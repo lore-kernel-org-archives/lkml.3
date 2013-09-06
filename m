@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756333Ab3IFVFz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 17:05:55 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:37220 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759023Ab3IFVFu (ORCPT
+	id S1751361Ab3IFVaN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 17:30:13 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:53802 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985Ab3IFVaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 17:05:50 -0400
-Date: Fri, 6 Sep 2013 22:05:46 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Waiman Long <Waiman.Long@hp.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        George Spelvin <linux@horizon.com>, John Stoffel <john@stoffel.org>
-Subject: Re: [PATCH v3 1/1] dcache: Translating dentry into pathname without
- taking rename_lock
-Message-ID: <20130906210546.GW13318@ZenIV.linux.org.uk>
-References: <1378483738-10129-1-git-send-email-Waiman.Long@hp.com>
- <1378483738-10129-2-git-send-email-Waiman.Long@hp.com>
- <CA+55aFw8UuEmKsSdGZPUmcekZheNimEt4U81i7Bz0LipGzsFmg@mail.gmail.com>
+	Fri, 6 Sep 2013 17:30:11 -0400
+From: behanw@converseincode.com
+To: linux@arm.linux.org.uk
+Cc: behanw@converseincode.com, Russell King <rmk+kernel@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>,
+        Wade Farnsworth <wade_farnsworth@mentor.com>,
+        Will Drewry <wad@chromium.org>, Sahara <keun-o.park@windriver.com>,
+        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
+        Mark Charlebois <charlebm@gmail.com>,
+        linux-arm-kernel@lists.infradead.org (moderated list:ARM PORT),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH 0/5] arm: LLVMLinux: Add current_stack_pointer
+Date: Fri,  6 Sep 2013 17:28:06 -0400
+Message-Id: <1378502899-1241-1-git-send-email-behanw@converseincode.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFw8UuEmKsSdGZPUmcekZheNimEt4U81i7Bz0LipGzsFmg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 06, 2013 at 01:52:49PM -0700, Linus Torvalds wrote:
- 
-> Al - do you have comments? Do you want to take this through your tree,
-> or are you working on other things? I can take this directly too..
+From: Behan Webster <behanw@converseincode.com>
 
-I can take that, but I'm really not convinced that we need writer lock
-there at all.  After all, if we really can get livelocks on that one,
-we would be getting them on d_lookup()...
+The LLVMLinux Project is working to be able to build the Linux kernel with
+clang/LLVM. With the release of LLVM 3.3 clang is now able to compile the Linux
+kernel with a number of small patches (available from the LLVMLinux git repo).
 
-Let's not complicate the things without need; if we ever run into loads
-where livelock start to happen, we can look into dealing with them.
+These patches add a macro to get the current stack pointer which allows for a
+single place in which to do so with ASM. Before this named registers (a gcc
+extension) was used to get the stack pointer. Using ASM is a more portable way
+of getting the stack pointer which works with both gcc and clang.  This macro
+is of the same name used in the X86 arch.
+
+Behan Webster (5):
+  arm: LLVMLinux: Add current_stack_pointer macro for ARM
+  arm: LLVMLinux: use current_stack_pointer for percpu
+  arm: LLVMLinux: Use current_stack_pointer for return_address
+  arm: LLVMLinux: Use current_stack_pointer in save_stack_trace_tsk
+  arm: LLVMLinux: Use current_stack_pointer in unwind_backtrace
+
+ arch/arm/include/asm/percpu.h      | 4 ++--
+ arch/arm/include/asm/thread_info.h | 9 +++++++++
+ arch/arm/kernel/return_address.c   | 3 +--
+ arch/arm/kernel/stacktrace.c       | 4 +---
+ arch/arm/kernel/unwind.c           | 3 +--
+ 5 files changed, 14 insertions(+), 9 deletions(-)
+
+-- 
+1.8.1.2
+
