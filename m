@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750904Ab3IFR4S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 13:56:18 -0400
-Received: from mail-vb0-f48.google.com ([209.85.212.48]:55765 "EHLO
-	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750771Ab3IFR4Q (ORCPT
+	id S1757652Ab3IFR6Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 13:58:24 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:64778 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751087Ab3IFR6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 13:56:16 -0400
+	Fri, 6 Sep 2013 13:58:22 -0400
+Date: Fri, 6 Sep 2013 10:58:18 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [ 00/14] 3.4.61-stable review
+Message-ID: <20130906175817.GA17955@roeck-us.net>
+References: <20130905202614.354156084@linuxfoundation.org>
+ <20130905225628.GB1358@roeck-us.net>
+ <20130906163948.GB17541@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <1378434264.4321.209.camel@pasglop>
-References: <1378434264.4321.209.camel@pasglop>
-Date: Fri, 6 Sep 2013 10:56:15 -0700
-X-Google-Sender-Auth: aDWS0Gy4VcPZH-SbiBB57vaD9Zc
-Message-ID: <CA+55aFwvPNu6-PHJmDkqihiCgMy=TH_we8LtVKm31teWhmLQPw@mail.gmail.com>
-Subject: Re: [git pull] Please pull powerpc.git next branch
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130906163948.GB17541@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 5, 2013 at 7:24 PM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
->
->  * A bunch of endian fixes ! We don't have full LE support yet in that
-> release but this contains a lot of fixes all over arch/powerpc to use the
-> proper accessors, call the firmware with the right endian mode, etc...
+On Fri, Sep 06, 2013 at 09:39:48AM -0700, Greg Kroah-Hartman wrote:
+> On Thu, Sep 05, 2013 at 03:56:28PM -0700, Guenter Roeck wrote:
+> > On Thu, Sep 05, 2013 at 01:28:11PM -0700, Greg Kroah-Hartman wrote:
+> > > This is the start of the stable review cycle for the 3.4.61 release.
+> > > There are 14 patches in this series, all will be posted as a response
+> > > to this one.  If anyone has any issues with these being applied, please
+> > > let me know.
+> > > 
+> > > Responses should be made by Sat Sep  7 20:25:41 UTC 2013.
+> > > Anything received after that time might be too late.
+> > > 
+> > > The whole patch series can be found in one patch at:
+> > > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.61-rc1.gz
+> > > and the diffstat can be found below.
+> > > 
+> > 
+> > buildbot says:
+> >         total: 93 pass: 80 skipped: 8 fail: 5
+> > This matches the test results for the previous release.
+> 
+> Hm, did we ever figure out how to fix those 5 failures?  Or have we just
+> given up on them for now (which is fine by me.)
+> 
+I concluded that the failues are too complex for me to fix,
+and/or there are too many failures.
 
-Ok, this caused a conflict in arch/powerpc/kernel/prom.c, where some
-of the OF CPU number accessors had been moved to generic OF code
-instead.
+Of course, if someone else wants to give it a try, here are the logs:
 
-It *looks* to me like those accessors had already been made
-endian-clean as part of the move to generic code, and so my conflict
-resolution was to just ignore the parts of the changes the code that
-no longer exists in prom.c, but you really should double-check my
-resolution. Maybe I screwed it up.
+alpha-allmodconfig
+	http://server.roeck-us.net:8010/builders/stable-queue-alpha-3.4/builds/20/steps/buildcommand/logs/stdio
+arm-allmodcfonfig
+	http://server.roeck-us.net:8010/builders/stable-queue-arm-3.4/builds/14/steps/buildcommand/logs/stdio
+	[ easy to fix by itself but then there are secondary failures ]
+m32r:defconfig
+	http://server.roeck-us.net:8010/builders/stable-queue-m32r-3.4/builds/5/steps/buildcommand/logs/stdio
+sparc64:allmodconfig
+	http://server.roeck-us.net:8010/builders/stable-queue-sparc64-3.4/builds/11/steps/buildcommand/logs/stdioxtensa:defconfig
+	http://server.roeck-us.net:8010/builders/stable-queue-xtensa-3.4/builds/12/steps/buildcommand/logs/stdio
 
-But apparent'y the LE mode isn't finished, so hopefully even if I read
-those changes wrong it won't affect you guys too badly. I didn't
-test-compile any of it, yadda yadda..
-
-              Linus
+Guenter
