@@ -1,61 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757208Ab3IFQG3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 12:06:29 -0400
-Received: from mail-ye0-f180.google.com ([209.85.213.180]:56499 "EHLO
-	mail-ye0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753815Ab3IFQG0 (ORCPT
+	id S1757721Ab3IFQGf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 12:06:35 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:49897 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757433Ab3IFQGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 12:06:26 -0400
-Date: Fri, 6 Sep 2013 12:06:21 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Jan Beulich <JBeulich@suse.com>
-Subject: Re: [PATCH v2 2/6] PCI/MSI: Factor out pci_get_msi_cap() interface
-Message-ID: <20130906160621.GF22763@mtj.dyndns.org>
-References: <cover.1378383792.git.agordeev@redhat.com>
- <c5ff8fbf905a3df2b75369da725ab5ebf31544ff.1378383792.git.agordeev@redhat.com>
- <20130905130902.GA26314@htj.dyndns.org>
- <20130905150259.GA30984@dhcp-26-207.brq.redhat.com>
- <20130905150442.GA24148@htj.dyndns.org>
- <20130905154041.GD30984@dhcp-26-207.brq.redhat.com>
- <20130905154436.GC24148@htj.dyndns.org>
- <20130905185440.GA13175@dhcp-26-207.brq.redhat.com>
- <20130905200608.GA3846@htj.dyndns.org>
- <CAErSpo4TU2geqzY3AYsL08KimBqtfwa4iUoFHgcFt0zMTBJkHw@mail.gmail.com>
+	Fri, 6 Sep 2013 12:06:34 -0400
+Message-ID: <5229FD81.6000701@oracle.com>
+Date: Fri, 06 Sep 2013 12:06:25 -0400
+From: konrad wilk <konrad.wilk@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo4TU2geqzY3AYsL08KimBqtfwa4iUoFHgcFt0zMTBJkHw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Boris Ostrovsky <boris.ostrovsky@oracle.com>, david.vrabel@citrix.com,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] xen/p2m: Don't call get_balloon_scratch_page() twice,
+ keep interrupts disabled for multicalls
+References: <1378479646-12592-1-git-send-email-boris.ostrovsky@oracle.com> <alpine.DEB.2.02.1309061607190.6397@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1309061607190.6397@kaball.uk.xensource.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Bjorn.
 
-On Fri, Sep 06, 2013 at 10:01:38AM -0600, Bjorn Helgaas wrote:
-> Sorry, I haven't jumped in here yet because I saw your discussion and
-> was hoping you guys would figure something out without my help.  It
-> will take me a few hours to look into this and come up with anything
-> constructive to say.
-> 
-> I do remember disliking the complicated interface of
-> pci_enable_msi_block() (return negative errno, return positive "we
-> might be able to do this" values, or zero), but I'll have to do some
-> more research before I can say much more than that.
+On 9/6/2013 11:09 AM, Stefano Stabellini wrote:
+> On Fri, 6 Sep 2013, Boris Ostrovsky wrote:
+>> m2p_remove_override() calls get_balloon_scratch_page() in
+>> MULTI_update_va_mapping() even though it already has pointer to this page from
+>> the earlier call (in scratch_page). This second call doesn't have a matching
+>> put_balloon_scratch_page() thus not restoring preempt count back. (Also, there
+>> is no put_balloon_scratch_page() in the error path.)
+>>
+>> In addition, the second multicall uses __xen_mc_entry() which does not disable
+>> interrupts. Rearrange xen_mc_* calls to keep interrupts off while performing
+>> multicalls.
+>>
+>> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+You also might want to mention that this fixes the regression introduced 
+by ..
+commit id <"title"
+> Reviewed-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+>
+>
+>>   arch/x86/xen/p2m.c | 10 ++++++----
+>>   1 file changed, 6 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+>> index 0d4ec35..8b901e8 100644
+>> --- a/arch/x86/xen/p2m.c
+>> +++ b/arch/x86/xen/p2m.c
+>> @@ -990,10 +990,13 @@ int m2p_remove_override(struct page *page,
+>>   				printk(KERN_WARNING "m2p_remove_override: "
+>>   						"pfn %lx mfn %lx, failed to modify kernel mappings",
+>>   						pfn, mfn);
+>> +				put_balloon_scratch_page();
+>>   				return -1;
+>>   			}
+>>   
+>> -			mcs = xen_mc_entry(
+>> +			xen_mc_batch();
+>> +
+>> +			mcs = __xen_mc_entry(
+>>   					sizeof(struct gnttab_unmap_and_replace));
+>>   			unmap_op = mcs.args;
+>>   			unmap_op->host_addr = kmap_op->host_addr;
+>> @@ -1003,12 +1006,11 @@ int m2p_remove_override(struct page *page,
+>>   			MULTI_grant_table_op(mcs.mc,
+>>   					GNTTABOP_unmap_and_replace, unmap_op, 1);
+>>   
+>> -			xen_mc_issue(PARAVIRT_LAZY_MMU);
+>> -
+>>   			mcs = __xen_mc_entry(0);
+>>   			MULTI_update_va_mapping(mcs.mc, scratch_page_address,
+>> -					pfn_pte(page_to_pfn(get_balloon_scratch_page()),
+>> +					pfn_pte(page_to_pfn(scratch_page),
+>>   					PAGE_KERNEL_RO), 0);
+>> +
+>>   			xen_mc_issue(PARAVIRT_LAZY_MMU);
+>>   
+>>   			kmap_op->host_addr = 0;
+>> -- 
+>> 1.8.3.1
+>>
 
-According to Alexander, it doesn't even seem like we have any actual
-use case for the positive return numbers.  I say just rip it out and
-do the regular 0/-errno all the way through.
-
-Thanks.
-
--- 
-tejun
