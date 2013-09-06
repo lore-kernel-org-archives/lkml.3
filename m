@@ -1,91 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592Ab3IFPcn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 11:32:43 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:54826 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391Ab3IFPcl (ORCPT
+	id S1754063Ab3IFPdZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 11:33:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7867 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753028Ab3IFPdY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 11:32:41 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alexander Holler <holler@ahsoftware.de>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
-Subject: Re: [PATCH] RFC: interrupt consistency check for OF GPIO IRQs
-Date: Fri, 06 Sep 2013 17:32:43 +0200
-Message-ID: <2966898.neCKEkcf1e@avalon>
-User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CACRpkdavR=fv+y1RCNfdgQypPuRbO6isOSwGsABDrYiGeMdyZw@mail.gmail.com>
-References: <1375101368-17645-1-git-send-email-linus.walleij@linaro.org> <344239800.bDEkDg48ZQ@avalon> <CACRpkdavR=fv+y1RCNfdgQypPuRbO6isOSwGsABDrYiGeMdyZw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Fri, 6 Sep 2013 11:33:24 -0400
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=JDfofD-L5ZgA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5p3hctMY2UsA:10 a=VnNF1IyMAAAA:8 a=alNW_B91wzLGG2PP7VQA:9 a=CjuIK1q_8ugA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Fri, 6 Sep 2013 11:33:20 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, sbw@mit.edu
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+Message-ID: <20130906113320.46b2ea3e@gandalf.local.home>
+In-Reply-To: <20130906151851.GQ3966@linux.vnet.ibm.com>
+References: <20130905195234.GA20555@linux.vnet.ibm.com>
+	<20130906105934.GF20519@somewhere>
+	<20130906151851.GQ3966@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, 6 Sep 2013 08:18:52 -0700
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
 
-Sorry for the late reply.
-
-On Thursday 22 August 2013 00:02:39 Linus Walleij wrote:
-> On Tue, Aug 20, 2013 at 12:04 AM, Laurent Pinchart wrote:
-> > On Wednesday 31 July 2013 01:44:53 Linus Walleij wrote:
-> >> I don't see how sharing works here, or how another user, i.e. another one
-> >> than the user wanting to recieve the IRQ, can validly request such a
-> >> line? What would the usecase for that valid request be?
+> On Fri, Sep 06, 2013 at 12:59:41PM +0200, Frederic Weisbecker wrote:
+> > On Thu, Sep 05, 2013 at 12:52:34PM -0700, Paul E. McKenney wrote:
+> > > There is currently no way for kernel code to determine whether it
+> > > is safe to enter an RCU read-side critical section, in other words,
+> > > whether or not RCU is paying attention to the currently running CPU.
+> > > Given the large and increasing quantity of code shared by the idle loop
+> > > and non-idle code, the this shortcoming is becoming increasingly painful.
+> > > 
+> > > This commit therefore adds rcu_watching_this_cpu(), which returns true
+> > > if it is safe to enter an RCU read-side critical section on the currently
+> > > running CPU.  This function is quite fast, using only a __this_cpu_read().
+> > > However, the caller must disable preemption.
+> > > 
+> > > Reported-by: Steven Rostedt <rostedt@goodmis.org>
+> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > 
+> > >  include/linux/rcupdate.h |    1 +
+> > >  kernel/rcutree.c         |   12 ++++++++++++
+> > >  2 files changed, 13 insertions(+)
+> > > 
+> > > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> > > index 15d33d9..1c7112c 100644
+> > > --- a/include/linux/rcupdate.h
+> > > +++ b/include/linux/rcupdate.h
+> > > @@ -225,6 +225,7 @@ extern void rcu_idle_enter(void);
+> > >  extern void rcu_idle_exit(void);
+> > >  extern void rcu_irq_enter(void);
+> > >  extern void rcu_irq_exit(void);
+> > > +extern bool rcu_watching_this_cpu(void);
+> > >  
+> > >  #ifdef CONFIG_RCU_USER_QS
+> > >  extern void rcu_user_enter(void);
+> > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > > index a06d172..7b8fcee 100644
+> > > --- a/kernel/rcutree.c
+> > > +++ b/kernel/rcutree.c
+> > > @@ -710,6 +710,18 @@ EXPORT_SYMBOL_GPL(rcu_lockdep_current_cpu_online);
+> > >  #endif /* #if defined(CONFIG_PROVE_RCU) && defined(CONFIG_HOTPLUG_CPU) */
+> > >  
+> > >  /**
+> > > + * rcu_watching_this_cpu - are RCU read-side critical sections safe?
+> > > + *
+> > > + * Return true if RCU is watching the running CPU, which means that this
+> > > + * CPU can safely enter RCU read-side critical sections.  The caller must
+> > > + * have at least disabled preemption.
+> > > + */
+> > > +bool rcu_watching_this_cpu(void)
+> > > +{
+> > > +	return !!__this_cpu_read(rcu_dynticks.dynticks_nesting);
+> > > +}
 > > 
-> > When the GPIO is wired to a status signal (such as an MMC card detect
-> > signal) the driver might want to read the state of the signal
-> > independently of the interrupt handler.
+> > There is also rcu_is_cpu_idle().
 > 
-> That is true. But for such a complex usecase I think it's reasonable that
-> we only specify the GPIO in the device tree, and the driver utilizing the
-> IRQ need to take that and perform gpio_to_irq() on it, and then it still
-> works to use it both ways.
-
-I'm pretty sure I would have had an objection a couple of weeks ago when I was 
-looking into this, but I can't think of another use case for now, so I agree 
-with you.
-
-> >> Basically I believe these two things need to be exclusive in the DT
-> >> world:
-> >> 
-> >> A: request_irq(a resource passed from "interrupts");
-> >>      -> core implicitly performs gpio_request()
-> >>          gpio_direction_input()
-> >> 
-> >> B: gpio_request(a resource passed from "gpios");
-> >>      gpio_direction_input()
-> >>      request_irq(gpio_to_irq())
-> >> 
-> >> Never both. And IIUC that was what happened in the OMAP case.
-> > 
-> > Isn't the core issue that we can translate a GPIO number to an IRQ number,
-> > but not the other way around ? If that could be done, we could request
-> > the GPIO and configure it as an input when the IRQ is requested.
+> Good point, thank you!  I was clearly in autonomic-reflex mode yesterday.  :-/
 > 
-> That is true. It would be easier if all GPIO drivers has an irqchip and
-> and irqdomain, then we could implement irq_to_gpio() properly in gpiolib
-> and this would not be a problem. Alas, not all do.
+> Here is the rcutree version:
 > 
-> But I also think that the DT contains (as demonstrated by the patch)
-> all information about what interrupts and GPIOs may conflict, so I
-> also see this as something of a consistency check, but it could go
-> in either way.
+> int rcu_is_cpu_idle(void)
+> {
+> 	int ret;
+> 
+> 	preempt_disable();
+> 	ret = (atomic_read(&__get_cpu_var(rcu_dynticks).dynticks) & 0x1) == 0;
+> 	preempt_enable();
+> 	return ret;
+> }
+> 
+> And here is the rcutiny version:
+> 
+> int rcu_is_cpu_idle(void)
+> {
+> 	return !rcu_dynticks_nesting;
+> }
+> 
+> Steve, could you please use rcu_is_cpu_idle()?  I will revert yesterday's
+> redundancy.
+> 
 
--- 
-Regards,
+I can't use plain preempt_disable() in function tracing.
 
-Laurent Pinchart
+Also, since it's a misnomer to say the cpu is idle in NO_HZ_FULL when
+we are coming from userspace, can we rename that?
+
+Perhaps we can also have a __rcu_is_cpu_tracking() (or whatever), with
+the "__" appended that does not do the preempt disable.
+
+-- Steve
