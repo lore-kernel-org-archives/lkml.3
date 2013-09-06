@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751147Ab3IFIWq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 04:22:46 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35578 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751046Ab3IFIWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 04:22:43 -0400
-From: George Cherian <george.cherian@ti.com>
-To: <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <bcousson@baylibre.com>, <tony@atomide.com>, <rob.herring@calxeda.com>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ijc+devicetree@hellion.org.uk>, <linux@arm.linux.org.uk>,
-        George Cherian <george.cherian@ti.com>
-Subject: [PATCH] arm: dts: am33xx: Add mmc nodes for am33xx platform
-Date: Fri, 6 Sep 2013 13:51:52 +0530
-Message-ID: <1378455712-17379-1-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.1.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1750862Ab3IFIiK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 04:38:10 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:60225 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750756Ab3IFIiH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 04:38:07 -0400
+X-Sasl-enc: Wg/gY48M70flqLRo+uOHfrb8GjQBDTgtoO2TJNJ+Xa7U 1378456685
+Message-ID: <1378456682.2311.21.camel@perseus.fritz.box>
+Subject: Re: [PATCH 1/3] autofs4 - fix device ioctl mount lookup
+From: Ian Kent <raven@themaw.net>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>, rui.xiang@huawei.com,
+        autofs mailing list <autofs@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Fri, 06 Sep 2013 16:38:02 +0800
+In-Reply-To: <20130904024230.GH13318@ZenIV.linux.org.uk>
+References: <20130904005456.5025.94309.stgit@perseus.fritz.box>
+	 <20130904010301.GE13318@ZenIV.linux.org.uk>
+	 <20130904020013.GF13318@ZenIV.linux.org.uk>
+	 <CA+55aFwF+dqSMyGE+3LamM+qSDymieyReYB+RPb8fHTTmntgqw@mail.gmail.com>
+	 <20130904022617.GG13318@ZenIV.linux.org.uk>
+	 <20130904024230.GH13318@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add mmc nodes for am33xx platforms
+On Wed, 2013-09-04 at 03:42 +0100, Al Viro wrote:
+> On Wed, Sep 04, 2013 at 03:26:17AM +0100, Al Viro wrote:
+> > I've applied slightly modified variant of Jeff's "vfs: allow umount to handle
+> > mountpoints without revalidating them" (modified by just leaving the
+> > struct path filled with mountpoint and leaving the equivalent of follow_mount()
+> > to caller) to the local queue and I'm pretty sure that it's what we want
+> > here as well.
+> 
+> ... and killed the modifications since the result ends up uglier for
+> caller(s) anyway.  Reapplied as-is.
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
----
-Verified after applying [1] and [2]
-[1] - [PATCH v4 0/6] dma: edma: Support scatter-lists of any length - https://lkml.org/lkml/2013/8/29/466
-[2] - [PATCH v2] ARM: dts: add AM33XX EDMA support - https://lkml.org/lkml/2013/8/26/57
- arch/arm/boot/dts/am33xx.dtsi | 35 +++++++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
+Looks like Jeff's patch has been merged, commit 8033426e6.
 
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index b0badff..1df512d 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -236,6 +236,41 @@
- 			status = "disabled";
- 		};
- 
-+		mmc1: mmc@48061000 {
-+			compatible = "ti,omap4-hsmmc";
-+			reg = <0x48060000 0x1000>;
-+			interrupts = <64>;
-+			ti,hwmods = "mmc1";
-+			ti,dual-volt;
-+			ti,needs-special-reset;
-+			ti,needs-special-hs-handling;
-+			dmas = <&edma 24
-+				&edma 25>;
-+			dma-names = "tx", "rx";
-+			status = "disabled";
-+		};
-+
-+		mmc2: mmc@481d8000 {
-+			compatible = "ti,omap4-hsmmc";
-+			reg = <0x481d8000 0x1000>;
-+			interrupts = <28>;
-+			ti,hwmods = "mmc2";
-+			ti,needs-special-reset;
-+			dmas = <&edma 2
-+				&edma 3>;
-+			dma-names = "tx", "rx";
-+			status = "disabled";
-+		};
-+
-+		mmc3: mmc@47810000 {
-+			compatible = "ti,omap4-hsmmc";
-+			reg = <0x47810000 0x1000>;
-+			interrupts = <29>;
-+			ti,hwmods = "mmc3";
-+			ti,needs-special-reset;
-+			status = "disabled";
-+		};
-+
- 		wdt2: wdt@44e35000 {
- 			compatible = "ti,omap3-wdt";
- 			ti,hwmods = "wd_timer2";
--- 
-1.8.1.4
+Revalidation isn't the only thing not done on the last component using
+Jeff's user_path_umountat() path walk. It also bypasses the managed
+dentry code for the last component, which is why it's what I need as
+well.
+
+Encoding umount in the name seems misleading as to what it really does
+as would encoding unmanaged or similar since that doesn't properly cover
+it either.
+
+I can rename it in a patch to solve my autofs problem, so how about
+something like user_path_simple_last(), other suggestions anyone?
+
+Ian
 
