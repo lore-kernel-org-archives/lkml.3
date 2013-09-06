@@ -1,184 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751091Ab3IFGCR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 02:02:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28201 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750781Ab3IFGCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 02:02:03 -0400
-Date: Fri, 6 Sep 2013 09:01:47 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Alexander Graf <agraf@suse.de>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v9 12/13] KVM: PPC: Add support for IOMMU in-kernel
- handling
-Message-ID: <20130906060147.GF13021@redhat.com>
-References: <1377679070-3515-1-git-send-email-aik@ozlabs.ru>
- <1377679841-3822-1-git-send-email-aik@ozlabs.ru>
- <20130901120609.GJ22899@redhat.com>
- <52240295.7050608@ozlabs.ru>
- <20130903105315.GY22899@redhat.com>
- <522607D8.4070408@ozlabs.ru>
- <20130905181010.GE13021@redhat.com>
- <522915ED.7050106@ozlabs.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <522915ED.7050106@ozlabs.ru>
+	id S1751103Ab3IFGC3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 02:02:29 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64715 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750766Ab3IFGCZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 02:02:25 -0400
+X-AuditID: 9c930197-b7b44ae00000347f-d8-52296fef5abd
+From: Chanho Min <chanho.min@lge.com>
+To: Chris Ball <cjb@laptop.org>, Per Forlin <per.forlin@linaro.org>
+Cc: HyoJun Im <hyojun.im@lge.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Gunho Lee <gunho.lee@lge.com>,
+        Chanho Min <chanho.min@lge.com>
+Subject: [PATCH] mmc: sdhci: add support for pre_req and post_req
+Date: Fri,  6 Sep 2013 15:01:53 +0900
+Message-Id: <1378447313-12935-1-git-send-email-chanho.min@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 06, 2013 at 09:38:21AM +1000, Alexey Kardashevskiy wrote:
-> On 09/06/2013 04:10 AM, Gleb Natapov wrote:
-> > On Wed, Sep 04, 2013 at 02:01:28AM +1000, Alexey Kardashevskiy wrote:
-> >> On 09/03/2013 08:53 PM, Gleb Natapov wrote:
-> >>> On Mon, Sep 02, 2013 at 01:14:29PM +1000, Alexey Kardashevskiy wrote:
-> >>>> On 09/01/2013 10:06 PM, Gleb Natapov wrote:
-> >>>>> On Wed, Aug 28, 2013 at 06:50:41PM +1000, Alexey Kardashevskiy wrote:
-> >>>>>> This allows the host kernel to handle H_PUT_TCE, H_PUT_TCE_INDIRECT
-> >>>>>> and H_STUFF_TCE requests targeted an IOMMU TCE table without passing
-> >>>>>> them to user space which saves time on switching to user space and back.
-> >>>>>>
-> >>>>>> Both real and virtual modes are supported. The kernel tries to
-> >>>>>> handle a TCE request in the real mode, if fails it passes the request
-> >>>>>> to the virtual mode to complete the operation. If it a virtual mode
-> >>>>>> handler fails, the request is passed to user space.
-> >>>>>>
-> >>>>>> The first user of this is VFIO on POWER. Trampolines to the VFIO external
-> >>>>>> user API functions are required for this patch.
-> >>>>>>
-> >>>>>> This adds a "SPAPR TCE IOMMU" KVM device to associate a logical bus
-> >>>>>> number (LIOBN) with an VFIO IOMMU group fd and enable in-kernel handling
-> >>>>>> of map/unmap requests. The device supports a single attribute which is
-> >>>>>> a struct with LIOBN and IOMMU fd. When the attribute is set, the device
-> >>>>>> establishes the connection between KVM and VFIO.
-> >>>>>>
-> >>>>>> Tests show that this patch increases transmission speed from 220MB/s
-> >>>>>> to 750..1020MB/s on 10Gb network (Chelsea CXGB3 10Gb ethernet card).
-> >>>>>>
-> >>>>>> Signed-off-by: Paul Mackerras <paulus@samba.org>
-> >>>>>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-> >>>>>>
-> >>>>>> ---
-> >>>>>>
-> >>>>>> Changes:
-> >>>>>> v9:
-> >>>>>> * KVM_CAP_SPAPR_TCE_IOMMU ioctl to KVM replaced with "SPAPR TCE IOMMU"
-> >>>>>> KVM device
-> >>>>>> * release_spapr_tce_table() is not shared between different TCE types
-> >>>>>> * reduced the patch size by moving VFIO external API
-> >>>>>> trampolines to separate patche
-> >>>>>> * moved documentation from Documentation/virtual/kvm/api.txt to
-> >>>>>> Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
-> >>>>>>
-> >>>>>> v8:
-> >>>>>> * fixed warnings from check_patch.pl
-> >>>>>>
-> >>>>>> 2013/07/11:
-> >>>>>> * removed multiple #ifdef IOMMU_API as IOMMU_API is always enabled
-> >>>>>> for KVM_BOOK3S_64
-> >>>>>> * kvmppc_gpa_to_hva_and_get also returns host phys address. Not much sense
-> >>>>>> for this here but the next patch for hugepages support will use it more.
-> >>>>>>
-> >>>>>> 2013/07/06:
-> >>>>>> * added realmode arch_spin_lock to protect TCE table from races
-> >>>>>> in real and virtual modes
-> >>>>>> * POWERPC IOMMU API is changed to support real mode
-> >>>>>> * iommu_take_ownership and iommu_release_ownership are protected by
-> >>>>>> iommu_table's locks
-> >>>>>> * VFIO external user API use rewritten
-> >>>>>> * multiple small fixes
-> >>>>>>
-> >>>>>> 2013/06/27:
-> >>>>>> * tce_list page is referenced now in order to protect it from accident
-> >>>>>> invalidation during H_PUT_TCE_INDIRECT execution
-> >>>>>> * added use of the external user VFIO API
-> >>>>>>
-> >>>>>> 2013/06/05:
-> >>>>>> * changed capability number
-> >>>>>> * changed ioctl number
-> >>>>>> * update the doc article number
-> >>>>>>
-> >>>>>> 2013/05/20:
-> >>>>>> * removed get_user() from real mode handlers
-> >>>>>> * kvm_vcpu_arch::tce_tmp usage extended. Now real mode handler puts there
-> >>>>>> translated TCEs, tries realmode_get_page() on those and if it fails, it
-> >>>>>> passes control over the virtual mode handler which tries to finish
-> >>>>>> the request handling
-> >>>>>> * kvmppc_lookup_pte() now does realmode_get_page() protected by BUSY bit
-> >>>>>> on a page
-> >>>>>> * The only reason to pass the request to user mode now is when the user mode
-> >>>>>> did not register TCE table in the kernel, in all other cases the virtual mode
-> >>>>>> handler is expected to do the job
-> >>>>>> ---
-> >>>>>>  .../virtual/kvm/devices/spapr_tce_iommu.txt        |  37 +++
-> >>>>>>  arch/powerpc/include/asm/kvm_host.h                |   4 +
-> >>>>>>  arch/powerpc/kvm/book3s_64_vio.c                   | 310 ++++++++++++++++++++-
-> >>>>>>  arch/powerpc/kvm/book3s_64_vio_hv.c                | 122 ++++++++
-> >>>>>>  arch/powerpc/kvm/powerpc.c                         |   1 +
-> >>>>>>  include/linux/kvm_host.h                           |   1 +
-> >>>>>>  virt/kvm/kvm_main.c                                |   5 +
-> >>>>>>  7 files changed, 477 insertions(+), 3 deletions(-)
-> >>>>>>  create mode 100644 Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
-> >>>>>>
-> >>>>>> diff --git a/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt b/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
-> >>>>>> new file mode 100644
-> >>>>>> index 0000000..4bc8fc3
-> >>>>>> --- /dev/null
-> >>>>>> +++ b/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
-> >>>>>> @@ -0,0 +1,37 @@
-> >>>>>> +SPAPR TCE IOMMU device
-> >>>>>> +
-> >>>>>> +Capability: KVM_CAP_SPAPR_TCE_IOMMU
-> >>>>>> +Architectures: powerpc
-> >>>>>> +
-> >>>>>> +Device type supported: KVM_DEV_TYPE_SPAPR_TCE_IOMMU
-> >>>>>> +
-> >>>>>> +Groups:
-> >>>>>> +  KVM_DEV_SPAPR_TCE_IOMMU_ATTR_LINKAGE
-> >>>>>> +  Attributes: single attribute with pair { LIOBN, IOMMU fd}
-> >>>>>> +
-> >>>>>> +This is completely made up device which provides API to link
-> >>>>>> +logical bus number (LIOBN) and IOMMU group. The user space has
-> >>>>>> +to create a new SPAPR TCE IOMMU device per a logical bus.
-> >>>>>> +
-> >>>>> Why not have one device that can handle multimple links?
-> >>>>
-> >>>>
-> >>>> I can do that. If I make it so, it won't even look as a device at all, just
-> >>>> some weird interface to KVM but ok. What bothers me is it is just a
-> >>> May be I do not understand usage pattern here. Why do you feel that device
-> >>> that can handle multiple links is worse than device per link? How many logical
-> >>> buses is there usually? How often they created/destroyed? I am not insisting
-> >>> on the change, just trying to understand why you do not like it.
-> >>
-> >>
-> >> Is it usually one PCI host bus adapter per IOMMU group which is usually
-> >> one PCI card or 2-3 cards if it is a legacy PCI-X, and they are created
-> >> when QEMU-KVM starts. Not many. And they live till KVM ends.
-> >>
-> >> My point is why would I want to put all links to one device? It all is just
-> >> a matter of taste and nothing more. Or I am missing something but I do not
-> >> see what. If it is all about making thing to be kosher/halal/orthodox, then
-> >> I have more stuff to do, like reworking the emulated TCEs. But if is it for
-> >> (I do not know, just guessing) performance or something like that - then
-> >> I'll fix it, I just need to know what I am fixing.
-> >>
-> > Each device creates an fd, if you can have a lot of them eventually this
-> > will be a bottleneck. You are saying this is not the case, so lets go
-> > with proposed interface.
-> 
-> 
-> Did you decide not to answer the email which Ben sent yesterday or you just
-> did not see it? Just checking :)
-> 
-Haven't seen it. Which one?
+This patch supports non-blocking mmc request function for the sdchi driver.
+(commit: aa8b683a7d392271ed349c6ab9f36b8c313794b7)
 
---
-			Gleb.
+pre_req() runs dma_map_sg(), post_req() runs dma_unmap_sg.  If not calling
+pre_req() before sdhci_request(), dma_map_sg will be issued before
+starting the transfer.  It is optional to use pre_req().  If issuing
+pre_req(), post_req() must be called as well.
+
+benchmark results:
+ ARM CA9 1GHz, UHS DDR50 mode
+
+ Before:
+ dd if=/dev/mmcblk0p15 of=/dev/null bs=64k count=1024
+ 67108864 bytes (64.0MB) copied, 1.188846 seconds, 53.8MB/s
+
+ After:
+ dd if=/dev/mmcblk0p15 of=/dev/null bs=64k count=1024
+ 67108864 bytes (64.0MB) copied, 0.993098 seconds, 64.4MB/s
+
+Signed-off-by: Chanho Min <chanho.min@lge.com>
+---
+ drivers/mmc/host/sdhci.c  |   96 +++++++++++++++++++++++++++++++++++++++------
+ include/linux/mmc/sdhci.h |    6 +++
+ 2 files changed, 90 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index 2ea429c..0465a9a 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -465,6 +465,42 @@ static void sdhci_set_adma_desc(u8 *desc, u32 addr, int len, unsigned cmd)
+ 	dataddr[0] = cpu_to_le32(addr);
+ }
+ 
++static int sdhci_pre_dma_transfer(struct sdhci_host *host,
++				       struct mmc_data *data,
++				       struct sdhci_next *next)
++{
++	int sg_count = 0;
++
++	if (!next && data->host_cookie &&
++	    data->host_cookie != host->next_data.cookie) {
++		pr_warn("[%s] invalid cookie: data->host_cookie %d"
++			" host->next_data.cookie %d\n",
++			__func__, data->host_cookie, host->next_data.cookie);
++		data->host_cookie = 0;
++	}
++
++	/* Check if next job is already prepared */
++	if (next ||
++	    (!next && data->host_cookie != host->next_data.cookie)) {
++		sg_count = dma_map_sg(mmc_dev(host->mmc), data->sg,
++					data->sg_len,
++					(data->flags & MMC_DATA_READ) ?
++						DMA_FROM_DEVICE :
++						DMA_TO_DEVICE);
++	} else {
++		sg_count = host->next_data.sg_count;
++		host->next_data.sg_count = 0;
++	}
++
++	if (next) {
++		next->sg_count = sg_count;
++		data->host_cookie = ++next->cookie < 0 ? 1 : next->cookie;
++	} else
++		host->sg_count = sg_count;
++
++	return sg_count;
++}
++
+ static int sdhci_adma_table_pre(struct sdhci_host *host,
+ 	struct mmc_data *data)
+ {
+@@ -502,8 +538,8 @@ static int sdhci_adma_table_pre(struct sdhci_host *host,
+ 		goto fail;
+ 	BUG_ON(host->align_addr & 0x3);
+ 
+-	host->sg_count = dma_map_sg(mmc_dev(host->mmc),
+-		data->sg, data->sg_len, direction);
++	host->sg_count = sdhci_pre_dma_transfer(host, data, NULL);
++
+ 	if (host->sg_count == 0)
+ 		goto unmap_align;
+ 
+@@ -643,9 +679,10 @@ static void sdhci_adma_table_post(struct sdhci_host *host,
+ 			}
+ 		}
+ 	}
+-
+-	dma_unmap_sg(mmc_dev(host->mmc), data->sg,
+-		data->sg_len, direction);
++	if (!data->host_cookie) {
++		dma_unmap_sg(mmc_dev(host->mmc), data->sg,
++			data->sg_len, direction);
++	}
+ }
+ 
+ static u8 sdhci_calc_timeout(struct sdhci_host *host, struct mmc_command *cmd)
+@@ -824,12 +861,8 @@ static void sdhci_prepare_data(struct sdhci_host *host, struct mmc_command *cmd)
+ 			}
+ 		} else {
+ 			int sg_cnt;
++			sg_cnt = sdhci_pre_dma_transfer(host, data, NULL);
+ 
+-			sg_cnt = dma_map_sg(mmc_dev(host->mmc),
+-					data->sg, data->sg_len,
+-					(data->flags & MMC_DATA_READ) ?
+-						DMA_FROM_DEVICE :
+-						DMA_TO_DEVICE);
+ 			if (sg_cnt == 0) {
+ 				/*
+ 				 * This only happens when someone fed
+@@ -928,9 +961,12 @@ static void sdhci_finish_data(struct sdhci_host *host)
+ 		if (host->flags & SDHCI_USE_ADMA)
+ 			sdhci_adma_table_post(host, data);
+ 		else {
+-			dma_unmap_sg(mmc_dev(host->mmc), data->sg,
+-				data->sg_len, (data->flags & MMC_DATA_READ) ?
++			if (!data->host_cookie) {
++				dma_unmap_sg(mmc_dev(host->mmc), data->sg,
++					data->sg_len,
++					(data->flags & MMC_DATA_READ) ?
+ 					DMA_FROM_DEVICE : DMA_TO_DEVICE);
++			}
+ 		}
+ 	}
+ 
+@@ -2066,8 +2102,42 @@ static void sdhci_card_event(struct mmc_host *mmc)
+ 	spin_unlock_irqrestore(&host->lock, flags);
+ }
+ 
++static void sdhci_post_req(struct mmc_host *mmc, struct mmc_request *mrq,
++				int err)
++{
++	struct sdhci_host *host = mmc_priv(mmc);
++	struct mmc_data *data = mrq->data;
++
++	if (host->flags & SDHCI_REQ_USE_DMA) {
++		dma_unmap_sg(mmc_dev(host->mmc), data->sg, data->sg_len,
++			(data->flags & MMC_DATA_READ) ?
++			DMA_FROM_DEVICE :
++			DMA_TO_DEVICE);
++		data->host_cookie = 0;
++	}
++}
++
++static void sdhci_pre_req(struct mmc_host *mmc, struct mmc_request *mrq,
++			       bool is_first_req)
++{
++	struct sdhci_host *host = mmc_priv(mmc);
++	struct mmc_data *data = mrq->data;
++
++	if (mrq->data->host_cookie) {
++		mrq->data->host_cookie = 0;
++		return;
++	}
++
++	if (host->flags & SDHCI_REQ_USE_DMA) {
++		if (!sdhci_pre_dma_transfer(host, data, &host->next_data))
++			mrq->data->host_cookie = 0;
++	}
++}
++
+ static const struct mmc_host_ops sdhci_ops = {
+ 	.request	= sdhci_request,
++	.post_req	= sdhci_post_req,
++	.pre_req	= sdhci_pre_req,
+ 	.set_ios	= sdhci_set_ios,
+ 	.get_cd		= sdhci_get_cd,
+ 	.get_ro		= sdhci_get_ro,
+@@ -3204,6 +3274,8 @@ int sdhci_add_host(struct sdhci_host *host)
+ 	}
+ #endif
+ 
++	host->next_data.cookie = 1;
++
+ 	mmiowb();
+ 
+ 	mmc_add_host(mmc);
+diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
+index b838ffc..220a515 100644
+--- a/include/linux/mmc/sdhci.h
++++ b/include/linux/mmc/sdhci.h
+@@ -17,6 +17,11 @@
+ #include <linux/io.h>
+ #include <linux/mmc/host.h>
+ 
++struct sdhci_next {
++	unsigned int	sg_count;
++	s32		cookie;
++};
++
+ struct sdhci_host {
+ 	/* Data set by hardware interface driver */
+ 	const char *hw_name;	/* Hardware bus name */
+@@ -177,5 +182,6 @@ struct sdhci_host {
+ 	struct timer_list	tuning_timer;	/* Timer for tuning */
+ 
+ 	unsigned long private[0] ____cacheline_aligned;
++	struct sdhci_next	next_data;
+ };
+ #endif /* LINUX_MMC_SDHCI_H */
+-- 
+1.7.9.5
+
