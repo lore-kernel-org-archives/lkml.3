@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750883Ab3IFFUA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 01:20:00 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:53328 "EHLO
+	id S1750929Ab3IFFUe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 01:20:34 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44198 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750725Ab3IFFT7 (ORCPT
+	with ESMTP id S1750903Ab3IFFUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 01:19:59 -0400
-X-AuditID: 9c930197-b7b44ae00000347f-58-522965fc97c0
+	Fri, 6 Sep 2013 01:20:33 -0400
+X-AuditID: 9c930197-b7b44ae00000347f-3c-5229661f0bee
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
@@ -22,11 +22,12 @@ Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
 Subject: [PATCH v3 03/20] mm, hugetlb: fix subpool accounting handling
-Date: Fri,  6 Sep 2013 14:19:56 +0900
-Message-Id: <1378444797-3353-1-git-send-email-iamjoonsoo.kim@lge.com>
+Date: Fri,  6 Sep 2013 14:19:57 +0900
+Message-Id: <1378444797-3353-2-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <520c10e8.1kKQVx1mpwqXywyM%akpm@linux-foundation.org>
+In-Reply-To: <1378444797-3353-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <520c10e8.1kKQVx1mpwqXywyM%akpm@linux-foundation.org>
+ <1378444797-3353-1-git-send-email-iamjoonsoo.kim@lge.com>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
