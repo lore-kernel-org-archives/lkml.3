@@ -1,75 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004Ab3IFO7e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 10:59:34 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:21284 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752866Ab3IFO7c (ORCPT
+	id S1753804Ab3IFPBK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 11:01:10 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:34848 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752510Ab3IFPBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 10:59:32 -0400
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-To: stefano.stabellini@eu.citrix.com, david.vrabel@citrix.com,
-        konrad.wilk@oracle.com
-Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: [PATCH] xen/p2m: Don't call get_balloon_scratch_page() twice, keep interrupts disabled for multicalls
-Date: Fri,  6 Sep 2013 11:00:46 -0400
-Message-Id: <1378479646-12592-1-git-send-email-boris.ostrovsky@oracle.com>
-X-Mailer: git-send-email 1.8.3.1
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Fri, 6 Sep 2013 11:01:08 -0400
+Date: Fri, 6 Sep 2013 17:59:49 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Jerome Marchand <jmarchan@redhat.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Minchan Kim <minchan@kernel.org>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] staging: zram: remove init_done from zram struct
+Message-ID: <20130906145949.GD2238@swordfish.minsk.epam.com>
+References: <20130906135258.GB2238@swordfish.minsk.epam.com>
+ <5229EB9E.7040609@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5229EB9E.7040609@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-m2p_remove_override() calls get_balloon_scratch_page() in
-MULTI_update_va_mapping() even though it already has pointer to this page from
-the earlier call (in scratch_page). This second call doesn't have a matching
-put_balloon_scratch_page() thus not restoring preempt count back. (Also, there
-is no put_balloon_scratch_page() in the error path.)
+On (09/06/13 16:50), Jerome Marchand wrote:
+> On 09/06/2013 03:52 PM, Sergey Senozhatsky wrote:
+> > `zram->init_done != 0' equals to `zram->meta != NULL', so init_done
+> > can be removed.
+> 
+> The name init_done is self explanatory, meta isn't. You could for
+> instance write a function with an explicit name to test for
+> initialization.
 
-In addition, the second multicall uses __xen_mc_entry() which does not disable
-interrupts. Rearrange xen_mc_* calls to keep interrupts off while performing
-multicalls.
+init_done are pretty useless 4 bytes, they just mimic `!!zram->meta'
+value (or `zram->meta != NULL'). well, we can have a macro or inline
+function to return `zram->meta != NULL'
 
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
----
- arch/x86/xen/p2m.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+	-ss
 
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 0d4ec35..8b901e8 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -990,10 +990,13 @@ int m2p_remove_override(struct page *page,
- 				printk(KERN_WARNING "m2p_remove_override: "
- 						"pfn %lx mfn %lx, failed to modify kernel mappings",
- 						pfn, mfn);
-+				put_balloon_scratch_page();
- 				return -1;
- 			}
- 
--			mcs = xen_mc_entry(
-+			xen_mc_batch();
-+
-+			mcs = __xen_mc_entry(
- 					sizeof(struct gnttab_unmap_and_replace));
- 			unmap_op = mcs.args;
- 			unmap_op->host_addr = kmap_op->host_addr;
-@@ -1003,12 +1006,11 @@ int m2p_remove_override(struct page *page,
- 			MULTI_grant_table_op(mcs.mc,
- 					GNTTABOP_unmap_and_replace, unmap_op, 1);
- 
--			xen_mc_issue(PARAVIRT_LAZY_MMU);
--
- 			mcs = __xen_mc_entry(0);
- 			MULTI_update_va_mapping(mcs.mc, scratch_page_address,
--					pfn_pte(page_to_pfn(get_balloon_scratch_page()),
-+					pfn_pte(page_to_pfn(scratch_page),
- 					PAGE_KERNEL_RO), 0);
-+
- 			xen_mc_issue(PARAVIRT_LAZY_MMU);
- 
- 			kmap_op->host_addr = 0;
--- 
-1.8.3.1
-
+> Jerome
+> 
+> > 
+> > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> > 
+> > ---
+> > 
+> >  drivers/staging/zram/zram_drv.c | 18 +++++++-----------
+> >  drivers/staging/zram/zram_drv.h |  1 -
+> >  2 files changed, 7 insertions(+), 12 deletions(-)
+> > 
+> > diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> > index 17386e2..34b72ea 100644
+> > --- a/drivers/staging/zram/zram_drv.c
+> > +++ b/drivers/staging/zram/zram_drv.c
+> > @@ -60,7 +60,7 @@ static ssize_t initstate_show(struct device *dev,
+> >  {
+> >  	struct zram *zram = dev_to_zram(dev);
+> >  
+> > -	return sprintf(buf, "%u\n", zram->init_done);
+> > +	return sprintf(buf, "%u\n", zram->meta != NULL);
+> >  }
+> >  
+> >  static ssize_t num_reads_show(struct device *dev,
+> > @@ -133,7 +133,7 @@ static ssize_t mem_used_total_show(struct device *dev,
+> >  	struct zram_meta *meta = zram->meta;
+> >  
+> >  	down_read(&zram->init_lock);
+> > -	if (zram->init_done)
+> > +	if (meta)
+> >  		val = zs_get_total_size_bytes(meta->mem_pool);
+> >  	up_read(&zram->init_lock);
+> >  
+> > @@ -556,14 +556,12 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+> >  	flush_work(&zram->free_work);
+> >  
+> >  	down_write(&zram->init_lock);
+> > -	if (!zram->init_done) {
+> > +	if (!zram->meta) {
+> >  		up_write(&zram->init_lock);
+> >  		return;
+> >  	}
+> >  
+> >  	meta = zram->meta;
+> > -	zram->init_done = 0;
+> > -
+> >  	/* Free all pages that are still in this zram device */
+> >  	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
+> >  		unsigned long handle = meta->table[index].handle;
+> > @@ -573,7 +571,7 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+> >  		zs_free(meta->mem_pool, handle);
+> >  	}
+> >  
+> > -	zram_meta_free(zram->meta);
+> > +	zram_meta_free(meta);
+> >  	zram->meta = NULL;
+> >  	/* Reset stats */
+> >  	memset(&zram->stats, 0, sizeof(zram->stats));
+> > @@ -602,9 +600,7 @@ static void zram_init_device(struct zram *zram, struct zram_meta *meta)
+> >  
+> >  	/* zram devices sort of resembles non-rotational disks */
+> >  	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
+> > -
+> >  	zram->meta = meta;
+> > -	zram->init_done = 1;
+> >  
+> >  	pr_debug("Initialization done!\n");
+> >  }
+> > @@ -623,7 +619,7 @@ static ssize_t disksize_store(struct device *dev,
+> >  	disksize = PAGE_ALIGN(disksize);
+> >  	meta = zram_meta_alloc(disksize);
+> >  	down_write(&zram->init_lock);
+> > -	if (zram->init_done) {
+> > +	if (zram->meta) {
+> >  		up_write(&zram->init_lock);
+> >  		zram_meta_free(meta);
+> >  		pr_info("Cannot change disksize for initialized device\n");
+> > @@ -731,7 +727,7 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
+> >  	struct zram *zram = queue->queuedata;
+> >  
+> >  	down_read(&zram->init_lock);
+> > -	if (unlikely(!zram->init_done))
+> > +	if (unlikely(!zram->meta))
+> >  		goto error;
+> >  
+> >  	if (!valid_io_request(zram, bio)) {
+> > @@ -880,7 +876,7 @@ static int create_device(struct zram *zram, int device_id)
+> >  		goto out_free_disk;
+> >  	}
+> >  
+> > -	zram->init_done = 0;
+> > +	zram->meta = NULL;
+> >  	return 0;
+> >  
+> >  out_free_disk:
+> > diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
+> > index 97a3acf..b1100cf 100644
+> > --- a/drivers/staging/zram/zram_drv.h
+> > +++ b/drivers/staging/zram/zram_drv.h
+> > @@ -110,7 +110,6 @@ struct zram {
+> >  
+> >  	struct request_queue *queue;
+> >  	struct gendisk *disk;
+> > -	int init_done;
+> >  	/* Prevent concurrent execution of device init, reset and R/W request */
+> >  	struct rw_semaphore init_lock;
+> >  	/*
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> > 
+> 
