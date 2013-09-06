@@ -1,239 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750866Ab3IFF61 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 01:58:27 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:57945 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781Ab3IFF5s (ORCPT
+	id S1750910Ab3IFF6h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 01:58:37 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57208 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883Ab3IFF6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 01:57:48 -0400
-X-AuditID: 9c93016f-b7cf0ae00000518f-5b-52296ed995bc
+	Fri, 6 Sep 2013 01:58:36 -0400
+X-AuditID: 9c930179-b7c0bae0000040ac-a2-52296f0a87bd
+Date: Fri, 6 Sep 2013 14:58:38 +0900
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>,
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [REPOST PATCH 3/4] slab: introduce byte sized index for the freelist of a slab
-Date: Fri,  6 Sep 2013 14:57:46 +0900
-Message-Id: <1378447067-19832-4-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1378447067-19832-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1378447067-19832-1-git-send-email-iamjoonsoo.kim@lge.com>
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] slab: implement byte sized indexes for the freelist
+ of a slab
+Message-ID: <20130906055838.GA6015@lge.com>
+References: <CAAmzW4N1GXbr18Ws9QDKg7ChN5RVcOW9eEv2RxWhaEoHtw=ctw@mail.gmail.com>
+ <1378111138-30340-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <00000140e42dcd61-00e6cf6a-457c-48bd-8bf7-830133923564-000000@email.amazonses.com>
+ <20130904083305.GC16355@lge.com>
+ <20130905065552.GA6384@lge.com>
+ <00000140ee8b386a-f9b8a845-58db-482e-8c63-20fb24404dc8-000000@email.amazonses.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <00000140ee8b386a-f9b8a845-58db-482e-8c63-20fb24404dc8-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, the freelist of a slab consist of unsigned int sized indexes.
-Most of slabs have less number of objects than 256, since restriction
-for page order is at most 1 in default configuration. For example,
-consider a slab consisting of 32 byte sized objects on two continous
-pages. In this case, 256 objects is possible and these number fit to byte
-sized indexes. 256 objects is maximum possible value in default
-configuration, since 32 byte is minimum object size in the SLAB.
-(8192 / 32 = 256). Therefore, if we use byte sized index, we can save
-3 bytes for each object.
+On Thu, Sep 05, 2013 at 02:33:56PM +0000, Christoph Lameter wrote:
+> On Thu, 5 Sep 2013, Joonsoo Kim wrote:
+> 
+> > I think that all patchsets deserve to be merged, since it reduces memory usage and
+> > also improves performance. :)
+> 
+> Could you clean things up etc and the repost the patchset? This time do
+> *not* do this as a response to an earlier email but start the patchset
+> with new thread id. I think some people are not seeing this patchset.
 
-This introduce one likely branch to functions used for setting/getting
-objects to/from the freelist, but we may get more benefits from
-this change.
+Okay. I just did that.
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-
-diff --git a/mm/slab.c b/mm/slab.c
-index a0e49bb..bd366e5 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -565,8 +565,16 @@ static inline struct array_cache *cpu_cache_get(struct kmem_cache *cachep)
- 	return cachep->array[smp_processor_id()];
- }
- 
--static int calculate_nr_objs(size_t slab_size, size_t buffer_size,
--				size_t idx_size, size_t align)
-+static inline bool can_byte_index(int nr_objs)
-+{
-+	if (likely(nr_objs <= (sizeof(unsigned char) << 8)))
-+		return true;
-+
-+	return false;
-+}
-+
-+static int __calculate_nr_objs(size_t slab_size, size_t buffer_size,
-+				unsigned int idx_size, size_t align)
- {
- 	int nr_objs;
- 	size_t freelist_size;
-@@ -592,6 +600,29 @@ static int calculate_nr_objs(size_t slab_size, size_t buffer_size,
- 	return nr_objs;
- }
- 
-+static int calculate_nr_objs(size_t slab_size, size_t buffer_size,
-+							size_t align)
-+{
-+	int nr_objs;
-+	int byte_nr_objs;
-+
-+	nr_objs = __calculate_nr_objs(slab_size, buffer_size,
-+					sizeof(unsigned int), align);
-+	if (!can_byte_index(nr_objs))
-+		return nr_objs;
-+
-+	byte_nr_objs = __calculate_nr_objs(slab_size, buffer_size,
-+					sizeof(unsigned char), align);
-+	/*
-+	 * nr_objs can be larger when using byte index,
-+	 * so that it cannot be indexed by byte index.
-+	 */
-+	if (can_byte_index(byte_nr_objs))
-+		return byte_nr_objs;
-+	else
-+		return nr_objs;
-+}
-+
- /*
-  * Calculate the number of objects and left-over bytes for a given buffer size.
-  */
-@@ -618,13 +649,18 @@ static void cache_estimate(unsigned long gfporder, size_t buffer_size,
- 	 * correct alignment when allocated.
- 	 */
- 	if (flags & CFLGS_OFF_SLAB) {
--		mgmt_size = 0;
- 		nr_objs = slab_size / buffer_size;
-+		mgmt_size = 0;
- 
- 	} else {
--		nr_objs = calculate_nr_objs(slab_size, buffer_size,
--					sizeof(unsigned int), align);
--		mgmt_size = ALIGN(nr_objs * sizeof(unsigned int), align);
-+		nr_objs = calculate_nr_objs(slab_size, buffer_size, align);
-+		if (can_byte_index(nr_objs)) {
-+			mgmt_size =
-+				ALIGN(nr_objs * sizeof(unsigned char), align);
-+		} else {
-+			mgmt_size =
-+				ALIGN(nr_objs * sizeof(unsigned int), align);
-+		}
- 	}
- 	*num = nr_objs;
- 	*left_over = slab_size - (nr_objs * buffer_size) - mgmt_size;
-@@ -2012,7 +2048,10 @@ static size_t calculate_slab_order(struct kmem_cache *cachep,
- 			 * looping condition in cache_grow().
- 			 */
- 			offslab_limit = size;
--			offslab_limit /= sizeof(unsigned int);
-+			if (can_byte_index(num))
-+				offslab_limit /= sizeof(unsigned char);
-+			else
-+				offslab_limit /= sizeof(unsigned int);
- 
-  			if (num > offslab_limit)
- 				break;
-@@ -2253,8 +2292,13 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
- 	if (!cachep->num)
- 		return -E2BIG;
- 
--	freelist_size =
--		ALIGN(cachep->num * sizeof(unsigned int), cachep->align);
-+	if (can_byte_index(cachep->num)) {
-+		freelist_size = ALIGN(cachep->num * sizeof(unsigned char),
-+								cachep->align);
-+	} else {
-+		freelist_size = ALIGN(cachep->num * sizeof(unsigned int),
-+								cachep->align);
-+	}
- 
- 	/*
- 	 * If the slab has been placed off-slab, and we have enough space then
-@@ -2267,7 +2311,10 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
- 
- 	if (flags & CFLGS_OFF_SLAB) {
- 		/* really off slab. No need for manual alignment */
--		freelist_size = cachep->num * sizeof(unsigned int);
-+		if (can_byte_index(cachep->num))
-+			freelist_size = cachep->num * sizeof(unsigned char);
-+		else
-+			freelist_size = cachep->num * sizeof(unsigned int);
- 
- #ifdef CONFIG_PAGE_POISONING
- 		/* If we're going to use the generic kernel_map_pages()
-@@ -2545,15 +2592,22 @@ static struct freelist *alloc_slabmgmt(struct kmem_cache *cachep,
- 	return freelist;
- }
- 
--static inline unsigned int get_free_obj(struct page *page, unsigned int idx)
-+static inline unsigned int get_free_obj(struct kmem_cache *cachep,
-+					struct page *page, unsigned int idx)
- {
--	return ((unsigned int *)page->freelist)[idx];
-+	if (likely(can_byte_index(cachep->num)))
-+		return ((unsigned char *)page->freelist)[idx];
-+	else
-+		return ((unsigned int *)page->freelist)[idx];
- }
- 
--static inline void set_free_obj(struct page *page,
-+static inline void set_free_obj(struct kmem_cache *cachep, struct page *page,
- 					unsigned int idx, unsigned int val)
- {
--	((unsigned int *)(page->freelist))[idx] = val;
-+	if (likely(can_byte_index(cachep->num)))
-+		((unsigned char *)(page->freelist))[idx] = (unsigned char)val;
-+	else
-+		((unsigned int *)(page->freelist))[idx] = val;
- }
- 
- static void cache_init_objs(struct kmem_cache *cachep,
-@@ -2598,7 +2652,7 @@ static void cache_init_objs(struct kmem_cache *cachep,
- 		if (cachep->ctor)
- 			cachep->ctor(objp);
- #endif
--		set_free_obj(page, i, i);
-+		set_free_obj(cachep, page, i, i);
- 	}
- }
- 
-@@ -2615,9 +2669,11 @@ static void kmem_flagcheck(struct kmem_cache *cachep, gfp_t flags)
- static void *slab_get_obj(struct kmem_cache *cachep, struct page *page,
- 				int nodeid)
- {
-+	unsigned int index;
- 	void *objp;
- 
--	objp = index_to_obj(cachep, page, get_free_obj(page, page->active));
-+	index = get_free_obj(cachep, page, page->active);
-+	objp = index_to_obj(cachep, page, index);
- 	page->active++;
- #if DEBUG
- 	WARN_ON(page_to_nid(virt_to_page(objp)) != nodeid);
-@@ -2638,7 +2694,7 @@ static void slab_put_obj(struct kmem_cache *cachep, struct page *page,
- 
- 	/* Verify double free bug */
- 	for (i = page->active; i < cachep->num; i++) {
--		if (get_free_obj(page, i) == objnr) {
-+		if (get_free_obj(cachep, page, i) == objnr) {
- 			printk(KERN_ERR "slab: double free detected in cache "
- 					"'%s', objp %p\n", cachep->name, objp);
- 			BUG();
-@@ -2646,7 +2702,7 @@ static void slab_put_obj(struct kmem_cache *cachep, struct page *page,
- 	}
- #endif
- 	page->active--;
--	set_free_obj(page, page->active, objnr);
-+	set_free_obj(cachep, page, page->active, objnr);
- }
- 
- /*
-@@ -4220,7 +4276,7 @@ static void handle_slab(unsigned long *n, struct kmem_cache *c,
- 
- 		for (j = page->active; j < c->num; j++) {
- 			/* Skip freed item */
--			if (get_free_obj(page, j) == i) {
-+			if (get_free_obj(c, page, j) == i) {
- 				active = false;
- 				break;
- 			}
--- 
-1.7.9.5
-
+Thanks.
