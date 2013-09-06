@@ -1,88 +1,368 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758783Ab3IFDen (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 23:34:43 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:44615 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753734Ab3IFDem convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 23:34:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130904215022.GA30606@redhat.com>
-References: <20130904215022.GA30606@redhat.com>
-Date: Fri, 6 Sep 2013 11:34:40 +0800
-Message-ID: <CAF1ivSaQpKEwXJLm7XOPT3b+zvUFNdfO5grK1-8grE5v3Jfymw@mail.gmail.com>
-Subject: Re: soft lockup in sysvipc code.
-From: Lin Ming <minggr@gmail.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        manfred@colorfullife.com
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1758938Ab3IFDhr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 23:37:47 -0400
+Received: from mga09.intel.com ([134.134.136.24]:9976 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758620Ab3IFDho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 23:37:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,851,1371106800"; 
+   d="scan'208";a="374223087"
+From: Andi Kleen <andi@firstfloor.org>
+To: mingo@kernel.org
+Cc: peterz@infradead.org, linux-kernel@vger.kernel.org, acme@infradead.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 4/4] perf, tools: Add perf stat --transaction v5
+Date: Thu,  5 Sep 2013 20:37:41 -0700
+Message-Id: <1378438661-24765-5-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1378438661-24765-1-git-send-email-andi@firstfloor.org>
+References: <1378438661-24765-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 5, 2013 at 5:50 AM, Dave Jones <davej@redhat.com> wrote:
-> Haven't seen this before.
-> Tree based on v3.11-3104-gf357a82
->
-> BUG: soft lockup - CPU#0 stuck for 22s! [trinity-child0:25479]
+From: Andi Kleen <ak@linux.intel.com>
 
-Can't imagine how it could happen.
-In my understanding, "soft lockup" happens when code stuck at
-somewhere with preemption disabled.
+Add support to perf stat to print the basic transactional execution statistics:
+Total cycles, Cycles in Transaction, Cycles in aborted transsactions
+using the in_tx and in_tx_checkpoint qualifiers.
+Transaction Starts and Elision Starts, to compute the average transaction
+length.
 
-Look at the code, preemption disabled at:
-sysvipc_proc_next -> sysvipc_find_ipc -> ipc_lock_by_ptr
+This is a reasonable overview over the success of the transactions.
 
-enabled at:
-sysvipc_proc_next -> ipc_unlock
-or
-sysvipc_proc_stop -> ipc_unlock
+Also support architectures that have a transaction aborted cycles
+counter like POWER8. Since that is awkward to handle in the kernel
+abstract handle both cases here.
 
-And I didn't find code may stuck in the path.
-I may miss something ......
+Enable with a new --transaction / -T option.
 
-Regards,
-Lin Ming
+This requires measuring these events in a group, since they depend on each
+other.
 
-> Modules linked in: sctp snd_seq_dummy fuse dlci rfcomm tun bnep hidp ipt_ULOG nfnetlink can_raw can_bcm scsi_transport_iscsi nfc caif_socket caif af_802154 phonet af_rxrpc bluetooth rfkill can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 xfs snd_hda_codec_realtek libcrc32c snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_page_alloc snd_timer snd soundcore pcspkr usb_debug e1000e ptp pps_core
-> irq event stamp: 1143030
-> hardirqs last  enabled at (1143029): [<ffffffff81715d5c>] restore_args+0x0/0x30
-> hardirqs last disabled at (1143030): [<ffffffff8171f9aa>] apic_timer_interrupt+0x6a/0x80
-> softirqs last  enabled at (1143028): [<ffffffff8105a938>] __do_softirq+0x198/0x460
-> softirqs last disabled at (1143023): [<ffffffff8105ae55>] irq_exit+0x135/0x150
-> CPU: 0 PID: 25479 Comm: trinity-child0 Not tainted 3.11.0+ #44
-> task: ffff88022c013f90 ti: ffff88022bd8c000 task.ti: ffff88022bd8c000
-> RIP: 0010:[<ffffffff8131014b>]  [<ffffffff8131014b>] idr_find_slowpath+0x9b/0x150
-> RSP: 0018:ffff88022bd8dc88  EFLAGS: 00000206
-> RAX: 0000000000000006 RBX: ffff000a6c0a0000 RCX: 0000000000000008
-> RDX: 0000000000000008 RSI: ffffffff81c41040 RDI: ffff88022c014668
-> RBP: ffff88022bd8dca0 R08: 0000000000000000 R09: 0000000000000000
-> R10: 0000000000000001 R11: 0000000000000001 R12: ffff88023831a290
-> R13: 0000000000000001 R14: ffff88022bd8dbe8 R15: ffff8802449dffff
-> FS:  00007fcfcad2c740(0000) GS:ffff880244800000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> CR2: 00007fcfc84cb968 CR3: 00000001de93f000 CR4: 00000000001407f0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
-> Stack:
->  0000000000000260 0000000000002dba ffffffff81c7e258 ffff88022bd8dcf8
->  ffffffff812b1131 ffff88022c013f90 ffff8801d37174c0 ffff88022bd8dd38
->  ffffffff81c7e2f0 ffff88022bd8dd38 ffff8801e065cec8 ffff880241d86ca8
-> Call Trace:
->  [<ffffffff812b1131>] sysvipc_find_ipc+0x61/0x300
->  [<ffffffff812b1416>] sysvipc_proc_next+0x46/0xd0
->  [<ffffffff811e13b9>] traverse.isra.7+0xc9/0x260
->  [<ffffffff810c4078>] ? lock_release_non_nested+0x308/0x350
->  [<ffffffff811e1b61>] seq_read+0x3e1/0x450
->  [<ffffffff81228f10>] ? proc_reg_write+0x80/0x80
->  [<ffffffff81228f4d>] proc_reg_read+0x3d/0x80
->  [<ffffffff811ba3a3>] do_loop_readv_writev+0x63/0x90
->  [<ffffffff811bbccd>] do_readv_writev+0x21d/0x240
->  [<ffffffff810994af>] ? local_clock+0x3f/0x50
->  [<ffffffff81152376>] ? context_tracking_user_exit+0x46/0x1a0
->  [<ffffffff811bbd25>] vfs_readv+0x35/0x60
->  [<ffffffff811bbff2>] SyS_preadv+0xa2/0xd0
->  [<ffffffff8171ef54>] tracesys+0xdd/0xe2
-> Code: 7e 6e 41 8b 84 24 2c 08 00 00 83 eb 08 c1 e0 03 39 c3 0f 85 c1 00 00 00 89 d9 44 89 e8 d3 f8 0f b6 c0 48 83 c0 04 4d 8b 64 c4 08 <e8> 80 b4 d6 ff 85 c0 74 c4 80 3d f7 2f 9d 00 00 75 bb e8 6e b4
+This is implemented by using TM sysfs events exported by the kernel
+
+v2: Only print the extended statistics when the option is enabled.
+This avoids negative output when the user specifies the -T events
+in separate groups.
+v3: Port to latest tree
+v4: Remove merge error. Avoid linear walks for comparisons. Check
+transaction_run earlier. Minor fixes.
+v5: Move option to avoid conflict. Improve description.
+Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/Documentation/perf-stat.txt |   5 ++
+ tools/perf/builtin-stat.c              | 144 ++++++++++++++++++++++++++++++++-
+ tools/perf/util/evsel.h                |   6 ++
+ tools/perf/util/pmu.c                  |  16 ++++
+ tools/perf/util/pmu.h                  |   1 +
+ 5 files changed, 171 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
+index 2fe87fb..40bc65a 100644
+--- a/tools/perf/Documentation/perf-stat.txt
++++ b/tools/perf/Documentation/perf-stat.txt
+@@ -132,6 +132,11 @@ is a useful mode to detect imbalance between physical cores.  To enable this mod
+ use --per-core in addition to -a. (system-wide).  The output includes the
+ core number and the number of online logical processors on that physical processor.
+ 
++-T::
++--transaction::
++
++Print statistics of transactional execution if supported.
++
+ EXAMPLES
+ --------
+ 
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 352fbd7..6bd90e4 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -46,6 +46,7 @@
+ #include "util/util.h"
+ #include "util/parse-options.h"
+ #include "util/parse-events.h"
++#include "util/pmu.h"
+ #include "util/event.h"
+ #include "util/evlist.h"
+ #include "util/evsel.h"
+@@ -70,6 +71,41 @@ static void print_counter_aggr(struct perf_evsel *counter, char *prefix);
+ static void print_counter(struct perf_evsel *counter, char *prefix);
+ static void print_aggr(char *prefix);
+ 
++/* Default events used for perf stat -T */
++static const char * const transaction_attrs[] = {
++	"task-clock",
++	"{"
++	"instructions,"
++	"cycles,"
++	"cpu/cycles-t/,"
++	"cpu/tx-start/,"
++	"cpu/el-start/,"
++	"cpu/cycles-ct/"
++	"}"
++};
++
++/* More limited version when the CPU does not have all events. */
++static const char * const transaction_limited_attrs[] = {
++	"task-clock",
++	"{"
++	"instructions,"
++	"cycles,"
++	"cpu/cycles-t/,"
++	"cpu/tx-start/"
++	"}"
++};
++
++/* must match transaction_attrs and the beginning limited_attrs */
++enum {
++	T_TASK_CLOCK,
++	T_INSTRUCTIONS,
++	T_CYCLES,
++	T_CYCLES_IN_TX,
++	T_TRANSACTION_START,
++	T_ELISION_START,
++	T_CYCLES_IN_TX_CP,
++};
++
+ static struct perf_evlist	*evsel_list;
+ 
+ static struct perf_target	target = {
+@@ -90,6 +126,7 @@ static enum aggr_mode		aggr_mode			= AGGR_GLOBAL;
+ static volatile pid_t		child_pid			= -1;
+ static bool			null_run			=  false;
+ static int			detailed_run			=  0;
++static bool			transaction_run;
+ static bool			big_num				=  true;
+ static int			big_num_opt			=  -1;
+ static const char		*csv_sep			= NULL;
+@@ -213,7 +250,10 @@ static struct stats runtime_l1_icache_stats[MAX_NR_CPUS];
+ static struct stats runtime_ll_cache_stats[MAX_NR_CPUS];
+ static struct stats runtime_itlb_cache_stats[MAX_NR_CPUS];
+ static struct stats runtime_dtlb_cache_stats[MAX_NR_CPUS];
++static struct stats runtime_cycles_in_tx_stats[MAX_NR_CPUS];
+ static struct stats walltime_nsecs_stats;
++static struct stats runtime_transaction_stats[MAX_NR_CPUS];
++static struct stats runtime_elision_stats[MAX_NR_CPUS];
+ 
+ static void perf_stat__reset_stats(struct perf_evlist *evlist)
+ {
+@@ -235,6 +275,11 @@ static void perf_stat__reset_stats(struct perf_evlist *evlist)
+ 	memset(runtime_ll_cache_stats, 0, sizeof(runtime_ll_cache_stats));
+ 	memset(runtime_itlb_cache_stats, 0, sizeof(runtime_itlb_cache_stats));
+ 	memset(runtime_dtlb_cache_stats, 0, sizeof(runtime_dtlb_cache_stats));
++	memset(runtime_cycles_in_tx_stats, 0,
++			sizeof(runtime_cycles_in_tx_stats));
++	memset(runtime_transaction_stats, 0,
++		sizeof(runtime_transaction_stats));
++	memset(runtime_elision_stats, 0, sizeof(runtime_elision_stats));
+ 	memset(&walltime_nsecs_stats, 0, sizeof(walltime_nsecs_stats));
+ }
+ 
+@@ -272,6 +317,29 @@ static inline int nsec_counter(struct perf_evsel *evsel)
+ 	return 0;
+ }
+ 
++static struct perf_evsel *nth_evsel(int n)
++{
++	static struct perf_evsel **array;
++	static int array_len;
++	struct perf_evsel *ev;
++	int j;
++
++	/* Assumes this only called when evsel_list does not change anymore. */
++	if (!array) {
++		list_for_each_entry(ev, &evsel_list->entries, node)
++			array_len++;
++		array = malloc(array_len * sizeof(void *));
++		if (!array)
++			exit(ENOMEM);
++		j = 0;
++		list_for_each_entry(ev, &evsel_list->entries, node)
++			array[j++] = ev;
++	}
++	if (n < array_len)
++		return array[n];
++	return NULL;
++}
++
+ /*
+  * Update various tracking values we maintain to print
+  * more semantic information such as miss/hit ratios,
+@@ -283,6 +351,15 @@ static void update_shadow_stats(struct perf_evsel *counter, u64 *count)
+ 		update_stats(&runtime_nsecs_stats[0], count[0]);
+ 	else if (perf_evsel__match(counter, HARDWARE, HW_CPU_CYCLES))
+ 		update_stats(&runtime_cycles_stats[0], count[0]);
++	else if (transaction_run &&
++		 perf_evsel__cmp(counter, nth_evsel(T_CYCLES_IN_TX)))
++		update_stats(&runtime_cycles_in_tx_stats[0], count[0]);
++	else if (transaction_run &&
++		 perf_evsel__cmp(counter, nth_evsel(T_TRANSACTION_START)))
++		update_stats(&runtime_transaction_stats[0], count[0]);
++	else if (transaction_run &&
++		 perf_evsel__cmp(counter, nth_evsel(T_ELISION_START)))
++		update_stats(&runtime_elision_stats[0], count[0]);
+ 	else if (perf_evsel__match(counter, HARDWARE, HW_STALLED_CYCLES_FRONTEND))
+ 		update_stats(&runtime_stalled_cycles_front_stats[0], count[0]);
+ 	else if (perf_evsel__match(counter, HARDWARE, HW_STALLED_CYCLES_BACKEND))
+@@ -807,7 +884,7 @@ static void print_ll_cache_misses(int cpu,
+ 
+ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
+ {
+-	double total, ratio = 0.0;
++	double total, ratio = 0.0, total2;
+ 	const char *fmt;
+ 
+ 	if (csv_output)
+@@ -903,6 +980,43 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
+ 			ratio = 1.0 * avg / total;
+ 
+ 		fprintf(output, " # %8.3f GHz                    ", ratio);
++	} else if (transaction_run &&
++		   perf_evsel__cmp(evsel, nth_evsel(T_CYCLES_IN_TX))) {
++		total = avg_stats(&runtime_cycles_stats[cpu]);
++		if (total)
++			fprintf(output,
++				" #   %5.2f%% transactional cycles   ",
++				100.0 * (avg / total));
++	} else if (transaction_run &&
++		   perf_evsel__cmp(evsel, nth_evsel(T_CYCLES_IN_TX_CP))) {
++		total = avg_stats(&runtime_cycles_stats[cpu]);
++		total2 = avg_stats(&runtime_cycles_in_tx_stats[cpu]);
++		if (total2 < avg)
++			total2 = avg;
++		if (total)
++			fprintf(output,
++				" #   %5.2f%% aborted cycles         ",
++				100.0 * ((total2-avg) / total));
++	} else if (transaction_run &&
++		   perf_evsel__cmp(evsel, nth_evsel(T_TRANSACTION_START)) &&
++		   avg > 0 &&
++		   runtime_cycles_in_tx_stats[cpu].n != 0) {
++		total = avg_stats(&runtime_cycles_in_tx_stats[cpu]);
++
++		if (total)
++			ratio = total / avg;
++
++		fprintf(output, " # %8.0f cycles / transaction   ", ratio);
++	} else if (transaction_run &&
++		   perf_evsel__cmp(evsel, nth_evsel(T_ELISION_START)) &&
++		   avg > 0 &&
++		   runtime_cycles_in_tx_stats[cpu].n != 0) {
++		total = avg_stats(&runtime_cycles_in_tx_stats[cpu]);
++
++		if (total)
++			ratio = total / avg;
++
++		fprintf(output, " # %8.0f cycles / elision       ", ratio);
+ 	} else if (runtime_nsecs_stats[cpu].n != 0) {
+ 		char unit = 'M';
+ 
+@@ -1216,6 +1330,16 @@ static int perf_stat_init_aggr_mode(void)
+ 	return 0;
+ }
+ 
++static int setup_events(const char * const *attrs, unsigned len)
++{
++	unsigned i;
++
++	for (i = 0; i < len; i++) {
++		if (parse_events(evsel_list, attrs[i]))
++			return -1;
++	}
++	return 0;
++}
+ 
+ /*
+  * Add default attributes, if there were no attributes specified or
+@@ -1334,6 +1458,22 @@ static int add_default_attributes(void)
+ 	if (null_run)
+ 		return 0;
+ 
++	if (transaction_run) {
++		int err;
++		if (pmu_have_event("cpu", "cycles-ct") &&
++		    pmu_have_event("cpu", "el-start"))
++			err = setup_events(transaction_attrs,
++					ARRAY_SIZE(transaction_attrs));
++		else
++			err = setup_events(transaction_limited_attrs,
++				 ARRAY_SIZE(transaction_limited_attrs));
++		if (err < 0) {
++			fprintf(stderr, "Cannot set up transaction events\n");
++			return -1;
++		}
++		return 0;
++	}
++
+ 	if (!evsel_list->nr_entries) {
+ 		if (perf_evlist__add_default_attrs(evsel_list, default_attrs) < 0)
+ 			return -1;
+@@ -1368,6 +1508,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	int output_fd = 0;
+ 	const char *output_name	= NULL;
+ 	const struct option options[] = {
++	OPT_BOOLEAN('T', "transaction", &transaction_run,
++		    "hardware transaction statistics"),
+ 	OPT_CALLBACK('e', "event", &evsel_list, "event",
+ 		     "event selector. use 'perf list' to list available events",
+ 		     parse_events_option),
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 3f156cc..2f3dc86 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -180,6 +180,12 @@ static inline bool perf_evsel__match2(struct perf_evsel *e1,
+ 	       (e1->attr.config == e2->attr.config);
+ }
+ 
++#define perf_evsel__cmp(a, b)			\
++	((a) &&					\
++	 (b) &&					\
++	 (a)->attr.type == (b)->attr.type &&	\
++	 (a)->attr.config == (b)->attr.config)
++
+ int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
+ 			      int cpu, int thread, bool scale);
+ 
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index bc9d806..64362fe 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -637,3 +637,19 @@ void print_pmu_events(const char *event_glob, bool name_only)
+ 		printf("\n");
+ 	free(aliases);
+ }
++
++bool pmu_have_event(const char *pname, const char *name)
++{
++	struct perf_pmu *pmu;
++	struct perf_pmu_alias *alias;
++
++	pmu = NULL;
++	while ((pmu = perf_pmu__scan(pmu)) != NULL) {
++		if (strcmp(pname, pmu->name))
++			continue;
++		list_for_each_entry(alias, &pmu->aliases, list)
++			if (!strcmp(alias->name, name))
++				return true;
++	}
++	return false;
++}
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index 6b2cbe2..1179b26 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -42,6 +42,7 @@ int perf_pmu__format_parse(char *dir, struct list_head *head);
+ struct perf_pmu *perf_pmu__scan(struct perf_pmu *pmu);
+ 
+ void print_pmu_events(const char *event_glob, bool name_only);
++bool pmu_have_event(const char *pname, const char *name);
+ 
+ int perf_pmu__test(void);
+ #endif /* __PMU_H */
+-- 
+1.8.3.1
+
