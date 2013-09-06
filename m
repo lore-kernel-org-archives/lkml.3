@@ -1,113 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab3IFOKp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 10:10:45 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:51827 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771Ab3IFOKn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 10:10:43 -0400
+	id S1752956Ab3IFOL4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 10:11:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42623 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751418Ab3IFOLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 10:11:55 -0400
+Message-ID: <5229E2A4.3080706@redhat.com>
+Date: Fri, 06 Sep 2013 16:11:48 +0200
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130906101720.GA1055@krava.brq.redhat.com>
-References: <1378317854-25965-1-git-send-email-jean.pihet@linaro.org>
-	<1378317854-25965-4-git-send-email-jean.pihet@linaro.org>
-	<20130905163030.GF1100@krava.brq.redhat.com>
-	<CAFrcx1=QA3EpPAxx7Jx=87WbupAEFQ8L+t9pTJ=+3ucVTE+xtg@mail.gmail.com>
-	<20130906101720.GA1055@krava.brq.redhat.com>
-Date: Fri, 6 Sep 2013 16:10:41 +0200
-Message-ID: <CAFrcx1nvuCyxcBNgYPs8a6kd2c8ad2r6ogmQUkXEiDGbZygHzA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] perf: parse the .debug_frame section in case
- .eh_frame is not present
-From: Jean Pihet <jean.pihet@linaro.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Patch Tracking <patches@linaro.org>
+To: Dave Hansen <dave.hansen@intel.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Pavel Machek <pavel@ucw.cz>
+Subject: [PATCH 2/2 v3] mm: allow to set overcommit ratio more precisely
+References: <1376925478-15506-1-git-send-email-jmarchan@redhat.com> <1376925478-15506-2-git-send-email-jmarchan@redhat.com> <52287E66.9010107@redhat.com> <52289824.20000@intel.com>
+In-Reply-To: <52289824.20000@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 September 2013 12:17, Jiri Olsa <jolsa@redhat.com> wrote:
-> On Fri, Sep 06, 2013 at 11:31:17AM +0200, Jean Pihet wrote:
->> Hi Jiri,
->>
->> On 5 September 2013 18:30, Jiri Olsa <jolsa@redhat.com> wrote:
->> > On Wed, Sep 04, 2013 at 08:04:14PM +0200, Jean Pihet wrote:
->> >> On ARM the debug info is not present in the .eh_frame sections but
->> >> instead in .debug_frame.
->> >> Use libunwind to load and parse the debug info.
->> >
->> > hum, cannot make final link:
->> >
->> > $ make LIBUNWIND_DIR=/opt/libunwind/
->> >     CHK -fstack-protector-all
->> >     CHK -Wstack-protector
->> >     CHK -Wvolatile-register-var
->> >     CHK -D_FORTIFY_SOURCE=2
->> >     CHK bionic
->> >     CHK libelf
->> >     CHK libdw
->> >     CHK -DLIBELF_MMAP
->> >     CHK -DLIBELF_MMAP
->> >     CHK libunwind
->> >     CHK libaudit
->> >
->> > ...
->> >
->> > make[1]: `liblk.a' is up to date.
->> >     SUBDIR /home/jolsa/linux-perf/tools/lib/traceevent/
->> >     LINK perf
->> > libperf.a(unwind.o): In function `find_proc_info':
->> > /home/jolsa/linux-perf/tools/perf/util/unwind.c:339: undefined reference to `_Ux86_64_dwarf_find_debug_frame'
->> > collect2: ld returned 1 exit status
->> > make: *** [perf] Error 1
->> >
->> >
->> > I'm using the latest code from git://git.sv.gnu.org/libunwind.git
->> >
->> > Looks like dwarf_find_debug_frame is not exported, although
->> > it looks like it is based on what I see in libunwind sources ;-)
->> >
->> > What did I miss?
->> libunwind needs to be configured with --enable-debug-frame for the
->> debug_frame code to be included in the lib.
->> On ARM the flag is always set while it isn't on x86. Here is the
->> culprit below (lines from libunwind configure).
->
-> yay, thats it!
->
->>
->> Should that be changed in configure along with the changes in tools/perf?
->
-> I guess it's ok
-I wonder how to express the dependency between the perf changes and
-the libunwind version and configure flags. Is a note in the commit
-descritpion enough?
-I fear that the change can break many build systems...
 
->
-> Other than that tabs misformating the 'perf tool' change looks ok.
-Ok I will respin the code with the typo and formatting changes.
+Changes since v2:
+ - update documentation
+Changes since v1:
+ - use overcommit_ratio_ppm instead of overcommit_kbytes
+ - keep both variables in sync
 
->
-> I tested the '.eh_frame' code and it's still working. Once
-> I figure out how to create a x86 binary with .debug_frame
-> data I'll test the code itself ;-)
-Great!
+Some applications that run on HPC clusters are designed around the
+availability of RAM and the overcommit ratio is fine tuned to get the
+maximum usage of memory without swapping. With growing memory, the 1%
+of all RAM grain provided by overcommit_ratio has become too coarse
+for these workload (on a 2TB machine it represents no less than
+20GB).
 
->
-> If you could think of any automated testcase for this that could
-> be added under 'tests' that'd be nice (not necessarily)
-Ok will look at it. Linaro has automated tests that I need to write as
-well so rather do it in perf/tests directly ;-p
+This patch adds the new overcommit_ratio_ppm sysctl variable that
+allow to set overcommit ratio with a part per million precision.
+The old overcommit_ratio variable can still be used to set and read
+the ratio with a 1% precision. That way, overcommit_ratio interface
+isn't broken in any way that I can imagine.
 
->
-> thanks,
-> jirka
+Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+---
+ Documentation/sysctl/vm.txt            |   10 +++++
+ Documentation/vm/overcommit-accounting |    7 ++--
+ include/linux/mman.h                   |    6 ++--
+ include/linux/sysctl.h                 |    2 +
+ kernel/sysctl.c                        |   63 ++++++++++++++++++++++++++++++--
+ mm/mmap.c                              |    2 +-
+ mm/nommu.c                             |    2 +-
+ 7 files changed, 81 insertions(+), 11 deletions(-)
 
-Thanks!
-Jean
+diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+index 36ecc26..5cd5c53 100644
+--- a/Documentation/sysctl/vm.txt
++++ b/Documentation/sysctl/vm.txt
+@@ -49,6 +49,7 @@ Currently, these files are in /proc/sys/vm:
+ - oom_kill_allocating_task
+ - overcommit_memory
+ - overcommit_ratio
++- overcommit_ratio_ppm
+ - page-cluster
+ - panic_on_oom
+ - percpu_pagelist_fraction
+@@ -591,6 +592,15 @@ overcommit_ratio:
+ When overcommit_memory is set to 2, the committed address
+ space is not permitted to exceed swap plus this percentage
+ of physical RAM.  See above.
++If overcommit_ratio_ppm has been set, overcommit_ratio shows a
++rounded value.
++
++==============================================================
++
++overcommit_ratio_ppm:
++
++Same as overcommit_ratio, but allows to set the ratio with a finer
++grain (part per million).
+ 
+ ==============================================================
+ 
+diff --git a/Documentation/vm/overcommit-accounting b/Documentation/vm/overcommit-accounting
+index 8eaa2fc..15b5ecb 100644
+--- a/Documentation/vm/overcommit-accounting
++++ b/Documentation/vm/overcommit-accounting
+@@ -14,8 +14,8 @@ The Linux kernel supports the following overcommit handling modes
+ 
+ 2	-	Don't overcommit. The total address space commit
+ 		for the system is not permitted to exceed swap + a
+-		configurable percentage (default is 50) of physical RAM.
+-		Depending on the percentage you use, in most situations
++		configurable ratio (default is 50%) of physical RAM.
++		Depending on the ratio you use, in most situations
+ 		this means a process will not be killed while accessing
+ 		pages but will receive errors on memory allocation as
+ 		appropriate.
+@@ -26,7 +26,8 @@ The Linux kernel supports the following overcommit handling modes
+ 
+ The overcommit policy is set via the sysctl `vm.overcommit_memory'.
+ 
+-The overcommit percentage is set via `vm.overcommit_ratio'.
++The overcommit percentage is set via `vm.overcommit_ratio' or
++`vm.overcommit_ratio_ppm'.
+ 
+ The current overcommit limit and amount committed are viewable in
+ /proc/meminfo as CommitLimit and Committed_AS respectively.
+diff --git a/include/linux/mman.h b/include/linux/mman.h
+index d622d34..24f9c12 100644
+--- a/include/linux/mman.h
++++ b/include/linux/mman.h
+@@ -11,7 +11,7 @@
+ #include <linux/swap.h>
+ 
+ extern int sysctl_overcommit_memory;
+-extern int sysctl_overcommit_ratio;
++extern int sysctl_overcommit_ratio_ppm;
+ extern struct percpu_counter vm_committed_as;
+ 
+ #ifdef CONFIG_SMP
+@@ -96,7 +96,7 @@ calc_vm_flag_bits(unsigned long flags)
+  */
+ static inline unsigned long vm_commit_limit()
+ {
+-	return ((totalram_pages - hugetlb_total_pages())
+-		* sysctl_overcommit_ratio / 100) + total_swap_pages;
++	return ((u64) (totalram_pages - hugetlb_total_pages())
++		* sysctl_overcommit_ratio_ppm / 100000) + total_swap_pages;
+ }
+ #endif /* _LINUX_MMAN_H */
+diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
+index 14a8ff2..2e2389c 100644
+--- a/include/linux/sysctl.h
++++ b/include/linux/sysctl.h
+@@ -51,6 +51,8 @@ extern int proc_dointvec_userhz_jiffies(struct ctl_table *, int,
+ 					void __user *, size_t *, loff_t *);
+ extern int proc_dointvec_ms_jiffies(struct ctl_table *, int,
+ 				    void __user *, size_t *, loff_t *);
++extern int proc_dointvec_percent_ppm(struct ctl_table *, int,
++				     void __user *, size_t *, loff_t *);
+ extern int proc_doulongvec_minmax(struct ctl_table *, int,
+ 				  void __user *, size_t *, loff_t *);
+ extern int proc_doulongvec_ms_jiffies_minmax(struct ctl_table *table, int,
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 07f6fc4..a94ff8d 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -96,7 +96,7 @@
+ 
+ /* External variables not in a header file. */
+ extern int sysctl_overcommit_memory;
+-extern int sysctl_overcommit_ratio;
++extern int sysctl_overcommit_ratio_ppm;
+ extern int max_threads;
+ extern int suid_dumpable;
+ #ifdef CONFIG_COREDUMP
+@@ -1116,8 +1116,15 @@ static struct ctl_table vm_table[] = {
+ 	},
+ 	{
+ 		.procname	= "overcommit_ratio",
+-		.data		= &sysctl_overcommit_ratio,
+-		.maxlen		= sizeof(sysctl_overcommit_ratio),
++		.data		= &sysctl_overcommit_ratio_ppm,
++		.maxlen		= sizeof(sysctl_overcommit_ratio_ppm),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_percent_ppm,
++	},
++	{
++		.procname	= "overcommit_ratio_ppm",
++		.data		= &sysctl_overcommit_ratio_ppm,
++		.maxlen		= sizeof(sysctl_overcommit_ratio_ppm),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec,
+ 	},
+@@ -2433,6 +2440,56 @@ int proc_dointvec_ms_jiffies(struct ctl_table *table, int write,
+ 				do_proc_dointvec_ms_jiffies_conv, NULL);
+ }
+ 
++static int do_proc_dointvec_percent_ppm_conv(bool *negp, unsigned long *lvalp,
++					     int *valp,
++					     int write, void *data)
++{
++	if (write) {
++		unsigned long ppm = (*negp ? -*lvalp : *lvalp) * 10000;
++
++		if (ppm > INT_MAX)
++			return 1;
++		*valp = (int)ppm;
++	} else {
++		int val = *valp;
++		unsigned long lval;
++		if (val < 0) {
++			*negp = true;
++			lval = (unsigned long)-val;
++		} else {
++			*negp = false;
++			lval = (unsigned long)val;
++		}
++		*lvalp = lval / 10000;
++		if (lval % 10000 >= 5000)
++			(*lvalp)++;
++	}
++	return 0;
++}
++
++/**
++ * proc_dointvec_percent_ppm - read a vector of integers as percent and convert it to ppm
++ * @table: the sysctl table
++ * @write: %TRUE if this is a write to the sysctl file
++ * @buffer: the user buffer
++ * @lenp: the size of the user buffer
++ * @ppos: file position
++ * @ppos: the current position in the file
++ *
++ * Reads/writes up to table->maxlen/sizeof(unsigned int) integer
++ * values from/to the user buffer, treated as an ASCII string.
++ * The values read are assumed to be in percents, and are converted
++ * into parts per million.
++ *
++ * Returns 0 on success.
++ */
++int proc_dointvec_percent_ppm(struct ctl_table *table, int write,
++			      void __user *buffer, size_t *lenp, loff_t *ppos)
++{
++	return do_proc_dointvec(table, write, buffer, lenp, ppos,
++				do_proc_dointvec_percent_ppm_conv, NULL);
++}
++
+ static int proc_do_cad_pid(struct ctl_table *table, int write,
+ 			   void __user *buffer, size_t *lenp, loff_t *ppos)
+ {
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 3a1bd2c..b996483 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -85,7 +85,7 @@ pgprot_t vm_get_page_prot(unsigned long vm_flags)
+ EXPORT_SYMBOL(vm_get_page_prot);
+ 
+ int sysctl_overcommit_memory __read_mostly = OVERCOMMIT_GUESS;  /* heuristic overcommit */
+-int sysctl_overcommit_ratio __read_mostly = 50;	/* default is 50% */
++int sysctl_overcommit_ratio_ppm __read_mostly = 500000;	/* default is 50% */
+ int sysctl_max_map_count __read_mostly = DEFAULT_MAX_MAP_COUNT;
+ unsigned long sysctl_user_reserve_kbytes __read_mostly = 1UL << 17; /* 128MB */
+ unsigned long sysctl_admin_reserve_kbytes __read_mostly = 1UL << 13; /* 8MB */
+diff --git a/mm/nommu.c b/mm/nommu.c
+index d8a957b..cf10a9b 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -59,7 +59,7 @@ unsigned long max_mapnr;
+ unsigned long highest_memmap_pfn;
+ struct percpu_counter vm_committed_as;
+ int sysctl_overcommit_memory = OVERCOMMIT_GUESS; /* heuristic overcommit */
+-int sysctl_overcommit_ratio = 50; /* default is 50% */
++int sysctl_overcommit_ratio_ppm = 500000; /* default is 50% */
+ int sysctl_max_map_count = DEFAULT_MAX_MAP_COUNT;
+ int sysctl_nr_trim_pages = CONFIG_NOMMU_INITIAL_TRIM_EXCESS;
+ unsigned long sysctl_user_reserve_kbytes __read_mostly = 1UL << 17; /* 128MB */
+-- 
+1.7.7.6
+
