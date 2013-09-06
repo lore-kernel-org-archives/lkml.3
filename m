@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753103Ab3IFWT7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 18:19:59 -0400
-Received: from unicorn.mansr.com ([81.2.72.234]:40150 "EHLO unicorn.mansr.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751009Ab3IFWT6 convert rfc822-to-8bit (ORCPT
+	id S1753832Ab3IFWUT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 18:20:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37027 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752892Ab3IFWUQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 18:19:58 -0400
-X-Greylist: delayed 468 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Sep 2013 18:19:57 EDT
-From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-To: behanw@converseincode.com
-Cc: linux@arm.linux.org.uk, Will Deacon <will.deacon@arm.com>,
-        Wade Farnsworth <wade_farnsworth@mentor.com>,
-        Will Drewry <wad@chromium.org>,
-        linux-arm-kernel@lists.infradead.org (moderated list:ARM PORT),
-        linux-kernel@vger.kernel.org (open list)
-Subject: Re: [PATCH 1/5] arm: LLVMLinux: Add current_stack_pointer macro for ARM
-References: <1378502899-1241-1-git-send-email-behanw@converseincode.com>
-	<1378502899-1241-2-git-send-email-behanw@converseincode.com>
-Date: Fri, 06 Sep 2013 23:12:05 +0100
-In-Reply-To: <1378502899-1241-2-git-send-email-behanw@converseincode.com>
-	(behanw@converseincode.com's message of "Fri, 6 Sep 2013 17:28:07
-	-0400")
-Message-ID: <yw1xmwnp1txm.fsf@unicorn.mansr.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Fri, 6 Sep 2013 18:20:16 -0400
+Date: Fri, 6 Sep 2013 15:20:15 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, stable@vger.kernel.org
+Subject: Re: [ 00/36] 3.10.11-stable review
+Message-ID: <20130906222015.GA31733@kroah.com>
+References: <20130905202702.289738686@linuxfoundation.org>
+ <CAOesGMgHwkU9Tih98ucDCqB815Abk=+e2TQNYkyMn-h0PY--pg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOesGMgHwkU9Tih98ucDCqB815Abk=+e2TQNYkyMn-h0PY--pg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-behanw@converseincode.com writes:
+On Fri, Sep 06, 2013 at 03:08:06PM -0700, Olof Johansson wrote:
+> On Thu, Sep 5, 2013 at 1:27 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > This is the start of the stable review cycle for the 3.10.11 release.
+> > There are 36 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> >
+> > Responses should be made by Sat Sep  7 20:26:25 UTC 2013.
+> > Anything received after that time might be too late.
+> >
+> > The whole patch series can be found in one patch at:
+> >         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.11-rc1.gz
+> > and the diffstat can be found below.
+> 
+> FYI; I've started tracking the 3.10+ queues on my builder/booter for
+> arm-soc platforms.
+> 
+> I don't plan on posting the logs but will keep an eye on them and
+> report (new) failures that aren't seen on the baseline. I poll for new
+> patches a few times an hour.
 
-> +#define current_stack_pointer ({ \
-> +	unsigned long current_sp; \
-> +	asm ("mov %0, r13" : "=r" (current_sp)); \
-> +	current_sp; \
-> +})
+That would be great to know, thanks for doing this.
 
-Why do you use 'r13' rather than the more common 'sp' alias?
-
--- 
-Måns Rullgård
-mans@mansr.com
+greg k-h
