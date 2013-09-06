@@ -1,100 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751616Ab3IFOKQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 10:10:16 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50224 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751299Ab3IFOKO (ORCPT
+	id S1752511Ab3IFOKp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 10:10:45 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:51827 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751771Ab3IFOKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 10:10:14 -0400
-Date: Fri, 6 Sep 2013 15:09:21 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+	Fri, 6 Sep 2013 10:10:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130906101720.GA1055@krava.brq.redhat.com>
+References: <1378317854-25965-1-git-send-email-jean.pihet@linaro.org>
+	<1378317854-25965-4-git-send-email-jean.pihet@linaro.org>
+	<20130905163030.GF1100@krava.brq.redhat.com>
+	<CAFrcx1=QA3EpPAxx7Jx=87WbupAEFQ8L+t9pTJ=+3ucVTE+xtg@mail.gmail.com>
+	<20130906101720.GA1055@krava.brq.redhat.com>
+Date: Fri, 6 Sep 2013 16:10:41 +0200
+Message-ID: <CAFrcx1nvuCyxcBNgYPs8a6kd2c8ad2r6ogmQUkXEiDGbZygHzA@mail.gmail.com>
+Subject: Re: [PATCH 3/3] perf: parse the .debug_frame section in case
+ .eh_frame is not present
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Will Deacon <will.deacon@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Subject: Re: [PATCH v5 05/13] xen/arm,arm64: move Xen initialization earlier
-Message-ID: <20130906140921.GD1946@arm.com>
-References: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com>
- <1377801154-29215-5-git-send-email-stefano.stabellini@eu.citrix.com>
- <20130905162026.GJ11887@arm.com>
- <alpine.DEB.2.02.1309051755560.6397@kaball.uk.xensource.com>
- <1378457939.14745.73.camel@kazak.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378457939.14745.73.camel@kazak.uk.xensource.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        Patch Tracking <patches@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 06, 2013 at 09:58:59AM +0100, Ian Campbell wrote:
-> On Thu, 2013-09-05 at 17:59 +0100, Stefano Stabellini wrote:
-> > On Thu, 5 Sep 2013, Catalin Marinas wrote:
-> > > On Thu, Aug 29, 2013 at 07:32:26PM +0100, Stefano Stabellini wrote:
-> > > > Move Xen initialization earlier, before any DMA requests can be made.
-> > > > 
-> > > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > 
-> > > I guess you should cc the corresponding maintainers here.
-> > 
-> > Thanks for the reminder, I'll do that.
-> > 
-> > 
-> > > >  arch/arm/include/asm/xen/hypervisor.h |    8 ++++++++
-> > > >  arch/arm/kernel/setup.c               |    2 ++
-> > > >  arch/arm/xen/enlighten.c              |   21 ++++++++++++++-------
-> > > >  arch/arm64/kernel/setup.c             |    2 ++
-> > > >  4 files changed, 26 insertions(+), 7 deletions(-)
-> > > 
-> > > [...]
-> > > 
-> > > > --- a/arch/arm64/kernel/setup.c
-> > > > +++ b/arch/arm64/kernel/setup.c
-> > > > @@ -53,6 +53,7 @@
-> > > >  #include <asm/traps.h>
-> > > >  #include <asm/memblock.h>
-> > > >  #include <asm/psci.h>
-> > > > +#include <asm/xen/hypervisor.h>
-> > > >  
-> > > >  unsigned int processor_id;
-> > > >  EXPORT_SYMBOL(processor_id);
-> > > > @@ -267,6 +268,7 @@ void __init setup_arch(char **cmdline_p)
-> > > >  	unflatten_device_tree();
-> > > >  
-> > > >  	psci_init();
-> > > > +	xen_early_init();
-> > > 
-> > > So Xen guests don't have any hope for single Image? Basically you set
-> > > dma_ops unconditionally in xen_early_init(), even if the kernel is not
-> > > intended to run under Xen.
-> > 
-> > That should not happen: if we are not running on Xen xen_early_init
-> > returns early, before calling xen_mm_init.
-> 
-> x96 has a call to init_hypervisor_platform() at approximately this
-> location, which detects and calls the init function for any of Xen, KVM,
-> hyperv and vmware.
+On 6 September 2013 12:17, Jiri Olsa <jolsa@redhat.com> wrote:
+> On Fri, Sep 06, 2013 at 11:31:17AM +0200, Jean Pihet wrote:
+>> Hi Jiri,
+>>
+>> On 5 September 2013 18:30, Jiri Olsa <jolsa@redhat.com> wrote:
+>> > On Wed, Sep 04, 2013 at 08:04:14PM +0200, Jean Pihet wrote:
+>> >> On ARM the debug info is not present in the .eh_frame sections but
+>> >> instead in .debug_frame.
+>> >> Use libunwind to load and parse the debug info.
+>> >
+>> > hum, cannot make final link:
+>> >
+>> > $ make LIBUNWIND_DIR=/opt/libunwind/
+>> >     CHK -fstack-protector-all
+>> >     CHK -Wstack-protector
+>> >     CHK -Wvolatile-register-var
+>> >     CHK -D_FORTIFY_SOURCE=2
+>> >     CHK bionic
+>> >     CHK libelf
+>> >     CHK libdw
+>> >     CHK -DLIBELF_MMAP
+>> >     CHK -DLIBELF_MMAP
+>> >     CHK libunwind
+>> >     CHK libaudit
+>> >
+>> > ...
+>> >
+>> > make[1]: `liblk.a' is up to date.
+>> >     SUBDIR /home/jolsa/linux-perf/tools/lib/traceevent/
+>> >     LINK perf
+>> > libperf.a(unwind.o): In function `find_proc_info':
+>> > /home/jolsa/linux-perf/tools/perf/util/unwind.c:339: undefined reference to `_Ux86_64_dwarf_find_debug_frame'
+>> > collect2: ld returned 1 exit status
+>> > make: *** [perf] Error 1
+>> >
+>> >
+>> > I'm using the latest code from git://git.sv.gnu.org/libunwind.git
+>> >
+>> > Looks like dwarf_find_debug_frame is not exported, although
+>> > it looks like it is based on what I see in libunwind sources ;-)
+>> >
+>> > What did I miss?
+>> libunwind needs to be configured with --enable-debug-frame for the
+>> debug_frame code to be included in the lib.
+>> On ARM the flag is always set while it isn't on x86. Here is the
+>> culprit below (lines from libunwind configure).
+>
+> yay, thats it!
+>
+>>
+>> Should that be changed in configure along with the changes in tools/perf?
+>
+> I guess it's ok
+I wonder how to express the dependency between the perf changes and
+the libunwind version and configure flags. Is a note in the commit
+descritpion enough?
+I fear that the change can break many build systems...
 
-I would rather have a core_initcall(xen_early_init()) if possible,
-rather than hard-coded calls in setup_arch(). This early stuff is
-DT-driven, so in theory you don't need a specific xen call. The only
-thing is that you end up with swiotlb_init() and 64MB wasted if the Xen
-guest does not plan to use them.
+>
+> Other than that tabs misformating the 'perf tool' change looks ok.
+Ok I will respin the code with the typo and formatting changes.
 
-> I guess only Xen and KVM are currently relevant on Linux ARM(64), so
-> perhaps adding similar infrastructure on ARM would be overkill at this
-> point. I don't know if KVM needs such an early C-land hook, I suppose
-> it needs it even earlier so it can set up the hyp mode trampoline from
-> head.S?
+>
+> I tested the '.eh_frame' code and it's still working. Once
+> I figure out how to create a x86 binary with .debug_frame
+> data I'll test the code itself ;-)
+Great!
 
-head.S installs a Hyp stub if it starts in that mode and then forget
-about. Later when KVM is initialised it installs its own code by doing
-an HVC call.
+>
+> If you could think of any automated testcase for this that could
+> be added under 'tests' that'd be nice (not necessarily)
+Ok will look at it. Linaro has automated tests that I need to write as
+well so rather do it in perf/tests directly ;-p
 
--- 
-Catalin
+>
+> thanks,
+> jirka
+
+Thanks!
+Jean
