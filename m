@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750867Ab3IFIIb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 04:08:31 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:35709 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808Ab3IFIIX (ORCPT
+	id S1750865Ab3IFILw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 04:11:52 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:18580
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750748Ab3IFILs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 04:08:23 -0400
+	Fri, 6 Sep 2013 04:11:48 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(z551bizzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <r65073@freescale.com>, <thierry.reding@gmail.com>
+CC: <grant.likely@linaro.org>, <linux@arm.linux.org.uk>, <rob@landley.net>,
+        <ian.campbell@citrix.com>, <swarren@wwwdotorg.org>,
+        <mark.rutland@arm.com>, <pawel.moll@arm.com>,
+        <rob.herring@calxeda.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-pwm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>
+Subject: [PATCHv3 0/4] Add Freescale FTM PWM driver.
+Date: Fri, 6 Sep 2013 16:08:23 +0800
+Message-ID: <1378454907-22728-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-In-Reply-To: <1376966841-31774-8-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20130820024700.GA31075@linux.vnet.ibm.com>
-	<1376966841-31774-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	<1376966841-31774-8-git-send-email-paulmck@linux.vnet.ibm.com>
-Date: Fri, 6 Sep 2013 10:08:22 +0200
-X-Google-Sender-Auth: oqhhN00C_a096kOIlv8gufCANW4
-Message-ID: <CAMuHMdWtZAD3G_miFOT9DPZpfTO3nJ9J4aG_zvHV_6eVf2jdQg@mail.gmail.com>
-Subject: Re: [PATCH tip/core/rcu 8/9] nohz_full: Add full-system-idle state machine
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        josh@joshtriplett.org, niv@us.ibm.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Howells <dhowells@redhat.com>, edumazet@google.com,
-        darren@dvhart.com,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        sbw@mit.edu, Linux-Arch <linux-arch@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 4:47 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> --- a/kernel/time/Kconfig
-> +++ b/kernel/time/Kconfig
-> @@ -157,6 +157,33 @@ config NO_HZ_FULL_SYSIDLE
->
->          Say N if you are unsure.
->
-> +config NO_HZ_FULL_SYSIDLE_SMALL
-> +       int "Number of CPUs above which large-system approach is used"
-> +       depends on NO_HZ_FULL_SYSIDLE
-> +       range 1 NR_CPUS
+Hello,
 
-This causes "kernel/time/Kconfig:162:warning: range is invalid" on m68k and
-all other architectures that do not support SMP.
+This patch series is the Freescale FTM PWM implementation. And there are 8 channels most supported by the FTM PWM. This implementation is only compatible with device tree definition.
 
-How to reproduce:
-    make ARCH=m68k defconfig
+This patch series is based on linux-next and has been tested on Vybrid VF610 Tower board using device tree.
 
-Furthermore, it seems only hexagon, metag, mips, and x86 set NR_CPUS to 1
-if !SMP. On other architectures, NR_CPUS is not defined and presumed to be 0.
+Changes in v3:
+- Remove "availabe" field.
+- Remove "fsl,pwm-avaliable-chs" property.
+- ...
 
-Hence in non-interactive configs (e.g. "make defconfig"),
-NO_HZ_FULL_SYSIDLE_SMALL will end up as 0.
-In interactive configs (e.g. "make oldconfig") Kconfig suggest "0" as
-the default,
-but refuses to accept it as it doesn't fall within the range 1..0.
+Changes in v2:
+- Remove PWM CPWM/EPWM feature and sysfs.
+- Remove some redundant code.
+- Revise some code for more readable.
+- Remove "fsl,pwm-clk-ps", "fsl,pwm-number", "fsl,pwm-channels",etc.
+- Add "fsl,pwm-avaliable-chs", "fsl,pwm-counter-clk", etc.
+- Support 8 channels default in dtsi file.
+- Add counter clock source selection.
+- Rename some function name, macro name, etc.
+- Use PWM's and OF's existing function interfaces.
+- Split clk_unprepare_enable to clk_unprepare and clk_enable,etc.
+- ...
 
-How to reproduce:
-    Remove the "depends on NO_HZ_FULL_SYSIDLE"
-    make ARCH=powerpc mpc83xx_defconfig
-    grep NO_HZ_FULL_SYSIDLE_SMALL .config
-    -> CONFIG_NO_HZ_FULL_SYSIDLE_SMALL=0
-    sed 's/CONFIG_NO_HZ_FULL_SYSIDLE_SMALL=0//g' -i .config
-    make ARCH=powerpc oldconfig
-    -> no value is accepted
+Orignal in v1:
+- Add Freescale FTM PWM driver support.
+- Add Freescale FTM PWM node for VF610.
+- Enable Enables FTM PWM device for Vybrid VF610 TOWER.
+- Add device tree bindings for Freescale.
 
-Gr{oetje,eeting}s,
 
-                        Geert
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+
+
