@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757566Ab3IFQPE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 12:15:04 -0400
-Received: from mail-pd0-f193.google.com ([209.85.192.193]:38706 "EHLO
-	mail-pd0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755672Ab3IFQPC (ORCPT
+	id S1758701Ab3IFQPc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 12:15:32 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54056 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753028Ab3IFQPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 12:15:02 -0400
-From: Avinash Kumar <avi.kp.137@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: emilgoode@gmail.com, bzhao@marvell.com, johannes.berg@intel.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Avinash Kumar <avi.kp.137@gmail.com>
-Subject: [PATCH 2/2] staging: wlan-ng: cfg80211.c: replaced printk() with netdev_warn()
-Date: Fri,  6 Sep 2013 21:44:51 +0530
-Message-Id: <1378484091-5827-1-git-send-email-avi.kp.137@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 6 Sep 2013 12:15:31 -0400
+Date: Fri, 6 Sep 2013 17:14:49 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Leif Lindholm <leif.lindholm@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "nico@linaro.org" <nico@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v2 2/2] arm: add early_ioremap support
+Message-ID: <20130906161448.GI1946@arm.com>
+References: <1378459158-2145-1-git-send-email-leif.lindholm@linaro.org>
+ <1378459158-2145-3-git-send-email-leif.lindholm@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378459158-2145-3-git-send-email-leif.lindholm@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-replaced printk functions used for debug messages by respective netdev_warn
-netdev_err functions.
+On Fri, Sep 06, 2013 at 10:19:18AM +0100, Leif Lindholm wrote:
+> --- a/arch/arm/kernel/setup.c
+> +++ b/arch/arm/kernel/setup.c
+> @@ -877,6 +878,10 @@ void __init setup_arch(char **cmdline_p)
+> 
+>         parse_early_param();
+> 
+> +#ifdef CONFIG_EARLY_IOREMAP
+> +       early_ioremap_init();
+> +#endif
 
-Signed-off-by: Avinash Kumar <avi.kp.137@gmail.com>
----
- drivers/staging/wlan-ng/cfg80211.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Better with a dummy early_ioremap_init() in the header when
+!CONFIG_EARLY_IOREMAP to avoid the #ifdef here.
 
-diff --git a/drivers/staging/wlan-ng/cfg80211.c b/drivers/staging/wlan-ng/cfg80211.c
-index f1bce18..237479a 100644
---- a/drivers/staging/wlan-ng/cfg80211.c
-+++ b/drivers/staging/wlan-ng/cfg80211.c
-@@ -122,7 +122,7 @@ int prism2_change_virtual_intf(struct wiphy *wiphy,
- 		data = 1;
- 		break;
- 	default:
--		printk(KERN_WARNING "Operation mode: %d not support\n", type);
-+		netdev_warn(dev, "Operation mode: %d not support\n", type);
- 		return -EOPNOTSUPP;
- 	}
- 
-@@ -352,7 +352,7 @@ int prism2_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request)
- 		return -EBUSY;
- 
- 	if (wlandev->macmode == WLAN_MACMODE_ESS_AP) {
--		printk(KERN_ERR "Can't scan in AP mode\n");
-+		netdev_err(dev, "Can't scan in AP mode\n");
- 		return -EOPNOTSUPP;
- 	}
- 
-@@ -510,7 +510,7 @@ int prism2_connect(struct wiphy *wiphy, struct net_device *dev,
- 		((sme->auth_type == NL80211_AUTHTYPE_AUTOMATIC) && is_wep))
- 			msg_join.authtype.data = P80211ENUM_authalg_sharedkey;
- 	else
--		printk(KERN_WARNING
-+		netdev_warn(dev,
- 			"Unhandled authorisation type for connect (%d)\n",
- 			sme->auth_type);
- 
+> --- /dev/null
+> +++ b/arch/arm/mm/early_ioremap.c
+> @@ -0,0 +1,271 @@
+> +/*
+> + * early_ioremap() support for ARM
+> + *
+> + * Based on existing support in arch/x86/mm/ioremap.c
+
+At a very quick look, this looks really close to the x86 implementation.
+Any reason why this cannot be made generic and avoid duplication?
+
 -- 
-1.7.10.4
-
+Catalin
