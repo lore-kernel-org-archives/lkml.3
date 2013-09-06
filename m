@@ -1,178 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751148Ab3IFGrK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 02:47:10 -0400
-Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:19864
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750782Ab3IFGrI (ORCPT
+	id S1750843Ab3IFGuX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 02:50:23 -0400
+Received: from nm4-vm2.bullet.mail.gq1.yahoo.com ([98.136.218.161]:43997 "EHLO
+	nm4-vm2.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750771Ab3IFGuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 02:47:08 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzc8kzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h1155h)
-From: <hongbo.zhang@freescale.com>
-To: <LCTBJ@freescale.com>
-CC: <linux-kernel@vger.kernel.org>, Hongbo Zhang <hongbo.zhang@freescale.com>
-Subject: [PATCH 2/2] fsl: set wakeup sources
-Date: Fri, 6 Sep 2013 14:46:55 +0800
-Message-ID: <1378450015-27607-1-git-send-email-hongbo.zhang@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 6 Sep 2013 02:50:21 -0400
+X-Greylist: delayed 329 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Sep 2013 02:50:21 EDT
+X-Yahoo-Newman-Id: 21627.45752.bm@omp1084.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: hUh83gMVM1lMi2WEGaXUVBxeDK69S8dYdrdB9Q2t1KxNffp
+ Cvvyp2pIrH2lmGMGGxRszYk8f7GAR.PXWaIGdd3EK2iZLi2awBRomaDxl9Lm
+ tIKjvDNGXLsQ45hO57cF7VBGWbwGYTBYeoa4luupbdMWna1ZKw1mkSJjptfk
+ 8BUjYmontqcVIGqkBlHvPHgrapqBKXHd0T2Zhty5BtFi9odSQmuhgXzqTkxT
+ yroVONJ3I2Xf_.cWXnZ9UPPGXtAI3YV6j106Ivbol4zd9mHsBGQUEpCUOxTc
+ nmR53kTGhOTO6zj.hdLdDBD6v5nJMt8DY9VG.32lnO0edBWdoA2sqi.eXl1p
+ 46iugJhC4Np7WiDBRLXqn.6av_Cfw1LLrYefAiA837T4vomp3PH0k6q9dYF6
+ p7zEa_9eiDRXzfQLw7k6az0ntOloJ4qDynm1mKJYSBq5qAzQDQ50On5ZPNcp
+ ifzpPzHucN3cmguUFHrakhROBEfyVrqEGMkH_IpYy_sYE6Qz5ZyvR7E0EmUV
+ TM3QDml1nKtZ8ndfUvUDz.3I.EZmOhFSlOpwi_mr44GM-
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-Rocket-Received: from [10.5.57.252] (casey@92.39.189.50 with )
+        by smtp104.biz.mail.gq1.yahoo.com with SMTP; 05 Sep 2013 23:44:51 -0700 PDT
+Message-ID: <522979E7.5070102@schaufler-ca.com>
+Date: Thu, 05 Sep 2013 23:44:55 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Kees Cook <keescook@chromium.org>
+CC: LKLM <linux-kernel@vger.kernel.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        SE Linux <selinux@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
+        John Johansen <john.johansen@canonical.com>,
+        Eric Paris <eparis@redhat.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Subject: Re: [PATCH v14 0/6] LSM: Multiple concurrent LSMs
+References: <20130806063002.GF2280@outflux.net> <520177E8.5080906@schaufler-ca.com> <CAGXu5jL6dtB0F7fPh17pyhD22q0Q9Nn=wxbPf5AMYsrJuTvvJA@mail.gmail.com> <521C0F07.6030102@schaufler-ca.com> <CAGXu5jJmJu5Ram_x51kk2eoFOrS-v7SWernXUM_azdXdxzMLVA@mail.gmail.com>
+In-Reply-To: <CAGXu5jJmJu5Ram_x51kk2eoFOrS-v7SWernXUM_azdXdxzMLVA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hongbo Zhang <hongbo.zhang@freescale.com>
-
-Some devices can work as wakeup sources, they should be powerred on during
-system deep sleep, this patch adds interface for configuring devices power
-supply status during deep sleep.
-
-Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
----
- arch/powerpc/boot/dts/fsl/qoriq-power.dtsi |   73 ++++++++++++++++++++++++++++
- arch/powerpc/sysdev/fsl_rcpm.c             |   43 ++++++++++++++++
- 2 files changed, 116 insertions(+)
- create mode 100644 arch/powerpc/boot/dts/fsl/qoriq-power.dtsi
-
-diff --git a/arch/powerpc/boot/dts/fsl/qoriq-power.dtsi b/arch/powerpc/boot/dts/fsl/qoriq-power.dtsi
-new file mode 100644
-index 0000000..c5c2ba0
---- /dev/null
-+++ b/arch/powerpc/boot/dts/fsl/qoriq-power.dtsi
-@@ -0,0 +1,73 @@
-+/*
-+ * QorIQ Power Management device tree stub
-+ *
-+ * Copyright 2013 Freescale Semiconductor Inc.
-+ *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions are met:
-+ *     * Redistributions of source code must retain the above copyright
-+ *       notice, this list of conditions and the following disclaimer.
-+ *     * Redistributions in binary form must reproduce the above copyright
-+ *       notice, this list of conditions and the following disclaimer in the
-+ *       documentation and/or other materials provided with the distribution.
-+ *     * Neither the name of Freescale Semiconductor nor the
-+ *       names of its contributors may be used to endorse or promote products
-+ *       derived from this software without specific prior written permission.
-+ *
-+ *
-+ * ALTERNATIVELY, this software may be distributed under the terms of the
-+ * GNU General Public License ("GPL") as published by the Free Software
-+ * Foundation, either version 2 of that License or (at your option) any
-+ * later version.
-+ *
-+ * THIS SOFTWARE IS PROVIDED BY Freescale Semiconductor ``AS IS'' AND ANY
-+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-+ * DISCLAIMED. IN NO EVENT SHALL Freescale Semiconductor BE LIABLE FOR ANY
-+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+ */
-+
-+/* IPPDEXPCR: IP Power Down EXcePtion Control Register */
-+rcpm-power@e2140 {
-+	compatible = "fsl,rcpm-ippdexpcr";
-+	reg = <0xe2140 0x4>;
-+
-+	mac1_1_power: soc-power@0 {
-+		fsl,ippdexpcr-mask = <0x80000000>;
-+	};
-+	mac1_2_power: soc-power@1 {
-+		fsl,ippdexpcr-mask = <0x40000000>;
-+	};
-+	mac1_3_power: soc-power@2 {
-+		fsl,ippdexpcr-mask = <0x20000000>;
-+	};
-+	mac1_4_power: soc-power@3 {
-+		fsl,ippdexpcr-mask = <0x10000000>;
-+	};
-+	mac1_5_power: soc-power@4 {
-+		fsl,ippdexpcr-mask = <0x08000000>;
-+	};
-+	sdhc_power: soc-power@24 {
-+		fsl,ippdexpcr-mask = <0x00000080>;
-+	};
-+	gpio_power: soc-power@25 {
-+		fsl,ippdexpcr-mask = <0x00000040>;
-+	};
-+	usb1_power: soc-power@26 {
-+		fsl,ippdexpcr-mask = <0x00000020>;
-+	};
-+	usb2_power: soc-power@27 {
-+		fsl,ippdexpcr-mask = <0x00000010>;
-+	};
-+	fman1_power: soc-power@28 {
-+		fsl,ippdexpcr-mask = <0x00000008>;
-+	};
-+	sap_power: soc-power@31 {
-+		fsl,ippdexpcr-mask = <0x00000001>;
-+	};
-+};
-diff --git a/arch/powerpc/sysdev/fsl_rcpm.c b/arch/powerpc/sysdev/fsl_rcpm.c
-index ecf43a2..bc21aea 100644
---- a/arch/powerpc/sysdev/fsl_rcpm.c
-+++ b/arch/powerpc/sysdev/fsl_rcpm.c
-@@ -23,6 +23,49 @@
- struct ccsr_rcpm __iomem *rcpm1_regs;
- struct ccsr_rcpm_v2 __iomem *rcpm2_regs;
- 
-+/**
-+ * fsl_rcpm_set_wake - enable/disable device working as wakeup source
-+ * @dev: device affected
-+ * @enable: true for keeping power on for this device during deep sleep
-+ *          false otherwise
-+ *
-+ * return 0 on success, return -EINVAL if the device cannot wake up system
-+ * and -ENODEV if RCPM unavailable
-+ */
-+int fsl_rcpm_set_wake(struct device *dev, bool enable)
-+{
-+	int ret = 0;
-+	struct device_node *pw_np;
-+	u32 pw_mask;
-+
-+	if (!rcpm2_regs) {
-+		dev_err(dev, "%s: RCPM is unavailable\n", __func__);
-+		return -ENODEV;
-+	}
-+
-+	if (enable && !device_may_wakeup(dev))
-+		return -EINVAL;
-+
-+	pw_np = of_parse_phandle(dev->of_node, "fsl,rcpm-handle", 0);
-+	if (!pw_np)
-+		return -EINVAL;
-+
-+	if (of_property_read_u32(pw_np, "fsl,ippdexpcr-mask", &pw_mask)) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	if (enable)
-+		/* clear to enable power in deep sleep mode */
-+		clrbits32(&rcpm2_regs->ippdexpcr[0], pw_mask);
-+	else
-+		setbits32(&rcpm2_regs->ippdexpcr[0], pw_mask);
-+
-+out:
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(fsl_rcpm_set_wake);
-+
- static int rcpm_suspend_enter(suspend_state_t state)
- {
- 	int ret = 0;
--- 
-1.7.9.5
-
-
+On 9/5/2013 11:48 AM, Kees Cook wrote:
+> On Mon, Aug 26, 2013 at 7:29 PM, Casey Schaufler <casey@schaufler-ca.com> wrote:
+>> On 8/6/2013 3:36 PM, Kees Cook wrote:
+>>> On Tue, Aug 6, 2013 at 3:25 PM, Casey Schaufler <casey@schaufler-ca.com> wrote:
+>>>> On 8/5/2013 11:30 PM, Kees Cook wrote:
+>>>>> On Thu, Jul 25, 2013 at 11:52 PM, Casey Schaufler <casey@schaufler-ca.com> wrote:
+>>>>>> The /proc/*/attr interfaces are given to one LSM. This can be
+>>>>>> done by setting CONFIG_SECURITY_PRESENT. Additional interfaces
+>>>>>> have been created in /proc/*/attr so that each LSM has its own
+>>>>>> named interfaces. The name of the presenting LSM can be read from
+>>>>> For me, this is one problem that was bothering me, but it was a cosmetic
+>>>>> one that I'd mentioned before: I really disliked the /proc/$pid/attr
+>>>>> interface being named "$lsm.$file". I feel it's important to build
+>>>>> directories in attr/ for each LSM. So, I spent time to figure out a way to
+>>>>> do this. This patch changes the interface to /proc/$pid/attr/$lsm/$file
+>>>>> instead, which I feel has a much more appealing organizational structure.
+>>>> I will confess that the reason I went with <lsm>.current instead of
+>>>> <lsm>/current was that the former was easier to implement.
+>>> Yeah, that's totally fine. It wasn't very obvious (to me) how to
+>>> implement this initially, so no problem at all. I'm glad there was
+>>> something more than bug fixes I could contribute to this series. :)
+>> Oh dear. I'm rebasing for 3.12 and the macros don't generate compiling
+>> code any longer. It seems that, among other things, readdir is no longer
+>> a member of file_operations.
+> Looks like f0c3b5093addc8bfe9fe3a5b01acb7ec7969eafa is what touched
+> fs/proc/base.c and it should just need a few tweaks from "readdir"
+> becoming "iterate", and the prototype changing.
+>
+> So it should just require bump the macros a little. Let's see if gmail
+> eats my paste...
+>
+> diff --git a/fs/proc/base.c b/fs/proc/base.c
+> index 4c80ffd..f670349 100644
+> --- a/fs/proc/base.c
+> +++ b/fs/proc/base.c
+> @@ -2358,17 +2358,17 @@ static const struct file_operations proc_pid_attr_operat
+>  };
+>
+>  #define LSM_DIR_OPS(LSM) \
+> -static int proc_##LSM##_attr_dir_readdir(struct file * filp, \
+> -                            void * dirent, filldir_t filldir) \
+> +static int proc_##LSM##_attr_dir_iterate(struct file * filp, \
+> +                            struct dir_context *ctx) \
+>  { \
+> -       return proc_pident_readdir(filp, dirent, filldir, \
+> +       return proc_pident_readdir(filp, ctx, \
+>                                    LSM##_attr_dir_stuff, \
+>                                    ARRAY_SIZE(LSM##_attr_dir_stuff)); \
+>  } \
+>  \
+>  static const struct file_operations proc_##LSM##_attr_dir_ops = { \
+>         .read           = generic_read_dir, \
+> -       .readdir        = proc_##LSM##_attr_dir_readdir, \
+> +       .iterate        = proc_##LSM##_attr_dir_iterate, \
+>         .llseek         = default_llseek, \
+>  }; \
+>  \
+>
+>
+> Do you have the rest of the series already ported to 3.12?
+>
+> -Kees
+>
+Yes, but I did it last week before my holiday started, and have not updated since.
+I will become active again upon my return. I hope to have the 3.12 version posted
+before the Security Summit.
 
