@@ -1,90 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750889Ab3IFI7G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 04:59:06 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:17045 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756Ab3IFI7E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 04:59:04 -0400
-X-IronPort-AV: E=Sophos;i="4.90,853,1371081600"; 
-   d="scan'208";a="8483061"
-Message-ID: <1378457939.14745.73.camel@kazak.uk.xensource.com>
-Subject: Re: [PATCH v5 05/13] xen/arm,arm64: move Xen initialization earlier
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Date: Fri, 6 Sep 2013 09:58:59 +0100
-In-Reply-To: <alpine.DEB.2.02.1309051755560.6397@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com>
-	 <1377801154-29215-5-git-send-email-stefano.stabellini@eu.citrix.com>
-	 <20130905162026.GJ11887@arm.com>
-	 <alpine.DEB.2.02.1309051755560.6397@kaball.uk.xensource.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.203.1]
+	id S1750980Ab3IFI7y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 04:59:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40319 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750805Ab3IFI7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 04:59:51 -0400
+Date: Fri, 6 Sep 2013 10:58:56 +0200
+From: Jesper Dangaard Brouer <brouer@redhat.com>
+To: lvs-devel@vger.kernel.org, lvs-users@linuxvirtualserver.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Julian Anastasov <ja@ssi.bg>,
+        Hans Schillstrom <hans.schillstrom@ericsson.com>,
+        Simon Horman <horms@verge.net.au>,
+        Wensong Zhang <wensong@linux-vs.org>,
+        Jesper Dangaard Brouer <brouer@redhat.com>,
+        "Ryan O'Hara" <rohara@redhat.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Alexander Frolkin <avf@eldamar.org.uk>
+Subject: [ANNOUNCE] ipvsadm release v1.27
+Message-ID: <20130906105856.466aa103@redhat.com>
+Organization: Red Hat Inc.
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA256;
+ boundary="Sig_/RxodrJFzld1_TaruaWOsSkE"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-09-05 at 17:59 +0100, Stefano Stabellini wrote:
-> On Thu, 5 Sep 2013, Catalin Marinas wrote:
-> > On Thu, Aug 29, 2013 at 07:32:26PM +0100, Stefano Stabellini wrote:
-> > > Move Xen initialization earlier, before any DMA requests can be made.
-> > > 
-> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > 
-> > I guess you should cc the corresponding maintainers here.
-> 
-> Thanks for the reminder, I'll do that.
-> 
-> 
-> > >  arch/arm/include/asm/xen/hypervisor.h |    8 ++++++++
-> > >  arch/arm/kernel/setup.c               |    2 ++
-> > >  arch/arm/xen/enlighten.c              |   21 ++++++++++++++-------
-> > >  arch/arm64/kernel/setup.c             |    2 ++
-> > >  4 files changed, 26 insertions(+), 7 deletions(-)
-> > 
-> > [...]
-> > 
-> > > --- a/arch/arm64/kernel/setup.c
-> > > +++ b/arch/arm64/kernel/setup.c
-> > > @@ -53,6 +53,7 @@
-> > >  #include <asm/traps.h>
-> > >  #include <asm/memblock.h>
-> > >  #include <asm/psci.h>
-> > > +#include <asm/xen/hypervisor.h>
-> > >  
-> > >  unsigned int processor_id;
-> > >  EXPORT_SYMBOL(processor_id);
-> > > @@ -267,6 +268,7 @@ void __init setup_arch(char **cmdline_p)
-> > >  	unflatten_device_tree();
-> > >  
-> > >  	psci_init();
-> > > +	xen_early_init();
-> > 
-> > So Xen guests don't have any hope for single Image? Basically you set
-> > dma_ops unconditionally in xen_early_init(), even if the kernel is not
-> > intended to run under Xen.
-> 
-> That should not happen: if we are not running on Xen xen_early_init
-> returns early, before calling xen_mm_init.
+--Sig_/RxodrJFzld1_TaruaWOsSkE
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-x96 has a call to init_hypervisor_platform() at approximately this
-location, which detects and calls the init function for any of Xen, KVM,
-hyperv and vmware. I guess only Xen and KVM are currently relevant on
-Linux ARM(64), so perhaps adding similar infrastructure on ARM would be
-overkill at this point. I don't know if KVM needs such an early C-land
-hook, I suppose it needs it even earlier so it can set up the hyp mode
-trampoline from head.S?
 
-Ian.
+We are happy to announce the release of ipvsadm v1.27.
 
+ ipvsadm is a utility to administer the kernels IPVS/LVS load-balancer serv=
+ice
+
+It have been quite a while since the last release of ipvsadm, as v1.26
+were released on February 8, 2011.  Since then, the source code
+repository have been converted into git.
+
+This is the first released based on the kernel.org git tree:
+  https://git.kernel.org/cgit/utils/kernel/ipvsadm/ipvsadm.git/
+
+You can download the tarballs from:
+ https://kernel.org/pub/linux/utils/kernel/ipvsadm/
+
+The older releases are also available via:
+ http://www.linuxvirtualserver.org/software/ipvs.html#kernel-2.6
+ http://www.linuxvirtualserver.org/software/kernel-2.6/
+
+Maintainers:
+ Simon Horman <horms@verge.net.au>
+ Jesper Dangaard Brouer <brouer@redhat.com>
+ Wensong Zhang <wensong@linux-vs.org>
+
+The development have slowed down over the past years, as the tool and
+kernel in this area have stabilized.  As can be seen by the shortlog
+below, this release mostly contains bug fixes for existing features.
+
+With one exception commit 3141694c (ipvsadm: support for scheduler flags)
+by Alexander Frolkin, adds support for a new feature in kernel v3.11
+introduced in kernel commit eba3b5a787 (ipvs: SH fallback and L4 hashing).
+
+Shortlog:
+---------
+Alexander Frolkin (1):
+      ipvsadm: support for scheduler flags
+
+Alexander Holler (1):
+      libipvs: Fix initialization of netlink (needed for IPv6) when the mod=
+ule ip_vs wasn't loaded.
+
+Daniel Borkmann (1):
+      libipvs: libnl3: fix compilation error
+
+Henrique Mecking (1):
+      libipvs: Fix memory leak
+
+Jesper Dangaard Brouer (6):
+      ipvsadm: fix compiling tool on distros with only libnl-1
+      ipvsadm: detect LIBS and CFLAGS for libnl versions
+      Make README more generic and reference new kernel.org location
+      Add MAINTAINERS style file
+      Maintainer script for releasing tarballs
+      Release: Version 1.27
+
+Julian Anastasov (4):
+      Fix the --pe option checks
+      Fallback to libpopt on shared object
+      ipvsadm: Fix wrong format of --pe option in FMT_RULE listing
+      ipvsadm: init svc in ipvs_get_service
+
+Krzysztof Gajdemski (2):
+      ipvsadm: Fix wrong format of -o option in FMT_RULE listing
+      ipvsadm: Show 'ops' flag regardless of service persistence
+
+Ryan O'Hara (4):
+      ipvsadm: fix list_daemon to handle master/backup status in either pos=
+ition
+      ipvsadm: Fix svc->pe_name conditional
+      libipvs: Remove redundant CHECK_PE
+      libipvs: CHECK_IPV4 and CHECK_PE macros should not call return
+
+Simon Horman (1):
+      Linking against libpopt is always requited
+
+Tim Serong (1):
+      ipvsadm: Fix buffer overrun in ipvs_dests_parse_cb()
+
+wensong (1):
+      exclude the .svn directory and the TAGS file while making distribution
+
+--=20
+Best regards,
+  Jesper Dangaard Brouer
+  MSc.CS, Sr. Network Kernel Developer at Red Hat
+  Author of http://www.iptv-analyzer.org
+  LinkedIn: http://www.linkedin.com/in/brouer
+
+--Sig_/RxodrJFzld1_TaruaWOsSkE
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iF4EAREIAAYFAlIpmV4ACgkQOlVNAzs3vO1V7gEAmY5deaZT5PCJXR9upWaDzWKR
+Aqfe98PbAahW8Xj2btUBAIHz6gGTvk9+OsO7JowthYwBMMDAGyaea8X5hlnBUXPM
+=xkmC
+-----END PGP SIGNATURE-----
+
+--Sig_/RxodrJFzld1_TaruaWOsSkE--
