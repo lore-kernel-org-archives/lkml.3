@@ -1,80 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751286Ab3IFLYy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 07:24:54 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:48006 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750957Ab3IFLYw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 07:24:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMuHMdUEjLSRoSHdQUACupxiJ_GxMXSzk-KsMA5ep55sxNT3kw@mail.gmail.com>
-References: <1378459933-367-1-git-send-email-teg@jklm.no>
-	<CANq1E4Tco9K1zeL2d7MhBQ=UjHFOktrrR8GHp8cJm3V6CTqf0g@mail.gmail.com>
-	<CAMuHMdUEjLSRoSHdQUACupxiJ_GxMXSzk-KsMA5ep55sxNT3kw@mail.gmail.com>
-Date: Fri, 6 Sep 2013 13:24:52 +0200
-Message-ID: <CANq1E4QueHY41Kz5xWnMC5Y8fQzsb4a7FxyrYg2XuGLOQ-wZfw@mail.gmail.com>
-Subject: Re: [PATCH] x86: simplefb: avoid overflow
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Tom Gundersen <teg@jklm.no>, "the arch/x86 maintainers" <x86@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751264Ab3IFLeH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 07:34:07 -0400
+Received: from mga01.intel.com ([192.55.52.88]:19951 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750887Ab3IFLeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 07:34:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,854,1371106800"; 
+   d="scan'208";a="397635637"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Ning Qu <quning@google.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <CACz4_2fJPngXwijEQcmVYB67u_4QDDJkpiyCv4K0iCFdmPsDuA@mail.gmail.com>
+References: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1375582645-29274-4-git-send-email-kirill.shutemov@linux.intel.com>
+ <CACz4_2fJPngXwijEQcmVYB67u_4QDDJkpiyCv4K0iCFdmPsDuA@mail.gmail.com>
+Subject: Re: [PATCH 03/23] thp: compile-time and sysfs knob for thp pagecache
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130906113358.6D8EEE0090@blue.fi.intel.com>
+Date: Fri,  6 Sep 2013 14:33:58 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Ning Qu wrote:
+> One minor question inline.
+> 
+> Best wishes,
+> -- 
+> Ning Qu (曲宁) | Software Engineer | quning@google.com | +1-408-418-6066
+> 
+> 
+> On Sat, Aug 3, 2013 at 7:17 PM, Kirill A. Shutemov <
+> kirill.shutemov@linux.intel.com> wrote:
+> 
+> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> >
+> > For now, TRANSPARENT_HUGEPAGE_PAGECACHE is only implemented for x86_64.
+> >
+> > Radix tree perload overhead can be significant on BASE_SMALL systems, so
+> > let's add dependency on !BASE_SMALL.
+> >
+> > /sys/kernel/mm/transparent_hugepage/page_cache is runtime knob for the
+> > feature. It's enabled by default if TRANSPARENT_HUGEPAGE_PAGECACHE is
+> > enabled.
+> >
+> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > ---
+> >  Documentation/vm/transhuge.txt |  9 +++++++++
+> >  include/linux/huge_mm.h        |  9 +++++++++
+> >  mm/Kconfig                     | 12 ++++++++++++
+> >  mm/huge_memory.c               | 23 +++++++++++++++++++++++
+> >  4 files changed, 53 insertions(+)
+> >
+> > diff --git a/Documentation/vm/transhuge.txt
+> > b/Documentation/vm/transhuge.txt
+> > index 4a63953..4cc15c4 100644
+> > --- a/Documentation/vm/transhuge.txt
+> > +++ b/Documentation/vm/transhuge.txt
+> > @@ -103,6 +103,15 @@ echo always
+> > >/sys/kernel/mm/transparent_hugepage/enabled
+> >  echo madvise >/sys/kernel/mm/transparent_hugepage/enabled
+> >  echo never >/sys/kernel/mm/transparent_hugepage/enabled
+> >
+> > +If TRANSPARENT_HUGEPAGE_PAGECACHE is enabled kernel will use huge pages in
+> > +page cache if possible. It can be disable and re-enabled via sysfs:
+> > +
+> > +echo 0 >/sys/kernel/mm/transparent_hugepage/page_cache
+> > +echo 1 >/sys/kernel/mm/transparent_hugepage/page_cache
+> > +
+> > +If it's disabled kernel will not add new huge pages to page cache and
+> > +split them on mapping, but already mapped pages will stay intakt.
+> > +
+> >  It's also possible to limit defrag efforts in the VM to generate
+> >  hugepages in case they're not immediately free to madvise regions or
+> >  to never try to defrag memory and simply fallback to regular pages
+> > diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+> > index 3935428..1534e1e 100644
+> > --- a/include/linux/huge_mm.h
+> > +++ b/include/linux/huge_mm.h
+> > @@ -40,6 +40,7 @@ enum transparent_hugepage_flag {
+> >         TRANSPARENT_HUGEPAGE_DEFRAG_FLAG,
+> >         TRANSPARENT_HUGEPAGE_DEFRAG_REQ_MADV_FLAG,
+> >         TRANSPARENT_HUGEPAGE_DEFRAG_KHUGEPAGED_FLAG,
+> > +       TRANSPARENT_HUGEPAGE_PAGECACHE,
+> >         TRANSPARENT_HUGEPAGE_USE_ZERO_PAGE_FLAG,
+> >  #ifdef CONFIG_DEBUG_VM
+> >         TRANSPARENT_HUGEPAGE_DEBUG_COW_FLAG,
+> > @@ -229,4 +230,12 @@ static inline int do_huge_pmd_numa_page(struct
+> > mm_struct *mm, struct vm_area_str
+> >
+> >  #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+> >
+> > +static inline bool transparent_hugepage_pagecache(void)
+> > +{
+> > +       if (!IS_ENABLED(CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE))
+> > +               return false;
+> > +       if (!(transparent_hugepage_flags & (1<<TRANSPARENT_HUGEPAGE_FLAG)))
+> >
+> 
+> Here, I suppose we should test the  TRANSPARENT_HUGEPAGE_REQ_MADV_FLAG as
+> well? E.g.
+>         if (!(transparent_hugepage_flags &
+>               ((1<<TRANSPARENT_HUGEPAGE_FLAG) |
+>                (1<<TRANSPARENT_HUGEPAGE_REQ_MADV_FLAG))))
+> 
+> +               return false;
 
-On Fri, Sep 6, 2013 at 12:59 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> On Fri, Sep 6, 2013 at 11:55 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
->> On Fri, Sep 6, 2013 at 11:32 AM, Tom Gundersen <teg@jklm.no> wrote:
->>> lfb_size can easily be say 4M, which would make the bitshit overflow and
->>> the test fail.
->>>
->>> Signed-off-by: Tom Gundersen <teg@jklm.no>
->>> Cc: David Herrmann <dh.herrmann@gmail.com>
->>> Cc: H. Peter Anvin <hpa@zytor.com>
->>> ---
->>>  arch/x86/kernel/sysfb_simplefb.c | 2 +-
->>>  1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> diff --git a/arch/x86/kernel/sysfb_simplefb.c b/arch/x86/kernel/sysfb_simplefb.c
->>> index 22513e9..fff44a5 100644
->>> --- a/arch/x86/kernel/sysfb_simplefb.c
->>> +++ b/arch/x86/kernel/sysfb_simplefb.c
->>> @@ -72,7 +72,7 @@ __init int create_simplefb(const struct screen_info *si,
->>>          * the part that is occupied by the framebuffer */
->>>         len = mode->height * mode->stride;
->>>         len = PAGE_ALIGN(len);
->>> -       if (len > si->lfb_size << 16) {
->>> +       if (len > ((unsigned long) si->lfb_size) << 16) {
->
-> On 32-bit, "unsigned long" is the same size as __u32, so this doesn't
-> make any difference.
+You're right. Fixed.
 
-lfb_size cannot be 4M on 32bit machines. Well, if it is, the firmware
-passed bogus information as you cannot have a 262G-region on 32bit.
-But on 64bit it can pass 4M just fine.
-So we don't care for the 32bit case here, only 64bit. The (__u64) cast
-would be more obvious. Don't know.. It's just a sanity check, anyways,
-so I'm fine with it.
-
->> Nice catch. vesafb uses "lfb_size * 65535" which causes an implicit
->> cast. I thought <<16 looks nicer but that doesn't do any implicit
->> cast..
->
-> "lfb_size * 65535" is the same. "lfb_size" is __u32, "65535" is int.
-> So there's no implicit cast. Or am I missing something?
-
-Yepp, indeed. My bad, so vesafb doesn't do any better here.
-
-I wonder, though, which firmware passes such values. It means the
-lfb_size area is reserved >4G. We do have huge VMEM these days..
-Tom, on what hardware did you hit that?
-
-Thanks
-David
+-- 
+ Kirill A. Shutemov
