@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751832Ab3IFQqb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 12:46:31 -0400
-Received: from mga11.intel.com ([192.55.52.93]:17233 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750743Ab3IFQqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 12:46:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,855,1371106800"; 
-   d="scan'208";a="397757745"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andi Kleen <andi@firstfloor.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Alex Thorlton <athorlton@sgi.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <1378484835-8552fpnd-mutt-n-horiguchi@ah.jp.nec.com>
-References: <1378416466-30913-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1378416466-30913-3-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20130906104803.0F39CE0090@blue.fi.intel.com>
- <1378484835-8552fpnd-mutt-n-horiguchi@ah.jp.nec.com>
-Subject: Re: [PATCH 2/2] thp: support split page table lock
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130906164625.353B1E0090@blue.fi.intel.com>
-Date: Fri,  6 Sep 2013 19:46:25 +0300 (EEST)
+	id S1752605Ab3IFQsS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 12:48:18 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:46248 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751488Ab3IFQsQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 12:48:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <1378351680-14696-2-git-send-email-acourbot@nvidia.com>
+References: <1378351680-14696-1-git-send-email-acourbot@nvidia.com>
+	<1378351680-14696-2-git-send-email-acourbot@nvidia.com>
+Date: Fri, 6 Sep 2013 18:48:15 +0200
+Message-ID: <CACRpkdaphSqM1oOphC-t1UPmkxaEemC3R3aDfEXb79GWNNyNMA@mail.gmail.com>
+Subject: Re: [PATCH v5 1/5] ARM: add basic Trusted Foundations support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>, Dave Martin <Dave.Martin@arm.com>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Kevin Hilman <khilman@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Naoya Horiguchi wrote:
-> Hi Kirill,
-> 
-> On Fri, Sep 06, 2013 at 01:48:03PM +0300, Kirill A. Shutemov wrote:
-> > Naoya Horiguchi wrote:
-> > > Thp related code also uses per process mm->page_table_lock now.
-> > > So making it fine-grained can provide better performance.
-> > > 
-> > > This patch makes thp support split page table lock by using page->ptl
-> > > of the pages storing "pmd_trans_huge" pmds.
-> > > 
-> > > Some functions like pmd_trans_huge_lock() and page_check_address_pmd()
-> > > are expected by their caller to pass back the pointer of ptl, so this
-> > > patch adds to those functions new arguments for that. Rather than that,
-> > > this patch gives only straightforward replacement.
-> > > 
-> > > ChangeLog v3:
-> > >  - fixed argument of huge_pmd_lockptr() in copy_huge_pmd()
-> > >  - added missing declaration of ptl in do_huge_pmd_anonymous_page()
-> > > 
-> > > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > 
-> > Generally, looks good. Few notes:
-> > 
-> > I believe you need to convert __pte_alloc() to new locking. Not sure about
-> > __pte_alloc_kernel().
-> > Have you check all rest mm->page_table_lock, that they shouldn't be
-> > converted to new locking?
-> 
-> I thought that keeping __pte_alloc() using mm->page_table_lock was safe
-> because it uses bare mm->page_table_lock instead of pte_lockptr() even
-> before this patchset, but not 100% sure.
-> __pte_alloc() (and its family) are used in normal page path, so if it's
-> not safe, we've lived with unsafe code for very long (maybe since 2005).
-> Anyway, converting __pte_alloc() into split ptl could improve performance
-> (though we need testing to know what amount), so I'll try that.
+On Thu, Sep 5, 2013 at 5:27 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
 
-No, before the patch mm->page_table_lock is what we need: it serializes
-setting up pmd, not adding pte to pmd and it's subject to change with new
-locking model.
+> Trusted Foundations is a TrustZone-based secure monitor for ARM that
+> can be invoked  using a consistent SMC-based API on all supported
+> platforms. This patch adds initial basic support for Trusted
+> Foundations using the ARM firmware API. Current features are limited
+> to the ability to boot secondary processors.
+>
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+> Reviewed-by: Stephen Warren <swarren@nvidia.com>
 
--- 
- Kirill A. Shutemov
+I take it that this means that it is a set of standard routines
+living in the secure world that can be called by way of this
+API, correct? The commit message is written a bit like
+everybody knows what this is about but I don't :-)
+
+Some more background here would be nice, like where did this
+thing come from, and are there other platforms in existance that
+use trusted foundations or is it a Tegra-only thing? Does a
+specification of this thing listing available services exist for
+example?
+
+How does it relate to the (arch-neutral) trusted execution
+environment and such things that other vendors are pushing for?
+Can the trusted foundations be used "underneath" such
+frameworks for trusted applications, or is it a parallell thing
+altogether?
+
+Simple things like that...
+
+I tried googling it, is this a relevant URL?
+http://www.arm.com/community/partners/display_product/rw/ProductId/5393/
+
+Thanks,
+Linus Walleij
