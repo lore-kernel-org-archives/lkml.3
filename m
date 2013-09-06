@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752322Ab3IFOjU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 10:39:20 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:44694 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751605Ab3IFOjT (ORCPT
+	id S1752866Ab3IFOlS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 10:41:18 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44209 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839Ab3IFOlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 10:39:19 -0400
-Date: Fri, 6 Sep 2013 10:39:09 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: david.vrabel@citrix.com, xen-devel <xen-devel@lists.xenproject.org>,
-        boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH] xen/p2m: Export set_phys_to_machine.
-Message-ID: <20130906143909.GC5140@phenom.dumpdata.com>
-References: <1378476042-4821-1-git-send-email-konrad.wilk@oracle.com>
- <5229FD6A02000078000F119C@nat28.tlf.novell.com>
+	Fri, 6 Sep 2013 10:41:16 -0400
+Date: Fri, 6 Sep 2013 10:41:13 -0400
+From: Kyle McMartin <kyle@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: ftrace 'failed to modify' bug when loading reiserfs.ko
+Message-ID: <20130906144113.GC25882@merlin.infradead.org>
+References: <20130906011924.GA7970@redhat.com>
+ <20130905212834.605408a4@gandalf.local.home>
+ <20130906013455.GA10073@redhat.com>
+ <20130905214455.101c6347@gandalf.local.home>
+ <20130906014859.GB10073@redhat.com>
+ <20130905215154.74c55e9a@gandalf.local.home>
+ <20130906035827.GA13446@redhat.com>
+ <20130906093252.02c748f5@gandalf.local.home>
+ <20130906141852.GA18708@redhat.com>
+ <20130906102413.2e52d337@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5229FD6A02000078000F119C@nat28.tlf.novell.com>
+In-Reply-To: <20130906102413.2e52d337@gandalf.local.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 06, 2013 at 03:06:02PM +0100, Jan Beulich wrote:
-> >>> On 06.09.13 at 16:00, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> > We have already exported 'get_phys_to_machine' and there are
-> > third-party drivers that depend on this other symbol. As such
-> > lets make this balanced and also export this symbol.
+On Fri, Sep 06, 2013 at 10:24:13AM -0400, Steven Rostedt wrote:
 > 
-> I tend to disagree: Allowing external modules read access to some
-> internal state is quite different from also allowing them to alter it.
+> Is it really safe to load modules that were compiled with different
+> options?
 
-I am not following you. We have drivers in the kernel that do
-this now. For example xen-netfront uses set_phys_to_machine.
+Certainly not, offsets can change based on config options.
 
-Oddly it can be built as a module.  I am wondering how it actually
-works without this EXPORT symbol.
+> Sounds like a failure in the install scripts to me.
+> 
 
-> 
-> Jan
-> 
-> > Reported-by: Yuval Shaia <yuval.shaia@oracle.com>
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > ---
-> >  arch/x86/xen/p2m.c | 1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-> > index 0d4ec35..cdb96bc 100644
-> > --- a/arch/x86/xen/p2m.c
-> > +++ b/arch/x86/xen/p2m.c
-> > @@ -847,6 +847,7 @@ bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
-> >  
-> >  	return true;
-> >  }
-> > +EXPORT_SYMBOL_GPL(set_phys_to_machine);
-> >  
-> >  #define M2P_OVERRIDE_HASH_SHIFT	10
-> >  #define M2P_OVERRIDE_HASH	(1 << M2P_OVERRIDE_HASH_SHIFT)
-> > -- 
-> > 1.8.3.1
-> > 
-> > 
-> > _______________________________________________
-> > Xen-devel mailing list
-> > Xen-devel@lists.xen.org 
-> > http://lists.xen.org/xen-devel 
-> 
-> 
-> 
+Definitely a bug in those scripts, os-prober would need to run before
+modules_install, since if $INSTALL_MOD_PATH is the same between config
+changes, there's no guarantee the modules are loadable on the running
+kernel without a reboot.
+
+--Kyle
