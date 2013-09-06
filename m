@@ -1,641 +1,368 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537Ab3IFUcG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 16:32:06 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:45497 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab3IFUcC (ORCPT
+	id S1753786Ab3IFUeN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 16:34:13 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:61213 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810Ab3IFUeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 16:32:02 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
-        David Brown <davidb@codeaurora.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: [PATCH] ARM: msm: Remove irqs-*.h files for DT based targets
-Date: Fri,  6 Sep 2013 13:31:57 -0700
-Message-Id: <1378499517-24014-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.4.21.g992c386
-In-Reply-To: <20130906195300.GJ808@joshc.qualcomm.com>
-References: <20130906195300.GJ808@joshc.qualcomm.com>
+	Fri, 6 Sep 2013 16:34:11 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+Subject: Re: [PATCH v2] ADP1653 board code for Nokia RX-51
+Date: Fri, 6 Sep 2013 22:34:05 +0200
+User-Agent: KMail/1.13.7 (Linux/3.11.0-1+synaptics-generic; KDE/4.11.0; x86_64; ; )
+Cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <201302171616.50152@pali> <20130217190303.GC2317@blackmetal.musicnaut.iki.fi> <201303062112.06417@pali>
+In-Reply-To: <201303062112.06417@pali>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart1696311.H7yyvhgxLS";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201309062234.05878@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't want or need the irqs.h files from the DT based MSM
-targets. Remove these header files and select sparse irq so that
-we don't try to include the mach/irqs.h file.
+--nextPart1696311.H7yyvhgxLS
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
+On Wednesday 06 March 2013 21:12:06 Pali Roh=C3=A1r wrote:
+> On Sunday 17 February 2013 20:03:03 Aaro Koskinen wrote:
+> > Hi,
+> >=20
+> > On Sun, Feb 17, 2013 at 04:16:49PM +0100, Pali Roh=C3=A1r wrote:
+> > > I'm sending ADP1653 flash torch board code for Nokia
+> > > RX-51. Kernel driver ADP1653 is already in upstream
+> > > kernel. Board code was extracted from this big camera
+> > > meego patch:
+> > >=20
+> > > https://api.pub.meego.com/public/source/CE:Adaptation:N900
+> > > /k
+> > > ernel-adaptation-n900/linux-2.6-Camera-for-Meego-N900-Ada
+> > > pta tion-kernel-2.6.37-patch.patch
+> >=20
+> > You need to sign-off the patch.
+>=20
+> Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+>=20
+> > > --- /dev/null
+> > > +++ b/arch/arm/mach-omap2/board-rx51-camera.c
+> >=20
+> > I'm not sure if adding a new file is sensible. There are
+> > already 3 board files for RX-51, which I think is overkill.
+>=20
+> You can see that camera board code is big, so code was moved
+> to separate file. Because not all camera drivers are
+> upstreamed yet there is no camera support in RX-51 board
+> code. Current peripheral file for RX-51 is big too and split
+> camera code into separate file can be usefull...
+>=20
+> > > @@ -0,0 +1,177 @@
+> > > +/*
+> > > + * arch/arm/mach-omap2/board-rx51-camera.c
+> > > + *
+> > > + * Copyright (C) 2008 Nokia Corporation
+> > > + *
+> > > + * Contact: Sakari Ailus <sakari.ailus@nokia.com>
+> > > + *          Tuukka Toivonen <tuukka.o.toivonen@nokia.com>
+> >=20
+> > You should put these people to CC... Just to see if the
+> > addresses are still valid (which I doubt).
+>=20
+> Ok, trying :-)
+>=20
+> > > +static int __init rx51_adp1653_init(void)
+> > > +{
+> > > +	int err;
+> > > +
+> > > +	err =3D gpio_request(ADP1653_GPIO_ENABLE, "adp1653
+> > > enable"); +	if (err) {
+> > > +		printk(KERN_ERR ADP1653_NAME
+> > > +		       " Failed to request EN gpio\n");
+> > > +		err =3D -ENODEV;
+> > > +		goto err_omap_request_gpio;
+> > > +	}
+> > > +
+> > > +	err =3D gpio_request(ADP1653_GPIO_INT, "adp1653
+> > > interrupt"); +	if (err) {
+> > > +		printk(KERN_ERR ADP1653_NAME " Failed to request IRQ
+> > > gpio\n"); +		err =3D -ENODEV;
+> > > +		goto err_omap_request_gpio_2;
+> > > +	}
+> > > +
+> > > +	err =3D gpio_request(ADP1653_GPIO_STROBE, "adp1653
+> > > strobe"); +	if (err) {
+> > > +		printk(KERN_ERR ADP1653_NAME
+> > > +		       " Failed to request STROBE gpio\n");
+> > > +		err =3D -ENODEV;
+> > > +		goto err_omap_request_gpio_3;
+> > > +	}
+> > > +
+> > > +	gpio_direction_output(ADP1653_GPIO_ENABLE, 0);
+> > > +	gpio_direction_input(ADP1653_GPIO_INT);
+> > > +	gpio_direction_output(ADP1653_GPIO_STROBE, 0);
+> >=20
+> > gpio_request_array() should be used.
+>=20
+> Ok, fixing this.
+>=20
+> > > +void __init rx51_camera_init(void)
+> > > +{
+> > > +	if (rx51_camera_hw_init()) {
+> > > +		printk(KERN_WARNING "%s: Unable to initialize
+> > > camera\n", +		       __func__);
+> > > +		return;
+> > > +	}
+> > > +
+> > > +	if (omap3_init_camera(&rx51_isp_platform_data) < 0)
+> > > +		printk(KERN_WARNING "%s: Unable to register camera
+> > > platform " +		       "device\n", __func__);
+> >=20
+> > pr_warn() should be used.
+> >=20
+> > A.
+>=20
+> Fixed too.
+>=20
+> Here is new version v2 of this patch:
+>=20
+> diff --git a/arch/arm/mach-omap2/Kconfig
+> b/arch/arm/mach-omap2/Kconfig index 41b581f..268fa57 100644
+> --- a/arch/arm/mach-omap2/Kconfig
+> +++ b/arch/arm/mach-omap2/Kconfig
+> @@ -287,6 +287,7 @@ config MACH_NOKIA_RX51
+>  	depends on ARCH_OMAP3
+>  	default y
+>  	select OMAP_PACKAGE_CBB
+> +	select VIDEO_ADP1653 if VIDEO_OMAP3 &&
+> VIDEO_HELPER_CHIPS_AUTO
+>=20
+>  config MACH_OMAP_ZOOM2
+>  	bool "OMAP3 Zoom2 board"
+> diff --git a/arch/arm/mach-omap2/Makefile
+> b/arch/arm/mach-omap2/Makefile index 947cafe..f20f693 100644
+> --- a/arch/arm/mach-omap2/Makefile
+> +++ b/arch/arm/mach-omap2/Makefile
+> @@ -236,6 +236,7 @@ obj-$(CONFIG_MACH_NOKIA_RM680)		+=3D
+> board-rm680.o sdram-nokia.o obj-$(CONFIG_MACH_NOKIA_RX51)		+=3D
+> board-rx51.o sdram-nokia.o obj-$(CONFIG_MACH_NOKIA_RX51)	=09
++=3D
+> board-rx51-peripherals.o obj-$(CONFIG_MACH_NOKIA_RX51)		+=3D
+> board-rx51-video.o +obj-$(CONFIG_MACH_NOKIA_RX51)		+=3D
+> board-rx51-camera.o obj-$(CONFIG_MACH_OMAP_ZOOM2)		+=3D
+> board-zoom.o board-zoom-peripherals.o
+> obj-$(CONFIG_MACH_OMAP_ZOOM2)		+=3D board-zoom-display.o
+> obj-$(CONFIG_MACH_OMAP_ZOOM2)		+=3D board-zoom-debugboard.o
+> diff --git a/arch/arm/mach-omap2/board-rx51-camera.c
+> b/arch/arm/mach-omap2/board-rx51-camera.c new file mode
+> 100644
+> index 0000000..80057ab
+> --- /dev/null
+> +++ b/arch/arm/mach-omap2/board-rx51-camera.c
+> @@ -0,0 +1,152 @@
+> +/*
+> + * arch/arm/mach-omap2/board-rx51-camera.c
+> + *
+> + * Copyright (C) 2008 Nokia Corporation
+> + *
+> + * Contact: Sakari Ailus <sakari.ailus@nokia.com>
+> + *          Tuukka Toivonen <tuukka.o.toivonen@nokia.com>
+> + *
+> + * This program is free software; you can redistribute it
+> and/or + * modify it under the terms of the GNU General
+> Public License + * version 2 as published by the Free
+> Software Foundation. + *
+> + * This program is distributed in the hope that it will be
+> useful, but + * WITHOUT ANY WARRANTY; without even the
+> implied warranty of + * MERCHANTABILITY or FITNESS FOR A
+> PARTICULAR PURPOSE.  See the GNU + * General Public License
+> for more details.
+> + *
+> + * You should have received a copy of the GNU General Public
+> License + * along with this program; if not, write to the
+> Free Software + * Foundation, Inc., 51 Franklin St, Fifth
+> Floor, Boston, MA + * 02110-1301 USA
+> + *
+> + */
+> +
+> +#include <linux/i2c.h>
+> +#include <linux/delay.h>
+> +#include <linux/gpio.h>
+> +
+> +#include "../../../drivers/media/platform/omap3isp/isp.h"
+> +
+> +#include <media/adp1653.h>
+> +
+> +#include "devices.h"
+> +
+> +#define ADP1653_GPIO_ENABLE	88	/* Used for resetting ADP1653
+> */ +#define ADP1653_GPIO_INT	167	/* Fault interrupt */
+> +#define ADP1653_GPIO_STROBE	126	/* Pin used in cam_strobe
+> mode -> +					 * control using ISP drivers */
+> +
+> +static struct gpio rx51_adp1653_gpios[] __initdata =3D {
+> +	{ ADP1653_GPIO_ENABLE,	GPIOF_OUT_INIT_LOW,	"adp1653=20
+enable"
+> }, +	{ ADP1653_GPIO_INT,	GPIOF_IN,		"adp1653 interrupt" },
+> +	{ ADP1653_GPIO_STROBE,	GPIOF_OUT_INIT_LOW,	"adp1653=20
+strobe"
+> }, +};
+> +
+> +static int __init rx51_adp1653_init(void)
+> +{
+> +	int ret;
+> +
+> +	ret =3D gpio_request_array(rx51_adp1653_gpios,
+> +				 ARRAY_SIZE(rx51_adp1653_gpios));
+> +	if (ret < 0) {
+> +		pr_err(ADP1653_NAME ": Failed to request gpios\n");
+> +		return -ENODEV;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int __init rx51_camera_hw_init(void)
+> +{
+> +	int rval;
+> +
+> +	rval =3D rx51_adp1653_init();
+> +	if (rval)
+> +		return rval;
+> +
+> +	return 0;
+> +}
+> +
+> +/*
+> + *
+> + * ADP1653
+> + *
+> + */
+> +
+> +static int rx51_adp1653_power(struct v4l2_subdev *subdev, int
+> on) +{
+> +	gpio_set_value(ADP1653_GPIO_ENABLE, on);
+> +	if (on) {
+> +		/* Some delay is apparently required. */
+> +		udelay(20);
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static struct adp1653_platform_data
+> rx51_adp1653_platform_data =3D { +	.power			 =3D
+> rx51_adp1653_power,
+> +	/* Must be limited to 500 ms in RX-51 */
+> +	.max_flash_timeout	 =3D 500000,		/* us */
+> +	/* Must be limited to 320 mA in RX-51 B3 and newer hardware
+> */ +	.max_flash_intensity	 =3D
+> ADP1653_FLASH_INTENSITY_REG_TO_mA(19), +	/* Must be limited
+> to 50 mA in RX-51 */
+> +	.max_torch_intensity	 =3D
+> ADP1653_FLASH_INTENSITY_REG_TO_mA(1),
+> +	.max_indicator_intensity =3D
+> ADP1653_INDICATOR_INTENSITY_REG_TO_uA(
+> +		ADP1653_REG_OUT_SEL_ILED_MAX),
+> +};
+> +
+> +/*
+> + *
+> + * Init it all
+> + *
+> + */
+> +
+> +#define ADP1653_I2C_BUS_NUM		2
+> +
+> +static struct i2c_board_info rx51_camera_i2c_devices[] =3D {
+> +	{
+> +		I2C_BOARD_INFO(ADP1653_NAME, ADP1653_I2C_ADDR),
+> +		.platform_data =3D &rx51_adp1653_platform_data,
+> +	},
+> +};
+> +
+> +static struct isp_subdev_i2c_board_info
+> rx51_camera_primary_subdevs[] =3D { +	{
+> +		.board_info =3D &rx51_camera_i2c_devices[0],
+> +		.i2c_adapter_id =3D ADP1653_I2C_BUS_NUM,
+> +	},
+> +	{ NULL, 0, },
+> +};
+> +
+> +static struct isp_v4l2_subdevs_group rx51_camera_subdevs[] =3D
+> { +	{
+> +		.subdevs =3D rx51_camera_primary_subdevs,
+> +		.interface =3D ISP_INTERFACE_CCP2B_PHY1,
+> +		.bus =3D { .ccp2 =3D {
+> +			.strobe_clk_pol		=3D 0,
+> +			.crc			=3D 1,
+> +			.ccp2_mode		=3D 1,
+> +			.phy_layer		=3D 1,
+> +			.vpclk_div		=3D 1,
+> +		} },
+> +	},
+> +	{ NULL, 0, },
+> +};
+> +
+> +static struct isp_platform_data rx51_isp_platform_data =3D {
+> +	.subdevs =3D rx51_camera_subdevs,
+> +};
+> +
+> +void __init rx51_camera_init(void)
+> +{
+> +	if (rx51_camera_hw_init()) {
+> +		pr_warn("%s: Unable to initialize camera\n", __func__);
+> +		return;
+> +	}
+> +
+> +	if (omap3_init_camera(&rx51_isp_platform_data) < 0)
+> +		pr_warn("%s: Unable to register camera platform "
+> +		       "device\n", __func__);
+> +}
+> diff --git a/arch/arm/mach-omap2/board-rx51.c
+> b/arch/arm/mach-omap2/board-rx51.c index d0374ea..92117a13
+> 100644
+> --- a/arch/arm/mach-omap2/board-rx51.c
+> +++ b/arch/arm/mach-omap2/board-rx51.c
+> @@ -75,6 +75,7 @@ static struct platform_device leds_gpio =3D {
+>  */
+>=20
+>  extern void __init rx51_peripherals_init(void);
+> +extern void __init rx51_camera_init(void);
+>=20
+>  #ifdef CONFIG_OMAP_MUX
+>  static struct omap_board_mux board_mux[] __initdata =3D {
+> @@ -100,6 +101,7 @@ static void __init rx51_init(void)
+>=20
+>  	usb_musb_init(&musb_board_data);
+>  	rx51_peripherals_init();
+> +	rx51_camera_init();
+>=20
+>  	/* Ensure SDRC pins are mux'd for self-refresh */
+>  	omap_mux_init_signal("sdrc_cke0", OMAP_PIN_OUTPUT);
 
-On 09/06, Josh Cartwright wrote:
-> 
-> Selecting _only_ ARCH_MSM8974 with these changes breaks the build with:
+Ping, can you review this patch v2?
 
-I've been meaning to fix this. Perhaps you can use this patch as a base
-and then push the SPARSE_IRQ selection into the DT config?
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
- arch/arm/mach-msm/Kconfig                  |   2 +
- arch/arm/mach-msm/include/mach/irqs-8960.h | 277 -----------------------------
- arch/arm/mach-msm/include/mach/irqs-8x60.h | 258 ---------------------------
- arch/arm/mach-msm/include/mach/irqs.h      |   5 -
- 4 files changed, 2 insertions(+), 540 deletions(-)
- delete mode 100644 arch/arm/mach-msm/include/mach/irqs-8960.h
- delete mode 100644 arch/arm/mach-msm/include/mach/irqs-8x60.h
+--nextPart1696311.H7yyvhgxLS
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-index 905efc8..30b3342 100644
---- a/arch/arm/mach-msm/Kconfig
-+++ b/arch/arm/mach-msm/Kconfig
-@@ -50,6 +50,7 @@ config ARCH_MSM8X60
- 	select HAVE_SMP
- 	select MSM_SCM if SMP
- 	select USE_OF
-+	select SPARSE_IRQ
- 
- config ARCH_MSM8960
- 	bool "MSM8960"
-@@ -59,6 +60,7 @@ config ARCH_MSM8960
- 	select GPIO_MSM_V2
- 	select MSM_SCM if SMP
- 	select USE_OF
-+	select SPARSE_IRQ
- 
- config MSM_HAS_DEBUG_UART_HS
- 	bool
-diff --git a/arch/arm/mach-msm/include/mach/irqs-8960.h b/arch/arm/mach-msm/include/mach/irqs-8960.h
-deleted file mode 100644
-index 81ab2a6..0000000
---- a/arch/arm/mach-msm/include/mach/irqs-8960.h
-+++ /dev/null
-@@ -1,277 +0,0 @@
--/* Copyright (c) 2011 Code Aurora Forum. All rights reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 and
-- * only version 2 as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- */
--
--#ifndef __ASM_ARCH_MSM_IRQS_8960_H
--#define __ASM_ARCH_MSM_IRQS_8960_H
--
--/* MSM ACPU Interrupt Numbers */
--
--/* 0-15:  STI/SGI (software triggered/generated interrupts)
--   16-31: PPI (private peripheral interrupts)
--   32+:   SPI (shared peripheral interrupts) */
--
--#define GIC_PPI_START 16
--#define GIC_SPI_START 32
--
--#define INT_VGIC				(GIC_PPI_START + 0)
--#define INT_DEBUG_TIMER_EXP			(GIC_PPI_START + 1)
--#define INT_GP_TIMER_EXP			(GIC_PPI_START + 2)
--#define INT_GP_TIMER2_EXP			(GIC_PPI_START + 3)
--#define WDT0_ACCSCSSNBARK_INT			(GIC_PPI_START + 4)
--#define WDT1_ACCSCSSNBARK_INT			(GIC_PPI_START + 5)
--#define AVS_SVICINT				(GIC_PPI_START + 6)
--#define AVS_SVICINTSWDONE			(GIC_PPI_START + 7)
--#define CPU_DBGCPUXCOMMRXFULL			(GIC_PPI_START + 8)
--#define CPU_DBGCPUXCOMMTXEMPTY			(GIC_PPI_START + 9)
--#define CPU_SICCPUXPERFMONIRPTREQ		(GIC_PPI_START + 10)
--#define SC_AVSCPUXDOWN				(GIC_PPI_START + 11)
--#define SC_AVSCPUXUP				(GIC_PPI_START + 12)
--#define SC_SICCPUXACGIRPTREQ			(GIC_PPI_START + 13)
--#define SC_SICCPUXEXTFAULTIRPTREQ		(GIC_PPI_START + 14)
--/* PPI 15 is unused */
--
--#define SC_SICMPUIRPTREQ			(GIC_SPI_START + 0)
--#define SC_SICL2IRPTREQ				(GIC_SPI_START + 1)
--#define SC_SICL2PERFMONIRPTREQ			(GIC_SPI_START + 2)
--#define SC_SICAGCIRPTREQ			(GIC_SPI_START + 3)
--#define TLMM_APCC_DIR_CONN_IRQ_0		(GIC_SPI_START + 4)
--#define TLMM_APCC_DIR_CONN_IRQ_1		(GIC_SPI_START + 5)
--#define TLMM_APCC_DIR_CONN_IRQ_2		(GIC_SPI_START + 6)
--#define TLMM_APCC_DIR_CONN_IRQ_3		(GIC_SPI_START + 7)
--#define TLMM_APCC_DIR_CONN_IRQ_4		(GIC_SPI_START + 8)
--#define TLMM_APCC_DIR_CONN_IRQ_5		(GIC_SPI_START + 9)
--#define TLMM_APCC_DIR_CONN_IRQ_6		(GIC_SPI_START + 10)
--#define TLMM_APCC_DIR_CONN_IRQ_7		(GIC_SPI_START + 11)
--#define TLMM_APCC_DIR_CONN_IRQ_8		(GIC_SPI_START + 12)
--#define TLMM_APCC_DIR_CONN_IRQ_9		(GIC_SPI_START + 13)
--#define PM8921_SEC_IRQ_103			(GIC_SPI_START + 14)
--#define PM8018_SEC_IRQ_106			(GIC_SPI_START + 15)
--#define TLMM_APCC_SUMMARY_IRQ			(GIC_SPI_START + 16)
--#define SPDM_RT_1_IRQ				(GIC_SPI_START + 17)
--#define SPDM_DIAG_IRQ				(GIC_SPI_START + 18)
--#define RPM_APCC_CPU0_GP_HIGH_IRQ		(GIC_SPI_START + 19)
--#define RPM_APCC_CPU0_GP_MEDIUM_IRQ		(GIC_SPI_START + 20)
--#define RPM_APCC_CPU0_GP_LOW_IRQ		(GIC_SPI_START + 21)
--#define RPM_APCC_CPU0_WAKE_UP_IRQ		(GIC_SPI_START + 22)
--#define RPM_APCC_CPU1_GP_HIGH_IRQ		(GIC_SPI_START + 23)
--#define RPM_APCC_CPU1_GP_MEDIUM_IRQ		(GIC_SPI_START + 24)
--#define RPM_APCC_CPU1_GP_LOW_IRQ		(GIC_SPI_START + 25)
--#define RPM_APCC_CPU1_WAKE_UP_IRQ		(GIC_SPI_START + 26)
--#define SSBI2_2_SC_CPU0_SECURE_IRQ		(GIC_SPI_START + 27)
--#define SSBI2_2_SC_CPU0_NON_SECURE_IRQ		(GIC_SPI_START + 28)
--#define SSBI2_1_SC_CPU0_SECURE_IRQ		(GIC_SPI_START + 29)
--#define SSBI2_1_SC_CPU0_NON_SECURE_IRQ		(GIC_SPI_START + 30)
--#define MSMC_SC_SEC_CE_IRQ			(GIC_SPI_START + 31)
--#define MSMC_SC_PRI_CE_IRQ			(GIC_SPI_START + 32)
--#define SLIMBUS0_CORE_EE1_IRQ			(GIC_SPI_START + 33)
--#define SLIMBUS0_BAM_EE1_IRQ			(GIC_SPI_START + 34)
--#define Q6FW_WDOG_EXPIRED_IRQ			(GIC_SPI_START + 35)
--#define Q6SW_WDOG_EXPIRED_IRQ			(GIC_SPI_START + 36)
--#define MSS_TO_APPS_IRQ_0			(GIC_SPI_START + 37)
--#define MSS_TO_APPS_IRQ_1			(GIC_SPI_START + 38)
--#define MSS_TO_APPS_IRQ_2			(GIC_SPI_START + 39)
--#define MSS_TO_APPS_IRQ_3			(GIC_SPI_START + 40)
--#define MSS_TO_APPS_IRQ_4			(GIC_SPI_START + 41)
--#define MSS_TO_APPS_IRQ_5			(GIC_SPI_START + 42)
--#define MSS_TO_APPS_IRQ_6			(GIC_SPI_START + 43)
--#define MSS_TO_APPS_IRQ_7			(GIC_SPI_START + 44)
--#define MSS_TO_APPS_IRQ_8			(GIC_SPI_START + 45)
--#define MSS_TO_APPS_IRQ_9			(GIC_SPI_START + 46)
--#define VPE_IRQ					(GIC_SPI_START + 47)
--#define VFE_IRQ					(GIC_SPI_START + 48)
--#define VCODEC_IRQ				(GIC_SPI_START + 49)
--#define TV_ENC_IRQ				(GIC_SPI_START + 50)
--#define SMMU_VPE_CB_SC_SECURE_IRQ		(GIC_SPI_START + 51)
--#define SMMU_VPE_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 52)
--#define SMMU_VFE_CB_SC_SECURE_IRQ		(GIC_SPI_START + 53)
--#define SMMU_VFE_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 54)
--#define SMMU_VCODEC_B_CB_SC_SECURE_IRQ		(GIC_SPI_START + 55)
--#define SMMU_VCODEC_B_CB_SC_NON_SECURE_IRQ	(GIC_SPI_START + 56)
--#define SMMU_VCODEC_A_CB_SC_SECURE_IRQ		(GIC_SPI_START + 57)
--#define SMMU_VCODEC_A_CB_SC_NON_SECURE_IRQ	(GIC_SPI_START + 58)
--#define SMMU_ROT_CB_SC_SECURE_IRQ		(GIC_SPI_START + 59)
--#define SMMU_ROT_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 60)
--#define SMMU_MDP1_CB_SC_SECURE_IRQ		(GIC_SPI_START + 61)
--#define SMMU_MDP1_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 62)
--#define SMMU_MDP0_CB_SC_SECURE_IRQ		(GIC_SPI_START + 63)
--#define SMMU_MDP0_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 64)
--#define SMMU_JPEGD_CB_SC_SECURE_IRQ		(GIC_SPI_START + 65)
--#define SMMU_JPEGD_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 66)
--#define SMMU_IJPEG_CB_SC_SECURE_IRQ		(GIC_SPI_START + 67)
--#define SMMU_IJPEG_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 68)
--#define SMMU_GFX3D_CB_SC_SECURE_IRQ		(GIC_SPI_START + 69)
--#define SMMU_GFX3D_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 70)
--#define SMMU_GFX2D0_CB_SC_SECURE_IRQ		(GIC_SPI_START + 71)
--#define SMMU_GFX2D0_CB_SC_NON_SECURE_IRQ	(GIC_SPI_START + 72)
--#define ROT_IRQ					(GIC_SPI_START + 73)
--#define MMSS_FABRIC_IRQ				(GIC_SPI_START + 74)
--#define MDP_IRQ					(GIC_SPI_START + 75)
--#define JPEGD_IRQ				(GIC_SPI_START + 76)
--#define JPEG_IRQ				(GIC_SPI_START + 77)
--#define MMSS_IMEM_IRQ				(GIC_SPI_START + 78)
--#define HDMI_IRQ				(GIC_SPI_START + 79)
--#define GFX3D_IRQ				(GIC_SPI_START + 80)
--#define GFX2D0_IRQ				(GIC_SPI_START + 81)
--#define DSI1_IRQ				(GIC_SPI_START + 82)
--#define CSI_1_IRQ				(GIC_SPI_START + 83)
--#define CSI_0_IRQ				(GIC_SPI_START + 84)
--#define LPASS_SCSS_AUDIO_IF_OUT0_IRQ		(GIC_SPI_START + 85)
--#define LPASS_SCSS_MIDI_IRQ			(GIC_SPI_START + 86)
--#define LPASS_Q6SS_WDOG_EXPIRED			(GIC_SPI_START + 87)
--#define LPASS_SCSS_GP_LOW_IRQ			(GIC_SPI_START + 88)
--#define LPASS_SCSS_GP_MEDIUM_IRQ		(GIC_SPI_START + 89)
--#define LPASS_SCSS_GP_HIGH_IRQ			(GIC_SPI_START + 90)
--#define TOP_IMEM_IRQ				(GIC_SPI_START + 91)
--#define FABRIC_SYS_IRQ				(GIC_SPI_START + 92)
--#define FABRIC_APPS_IRQ				(GIC_SPI_START + 93)
--#define USB1_HS_BAM_IRQ				(GIC_SPI_START + 94)
--#define SDC4_BAM_IRQ				(GIC_SPI_START + 95)
--#define SDC3_BAM_IRQ				(GIC_SPI_START + 96)
--#define SDC2_BAM_IRQ				(GIC_SPI_START + 97)
--#define SDC1_BAM_IRQ				(GIC_SPI_START + 98)
--#define FABRIC_SPS_IRQ				(GIC_SPI_START + 99)
--#define USB1_HS_IRQ				(GIC_SPI_START + 100)
--#define SDC4_IRQ_0				(GIC_SPI_START + 101)
--#define SDC3_IRQ_0				(GIC_SPI_START + 102)
--#define SDC2_IRQ_0				(GIC_SPI_START + 103)
--#define SDC1_IRQ_0				(GIC_SPI_START + 104)
--#define SPS_BAM_DMA_IRQ				(GIC_SPI_START + 105)
--#define SPS_SEC_VIOL_IRQ			(GIC_SPI_START + 106)
--#define SPS_MTI_0				(GIC_SPI_START + 107)
--#define SPS_MTI_1				(GIC_SPI_START + 108)
--#define SPS_MTI_2				(GIC_SPI_START + 109)
--#define SPS_MTI_3				(GIC_SPI_START + 110)
--#define SPS_MTI_4				(GIC_SPI_START + 111)
--#define SPS_MTI_5				(GIC_SPI_START + 112)
--#define SPS_MTI_6				(GIC_SPI_START + 113)
--#define SPS_MTI_7				(GIC_SPI_START + 114)
--#define SPS_MTI_8				(GIC_SPI_START + 115)
--#define SPS_MTI_9				(GIC_SPI_START + 116)
--#define SPS_MTI_10				(GIC_SPI_START + 117)
--#define SPS_MTI_11				(GIC_SPI_START + 118)
--#define SPS_MTI_12				(GIC_SPI_START + 119)
--#define SPS_MTI_13				(GIC_SPI_START + 120)
--#define SPS_MTI_14				(GIC_SPI_START + 121)
--#define SPS_MTI_15				(GIC_SPI_START + 122)
--#define SPS_MTI_16				(GIC_SPI_START + 123)
--#define SPS_MTI_17				(GIC_SPI_START + 124)
--#define SPS_MTI_18				(GIC_SPI_START + 125)
--#define SPS_MTI_19				(GIC_SPI_START + 126)
--#define SPS_MTI_20				(GIC_SPI_START + 127)
--#define SPS_MTI_21				(GIC_SPI_START + 128)
--#define SPS_MTI_22				(GIC_SPI_START + 129)
--#define SPS_MTI_23				(GIC_SPI_START + 130)
--#define SPS_MTI_24				(GIC_SPI_START + 131)
--#define SPS_MTI_25				(GIC_SPI_START + 132)
--#define SPS_MTI_26				(GIC_SPI_START + 133)
--#define SPS_MTI_27				(GIC_SPI_START + 134)
--#define SPS_MTI_28				(GIC_SPI_START + 135)
--#define SPS_MTI_29				(GIC_SPI_START + 136)
--#define SPS_MTI_30				(GIC_SPI_START + 137)
--#define SPS_MTI_31				(GIC_SPI_START + 138)
--#define CSIPHY_4LN_IRQ				(GIC_SPI_START + 139)
--#define CSIPHY_2LN_IRQ				(GIC_SPI_START + 140)
--#define USB2_IRQ				(GIC_SPI_START + 141)
--#define USB1_IRQ				(GIC_SPI_START + 142)
--#define TSSC_SSBI_IRQ				(GIC_SPI_START + 143)
--#define TSSC_SAMPLE_IRQ				(GIC_SPI_START + 144)
--#define TSSC_PENUP_IRQ				(GIC_SPI_START + 145)
--#define GSBI1_UARTDM_IRQ			(GIC_SPI_START + 146)
--#define GSBI1_QUP_IRQ				(GIC_SPI_START + 147)
--#define GSBI2_UARTDM_IRQ			(GIC_SPI_START + 148)
--#define GSBI2_QUP_IRQ			        (GIC_SPI_START + 149)
--#define GSBI3_UARTDM_IRQ			(GIC_SPI_START + 150)
--#define GSBI3_QUP_IRQ				(GIC_SPI_START + 151)
--#define GSBI4_UARTDM_IRQ			(GIC_SPI_START + 152)
--#define GSBI4_QUP_IRQ				(GIC_SPI_START + 153)
--#define GSBI5_UARTDM_IRQ			(GIC_SPI_START + 154)
--#define GSBI5_QUP_IRQ				(GIC_SPI_START + 155)
--#define GSBI6_UARTDM_IRQ			(GIC_SPI_START + 156)
--#define GSBI6_QUP_IRQ				(GIC_SPI_START + 157)
--#define GSBI7_UARTDM_IRQ			(GIC_SPI_START + 158)
--#define GSBI7_QUP_IRQ				(GIC_SPI_START + 159)
--#define GSBI8_UARTDM_IRQ			(GIC_SPI_START + 160)
--#define GSBI8_QUP_IRQ				(GIC_SPI_START + 161)
--#define TSIF_TSPP_IRQ				(GIC_SPI_START + 162)
--#define TSIF_BAM_IRQ				(GIC_SPI_START + 163)
--#define TSIF2_IRQ				(GIC_SPI_START + 164)
--#define TSIF1_IRQ				(GIC_SPI_START + 165)
--#define DSI2_IRQ				(GIC_SPI_START + 166)
--#define ISPIF_IRQ				(GIC_SPI_START + 167)
--#define MSMC_SC_SEC_TMR_IRQ			(GIC_SPI_START + 168)
--#define MSMC_SC_SEC_WDOG_BARK_IRQ		(GIC_SPI_START + 169)
--#define INT_ADM0_SCSS_0_IRQ			(GIC_SPI_START + 170)
--#define INT_ADM0_SCSS_1_IRQ			(GIC_SPI_START + 171)
--#define INT_ADM0_SCSS_2_IRQ			(GIC_SPI_START + 172)
--#define INT_ADM0_SCSS_3_IRQ			(GIC_SPI_START + 173)
--#define CC_SCSS_WDT1CPU1BITEEXPIRED		(GIC_SPI_START + 174)
--#define CC_SCSS_WDT1CPU0BITEEXPIRED		(GIC_SPI_START + 175)
--#define CC_SCSS_WDT0CPU1BITEEXPIRED		(GIC_SPI_START + 176)
--#define CC_SCSS_WDT0CPU0BITEEXPIRED		(GIC_SPI_START + 177)
--#define TSENS_UPPER_LOWER_INT			(GIC_SPI_START + 178)
--#define SSBI2_2_SC_CPU1_SECURE_INT		(GIC_SPI_START + 179)
--#define SSBI2_2_SC_CPU1_NON_SECURE_INT		(GIC_SPI_START + 180)
--#define SSBI2_1_SC_CPU1_SECURE_INT		(GIC_SPI_START + 181)
--#define SSBI2_1_SC_CPU1_NON_SECURE_INT		(GIC_SPI_START + 182)
--#define XPU_SUMMARY_IRQ				(GIC_SPI_START + 183)
--#define BUS_EXCEPTION_SUMMARY_IRQ		(GIC_SPI_START + 184)
--#define HSDDRX_EBI1CH0_IRQ			(GIC_SPI_START + 185)
--#define HSDDRX_EBI1CH1_IRQ			(GIC_SPI_START + 186)
--#define SDC5_BAM_IRQ				(GIC_SPI_START + 187)
--#define SDC5_IRQ_0				(GIC_SPI_START + 188)
--#define GSBI9_UARTDM_IRQ			(GIC_SPI_START + 189)
--#define GSBI9_QUP_IRQ				(GIC_SPI_START + 190)
--#define GSBI10_UARTDM_IRQ			(GIC_SPI_START + 191)
--#define GSBI10_QUP_IRQ				(GIC_SPI_START + 192)
--#define GSBI11_UARTDM_IRQ			(GIC_SPI_START + 193)
--#define GSBI11_QUP_IRQ				(GIC_SPI_START + 194)
--#define GSBI12_UARTDM_IRQ			(GIC_SPI_START + 195)
--#define GSBI12_QUP_IRQ				(GIC_SPI_START + 196)
--#define RIVA_APSS_LTECOEX_IRQ			(GIC_SPI_START + 197)
--#define RIVA_APSS_SPARE_IRQ			(GIC_SPI_START + 198)
--#define RIVA_APSS_WDOG_BITE_RESET_RDY_IRQ	(GIC_SPI_START + 199)
--#define RIVA_ASS_RESET_DONE_IRQ			(GIC_SPI_START + 200)
--#define RIVA_APSS_ASIC_IRQ			(GIC_SPI_START + 201)
--#define RIVA_APPS_WLAN_RX_DATA_AVAIL_IRQ	(GIC_SPI_START + 202)
--#define RIVA_APPS_WLAN_DATA_XFER_DONE_IRQ	(GIC_SPI_START + 203)
--#define RIVA_APPS_WLAM_SMSM_IRQ			(GIC_SPI_START + 204)
--#define RIVA_APPS_LOG_CTRL_IRQ			(GIC_SPI_START + 205)
--#define RIVA_APPS_FM_CTRL_IRQ			(GIC_SPI_START + 206)
--#define RIVA_APPS_HCI_IRQ			(GIC_SPI_START + 207)
--#define RIVA_APPS_WLAN_CTRL_IRQ			(GIC_SPI_START + 208)
--#define A2_BAM_IRQ				(GIC_SPI_START + 209)
--#define SMMU_GFX2D1_CB_SC_SECURE_IRQ		(GIC_SPI_START + 210)
--#define SMMU_GFX2D1_CB_SC_NON_SECURE_IRQ	(GIC_SPI_START + 211)
--#define GFX2D1_IRQ				(GIC_SPI_START + 212)
--#define PPSS_WDOG_TIMER_IRQ			(GIC_SPI_START + 213)
--#define SPS_SLIMBUS_CORE_EE0_IRQ		(GIC_SPI_START + 214)
--#define SPS_SLIMBUS_BAM_EE0_IRQ			(GIC_SPI_START + 215)
--#define QDSS_ETB_IRQ				(GIC_SPI_START + 216)
--#define QDSS_CTI2KPSS_CPU1_IRQ			(GIC_SPI_START + 217)
--#define QDSS_CTI2KPSS_CPU0_IRQ			(GIC_SPI_START + 218)
--#define TLMM_APCC_DIR_CONN_IRQ_16		(GIC_SPI_START + 219)
--#define TLMM_APCC_DIR_CONN_IRQ_17		(GIC_SPI_START + 220)
--#define TLMM_APCC_DIR_CONN_IRQ_18		(GIC_SPI_START + 221)
--#define TLMM_APCC_DIR_CONN_IRQ_19		(GIC_SPI_START + 222)
--#define TLMM_APCC_DIR_CONN_IRQ_20		(GIC_SPI_START + 223)
--#define TLMM_APCC_DIR_CONN_IRQ_21		(GIC_SPI_START + 224)
--#define PM8921_SEC_IRQ_104			(GIC_SPI_START + 225)
--#define PM8018_SEC_IRQ_107			(GIC_SPI_START + 226)
--
--/* For now, use the maximum number of interrupts until a pending GIC issue
-- * is sorted out */
--#define NR_MSM_IRQS 1020
--#define NR_BOARD_IRQS 0
--#define NR_GPIO_IRQS 0
--
--#endif
--
-diff --git a/arch/arm/mach-msm/include/mach/irqs-8x60.h b/arch/arm/mach-msm/include/mach/irqs-8x60.h
-deleted file mode 100644
-index f65841c..0000000
---- a/arch/arm/mach-msm/include/mach/irqs-8x60.h
-+++ /dev/null
-@@ -1,258 +0,0 @@
--/* Copyright (c) 2010 Code Aurora Forum. All rights reserved.
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- */
--
--#ifndef __ASM_ARCH_MSM_IRQS_8X60_H
--#define __ASM_ARCH_MSM_IRQS_8X60_H
--
--/* MSM ACPU Interrupt Numbers */
--
--/* 0-15:  STI/SGI (software triggered/generated interrupts)
-- * 16-31: PPI (private peripheral interrupts)
-- * 32+:   SPI (shared peripheral interrupts)
-- */
--
--#define GIC_PPI_START 16
--#define GIC_SPI_START 32
--
--#define INT_DEBUG_TIMER_EXP			(GIC_PPI_START + 0)
--#define INT_GP_TIMER_EXP			(GIC_PPI_START + 1)
--#define INT_GP_TIMER2_EXP			(GIC_PPI_START + 2)
--#define WDT0_ACCSCSSNBARK_INT			(GIC_PPI_START + 3)
--#define WDT1_ACCSCSSNBARK_INT			(GIC_PPI_START + 4)
--#define AVS_SVICINT				(GIC_PPI_START + 5)
--#define AVS_SVICINTSWDONE			(GIC_PPI_START + 6)
--#define CPU_DBGCPUXCOMMRXFULL			(GIC_PPI_START + 7)
--#define CPU_DBGCPUXCOMMTXEMPTY			(GIC_PPI_START + 8)
--#define CPU_SICCPUXPERFMONIRPTREQ		(GIC_PPI_START + 9)
--#define SC_AVSCPUXDOWN				(GIC_PPI_START + 10)
--#define SC_AVSCPUXUP				(GIC_PPI_START + 11)
--#define SC_SICCPUXACGIRPTREQ			(GIC_PPI_START + 12)
--/* PPI 13 to 15 are unused */
--
--
--#define SC_SICMPUIRPTREQ			(GIC_SPI_START + 0)
--#define SC_SICL2IRPTREQ				(GIC_SPI_START + 1)
--#define SC_SICL2ACGIRPTREQ			(GIC_SPI_START + 2)
--#define NC					(GIC_SPI_START + 3)
--#define TLMM_SCSS_DIR_CONN_IRQ_0		(GIC_SPI_START + 4)
--#define TLMM_SCSS_DIR_CONN_IRQ_1		(GIC_SPI_START + 5)
--#define TLMM_SCSS_DIR_CONN_IRQ_2		(GIC_SPI_START + 6)
--#define TLMM_SCSS_DIR_CONN_IRQ_3		(GIC_SPI_START + 7)
--#define TLMM_SCSS_DIR_CONN_IRQ_4		(GIC_SPI_START + 8)
--#define TLMM_SCSS_DIR_CONN_IRQ_5		(GIC_SPI_START + 9)
--#define TLMM_SCSS_DIR_CONN_IRQ_6		(GIC_SPI_START + 10)
--#define TLMM_SCSS_DIR_CONN_IRQ_7		(GIC_SPI_START + 11)
--#define TLMM_SCSS_DIR_CONN_IRQ_8		(GIC_SPI_START + 12)
--#define TLMM_SCSS_DIR_CONN_IRQ_9		(GIC_SPI_START + 13)
--#define PM8058_SEC_IRQ_N			(GIC_SPI_START + 14)
--#define PM8901_SEC_IRQ_N			(GIC_SPI_START + 15)
--#define TLMM_SCSS_SUMMARY_IRQ			(GIC_SPI_START + 16)
--#define SPDM_RT_1_IRQ				(GIC_SPI_START + 17)
--#define SPDM_DIAG_IRQ				(GIC_SPI_START + 18)
--#define RPM_SCSS_CPU0_GP_HIGH_IRQ		(GIC_SPI_START + 19)
--#define RPM_SCSS_CPU0_GP_MEDIUM_IRQ		(GIC_SPI_START + 20)
--#define RPM_SCSS_CPU0_GP_LOW_IRQ		(GIC_SPI_START + 21)
--#define RPM_SCSS_CPU0_WAKE_UP_IRQ		(GIC_SPI_START + 22)
--#define RPM_SCSS_CPU1_GP_HIGH_IRQ		(GIC_SPI_START + 23)
--#define RPM_SCSS_CPU1_GP_MEDIUM_IRQ		(GIC_SPI_START + 24)
--#define RPM_SCSS_CPU1_GP_LOW_IRQ		(GIC_SPI_START + 25)
--#define RPM_SCSS_CPU1_WAKE_UP_IRQ		(GIC_SPI_START + 26)
--#define SSBI2_2_SC_CPU0_SECURE_INT		(GIC_SPI_START + 27)
--#define SSBI2_2_SC_CPU0_NON_SECURE_INT		(GIC_SPI_START + 28)
--#define SSBI2_1_SC_CPU0_SECURE_INT		(GIC_SPI_START + 29)
--#define SSBI2_1_SC_CPU0_NON_SECURE_INT		(GIC_SPI_START + 30)
--#define MSMC_SC_SEC_CE_IRQ			(GIC_SPI_START + 31)
--#define MSMC_SC_PRI_CE_IRQ			(GIC_SPI_START + 32)
--#define MARM_FIQ				(GIC_SPI_START + 33)
--#define MARM_IRQ				(GIC_SPI_START + 34)
--#define MARM_L2CC_IRQ				(GIC_SPI_START + 35)
--#define MARM_WDOG_EXPIRED			(GIC_SPI_START + 36)
--#define MARM_SCSS_GP_IRQ_0			(GIC_SPI_START + 37)
--#define MARM_SCSS_GP_IRQ_1			(GIC_SPI_START + 38)
--#define MARM_SCSS_GP_IRQ_2			(GIC_SPI_START + 39)
--#define MARM_SCSS_GP_IRQ_3			(GIC_SPI_START + 40)
--#define MARM_SCSS_GP_IRQ_4			(GIC_SPI_START + 41)
--#define MARM_SCSS_GP_IRQ_5			(GIC_SPI_START + 42)
--#define MARM_SCSS_GP_IRQ_6			(GIC_SPI_START + 43)
--#define MARM_SCSS_GP_IRQ_7			(GIC_SPI_START + 44)
--#define MARM_SCSS_GP_IRQ_8			(GIC_SPI_START + 45)
--#define MARM_SCSS_GP_IRQ_9			(GIC_SPI_START + 46)
--#define VPE_IRQ					(GIC_SPI_START + 47)
--#define VFE_IRQ					(GIC_SPI_START + 48)
--#define VCODEC_IRQ				(GIC_SPI_START + 49)
--#define TV_ENC_IRQ				(GIC_SPI_START + 50)
--#define SMMU_VPE_CB_SC_SECURE_IRQ		(GIC_SPI_START + 51)
--#define SMMU_VPE_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 52)
--#define SMMU_VFE_CB_SC_SECURE_IRQ		(GIC_SPI_START + 53)
--#define SMMU_VFE_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 54)
--#define SMMU_VCODEC_B_CB_SC_SECURE_IRQ		(GIC_SPI_START + 55)
--#define SMMU_VCODEC_B_CB_SC_NON_SECURE_IRQ	(GIC_SPI_START + 56)
--#define SMMU_VCODEC_A_CB_SC_SECURE_IRQ		(GIC_SPI_START + 57)
--#define SMMU_VCODEC_A_CB_SC_NON_SECURE_IRQ	(GIC_SPI_START + 58)
--#define SMMU_ROT_CB_SC_SECURE_IRQ		(GIC_SPI_START + 59)
--#define SMMU_ROT_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 60)
--#define SMMU_MDP1_CB_SC_SECURE_IRQ		(GIC_SPI_START + 61)
--#define SMMU_MDP1_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 62)
--#define SMMU_MDP0_CB_SC_SECURE_IRQ		(GIC_SPI_START + 63)
--#define SMMU_MDP0_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 64)
--#define SMMU_JPEGD_CB_SC_SECURE_IRQ		(GIC_SPI_START + 65)
--#define SMMU_JPEGD_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 66)
--#define SMMU_IJPEG_CB_SC_SECURE_IRQ		(GIC_SPI_START + 67)
--#define SMMU_IJPEG_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 68)
--#define SMMU_GFX3D_CB_SC_SECURE_IRQ		(GIC_SPI_START + 69)
--#define SMMU_GFX3D_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 70)
--#define SMMU_GFX2D0_CB_SC_SECURE_IRQ		(GIC_SPI_START + 71)
--#define SMMU_GFX2D0_CB_SC_NON_SECURE_IRQ	(GIC_SPI_START + 72)
--#define ROT_IRQ					(GIC_SPI_START + 73)
--#define MMSS_FABRIC_IRQ				(GIC_SPI_START + 74)
--#define MDP_IRQ					(GIC_SPI_START + 75)
--#define JPEGD_IRQ				(GIC_SPI_START + 76)
--#define JPEG_IRQ				(GIC_SPI_START + 77)
--#define MMSS_IMEM_IRQ				(GIC_SPI_START + 78)
--#define HDMI_IRQ				(GIC_SPI_START + 79)
--#define GFX3D_IRQ				(GIC_SPI_START + 80)
--#define GFX2D0_IRQ				(GIC_SPI_START + 81)
--#define DSI_IRQ					(GIC_SPI_START + 82)
--#define CSI_1_IRQ				(GIC_SPI_START + 83)
--#define CSI_0_IRQ				(GIC_SPI_START + 84)
--#define LPASS_SCSS_AUDIO_IF_OUT0_IRQ		(GIC_SPI_START + 85)
--#define LPASS_SCSS_MIDI_IRQ			(GIC_SPI_START + 86)
--#define LPASS_Q6SS_WDOG_EXPIRED			(GIC_SPI_START + 87)
--#define LPASS_SCSS_GP_LOW_IRQ			(GIC_SPI_START + 88)
--#define LPASS_SCSS_GP_MEDIUM_IRQ		(GIC_SPI_START + 89)
--#define LPASS_SCSS_GP_HIGH_IRQ			(GIC_SPI_START + 90)
--#define TOP_IMEM_IRQ				(GIC_SPI_START + 91)
--#define FABRIC_SYS_IRQ				(GIC_SPI_START + 92)
--#define FABRIC_APPS_IRQ				(GIC_SPI_START + 93)
--#define USB1_HS_BAM_IRQ				(GIC_SPI_START + 94)
--#define SDC4_BAM_IRQ				(GIC_SPI_START + 95)
--#define SDC3_BAM_IRQ				(GIC_SPI_START + 96)
--#define SDC2_BAM_IRQ				(GIC_SPI_START + 97)
--#define SDC1_BAM_IRQ				(GIC_SPI_START + 98)
--#define FABRIC_SPS_IRQ				(GIC_SPI_START + 99)
--#define USB1_HS_IRQ				(GIC_SPI_START + 100)
--#define SDC4_IRQ_0				(GIC_SPI_START + 101)
--#define SDC3_IRQ_0				(GIC_SPI_START + 102)
--#define SDC2_IRQ_0				(GIC_SPI_START + 103)
--#define SDC1_IRQ_0				(GIC_SPI_START + 104)
--#define SPS_BAM_DMA_IRQ				(GIC_SPI_START + 105)
--#define SPS_SEC_VIOL_IRQ			(GIC_SPI_START + 106)
--#define SPS_MTI_0				(GIC_SPI_START + 107)
--#define SPS_MTI_1				(GIC_SPI_START + 108)
--#define SPS_MTI_2				(GIC_SPI_START + 109)
--#define SPS_MTI_3				(GIC_SPI_START + 110)
--#define SPS_MTI_4				(GIC_SPI_START + 111)
--#define SPS_MTI_5				(GIC_SPI_START + 112)
--#define SPS_MTI_6				(GIC_SPI_START + 113)
--#define SPS_MTI_7				(GIC_SPI_START + 114)
--#define SPS_MTI_8				(GIC_SPI_START + 115)
--#define SPS_MTI_9				(GIC_SPI_START + 116)
--#define SPS_MTI_10				(GIC_SPI_START + 117)
--#define SPS_MTI_11				(GIC_SPI_START + 118)
--#define SPS_MTI_12				(GIC_SPI_START + 119)
--#define SPS_MTI_13				(GIC_SPI_START + 120)
--#define SPS_MTI_14				(GIC_SPI_START + 121)
--#define SPS_MTI_15				(GIC_SPI_START + 122)
--#define SPS_MTI_16				(GIC_SPI_START + 123)
--#define SPS_MTI_17				(GIC_SPI_START + 124)
--#define SPS_MTI_18				(GIC_SPI_START + 125)
--#define SPS_MTI_19				(GIC_SPI_START + 126)
--#define SPS_MTI_20				(GIC_SPI_START + 127)
--#define SPS_MTI_21				(GIC_SPI_START + 128)
--#define SPS_MTI_22				(GIC_SPI_START + 129)
--#define SPS_MTI_23				(GIC_SPI_START + 130)
--#define SPS_MTI_24				(GIC_SPI_START + 131)
--#define SPS_MTI_25				(GIC_SPI_START + 132)
--#define SPS_MTI_26				(GIC_SPI_START + 133)
--#define SPS_MTI_27				(GIC_SPI_START + 134)
--#define SPS_MTI_28				(GIC_SPI_START + 135)
--#define SPS_MTI_29				(GIC_SPI_START + 136)
--#define SPS_MTI_30				(GIC_SPI_START + 137)
--#define SPS_MTI_31				(GIC_SPI_START + 138)
--#define UXMC_EBI2_WR_ER_DONE_IRQ		(GIC_SPI_START + 139)
--#define UXMC_EBI2_OP_DONE_IRQ			(GIC_SPI_START + 140)
--#define USB2_IRQ				(GIC_SPI_START + 141)
--#define USB1_IRQ				(GIC_SPI_START + 142)
--#define TSSC_SSBI_IRQ				(GIC_SPI_START + 143)
--#define TSSC_SAMPLE_IRQ				(GIC_SPI_START + 144)
--#define TSSC_PENUP_IRQ				(GIC_SPI_START + 145)
--#define INT_UART1DM_IRQ				(GIC_SPI_START + 146)
--#define GSBI1_QUP_IRQ				(GIC_SPI_START + 147)
--#define INT_UART2DM_IRQ				(GIC_SPI_START + 148)
--#define GSBI2_QUP_IRQ				(GIC_SPI_START + 149)
--#define INT_UART3DM_IRQ				(GIC_SPI_START + 150)
--#define GSBI3_QUP_IRQ				(GIC_SPI_START + 151)
--#define INT_UART4DM_IRQ				(GIC_SPI_START + 152)
--#define GSBI4_QUP_IRQ				(GIC_SPI_START + 153)
--#define INT_UART5DM_IRQ				(GIC_SPI_START + 154)
--#define GSBI5_QUP_IRQ				(GIC_SPI_START + 155)
--#define INT_UART6DM_IRQ				(GIC_SPI_START + 156)
--#define GSBI6_QUP_IRQ				(GIC_SPI_START + 157)
--#define INT_UART7DM_IRQ				(GIC_SPI_START + 158)
--#define GSBI7_QUP_IRQ				(GIC_SPI_START + 159)
--#define INT_UART8DM_IRQ				(GIC_SPI_START + 160)
--#define GSBI8_QUP_IRQ				(GIC_SPI_START + 161)
--#define TSIF_TSPP_IRQ				(GIC_SPI_START + 162)
--#define TSIF_BAM_IRQ				(GIC_SPI_START + 163)
--#define TSIF2_IRQ				(GIC_SPI_START + 164)
--#define TSIF1_IRQ				(GIC_SPI_START + 165)
--#define INT_ADM1_MASTER				(GIC_SPI_START + 166)
--#define INT_ADM1_AARM				(GIC_SPI_START + 167)
--#define INT_ADM1_SD2				(GIC_SPI_START + 168)
--#define INT_ADM1_SD3				(GIC_SPI_START + 169)
--#define INT_ADM0_MASTER				(GIC_SPI_START + 170)
--#define INT_ADM0_AARM				(GIC_SPI_START + 171)
--#define INT_ADM0_SD2				(GIC_SPI_START + 172)
--#define INT_ADM0_SD3				(GIC_SPI_START + 173)
--#define CC_SCSS_WDT1CPU1BITEEXPIRED		(GIC_SPI_START + 174)
--#define CC_SCSS_WDT1CPU0BITEEXPIRED		(GIC_SPI_START + 175)
--#define CC_SCSS_WDT0CPU1BITEEXPIRED		(GIC_SPI_START + 176)
--#define CC_SCSS_WDT0CPU0BITEEXPIRED		(GIC_SPI_START + 177)
--#define TSENS_UPPER_LOWER_INT			(GIC_SPI_START + 178)
--#define SSBI2_2_SC_CPU1_SECURE_INT		(GIC_SPI_START + 179)
--#define SSBI2_2_SC_CPU1_NON_SECURE_INT		(GIC_SPI_START + 180)
--#define SSBI2_1_SC_CPU1_SECURE_INT		(GIC_SPI_START + 181)
--#define SSBI2_1_SC_CPU1_NON_SECURE_INT		(GIC_SPI_START + 182)
--#define XPU_SUMMARY_IRQ				(GIC_SPI_START + 183)
--#define BUS_EXCEPTION_SUMMARY_IRQ		(GIC_SPI_START + 184)
--#define HSDDRX_SMICH0_IRQ			(GIC_SPI_START + 185)
--#define HSDDRX_EBI1_IRQ				(GIC_SPI_START + 186)
--#define SDC5_BAM_IRQ				(GIC_SPI_START + 187)
--#define SDC5_IRQ_0				(GIC_SPI_START + 188)
--#define INT_UART9DM_IRQ				(GIC_SPI_START + 189)
--#define GSBI9_QUP_IRQ				(GIC_SPI_START + 190)
--#define INT_UART10DM_IRQ			(GIC_SPI_START + 191)
--#define GSBI10_QUP_IRQ				(GIC_SPI_START + 192)
--#define INT_UART11DM_IRQ			(GIC_SPI_START + 193)
--#define GSBI11_QUP_IRQ				(GIC_SPI_START + 194)
--#define INT_UART12DM_IRQ			(GIC_SPI_START + 195)
--#define GSBI12_QUP_IRQ				(GIC_SPI_START + 196)
--
--/*SPI 197 to 209 arent used in 8x60*/
--#define SMMU_GFX2D1_CB_SC_SECURE_IRQ            (GIC_SPI_START + 210)
--#define SMMU_GFX2D1_CB_SC_NON_SECURE_IRQ        (GIC_SPI_START + 211)
--
--/*SPI 212 to 216 arent used in 8x60*/
--#define SMPSS_SPARE_1				(GIC_SPI_START + 217)
--#define SMPSS_SPARE_2				(GIC_SPI_START + 218)
--#define SMPSS_SPARE_3				(GIC_SPI_START + 219)
--#define SMPSS_SPARE_4				(GIC_SPI_START + 220)
--#define SMPSS_SPARE_5				(GIC_SPI_START + 221)
--#define SMPSS_SPARE_6				(GIC_SPI_START + 222)
--#define SMPSS_SPARE_7				(GIC_SPI_START + 223)
--
--#define NR_GPIO_IRQS 173
--#define NR_MSM_IRQS 256
--#define NR_BOARD_IRQS 0
--
--#endif
-diff --git a/arch/arm/mach-msm/include/mach/irqs.h b/arch/arm/mach-msm/include/mach/irqs.h
-index 3cd78b1..164d355 100644
---- a/arch/arm/mach-msm/include/mach/irqs.h
-+++ b/arch/arm/mach-msm/include/mach/irqs.h
-@@ -24,11 +24,6 @@
- #elif defined(CONFIG_ARCH_QSD8X50)
- #include "irqs-8x50.h"
- #include "sirc.h"
--#elif defined(CONFIG_ARCH_MSM8X60)
--#include "irqs-8x60.h"
--#elif defined(CONFIG_ARCH_MSM8960)
--/* TODO: Make these not generic. */
--#include "irqs-8960.h"
- #elif defined(CONFIG_ARCH_MSM_ARM11)
- #include "irqs-7x00.h"
- #else
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iEYEABECAAYFAlIqPD0ACgkQi/DJPQPkQ1KJUgCfYz1SQDNtIdbUmXH47fK135Be
+9wEAnAkeKwmT3M9+2YeBcfXNJoX5UFs0
+=5jxi
+-----END PGP SIGNATURE-----
+
+--nextPart1696311.H7yyvhgxLS--
