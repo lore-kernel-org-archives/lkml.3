@@ -1,87 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751088Ab3IFHFK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 03:05:10 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:44778 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793Ab3IFHFH (ORCPT
+	id S1751139Ab3IFHFV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 03:05:21 -0400
+Received: from mail.peak-system.com ([213.157.13.214]:52093 "EHLO
+	mail.peak-system.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751091Ab3IFHFR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 03:05:07 -0400
-Message-ID: <52297E9A.3070206@ozlabs.ru>
-Date: Fri, 06 Sep 2013 17:04:58 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Fri, 6 Sep 2013 03:05:17 -0400
+From: Stephane Grosjean <s.grosjean@peak-system.com>
+Date: Fri, 6 Sep 2013 08:52:59 +0200
+X-Mailer: Axigen WebMail
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Wolfgang Grandegger <wg@grandegger.com>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@linuxtesting.org
+Message-ID: <1378450379823688500@peak-system.com>
+Subject: [PATCH] can: pcan_usb_core: fix memory leak on failure paths in
+ peak_usb_start()
+Importance: Normal
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Paul Mackerras <paulus@samba.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Alexander Graf <agraf@suse.de>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v9 12/13] KVM: PPC: Add support for IOMMU in-kernel handling
-References: <1377679070-3515-1-git-send-email-aik@ozlabs.ru> <1377679841-3822-1-git-send-email-aik@ozlabs.ru> <20130901120609.GJ22899@redhat.com> <52240295.7050608@ozlabs.ru> <20130903105315.GY22899@redhat.com> <1378353909.4321.126.camel@pasglop> <20130906065715.GG13021@redhat.com>
-In-Reply-To: <20130906065715.GG13021@redhat.com>
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Content-Disposition: inline
+X-AxigenSpam-Level: 1
+X-CTCH-RefID: str=0001.0A0C0204.52297BD5.0016,ss=1,fgs=0
+X-CTCH-VOD: Unknown
+X-CTCH-Spam: Unknown
+X-AXIGEN-KAS-Info: Not spam
+X-AXIGEN-KAS-Info: Version: 4.4.2 (May 20 2011 12:01:19)
+X-AXIGEN-KAS-Info: Envelope from: 
+X-AXIGEN-KAS-Info: Rate: 0
+X-AXIGEN-KAS-Info: Status: not_detected
+X-AXIGEN-KAS-Info: Method: none
+X-AXIGEN-KAS-Info: DBG v.5. 3296, 2164. R:128,128,128,6,128,128,1,128,0.
+ M:12,24,95,145,161,193,194,210, CF:1,2118,1. XMailer: Axigen WebMail Date:
+ +0200
+X-AXIGEN-KAS-Spam-Level: Not Spam
+X-AXIGEN-KAS-Spam-Confidence: 0%
+X-AxigenVirus-Level: 1
+X-AXIGEN-KAV-Info: clean: Scanned with Kaspersky Anti Virus 8.0.3.83
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/2013 04:57 PM, Gleb Natapov wrote:
-> On Thu, Sep 05, 2013 at 02:05:09PM +1000, Benjamin Herrenschmidt wrote:
->> On Tue, 2013-09-03 at 13:53 +0300, Gleb Natapov wrote:
->>>> Or supporting all IOMMU links (and leaving emulated stuff as is) in on
->>>> "device" is the last thing I have to do and then you'll ack the patch?
->>>>
->>> I am concerned more about API here. Internal implementation details I
->>> leave to powerpc experts :)
->>
->> So Gleb, I want to step in for a bit here.
->>
->> While I understand that the new KVM device API is all nice and shiny and that this
->> whole thing should probably have been KVM devices in the first place (had they
->> existed or had we been told back then), the point is, the API for handling
->> HW IOMMUs that Alexey is trying to add is an extension of an existing mechanism
->> used for emulated IOMMUs.
->>
->> The internal data structure is shared, and fundamentally, by forcing him to
->> use that new KVM device for the "new stuff", we create a oddball API with
->> an ioctl for one type of iommu and a KVM device for the other, which makes
->> the implementation a complete mess in the kernel (and you should care :-)
->>
-> Is it unfixable mess? Even if Alexey will do what you suggested earlier?
-> 
->   - Convert *both* existing TCE objects to the new
->       KVM_CREATE_DEVICE, and have some backward compat code for the old one.
+Tx and rx urbs are not deallocated if something goes wrong in peak_usb_start().
+The patch fixes error handling to deallocate all the resources.
 
+Found by Linux Driver Verification project (linuxtesting.org).
 
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Acked-by: Stephane Grosjean <s.grosjean@peak-system.com>
+---
+ drivers/net/can/usb/peak_usb/pcan_usb_core.c | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
-If we convert *old*, then for compatibility we will need one KVM device
-(more precisely, one fd) per an TCE object (not one for all TCE objects) as
-the guest (upstream QEMU) will mmap the table via mmap() and it won't use
-any offset when mapping this fd.
+diff --git a/drivers/net/can/usb/peak_usb/pcan_usb_core.c b/drivers/net/can/usb/peak_usb/pcan_usb_core.c
+index a0f647f..0b7a4c3 100644
+--- a/drivers/net/can/usb/peak_usb/pcan_usb_core.c
++++ b/drivers/net/can/usb/peak_usb/pcan_usb_core.c
+@@ -463,7 +463,7 @@ static int peak_usb_start(struct peak_usb_device *dev)
+     if (i < PCAN_USB_MAX_TX_URBS) {
+         if (i == 0) {
+             netdev_err(netdev, "couldn't setup any tx URB\n");
+-            return err;
++            goto err_tx;
+         }
+ 
+         netdev_warn(netdev, "tx performance may be slow\n");
+@@ -472,7 +472,7 @@ static int peak_usb_start(struct peak_usb_device *dev)
+     if (dev->adapter->dev_start) {
+         err = dev->adapter->dev_start(dev);
+         if (err)
+-            goto failed;
++            goto err_adapter;
+     }
+ 
+     dev->state |= PCAN_USB_STATE_STARTED;
+@@ -481,19 +481,26 @@ static int peak_usb_start(struct peak_usb_device *dev)
+     if (dev->adapter->dev_set_bus) {
+         err = dev->adapter->dev_set_bus(dev, 1);
+         if (err)
+-            goto failed;
++            goto err_adapter;
+     }
+ 
+     dev->can.state = CAN_STATE_ERROR_ACTIVE;
+ 
+     return 0;
+ 
+-failed:
++err_adapter:
+     if (err == -ENODEV)
+         netif_device_detach(dev->netdev);
+ 
+     netdev_warn(netdev, "couldn't submit control: %d\n", err);
+ 
++    for (i = 0; i < PCAN_USB_MAX_TX_URBS; i++) {
++        usb_free_urb(dev->tx_contexts[i].urb);
++        dev->tx_contexts[i].urb = NULL;
++    }
++err_tx:
++    usb_kill_anchored_urbs(&dev->rx_submitted);
++
+     return err;
+ }
+ 
+--
+1.8.1.2
 
-The current KVM device implementation does not even support mmap().
-
-So I would go with the KVM device patch I posted and really want to avoid
-putting all TCEs into one device.
-
-
-
-> The point is implementation usually can be changed, but for API it is
-> much harder to do so.
-> 
->> So for something completely new, I would tend to agree with you. However, I
->> still think that for this specific case, we should just plonk-in the original
->> ioctl proposed by Alexey and be done with it.
->>
-> Do you think this is the last extension to IOMMU code, or we will see
-> more and will use same justification to continue adding ioctls?
-
-
-
-
--- 
-Alexey
+--
+To unsubscribe from this list: send the line "unsubscribe linux-can" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+--
+PEAK-System Technik GmbH, Otto-Roehm-Strasse 69, D-64293 Darmstadt 
+Geschaeftsleitung: A.Gach/U.Wilhelm,St.Nr.:007/241/13586 FA Darmstadt 
+HRB-9183 Darmstadt, Ust.IdNr.:DE 202220078, WEE-Reg.-Nr.: DE39305391 
+Tel.+49 (0)6151-817320 / Fax:+49 (0)6151-817329, info@peak-system.com
