@@ -1,131 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750745Ab3IFEie (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 00:38:34 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:43522 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705Ab3IFEic (ORCPT
+	id S1750769Ab3IFEiy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 00:38:54 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:62115 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705Ab3IFEiu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 00:38:32 -0400
-Message-ID: <52295BD0.3000602@windriver.com>
-Date: Thu, 5 Sep 2013 23:36:32 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Fri, 6 Sep 2013 00:38:50 -0400
 MIME-Version: 1.0
-To: Mike Travis <travis@sgi.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
-        <x86@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/9] KGDB/KDB: add support for external NMI handler to
- call KGDB/KDB.
-References: <20130905225032.879120272@asylum.americas.sgi.com> <20130905225033.730379071@asylum.americas.sgi.com>
-In-Reply-To: <20130905225033.730379071@asylum.americas.sgi.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1378268629-2886-2-git-send-email-ch.naveen@samsung.com>
+References: <1377668719-8602-2-git-send-email-ch.naveen@samsung.com>
+	<1378268629-2886-1-git-send-email-ch.naveen@samsung.com>
+	<1378268629-2886-2-git-send-email-ch.naveen@samsung.com>
+Date: Fri, 6 Sep 2013 10:08:49 +0530
+X-Google-Sender-Auth: bEpLL8EYKDN-6d9wwLzesDIcroU
+Message-ID: <CADGdYn5MVpSrdVhioEesy=5=r6a7cz4yvkiLfavxhcDAjY02OQ@mail.gmail.com>
+Subject: Re: [PATCH 2/3] thermal: samsung: change base_common to more
+ meaningful base_second
+From: amit daniel kachhap <amit.daniel@samsung.com>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        "Valentin, Eduardo" <eduardo.valentin@ti.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Naveen Krishna <naveenkrishna.ch@gmail.com>,
+        devicetree@vger.kernel.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2013 05:50 PM, Mike Travis wrote:
-> This patch adds a kgdb_nmicallin() interface that can be used by
-> external NMI handlers to call the KGDB/KDB handler.  The primary need
-> for this is for those types of NMI interrupts where all the CPUs
-> have already received the NMI signal.  Therefore no send_IPI(NMI)
-> is required, and in fact it will cause a 2nd unhandled NMI to occur.
-> This generates the "Dazed and Confuzed" messages.
+On Wed, Sep 4, 2013 at 9:53 AM, Naveen Krishna Chatradhi
+<ch.naveen@samsung.com> wrote:
+> On Exynos5440 and Exynos5420 there are registers common
+> across the TMU channels.
 >
-> Since all the CPUs are getting the NMI at roughly the same time, it's not
-> guaranteed that the first CPU that hits the NMI handler will manage to
-> enter KGDB and set the dbg_master_lock before the slaves start entering.
-
-It should have been ok to have more than one master if this was some kind of watch dog.  The raw spin lock for the dbg_master_lock should have ensured that only a single CPU is in fact the master.  If it is the case that we cannot send a nested IPI at this point, the UV machine type should have replaced the kgdb_roundup_cpus() routine with something that will work, such as looking at the exception type on the way in and perhaps skipping the IPI send.
-
-Also if there is no possibility of restarting the machine from this state it would have been possible to simply turn off kgdb_do_roundup in the custom kgdb_roundup_cpus().
-
-The patch you created appears that it will work, but it comes at the cost of some complexity because you are also checking on the state of "kgdb_info[cpu].send_ready" in some other location in the NMI handler.  It might be better to consider not sending a nested NMI if all the CPUs are going to enter anyway in the master state.
-
-
+> To support that, we introduced a ADDRESS_MULTIPLE flag in the
+> driver and the 2nd set of register base and size are provided
+> in the "reg" property of the node.
 >
-> The new argument "send_ready" was added for KGDB to signal the NMI handler
-> to release the slave CPUs for entry into KGDB.
+> As per Amit's suggestion, this patch changes the base_common
+> to base_second and SHARED_MEMORY to ADDRESS_MULTIPLE.
 >
-> Signed-off-by: Mike Travis <travis@sgi.com>
-> Reviewed-by: Dimitri Sivanich <sivanich@sgi.com>
-> Reviewed-by: Hedi Berriche <hberrich@sgi.com>
-> ---
->  include/linux/kgdb.h      |    1 +
->  kernel/debug/debug_core.c |   41 +++++++++++++++++++++++++++++++++++++++++
->  kernel/debug/debug_core.h |    1 +
->  3 files changed, 43 insertions(+)
->
-> --- linux.orig/include/linux/kgdb.h
-> +++ linux/include/linux/kgdb.h
-> @@ -310,6 +310,7 @@ extern int
->  kgdb_handle_exception(int ex_vector, int signo, int err_code,
->                struct pt_regs *regs);
->  extern int kgdb_nmicallback(int cpu, void *regs);
-> +extern int kgdb_nmicallin(int cpu, int trapnr, void *regs, atomic_t *snd_rdy);
->  extern void gdbstub_exit(int status);
-> 
->  extern int            kgdb_single_step;
-> --- linux.orig/kernel/debug/debug_core.c
-> +++ linux/kernel/debug/debug_core.c
-> @@ -578,6 +578,10 @@ return_normal:
->      /* Signal the other CPUs to enter kgdb_wait() */
->      if ((!kgdb_single_step) && kgdb_do_roundup)
->          kgdb_roundup_cpus(flags);
-> +
-> +    /* If optional send ready pointer, signal CPUs to proceed */
-> +    if (kgdb_info[cpu].send_ready)
-> +        atomic_set(kgdb_info[cpu].send_ready, 1);
->  #endif
-> 
->      /*
-> @@ -729,6 +733,43 @@ int kgdb_nmicallback(int cpu, void *regs
->          return 0;
->      }
->  #endif
-> +    return 1;
-> +}
-> +
-> +int kgdb_nmicallin(int cpu, int trapnr, void *regs, atomic_t *send_ready)
-> +{
-> +#ifdef CONFIG_SMP
-> +    if (!kgdb_io_ready(0))
-> +        return 1;
-> +
-> +    if (kgdb_info[cpu].enter_kgdb == 0) {
-> +        struct kgdb_state kgdb_var;
-> +        struct kgdb_state *ks = &kgdb_var;
-> +        int save_kgdb_do_roundup = kgdb_do_roundup;
-> +
-> +        memset(ks, 0, sizeof(struct kgdb_state));
-> +        ks->cpu            = cpu;
-> +        ks->ex_vector        = trapnr;
-> +        ks->signo        = SIGTRAP;
-> +        ks->err_code        = 0;
-> +        ks->kgdb_usethreadid    = 0;
-> +        ks->linux_regs        = regs;
-> +
-> +        /* Do not broadcast NMI */
-> +        kgdb_do_roundup = 0;
-> +
-> +        /* Indicate there are slaves waiting */
-> +        kgdb_info[cpu].send_ready = send_ready;
-> +        kgdb_cpu_enter(ks, regs, DCPU_WANT_MASTER);
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+The changes look good. For all the 3 patches in the series,
 
-This is the one part of the patch I don't quite understand.  Why does the kgdb_nmicallin() desire to be the master core?
-
-It was not obvious the circumstance as to why this is called.  Is it some kind of watch dog where you really do want to enter the debugger or is it more to deal with nested slave interrupts were the round up would have possibly hung on this hardware.  If it is the later, I would have thought this should be a slave and not the master.
-
-Perhaps a comment in the code can clear this up?
+Acked-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Reviewed-by: Amit Daniel Kachhap<amit.daniel@samsung.com>
 
 Thanks,
-Jason.
-
-
+Amit Daniel
+> ---
+> Changes since v2:
+> Changed the flag name from SHARED_MEMORY to ADDRESS_MULTIPLE.
+> https://lkml.org/lkml/2013/8/1/38
+>
+>  .../devicetree/bindings/thermal/exynos-thermal.txt |    4 ++--
+>  drivers/thermal/samsung/exynos_tmu.c               |   12 ++++++------
+>  drivers/thermal/samsung/exynos_tmu.h               |    4 ++--
+>  drivers/thermal/samsung/exynos_tmu_data.c          |    2 +-
+>  4 files changed, 11 insertions(+), 11 deletions(-)
+>
+> diff --git a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+> index 284f530..116cca0 100644
+> --- a/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+> +++ b/Documentation/devicetree/bindings/thermal/exynos-thermal.txt
+> @@ -11,8 +11,8 @@
+>  - reg : Address range of the thermal registers. For soc's which has multiple
+>         instances of TMU and some registers are shared across all TMU's like
+>         interrupt related then 2 set of register has to supplied. First set
+> -       belongs to each instance of TMU and second set belongs to common TMU
+> -       registers.
+> +       belongs to each instance of TMU and second set belongs to second set
+> +       of common TMU registers.
+>  - interrupts : Should contain interrupt for thermal system
+>  - clocks : The main clock for TMU device
+>  - clock-names : Thermal system clock name
+> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+> index d201ed8..3a55caf 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.c
+> +++ b/drivers/thermal/samsung/exynos_tmu.c
+> @@ -41,7 +41,7 @@
+>   * @id: identifier of the one instance of the TMU controller.
+>   * @pdata: pointer to the tmu platform/configuration data
+>   * @base: base address of the single instance of the TMU controller.
+> - * @base_common: base address of the common registers of the TMU controller.
+> + * @base_second: base address of the common registers of the TMU controller.
+>   * @irq: irq number of the TMU controller.
+>   * @soc: id of the SOC type.
+>   * @irq_work: pointer to the irq work structure.
+> @@ -56,7 +56,7 @@ struct exynos_tmu_data {
+>         int id;
+>         struct exynos_tmu_platform_data *pdata;
+>         void __iomem *base;
+> -       void __iomem *base_common;
+> +       void __iomem *base_second;
+>         int irq;
+>         enum soc_type soc;
+>         struct work_struct irq_work;
+> @@ -297,7 +297,7 @@ skip_calib_data:
+>         }
+>         /*Clear the PMIN in the common TMU register*/
+>         if (reg->tmu_pmin && !data->id)
+> -               writel(0, data->base_common + reg->tmu_pmin);
+> +               writel(0, data->base_second + reg->tmu_pmin);
+>  out:
+>         clk_disable(data->clk);
+>         mutex_unlock(&data->lock);
+> @@ -451,7 +451,7 @@ static void exynos_tmu_work(struct work_struct *work)
+>
+>         /* Find which sensor generated this interrupt */
+>         if (reg->tmu_irqstatus) {
+> -               val_type = readl(data->base_common + reg->tmu_irqstatus);
+> +               val_type = readl(data->base_second + reg->tmu_irqstatus);
+>                 if (!((val_type >> data->id) & 0x1))
+>                         goto out;
+>         }
+> @@ -582,7 +582,7 @@ static int exynos_map_dt_data(struct platform_device *pdev)
+>          * Check if the TMU shares some registers and then try to map the
+>          * memory of common registers.
+>          */
+> -       if (!TMU_SUPPORTS(pdata, SHARED_MEMORY))
+> +       if (!TMU_SUPPORTS(pdata, ADDRESS_MULTIPLE))
+>                 return 0;
+>
+>         if (of_address_to_resource(pdev->dev.of_node, 1, &res)) {
+> @@ -590,7 +590,7 @@ static int exynos_map_dt_data(struct platform_device *pdev)
+>                 return -ENODEV;
+>         }
+>
+> -       data->base_common = devm_ioremap(&pdev->dev, res.start,
+> +       data->base_second = devm_ioremap(&pdev->dev, res.start,
+>                                         resource_size(&res));
+>         if (!data->base) {
+>                 dev_err(&pdev->dev, "Failed to ioremap memory\n");
+> diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
+> index 7c6c34a..ebd2ec1 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.h
+> +++ b/drivers/thermal/samsung/exynos_tmu.h
+> @@ -59,7 +59,7 @@ enum soc_type {
+>   *                     state(active/idle) can be checked.
+>   * TMU_SUPPORT_EMUL_TIME - This features allows to set next temp emulation
+>   *                     sample time.
+> - * TMU_SUPPORT_SHARED_MEMORY - This feature tells that the different TMU
+> + * TMU_SUPPORT_ADDRESS_MULTIPLE - This feature tells that the different TMU
+>   *                     sensors shares some common registers.
+>   * TMU_SUPPORT - macro to compare the above features with the supplied.
+>   */
+> @@ -69,7 +69,7 @@ enum soc_type {
+>  #define TMU_SUPPORT_FALLING_TRIP               BIT(3)
+>  #define TMU_SUPPORT_READY_STATUS               BIT(4)
+>  #define TMU_SUPPORT_EMUL_TIME                  BIT(5)
+> -#define TMU_SUPPORT_SHARED_MEMORY              BIT(6)
+> +#define TMU_SUPPORT_ADDRESS_MULTIPLE           BIT(6)
+>
+>  #define TMU_SUPPORTS(a, b)     (a->features & TMU_SUPPORT_ ## b)
+>
+> diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
+> index 23fea23..58570d0 100644
+> --- a/drivers/thermal/samsung/exynos_tmu_data.c
+> +++ b/drivers/thermal/samsung/exynos_tmu_data.c
+> @@ -239,7 +239,7 @@ static const struct exynos_tmu_registers exynos5440_tmu_registers = {
+>         .type = SOC_ARCH_EXYNOS5440, \
+>         .registers = &exynos5440_tmu_registers, \
+>         .features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_FALLING_TRIP | \
+> -                       TMU_SUPPORT_MULTI_INST | TMU_SUPPORT_SHARED_MEMORY),
+> +                       TMU_SUPPORT_MULTI_INST | TMU_SUPPORT_ADDRESS_MULTIPLE),
+>
+>  struct exynos_tmu_init_data const exynos5440_default_tmu_data = {
+>         .tmu_data = {
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
