@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750790Ab3IFFFY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 01:05:24 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:45993 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720Ab3IFFFX (ORCPT
+	id S1750765Ab3IFFKn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 01:10:43 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:52049 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750733Ab3IFFKl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 01:05:23 -0400
-Date: Fri, 6 Sep 2013 15:05:14 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Sage Weil <sage@newdream.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build warning after merge of the ceph tree
-Message-Id: <20130906150514.729ab264b41529253d958819@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__6_Sep_2013_15_05_14_+1000_xYX+kQFNqgm2nQfc"
+	Fri, 6 Sep 2013 01:10:41 -0400
+Subject: Re: [PATCH v3 0/2] ext4: increase mbcache scalability
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <52285395.1070508@hp.com>
+Date: Thu, 5 Sep 2013 23:10:31 -0600
+Cc: "Theodore Ts'o" <tytso@mit.edu>, T Makphaibulchoke <tmac@hp.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-ext4@vger.kernel.org List" <linux-ext4@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org Devel" <linux-fsdevel@vger.kernel.org>,
+        aswin@hp.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        aswin_proj@groups.hp.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <0787C579-7E2C-4864-B8F4-98816E1E50A2@dilger.ca>
+References: <1374108934-50550-1-git-send-email-tmac@hp.com> <1378312756-68597-1-git-send-email-tmac@hp.com> <20130905023522.GA21268@thunk.org> <52285395.1070508@hp.com>
+To: Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__6_Sep_2013_15_05_14_+1000_xYX+kQFNqgm2nQfc
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 2013-09-05, at 3:49 AM, Thavatchai Makphaibulchoke wrote:
+> On 09/05/2013 02:35 AM, Theodore Ts'o wrote:
+>> How did you gather these results?  The mbcache is only used if you
+>> are using extended attributes, and only if the extended attributes don't fit in the inode's extra space.
+>> 
+>> I checked aim7, and it doesn't do any extended attribute operations.
+>> So why are you seeing differences?  Are you doing something like
+>> deliberately using 128 byte inodes (which is not the default inode
+>> size), and then enabling SELinux, or some such?
+> 
+> No, I did not do anything special, including changing an inode's size. I just used the profile data, which indicated mb_cache module as one of the bottleneck.  Please see below for perf data from one of th new_fserver run, which also shows some mb_cache activities.
+> 
+> 
+>                        |--3.51%-- __mb_cache_entry_find
+>                        |          mb_cache_entry_find_first
+>                        |          ext4_xattr_cache_find
+>                        |          ext4_xattr_block_set
+>                        |          ext4_xattr_set_handle
+>                        |          ext4_initxattrs
+>                        |          security_inode_init_security
+>                        |          ext4_init_security
 
-Hi Sage,
+Looks like this is some large security xattr, or enough smaller
+xattrs to exceed the ~120 bytes of in-inode xattr storage.  How
+big is the SELinux xattr (assuming that is what it is)?
 
-After merging the ceph tree, today's linux-next build (x86_64
-allmodconfig) produced this warning:
+> Looks like it's a bit harder to disable mbcache than I thought.
+> I ended up adding code to collect the statics.
+> 
+> With selinux enabled, for new_fserver workload of aim7, there
+> are a total of 0x7e05420100000000 ext4_xattr_cache_find() calls
+> that result in a hit and 0xc100000000000000 calls that are not.
+> The number does not seem to favor the complete disabling of
+> mbcache in this case.
 
-In file included from fs/ceph/super.h:4:0,
-                 from fs/ceph/cache.c:26:
-include/linux/ceph/ceph_debug.h:4:0: warning: "pr_fmt" redefined [enabled b=
-y default]
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- ^
-In file included from include/linux/kernel.h:13:0,
-                 from include/asm-generic/bug.h:13,
-                 from arch/x86/include/asm/bug.h:38,
-                 from include/linux/bug.h:4,
-                 from include/linux/thread_info.h:11,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/wait.h:7,
-                 from include/linux/fs.h:6,
-                 from include/linux/fscache.h:21,
-                 from fs/ceph/cache.c:24:
-include/linux/printk.h:206:0: note: this is the location of the previous de=
-finition
- #define pr_fmt(fmt) fmt
- ^
+This is about a 65% hit rate, which seems reasonable.
 
-Probably introduced by commit cb0963fcf836 ("ceph: use fscache as a local
-presisent cache").
+You could try a few different things here:
+- disable selinux completely (boot with "selinux=0" on the kernel
+  command line) and see how much faster it is
+- format your ext4 filesystem with larger inodes (-I 512) and see
+  if this is an improvement or not.  That depends on the size of
+  the selinux xattrs and if they will fit into the extra 256 bytes
+  of xattr space these larger inodes will give you.  The performance
+  might also be worse, since there will be more data to read/write
+  for each inode, but it would avoid seeking to the xattr blocks.
 
-pr_fmt needs to be defined before printk.h gets included.
+Cheers, Andreas
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Fri__6_Sep_2013_15_05_14_+1000_xYX+kQFNqgm2nQfc
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBCAAGBQJSKWKOAAoJEECxmPOUX5FEv2YP+wXq9ZyuQpzTxPamkLoU95w9
-dkbEQr3Us9jaa0vRtrQZfnRnYcCS2l6kqmaW+cJmEWEw1Hz6ZGq+6cbew2WaubOn
-93U9cX7t3oTQo/rnjRAI192oeYugtSH2313pFLFOof2sgakx6ua2lpF75Ek0h/+m
-yc3QT3muZ8GgubyAF3EtQWYXvcYtCRFw/FtMITDrNsUm3yfx2NF/dUaMJa6ZfcBT
-t1WuuJkS1BLRqnkmZMDXJWactvWJ5FZNzPkUYsCnVkjp2ee4+jJetLCWtp9Pke6m
-Mfx+tRNDkPKUlBotjCgEfKpDBIpwW7akUmh1Xj6GTj/OM+V5E4+lQ99/uyhMEz8S
-tIwkAO1m85OJRBmpg9AX4uBphItKx1+A+6XUh19Lp805kaZ+w4z4zsUg7kgOEWfG
-H2vXrSqrVAdPqHVgEarrlARqCOkA86v2fgixALBj9jmIdxZhvhhh4GRKPqQ782Io
-7OzVl40tfac3BPkFS9Wv6sXaxGUPJdZkVJuiV0uRc5Io15MlipDdlRmxliSoflwK
-7DkFG67tbYvBDyBGh3C2r1y4P1fKA87BymtvxIBPNt3hbI4cRwT4m4F5pEh5NXUM
-OKA0trmghJenRxLraHJwYZhwZo3RpeEiSbL8DSqoO+Z4m1WMgZvSb/RW5Dn72xCb
-45JJbFPGVwL+JoGKnoox
-=sBjO
------END PGP SIGNATURE-----
 
---Signature=_Fri__6_Sep_2013_15_05_14_+1000_xYX+kQFNqgm2nQfc--
