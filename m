@@ -1,37 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750837Ab3IFRhv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 13:37:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10806 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750711Ab3IFRhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 13:37:48 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <alpine.LRH.2.02.1309070309360.24160@tundra.namei.org>
-References: <alpine.LRH.2.02.1309070309360.24160@tundra.namei.org> <12075.1378340063@warthog.procyon.org.uk>
-To: James Morris <jmorris@namei.org>
-Cc: dhowells@redhat.com, simo@redhat.com, zohar@linux.vnet.ibm.com,
-        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] Keyrings patches
-Date: Fri, 06 Sep 2013 18:36:29 +0100
-Message-ID: <17000.1378488989@warthog.procyon.org.uk>
+	id S1750854Ab3IFRj4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 13:39:56 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:54130 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708Ab3IFRjy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 13:39:54 -0400
+Message-ID: <522A1365.2020504@gmail.com>
+Date: Fri, 06 Sep 2013 11:39:49 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Adrian Hunter <adrian.hunter@intel.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH] perf kvm: fix sample_type manipulation
+References: <1378450134-28982-1-git-send-email-adrian.hunter@intel.com>
+In-Reply-To: <1378450134-28982-1-git-send-email-adrian.hunter@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James Morris <jmorris@namei.org> wrote:
+On 9/6/13 12:48 AM, Adrian Hunter wrote:
+> Manipulating the sample_type of an evsel requires
+> the use of:
+> 	perf_evsel__set_sample_bit()
+> and	perf_evsel__reset_sample_bit()
+>
+> Manipulating the sample type of an evlist requires
+> the id position to be recalculated.
+>
+> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 
-> > Could you pull these patches into the security tree?  They're based on your
-> > next branch.
-> 
-> This missed the merge for 3.12.  Do you want me to queue the changes up, 
-> or do you want to send a pull request again after -rc1 ?
 
-Can you queue them up now in your 'next' branch?
+Fixes the regression. Thanks for taking care of it
 
-David
+Tested-by-and-Acked-by: David Ahern <dsahern@gmail.com>
