@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758726Ab3IFBv4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 21:51:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31852 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752974Ab3IFBvz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 21:51:55 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=BbXNHQx3NekA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=fxhqf5xVK60A:10 a=20KFwNOVAAAA:8 a=VG2FNCXc219QzkaJD1YA:9 a=CjuIK1q_8ugA:10 a=jEp0ucaQiEUA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Thu, 5 Sep 2013 21:51:54 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: ftrace 'failed to modify' bug when loading reiserfs.ko
-Message-ID: <20130905215154.74c55e9a@gandalf.local.home>
-In-Reply-To: <20130906014859.GB10073@redhat.com>
-References: <20130906011924.GA7970@redhat.com>
-	<20130905212834.605408a4@gandalf.local.home>
-	<20130906013455.GA10073@redhat.com>
-	<20130905214455.101c6347@gandalf.local.home>
-	<20130906014859.GB10073@redhat.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756148Ab3IFCAd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 22:00:33 -0400
+Received: from smtpfreer206.163vip.net ([61.135.158.113]:25095 "HELO
+	smtp.tom.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1752974Ab3IFCAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 22:00:32 -0400
+Authentication-Results: bjzjm-antispam2 smtp.user=xinerli2008@tom.com; auth=pass (LOGIN)
+Date: Fri, 6 Sep 2013 10:00:25 +0800
+From: "jenny" <xinerli2008@tom.com>
+Reply-To: xinerli1986@sjzxinerlichem.com
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: Hope and your long-term cooperation
+Message-ID: <201309061000257818488@tom.com>
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="GB2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8620vSP002049
 
-On Thu, 5 Sep 2013 21:48:59 -0400
-Dave Jones <davej@redhat.com> wrote:
+Dear Manager: 
 
-> On Thu, Sep 05, 2013 at 09:44:55PM -0400, Steven Rostedt wrote:
->  > On Thu, 5 Sep 2013 21:34:55 -0400
->  > Dave Jones <davej@redhat.com> wrote:
->  > 
->  > > On Thu, Sep 05, 2013 at 09:28:34PM -0400, Steven Rostedt wrote:
+Glad to write to you. 
 
->  > Did you change a config option, or update your gcc?
-> 
-> Yeah, changed CONFIG_DEBUG_KOBJECT, which rebuilt the world.
+We are manufacturer of  Stearic acid from China,
+We have Zinc stearate, calcium stearate, magnesium stearate, etc.
+If you need such chemicals, please do not hesitate to contact me.
 
-Still doesn't explain why it gave you that splat there.
+ 
+Best Regards,
 
-Do you still have that binary module, and can you show me what's at
-reiserfs_init_bitmap_cache+0x0 with objdump?
 
--- Steve
+
+--------------------------------------------------------------------------------
+
+  
+Shijiazhuang Shinearly Chemicals Co.,Ltd
+
+No. 105 Yellow River Road, Hightech Zone, Shijiazhuang City, Hebei Province, China
+
+Tel:  0086-311-89809275
+
+Fax:  0086-311-67795015ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
