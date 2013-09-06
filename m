@@ -1,113 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639Ab3IFQxx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 12:53:53 -0400
-Received: from usindpps05.hds.com ([207.126.252.18]:49158 "EHLO
-	usindpps05.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752719Ab3IFQxv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 12:53:51 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        "mingo@elte.hu" <mingo@elte.hu>, "bp@alien8.de" <bp@alien8.de>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "fdeslaur@gmail.com" <fdeslaur@gmail.com>,
-        "raphael.beamonte@gmail.com" <raphael.beamonte@gmail.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Tomoki Sekiyama <tomoki.sekiyama@hds.com>
-Subject: RE: [PATCH v2] Introduce page fault tracepoint
-Thread-Topic: [PATCH v2] Introduce page fault tracepoint
-Thread-Index: AQHOoBcWpWROXdr1ikWlDNj02w1Pt5m5RQKA//+9qwA=
-Date: Fri, 6 Sep 2013 16:53:03 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D443EA18A6@USINDEM103.corp.hds.com>
-References: <521781C7.3050906@hds.com>
- <20130906124935.3b4aa870@gandalf.local.home>
-In-Reply-To: <20130906124935.3b4aa870@gandalf.local.home>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.73.11]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755467Ab3IFQzH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 12:55:07 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:59164 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753304Ab3IFQzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 12:55:05 -0400
+X-IronPort-AV: E=Sophos;i="4.90,855,1371081600"; 
+   d="scan'208";a="51343938"
+Date: Fri, 6 Sep 2013 17:52:57 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v5 11/13] xen: introduce xen_alloc/free_coherent_pages
+In-Reply-To: <20130906162018.GJ1946@arm.com>
+Message-ID: <alpine.DEB.2.02.1309061740050.6397@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com> <1377801154-29215-11-git-send-email-stefano.stabellini@eu.citrix.com> <20130905160905.GI11887@arm.com> <alpine.DEB.2.02.1309051742390.6397@kaball.uk.xensource.com> <20130906141444.GE1946@arm.com>
+ <alpine.DEB.2.02.1309061554260.6397@kaball.uk.xensource.com> <20130906155928.GH1946@arm.com> <alpine.DEB.2.02.1309061706480.6397@kaball.uk.xensource.com> <20130906162018.GJ1946@arm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-X-Proofpoint-SPF-Result: pass
-X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
- include:cloud.hds.com ~all
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-09-06_06:2013-09-06,2013-09-06,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1309060101
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 6 Sep 2013, Catalin Marinas wrote:
+> On Fri, Sep 06, 2013 at 05:09:52PM +0100, Stefano Stabellini wrote:
+> > On Fri, 6 Sep 2013, Catalin Marinas wrote:
+> > > On Fri, Sep 06, 2013 at 03:59:02PM +0100, Stefano Stabellini wrote:
+> > > > On Fri, 6 Sep 2013, Catalin Marinas wrote:
+> > > > > On Thu, Sep 05, 2013 at 05:43:33PM +0100, Stefano Stabellini wrote:
+> > > > > > On Thu, 5 Sep 2013, Catalin Marinas wrote:
+> > > > > > > On Thu, Aug 29, 2013 at 07:32:32PM +0100, Stefano Stabellini wrote:
+> > > > > > > > xen_swiotlb_alloc_coherent needs to allocate a coherent buffer for cpu
+> > > > > > > > and devices. On native x86 and ARMv8 is sufficient to call
+> > > > > > > > __get_free_pages in order to get a coherent buffer, while on ARM we need
+> > > > > > > > to call arm_dma_ops.alloc.
+> > > > > > > 
+> > > > > > > Don't bet on this for ARMv8. It's not mandated for the architecture, so
+> > > > > > > at some point some SoC will require non-cacheable buffers for coherency.
+> > > > > > 
+> > > > > > I see.
+> > > > > > Would it be better if I implemented xen_alloc_coherent_pages on armv8 by
+> > > > > > calling arm64_swiotlb_dma_ops.alloc?
+> > > > > 
+> > > > > What does this buffer do exactly? Is it allocated by guests?
+> > > > 
+> > > > It is allocated by Dom0 to do DMA to/from a device.
+> > > > It is the buffer that is going to be returned by dma_map_ops.alloc to
+> > > > the caller:
+> > > > 
+> > > > On x86:
+> > > > dma_map_ops.alloc -> xen_swiotlb_alloc_coherent -> xen_alloc_coherent_pages -> __get_free_pages
+> > > > 
+> > > > On ARM:
+> > > > dma_map_ops.alloc -> xen_swiotlb_alloc_coherent -> xen_alloc_coherent_pages -> arm_dma_ops.alloc
+> > > > 
+> > > > On ARM64
+> > > > dma_map_ops.alloc -> xen_swiotlb_alloc_coherent -> xen_alloc_coherent_pages -> ????
+> > > 
+> > > OK, I'm getting more confused. Do all the above calls happen in the
+> > > guest, Dom0, or a mix?
+> > 
+> > I guess the confusion comes from a difference in terminology: dom0 is a
+> > guest like the others, just a bit more privileged. We usually call domU
+> > a normal unprivileged guest.
+> 
+> Thanks for the explanation.
+> 
+> > The above calls would happen in Dom0 (when an SMMU is not available).
+> 
+> So for Dom0, are there cases when it needs xen_swiotlb_alloc_coherent()
+> and other cases when it needs the arm_dma_ops.alloc? In Dom0 could we
+> not always use the default dma_alloc_coherent()?
+
+Keep in mind that dom0 runs with second stage translation enabled.  This
+means that what dom0 thinks is a physical address (machine address in
+Xen terminology), it's actually just an intermediate physical address.
+Also for the same reason what dom0 thinks is a contiguous buffer, it's
+actually only contiguous in the intermediate physical address space.
+
+So every time dom0 wants to allocate a dma-capable buffer it needs to go
+via swiotlb-xen, that makes the buffer contiguous in the physical address
+space (machine address space in Xen terminology) by issuing an hypercall.
+swiotlb-xen also returns the physical address (machine address in Xen
+terminology) to the caller.
+
+To answer your question: in absence of an SMMU, all the
+dma_alloc_coherent calls in dom0 need to go via xen_swiotlb_alloc_coherent.
+
+xen_swiotlb_alloc_coherent cannot allocate a contigous buffer in physical
+address space (see above), but it has to allocate a buffer coherent from
+the caching attributes point of view. The hypervisor is going to take
+care of making the allocated buffer really contiguous in physical address
+space.
+
+So now the problem is: how is xen_swiotlb_alloc_coherent going to
+allocate a coherent buffer?
+On x86 I can just call __get_free_pages.
+On ARM I have to call arm_dma_ops.alloc.
+On ARM64 ???
+
+BTW if the Matrix is your kind of fun, I wrote an blog post explaining the
+swiotlb Morpheus style:
+http://blog.xen.org/index.php/2013/08/14/swiotlb-by-morpheus/
 
 
-> -----Original Message-----
-> From: Steven Rostedt [mailto:rostedt@goodmis.org]
-> Sent: Friday, September 06, 2013 12:50 PM
-> To: Seiji Aguchi
-> Cc: linux-kernel@vger.kernel.org; x86@kernel.org; hpa@zytor.com; mingo@elte.hu; bp@alien8.de; tglx@linutronix.de;
-> fdeslaur@gmail.com; raphael.beamonte@gmail.com; dle-develop@lists.sourceforge.net; Tomoki Sekiyama
-> Subject: Re: [PATCH v2] Introduce page fault tracepoint
+> > They could also happen in a DomU if we assign a physical device to it
+> > (and an SMMU is not available).
 > 
-> On Fri, 23 Aug 2013 11:37:43 -0400
-> Seiji Aguchi <seiji.aguchi@hds.com> wrote:
-> 
-> 
-> > +#if !defined(_TRACE_PAGE_FAULT_H) || defined(TRACE_HEADER_MULTI_READ)
-> > +#define _TRACE_PAGE_FAULT_H
-> > +
-> > +#include <linux/tracepoint.h>
-> > +
-> > +extern void trace_irq_vector_regfunc(void);
-> > +extern void trace_irq_vector_unregfunc(void);
-> > +
-> > +DECLARE_EVENT_CLASS(x86_exceptions,
-> > +
-> > +	TP_PROTO(unsigned long address, struct pt_regs *regs,
-> > +		 unsigned long error_code),
-> > +
-> > +	TP_ARGS(address, regs, error_code),
-> > +
-> > +	TP_STRUCT__entry(
-> > +		__field(		unsigned long, address	)
-> > +		__field(		struct pt_regs *, regs	)
-> > +		__field(		unsigned long, error_code )
-> > +	),
-> > +
-> > +	TP_fast_assign(
-> > +		__entry->address = address;
-> > +		__entry->regs = regs;
-> > +		__entry->error_code = error_code;
-> > +	),
-> > +
-> > +	TP_printk("address=0x%lx ip=0x%lx error_code=0x%lx",
-> > +		  __entry->address, __entry->regs->ip, __entry->error_code) );
-> 
-> This is sure to crash the kernel.
-> 
-> You just saved the address of a pointer to some task's stack in the
-> ring buffer. And then on output (which can happen a long time from when
-> it was recorded), you are dereferencing that same address!
-> 
-> That __entry->regs->ip *will* crash the kernel!
-> 
-> What you want is to save ip in the fast_assign:
-> 
-> 	__entry->ip = regs->ip
-> 
-> And then print that. Never dereference a pointer directly from the ring
-> buffer unless it's a constant value (like a global string).
-
-I see..
-Thank you for reviewing.
-
-I will fix it.
-
-Seiji
+> The problem is that you don't necessarily know one kind of coherency you
+> know for a physical device. As I said, we plan to do this DT-driven.
+ 
+OK, but if I call arm64_swiotlb_dma_ops.alloc passing the right
+arguments to it, I should be able to get the right coherency for the
+right device, correct?
