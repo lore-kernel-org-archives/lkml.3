@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758934Ab3IFBt2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 21:49:28 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24005 "EHLO
+	id S1758948Ab3IFBtn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 21:49:43 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10577 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758764Ab3IFBtR (ORCPT
+	with ESMTP id S1758759Ab3IFBtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 21:49:17 -0400
-X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=ZtygFLEOK88A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=SJBCHd5iOokA:10 a=QyXUC8HyAAAA:8 a=a_U1oVfrAAAA:8 a=zGuplzhgmjNTnmIVghEA:9 a=k4qQewaewV0A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Thu, 5 Sep 2013 21:49:16 -0400
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=wcXYPUs7a-oA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=sIsxsRJOc_QA:10 a=VnNF1IyMAAAA:8 a=ADIRIkwvCkhWOhZfK5QA:9 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130906014915.433485667@goodmis.org>
+Message-Id: <20130906014915.603795285@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 05 Sep 2013 21:48:19 -0400
+Date: Thu, 05 Sep 2013 21:48:20 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Peter Zijlstra <peterz@infradead.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Dave Jones <davej@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [for-next][PATCH 3/4] x86-32, ftrace: Fix static ftrace when early microcode is enabled
+        Dave Jones <davej@redhat.com>
+Subject: [for-next][PATCH 4/4] ftrace/rcu: Do not trace debug_lockdep_rcu_enabled()
 References: <20130906014816.037690469@goodmis.org>
-Content-Disposition: inline; filename=0003-x86-32-ftrace-Fix-static-ftrace-when-early-microcode.patch
+Content-Disposition: inline; filename=0004-ftrace-rcu-Do-not-trace-debug_lockdep_rcu_enabled.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Early microcode loading runs C code before paging is enabled on 32
-bits.  Since ftrace puts a hook into every function, that hook needs
-to be safe to execute in the pre-paging environment.  This is
-currently true for dynamic ftrace but not for static ftrace.
+The function debug_lockdep_rcu_enabled() is part of the RCU lockdep
+debugging, and is called very frequently. I found that if I enable
+a lot of debugging and run the function graph tracer, this
+function can cause a live lock of the system.
 
-Static ftrace is obsolescent and assumed to not be
-performance-critical, so we can simply test that the stack pointer
-falls within the valid range of kernel addresses.
+We don't usually trace lockdep infrastructure, no need to trace
+this either.
 
-Reported-by: Jan Kiszka <jan.kiszka@siemens.com>
-Tested-by: Jan Kiszka <jan.kiszka@siemens.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/kernel/entry_32.S |    3 +++
- 1 file changed, 3 insertions(+)
+ kernel/rcupdate.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 2cfbc3a..f0dcb0c 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -1176,6 +1176,9 @@ ftrace_restore_flags:
- #else /* ! CONFIG_DYNAMIC_FTRACE */
+diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
+index cce6ba8..4f20c6c 100644
+--- a/kernel/rcupdate.c
++++ b/kernel/rcupdate.c
+@@ -122,7 +122,7 @@ struct lockdep_map rcu_sched_lock_map =
+ 	STATIC_LOCKDEP_MAP_INIT("rcu_read_lock_sched", &rcu_sched_lock_key);
+ EXPORT_SYMBOL_GPL(rcu_sched_lock_map);
  
- ENTRY(mcount)
-+	cmpl $__PAGE_OFFSET, %esp
-+	jb ftrace_stub		/* Paging not enabled yet? */
-+
- 	cmpl $0, function_trace_stop
- 	jne  ftrace_stub
- 
+-int debug_lockdep_rcu_enabled(void)
++int notrace debug_lockdep_rcu_enabled(void)
+ {
+ 	return rcu_scheduler_active && debug_locks &&
+ 	       current->lockdep_recursion == 0;
 -- 
 1.7.10.4
 
