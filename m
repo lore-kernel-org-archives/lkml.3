@@ -1,52 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758769Ab3IFDc3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 23:32:29 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:20270 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753734Ab3IFDc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 23:32:28 -0400
-X-IronPort-AV: E=Sophos;i="4.90,850,1371052800"; 
-   d="scan'208";a="8431990"
-Message-ID: <52294C9D.1080808@cn.fujitsu.com>
-Date: Fri, 06 Sep 2013 11:31:41 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1758783Ab3IFDen (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 23:34:43 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:44615 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753734Ab3IFDem convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 23:34:42 -0400
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mm/mmap.c: Remove unnecessary pgoff assignment
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/06 11:29:49,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/06 11:29:51,
-	Serialize complete at 2013/09/06 11:29:51
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20130904215022.GA30606@redhat.com>
+References: <20130904215022.GA30606@redhat.com>
+Date: Fri, 6 Sep 2013 11:34:40 +0800
+Message-ID: <CAF1ivSaQpKEwXJLm7XOPT3b+zvUFNdfO5grK1-8grE5v3Jfymw@mail.gmail.com>
+Subject: Re: soft lockup in sysvipc code.
+From: Lin Ming <minggr@gmail.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        manfred@colorfullife.com
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We never access variable pgoff later, so the assignment is
-redundant. Remove it. 
+On Thu, Sep 5, 2013 at 5:50 AM, Dave Jones <davej@redhat.com> wrote:
+> Haven't seen this before.
+> Tree based on v3.11-3104-gf357a82
+>
+> BUG: soft lockup - CPU#0 stuck for 22s! [trinity-child0:25479]
 
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- mm/mmap.c |    1 - 
- 1 files changed, 0 insertions(+), 1 deletions(-)
+Can't imagine how it could happen.
+In my understanding, "soft lockup" happens when code stuck at
+somewhere with preemption disabled.
 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index f9c97d1..db44f6a 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1570,7 +1570,6 @@ munmap_back:
-                WARN_ON_ONCE(addr != vma->vm_start);
- 
-                addr = vma->vm_start;
--               pgoff = vma->vm_pgoff;
-                vm_flags = vma->vm_flags;
-        } else if (vm_flags & VM_SHARED) {
-                if (unlikely(vm_flags & (VM_GROWSDOWN|VM_GROWSUP)))
--- 
-1.7.1
+Look at the code, preemption disabled at:
+sysvipc_proc_next -> sysvipc_find_ipc -> ipc_lock_by_ptr
+
+enabled at:
+sysvipc_proc_next -> ipc_unlock
+or
+sysvipc_proc_stop -> ipc_unlock
+
+And I didn't find code may stuck in the path.
+I may miss something ......
+
+Regards,
+Lin Ming
+
+> Modules linked in: sctp snd_seq_dummy fuse dlci rfcomm tun bnep hidp ipt_ULOG nfnetlink can_raw can_bcm scsi_transport_iscsi nfc caif_socket caif af_802154 phonet af_rxrpc bluetooth rfkill can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 xfs snd_hda_codec_realtek libcrc32c snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_page_alloc snd_timer snd soundcore pcspkr usb_debug e1000e ptp pps_core
+> irq event stamp: 1143030
+> hardirqs last  enabled at (1143029): [<ffffffff81715d5c>] restore_args+0x0/0x30
+> hardirqs last disabled at (1143030): [<ffffffff8171f9aa>] apic_timer_interrupt+0x6a/0x80
+> softirqs last  enabled at (1143028): [<ffffffff8105a938>] __do_softirq+0x198/0x460
+> softirqs last disabled at (1143023): [<ffffffff8105ae55>] irq_exit+0x135/0x150
+> CPU: 0 PID: 25479 Comm: trinity-child0 Not tainted 3.11.0+ #44
+> task: ffff88022c013f90 ti: ffff88022bd8c000 task.ti: ffff88022bd8c000
+> RIP: 0010:[<ffffffff8131014b>]  [<ffffffff8131014b>] idr_find_slowpath+0x9b/0x150
+> RSP: 0018:ffff88022bd8dc88  EFLAGS: 00000206
+> RAX: 0000000000000006 RBX: ffff000a6c0a0000 RCX: 0000000000000008
+> RDX: 0000000000000008 RSI: ffffffff81c41040 RDI: ffff88022c014668
+> RBP: ffff88022bd8dca0 R08: 0000000000000000 R09: 0000000000000000
+> R10: 0000000000000001 R11: 0000000000000001 R12: ffff88023831a290
+> R13: 0000000000000001 R14: ffff88022bd8dbe8 R15: ffff8802449dffff
+> FS:  00007fcfcad2c740(0000) GS:ffff880244800000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 00007fcfc84cb968 CR3: 00000001de93f000 CR4: 00000000001407f0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
+> Stack:
+>  0000000000000260 0000000000002dba ffffffff81c7e258 ffff88022bd8dcf8
+>  ffffffff812b1131 ffff88022c013f90 ffff8801d37174c0 ffff88022bd8dd38
+>  ffffffff81c7e2f0 ffff88022bd8dd38 ffff8801e065cec8 ffff880241d86ca8
+> Call Trace:
+>  [<ffffffff812b1131>] sysvipc_find_ipc+0x61/0x300
+>  [<ffffffff812b1416>] sysvipc_proc_next+0x46/0xd0
+>  [<ffffffff811e13b9>] traverse.isra.7+0xc9/0x260
+>  [<ffffffff810c4078>] ? lock_release_non_nested+0x308/0x350
+>  [<ffffffff811e1b61>] seq_read+0x3e1/0x450
+>  [<ffffffff81228f10>] ? proc_reg_write+0x80/0x80
+>  [<ffffffff81228f4d>] proc_reg_read+0x3d/0x80
+>  [<ffffffff811ba3a3>] do_loop_readv_writev+0x63/0x90
+>  [<ffffffff811bbccd>] do_readv_writev+0x21d/0x240
+>  [<ffffffff810994af>] ? local_clock+0x3f/0x50
+>  [<ffffffff81152376>] ? context_tracking_user_exit+0x46/0x1a0
+>  [<ffffffff811bbd25>] vfs_readv+0x35/0x60
+>  [<ffffffff811bbff2>] SyS_preadv+0xa2/0xd0
+>  [<ffffffff8171ef54>] tracesys+0xdd/0xe2
+> Code: 7e 6e 41 8b 84 24 2c 08 00 00 83 eb 08 c1 e0 03 39 c3 0f 85 c1 00 00 00 89 d9 44 89 e8 d3 f8 0f b6 c0 48 83 c0 04 4d 8b 64 c4 08 <e8> 80 b4 d6 ff 85 c0 74 c4 80 3d f7 2f 9d 00 00 75 bb e8 6e b4
