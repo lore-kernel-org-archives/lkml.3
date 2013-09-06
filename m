@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab3IFA4q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 20:56:46 -0400
-Received: from mail-vb0-f44.google.com ([209.85.212.44]:59471 "EHLO
-	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753815Ab3IFA4p (ORCPT
+	id S1753804Ab3IFBC0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 21:02:26 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:45185 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752733Ab3IFBCZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 20:56:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFwOme_LD6qqmzdEQ6AXiK8My7PWU1y5VV2tLgkO1HU7xg@mail.gmail.com>
-References: <alpine.DEB.2.00.1309051139240.25450@skynet.skynet.ie>
-	<CA+55aFwyKmVWkrV3=XiuruZzeTicpfW-JrwjWzpq9eP2yGPeJA@mail.gmail.com>
-	<20130905153243.43d0346e@jbarnes-desktop>
-	<CA+55aFybVR6MqWpQfTu3jK8mgSg8Z53gz0Ah77ZK1+40Fx=FsQ@mail.gmail.com>
-	<CA+55aFwOme_LD6qqmzdEQ6AXiK8My7PWU1y5VV2tLgkO1HU7xg@mail.gmail.com>
-Date: Thu, 5 Sep 2013 17:56:44 -0700
-X-Google-Sender-Auth: ZzACpQ7wkqIuDbFIWDEA5uT1-Xg
-Message-ID: <CA+55aFyy_pKt07MgB9PzKg-LLKj1PH0q1t8y2Zu42srCyw-W4w@mail.gmail.com>
-Subject: Re: [git pull] drm tree for 3.12-rc1
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Dave Airlie <airlied@linux.ie>, Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        "Beauchesne, Gwenole" <gwenole.beauchesne@intel.com>,
-        Sean V Kelley <sean.v.kelley@intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 5 Sep 2013 21:02:25 -0400
+From: Olof Johansson <olof@lixom.net>
+To: torvalds@linux-foundation.org
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
+        Olof Johansson <olof@lixom.net>
+Subject: [PATCH] net: stmmac: fix bad merge conflict resolution
+Date: Thu,  5 Sep 2013 18:01:41 -0700
+Message-Id: <1378429301-19964-1-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.8.1.192.gc4361b8
+In-Reply-To: <20130905.163725.106795517693348522.davem@davemloft.net>
+References: <20130905.163725.106795517693348522.davem@davemloft.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 5, 2013 at 4:19 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> So I've decided I'm going to try to bisect this after all. I've done
-> enough pulls for today anyway, I guess. Let's see if I can bisect it
-> by just trying to boot many times each try.
+Merge commit 06c54055bebf919249aa1eb68312887c3cfe77b4 did a bad conflict
+resolution accidentally leaving out a closing brace. Add it back.
 
-Ok, it's not the recent drm pull at all. I can't find a good kernel in
-the bunch - they all fail eventually.
+Signed-off-by: Olof Johansson <olof@lixom.net>
+---
 
-It may have been going in for as long as I've had this Haswell
-machine, and I was just lucky (and not rebooting a lot until in the
-merge window - and 4/5 boots work fine).
+This breaks a handful of defconfigs on ARM, so it'd be good to see it
+applied pretty quickly. Thanks!
 
-It may also be user-space and have come in with the mesa update I got
-through yum yesterday. So there might be multiple reasons why I saw it
-today after the drm pull for the first time.
 
-The black screen - when it happens - happens after the fedora logo has
-flashed, and gdm is supposed to start up. I tried reproducing it by
-logging out and back in again (to restart X), but that doesn't do it.
-Maybe timing-related with boot or just demand-loading of binaries the
-first time, whatever.. Or mayby it's something special that gdm does
-at startup?
+-Olof
 
-              Linus
+ drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+index 7a00720..51c9069 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+@@ -87,6 +87,7 @@ static int stmmac_probe_config_dt(struct platform_device *pdev,
+ 	if (plat->force_thresh_dma_mode) {
+ 		plat->force_sf_dma_mode = 0;
+ 		pr_warn("force_sf_dma_mode is ignored if force_thresh_dma_mode is set.");
++	}
+ 
+ 	return 0;
+ }
+-- 
+1.7.10.4
+
