@@ -1,73 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab3IFPlY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 11:41:24 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:50277 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391Ab3IFPlW (ORCPT
+	id S1755711Ab3IFPpV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 11:45:21 -0400
+Received: from a9-97.smtp-out.amazonses.com ([54.240.9.97]:55744 "EHLO
+	a9-97.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752749Ab3IFPpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 11:41:22 -0400
-Date: Fri, 6 Sep 2013 16:40:59 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20130906154059.GI29403@sirena.org.uk>
-References: <1378479340-31237-1-git-send-email-geert@linux-m68k.org>
+	Fri, 6 Sep 2013 11:45:20 -0400
+X-Greylist: delayed 358 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Sep 2013 11:45:19 EDT
+Date: Fri, 6 Sep 2013 15:39:17 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Will Deacon <will.deacon@arm.com>
+cc: Tejun Heo <tj@kernel.org>,
+        "akpm@linuxfoundation.org" <akpm@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Steven Rostedt <srostedt@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [gcv v3 27/35] arm: Replace __get_cpu_var uses
+In-Reply-To: <20130906110423.GE30450@mudshark.cambridge.arm.com>
+Message-ID: <00000140f3ed6950-03760ead-5f78-414c-91e3-e3d40175cc92-000000@email.amazonses.com>
+References: <00000140e97747d2-ee164a4d-d692-409a-a919-083eff3a41ca-000000@email.amazonses.com> <20130904174624.GB5599@mudshark.cambridge.arm.com> <00000140ea29d3c8-5110dd9f-9dcf-470f-9b7e-4e7ff0874052-000000@email.amazonses.com> <20130904182113.GD5599@mudshark.cambridge.arm.com>
+ <alpine.DEB.2.02.1309041324530.26497@gentwo.org> <00000140eac4f5fc-9f8c86db-05dd-496f-abf8-63ca3667574f-000000@email.amazonses.com> <20130905130359.GA22351@mudshark.cambridge.arm.com> <00000140ee828138-3328099b-149e-433d-8262-0a481806ca85-000000@email.amazonses.com>
+ <20130905172810.GB29219@mudshark.cambridge.arm.com> <00000140ef40d3fc-55c44dfd-7403-43f4-b1fb-d116c55be5a6-000000@email.amazonses.com> <20130906110423.GE30450@mudshark.cambridge.arm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OgApRN/oydYDdnYz"
-Content-Disposition: inline
-In-Reply-To: <1378479340-31237-1-git-send-email-geert@linux-m68k.org>
-X-Cookie: Your present plans will be successful.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi/drivers: Restrict COMPILE_TEST by HAS_DMA where
- needed
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.09.06-54.240.9.97
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 6 Sep 2013, Will Deacon wrote:
 
---OgApRN/oydYDdnYz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> Ok, I had a crack at putting something together on top of HEAD, but I still
+> see some errors due to pcpu array types (even with your patch in mainline).
+> I think some of your conversions to __this_cpu_read should use this_cpu_ptr
+> instead, but could you have a quick look at my fixup below please?
 
-On Fri, Sep 06, 2013 at 04:55:40PM +0200, Geert Uytterhoeven wrote:
-> commit dd1053a93fdc11d491f5460f7da5ce70e6c93c9e ("spi/drivers: Enable build
-> of drivers with COMPILE_TEST") allows compile-testing drivers on platforms
-> they're not meant for.
+That could be the case since the cocci script does assume a read operation
+is needed if there was no & in front of the __get_cpu_var. This is wrong
+for pointers and arrays.
 
-> However, adding "|| COMPILE_TEST" bypasses all other implicit dependencies
-> assumed by the platform dependencies before, like HAS_DMA.
-
-> If NO_DMA=y:
-
-Why is the fix for this not to have the DMA APIs provide shims (or
-whatever platforms are affected implement the DMA API)?
-
---OgApRN/oydYDdnYz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSKfeIAAoJELSic+t+oim97BkP/R1oFh9pIrK2WzQoFXFj6ePD
-y+kD45POPfl8tTtY195s4ZVjwR63Sl3ZsvSl2uABEHM0UVaTwq/uUs3DGGEm50Db
-+SIt7cF4hP4QWhM3bQriZ0UHlvdIp2DpjFpSR/uusTPhMM0yc+uiWJTpqmvopebo
-0wiPjSRUZcsladbiCkZPtK2KQT0rBQvSqhmMWL0s2xQVN6MDm4Ak/NH/3icdeCtC
-7W2OY8gkg2PBn86BeIfZOcrbW4xDDJSNL2QEQpGdqF44authkn/EozTnqt4+a3QO
-uBAJMNFBaPeqi1euub+XauNQAnag4ExmuWz8tcqLTP+Sc+rcM1zpo75loTRwKoL2
-U1Oj34iICcH1mAW05HO5qLNwRysLiwhfKUaXHs0LKbQzP1a2+ltj+6KXVjivJDxR
-DJLu30iqB9awy4wTMZ+NCV2IgHBsiv8HvXrI/Zs8G6qoWk4VAHkoVey8fhLRBmhd
-gKAALZzsvOtAnIns+rRqt93bj4N8wx0T2JramyzeoU604vgRRWBaEqx8JaQA9Mth
-xW1L0uKYEuJa3IhlJCTBj3ceFBFkztHlKIqs9Je8iIzN+bmvDxeySb7X3a3OTXAx
-YLtrmNUBf9YoqGbBiIjSlG+Wfw96bGhNvwrZempEpXyxXR1zGRzXtDvMPPV2g6HH
-UAk2dy3lbjoUOWoZEIWd
-=sv6q
------END PGP SIGNATURE-----
-
---OgApRN/oydYDdnYz--
+Patch looks fine to me.
