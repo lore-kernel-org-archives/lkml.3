@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751549Ab3IFLFi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 07:05:38 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:64847 "EHLO
+	id S1751400Ab3IFLHf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 07:07:35 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:1165 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103Ab3IFLFg (ORCPT
+	with ESMTP id S1751102Ab3IFLHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 07:05:36 -0400
-Message-ID: <5229B6E5.70900@huawei.com>
-Date: Fri, 6 Sep 2013 19:05:09 +0800
+	Fri, 6 Sep 2013 07:07:34 -0400
+Message-ID: <5229B741.8000403@huawei.com>
+Date: Fri, 6 Sep 2013 19:06:41 +0800
 From: Xie XiuQi <xiexiuqi@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
@@ -21,7 +21,7 @@ To: Jonathan Cameron <jic23@cam.ac.uk>,
         Nadia Derbey <Nadia.Derbey@bull.net>
 CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Li Bin <huawei.libin@huawei.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3/5] lib: remove unnecessary work pending test
+Subject: [PATCH 4/5] staging: olpc_dcon: remove unnecessary work pending test
 References: <5229B601.9090109@huawei.com>
 In-Reply-To: <5229B601.9090109@huawei.com>
 Content-Type: text/plain; charset="ISO-8859-1"
@@ -38,22 +38,22 @@ It has been tested in queue_work_on() already. No functional changed.
 Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
 Cc: Tejun Heo <tj@kernel.org>
 ---
- lib/debugobjects.c | 2 +-
+ drivers/staging/olpc_dcon/olpc_dcon.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/lib/debugobjects.c b/lib/debugobjects.c
-index 37061ed..67e84c8 100644
---- a/lib/debugobjects.c
-+++ b/lib/debugobjects.c
-@@ -196,7 +196,7 @@ static void free_object(struct debug_obj *obj)
- 	 * initialized:
- 	 */
- 	if (obj_pool_free > ODEBUG_POOL_SIZE && obj_cache)
--		sched = keventd_up() && !work_pending(&debug_obj_work);
-+		sched = keventd_up();
- 	hlist_add_head(&obj->node, &obj_pool);
- 	obj_pool_free++;
- 	obj_pool_used--;
+diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c b/drivers/staging/olpc_dcon/olpc_dcon.c
+index 193e1c6..0dfd528 100644
+--- a/drivers/staging/olpc_dcon/olpc_dcon.c
++++ b/drivers/staging/olpc_dcon/olpc_dcon.c
+@@ -381,7 +381,7 @@ static void dcon_set_source(struct dcon_priv *dcon, int arg)
+
+ 	dcon->pending_src = arg;
+
+-	if ((dcon->curr_src != arg) && !work_pending(&dcon->switch_source))
++	if (dcon->curr_src != arg)
+ 		schedule_work(&dcon->switch_source);
+ }
+
 -- 
 1.8.2.2
 
