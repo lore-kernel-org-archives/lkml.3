@@ -1,76 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab3IFO7Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 10:59:24 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:1413 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751400Ab3IFO7W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 10:59:22 -0400
-X-IronPort-AV: E=Sophos;i="4.90,854,1371081600"; 
-   d="scan'208";a="51289140"
-Date: Fri, 6 Sep 2013 15:59:02 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Subject: Re: [PATCH v5 11/13] xen: introduce xen_alloc/free_coherent_pages
-In-Reply-To: <20130906141444.GE1946@arm.com>
-Message-ID: <alpine.DEB.2.02.1309061554260.6397@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com> <1377801154-29215-11-git-send-email-stefano.stabellini@eu.citrix.com> <20130905160905.GI11887@arm.com> <alpine.DEB.2.02.1309051742390.6397@kaball.uk.xensource.com>
- <20130906141444.GE1946@arm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+	id S1754004Ab3IFO7e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 10:59:34 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:21284 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752866Ab3IFO7c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 10:59:32 -0400
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+To: stefano.stabellini@eu.citrix.com, david.vrabel@citrix.com,
+        konrad.wilk@oracle.com
+Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Subject: [PATCH] xen/p2m: Don't call get_balloon_scratch_page() twice, keep interrupts disabled for multicalls
+Date: Fri,  6 Sep 2013 11:00:46 -0400
+Message-Id: <1378479646-12592-1-git-send-email-boris.ostrovsky@oracle.com>
+X-Mailer: git-send-email 1.8.3.1
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Sep 2013, Catalin Marinas wrote:
-> On Thu, Sep 05, 2013 at 05:43:33PM +0100, Stefano Stabellini wrote:
-> > On Thu, 5 Sep 2013, Catalin Marinas wrote:
-> > > On Thu, Aug 29, 2013 at 07:32:32PM +0100, Stefano Stabellini wrote:
-> > > > xen_swiotlb_alloc_coherent needs to allocate a coherent buffer for cpu
-> > > > and devices. On native x86 and ARMv8 is sufficient to call
-> > > > __get_free_pages in order to get a coherent buffer, while on ARM we need
-> > > > to call arm_dma_ops.alloc.
-> > > 
-> > > Don't bet on this for ARMv8. It's not mandated for the architecture, so
-> > > at some point some SoC will require non-cacheable buffers for coherency.
-> > 
-> > I see.
-> > Would it be better if I implemented xen_alloc_coherent_pages on armv8 by
-> > calling arm64_swiotlb_dma_ops.alloc?
-> 
-> What does this buffer do exactly? Is it allocated by guests?
+m2p_remove_override() calls get_balloon_scratch_page() in
+MULTI_update_va_mapping() even though it already has pointer to this page from
+the earlier call (in scratch_page). This second call doesn't have a matching
+put_balloon_scratch_page() thus not restoring preempt count back. (Also, there
+is no put_balloon_scratch_page() in the error path.)
 
-It is allocated by Dom0 to do DMA to/from a device.
-It is the buffer that is going to be returned by dma_map_ops.alloc to
-the caller:
+In addition, the second multicall uses __xen_mc_entry() which does not disable
+interrupts. Rearrange xen_mc_* calls to keep interrupts off while performing
+multicalls.
 
-On x86:
-dma_map_ops.alloc -> xen_swiotlb_alloc_coherent -> xen_alloc_coherent_pages -> __get_free_pages
+Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+---
+ arch/x86/xen/p2m.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-On ARM:
-dma_map_ops.alloc -> xen_swiotlb_alloc_coherent -> xen_alloc_coherent_pages -> arm_dma_ops.alloc
+diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+index 0d4ec35..8b901e8 100644
+--- a/arch/x86/xen/p2m.c
++++ b/arch/x86/xen/p2m.c
+@@ -990,10 +990,13 @@ int m2p_remove_override(struct page *page,
+ 				printk(KERN_WARNING "m2p_remove_override: "
+ 						"pfn %lx mfn %lx, failed to modify kernel mappings",
+ 						pfn, mfn);
++				put_balloon_scratch_page();
+ 				return -1;
+ 			}
+ 
+-			mcs = xen_mc_entry(
++			xen_mc_batch();
++
++			mcs = __xen_mc_entry(
+ 					sizeof(struct gnttab_unmap_and_replace));
+ 			unmap_op = mcs.args;
+ 			unmap_op->host_addr = kmap_op->host_addr;
+@@ -1003,12 +1006,11 @@ int m2p_remove_override(struct page *page,
+ 			MULTI_grant_table_op(mcs.mc,
+ 					GNTTABOP_unmap_and_replace, unmap_op, 1);
+ 
+-			xen_mc_issue(PARAVIRT_LAZY_MMU);
+-
+ 			mcs = __xen_mc_entry(0);
+ 			MULTI_update_va_mapping(mcs.mc, scratch_page_address,
+-					pfn_pte(page_to_pfn(get_balloon_scratch_page()),
++					pfn_pte(page_to_pfn(scratch_page),
+ 					PAGE_KERNEL_RO), 0);
++
+ 			xen_mc_issue(PARAVIRT_LAZY_MMU);
+ 
+ 			kmap_op->host_addr = 0;
+-- 
+1.8.3.1
 
-On ARM64
-dma_map_ops.alloc -> xen_swiotlb_alloc_coherent -> xen_alloc_coherent_pages -> ????
-
-
-
-> Currently arm64_swiotlb_dma_ops assume cache-coherent DMA. I have a
-> patch which introduces new ops for non-coherent DMA but this should
-> really be orthogonal to swiotlb. You can basically have 4 combinations
-> of coherent/non-coherent and swiotlb/iommu. Mark Rutland is currently
-> looking into how best to describe this via DT as it may not even be per
-> SoC but per bus or device.
-
-It seems to me that calling arm64_swiotlb_dma_ops.alloc would ensure
-that we allocate the right buffer for the right device?
