@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757142Ab3IFP66 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 11:58:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55677 "EHLO mail.zytor.com"
+	id S1757686Ab3IFP7S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 11:59:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63503 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756816Ab3IFP64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 11:58:56 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130906151526.GA22423@mtj.dyndns.org>
-References: <1377596268-31552-1-git-send-email-tangchen@cn.fujitsu.com> <20130904192215.GG26609@mtj.dyndns.org> <52299935.0302450a.26c9.ffffb240SMTPIN_ADDED_BROKEN@mx.google.com> <20130906151526.GA22423@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 00/11] x86, memblock: Allocate memory near kernel image before SRAT parsed.
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, 06 Sep 2013 08:47:45 -0700
-To: Tejun Heo <tj@kernel.org>, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-CC: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Message-ID: <157310e1-f8cb-4184-b58d-63cf9fa611ee@email.android.com>
+	id S1757357Ab3IFP7O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 11:59:14 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+In-Reply-To: <CANP1eJEk=eRmq1F+yYWB53spgifbU+zzKGdmKw6BGfx8SknkrA@mail.gmail.com>
+References: <CANP1eJEk=eRmq1F+yYWB53spgifbU+zzKGdmKw6BGfx8SknkrA@mail.gmail.com> <cover.1378418255.git.milosz@adfin.com> <alpine.DEB.2.00.1309051555250.1073@cobra.newdream.net>
+To: Milosz Tanski <milosz@adfin.com>
+Cc: dhowells@redhat.com, Sage Weil <sage@inktank.com>, sprabhu@redhat.com,
+        ceph-devel <ceph-devel@vger.kernel.org>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>, Hongyi Jia <jiayisuse@gmail.com>,
+        "linux-cachefs@redhat.com" <linux-cachefs@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/8] ceph: fscache support & upstream changes
+From: David Howells <dhowells@redhat.com>
+Date: Fri, 06 Sep 2013 16:59:02 +0100
+Message-ID: <18764.1378483142@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Specifically there are a bunch of things which need to be below a certain address (which one varies.)
+Milosz Tanski <milosz@adfin.com> wrote:
 
-Tejun Heo <tj@kernel.org> wrote:
->Hello, Wanpeng.
->
->On Fri, Sep 06, 2013 at 04:58:11PM +0800, Wanpeng Li wrote:
->> What's the root reason memblock alloc from high to low? To reduce 
->> fragmentation or ...
->
->Because low memory tends to be more precious, it's just easier to pack
->everything towards the top so that we don't have to worry about which
->zone to use for allocation and fallback logic.
->
->Thanks.
+> After running this for a day on some loaded machines I ran into what
+> looks like an old issue with the new code. I remember you saw an issue
+> that manifested it self in a similar way a while back.
+> 
+> [13837253.462779] FS-Cache: Assertion failed
+> [13837253.462782] 3 == 5 is false
+> [13837253.462807] ------------[ cut here ]------------
+> [13837253.462811] kernel BUG at fs/fscache/operation.c:414!
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+Bah.
+
+I forgot to call fscache_op_complete().  Patch updated and repushed.
+
+Btw, I've reordered the patches to put the CIFS patch last.  Can you merge the
+patches prior to the CIFS commit from my branch rather than cherry picking
+them so that if they go via two different routes, GIT will handle the merge
+correctly?  I've stuck a tag on it (fscache-fixes-for-ceph) to make that
+easier for you.
+
+I've also asked another RH engineer to try doing some basic testing on the
+CIFS stuff - which may validate the fscache_readpages_cancel patch.
+
+David
