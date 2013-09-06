@@ -1,141 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804Ab3IFOz7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 10:55:59 -0400
-Received: from gerard.telenet-ops.be ([195.130.132.48]:56210 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069Ab3IFOz6 (ORCPT
+	id S1753853Ab3IFO5H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 10:57:07 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:42108 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751713Ab3IFO5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 10:55:58 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] spi/drivers: Restrict COMPILE_TEST by HAS_DMA where needed
-Date: Fri,  6 Sep 2013 16:55:40 +0200
-Message-Id: <1378479340-31237-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 6 Sep 2013 10:57:05 -0400
+Date: Fri, 6 Sep 2013 17:55:45 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Jerome Marchand <jmarchan@redhat.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Minchan Kim <minchan@kernel.org>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] staging: zram: minimize `slot_free_lock' usage
+Message-ID: <20130906145545.GC2238@swordfish.minsk.epam.com>
+References: <20130906134706.GA2238@swordfish.minsk.epam.com>
+ <5229E9BF.5020604@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5229E9BF.5020604@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit dd1053a93fdc11d491f5460f7da5ce70e6c93c9e ("spi/drivers: Enable build
-of drivers with COMPILE_TEST") allows compile-testing drivers on platforms
-they're not meant for.
+On (09/06/13 16:42), Jerome Marchand wrote:
+> On 09/06/2013 03:47 PM, Sergey Senozhatsky wrote:
+> > Calling handle_pending_slot_free() for every RW operation may
+> > cause unneccessary slot_free_lock locking, because most likely
+> > process will see NULL slot_free_rq. handle_pending_slot_free()
+> > only when current detects that slot_free_rq is not NULL.
+> > 
+> > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> > 
+> > ---
+> > 
+> >  drivers/staging/zram/zram_drv.c | 5 +++--
+> >  1 file changed, 3 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> > index 91d94b5..17386e2 100644
+> > --- a/drivers/staging/zram/zram_drv.c
+> > +++ b/drivers/staging/zram/zram_drv.c
+> > @@ -532,14 +532,15 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
+> >  {
+> >  	int ret;
+> >  
+> > +	if (zram->slot_free_rq)
+> > +		handle_pending_slot_free(zram);
+> > +
+> 
+> Calling handle_pending_slot_free() without holding zram->lock?
+> That's racy.
 
-However, adding "|| COMPILE_TEST" bypasses all other implicit dependencies
-assumed by the platform dependencies before, like HAS_DMA.
+sorry, my bad. it should take down_write() lock.
 
-If NO_DMA=y:
+	-ss
 
-drivers/built-in.o: In function `atmel_spi_dma_unmap_xfer':
-drivers/spi/spi-atmel.c:915: undefined reference to `dma_unmap_single'
-drivers/spi/spi-atmel.c:918: undefined reference to `dma_unmap_single'
-drivers/built-in.o: In function `atmel_spi_next_xfer_data':
-drivers/spi/spi-atmel.c:690: undefined reference to `dma_sync_single_for_cpu'
-drivers/built-in.o: In function `atmel_spi_dma_map_xfer':
-drivers/spi/spi-atmel.c:890: undefined reference to `dma_map_single'
-drivers/spi/spi-atmel.c:893: undefined reference to `dma_mapping_error'
-drivers/spi/spi-atmel.c:897: undefined reference to `dma_map_single'
-drivers/spi/spi-atmel.c:900: undefined reference to `dma_mapping_error'
-drivers/spi/spi-atmel.c:902: undefined reference to `dma_unmap_single'
-drivers/built-in.o: In function `atmel_spi_probe':
-drivers/spi/spi-atmel.c:1540: undefined reference to `dma_alloc_coherent'
-drivers/spi/spi-atmel.c:1623: undefined reference to `dma_free_coherent'
-drivers/built-in.o: In function `atmel_spi_remove':
-drivers/spi/spi-atmel.c:1665: undefined reference to `dma_free_coherent'
-drivers/built-in.o: In function `ep93xx_spi_dma_finish':
-drivers/spi/spi-ep93xx.c:550: undefined reference to `dma_unmap_sg'
-drivers/built-in.o: In function `ep93xx_spi_dma_prepare':
-drivers/spi/spi-ep93xx.c:516: undefined reference to `dma_map_sg'
-drivers/spi/spi-ep93xx.c:522: undefined reference to `dma_unmap_sg'
-drivers/built-in.o: In function `omap2_mcspi_rx_dma':
-drivers/spi/spi-omap2-mcspi.c:475: undefined reference to `dma_unmap_single'
-drivers/built-in.o: In function `omap2_mcspi_txrx_dma':
-drivers/spi/spi-omap2-mcspi.c:589: undefined reference to `dma_unmap_single'
-drivers/built-in.o: In function `omap2_mcspi_transfer_one_message':
-drivers/spi/spi-omap2-mcspi.c:1202: undefined reference to `dma_map_single'
-drivers/spi/spi-omap2-mcspi.c:1204: undefined reference to `dma_mapping_error'
-drivers/spi/spi-omap2-mcspi.c:1211: undefined reference to `dma_map_single'
-drivers/spi/spi-omap2-mcspi.c:1213: undefined reference to `dma_mapping_error'
-drivers/spi/spi-omap2-mcspi.c:1217: undefined reference to `dma_unmap_single'
-drivers/built-in.o: In function `tegra_spi_deinit_dma_param':
-drivers/spi/spi-tegra114.c:675: undefined reference to `dma_free_coherent'
-drivers/built-in.o: In function `tegra_spi_copy_spi_rxbuf_to_client_rxbuf':
-drivers/spi/spi-tegra114.c:415: undefined reference to `dma_sync_single_for_cpu'
-drivers/spi/spi-tegra114.c:440: undefined reference to `dma_sync_single_for_cpu'
-drivers/built-in.o: In function `tegra_spi_copy_client_txbuf_to_spi_txbuf':
-drivers/spi/spi-tegra114.c:381: undefined reference to `dma_sync_single_for_cpu'
-drivers/spi/spi-tegra114.c:405: undefined reference to `dma_sync_single_for_cpu'
-drivers/built-in.o: In function `tegra_spi_start_dma_based_transfer':
-drivers/spi/spi-tegra114.c:543: undefined reference to `dma_sync_single_for_cpu'
-drivers/built-in.o: In function `tegra_slink_deinit_dma_param':
-drivers/spi/spi-tegra20-slink.c:705: undefined reference to `dma_free_coherent'
-drivers/built-in.o: In function `tegra_slink_copy_spi_rxbuf_to_client_rxbuf':
-drivers/spi/spi-tegra20-slink.c:427: undefined reference to `dma_sync_single_for_cpu'
-drivers/spi/spi-tegra20-slink.c:452: undefined reference to `dma_sync_single_for_cpu'
-drivers/built-in.o: In function `tegra_slink_copy_client_txbuf_to_spi_txbuf':
-drivers/spi/spi-tegra20-slink.c:393: undefined reference to `dma_sync_single_for_cpu'
-drivers/spi/spi-tegra20-slink.c:417: undefined reference to `dma_sync_single_for_cpu'
-drivers/built-in.o: In function `tegra_slink_start_dma_based_transfer':
-drivers/spi/spi-tegra20-slink.c:561: undefined reference to `dma_sync_single_for_cpu'
-
-Add dependencies on HAS_DMA to fix this.
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/spi/Kconfig |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-index 0170d4c..b80b959 100644
---- a/drivers/spi/Kconfig
-+++ b/drivers/spi/Kconfig
-@@ -70,7 +70,7 @@ config SPI_ATH79
- 
- config SPI_ATMEL
- 	tristate "Atmel SPI Controller"
--	depends on (ARCH_AT91 || AVR32 || COMPILE_TEST)
-+	depends on (ARCH_AT91 || AVR32 || (COMPILE_TEST && HAS_DMA))
- 	help
- 	  This selects a driver for the Atmel SPI Controller, present on
- 	  many AT32 (AVR32) and AT91 (ARM) chips.
-@@ -173,7 +173,7 @@ config SPI_EFM32
- 
- config SPI_EP93XX
- 	tristate "Cirrus Logic EP93xx SPI controller"
--	depends on ARCH_EP93XX || COMPILE_TEST
-+	depends on ARCH_EP93XX || (COMPILE_TEST && HAS_DMA)
- 	help
- 	  This enables using the Cirrus EP93xx SPI controller in master
- 	  mode.
-@@ -301,7 +301,7 @@ config SPI_OMAP_UWIRE
- 
- config SPI_OMAP24XX
- 	tristate "McSPI driver for OMAP"
--	depends on ARCH_OMAP2PLUS || COMPILE_TEST
-+	depends on ARCH_OMAP2PLUS || (COMPILE_TEST && HAS_DMA)
- 	help
- 	  SPI master controller for OMAP24XX and later Multichannel SPI
- 	  (McSPI) modules.
-@@ -447,7 +447,7 @@ config SPI_MXS
- 
- config SPI_TEGRA114
- 	tristate "NVIDIA Tegra114 SPI Controller"
--	depends on (ARCH_TEGRA && TEGRA20_APB_DMA) || COMPILE_TEST
-+	depends on (ARCH_TEGRA && TEGRA20_APB_DMA) || (COMPILE_TEST && HAS_DMA)
- 	help
- 	  SPI driver for NVIDIA Tegra114 SPI Controller interface. This controller
- 	  is different than the older SoCs SPI controller and also register interface
-@@ -463,7 +463,7 @@ config SPI_TEGRA20_SFLASH
- 
- config SPI_TEGRA20_SLINK
- 	tristate "Nvidia Tegra20/Tegra30 SLINK Controller"
--	depends on (ARCH_TEGRA && TEGRA20_APB_DMA) || COMPILE_TEST
-+	depends on (ARCH_TEGRA && TEGRA20_APB_DMA) || (COMPILE_TEST && HAS_DMA)
- 	help
- 	  SPI driver for Nvidia Tegra20/Tegra30 SLINK Controller interface.
- 
--- 
-1.7.9.5
-
+> Jerome
+> 
+> >  	if (rw == READ) {
+> >  		down_read(&zram->lock);
+> > -		handle_pending_slot_free(zram);
+> >  		ret = zram_bvec_read(zram, bvec, index, offset, bio);
+> >  		up_read(&zram->lock);
+> >  	} else {
+> >  		down_write(&zram->lock);
+> > -		handle_pending_slot_free(zram);
+> >  		ret = zram_bvec_write(zram, bvec, index, offset);
+> >  		up_write(&zram->lock);
+> >  	}
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> > 
+> 
