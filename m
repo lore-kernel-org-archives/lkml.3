@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750805Ab3IFF5s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 01:57:48 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:58518 "EHLO
+	id S1750866Ab3IFF61 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 01:58:27 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:57945 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750730Ab3IFF5q (ORCPT
+	with ESMTP id S1750781Ab3IFF5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 01:57:46 -0400
-X-AuditID: 9c93016f-b7cf0ae00000518f-55-52296ed9bafb
+	Fri, 6 Sep 2013 01:57:48 -0400
+X-AuditID: 9c93016f-b7cf0ae00000518f-5b-52296ed995bc
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Pekka Enberg <penberg@kernel.org>
 Cc: Christoph Lameter <cl@linux.com>,
@@ -15,134 +15,225 @@ Cc: Christoph Lameter <cl@linux.com>,
         Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [REPOST PATCH 0/4] slab: implement byte sized indexes for the freelist of a slab
-Date: Fri,  6 Sep 2013 14:57:43 +0900
-Message-Id: <1378447067-19832-1-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [REPOST PATCH 3/4] slab: introduce byte sized index for the freelist of a slab
+Date: Fri,  6 Sep 2013 14:57:46 +0900
+Message-Id: <1378447067-19832-4-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1378447067-19832-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1378447067-19832-1-git-send-email-iamjoonsoo.kim@lge.com>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* THIS IS JUST REPOSTED ACCORDING TO MAINTAINER'S REQUEST *
-
-* Changes from original post
-Correct the position of the results.
-Attach more results about cache-misses and elapsed time on a hackbench test.
-
------------------------------------------------------
-This patchset implements byte sized indexes for the freelist of a slab.
-
 Currently, the freelist of a slab consist of unsigned int sized indexes.
-Most of slabs have less number of objects than 256, so much space is wasted.
-To reduce this overhead, this patchset implements byte sized indexes for
-the freelist of a slab. With it, we can save 3 bytes for each objects.
+Most of slabs have less number of objects than 256, since restriction
+for page order is at most 1 in default configuration. For example,
+consider a slab consisting of 32 byte sized objects on two continous
+pages. In this case, 256 objects is possible and these number fit to byte
+sized indexes. 256 objects is maximum possible value in default
+configuration, since 32 byte is minimum object size in the SLAB.
+(8192 / 32 = 256). Therefore, if we use byte sized index, we can save
+3 bytes for each object.
 
 This introduce one likely branch to functions used for setting/getting
 objects to/from the freelist, but we may get more benefits from
 this change.
 
-Below is some numbers of 'cat /proc/slabinfo' related to my previous posting
-and this patchset.
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-
-* Before *
-# name            <active_objs> <num_objs> <objsize> <objperslab> <pagesperslab> : tunables [snip...]
-kmalloc-512          527    600    512    8    1 : tunables   54   27    0 : slabdata     75     75      0   
-kmalloc-256          210    210    256   15    1 : tunables  120   60    0 : slabdata     14     14      0   
-kmalloc-192         1040   1040    192   20    1 : tunables  120   60    0 : slabdata     52     52      0   
-kmalloc-96           750    750    128   30    1 : tunables  120   60    0 : slabdata     25     25      0   
-kmalloc-64          2773   2773     64   59    1 : tunables  120   60    0 : slabdata     47     47      0   
-kmalloc-128          660    690    128   30    1 : tunables  120   60    0 : slabdata     23     23      0   
-kmalloc-32         11200  11200     32  112    1 : tunables  120   60    0 : slabdata    100    100      0   
-kmem_cache           197    200    192   20    1 : tunables  120   60    0 : slabdata     10     10      0   
-
-* After my previous posting(overload struct slab over struct page) *
-# name            <active_objs> <num_objs> <objsize> <objperslab> <pagesperslab> : tunables [snip...]
-kmalloc-512          525    640    512    8    1 : tunables   54   27    0 : slabdata     80     80      0   
-kmalloc-256          210    210    256   15    1 : tunables  120   60    0 : slabdata     14     14      0   
-kmalloc-192         1016   1040    192   20    1 : tunables  120   60    0 : slabdata     52     52      0   
-kmalloc-96           560    620    128   31    1 : tunables  120   60    0 : slabdata     20     20      0   
-kmalloc-64          2148   2280     64   60    1 : tunables  120   60    0 : slabdata     38     38      0   
-kmalloc-128          647    682    128   31    1 : tunables  120   60    0 : slabdata     22     22      0   
-kmalloc-32         11360  11413     32  113    1 : tunables  120   60    0 : slabdata    101    101      0   
-kmem_cache           197    200    192   20    1 : tunables  120   60    0 : slabdata     10     10      0   
-
-kmem_caches consisting of objects less than or equal to 128 byte have one more
-objects in a slab. You can see it at objperslab.
-
-We can improve further with this patchset.
-
-* My previous posting + this patchset *
-# name            <active_objs> <num_objs> <objsize> <objperslab> <pagesperslab> : tunables [snip...]
-kmalloc-512          521    648    512    8    1 : tunables   54   27    0 : slabdata     81     81      0
-kmalloc-256          208    208    256   16    1 : tunables  120   60    0 : slabdata     13     13      0
-kmalloc-192         1029   1029    192   21    1 : tunables  120   60    0 : slabdata     49     49      0
-kmalloc-96           529    589    128   31    1 : tunables  120   60    0 : slabdata     19     19      0
-kmalloc-64          2142   2142     64   63    1 : tunables  120   60    0 : slabdata     34     34      0
-kmalloc-128          660    682    128   31    1 : tunables  120   60    0 : slabdata     22     22      0
-kmalloc-32         11716  11780     32  124    1 : tunables  120   60    0 : slabdata     95     95      0
-kmem_cache           197    210    192   21    1 : tunables  120   60    0 : slabdata     10     10      0
-
-kmem_caches consisting of objects less than or equal to 256 byte have
-one or more objects than before. In the case of kmalloc-32, we have 11 more
-objects, so 352 bytes (11 * 32) are saved and this is roughly 9% saving of
-memory. Of couse, this percentage decreases as the number of objects
-in a slab decreases.
-
-
-
-Here are the performance results on my 4 cpus machine.
-
-* Before *
-
- Performance counter stats for 'perf bench sched messaging -g 50 -l 1000' (10 runs):
-
-       238,309,671 cache-misses                                                  ( +-  0.40% )
-
-      12.010172090 seconds time elapsed                                          ( +-  0.21% )
-
-* After my previous posting *
-
- Performance counter stats for 'perf bench sched messaging -g 50 -l 1000' (10 runs):
-
-       229,945,138 cache-misses                                                  ( +-  0.23% )
-
-      11.627897174 seconds time elapsed                                          ( +-  0.14% )
-
-* My previous posting + this patchset *
-
- Performance counter stats for 'perf bench sched messaging -g 50 -l 1000' (10 runs):
-
-       218,640,472 cache-misses                                                  ( +-  0.42% )
-
-      11.504999837 seconds time elapsed                                          ( +-  0.21% )
-
-
-cache-misses are reduced by each patchset, roughly 5% respectively.
-And elapsed times are also improved by 3.1% and 4.2% to baseline, respectively.
-
-I think that all patchsets deserve to be merged, since it reduces memory usage and
-also improves performance. :)
-
-Please let me know expert's opinions :)
-Thanks.
-
-This patchset comes from a Christoph's idea.
-https://lkml.org/lkml/2013/8/23/315
-
-Patches are on top of my previous posting.
-https://lkml.org/lkml/2013/8/22/137
-
-Joonsoo Kim (4):
-  slab: factor out calculate nr objects in cache_estimate
-  slab: introduce helper functions to get/set free object
-  slab: introduce byte sized index for the freelist of a slab
-  slab: make more slab management structure off the slab
-
- mm/slab.c |  138 +++++++++++++++++++++++++++++++++++++++++++++----------------
- 1 file changed, 103 insertions(+), 35 deletions(-)
-
+diff --git a/mm/slab.c b/mm/slab.c
+index a0e49bb..bd366e5 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -565,8 +565,16 @@ static inline struct array_cache *cpu_cache_get(struct kmem_cache *cachep)
+ 	return cachep->array[smp_processor_id()];
+ }
+ 
+-static int calculate_nr_objs(size_t slab_size, size_t buffer_size,
+-				size_t idx_size, size_t align)
++static inline bool can_byte_index(int nr_objs)
++{
++	if (likely(nr_objs <= (sizeof(unsigned char) << 8)))
++		return true;
++
++	return false;
++}
++
++static int __calculate_nr_objs(size_t slab_size, size_t buffer_size,
++				unsigned int idx_size, size_t align)
+ {
+ 	int nr_objs;
+ 	size_t freelist_size;
+@@ -592,6 +600,29 @@ static int calculate_nr_objs(size_t slab_size, size_t buffer_size,
+ 	return nr_objs;
+ }
+ 
++static int calculate_nr_objs(size_t slab_size, size_t buffer_size,
++							size_t align)
++{
++	int nr_objs;
++	int byte_nr_objs;
++
++	nr_objs = __calculate_nr_objs(slab_size, buffer_size,
++					sizeof(unsigned int), align);
++	if (!can_byte_index(nr_objs))
++		return nr_objs;
++
++	byte_nr_objs = __calculate_nr_objs(slab_size, buffer_size,
++					sizeof(unsigned char), align);
++	/*
++	 * nr_objs can be larger when using byte index,
++	 * so that it cannot be indexed by byte index.
++	 */
++	if (can_byte_index(byte_nr_objs))
++		return byte_nr_objs;
++	else
++		return nr_objs;
++}
++
+ /*
+  * Calculate the number of objects and left-over bytes for a given buffer size.
+  */
+@@ -618,13 +649,18 @@ static void cache_estimate(unsigned long gfporder, size_t buffer_size,
+ 	 * correct alignment when allocated.
+ 	 */
+ 	if (flags & CFLGS_OFF_SLAB) {
+-		mgmt_size = 0;
+ 		nr_objs = slab_size / buffer_size;
++		mgmt_size = 0;
+ 
+ 	} else {
+-		nr_objs = calculate_nr_objs(slab_size, buffer_size,
+-					sizeof(unsigned int), align);
+-		mgmt_size = ALIGN(nr_objs * sizeof(unsigned int), align);
++		nr_objs = calculate_nr_objs(slab_size, buffer_size, align);
++		if (can_byte_index(nr_objs)) {
++			mgmt_size =
++				ALIGN(nr_objs * sizeof(unsigned char), align);
++		} else {
++			mgmt_size =
++				ALIGN(nr_objs * sizeof(unsigned int), align);
++		}
+ 	}
+ 	*num = nr_objs;
+ 	*left_over = slab_size - (nr_objs * buffer_size) - mgmt_size;
+@@ -2012,7 +2048,10 @@ static size_t calculate_slab_order(struct kmem_cache *cachep,
+ 			 * looping condition in cache_grow().
+ 			 */
+ 			offslab_limit = size;
+-			offslab_limit /= sizeof(unsigned int);
++			if (can_byte_index(num))
++				offslab_limit /= sizeof(unsigned char);
++			else
++				offslab_limit /= sizeof(unsigned int);
+ 
+  			if (num > offslab_limit)
+ 				break;
+@@ -2253,8 +2292,13 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
+ 	if (!cachep->num)
+ 		return -E2BIG;
+ 
+-	freelist_size =
+-		ALIGN(cachep->num * sizeof(unsigned int), cachep->align);
++	if (can_byte_index(cachep->num)) {
++		freelist_size = ALIGN(cachep->num * sizeof(unsigned char),
++								cachep->align);
++	} else {
++		freelist_size = ALIGN(cachep->num * sizeof(unsigned int),
++								cachep->align);
++	}
+ 
+ 	/*
+ 	 * If the slab has been placed off-slab, and we have enough space then
+@@ -2267,7 +2311,10 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
+ 
+ 	if (flags & CFLGS_OFF_SLAB) {
+ 		/* really off slab. No need for manual alignment */
+-		freelist_size = cachep->num * sizeof(unsigned int);
++		if (can_byte_index(cachep->num))
++			freelist_size = cachep->num * sizeof(unsigned char);
++		else
++			freelist_size = cachep->num * sizeof(unsigned int);
+ 
+ #ifdef CONFIG_PAGE_POISONING
+ 		/* If we're going to use the generic kernel_map_pages()
+@@ -2545,15 +2592,22 @@ static struct freelist *alloc_slabmgmt(struct kmem_cache *cachep,
+ 	return freelist;
+ }
+ 
+-static inline unsigned int get_free_obj(struct page *page, unsigned int idx)
++static inline unsigned int get_free_obj(struct kmem_cache *cachep,
++					struct page *page, unsigned int idx)
+ {
+-	return ((unsigned int *)page->freelist)[idx];
++	if (likely(can_byte_index(cachep->num)))
++		return ((unsigned char *)page->freelist)[idx];
++	else
++		return ((unsigned int *)page->freelist)[idx];
+ }
+ 
+-static inline void set_free_obj(struct page *page,
++static inline void set_free_obj(struct kmem_cache *cachep, struct page *page,
+ 					unsigned int idx, unsigned int val)
+ {
+-	((unsigned int *)(page->freelist))[idx] = val;
++	if (likely(can_byte_index(cachep->num)))
++		((unsigned char *)(page->freelist))[idx] = (unsigned char)val;
++	else
++		((unsigned int *)(page->freelist))[idx] = val;
+ }
+ 
+ static void cache_init_objs(struct kmem_cache *cachep,
+@@ -2598,7 +2652,7 @@ static void cache_init_objs(struct kmem_cache *cachep,
+ 		if (cachep->ctor)
+ 			cachep->ctor(objp);
+ #endif
+-		set_free_obj(page, i, i);
++		set_free_obj(cachep, page, i, i);
+ 	}
+ }
+ 
+@@ -2615,9 +2669,11 @@ static void kmem_flagcheck(struct kmem_cache *cachep, gfp_t flags)
+ static void *slab_get_obj(struct kmem_cache *cachep, struct page *page,
+ 				int nodeid)
+ {
++	unsigned int index;
+ 	void *objp;
+ 
+-	objp = index_to_obj(cachep, page, get_free_obj(page, page->active));
++	index = get_free_obj(cachep, page, page->active);
++	objp = index_to_obj(cachep, page, index);
+ 	page->active++;
+ #if DEBUG
+ 	WARN_ON(page_to_nid(virt_to_page(objp)) != nodeid);
+@@ -2638,7 +2694,7 @@ static void slab_put_obj(struct kmem_cache *cachep, struct page *page,
+ 
+ 	/* Verify double free bug */
+ 	for (i = page->active; i < cachep->num; i++) {
+-		if (get_free_obj(page, i) == objnr) {
++		if (get_free_obj(cachep, page, i) == objnr) {
+ 			printk(KERN_ERR "slab: double free detected in cache "
+ 					"'%s', objp %p\n", cachep->name, objp);
+ 			BUG();
+@@ -2646,7 +2702,7 @@ static void slab_put_obj(struct kmem_cache *cachep, struct page *page,
+ 	}
+ #endif
+ 	page->active--;
+-	set_free_obj(page, page->active, objnr);
++	set_free_obj(cachep, page, page->active, objnr);
+ }
+ 
+ /*
+@@ -4220,7 +4276,7 @@ static void handle_slab(unsigned long *n, struct kmem_cache *c,
+ 
+ 		for (j = page->active; j < c->num; j++) {
+ 			/* Skip freed item */
+-			if (get_free_obj(page, j) == i) {
++			if (get_free_obj(c, page, j) == i) {
+ 				active = false;
+ 				break;
+ 			}
 -- 
 1.7.9.5
 
