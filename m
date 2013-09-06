@@ -1,223 +1,486 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751087Ab3IFJUp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 05:20:45 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:33257 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750941Ab3IFJUZ convert rfc822-to-8bit (ORCPT
+	id S1751113Ab3IFJUr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 05:20:47 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:46600 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954Ab3IFJU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 05:20:25 -0400
-MIME-Version: 1.0
-Date: Fri, 6 Sep 2013 11:20:25 +0200
-Message-ID: <CACRpkdar99ZUEp42Kcr_f0FSfFw7Q1EbJQ0-ZEZRsauen-S7cg@mail.gmail.com>
-Subject: [GIT PULL] GPIO changes for v3.12
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 6 Sep 2013 05:20:27 -0400
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org, arnd@arndb.de,
+        nico@linaro.org, Leif Lindholm <leif.lindholm@linaro.org>
+Subject: [PATCH v2 2/2] arm: add early_ioremap support
+Date: Fri,  6 Sep 2013 10:19:18 +0100
+Message-Id: <1378459158-2145-3-git-send-email-leif.lindholm@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1378459158-2145-1-git-send-email-leif.lindholm@linaro.org>
+References: <1378459158-2145-1-git-send-email-leif.lindholm@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+This patch adds support for early_ioremap and early_memremap, based
+on the existing mechanism in x86. Up to 7 regions of up to 128KB each
+can be temporarily mapped in before paging_init, regardless of later
+highmem status.
 
-this is the bulk of GPIO changes for the v3.12 series.
-Details can be found in the signed tag.
+Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
+---
+ arch/arm/Kconfig              |    7 ++
+ arch/arm/include/asm/fixmap.h |   31 ++++-
+ arch/arm/include/asm/io.h     |   17 +++
+ arch/arm/kernel/setup.c       |    5 +
+ arch/arm/mm/Makefile          |    1 +
+ arch/arm/mm/early_ioremap.c   |  271 +++++++++++++++++++++++++++++++++++++++++
+ arch/arm/mm/mmu.c             |    4 +
+ 7 files changed, 334 insertions(+), 2 deletions(-)
+ create mode 100644 arch/arm/mm/early_ioremap.c
 
-I have a feeling that some of the fixes need to be taken
-into -stable so I will attempt to ask the authors of suspected
-patches to indicate this to Greg in a separate mail.
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 43594d5..53a82da 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1805,6 +1805,13 @@ config UACCESS_WITH_MEMCPY
+ 	  However, if the CPU data cache is using a write-allocate mode,
+ 	  this option is unlikely to provide any performance gain.
+ 
++config EARLY_IOREMAP
++	depends on MMU
++	bool "Provide early_ioremap() support for kernel initialization."
++	help
++	  Provides a mechanism for kernel initialisation code to temporarily
++	  map, in a highmem-agnostic way, memory pages in before paging_init().
++
+ config SECCOMP
+ 	bool
+ 	prompt "Enable seccomp to safely compute untrusted bytecode"
+diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
+index bbae919..a2a5f50 100644
+--- a/arch/arm/include/asm/fixmap.h
++++ b/arch/arm/include/asm/fixmap.h
+@@ -1,6 +1,8 @@
+ #ifndef _ASM_FIXMAP_H
+ #define _ASM_FIXMAP_H
+ 
++#include <linux/bug.h>
++
+ /*
+  * Nothing too fancy for now.
+  *
+@@ -20,13 +22,38 @@
+ #define FIX_KMAP_BEGIN		0
+ #define FIX_KMAP_END		(FIXADDR_SIZE >> PAGE_SHIFT)
+ 
++/*
++ * 224 temporary boot-time mappings, used by early_ioremap(),
++ * before ioremap() is functional.
++ *
++ * (P)re-using the FIXADDR region, which is used for highmem
++ * later on, and statically aligned to 1MB.
++ */
++#define NR_FIX_BTMAPS		32
++#define FIX_BTMAPS_SLOTS	7
++#define TOTAL_FIX_BTMAPS	(NR_FIX_BTMAPS * FIX_BTMAPS_SLOTS)
++#define FIX_BTMAP_BEGIN		FIX_KMAP_BEGIN
++#define FIX_BTMAP_END		(FIX_KMAP_END - 1)
++
++#define clear_fixmap(idx)			\
++	__set_fixmap(idx, 0, __pgprot(0))
++
+ #define __fix_to_virt(x)	(FIXADDR_START + ((x) << PAGE_SHIFT))
+ #define __virt_to_fix(x)	(((x) - FIXADDR_START) >> PAGE_SHIFT)
+ 
+ extern void __this_fixmap_does_not_exist(void);
+ 
+-static inline unsigned long fix_to_virt(const unsigned int idx)
++static __always_inline unsigned long fix_to_virt(const unsigned int idx)
+ {
++	/*
++	 * this branch gets completely eliminated after inlining,
++	 * except when someone tries to use fixaddr indices in an
++	 * illegal way. (such as mixing up address types or using
++	 * out-of-range indices).
++	 *
++	 * If it doesn't get removed, the linker will complain
++	 * loudly with a reasonably clear error message..
++	 */
+ 	if (idx >= FIX_KMAP_END)
+ 		__this_fixmap_does_not_exist();
+ 	return __fix_to_virt(idx);
+@@ -38,4 +65,4 @@ static inline unsigned int virt_to_fix(const unsigned long vaddr)
+ 	return __virt_to_fix(vaddr);
+ }
+ 
+-#endif
++#endif /* _ASM_FIXMAP_H */
+diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
+index d070741..35499d9 100644
+--- a/arch/arm/include/asm/io.h
++++ b/arch/arm/include/asm/io.h
+@@ -26,6 +26,7 @@
+ #include <linux/types.h>
+ #include <asm/byteorder.h>
+ #include <asm/memory.h>
++#include <asm/pgtable.h>
+ #include <asm-generic/pci_iomap.h>
+ 
+ /*
+@@ -397,5 +398,21 @@ extern int devmem_is_allowed(unsigned long pfn);
+ extern void register_isa_ports(unsigned int mmio, unsigned int io,
+ 			       unsigned int io_shift);
+ 
++/*
++ * early_ioremap() and early_iounmap() are for temporary early boot-time
++ * mappings, before the real ioremap() is functional.
++ * A boot-time mapping is currently limited to at most 16 pages.
++ *
++ * This is all squashed by paging_init().
++ */
++extern void early_ioremap_init(void);
++extern void early_ioremap_reset(void);
++extern void __iomem *early_remap(resource_size_t phys_addr,
++				 unsigned long size, u32 prot);
++#define early_ioremap(x, y) early_remap(x, y, L_PTE_MT_DEV_NONSHARED)
++#define early_memremap(x, y) early_remap(x, y, L_PTE_MT_UNCACHED)
++
++extern void early_iounmap(void __iomem *addr, unsigned long size);
++
+ #endif	/* __KERNEL__ */
+ #endif	/* __ASM_ARM_IO_H */
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index afc2489..ce913ea 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -36,6 +36,7 @@
+ #include <asm/cpu.h>
+ #include <asm/cputype.h>
+ #include <asm/elf.h>
++#include <asm/io.h>
+ #include <asm/procinfo.h>
+ #include <asm/psci.h>
+ #include <asm/sections.h>
+@@ -877,6 +878,10 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	parse_early_param();
+ 
++#ifdef CONFIG_EARLY_IOREMAP
++	early_ioremap_init();
++#endif
++
+ 	sort(&meminfo.bank, meminfo.nr_banks, sizeof(meminfo.bank[0]), meminfo_cmp, NULL);
+ 	sanity_check_meminfo();
+ 	arm_memblock_init(&meminfo, mdesc);
+diff --git a/arch/arm/mm/Makefile b/arch/arm/mm/Makefile
+index ecfe6e5..fea855e 100644
+--- a/arch/arm/mm/Makefile
++++ b/arch/arm/mm/Makefile
+@@ -15,6 +15,7 @@ endif
+ obj-$(CONFIG_MODULES)		+= proc-syms.o
+ 
+ obj-$(CONFIG_ALIGNMENT_TRAP)	+= alignment.o
++obj-$(CONFIG_EARLY_IOREMAP)	+= early_ioremap.o
+ obj-$(CONFIG_HIGHMEM)		+= highmem.o
+ obj-$(CONFIG_HUGETLB_PAGE)	+= hugetlbpage.o
+ 
+diff --git a/arch/arm/mm/early_ioremap.c b/arch/arm/mm/early_ioremap.c
+new file mode 100644
+index 0000000..9bb1339
+--- /dev/null
++++ b/arch/arm/mm/early_ioremap.c
+@@ -0,0 +1,271 @@
++/*
++ * early_ioremap() support for ARM
++ *
++ * Based on existing support in arch/x86/mm/ioremap.c
++ *
++ * Restrictions: currently only functional before paging_init()
++ */
++
++#include <linux/init.h>
++#include <linux/io.h>
++
++#include <asm/fixmap.h>
++#include <asm/pgalloc.h>
++#include <asm/pgtable.h>
++#include <asm/tlbflush.h>
++
++#include <asm/mach/map.h>
++
++static int __initdata early_ioremap_debug;
++
++static int __init early_ioremap_debug_setup(char *str)
++{
++	early_ioremap_debug = 1;
++
++	return 0;
++}
++early_param("early_ioremap_debug", early_ioremap_debug_setup);
++
++static pte_t __initdata bm_pte[PTRS_PER_PTE] __aligned(PTRS_PER_PTE * sizeof(pte_t));
++static __initdata int after_paging_init;
++
++static inline pmd_t * __init early_ioremap_pmd(unsigned long addr)
++{
++	unsigned int index = pgd_index(addr);
++	pgd_t *pgd = cpu_get_pgd() + index;
++	pud_t *pud = pud_offset(pgd, addr);
++	pmd_t *pmd = pmd_offset(pud, addr);
++
++	return pmd;
++}
++
++static inline pte_t * __init early_ioremap_pte(unsigned long addr)
++{
++	return &bm_pte[pte_index(addr)];
++}
++
++static unsigned long slot_virt[FIX_BTMAPS_SLOTS] __initdata;
++
++void __init early_ioremap_init(void)
++{
++	pmd_t *pmd;
++	int i;
++	u64 desc;
++
++	if (early_ioremap_debug)
++		pr_info("early_ioremap_init()\n");
++
++	for (i = 0; i < FIX_BTMAPS_SLOTS; i++) {
++		slot_virt[i] = __fix_to_virt(FIX_BTMAP_BEGIN + NR_FIX_BTMAPS*i);
++		if (early_ioremap_debug)
++			pr_info("  %lu byte slot @ 0x%08x\n",
++				NR_FIX_BTMAPS * PAGE_SIZE, (u32)slot_virt[i]);
++	}
++
++	pmd = early_ioremap_pmd(fix_to_virt(FIX_BTMAP_BEGIN));
++	desc = *pmd;
++	memset(bm_pte, 0, sizeof(bm_pte));
++
++	pmd_populate_kernel(NULL, pmd, bm_pte);
++	desc = *pmd;
++
++	BUILD_BUG_ON((__fix_to_virt(FIX_BTMAP_BEGIN) >> PMD_SHIFT)
++		     != (__fix_to_virt(FIX_BTMAP_END) >> PMD_SHIFT));
++
++	if (pmd != early_ioremap_pmd(fix_to_virt(FIX_BTMAP_END))) {
++		WARN_ON(1);
++		pr_warn("pmd %p != %p\n",
++			pmd, early_ioremap_pmd(fix_to_virt(FIX_BTMAP_END)));
++		pr_warn("fix_to_virt(FIX_BTMAP_BEGIN): %08lx\n",
++			fix_to_virt(FIX_BTMAP_BEGIN));
++		pr_warn("fix_to_virt(FIX_BTMAP_END):   %08lx\n",
++			fix_to_virt(FIX_BTMAP_END));
++		pr_warn("FIX_BTMAP_END:       %lu\n", FIX_BTMAP_END);
++		pr_warn("FIX_BTMAP_BEGIN:     %d\n",  FIX_BTMAP_BEGIN);
++	}
++}
++
++void __init early_ioremap_reset(void)
++{
++	after_paging_init = 1;
++}
++
++static void __init __early_set_fixmap(unsigned long idx,
++				      phys_addr_t phys, pgprot_t flags)
++{
++	unsigned long addr = __fix_to_virt(idx);
++	pte_t *pte;
++	u64 desc;
++
++	if (idx >= FIX_KMAP_END) {
++		BUG();
++		return;
++	}
++	pte = early_ioremap_pte(addr);
++
++	if (pgprot_val(flags))
++		set_pte_at(NULL, 0xfff00000, pte,
++			   pfn_pte(phys >> PAGE_SHIFT, flags));
++	else
++		pte_clear(NULL, addr, pte);
++	flush_tlb_kernel_range(addr, addr + PAGE_SIZE);
++	desc = *pte;
++}
++
++static inline void __init early_set_fixmap(unsigned long idx,
++					   phys_addr_t phys, pgprot_t prot)
++{
++	__early_set_fixmap(idx, phys, prot);
++}
++
++static inline void __init early_clear_fixmap(unsigned long idx)
++{
++	__early_set_fixmap(idx, 0, __pgprot(0));
++}
++
++static void __iomem *prev_map[FIX_BTMAPS_SLOTS] __initdata;
++static unsigned long prev_size[FIX_BTMAPS_SLOTS] __initdata;
++
++static void __init __iomem *
++__early_remap(resource_size_t phys_addr, unsigned long size, pgprot_t prot)
++{
++	unsigned long offset;
++	resource_size_t last_addr;
++	unsigned int nrpages;
++	unsigned long idx;
++	int i, slot;
++
++	slot = -1;
++	for (i = 0; i < FIX_BTMAPS_SLOTS; i++) {
++		if (!prev_map[i]) {
++			slot = i;
++			break;
++		}
++	}
++
++	if (slot < 0) {
++		pr_info("early_iomap(%08llx, %08lx) not found slot\n",
++			(u64)phys_addr, size);
++		WARN_ON(1);
++		return NULL;
++	}
++
++	if (early_ioremap_debug) {
++		pr_info("early_ioremap(%08llx, %08lx) [%d] => ",
++			(u64)phys_addr, size, slot);
++	}
++
++	/* Don't allow wraparound or zero size */
++	last_addr = phys_addr + size - 1;
++	if (!size || last_addr < phys_addr) {
++		WARN_ON(1);
++		return NULL;
++	}
++
++	prev_size[slot] = size;
++	/*
++	 * Mappings have to be page-aligned
++	 */
++	offset = phys_addr & ~PAGE_MASK;
++	phys_addr &= PAGE_MASK;
++	size = PAGE_ALIGN(last_addr + 1) - phys_addr;
++
++	/*
++	 * Mappings have to fit in the FIX_BTMAP area.
++	 */
++	nrpages = size >> PAGE_SHIFT;
++	if (nrpages > NR_FIX_BTMAPS) {
++		WARN_ON(1);
++		return NULL;
++	}
++
++	/*
++	 * Ok, go for it..
++	 */
++	idx = FIX_BTMAP_BEGIN + slot * NR_FIX_BTMAPS;
++	while (nrpages > 0) {
++		early_set_fixmap(idx, phys_addr, prot);
++		phys_addr += PAGE_SIZE;
++		idx++;
++		--nrpages;
++	}
++	if (early_ioremap_debug)
++		pr_cont("%08lx + %08lx\n", offset, slot_virt[slot]);
++
++	prev_map[slot] = (void __iomem *)(offset + slot_virt[slot]);
++	return prev_map[slot];
++}
++
++/* Remap an IO device */
++void __init __iomem *
++early_remap(resource_size_t phys_addr, unsigned long size, u32 prot)
++{
++	if (after_paging_init) {
++		WARN_ON(1);
++		return NULL;
++	}
++
++	/*
++	 * PAGE_KERNEL depends on not-yet-initialised variables.
++	 * We don't care about coherency or executability of early_ioremap
++	 * pages anyway.
++	 */
++	prot |= L_PTE_YOUNG | L_PTE_PRESENT;
++	return __early_remap(phys_addr, size, prot);
++}
++
++
++void __init early_iounmap(void __iomem *addr, unsigned long size)
++{
++	unsigned long virt_addr;
++	unsigned long offset;
++	unsigned int nrpages;
++	unsigned long idx;
++	int i, slot;
++
++	if (after_paging_init) {
++		WARN_ON(1);
++		return;
++	}
++
++	slot = -1;
++	for (i = 0; i < FIX_BTMAPS_SLOTS; i++) {
++		if (prev_map[i] == addr) {
++			slot = i;
++			break;
++		}
++	}
++
++	if (slot < 0) {
++		pr_info("early_iounmap(%p, %08lx) not found slot\n",
++			addr, size);
++		WARN_ON(1);
++		return;
++	}
++
++	if (prev_size[slot] != size) {
++		pr_info("early_iounmap(%p, %08lx) [%d] size not consistent %08lx\n",
++			addr, size, slot, prev_size[slot]);
++		WARN_ON(1);
++		return;
++	}
++
++	if (early_ioremap_debug)
++		pr_info("early_iounmap(%p, %08lx) [%d]\n", addr, size, slot);
++
++	virt_addr = (unsigned long)addr;
++	if (virt_addr < fix_to_virt(FIX_BTMAP_BEGIN)) {
++		WARN_ON(1);
++		return;
++	}
++	offset = virt_addr & ~PAGE_MASK;
++	nrpages = PAGE_ALIGN(offset + size) >> PAGE_SHIFT;
++
++	idx = FIX_BTMAP_BEGIN + slot * NR_FIX_BTMAPS;
++	while (nrpages > 0) {
++		early_clear_fixmap(idx);
++		idx++;
++		--nrpages;
++	}
++	prev_map[slot] = NULL;
++}
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index 53cdbd3..f4adb41 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -28,6 +28,7 @@
+ #include <asm/highmem.h>
+ #include <asm/system_info.h>
+ #include <asm/traps.h>
++#include <asm/io.h>
+ 
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+@@ -1340,4 +1341,7 @@ void __init paging_init(struct machine_desc *mdesc)
+ 
+ 	empty_zero_page = virt_to_page(zero_page);
+ 	__flush_dcache_page(NULL, empty_zero_page);
++#ifdef CONFIG_EARLY_IOREMAP
++	early_ioremap_reset();
++#endif
+ }
+-- 
+1.7.10.4
 
-Please pull them in!
-
-Yours,
-Linus Walleij
-
-
-The following changes since commit ad81f0545ef01ea651886dddac4bef6cec930092:
-
-  Linux 3.11-rc1 (2013-07-14 15:18:27 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
-tags/gpio-v3.12-1
-
-for you to fetch changes up to 65d876564e989b63b0f769e0e06b9830db97b2d9:
-
-  gpio: return -ENOTSUPP if debounce cannot be set (2013-09-04 14:22:47 +0200)
-
-----------------------------------------------------------------
-This is the bulk of GPIO changes for the v3.12 series:
-
-- A new driver for the TZ1090 PDC which is used on the metag
-  architecture.
-
-- A new driver for the Kontron ETX or COMexpress GPIO block.
-  This is found on some ETX x86 devices.
-
-- A new driver for the Fintek Super-I/O chips, used on
-  some x86 boards.
-
-- Added device tree probing on a few select GPIO blocks.
-
-- Drop the Exynos support from the Samsung GPIO driver.
-  The Samsung maintainers have moved over to use the
-  modernized pin control driver to provide GPIO for the
-  modern platforms instead.
-
-- The usual bunch of non-critical fixes and cleanups.
-
-----------------------------------------------------------------
-Andrew Chew (1):
-      gpio: palmas: Fix misreported GPIO out value
-
-Andrew Ruder (1):
-      gpio: pca953x: fix gpio input on gpio offsets >= 8
-
-Brunner Michael (1):
-      gpio: Fix bit masking in Kontron PLD GPIO driver
-
-Christophe Leroy (1):
-      gpio: max7301: Reverting "Do not force SPI speed when using OF Platform"
-
-Daniel M. Weeks (1):
-      gpio-mcp23s08: i2c: auto-select base if no DT match or platform data
-
-Daniel Mack (2):
-      gpio: pxa: remove dead code
-      gpio: pxa: fix Documentation of interrupt-names property
-
-Fabio Estevam (2):
-      gpio: gpio-mxc: Use devm functions
-      gpio: gpio-mxc: Include "<linux/err.h>"
-
-Guenter Roeck (1):
-      gpio: Kontron PLD gpio driver
-
-James Hogan (3):
-      gpio-tz1090: add TZ1090 gpio driver
-      gpio-tz1090-pdc: add TZ1090 PDC gpio driver
-      gpio-tz1090: convert to use generic irqchip
-
-Jingoo Han (3):
-      gpiolib: replace strict_strtol() with kstrtol()
-      gpio: use dev_get_platdata()
-      gpio: msm: Staticize local variable 'msm_gpio'
-
-Joe Perches (1):
-      MAINTAINERS: gpio: vt8500: Remove file pattern
-
-Julia Lawall (2):
-      drivers/gpio/gpio-omap.c: convert comma to semicolon
-      drivers/gpio: simplify use of devm_ioremap_resource
-
-Lars Poeschel (3):
-      gpio: adnp: Fix segfault if request_threaded_irq fails
-      gpio: mcp23s08: rename the device tree property
-      of: add vendor prefix for Microchip Technology Inc
-
-Laurent Pinchart (3):
-      gpio-rcar: Add interrupt controller support to the DT bindings
-      gpio: pcf857x: Sort headers alphabetically
-      gpio: pcf857x: Remove pdata argument to pcf857x_irq_domain_init()
-
-Laxman Dewangan (1):
-      gpio: palmas: add dt support
-
-Linus Walleij (2):
-      gpio: improve error path in gpiolib
-      gpio: return -ENOTSUPP if debounce cannot be set
-
-Lothar Waßmann (1):
-      gpio: gpiolib-of.c: make error message more meaningful by adding
-the node name and index
-
-Magnus Damm (1):
-      gpio: em: Add pinctrl support
-
-Mathias Nyman (1):
-      gpio-lynxpoint: Fix warning about unbalanced pm_runtime_enable
-
-Michael Brunner (1):
-      gpio: Fix platform driver name in Kontron PLD GPIO driver
-
-Peter Ujfalusi (1):
-      GPIO: gpio-twl6040: Remove support for legacy (pdata) mode
-
-Simon Guinot (1):
-      gpio: add GPIO support for F71882FG and F71889F
-
-Tomasz Figa (1):
-      gpio: samsung: Drop support for Exynos SoCs
-
-Uwe Kleine-König (1):
-      gpio/mxc: add chained_irq_enter/exit() to mx2_gpio_irq_handler
-
- .../devicetree/bindings/gpio/gpio-mcp23s08.txt     |  26 +-
- .../devicetree/bindings/gpio/gpio-palmas.txt       |  27 +
- .../devicetree/bindings/gpio/gpio-tz1090-pdc.txt   |  45 ++
- .../devicetree/bindings/gpio/gpio-tz1090.txt       |  88 +++
- .../devicetree/bindings/gpio/mrvl-gpio.txt         |   7 +-
- .../devicetree/bindings/gpio/renesas,gpio-rcar.txt |   8 +
- .../devicetree/bindings/vendor-prefixes.txt        |   1 +
- MAINTAINERS                                        |   1 -
- drivers/gpio/Kconfig                               |  37 +
- drivers/gpio/Makefile                              |   4 +
- drivers/gpio/gpio-74x164.c                         |   2 +-
- drivers/gpio/gpio-adnp.c                           |   6 +-
- drivers/gpio/gpio-adp5520.c                        |   2 +-
- drivers/gpio/gpio-adp5588.c                        |   9 +-
- drivers/gpio/gpio-arizona.c                        |   2 +-
- drivers/gpio/gpio-da9052.c                         |   2 +-
- drivers/gpio/gpio-da9055.c                         |   2 +-
- drivers/gpio/gpio-em.c                             |  27 +-
- drivers/gpio/gpio-f7188x.c                         | 469 +++++++++++
- drivers/gpio/gpio-ich.c                            |   2 +-
- drivers/gpio/gpio-janz-ttl.c                       |   2 +-
- drivers/gpio/gpio-kempld.c                         | 219 ++++++
- drivers/gpio/gpio-lynxpoint.c                      |   1 +
- drivers/gpio/gpio-max7301.c                        |   3 +-
- drivers/gpio/gpio-max730x.c                        |   2 +-
- drivers/gpio/gpio-max732x.c                        |   8 +-
- drivers/gpio/gpio-mc33880.c                        |   2 +-
- drivers/gpio/gpio-mcp23s08.c                       |  52 +-
- drivers/gpio/gpio-msic.c                           |   2 +-
- drivers/gpio/gpio-msm-v2.c                         |   2 +-
- drivers/gpio/gpio-mvebu.c                          |   7 +-
- drivers/gpio/gpio-mxc.c                            |  41 +-
- drivers/gpio/gpio-omap.c                           |   4 +-
- drivers/gpio/gpio-palmas.c                         |  29 +-
- drivers/gpio/gpio-pca953x.c                        |   6 +-
- drivers/gpio/gpio-pcf857x.c                        |  17 +-
- drivers/gpio/gpio-pl061.c                          |   2 +-
- drivers/gpio/gpio-pxa.c                            |  13 +-
- drivers/gpio/gpio-rcar.c                           |   2 +-
- drivers/gpio/gpio-rdc321x.c                        |   2 +-
- drivers/gpio/gpio-samsung.c                        | 871 ---------------------
- drivers/gpio/gpio-spear-spics.c                    |   7 +-
- drivers/gpio/gpio-sta2x11.c                        |   2 +-
- drivers/gpio/gpio-sx150x.c                         |   2 +-
- drivers/gpio/gpio-timberdale.c                     |   4 +-
- drivers/gpio/gpio-tps65912.c                       |   2 +-
- drivers/gpio/gpio-ts5500.c                         |   2 +-
- drivers/gpio/gpio-twl4030.c                        |   6 +-
- drivers/gpio/gpio-twl6040.c                        |   6 +-
- drivers/gpio/gpio-tz1090-pdc.c                     | 243 ++++++
- drivers/gpio/gpio-tz1090.c                         | 606 ++++++++++++++
- drivers/gpio/gpio-ucb1400.c                        |   2 +-
- drivers/gpio/gpio-wm831x.c                         |   2 +-
- drivers/gpio/gpio-wm8350.c                         |   2 +-
- drivers/gpio/gpio-wm8994.c                         |   2 +-
- drivers/gpio/gpiolib-of.c                          |   3 +-
- drivers/gpio/gpiolib.c                             |  52 +-
- include/linux/platform_data/gpio-em.h              |   1 +
- 58 files changed, 1967 insertions(+), 1031 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio-palmas.txt
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio-tz1090-pdc.txt
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio-tz1090.txt
- create mode 100644 drivers/gpio/gpio-f7188x.c
- create mode 100644 drivers/gpio/gpio-kempld.c
- create mode 100644 drivers/gpio/gpio-tz1090-pdc.c
- create mode 100644 drivers/gpio/gpio-tz1090.c
