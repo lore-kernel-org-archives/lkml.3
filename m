@@ -1,193 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750736Ab3IFGGx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 02:06:53 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:49182 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750766Ab3IFGGu (ORCPT
+	id S1750842Ab3IFGH5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 02:07:57 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:58638 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750764Ab3IFGHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 02:06:50 -0400
-Message-ID: <522970F2.4010509@ozlabs.ru>
-Date: Fri, 06 Sep 2013 16:06:42 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Fri, 6 Sep 2013 02:07:55 -0400
+Message-ID: <5229704B.7010200@linux.vnet.ibm.com>
+Date: Fri, 06 Sep 2013 11:33:55 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Alexander Graf <agraf@suse.de>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v9 12/13] KVM: PPC: Add support for IOMMU in-kernel handling
-References: <1377679070-3515-1-git-send-email-aik@ozlabs.ru> <1377679841-3822-1-git-send-email-aik@ozlabs.ru> <20130901120609.GJ22899@redhat.com> <52240295.7050608@ozlabs.ru> <20130903105315.GY22899@redhat.com> <522607D8.4070408@ozlabs.ru> <20130905181010.GE13021@redhat.com> <522915ED.7050106@ozlabs.ru> <20130906060147.GF13021@redhat.com>
-In-Reply-To: <20130906060147.GF13021@redhat.com>
-Content-Type: text/plain; charset=KOI8-R
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] cpufreq: serialize calls to __cpufreq_governor()
+References: <085013f4e584e3fef97187bcb349c3fa76942e19.1378012620.git.viresh.kumar@linaro.org> <1706734.hVYFTCa5rJ@vostro.rjw.lan> <5227C729.5040803@codeaurora.org> <16630296.tCCMEKstkO@vostro.rjw.lan> <5227D65A.7040200@codeaurora.org>
+In-Reply-To: <5227D65A.7040200@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090606-8256-0000-0000-0000091C3F8D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/06/2013 04:01 PM, Gleb Natapov wrote:
-> On Fri, Sep 06, 2013 at 09:38:21AM +1000, Alexey Kardashevskiy wrote:
->> On 09/06/2013 04:10 AM, Gleb Natapov wrote:
->>> On Wed, Sep 04, 2013 at 02:01:28AM +1000, Alexey Kardashevskiy wrote:
->>>> On 09/03/2013 08:53 PM, Gleb Natapov wrote:
->>>>> On Mon, Sep 02, 2013 at 01:14:29PM +1000, Alexey Kardashevskiy wrote:
->>>>>> On 09/01/2013 10:06 PM, Gleb Natapov wrote:
->>>>>>> On Wed, Aug 28, 2013 at 06:50:41PM +1000, Alexey Kardashevskiy wrote:
->>>>>>>> This allows the host kernel to handle H_PUT_TCE, H_PUT_TCE_INDIRECT
->>>>>>>> and H_STUFF_TCE requests targeted an IOMMU TCE table without passing
->>>>>>>> them to user space which saves time on switching to user space and back.
->>>>>>>>
->>>>>>>> Both real and virtual modes are supported. The kernel tries to
->>>>>>>> handle a TCE request in the real mode, if fails it passes the request
->>>>>>>> to the virtual mode to complete the operation. If it a virtual mode
->>>>>>>> handler fails, the request is passed to user space.
->>>>>>>>
->>>>>>>> The first user of this is VFIO on POWER. Trampolines to the VFIO external
->>>>>>>> user API functions are required for this patch.
->>>>>>>>
->>>>>>>> This adds a "SPAPR TCE IOMMU" KVM device to associate a logical bus
->>>>>>>> number (LIOBN) with an VFIO IOMMU group fd and enable in-kernel handling
->>>>>>>> of map/unmap requests. The device supports a single attribute which is
->>>>>>>> a struct with LIOBN and IOMMU fd. When the attribute is set, the device
->>>>>>>> establishes the connection between KVM and VFIO.
->>>>>>>>
->>>>>>>> Tests show that this patch increases transmission speed from 220MB/s
->>>>>>>> to 750..1020MB/s on 10Gb network (Chelsea CXGB3 10Gb ethernet card).
->>>>>>>>
->>>>>>>> Signed-off-by: Paul Mackerras <paulus@samba.org>
->>>>>>>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
->>>>>>>>
->>>>>>>> ---
->>>>>>>>
->>>>>>>> Changes:
->>>>>>>> v9:
->>>>>>>> * KVM_CAP_SPAPR_TCE_IOMMU ioctl to KVM replaced with "SPAPR TCE IOMMU"
->>>>>>>> KVM device
->>>>>>>> * release_spapr_tce_table() is not shared between different TCE types
->>>>>>>> * reduced the patch size by moving VFIO external API
->>>>>>>> trampolines to separate patche
->>>>>>>> * moved documentation from Documentation/virtual/kvm/api.txt to
->>>>>>>> Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
->>>>>>>>
->>>>>>>> v8:
->>>>>>>> * fixed warnings from check_patch.pl
->>>>>>>>
->>>>>>>> 2013/07/11:
->>>>>>>> * removed multiple #ifdef IOMMU_API as IOMMU_API is always enabled
->>>>>>>> for KVM_BOOK3S_64
->>>>>>>> * kvmppc_gpa_to_hva_and_get also returns host phys address. Not much sense
->>>>>>>> for this here but the next patch for hugepages support will use it more.
->>>>>>>>
->>>>>>>> 2013/07/06:
->>>>>>>> * added realmode arch_spin_lock to protect TCE table from races
->>>>>>>> in real and virtual modes
->>>>>>>> * POWERPC IOMMU API is changed to support real mode
->>>>>>>> * iommu_take_ownership and iommu_release_ownership are protected by
->>>>>>>> iommu_table's locks
->>>>>>>> * VFIO external user API use rewritten
->>>>>>>> * multiple small fixes
->>>>>>>>
->>>>>>>> 2013/06/27:
->>>>>>>> * tce_list page is referenced now in order to protect it from accident
->>>>>>>> invalidation during H_PUT_TCE_INDIRECT execution
->>>>>>>> * added use of the external user VFIO API
->>>>>>>>
->>>>>>>> 2013/06/05:
->>>>>>>> * changed capability number
->>>>>>>> * changed ioctl number
->>>>>>>> * update the doc article number
->>>>>>>>
->>>>>>>> 2013/05/20:
->>>>>>>> * removed get_user() from real mode handlers
->>>>>>>> * kvm_vcpu_arch::tce_tmp usage extended. Now real mode handler puts there
->>>>>>>> translated TCEs, tries realmode_get_page() on those and if it fails, it
->>>>>>>> passes control over the virtual mode handler which tries to finish
->>>>>>>> the request handling
->>>>>>>> * kvmppc_lookup_pte() now does realmode_get_page() protected by BUSY bit
->>>>>>>> on a page
->>>>>>>> * The only reason to pass the request to user mode now is when the user mode
->>>>>>>> did not register TCE table in the kernel, in all other cases the virtual mode
->>>>>>>> handler is expected to do the job
->>>>>>>> ---
->>>>>>>>  .../virtual/kvm/devices/spapr_tce_iommu.txt        |  37 +++
->>>>>>>>  arch/powerpc/include/asm/kvm_host.h                |   4 +
->>>>>>>>  arch/powerpc/kvm/book3s_64_vio.c                   | 310 ++++++++++++++++++++-
->>>>>>>>  arch/powerpc/kvm/book3s_64_vio_hv.c                | 122 ++++++++
->>>>>>>>  arch/powerpc/kvm/powerpc.c                         |   1 +
->>>>>>>>  include/linux/kvm_host.h                           |   1 +
->>>>>>>>  virt/kvm/kvm_main.c                                |   5 +
->>>>>>>>  7 files changed, 477 insertions(+), 3 deletions(-)
->>>>>>>>  create mode 100644 Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
->>>>>>>>
->>>>>>>> diff --git a/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt b/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
->>>>>>>> new file mode 100644
->>>>>>>> index 0000000..4bc8fc3
->>>>>>>> --- /dev/null
->>>>>>>> +++ b/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
->>>>>>>> @@ -0,0 +1,37 @@
->>>>>>>> +SPAPR TCE IOMMU device
->>>>>>>> +
->>>>>>>> +Capability: KVM_CAP_SPAPR_TCE_IOMMU
->>>>>>>> +Architectures: powerpc
->>>>>>>> +
->>>>>>>> +Device type supported: KVM_DEV_TYPE_SPAPR_TCE_IOMMU
->>>>>>>> +
->>>>>>>> +Groups:
->>>>>>>> +  KVM_DEV_SPAPR_TCE_IOMMU_ATTR_LINKAGE
->>>>>>>> +  Attributes: single attribute with pair { LIOBN, IOMMU fd}
->>>>>>>> +
->>>>>>>> +This is completely made up device which provides API to link
->>>>>>>> +logical bus number (LIOBN) and IOMMU group. The user space has
->>>>>>>> +to create a new SPAPR TCE IOMMU device per a logical bus.
->>>>>>>> +
->>>>>>> Why not have one device that can handle multimple links?
->>>>>>
->>>>>>
->>>>>> I can do that. If I make it so, it won't even look as a device at all, just
->>>>>> some weird interface to KVM but ok. What bothers me is it is just a
->>>>> May be I do not understand usage pattern here. Why do you feel that device
->>>>> that can handle multiple links is worse than device per link? How many logical
->>>>> buses is there usually? How often they created/destroyed? I am not insisting
->>>>> on the change, just trying to understand why you do not like it.
+On 09/05/2013 06:24 AM, Stephen Boyd wrote:
+> On 09/04/13 17:26, Rafael J. Wysocki wrote:
+>> On Wednesday, September 04, 2013 04:50:01 PM Stephen Boyd wrote:
+>>> On 09/04/13 16:55, Rafael J. Wysocki wrote:
+>>>> Well, I'm not sure when Viresh is going to be back.
 >>>>
+>>>> Srivatsa, can you please resend this patch with a proper changelog?
 >>>>
->>>> Is it usually one PCI host bus adapter per IOMMU group which is usually
->>>> one PCI card or 2-3 cards if it is a legacy PCI-X, and they are created
->>>> when QEMU-KVM starts. Not many. And they live till KVM ends.
->>>>
->>>> My point is why would I want to put all links to one device? It all is just
->>>> a matter of taste and nothing more. Or I am missing something but I do not
->>>> see what. If it is all about making thing to be kosher/halal/orthodox, then
->>>> I have more stuff to do, like reworking the emulated TCEs. But if is it for
->>>> (I do not know, just guessing) performance or something like that - then
->>>> I'll fix it, I just need to know what I am fixing.
->>>>
->>> Each device creates an fd, if you can have a lot of them eventually this
->>> will be a bottleneck. You are saying this is not the case, so lets go
->>> with proposed interface.
+>>> I haven't had a chance to try this out yet, but I was just thinking
+>>> about this patch. How is it going to work? If one task opens the file
+>>> and another task is taking down the CPU wouldn't we deadlock in the
+>>> CPU_DOWN notifier waiting for the kobject to be released? Task 1 will
+>>> grab the kobject reference and sleep on the hotplug mutex and task 2
+>>> will put the kobject and wait for the completion, but it won't happen.
+>>> At least I think that's what would happen.
+>> Do you mean the completion in sysfs_deactivate()?  Yes, we can deadlock
+>> there.
+> 
+> I mean the complete in cpufreq_sysfs_release(). I don't think that will
+> ever be called because the kobject is held by the task calling store()
+> which is waiting on the hotplug lock to be released.
+> 
 >>
->>
->> Did you decide not to answer the email which Ben sent yesterday or you just
->> did not see it? Just checking :)
->>
-> Haven't seen it. Which one?
+>> Well, I guess the Srivatsa's patch may be salvaged by making it do a "trylock"
+>> version of get_online_cpus(), but then I wonder if there's no better way.
+> 
+> I think the real solution is to remove the kobject first if the CPU
+> going down is the last user of that policy. Once the completion is done
+> we can stop the governor and clean up state. For the case where there
+> are still CPUs using the policy why can't we cancel that CPU's work and
+> do nothing else? Even in the case where we have to move the cpufreq
+> directory do we need to do a STOP/START/LIMITS sequence? I hope we can
+> get away with just moving the directory and canceling that CPUs work then.
+> 
+
+Conceptually, I agree that your idea of not allowing any process to take
+a new reference to the kobject while we are taking the CPU offline, is a
+sound solution.
+
+However, I am reluctant to go down that path because, handling the CPU hotplug
+sequence in the suspend/resume path might get even more tricky, if we want
+to implement the changes that you propose. Just recently we managed to
+rework the cpufreq CPU hotplug handling to retain the sysfs file permissions
+around suspend/resume, and doing that was not at all simple. Adding more
+quirks and complexity to the kobject handling in that path will only make
+things even more challenging, IMHO. That's the reason I'm trying to think
+of ways to avoid touching that fragile code, and instead solve this problem
+in some other way, without compromising on the robustness of the solution.
+
+So here is my new proposal, as a replacement to this patch[2/2]:
+
+We note that, at CPU_DOWN_PREPARE stage, the CPU is not yet marked offline,
+whereas by the time we handle CPU_POST_DEAD, the CPU is removed from the
+cpu_online_mask, and also the cpu_hotplug lock is dropped.
+
+So, let us split up __cpu_remove_dev() into 2 parts, say:
+__cpu_remove_prepare() - invoked during CPU_DOWN_PREPARE
+__cpu_remove_finish()  - invoked during CPU_POST_DEAD
 
 
-Subject: Re: [PATCH v9 12/13] KVM: PPC: Add support for IOMMU in-kernel
-handling
-Date: Thu, 05 Sep 2013 14:05:09 +1000
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Gleb Natapov <gleb@redhat.com>
-CC: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org,
-     David Gibson <david@gibson.dropbear.id.au>,        Paul Mackerras
-<paulus@samba.org>,        Paolo Bonzini <pbonzini@redhat.com>, Alexander
-Graf <agraf@suse.de>,        kvm@vger.kernel.org,
-linux-kernel@vger.kernel.org,        kvm-ppc@vger.kernel.org,
-linux-mm@kvack.org
+In the former function, we stop the governors, so that policy->governor_enabled
+gets set to false, so that patch [1/2] will return -EBUSY to any subsequent
+->store() requests. Also, we do everything except the kobject cleanup.
+
+In the latter function, we do the remaining work, particularly the part
+where we wait for the kobject refcount to drop to zero and the subsequent
+cleanup.
 
 
--- 
-Alexey
+And the ->store() functions will be modified to look like this:
+
+store()
+{
+	get_online_cpus();
+
+	if (!cpu_online(cpu))
+		goto out;
+
+	/* Body of the function*/
+out:
+	put_online_cpus();
+}
+
+That way, if a task tries to write to a cpufreq file during CPU offline,
+it will get blocked on get_online_cpus(), and will continue after
+CPU_DEAD (since we release the lock here). Then it will notice that the cpu
+is offline, and hence will return silently, thus dropping the kobject refcnt.
+So, when the cpufreq core comes back at the CPU_POST_DEAD stage to cleanup
+the kobject, it won't encounter any problems.
+
+Any thoughts on this approach? I'll try to code it up and post the patch
+later today.
+
+Thank you!
+
+Regards,
+Srivatsa S. Bhat
+
