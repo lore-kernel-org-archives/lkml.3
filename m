@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880Ab3IFLIY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 07:08:24 -0400
-Received: from mga02.intel.com ([134.134.136.20]:49798 "EHLO mga02.intel.com"
+	id S1751768Ab3IFLJO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 07:09:14 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53231 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751768Ab3IFLIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 07:08:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,853,1371106800"; 
-   d="scan'208";a="399317866"
-Date: Fri, 6 Sep 2013 13:08:18 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Steve Twiss <stwiss.opensource@diasemi.com>
-Cc: Mark Brown <broonie@kernel.org>, Philipp Zabel <p.zabel@pengutronix.de>,
-        Lee Jones <lee.jones@linaro.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: DA9063 driver development
-Message-ID: <20130906110818.GA3696@zurbaran>
-References: <6ED8E3B22081A4459DAC7699F3695FB732FD0B57@SW-EX-MBX02.diasemi.com>
+	id S1751108Ab3IFLJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 07:09:13 -0400
+Message-ID: <5229B7BB.5020804@zytor.com>
+Date: Fri, 06 Sep 2013 04:08:43 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6ED8E3B22081A4459DAC7699F3695FB732FD0B57@SW-EX-MBX02.diasemi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: David Herrmann <dh.herrmann@gmail.com>, Tom Gundersen <teg@jklm.no>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] x86: simplefb: avoid overflow
+References: <1378459933-367-1-git-send-email-teg@jklm.no> <CANq1E4Tco9K1zeL2d7MhBQ=UjHFOktrrR8GHp8cJm3V6CTqf0g@mail.gmail.com> <CAMuHMdUEjLSRoSHdQUACupxiJ_GxMXSzk-KsMA5ep55sxNT3kw@mail.gmail.com>
+In-Reply-To: <CAMuHMdUEjLSRoSHdQUACupxiJ_GxMXSzk-KsMA5ep55sxNT3kw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steve,
+On 09/06/2013 03:59 AM, Geert Uytterhoeven wrote:
+> On Fri, Sep 6, 2013 at 11:55 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>> On Fri, Sep 6, 2013 at 11:32 AM, Tom Gundersen <teg@jklm.no> wrote:
+>>> lfb_size can easily be say 4M, which would make the bitshit overflow and
+>>> the test fail.
+>>>
+>>> Signed-off-by: Tom Gundersen <teg@jklm.no>
+>>> Cc: David Herrmann <dh.herrmann@gmail.com>
+>>> Cc: H. Peter Anvin <hpa@zytor.com>
+>>> ---
+>>>   arch/x86/kernel/sysfb_simplefb.c | 2 +-
+>>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>>
+>>> diff --git a/arch/x86/kernel/sysfb_simplefb.c b/arch/x86/kernel/sysfb_simplefb.c
+>>> index 22513e9..fff44a5 100644
+>>> --- a/arch/x86/kernel/sysfb_simplefb.c
+>>> +++ b/arch/x86/kernel/sysfb_simplefb.c
+>>> @@ -72,7 +72,7 @@ __init int create_simplefb(const struct screen_info *si,
+>>>           * the part that is occupied by the framebuffer */
+>>>          len = mode->height * mode->stride;
+>>>          len = PAGE_ALIGN(len);
+>>> -       if (len > si->lfb_size << 16) {
+>>> +       if (len > ((unsigned long) si->lfb_size) << 16) {
+>
+> On 32-bit, "unsigned long" is the same size as __u32, so this doesn't
+> make any difference.
+>
+>> Nice catch. vesafb uses "lfb_size * 65535" which causes an implicit
+>> cast. I thought <<16 looks nicer but that doesn't do any implicit
+>> cast..
+>
+> "lfb_size * 65535" is the same. "lfb_size" is __u32, "65535" is int.
+> So there's no implicit cast. Or am I missing something?
+>
 
-See my answers below:
+<< 16 is * 65536 not 65535...
 
-On Fri, Sep 06, 2013 at 10:47:58AM +0000, Steve Twiss wrote:
-> Hello,
-> 
-> I am late into the discussion about the DA9063 driver because I missed
-> the e-mail thread around 24th July 
-> (https://lkml.org/lkml/2013/7/24/460)
-> so I only recently noticed that a DA9063 driver from Philipp Zabel 
-> had been submitted and accepted to linux-next.
-> 
-> I also noted that this driver was using a previous patch-set as its baseline;
-> sent by Krystian Garbaciak over a year ago. Given that this original 
-> patch-set was not accepted, and the production of the DA9063 chip has 
-> advanced since the last submission, we were holding off the final DA9063 
-> driver until later. 
-> 
-> As I discussed earlier in https://lkml.org/lkml/2013/6/28/170 I was in 
-> the process of getting this driver ready for submission to the kernel.
-> 
-> It is well understood that any early submission of our driver to the 
-> community (around v3.6) meant that this sort of external driver development 
-> could happen without any further input from Dialog. However, this driver:
-> 
-> - is based on something that is a year old and now out of date; 
-> - it cannot support the most recent mass-production release of DA9063 silicon; 
-> 
-> Is it possible to remove this driver from linux-next so these issues 
-> can be resolved by Dialog?
-Unfortunately it's too late for that. I sent a pull request to Linus
-with this driver included, so I expect it to hit Linus' tree anytime
-soon.
-That means that it will be part of the 3.12-rc1 release. The good news
-here is that we have about 8 weeks to modify it to match your recent
-development, before 3.12 is released.
-I would really prefer to modify the now existing driver and improve it,
-rather than revert it.
-
-Cheers,
-Samuel.
+	-hpa
 
 
-
-
-
-> Regards,
-> Steve Twiss
-> 
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
