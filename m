@@ -1,847 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751113Ab3IFKkt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 06:40:49 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:55031 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968Ab3IFKkp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 06:40:45 -0400
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-To: linuxppc-dev@lists.ozlabs.org
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
-        David Gibson <david@gibson.dropbear.id.au>,
+	id S1751240Ab3IFKlO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 06:41:14 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:38396 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751138Ab3IFKlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 06:41:08 -0400
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-ia64@vger.kernel.org, Jeremy Kerr <jk@ozlabs.org>,
+        Arnd Bergmann <arnd@arndb.de>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Gleb Natapov <gleb@redhat.com>,
-        Alexander Graf <agraf@suse.de>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org
-Subject: [PATCH v10 12/13] KVM: PPC: Add support for IOMMU in-kernel handling
-Date: Fri,  6 Sep 2013 20:40:26 +1000
-Message-Id: <1378464026-32459-1-git-send-email-aik@ozlabs.ru>
-X-Mailer: git-send-email 1.8.4.rc4
-In-Reply-To: <1377679841-3822-1-git-send-email-aik@ozlabs.ru>
-References: <1377679841-3822-1-git-send-email-aik@ozlabs.ru>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090610-7014-0000-0000-000003928C90
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        cbe-oss-dev@lists.ozlabs.org, linux-fsdevel@vger.kernel.org,
+        Eric Paris <eparis@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jonathan Cameron <jic23@cam.ac.uk>, linux-iio@vger.kernel.org
+Cc: Yann Droneaud <ydroneaud@opteya.com>
+Subject: [PATCH v3 0/8] Getting rid of get_unused_fd() / use O_CLOEXEC
+Date: Fri,  6 Sep 2013 12:39:50 +0200
+Message-Id: <cover.1378460926.git.ydroneaud@opteya.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows the host kernel to handle H_PUT_TCE, H_PUT_TCE_INDIRECT
-and H_STUFF_TCE requests targeted an IOMMU TCE table without passing
-them to user space which saves time on switching to user space and back.
+Hi,
 
-Both real and virtual modes are supported. The kernel tries to
-handle a TCE request in the real mode, if fails it passes the request
-to the virtual mode to complete the operation. If it a virtual mode
-handler fails, the request is passed to user space.
+With help from subsystem maintainers, I've managed to get some of
+get_unused_fd() calls converted to use get_unused_fd_flags(O_CLOEXEC)
+instead. [ANDROID][IB][VFIO]
 
-The first user of this is VFIO on POWER. Trampolines to the VFIO external
-user API functions are required for this patch.
+KVM subsystem maintainers helped me to change calls to anon_inode_getfd()
+to use O_CLOEXEC by default. [KVM]
 
-This adds a "SPAPR TCE IOMMU" KVM device to associate a logical bus
-number (LIOBN) with an VFIO IOMMU group fd and enable in-kernel handling
-of map/unmap requests. The device supports a single attribute which is
-a struct with LIOBN and IOMMU fd. When the attribute is set, the device
-establishes the connection between KVM and VFIO.
+Some maintainers applied my patches to convert get_unused_fd() to
+get_unused_fd_flags(0) were using O_CLOEXEC wasn't possible without breaking ABI.
+[SCTP][XFS]
 
-Tests show that this patch increases transmission speed from 220MB/s
-to 750..1020MB/s on 10Gb network (Chelsea CXGB3 10Gb ethernet card).
+So, still in the hope to get rid of get_unused_fd(), please find a another
+attempt to remove get_unused_fd() macro and encourage subsystems to use
+get_unused_fd_flags(O_CLOEXEC) or anon_inode_getfd(O_CLOEXEC) by default
+were appropriate.
 
-Signed-off-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+The patchset convert all calls to get_unused_fd()
+to get_unused_fd_flags(0) before removing get_unused_fd() macro.
 
----
+Without get_unused_fd() macro, more subsystems are likely to use
+anon_inode_getfd() and be teached to provide an API that let userspace
+choose the opening flags of the file descriptor.
 
-Changes:
-v10:
-* all IOMMU TCE links are handled by one KVM device now
-* KVM device has its own list of TCE descriptors
-* the search-by-liobn function was extended to search through
-emulated and IOMMU lists
+Additionally I'm suggesting Industrial IO (IIO) subsystem to use
+anon_inode_getfd(O_CLOEXEC): it's the only subsystem using anon_inode_getfd()
+with a fixed set of flags not including O_CLOEXEC.
 
-v9:
-* KVM_CAP_SPAPR_TCE_IOMMU ioctl to KVM replaced with "SPAPR TCE IOMMU"
-KVM device
-* release_spapr_tce_table() is not shared between different TCE types
-* reduced the patch size by moving KVM device bits and VFIO external API
-trampolines to separate patches
-* moved documentation from Documentation/virtual/kvm/api.txt to
-Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
+Not using O_CLOEXEC by default or not letting userspace provide the "open" flags
+should be considered bad practice from security point of view:
+in most case O_CLOEXEC must be used to not leak file descriptor across exec().
+Using O_CLOEXEC by default when flags are not provided by userspace allows it
+to choose, without race, if the file descriptor is going to be inherited
+across exec().
 
-v8:
-* fixed warnings from check_patch.pl
+Status:
 
-2013/07/11:
-* removed multiple #ifdef IOMMU_API as IOMMU_API is always enabled
-for KVM_BOOK3S_64
-* kvmppc_gpa_to_hva_and_get also returns host phys address. Not much sense
-for this here but the next patch for hugepages support will use it more.
+In linux-next tag 20130906, they're currently:
 
-2013/07/06:
-* added realmode arch_spin_lock to protect TCE table from races
-in real and virtual modes
-* POWERPC IOMMU API is changed to support real mode
-* iommu_take_ownership and iommu_release_ownership are protected by
-iommu_table's locks
-* VFIO external user API use rewritten
-* multiple small fixes
+- 22 calls to get_unused_fd_flags()     (+3)
+     not counting get_unused_fd() and anon_inode_getfd()
+-  7 calls to get_unused_fd()           (-3)
+- 11 calls to anon_inode_getfd()        (0)
 
-2013/06/27:
-* tce_list page is referenced now in order to protect it from accident
-invalidation during H_PUT_TCE_INDIRECT execution
-* added use of the external user VFIO API
+Changes from patchset v2 [PATCHSETv2]:
 
-2013/06/05:
-* changed capability number
-* changed ioctl number
-* update the doc article number
+- android/sw_sync: use get_unused_fd_flags(O_CLOEXEC) instead of get_unused_fd()
+  DROPPED: applied upstream
 
-2013/05/20:
-* removed get_user() from real mode handlers
-* kvm_vcpu_arch::tce_tmp usage extended. Now real mode handler puts there
-translated TCEs, tries realmode_get_page() on those and if it fails, it
-passes control over the virtual mode handler which tries to finish
-the request handling
-* kvmppc_lookup_pte() now does realmode_get_page() protected by BUSY bit
-on a page
-* The only reason to pass the request to user mode now is when the user mode
-did not register TCE table in the kernel, in all other cases the virtual mode
-handler is expected to do the job
----
- .../virtual/kvm/devices/spapr_tce_iommu.txt        |  40 +++
- arch/powerpc/include/asm/kvm_host.h                |   8 +
- arch/powerpc/include/uapi/asm/kvm.h                |   5 -
- arch/powerpc/kvm/book3s_64_vio.c                   | 327 ++++++++++++++++++++-
- arch/powerpc/kvm/book3s_64_vio_hv.c                | 142 +++++++++
- arch/powerpc/kvm/powerpc.c                         |   1 +
- include/linux/kvm_host.h                           |   1 +
- virt/kvm/kvm_main.c                                |   5 +
- 8 files changed, 517 insertions(+), 12 deletions(-)
- create mode 100644 Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
+- android/sync: use get_unused_fd_flags(O_CLOEXEC) instead of get_unused_fd()
+  DROPPED: applied upstream
 
-diff --git a/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt b/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
-new file mode 100644
-index 0000000..b911945
---- /dev/null
-+++ b/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
-@@ -0,0 +1,40 @@
-+SPAPR TCE IOMMU device
-+
-+Capability: KVM_CAP_SPAPR_TCE_IOMMU
-+Architectures: powerpc
-+
-+Device type supported: KVM_DEV_TYPE_SPAPR_TCE_IOMMU
-+
-+Groups:
-+  KVM_DEV_SPAPR_TCE_IOMMU_ATTR_LINKAGE
-+  Attributes: one VFIO IOMMU fd per LIOBN, indexed by LIOBN
-+
-+This is completely made up device which provides API to link
-+logical bus number (LIOBN) and IOMMU group. The user space has
-+to create a new SPAPR TCE IOMMU device once per KVM session
-+and use "set_attr" to add or remove a logical bus.
-+
-+LIOBN is a PCI bus identifier from PPC64-server (sPAPR) DMA hypercalls
-+(H_PUT_TCE, H_PUT_TCE_INDIRECT, H_STUFF_TCE).
-+IOMMU group is a minimal isolated device set which can be passed to
-+the user space via VFIO.
-+
-+The userspace adds the new LIOBN-IOMMU link by calling KVM_SET_DEVICE_ATTR
-+with the attribute initialized as shown below:
-+struct kvm_device_attr attr = {
-+	.flags = 0,
-+	.group = KVM_DEV_SPAPR_TCE_IOMMU_ATTR_LINKAGE,
-+	.attr = liobn,
-+	.addr = (uint64_t)(uintptr_t)&group_fd,
-+};
-+
-+To remove the link, the userspace calls KVM_SET_DEVICE_ATTR with
-+the group_fd equal to zero.
-+
-+As the device opens VFIO group fds and holds the file pointer,
-+it does not need to keep an fd internally and therefore KVM_GET_DEVICE_ATTR
-+is not supported.
-+
-+When KVM exits, all links are destroyed automatically.
-+
-+The kernel advertises this feature via KVM_CAP_SPAPR_TCE_IOMMU capability.
-diff --git a/arch/powerpc/include/asm/kvm_host.h b/arch/powerpc/include/asm/kvm_host.h
-index a23f132..a2a481e 100644
---- a/arch/powerpc/include/asm/kvm_host.h
-+++ b/arch/powerpc/include/asm/kvm_host.h
-@@ -181,9 +181,15 @@ struct kvmppc_spapr_tce_table {
- 	struct kvm *kvm;
- 	u64 liobn;
- 	u32 window_size;
-+	struct iommu_group *grp;		/* used for IOMMU groups */
-+	struct vfio_group *vfio_grp;		/* used for IOMMU groups */
- 	struct page *pages[0];
- };
- 
-+struct kvmppc_spapr_tce_iommu_device {
-+	struct list_head tables;
-+};
-+
- struct kvmppc_linear_info {
- 	void		*base_virt;
- 	unsigned long	 base_pfn;
-@@ -264,6 +270,7 @@ struct kvm_arch {
- #endif /* CONFIG_KVM_BOOK3S_64_HV */
- #ifdef CONFIG_PPC_BOOK3S_64
- 	struct list_head spapr_tce_tables;
-+	struct kvmppc_spapr_tce_iommu_device *tcedev;
- 	struct list_head rtas_tokens;
- #endif
- #ifdef CONFIG_KVM_MPIC
-@@ -612,6 +619,7 @@ struct kvm_vcpu_arch {
- 	u64 busy_preempt;
- 
- 	unsigned long *tce_tmp_hpas;	/* TCE cache for TCE_PUT_INDIRECT */
-+	unsigned long tce_tmp_num;	/* Number of handled TCEs in cache */
- 	enum {
- 		TCERM_NONE,
- 		TCERM_GETPAGE,
-diff --git a/arch/powerpc/include/uapi/asm/kvm.h b/arch/powerpc/include/uapi/asm/kvm.h
-index c1ae1e5..a9d3d73 100644
---- a/arch/powerpc/include/uapi/asm/kvm.h
-+++ b/arch/powerpc/include/uapi/asm/kvm.h
-@@ -512,11 +512,6 @@ struct kvm_get_htab_header {
- #define  KVM_XICS_PENDING		(1ULL << 42)
- 
- /* SPAPR TCE IOMMU device specification */
--struct kvm_create_spapr_tce_iommu_linkage {
--	__u64 liobn;
--	__u32 fd;
--	__u32 flags;
--};
- #define KVM_DEV_SPAPR_TCE_IOMMU_ATTR_LINKAGE	0
- 
- #endif /* __LINUX_KVM_POWERPC_H */
-diff --git a/arch/powerpc/kvm/book3s_64_vio.c b/arch/powerpc/kvm/book3s_64_vio.c
-index 2880d2b..0978794 100644
---- a/arch/powerpc/kvm/book3s_64_vio.c
-+++ b/arch/powerpc/kvm/book3s_64_vio.c
-@@ -29,6 +29,8 @@
- #include <linux/anon_inodes.h>
- #include <linux/module.h>
- #include <linux/vfio.h>
-+#include <linux/iommu.h>
-+#include <linux/file.h>
- 
- #include <asm/tlbflush.h>
- #include <asm/kvm_ppc.h>
-@@ -158,10 +160,8 @@ long kvm_vm_ioctl_create_spapr_tce(struct kvm *kvm,
- 	int i;
- 
- 	/* Check this LIOBN hasn't been previously allocated */
--	list_for_each_entry(stt, &kvm->arch.spapr_tce_tables, list) {
--		if (stt->liobn == args->liobn)
--			return -EBUSY;
--	}
-+	if (kvmppc_find_tce_table(kvm, args->liobn))
-+		return -EBUSY;
- 
- 	npages = kvmppc_stt_npages(args->window_size);
- 
-@@ -201,9 +201,175 @@ fail:
- 	return ret;
- }
- 
--/* Converts guest physical address to host virtual address */
-+static void kvmppc_spapr_tce_iommu_table_destroy(
-+		struct kvm_device *dev,
-+		struct kvmppc_spapr_tce_table *tt)
-+{
-+	struct kvm *kvm = dev->kvm;
-+
-+	mutex_lock(&kvm->lock);
-+	list_del(&tt->list);
-+
-+	if (tt->vfio_grp)
-+		kvmppc_vfio_group_put_external_user(tt->vfio_grp);
-+	iommu_group_put(tt->grp);
-+
-+	kfree(tt);
-+	mutex_unlock(&kvm->lock);
-+}
-+
-+static int kvmppc_spapr_tce_iommu_create(struct kvm_device *dev, u32 type)
-+{
-+	struct kvmppc_spapr_tce_iommu_device *tcedev;
-+	int ret = 0;
-+
-+	tcedev = kzalloc(sizeof(*tcedev), GFP_KERNEL);
-+	if (!tcedev)
-+		return -ENOMEM;
-+	dev->private = tcedev;
-+
-+	INIT_LIST_HEAD(&tcedev->tables);
-+
-+	/* Already there ? */
-+	mutex_lock(&dev->kvm->lock);
-+	if (dev->kvm->arch.tcedev)
-+		ret = -EEXIST;
-+	else
-+		dev->kvm->arch.tcedev = tcedev;
-+	mutex_unlock(&dev->kvm->lock);
-+
-+	if (ret)
-+		return ret;
-+
-+	return 0;
-+}
-+
-+static long kvmppc_spapr_tce_iommu_link(struct kvm_device *dev,
-+		u64 liobn, u32 group_fd)
-+{
-+	struct kvmppc_spapr_tce_iommu_device *tcedev = dev->private;
-+	struct kvmppc_spapr_tce_table *tt;
-+	struct iommu_group *grp;
-+	struct iommu_table *tbl;
-+	struct file *vfio_filp;
-+	struct vfio_group *vfio_grp;
-+	int ret = -ENXIO, iommu_id;
-+
-+	/* Check this LIOBN hasn't been previously registered */
-+	tt = kvmppc_find_tce_table(dev->kvm, liobn);
-+	if (tt) {
-+		if (group_fd)
-+			return -EBUSY;
-+
-+		/* Release and exit */
-+		kvmppc_spapr_tce_iommu_table_destroy(dev, tt);
-+		return 0;
-+	}
-+
-+	vfio_filp = fget(group_fd);
-+	if (!vfio_filp)
-+		return -ENXIO;
-+
-+	/*
-+	 * Lock the group. Fails if group is not viable or
-+	 * does not have IOMMU set
-+	 */
-+	vfio_grp = kvmppc_vfio_group_get_external_user(vfio_filp);
-+	if (IS_ERR_VALUE((unsigned long)vfio_grp))
-+		goto fput_exit;
-+
-+	/* Get IOMMU ID, find iommu_group and iommu_table*/
-+	iommu_id = kvmppc_vfio_external_user_iommu_id(vfio_grp);
-+	if (iommu_id < 0)
-+		goto grpput_fput_exit;
-+
-+	grp = iommu_group_get_by_id(iommu_id);
-+	if (!grp)
-+		goto grpput_fput_exit;
-+
-+	tbl = iommu_group_get_iommudata(grp);
-+	if (!tbl)
-+		goto grpput_fput_exit;
-+
-+	/* Create a TCE table descriptor and add into the descriptor list */
-+	tt = kzalloc(sizeof(*tt), GFP_KERNEL);
-+	if (!tt)
-+		goto grpput_fput_exit;
-+
-+	tt->liobn = liobn;
-+	tt->grp = grp;
-+	tt->window_size = tbl->it_size << IOMMU_PAGE_SHIFT;
-+	tt->vfio_grp = vfio_grp;
-+
-+	/* Add the TCE table descriptor to the descriptor list */
-+	mutex_lock(&dev->kvm->lock);
-+	list_add(&tt->list, &tcedev->tables);
-+	mutex_unlock(&dev->kvm->lock);
-+
-+	ret = 0;
-+
-+	goto fput_exit;
-+
-+grpput_fput_exit:
-+	kvmppc_vfio_group_put_external_user(vfio_grp);
-+fput_exit:
-+	fput(vfio_filp);
-+
-+	return ret;
-+}
-+
-+static int kvmppc_spapr_tce_iommu_set_attr(struct kvm_device *dev,
-+		struct kvm_device_attr *attr)
-+{
-+	u32 group_fd;
-+	u32 __user *argp = (u32 __user *) attr->addr;
-+
-+	switch (attr->group) {
-+	case KVM_DEV_SPAPR_TCE_IOMMU_ATTR_LINKAGE:
-+		if (get_user(group_fd, argp))
-+			return -EFAULT;
-+
-+		return kvmppc_spapr_tce_iommu_link(dev, attr->attr, group_fd);
-+	}
-+	return -ENXIO;
-+}
-+
-+static int kvmppc_spapr_tce_iommu_has_attr(struct kvm_device *dev,
-+		struct kvm_device_attr *attr)
-+{
-+	switch (attr->group) {
-+	case KVM_DEV_SPAPR_TCE_IOMMU_ATTR_LINKAGE:
-+		return 0;
-+	}
-+	return -ENXIO;
-+}
-+
-+static void kvmppc_spapr_tce_iommu_destroy(struct kvm_device *dev)
-+{
-+	struct kvmppc_spapr_tce_iommu_device *tcedev = dev->private;
-+	struct kvmppc_spapr_tce_table *tt, *tmp;
-+
-+	list_for_each_entry_safe(tt, tmp, &tcedev->tables, list) {
-+		kvmppc_spapr_tce_iommu_table_destroy(dev, tt);
-+	}
-+	kfree(tcedev);
-+	kfree(dev);
-+}
-+
-+struct kvm_device_ops kvmppc_spapr_tce_iommu_ops = {
-+	.name = "kvm-spapr-tce-iommu",
-+	.create = kvmppc_spapr_tce_iommu_create,
-+	.set_attr = kvmppc_spapr_tce_iommu_set_attr,
-+	.has_attr = kvmppc_spapr_tce_iommu_has_attr,
-+	.destroy = kvmppc_spapr_tce_iommu_destroy,
-+};
-+
-+/*
-+ * Converts guest physical address to host virtual address.
-+ * Also returns host physical address which is to put to TCE table.
-+ */
- static void __user *kvmppc_gpa_to_hva_and_get(struct kvm_vcpu *vcpu,
--		unsigned long gpa, struct page **pg)
-+		unsigned long gpa, struct page **pg, unsigned long *phpa)
- {
- 	unsigned long hva, gfn = gpa >> PAGE_SHIFT;
- 	struct kvm_memory_slot *memslot;
-@@ -218,9 +384,140 @@ static void __user *kvmppc_gpa_to_hva_and_get(struct kvm_vcpu *vcpu,
- 	if (get_user_pages_fast(hva & PAGE_MASK, 1, is_write, pg) != 1)
- 		return ERROR_ADDR;
- 
-+	if (phpa)
-+		*phpa = __pa((unsigned long) page_address(*pg)) |
-+				(hva & ~PAGE_MASK);
-+
- 	return (void *) hva;
- }
- 
-+long kvmppc_h_put_tce_iommu(struct kvm_vcpu *vcpu,
-+		struct kvmppc_spapr_tce_table *tt,
-+		unsigned long liobn, unsigned long ioba,
-+		unsigned long tce)
-+{
-+	struct page *pg = NULL;
-+	unsigned long hpa;
-+	void __user *hva;
-+	struct iommu_table *tbl = iommu_group_get_iommudata(tt->grp);
-+
-+	if (!tbl)
-+		return H_RESCINDED;
-+
-+	/* Clear TCE */
-+	if (!(tce & (TCE_PCI_READ | TCE_PCI_WRITE))) {
-+		if (iommu_tce_clear_param_check(tbl, ioba, 0, 1))
-+			return H_PARAMETER;
-+
-+		if (iommu_free_tces(tbl, ioba >> IOMMU_PAGE_SHIFT,
-+				1, false))
-+			return H_HARDWARE;
-+
-+		return H_SUCCESS;
-+	}
-+
-+	/* Put TCE */
-+	if (vcpu->arch.tce_rm_fail != TCERM_NONE) {
-+		/* Retry iommu_tce_build if it failed in real mode */
-+		vcpu->arch.tce_rm_fail = TCERM_NONE;
-+		hpa = vcpu->arch.tce_tmp_hpas[0];
-+	} else {
-+		if (iommu_tce_put_param_check(tbl, ioba, tce))
-+			return H_PARAMETER;
-+
-+		hva = kvmppc_gpa_to_hva_and_get(vcpu, tce, &pg, &hpa);
-+		if (hva == ERROR_ADDR)
-+			return H_HARDWARE;
-+	}
-+
-+	if (!iommu_tce_build(tbl, ioba >> IOMMU_PAGE_SHIFT, &hpa, 1, false))
-+		return H_SUCCESS;
-+
-+	pg = pfn_to_page(hpa >> PAGE_SHIFT);
-+	if (pg)
-+		put_page(pg);
-+
-+	return H_HARDWARE;
-+}
-+
-+static long kvmppc_h_put_tce_indirect_iommu(struct kvm_vcpu *vcpu,
-+		struct kvmppc_spapr_tce_table *tt, unsigned long ioba,
-+		unsigned long __user *tces, unsigned long npages)
-+{
-+	long i = 0, start = 0;
-+	struct iommu_table *tbl = iommu_group_get_iommudata(tt->grp);
-+
-+	if (!tbl)
-+		return H_RESCINDED;
-+
-+	switch (vcpu->arch.tce_rm_fail) {
-+	case TCERM_NONE:
-+		break;
-+	case TCERM_GETPAGE:
-+		start = vcpu->arch.tce_tmp_num;
-+		break;
-+	case TCERM_PUTTCE:
-+		goto put_tces;
-+	case TCERM_PUTLIST:
-+	default:
-+		WARN_ON(1);
-+		return H_HARDWARE;
-+	}
-+
-+	for (i = start; i < npages; ++i) {
-+		struct page *pg = NULL;
-+		unsigned long gpa;
-+		void __user *hva;
-+
-+		if (get_user(gpa, tces + i))
-+			return H_HARDWARE;
-+
-+		if (iommu_tce_put_param_check(tbl, ioba +
-+					(i << IOMMU_PAGE_SHIFT), gpa))
-+			return H_PARAMETER;
-+
-+		hva = kvmppc_gpa_to_hva_and_get(vcpu, gpa, &pg,
-+				&vcpu->arch.tce_tmp_hpas[i]);
-+		if (hva == ERROR_ADDR)
-+			goto putpages_flush_exit;
-+	}
-+
-+put_tces:
-+	if (!iommu_tce_build(tbl, ioba >> IOMMU_PAGE_SHIFT,
-+			vcpu->arch.tce_tmp_hpas, npages, false))
-+		return H_SUCCESS;
-+
-+putpages_flush_exit:
-+	for (--i; i >= 0; --i) {
-+		struct page *pg;
-+		pg = pfn_to_page(vcpu->arch.tce_tmp_hpas[i] >> PAGE_SHIFT);
-+		if (pg)
-+			put_page(pg);
-+	}
-+
-+	return H_HARDWARE;
-+}
-+
-+long kvmppc_h_stuff_tce_iommu(struct kvm_vcpu *vcpu,
-+		struct kvmppc_spapr_tce_table *tt,
-+		unsigned long liobn, unsigned long ioba,
-+		unsigned long tce_value, unsigned long npages)
-+{
-+	struct iommu_table *tbl = iommu_group_get_iommudata(tt->grp);
-+	unsigned long entry = ioba >> IOMMU_PAGE_SHIFT;
-+
-+	if (!tbl)
-+		return H_RESCINDED;
-+
-+	if (iommu_tce_clear_param_check(tbl, ioba, tce_value, npages))
-+		return H_PARAMETER;
-+
-+	if (iommu_free_tces(tbl, entry, npages, false))
-+		return H_HARDWARE;
-+
-+	return H_SUCCESS;
-+}
-+
- long kvmppc_h_put_tce(struct kvm_vcpu *vcpu,
- 		unsigned long liobn, unsigned long ioba,
- 		unsigned long tce)
-@@ -232,6 +529,10 @@ long kvmppc_h_put_tce(struct kvm_vcpu *vcpu,
- 	if (!tt)
- 		return H_TOO_HARD;
- 
-+	if (tt->grp)
-+		return kvmppc_h_put_tce_iommu(vcpu, tt, liobn, ioba, tce);
-+
-+	/* Emulated IO */
- 	if (ioba >= tt->window_size)
- 		return H_PARAMETER;
- 
-@@ -270,13 +571,20 @@ long kvmppc_h_put_tce_indirect(struct kvm_vcpu *vcpu,
- 	if ((ioba + (npages << IOMMU_PAGE_SHIFT)) > tt->window_size)
- 		return H_PARAMETER;
- 
--	tces = kvmppc_gpa_to_hva_and_get(vcpu, tce_list, &pg);
-+	tces = kvmppc_gpa_to_hva_and_get(vcpu, tce_list, &pg, NULL);
- 	if (tces == ERROR_ADDR)
- 		return H_TOO_HARD;
- 
- 	if (vcpu->arch.tce_rm_fail == TCERM_PUTLIST)
- 		goto put_list_page_exit;
- 
-+	if (tt->grp) {
-+		ret = kvmppc_h_put_tce_indirect_iommu(vcpu,
-+			tt, ioba, tces, npages);
-+		goto put_list_page_exit;
-+	}
-+
-+	/* Emulated IO */
- 	for (i = 0; i < npages; ++i) {
- 		if (get_user(vcpu->arch.tce_tmp_hpas[i], tces + i)) {
- 			ret = H_PARAMETER;
-@@ -315,6 +623,11 @@ long kvmppc_h_stuff_tce(struct kvm_vcpu *vcpu,
- 	if (!tt)
- 		return H_TOO_HARD;
- 
-+	if (tt->grp)
-+		return kvmppc_h_stuff_tce_iommu(vcpu, tt, liobn, ioba,
-+				tce_value, npages);
-+
-+	/* Emulated IO */
- 	if ((ioba + (npages << IOMMU_PAGE_SHIFT)) > tt->window_size)
- 		return H_PARAMETER;
- 
-diff --git a/arch/powerpc/kvm/book3s_64_vio_hv.c b/arch/powerpc/kvm/book3s_64_vio_hv.c
-index f00fcd2..fc872f2 100644
---- a/arch/powerpc/kvm/book3s_64_vio_hv.c
-+++ b/arch/powerpc/kvm/book3s_64_vio_hv.c
-@@ -26,6 +26,7 @@
- #include <linux/slab.h>
- #include <linux/hugetlb.h>
- #include <linux/list.h>
-+#include <linux/iommu.h>
- 
- #include <asm/tlbflush.h>
- #include <asm/kvm_ppc.h>
-@@ -47,11 +48,31 @@
-  * WARNING: This will be called in real or virtual mode on HV KVM and virtual
-  *          mode on PR KVM
-  */
-+static struct kvmppc_spapr_tce_table *kvmppc_find_iommu_tce_table(
-+		struct kvm *kvm, unsigned long liobn)
-+{
-+	struct kvmppc_spapr_tce_table *tt;
-+	struct kvmppc_spapr_tce_iommu_device *tcedev = kvm->arch.tcedev;
-+
-+	if (tcedev) {
-+		list_for_each_entry(tt, &tcedev->tables, list) {
-+			if (tt->liobn == liobn)
-+				return tt;
-+		}
-+	}
-+
-+	return NULL;
-+}
-+
- struct kvmppc_spapr_tce_table *kvmppc_find_tce_table(struct kvm *kvm,
- 		unsigned long liobn)
- {
- 	struct kvmppc_spapr_tce_table *tt;
- 
-+	tt = kvmppc_find_iommu_tce_table(kvm, liobn);
-+	if (tt)
-+		return tt;
-+
- 	list_for_each_entry(tt, &kvm->arch.spapr_tce_tables, list) {
- 		if (tt->liobn == liobn)
- 			return tt;
-@@ -191,6 +212,111 @@ static unsigned long kvmppc_rm_gpa_to_hpa_and_get(struct kvm_vcpu *vcpu,
- 	return hpa;
- }
- 
-+static long kvmppc_rm_h_put_tce_iommu(struct kvm_vcpu *vcpu,
-+		struct kvmppc_spapr_tce_table *tt, unsigned long liobn,
-+		unsigned long ioba, unsigned long tce)
-+{
-+	int ret = 0;
-+	struct iommu_table *tbl = iommu_group_get_iommudata(tt->grp);
-+	unsigned long hpa;
-+	struct page *pg = NULL;
-+
-+	if (!tbl)
-+		return H_RESCINDED;
-+
-+	/* Clear TCE */
-+	if (!(tce & (TCE_PCI_READ | TCE_PCI_WRITE))) {
-+		if (iommu_tce_clear_param_check(tbl, ioba, 0, 1))
-+			return H_PARAMETER;
-+
-+		if (iommu_free_tces(tbl, ioba >> IOMMU_PAGE_SHIFT, 1, true))
-+			return H_TOO_HARD;
-+
-+		return H_SUCCESS;
-+	}
-+
-+	/* Put TCE */
-+	if (iommu_tce_put_param_check(tbl, ioba, tce))
-+		return H_PARAMETER;
-+
-+	hpa = kvmppc_rm_gpa_to_hpa_and_get(vcpu, tce, &pg);
-+	if (hpa != ERROR_ADDR) {
-+		ret = iommu_tce_build(tbl, ioba >> IOMMU_PAGE_SHIFT,
-+				&hpa, 1, true);
-+	}
-+
-+	if (((hpa == ERROR_ADDR) && pg) || ret) {
-+		vcpu->arch.tce_tmp_hpas[0] = hpa;
-+		vcpu->arch.tce_tmp_num = 0;
-+		vcpu->arch.tce_rm_fail = TCERM_PUTTCE;
-+		return H_TOO_HARD;
-+	}
-+
-+	return H_SUCCESS;
-+}
-+
-+static long kvmppc_rm_h_put_tce_indirect_iommu(struct kvm_vcpu *vcpu,
-+		struct kvmppc_spapr_tce_table *tt, unsigned long ioba,
-+		unsigned long *tces, unsigned long npages)
-+{
-+	int i, ret;
-+	unsigned long hpa;
-+	struct iommu_table *tbl = iommu_group_get_iommudata(tt->grp);
-+	struct page *pg = NULL;
-+
-+	if (!tbl)
-+		return H_RESCINDED;
-+
-+	/* Check all TCEs */
-+	for (i = 0; i < npages; ++i) {
-+		if (iommu_tce_put_param_check(tbl, ioba +
-+				(i << IOMMU_PAGE_SHIFT), tces[i]))
-+			return H_PARAMETER;
-+	}
-+
-+	/* Translate TCEs and go get_page() */
-+	for (i = 0; i < npages; ++i) {
-+		hpa = kvmppc_rm_gpa_to_hpa_and_get(vcpu, tces[i], &pg);
-+		if (hpa == ERROR_ADDR) {
-+			vcpu->arch.tce_tmp_num = i;
-+			vcpu->arch.tce_rm_fail = TCERM_GETPAGE;
-+			return H_TOO_HARD;
-+		}
-+		vcpu->arch.tce_tmp_hpas[i] = hpa;
-+	}
-+
-+	/* Put TCEs to the table */
-+	ret = iommu_tce_build(tbl, (ioba >> IOMMU_PAGE_SHIFT),
-+			vcpu->arch.tce_tmp_hpas, npages, true);
-+	if (ret == -EAGAIN) {
-+		vcpu->arch.tce_rm_fail = TCERM_PUTTCE;
-+		return H_TOO_HARD;
-+	} else if (ret) {
-+		return H_HARDWARE;
-+	}
-+
-+	return H_SUCCESS;
-+}
-+
-+static long kvmppc_rm_h_stuff_tce_iommu(struct kvm_vcpu *vcpu,
-+		struct kvmppc_spapr_tce_table *tt,
-+		unsigned long liobn, unsigned long ioba,
-+		unsigned long tce_value, unsigned long npages)
-+{
-+	struct iommu_table *tbl = iommu_group_get_iommudata(tt->grp);
-+
-+	if (!tbl)
-+		return H_RESCINDED;
-+
-+	if (iommu_tce_clear_param_check(tbl, ioba, tce_value, npages))
-+		return H_PARAMETER;
-+
-+	if (iommu_free_tces(tbl, ioba >> IOMMU_PAGE_SHIFT, npages, true))
-+		return H_TOO_HARD;
-+
-+	return H_SUCCESS;
-+}
-+
- long kvmppc_rm_h_put_tce(struct kvm_vcpu *vcpu, unsigned long liobn,
- 		      unsigned long ioba, unsigned long tce)
- {
-@@ -201,6 +327,10 @@ long kvmppc_rm_h_put_tce(struct kvm_vcpu *vcpu, unsigned long liobn,
- 	if (!tt)
- 		return H_TOO_HARD;
- 
-+	if (tt->grp)
-+		return kvmppc_rm_h_put_tce_iommu(vcpu, tt, liobn, ioba, tce);
-+
-+	/* Emulated IO */
- 	if (ioba >= tt->window_size)
- 		return H_PARAMETER;
- 
-@@ -243,6 +373,13 @@ long kvmppc_rm_h_put_tce_indirect(struct kvm_vcpu *vcpu,
- 		goto put_unlock_exit;
- 	}
- 
-+	if (tt->grp) {
-+		ret = kvmppc_rm_h_put_tce_indirect_iommu(vcpu,
-+			tt, ioba, (unsigned long *)tces, npages);
-+		goto put_unlock_exit;
-+	}
-+
-+	/* Emulated IO */
- 	for (i = 0; i < npages; ++i) {
- 		ret = kvmppc_tce_validate(((unsigned long *)tces)[i]);
- 		if (ret)
-@@ -273,6 +410,11 @@ long kvmppc_rm_h_stuff_tce(struct kvm_vcpu *vcpu,
- 	if (!tt)
- 		return H_TOO_HARD;
- 
-+	if (tt->grp)
-+		return kvmppc_rm_h_stuff_tce_iommu(vcpu, tt, liobn, ioba,
-+				tce_value, npages);
-+
-+	/* Emulated IO */
- 	if ((ioba + (npages << IOMMU_PAGE_SHIFT)) > tt->window_size)
- 		return H_PARAMETER;
- 
-diff --git a/arch/powerpc/kvm/powerpc.c b/arch/powerpc/kvm/powerpc.c
-index ccb578b..ea9af59 100644
---- a/arch/powerpc/kvm/powerpc.c
-+++ b/arch/powerpc/kvm/powerpc.c
-@@ -395,6 +395,7 @@ int kvm_dev_ioctl_check_extension(long ext)
- 		r = 1;
- 		break;
- 	case KVM_CAP_SPAPR_MULTITCE:
-+	case KVM_CAP_SPAPR_TCE_IOMMU:
- 		r = 1;
- 		break;
- #endif
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 7a8c1b3..016df11 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -1053,6 +1053,7 @@ struct kvm_device *kvm_device_from_filp(struct file *filp);
- 
- extern struct kvm_device_ops kvm_mpic_ops;
- extern struct kvm_device_ops kvm_xics_ops;
-+extern struct kvm_device_ops kvmppc_spapr_tce_iommu_ops;
- 
- #ifdef CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT
- 
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 1580dd4..34c3c22 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -2282,6 +2282,11 @@ static int kvm_ioctl_create_device(struct kvm *kvm,
- 		ops = &kvm_xics_ops;
- 		break;
- #endif
-+#ifdef CONFIG_SPAPR_TCE_IOMMU
-+	case KVM_DEV_TYPE_SPAPR_TCE_IOMMU:
-+		ops = &kvmppc_spapr_tce_iommu_ops;
-+		break;
-+#endif
- 	default:
- 		return -ENODEV;
- 	}
+- vfio: use get_unused_fd_flags(0) instead of get_unused_fd()
+  DROPPED: applied upstream.
+  Additionally subsystem maintainer applied another patch on top
+  to set the flags to O_CLOEXEC.
+
+- industrialio: use anon_inode_getfd() with O_CLOEXEC flag
+  NEW: propose to use O_CLOEXEC as default flag.
+
+Links:
+
+[ANDROID]
+  http://lkml.kernel.org/r/CACSP8SjXGMk2_kX_+RgzqqQwqKernvF1Wt3K5tw991W5dfAnCA@mail.gmail.com
+  http://lkml.kernel.org/r/CACSP8SjZcpcpEtQHzcGYhf-MP7QGo0XpN7-uN7rmD=vNtopG=w@mail.gmail.com
+
+[IB]
+  http://lkml.kernel.org/r/CAL1RGDXV1_BjSLrQDFdVQ1_D75+bMtOtikHOUp8VBiy_OJUf=w@mail.gmail.com
+
+[VFIO]
+  http://lkml.kernel.org/r/20130822171744.1297.13711.stgit@bling.home
+
+[KVM]
+  http://lkml.kernel.org/r/5219A8FC.8090307@redhat.com
+  http://lkml.kernel.org/r/3557EF65-4327-4DAE-999A-B0EE13C433F5@suse.de
+  http://lkml.kernel.org/r/20130826102023.GA8218@redhat.com
+
+[SCTP]
+  http://lkml.kernel.org/r/51D312E8.6090702@gmail.com
+  http://lkml.kernel.org/r/20130702.161428.1703028286206350504.davem@davemloft.net
+
+[XFS]
+  http://lkml.kernel.org/r/20130709205321.GV20932@sgi.com
+
+[PATCHSETv2]
+  http://lkml.kernel.org/r/cover.1376327678.git.ydroneaud@opteya.com
+
+Yann Droneaud (8):
+  ia64: use get_unused_fd_flags(0) instead of get_unused_fd()
+  ppc/cell: use get_unused_fd_flags(0) instead of get_unused_fd()
+  binfmt_misc: use get_unused_fd_flags(0) instead of get_unused_fd()
+  file: use get_unused_fd_flags(0) instead of get_unused_fd()
+  fanotify: use get_unused_fd_flags(0) instead of get_unused_fd()
+  events: use get_unused_fd_flags(0) instead of get_unused_fd()
+  file: remove get_unused_fd()
+  industrialio: use anon_inode_getfd() with O_CLOEXEC flag
+
+ arch/ia64/kernel/perfmon.c                | 2 +-
+ arch/powerpc/platforms/cell/spufs/inode.c | 4 ++--
+ drivers/iio/industrialio-event.c          | 2 +-
+ fs/binfmt_misc.c                          | 2 +-
+ fs/file.c                                 | 2 +-
+ fs/notify/fanotify/fanotify_user.c        | 2 +-
+ include/linux/file.h                      | 1 -
+ kernel/events/core.c                      | 2 +-
+ 8 files changed, 8 insertions(+), 9 deletions(-)
+
 -- 
-1.8.4.rc4
+1.8.3.1
 
