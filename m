@@ -1,21 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751433Ab3IFKlo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 06:41:44 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:40926 "EHLO smtp3-g21.free.fr"
+	id S1751662Ab3IFKmB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 06:42:01 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:42090 "EHLO smtp3-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751152Ab3IFKlk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 06:41:40 -0400
+	id S1751553Ab3IFKl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 06:41:58 -0400
 From: Yann Droneaud <ydroneaud@opteya.com>
-To: linux-kernel@vger.kernel.org, Jeremy Kerr <jk@ozlabs.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Cc: linuxppc-dev@lists.ozlabs.org, cbe-oss-dev@lists.ozlabs.org,
-        Yann Droneaud <ydroneaud@opteya.com>
-Subject: [PATCH v3 2/8] ppc/cell: use get_unused_fd_flags(0) instead of get_unused_fd()
-Date: Fri,  6 Sep 2013 12:39:52 +0200
-Message-Id: <74f26a6b6bce2e30c65cd198e5709ce1634ad041.1378460926.git.ydroneaud@opteya.com>
+To: linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>
+Cc: Yann Droneaud <ydroneaud@opteya.com>
+Subject: [PATCH v3 5/8] fanotify: use get_unused_fd_flags(0) instead of get_unused_fd()
+Date: Fri,  6 Sep 2013 12:39:55 +0200
+Message-Id: <374e4fc626668a580b74eaecb303e9ce4bbfd025.1378460926.git.ydroneaud@opteya.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <cover.1378460926.git.ydroneaud@opteya.com>
 References: <cover.1378460926.git.ydroneaud@opteya.com>
@@ -48,30 +44,21 @@ and, if possible, set to O_CLOEXEC.
 Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
 Link: http://lkml.kernel.org/r/cover.1378460926.git.ydroneaud@opteya.com
 ---
- arch/powerpc/platforms/cell/spufs/inode.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/notify/fanotify/fanotify_user.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/platforms/cell/spufs/inode.c b/arch/powerpc/platforms/cell/spufs/inode.c
-index 87ba7cf..51effce 100644
---- a/arch/powerpc/platforms/cell/spufs/inode.c
-+++ b/arch/powerpc/platforms/cell/spufs/inode.c
-@@ -301,7 +301,7 @@ static int spufs_context_open(struct path *path)
- 	int ret;
- 	struct file *filp;
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index e44cb64..644b9a7 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -69,7 +69,7 @@ static int create_fd(struct fsnotify_group *group,
  
--	ret = get_unused_fd();
-+	ret = get_unused_fd_flags(0);
- 	if (ret < 0)
- 		return ret;
+ 	pr_debug("%s: group=%p event=%p\n", __func__, group, event);
  
-@@ -518,7 +518,7 @@ static int spufs_gang_open(struct path *path)
- 	int ret;
- 	struct file *filp;
- 
--	ret = get_unused_fd();
-+	ret = get_unused_fd_flags(0);
- 	if (ret < 0)
- 		return ret;
+-	client_fd = get_unused_fd();
++	client_fd = get_unused_fd_flags(0);
+ 	if (client_fd < 0)
+ 		return client_fd;
  
 -- 
 1.8.3.1
