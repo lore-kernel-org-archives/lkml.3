@@ -1,262 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956Ab3IFOL4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 10:11:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42623 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751418Ab3IFOLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 10:11:55 -0400
-Message-ID: <5229E2A4.3080706@redhat.com>
-Date: Fri, 06 Sep 2013 16:11:48 +0200
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1752354Ab3IFOPZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 10:15:25 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53146 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751491Ab3IFOPY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 10:15:24 -0400
+Date: Fri, 6 Sep 2013 15:14:44 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v5 11/13] xen: introduce xen_alloc/free_coherent_pages
+Message-ID: <20130906141444.GE1946@arm.com>
+References: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com>
+ <1377801154-29215-11-git-send-email-stefano.stabellini@eu.citrix.com>
+ <20130905160905.GI11887@arm.com>
+ <alpine.DEB.2.02.1309051742390.6397@kaball.uk.xensource.com>
 MIME-Version: 1.0
-To: Dave Hansen <dave.hansen@intel.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Pavel Machek <pavel@ucw.cz>
-Subject: [PATCH 2/2 v3] mm: allow to set overcommit ratio more precisely
-References: <1376925478-15506-1-git-send-email-jmarchan@redhat.com> <1376925478-15506-2-git-send-email-jmarchan@redhat.com> <52287E66.9010107@redhat.com> <52289824.20000@intel.com>
-In-Reply-To: <52289824.20000@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1309051742390.6397@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Sep 05, 2013 at 05:43:33PM +0100, Stefano Stabellini wrote:
+> On Thu, 5 Sep 2013, Catalin Marinas wrote:
+> > On Thu, Aug 29, 2013 at 07:32:32PM +0100, Stefano Stabellini wrote:
+> > > xen_swiotlb_alloc_coherent needs to allocate a coherent buffer for cpu
+> > > and devices. On native x86 and ARMv8 is sufficient to call
+> > > __get_free_pages in order to get a coherent buffer, while on ARM we need
+> > > to call arm_dma_ops.alloc.
+> > 
+> > Don't bet on this for ARMv8. It's not mandated for the architecture, so
+> > at some point some SoC will require non-cacheable buffers for coherency.
+> 
+> I see.
+> Would it be better if I implemented xen_alloc_coherent_pages on armv8 by
+> calling arm64_swiotlb_dma_ops.alloc?
 
-Changes since v2:
- - update documentation
-Changes since v1:
- - use overcommit_ratio_ppm instead of overcommit_kbytes
- - keep both variables in sync
+What does this buffer do exactly? Is it allocated by guests?
 
-Some applications that run on HPC clusters are designed around the
-availability of RAM and the overcommit ratio is fine tuned to get the
-maximum usage of memory without swapping. With growing memory, the 1%
-of all RAM grain provided by overcommit_ratio has become too coarse
-for these workload (on a 2TB machine it represents no less than
-20GB).
+Currently arm64_swiotlb_dma_ops assume cache-coherent DMA. I have a
+patch which introduces new ops for non-coherent DMA but this should
+really be orthogonal to swiotlb. You can basically have 4 combinations
+of coherent/non-coherent and swiotlb/iommu. Mark Rutland is currently
+looking into how best to describe this via DT as it may not even be per
+SoC but per bus or device.
 
-This patch adds the new overcommit_ratio_ppm sysctl variable that
-allow to set overcommit ratio with a part per million precision.
-The old overcommit_ratio variable can still be used to set and read
-the ratio with a 1% precision. That way, overcommit_ratio interface
-isn't broken in any way that I can imagine.
-
-Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
----
- Documentation/sysctl/vm.txt            |   10 +++++
- Documentation/vm/overcommit-accounting |    7 ++--
- include/linux/mman.h                   |    6 ++--
- include/linux/sysctl.h                 |    2 +
- kernel/sysctl.c                        |   63 ++++++++++++++++++++++++++++++--
- mm/mmap.c                              |    2 +-
- mm/nommu.c                             |    2 +-
- 7 files changed, 81 insertions(+), 11 deletions(-)
-
-diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-index 36ecc26..5cd5c53 100644
---- a/Documentation/sysctl/vm.txt
-+++ b/Documentation/sysctl/vm.txt
-@@ -49,6 +49,7 @@ Currently, these files are in /proc/sys/vm:
- - oom_kill_allocating_task
- - overcommit_memory
- - overcommit_ratio
-+- overcommit_ratio_ppm
- - page-cluster
- - panic_on_oom
- - percpu_pagelist_fraction
-@@ -591,6 +592,15 @@ overcommit_ratio:
- When overcommit_memory is set to 2, the committed address
- space is not permitted to exceed swap plus this percentage
- of physical RAM.  See above.
-+If overcommit_ratio_ppm has been set, overcommit_ratio shows a
-+rounded value.
-+
-+==============================================================
-+
-+overcommit_ratio_ppm:
-+
-+Same as overcommit_ratio, but allows to set the ratio with a finer
-+grain (part per million).
- 
- ==============================================================
- 
-diff --git a/Documentation/vm/overcommit-accounting b/Documentation/vm/overcommit-accounting
-index 8eaa2fc..15b5ecb 100644
---- a/Documentation/vm/overcommit-accounting
-+++ b/Documentation/vm/overcommit-accounting
-@@ -14,8 +14,8 @@ The Linux kernel supports the following overcommit handling modes
- 
- 2	-	Don't overcommit. The total address space commit
- 		for the system is not permitted to exceed swap + a
--		configurable percentage (default is 50) of physical RAM.
--		Depending on the percentage you use, in most situations
-+		configurable ratio (default is 50%) of physical RAM.
-+		Depending on the ratio you use, in most situations
- 		this means a process will not be killed while accessing
- 		pages but will receive errors on memory allocation as
- 		appropriate.
-@@ -26,7 +26,8 @@ The Linux kernel supports the following overcommit handling modes
- 
- The overcommit policy is set via the sysctl `vm.overcommit_memory'.
- 
--The overcommit percentage is set via `vm.overcommit_ratio'.
-+The overcommit percentage is set via `vm.overcommit_ratio' or
-+`vm.overcommit_ratio_ppm'.
- 
- The current overcommit limit and amount committed are viewable in
- /proc/meminfo as CommitLimit and Committed_AS respectively.
-diff --git a/include/linux/mman.h b/include/linux/mman.h
-index d622d34..24f9c12 100644
---- a/include/linux/mman.h
-+++ b/include/linux/mman.h
-@@ -11,7 +11,7 @@
- #include <linux/swap.h>
- 
- extern int sysctl_overcommit_memory;
--extern int sysctl_overcommit_ratio;
-+extern int sysctl_overcommit_ratio_ppm;
- extern struct percpu_counter vm_committed_as;
- 
- #ifdef CONFIG_SMP
-@@ -96,7 +96,7 @@ calc_vm_flag_bits(unsigned long flags)
-  */
- static inline unsigned long vm_commit_limit()
- {
--	return ((totalram_pages - hugetlb_total_pages())
--		* sysctl_overcommit_ratio / 100) + total_swap_pages;
-+	return ((u64) (totalram_pages - hugetlb_total_pages())
-+		* sysctl_overcommit_ratio_ppm / 100000) + total_swap_pages;
- }
- #endif /* _LINUX_MMAN_H */
-diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
-index 14a8ff2..2e2389c 100644
---- a/include/linux/sysctl.h
-+++ b/include/linux/sysctl.h
-@@ -51,6 +51,8 @@ extern int proc_dointvec_userhz_jiffies(struct ctl_table *, int,
- 					void __user *, size_t *, loff_t *);
- extern int proc_dointvec_ms_jiffies(struct ctl_table *, int,
- 				    void __user *, size_t *, loff_t *);
-+extern int proc_dointvec_percent_ppm(struct ctl_table *, int,
-+				     void __user *, size_t *, loff_t *);
- extern int proc_doulongvec_minmax(struct ctl_table *, int,
- 				  void __user *, size_t *, loff_t *);
- extern int proc_doulongvec_ms_jiffies_minmax(struct ctl_table *table, int,
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 07f6fc4..a94ff8d 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -96,7 +96,7 @@
- 
- /* External variables not in a header file. */
- extern int sysctl_overcommit_memory;
--extern int sysctl_overcommit_ratio;
-+extern int sysctl_overcommit_ratio_ppm;
- extern int max_threads;
- extern int suid_dumpable;
- #ifdef CONFIG_COREDUMP
-@@ -1116,8 +1116,15 @@ static struct ctl_table vm_table[] = {
- 	},
- 	{
- 		.procname	= "overcommit_ratio",
--		.data		= &sysctl_overcommit_ratio,
--		.maxlen		= sizeof(sysctl_overcommit_ratio),
-+		.data		= &sysctl_overcommit_ratio_ppm,
-+		.maxlen		= sizeof(sysctl_overcommit_ratio_ppm),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec_percent_ppm,
-+	},
-+	{
-+		.procname	= "overcommit_ratio_ppm",
-+		.data		= &sysctl_overcommit_ratio_ppm,
-+		.maxlen		= sizeof(sysctl_overcommit_ratio_ppm),
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec,
- 	},
-@@ -2433,6 +2440,56 @@ int proc_dointvec_ms_jiffies(struct ctl_table *table, int write,
- 				do_proc_dointvec_ms_jiffies_conv, NULL);
- }
- 
-+static int do_proc_dointvec_percent_ppm_conv(bool *negp, unsigned long *lvalp,
-+					     int *valp,
-+					     int write, void *data)
-+{
-+	if (write) {
-+		unsigned long ppm = (*negp ? -*lvalp : *lvalp) * 10000;
-+
-+		if (ppm > INT_MAX)
-+			return 1;
-+		*valp = (int)ppm;
-+	} else {
-+		int val = *valp;
-+		unsigned long lval;
-+		if (val < 0) {
-+			*negp = true;
-+			lval = (unsigned long)-val;
-+		} else {
-+			*negp = false;
-+			lval = (unsigned long)val;
-+		}
-+		*lvalp = lval / 10000;
-+		if (lval % 10000 >= 5000)
-+			(*lvalp)++;
-+	}
-+	return 0;
-+}
-+
-+/**
-+ * proc_dointvec_percent_ppm - read a vector of integers as percent and convert it to ppm
-+ * @table: the sysctl table
-+ * @write: %TRUE if this is a write to the sysctl file
-+ * @buffer: the user buffer
-+ * @lenp: the size of the user buffer
-+ * @ppos: file position
-+ * @ppos: the current position in the file
-+ *
-+ * Reads/writes up to table->maxlen/sizeof(unsigned int) integer
-+ * values from/to the user buffer, treated as an ASCII string.
-+ * The values read are assumed to be in percents, and are converted
-+ * into parts per million.
-+ *
-+ * Returns 0 on success.
-+ */
-+int proc_dointvec_percent_ppm(struct ctl_table *table, int write,
-+			      void __user *buffer, size_t *lenp, loff_t *ppos)
-+{
-+	return do_proc_dointvec(table, write, buffer, lenp, ppos,
-+				do_proc_dointvec_percent_ppm_conv, NULL);
-+}
-+
- static int proc_do_cad_pid(struct ctl_table *table, int write,
- 			   void __user *buffer, size_t *lenp, loff_t *ppos)
- {
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 3a1bd2c..b996483 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -85,7 +85,7 @@ pgprot_t vm_get_page_prot(unsigned long vm_flags)
- EXPORT_SYMBOL(vm_get_page_prot);
- 
- int sysctl_overcommit_memory __read_mostly = OVERCOMMIT_GUESS;  /* heuristic overcommit */
--int sysctl_overcommit_ratio __read_mostly = 50;	/* default is 50% */
-+int sysctl_overcommit_ratio_ppm __read_mostly = 500000;	/* default is 50% */
- int sysctl_max_map_count __read_mostly = DEFAULT_MAX_MAP_COUNT;
- unsigned long sysctl_user_reserve_kbytes __read_mostly = 1UL << 17; /* 128MB */
- unsigned long sysctl_admin_reserve_kbytes __read_mostly = 1UL << 13; /* 8MB */
-diff --git a/mm/nommu.c b/mm/nommu.c
-index d8a957b..cf10a9b 100644
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -59,7 +59,7 @@ unsigned long max_mapnr;
- unsigned long highest_memmap_pfn;
- struct percpu_counter vm_committed_as;
- int sysctl_overcommit_memory = OVERCOMMIT_GUESS; /* heuristic overcommit */
--int sysctl_overcommit_ratio = 50; /* default is 50% */
-+int sysctl_overcommit_ratio_ppm = 500000; /* default is 50% */
- int sysctl_max_map_count = DEFAULT_MAX_MAP_COUNT;
- int sysctl_nr_trim_pages = CONFIG_NOMMU_INITIAL_TRIM_EXCESS;
- unsigned long sysctl_user_reserve_kbytes __read_mostly = 1UL << 17; /* 128MB */
 -- 
-1.7.7.6
-
+Catalin
