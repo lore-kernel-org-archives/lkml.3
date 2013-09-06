@@ -1,66 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750999Ab3IFITo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 04:19:44 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:48578 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745Ab3IFITL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 04:19:11 -0400
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: anton@enomsg.org, dwmw2@infradead.org, lee.jones@linaro.org,
-        sachin.kamat@linaro.org
-Subject: [PATCH v3 3/4] pm2301-charger: Check return value of regulator_enable
-Date: Fri,  6 Sep 2013 13:31:11 +0530
-Message-Id: <1378454473-24508-3-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1378454473-24508-1-git-send-email-sachin.kamat@linaro.org>
-References: <1378454473-24508-1-git-send-email-sachin.kamat@linaro.org>
+	id S1751147Ab3IFIWq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 04:22:46 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:35578 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751046Ab3IFIWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 04:22:43 -0400
+From: George Cherian <george.cherian@ti.com>
+To: <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <bcousson@baylibre.com>, <tony@atomide.com>, <rob.herring@calxeda.com>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ijc+devicetree@hellion.org.uk>, <linux@arm.linux.org.uk>,
+        George Cherian <george.cherian@ti.com>
+Subject: [PATCH] arm: dts: am33xx: Add mmc nodes for am33xx platform
+Date: Fri, 6 Sep 2013 13:51:52 +0530
+Message-ID: <1378455712-17379-1-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check the return value of regulator_enable to silence the following
-warning:
-drivers/power/pm2301_charger.c:725:20: warning:
-ignoring return value of ‘regulator_enable’, declared with
-attribute warn_unused_result [-Wunused-result]
+Add mmc nodes for am33xx platforms
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: George Cherian <george.cherian@ti.com>
 ---
-Compile tested.
-Changes since v2:
-* removed redundant assignment to false.
-Changes since v1:
-* converted dev_err and return to dev_warn as suggested by Lee Jones.
----
- drivers/power/pm2301_charger.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+Verified after applying [1] and [2]
+[1] - [PATCH v4 0/6] dma: edma: Support scatter-lists of any length - https://lkml.org/lkml/2013/8/29/466
+[2] - [PATCH v2] ARM: dts: add AM33XX EDMA support - https://lkml.org/lkml/2013/8/26/57
+ arch/arm/boot/dts/am33xx.dtsi | 35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
 
-diff --git a/drivers/power/pm2301_charger.c b/drivers/power/pm2301_charger.c
-index ffa10ed..7214b66 100644
---- a/drivers/power/pm2301_charger.c
-+++ b/drivers/power/pm2301_charger.c
-@@ -722,8 +722,12 @@ static int pm2xxx_charger_ac_en(struct ux500_charger *charger,
+diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+index b0badff..1df512d 100644
+--- a/arch/arm/boot/dts/am33xx.dtsi
++++ b/arch/arm/boot/dts/am33xx.dtsi
+@@ -236,6 +236,41 @@
+ 			status = "disabled";
+ 		};
  
- 		dev_dbg(pm2->dev, "Enable AC: %dmV %dmA\n", vset, iset);
- 		if (!pm2->vddadc_en_ac) {
--			regulator_enable(pm2->regu);
--			pm2->vddadc_en_ac = true;
-+			ret = regulator_enable(pm2->regu);
-+			if (ret)
-+				dev_warn(pm2->dev,
-+					"Failed to enable vddadc regulator\n");
-+			else
-+				pm2->vddadc_en_ac = true;
- 		}
- 
- 		ret = pm2xxx_charging_init(pm2);
++		mmc1: mmc@48061000 {
++			compatible = "ti,omap4-hsmmc";
++			reg = <0x48060000 0x1000>;
++			interrupts = <64>;
++			ti,hwmods = "mmc1";
++			ti,dual-volt;
++			ti,needs-special-reset;
++			ti,needs-special-hs-handling;
++			dmas = <&edma 24
++				&edma 25>;
++			dma-names = "tx", "rx";
++			status = "disabled";
++		};
++
++		mmc2: mmc@481d8000 {
++			compatible = "ti,omap4-hsmmc";
++			reg = <0x481d8000 0x1000>;
++			interrupts = <28>;
++			ti,hwmods = "mmc2";
++			ti,needs-special-reset;
++			dmas = <&edma 2
++				&edma 3>;
++			dma-names = "tx", "rx";
++			status = "disabled";
++		};
++
++		mmc3: mmc@47810000 {
++			compatible = "ti,omap4-hsmmc";
++			reg = <0x47810000 0x1000>;
++			interrupts = <29>;
++			ti,hwmods = "mmc3";
++			ti,needs-special-reset;
++			status = "disabled";
++		};
++
+ 		wdt2: wdt@44e35000 {
+ 			compatible = "ti,omap3-wdt";
+ 			ti,hwmods = "wd_timer2";
 -- 
-1.7.9.5
+1.8.1.4
 
