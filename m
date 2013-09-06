@@ -1,80 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750750Ab3IFEw3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 00:52:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56676 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705Ab3IFEwU (ORCPT
+	id S1750770Ab3IFEyT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 00:54:19 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:65083 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705Ab3IFEyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 00:52:20 -0400
-Date: Thu, 5 Sep 2013 21:55:03 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Sudeep Dutt <sudeep.dutt@intel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rob Landley <rob@landley.net>,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, linux-doc@vger.kernel.org,
-        Asias He <asias@redhat.com>, Nikhil Rao <nikhil.rao@intel.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Caz Yokoyama <Caz.Yokoyama@intel.com>,
-        Dasaratharaman Chandramouli 
-	<dasaratharaman.chandramouli@intel.com>,
-        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
-        "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Subject: Re: [PATCH RESEND v3 1/7] Intel MIC Host Driver for X100 family.
-Message-ID: <20130906045503.GB28806@kroah.com>
-References: <cover.1378423596.git.sudeep.dutt@intel.com>
- <8b972a444f4529ecffc718db4112aa8959bf72ad.1378423596.git.sudeep.dutt@intel.com>
+	Fri, 6 Sep 2013 00:54:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8b972a444f4529ecffc718db4112aa8959bf72ad.1378423596.git.sudeep.dutt@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5229377E.5050805@hp.com>
+References: <1378407316-59852-1-git-send-email-Waiman.Long@hp.com>
+	<1378407316-59852-2-git-send-email-Waiman.Long@hp.com>
+	<CA+55aFwShEG-bm2JuQJPF3DTq-O5CVdYXzwN5UpSckka0Wgm-A@mail.gmail.com>
+	<5228E992.5050901@hp.com>
+	<CA+55aFzx4YHY3e5AH0U5AkAQSc8pZyC35jBP4t2jpbi8NHM18g@mail.gmail.com>
+	<5229377E.5050805@hp.com>
+Date: Thu, 5 Sep 2013 21:54:16 -0700
+X-Google-Sender-Auth: eh2rXSvQkbEj5Doh6XaWZVW_Maw
+Message-ID: <CA+55aFydWW3Azfo_oh+M2MY75xJn+fd_pnKE-UBrEtw10jOhow@mail.gmail.com>
+Subject: Re: [PATCH v2 1/1] dcache: Translating dentry into pathname without
+ taking rename_lock
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        George Spelvin <linux@horizon.com>, John Stoffel <john@stoffel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Very minor nits, you can change this in a future add-on patch:
+On Thu, Sep 5, 2013 at 7:01 PM, Waiman Long <waiman.long@hp.com> wrote:
+>
+> I am sorry that I misunderstand what you said. I will do what you and Al
+> advise me to do.
 
-> +static DEVICE_ATTR(family, S_IRUGO, mic_show_family, NULL);
+I'm sorry I shouted at you. I was getting a bit frustrated there..
 
-This should use DEVICE_ATTR_RO(), so that we don't have to audit the
-permissions of your DEVICE_ATTR() files.
-
-> +static DEVICE_ATTR(stepping, S_IRUGO, mic_show_stepping, NULL);
-
-Same here.
-
-> +static struct attribute *mic_default_attrs[] = {
-> +	&dev_attr_family.attr,
-> +	&dev_attr_stepping.attr,
-> +
-> +	NULL
-> +};
-> +
-> +static struct attribute_group mic_attr_group = {
-> +	.attrs = mic_default_attrs,
-> +};
-> +
-> +static const struct attribute_group *__mic_attr_group[] = {
-> +	&mic_attr_group,
-> +	NULL
-> +};
-
-These last two structures can be replaced with:
-ATTRIBUTE_GROUPS(mic_default);
-
-> +void mic_sysfs_init(struct mic_device *mdev)
-> +{
-> +	mdev->attr_group = __mic_attr_group;
-> +}
-
-This is "odd", why not just export the data structure and reference it
-in the other code?  The pci core does this, and so do other busses.
-
-Anyway, it's not a big deal, just a bit strange to me.
-
-thanks,
-
-greg k-h
+            Linus
