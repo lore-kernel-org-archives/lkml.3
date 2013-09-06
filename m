@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751050Ab3IFIy3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 04:54:29 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:33718 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750798Ab3IFIyZ (ORCPT
+	id S1751106Ab3IFIza (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 04:55:30 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:31749 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750856Ab3IFIz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 04:54:25 -0400
-X-Sasl-enc: dZIIyxt6o8v/x0ercX+QO4Dg4viaGwqSD+3mK3iHMBGr 1378457664
-Message-ID: <1378457659.2311.23.camel@perseus.fritz.box>
-Subject: Re: [PATCH 1/3] autofs4 - fix device ioctl mount lookup
-From: Ian Kent <raven@themaw.net>
-To: Jeffrey Layton <jlayton@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>, rui.xiang@huawei.com,
-        autofs mailing list <autofs@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Date: Fri, 06 Sep 2013 16:54:19 +0800
-In-Reply-To: <1378456682.2311.21.camel@perseus.fritz.box>
-References: <20130904005456.5025.94309.stgit@perseus.fritz.box>
-	 <20130904010301.GE13318@ZenIV.linux.org.uk>
-	 <20130904020013.GF13318@ZenIV.linux.org.uk>
-	 <CA+55aFwF+dqSMyGE+3LamM+qSDymieyReYB+RPb8fHTTmntgqw@mail.gmail.com>
-	 <20130904022617.GG13318@ZenIV.linux.org.uk>
-	 <20130904024230.GH13318@ZenIV.linux.org.uk>
-	 <1378456682.2311.21.camel@perseus.fritz.box>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Fri, 6 Sep 2013 04:55:27 -0400
+Message-ID: <52299848.1000105@huawei.com>
+Date: Fri, 6 Sep 2013 16:54:32 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Toshi Kani <toshi.kani@hp.com>
+CC: <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Xishi Qiu <qiuxishi@huawei.com>
+Subject: [PATCH] mm/hotplug: rename the function is_memblock_offlined_cb()
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Function is_memblock_offlined() return 1 means memory block is offlined,
+but is_memblock_offlined_cb() return 1 means memory block is not offlined, 
+this will confuse somebody, so rename the function.
+Another, use "pfn_to_nid(pfn)" instead of "page_to_nid(pfn_to_page(pfn))".
 
-Sorry, I should have added Jeff to the cc for this post.
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+---
+ mm/memory_hotplug.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-On Fri, 2013-09-06 at 16:38 +0800, Ian Kent wrote:
-> On Wed, 2013-09-04 at 03:42 +0100, Al Viro wrote:
-> > On Wed, Sep 04, 2013 at 03:26:17AM +0100, Al Viro wrote:
-> > > I've applied slightly modified variant of Jeff's "vfs: allow umount to handle
-> > > mountpoints without revalidating them" (modified by just leaving the
-> > > struct path filled with mountpoint and leaving the equivalent of follow_mount()
-> > > to caller) to the local queue and I'm pretty sure that it's what we want
-> > > here as well.
-> > 
-> > ... and killed the modifications since the result ends up uglier for
-> > caller(s) anyway.  Reapplied as-is.
-> 
-> Looks like Jeff's patch has been merged, commit 8033426e6.
-> 
-> Revalidation isn't the only thing not done on the last component using
-> Jeff's user_path_umountat() path walk. It also bypasses the managed
-> dentry code for the last component, which is why it's what I need as
-> well.
-> 
-> Encoding umount in the name seems misleading as to what it really does
-> as would encoding unmanaged or similar since that doesn't properly cover
-> it either.
-> 
-> I can rename it in a patch to solve my autofs problem, so how about
-> something like user_path_simple_last(), other suggestions anyone?
-> 
-> Ian
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index ca1dd3a..a95dd28 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -937,7 +937,7 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_typ
+ 	arg.nr_pages = nr_pages;
+ 	node_states_check_changes_online(nr_pages, zone, &arg);
+ 
+-	nid = page_to_nid(pfn_to_page(pfn));
++	nid = pfn_to_nid(pfn);
+ 
+ 	ret = memory_notify(MEM_GOING_ONLINE, &arg);
+ 	ret = notifier_to_errno(ret);
+@@ -1657,7 +1657,7 @@ int walk_memory_range(unsigned long start_pfn, unsigned long end_pfn,
+ }
+ 
+ #ifdef CONFIG_MEMORY_HOTREMOVE
+-static int is_memblock_offlined_cb(struct memory_block *mem, void *arg)
++static int check_memblock_offlined_cb(struct memory_block *mem, void *arg)
+ {
+ 	int ret = !is_memblock_offlined(mem);
+ 
+@@ -1794,7 +1794,7 @@ void __ref remove_memory(int nid, u64 start, u64 size)
+ 	 * if this is not the case.
+ 	 */
+ 	ret = walk_memory_range(PFN_DOWN(start), PFN_UP(start + size - 1), NULL,
+-				is_memblock_offlined_cb);
++				check_memblock_offlined_cb);
+ 	if (ret) {
+ 		unlock_memory_hotplug();
+ 		BUG();
+-- 
+1.7.1
 
 
