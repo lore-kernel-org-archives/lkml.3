@@ -1,84 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537Ab3IFOwg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 10:52:36 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:34127 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751786Ab3IFOwf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 10:52:35 -0400
+	id S1753639Ab3IFOyU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 10:54:20 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:10360 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752169Ab3IFOyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 10:54:18 -0400
+X-IronPort-AV: E=Sophos;i="4.90,854,1371081600"; 
+   d="scan'208";a="51287090"
+Date: Fri, 6 Sep 2013 15:53:58 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v5 05/13] xen/arm,arm64: move Xen initialization
+ earlier
+In-Reply-To: <20130906142301.GA5140@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1309061553270.6397@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com> <1377801154-29215-5-git-send-email-stefano.stabellini@eu.citrix.com> <20130905162026.GJ11887@arm.com> <alpine.DEB.2.02.1309051755560.6397@kaball.uk.xensource.com>
+ <1378457939.14745.73.camel@kazak.uk.xensource.com> <20130906140921.GD1946@arm.com> <20130906142301.GA5140@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <5229E9D2.9060000@lwfinger.net>
-References: <1378471536-7169-1-git-send-email-geert@linux-m68k.org>
-	<5229E9D2.9060000@lwfinger.net>
-Date: Fri, 6 Sep 2013 16:52:34 +0200
-X-Google-Sender-Auth: _Y8lqegEYvqBJmOLYn4Cn4QWQOA
-Message-ID: <CAMuHMdXdXRtpYoZBG3poJAvMO+tWVg3J0Z6v2MEv0DgPw==RiA@mail.gmail.com>
-Subject: Re: [PATCH] staging: r8188eu: Fix uninitialized variable change_inx
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        driverdevel <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 6, 2013 at 4:42 PM, Larry Finger <Larry.Finger@lwfinger.net> wrote:
-> On 09/06/2013 07:45 AM, Geert Uytterhoeven wrote:
->> drivers/staging/rtl8188eu/core/rtw_wlan_util.c: In function
->> ‘WMMOnAssocRsp’:
->> drivers/staging/rtl8188eu/core/rtw_wlan_util.c:634: warning: ‘change_inx’
->> may be used uninitialized in this function
->>
->> And the compiler is right: change_inx should be initialized to false.
->>
->> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
->> ---
->>   drivers/staging/rtl8188eu/core/rtw_wlan_util.c |    2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/staging/rtl8188eu/core/rtw_wlan_util.c
->> b/drivers/staging/rtl8188eu/core/rtw_wlan_util.c
->> index 013ea48..8018edd 100644
->> --- a/drivers/staging/rtl8188eu/core/rtw_wlan_util.c
->> +++ b/drivers/staging/rtl8188eu/core/rtw_wlan_util.c
->> @@ -631,7 +631,7 @@ void WMMOnAssocRsp(struct adapter *padapter)
->>         inx[0] = 0; inx[1] = 1; inx[2] = 2; inx[3] = 3;
->>
->>         if (pregpriv->wifi_spec == 1) {
->> -               u32     j, tmp, change_inx;
->> +               u32     j, tmp, change_inx = false;
->>
->>                 /* entry indx: 0->vo, 1->vi, 2->be, 3->bk. */
->>                 for (i = 0; i < 4; i++) {
->>
->
-> Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
->
-> This warning has not shown up on my x86_64 system with gcc 4.7.2. What
-> architecture and gcc version were you using?
+On Fri, 6 Sep 2013, Konrad Rzeszutek Wilk wrote:
+> On Fri, Sep 06, 2013 at 03:09:21PM +0100, Catalin Marinas wrote:
+> > On Fri, Sep 06, 2013 at 09:58:59AM +0100, Ian Campbell wrote:
+> > > On Thu, 2013-09-05 at 17:59 +0100, Stefano Stabellini wrote:
+> > > > On Thu, 5 Sep 2013, Catalin Marinas wrote:
+> > > > > On Thu, Aug 29, 2013 at 07:32:26PM +0100, Stefano Stabellini wrote:
+> > > > > > Move Xen initialization earlier, before any DMA requests can be made.
+> > > > > > 
+> > > > > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > > > > 
+> > > > > I guess you should cc the corresponding maintainers here.
+> > > > 
+> > > > Thanks for the reminder, I'll do that.
+> > > > 
+> > > > 
+> > > > > >  arch/arm/include/asm/xen/hypervisor.h |    8 ++++++++
+> > > > > >  arch/arm/kernel/setup.c               |    2 ++
+> > > > > >  arch/arm/xen/enlighten.c              |   21 ++++++++++++++-------
+> > > > > >  arch/arm64/kernel/setup.c             |    2 ++
+> > > > > >  4 files changed, 26 insertions(+), 7 deletions(-)
+> > > > > 
+> > > > > [...]
+> > > > > 
+> > > > > > --- a/arch/arm64/kernel/setup.c
+> > > > > > +++ b/arch/arm64/kernel/setup.c
+> > > > > > @@ -53,6 +53,7 @@
+> > > > > >  #include <asm/traps.h>
+> > > > > >  #include <asm/memblock.h>
+> > > > > >  #include <asm/psci.h>
+> > > > > > +#include <asm/xen/hypervisor.h>
+> > > > > >  
+> > > > > >  unsigned int processor_id;
+> > > > > >  EXPORT_SYMBOL(processor_id);
+> > > > > > @@ -267,6 +268,7 @@ void __init setup_arch(char **cmdline_p)
+> > > > > >  	unflatten_device_tree();
+> > > > > >  
+> > > > > >  	psci_init();
+> > > > > > +	xen_early_init();
+> > > > > 
+> > > > > So Xen guests don't have any hope for single Image? Basically you set
+> > > > > dma_ops unconditionally in xen_early_init(), even if the kernel is not
+> > > > > intended to run under Xen.
+> > > > 
+> > > > That should not happen: if we are not running on Xen xen_early_init
+> > > > returns early, before calling xen_mm_init.
+> > > 
+> > > x96 has a call to init_hypervisor_platform() at approximately this
+> > > location, which detects and calls the init function for any of Xen, KVM,
+> > > hyperv and vmware.
+> > 
+> > I would rather have a core_initcall(xen_early_init()) if possible,
+> > rather than hard-coded calls in setup_arch(). This early stuff is
+> > DT-driven, so in theory you don't need a specific xen call. The only
+> > thing is that you end up with swiotlb_init() and 64MB wasted if the Xen
+> > guest does not plan to use them.
+> 
+> There is a swiotlb_free mechanism in case the allocation was not
+> neccessary.
 
-Good old gcc version 4.1.2 20061115 (prerelease) (Ubuntu 4.1.1-21) for m68k.
-
-Recent versions of gcc no longer give warnings for uninitialized variables,
-probably because it used to flood you with too many false positives.
-This may please the -Werror camp, but once in a while the warnings do disclose
-real bugs, so I tend to look at all regressions I encounter there.
-
-I've just checked with m68k-linux-gcc 4.6.3 from crosstool on kernel.org, and
-it doesn't give this warning (hmm, it does give other warnings, so I should have
-a closer look...).
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+I think I'll just use the late swiotlb initialization.
