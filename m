@@ -1,13 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758729Ab3IFQki (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 12:40:38 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:55245 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753815Ab3IFQkd (ORCPT
+	id S1756519Ab3IFQod (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 12:44:33 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32059 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753895Ab3IFQoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 12:40:33 -0400
-MIME-Version: 1.0
+	Fri, 6 Sep 2013 12:44:32 -0400
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=BbXNHQx3NekA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=fxhqf5xVK60A:10 a=vTr9H3xdAAAA:8 a=t98SeGsm3doavwbB9lwA:9 a=CjuIK1q_8ugA:10 a=DGUv9C6miAAA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Fri, 6 Sep 2013 12:44:29 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Dave Jones <davej@redhat.com>, Kyle McMartin <kyle@infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "John 'Warthog9' Hawley" <warthog9@kernel.org>
+Subject: Re: ftrace 'failed to modify' bug when loading reiserfs.ko
+Message-ID: <20130906124429.2376b80c@gandalf.local.home>
 In-Reply-To: <CA+5PVA6=jbzzjHJcE=CE6Eu+YtOCU+VN8ttraxL_pzQauRrSXA@mail.gmail.com>
 References: <20130905212834.605408a4@gandalf.local.home>
 	<20130906013455.GA10073@redhat.com>
@@ -24,45 +35,51 @@ References: <20130905212834.605408a4@gandalf.local.home>
 	<CA+5PVA4axYkrb=jCHAuW_W4rzrKtEaBDLtx5TMcCKS9oH0VFqA@mail.gmail.com>
 	<20130906120736.6ef58106@gandalf.local.home>
 	<CA+5PVA6=jbzzjHJcE=CE6Eu+YtOCU+VN8ttraxL_pzQauRrSXA@mail.gmail.com>
-Date: Fri, 6 Sep 2013 18:40:32 +0200
-Message-ID: <CAFLxGvziE4dp1UOoSKqeUcPUwv8V2eT1hVgC6tbsfkHUSkS4rg@mail.gmail.com>
-Subject: Re: ftrace 'failed to modify' bug when loading reiserfs.ko
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
-        Kyle McMartin <kyle@infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 6, 2013 at 6:12 PM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+On Fri, 6 Sep 2013 12:12:48 -0400
+Josh Boyer <jwboyer@fedoraproject.org> wrote:
+
 > On Fri, Sep 6, 2013 at 12:07 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
->> On Fri, 6 Sep 2013 11:46:13 -0400
->> Josh Boyer <jwboyer@fedoraproject.org> wrote:
->>
->>
->>> > Fedora should really look into defaulting to syslinux.
->>>
->>> Doesn't support all the usecases we have, and it's not multi-arch.
->>> Grub2 has warts, but it's all around more flexible.
->>
->> We should be working on making syslinux work for all cases then.
->
-> Is there something stopping you? :)  More specifically, I don't think
-> syslinux will ever support e.g. powerpc or ARM (Aarch64) so it doesn't
-> seem like a general purpose solution.  I could be wrong.
+> > On Fri, 6 Sep 2013 11:46:13 -0400
+> > Josh Boyer <jwboyer@fedoraproject.org> wrote:
+> >
+> >
+> >> > Fedora should really look into defaulting to syslinux.
+> >>
+> >> Doesn't support all the usecases we have, and it's not multi-arch.
+> >> Grub2 has warts, but it's all around more flexible.
+> >
+> > We should be working on making syslinux work for all cases then.
+> 
+> Is there something stopping you? :)
 
-Is there a list of use cases which are missing in syslinux?
+Yes, it's called a day job that takes up most my time ;-)
 
-On all systems where I have to touch the bootloader
-(running custom kernels, using one-shot, ...) I always install
-gummiboot or syslinux because
-grub2 sucks so much. grub1 worked quite well but grub2 is a PITA.
+I'd love to work more on it. I just don't have the time to do so.
 
--- 
-Thanks,
-//richard
+> 
+> > Grub2 has more than warts, it's a total disaster. I have not found a
+> > single user that likes grub2 (outside of the grub2 developers
+> > themselves).
+> >
+> > The "oneshot" booting is totally broken, I could never get it to work
+> > consistently, thus I had to abandon it for ktest. Grub2 may be
+> > flexible, but it is overly complicated. It's horrible to do anything
+> > but the "default" settings.
+> 
+> We have essentially one person working on bootloaders and that person
+> has to support them in RHEL too.  I'm sure they'd appreciate help.
 
-P.s: Sorry for flaming but gub2 disappointed me more than once.
+I'd love to. But there's a bunch of other things I need to do first
+before I ever get a chance to work on that.
+
+I wonder how much time John Hawley has?
+
+-- Steve
