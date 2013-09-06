@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751496Ab3IFNXa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 09:23:30 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:36756 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704Ab3IFNX3 (ORCPT
+	id S1751888Ab3IFN1q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 09:27:46 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:29656 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708Ab3IFN1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 09:23:29 -0400
-Date: Fri, 6 Sep 2013 09:23:00 -0400
+	Fri, 6 Sep 2013 09:27:45 -0400
+Date: Fri, 6 Sep 2013 09:27:10 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Manjunath Goudar <manjunath.goudar@linaro.org>
-Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Jeyaraman R <jeyaraman.rangasamy@lge.com>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        David Howells <dhowells@redhat.com>, dsaxena@linaro.org,
-        Dave Airlie <airlied@redhat.com>, Dave Jones <davej@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] DRM: TTM: Fix memory leak issue in ttm_agp_tt_create().
-Message-ID: <20130906132300.GH2590@phenom.dumpdata.com>
-References: <1378276090-10130-1-git-send-email-manjunath.goudar@linaro.org>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        Neil Horman <nhorman@tuxdriver.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xen.org,
+        Eric Dumazet <edumazet@google.com>, Li Zefan <lizefan@huawei.com>,
+        david.vrabel@citrix.com, Zoltan Kiss <zoltan.kiss@citrix.com>,
+        malcolm.crossley@citrix.com, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [Xen-devel] [PATCH] net/core: Order-3 frag allocator causes
+ SWIOTLB bouncing under Xen
+Message-ID: <20130906132710.GI2590@phenom.dumpdata.com>
+References: <1378327638-23956-1-git-send-email-zoltan.kiss@citrix.com>
+ <1378328440.7360.124.camel@edumazet-glaptop>
+ <20130904211110.GA17758@phenom.dumpdata.com>
+ <1378366746.6935.35.camel@dagon.hellion.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1378276090-10130-1-git-send-email-manjunath.goudar@linaro.org>
+In-Reply-To: <1378366746.6935.35.camel@dagon.hellion.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 04, 2013 at 11:58:10AM +0530, Manjunath Goudar wrote:
-> From: Jeyaraman R <jeyaraman.rangasamy@lge.com> 
+On Thu, Sep 05, 2013 at 08:39:06AM +0100, Ian Campbell wrote:
+> On Wed, 2013-09-04 at 17:11 -0400, Konrad Rzeszutek Wilk wrote:
+> > On Wed, Sep 04, 2013 at 02:00:40PM -0700, Eric Dumazet wrote:
 > 
-> This patch adds kfree() in ttm_agp_tt_create() to avoide the
-> memory leak, without this there is a chance of memory leak in
-> ttm_tt_init() fail case.
+> > > Maybe you could add proper infrastructure to deal with Xen limitations.
+> > 
+> > I think Ian posted at some point an sysctl patch for that (more for
+> > debugging that anything else). And it kind
+> > of stalled: http://lists.xen.org/archives/html/xen-devel/2012-10/msg01832.html
 > 
-> Signed-off-by: Jeyaraman R <jeyaraman.rangasamy@lge.com>
-> Signed-off-by: Manjunath Goudar <manjunath.goudar@linaro.org>
-> Cc: David Airlie <airlied@linux.ie>
-> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> Cc: David Howells <dhowells@redhat.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Dave Jones <davej@redhat.com>
-> Cc: Dave Airlie <airlied@redhat.com>
-> Cc: dri-devel@lists.freedesktop.org
-> Cc: linux-kernel@vger.kernel.org
+> I think I though you were looking into it from the swiotlb angle?
 
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Yes. I didn't find anything immediately obvious - but I can still
+reproduce with an skge DMA issues when booting baremetal with 'swiotlb=force'.
 
-> ---
->  drivers/gpu/drm/ttm/ttm_agp_backend.c | 1 +
->  1 file changed, 1 insertion(+)
+But only under 32-bit. I think there is some physical address
+truncation with the new compound size skb's. Obviously needs
+further investigation.
+
 > 
-> diff --git a/drivers/gpu/drm/ttm/ttm_agp_backend.c b/drivers/gpu/drm/ttm/ttm_agp_backend.c
-> index 3302f99..764be36 100644
-> --- a/drivers/gpu/drm/ttm/ttm_agp_backend.c
-> +++ b/drivers/gpu/drm/ttm/ttm_agp_backend.c
-> @@ -126,6 +126,7 @@ struct ttm_tt *ttm_agp_tt_create(struct ttm_bo_device *bdev,
->  	agp_be->ttm.func = &ttm_agp_func;
->  
->  	if (ttm_tt_init(&agp_be->ttm, bdev, size, page_flags, dummy_read_page)) {
-> +		kfree(agp_be);
->  		return NULL;
->  	}
->  
-> -- 
-> 1.8.1.2
+> In any case I don't have time to look into this further.
 > 
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+> > Is that what you mean by proper infrastructure ?
+> > 
+> > Oh wait, did you mean via dev and not the whole system wide sysctl?
+> 
+> The system wide sysctl was not acceptable AFAIR, which seems reasonable.
+
+<nods>
+> 
+> Per-dev is hard because it affects the native drivers for each physical
+> NIC when running under Xen, not the Xen PV NIC which we fixed by
+> splitting compound frags into separate slots on the PV ring.
+
+Right. Thank you for pointing that obvious issue.
+
+> 
+> Ian.
+> 
