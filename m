@@ -1,47 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063Ab3IFPWM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 11:22:12 -0400
-Received: from mail-yh0-f44.google.com ([209.85.213.44]:60196 "EHLO
-	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752568Ab3IFPWK (ORCPT
+	id S1756958Ab3IFPWk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 11:22:40 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:59906 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753322Ab3IFPWj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 11:22:10 -0400
-Date: Fri, 6 Sep 2013 11:22:04 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Xie XiuQi <xiexiuqi@huawei.com>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Dmitry Torokhov <dtor@mail.ru>, Thomas Gleixner <tglx@linutronix.de>,
-        Andres Salomon <dilinger@queued.net>, Chris Ball <cjb@laptop.org>,
-        Jon Nettleton <jon.nettleton@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nadia Derbey <Nadia.Derbey@bull.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Bin <huawei.libin@huawei.com>
-Subject: Re: [PATCH 3/5] lib: remove unnecessary work pending test
-Message-ID: <20130906152204.GC22763@mtj.dyndns.org>
-References: <5229B601.9090109@huawei.com>
- <5229B6E5.70900@huawei.com>
+	Fri, 6 Sep 2013 11:22:39 -0400
+Date: Fri, 6 Sep 2013 18:21:20 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jerome Marchand <jmarchan@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] staging: zram: remove init_done from zram struct (v2)
+Message-ID: <20130906152120.GF2238@swordfish.minsk.epam.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5229B6E5.70900@huawei.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 06, 2013 at 07:05:09PM +0800, Xie XiuQi wrote:
-> Remove unnecessary work pending test before calling schedule_work().
-> It has been tested in queue_work_on() already. No functional changed.
-> 
-> Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
-> Cc: Tejun Heo <tj@kernel.org>
+`zram->init_done' in fact mimics `zram->meta != NULL' value. Introduce
+init_done() function that checks zram->meta (iow, checks if initialisation
+was performed), so `zram->init_done' can be removed.
 
-Reviewed-by: Tejun Heo <tj@kernel.org>
+v2: introduce init_done()
 
-Thanks.
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
--- 
-tejun
+---
+
+ drivers/staging/zram/zram_drv.c | 21 +++++++++++----------
+ drivers/staging/zram/zram_drv.h |  1 -
+ 2 files changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 5bfbe0e..f1b5dbf 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -42,6 +42,11 @@ static struct zram *zram_devices;
+ /* Module params (documentation at end) */
+ static unsigned int num_devices = 1;
+ 
++static inline int init_done(struct zram *zram)
++{
++	return zram->meta != NULL;
++}
++
+ static inline struct zram *dev_to_zram(struct device *dev)
+ {
+ 	return (struct zram *)dev_to_disk(dev)->private_data;
+@@ -60,7 +65,7 @@ static ssize_t initstate_show(struct device *dev,
+ {
+ 	struct zram *zram = dev_to_zram(dev);
+ 
+-	return sprintf(buf, "%u\n", zram->init_done);
++	return sprintf(buf, "%u\n", init_done(zram));
+ }
+ 
+ static ssize_t num_reads_show(struct device *dev,
+@@ -133,7 +138,7 @@ static ssize_t mem_used_total_show(struct device *dev,
+ 	struct zram_meta *meta = zram->meta;
+ 
+ 	down_read(&zram->init_lock);
+-	if (zram->init_done)
++	if (init_done(zram))
+ 		val = zs_get_total_size_bytes(meta->mem_pool);
+ 	up_read(&zram->init_lock);
+ 
+@@ -558,14 +563,12 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+ 	flush_work(&zram->free_work);
+ 
+ 	down_write(&zram->init_lock);
+-	if (!zram->init_done) {
++	if (!init_done(zram)) {
+ 		up_write(&zram->init_lock);
+ 		return;
+ 	}
+ 
+ 	meta = zram->meta;
+-	zram->init_done = 0;
+-
+ 	/* Free all pages that are still in this zram device */
+ 	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
+ 		unsigned long handle = meta->table[index].handle;
+@@ -604,9 +607,7 @@ static void zram_init_device(struct zram *zram, struct zram_meta *meta)
+ 
+ 	/* zram devices sort of resembles non-rotational disks */
+ 	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
+-
+ 	zram->meta = meta;
+-	zram->init_done = 1;
+ 
+ 	pr_debug("Initialization done!\n");
+ }
+@@ -625,7 +626,7 @@ static ssize_t disksize_store(struct device *dev,
+ 	disksize = PAGE_ALIGN(disksize);
+ 	meta = zram_meta_alloc(disksize);
+ 	down_write(&zram->init_lock);
+-	if (zram->init_done) {
++	if (init_done(zram)) {
+ 		up_write(&zram->init_lock);
+ 		zram_meta_free(meta);
+ 		pr_info("Cannot change disksize for initialized device\n");
+@@ -733,7 +734,7 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
+ 	struct zram *zram = queue->queuedata;
+ 
+ 	down_read(&zram->init_lock);
+-	if (unlikely(!zram->init_done))
++	if (unlikely(!init_done(zram)))
+ 		goto error;
+ 
+ 	if (!valid_io_request(zram, bio)) {
+@@ -882,7 +883,7 @@ static int create_device(struct zram *zram, int device_id)
+ 		goto out_free_disk;
+ 	}
+ 
+-	zram->init_done = 0;
++	zram->meta = NULL;
+ 	return 0;
+ 
+ out_free_disk:
+diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
+index 97a3acf..b1100cf 100644
+--- a/drivers/staging/zram/zram_drv.h
++++ b/drivers/staging/zram/zram_drv.h
+@@ -110,7 +110,6 @@ struct zram {
+ 
+ 	struct request_queue *queue;
+ 	struct gendisk *disk;
+-	int init_done;
+ 	/* Prevent concurrent execution of device init, reset and R/W request */
+ 	struct rw_semaphore init_lock;
+ 	/*
+
