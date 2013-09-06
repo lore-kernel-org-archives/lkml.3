@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804Ab3IFBC0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 21:02:26 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:45185 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752733Ab3IFBCZ (ORCPT
+	id S1753981Ab3IFBKT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 21:10:19 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:35475 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753029Ab3IFBKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 21:02:25 -0400
-From: Olof Johansson <olof@lixom.net>
-To: torvalds@linux-foundation.org
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
-        Olof Johansson <olof@lixom.net>
-Subject: [PATCH] net: stmmac: fix bad merge conflict resolution
-Date: Thu,  5 Sep 2013 18:01:41 -0700
-Message-Id: <1378429301-19964-1-git-send-email-olof@lixom.net>
-X-Mailer: git-send-email 1.8.1.192.gc4361b8
-In-Reply-To: <20130905.163725.106795517693348522.davem@davemloft.net>
-References: <20130905.163725.106795517693348522.davem@davemloft.net>
+	Thu, 5 Sep 2013 21:10:17 -0400
+Message-ID: <52292B75.8080705@converseincode.com>
+Date: Thu, 05 Sep 2013 21:10:13 -0400
+From: Behan Webster <behanw@converseincode.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        charlebm@gmail.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: LLVMLinux: Change "extern inline" to "gnu_inline"
+ in ARM ftrace.h
+References: <1376516261-2071-1-git-send-email-behanw@converseincode.com> <1376516261-2071-2-git-send-email-behanw@converseincode.com> <20130814224552.GA23006@n2100.arm.linux.org.uk>
+In-Reply-To: <20130814224552.GA23006@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Merge commit 06c54055bebf919249aa1eb68312887c3cfe77b4 did a bad conflict
-resolution accidentally leaving out a closing brace. Add it back.
+Sorry for the delay. A mistake in my email filters ate all your replies. 
+Doh!
 
-Signed-off-by: Olof Johansson <olof@lixom.net>
----
+On 08/14/13 18:45, Russell King - ARM Linux wrote:
+> On Wed, Aug 14, 2013 at 05:37:41PM -0400, behanw@converseincode.com wrote:
+>> -extern inline void *return_address(unsigned int level)
+>> +extern inline __attribute__((gnu_inline))
+>> +void *return_address(unsigned int level)
+> Well, that should be static inline, not extern inline in any case.  Does
+> clang work if that's static inline?
 
-This breaks a handful of defconfigs on ARM, so it'd be good to see it
-applied pretty quickly. Thanks!
+Actually, neither gcc nor clang work with it merely changed to "static 
+inline".
 
+Which is why we left it with the explicit GNU89 meaning of "extern 
+inline" which is gnu_inline. C99 changed the meaning of what "extern 
+inline" means. One of the major issues we've had with the clang kernel 
+port is that clang defaults to gnu99 (which is mostly just C99) while 
+until recently gcc defaulted to gnu89.
 
--Olof
+For recent versions of gcc:
 
- drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c |    1 +
- 1 file changed, 1 insertion(+)
+     http://gcc.gnu.org/onlinedocs/gcc/Standards.html
 
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-index 7a00720..51c9069 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-@@ -87,6 +87,7 @@ static int stmmac_probe_config_dt(struct platform_device *pdev,
- 	if (plat->force_thresh_dma_mode) {
- 		plat->force_sf_dma_mode = 0;
- 		pr_warn("force_sf_dma_mode is ignored if force_thresh_dma_mode is set.");
-+	}
- 
- 	return 0;
- }
+"The default, if no C language dialect options are given, is -std=gnu90; 
+this will change to -std=gnu99 or -std=gnu11 in some future release when 
+the C99 or C11 support is complete. Some features that are part of the 
+C99 standard are accepted as extensions in C90 mode, and some features 
+that are part of the C11 standard are accepted as extensions in C90 and 
+C99 modes."
+
+However, having said all that, it seems if I remove the corresponding 
+NULL definition for return_address in arch/arm/kernel/return_address.c, 
+I can make it "static inline" and it seems to work for both gcc and clang.
+
+I'll send a new patch. :)
+
+Incidentally the LLVMLinux project tests all the project's patches with 
+both gcc and clang. The idea is to make it work with both compilers 
+after all.
+
+Behan
+
 -- 
-1.7.10.4
+Behan Webster
+behanw@converseincode.com
 
