@@ -1,54 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757686Ab3IFP7S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 11:59:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63503 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757357Ab3IFP7O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757583Ab3IFP7Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 11:59:16 -0400
+Received: from a9-42.smtp-out.amazonses.com ([54.240.9.42]:54185 "EHLO
+	a9-42.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757355Ab3IFP7O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Sep 2013 11:59:14 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-In-Reply-To: <CANP1eJEk=eRmq1F+yYWB53spgifbU+zzKGdmKw6BGfx8SknkrA@mail.gmail.com>
-References: <CANP1eJEk=eRmq1F+yYWB53spgifbU+zzKGdmKw6BGfx8SknkrA@mail.gmail.com> <cover.1378418255.git.milosz@adfin.com> <alpine.DEB.2.00.1309051555250.1073@cobra.newdream.net>
-To: Milosz Tanski <milosz@adfin.com>
-Cc: dhowells@redhat.com, Sage Weil <sage@inktank.com>, sprabhu@redhat.com,
-        ceph-devel <ceph-devel@vger.kernel.org>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, Hongyi Jia <jiayisuse@gmail.com>,
-        "linux-cachefs@redhat.com" <linux-cachefs@redhat.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] ceph: fscache support & upstream changes
-From: David Howells <dhowells@redhat.com>
-Date: Fri, 06 Sep 2013 16:59:02 +0100
-Message-ID: <18764.1378483142@warthog.procyon.org.uk>
+Date: Fri, 6 Sep 2013 15:59:12 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [REPOST PATCH 4/4] slab: make more slab management structure
+ off the slab
+In-Reply-To: <1378447067-19832-5-git-send-email-iamjoonsoo.kim@lge.com>
+Message-ID: <00000140f3ffa61e-035ca6ab-4931-407f-8a9d-0c60f6bb0357-000000@email.amazonses.com>
+References: <1378447067-19832-1-git-send-email-iamjoonsoo.kim@lge.com> <1378447067-19832-5-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.09.06-54.240.9.42
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Milosz Tanski <milosz@adfin.com> wrote:
+On Fri, 6 Sep 2013, Joonsoo Kim wrote:
 
-> After running this for a day on some loaded machines I ran into what
-> looks like an old issue with the new code. I remember you saw an issue
-> that manifested it self in a similar way a while back.
-> 
-> [13837253.462779] FS-Cache: Assertion failed
-> [13837253.462782] 3 == 5 is false
-> [13837253.462807] ------------[ cut here ]------------
-> [13837253.462811] kernel BUG at fs/fscache/operation.c:414!
+> In a 64 byte sized slab case, no space is wasted if we use on-slab.
+> So set off-slab determining constraint to 128 bytes.
 
-Bah.
-
-I forgot to call fscache_op_complete().  Patch updated and repushed.
-
-Btw, I've reordered the patches to put the CIFS patch last.  Can you merge the
-patches prior to the CIFS commit from my branch rather than cherry picking
-them so that if they go via two different routes, GIT will handle the merge
-correctly?  I've stuck a tag on it (fscache-fixes-for-ceph) to make that
-easier for you.
-
-I've also asked another RH engineer to try doing some basic testing on the
-CIFS stuff - which may validate the fscache_readpages_cancel patch.
-
-David
+Acked-by: Christoph Lameter <cl@linux.com>
