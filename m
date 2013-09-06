@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751281Ab3IFSY1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 14:24:27 -0400
+	id S1751496Ab3IFSYc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 14:24:32 -0400
 Received: from mga02.intel.com ([134.134.136.20]:32430 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750838Ab3IFSY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 14:24:26 -0400
+	id S1751352Ab3IFSY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 14:24:29 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,855,1371106800"; 
-   d="scan'208";a="399510778"
-Subject: [PATCH 1/2] fs/superblock: Unregister sb shrinker before
- ->kill_sb()
+   d="scan'208";a="399510811"
+Subject: [PATCH 2/2] fs/superblock: Avoid locking counting inodes and
+ dentries before reclaiming them
 From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Dave Chinner <dchinner@redhat.com>, Jan Kara <jack@suse.cz>,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Dave Hansen <dave.hansen@intel.com>, Andi Kleen <ak@linux.intel.com>,
+To: Dave Chinner <dchinner@redhat.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>
+Cc: Andi Kleen <ak@linux.intel.com>, Dave Hansen <dave.hansen@intel.com>,
         Matthew Wilcox <willy@linux.intel.com>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+In-Reply-To: <409cc1e38244136e72e97883445187941d1405b8.1378465804.git.tim.c.chen@linux.intel.com>
+References: <409cc1e38244136e72e97883445187941d1405b8.1378465804.git.tim.c.chen@linux.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 06 Sep 2013 11:24:22 -0700
-Message-ID: <1378491862.3467.6.camel@schen9-DESK>
+Date: Fri, 06 Sep 2013 11:24:26 -0700
+Message-ID: <1378491866.3467.7.camel@schen9-DESK>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
@@ -29,72 +31,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave, 
+We remove the call to grab_super_passive in call to super_cache_count.
+This becomes a scalability bottleneck as multiple threads are trying
+to do memory reclamation, e.g. when we are doing large amount of
+file read and page cache is under pressure.  The cached objects
+quickly got reclaimed down to 0 and we are aborting the cache_scan()
+reclaim.  But counting creates a log jam acquiring the sb_lock.
 
-I've created the two patches we've discussed on the
-mail thread regarding avoiding grab_super_passive during
-memory reclaim.
-
-Tim
-
-From: 	Dave Chinner <david@fromorbit.com>
-We will like to unregister the sb shrinker before ->kill_sb().
-This will allow cached objects to be counted without call to
-grab_super_passive() to update ref count on sb. We want
-to avoid locking during memory reclamation especially when
-we are skipping the memory reclaim when we are out of
-cached objects.
-
-This is safe because grab_super_passive does a try-lock on the sb->s_umount
-now, and so if we are in the unmount process, it won't ever block.
-That means what used to be a deadlock and races we were avoiding
-by using grab_super_passive() is now:
-
-        shrinker                        umount
-
-        down_read(shrinker_rwsem)
-                                        down_write(sb->s_umount)
-                                        shrinker_unregister
-                                          down_write(shrinker_rwsem)
-                                            <blocks>
-        grab_super_passive(sb)
-          down_read_trylock(sb->s_umount)
-            <fails>
-        <shrinker aborts>
-        ....
-        <shrinkers finish running>
-        up_read(shrinker_rwsem)
-                                          <unblocks>
-                                          <removes shrinker>
-                                          up_write(shrinker_rwsem)
-                                        ->kill_sb()
-                                        ....
-
-So it is safe to deregister the shrinker before ->kill_sb().
+We are holding the shrinker_rwsem which ensures the safety of
+call to list_lru_count_node() and s_op->nr_cached_objects.  The
+shrinker is unregistered now before ->kill_sb() so the operation is
+safe when we are doing unmount.
 
 Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
 ---
- fs/super.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/super.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
 diff --git a/fs/super.c b/fs/super.c
-index 73d0952..b724f35 100644
+index b724f35..b5c9fdf 100644
 --- a/fs/super.c
 +++ b/fs/super.c
-@@ -324,10 +324,10 @@ void deactivate_locked_super(struct super_block *s)
- 	struct file_system_type *fs = s->s_type;
- 	if (atomic_dec_and_test(&s->s_active)) {
- 		cleancache_invalidate_fs(s);
-+		unregister_shrinker(&s->s_shrink);
- 		fs->kill_sb(s);
+@@ -112,9 +112,14 @@ static unsigned long super_cache_count(struct shrinker *shrink,
  
- 		/* caches are now gone, we can safely kill the shrinker now */
--		unregister_shrinker(&s->s_shrink);
- 		list_lru_destroy(&s->s_dentry_lru);
- 		list_lru_destroy(&s->s_inode_lru);
+ 	sb = container_of(shrink, struct super_block, s_shrink);
+ 
+-	if (!grab_super_passive(sb))
+-		return 0;
+-
++	/*
++	 * Don't call grab_super_passive as it is a potential
++	 * scalability bottleneck. The counts could get updated
++	 * between super_cache_count and super_cache_scan anyway.
++	 * Call to super_cache_count with shrinker_rwsem held
++	 * ensures the safety of call to list_lru_count_node() and
++	 * s_op->nr_cached_objects().
++	 */
+ 	if (sb->s_op && sb->s_op->nr_cached_objects)
+ 		total_objects = sb->s_op->nr_cached_objects(sb,
+ 						 sc->nid);
+@@ -125,7 +130,6 @@ static unsigned long super_cache_count(struct shrinker *shrink,
+ 						 sc->nid);
+ 
+ 	total_objects = vfs_pressure_ratio(total_objects);
+-	drop_super(sb);
+ 	return total_objects;
+ }
  
 -- 
 1.7.11.7
-
 
 
