@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751324Ab3IFLAA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 07:00:00 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:59110 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140Ab3IFK7s (ORCPT
+	id S1751191Ab3IFLET (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 07:04:19 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:30939 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750847Ab3IFLES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 06:59:48 -0400
+	Fri, 6 Sep 2013 07:04:18 -0400
+Message-ID: <5229B68F.1000903@huawei.com>
+Date: Fri, 6 Sep 2013 19:03:43 +0800
+From: Xie XiuQi <xiexiuqi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <CANq1E4Tco9K1zeL2d7MhBQ=UjHFOktrrR8GHp8cJm3V6CTqf0g@mail.gmail.com>
-References: <1378459933-367-1-git-send-email-teg@jklm.no>
-	<CANq1E4Tco9K1zeL2d7MhBQ=UjHFOktrrR8GHp8cJm3V6CTqf0g@mail.gmail.com>
-Date: Fri, 6 Sep 2013 12:59:47 +0200
-X-Google-Sender-Auth: jEmtLA-br9A1732WTu-ZRwlxG9I
-Message-ID: <CAMuHMdUEjLSRoSHdQUACupxiJ_GxMXSzk-KsMA5ep55sxNT3kw@mail.gmail.com>
-Subject: Re: [PATCH] x86: simplefb: avoid overflow
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: Tom Gundersen <teg@jklm.no>, "the arch/x86 maintainers" <x86@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+To: Jonathan Cameron <jic23@cam.ac.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dmitry Torokhov <dtor@mail.ru>, Thomas Gleixner <tglx@linutronix.de>,
+        Andres Salomon <dilinger@queued.net>, Chris Ball <cjb@laptop.org>,
+        Jon Nettleton <jon.nettleton@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nadia Derbey <Nadia.Derbey@bull.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Li Bin <huawei.libin@huawei.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 2/5] input: remove unnecessary work pending test
+References: <5229B601.9090109@huawei.com>
+In-Reply-To: <5229B601.9090109@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.69.18]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 6, 2013 at 11:55 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> On Fri, Sep 6, 2013 at 11:32 AM, Tom Gundersen <teg@jklm.no> wrote:
->> lfb_size can easily be say 4M, which would make the bitshit overflow and
->> the test fail.
->>
->> Signed-off-by: Tom Gundersen <teg@jklm.no>
->> Cc: David Herrmann <dh.herrmann@gmail.com>
->> Cc: H. Peter Anvin <hpa@zytor.com>
->> ---
->>  arch/x86/kernel/sysfb_simplefb.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/arch/x86/kernel/sysfb_simplefb.c b/arch/x86/kernel/sysfb_simplefb.c
->> index 22513e9..fff44a5 100644
->> --- a/arch/x86/kernel/sysfb_simplefb.c
->> +++ b/arch/x86/kernel/sysfb_simplefb.c
->> @@ -72,7 +72,7 @@ __init int create_simplefb(const struct screen_info *si,
->>          * the part that is occupied by the framebuffer */
->>         len = mode->height * mode->stride;
->>         len = PAGE_ALIGN(len);
->> -       if (len > si->lfb_size << 16) {
->> +       if (len > ((unsigned long) si->lfb_size) << 16) {
+Remove unnecessary work pending test before calling schedule_work().
+It has been tested in queue_work_on() already.
 
-On 32-bit, "unsigned long" is the same size as __u32, so this doesn't
-make any difference.
+Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
+Cc: Tejun Heo <tj@kernel.org>
+---
+ drivers/input/touchscreen/cyttsp4_core.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-> Nice catch. vesafb uses "lfb_size * 65535" which causes an implicit
-> cast. I thought <<16 looks nicer but that doesn't do any implicit
-> cast..
+diff --git a/drivers/input/touchscreen/cyttsp4_core.c b/drivers/input/touchscreen/cyttsp4_core.c
+index edcf799..b0ee865 100644
+--- a/drivers/input/touchscreen/cyttsp4_core.c
++++ b/drivers/input/touchscreen/cyttsp4_core.c
+@@ -1249,8 +1249,7 @@ static void cyttsp4_watchdog_timer(unsigned long handle)
+ 	if (!cd)
+ 		return;
 
-"lfb_size * 65535" is the same. "lfb_size" is __u32, "65535" is int.
-So there's no implicit cast. Or am I missing something?
+-	if (!work_pending(&cd->watchdog_work))
+-		schedule_work(&cd->watchdog_work);
++	schedule_work(&cd->watchdog_work);
 
-Gr{oetje,eeting}s,
+ 	return;
+ }
+-- 
+1.8.2.2
 
-                        Geert
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
