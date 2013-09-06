@@ -1,176 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab3IFUfY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 16:35:24 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:52669 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966Ab3IFUfX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 16:35:23 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>
-Subject: Re: [PATCH v2] Camera drivers for Nokia RX-51
-Date: Fri, 6 Sep 2013 22:35:18 +0200
-User-Agent: KMail/1.13.7 (Linux/3.11.0-1+synaptics-generic; KDE/4.11.0; x86_64; ; )
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, Tony Lindgren <tony@atomide.com>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <201302171616.50152@pali> <20130403222228.GE10541@valkosipuli.retiisi.org.uk> <2135333.iYIDmYH7CC@avalon>
-In-Reply-To: <2135333.iYIDmYH7CC@avalon>
+	id S1752551Ab3IFUib (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 16:38:31 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:40100 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750929Ab3IFUi3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 16:38:29 -0400
+Date: Fri, 6 Sep 2013 13:38:21 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, sbw@mit.edu
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+Message-ID: <20130906203821.GX3966@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130905195234.GA20555@linux.vnet.ibm.com>
+ <20130906105934.GF20519@somewhere>
+ <20130906151851.GQ3966@linux.vnet.ibm.com>
+ <1378488088.31445.39.camel@edumazet-glaptop>
+ <20130906174117.GU3966@linux.vnet.ibm.com>
+ <20130906185927.GE2706@somewhere>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2043704.XG09jN2rnN";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201309062235.18603@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130906185927.GE2706@somewhere>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090620-0320-0000-0000-000000EB8546
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2043704.XG09jN2rnN
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Fri, Sep 06, 2013 at 08:59:29PM +0200, Frederic Weisbecker wrote:
+> On Fri, Sep 06, 2013 at 10:41:17AM -0700, Paul E. McKenney wrote:
+> > On Fri, Sep 06, 2013 at 10:21:28AM -0700, Eric Dumazet wrote:
+> > > On Fri, 2013-09-06 at 08:18 -0700, Paul E. McKenney wrote:
+> > > 
+> > > > int rcu_is_cpu_idle(void)
+> > > > {
+> > > > 	int ret;
+> > > > 
+> > > > 	preempt_disable();
+> > > > 	ret = (atomic_read(&__get_cpu_var(rcu_dynticks).dynticks) & 0x1) == 0;
+> > > > 	preempt_enable();
+> > > > 	return ret;
+> > > > }
+> > > 
+> > > Paul I find this very confusing.
+> > > 
+> > > If caller doesn't have preemption disabled, what could be the meaning of
+> > > this rcu_is_cpu_idle() call ?
+> > > 
+> > > Its result is meaningless if suddenly thread is preempted, so what is
+> > > the point ?
+> > > 
+> > > Sorry if this is obvious to you.
+> > 
+> > It is a completely fair question.  In fact, this might well now be
+> > pointing to a bug given NO_HZ_FULL.
+> > 
+> > The assumption is that if you don't have preemption disabled, you had
+> > better be running on a CPU that RCU is paying attention to.  The rationale
+> > involves preemptible RCU.
+> > 
+> > Suppose that you just did rcu_read_lock() on a CPU that RCU is paying
+> > attention to.  All is well, and rcu_is_cpu_idle() will return false, as
+> > expected.  Suppose now that it is possible to be preempted and suddenly
+> > find yourself running on a CPU that RCU is not paying attention to.
+> > This would have the effect of making your RCU read-side critical section
+> > be ignored.  Therefore, it had better not be possible to be preempted
+> > from a CPU to which RCU is paying attention to a CPU that RCU is ignoring.
+> > 
+> > So if rcu_is_cpu_idle() returns false, you had better be guaranteed
+> > that whatever CPU you are running on (which might well be a different
+> > one than the rcu_is_cpu_idle() was running on) is being watched by RCU.
+> > 
+> > So, Frederic, does this still work with NO_HZ_FULL?  If not, I believe
+> > we have a bigger problem than the preempt_disable() in rcu_is_cpu_idle()!
+> 
+> Sure it works well, because the scheduler task entrypoints exit those RCU
+> extended quiescent states.
+> 
+> Imagine that you're running on an rcu read side critical section on CPU 0, which
+> is not in extended quiescent state. Now you get preempted in the middle of your
+> RCU read side critical section (you called rcu_read_lock() but not yet rcu_read_unlock()).
+> 
+> Later on, the task is woken up to be scheduled in CPU 1. If CPU 1 is in extended
+> quiescent state because it runs is userspace, it receives a scheduler IPI,
+> then schedule_user() is called by the end of the interrupt and in turns calls rcu_user_exit()
+> before the task is resumed to the code it was running on CPU 0, in the middle of
+> the rcu read side extended quiescent state.
+> 
+> See, the key here is the rcu_user_exit() that restore the CPU on RCU's state machine.
+> There are other possible scheduler entrypoints when a CPU runs in user extended quiescent
+> state: exception and syscall entries or even preempt_schedule_irq() in case we receive an irq
+> in the kernel while we haven't yet reached the call to rcu_user_exit()... All of these should
+> be covered, otherwise you bet RCU would be prompt to warn.
+> 
+> That's why when we call rcu_is_cpu_idle() from an RCU read side critical section, it's legit even
+> if we can be preempted anytime around it.
+> And preempt_disable() is probably not even necessary, except perhaps if __get_cpu_var() itself
+> relies on non-preemptibility for its own correctness on the address calculation.
 
-On Thursday 04 April 2013 15:11:27 Laurent Pinchart wrote:
-> Hi Sakari,
->=20
-> On Thursday 04 April 2013 01:22:28 Sakari Ailus wrote:
-> > On Tue, Mar 26, 2013 at 12:07:01AM +0100, Laurent Pinchart=20
-wrote:
-> > > On Sunday 24 March 2013 23:46:01 Sakari Ailus wrote:
-> > > > Pali Roh=C3=A1r wrote:
-> > > > > On Thursday 07 March 2013 23:18:27 Sakari Ailus wrote:
-> > > > >> On Wed, Mar 06, 2013 at 10:44:41PM +0100, Sebastian=20
-Reichel wrote:
-> > > > >>> On Wed, Mar 06, 2013 at 09:20:16PM +0100, Pali Roh=C3=A1r=20
-wrote:
-> > > > >>>> On Wednesday 06 March 2013 21:12:06 Pali Roh=C3=A1r=20
-wrote:
-> > > > >>>>> On Sunday 17 February 2013 20:03:03 Aaro Koskinen=20
-wrote:
-> > > > >>>>>> On Sun, Feb 17, 2013 at 04:16:49PM +0100, Pali=20
-Roh=C3=A1r wrote:
-> > > > >>>>>>> +/*
-> > > > >>>>>>> + * arch/arm/mach-omap2/board-rx51-camera.c
-> > > > >>>>>>> + *
-> > > > >>>>>>> + * Copyright (C) 2008 Nokia Corporation
-> > > > >>>>>>> + *
-> > > > >>>>>>> + * Contact: Sakari Ailus
-> > > > >>>>>>> <sakari.ailus@nokia.com> + *          Tuukka
-> > > > >>>>>>> Toivonen <tuukka.o.toivonen@nokia.com>
-> > > > >>>>>>=20
-> > > > >>>>>> You should put these people to CC... Just to see
-> > > > >>>>>> if the addresses are still valid (which I
-> > > > >>>>>> doubt).
-> > > > >>>>>=20
-> > > > >>>>> Ok, trying :-)
-> > > > >>>>=20
-> > > > >>>> I got "Delivery Status Notification (Failure)" for
-> > > > >>>> both addresses.
-> > > > >>=20
-> > > > >> This is expected.
-> > > > >>=20
-> > > > >>> Sakari Ailus hosts some code on github [0], which
-> > > > >>> has the following email address:
-> > > > >>> sakari.ailus+gitorious@retiisi.org.uk
-> > > > >>>=20
-> > > > >>> I added it to this mail's CC.
-> > > > >>>=20
-> > > > >>> [0] https://gitorious.org/~sailus
-> > > > >>=20
-> > > > >> Nice to hear people are interested in this. ;-)
-> > > > >>=20
-> > > > >> The primary reason I haven't tried submitting this to
-> > > > >> mainline is that ARM board code has a bad reputation
-> > > > >> these days. The N900 does not have yet support for
-> > > > >> device tree (AFAIK), which also would require a few
-> > > > >> bits and pieces on the flash driver to work.
-> > > > >>=20
-> > > > >> Also the sensor and lens drivers would need at least
-> > > > >> some work before being ready for submission to
-> > > > >> mainline for camera to be usable. Unfortunately I
-> > > > >> haven't had recently time to work on this. N9(50)
-> > > > >> support has higher priority for myself. That, too,
-> > > > >> is pending the DT support for the device.
-> > > > >>=20
-> > > > >> There's indeed more up-to-date code in my repository.
-> > > > >> Even if it's not too close to mainline anymore it
-> > > > >> should be a better starting point than the old
-> > > > >> kernel from MeeGo.
-> > > > >>=20
-> > > > >> <URL:https://gitorious.org/omap3camera/pages/Home>
-> > > > >=20
-> > > > > Hi,
-> > > > >=20
-> > > > > this board code is same in your git repository and on
-> > > > > meego obs.
-> > > > >=20
-> > > > > Patch only adding support for adp1653 driver which is
-> > > > > already in upstream kernel.
-> > > > >=20
-> > > > > Are there any other problems with this patch to go for
-> > > > > upstream?
-> > > >=20
-> > > > A few more things comes to mind. We depend a little bit
-> > > > on actual board code; it's not only static data. That's
-> > > > the configuration of the external clock from the ISP to
-> > > > the sensor. That should move to the common clock
-> > > > framework so that the ISP registers the clock and the
-> > > > sensor driver can then use it. AFAIR Laurent has done
-> > > > some work on that.
-> > >=20
-> > > Yes. I hope to get the patches in v3.10.
-> >=20
-> > Cool! :)
->=20
-> The patches have been posted to the linux-media mailing list.
-> If the dependencies make it to v3.10 the OMAP3 ISP patches
-> should get there too.
->=20
-> > > > The peculiar detail of the rx51 is that there's a switch
-> > > > on the camera CCP2 bus that selects either sensor
-> > > > (primary or secondary). Both sensors are connected to
-> > > > the same receiver. That isn't properly modelled
-> > > > currently at all, so that's why we have
-> > > > rx51_camera_set_xshutdown(). I guess it'd still work if
-> > > > you only power (i.e. open) either of the devices at a
-> > > > time, though.
-> > >=20
-> > > Have you thought about how we could model that ?
-> >=20
-> > Well, the two dependent gpios could be modelled as two
-> > independent ones ( for sensor drivers), but setting the
-> > state of those gpios could fail, gpio_set_value() still
-> > returns void. This isn't pretty perhaps but as a result the
-> > initialisation of the secondary sensor to be powered up at
-> > the same time will fail since it's in reset: the xshutdown
-> > of both sensors is controlled by the same gpio as is the
-> > mux (AFAIR).
-> >=20
-> > So one N900 camera specific gpio driver would be needed.
-> > It'd be a very simple driver. What do you think?
->=20
-> I think I'll need to see how the GPIOs are wired up on the
-> board.
+Whew!!!  ;-)
 
-Hello, after months, what is state of drivers now?
+But the problem for rcu_is_cpu_idle() was not the calls from the scheduler,
+but rather those from lockdep.  If the overhead is a concern, you could
+switch to the primitives I will be supplying for Steven.
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+							Thanx, Paul
 
---nextPart2043704.XG09jN2rnN
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlIqPIYACgkQi/DJPQPkQ1Jb4wCggGuksPYv0s3ZP+KtRWYCF/sG
-hSoAoJa6Fk4pZj8pK4mhcyf2iggHO4La
-=eBTh
------END PGP SIGNATURE-----
-
---nextPart2043704.XG09jN2rnN--
