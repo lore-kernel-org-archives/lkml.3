@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750845Ab3IFFT0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 01:19:26 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:57813 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720Ab3IFFTY (ORCPT
+	id S1750883Ab3IFFUA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 01:20:00 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:53328 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750725Ab3IFFT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 01:19:24 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-56-522965dbfd3e
-From: Weijie Yang <weijie.yang@samsung.com>
-To: sjenning@linux.vnet.ibm.com
-Cc: minchan@kernel.org, bob.liu@oracle.com, weijie.yang.kh@gmail.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/4] mm/zswap: bugfix: memory leak when re-swapon
-Date: Fri, 06 Sep 2013 13:16:45 +0800
-Message-id: <000901ceaac0$a5f28420$f1d78c60$%yang@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac6qwBw2B9l6Cf6OR2iYOg31tuWrtg==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9jQd3bqZpBBj3rDS26Tk1lsbi8aw6b
-	xb01/1ktln19z25xaN8qdosnJ/6zOLB57Jx1l91j06pONo9Nnyaxezw4tJnF4+PTWywenzfJ
-	BbBFcdmkpOZklqUW6dslcGVcbdrFXLCFtWJuzzfGBsYtLF2MnBwSAiYSB2+vYIOwxSQu3FsP
-	ZHNxCAlMZ5TYdrGFEcL5wyhx//dRsCo2AW2Ju/0bWUFsEQF5id3fvoPZzAIVEs+nfWcGsYUF
-	XCQ2zvoPtoFFQFVi2ffNYL28AnYS6ybNY4GwBSV+TL4HZHMA9apLTJmSCzFGXmLzmrfMIGEJ
-	oPCjv7oQm/Qkuv/fYYQoEZfYeOQWywRGgVlIBs1CGDQLyaBZSDoWMLKsYhRNLUguKE5KzzXU
-	K07MLS7NS9dLzs/dxAgO/GdSOxhXNlgcYhTgYFTi4eXo0QgSYk0sK67MPcQowcGsJMIrrqEZ
-	JMSbklhZlVqUH19UmpNafIhRmoNFSZz3QKt1oJBAemJJanZqakFqEUyWiYNTqoFRsld5/x5v
-	scU/czWcT0zs4DkeynlqXqNV1Np+P75m0eVi3d2bYyd9fNK2UUPi9tpu77LI8Pmn25bFLc41
-	e71vmaaOD0f0ZifONV8MHW6lGN9RzL0cwtAhtb+DR+7EbhtF53xlmbLbjYW2k5cbfGO5KH1u
-	orPiVxaOY7lvb8rkTshtvpCx+6cSS3FGoqEWc1FxIgA1PjdBeAIAAA==
+	Fri, 6 Sep 2013 01:19:59 -0400
+X-AuditID: 9c930197-b7b44ae00000347f-58-522965fc97c0
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH v3 03/20] mm, hugetlb: fix subpool accounting handling
+Date: Fri,  6 Sep 2013 14:19:56 +0900
+Message-Id: <1378444797-3353-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <520c10e8.1kKQVx1mpwqXywyM%akpm@linux-foundation.org>
+References: <520c10e8.1kKQVx1mpwqXywyM%akpm@linux-foundation.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zswap_tree is not freed when swapoff, and it got re-kmalloc in swapon,
-so memory-leak occurs.
+There is a case that we attempt to allocate a hugepage with chg = 0 and
+avoid_reserve = 1. Although chg = 0 means that it has a reserved hugepage,
+we wouldn't use it, since avoid_reserve = 1 represents that we don't want
+to allocate a hugepage from a reserved pool. This happens when the parent
+process that created a MAP_PRIVATE mapping is about to perform a COW due to
+a shared page count and it attempt to satisfy the allocation without using
+the existing reserves.
 
-Modify: free memory of zswap_tree in zswap_frontswap_invalidate_area().
+In this case, we would not dequeue a reserved hugepage and, instead, try
+to allocate a new hugepage. Therefore, we should check subpool counter
+for a new hugepage. This patch implement it.
 
-Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 ---
- mm/zswap.c |    4 ++++
- 1 file changed, 4 insertions(+)
+Replenishing commit message and adding reviewed-by tag.
 
-diff --git a/mm/zswap.c b/mm/zswap.c
-index deda2b6..cbd9578 100644
---- a/mm/zswap.c
-+++ b/mm/zswap.c
-@@ -816,6 +816,10 @@ static void zswap_frontswap_invalidate_area(unsigned type)
- 	}
- 	tree->rbroot = RB_ROOT;
- 	spin_unlock(&tree->lock);
-+
-+	zbud_destroy_pool(tree->pool);
-+	kfree(tree);
-+	zswap_trees[type] = NULL;
- }
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 12b6581..ea1ae0a 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1144,13 +1144,14 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+ 	chg = vma_needs_reservation(h, vma, addr);
+ 	if (chg < 0)
+ 		return ERR_PTR(-ENOMEM);
+-	if (chg)
+-		if (hugepage_subpool_get_pages(spool, chg))
++	if (chg || avoid_reserve)
++		if (hugepage_subpool_get_pages(spool, 1))
+ 			return ERR_PTR(-ENOSPC);
  
- static struct zbud_ops zswap_zbud_ops = {
+ 	ret = hugetlb_cgroup_charge_cgroup(idx, pages_per_huge_page(h), &h_cg);
+ 	if (ret) {
+-		hugepage_subpool_put_pages(spool, chg);
++		if (chg || avoid_reserve)
++			hugepage_subpool_put_pages(spool, 1);
+ 		return ERR_PTR(-ENOSPC);
+ 	}
+ 	spin_lock(&hugetlb_lock);
+@@ -1162,7 +1163,8 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+ 			hugetlb_cgroup_uncharge_cgroup(idx,
+ 						       pages_per_huge_page(h),
+ 						       h_cg);
+-			hugepage_subpool_put_pages(spool, chg);
++			if (chg || avoid_reserve)
++				hugepage_subpool_put_pages(spool, 1);
+ 			return ERR_PTR(-ENOSPC);
+ 		}
+ 		spin_lock(&hugetlb_lock);
 -- 
-1.7.10.4
-
+1.7.9.5
 
