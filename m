@@ -1,48 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042Ab3IFPZd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 11:25:33 -0400
-Received: from mail-ye0-f171.google.com ([209.85.213.171]:39900 "EHLO
-	mail-ye0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753502Ab3IFPZb (ORCPT
+	id S1753592Ab3IFPcn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 11:32:43 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:54826 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391Ab3IFPcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 11:25:31 -0400
-Date: Fri, 6 Sep 2013 11:25:23 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Xie XiuQi <xiexiuqi@huawei.com>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Dmitry Torokhov <dtor@mail.ru>, Thomas Gleixner <tglx@linutronix.de>,
-        Andres Salomon <dilinger@queued.net>, Chris Ball <cjb@laptop.org>,
-        Jon Nettleton <jon.nettleton@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nadia Derbey <Nadia.Derbey@bull.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Bin <huawei.libin@huawei.com>
-Subject: Re: [PATCH 5/5] ipc: remove unnecessary work pending test
-Message-ID: <20130906152523.GE22763@mtj.dyndns.org>
-References: <5229B601.9090109@huawei.com>
- <5229B779.4000704@huawei.com>
+	Fri, 6 Sep 2013 11:32:41 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alexander Holler <holler@ahsoftware.de>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
+Subject: Re: [PATCH] RFC: interrupt consistency check for OF GPIO IRQs
+Date: Fri, 06 Sep 2013 17:32:43 +0200
+Message-ID: <2966898.neCKEkcf1e@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CACRpkdavR=fv+y1RCNfdgQypPuRbO6isOSwGsABDrYiGeMdyZw@mail.gmail.com>
+References: <1375101368-17645-1-git-send-email-linus.walleij@linaro.org> <344239800.bDEkDg48ZQ@avalon> <CACRpkdavR=fv+y1RCNfdgQypPuRbO6isOSwGsABDrYiGeMdyZw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5229B779.4000704@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 06, 2013 at 07:07:37PM +0800, Xie XiuQi wrote:
-> Remove unnecessary work pending test before calling schedule_work().
-> It has been tested in queue_work_on() already. No functional changed.
+Hi Linus,
+
+Sorry for the late reply.
+
+On Thursday 22 August 2013 00:02:39 Linus Walleij wrote:
+> On Tue, Aug 20, 2013 at 12:04 AM, Laurent Pinchart wrote:
+> > On Wednesday 31 July 2013 01:44:53 Linus Walleij wrote:
+> >> I don't see how sharing works here, or how another user, i.e. another one
+> >> than the user wanting to recieve the IRQ, can validly request such a
+> >> line? What would the usecase for that valid request be?
+> > 
+> > When the GPIO is wired to a status signal (such as an MMC card detect
+> > signal) the driver might want to read the state of the signal
+> > independently of the interrupt handler.
 > 
-> Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
-> Cc: Nadia Derbey <Nadia.Derbey@bull.net>
-> Cc: Tejun Heo <tj@kernel.org>
+> That is true. But for such a complex usecase I think it's reasonable that
+> we only specify the GPIO in the device tree, and the driver utilizing the
+> IRQ need to take that and perform gpio_to_irq() on it, and then it still
+> works to use it both ways.
 
-Reviewed-by: Tejun Heo <tj@kernel.org>
+I'm pretty sure I would have had an objection a couple of weeks ago when I was 
+looking into this, but I can't think of another use case for now, so I agree 
+with you.
 
-Thanks.
+> >> Basically I believe these two things need to be exclusive in the DT
+> >> world:
+> >> 
+> >> A: request_irq(a resource passed from "interrupts");
+> >>      -> core implicitly performs gpio_request()
+> >>          gpio_direction_input()
+> >> 
+> >> B: gpio_request(a resource passed from "gpios");
+> >>      gpio_direction_input()
+> >>      request_irq(gpio_to_irq())
+> >> 
+> >> Never both. And IIUC that was what happened in the OMAP case.
+> > 
+> > Isn't the core issue that we can translate a GPIO number to an IRQ number,
+> > but not the other way around ? If that could be done, we could request
+> > the GPIO and configure it as an input when the IRQ is requested.
+> 
+> That is true. It would be easier if all GPIO drivers has an irqchip and
+> and irqdomain, then we could implement irq_to_gpio() properly in gpiolib
+> and this would not be a problem. Alas, not all do.
+> 
+> But I also think that the DT contains (as demonstrated by the patch)
+> all information about what interrupts and GPIOs may conflict, so I
+> also see this as something of a consistency check, but it could go
+> in either way.
 
 -- 
-tejun
+Regards,
+
+Laurent Pinchart
