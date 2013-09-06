@@ -1,91 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757345Ab3IFQ1r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 12:27:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42295 "EHLO mx1.redhat.com"
+	id S1755374Ab3IFQfn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 12:35:43 -0400
+Received: from mga09.intel.com ([134.134.136.24]:14150 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753815Ab3IFQ1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 12:27:46 -0400
-Date: Fri, 06 Sep 2013 12:27:15 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andi Kleen <andi@firstfloor.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Alex Thorlton <athorlton@sgi.com>, linux-kernel@vger.kernel.org
-Message-ID: <1378484835-8552fpnd-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20130906104803.0F39CE0090@blue.fi.intel.com>
-References: <1378416466-30913-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1378416466-30913-3-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20130906104803.0F39CE0090@blue.fi.intel.com>
-Subject: Re: [PATCH 2/2] thp: support split page table lock
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
+	id S1753710Ab3IFQfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 12:35:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,855,1371106800"; 
+   d="scan'208";a="374488954"
+Message-ID: <522A0437.40802@intel.com>
+Date: Fri, 06 Sep 2013 12:35:03 -0400
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>
+Subject: Re: [RFC PATCH 4/4] X86/PCI/ACPI: Rework setup_resource() via functions
+ ACPI resource functions
+References: <1378477486-8758-1-git-send-email-tianyu.lan@intel.com> <1378477486-8758-5-git-send-email-tianyu.lan@intel.com> <CAErSpo5rWq0+CbPMtjruDv0eN8-q=qBhHQURFeia_CfOgmDotA@mail.gmail.com> <5229FC3D.9040308@intel.com> <CAErSpo4=Bs4r+JMYjps=XvtOLeGmckJYJ508yMT1nRR=_KLz0g@mail.gmail.com>
+In-Reply-To: <CAErSpo4=Bs4r+JMYjps=XvtOLeGmckJYJ508yMT1nRR=_KLz0g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <20130906104803.0F39CE0090@blue.fi.intel.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kirill,
+On 09/06/2013 12:10 PM, Bjorn Helgaas wrote:
+> On Fri, Sep 6, 2013 at 10:01 AM, Lan Tianyu <tianyu.lan@intel.com> wrote:
+>> On 09/06/2013 11:36 AM, Bjorn Helgaas wrote:
+>
+>>> Please make corresponding changes to arch/ia64/pci/pci.c so that these
+>>> paths remain as similar as possible.  There's quite a bit of
+>>> similarity between this x86 and ia64 code, and it would be nice to
+>>> unify them more when possible.
+>>>
+>>
+>> OK. Actually, I have such plan. I will do that if there is no objection on
+>> this patchset.
+>
+> Great, I'm glad to hear that!  I'm not sure whether you mean "after
+> this patchset is accepted" or "as part of this patchset if it seems a
+> reasonable path."  I vote for the latter, because if we put in the
+> parts people care about, i.e., x86, the rest seems to never happen.
+> That's not surprising; whose manager will approve extra time to work
+> on an arch that's not on their critical path?  But in my opinion,
+> doing just x86 is only doing half the job, and we have to do the whole
+> thing if we want to keep Linux maintainable in the future.
 
-On Fri, Sep 06, 2013 at 01:48:03PM +0300, Kirill A. Shutemov wrote:
-> Naoya Horiguchi wrote:
-> > Thp related code also uses per process mm->page_table_lock now.
-> > So making it fine-grained can provide better performance.
-> > 
-> > This patch makes thp support split page table lock by using page->ptl
-> > of the pages storing "pmd_trans_huge" pmds.
-> > 
-> > Some functions like pmd_trans_huge_lock() and page_check_address_pmd()
-> > are expected by their caller to pass back the pointer of ptl, so this
-> > patch adds to those functions new arguments for that. Rather than that,
-> > this patch gives only straightforward replacement.
-> > 
-> > ChangeLog v3:
-> >  - fixed argument of huge_pmd_lockptr() in copy_huge_pmd()
-> >  - added missing declaration of ptl in do_huge_pmd_anonymous_page()
-> > 
-> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> 
-> Generally, looks good. Few notes:
-> 
-> I believe you need to convert __pte_alloc() to new locking. Not sure about
-> __pte_alloc_kernel().
-> Have you check all rest mm->page_table_lock, that they shouldn't be
-> converted to new locking?
+I mean the later. :).
+Yes, Linux maintainable is very important.
+My plan is to find all such cases of converting ACPI resource to generic 
+resource but not using ACPI resource function and rework them.
 
-I thought that keeping __pte_alloc() using mm->page_table_lock was safe
-because it uses bare mm->page_table_lock instead of pte_lockptr() even
-before this patchset, but not 100% sure.
-__pte_alloc() (and its family) are used in normal page path, so if it's
-not safe, we've lived with unsafe code for very long (maybe since 2005).
-Anyway, converting __pte_alloc() into split ptl could improve performance
-(though we need testing to know what amount), so I'll try that.
 
-> You use uninitialized_var() a lot. It's ugly. I've check few places
-> (task_mmu.c, copy_huge_pmd) and have found a reason why we need it there.
-> Why?
+>
+> Bjorn
+>
 
-I got a compile warning of uninitialized usage when developing and added
-to suppress it, but in the final form I never get such a warning.
-So I'll remove this uninitialized_var()s.
-
-> You often do
-> 
-> +       ptl = huge_pmd_lockptr(mm, pmd);
-> +       spin_lock(ptl);
-> 
-> Should we have a helper to combine them? huge_pmd_lock()?
-
-OK, I'll do it.
-
-Thanks,
-Naoya Horiguchi
