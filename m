@@ -1,82 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750744Ab3IFETm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 00:19:42 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:38674 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702Ab3IFETl (ORCPT
+	id S1750765Ab3IFEYp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 00:24:45 -0400
+Received: from kiruna.synopsys.com ([198.182.44.80]:63838 "EHLO
+	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713Ab3IFEYn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 00:19:41 -0400
-Date: Fri, 6 Sep 2013 14:19:29 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
+	Fri, 6 Sep 2013 00:24:43 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: David Miller <davem@davemloft.net>
-Cc: olof@lixom.net, torvalds@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH] net: stmmac: fix bad merge conflict resolution
-Message-Id: <20130906141929.2f30c62de4eb5c6ad9d3f699@canb.auug.org.au>
-In-Reply-To: <20130905.225817.700066425182547791.davem@davemloft.net>
-References: <20130905.163725.106795517693348522.davem@davemloft.net>
-	<1378429301-19964-1-git-send-email-olof@lixom.net>
-	<20130905.225817.700066425182547791.davem@davemloft.net>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__6_Sep_2013_14_19_29_+1000_y258LkJM6Squ_HDq"
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Alexey.Brodkin@synopsys.com" <Alexey.Brodkin@synopsys.com>,
+        "romieu@fr.zoreil.com" <romieu@fr.zoreil.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arc-linux-dev@synopsys.com" <arc-linux-dev@synopsys.com>
+Subject: Re: [PATCH] ethernet/arc/arc_emac: optimize the Tx/Tx-reclaim paths
+ a bit
+Thread-Topic: [PATCH] ethernet/arc/arc_emac: optimize the Tx/Tx-reclaim
+ paths a bit
+Thread-Index: AQHOqW8mH5tlu8RXMU6xMy4OB58Wxw==
+Date: Fri, 6 Sep 2013 04:24:39 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA23075141D3B@IN01WEMBXA.internal.synopsys.com>
+References: <1378299791-24598-1-git-send-email-vgupta@synopsys.com>
+ <20130905.142436.685399325201245026.davem@davemloft.net>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.239.237]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__6_Sep_2013_14_19_29_+1000_y258LkJM6Squ_HDq
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi David,
 
-Hi all,
-
-On Thu, 05 Sep 2013 22:58:17 -0400 (EDT) David Miller <davem@davemloft.net>=
- wrote:
+On 09/05/2013 11:54 PM, David Miller wrote:
+> From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+> Date: Wed, 4 Sep 2013 18:33:11 +0530
 >
-> From: Olof Johansson <olof@lixom.net>
-> Date: Thu,  5 Sep 2013 18:01:41 -0700
->=20
-> > Merge commit 06c54055bebf919249aa1eb68312887c3cfe77b4 did a bad conflict
-> > resolution accidentally leaving out a closing brace. Add it back.
-> >=20
-> > Signed-off-by: Olof Johansson <olof@lixom.net>
-> > ---
-> >=20
-> > This breaks a handful of defconfigs on ARM, so it'd be good to see it
-> > applied pretty quickly. Thanks!
->=20
-> Looks like Linus applied this, thanks Olof.
+>> This came out of staring at code due to recent performance fix.
+>>
+>> * TX BD reclaim can call netif_wake_queue() once, outside the loop if
+>>   one/more BDs were freed, NO need to do this each iteration.
+>>
+>> * TX need not look at next BD to stop the netif queue. It rather be done
+>>   in the next tx call, when it actually fails as the queue seldom gets
+>>   full but the check nevertheless needs to be done for each packet Tx.
+>>   Profiled this under heavy traffic (big tar file cp, LMBench betworking
+>>   tests) and saw not a single hit to that code.
+>>
+>> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+> You should keep the check in the transmit queueing code as a BUG check,
+> almost every driver has code of the form (using NIU as an example):
+>
+> 	if (niu_tx_avail(rp) <= (skb_shinfo(skb)->nr_frags + 1)) {
+> 		netif_tx_stop_queue(txq);
+> 		dev_err(np->device, "%s: BUG! Tx ring full when queue awake!\n", dev->name);
+> 		rp->tx_errors++;
+> 		return NETDEV_TX_BUSY;
+> 	}
+>
+> and arc_emac should too.
+>
+> Otherwise queue management bugs are incredibly hard to diagnose.
+>
+> I'm not applying this patch.
 
-And I cherry-picked it into linux-next for today.
+The check is already there for current BD. What I removed was checking for next BD
+too (please see below). IMHO this is useless since it will be done in next
+iteration anyways. In my tests, the next check never got hit, so it was waste of
+cycles.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+static int arc_emac_tx(struct sk_buff *skb, struct net_device *ndev)
+{
+    if (unlikely((le32_to_cpu(*info) & OWN_MASK) == FOR_EMAC)) {
+        netif_stop_queue(ndev);
+        return NETDEV_TX_BUSY;
+    }
 
---Signature=_Fri__6_Sep_2013_14_19_29_+1000_y258LkJM6Squ_HDq
-Content-Type: application/pgp-signature
+...
+        *txbd_curr = (*txbd_curr + 1) % TX_BD_NUM;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+-       /* Get "info" of the next BD */
+-       info = &priv->txbd[*txbd_curr].info;
+-
+-       /* Check if if Tx BD ring is full - next BD is still owned by EMAC */
+-       if (unlikely((le32_to_cpu(*info) & OWN_MASK) == FOR_EMAC))
+-               netif_stop_queue(ndev);
 
-iQIcBAEBCAAGBQJSKVfWAAoJEECxmPOUX5FEVQ8P/A5fyR41e1cgYZgVo2w+XMVW
-LkflqemSr5GD3I+lune+4yqmUsGX9qI27UjiHpNU1pWda0gXXatn16iF6f3sXp/L
-HK03rhXS3TkUouvOwLBi/QDQD5DyBBy7vNn8qzledfQDn1oBeR4vWeZyeXKaLL47
-fQoxLd9GB4Ex/vEBkn5XqxY7BzG2FWrAEuu1XE9lhbe9ZOkagXXzykka7+ix2ofa
-dj8cck+OtRAXV1usvR+EYUMW3UpnHpvhKDJx5josOBiqHrN2yJGVNGgu+im0WL7V
-uWwJfKA2LSJdySaMe3Na5T99kBa2JZzfyan/bf52owKuw5GPgWo8zETn3euey9Xb
-43+D4ORKxX/RjZLMS7lH3CBa72DSSzEFLwK2JIxQkEkqp5OVzwGTP1yPsrtHC2JJ
-0SSPElpD8U90XFq1zd00UQ9Ei1siNFireJW0c0ivFv3jyhQBME0JELkQdzK0hT3L
-h5FbjytxkcH6sa7GWXsyLCofzMW4+cLKQIzyCXAzGjBny2dzWno1CBsz7dd28KfD
-vWRBSwKqJjSUnpSRGcDfWZA/dCcBekxsfSDYpStc2dBEcIL8m/hFSNTY0dM/4SYL
-zx55bwqsEWMZWYybjMGyPq89doLEcf4F6pwoZ2aFzdhjqdghjdWgI2x21MTrXLtp
-/+77/dJ9rwmVZnkjrjP8
-=MLHa
------END PGP SIGNATURE-----
+OTOH, I do see a slight stats update issue - if the queue is stopped (but pkt not
+dropped) we are failing to increment tx_errors. But that would be a separate patch.
 
---Signature=_Fri__6_Sep_2013_14_19_29_+1000_y258LkJM6Squ_HDq--
+-Vineet
