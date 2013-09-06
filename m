@@ -1,66 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894Ab3IFOF5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 10:05:57 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:54395 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751376Ab3IFOF4 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Fri, 6 Sep 2013 10:05:56 -0400
-Message-Id: <5229FD6A02000078000F119C@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Fri, 06 Sep 2013 15:06:02 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: <david.vrabel@citrix.com>, "xen-devel" <xen-devel@lists.xenproject.org>,
-        <boris.ostrovsky@oracle.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen/p2m: Export set_phys_to_machine.
-References: <1378476042-4821-1-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1378476042-4821-1-git-send-email-konrad.wilk@oracle.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1751616Ab3IFOKQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 10:10:16 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50224 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751299Ab3IFOKO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 10:10:14 -0400
+Date: Fri, 6 Sep 2013 15:09:21 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v5 05/13] xen/arm,arm64: move Xen initialization earlier
+Message-ID: <20130906140921.GD1946@arm.com>
+References: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com>
+ <1377801154-29215-5-git-send-email-stefano.stabellini@eu.citrix.com>
+ <20130905162026.GJ11887@arm.com>
+ <alpine.DEB.2.02.1309051755560.6397@kaball.uk.xensource.com>
+ <1378457939.14745.73.camel@kazak.uk.xensource.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1378457939.14745.73.camel@kazak.uk.xensource.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 06.09.13 at 16:00, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> We have already exported 'get_phys_to_machine' and there are
-> third-party drivers that depend on this other symbol. As such
-> lets make this balanced and also export this symbol.
-
-I tend to disagree: Allowing external modules read access to some
-internal state is quite different from also allowing them to alter it.
-
-Jan
-
-> Reported-by: Yuval Shaia <yuval.shaia@oracle.com>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/x86/xen/p2m.c | 1 +
->  1 file changed, 1 insertion(+)
+On Fri, Sep 06, 2013 at 09:58:59AM +0100, Ian Campbell wrote:
+> On Thu, 2013-09-05 at 17:59 +0100, Stefano Stabellini wrote:
+> > On Thu, 5 Sep 2013, Catalin Marinas wrote:
+> > > On Thu, Aug 29, 2013 at 07:32:26PM +0100, Stefano Stabellini wrote:
+> > > > Move Xen initialization earlier, before any DMA requests can be made.
+> > > > 
+> > > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > > 
+> > > I guess you should cc the corresponding maintainers here.
+> > 
+> > Thanks for the reminder, I'll do that.
+> > 
+> > 
+> > > >  arch/arm/include/asm/xen/hypervisor.h |    8 ++++++++
+> > > >  arch/arm/kernel/setup.c               |    2 ++
+> > > >  arch/arm/xen/enlighten.c              |   21 ++++++++++++++-------
+> > > >  arch/arm64/kernel/setup.c             |    2 ++
+> > > >  4 files changed, 26 insertions(+), 7 deletions(-)
+> > > 
+> > > [...]
+> > > 
+> > > > --- a/arch/arm64/kernel/setup.c
+> > > > +++ b/arch/arm64/kernel/setup.c
+> > > > @@ -53,6 +53,7 @@
+> > > >  #include <asm/traps.h>
+> > > >  #include <asm/memblock.h>
+> > > >  #include <asm/psci.h>
+> > > > +#include <asm/xen/hypervisor.h>
+> > > >  
+> > > >  unsigned int processor_id;
+> > > >  EXPORT_SYMBOL(processor_id);
+> > > > @@ -267,6 +268,7 @@ void __init setup_arch(char **cmdline_p)
+> > > >  	unflatten_device_tree();
+> > > >  
+> > > >  	psci_init();
+> > > > +	xen_early_init();
+> > > 
+> > > So Xen guests don't have any hope for single Image? Basically you set
+> > > dma_ops unconditionally in xen_early_init(), even if the kernel is not
+> > > intended to run under Xen.
+> > 
+> > That should not happen: if we are not running on Xen xen_early_init
+> > returns early, before calling xen_mm_init.
 > 
-> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-> index 0d4ec35..cdb96bc 100644
-> --- a/arch/x86/xen/p2m.c
-> +++ b/arch/x86/xen/p2m.c
-> @@ -847,6 +847,7 @@ bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
->  
->  	return true;
->  }
-> +EXPORT_SYMBOL_GPL(set_phys_to_machine);
->  
->  #define M2P_OVERRIDE_HASH_SHIFT	10
->  #define M2P_OVERRIDE_HASH	(1 << M2P_OVERRIDE_HASH_SHIFT)
-> -- 
-> 1.8.3.1
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org 
-> http://lists.xen.org/xen-devel 
+> x96 has a call to init_hypervisor_platform() at approximately this
+> location, which detects and calls the init function for any of Xen, KVM,
+> hyperv and vmware.
 
+I would rather have a core_initcall(xen_early_init()) if possible,
+rather than hard-coded calls in setup_arch(). This early stuff is
+DT-driven, so in theory you don't need a specific xen call. The only
+thing is that you end up with swiotlb_init() and 64MB wasted if the Xen
+guest does not plan to use them.
 
+> I guess only Xen and KVM are currently relevant on Linux ARM(64), so
+> perhaps adding similar infrastructure on ARM would be overkill at this
+> point. I don't know if KVM needs such an early C-land hook, I suppose
+> it needs it even earlier so it can set up the hyp mode trampoline from
+> head.S?
 
+head.S installs a Hyp stub if it starts in that mode and then forget
+about. Later when KVM is initialised it installs its own code by doing
+an HVC call.
+
+-- 
+Catalin
