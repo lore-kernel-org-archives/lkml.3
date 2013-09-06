@@ -1,72 +1,366 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751163Ab3IFG5c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 02:57:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19942 "EHLO mx1.redhat.com"
+	id S1751187Ab3IFG6T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 02:58:19 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47037 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750775Ab3IFG5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 02:57:30 -0400
-Date: Fri, 6 Sep 2013 09:57:15 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Paul Mackerras <paulus@samba.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        Alexander Graf <agraf@suse.de>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v9 12/13] KVM: PPC: Add support for IOMMU in-kernel
- handling
-Message-ID: <20130906065715.GG13021@redhat.com>
-References: <1377679070-3515-1-git-send-email-aik@ozlabs.ru>
- <1377679841-3822-1-git-send-email-aik@ozlabs.ru>
- <20130901120609.GJ22899@redhat.com>
- <52240295.7050608@ozlabs.ru>
- <20130903105315.GY22899@redhat.com>
- <1378353909.4321.126.camel@pasglop>
+	id S1750813Ab3IFG6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 02:58:17 -0400
+Message-ID: <52297CCF.3090200@ti.com>
+Date: Fri, 6 Sep 2013 12:27:19 +0530
+From: George Cherian <george.cherian@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378353909.4321.126.camel@pasglop>
+To: Koen Kooi <koen@dominion.thruhere.net>
+CC: <linux-omap@vger.kernel.org>, <bcousson@baylibre.com>, <tony@atomide.com>,
+        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ijc+devicetree@hellion.org.uk>, <linux@arm.linux.org.uk>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <olof@lixom.net>
+Subject: Re: [PATCH] ARM: OMAP2+: am335x-bone*: add DT for BeagleBone Black
+References: <1378449204-8601-1-git-send-email-koen@dominion.thruhere.net>
+In-Reply-To: <1378449204-8601-1-git-send-email-koen@dominion.thruhere.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 05, 2013 at 02:05:09PM +1000, Benjamin Herrenschmidt wrote:
-> On Tue, 2013-09-03 at 13:53 +0300, Gleb Natapov wrote:
-> > > Or supporting all IOMMU links (and leaving emulated stuff as is) in on
-> > > "device" is the last thing I have to do and then you'll ack the patch?
-> > > 
-> > I am concerned more about API here. Internal implementation details I
-> > leave to powerpc experts :)
-> 
-> So Gleb, I want to step in for a bit here.
-> 
-> While I understand that the new KVM device API is all nice and shiny and that this
-> whole thing should probably have been KVM devices in the first place (had they
-> existed or had we been told back then), the point is, the API for handling
-> HW IOMMUs that Alexey is trying to add is an extension of an existing mechanism
-> used for emulated IOMMUs.
-> 
-> The internal data structure is shared, and fundamentally, by forcing him to
-> use that new KVM device for the "new stuff", we create a oddball API with
-> an ioctl for one type of iommu and a KVM device for the other, which makes
-> the implementation a complete mess in the kernel (and you should care :-)
-> 
-Is it unfixable mess? Even if Alexey will do what you suggested earlier?
+On 9/6/2013 12:03 PM, Koen Kooi wrote:
+> The BeagleBone Black is basically a regular BeagleBone with eMMC and HDMI added,
+> so create a common dtsi both can use. MMC support for AM335x still isn't in, so
+> only the LDO change has been added.
+>
+> Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
+> ---
+>   .../{am335x-bone.dts => am335x-bone-common.dtsi}   |   3 -
+>   arch/arm/boot/dts/am335x-bone.dts                  | 256 +--------------------
+>   arch/arm/boot/dts/am335x-boneblack.dts             |  18 ++
+>   3 files changed, 19 insertions(+), 258 deletions(-)
+>   copy arch/arm/boot/dts/{am335x-bone.dts => am335x-bone-common.dtsi} (99%)
+>   create mode 100644 arch/arm/boot/dts/am335x-boneblack.dts
+How did you test am335x-boneblack.dtb? where are the Makefile changes 
+for boneblack?
 
-  - Convert *both* existing TCE objects to the new
-      KVM_CREATE_DEVICE, and have some backward compat code for the old one.
 
-The point is implementation usually can be changed, but for API it is
-much harder to do so.
+> diff --git a/arch/arm/boot/dts/am335x-bone.dts b/arch/arm/boot/dts/am335x-bone-common.dtsi
+> similarity index 99%
+> copy from arch/arm/boot/dts/am335x-bone.dts
+> copy to arch/arm/boot/dts/am335x-bone-common.dtsi
+> index d318987..2f66ded 100644
+> --- a/arch/arm/boot/dts/am335x-bone.dts
+> +++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
+> @@ -5,9 +5,6 @@
+>    * it under the terms of the GNU General Public License version 2 as
+>    * published by the Free Software Foundation.
+>    */
+> -/dts-v1/;
+> -
+> -#include "am33xx.dtsi"
+>   
+>   / {
+>   	model = "TI AM335x BeagleBone";
+> diff --git a/arch/arm/boot/dts/am335x-bone.dts b/arch/arm/boot/dts/am335x-bone.dts
+> index d318987..7993c48 100644
+> --- a/arch/arm/boot/dts/am335x-bone.dts
+> +++ b/arch/arm/boot/dts/am335x-bone.dts
+> @@ -8,258 +8,4 @@
+>   /dts-v1/;
+>   
+>   #include "am33xx.dtsi"
+> -
+> -/ {
+> -	model = "TI AM335x BeagleBone";
+> -	compatible = "ti,am335x-bone", "ti,am33xx";
+> -
+> -	cpus {
+> -		cpu@0 {
+> -			cpu0-supply = <&dcdc2_reg>;
+> -		};
+> -	};
+> -
+> -	memory {
+> -		device_type = "memory";
+> -		reg = <0x80000000 0x10000000>; /* 256 MB */
+> -	};
+> -
+> -	am33xx_pinmux: pinmux@44e10800 {
+> -		pinctrl-names = "default";
+> -		pinctrl-0 = <&clkout2_pin>;
+> -
+> -		user_leds_s0: user_leds_s0 {
+> -			pinctrl-single,pins = <
+> -				0x54 (PIN_OUTPUT_PULLDOWN | MUX_MODE7)	/* gpmc_a5.gpio1_21 */
+> -				0x58 (PIN_OUTPUT_PULLUP | MUX_MODE7)	/* gpmc_a6.gpio1_22 */
+> -				0x5c (PIN_OUTPUT_PULLDOWN | MUX_MODE7)	/* gpmc_a7.gpio1_23 */
+> -				0x60 (PIN_OUTPUT_PULLUP | MUX_MODE7)	/* gpmc_a8.gpio1_24 */
+> -			>;
+> -		};
+> -
+> -		i2c0_pins: pinmux_i2c0_pins {
+> -			pinctrl-single,pins = <
+> -				0x188 (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c0_sda.i2c0_sda */
+> -				0x18c (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c0_scl.i2c0_scl */
+> -			>;
+> -		};
+> -
+> -		uart0_pins: pinmux_uart0_pins {
+> -			pinctrl-single,pins = <
+> -				0x170 (PIN_INPUT_PULLUP | MUX_MODE0)	/* uart0_rxd.uart0_rxd */
+> -				0x174 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* uart0_txd.uart0_txd */
+> -			>;
+> -		};
+> -
+> -		clkout2_pin: pinmux_clkout2_pin {
+> -			pinctrl-single,pins = <
+> -				0x1b4 (PIN_OUTPUT_PULLDOWN | MUX_MODE3)	/* xdma_event_intr1.clkout2 */
+> -			>;
+> -		};
+> -
+> -		cpsw_default: cpsw_default {
+> -			pinctrl-single,pins = <
+> -				/* Slave 1 */
+> -				0x110 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxerr.mii1_rxerr */
+> -				0x114 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mii1_txen.mii1_txen */
+> -				0x118 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxdv.mii1_rxdv */
+> -				0x11c (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mii1_txd3.mii1_txd3 */
+> -				0x120 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mii1_txd2.mii1_txd2 */
+> -				0x124 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mii1_txd1.mii1_txd1 */
+> -				0x128 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mii1_txd0.mii1_txd0 */
+> -				0x12c (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_txclk.mii1_txclk */
+> -				0x130 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxclk.mii1_rxclk */
+> -				0x134 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxd3.mii1_rxd3 */
+> -				0x138 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxd2.mii1_rxd2 */
+> -				0x13c (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxd1.mii1_rxd1 */
+> -				0x140 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxd0.mii1_rxd0 */
+> -			>;
+> -		};
+> -
+> -		cpsw_sleep: cpsw_sleep {
+> -			pinctrl-single,pins = <
+> -				/* Slave 1 reset value */
+> -				0x110 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> -				0x114 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> -				0x118 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> -				0x11c (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> -				0x120 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> -				0x124 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> -				0x128 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> -				0x12c (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> -				0x130 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> -				0x134 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> -				0x138 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> -				0x13c (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> -				0x140 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> -			>;
+> -		};
+> -
+> -		davinci_mdio_default: davinci_mdio_default {
+> -			pinctrl-single,pins = <
+> -				/* MDIO */
+> -				0x148 (PIN_INPUT_PULLUP | SLEWCTRL_FAST | MUX_MODE0)	/* mdio_data.mdio_data */
+> -				0x14c (PIN_OUTPUT_PULLUP | MUX_MODE0)			/* mdio_clk.mdio_clk */
+> -			>;
+> -		};
+> -
+> -		davinci_mdio_sleep: davinci_mdio_sleep {
+> -			pinctrl-single,pins = <
+> -				/* MDIO reset value */
+> -				0x148 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> -				0x14c (PIN_INPUT_PULLDOWN | MUX_MODE7)
+> -			>;
+> -		};
+> -	};
+> -
+> -	ocp {
+> -		uart0: serial@44e09000 {
+> -			pinctrl-names = "default";
+> -			pinctrl-0 = <&uart0_pins>;
+> -
+> -			status = "okay";
+> -		};
+> -
+> -		musb: usb@47400000 {
+> -			status = "okay";
+> -
+> -			control@44e10000 {
+> -				status = "okay";
+> -			};
+> -
+> -			usb-phy@47401300 {
+> -				status = "okay";
+> -			};
+> -
+> -			usb-phy@47401b00 {
+> -				status = "okay";
+> -			};
+> -
+> -			usb@47401000 {
+> -				status = "okay";
+> -			};
+> -
+> -			usb@47401800 {
+> -				status = "okay";
+> -				dr_mode = "host";
+> -			};
+> -
+> -			dma-controller@07402000  {
+> -				status = "okay";
+> -			};
+> -		};
+> -
+> -		i2c0: i2c@44e0b000 {
+> -			pinctrl-names = "default";
+> -			pinctrl-0 = <&i2c0_pins>;
+> -
+> -			status = "okay";
+> -			clock-frequency = <400000>;
+> -
+> -			tps: tps@24 {
+> -				reg = <0x24>;
+> -			};
+> -
+> -		};
+> -	};
+> -
+> -	leds {
+> -		pinctrl-names = "default";
+> -		pinctrl-0 = <&user_leds_s0>;
+> -
+> -		compatible = "gpio-leds";
+> -
+> -		led@2 {
+> -			label = "beaglebone:green:heartbeat";
+> -			gpios = <&gpio1 21 GPIO_ACTIVE_HIGH>;
+> -			linux,default-trigger = "heartbeat";
+> -			default-state = "off";
+> -		};
+> -
+> -		led@3 {
+> -			label = "beaglebone:green:mmc0";
+> -			gpios = <&gpio1 22 GPIO_ACTIVE_HIGH>;
+> -			linux,default-trigger = "mmc0";
+> -			default-state = "off";
+> -		};
+> -
+> -		led@4 {
+> -			label = "beaglebone:green:usr2";
+> -			gpios = <&gpio1 23 GPIO_ACTIVE_HIGH>;
+> -			default-state = "off";
+> -		};
+> -
+> -		led@5 {
+> -			label = "beaglebone:green:usr3";
+> -			gpios = <&gpio1 24 GPIO_ACTIVE_HIGH>;
+> -			default-state = "off";
+> -		};
+> -	};
+> -};
+> -
+> -/include/ "tps65217.dtsi"
+> -
+> -&tps {
+> -	regulators {
+> -		dcdc1_reg: regulator@0 {
+> -			regulator-always-on;
+> -		};
+> -
+> -		dcdc2_reg: regulator@1 {
+> -			/* VDD_MPU voltage limits 0.95V - 1.26V with +/-4% tolerance */
+> -			regulator-name = "vdd_mpu";
+> -			regulator-min-microvolt = <925000>;
+> -			regulator-max-microvolt = <1325000>;
+> -			regulator-boot-on;
+> -			regulator-always-on;
+> -		};
+> -
+> -		dcdc3_reg: regulator@2 {
+> -			/* VDD_CORE voltage limits 0.95V - 1.1V with +/-4% tolerance */
+> -			regulator-name = "vdd_core";
+> -			regulator-min-microvolt = <925000>;
+> -			regulator-max-microvolt = <1150000>;
+> -			regulator-boot-on;
+> -			regulator-always-on;
+> -		};
+> -
+> -		ldo1_reg: regulator@3 {
+> -			regulator-always-on;
+> -		};
+> -
+> -		ldo2_reg: regulator@4 {
+> -			regulator-always-on;
+> -		};
+> -
+> -		ldo3_reg: regulator@5 {
+> -			regulator-always-on;
+> -		};
+> -
+> -		ldo4_reg: regulator@6 {
+> -			regulator-always-on;
+> -		};
+> -	};
+> -};
+> -
+> -&cpsw_emac0 {
+> -	phy_id = <&davinci_mdio>, <0>;
+> -	phy-mode = "mii";
+> -};
+> -
+> -&cpsw_emac1 {
+> -	phy_id = <&davinci_mdio>, <1>;
+> -	phy-mode = "mii";
+> -};
+> -
+> -&mac {
+> -	pinctrl-names = "default", "sleep";
+> -	pinctrl-0 = <&cpsw_default>;
+> -	pinctrl-1 = <&cpsw_sleep>;
+> -
+> -};
+> -
+> -&davinci_mdio {
+> -	pinctrl-names = "default", "sleep";
+> -	pinctrl-0 = <&davinci_mdio_default>;
+> -	pinctrl-1 = <&davinci_mdio_sleep>;
+> -};
+> +#include "am335x-bone-common.dtsi"
+> diff --git a/arch/arm/boot/dts/am335x-boneblack.dts b/arch/arm/boot/dts/am335x-boneblack.dts
+> new file mode 100644
+> index 0000000..68d12aa
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/am335x-boneblack.dts
+> @@ -0,0 +1,18 @@
+> +/*
+> + * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +/dts-v1/;
+> +
+> +#include "am33xx.dtsi"
+Why cant we add am33xx.dtsi  in am335x-bone-common.dtsi ?
+> +#include "am335x-bone-common.dtsi"
+> +
+> +&ldo3_reg {
+> +	regulator-min-microvolt = <1800000>;
+> +	regulator-max-microvolt = <1800000>;
+> +	regulator-always-on;
+> +};
+> +
+With this ldo values mmc was not working for me on Boneblack.
+got it working with
 
-> So for something completely new, I would tend to agree with you. However, I
-> still think that for this specific case, we should just plonk-in the original
-> ioctl proposed by Alexey and be done with it.
-> 
-Do you think this is the last extension to IOMMU code, or we will see
-more and will use same justification to continue adding ioctls?
+&ldo3_reg {
+	regulator-min-microvolt = <1800000>;
+	regulator-max-microvolt = <3300000>;
+	regulator-always-on;
+};
 
---
-			Gleb.
+
+
+-- 
+-George
+
