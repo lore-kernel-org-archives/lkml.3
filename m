@@ -1,106 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751091Ab3IFS7e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 14:59:34 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:44254 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887Ab3IFS7c (ORCPT
+	id S1751400Ab3IFTBW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 15:01:22 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56948 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225Ab3IFTBU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 14:59:32 -0400
-Date: Fri, 6 Sep 2013 20:59:29 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, sbw@mit.edu
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
- section?
-Message-ID: <20130906185927.GE2706@somewhere>
-References: <20130905195234.GA20555@linux.vnet.ibm.com>
- <20130906105934.GF20519@somewhere>
- <20130906151851.GQ3966@linux.vnet.ibm.com>
- <1378488088.31445.39.camel@edumazet-glaptop>
- <20130906174117.GU3966@linux.vnet.ibm.com>
+	Fri, 6 Sep 2013 15:01:20 -0400
+Message-ID: <522A267B.4010200@wwwdotorg.org>
+Date: Fri, 06 Sep 2013 13:01:15 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130906174117.GU3966@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tero Kristo <t-kristo@ti.com>
+CC: Mark Rutland <Mark.Rutland@arm.com>, devicetree@vger.kernel.org,
+        Mike Turquette <mturquette@linaro.org>,
+        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        Pawel Moll <pawel.moll@arm.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Matt Sealey <neko@bakuhatsu.net>, Kumar Gala <galak@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        ian campbell <ian.campbell@citrix.com>
+Subject: Re: [PATCH v4 3/5] clk: dt: binding for basic multiplexer clock
+References: <1377150793-27864-1-git-send-email-mturquette@linaro.org> <1377150793-27864-4-git-send-email-mturquette@linaro.org> <2A930389-012E-45C3-93EB-6B4A41DB2EF5@codeaurora.org> <20130829011425.8231.78802@quantum> <39BAF1F8-41AD-4667-BF76-22BDF709415A@codeaurora.org> <20130830203334.10934.10011@quantum> <522110AA.7040700@wwwdotorg.org> <20130903232219.10934.67434@quantum> <52277DBF.7080104@wwwdotorg.org> <CAPtuhThWHP61FzDBCH5SSFx6kV7==VdF3-M=Lke+cgnrOQL7JQ@mail.gmail.com> <5228EA02.3000200@wwwdotorg.org> <52297BE2.8010603@ti.com>
+In-Reply-To: <52297BE2.8010603@ti.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 06, 2013 at 10:41:17AM -0700, Paul E. McKenney wrote:
-> On Fri, Sep 06, 2013 at 10:21:28AM -0700, Eric Dumazet wrote:
-> > On Fri, 2013-09-06 at 08:18 -0700, Paul E. McKenney wrote:
-> > 
-> > > int rcu_is_cpu_idle(void)
-> > > {
-> > > 	int ret;
-> > > 
-> > > 	preempt_disable();
-> > > 	ret = (atomic_read(&__get_cpu_var(rcu_dynticks).dynticks) & 0x1) == 0;
-> > > 	preempt_enable();
-> > > 	return ret;
-> > > }
-> > 
-> > Paul I find this very confusing.
-> > 
-> > If caller doesn't have preemption disabled, what could be the meaning of
-> > this rcu_is_cpu_idle() call ?
-> > 
-> > Its result is meaningless if suddenly thread is preempted, so what is
-> > the point ?
-> > 
-> > Sorry if this is obvious to you.
+On 09/06/2013 12:53 AM, Tero Kristo wrote:
+> On 09/05/2013 11:30 PM, Stephen Warren wrote:
+
+...
+>> 1)
+>>
+>> At least for large SoCs (rather than e.g. a simple clock generator
+>> chip/crystal with 1 or 2 outputs), clock drivers need a *lot* of data.
+>> We can either:
+>>
+>> a) Put that data into the clock driver, so it's "just there" for the
+>> clock driver to use.
+>>
+>> b) Represent that data in DT, and write code in the clock driver to
+>> parse DT when the driver probe()s.
+>>
+>> Option (a) is very simple.
 > 
-> It is a completely fair question.  In fact, this might well now be
-> pointing to a bug given NO_HZ_FULL.
+> How can you claim option (a) to be very simple compared to (b)? I think
+> both are as easy / or hard to implement.
+
+Well, the work required for (b) is a pure super-set of the work require
+for (a), so clearly (a) is less work (perhaps the issue you're debating
+is harder/easier rather than more/less work?)
+
+>> Option (b) entails writing (and executing) a whole bunch of DT parsing
+>> code.It's a lot of effort to define the DT binding for the data,
+>> convert the data into DT format, and write the parsing code. It wastes
+>> execution time at boot. In the end, the result of the parsing is exactly
+>> the same data structures that could have been embedded into DT in the
+>> first place. This seems like a futile effort.
 > 
-> The assumption is that if you don't have preemption disabled, you had
-> better be running on a CPU that RCU is paying attention to.  The rationale
-> involves preemptible RCU.
-> 
-> Suppose that you just did rcu_read_lock() on a CPU that RCU is paying
-> attention to.  All is well, and rcu_is_cpu_idle() will return false, as
-> expected.  Suppose now that it is possible to be preempted and suddenly
-> find yourself running on a CPU that RCU is not paying attention to.
-> This would have the effect of making your RCU read-side critical section
-> be ignored.  Therefore, it had better not be possible to be preempted
-> from a CPU to which RCU is paying attention to a CPU that RCU is ignoring.
-> 
-> So if rcu_is_cpu_idle() returns false, you had better be guaranteed
-> that whatever CPU you are running on (which might well be a different
-> one than the rcu_is_cpu_idle() was running on) is being watched by RCU.
-> 
-> So, Frederic, does this still work with NO_HZ_FULL?  If not, I believe
-> we have a bigger problem than the preempt_disable() in rcu_is_cpu_idle()!
+> Not really, consider a new SoC where you don't have any kind of data at
+> all. You need to write the data tables anyway, whether they are under DT
+> or some kernel data struct.
 
-Sure it works well, because the scheduler task entrypoints exit those RCU
-extended quiescent states.
+Yes.
 
-Imagine that you're running on an rcu read side critical section on CPU 0, which
-is not in extended quiescent state. Now you get preempted in the middle of your
-RCU read side critical section (you called rcu_read_lock() but not yet rcu_read_unlock()).
+But beyond writing the data tables, you also don't/do have to write all
+the DT parsing code based on choosing (a) or (b), etc.
 
-Later on, the task is woken up to be scheduled in CPU 1. If CPU 1 is in extended
-quiescent state because it runs is userspace, it receives a scheduler IPI,
-then schedule_user() is called by the end of the interrupt and in turns calls rcu_user_exit()
-before the task is resumed to the code it was running on CPU 0, in the middle of
-the rcu read side extended quiescent state.
+> The execution time remain in place for
+> parsing DT data though, but I wouldn't think this to be a problem. Also,
+> you should consider multiarch ARM kernel, where same kernel binary
+> should support multiple SoCs, this would entail having clock data for
+> all built in to the kernel, which can be a problem also.
 
-See, the key here is the rcu_user_exit() that restore the CPU on RCU's state machine.
-There are other possible scheduler entrypoints when a CPU runs in user extended quiescent
-state: exception and syscall entries or even preempt_schedule_irq() in case we receive an irq
-in the kernel while we haven't yet reached the call to rcu_user_exit()... All of these should
-be covered, otherwise you bet RCU would be prompt to warn.
+There's no reason that the clock data has to be built into the kernel at
+all; we should support even SoC clock drivers as modules in an initrd.
+Alternatively, drop the unused data from the kernel after boot via
+__init or similar. Alternatively, "pre-link" the clock driver module
+into the kernel in a way that allows it to be unloaded after boot even
+though it was built-in.
 
-That's why when we call rcu_is_cpu_idle() from an RCU read side critical section, it's legit even
-if we can be preempted anytime around it.
-And preempt_disable() is probably not even necessary, except perhaps if __get_cpu_var() itself
-relies on non-preemptibility for its own correctness on the address calculation.
+...
+> You can just as easily claim that anything internal to SoC should be
+> left out from DT, as this is cast in stone (or rather, silicon) also. We
+> should only use it to describe board layout. Everything else, the kernel
+> can 'know' by compile time.
 
-Thanks.
+I did, immediately below:-) And then I went on to explain why that's
+necessary in many cases.
+
+...
+> I can turn this around, as you went to this road. Why have DT at all?
+
+I believe (at least for ARM) the idea was to avoid churn to the kernel
+for supporting the numerous different *boards*.
+
+The kernel needs and contains drivers for HW blocks, and so since
+they're there, they may as well encode everything about the HW block.
+
+However, in most cases, the kernel shouldn't contain drivers for boards;
+boards are built from various common components which have drivers. DT
+is used to describe how those components are inter-connected. Hence, we
+can hopefully remove all board-related churn from the kernel (once the
+DT files are moved out of the kernel).
+
+> Personally I hate the whole idea of a devicetree, however am forced to
+> use it as somebody decided it is a good idea to have one. It doesn't
+> really solve any problems, it just creates new ones in a way of
+> political BS where everybody claims they know how DT should be used, and
+> this just prevents people from actually using it at all. Also, it
+> creates just one new unnecessary dependency for boot, previously we had
+> bootloader and kernel images which had to be in sync, now we have
+> bootloader + DT + kernel. What next? Maybe we should move the clock data
+> into a firmware file of its own?
+
+Well, I can sympathize, but I think the time is past for debating that.
+
+> Why do you care so much what actually goes into the devicetree?
+
+To get DT right.
+
+Even if we went back to board files and mach-xxx specific code rather
+than cleanly separated drivers, it would still be beneficial to have
+much more oversight of board/mach-xxx code than there was previously.
+Board files made it very easy to do SoC-specific hacks. To avoid that,
+in either DT or board files, we're trying to impose standards so that we
+pick correct, generic, appropriate solutions, rather than letting
+everyone run of with isolated ad-hoc solutions.
+
+> Shouldn't people be let use it how they see fit? For the clock bindings
+> business this is the same, even if the bindings are there, you are free
+> to use them if you like, and if you don't like them, you can do things
+> differently.
+
+We'd be better of creating as much standardization as possible, so that
+all SoCs/boards/.. work as similarly as possible, and we achieve maximal
+code reuse, design-reuse, and allow people to understand everything
+rather than just one particular SoC's/board's solution.
+
+If we don't get some re-use and standardization out of DT, we really may
+as well just use board files.
