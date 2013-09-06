@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719Ab3IFUmC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 16:42:02 -0400
-Received: from mga09.intel.com ([134.134.136.24]:40388 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750810Ab3IFUmA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 16:42:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,857,1371106800"; 
-   d="scan'208";a="399581766"
-Date: Fri, 6 Sep 2013 16:41:58 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nvme@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PULL REQUEST] NVM Express updates
-Message-ID: <20130906204158.GB4668@linux.intel.com>
+	id S1752568Ab3IFUrz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 16:47:55 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:43775 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751070Ab3IFUrx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 16:47:53 -0400
+Date: Fri, 6 Sep 2013 21:47:12 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: sameo@linux.intel.com, swarren@wwwdotorg.org, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, rob@landley.net,
+        lee.jones@linaro.org, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gg@slimlogic.co.uk, kishon@ti.com,
+        j-keerthy@ti.com, ian.campbell@citrix.com
+Message-ID: <20130906204712.GK29403@sirena.org.uk>
+References: <1377082096-22296-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Tu8ztk+XgTAiG9Id"
 Content-Disposition: inline
+In-Reply-To: <1377082096-22296-1-git-send-email-ldewangan@nvidia.com>
+X-Cookie: Your present plans will be successful.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH V4] regulator: palmas: add support for external control
+ of rails
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Please pull the NVMe tree.
+--Tu8ztk+XgTAiG9Id
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The following changes since commit a2648ebb7ed69ef209d9c8a76fadeb3252d9a023:
+On Wed, Aug 21, 2013 at 04:18:16PM +0530, Laxman Dewangan wrote:
+> Palmas rails like LDOs, SMPSs, REGENs, SYSENs can be enable and disable
+> by register programming through I2C communication as well as it can be
+> enable/disable with the external control input ENABLE1, ENABLE2 and NSLEEP.
 
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs (2013-06-13 22:34:14 -0700)
+Applied, thanks.
 
-are available in the git repository at:
+--Tu8ztk+XgTAiG9Id
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
 
-  git://git.infradead.org/users/willy/linux-nvme.git master
+iQIcBAEBAgAGBQJSKj9NAAoJELSic+t+oim9LI4P/3Qb7pv8EVyN2uT9RUSXN4Lp
+1XJLaBZnsZ6/WrivXD7nBZGUIvLvvdHJ04XMWQip7XEjuWE9F6oKk0HphdlGt+EE
++97ZI5rcAHlllTQ9aEipMfpzY+ZWsITZZabPjAi1pTPTVuzhBBdCjiaSabpuVV12
+tTfgZRsbnRqpEcXkx2PS5x/TowEovsfRswmOJ1p1Ob3+upTJfuy0g4JIBMHBFPLO
+1u8poY9rxO3UTg8YpxvtLiVR5y1lWCaQcqR+uzzvzXc2MkJM27aYr1bSj2bw9pZa
+w5lvXYQSm+05bny++cbX98jfjjuCMOpJfSpZvEWChyaINeZWSVjo0h9pb9UeUNCX
+OHgl8rRh2vxHJFGp/T2jCmnEjQEFFEz07B4lH/f9YJ2hHfDn2rSuA6JRrK4i+JZY
+0+HUhZuw1JwDm0A84/S+PrZFSKILtg+g+YmGqendoFnQHCZG8w6rwssuHwwvsywY
+bDZELb/U2C8o7YFzpuvbWJreYCDbMmUr3GYYSICiwQe1yyGVXgX1RU3M9hQQ2fi/
+Z+0iU4LV6Y/IXHJv3mBXeUi/SZ2InxCVNi/MQ2bHCpTXsKfEOl3HW3/ZLdrudw58
+/X5H84/jjumVqitkCF/Rm8Vyayn3SXhq8MxNKrlBvQWLAVsXsa5IBNIFZDAdP0kC
+0xli7Fl1xL5zBfcvOZ6x
+=BwM7
+-----END PGP SIGNATURE-----
 
-for you to fetch changes up to d82e8bfdef9afae83b894be49af4644d9ac3c359:
-  NVMe: Merge issue on character device bring-up (2013-09-06 16:26:58 -0400)
-
-----------------------------------------------------------------
-Keith Busch (12):
-      NVMe: Disk IO statistics
-      NVMe: Update nvme_id_power_state with latest spec
-      NVMe: Fix checkpatch issues
-      NVMe: Bring up cdev on set feature failure
-      NVMe: Disk stats for read/write commands only
-      NVMe: Group pci related actions in functions
-      NVMe: Separate queue alloc/free from create/delete
-      NVMe: Separate controller init from disk discovery
-      NVMe: Use normal shutdown
-      NVMe: Add pci suspend/resume driver callbacks
-      NVMe: Handle ioremap failure
-      NVMe: Merge issue on character device bring-up
-
-Matthew Wilcox (6):
-      NVMe: Restructure MSI / MSI-X setup
-      NVMe: Return correct value from interrupt handler
-      NVMe: Remove "process_cq did something" message
-      NVMe: Call nvme_process_cq from submission path
-      NVMe: Split header file into user-visible and kernel-visible pieces
-      NVMe: Namespace IDs are unsigned
-
-Tushar Behera (1):
-      NVMe: Use kzalloc instead of kmalloc+memset
-
- drivers/block/nvme-core.c | 585 +++++++++++++++++++++++++++++++---------------
- drivers/block/nvme-scsi.c |  24 +-
- include/linux/nvme.h      | 466 +-----------------------------------
- include/uapi/linux/Kbuild |   1 +
- include/uapi/linux/nvme.h | 477 +++++++++++++++++++++++++++++++++++++
- 5 files changed, 895 insertions(+), 658 deletions(-)
- create mode 100644 include/uapi/linux/nvme.h
-
-
+--Tu8ztk+XgTAiG9Id--
