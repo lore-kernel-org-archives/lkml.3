@@ -1,163 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804Ab3IFVuD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 17:50:03 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:44953 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751081Ab3IFVuA (ORCPT
+	id S1754277Ab3IFVvb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 17:51:31 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:41970 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805Ab3IFVv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 17:50:00 -0400
+	Fri, 6 Sep 2013 17:51:29 -0400
+Date: Fri, 6 Sep 2013 14:50:51 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Rohit Vaswani <rvaswani@codeaurora.org>
+Cc: David Brown <davidb@codeaurora.org>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCHv3 1/2] ARM: msm: Add support for APQ8074 Dragonboard
+Message-ID: <20130906215051.GA29253@quad.lixom.net>
+References: <1378495943-2572-1-git-send-email-rvaswani@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <20130906202022.GA353@x4>
-References: <alpine.LNX.2.00.1309061202050.26934@pobox.suse.cz>
-	<20130906202022.GA353@x4>
-Date: Fri, 6 Sep 2013 23:50:00 +0200
-Message-ID: <CANq1E4Rf4c4zj1mD1aPr93Q2_M65DCEJhuLqcBWa5uH9tcKuWA@mail.gmail.com>
-Subject: Re: [GIT] HID for 3.12 merge window
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Content-Type: multipart/mixed; boundary=089e01493b542f7c1804e5be058e
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378495943-2572-1-git-send-email-rvaswani@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---089e01493b542f7c1804e5be058e
-Content-Type: text/plain; charset=ISO-8859-1
+Hi,
 
-Hi
+Some comments below.
 
-On Fri, Sep 6, 2013 at 10:20 PM, Markus Trippelsdorf
-<markus@trippelsdorf.de> wrote:
-> On 2013.09.06 at 14:00 +0200, Jiri Kosina wrote:
->>
->> David Herrmann (12):
-> ...
->>       HID: wiimote: add support for Guitar-Hero drums
->
->  commit 61e00655e9cb82e034eb72b95a51072e718d14a7
->  Author: David Herrmann <dh.herrmann@gmail.com>
->  Date:   Mon Aug 26 19:14:46 2013 +0200
->
->      Input: introduce BTN/ABS bits for drums and guitars
->
-> The commit above breaks my Logitech mouse. The mouse cursor just sits in
-> the middle of the screen and doesn't react to movements. dmesg is
-> normal, but Xorg.0.log says:
+On Fri, Sep 06, 2013 at 12:32:22PM -0700, Rohit Vaswani wrote:
+> This patch adds basic board support for APQ8074 Dragonboard
+> which belongs to the Snapdragon 800 family.
+> For now, just support a basic machine with device tree.
+> 
+> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+> ---
+>  arch/arm/boot/dts/Makefile                |  3 ++-
+>  arch/arm/boot/dts/apq8074-dragonboard.dts |  6 ++++++
+>  arch/arm/boot/dts/msm8974.dtsi            | 35 +++++++++++++++++++++++++++++++
+>  arch/arm/mach-msm/Kconfig                 | 20 ++++++++++++++++--
+>  arch/arm/mach-msm/Makefile                |  1 +
+>  arch/arm/mach-msm/board-dt-8974.c         | 24 +++++++++++++++++++++
+>  6 files changed, 86 insertions(+), 3 deletions(-)
+>  create mode 100644 arch/arm/boot/dts/apq8074-dragonboard.dts
+>  create mode 100644 arch/arm/boot/dts/msm8974.dtsi
+>  create mode 100644 arch/arm/mach-msm/board-dt-8974.c
+> 
+> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> index 641b3c9a..bea54a7 100644
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@ -97,7 +97,8 @@ dtb-$(CONFIG_ARCH_KIRKWOOD) += kirkwood-cloudbox.dtb \
+>  	kirkwood-openblocks_a6.dtb
+>  dtb-$(CONFIG_ARCH_MARCO) += marco-evb.dtb
+>  dtb-$(CONFIG_ARCH_MSM) += msm8660-surf.dtb \
+> -	msm8960-cdp.dtb
+> +	msm8960-cdp.dtb \
+> +	apq8074-dragonboard.dtb
 
-Ok, the issue is the kernel assumes ABS_MAX to be a power-of-2 minus 1
-(used as mask). That wasn't really obvious to me. Attached is a patch
-which should fix that. Could you apply it on top of linus/master and
-give it a try?
+Please add boards alphabetically.
 
-@Dmitry: The IOC_NR part of the definition of EVIOCSABS() is now
-bigger than 1-byte. I need to check how that affects the 'E' part. Any
-idea what to do here?
+>  dtb-$(CONFIG_ARCH_MVEBU) += armada-370-db.dtb \
+>  	armada-370-mirabox.dtb \
+>  	armada-370-rd.dtb \
+> diff --git a/arch/arm/boot/dts/apq8074-dragonboard.dts b/arch/arm/boot/dts/apq8074-dragonboard.dts
+> new file mode 100644
+> index 0000000..5b7b6a0
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/apq8074-dragonboard.dts
 
-Thanks
-David
+arch/arm/boot/dts/ is getting really crowded. It's been working best if the SoC
+family or vendor is used as a prefix to keep things a bit more organized. In
+that spirit, prefixing these with msm-<foo> makes sense. Can you please do so?
 
-Patch is also attached as I doubt that inlining it works in that
-stupid web-client:
+> @@ -0,0 +1,6 @@
+> +/include/ "msm8974.dtsi"
+> +
+> +/ {
+> +	model = "Qualcomm APQ8074 Dragonboard";
+> +	compatible = "qcom,apq8074-dragonboard", "qcom,apq8074";
+> +};
 
->From 653fe4d46ad368cdbf9b56a559a8468bd6f5cb3c Mon Sep 17 00:00:00 2001
-From: David Herrmann <dh.herrmann@gmail.com>
-Date: Fri, 6 Sep 2013 23:46:08 +0200
-Subject: [PATCH] Input: evdev: don't assume ABS_MAX to be a power-of-2 minus 1
+Ok, I'm all for merging a early minimal dts file, but things like memory and
+a default bootargs tend to make sense.
 
-ABS_MAX is no longer a full mask. Hence, don't use it directly to get any
-parameter for ioctls. Furthermore, the parameter-region and
-ioctl-definition overlap, so even bumping ABS_MAX to 0x7f wouldn't help.
+> diff --git a/arch/arm/boot/dts/msm8974.dtsi b/arch/arm/boot/dts/msm8974.dtsi
+> new file mode 100644
+> index 0000000..f04b643
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/msm8974.dtsi
+> @@ -0,0 +1,35 @@
+> +/dts-v1/;
+> +
+> +/include/ "skeleton.dtsi"
+> +
+> +/ {
+> +	model = "Qualcomm MSM8974";
+> +	compatible = "qcom,msm8974";
 
-Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
----
- drivers/input/evdev.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+the board uses "qcom,apq8074" and this overrides this. Which way is it?
 
-diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
-index d2b34fb..82e0073 100644
---- a/drivers/input/evdev.c
-+++ b/drivers/input/evdev.c
-@@ -939,12 +939,13 @@ static long evdev_do_ioctl(struct file *file,
-unsigned int cmd,
-  _IOC_NR(cmd) & EV_MAX, size,
-  p, compat_mode);
+> +	interrupt-parent = <&intc>;
+> +
+> +	soc: soc { };
 
-- if ((_IOC_NR(cmd) & ~ABS_MAX) == _IOC_NR(EVIOCGABS(0))) {
-+ if (_IOC_NR(cmd) >= _IOC_NR(EVIOCGABS(0)) &&
-+    _IOC_NR(cmd) <= _IOC_NR(EVIOCGABS(ABS_MAX))) {
+For files that include this it's ok to use the &phandle syntax, but in this
+base dtsi, please use proper structure. In other words, move the contents of
+the soc node up above instead.
 
-  if (!dev->absinfo)
-  return -EINVAL;
+> +};
+> +
+> +&soc {
+> +	#address-cells = <1>;
+> +	#size-cells = <1>;
+> +	ranges;
+> +	compatible = "simple-bus";
+> +
+> +	intc: interrupt-controller@f9000000 {
+> +		compatible = "qcom,msm-qgic2";
+> +		interrupt-controller;
+> +		#interrupt-cells = <3>;
+> +		reg = <0xf9000000 0x1000>,
+> +		      <0xf9002000 0x1000>;
+> +	};
+> +
+> +	timer {
+> +		compatible = "arm,armv7-timer";
+> +		interrupts = <1 2 0xf08>,
+> +			     <1 3 0xf08>,
+> +			     <1 4 0xf08>,
+> +			     <1 1 0xf08>;
+> +		clock-frequency = <19200000>;
+> +	};
+> +};
 
-- t = _IOC_NR(cmd) & ABS_MAX;
-+ t = _IOC_NR(cmd) - _IOC_NR(EVIOCGABS(0));
-  abs = dev->absinfo[t];
+It'd make a lot of sense to include at least cpu nodes here as well, and
+ideally basics for the drivers you have already merged, such as uarts.
 
-  if (copy_to_user(p, &abs, min_t(size_t,
-@@ -957,12 +958,13 @@ static long evdev_do_ioctl(struct file *file,
-unsigned int cmd,
+> diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
+> index 905efc8..499e8fe 100644
+> --- a/arch/arm/mach-msm/Kconfig
+> +++ b/arch/arm/mach-msm/Kconfig
+> @@ -1,12 +1,12 @@
+>  if ARCH_MSM
+>  
+>  comment "Qualcomm MSM SoC Type"
+> -	depends on (ARCH_MSM8X60 || ARCH_MSM8960)
+> +	depends on ARCH_MSM_DT
+>  
+>  choice
+>  	prompt "Qualcomm MSM SoC Type"
+>  	default ARCH_MSM7X00A
+> -	depends on !(ARCH_MSM8X60 || ARCH_MSM8960)
+> +	depends on !ARCH_MSM_DT
 
-  if (_IOC_DIR(cmd) == _IOC_WRITE) {
+This has nothing to do with adding support for dragonboard. Please break
+out the cleanup separately.
 
-- if ((_IOC_NR(cmd) & ~ABS_MAX) == _IOC_NR(EVIOCSABS(0))) {
-+ if (_IOC_NR(cmd) >= _IOC_NR(EVIOCSABS(0)) &&
-+    _IOC_NR(cmd) <= _IOC_NR(EVIOCSABS(ABS_MAX))) {
+I'm not sure what the purpose of ARCH_MSM_DT is either, it just looks to
+complicate matter here?
 
-  if (!dev->absinfo)
-  return -EINVAL;
+> +config ARCH_MSM8974
+> +	bool "MSM8974"
+> +	select ARM_GIC
+> +	select CPU_V7
+> +	select HAVE_ARM_ARCH_TIMER
+> +	select HAVE_SMP
+> +	select MSM_SCM if SMP
+> +	select USE_OF
+> +
+> +config ARCH_MSM_DT
+> +	def_bool y
+> +	depends on (ARCH_MSM8X60 || ARCH_MSM8960 || ARCH_MSM8974)
+> +
+>  config MSM_HAS_DEBUG_UART_HS
+>  	bool
+>  
+> @@ -68,6 +81,7 @@ config MSM_SOC_REV_A
+>  
+>  config  ARCH_MSM_ARM11
+>  	bool
+> +
+>  config  ARCH_MSM_SCORPION
+>  	bool
+>  
+> @@ -75,6 +89,7 @@ config  MSM_VIC
+>  	bool
+>  
+>  menu "Qualcomm MSM Board Type"
+> +	depends on !ARCH_MSM_DT
+>  
+>  config MACH_HALIBUT
+>  	depends on ARCH_MSM
+> @@ -122,6 +137,7 @@ config MSM_SMD
+>  
+>  config MSM_GPIOMUX
+>  	bool
+> +	depends on !ARCH_MSM_DT
+>  	help
+>  	  Support for MSM V1 TLMM GPIOMUX architecture.
 
-- t = _IOC_NR(cmd) & ABS_MAX;
-+ t = _IOC_NR(cmd) - _IOC_NR(EVIOCSABS(0));
 
-  if (copy_from_user(&abs, p, min_t(size_t,
-  size, sizeof(struct input_absinfo))))
--- 
-1.8.4
+All of the above should be in a separate patch and motivated.
 
---089e01493b542f7c1804e5be058e
-Content-Type: application/octet-stream; 
-	name="0001-Input-evdev-don-t-assume-ABS_MAX-to-be-a-power-of-2-.patch"
-Content-Disposition: attachment; 
-	filename="0001-Input-evdev-don-t-assume-ABS_MAX-to-be-a-power-of-2-.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hl9xsn0w0
+>  
+> diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
+> index d257ff4..80e3b15 100644
+> --- a/arch/arm/mach-msm/Makefile
+> +++ b/arch/arm/mach-msm/Makefile
+> @@ -29,5 +29,6 @@ obj-$(CONFIG_ARCH_MSM7X30) += board-msm7x30.o devices-msm7x30.o
+>  obj-$(CONFIG_ARCH_QSD8X50) += board-qsd8x50.o devices-qsd8x50.o
+>  obj-$(CONFIG_ARCH_MSM8X60) += board-dt-8660.o
+>  obj-$(CONFIG_ARCH_MSM8960) += board-dt-8960.o
+> +obj-$(CONFIG_ARCH_MSM8974) += board-dt-8974.o
+>  obj-$(CONFIG_MSM_GPIOMUX) += gpiomux.o
+>  obj-$(CONFIG_ARCH_QSD8X50) += gpiomux-8x50.o
+> diff --git a/arch/arm/mach-msm/board-dt-8974.c b/arch/arm/mach-msm/board-dt-8974.c
+> new file mode 100644
+> index 0000000..01ed8d0
+> --- /dev/null
+> +++ b/arch/arm/mach-msm/board-dt-8974.c
+> @@ -0,0 +1,24 @@
+> +/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/of_platform.h>
+> +#include <asm/mach/arch.h>
+> +
+> +static const char * const msm8974_dt_match[] __initconst = {
+> +	"qcom,msm8974",
+> +	"qcom,apq8074",
+> +	NULL
+> +};
+> +
+> +DT_MACHINE_START(MSM8974_DT, "Qualcomm MSM (Flattened Device Tree)")
+> +	.dt_compat = msm8974_dt_match,
+> +MACHINE_END
 
-RnJvbSA2NTNmZTRkNDZhZDM2OGNkYmY5YjU2YTU1OWE4NDY4YmQ2ZjVjYjNjIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBEYXZpZCBIZXJybWFubiA8ZGguaGVycm1hbm5AZ21haWwuY29t
-PgpEYXRlOiBGcmksIDYgU2VwIDIwMTMgMjM6NDY6MDggKzAyMDAKU3ViamVjdDogW1BBVENIXSBJ
-bnB1dDogZXZkZXY6IGRvbid0IGFzc3VtZSBBQlNfTUFYIHRvIGJlIGEgcG93ZXItb2YtMiBtaW51
-cyAxCgpBQlNfTUFYIGlzIG5vIGxvbmdlciBhIGZ1bGwgbWFzay4gSGVuY2UsIGRvbid0IHVzZSBp
-dCBkaXJlY3RseSB0byBnZXQgYW55CnBhcmFtZXRlciBmb3IgaW9jdGxzLiBGdXJ0aGVybW9yZSwg
-dGhlIHBhcmFtZXRlci1yZWdpb24gYW5kCmlvY3RsLWRlZmluaXRpb24gb3ZlcmxhcCwgc28gZXZl
-biBidW1waW5nIEFCU19NQVggdG8gMHg3ZiB3b3VsZG4ndCBoZWxwLgoKUmVwb3J0ZWQtYnk6IE1h
-cmt1cyBUcmlwcGVsc2RvcmYgPG1hcmt1c0B0cmlwcGVsc2RvcmYuZGU+ClNpZ25lZC1vZmYtYnk6
-IERhdmlkIEhlcnJtYW5uIDxkaC5oZXJybWFubkBnbWFpbC5jb20+Ci0tLQogZHJpdmVycy9pbnB1
-dC9ldmRldi5jIHwgMTAgKysrKysrLS0tLQogMSBmaWxlIGNoYW5nZWQsIDYgaW5zZXJ0aW9ucygr
-KSwgNCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9kcml2ZXJzL2lucHV0L2V2ZGV2LmMgYi9k
-cml2ZXJzL2lucHV0L2V2ZGV2LmMKaW5kZXggZDJiMzRmYi4uODJlMDA3MyAxMDA2NDQKLS0tIGEv
-ZHJpdmVycy9pbnB1dC9ldmRldi5jCisrKyBiL2RyaXZlcnMvaW5wdXQvZXZkZXYuYwpAQCAtOTM5
-LDEyICs5MzksMTMgQEAgc3RhdGljIGxvbmcgZXZkZXZfZG9faW9jdGwoc3RydWN0IGZpbGUgKmZp
-bGUsIHVuc2lnbmVkIGludCBjbWQsCiAJCQkJCQlfSU9DX05SKGNtZCkgJiBFVl9NQVgsIHNpemUs
-CiAJCQkJCQlwLCBjb21wYXRfbW9kZSk7CiAKLQkJaWYgKChfSU9DX05SKGNtZCkgJiB+QUJTX01B
-WCkgPT0gX0lPQ19OUihFVklPQ0dBQlMoMCkpKSB7CisJCWlmIChfSU9DX05SKGNtZCkgPj0gX0lP
-Q19OUihFVklPQ0dBQlMoMCkpICYmCisJCSAgICBfSU9DX05SKGNtZCkgPD0gX0lPQ19OUihFVklP
-Q0dBQlMoQUJTX01BWCkpKSB7CiAKIAkJCWlmICghZGV2LT5hYnNpbmZvKQogCQkJCXJldHVybiAt
-RUlOVkFMOwogCi0JCQl0ID0gX0lPQ19OUihjbWQpICYgQUJTX01BWDsKKwkJCXQgPSBfSU9DX05S
-KGNtZCkgLSBfSU9DX05SKEVWSU9DR0FCUygwKSk7CiAJCQlhYnMgPSBkZXYtPmFic2luZm9bdF07
-CiAKIAkJCWlmIChjb3B5X3RvX3VzZXIocCwgJmFicywgbWluX3Qoc2l6ZV90LApAQCAtOTU3LDEy
-ICs5NTgsMTMgQEAgc3RhdGljIGxvbmcgZXZkZXZfZG9faW9jdGwoc3RydWN0IGZpbGUgKmZpbGUs
-IHVuc2lnbmVkIGludCBjbWQsCiAKIAlpZiAoX0lPQ19ESVIoY21kKSA9PSBfSU9DX1dSSVRFKSB7
-CiAKLQkJaWYgKChfSU9DX05SKGNtZCkgJiB+QUJTX01BWCkgPT0gX0lPQ19OUihFVklPQ1NBQlMo
-MCkpKSB7CisJCWlmIChfSU9DX05SKGNtZCkgPj0gX0lPQ19OUihFVklPQ1NBQlMoMCkpICYmCisJ
-CSAgICBfSU9DX05SKGNtZCkgPD0gX0lPQ19OUihFVklPQ1NBQlMoQUJTX01BWCkpKSB7CiAKIAkJ
-CWlmICghZGV2LT5hYnNpbmZvKQogCQkJCXJldHVybiAtRUlOVkFMOwogCi0JCQl0ID0gX0lPQ19O
-UihjbWQpICYgQUJTX01BWDsKKwkJCXQgPSBfSU9DX05SKGNtZCkgLSBfSU9DX05SKEVWSU9DU0FC
-UygwKSk7CiAKIAkJCWlmIChjb3B5X2Zyb21fdXNlcigmYWJzLCBwLCBtaW5fdChzaXplX3QsCiAJ
-CQkJCXNpemUsIHNpemVvZihzdHJ1Y3QgaW5wdXRfYWJzaW5mbykpKSkKLS0gCjEuOC40Cgo=
---089e01493b542f7c1804e5be058e--
+This file should be shared across SoCs. You should avoid adding a new dt board
+file for every SoC like this.
+
+
+-Olof
