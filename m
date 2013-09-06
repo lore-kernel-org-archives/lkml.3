@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751048Ab3IFITq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 04:19:46 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:38374 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851Ab3IFITO (ORCPT
+	id S1750999Ab3IFITo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 04:19:44 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:48578 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750745Ab3IFITL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 04:19:14 -0400
+	Fri, 6 Sep 2013 04:19:11 -0400
 From: Sachin Kamat <sachin.kamat@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: anton@enomsg.org, dwmw2@infradead.org, lee.jones@linaro.org,
         sachin.kamat@linaro.org
-Subject: [PATCH v3 4/4] pm2301-charger: Staticize pm2xxx_charger_die_therm_mngt
-Date: Fri,  6 Sep 2013 13:31:12 +0530
-Message-Id: <1378454473-24508-4-git-send-email-sachin.kamat@linaro.org>
+Subject: [PATCH v3 3/4] pm2301-charger: Check return value of regulator_enable
+Date: Fri,  6 Sep 2013 13:31:11 +0530
+Message-Id: <1378454473-24508-3-git-send-email-sachin.kamat@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1378454473-24508-1-git-send-email-sachin.kamat@linaro.org>
 References: <1378454473-24508-1-git-send-email-sachin.kamat@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pm2xxx_charger_die_therm_mngt is used only in this file.
-Make it static.
+Check the return value of regulator_enable to silence the following
+warning:
+drivers/power/pm2301_charger.c:725:20: warning:
+ignoring return value of ‘regulator_enable’, declared with
+attribute warn_unused_result [-Wunused-result]
 
 Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-Acked-by: Lee Jones <lee.jones@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>
 ---
-No changes since v1.
+Compile tested.
+Changes since v2:
+* removed redundant assignment to false.
+Changes since v1:
+* converted dev_err and return to dev_warn as suggested by Lee Jones.
 ---
- drivers/power/pm2301_charger.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/power/pm2301_charger.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/power/pm2301_charger.c b/drivers/power/pm2301_charger.c
-index 7214b66..b733c69 100644
+index ffa10ed..7214b66 100644
 --- a/drivers/power/pm2301_charger.c
 +++ b/drivers/power/pm2301_charger.c
-@@ -205,7 +205,7 @@ static int pm2xxx_charger_batt_therm_mngt(struct pm2xxx_charger *pm2, int val)
- }
+@@ -722,8 +722,12 @@ static int pm2xxx_charger_ac_en(struct ux500_charger *charger,
  
+ 		dev_dbg(pm2->dev, "Enable AC: %dmV %dmA\n", vset, iset);
+ 		if (!pm2->vddadc_en_ac) {
+-			regulator_enable(pm2->regu);
+-			pm2->vddadc_en_ac = true;
++			ret = regulator_enable(pm2->regu);
++			if (ret)
++				dev_warn(pm2->dev,
++					"Failed to enable vddadc regulator\n");
++			else
++				pm2->vddadc_en_ac = true;
+ 		}
  
--int pm2xxx_charger_die_therm_mngt(struct pm2xxx_charger *pm2, int val)
-+static int pm2xxx_charger_die_therm_mngt(struct pm2xxx_charger *pm2, int val)
- {
- 	queue_work(pm2->charger_wq, &pm2->check_main_thermal_prot_work);
- 
+ 		ret = pm2xxx_charging_init(pm2);
 -- 
 1.7.9.5
 
