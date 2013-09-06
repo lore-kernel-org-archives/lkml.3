@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750961Ab3IFIw4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 04:52:56 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:46924 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788Ab3IFIwx (ORCPT
+	id S1751050Ab3IFIy3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 04:54:29 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:33718 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750798Ab3IFIyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 04:52:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130906171916.41b5f48d1aaccca594d1e760@canb.auug.org.au>
-References: <20130906171916.41b5f48d1aaccca594d1e760@canb.auug.org.au>
-Date: Fri, 6 Sep 2013 10:52:52 +0200
-X-Google-Sender-Auth: 9vqFXEy5xOJWwbBPd1Yn2pLU-6A
-Message-ID: <CAMuHMdXib30o3-70EuYj3to0==b7LfwPbivF9DaBrpHPejsDFg@mail.gmail.com>
-Subject: Re: linux-next: build warning after merge of the final tree (Linus'
- tree related - vai vfs tree)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Linux-Next <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 6 Sep 2013 04:54:25 -0400
+X-Sasl-enc: dZIIyxt6o8v/x0ercX+QO4Dg4viaGwqSD+3mK3iHMBGr 1378457664
+Message-ID: <1378457659.2311.23.camel@perseus.fritz.box>
+Subject: Re: [PATCH 1/3] autofs4 - fix device ioctl mount lookup
+From: Ian Kent <raven@themaw.net>
+To: Jeffrey Layton <jlayton@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>, rui.xiang@huawei.com,
+        autofs mailing list <autofs@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Date: Fri, 06 Sep 2013 16:54:19 +0800
+In-Reply-To: <1378456682.2311.21.camel@perseus.fritz.box>
+References: <20130904005456.5025.94309.stgit@perseus.fritz.box>
+	 <20130904010301.GE13318@ZenIV.linux.org.uk>
+	 <20130904020013.GF13318@ZenIV.linux.org.uk>
+	 <CA+55aFwF+dqSMyGE+3LamM+qSDymieyReYB+RPb8fHTTmntgqw@mail.gmail.com>
+	 <20130904022617.GG13318@ZenIV.linux.org.uk>
+	 <20130904024230.GH13318@ZenIV.linux.org.uk>
+	 <1378456682.2311.21.camel@perseus.fritz.box>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 6, 2013 at 9:19 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> After merging the final tree, today's linux-next build (arm defconfig)
-> produced this warning:
->
-> fs/direct-io.c: In function 'sb_init_dio_done_wq':
-> fs/direct-io.c:557:2: warning: value computed is not used [-Wunused-value]
->
-> This is:
->
->         cmpxchg(&sb->s_dio_done_wq, NULL, wq);
->
-> Introduced by commit 7b7a8665edd8 ("direct-io: Implement generic deferred
-> AIO completions").
 
-This happens for include/asm-generic/cmpxchg.h and several other
-arch-specific implementations that cast the return value of cmpxchg()
-like
+Sorry, I should have added Jeff to the cc for this post.
 
-#define cmpxchg(ptr, o, n)   ((__typeof__(*(ptr)))__cmpxchg(....
+On Fri, 2013-09-06 at 16:38 +0800, Ian Kent wrote:
+> On Wed, 2013-09-04 at 03:42 +0100, Al Viro wrote:
+> > On Wed, Sep 04, 2013 at 03:26:17AM +0100, Al Viro wrote:
+> > > I've applied slightly modified variant of Jeff's "vfs: allow umount to handle
+> > > mountpoints without revalidating them" (modified by just leaving the
+> > > struct path filled with mountpoint and leaving the equivalent of follow_mount()
+> > > to caller) to the local queue and I'm pretty sure that it's what we want
+> > > here as well.
+> > 
+> > ... and killed the modifications since the result ends up uglier for
+> > caller(s) anyway.  Reapplied as-is.
+> 
+> Looks like Jeff's patch has been merged, commit 8033426e6.
+> 
+> Revalidation isn't the only thing not done on the last component using
+> Jeff's user_path_umountat() path walk. It also bypasses the managed
+> dentry code for the last component, which is why it's what I need as
+> well.
+> 
+> Encoding umount in the name seems misleading as to what it really does
+> as would encoding unmanaged or similar since that doesn't properly cover
+> it either.
+> 
+> I can rename it in a patch to solve my autofs problem, so how about
+> something like user_path_simple_last(), other suggestions anyone?
+> 
+> Ian
 
-If the caller of cmpxchg() doesn't use the return value, we get a
-compiler warning,
-at least with some versions of gcc.
 
-Any idea how to fix this once and for good?
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
