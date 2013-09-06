@@ -1,306 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753279Ab3IFRGG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 13:06:06 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:21714 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151Ab3IFRGF (ORCPT
+	id S1753893Ab3IFRHx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 13:07:53 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:59848 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752832Ab3IFRHv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 13:06:05 -0400
-From: Linn Crosetto <linn@hp.com>
-To: matt.fleming@intel.com, hpa@zytor.com, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, yinghai@kernel.org
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linn Crosetto <linn@hp.com>
-Subject: [PATCHv2] x86: EFI stub support for large memory maps
-Date: Fri,  6 Sep 2013 11:04:16 -0600
-Message-Id: <1378487056-9857-1-git-send-email-linn@hp.com>
-X-Mailer: git-send-email 1.7.11.3
-In-Reply-To: <1377291771-21302-1-git-send-email-linn@hp.com>
-References: <1377291771-21302-1-git-send-email-linn@hp.com>
+	Fri, 6 Sep 2013 13:07:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <2886273.7m0Ub6qIMh@avalon>
+References: <1378471436-7045-1-git-send-email-geert@linux-m68k.org>
+	<2886273.7m0Ub6qIMh@avalon>
+Date: Fri, 6 Sep 2013 19:07:50 +0200
+X-Google-Sender-Auth: f3RuGR1s2VfrrH2B4HjwX3PxURY
+Message-ID: <CAMuHMdV6QrVcHfxwnS7EDQF6J6DjLTTZRNPP-VkWuJOv4HFweg@mail.gmail.com>
+Subject: Re: [PATCH] [media] media/v4l2: VIDEO_RENESAS_VSP1 should depend on HAS_DMA
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a problem with EFI memory maps larger than 128 entries
-when booting using the EFI stub, which results in overflowing e820_map
-in boot_params and an eventual halt when checking the map size in
-sanitize_e820_map().
+On Fri, Sep 6, 2013 at 5:20 PM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> On Friday 06 September 2013 14:43:56 Geert Uytterhoeven wrote:
+>> If NO_DMA=y:
+>>
+>> warning: (... && VIDEO_RENESAS_VSP1 && ...) selects VIDEOBUF2_DMA_CONTIG
+>> which has unmet direct dependencies (MEDIA_SUPPORT && HAS_DMA)
+>>
+>> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ‘vb2_dc_mmap’:
+>> drivers/media/v4l2-core/videobuf2-dma-contig.c:202: error: implicit
+>> declaration of function ‘dma_mmap_coherent’
+>> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function
+>> ‘vb2_dc_get_base_sgt’: drivers/media/v4l2-core/videobuf2-dma-contig.c:385:
+>> error: implicit declaration of function ‘dma_get_sgtable’ make[7]: ***
+>> [drivers/media/v4l2-core/videobuf2-dma-contig.o] Error 1
+>>
+>> VIDEO_RENESAS_VSP1 (which doesn't have a platform dependency) selects
+>> VIDEOBUF2_DMA_CONTIG, but the latter depends on HAS_DMA.
+>>
+>> Make VIDEO_RENESAS_VSP1 depend on HAS_DMA to fix this.
+>
+> Is there a chance we could fix the Kconfig infrastructure instead ? It warns
+> about the unmet dependency, shouldn't it disallow selecting the driver in the
+> first place ? I have a vague feeling that this topic has been discussed before
+> though.
 
-If the number of map entries is greater than what can fit in e820_map,
-add the extra entries to the setup_data list using type SETUP_E820_EXT.
-These extra entries are then picked up when the setup_data list is
-parsed in parse_e820_ext().
+This has come up several times before.
+Unfortunately "select" was "designed" to circumvent all dependencies of
+the target symbol.
 
-Signed-off-by: Linn Crosetto <linn@hp.com>
----
-Changes in v2:
-* Free memory when error is returned from alloc_e820ext() as suggested by Matt
-  Fleming
-* Set pointer to NULL and size to 0 after freeing memory in alloc_e820ext()
+> If that's not possible,
+>
+>> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>
+> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+>
+>> ---
+>>  drivers/media/platform/Kconfig |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/media/platform/Kconfig b/drivers/media/platform/Kconfig
+>> index 8068d7b..fbc0611 100644
+>> --- a/drivers/media/platform/Kconfig
+>> +++ b/drivers/media/platform/Kconfig
+>> @@ -212,7 +212,7 @@ config VIDEO_SH_VEU
+>>
+>>  config VIDEO_RENESAS_VSP1
+>>       tristate "Renesas VSP1 Video Processing Engine"
+>> -     depends on VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
+>> +     depends on VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API && HAS_DMA
+>>       select VIDEOBUF2_DMA_CONTIG
+>>       ---help---
+>>         This is a V4L2 driver for the Renesas VSP1 video processing engine.
 
- arch/x86/boot/compressed/eboot.c | 223 ++++++++++++++++++++++++++++-----------
- 1 file changed, 160 insertions(+), 63 deletions(-)
+Gr{oetje,eeting}s,
 
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index b7388a4..2ac395e 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -982,20 +982,161 @@ fail:
- 	return NULL;
- }
- 
-+static void add_e820ext(struct boot_params *params,
-+			struct setup_data *e820ext, u32 nr_entries)
-+{
-+	struct setup_data *data;
-+	efi_status_t status;
-+	unsigned long size;
-+
-+	e820ext->type = SETUP_E820_EXT;
-+	e820ext->len = nr_entries * sizeof(struct e820entry);
-+	e820ext->next = 0;
-+
-+	data = (struct setup_data *)(unsigned long)params->hdr.setup_data;
-+
-+	while (data && data->next)
-+		data = (struct setup_data *)(unsigned long)data->next;
-+
-+	if (data)
-+		data->next = (unsigned long)e820ext;
-+	else
-+		params->hdr.setup_data = (unsigned long)e820ext;
-+}
-+
-+static efi_status_t setup_e820(struct boot_params *params,
-+			       struct setup_data *e820ext, u32 e820ext_size)
-+{
-+	struct e820entry *e820_map = &params->e820_map[0];
-+	struct efi_info *efi = &params->efi_info;
-+	struct e820entry *prev = NULL;
-+	u32 nr_entries;
-+	u32 nr_desc;
-+	int i;
-+
-+	nr_entries = 0;
-+	nr_desc = efi->efi_memmap_size / efi->efi_memdesc_size;
-+
-+	for (i = 0; i < nr_desc; i++) {
-+		efi_memory_desc_t *d;
-+		unsigned int e820_type = 0;
-+		unsigned long m = efi->efi_memmap;
-+
-+		d = (efi_memory_desc_t *)(m + (i * efi->efi_memdesc_size));
-+		switch (d->type) {
-+		case EFI_RESERVED_TYPE:
-+		case EFI_RUNTIME_SERVICES_CODE:
-+		case EFI_RUNTIME_SERVICES_DATA:
-+		case EFI_MEMORY_MAPPED_IO:
-+		case EFI_MEMORY_MAPPED_IO_PORT_SPACE:
-+		case EFI_PAL_CODE:
-+			e820_type = E820_RESERVED;
-+			break;
-+
-+		case EFI_UNUSABLE_MEMORY:
-+			e820_type = E820_UNUSABLE;
-+			break;
-+
-+		case EFI_ACPI_RECLAIM_MEMORY:
-+			e820_type = E820_ACPI;
-+			break;
-+
-+		case EFI_LOADER_CODE:
-+		case EFI_LOADER_DATA:
-+		case EFI_BOOT_SERVICES_CODE:
-+		case EFI_BOOT_SERVICES_DATA:
-+		case EFI_CONVENTIONAL_MEMORY:
-+			e820_type = E820_RAM;
-+			break;
-+
-+		case EFI_ACPI_MEMORY_NVS:
-+			e820_type = E820_NVS;
-+			break;
-+
-+		default:
-+			continue;
-+		}
-+
-+		/* Merge adjacent mappings */
-+		if (prev && prev->type == e820_type &&
-+		    (prev->addr + prev->size) == d->phys_addr) {
-+			prev->size += d->num_pages << 12;
-+			continue;
-+		}
-+
-+		if (nr_entries == ARRAY_SIZE(params->e820_map)) {
-+			u32 need = (nr_desc - i) * sizeof(struct e820entry) +
-+				   sizeof(struct setup_data);
-+
-+			if (!e820ext || e820ext_size < need)
-+				return EFI_BUFFER_TOO_SMALL;
-+
-+			/* boot_params map full, switch to e820 extended */
-+			e820_map = (struct e820entry *)e820ext->data;
-+		}
-+
-+		e820_map->addr = d->phys_addr;
-+		e820_map->size = d->num_pages << PAGE_SHIFT;
-+		e820_map->type = e820_type;
-+		prev = e820_map++;
-+		nr_entries++;
-+	}
-+
-+	if (nr_entries > ARRAY_SIZE(params->e820_map)) {
-+		u32 nr_e820ext = nr_entries - ARRAY_SIZE(params->e820_map);
-+
-+		add_e820ext(params, e820ext, nr_e820ext);
-+		nr_entries -= nr_e820ext;
-+	}
-+
-+	params->e820_entries = (u8)nr_entries;
-+
-+	return EFI_SUCCESS;
-+}
-+
-+static efi_status_t alloc_e820ext(u32 nr_desc, struct setup_data **e820ext,
-+				  u32 *e820ext_size)
-+{
-+	efi_status_t status;
-+	unsigned long size;
-+
-+	size = sizeof(struct setup_data) +
-+		sizeof(struct e820entry) * nr_desc;
-+
-+	if (*e820ext && size <= *e820ext_size)
-+		return EFI_SUCCESS; /* Already allocated */
-+
-+	if (*e820ext) {
-+		efi_call_phys1(sys_table->boottime->free_pool, *e820ext);
-+		*e820ext = NULL;
-+		*e820ext_size = 0;
-+	}
-+
-+	status = efi_call_phys3(sys_table->boottime->allocate_pool,
-+				EFI_LOADER_DATA, size, e820ext);
-+
-+	if (status == EFI_SUCCESS)
-+		*e820ext_size = size;
-+
-+	return status;
-+}
-+
- static efi_status_t exit_boot(struct boot_params *boot_params,
- 			      void *handle)
- {
- 	struct efi_info *efi = &boot_params->efi_info;
--	struct e820entry *e820_map = &boot_params->e820_map[0];
--	struct e820entry *prev = NULL;
- 	unsigned long size, key, desc_size, _size;
- 	efi_memory_desc_t *mem_map;
-+	struct setup_data *e820ext;
-+	__u32 e820ext_size;
-+	__u32 nr_desc, prev_nr_desc;
- 	efi_status_t status;
- 	__u32 desc_version;
- 	bool called_exit = false;
--	u8 nr_entries;
--	int i;
- 
-+	nr_desc = 0;
-+	e820ext = NULL;
-+	e820ext_size = 0;
- 	size = sizeof(*mem_map) * 32;
- 
- again:
-@@ -1016,6 +1157,19 @@ get_map:
- 	if (status != EFI_SUCCESS)
- 		goto free_mem_map;
- 
-+	prev_nr_desc = nr_desc;
-+	nr_desc = size / desc_size;
-+	if (nr_desc > prev_nr_desc &&
-+	    nr_desc > ARRAY_SIZE(boot_params->e820_map)) {
-+		u32 nr_e820ext = nr_desc - ARRAY_SIZE(boot_params->e820_map);
-+
-+		status = alloc_e820ext(nr_e820ext, &e820ext, &e820ext_size);
-+		if (status != EFI_SUCCESS)
-+			goto free_mem_map;
-+
-+		goto get_map; /* Allocated memory, get map again */
-+	}
-+
- 	memcpy(&efi->efi_loader_signature, EFI_LOADER_SIGNATURE, sizeof(__u32));
- 	efi->efi_systab = (unsigned long)sys_table;
- 	efi->efi_memdesc_size = desc_size;
-@@ -1049,66 +1203,9 @@ get_map:
- 	/* Historic? */
- 	boot_params->alt_mem_k = 32 * 1024;
- 
--	/*
--	 * Convert the EFI memory map to E820.
--	 */
--	nr_entries = 0;
--	for (i = 0; i < size / desc_size; i++) {
--		efi_memory_desc_t *d;
--		unsigned int e820_type = 0;
--		unsigned long m = (unsigned long)mem_map;
-+	status = setup_e820(boot_params, e820ext, e820ext_size);
- 
--		d = (efi_memory_desc_t *)(m + (i * desc_size));
--		switch (d->type) {
--		case EFI_RESERVED_TYPE:
--		case EFI_RUNTIME_SERVICES_CODE:
--		case EFI_RUNTIME_SERVICES_DATA:
--		case EFI_MEMORY_MAPPED_IO:
--		case EFI_MEMORY_MAPPED_IO_PORT_SPACE:
--		case EFI_PAL_CODE:
--			e820_type = E820_RESERVED;
--			break;
--
--		case EFI_UNUSABLE_MEMORY:
--			e820_type = E820_UNUSABLE;
--			break;
--
--		case EFI_ACPI_RECLAIM_MEMORY:
--			e820_type = E820_ACPI;
--			break;
--
--		case EFI_LOADER_CODE:
--		case EFI_LOADER_DATA:
--		case EFI_BOOT_SERVICES_CODE:
--		case EFI_BOOT_SERVICES_DATA:
--		case EFI_CONVENTIONAL_MEMORY:
--			e820_type = E820_RAM;
--			break;
--
--		case EFI_ACPI_MEMORY_NVS:
--			e820_type = E820_NVS;
--			break;
--
--		default:
--			continue;
--		}
--
--		/* Merge adjacent mappings */
--		if (prev && prev->type == e820_type &&
--		    (prev->addr + prev->size) == d->phys_addr)
--			prev->size += d->num_pages << 12;
--		else {
--			e820_map->addr = d->phys_addr;
--			e820_map->size = d->num_pages << 12;
--			e820_map->type = e820_type;
--			prev = e820_map++;
--			nr_entries++;
--		}
--	}
--
--	boot_params->e820_entries = nr_entries;
--
--	return EFI_SUCCESS;
-+	return status;
- 
- free_mem_map:
- 	low_free(_size, (unsigned long)mem_map);
--- 
-1.7.11.3
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
