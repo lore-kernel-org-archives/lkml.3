@@ -1,75 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981Ab3IFBKT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Sep 2013 21:10:19 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:35475 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753029Ab3IFBKR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Sep 2013 21:10:17 -0400
-Message-ID: <52292B75.8080705@converseincode.com>
-Date: Thu, 05 Sep 2013 21:10:13 -0400
-From: Behan Webster <behanw@converseincode.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
+	id S1754080Ab3IFBMF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Sep 2013 21:12:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5261 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753240Ab3IFBMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Sep 2013 21:12:03 -0400
+Date: Thu, 5 Sep 2013 21:11:37 -0400
+From: Dave Jones <davej@redhat.com>
 To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
-        charlebm@gmail.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: LLVMLinux: Change "extern inline" to "gnu_inline"
- in ARM ftrace.h
-References: <1376516261-2071-1-git-send-email-behanw@converseincode.com> <1376516261-2071-2-git-send-email-behanw@converseincode.com> <20130814224552.GA23006@n2100.arm.linux.org.uk>
-In-Reply-To: <20130814224552.GA23006@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: kobject: delayed kobject release: help find buggy drivers
+Message-ID: <20130906011137.GA25277@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Russell King - ARM Linux <linux@arm.linux.org.uk>,
+	Greg KH <gregkh@linuxfoundation.org>,
+	Rusty Russell <rusty@rustcorp.com.au>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <20130903205527.GA6358@kroah.com>
+ <87zjrt6tz4.fsf@rustcorp.com.au>
+ <20130905041338.GA21090@redhat.com>
+ <20130905045745.GA18876@kroah.com>
+ <20130905051945.GB23209@redhat.com>
+ <20130905173540.GK6617@n2100.arm.linux.org.uk>
+ <20130905192917.GA9339@redhat.com>
+ <20130905211113.GA22201@redhat.com>
+ <20130905212606.GA22584@redhat.com>
+ <20130905214434.GL6617@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130905214434.GL6617@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the delay. A mistake in my email filters ate all your replies. 
-Doh!
+On Thu, Sep 05, 2013 at 10:44:34PM +0100, Russell King - ARM Linux wrote:
+ > On Thu, Sep 05, 2013 at 05:26:06PM -0400, Dave Jones wrote:
+ > > On Thu, Sep 05, 2013 at 05:11:13PM -0400, Dave Jones wrote:
+ > >  >  > Trying without serial console next..
+ > >  > 
+ > >  > rebuilt with all serial turned off.
+ > >  > 
+ > >  > no luck, then it oopses somewhere else. I'm suspecting something isn't
+ > >  > right with that debug patch, as the next trace is also in kobject_release
+ > 
+ > You're right about that - I had assumed that it was necessary for all
+ > kobjects to be 'added' before they're released, but that is not so.
+ > Mea culpa.  They just need to be initialised - the problem with putting
+ > a kmalloc into kobject_init() is that if it fails, we have no way to
+ > report that failure...
+ > 
+ > Updated patch attached... though it sounds like you got it working
+ > anyway.
+ > 
+ > > I managed to get to userspace on one boot, and got this.
+ > > 
+ > > kobject ffff88023d93f518 has been corrupted (magic 0x6b6b6b6b).  Please
+ > > enable kobject debugging for full debug.
+ > 
+ > Okay, so this is definitely a case that someone has kfree'd the kobject
+ > without waiting for the ->release function to be called.
+ > 
+ > > That looks like SLAB_POISON. Incompatibility between the two options ?
+ > > 
+ > > For some reason, even though I have DEBUG_KOBJECT on, I didn't get
+ > > extra messages output.
+ > 
+ > Hmm.
+ > 
+ > ifeq ($(CONFIG_DEBUG_KOBJECT),y)
+ > CFLAGS_kobject.o += -DDEBUG
+ > CFLAGS_kobject_uevent.o += -DDEBUG
+ > endif
+ > 
+ > should enable the pr_debug()'s in lib/kobject.c... which should at least
+ > appear in the dmesg log.  Being debug level, of course, they won't appear
+ > during normal kernel boot unless 'debug' is passed on the kernel command
+ > line.
+ > 
+ > It seems to work for me - but... produces rather a lot of debug messages,
+ > so you may also wish to ensure that you have LOG_BUF_SHIFT set to
+ > something large.
 
-On 08/14/13 18:45, Russell King - ARM Linux wrote:
-> On Wed, Aug 14, 2013 at 05:37:41PM -0400, behanw@converseincode.com wrote:
->> -extern inline void *return_address(unsigned int level)
->> +extern inline __attribute__((gnu_inline))
->> +void *return_address(unsigned int level)
-> Well, that should be static inline, not extern inline in any case.  Does
-> clang work if that's static inline?
+As discussed on irc, with this updated patch it hangs *really* early in boot. 
 
-Actually, neither gcc nor clang work with it merely changed to "static 
-inline".
+With earlyprintk=vga I can see some of the trace..
 
-Which is why we left it with the explicit GNU89 meaning of "extern 
-inline" which is gnu_inline. C99 changed the meaning of what "extern 
-inline" means. One of the major issues we've had with the clang kernel 
-port is that clang defaults to gnu99 (which is mostly just C99) while 
-until recently gcc defaulted to gnu89.
+kobject_init
+firmware_map_add_entry
+firmware_map_add_early
+e820_reserve_resources
+setup_arch
+start_kernel
+x86_64_start_reservations
+x86_64_start_kernel
 
-For recent versions of gcc:
+<RIP> kmem_cache_alloc_trace
 
-     http://gcc.gnu.org/onlinedocs/gcc/Standards.html
-
-"The default, if no C language dialect options are given, is -std=gnu90; 
-this will change to -std=gnu99 or -std=gnu11 in some future release when 
-the C99 or C11 support is complete. Some features that are part of the 
-C99 standard are accepted as extensions in C90 mode, and some features 
-that are part of the C11 standard are accepted as extensions in C90 and 
-C99 modes."
-
-However, having said all that, it seems if I remove the corresponding 
-NULL definition for return_address in arch/arm/kernel/return_address.c, 
-I can make it "static inline" and it seems to work for both gcc and clang.
-
-I'll send a new patch. :)
-
-Incidentally the LLVMLinux project tests all the project's patches with 
-both gcc and clang. The idea is to make it work with both compilers 
-after all.
-
-Behan
-
--- 
-Behan Webster
-behanw@converseincode.com
+	Dave
 
