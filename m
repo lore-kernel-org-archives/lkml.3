@@ -1,134 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751857Ab3IFTgh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 15:36:37 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:58859 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760Ab3IFTgg (ORCPT
+	id S1753821Ab3IFThJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 15:37:09 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:47197 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035Ab3IFThH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 15:36:36 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: linux-kernel@vger.kernel.org
-Cc: Neil Horman <nhorman@tuxdriver.com>, Ming Lei <ming.lei@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH] firmware: Be a bit more verbose about direct firmware loading failure
-Date: Fri,  6 Sep 2013 15:36:08 -0400
-Message-Id: <1378496168-3684-1-git-send-email-nhorman@tuxdriver.com>
-X-Mailer: git-send-email 1.8.1.4
-X-Spam-Score: -2.9 (--)
+	Fri, 6 Sep 2013 15:37:07 -0400
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: David Ahern <dsahern@gmail.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH] perf session: Add option to copy events when queueing
+Date: Fri,  6 Sep 2013 13:37:01 -0600
+Message-Id: <1378496221-61525-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The direct firmware loading interface is a bit quiet about failures.  Failures
-that occur during loading are masked if firmware exists in multiple locations,
-and may be masked entirely in the event that we fall back to the user mode
-helper code.  It would be nice to see some of the more unexpected errors get
-logged, so in the event that you expect the direct firmware loader to work (like
-if CONFIG_FW_LOADER_USER_HELPER is enabled), and something goes wrong, you can
-figure out what happened.
+When processing events the session code has an ordered samples queue which is
+used to time-sort events coming in across multiple mmaps. At a later point in
+time samples on the queue are flushed up to some timestamp at which point the
+event is actually processed.
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: Ming Lei <ming.lei@canonical.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+When analyzing events live (ie., record/analysis path in the same command)
+there is a race that leads to corrupted events and parse errors which cause
+perf to terminate. The problem is that when the event is placed in the ordered
+samples queue it is only a reference to the event which is really sitting in
+the mmap buffer. Even though the event is queued for later processing the mmap
+tail pointer is updated which indicates to the kernel that the event has been
+processed. The race is flushing the event from the queue before it gets
+overwritten by some other event. For commands trying to process events live
+(versus just writing to a file) and processing a high rate of events this leads
+to parse failures and perf terminates.
+
+Examples hitting this problem are 'perf kvm stat live', especially with nested
+VMs which generate 100,000+ traces per second, and a command processing
+scheduling events with a high rate of context switching -- e.g., running
+'perf bench sched pipe'.
+
+This patch offers live commands an option to copy the event when it is placed in
+the ordered samples queue.
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
 ---
- drivers/base/firmware_class.c | 38 +++++++++++++++++++++++++-------------
- 1 file changed, 25 insertions(+), 13 deletions(-)
+ tools/perf/util/session.c |   17 ++++++++++++++---
+ tools/perf/util/session.h |    1 +
+ 2 files changed, 15 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index 10a4467..eb8fb94 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -282,31 +282,35 @@ static noinline_for_stack long fw_file_size(struct file *file)
- 	return st.size;
- }
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 1b185ca..71f16db 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -483,6 +483,8 @@ static void perf_session_free_sample_buffers(struct perf_session *session)
  
--static bool fw_read_file_contents(struct file *file, struct firmware_buf *fw_buf)
-+static int fw_read_file_contents(struct file *file, struct firmware_buf *fw_buf)
- {
- 	long size;
- 	char *buf;
-+	int rc;
- 
- 	size = fw_file_size(file);
- 	if (size <= 0)
--		return false;
-+		return -EINVAL;
- 	buf = vmalloc(size);
- 	if (!buf)
--		return false;
--	if (kernel_read(file, 0, buf, size) != size) {
-+		return -ENOMEM;
-+	rc = kernel_read(file, 0, buf, size);
-+	if (rc != size) {
-+		if (rc > 0)
-+			rc = -EIO;
- 		vfree(buf);
--		return false;
-+		return rc;
+ 		sq = list_entry(os->to_free.next, struct sample_queue, list);
+ 		list_del(&sq->list);
++		if (session->copy_on_queue)
++			free(sq->event);
+ 		free(sq);
  	}
- 	fw_buf->data = buf;
- 	fw_buf->size = size;
--	return true;
-+	return 0;
  }
- 
--static bool fw_get_filesystem_firmware(struct device *device,
-+static int fw_get_filesystem_firmware(struct device *device,
- 				       struct firmware_buf *buf)
- {
- 	int i;
--	bool success = false;
-+	int rc = -ENOENT;
- 	char *path = __getname();
- 
- 	for (i = 0; i < ARRAY_SIZE(fw_path); i++) {
-@@ -321,14 +325,17 @@ static bool fw_get_filesystem_firmware(struct device *device,
- 		file = filp_open(path, O_RDONLY, 0);
- 		if (IS_ERR(file))
- 			continue;
--		success = fw_read_file_contents(file, buf);
-+		rc = fw_read_file_contents(file, buf);
- 		fput(file);
--		if (success)
-+		if (rc)
-+			dev_warn(device, "firmware, attempted to load %s, but failed with error %d\n",
-+				path, rc);
-+		else
+@@ -513,11 +515,15 @@ static int flush_sample_queue(struct perf_session *s,
  			break;
- 	}
- 	__putname(path);
  
--	if (success) {
-+	if (!rc) {
- 		dev_dbg(device, "firmware: direct-loading firmware %s\n",
- 			buf->fw_id);
- 		mutex_lock(&fw_lock);
-@@ -337,7 +344,7 @@ static bool fw_get_filesystem_firmware(struct device *device,
- 		mutex_unlock(&fw_lock);
- 	}
- 
--	return success;
-+	return rc;
- }
- 
- /* firmware holds the ownership of pages */
-@@ -1086,9 +1093,14 @@ _request_firmware(const struct firmware **firmware_p, const char *name,
+ 		ret = perf_evlist__parse_sample(s->evlist, iter->event, &sample);
+-		if (ret)
++		if (ret) {
+ 			pr_err("Can't parse sample, err = %d\n", ret);
+-		else {
++			if (s->copy_on_queue)
++				free(iter->event);
++		} else {
+ 			ret = perf_session_deliver_event(s, iter->event, &sample, tool,
+ 							 iter->file_offset);
++			if (s->copy_on_queue)
++				free(iter->event);
+ 			if (ret)
+ 				return ret;
  		}
- 	}
+@@ -676,7 +682,12 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
  
--	if (!fw_get_filesystem_firmware(device, fw->priv))
-+	ret = fw_get_filesystem_firmware(device, fw->priv);
-+	if (ret) {
-+		dev_warn(device, "Direct firmware load failed with error %d\n",
-+			 ret);
-+		dev_warn(device, "Falling back to user helper\n");
- 		ret = fw_load_from_user_helper(fw, name, device,
- 					       uevent, nowait, timeout);
-+	}
+ 	new->timestamp = timestamp;
+ 	new->file_offset = file_offset;
+-	new->event = event;
++
++	if (s->copy_on_queue) {
++		new->event = malloc(event->header.size);
++		memcpy(new->event, event, event->header.size);
++	} else
++		new->event = event;
  
- 	/* don't cache firmware handled without uevent */
- 	if (!ret)
+ 	__queue_event(new, s);
+ 
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 3aa75fb..4adfcbb 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -38,6 +38,7 @@ struct perf_session {
+ 	bool			fd_pipe;
+ 	bool			repipe;
+ 	struct ordered_samples	ordered_samples;
++	bool			copy_on_queue;
+ 	char			filename[1];
+ };
+ 
 -- 
-1.8.1.4
+1.7.10.1
 
