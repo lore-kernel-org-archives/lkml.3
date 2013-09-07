@@ -1,166 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751233Ab3IGIfZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 04:35:25 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:64522 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751072Ab3IGIfW (ORCPT
+	id S1751261Ab3IGIgT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 04:36:19 -0400
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:36955 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068Ab3IGIgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 04:35:22 -0400
-Message-ID: <522AE3A5.7030807@gmail.com>
-Date: Sat, 07 Sep 2013 10:28:21 +0200
+	Sat, 7 Sep 2013 04:36:17 -0400
+Message-ID: <522AE3DB.7000209@gmail.com>
+Date: Sat, 07 Sep 2013 10:29:15 +0200
 From: Marco Stornelli <marco.stornelli@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
-CC: Vladimir Davydov <vdavydov@parallels.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 11/19] pramfs: ioctl operations
+To: Vladimir Davydov <vdavydov@parallels.com>
+CC: linux-kernel@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH 12/19] pramfs: symlink operations
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add ioctl operations.
+Add symlink operations.
 
 Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
 ---
- fs/pramfs/ioctl.c |  127 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 127 insertions(+), 0 deletions(-)
- create mode 100644 fs/pramfs/ioctl.c
+ fs/pramfs/symlink.c |   76 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 76 insertions(+), 0 deletions(-)
+ create mode 100644 fs/pramfs/symlink.c
 
-diff --git a/fs/pramfs/ioctl.c b/fs/pramfs/ioctl.c
+diff --git a/fs/pramfs/symlink.c b/fs/pramfs/symlink.c
 new file mode 100644
-index 0000000..565cc46
+index 0000000..0d5213f
 --- /dev/null
-+++ b/fs/pramfs/ioctl.c
-@@ -0,0 +1,127 @@
++++ b/fs/pramfs/symlink.c
+@@ -0,0 +1,76 @@
 +/*
 + * BRIEF DESCRIPTION
 + *
-+ * Ioctl operations.
++ * Symlink operations
 + *
-+ * Copyright 2010-2011 Marco Stornelli <marco.stornelli@gmail.com>
-+ *
++ * Copyright 2009-2011 Marco Stornelli <marco.stornelli@gmail.com>
++ * Copyright 2003 Sony Corporation
++ * Copyright 2003 Matsushita Electric Industrial Co., Ltd.
++ * 2003-2004 (c) MontaVista Software, Inc. , Steve Longerbeam
 + * This file is licensed under the terms of the GNU General Public
 + * License version 2. This program is licensed "as is" without any
 + * warranty of any kind, whether express or implied.
 + */
 +
-+#include <linux/capability.h>
-+#include <linux/time.h>
-+#include <linux/sched.h>
-+#include <linux/compat.h>
-+#include <linux/mount.h>
++#include <linux/fs.h>
 +#include "pram.h"
++#include "xattr.h"
 +
-+long pram_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
++int pram_block_symlink(struct inode *inode, const char *symname, int len)
 +{
-+	struct inode *inode = file_inode(filp);
-+	struct pram_inode *pi;
-+	unsigned int flags;
-+	int ret;
++	struct super_block *sb = inode->i_sb;
++	u64 block;
++	char *blockp;
++	int err;
 +
-+	pi = pram_get_inode(inode->i_sb, inode->i_ino);
-+	if (!pi)
-+		return -EACCES;
++	err = pram_alloc_blocks(inode, 0, 1);
++	if (err)
++		return err;
 +
-+	switch (cmd) {
-+	case FS_IOC_GETFLAGS:
-+		flags = be32_to_cpu(pi->i_flags) & PRAM_FL_USER_VISIBLE;
-+		return put_user(flags, (int __user *) arg);
-+	case FS_IOC_SETFLAGS: {
-+		unsigned int oldflags;
++	block = pram_find_data_block(inode, 0);
++	blockp = pram_get_block(sb, block);
 +
-+		ret = mnt_want_write_file(filp);
-+		if (ret)
-+			return ret;
-+
-+		if (!inode_owner_or_capable(inode)) {
-+			ret = -EPERM;
-+			goto flags_out;
-+		}
-+
-+		if (get_user(flags, (int __user *) arg)) {
-+			ret = -EFAULT;
-+			goto flags_out;
-+		}
-+
-+		mutex_lock(&inode->i_mutex);
-+		oldflags = be32_to_cpu(pi->i_flags);
-+
-+		if ((flags ^ oldflags) & (FS_APPEND_FL | FS_IMMUTABLE_FL)) {
-+			if (!capable(CAP_LINUX_IMMUTABLE)) {
-+				mutex_unlock(&inode->i_mutex);
-+				ret = -EPERM;
-+				goto flags_out;
-+			}
-+		}
-+
-+		if (!S_ISDIR(inode->i_mode))
-+			flags &= ~FS_DIRSYNC_FL;
-+
-+		flags = flags & FS_FL_USER_MODIFIABLE;
-+		flags |= oldflags & ~FS_FL_USER_MODIFIABLE;
-+		pram_memunlock_inode(inode->i_sb, pi);
-+		pi->i_flags = cpu_to_be32(flags);
-+		inode->i_ctime = CURRENT_TIME_SEC;
-+		pi->i_ctime = cpu_to_be32(inode->i_ctime.tv_sec);
-+		pram_set_inode_flags(inode, pi);
-+		pram_memlock_inode(inode->i_sb, pi);
-+		mutex_unlock(&inode->i_mutex);
-+flags_out:
-+		mnt_drop_write_file(filp);
-+		return ret;
-+	}
-+	case FS_IOC_GETVERSION:
-+		return put_user(inode->i_generation, (int __user *) arg);
-+	case FS_IOC_SETVERSION: {
-+		__u32 generation;
-+		if (!inode_owner_or_capable(inode))
-+			return -EPERM;
-+		ret = mnt_want_write_file(filp);
-+		if (ret)
-+			return ret;
-+		if (get_user(generation, (int __user *) arg)) {
-+			ret = -EFAULT;
-+			goto setversion_out;
-+		}
-+		mutex_lock(&inode->i_mutex);
-+		inode->i_ctime = CURRENT_TIME_SEC;
-+		inode->i_generation = generation;
-+		pram_update_inode(inode);
-+		mutex_unlock(&inode->i_mutex);
-+setversion_out:
-+		mnt_drop_write_file(filp);
-+		return ret;
-+	}
-+	default:
-+		return -ENOTTY;
-+	}
++	pram_memunlock_block(sb, blockp);
++	memcpy(blockp, symname, len);
++	blockp[len] = '\0';
++	pram_memlock_block(sb, blockp);
++	return 0;
 +}
 +
-+#ifdef CONFIG_COMPAT
-+long pram_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
++static int pram_readlink(struct dentry *dentry, char __user *buffer, int buflen)
 +{
-+	switch (cmd) {
-+	case FS_IOC32_GETFLAGS:
-+		cmd = FS_IOC_GETFLAGS;
-+		break;
-+	case FS_IOC32_SETFLAGS:
-+		cmd = FS_IOC_SETFLAGS;
-+		break;
-+	case FS_IOC32_GETVERSION:
-+		cmd = FS_IOC_GETVERSION;
-+		break;
-+	case FS_IOC32_SETVERSION:
-+		cmd = FS_IOC_SETVERSION;
-+		break;
-+	default:
-+		return -ENOIOCTLCMD;
-+	}
-+	return pram_ioctl(file, cmd, (unsigned long) compat_ptr(arg));
++	struct inode *inode = dentry->d_inode;
++	struct super_block *sb = inode->i_sb;
++	u64 block;
++	char *blockp;
++
++	block = pram_find_data_block(inode, 0);
++	blockp = pram_get_block(sb, block);
++	return vfs_readlink(dentry, buffer, buflen, blockp);
 +}
++
++static void *pram_follow_link(struct dentry *dentry, struct nameidata *nd)
++{
++	struct inode *inode = dentry->d_inode;
++	struct super_block *sb = inode->i_sb;
++	off_t block;
++	int status;
++	char *blockp;
++
++	block = pram_find_data_block(inode, 0);
++	blockp = pram_get_block(sb, block);
++	status = vfs_follow_link(nd, blockp);
++	return ERR_PTR(status);
++}
++
++const struct inode_operations pram_symlink_inode_operations = {
++	.readlink	= pram_readlink,
++	.follow_link	= pram_follow_link,
++	.setattr	= pram_notify_change,
++#ifdef CONFIG_PRAMFS_XATTR
++	.setxattr	= generic_setxattr,
++	.getxattr	= generic_getxattr,
++	.listxattr	= pram_listxattr,
++	.removexattr	= generic_removexattr,
 +#endif
++};
 -- 
 1.7.3.4
