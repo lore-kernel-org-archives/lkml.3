@@ -1,97 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751927Ab3IGTCi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 15:02:38 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:48881 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516Ab3IGTCg (ORCPT
+	id S1751864Ab3IGTop (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 15:44:45 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:57955 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751786Ab3IGToo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 15:02:36 -0400
-Date: Sat, 7 Sep 2013 12:02:26 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Carsten Emde <C.Emde@osadl.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <williams@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: Re: [PATCH] cpufreq: Fix wrong time unit conversion
-Message-ID: <20130907190226.GI3966@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1378571708-27825-1-git-send-email-fweisbec@gmail.com>
+	Sat, 7 Sep 2013 15:44:44 -0400
+Message-ID: <522B903C.7040604@kernel.org>
+Date: Sat, 07 Sep 2013 21:44:44 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378571708-27825-1-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090719-0928-0000-0000-0000015AEF39
+To: Tejun Heo <tj@kernel.org>
+CC: Xie XiuQi <xiexiuqi@huawei.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dmitry Torokhov <dtor@mail.ru>, Thomas Gleixner <tglx@linutronix.de>,
+        Andres Salomon <dilinger@queued.net>, Chris Ball <cjb@laptop.org>,
+        Jon Nettleton <jon.nettleton@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nadia Derbey <Nadia.Derbey@bull.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Li Bin <huawei.libin@huawei.com>,
+        "Hennerich, Michael" <Michael.Hennerich@analog.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH 1/5] iio: adc: remove unnecessary work pending test
+References: <5229B601.9090109@huawei.com> <5229B64A.1030304@huawei.com> <20130906152028.GA22763@mtj.dyndns.org>
+In-Reply-To: <20130906152028.GA22763@mtj.dyndns.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 07, 2013 at 06:35:08PM +0200, Frederic Weisbecker wrote:
-> The time spent by a CPU under a given frequency is stored in jiffies unit
-> in the cpu var cpufreq_stats_table->time_in_state[i], i being the index of
-> the frequency.
-> 
-> This is what is displayed in the following file on the right column:
-> 
->      cat /sys/devices/system/cpu/cpuX/cpufreq/stats/time_in_state
->      2301000 19835820
->      2300000 3172
->      [...]
-> 
-> Now cpufreq converts this jiffies unit delta to clock_t before returning it
-> to the user as in the above file. And that conversion is achieved using the API
-> cputime64_to_clock_t().
-> 
-> Although it accidentally works on traditional tick based cputime accounting, where
-> cputime_t maps directly to jiffies, it doesn't work with other types of cputime
-> accounting such as CONFIG_VIRT_CPU_ACCOUNTING_* where cputime_t can map to nsecs
-> or any granularity preffered by the architecture.
-> 
-> For example we get a buggy zero delta on full dyntick configurations:
-> 
->      cat /sys/devices/system/cpu/cpuX/cpufreq/stats/time_in_state
->      2301000 0
->      2300000 0
->      [...]
-> 
-> Fix this with using the proper jiffies_64_t to clock_t conversion.
-> 
-> Reported-by: Carsten Emde <C.Emde@osadl.org>
-> Tested-by: Carsten Emde <C.Emde@osadl.org>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Carsten Emde <C.Emde@osadl.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Clark Williams <williams@redhat.com>
-> Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+ccing Michael Hennerich and Lars-Peter Clausen,
 
-Good catch!
-
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-> ---
->  drivers/cpufreq/cpufreq_stats.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+On 09/06/13 16:20, Tejun Heo wrote:
+> On Fri, Sep 06, 2013 at 07:02:34PM +0800, Xie XiuQi wrote:
+>> Remove unnecessary work pending test before calling schedule_work().
+>> It has been tested in queue_work_on() already. No functional changed.
+>>
+>> Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
+>> Cc: Tejun Heo <tj@kernel.org>
 > 
-> diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
-> index d37568c..10e6138 100644
-> --- a/drivers/cpufreq/cpufreq_stats.c
-> +++ b/drivers/cpufreq/cpufreq_stats.c
-> @@ -81,7 +81,7 @@ static ssize_t show_time_in_state(struct cpufreq_policy *policy, char *buf)
->  	for (i = 0; i < stat->state_num; i++) {
->  		len += sprintf(buf + len, "%u %llu\n", stat->freq_table[i],
->  			(unsigned long long)
-> -			cputime64_to_clock_t(stat->time_in_state[i]));
-> +			jiffies_64_to_clock_t(stat->time_in_state[i]));
->  	}
->  	return len;
->  }
-> -- 
-> 1.7.5.4
+> Reviewed-by: Tejun Heo <tj@kernel.org>
 > 
+> One nit below tho.
+> 
+>> -	if (iio_buffer_enabled(indio_dev)) {
+>> -		if (!work_pending(&st->poll_work))
+>> -			schedule_work(&st->poll_work);
+>> -	} else {
+>> +	if (iio_buffer_enabled(indio_dev))
+>> +		schedule_work(&st->poll_work);
+>> +	else {
+>>  		st->done = true;
+>>  		wake_up_interruptible(&st->wq_data_avail);
+>>  	}
+> 
+> Please don't drop the parentheses.  The convention is to have either
+> both or none on if/else.
 
+I'll fix this up on applying if everyone is happy (can't see why the
+won't be, but best to check!) Michael is clearly given as the author of driver
+so should probably have been in the cc list. Whilst I might apply this directly
+as maintainer I much prefer if I get an ack from the driver author as if nothing
+else it gives me a warm fuzzy feeling ;)
+
+Also patch title should mention that a) this is a staging driver, b) which adc driver it
+applies to. I'll fix that up as well on applying it.
+
+Thanks for the patch though, it would probably never have been noticed otherwise!
+
+> 
+> Thanks.
+> 
