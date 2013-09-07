@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750913Ab3IGXDE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 19:03:04 -0400
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:54364 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758Ab3IGXDC (ORCPT
+	id S1750878Ab3IGXXY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 19:23:24 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:34944 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770Ab3IGXXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 19:03:02 -0400
-Date: Sun, 8 Sep 2013 02:02:52 +0300
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] ADP1653 board code for Nokia RX-51
-Message-ID: <20130907230252.GA10700@blackmetal.musicnaut.iki.fi>
-References: <201302171616.50152@pali>
- <20130217190303.GC2317@blackmetal.musicnaut.iki.fi>
- <201303062112.06417@pali>
- <201309062234.05878@pali>
+	Sat, 7 Sep 2013 19:23:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201309062234.05878@pali>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [89.2.206.189]
+In-Reply-To: <CAG-2HqXrpmZCsqXTG7pE9rtgPVrtvkU8gDxngGMtRjkoyqBMHA@mail.gmail.com>
+References: <CAG-2HqVruXZxO1xLvYeAPa1RYmy044UiBXFLAtX5WcHVQVAtfA@mail.gmail.com>
+ <CANq1E4RAoLo2=fdZ4SCAnOtbCuJkAAf-BOfUFuK5S+gijpS8ng@mail.gmail.com>
+ <CAG-2HqVpAGOgvYKAsOCAac5F4SHB8nEtKtyTor2TYqp_fi7S7w@mail.gmail.com>
+ <CANq1E4QPMKvDu5wA9meSt6hKRA7yTA1RhGY6NsSCMTBFmR5f0w@mail.gmail.com>
+ <CANq1E4QYrQ-YcL9eGAA4LUozVnPaDNisVex8eMe+Xpj8TaWdeA@mail.gmail.com> <CAG-2HqXrpmZCsqXTG7pE9rtgPVrtvkU8gDxngGMtRjkoyqBMHA@mail.gmail.com>
+From: Tom Gundersen <teg@jklm.no>
+Date: Sun, 8 Sep 2013 01:22:59 +0200
+Message-ID: <CAG-2HqUG=Ocd6qZuy6LYRA49NvyKnguSdnpDgX1Br17SWvkS1A@mail.gmail.com>
+Subject: Re: [REGRESSION] v3.12-rc1: i915_driver_load oopses when sysfb enabled
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi David,
 
-On Fri, Sep 06, 2013 at 10:34:05PM +0200, Pali Rohár wrote:
-> > --- /dev/null
-> > +++ b/arch/arm/mach-omap2/board-rx51-camera.c
-[...]
-> Ping, can you review this patch v2?
+On Sat, Sep 7, 2013 at 11:57 PM, Tom Gundersen <teg@jklm.no> wrote:
+> On Sat, Sep 7, 2013 at 4:30 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>> Attached are two patches. The first one should fix this issue, the
+>> second one is the rebased ioremap_wc() patch from the other thread.
+>>
+>> Does this fix the issue (and the speed-problems)?
+>
+> Sadly, no. I added a few printk's to verify that the function you
+> added is called (it is), but still the same oops.
 
-I don't think Tony will accept any new board stuff for RX-51/N900.
-See for example: http://marc.info/?l=linux-kernel&m=137629626213187&w=2
+A few more datapoints:
 
-There should be initial Nokia N900 DTS file in 3.12-rc1, and we should
-continue converting this board fully to DT.
+Triggers:
+X86_SYSFB=y and FB_SIMPLE=n (so no fbdev until i915 is loaded)
+X86_SYSFB=y and FB_SIMPLE=y
 
-A.
+Does not trigger:
+X86_SYSFB=y, FB_EFI=yes, and without the overflow fix (i.e., so we
+fall back to efifb)
+X86_SYSFB=n and FB_EFI=y
+X86_SYSFB=n and FB_EFI=n (so no fbdev until i915 is loaded)
+
+Does this make any sense?
+
+Cheers,
+
+Tom
