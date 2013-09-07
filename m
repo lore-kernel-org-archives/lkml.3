@@ -1,92 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778Ab3IGOJv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 10:09:51 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:33459 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133Ab3IGOI4 (ORCPT
+	id S1751426Ab3IGOIz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 10:08:55 -0400
+Received: from mail-qe0-f48.google.com ([209.85.128.48]:64313 "EHLO
+	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133Ab3IGOIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 10:08:56 -0400
+	Sat, 7 Sep 2013 10:08:54 -0400
 From: Konrad Rzeszutek Wilk <konrad@kernel.org>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
         boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
         stefan.bader@canonical.com, stefano.stabellini@eu.citrix.com,
         jeremy@goop.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3/5] xen/smp: Update pv_lock_ops functions before alternative code starts under PVHVM
-Date: Sat,  7 Sep 2013 09:46:43 -0400
-Message-Id: <1378561605-18998-4-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH] Bug-fixes to enable PV ticketlock to work under Xen PVHVM with Linux v3.12. (v1)
+Date: Sat,  7 Sep 2013 09:46:40 -0400
+Message-Id: <1378561605-18998-1-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1378561605-18998-1-git-send-email-konrad.wilk@oracle.com>
-References: <1378561605-18998-1-git-send-email-konrad.wilk@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before this patch we would patch all of the pv_lock_ops sites
-using alternative assembler. Then later in the bootup cycle
-change the unlock_kick and lock_spinning to the Xen specific -
-without re patching.
+After a bit of false starts, lots of debugging, and tons of help from Stefano and
+David on how event mechanism is suppose to work I am happy to present a set
+of bug-fixes that make PV ticketlocks work under Xen PVHVM with Linux v3.12.
 
-That meant that for the core of the kernel we would be running
-with the baremetal version of unlock_kick and lock_spinning while
-for modules we would have the proper Xen specific slowpaths.
-
-As most of the module uses some API from the core kernel that ended
-up with slowpath lockers waiting forever to be kicked (b/c they
-would be using the Xen specific slowpath logic). And the
-kick never came b/c the unlock path that was taken was the
-baremetal one.
-
-On PV we do not have the problem as we initialise before the
-alternative code kicks in.
-
-The fix is to move the updating of the pv_lock_ops function
-before the alternative code starts patching.
-
-Note that this patch fixes issues discovered by commit
-f10cd522c5fbfec9ae3cc01967868c9c2401ed23.
-("xen: disable PV spinlocks on HVM") wherein it mentioned
-
-   PV spinlocks cannot possibly work with the current code because they are
-   enabled after pvops patching has already been done, and because PV
-   spinlocks use a different data structure than native spinlocks so we
-   cannot switch between them dynamically.
-
-The first problem is solved by this patch.
-
-The second problem has been solved by commit
-816434ec4a674fcdb3c2221a6dffdc8f34020550
+v3.12 has now thanks to commit 816434ec4a674fcdb3c2221a6dffdc8f34020550
 (Merge branch 'x86-spinlocks-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip)
+PV ticketlocks. That means:
+ - Xen PV bytelock has been replaced by Xen PV ticketlock.
+ - Xen PVHVM is using ticketlock (not PV variant) - this patch makes it PV.
+ - baremetal is still using ticketlocks.
 
-P.S.
-There is still the commit 70dd4998cb85f0ecd6ac892cc7232abefa432efb
-(xen/spinlock: Disable IRQ spinlock (PV) allocation on PVHVM) to
-revert but that can be done later after all other bugs have been
-fixed.
+In other words everything in the kernel is ticketlock based with the virtualizations
+having the 'PV' part to aid.
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/smp.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+Please take a look at the patches. If you are interested in testing them
+out I will post a git tree on Monday based on v3.11 and v3.12-rc0. 
 
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 4db779d..3404ee8 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -731,4 +731,12 @@ void __init xen_hvm_smp_init(void)
- 	smp_ops.cpu_die = xen_hvm_cpu_die;
- 	smp_ops.send_call_func_ipi = xen_smp_send_call_function_ipi;
- 	smp_ops.send_call_func_single_ipi = xen_smp_send_call_function_single_ipi;
-+
-+	/*
-+	 * The alternative logic (which patches the unlock/lock) runs before
-+	 * the smp bootup up code is activated. That meant we would never patch
-+	 * the core of the kernel with proper paravirt interfaces but would patch
-+	 * modules.
-+	 */
-+	xen_init_spinlocks();
- }
--- 
-1.7.7.6
+Note that I had not run any performance tests and I am not sure when I will
+be able to (got other bugs to squash now). I've asked our internal performance
+engineer to do some benchmarking - but those results won't be available for
+some time as it takes time to do good benchmarking.
+
+ arch/x86/xen/enlighten.c |    1 -
+ arch/x86/xen/smp.c       |   17 +++++++++++++++++
+ arch/x86/xen/spinlock.c  |   45 ++++++++-------------------------------------
+ 3 files changed, 25 insertions(+), 38 deletions(-)
+
+(oh neat, more deletions!) 
+
+Konrad Rzeszutek Wilk (5):
+      xen/spinlock: Fix locking path engaging too soon under PVHVM.
+      xen/spinlock: We don't need the old structure anymore
+      xen/smp: Update pv_lock_ops functions before alternative code starts under PVHVM
+      xen/spinlock: Don't setup xen spinlock IPI kicker if disabled.
+      Revert "xen/spinlock: Disable IRQ spinlock (PV) allocation on PVHVM"
 
