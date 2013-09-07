@@ -1,176 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751436Ab3IGOjs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 10:39:48 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:44294 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab3IGOjq (ORCPT
+	id S1751505Ab3IGOl1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 10:41:27 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42587 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751439Ab3IGOl0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 10:39:46 -0400
-Date: Sat, 7 Sep 2013 10:39:22 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
-        Tyler Hicks <tyhicks@canonical.com>
-Subject: Re: race condition in crypto larval handling
-Message-ID: <20130907143922.GA13851@neilslaptop.think-freely.org>
-References: <CAGXu5jJvuAC3paV5k_bmoHHrHVgc0Hi6ShSDk3iQUt1Lf0cioQ@mail.gmail.com>
+	Sat, 7 Sep 2013 10:41:26 -0400
+Date: Sat, 7 Sep 2013 15:41:18 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: Vladimir Davydov <vdavydov@parallels.com>, linux-kernel@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 12/19] pramfs: symlink operations
+Message-ID: <20130907144118.GA13318@ZenIV.linux.org.uk>
+References: <522AE3DB.7000209@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGXu5jJvuAC3paV5k_bmoHHrHVgc0Hi6ShSDk3iQUt1Lf0cioQ@mail.gmail.com>
+In-Reply-To: <522AE3DB.7000209@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 06, 2013 at 04:20:50PM -0700, Kees Cook wrote:
-> Hi,
-> 
-> I've tracked down a race condition and ref counting problem in the
-> crypto API internals. We've been seeing it under Chrome OS, but it
-> seems it's not isolated to just us:
-> 
-> https://code.google.com/p/chromium/issues/detail?id=244581
-> http://marc.info/?l=linux-crypto-vger&m=135429403609373&w=2
-> https://bugzilla.redhat.com/show_bug.cgi?id=983682
-> http://www.mail-archive.com/linux-cifs@vger.kernel.org/msg07933.html
-> 
-> I think I've found the basic origin of the problem.
-> crypto_larval_add() has synchronization to make sure only a single
-> larval can ever be created. That logic seems totally fine. However,
-> this means that crypto_larval_lookup() from two threads can return the
-> same larval, which means that crypto_alg_mod_lookup() runs the risk of
-> calling crypto_larval_kill() on the same larval twice, which does not
-> appear to be handled sanely.
-> 
-> I can easily crash the kernel by forcing a synchronization point just
-> before the "return crypt_larval_add(...)" call in
-> crypto_larval_lookup(). Basically, I added this sloppy sync code (I
-> feel like there must be a better way to do this):
-> 
-> +static atomic_t global_sync = ATOMIC_INIT(0);
-> ...
-> struct crypto_alg *crypto_larval_lookup(const char *name, u32 type, u32 mask)
-> ...
-> +       if (strncmp(name, "asdf", 4) == 0) {
-> +               int value;
+On Sat, Sep 07, 2013 at 10:29:15AM +0200, Marco Stornelli wrote:
+> +static int pram_readlink(struct dentry *dentry, char __user *buffer, int buflen)
+> +{
+> +	struct inode *inode = dentry->d_inode;
+> +	struct super_block *sb = inode->i_sb;
+> +	u64 block;
+> +	char *blockp;
 > +
-> +               value = atomic_add_return(1, &global_sync);
-> +               if (value == 1) {
-> +                       /* I was first to stall here, wait for inc. */
-> +                       while (atomic_read(&global_sync) != 2)
-> +                               cpu_relax();
-> +               } else if (value == 2) {
-> +                       /* I was second to stall here, wait for dec. */
-> +                       while (atomic_read(&global_sync) != 1)
-> +                               cpu_relax();
-> +               } else {
-> +                       BUG();
-> +               }
-> +               atomic_dec(&global_sync);
-> +       }
-> 
->         return crypto_larval_add(name, type, mask);
->  }
-> 
-> And then ran code from userspace that did, effectively:
-> 
->     struct sockaddr_alg sa = {
->         .salg_family = AF_ALG,
->         .salg_type   = "hash",
->     };
->     strcpy(sa.salg_name, argv[1]);
-> 
->     fork();
->     ...
->     sds[0] = socket(AF_ALG, SOCK_SEQPACKET, 0);
->     bind(sds[0], (struct sockaddr *) &sa, sizeof(sa));
-> 
-> And ran this as "./tickle asdf1" to generate the two threads trying to
-> find an invalid alg. The race looks possible even with valid algs, but
-> this was the fastest path I could see to tickle the issue.
-> 
-> With added printks to the kernel, it was clear that crypto_larval_kill
-> was being called twice on the same larval, and the list_del() call was
-> doing bad things. When I fixed that, the refcnt bug became very
-> obvious. Here's the change I made for crypto_larval_kill:
-> 
-> @@ -161,7 +166,8 @@ void crypto_larval_kill(struct crypto_alg *alg)
->         struct crypto_larval *larval = (void *)alg;
-> 
->         down_write(&crypto_alg_sem);
-> -       list_del(&alg->cra_list);
-> +       if (!list_empty(&alg->cra_list))
-> +               list_del_init(&alg->cra_list);
->         up_write(&crypto_alg_sem);
->         complete_all(&larval->completion);
->         crypto_alg_put(alg);
-> 
-> It seems that there are too many "put" calls (mixed between
-> crypto_alg_put() and crypto_mod_put(), which also calls
-> crypto_alg_put()). See this annotated portion of
-> crypto_alg_mod_lookup:
-> 
->         /* This can (correctly) return the same larval for two threads. */
->         larval = crypto_larval_lookup(name, type, mask);
->         if (IS_ERR(larval) || !crypto_is_larval(larval))
->                 return larval;
-> 
->         ok = crypto_probing_notify(CRYPTO_MSG_ALG_REQUEST, larval);
-> 
->         if (ok == NOTIFY_STOP)
->                 /* This calls crypto_mod_put(), but sometimes also get?? */
->                 alg = crypto_larval_wait(larval);
->         else {
->                 /* This directly calls crypto_mod_put */
->                 crypto_mod_put(larval);
->                 alg = ERR_PTR(-ENOENT);
->         }
->         /* This calls crypto_alg_put */
->         crypto_larval_kill(larval);
->         return alg;
-> 
-> In the two-thread situation, the first thread gets a larval with
-> refcnt 2 via crypto_larval_add. (Why 2?) The next thread finds the
-> larval via crypto_larval_add's call to __crypto_alg_lookup() and sees
-> the ref bump to 3. While exiting crypto_alg_mod_lookup, each thread
-> decrements the ref count twice.
-> 
-> It seems to me like either each call to crypto_larval_lookup() should
-> result in a refcount bumped by two, or crypto_alg_mod_lookup() should
-> decrement only once, and the initial refcount should be 1 not 2 from
-> crypto_larval_add. But it's not clear to me which is sensible here.
-> 
-> What's the right solution here?
-> 
-> Thanks,
-> 
-> -Kees
-> 
-> -- 
-> Kees Cook
-> Chrome OS Security
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-crypto" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-I've been tracking this problem too:
-https://bugzilla.redhat.com/show_bug.cgi?id=1002351
+> +	block = pram_find_data_block(inode, 0);
+> +	blockp = pram_get_block(sb, block);
+> +	return vfs_readlink(dentry, buffer, buflen, blockp);
+> +}
 
-Though I'd just started so I've not gotten anywhere near this far.  It seems,
-given your analysis above that we really need to rework the refcounting here.
-At the very least we probably need to:
+> +static void *pram_follow_link(struct dentry *dentry, struct nameidata *nd)
+> +{
+> +	struct inode *inode = dentry->d_inode;
+> +	struct super_block *sb = inode->i_sb;
+> +	off_t block;
+> +	int status;
+> +	char *blockp;
+> +
+> +	block = pram_find_data_block(inode, 0);
+> +	blockp = pram_get_block(sb, block);
+> +	status = vfs_follow_link(nd, blockp);
+> +	return ERR_PTR(status);
+> +}
 
-1) only modify the module reference count when a larval for a given alg is
-created, or when its last refcount is decremented.
+Just nd_set_link(nd, blockp) instead of that vfs_follow_link() and be
+done with that; that way you can use generic_readlink() instead of
+pram_readlink() *and* get lower stack footprint on traversing them.
 
-2) fix up the cra_refcount to start at one and increment for each lookup, and
-decrement for each kill.
-
-Neil
-
+BTW, where's the error checking?  pram_get_block()/pram_find_data_block()
+seem to assume that fs image isn't corrupted and if it is... that code
+will happily dereference any address.  At least range checks of some sort
+in pram_get_block() (and checking if it has failed) would be a good idea...
