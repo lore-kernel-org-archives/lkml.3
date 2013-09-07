@@ -1,95 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750860Ab3IGAqk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 20:46:40 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:59060 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758Ab3IGAqi (ORCPT
+	id S1751007Ab3IGAtd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 20:49:33 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:50511 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891Ab3IGAtb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 20:46:38 -0400
+	Fri, 6 Sep 2013 20:49:31 -0400
+Date: Fri, 6 Sep 2013 17:49:23 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, sbw@mit.edu
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+Message-ID: <20130907004923.GD3966@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130905195234.GA20555@linux.vnet.ibm.com>
+ <20130906105934.GF20519@somewhere>
+ <20130906151851.GQ3966@linux.vnet.ibm.com>
+ <20130906113320.46b2ea3e@gandalf.local.home>
+ <20130906164016.GB2706@somewhere>
+ <20130906125238.3c5ef919@gandalf.local.home>
+ <20130906170006.GC2706@somewhere>
+ <20130906131631.6a0a192d@gandalf.local.home>
+ <20130906175238.GV3966@linux.vnet.ibm.com>
+ <20130906142135.438caba1@gandalf.local.home>
 MIME-Version: 1.0
-In-Reply-To: <20130907002959.GN3853@boyd>
-References: <20130813220227.GA20160@www.outflux.net>
-	<20130907002959.GN3853@boyd>
-Date: Fri, 6 Sep 2013 17:46:38 -0700
-X-Google-Sender-Auth: wYrnuOSyKNT6JVECFC-RxVS8aKQ
-Message-ID: <CAGXu5jK3edvm9Xn3e-Nxv6ruGUMniqv2k61kdAfSB0Xg0eqH_Q@mail.gmail.com>
-Subject: Re: [PATCH] ecryptfs: avoid ctx initialization race
-From: Kees Cook <keescook@chromium.org>
-To: Tyler Hicks <tyhicks@canonical.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, ecryptfs@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130906142135.438caba1@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090700-9332-0000-0000-0000015509E9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 6, 2013 at 5:30 PM, Tyler Hicks <tyhicks@canonical.com> wrote:
-> On 2013-08-13 15:02:27, Kees Cook wrote:
->> It might be possible for two callers to race the mutex lock after the
->> NULL ctx check. Instead, move the lock above the check so there isn't
->> the possibility of leaking a crypto ctx. Additionally, report the full
->> algo name when failing.
->>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->
-> Thanks, Kees!
->
-> I've pushed this to my next branch and it'll be included in a pull
-> request early next week.
->
-> I made one small change to this patch. See below.
->
->> ---
->>  fs/ecryptfs/crypto.c |   11 ++++++-----
->>  1 file changed, 6 insertions(+), 5 deletions(-)
->>
->> diff --git a/fs/ecryptfs/crypto.c b/fs/ecryptfs/crypto.c
->> index d107576..c134346 100644
->> --- a/fs/ecryptfs/crypto.c
->> +++ b/fs/ecryptfs/crypto.c
->> @@ -618,27 +618,28 @@ int ecryptfs_init_crypt_ctx(struct ecryptfs_crypt_stat *crypt_stat)
->>                       "key_size_bits = [%zd]\n",
->>                       crypt_stat->cipher, (int)strlen(crypt_stat->cipher),
->>                       crypt_stat->key_size << 3);
->> +     mutex_lock(&crypt_stat->cs_tfm_mutex);
->>       if (crypt_stat->tfm) {
->>               rc = 0;
->> -             goto out;
->> +             goto out_unlock;
->>       }
->> -     mutex_lock(&crypt_stat->cs_tfm_mutex);
->>       rc = ecryptfs_crypto_api_algify_cipher_name(&full_alg_name,
->>                                                   crypt_stat->cipher, "cbc");
->>       if (rc)
->>               goto out_unlock;
->>       crypt_stat->tfm = crypto_alloc_ablkcipher(full_alg_name, 0, 0);
->> -     kfree(full_alg_name);
->>       if (IS_ERR(crypt_stat->tfm)) {
->>               rc = PTR_ERR(crypt_stat->tfm);
->>               crypt_stat->tfm = NULL;
->>               ecryptfs_printk(KERN_ERR, "cryptfs: init_crypt_ctx(): "
->>                               "Error initializing cipher [%s]\n",
->> -                             crypt_stat->cipher);
->> -             goto out_unlock;
->> +                             full_alg_name);
->> +             goto out_free;
->>       }
->>       crypto_ablkcipher_set_flags(crypt_stat->tfm, CRYPTO_TFM_REQ_WEAK_KEY);
->>       rc = 0;
->> +out_free:
->> +     kfree(full_alg_name);
->>  out_unlock:
->>       mutex_unlock(&crypt_stat->cs_tfm_mutex);
->>  out:
->
-> The out label is no longer used. I removed it when I committed this
-> patch.
+On Fri, Sep 06, 2013 at 02:21:35PM -0400, Steven Rostedt wrote:
+> On Fri, 6 Sep 2013 10:52:38 -0700
+> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > > What exactly does "extended quiescent state" mean? (Note, that's a
+> > > rhetorical question)
+> > 
+> > In which case my rhetorical (and therefore useless) answer has to be
+> > "it is a quiescent state that is extended".  ;-)
+> > 
+> > Sorry, couldn't resist...
+> 
+> Of course you couldn't ;)
+> 
+> > 
+> > > I wonder if we should change "rcu_cpu_ignore()" for "rcu_eqs_enter()"
+> > > and "rcu_cpu_heed()" for "rcu_eqs_exit()", as IMHO that's much more
+> > > straight forward to understand than trying to wrap you head around what
+> > > a quiescent state is, and why we are entering it or exiting it.
+> > > 
+> > > It also flat out explains to people that rcu is not processing that
+> > > current CPU, and things like rcu_read_lock() should not be used.
+> > > 
+> > > Then we can say "rcu_cpu_is_ignored()" for things like
+> > > "rcu_is_cpu_eqs()".
+> > 
+> > Currently, none of RCU's _eqs functions are exported, so they have
+> > the potential to confuse only people working on the RCU implementation
+> > itself, who had better understand what "eqs" means.
+> 
+> Yeah, that's what I thought, and never cared about the "eqs" meaning.
+> 
+> > 
+> > But I do count your vote against "eqs" appearing in the name of any
+> > function exported by RCU.
+> 
+> Right, their shouldn't be any "eqs" functions that are global to users
+> outside of the RCU infrastructure.
+> 
+> > 
+> > How about if I made rcu_is_cpu_idle() be as follows?
+> > 
+> > int rcu_is_cpu_idle(void)
+> > {
+> > 	int ret;
+> > 
+> > 	ret = (atomic_read(&per_cpu(rcu_dynticks.dynticks,
+> > 				    raw_smp_processor_id())) & 0x1) == 0;
+> > 	return ret;
+> > }
+> > 
+> > This should allow existing uses to function properly and should allow
+> > you to use it as well.
+> >
+> 
+> You already said it wont work, but I still would have been against
+> using it, because I wouldn't be checking if rcu thinks the CPU is idle,
+> as NO_HZ_FULL has nothing to do with idle.
 
-Ah! Yes, good call. Thanks,
+OK then, how about the following?
 
--Kees
+							Thanx, Paul
 
+------------------------------------------------------------------------
 
--- 
-Kees Cook
-Chrome OS Security
+rcu: Is it safe to enter an RCU read-side critical section?
+
+There is currently no way for kernel code to determine whether it
+is safe to enter an RCU read-side critical section, in other words,
+whether or not RCU is paying attention to the currently running CPU.
+Given the large and increasing quantity of code shared by the idle loop
+and non-idle code, the this shortcoming is becoming increasingly painful.
+
+This commit therefore adds rcu_watching_this_cpu(), which returns true
+if it is safe to enter an RCU read-side critical section on the currently
+running CPU.  This function is quite fast, using only a __this_cpu_read().
+However, the caller must disable preemption.
+
+Reported-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 5b444e0..a41eb35 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -261,6 +261,10 @@ static inline void rcu_user_hooks_switch(struct task_struct *prev,
+ 		rcu_irq_exit(); \
+ 	} while (0)
+ 
++#if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP)
++extern int rcu_is_cpu_idle(void);
++#endif /* #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP) */
++
+ /*
+  * Infrastructure to implement the synchronize_() primitives in
+  * TREE_RCU and rcu_barrier_() primitives in TINY_RCU.
+@@ -297,10 +301,6 @@ static inline void destroy_rcu_head_on_stack(struct rcu_head *head)
+ }
+ #endif	/* #else !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
+ 
+-#if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_SMP)
+-extern int rcu_is_cpu_idle(void);
+-#endif /* #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_SMP) */
+-
+ #if defined(CONFIG_HOTPLUG_CPU) && defined(CONFIG_PROVE_RCU)
+ bool rcu_lockdep_current_cpu_online(void);
+ #else /* #if defined(CONFIG_HOTPLUG_CPU) && defined(CONFIG_PROVE_RCU) */
+diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
+index e31005e..67fe672 100644
+--- a/include/linux/rcutiny.h
++++ b/include/linux/rcutiny.h
+@@ -132,4 +132,13 @@ static inline void rcu_scheduler_starting(void)
+ }
+ #endif /* #else #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+ 
++#ifdef CONFIG_RCU_TRACE
++
++static inline bool rcu_watching_this_cpu(void)
++{
++	return !rcu_is_cpu_idle();
++}
++
++#endif /* #ifdef CONFIG_RCU_TRACE */
++
+ #endif /* __LINUX_RCUTINY_H */
+diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
+index 226169d..c605b41 100644
+--- a/include/linux/rcutree.h
++++ b/include/linux/rcutree.h
+@@ -90,4 +90,6 @@ extern void exit_rcu(void);
+ extern void rcu_scheduler_starting(void);
+ extern int rcu_scheduler_active __read_mostly;
+ 
++extern bool rcu_watching_this_cpu(void);
++
+ #endif /* __LINUX_RCUTREE_H */
+diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+index 7e3b0d6..b14701f 100644
+--- a/kernel/rcutiny.c
++++ b/kernel/rcutiny.c
+@@ -176,7 +176,7 @@ void rcu_irq_enter(void)
+ }
+ EXPORT_SYMBOL_GPL(rcu_irq_enter);
+ 
+-#ifdef CONFIG_DEBUG_LOCK_ALLOC
++#if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE)
+ 
+ /*
+  * Test whether RCU thinks that the current CPU is idle.
+@@ -187,7 +187,7 @@ int rcu_is_cpu_idle(void)
+ }
+ EXPORT_SYMBOL(rcu_is_cpu_idle);
+ 
+-#endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
++#endif /* defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) */
+ 
+ /*
+  * Test whether the current CPU was interrupted from idle.  Nested
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index a06d172..38c6883 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -666,6 +666,19 @@ int rcu_is_cpu_idle(void)
+ }
+ EXPORT_SYMBOL(rcu_is_cpu_idle);
+ 
++/**
++ * rcu_watching_this_cpu - are RCU read-side critical sections safe?
++ *
++ * Return true if RCU is watching the running CPU, which means that
++ * this CPU can safely enter RCU read-side critical sections.  Unlike
++ * rcu_is_cpu_idle(), the caller of rcu_watching_this_cpu() must have at
++ * least disabled preemption.
++ */
++bool rcu_watching_this_cpu(void)
++{
++	return !!__this_cpu_read(rcu_dynticks.dynticks_nesting);
++}
++
+ #if defined(CONFIG_PROVE_RCU) && defined(CONFIG_HOTPLUG_CPU)
+ 
+ /*
+
