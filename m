@@ -1,112 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750974Ab3IGGrW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 02:47:22 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:49710 "EHLO
+	id S1750983Ab3IGG4z (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 02:56:55 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:49718 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750831Ab3IGGrV (ORCPT
+	with ESMTP id S1750832Ab3IGG4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 02:47:21 -0400
+	Sat, 7 Sep 2013 02:56:54 -0400
 From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org
-Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+To: davem@davemloft.net
+Cc: jogo@openwrt.org, joe@perches.com, jg1.han@samsung.com, mbizon@freebox.fr,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] x86/xen: remove deprecated IRQF_DISABLED
-Date: Sat,  7 Sep 2013 08:46:49 +0200
-Message-Id: <1378536409-7023-1-git-send-email-michael.opdenacker@free-electrons.com>
+Subject: [PATCH] bcm63xx_enet: remove deprecated IRQF_DISABLED
+Date: Sat,  7 Sep 2013 08:56:50 +0200
+Message-Id: <1378537010-7128-1-git-send-email-michael.opdenacker@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch proposes to remove the IRQF_DISABLED flag from x86/xen
-code. It's a NOOP since 2.6.35 and it will be removed one day.
+This patch proposes to remove the IRQF_DISABLED flag from
+drivers/net/ethernet/broadcom/bcm63xx_enet.c
+
+It's a NOOP since 2.6.35 and it will be removed one day.
 
 Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 ---
- arch/x86/xen/smp.c      | 10 +++++-----
- arch/x86/xen/spinlock.c |  2 +-
- arch/x86/xen/time.c     |  3 +--
- 3 files changed, 7 insertions(+), 8 deletions(-)
+ drivers/net/ethernet/broadcom/bcm63xx_enet.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 9235842..71177a9 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -149,7 +149,7 @@ static int xen_smp_intr_init(unsigned int cpu)
- 	rc = bind_ipi_to_irqhandler(XEN_RESCHEDULE_VECTOR,
- 				    cpu,
- 				    xen_reschedule_interrupt,
--				    IRQF_DISABLED|IRQF_PERCPU|IRQF_NOBALANCING,
-+				    IRQF_PERCPU|IRQF_NOBALANCING,
- 				    resched_name,
- 				    NULL);
- 	if (rc < 0)
-@@ -161,7 +161,7 @@ static int xen_smp_intr_init(unsigned int cpu)
- 	rc = bind_ipi_to_irqhandler(XEN_CALL_FUNCTION_VECTOR,
- 				    cpu,
- 				    xen_call_function_interrupt,
--				    IRQF_DISABLED|IRQF_PERCPU|IRQF_NOBALANCING,
-+				    IRQF_PERCPU|IRQF_NOBALANCING,
- 				    callfunc_name,
- 				    NULL);
- 	if (rc < 0)
-@@ -171,7 +171,7 @@ static int xen_smp_intr_init(unsigned int cpu)
+diff --git a/drivers/net/ethernet/broadcom/bcm63xx_enet.c b/drivers/net/ethernet/broadcom/bcm63xx_enet.c
+index 8ac48fb..b9a5fb6 100644
+--- a/drivers/net/ethernet/broadcom/bcm63xx_enet.c
++++ b/drivers/net/ethernet/broadcom/bcm63xx_enet.c
+@@ -926,13 +926,13 @@ static int bcm_enet_open(struct net_device *dev)
+ 	if (ret)
+ 		goto out_phy_disconnect;
  
- 	debug_name = kasprintf(GFP_KERNEL, "debug%d", cpu);
- 	rc = bind_virq_to_irqhandler(VIRQ_DEBUG, cpu, xen_debug_interrupt,
--				     IRQF_DISABLED | IRQF_PERCPU | IRQF_NOBALANCING,
-+				     IRQF_PERCPU | IRQF_NOBALANCING,
- 				     debug_name, NULL);
- 	if (rc < 0)
- 		goto fail;
-@@ -182,7 +182,7 @@ static int xen_smp_intr_init(unsigned int cpu)
- 	rc = bind_ipi_to_irqhandler(XEN_CALL_FUNCTION_SINGLE_VECTOR,
- 				    cpu,
- 				    xen_call_function_single_interrupt,
--				    IRQF_DISABLED|IRQF_PERCPU|IRQF_NOBALANCING,
-+				    IRQF_PERCPU|IRQF_NOBALANCING,
- 				    callfunc_name,
- 				    NULL);
- 	if (rc < 0)
-@@ -201,7 +201,7 @@ static int xen_smp_intr_init(unsigned int cpu)
- 	rc = bind_ipi_to_irqhandler(XEN_IRQ_WORK_VECTOR,
- 				    cpu,
- 				    xen_irq_work_interrupt,
--				    IRQF_DISABLED|IRQF_PERCPU|IRQF_NOBALANCING,
-+				    IRQF_PERCPU|IRQF_NOBALANCING,
- 				    callfunc_name,
- 				    NULL);
- 	if (rc < 0)
-diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
-index 0438b93..d1a3064 100644
---- a/arch/x86/xen/spinlock.c
-+++ b/arch/x86/xen/spinlock.c
-@@ -255,7 +255,7 @@ void xen_init_lock_cpu(int cpu)
- 	irq = bind_ipi_to_irqhandler(XEN_SPIN_UNLOCK_VECTOR,
- 				     cpu,
- 				     dummy_handler,
--				     IRQF_DISABLED|IRQF_PERCPU|IRQF_NOBALANCING,
-+				     IRQF_PERCPU|IRQF_NOBALANCING,
- 				     name,
- 				     NULL);
+-	ret = request_irq(priv->irq_rx, bcm_enet_isr_dma, IRQF_DISABLED,
++	ret = request_irq(priv->irq_rx, bcm_enet_isr_dma, 0,
+ 			  dev->name, dev);
+ 	if (ret)
+ 		goto out_freeirq;
  
-diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
-index ee36589..12a1ca7 100644
---- a/arch/x86/xen/time.c
-+++ b/arch/x86/xen/time.c
-@@ -443,8 +443,7 @@ void xen_setup_timer(int cpu)
- 		name = "<timer kasprintf failed>";
+ 	ret = request_irq(priv->irq_tx, bcm_enet_isr_dma,
+-			  IRQF_DISABLED, dev->name, dev);
++			  0, dev->name, dev);
+ 	if (ret)
+ 		goto out_freeirq_rx;
  
- 	irq = bind_virq_to_irqhandler(VIRQ_TIMER, cpu, xen_timer_interrupt,
--				      IRQF_DISABLED|IRQF_PERCPU|
--				      IRQF_NOBALANCING|IRQF_TIMER|
-+				      IRQF_PERCPU|IRQF_NOBALANCING|IRQF_TIMER|
- 				      IRQF_FORCE_RESUME,
- 				      name, NULL);
+@@ -2156,13 +2156,13 @@ static int bcm_enetsw_open(struct net_device *dev)
+ 	enet_dmac_writel(priv, 0, ENETDMAC_IRMASK, priv->tx_chan);
  
+ 	ret = request_irq(priv->irq_rx, bcm_enet_isr_dma,
+-			  IRQF_DISABLED, dev->name, dev);
++			  0, dev->name, dev);
+ 	if (ret)
+ 		goto out_freeirq;
+ 
+ 	if (priv->irq_tx != -1) {
+ 		ret = request_irq(priv->irq_tx, bcm_enet_isr_dma,
+-				  IRQF_DISABLED, dev->name, dev);
++				  0, dev->name, dev);
+ 		if (ret)
+ 			goto out_freeirq_rx;
+ 	}
 -- 
 1.8.1.2
 
