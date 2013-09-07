@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751295Ab3IGI3k (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 04:29:40 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:56617 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123Ab3IGI3h (ORCPT
+	id S1751311Ab3IGIas (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 04:30:48 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:46607 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751123Ab3IGIao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 04:29:37 -0400
-Message-ID: <522AE24C.6060903@gmail.com>
-Date: Sat, 07 Sep 2013 10:22:36 +0200
+	Sat, 7 Sep 2013 04:30:44 -0400
+Message-ID: <522AE28E.3010709@gmail.com>
+Date: Sat, 07 Sep 2013 10:23:42 +0200
 From: Marco Stornelli <marco.stornelli@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
 To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
-CC: linux-kernel@vger.kernel.org, Vladimir Davydov <vdavydov@parallels.com>
-Subject: [PATCH 08/19] pramfs: file operations for dirs
+CC: Vladimir Davydov <vdavydov@parallels.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 09/19] pramfs: inode operations for dirs
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add file operations for dirs.
+Add inode operations for dirs.
 
 Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
 ---
- fs/pramfs/dir.c |  226 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 226 insertions(+), 0 deletions(-)
- create mode 100644 fs/pramfs/dir.c
+ fs/pramfs/namei.c |  391 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 391 insertions(+), 0 deletions(-)
+ create mode 100644 fs/pramfs/namei.c
 
-diff --git a/fs/pramfs/dir.c b/fs/pramfs/dir.c
+diff --git a/fs/pramfs/namei.c b/fs/pramfs/namei.c
 new file mode 100644
-index 0000000..137a592
+index 0000000..64dd946
 --- /dev/null
-+++ b/fs/pramfs/dir.c
-@@ -0,0 +1,226 @@
++++ b/fs/pramfs/namei.c
+@@ -0,0 +1,391 @@
 +/*
 + * BRIEF DESCRIPTION
 + *
-+ * File operations for directories.
++ * Inode operations for directories.
 + *
 + * Copyright 2009-2011 Marco Stornelli <marco.stornelli@gmail.com>
 + * Copyright 2003 Sony Corporation
@@ -48,218 +48,383 @@ index 0000000..137a592
 + * License version 2. This program is licensed "as is" without any
 + * warranty of any kind, whether express or implied.
 + */
-+
 +#include <linux/fs.h>
 +#include <linux/pagemap.h>
 +#include "pram.h"
++#include "acl.h"
++#include "xattr.h"
++#include "xip.h"
 +
 +/*
-+ *	Parent is locked.
++ * Couple of helper functions - make the code slightly cleaner.
 + */
-+int pram_add_link(struct dentry *dentry, struct inode *inode)
++
++static inline void pram_inc_count(struct inode *inode)
 +{
-+	struct inode *dir = dentry->d_parent->d_inode;
-+	struct pram_inode *pidir, *pi, *pitail = NULL;
-+	u64 tail_ino, prev_ino;
++	inc_nlink(inode);
++	pram_write_inode(inode, NULL);
++}
 +
-+	const char *name = dentry->d_name.name;
++static inline void pram_dec_count(struct inode *inode)
++{
++	if (inode->i_nlink) {
++		drop_nlink(inode);
++		pram_write_inode(inode, NULL);
++	}
++}
 +
-+	int namelen = min_t(unsigned int, dentry->d_name.len, PRAM_NAME_LEN);
++static inline int pram_add_nondir(struct inode *dir,
++				   struct dentry *dentry,
++				   struct inode *inode)
++{
++	int err = pram_add_link(dentry, inode);
++	if (!err) {
++		unlock_new_inode(inode);
++		d_instantiate(dentry, inode);
++		return 0;
++	}
++	pram_dec_count(inode);
++	unlock_new_inode(inode);
++	iput(inode);
++	return err;
++}
 +
-+	pidir = pram_get_inode(dir->i_sb, dir->i_ino);
++/*
++ * Methods themselves.
++ */
++
++static ino_t pram_inode_by_name(struct inode *dir, struct dentry *dentry)
++{
++	struct pram_inode *pi;
++	ino_t ino;
++	int namelen;
++
++	pi = pram_get_inode(dir->i_sb, dir->i_ino);
++	ino = be64_to_cpu(pi->i_type.dir.head);
 +
 +	mutex_lock(&PRAM_I(dir)->i_link_mutex);
++	while (ino) {
++		pi = pram_get_inode(dir->i_sb, ino);
++
++		if (pi->i_links_count) {
++			namelen = strlen(pi->i_d.d_name);
++
++			if (namelen == dentry->d_name.len &&
++			    !memcmp(dentry->d_name.name,
++				    pi->i_d.d_name, namelen))
++				break;
++		}
++
++		ino = be64_to_cpu(pi->i_d.d_next);
++	}
++	mutex_unlock(&PRAM_I(dir)->i_link_mutex);
++	return ino;
++}
++
++static struct dentry *pram_lookup(struct inode *dir, struct dentry *dentry,
++				  unsigned int flags)
++{
++	struct inode *inode = NULL;
++	ino_t ino;
++
++	if (dentry->d_name.len > PRAM_NAME_LEN)
++		return ERR_PTR(-ENAMETOOLONG);
++
++	ino = pram_inode_by_name(dir, dentry);
++	if (ino) {
++		inode = pram_iget(dir->i_sb, ino);
++		if (inode == ERR_PTR(-ESTALE)) {
++			pram_err(dir->i_sb,
++				"deleted inode referenced: %lu",
++				(unsigned long) ino);
++			return ERR_PTR(-EIO);
++		}
++	}
++
++	return d_splice_alias(inode, dentry);
++}
++
++
++/*
++ * By the time this is called, we already have created
++ * the directory cache entry for the new file, but it
++ * is so far negative - it has no inode.
++ *
++ * If the create succeeds, we fill in the inode information
++ * with d_instantiate().
++ */
++static int pram_create(struct inode *dir, struct dentry *dentry, umode_t mode,
++		       bool flags)
++{
++	struct inode *inode = pram_new_inode(dir, mode, &dentry->d_name);
++	int err = PTR_ERR(inode);
++	if (!IS_ERR(inode)) {
++		inode->i_op = &pram_file_inode_operations;
++		if (pram_use_xip(inode->i_sb)) {
++			inode->i_mapping->a_ops = &pram_aops_xip;
++			inode->i_fop = &pram_xip_file_operations;
++		} else {
++			inode->i_fop = &pram_file_operations;
++			inode->i_mapping->a_ops = &pram_aops;
++		}
++		err = pram_add_nondir(dir, dentry, inode);
++	}
++	return err;
++}
++
++static int pram_tmpfile(struct inode *dir, struct dentry *dentry, umode_t mode)
++{
++	struct inode *inode = pram_new_inode(dir, mode, NULL);
++	if (IS_ERR(inode))
++		return PTR_ERR(inode);
++
++	inode->i_op = &pram_file_inode_operations;
++	if (pram_use_xip(inode->i_sb)) {
++		inode->i_mapping->a_ops = &pram_aops_xip;
++		inode->i_fop = &pram_xip_file_operations;
++	} else {
++		inode->i_mapping->a_ops = &pram_aops;
++		inode->i_fop = &pram_file_operations;
++	}
++	d_tmpfile(dentry, inode);
++	unlock_new_inode(inode);
++	return 0;
++}
++
++static int pram_mknod(struct inode *dir, struct dentry *dentry, umode_t mode,
++		      dev_t rdev)
++{
++	struct inode *inode = pram_new_inode(dir, mode, &dentry->d_name);
++	int err = PTR_ERR(inode);
++	if (!IS_ERR(inode)) {
++		init_special_inode(inode, mode, rdev);
++		inode->i_op = &pram_special_inode_operations;
++		pram_write_inode(inode, NULL); /* update rdev */
++		err = pram_add_nondir(dir, dentry, inode);
++	}
++	return err;
++}
++
++static int pram_symlink(struct inode *dir, struct dentry *dentry,
++			const char *symname)
++{
++	struct super_block *sb = dir->i_sb;
++	int err = -ENAMETOOLONG;
++	unsigned len = strlen(symname);
++	struct inode *inode;
++
++	if (len+1 > sb->s_blocksize)
++		goto out;
++
++	inode = pram_new_inode(dir, S_IFLNK | S_IRWXUGO, &dentry->d_name);
++	err = PTR_ERR(inode);
++	if (IS_ERR(inode))
++		goto out;
++
++	inode->i_op = &pram_symlink_inode_operations;
++	inode->i_mapping->a_ops = &pram_aops;
++
++	err = pram_block_symlink(inode, symname, len);
++	if (err)
++		goto out_fail;
++
++	inode->i_size = len;
++	pram_write_inode(inode, NULL);
++
++	err = pram_add_nondir(dir, dentry, inode);
++out:
++	return err;
++
++out_fail:
++	pram_dec_count(inode);
++	unlock_new_inode(inode);
++	iput(inode);
++	goto out;
++}
++
++static int pram_link(struct dentry *dest_dentry, struct inode *dir,
++		     struct dentry *dentry)
++{
++	pram_dbg("hard links not supported\n");
++	return -EOPNOTSUPP;
++}
++
++static int pram_unlink(struct inode *dir, struct dentry *dentry)
++{
++	struct inode *inode = dentry->d_inode;
++	inode->i_ctime = dir->i_ctime;
++	pram_dec_count(inode);
++	return 0;
++}
++
++static int pram_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
++{
++	struct inode *inode;
++	struct pram_inode *pi;
++	int err = 0;
++
++	pram_inc_count(dir);
++
++	inode = pram_new_inode(dir, S_IFDIR | mode, &dentry->d_name);
++	err = PTR_ERR(inode);
++	if (IS_ERR(inode))
++		goto out_dir;
++
++	inode->i_op = &pram_dir_inode_operations;
++	inode->i_fop = &pram_dir_operations;
++	inode->i_mapping->a_ops = &pram_aops;
++
++	pram_inc_count(inode);
++
++	/* make the new directory empty */
++	pi = pram_get_inode(dir->i_sb, inode->i_ino);
++	pram_memunlock_inode(dir->i_sb, pi);
++	pi->i_type.dir.head = pi->i_type.dir.tail = 0;
++	pram_memlock_inode(dir->i_sb, pi);
++
++	err = pram_add_link(dentry, inode);
++	if (err)
++		goto out_fail;
++
++	unlock_new_inode(inode);
++	d_instantiate(dentry, inode);
++out:
++	return err;
++
++out_fail:
++	pram_dec_count(inode);
++	pram_dec_count(inode);
++	unlock_new_inode(inode);
++	iput(inode);
++out_dir:
++	pram_dec_count(dir);
++	goto out;
++}
++
++static int pram_rmdir(struct inode *dir, struct dentry *dentry)
++{
++	struct inode *inode = dentry->d_inode;
++	struct pram_inode *pi;
++	int err = -ENOTEMPTY;
++
++	if (!inode)
++		return -ENOENT;
 +
 +	pi = pram_get_inode(dir->i_sb, inode->i_ino);
 +
-+	dir->i_mtime = dir->i_ctime = CURRENT_TIME;
-+
-+	tail_ino = be64_to_cpu(pidir->i_type.dir.tail);
-+	if (tail_ino != 0) {
-+		pitail = pram_get_inode(dir->i_sb, tail_ino);
-+		pram_memunlock_inode(dir->i_sb, pitail);
-+		pitail->i_d.d_next = cpu_to_be64(inode->i_ino);
-+		pram_memlock_inode(dir->i_sb, pitail);
-+
-+		prev_ino = tail_ino;
-+
-+		pram_memunlock_inode(dir->i_sb, pidir);
-+		pidir->i_type.dir.tail = cpu_to_be64(inode->i_ino);
-+		pidir->i_mtime = cpu_to_be32(dir->i_mtime.tv_sec);
-+		pidir->i_ctime = cpu_to_be32(dir->i_ctime.tv_sec);
-+		pram_memlock_inode(dir->i_sb, pidir);
++	/* directory to delete is empty? */
++	if (pi->i_type.dir.tail == 0) {
++		inode->i_ctime = dir->i_ctime;
++		inode->i_size = 0;
++		clear_nlink(inode);
++		pram_write_inode(inode, NULL);
++		pram_dec_count(dir);
++		err = 0;
 +	} else {
-+		/* the directory is empty */
-+		prev_ino = 0;
-+
-+		pram_memunlock_inode(dir->i_sb, pidir);
-+		pidir->i_type.dir.tail = cpu_to_be64(inode->i_ino);
-+		pidir->i_type.dir.head = cpu_to_be64(inode->i_ino);
-+		pidir->i_mtime = cpu_to_be32(dir->i_mtime.tv_sec);
-+		pidir->i_ctime = cpu_to_be32(dir->i_ctime.tv_sec);
-+		pram_memlock_inode(dir->i_sb, pidir);
++		pram_dbg("dir not empty\n");
 +	}
 +
-+
-+	pram_memunlock_inode(dir->i_sb, pi);
-+	pi->i_d.d_prev = cpu_to_be64(prev_ino);
-+	pi->i_d.d_parent = cpu_to_be64(dir->i_ino);
-+	memcpy(pi->i_d.d_name, name, namelen);
-+	pi->i_d.d_name[namelen] = '\0';
-+	pram_memlock_inode(dir->i_sb, pi);
-+	mutex_unlock(&PRAM_I(dir)->i_link_mutex);
-+	return 0;
++	return err;
 +}
 +
-+int pram_remove_link(struct inode *inode)
++static int pram_rename(struct inode  *old_dir,
++			struct dentry *old_dentry,
++			struct inode  *new_dir,
++			struct dentry *new_dentry)
 +{
-+	struct super_block *sb = inode->i_sb;
-+	struct pram_inode *prev = NULL;
-+	struct pram_inode *next = NULL;
-+	struct pram_inode *pidir, *pi;
-+	struct inode *dir = NULL;
++	struct inode *old_inode = old_dentry->d_inode;
++	struct inode *new_inode = new_dentry->d_inode;
++	struct pram_inode *pi_new;
++	int err = -ENOENT;
 +
-+	pi = pram_get_inode(sb, inode->i_ino);
-+	pidir = pram_get_inode(sb, be64_to_cpu(pi->i_d.d_parent));
-+	if (!pidir)
-+		return -EACCES;
-+
-+	dir = pram_iget(inode->i_sb, be64_to_cpu(pi->i_d.d_parent));
-+	if (IS_ERR(dir))
-+		return -EACCES;
-+	mutex_lock(&PRAM_I(dir)->i_link_mutex);
-+
-+	if (inode->i_ino == be64_to_cpu(pidir->i_type.dir.head)) {
-+		/* first inode in directory */
-+		next = pram_get_inode(sb, be64_to_cpu(pi->i_d.d_next));
-+
-+		if (next) {
-+			pram_memunlock_inode(sb, next);
-+			next->i_d.d_prev = 0;
-+			pram_memlock_inode(sb, next);
-+
-+			pram_memunlock_inode(sb, pidir);
-+			pidir->i_type.dir.head = pi->i_d.d_next;
-+		} else {
-+			pram_memunlock_inode(sb, pidir);
-+			pidir->i_type.dir.head = 0;
-+			pidir->i_type.dir.tail = 0;
++	if (new_inode) {
++		err = -ENOTEMPTY;
++		pi_new = pram_get_inode(new_dir->i_sb, new_inode->i_ino);
++		if (S_ISDIR(old_inode->i_mode)) {
++			if (pi_new->i_type.dir.tail != 0)
++				goto out;
++			if (new_inode->i_nlink)
++				drop_nlink(new_inode);
 +		}
-+		pram_memlock_inode(sb, pidir);
-+	} else if (inode->i_ino == be64_to_cpu(pidir->i_type.dir.tail)) {
-+		/* last inode in directory */
-+		prev = pram_get_inode(sb, be64_to_cpu(pi->i_d.d_prev));
 +
-+		pram_memunlock_inode(sb, prev);
-+		prev->i_d.d_next = 0;
-+		pram_memlock_inode(sb, prev);
-+
-+		pram_memunlock_inode(sb, pidir);
-+		pidir->i_type.dir.tail = pi->i_d.d_prev;
-+		pram_memlock_inode(sb, pidir);
++		new_inode->i_ctime = CURRENT_TIME;
++		pram_dec_count(new_inode);
 +	} else {
-+		/* somewhere in the middle */
-+		prev = pram_get_inode(sb, be64_to_cpu(pi->i_d.d_prev));
-+		next = pram_get_inode(sb, be64_to_cpu(pi->i_d.d_next));
-+
-+		if (prev && next) {
-+			pram_memunlock_inode(sb, prev);
-+			prev->i_d.d_next = pi->i_d.d_next;
-+			pram_memlock_inode(sb, prev);
-+
-+			pram_memunlock_inode(sb, next);
-+			next->i_d.d_prev = pi->i_d.d_prev;
-+			pram_memlock_inode(sb, next);
++		if (S_ISDIR(old_inode->i_mode)) {
++			pram_dec_count(old_dir);
++			pram_inc_count(new_dir);
 +		}
 +	}
 +
-+	pram_memunlock_inode(sb, pi);
-+	pi->i_d.d_next = 0;
-+	pi->i_d.d_prev = 0;
-+	pi->i_d.d_parent = 0;
-+	pram_memlock_inode(sb, pi);
-+	mutex_unlock(&PRAM_I(dir)->i_link_mutex);
-+	iput(dir);
++	/* unlink the inode from the old directory ... */
++	err = pram_remove_link(old_inode);
++	if (err)
++		goto out;
 +
-+	return 0;
++	/* and link it into the new directory. */
++	err = pram_add_link(new_dentry, old_inode);
++	if (err)
++		goto out;
++
++	err = 0;
++ out:
++	return err;
 +}
 +
-+#define DT2IF(dt) (((dt) << 12) & S_IFMT)
-+#define IF2DT(sif) (((sif) & S_IFMT) >> 12)
-+
-+static int pram_readdir(struct file *file, struct dir_context *ctx)
++struct dentry *pram_get_parent(struct dentry *child)
 +{
-+	struct inode *inode = file_inode(file);
-+	struct super_block *sb = inode->i_sb;
-+	struct pram_inode *pi;
-+	int namelen, ret = 0;
-+	char *name;
++	struct inode *inode;
++	struct pram_inode *pi, *piparent;
 +	ino_t ino;
 +
-+	pi = pram_get_inode(sb, inode->i_ino);
++	pi = pram_get_inode(child->d_inode->i_sb, child->d_inode->i_ino);
++	if (!pi)
++		return ERR_PTR(-EACCES);
 +
-+	switch ((u32)file->f_pos) {
-+	case 0:
-+		ret = dir_emit_dot(file, ctx);
-+		ctx->pos = 1;
-+		return ret;
-+	case 1:
-+		ret = dir_emit(ctx, "..", 2, be64_to_cpu(pi->i_d.d_parent),
-+			      DT_DIR);
-+		mutex_lock(&PRAM_I(inode)->i_link_mutex);
-+		ino = be64_to_cpu(pi->i_type.dir.head);
-+		mutex_unlock(&PRAM_I(inode)->i_link_mutex);
-+		ctx->pos = ino ? ino : 2;
-+		return ret;
-+	case 2:
-+		mutex_lock(&PRAM_I(inode)->i_link_mutex);
-+		ino = be64_to_cpu(pi->i_type.dir.head);
-+		if (ino) {
-+			ctx->pos = ino;
-+			pi = pram_get_inode(sb, ino);
-+			break;
-+		} else {
-+			/* the directory is empty */
-+			ctx->pos = 2;
-+			mutex_unlock(&PRAM_I(inode)->i_link_mutex);
-+			return 0;
-+		}
-+	case 3:
-+		return 0;
-+	default:
-+		mutex_lock(&PRAM_I(inode)->i_link_mutex);
-+		ino = file->f_pos;
-+		pi = pram_get_inode(sb, ino);
-+		break;
-+	}
++	piparent = pram_get_inode(child->d_inode->i_sb,
++				  be64_to_cpu(pi->i_d.d_parent));
++	if (!pi)
++		return ERR_PTR(-ENOENT);
 +
-+	while (pi && !be16_to_cpu(pi->i_links_count)) {
-+		ino = ctx->pos = be64_to_cpu(pi->i_d.d_next);
-+		pi = pram_get_inode(sb, ino);
-+	}
++	ino = pram_get_inodenr(child->d_inode->i_sb, piparent);
++	if (ino)
++		inode = pram_iget(child->d_inode->i_sb, ino);
++	else
++		return ERR_PTR(-ENOENT);
 +
-+	if (pi) {
-+		name = pi->i_d.d_name;
-+		namelen = strlen(name);
-+
-+		ret = dir_emit(ctx, name, namelen,
-+			      ino, IF2DT(be16_to_cpu(pi->i_mode)));
-+		ctx->pos = pi->i_d.d_next ? be64_to_cpu(pi->i_d.d_next) : 3;
-+	} else
-+		ctx->pos = 3;
-+
-+	mutex_unlock(&PRAM_I(inode)->i_link_mutex);
-+	return ret;
++	return d_obtain_alias(inode);
 +}
 +
-+const struct file_operations pram_dir_operations = {
-+	.read		= generic_read_dir,
-+	.iterate	= pram_readdir,
-+	.fsync		= noop_fsync,
-+	.unlocked_ioctl	= pram_ioctl,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl	= pram_compat_ioctl,
++const struct inode_operations pram_dir_inode_operations = {
++	.create		= pram_create,
++	.lookup		= pram_lookup,
++	.link		= pram_link,
++	.unlink		= pram_unlink,
++	.symlink	= pram_symlink,
++	.mkdir		= pram_mkdir,
++	.rmdir		= pram_rmdir,
++	.mknod		= pram_mknod,
++	.rename		= pram_rename,
++#ifdef CONFIG_PRAMFS_XATTR
++	.setxattr	= generic_setxattr,
++	.getxattr	= generic_getxattr,
++	.listxattr	= pram_listxattr,
++	.removexattr	= generic_removexattr,
 +#endif
++	.setattr	= pram_notify_change,
++	.get_acl	= pram_get_acl,
++	.tmpfile	= pram_tmpfile,
++};
++
++const struct inode_operations pram_special_inode_operations = {
++#ifdef CONFIG_PRAMFS_XATTR
++	.setxattr	= generic_setxattr,
++	.getxattr	= generic_getxattr,
++	.listxattr	= pram_listxattr,
++	.removexattr	= generic_removexattr,
++#endif
++	.setattr	= pram_notify_change,
++	.get_acl	= pram_get_acl,
 +};
 -- 
 1.7.3.4
