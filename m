@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750950Ab3IGF4c (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 01:56:32 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:38764 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750841Ab3IGF4b convert rfc822-to-8bit (ORCPT
+	id S1750992Ab3IGF7o (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 01:59:44 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:46746 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899Ab3IGF7n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 01:56:31 -0400
-References: <CA+5PVA6iUcY+DCh51R_uwxZ1BOGrS-8-OfaFTF6Bwz9JFDVcUQ@mail.gmail.com>
-Mime-Version: 1.0 (1.0)
-In-Reply-To: <CA+5PVA6iUcY+DCh51R_uwxZ1BOGrS-8-OfaFTF6Bwz9JFDVcUQ@mail.gmail.com>
-Content-Type: text/plain;
-	charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-Message-Id: <645D2350-5007-4EFF-AFFD-8D51BA006292@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>, Nicolas Pitre <nico@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-X-Mailer: iPad Mail (10B329)
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Subject: Re: crypto/xor.ko fails to build with CONFIG_KERNEL_MODE_NEON=y
-Date: Sat, 7 Sep 2013 07:56:26 +0200
-To: Josh Boyer <jwboyer@fedoraproject.org>
+	Sat, 7 Sep 2013 01:59:43 -0400
+Date: Fri, 6 Sep 2013 22:59:16 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH] vmpressure: fix divide-by-0 in vmpressure_work_fn
+Message-ID: <alpine.LNX.2.00.1309062254470.11420@eggly.anvils>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hit divide-by-0 in vmpressure_work_fn(): checking vmpr->scanned before
+taking the lock is not enough, we must check scanned afterwards too.
 
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: stable@vger.kernel.org
+---
 
-On 7 sep. 2013, at 04:44, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+ mm/vmpressure.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-> We enabled CONFIG_KERNEL_MODE_NEON on the armv7hl builds we're doing.
-> It builds for a while, but eventually fails when running modpost on
-> the xor.ko module:
-> 
-> ERROR: "xor_block_neon_inner" [crypto/xor.ko] undefined!
-> make[1]: *** [__modpost] Error 1
-> make: *** [modules] Error 2
-> 
-
-Clearly a bug, thanks for spotting this. I will submit a fix asap. In the mean time, building the xor code into the zImage will help you complete the build.
-
-> I tried adding an EXPORT_SYMBOL_GPL(xor_block_neon_inner); after the
-> structure definition in arch/arm/lib/xor-neon.c but that doesn't seem
-> to have done anything.
-> 
-
-I would expected that to have done the trick, but perhaps it is better to merge the neon code into the main arm/xor source file.
-
-> Before I go chasing this further, I'm curious if anyone else has run into this.
-> 
-
-Cheers,
-Ard.
-
-
-
-> josh
+--- 3.11/mm/vmpressure.c	2013-09-02 13:46:10.000000000 -0700
++++ linux/mm/vmpressure.c	2013-09-06 22:43:03.596003080 -0700
+@@ -187,6 +187,9 @@ static void vmpressure_work_fn(struct wo
+ 	vmpr->reclaimed = 0;
+ 	spin_unlock(&vmpr->sr_lock);
+ 
++	if (!scanned)
++		return;
++
+ 	do {
+ 		if (vmpressure_event(vmpr, scanned, reclaimed))
+ 			break;
