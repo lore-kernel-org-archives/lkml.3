@@ -1,636 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752210Ab3IGAUz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 20:20:55 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:52475 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750903Ab3IGAUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 20:20:52 -0400
-Message-ID: <522A710F.1040504@ti.com>
-Date: Fri, 6 Sep 2013 20:19:27 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1752231Ab3IGAXl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 20:23:41 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:56229 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893Ab3IGAXk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 20:23:40 -0400
+Date: Fri, 6 Sep 2013 17:23:35 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Tibor Billes <tbilles@gmx.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Unusually high system CPU usage with recent kernels
+Message-ID: <20130907002334.GA14886@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130903211101.189830@gmx.com>
+ <20130903221607.GG3871@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Eduardo Valentin <eduardo.valentin@ti.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux@roeck-us.net" <linux@roeck-us.net>,
-        "rui.zhang@intel.com" <rui.zhang@intel.com>,
-        "wni@nvidia.com" <wni@nvidia.com>,
-        "durgadoss.r@intel.com" <durgadoss.r@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 02/14] drivers: thermal: introduce device tree parser
-References: <1377299755-5134-1-git-send-email-eduardo.valentin@ti.com> <1377299755-5134-3-git-send-email-eduardo.valentin@ti.com> <20130827102205.GC19893@e106331-lin.cambridge.arm.com> <521CAD48.2030306@ti.com> <20130827162309.GR19893@e106331-lin.cambridge.arm.com> <521CED34.2090008@ti.com> <521FD70F.7080104@ti.com> <20130903131554.GE18206@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20130903131554.GE18206@e106331-lin.cambridge.arm.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="Fj3Vad5sRKoq8orBFi1qwl85axhxK3euq"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130903221607.GG3871@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090700-9332-0000-0000-000001550265
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Fj3Vad5sRKoq8orBFi1qwl85axhxK3euq
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Tue, Sep 03, 2013 at 03:16:07PM -0700, Paul E. McKenney wrote:
+> On Tue, Sep 03, 2013 at 11:11:01PM +0200, Tibor Billes wrote:
+> > > From: Paul E. McKenney Sent: 08/30/13 03:24 AM
+> > > On Tue, Aug 27, 2013 at 10:05:42PM +0200, Tibor Billes wrote:
+> > > > From: Paul E. McKenney Sent: 08/26/13 06:28 AM
+> > > > > Here is a patch that is more likely to help. I am testing it in parallel,
+> > > > > but figured I should send you a sneak preview.
+> > > > 
+> > > > I tried it, but I don't see any difference in overall performance. The dstat
+> > > > also shows the same as before.
+> > > > 
+> > > > But I did notice something. Occasionally there is an increase in userspace
+> > > > CPU usage, interrupts and context switches are dropping, and it really gets
+> > > > more work done (scons printed commands more frequently).  I checked that
+> > > > this behaviour is present without your patch, I just didn't notice this
+> > > > before. Maybe you can make some sense out of it.
+> > > > 
+> > > > ----system---- ----total-cpu-usage---- -dsk/total- -net/total- ---paging-- ---system-- ----swap--- ------memory-usage----- -----virtual-memory----
+> > > >     time     |usr sys idl wai hiq siq| read  writ| recv  send|  in   out | int   csw | used  free| used  buff  cach  free|majpf minpf alloc  free
+> > > > 27-08 20:51:53| 23  62   5   0  11   0|   0     0 |   0     0 |   0     0 |1274  3102k|   0  7934M| 549M 56.0M  491M 6698M|   0    28   156   159 
+> > > > 27-08 20:51:54| 24  64   1   0  11   0|   0     0 |   0     0 |   0     0 |1317  3165k|   0  7934M| 549M 56.0M  491M 6698M|   0    53   189   182 
+> > > > 27-08 20:51:55| 33  50   6   2   9   0| 192k 1832k|   0     0 |   0     0 |1371  2442k|   0  7934M| 544M 56.0M  492M 6702M|   0    30k   17k   17k
+> > > > 27-08 20:51:56| 24  64   0   0  12   0|   0     0 |   0     0 |   0     0 |1313  3220k|   0  7934M| 544M 56.0M  492M 6701M|   0    21   272   232 
+> > > > 27-08 20:51:57| 24  64   0   0  12   0|   0     0 |   0     0 |   0     0 |1319  3226k|   0  7934M| 544M 56.0M  492M 6701M|   0     8    96   112 
+> > > > 27-08 20:51:58| 25  63   0   0  12   0|   0     0 |   0     0 |   0     0 |1317  3224k|   0  7934M| 544M 56.0M  492M 6701M|   0    12   145   141 
+> > > > 27-08 20:51:59| 24  64   0   0  12   0|   0     0 |   0     0 |   0     0 |1317  3223k|   0  7934M| 544M 56.0M  492M 6701M|   0    54   193   191 
+> > > > 27-08 20:52:00| 25  63   0   0  12   0|   0    24k|   0     0 |   0     0 |1336  3216k|   0  7934M| 544M 56.0M  492M 6701M|   0    36   161   172 
+> > > > 27-08 20:52:01| 24  64   0   0  12   0|   0     0 |   0     0 |   0     0 |1313  3225k|   0  7934M| 544M 56.0M  492M 6701M|   0     9   107   107 
+> > > > 27-08 20:52:02| 24  64   0   0  12   0|   0     0 |   0     0 |   0     0 |1327  3224k|   0  7934M| 545M 56.0M  492M 6701M|   0    13   193   200 
+> > > > 27-08 20:52:03| 24  64   0   0  12   0|   0     0 |   0     0 |   0     0 |1311  3226k|   0  7934M| 545M 56.0M  492M 6701M|   0    13   114   114 
+> > > > 27-08 20:52:04| 25  63   0   0  12   0|   0     0 |   0     0 |   0     0 |1331  3223k|   0  7934M| 544M 56.0M  492M 6701M|   0    41   190   178 
+> > > > 27-08 20:52:05| 24  64   0   0  12   0|   0  8192B|   0     0 |   0     0 |1315  3222k|   0  7934M| 544M 56.0M  492M 6701M|   0    30   123   122 
+> > > > 27-08 20:52:06| 24  64   0   0  12   0|   0     0 |   0     0 |   0     0 |1314  3223k|   0  7934M| 544M 56.0M  492M 6701M|   0    16   187   195 
+> > > > 27-08 20:52:07| 25  63   1   0  12   0|2212k  192k|   0     0 |   0     0 |1637  3194k|   0  7934M| 544M 56.2M  494M 6699M|   0  1363  2590  1947 
+> > > > 27-08 20:52:08| 17  33  18  26   6   0|3208k    0 |   0     0 |   0     0 |1351  1766k|   0  7934M| 561M 56.3M  499M 6678M|   4    10k 7620  2055 
+> > > > 27-08 20:52:09| 47  21  16  13   4   0|4332k  628k|   0     0 |   0     0 |1400  1081k|   0  7934M| 647M 56.3M  504M 6587M|  10    24k   25k 1151 
+> > > > 27-08 20:52:10| 36  34  13  11   6   0|2636k 2820k|   0     0 |   0     0 |1451  1737k|   0  7934M| 598M 56.3M  507M 6632M|   5    19k   16k   28k
+> > > > 27-08 20:52:11| 46  17  10  25   3   0|4288k  536k|   0     0 |   0     0 |1386   868k|   0  7934M| 613M 56.3M  513M 6611M|  24    13k 8908  3616 
+> > > > 27-08 20:52:12| 53  33   5   4   5   0|4740k 3992k|   0     0 |   0     0 |1773  1464k|   0  7934M| 562M 56.6M  521M 6654M|   0    36k   29k   40k
+> > > > 27-08 20:52:13| 60  34   0   1   6   0|4228k 1416k|   0     0 |   0     0 |1642  1670k|   0  7934M| 593M 56.6M  526M 6618M|   0    36k   26k   17k
+> > > > 27-08 20:52:14| 53  37   1   3   7   0|3008k 1976k|   0     0 |   0     0 |1513  1972k|   0  7934M| 541M 56.6M  529M 6668M|   0    10k 9986    23k
+> > > > 27-08 20:52:15| 55  34   1   4   6   0|3636k 1284k|   0     0 |   0     0 |1645  1688k|   0  7934M| 581M 56.6M  535M 6622M|   0    43k   30k   18k
+> > > > 27-08 20:52:16| 57  30   5   2   5   0|4404k 2320k|   0     0 |   0     0 |1715  1489k|   0  7934M| 570M 56.6M  541M 6627M|   0    39k   24k   26k
+> > > > 27-08 20:52:17| 50  35   3   7   6   0|2520k 1972k|   0     0 |   0     0 |1699  1598k|   0  7934M| 587M 56.6M  554M 6596M|   0    65k   40k   32k
+> > > > 27-08 20:52:18| 52  40   2   1   7   0|1556k 1732k|   0     0 |   0     0 |1582  1865k|   0  7934M| 551M 56.6M  567M 6619M|   0    35k   26k   33k
+> > > > 27-08 20:52:19| 26  62   0   0  12   0|   0     0 |   0     0 |   0     0 |1351  3240k|   0  7934M| 551M 56.6M  568M 6619M|   0    86   440   214 
+> > > > 27-08 20:52:20| 26  63   0   0  11   0|   0   108k|   0     0 |   0     0 |1392  3162k|   0  7934M| 555M 56.6M  560M 6623M|   0  1801  1490  2672 
+> > > > 27-08 20:52:21| 25  63   0   0  12   0|   0     0 |   0     0 |   0     0 |1332  3198k|   0  7934M| 555M 56.6M  560M 6623M|   0    50   245   255 
+> > > > 27-08 20:52:22| 25  63   1   0  12   0|   0     0 |   0     0 |   0     0 |1350  3220k|   0  7934M| 556M 56.6M  560M 6622M|   0   755   544   286 
+> > > > 27-08 20:52:23| 27  62   1   0  11   0|   0   272k|   0     0 |   0     0 |1323  3092k|   0  7934M| 551M 56.6M  558M 6628M|   0   341  1464  3085 
+> > > > 27-08 20:52:24| 25  63   0   0  12   0|   0     0 |   0     0 |   0     0 |1334  3197k|   0  7934M| 551M 56.6M  559M 6627M|   0    63   514   273 
+> > > > 27-08 20:52:25| 25  63   0   0  12   0|   0    40k|   0     0 |   0     0 |1329  3243k|   0  7934M| 546M 56.6M  558M 6633M|   0   321   160  1679 
+> > > > 27-08 20:52:26| 39  50   1   1   9   0|  48k  644k|   0     0 |   0     0 |1500  2556k|   0  7934M| 552M 56.6M  560M 6625M|   0    30k   14k   12k
+> > > > 27-08 20:52:27| 26  62   1   0  11   0|   0   192k|   0     0 |   0     0 |1380  3152k|   0  7934M| 553M 56.6M  560M 6624M|   0  2370   808   718 
+> > > > 27-08 20:52:28| 23  55  12   0  10   0|   0     0 |   0     0 |   0     0 |1247  2993k|   0  7934M| 553M 56.6M  561M 6624M|   0  1060   428   241 
+> > > > 27-08 20:52:29| 25  63   1   0  11   0|   0     0 |   0     0 |   0     0 |1318  3142k|   0  7934M| 554M 56.6M  561M 6623M|   0   663   442   198 
+> > > > 27-08 20:52:30| 25  64   0   0  12   0|   0   100k|   0     0 |   0     0 |1316  3212k|   0  7934M| 554M 56.6M  561M 6623M|   0    42   187   186 
+> > > > 27-08 20:52:31| 24  64   0   0  12   0|   0  4096B|   0     0 |   0     0 |1309  3222k|   0  7934M| 554M 56.6M  561M 6623M|   0     9    85    85 
+> > > > 27-08 20:52:32| 24  64   0   0  12   0|   0     0 |   0     0 |   0     0 |1297  3219k|   0  7934M| 554M 56.6M  561M 6623M|   0    23    95    84 
+> > > > 27-08 20:52:33| 25  63   0   0  11   0|   0     0 |   0     0 |   0     0 |1339  3101k|   0  7934M| 555M 56.6M  557M 6625M|   0   923  1566  2176 
+> > > > 27-08 20:52:34| 25  63   0   0  11   0|   0     0 |   0     0 |   0     0 |1333  3095k|   0  7934M| 555M 56.6M  559M 6623M|   0   114   701   195 
+> > > > 27-08 20:52:35| 26  63   0   0  11   0|   0     0 |   0     0 |   0     0 |1342  3036k|   0  7934M| 557M 56.6M  568M 6613M|   0   957  3225   516 
+> > > > 27-08 20:52:36| 26  60   2   0  11   0|   0    28k|   0     0 |   0     0 |1340  3091k|   0  7934M| 555M 56.6M  568M 6614M|   0  5304  5422  5609 
+> > > > 27-08 20:52:37| 25  64   0   0  12   0|   0     0 |   0     0 |   0     0 |1348  3260k|   0  7934M| 556M 56.6M  565M 6617M|   0    30   156  1073 
+> > > > 27-08 20:52:38| 24  64   0   0  12   0|   0     0 |   0     0 |   0     0 |1314  3211k|   0  7934M| 556M 56.6M  549M 6633M|   0    11   105  4285 
+> > > > 27-08 20:52:39| 26  63   0   0  11   0|   0     0 |   0     0 |   0     0 |1353  3031k|   0  7934M| 558M 56.6M  559M 6620M|   0   847  3866   357 
+> > > > 27-08 20:52:40| 26  63   0   0  12   0|   0     0 |   0     0 |   0     0 |1309  3135k|   0  7934M| 569M 56.6M  566M 6602M|   0  3940  5727  1288 
+> > > 
+> > > Interesting. The number of context switches drops during the time
+> > > that throughput improves. It would be good to find out what task(s)
+> > > are doing all of the context switches. One way to find the pids of the
+> > > top 20 context-switching tasks should be something like this:
+> > > 
+> > > grep ctxt /proc/*/status | sort -k2nr | head -20
+> > > 
+> > > You could use any number of methods to map back to the command.
+> > > When generating my last patch, I was assuming that ksoftirqd would be
+> > > the big offender. Of course, if it is something else, I should be
+> > > taking a different approach.
+> > 
+> > I did some measuring of these context switches. I used the above command
+> > line to get the number of context switches before compiling and about 40
+> > seconds later.
+> > 
+> > The good case is:
+> > file                                        before  after   process name
+> > /proc/10/status:voluntary_ctxt_switches:    38108   54327   [rcu_sched]
+> > /proc/19/status:voluntary_ctxt_switches:    31022   38682   [ksoftirqd/2]
+> > /proc/14/status:voluntary_ctxt_switches:    12947   16914   [ksoftirqd/1]
+> > /proc/3/status:voluntary_ctxt_switches:     11061   14885   [ksoftirqd/0]
+> > /proc/194/status:voluntary_ctxt_switches:   10044   11660   [kworker/2:1H]
+> > /proc/1603/status:voluntary_ctxt_switches:  7626    9593    /usr/bin/X
+> > /proc/24/status:voluntary_ctxt_switches:    6415    9571    [ksoftirqd/3]
+> > /proc/20/status:voluntary_ctxt_switches:    5317    8879    [kworker/2:0]
+> > 
+> > The bad case is:
+> > file                                            before      after       process name
+> > /proc/3/status:voluntary_ctxt_switches:         82411972    98542227    [ksoftirqd/0]
+> > /proc/23/status:voluntary_ctxt_switches:        79592040    94206823    [ksoftirqd/3]
+> > /proc/13/status:voluntary_ctxt_switches:        79053870    93654161    [ksoftirqd/1]
+> > /proc/18/status:voluntary_ctxt_switches:        78136449    92288688    [ksoftirqd/2]
+> > /proc/2293/status:nonvoluntary_ctxt_switches:   29038881    29038881    mate-panel
+> > /proc/2308/status:nonvoluntary_ctxt_switches:   26607661    26607661    nm-applet
+> > /proc/2317/status:nonvoluntary_ctxt_switches:   15494474    15494474    /usr/lib/polkit-mate/polkit-mate-authentication-agent-1
+> > /proc/2148/status:nonvoluntary_ctxt_switches:   13763674    13763674    x-session-manager
+> > /proc/2985/status:nonvoluntary_ctxt_switches:               12062706    python /usr/bin/scons -j4
+> > /proc/2323/status:nonvoluntary_ctxt_switches:   11581510    11581510    mate-volume-control-applet
+> > /proc/2353/status:nonvoluntary_ctxt_switches:   9213436     9213436     mate-power-manager
+> > /proc/2305/status:nonvoluntary_ctxt_switches:   8328471     8328471     /usr/lib/matecomponent/matecomponent-activation-server
+> > /proc/3041/status:nonvoluntary_ctxt_switches:               7638312     sh -c "/opt/arm-2011.03/bin/arm-none-eabi-gcc" [...]
+> > /proc/3055/status:nonvoluntary_ctxt_switches:               4843977     sh -c "/opt/arm-2011.03/bin/arm-none-eabi-gcc" [...]
+> > /proc/2253/status:nonvoluntary_ctxt_switches:   4449918     4449918     mate-keyring-daemon
+> 
+> Thank you for the info!
+> 
+> > The processes for the tables were partly collected by hand so they may
+> > not contain every relevant process. But what I see is that there are a
+> > lot more context switches in the bad case, quite many of these are non
+> > voluntary. The context switch increase is pretty much everywhere, not
+> > just ksoftirqd. I suspect the Mate related processes did their context
+> > switches during bootup/login, which is consistent with the bootup/login
+> > procedure being significantly slower (just like the compilation).
+> 
+> Also, the non-ksoftirq context switches are nonvoluntary, which likely
+> means that some of their context switches were preemptions by ksoftirqd.
+> 
+> OK, time to look at whatever else might be causing this...
+
+I am still unable to reproduce this, so am reduced to shooting in the
+dark.  The attached patch could in theory help.  If it doesn't, would
+you be willing to do a bit of RCU event tracing?
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+    rcu: Throttle invoke_rcu_core() invocations due to non-lazy callbacks
+    
+    If a non-lazy callback arrives on a CPU that has previously gone idle
+    with no non-lazy callbacks, invoke_rcu_core() forces the RCU core to
+    run.  However, it does not update the conditions, which could result
+    in several closely spaced invocations of the RCU core, which in turn
+    could result in an excessively high context-switch rate and resulting
+    high overhead.
+    
+    This commit therefore updates the ->all_lazy and ->nonlazy_posted_snap
+    fields to prevent closely spaced invocations.
+    
+    Reported-by: Tibor Billes <tbilles@gmx.com>
+    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index dc09fb0..9d445ab 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -1745,6 +1745,8 @@ static void rcu_prepare_for_idle(int cpu)
+ 	 */
+ 	if (rdtp->all_lazy &&
+ 	    rdtp->nonlazy_posted != rdtp->nonlazy_posted_snap) {
++		rdtp->all_lazy = false;
++		rdtp->nonlazy_posted_snap = rdtp->nonlazy_posted;
+ 		invoke_rcu_core();
+ 		return;
+ 	}
 
-Hi Mark, Stephen and Pawel,
-
-On 03-09-2013 09:15, Mark Rutland wrote:
-> On Fri, Aug 30, 2013 at 12:19:43AM +0100, Eduardo Valentin wrote:
-
-<cut>
-
-> I think that the above can describe that, but I'd like to see a binding=
-
-> document so we can consider it in more detail.
-
-Find below another proposal. It is the updated binding document, with
-the your comments applied (at least those I agree :-) ). It is obviously
-an work in progress, but I think it is getting closer to what we are
-trying to achieve, I believe. And of course, much better after using
-your suggestions.
-
-As I stated before, I believe it is crucial to first agree on the
-bindings, then I can go ahead and update the corresponding code.
-
-The change from the last binding examples I sent is basically on sensors
-and cooling devices. This time, as suggested by Mark, I am adding
-cooling device nodes (or at least properties to be embedded into
-existing nodes). At some point, I remember that Pawel was not so in
-favor on this type of node, but lets discuss on top of the document
-below. I also added the #cells properties, as needed.
-
-Hopefully we may end with an agreement. :-)
-
-So, the document would look like this:
-
------------------------------------------------------------------------
-* Thermal Framework Device Tree descriptor
-
-Generic binding to provide a way of defining hardware thermal
-structure using device tree. A thermal structure includes thermal
-zones and their components, such as trip points, polling intervals,
-sensors and cooling devices binding descriptors.
-
-The target of device tree thermal descriptors is to describe only
-the hardware thermal aspects, not how the system must control or which
-algorithm or policy must be taken in place.
-
-There are five types of nodes involved to describe thermal bindings:
-- sensors: used to describe the device source of temperature sensing;
-- cooling devices: used to describe devices source of power dissipation
-control;
-- trip points: used to describe points in temperature domain defined to
-make the system aware of hardware limits;
-- cooling attachments: used to describe links between trip points and
-cooling devices;
-- thermal zones: used to describe thermal data within the hardware;
-
-It follows a description of each type of these device tree nodes.
-
-* Sensor devices
-
-Sensor devices are nodes providing temperature sensing capabilities on
-thermal
-zones. Typical devices are I2C ADC converters and bandgaps. Theses are no=
-des
-providing temperature data to thermal zones. Temperature sensor devices m=
-ay
-control one or more internal sensors.
-
-Required property:
-- #sensor-cells:	Used to provide sensor device specific information
-			while referring to it. Must be at least 1, in order
-			to identify uniquely the sensor instances within
-			the IC. See thermal zone binding for more details
-			on how consumers refer to sensor devices.
-
-* Cooling device nodes
-
-Cooling devices are nodes providing control on power dissipation. There
-are essentially two ways to provide control on power dissipation. First
-is by means of regulating device performance, which is known as passive
-cooling. Second is by means of activating devices in order to remove
-the dissipated heat, which is known as active cooling, e.g. regulating
-fan speeds. In both cases, cooling devices shall have a way to determine
-the level of cooling.
-
-Required property:
-- cooling-min-level:	A unsigned integer indicating the smallest
-			cooling level accepted. Typically 0.
-- cooling-max-level:	An unsigned integer indicating the largest
-			cooling level accepted.
-- #cooling-cells:	Used to provide cooling device specific information
-			while referring to it. Must be at least 2, in order
-			to specify minimum and maximum cooling level used
-			in the reference. See Cooling device attachments section
-			below for more details on how consumers refer to
-			cooling devices.
-
-* Trip points
-
-The trip node is a node to describe a point in the temperature domain
-in which the system takes an action. This node describes just the point,
-not the action.
-
-Required properties:
-- temperature:		the trip temperature level, in milliCelsius.
-- hysteresis:		a (low) hysteresis value on 'temperature'. This is a
-			relative value, in milliCelsius.
-- type:			the trip type. Here is the type mapping:
-	THERMAL_TRIP_ACTIVE	0:	A trip point to enable active cooling
-	THERMAL_TRIP_PASSIVE	1:	A trip point to enable passive cooling
-	THERMAL_TRIP_HOT	2:	A trip point to notify emergency
-	THERMAL_TRIP_CRITICAL	3:	Hardware not reliable.
-
-Refer to include/dt-bindings/thermal/thermal.h for definition of these
-consts.
-
-* Cooling device attachments
-
-The cooling device attachments node is a node to describe how cooling
-devices
-get assigned to trip points of the zone. The cooling devices are expected=
-
-to be loaded in the target system.
-
-Required properties:
-- cooling-device:	A phandle of a cooling device with its parameters,
-			referring to which cooling device is used in this
-			binding. The required parameters are: the minimum
-			cooling level and the maximum cooling level used
-			in this attach.
-- trip:			A phandle of a trip point node within the same thermal
-			zone.
-
-Optional property:
-- contribution:		The cooling contribution to the thermal zone of the
-			referred cooling device at the referred trip point.
-			The contribution is a value from 0 to 100. The sum
-			of all cooling contributions within a thermal zone
-			must never exceed 100.
-
-Note: Using the THERMAL_NO_LIMIT (-1L) constant in the cooling-device
-phandle
-limit parameters means:
-(i)   - minimum level allowed for minimum cooling level used in the
-reference.
-(ii)  - maximum level allowed for maximum cooling level used in the
-reference.
-Refer to include/dt-bindings/thermal/thermal.h for definition of this
-constant.
-
-* Thermal zones
-
-The thermal-zone node is the node containing all the required info
-for describing a thermal zone, including its cdev bindings. The thermal_z=
-one
-node must contain, apart from its own properties, one node containing
-trip nodes and one node containing all the zone cooling attachments.
-
-Required properties:
-- passive-delay:	The maximum number of milliseconds to wait between polls=
-
-			when performing passive cooling.
-- polling-delay:	The maximum number of milliseconds to wait between polls=
-
-			when checking this thermal zone.
-- sensors:		A list of sensor phandles and their parameters. The
-			required parameter is the sensor id, in order to
-			identify internal sensors when the sensor IC features
-			several sensing units.
-- trips:		A sub-node containing several trip point nodes required
-			to describe the thermal zone.
-- cooling-attachments	A sub-node containing several cooling device attach=
-es
-			nodes, used to describe the relation between trips
-			and cooling devices.
-
-Optional property:
-- coefficients:		An array of integers (one signed cell) containing
-			coefficients to compose a linear relation between
-			the sensors described in the sensors property.
-			Coefficients defaults to 1, in case this property
-			is not specified. A simple linear polynomial is used:
-			Z =3D c0 * x0 + c1 + x1 + ... + c(n-1) * x(n-1) + cn.
-
-			The coefficients are ordered and they match with sensors
-			by means of sensor ID. Additional coefficients are
-			interpreted as constant offsets.
-
-Note: The delay properties are bound to the maximum dT/dt (temperature
-derivative over time) in two situations for a thermal zone:
-(i)  - when active cooling is activated (passive-delay); and
-(ii) - when the zone just needs to be monitored (polling-delay).
-The maximum dT/dt is highly bound to hardware power consumption and
-dissipation
-capability.
-
-* Examples
-
-Below are several examples on how to use thermal data descriptors
-using device tree bindings:
-
-(a) - CPU thermal zone
-
-The CPU thermal zone example below describes how to setup one thermal zon=
-e
-using one single sensor as temperature source and many cooling devices an=
-d
-power dissipation control sources.
-
-#include <dt-bindings/thermal/thermal.h>
-
-cpus {
-	cpu0: cpu@0 {
-		...
-		cooling-min-level =3D 0;
-		cooling-max-level =3D 3;
-		#cooling-cells =3D <2>; /* min followed by max */
-	};
-	...
-};
-
-&i2c1 {
-	...
-	fan0: fan@0x48 {
-		...
-		cooling-min-level =3D 0;
-		cooling-max-level =3D 9;
-		#cooling-cells =3D <2>; /* min followed by max */
-	};
-};
-
-bandgap0: bandgap@0x0000ED00 {
-	...
-	#sensor-cells =3D <1>;
-};
-
-cpu-thermal: cpu-thermal {
-	passive-delay =3D <250>; /* milliseconds */
-	polling-delay =3D <1000>; /* milliseconds */
-
-		/* sensor       ID */
-        sensors =3D <&bandgap0     0>;
-
-        trips {
-                cpu-alert0: cpu-alert {
-                        temperature =3D <90000>; /* milliCelsius */
-                        hysteresis =3D <2000>; /* milliCelsius */
-                        type =3D <THERMAL_TRIP_ACTIVE>;
-                };
-                cpu-alert1: cpu-alert {
-                        temperature =3D <100000>; /* milliCelsius */
-                        hysteresis =3D <2000>; /* milliCelsius */
-                        type =3D <THERMAL_TRIP_PASSIVE>;
-                };
-                cpu-crit: cpu-crit {
-                        temperature =3D <125000>; /* milliCelsius */
-                        hysteresis =3D <2000>; /* milliCelsius */
-                        type =3D <THERMAL_TRIP_CRITICAL>;
-                };
-        };
-
-	cooling-attachments {
-		attach0 {
-			trip =3D <&cpu-alert0>;
-			cooling-devices =3D <&fan0 THERMAL_NO_LIMITS 4>;
- 		};
-		attach1 {
-			trip =3D <&cpu-alert1>;
-			cooling-device =3D <&fan0 5 THERMAL_NO_LIMITS>;
-		};
-		attach2 {
-			trip =3D <&cpu-alert1>;
-			cooling-device =3D
-				<&cpu0 THERMAL_NO_LIMITS THERMAL_NO_LIMITS>;
-		};
-	};
-};
-
-In the example above, the ADC sensor at address 0x0000ED00 is used to
-monitor
-the zone 'cpu-thermal' using its the sensor 0. The fan0, a fan device
-controlled
-via I2C bus 1, at adress 0x48, is used to remove the heat out of the ther=
-mal
-zone 'cpu-thermal' using its cooling levels from its minimum to 4, when i=
-t
-reaches trip point 'cpu-alert0' at 90C, as an example of active cooling. =
-The
-same cooling device is used at 'cpu-alert1', but from 5 to its maximum
-level.
-The cpu@0 device is also linked to the same thermal zone, 'cpu-thermal',
-as a
-passive cooling device, using all its cooling levels at trip point
-'cpu-alert1',
-which is a trip point at 100C.
-
-(b) - IC with several internal sensors
-
-The example below describes how to deploy several thermal zones based off=
- a
-single sensor IC, assuming it has several internal sensors. This is a com=
-mon
-case on SoC designs with several internal IPs that may need different
-thermal
-requirements, and thus may have their own sensor to monitor or detect
-internal
-hotspots in their silicon.
-
-#include <dt-bindings/thermal/thermal.h>
-
-bandgap0: bandgap@0x0000ED00 {
-	...
-	#sensor-cells =3D <1>;
-};
-
-cpu-thermal: cpu-thermal {
-	passive-delay =3D <250>; /* milliseconds */
-	polling-delay =3D <1000>; /* milliseconds */
-
-		/* sensor       ID */
-        sensors =3D <&bandgap0     0>;
-
-        trips {
-		/* each zone within the SoC may have its own trips */
-                cpu-alert: cpu-alert {
-                        temperature =3D <100000>; /* milliCelsius */
-                        hysteresis =3D <2000>; /* milliCelsius */
-                        type =3D <THERMAL_TRIP_PASSIVE>;
-                };
-                cpu-crit: cpu-crit {
-                        temperature =3D <125000>; /* milliCelsius */
-                        hysteresis =3D <2000>; /* milliCelsius */
-                        type =3D <THERMAL_TRIP_CRITICAL>;
-                };
-        };
-
-	cooling-attachments {
-		/* each zone within the SoC may have its own cooling */
-		...
-	};
-};
-
-gpu-thermal: gpu-thermal {
-	passive-delay =3D <120>; /* milliseconds */
-	polling-delay =3D <1000>; /* milliseconds */
-
-		/* sensor       ID */
-        sensors =3D <&bandgap0     1>;
-
-        trips {
-		/* each zone within the SoC may have its own trips */
-                gpu-alert: gpu-alert {
-                        temperature =3D <90000>; /* milliCelsius */
-                        hysteresis =3D <2000>; /* milliCelsius */
-                        type =3D <THERMAL_TRIP_PASSIVE>;
-                };
-                gpu-crit: gpu-crit {
-                        temperature =3D <105000>; /* milliCelsius */
-                        hysteresis =3D <2000>; /* milliCelsius */
-                        type =3D <THERMAL_TRIP_CRITICAL>;
-                };
-        };
-
-	cooling-attachments {
-		/* each zone within the SoC may have its own cooling */
-		...
-	};
-};
-
-dsp-thermal: dsp-thermal {
-	passive-delay =3D <50>; /* milliseconds */
-	polling-delay =3D <1000>; /* milliseconds */
-
-		/* sensor       ID */
-        sensors =3D <&bandgap0     2>;
-
-        trips {
-		/* each zone within the SoC may have its own trips */
-                dsp-alert: gpu-alert {
-                        temperature =3D <90000>; /* milliCelsius */
-                        hysteresis =3D <2000>; /* milliCelsius */
-                        type =3D <THERMAL_TRIP_PASSIVE>;
-                };
-                dsp-crit: gpu-crit {
-                        temperature =3D <135000>; /* milliCelsius */
-                        hysteresis =3D <2000>; /* milliCelsius */
-                        type =3D <THERMAL_TRIP_CRITICAL>;
-                };
-        };
-
-	cooling-attachments {
-		/* each zone within the SoC may have its own cooling */
-		...
-	};
-};
-
-In the example above there is one bandgap IC which has the capability to
-monitor three sensors. The hardware has been designed so that sensors are=
-
-placed on different places in the DIE to monitor different temperature
-hotspots: one for CPU thermal zone, one for GPU thermal zone and the
-other to monitor a DSP thermal zone.
-
-Thus, there is a need to assign each sensor provided by the bandgap IC
-to different thermal zones. This is achieved by means of using the
-#sensor-cells property and using the first parameter as sensor ID.
-In the example, then, bandgap.sensor0 is used to monitor CPU thermal zone=
-,
-bandgap.sensor1 is used to monitor GPU thermal zone and bandgap.sensor2
-is used to monitor DSP thermal zone. Each zone may be uncorrelated,
-having its own dT/dt requirements, trips and cooling attachments.
-
-(c) - Several sensors within one single thermal zone
-
-The example below illustrates how to use more than one sensor within
-one thermal zone.
-
-#include <dt-bindings/thermal/thermal.h>
-
-&i2c1 {
-	...
-	adc: sensor@0x49 {
-		...
-		#sensor-cells =3D <1>;
-	};
-};
-
-bandgap0: bandgap@0x0000ED00 {
-	...
-	#sensor-cells =3D <1>;
-};
-
-cpu-thermal: cpu-thermal {
-	passive-delay =3D <250>; /* milliseconds */
-	polling-delay =3D <1000>; /* milliseconds */
-
-		/* sensor       ID */
-        sensors =3D <&bandgap0	0>,
-		  <&adc		0>;
-
-		/* hotspot =3D 100 * bandgap - 120 * adc + 484 */
- 	coefficients =3D 		<100	-120	484>;
-
-        trips {
-		...
-        };
-
-	cooling-attachments {
-		...
-	};
-};
-
-In some cases, there is a need to use more than one sensor to extrapolate=
-
-a thermal hotspot in the silicon. The above example illustrate this
-situation.
-For instance, it may be the case that a sensor external to CPU IP may be
-place
-close to CPU hotspot and together with internal CPU sensor, it is used
-to determine the hotspot. The hyppotetical extrapolation rule would be:
-		hotspot =3D 100 * bandgap - 120 * adc + 484
-
-The same idea can be used to add fixed offset:
-	passive-delay =3D <1000>; /* milliseconds */
-	polling-delay =3D <2500>; /* milliseconds */
-		hotspot =3D 1 * adc + 6000
-
-In the above equation, the hotspot is always 6C higher than what is read
-from the sensor ADC. The binding would be then:
-		/* sensor       ID */
-        sensors =3D  <&adc	0>;
-
-		/* hotspot =3D 1 * adc + 6000 */
-	coefficients =3D 		<1	6000>;
-
-(d) - Board thermal
-
-The board thermal example below illustrates how to setup one thermal zone=
-
-with many sensors and many cooling devices.
-
-#include <dt-bindings/thermal/thermal.h>
-
-&i2c1 {
- 	...
-	adc-dummy: sensor@0x50 {
-		...
-		#sensor-cells =3D <1>; /* sensor internal ID */
-	};
-};
-
-batt-thermal {
-	passive-delay =3D <500>; /* milliseconds */
-	polling-delay =3D <2500>; /* milliseconds */
-
-	/* sensor       ID */
-	sensors =3D <&adc-dummy     4>;
-
-	trips {
-		...
-	};
-
-	cooling-attachments {
-		...
-	};
-};
-
-board-thermal: board-thermal {
-	passive-delay =3D <1000>; /* milliseconds */
-	polling-delay =3D <2500>; /* milliseconds */
-
-		/* sensor       ID */
-	sensors =3D <&adc-dummy     0>,
-		  <&adc-dummy     1>,
-		  <&adc-dymmy     2>;
-			/*
-			 * An array of coefficients describing the sensor
-			 * linear relation. E.g.:
-			 * z =3D c1*x1 + c2*x2 + c3*x3
-			 */
-	coefficients =3D		<1200	-345	890>;
-
-	trips {
-		/* Trips are based on resulting linear equation */
-		cpu-trip: cpu-trip {
-			temperature =3D <60000>; /* milliCelsius */
-			hysteresis =3D <2000>; /* milliCelsius */
-			type =3D <THERMAL_TRIP_PASSIVE>;
-		};
-		gpu-trip: gpu-trip {
-			temperature =3D <55000>; /* milliCelsius */
-			hysteresis =3D <2000>; /* milliCelsius */
-			type =3D <THERMAL_TRIP_PASSIVE>;
-		}
-		lcd-trip: lcp-trip {
-			temperature =3D <53000>; /* milliCelsius */
-			hysteresis =3D <2000>; /* milliCelsius */
-			type =3D <THERMAL_TRIP_PASSIVE>;
-		};
-		crit-trip: crit-trip {
-			temperature =3D <68000>; /* milliCelsius */
-			hysteresis =3D <2000>; /* milliCelsius */
- 			type =3D <THERMAL_TRIP_CRITICAL>;
-		};
-	};
-
-	cooling-attachments {
-		attach0 {
-			trip =3D <&cpu-trip>;
-			cooling-device =3D <&cpu0 0 2>;
-			contribution =3D <55>;
-		};
-		attach1 {
-			trip =3D <&gpu-trip>;
-			cooling-device =3D <&gpu0 0 2>;
-			contribution =3D <20>;
-		};
- 		attach2 {
-			trip =3D <&lcd-trip>;
-			cooling-device =3D <&lcd0 5 10>;
-			contribution =3D <15>;
-		};
-	};
-};
-
-The above example is a mix of previous examples, a sensor IP with
-several internal
-sensors used to monitor different zones, one of them is composed by
-several sensors and
-with different cooling devices.
------------------------------------------------------------------------
-
-All best,
-
-
---=20
-You have got to be excited about what you are doing. (L. Lamport)
-
-Eduardo Valentin
-
-
---Fj3Vad5sRKoq8orBFi1qwl85axhxK3euq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlIqcRYACgkQCXcVR3XQvP1KSAEA6WbiAVjNjO5WmpZO74HxM/0e
-1Vzw4memD5pdBETiemQBAMYni3CS4hL3UUQOjVIJ9fdZoetgldnkE7yACotewNme
-=HpyI
------END PGP SIGNATURE-----
-
---Fj3Vad5sRKoq8orBFi1qwl85axhxK3euq--
