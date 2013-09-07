@@ -1,339 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751236Ab3IGI0c (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 04:26:32 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:41158 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751036Ab3IGI03 (ORCPT
+	id S1751254Ab3IGI1U (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 04:27:20 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:52487 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068Ab3IGI1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 04:26:29 -0400
-Message-ID: <522AE18F.3070204@gmail.com>
-Date: Sat, 07 Sep 2013 10:19:27 +0200
+	Sat, 7 Sep 2013 04:27:16 -0400
+Message-ID: <522AE1BE.7050101@gmail.com>
+Date: Sat, 07 Sep 2013 10:20:14 +0200
 From: Marco Stornelli <marco.stornelli@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
 To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
 CC: linux-kernel@vger.kernel.org, Vladimir Davydov <vdavydov@parallels.com>
-Subject: [PATCH 04/19] pramfs: add include files
+Subject: [PATCH 05/19] pramfs: super block operations
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added include files.
+Add super block operations.
 
 Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
 ---
- fs/pramfs/pram.h             |  283 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/pram_fs.h      |   48 +++++++
- include/uapi/linux/Kbuild    |    1 +
- include/uapi/linux/magic.h   |    1 +
- include/uapi/linux/pram_fs.h |  192 ++++++++++++++++++++++++++++
- 5 files changed, 525 insertions(+), 0 deletions(-)
- create mode 100644 fs/pramfs/pram.h
- create mode 100644 include/linux/pram_fs.h
- create mode 100644 include/uapi/linux/pram_fs.h
+ fs/pramfs/super.c |  994 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 994 insertions(+), 0 deletions(-)
+ create mode 100644 fs/pramfs/super.c
 
-diff --git a/fs/pramfs/pram.h b/fs/pramfs/pram.h
+diff --git a/fs/pramfs/super.c b/fs/pramfs/super.c
 new file mode 100644
-index 0000000..08d724b
+index 0000000..1c9801c
 --- /dev/null
-+++ b/fs/pramfs/pram.h
-@@ -0,0 +1,283 @@
++++ b/fs/pramfs/super.c
+@@ -0,0 +1,994 @@
 +/*
 + * BRIEF DESCRIPTION
 + *
-+ * Definitions for the PRAMFS filesystem.
-+ *
-+ * Copyright 2009-2011 Marco Stornelli <marco.stornelli@gmail.com>
-+ * Copyright 2003 Sony Corporation
-+ * Copyright 2003 Matsushita Electric Industrial Co., Ltd.
-+ * 2003-2004 (c) MontaVista Software, Inc. , Steve Longerbeam
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+#ifndef __PRAM_H
-+#define __PRAM_H
-+
-+#include <linux/buffer_head.h>
-+#include <linux/pram_fs.h>
-+#include <linux/crc32.h>
-+#include <linux/mutex.h>
-+#include <linux/rcupdate.h>
-+#include <linux/types.h>
-+#include "wprotect.h"
-+
-+/*
-+ * Debug code
-+ */
-+#ifdef pr_fmt
-+#undef pr_fmt
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+#endif
-+
-+#define pram_dbg(s, args...)		pr_debug(s, ## args)
-+#define pram_warn(s, args...)		pr_warning(s, ## args)
-+#define pram_info(s, args...)		pr_info(s, ## args)
-+
-+#ifdef CONFIG_PRINTK
-+#define pram_err(sb, s, args...)        pram_error_mng(sb, s, ## args)
-+#else
-+#define pram_err(sb, s, args...)                                       \
-+do {                                                                   \
-+       no_printk(s, ## args);                                          \
-+       pram_error_mng(sb, " ");                                        \
-+} while (0)
-+#endif
-+
-+#define pram_set_bit			__test_and_set_bit_le
-+#define pram_clear_bit			__test_and_clear_bit_le
-+#define pram_find_next_zero_bit		find_next_zero_bit_le
-+
-+#define clear_opt(o, opt)	(o &= ~PRAM_MOUNT_##opt)
-+#define set_opt(o, opt)		(o |= PRAM_MOUNT_##opt)
-+#define test_opt(sb, opt)	(PRAM_SB(sb)->s_mount_opt & PRAM_MOUNT_##opt)
-+
-+/* Function Prototypes */
-+extern void pram_error_mng(struct super_block *sb, const char *fmt, ...);
-+
-+/* file.c */
-+extern ssize_t pram_direct_IO(int rw, struct kiocb *iocb,
-+			  const struct iovec *iov,
-+			  loff_t offset, unsigned long nr_segs);
-+extern int pram_mmap(struct file *file, struct vm_area_struct *vma);
-+
-+/* balloc.c */
-+extern void pram_init_bitmap(struct super_block *sb);
-+extern void pram_free_block(struct super_block *sb, unsigned long blocknr);
-+extern int pram_new_block(struct super_block *sb, unsigned long *blocknr,
-+			  int zero);
-+extern unsigned long pram_count_free_blocks(struct super_block *sb);
-+
-+/* dir.c */
-+extern int pram_add_link(struct dentry *dentry, struct inode *inode);
-+extern int pram_remove_link(struct inode *inode);
-+
-+/* namei.c */
-+extern struct dentry *pram_get_parent(struct dentry *child);
-+
-+/* inode.c */
-+extern int pram_alloc_blocks(struct inode *inode, int file_blocknr,
-+			     unsigned int num);
-+extern u64 pram_find_data_block(struct inode *inode,
-+				unsigned long file_blocknr);
-+
-+extern struct inode *pram_iget(struct super_block *sb, unsigned long ino);
-+extern void pram_put_inode(struct inode *inode);
-+extern void pram_evict_inode(struct inode *inode);
-+extern struct inode *pram_new_inode(struct inode *dir, umode_t mode,
-+					const struct qstr *qstr);
-+extern int pram_update_inode(struct inode *inode);
-+extern int pram_write_inode(struct inode *inode, struct writeback_control *wbc);
-+extern void pram_dirty_inode(struct inode *inode, int flags);
-+extern int pram_notify_change(struct dentry *dentry, struct iattr *attr);
-+extern void pram_set_inode_flags(struct inode *inode, struct pram_inode *pi);
-+extern void pram_get_inode_flags(struct inode *inode, struct pram_inode *pi);
-+extern int pram_find_region(struct inode *inode, loff_t *offset, int hole);
-+
-+/* ioctl.c */
-+extern long pram_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
-+#ifdef CONFIG_COMPAT
-+extern long pram_compat_ioctl(struct file *file, unsigned int cmd,
-+			      unsigned long arg);
-+#endif
-+
-+/* super.c */
-+#ifdef CONFIG_PRAMFS_TEST
-+extern struct pram_super_block *get_pram_super(void);
-+#endif
-+extern struct super_block *pram_read_super(struct super_block *sb,
-+					      void *data,
-+					      int silent);
-+extern int pram_statfs(struct dentry *d, struct kstatfs *buf);
-+extern int pram_remount(struct super_block *sb, int *flags, char *data);
-+
-+/* symlink.c */
-+extern int pram_block_symlink(struct inode *inode,
-+			       const char *symname, int len);
-+
-+/* Inline functions start here */
-+static inline int pram_freeze_fs(struct super_block *sb)
-+{
-+	return 0;
-+}
-+
-+static inline int pram_unfreeze_fs(struct super_block *sb)
-+{
-+	return 0;
-+}
-+
-+/* Mask out flags that are inappropriate for the given type of inode. */
-+static inline __be32 pram_mask_flags(umode_t mode, __be32 flags)
-+{
-+	flags &= cpu_to_be32(PRAM_FL_INHERITED);
-+	if (S_ISDIR(mode))
-+		return flags;
-+	else if (S_ISREG(mode))
-+		return flags & cpu_to_be32(PRAM_REG_FLMASK);
-+	else
-+		return flags & cpu_to_be32(PRAM_OTHER_FLMASK);
-+}
-+
-+static inline int pram_calc_checksum(u8 *data, int n)
-+{
-+	u32 crc = 0;
-+	crc = crc32(~0, (__u8 *)data + sizeof(__be32), n - sizeof(__be32));
-+	if (*((__be32 *)data) == cpu_to_be32(crc))
-+		return 0;
-+	else
-+		return 1;
-+}
-+
-+struct pram_inode_vfs {
-+#ifdef CONFIG_PRAMFS_XATTR
-+	/*
-+	 * Extended attributes can be read independently of the main file
-+	 * data. Taking i_mutex even when reading would cause contention
-+	 * between readers of EAs and writers of regular file data, so
-+	 * instead we synchronize on xattr_sem when reading or changing
-+	 * EAs.
-+	 */
-+	struct rw_semaphore xattr_sem;
-+#endif
-+	struct mutex i_meta_mutex;
-+	struct mutex i_link_mutex;
-+	struct inode vfs_inode;
-+};
-+
-+static inline struct pram_sb_info *PRAM_SB(struct super_block *sb)
-+{
-+	return sb->s_fs_info;
-+}
-+
-+static inline struct pram_inode_vfs *PRAM_I(struct inode *inode)
-+{
-+	return container_of(inode, struct pram_inode_vfs, vfs_inode);
-+}
-+
-+/* If this is part of a read-modify-write of the super block,
-+   pram_memunlock_super() before calling! */
-+static inline struct pram_super_block *
-+pram_get_super(struct super_block *sb)
-+{
-+	struct pram_sb_info *sbi = PRAM_SB(sb);
-+	return (struct pram_super_block *)sbi->virt_addr;
-+}
-+
-+static inline struct pram_super_block *
-+pram_get_redund_super(struct super_block *sb)
-+{
-+	struct pram_sb_info *sbi = PRAM_SB(sb);
-+	return (struct pram_super_block *)(sbi->virt_addr + PRAM_SB_SIZE);
-+}
-+
-+static inline void *
-+pram_get_bitmap(struct super_block *sb)
-+{
-+	struct pram_super_block *ps = pram_get_super(sb);
-+	return (void *)ps + be64_to_cpu(ps->s_bitmap_start);
-+}
-+
-+/* If this is part of a read-modify-write of the inode metadata,
-+   pram_memunlock_inode() before calling! */
-+static inline struct pram_inode *
-+pram_get_inode(struct super_block *sb, u64 ino)
-+{
-+	struct pram_super_block *ps = pram_get_super(sb);
-+	return ino ? (struct pram_inode *)((void *)ps + ino) : NULL;
-+}
-+
-+static inline ino_t
-+pram_get_inodenr(struct super_block *sb, struct pram_inode *pi)
-+{
-+	struct pram_super_block *ps = pram_get_super(sb);
-+	return (ino_t)((unsigned long)pi - (unsigned long)ps);
-+}
-+
-+static inline u64
-+pram_get_block_off(struct super_block *sb, unsigned long blocknr)
-+{
-+	struct pram_super_block *ps = pram_get_super(sb);
-+	return (u64)(be64_to_cpu(ps->s_bitmap_start) +
-+			     (blocknr << sb->s_blocksize_bits));
-+}
-+
-+static inline unsigned long
-+pram_get_blocknr(struct super_block *sb, u64 block)
-+{
-+	struct pram_super_block *ps = pram_get_super(sb);
-+	return (block - be64_to_cpu(ps->s_bitmap_start)) >>
-+							   sb->s_blocksize_bits;
-+}
-+
-+/* If this is part of a read-modify-write of the block,
-+   pram_memunlock_block() before calling! */
-+static inline void *
-+pram_get_block(struct super_block *sb, u64 block)
-+{
-+	struct pram_super_block *ps = pram_get_super(sb);
-+	return block ? ((void *)ps + block) : NULL;
-+}
-+
-+static inline unsigned long
-+pram_get_pfn(struct super_block *sb, u64 block)
-+{
-+	return (PRAM_SB(sb)->phys_addr + block) >> PAGE_SHIFT;
-+}
-+
-+static inline void check_eof_blocks(struct inode *inode, loff_t size)
-+{
-+	struct pram_inode *pi = pram_get_inode(inode->i_sb, inode->i_ino);
-+	if (unlikely(!pi))
-+		return;
-+	if ((pi->i_flags & cpu_to_be32(PRAM_EOFBLOCKS_FL)) &&
-+		size + inode->i_sb->s_blocksize >=
-+		(inode->i_blocks << inode->i_sb->s_blocksize_bits))
-+		pi->i_flags &= cpu_to_be32(~PRAM_EOFBLOCKS_FL);
-+}
-+
-+/*
-+ * Inodes and files operations
-+ */
-+
-+/* dir.c */
-+extern const struct file_operations pram_dir_operations;
-+
-+/* file.c */
-+extern const struct inode_operations pram_file_inode_operations;
-+extern const struct file_operations pram_file_operations;
-+extern const struct file_operations pram_xip_file_operations;
-+
-+/* inode.c */
-+extern const struct address_space_operations pram_aops;
-+extern const struct address_space_operations pram_aops_xip;
-+
-+/* namei.c */
-+extern const struct inode_operations pram_dir_inode_operations;
-+extern const struct inode_operations pram_special_inode_operations;
-+
-+/* symlink.c */
-+extern const struct inode_operations pram_symlink_inode_operations;
-+
-+extern struct backing_dev_info pram_backing_dev_info;
-+
-+#endif	/* __PRAM_H */
-diff --git a/include/linux/pram_fs.h b/include/linux/pram_fs.h
-new file mode 100644
-index 0000000..1224861
---- /dev/null
-+++ b/include/linux/pram_fs.h
-@@ -0,0 +1,48 @@
-+/*
-+ * BRIEF DESCRIPTION
-+ *
-+ * Definitions for the PRAM filesystem.
++ * Super block operations.
 + *
 + * Copyright 2009-2011 Marco Stornelli <marco.stornelli@gmail.com>
 + * Copyright 2003 Sony Corporation
@@ -344,258 +49,985 @@ index 0000000..1224861
 + * warranty of any kind, whether express or implied.
 + */
 +
-+#ifndef _LINUX_PRAM_FS_H
-+#define _LINUX_PRAM_FS_H
-+
-+#include <uapi/linux/pram_fs.h>
-+
-+/*
-+ * PRAM filesystem super-block data in memory
-+ */
-+struct pram_sb_info {
-+	/*
-+	 * base physical and virtual address of PRAMFS (which is also
-+	 * the pointer to the super block)
-+	 */
-+	phys_addr_t phys_addr;
-+	void *virt_addr;
-+
-+	/* Mount options */
-+	unsigned long bpi;
-+	unsigned long num_inodes;
-+	unsigned long blocksize;
-+	unsigned long initsize;
-+	unsigned long s_mount_opt;
-+	kuid_t uid;		    /* Mount uid for root directory */
-+	kgid_t gid;		    /* Mount gid for root directory */
-+	umode_t mode;		    /* Mount mode for root directory */
-+	atomic_t next_generation;
-+#ifdef CONFIG_PRAMFS_XATTR
-+	struct rb_root desc_tree;
-+	spinlock_t desc_tree_lock;
-+#endif
-+	struct mutex s_lock;
-+};
-+
-+#endif	/* _LINUX_PRAM_FS_H */
-diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
-index e7c94ee..2e55ff1 100644
---- a/include/uapi/linux/Kbuild
-+++ b/include/uapi/linux/Kbuild
-@@ -423,3 +423,4 @@ header-y += x25.h
- header-y += xattr.h
- header-y += xfrm.h
- header-y += hw_breakpoint.h
-+header-y += pram_fs.h
-diff --git a/include/uapi/linux/magic.h b/include/uapi/linux/magic.h
-index 2944278..cae5b49 100644
---- a/include/uapi/linux/magic.h
-+++ b/include/uapi/linux/magic.h
-@@ -42,6 +42,7 @@
- #define NCP_SUPER_MAGIC		0x564c		/* Guess, what 0x564c is :-) */
- #define NFS_SUPER_MAGIC		0x6969
- #define OPENPROM_SUPER_MAGIC	0x9fa1
-+#define PRAM_SUPER_MAGIC	0xEFFA
- #define QNX4_SUPER_MAGIC	0x002f		/* qnx4 fs detection */
- #define QNX6_SUPER_MAGIC	0x68191122	/* qnx6 fs detection */
- 
-diff --git a/include/uapi/linux/pram_fs.h b/include/uapi/linux/pram_fs.h
-new file mode 100644
-index 0000000..b488674
---- /dev/null
-+++ b/include/uapi/linux/pram_fs.h
-@@ -0,0 +1,192 @@
-+/*
-+ * BRIEF DESCRIPTION
-+ *
-+ * Definitions for the PRAMFS filesystem.
-+ *
-+ * Copyright 2009-2011 Marco Stornelli <marco.stornelli@gmail.com>
-+ * Copyright 2003 Sony Corporation
-+ * Copyright 2003 Matsushita Electric Industrial Co., Ltd.
-+ * 2003-2004 (c) MontaVista Software, Inc. , Steve Longerbeam
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+#ifndef _UAPI_LINUX_PRAM_FS_H
-+#define _UAPI_LINUX_PRAM_FS_H
-+
-+#include <linux/types.h>
++#include <linux/module.h>
++#include <linux/string.h>
++#include <linux/slab.h>
++#include <linux/init.h>
++#include <linux/parser.h>
++#include <linux/vfs.h>
++#include <linux/uaccess.h>
++#include <linux/io.h>
++#include <linux/seq_file.h>
++#include <linux/mount.h>
++#include <linux/mm.h>
++#include <linux/ctype.h>
++#include <linux/bitops.h>
 +#include <linux/magic.h>
-+#include <linux/fs.h>
++#include <linux/exportfs.h>
++#include <linux/random.h>
++#include <linux/cred.h>
++#include <linux/backing-dev.h>
++#include <linux/ioport.h>
++#include "xattr.h"
++#include "pram.h"
 +
-+/*
-+ * The PRAM filesystem constants/structures
-+ */
++static struct super_operations pram_sops;
++static const struct export_operations pram_export_ops;
++static struct kmem_cache *pram_inode_cachep;
 +
-+/*
-+ * Mount flags
-+ */
-+#define PRAM_MOUNT_PROTECT		0x000001  /* Use memory protection */
-+#define PRAM_MOUNT_XATTR_USER		0x000002  /* Extended user attributes */
-+#define PRAM_MOUNT_POSIX_ACL		0x000004  /* POSIX ACL */
-+#define PRAM_MOUNT_XIP			0x000008  /* Execute in place */
-+#define PRAM_MOUNT_ERRORS_CONT		0x000010  /* Continue on errors */
-+#define PRAM_MOUNT_ERRORS_RO		0x000020  /* Remount fs ro on errors */
-+#define PRAM_MOUNT_ERRORS_PANIC		0x000040  /* Panic on errors */
++#ifdef CONFIG_PRAMFS_TEST
++static void *first_pram_super;
 +
-+/*
-+ * Pram inode flags
-+ *
-+ * PRAM_EOFBLOCKS_FL	There are blocks allocated beyond eof
-+ */
-+#define PRAM_EOFBLOCKS_FL	0x20000000
-+/* Flags that should be inherited by new inodes from their parent. */
-+#define PRAM_FL_INHERITED (FS_SECRM_FL | FS_UNRM_FL | FS_COMPR_FL |\
-+			   FS_SYNC_FL | FS_NODUMP_FL | FS_NOATIME_FL | \
-+			   FS_COMPRBLK_FL | FS_NOCOMP_FL | FS_JOURNAL_DATA_FL |\
-+			   FS_NOTAIL_FL | FS_DIRSYNC_FL)
-+/* Flags that are appropriate for regular files (all but dir-specific ones). */
-+#define PRAM_REG_FLMASK (~(FS_DIRSYNC_FL | FS_TOPDIR_FL))
-+/* Flags that are appropriate for non-directories/regular files. */
-+#define PRAM_OTHER_FLMASK (FS_NODUMP_FL | FS_NOATIME_FL)
-+#define PRAM_FL_USER_VISIBLE (FS_FL_USER_VISIBLE | PRAM_EOFBLOCKS_FL)
++struct pram_super_block *get_pram_super(void)
++{
++	return (struct pram_super_block *)first_pram_super;
++}
++EXPORT_SYMBOL(get_pram_super);
++#endif
 +
-+/*
-+ * Maximal count of links to a file
-+ */
-+#define PRAM_LINK_MAX		32000
++void pram_error_mng(struct super_block *sb, const char *fmt, ...)
++{
++	va_list args;
 +
-+#define PRAM_MIN_BLOCK_SIZE 512
-+#define PRAM_MAX_BLOCK_SIZE 4096
-+#define PRAM_DEF_BLOCK_SIZE 2048
++	va_start(args, fmt);
++	printk(KERN_ERR "pramfs error: ");
++	vprintk(fmt, args);
++	printk("\n");
++	va_end(args);
 +
-+#define PRAM_INODE_SIZE 128 /* must be power of two */
-+#define PRAM_INODE_BITS   7
++	if (test_opt(sb, ERRORS_PANIC))
++		panic("pramfs: panic from previous error\n");
++	if (test_opt(sb, ERRORS_RO)) {
++		printk(KERN_CRIT "pramfs err: remounting filesystem read-only");
++		sb->s_flags |= MS_RDONLY;
++	}
++}
 +
-+/*
-+ * Structure of a directory entry in PRAMFS.
-+ * Offsets are to the inode that holds the referenced dentry.
-+ */
-+struct pram_dentry {
-+	__be64	d_next;     /* next dentry in this directory */
-+	__be64	d_prev;     /* previous dentry in this directory */
-+	__be64	d_parent;   /* parent directory */
-+	char	d_name[0];
++static void pram_set_blocksize(struct super_block *sb, unsigned long size)
++{
++	int bits;
++
++	/*
++	 * We've already validated the user input and the value here must be
++	 * between PRAM_MAX_BLOCK_SIZE and PRAM_MIN_BLOCK_SIZE
++	 * and it must be a power of 2.
++	 */
++	bits = fls(size) - 1;
++	sb->s_blocksize_bits = bits;
++	sb->s_blocksize = (1<<bits);
++}
++
++static inline void *pram_ioremap(phys_addr_t phys_addr, ssize_t size,
++				 bool protect)
++{
++	void *retval;
++
++	/*
++	 * NOTE: Userland may not map this resource, we will mark the region so
++	 * /dev/mem and the sysfs MMIO access will not be allowed. This
++	 * restriction depends on STRICT_DEVMEM option. If this option is
++	 * disabled or not available we mark the region only as busy.
++	 */
++	retval = request_mem_region_exclusive(phys_addr, size, "pramfs");
++	if (!retval)
++		goto fail;
++
++	if (protect) {
++		retval = (__force void *)ioremap_nocache(phys_addr, size);
++		if (!retval)
++			goto fail;
++		pram_writeable(retval, size, 0);
++	} else
++		retval = (__force void *)ioremap(phys_addr, size);
++fail:
++	return retval;
++}
++
++static loff_t pram_max_size(int bits)
++{
++	loff_t res;
++	res = (1ULL << (3*bits - 6)) - 1;
++
++	if (res > MAX_LFS_FILESIZE)
++		res = MAX_LFS_FILESIZE;
++
++	pram_info("max file size %llu bytes\n", res);
++	return res;
++}
++
++enum {
++	Opt_addr, Opt_bpi, Opt_size,
++	Opt_num_inodes, Opt_mode, Opt_uid,
++	Opt_gid, Opt_blocksize, Opt_user_xattr,
++	Opt_nouser_xattr, Opt_noprotect,
++	Opt_acl, Opt_noacl, Opt_xip,
++	Opt_err_cont, Opt_err_panic, Opt_err_ro,
++	Opt_err
 +};
 +
++static const match_table_t tokens = {
++	{Opt_bpi,		"physaddr=%x"},
++	{Opt_bpi,		"bpi=%u"},
++	{Opt_size,		"init=%s"},
++	{Opt_num_inodes,	"N=%u"},
++	{Opt_mode,		"mode=%o"},
++	{Opt_uid,		"uid=%u"},
++	{Opt_gid,		"gid=%u"},
++	{Opt_blocksize,		"bs=%s"},
++	{Opt_user_xattr,	"user_xattr"},
++	{Opt_user_xattr,	"nouser_xattr"},
++	{Opt_noprotect,		"noprotect"},
++	{Opt_acl,		"acl"},
++	{Opt_acl,		"noacl"},
++	{Opt_xip,		"xip"},
++	{Opt_err_cont,		"errors=continue"},
++	{Opt_err_panic,		"errors=panic"},
++	{Opt_err_ro,		"errors=remount-ro"},
++	{Opt_err,		NULL},
++};
++
++static phys_addr_t get_phys_addr(void **data)
++{
++	phys_addr_t phys_addr;
++	char *options = (char *) *data;
++	unsigned long long ulltmp;
++	char *end;
++	char org_end;
++	int err;
++
++	if (!options || strncmp(options, "physaddr=", 9) != 0)
++		return (phys_addr_t)ULLONG_MAX;
++	options += 9;
++	end = strchr(options, ',') ?: options + strlen(options);
++	org_end = *end;
++	*end = '\0';
++	err = kstrtoull(options, 0, &ulltmp);
++	*end = org_end;
++	options = end;
++	phys_addr = (phys_addr_t)ulltmp;
++	if (err) {
++		printk(KERN_ERR "Invalid phys addr specification: %s\n",
++		       (char *) *data);
++		return (phys_addr_t)ULLONG_MAX;
++	}
++	if (phys_addr & (PAGE_SIZE - 1)) {
++		printk(KERN_ERR "physical address 0x%16llx for pramfs isn't "
++			  "aligned to a page boundary\n",
++			  (u64)phys_addr);
++		return (phys_addr_t)ULLONG_MAX;
++	}
++	if (*options == ',')
++		options++;
++	*data = (void *) options;
++	return phys_addr;
++}
++
++static int pram_parse_options(char *options, struct pram_sb_info *sbi,
++			      bool remount)
++{
++	char *p, *rest;
++	substring_t args[MAX_OPT_ARGS];
++	int option;
++
++	if (!options)
++		return 0;
++
++	while ((p = strsep(&options, ",")) != NULL) {
++		int token;
++		if (!*p)
++			continue;
++
++		token = match_token(p, tokens, args);
++		switch (token) {
++		case Opt_addr:
++			if (remount)
++				goto bad_opt;
++			/* physaddr managed in get_phys_addr() */
++			break;
++		case Opt_bpi:
++			if (remount)
++				goto bad_opt;
++			if (match_int(&args[0], &option))
++				goto bad_val;
++			sbi->bpi = option;
++			break;
++		case Opt_uid:
++			if (remount)
++				goto bad_opt;
++			if (match_int(&args[0], &option))
++				goto bad_val;
++			sbi->uid = make_kuid(current_user_ns(), option);
++			if (!uid_valid(sbi->uid))
++				goto bad_val;
++			break;
++		case Opt_gid:
++			if (match_int(&args[0], &option))
++				goto bad_val;
++			sbi->gid = make_kgid(current_user_ns(), option);
++			if (!gid_valid(sbi->gid))
++				goto bad_val;
++			break;
++		case Opt_mode:
++			if (match_octal(&args[0], &option))
++				goto bad_val;
++			sbi->mode = option & 01777U;
++			break;
++		case Opt_size:
++			if (remount)
++				goto bad_opt;
++			/* memparse() will accept a K/M/G without a digit */
++			if (!isdigit(*args[0].from))
++				goto bad_val;
++			sbi->initsize = memparse(args[0].from, &rest);
++			break;
++		case Opt_num_inodes:
++			if (remount)
++				goto bad_opt;
++			if (match_int(&args[0], &option))
++				goto bad_val;
++				sbi->num_inodes = option;
++				break;
++		case Opt_blocksize:
++			if (remount)
++				goto bad_opt;
++			/* memparse() will accept a K/M/G without a digit */
++			if (!isdigit(*args[0].from))
++				goto bad_val;
++			sbi->blocksize = memparse(args[0].from, &rest);
++			if (sbi->blocksize < PRAM_MIN_BLOCK_SIZE ||
++				sbi->blocksize > PRAM_MAX_BLOCK_SIZE ||
++				!is_power_of_2(sbi->blocksize))
++				goto bad_val;
++			break;
++		case Opt_err_panic:
++			clear_opt(sbi->s_mount_opt, ERRORS_CONT);
++			clear_opt(sbi->s_mount_opt, ERRORS_RO);
++			set_opt(sbi->s_mount_opt, ERRORS_PANIC);
++			break;
++		case Opt_err_ro:
++			clear_opt(sbi->s_mount_opt, ERRORS_CONT);
++			clear_opt(sbi->s_mount_opt, ERRORS_PANIC);
++			set_opt(sbi->s_mount_opt, ERRORS_RO);
++			break;
++		case Opt_err_cont:
++			clear_opt(sbi->s_mount_opt, ERRORS_RO);
++			clear_opt(sbi->s_mount_opt, ERRORS_PANIC);
++			set_opt(sbi->s_mount_opt, ERRORS_CONT);
++			break;
++		case Opt_noprotect:
++#ifdef CONFIG_PRAMFS_WRITE_PROTECT
++			if (remount)
++				goto bad_opt;
++			clear_opt(sbi->s_mount_opt, PROTECT);
++#endif
++			break;
++#ifdef CONFIG_PRAMFS_XATTR
++		case Opt_user_xattr:
++			set_opt(sbi->s_mount_opt, XATTR_USER);
++			break;
++		case Opt_nouser_xattr:
++			clear_opt(sbi->s_mount_opt, XATTR_USER);
++			break;
++#else
++		case Opt_user_xattr:
++		case Opt_nouser_xattr:
++			pram_info("(no)user_xattr options not supported\n");
++			break;
++#endif
++#ifdef CONFIG_PRAMFS_POSIX_ACL
++		case Opt_acl:
++			set_opt(sbi->s_mount_opt, POSIX_ACL);
++			break;
++		case Opt_noacl:
++			clear_opt(sbi->s_mount_opt, POSIX_ACL);
++			break;
++#else
++		case Opt_acl:
++		case Opt_noacl:
++			pram_info("(no)acl options not supported\n");
++			break;
++#endif
++		case Opt_xip:
++#ifdef CONFIG_PRAMFS_XIP
++			if (remount)
++				goto bad_opt;
++			set_opt(sbi->s_mount_opt, XIP);
++			break;
++#else
++			pram_info("xip option not supported\n");
++			break;
++#endif
++		default: {
++			goto bad_opt;
++		}
++		}
++	}
++
++	return 0;
++
++bad_val:
++	printk(KERN_ERR "Bad value '%s' for mount option '%s'\n", args[0].from,
++	       p);
++	return -EINVAL;
++bad_opt:
++	printk(KERN_ERR "Bad mount option: \"%s\"\n", p);
++	return -EINVAL;
++}
++
++static struct pram_inode *pram_init(struct super_block *sb, unsigned long size)
++{
++	unsigned long bpi, num_inodes, bitmap_size, blocksize, num_blocks;
++	u64 bitmap_start;
++	struct pram_inode *root_i;
++	struct pram_super_block *super;
++	struct pram_sb_info *sbi = PRAM_SB(sb);
++
++	pram_info("creating an empty pramfs of size %lu\n", size);
++	sbi->virt_addr = pram_ioremap(sbi->phys_addr, size,
++							pram_is_protected(sb));
++
++	if (!sbi->virt_addr) {
++		printk(KERN_ERR "ioremap of the pramfs image failed\n");
++		return ERR_PTR(-EINVAL);
++	}
++
++#ifdef CONFIG_PRAMFS_TEST
++	if (!first_pram_super)
++		first_pram_super = sbi->virt_addr;
++#endif
++
++	if (!sbi->blocksize)
++		blocksize = PRAM_DEF_BLOCK_SIZE;
++	else
++		blocksize = sbi->blocksize;
++
++	pram_set_blocksize(sb, blocksize);
++	blocksize = sb->s_blocksize;
++
++	if (sbi->blocksize && sbi->blocksize != blocksize)
++		sbi->blocksize = blocksize;
++
++	if (size < blocksize) {
++		printk(KERN_ERR "size smaller then block size\n");
++		return ERR_PTR(-EINVAL);
++	}
++
++	if (!sbi->bpi)
++		/*
++		 * default is that 5% of the filesystem is
++		 * devoted to the inode table
++		 */
++		bpi = 20 * PRAM_INODE_SIZE;
++	else
++		bpi = sbi->bpi;
++
++	if (!sbi->num_inodes)
++		num_inodes = size / bpi;
++	else
++		num_inodes = sbi->num_inodes;
++
++	/*
++	 * up num_inodes such that the end of the inode table
++	 * (and start of bitmap) is on a block boundary
++	 */
++	bitmap_start = (PRAM_SB_SIZE*2) + (num_inodes<<PRAM_INODE_BITS);
++	if (bitmap_start & (blocksize - 1))
++		bitmap_start = (bitmap_start + blocksize) &
++			~(blocksize-1);
++	num_inodes = (bitmap_start - (PRAM_SB_SIZE*2)) >> PRAM_INODE_BITS;
++
++	if (sbi->num_inodes && num_inodes != sbi->num_inodes)
++		sbi->num_inodes = num_inodes;
++
++	num_blocks = (size - bitmap_start) >> sb->s_blocksize_bits;
++
++	if (!num_blocks) {
++		printk(KERN_ERR "num blocks equals to zero\n");
++		return ERR_PTR(-EINVAL);
++	}
++
++	/* calc the data blocks in-use bitmap size in bytes */
++	if (num_blocks & 7)
++		bitmap_size = ((num_blocks + 8) & ~7) >> 3;
++	else
++		bitmap_size = num_blocks >> 3;
++	/* round it up to the nearest blocksize boundary */
++	if (bitmap_size & (blocksize - 1))
++		bitmap_size = (bitmap_size + blocksize) & ~(blocksize-1);
++
++	pram_info("blocksize %lu, num inodes %lu, num blocks %lu\n",
++		  blocksize, num_inodes, num_blocks);
++	pram_dbg("bitmap start 0x%08x, bitmap size %lu\n",
++		 (unsigned int)bitmap_start, bitmap_size);
++	pram_dbg("max name length %d\n", (unsigned int)PRAM_NAME_LEN);
++
++	super = pram_get_super(sb);
++	pram_memunlock_range(sb, super, bitmap_start + bitmap_size);
++
++	/* clear out super-block and inode table */
++	memset(super, 0, bitmap_start);
++	super->s_size = cpu_to_be64(size);
++	super->s_blocksize = cpu_to_be32(blocksize);
++	super->s_inodes_count = cpu_to_be32(num_inodes);
++	super->s_blocks_count = cpu_to_be32(num_blocks);
++	super->s_free_inodes_count = cpu_to_be32(num_inodes - 1);
++	super->s_bitmap_blocks = cpu_to_be32(bitmap_size >>
++							  sb->s_blocksize_bits);
++	super->s_free_blocks_count =
++		cpu_to_be32(num_blocks - be32_to_cpu(super->s_bitmap_blocks));
++	super->s_free_inode_hint = cpu_to_be32(1);
++	super->s_bitmap_start = cpu_to_be64(bitmap_start);
++	super->s_magic = cpu_to_be16(PRAM_SUPER_MAGIC);
++	pram_sync_super(super);
++
++	root_i = pram_get_inode(sb, PRAM_ROOT_INO);
++
++	root_i->i_mode = cpu_to_be16(sbi->mode | S_IFDIR);
++	root_i->i_uid = cpu_to_be32(sbi->uid);
++	root_i->i_gid = cpu_to_be32(sbi->gid);
++	root_i->i_links_count = cpu_to_be16(2);
++	root_i->i_d.d_parent = cpu_to_be64(PRAM_ROOT_INO);
++	pram_sync_inode(root_i);
++
++	pram_init_bitmap(sb);
++
++	pram_memlock_range(sb, super, bitmap_start + bitmap_size);
++
++	return root_i;
++}
++
++static inline void set_default_opts(struct pram_sb_info *sbi)
++{
++#ifdef CONFIG_PRAMFS_WRITE_PROTECT
++	set_opt(sbi->s_mount_opt, PROTECT);
++#endif
++	set_opt(sbi->s_mount_opt, ERRORS_CONT);
++}
++
++static void pram_root_check(struct super_block *sb, struct pram_inode *root_pi)
++{
++	pram_memunlock_inode(sb, root_pi);
++
++	if (root_pi->i_d.d_next) {
++		pram_warn("root->next not NULL, trying to fix\n");
++		goto fail1;
++	}
++
++	if (!S_ISDIR(be16_to_cpu(root_pi->i_mode))) {
++		pram_warn("root is not a directory, trying to fix\n");
++		goto fail2;
++	}
++	
++	if (pram_calc_checksum((u8 *)root_pi, PRAM_INODE_SIZE)) {
++		pram_warn("checksum error in root inode, trying to fix\n");
++		goto fail3;
++	}
++ fail1:
++	root_pi->i_d.d_next = 0;
++ fail2:
++	root_pi->i_mode = cpu_to_be16(S_IRWXUGO|S_ISVTX|S_IFDIR);
++ fail3:
++	root_pi->i_d.d_parent = cpu_to_be64(PRAM_ROOT_INO);
++	pram_memlock_inode(sb, root_pi);
++}
++
++static int pram_fill_super(struct super_block *sb, void *data, int silent)
++{
++	struct pram_super_block *super, *super_redund;
++	struct pram_inode *root_pi;
++	struct pram_sb_info *sbi = NULL;
++	struct inode *root_i = NULL;
++	unsigned long blocksize, initsize = 0;
++	u32 random = 0;
++	int retval = -EINVAL;
++
++	BUILD_BUG_ON(sizeof(struct pram_super_block) > PRAM_SB_SIZE);
++	BUILD_BUG_ON(sizeof(struct pram_inode) > PRAM_INODE_SIZE);
++
++	sbi = kzalloc(sizeof(struct pram_sb_info), GFP_KERNEL);
++	if (!sbi)
++		return -ENOMEM;
++	sb->s_fs_info = sbi;
++
++	set_default_opts(sbi);
++
++	mutex_init(&sbi->s_lock);
++#ifdef CONFIG_PRAMFS_XATTR
++	spin_lock_init(&sbi->desc_tree_lock);
++	sbi->desc_tree.rb_node = NULL;
++#endif
++
++	sbi->phys_addr = get_phys_addr(&data);
++	if (sbi->phys_addr == (phys_addr_t)ULLONG_MAX)
++		goto out;
++
++	get_random_bytes(&random, sizeof(u32));
++	atomic_set(&sbi->next_generation, random);
++
++	/* Init with default values */
++	sbi->mode = (S_IRWXUGO | S_ISVTX);
++	sbi->uid = current_fsuid();
++	sbi->gid = current_fsgid();
++
++	if (pram_parse_options(data, sbi, 0))
++		goto out;
++
++	if (test_opt(sb, XIP) && test_opt(sb, PROTECT)) {
++		printk(KERN_ERR "xip and protect options both enabled\n");
++		goto out;
++	}
++
++	if (test_opt(sb, XIP) && sbi->blocksize != PAGE_SIZE) {
++		printk(KERN_ERR "blocksize not equal to page size "
++							 "and xip enabled\n");
++		goto out;
++	}
++
++	initsize = sbi->initsize;
++
++	/* Init a new pramfs instance */
++	if (initsize) {
++		root_pi = pram_init(sb, initsize);
++
++		if (IS_ERR(root_pi))
++			goto out;
++
++		super = pram_get_super(sb);
++
++		goto setup_sb;
++	}
++
++	pram_dbg("checking physical address 0x%016llx for pramfs image\n",
++		   (u64)sbi->phys_addr);
++
++	/* Map only one page for now. Will remap it when fs size is known. */
++	initsize = PAGE_SIZE;
++	sbi->virt_addr = pram_ioremap(sbi->phys_addr, initsize,
++							pram_is_protected(sb));
++	if (!sbi->virt_addr) {
++		printk(KERN_ERR "ioremap of the pramfs image failed\n");
++		goto out;
++	}
++
++	super = pram_get_super(sb);
++	super_redund = pram_get_redund_super(sb);
++
++	/* Do sanity checks on the superblock */
++	if (be16_to_cpu(super->s_magic) != PRAM_SUPER_MAGIC) {
++		if (be16_to_cpu(super_redund->s_magic) != PRAM_SUPER_MAGIC) {
++			if (!silent)
++				printk(KERN_ERR "Can't find a valid pramfs "
++								"partition\n");
++			goto out;
++		} else {
++			pram_warn("Error in super block: try to repair it with "
++							  "the redundant copy");
++			/* Try to auto-recover the super block */
++			pram_memunlock_super(sb, super);
++			memcpy(super, super_redund, PRAM_SB_SIZE);
++			pram_memlock_super(sb, super);
++		}
++	}
++
++	/* Read the superblock */
++	if (pram_calc_checksum((u8 *)super, PRAM_SB_SIZE)) {
++		if (pram_calc_checksum((u8 *)super_redund, PRAM_SB_SIZE)) {
++			printk(KERN_ERR "checksum error in super block\n");
++			goto out;
++		} else {
++			pram_warn("Error in super block: try to repair it with "
++							  "the redundant copy");
++			/* Try to auto-recover the super block */
++			pram_memunlock_super(sb, super);
++			memcpy(super, super_redund, PRAM_SB_SIZE);
++			pram_memlock_super(sb, super);
++		}
++	}
++
++	blocksize = be32_to_cpu(super->s_blocksize);
++	pram_set_blocksize(sb, blocksize);
++
++	initsize = be64_to_cpu(super->s_size);
++	pram_info("pramfs image appears to be %lu KB in size\n", initsize>>10);
++	pram_info("blocksize %lu\n", blocksize);
++
++	/* Read the root inode */
++	root_pi = pram_get_inode(sb, PRAM_ROOT_INO);
++
++	/* Check that the root inode is in a sane state */
++	pram_root_check(sb, root_pi);
++
++	/* Remap the whole filesystem now */
++	if (pram_is_protected(sb))
++		pram_writeable(sbi->virt_addr, PAGE_SIZE, 1);
++	iounmap((void __iomem *)sbi->virt_addr);
++	release_mem_region(sbi->phys_addr, PAGE_SIZE);
++	sbi->virt_addr = pram_ioremap(sbi->phys_addr, initsize,
++							pram_is_protected(sb));
++	if (!sbi->virt_addr) {
++		printk(KERN_ERR "ioremap of the pramfs image failed\n");
++		goto out;
++	}
++	super = pram_get_super(sb);
++
++#ifdef CONFIG_PRAMFS_TEST
++	if (!first_pram_super)
++		first_pram_super = sbi->virt_addr;
++#endif
++
++	/* Set it all up.. */
++ setup_sb:
++	sb->s_magic = be16_to_cpu(super->s_magic);
++	sb->s_op = &pram_sops;
++	sb->s_maxbytes = pram_max_size(sb->s_blocksize_bits);
++	sb->s_max_links = PRAM_LINK_MAX;
++	sb->s_export_op = &pram_export_ops;
++	sb->s_xattr = pram_xattr_handlers;
++#ifdef	CONFIG_PRAMFS_POSIX_ACL
++	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
++		(sbi->s_mount_opt & PRAM_MOUNT_POSIX_ACL) ?
++		 MS_POSIXACL : 0;
++#endif
++	sb->s_flags |= MS_NOSEC;
++	root_i = pram_iget(sb, PRAM_ROOT_INO);
++	if (IS_ERR(root_i)) {
++		retval = PTR_ERR(root_i);
++		goto out;
++	}
++	
++	sb->s_root = d_make_root(root_i);
++	if (!sb->s_root) {
++		printk(KERN_ERR "get pramfs root inode failed\n");
++		retval = -ENOMEM;
++		goto out;
++	}
++
++	retval = 0;
++	return retval;
++ out:
++	if (sbi->virt_addr) {
++		if (pram_is_protected(sb))
++			pram_writeable(sbi->virt_addr, initsize, 1);
++		iounmap((void __iomem *)sbi->virt_addr);
++		release_mem_region(sbi->phys_addr, initsize);
++	}
++
++	kfree(sbi);
++	return retval;
++}
++
++int pram_statfs(struct dentry *d, struct kstatfs *buf)
++{
++	struct super_block *sb = d->d_sb;
++	struct pram_super_block *ps = pram_get_super(sb);
++
++	buf->f_type = PRAM_SUPER_MAGIC;
++	buf->f_bsize = sb->s_blocksize;
++	buf->f_blocks = be32_to_cpu(ps->s_blocks_count);
++	buf->f_bfree = buf->f_bavail = pram_count_free_blocks(sb);
++	buf->f_files = be32_to_cpu(ps->s_inodes_count);
++	buf->f_ffree = be32_to_cpu(ps->s_free_inodes_count);
++	buf->f_namelen = PRAM_NAME_LEN;
++	return 0;
++}
++
++static int pram_show_options(struct seq_file *seq, struct dentry *root)
++{
++	struct pram_sb_info *sbi = PRAM_SB(root->d_sb);
++
++	seq_printf(seq, ",physaddr=0x%016llx", (u64)sbi->phys_addr);
++	if (sbi->initsize)
++		seq_printf(seq, ",init=%luk", sbi->initsize >> 10);
++	if (sbi->blocksize)
++		seq_printf(seq, ",bs=%lu", sbi->blocksize);
++	if (sbi->bpi)
++		seq_printf(seq, ",bpi=%lu", sbi->bpi);
++	if (sbi->num_inodes)
++		seq_printf(seq, ",N=%lu", sbi->num_inodes);
++	if (sbi->mode != (S_IRWXUGO | S_ISVTX))
++		seq_printf(seq, ",mode=%03o", sbi->mode);
++	if (!uid_eq(sbi->uid, GLOBAL_ROOT_UID))
++		seq_printf(seq, ",uid=%u",
++				from_kuid_munged(&init_user_ns, sbi->uid));
++	if (!gid_eq(sbi->gid, GLOBAL_ROOT_GID))
++		seq_printf(seq, ",gid=%u",
++				from_kgid_munged(&init_user_ns, sbi->gid));
++	if (test_opt(root->d_sb, ERRORS_RO))
++		seq_puts(seq, ",errors=remount-ro");
++	if (test_opt(root->d_sb, ERRORS_PANIC))
++		seq_puts(seq, ",errors=panic");
++#ifdef CONFIG_PRAMFS_WRITE_PROTECT
++	/* memory protection enabled by default */
++	if (!test_opt(root->d_sb, PROTECT))
++		seq_puts(seq, ",noprotect");
++#else
++	/*
++	 * If it's not compiled say to the user that there
++	 * isn't the protection.
++	 */
++	seq_puts(seq, ",noprotect");
++#endif
++
++#ifdef CONFIG_PRAMFS_XATTR
++	/* user xattr not enabled by default */
++	if (test_opt(root->d_sb, XATTR_USER))
++		seq_puts(seq, ",user_xattr");
++#endif
++
++#ifdef CONFIG_PRAMFS_POSIX_ACL
++	/* acl not enabled by default */
++	if (test_opt(root->d_sb, POSIX_ACL))
++		seq_puts(seq, ",acl");
++#endif
++
++#ifdef CONFIG_PRAMFS_XIP
++	/* xip not enabled by default */
++	if (test_opt(root->d_sb, XIP))
++		seq_puts(seq, ",xip");
++#endif
++
++	return 0;
++}
++
++int pram_remount(struct super_block *sb, int *mntflags, char *data)
++{
++	unsigned long old_sb_flags;
++	unsigned long old_mount_opt;
++	struct pram_super_block *ps;
++	struct pram_sb_info *sbi = PRAM_SB(sb);
++	int ret = -EINVAL;
++
++	/* Store the old options */
++	old_sb_flags = sb->s_flags;
++	old_mount_opt = sbi->s_mount_opt;
++
++	if (pram_parse_options(data, sbi, 1))
++		goto restore_opt;
++
++	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
++		((sbi->s_mount_opt & PRAM_MOUNT_POSIX_ACL) ? MS_POSIXACL : 0);
++
++	if ((*mntflags & MS_RDONLY) != (sb->s_flags & MS_RDONLY)) {
++		mutex_lock(&PRAM_SB(sb)->s_lock);
++		ps = pram_get_super(sb);
++		pram_memunlock_super(sb, ps);
++		/* update mount time */
++		ps->s_mtime = cpu_to_be32(get_seconds());
++		pram_memlock_super(sb, ps);
++		mutex_unlock(&PRAM_SB(sb)->s_lock);
++	}
++
++	ret = 0;
++	return ret;
++
++ restore_opt:
++	sb->s_flags = old_sb_flags;
++	sbi->s_mount_opt = old_mount_opt;
++	return ret;
++}
++
++static void pram_put_super(struct super_block *sb)
++{
++	struct pram_sb_info *sbi = PRAM_SB(sb);
++	struct pram_super_block *ps = pram_get_super(sb);
++	u64 size = be64_to_cpu(ps->s_size);
++
++#ifdef CONFIG_PRAMFS_TEST
++	if (first_pram_super == sbi->virt_addr)
++		first_pram_super = NULL;
++#endif
++
++	pram_xattr_put_super(sb);
++	/* It's unmount time, so unmap the pramfs memory */
++	if (sbi->virt_addr) {
++		if (pram_is_protected(sb))
++			pram_writeable(sbi->virt_addr, size, 1);
++		iounmap(sbi->virt_addr);
++		sbi->virt_addr = NULL;
++		release_mem_region(sbi->phys_addr, size);
++	}
++
++	sb->s_fs_info = NULL;
++	kfree(sbi);
++}
++
++static struct inode *pram_alloc_inode(struct super_block *sb)
++{
++	struct pram_inode_vfs *vi = (struct pram_inode_vfs *)
++				kmem_cache_alloc(pram_inode_cachep, GFP_NOFS);
++	if (!vi)
++		return NULL;
++	vi->vfs_inode.i_version = 1;
++	return &vi->vfs_inode;
++}
++
++static void pram_i_callback(struct rcu_head *head)
++{
++	struct inode *inode = container_of(head, struct inode, i_rcu);
++	kmem_cache_free(pram_inode_cachep, PRAM_I(inode));
++}
++
++static void pram_destroy_inode(struct inode *inode)
++{
++	call_rcu(&inode->i_rcu, pram_i_callback);
++}
++
++static void init_once(void *foo)
++{
++	struct pram_inode_vfs *vi = (struct pram_inode_vfs *) foo;
++
++#ifdef CONFIG_PRAMFS_XATTR
++	init_rwsem(&vi->xattr_sem);
++#endif
++	mutex_init(&vi->i_meta_mutex);
++	mutex_init(&vi->i_link_mutex);
++	inode_init_once(&vi->vfs_inode);
++}
++
++static int __init init_inodecache(void)
++{
++	pram_inode_cachep = kmem_cache_create("pram_inode_cache",
++					     sizeof(struct pram_inode_vfs),
++					     0, (SLAB_RECLAIM_ACCOUNT|
++						SLAB_MEM_SPREAD),
++					     init_once);
++	if (pram_inode_cachep == NULL)
++		return -ENOMEM;
++	return 0;
++}
++
++static void destroy_inodecache(void)
++{
++	/*
++         * Make sure all delayed rcu free inodes are flushed before we
++         * destroy cache.
++         */
++	rcu_barrier();
++	kmem_cache_destroy(pram_inode_cachep);
++}
 +
 +/*
-+ * Structure of an inode in PRAMFS
++ * the super block writes are all done "on the fly", so the
++ * super block is never in a "dirty" state, so there's no need
++ * for write_super.
 + */
-+struct pram_inode {
-+	__be32	i_sum;          /* checksum of this inode */
-+	__be32	i_uid;		/* Owner Uid */
-+	__be32	i_gid;		/* Group Id */
-+	__be16	i_mode;		/* File mode */
-+	__be16	i_links_count;	/* Links count */
-+	__be32	i_blocks;	/* Blocks count */
-+	__be32	i_size;		/* Size of data in bytes */
-+	__be32	i_atime;	/* Access time */
-+	__be32	i_ctime;	/* Creation time */
-+	__be32	i_mtime;	/* Modification time */
-+	__be32	i_dtime;	/* Deletion Time */
-+	__be64	i_xattr;	/* Extended attribute block */
-+	__be32	i_generation;	/* File version (for NFS) */
-+	__be32	i_flags;	/* Inode flags */
-+
-+	union {
-+		struct {
-+			/*
-+			 * ptr to row block of 2D block pointer array,
-+			 * file block #'s 0 to (blocksize/8)^2 - 1.
-+			 */
-+			__be64 row_block;
-+		} reg;   /* regular file or symlink inode */
-+		struct {
-+			__be64 head; /* first entry in this directory */
-+			__be64 tail; /* last entry in this directory */
-+		} dir;
-+		struct {
-+			__be32 rdev; /* major/minor # */
-+		} dev;   /* device inode */
-+	} i_type;
-+
-+	struct pram_dentry i_d;
++static struct super_operations pram_sops = {
++	.alloc_inode	= pram_alloc_inode,
++	.destroy_inode	= pram_destroy_inode,
++	.write_inode	= pram_write_inode,
++	.dirty_inode	= pram_dirty_inode,
++	.evict_inode	= pram_evict_inode,
++	.put_super	= pram_put_super,
++	.freeze_fs 	= pram_freeze_fs,
++	.unfreeze_fs 	= pram_unfreeze_fs,
++	.statfs		= pram_statfs,
++	.remount_fs	= pram_remount,
++	.show_options	= pram_show_options,
 +};
 +
-+#define PRAM_NAME_LEN \
-+	(PRAM_INODE_SIZE - offsetof(struct pram_inode, i_d.d_name) - 1)
++static struct dentry *pram_mount(struct file_system_type *fs_type,
++	int flags, const char *dev_name, void *data)
++{
++	return mount_nodev(fs_type, flags, data, pram_fill_super);
++}
 +
++static struct file_system_type pram_fs_type = {
++	.owner          = THIS_MODULE,
++	.name           = "pramfs",
++	.mount          = pram_mount,
++	.kill_sb        = kill_anon_super,
++};
++MODULE_ALIAS_FS("pramfs");
 +
-+#define PRAM_SB_SIZE 128 /* must be power of two */
++static struct inode *pram_nfs_get_inode(struct super_block *sb,
++		u64 ino, u32 generation)
++{
++	struct pram_super_block *ps = pram_get_super(sb);
++	struct inode *inode;
 +
-+/*
-+ * Structure of the super block in PRAMFS
-+ */
-+struct pram_super_block {
-+	__be32	s_sum;          /* checksum of this sb, including padding */
-+	__be64	s_size;         /* total size of fs in bytes */
-+	__be32	s_blocksize;    /* blocksize in bytes */
-+	__be32	s_inodes_count;	/* total inodes count (used or free) */
-+	__be32	s_free_inodes_count;/* free inodes count */
-+	__be32	s_free_inode_hint;  /* start hint for locating free inodes */
-+	__be32	s_blocks_count;	/* total data blocks count (used or free) */
-+	__be32	s_free_blocks_count;/* free data blocks count */
-+	__be32	s_free_blocknr_hint;/* free data blocks count */
-+	__be64	s_bitmap_start; /* data block in-use bitmap location */
-+	__be32	s_bitmap_blocks;/* size of bitmap in number of blocks */
-+	__be32	s_mtime;	/* Mount time */
-+	__be32	s_wtime;	/* Write time */
-+	__be16	s_magic;	/* Magic signature */
-+	char	s_volume_name[16]; /* volume name */
++	if (ino < PRAM_ROOT_INO)
++		return ERR_PTR(-ESTALE);
++	if (((ino - PRAM_ROOT_INO) >> PRAM_INODE_BITS) >
++	  be32_to_cpu(ps->s_inodes_count))
++		return ERR_PTR(-ESTALE);
++
++	inode = pram_iget(sb, ino);
++	if (IS_ERR(inode))
++		return ERR_CAST(inode);
++	if (generation && inode->i_generation != generation) {
++		/* we didn't find the right inode.. */
++		iput(inode);
++		return ERR_PTR(-ESTALE);
++	}
++	return inode;
++}
++
++static struct dentry *
++pram_fh_to_dentry(struct super_block *sb, struct fid *fid, int fh_len,
++		   int fh_type)
++{
++	return generic_fh_to_dentry(sb, fid, fh_len, fh_type,
++				    pram_nfs_get_inode);
++}
++
++static struct dentry *
++pram_fh_to_parent(struct super_block *sb, struct fid *fid, int fh_len,
++		   int fh_type)
++{
++	return generic_fh_to_parent(sb, fid, fh_len, fh_type,
++				    pram_nfs_get_inode);
++}
++
++static const struct export_operations pram_export_ops = {
++	.fh_to_dentry = pram_fh_to_dentry,
++	.fh_to_parent = pram_fh_to_parent,
++	.get_parent = pram_get_parent,
 +};
 +
-+/* The root inode follows immediately after the redundant super block */
-+#define PRAM_ROOT_INO (PRAM_SB_SIZE*2)
++static int __init init_pram_fs(void)
++{
++	int rc = 0;
 +
-+/*
-+ * XATTR related
-+ */
++	rc = init_pram_xattr();
++	if (rc)
++		return rc;
 +
-+/* Magic value in attribute blocks */
-+#define PRAM_XATTR_MAGIC		0x6d617270
++	rc = init_inodecache();
++	if (rc)
++		goto out1;
 +
-+/* Maximum number of references to one attribute block */
-+#define PRAM_XATTR_REFCOUNT_MAX		1024
++	rc = bdi_init(&pram_backing_dev_info);
++	if (rc)
++		goto out2;
 +
-+/* Name indexes */
-+#define PRAM_XATTR_INDEX_USER			1
-+#define PRAM_XATTR_INDEX_POSIX_ACL_ACCESS	2
-+#define PRAM_XATTR_INDEX_POSIX_ACL_DEFAULT	3
-+#define PRAM_XATTR_INDEX_TRUSTED		4
-+#define PRAM_XATTR_INDEX_SECURITY	        5
++	rc = register_filesystem(&pram_fs_type);
++	if (rc)
++		goto out3;
 +
-+struct pram_xattr_header {
-+	__be32	h_magic;	/* magic number for identification */
-+	__be32	h_refcount;	/* reference count */
-+	__be32	h_hash;		/* hash value of all attributes */
-+	__u32	h_reserved[4];	/* zero right now */
-+};
++	return 0;
 +
-+struct pram_xattr_entry {
-+	__u8	e_name_len;	/* length of name */
-+	__u8	e_name_index;	/* attribute name index */
-+	__be16	e_value_offs;	/* offset in disk block of value */
-+	__be32	e_value_block;	/* disk block attribute is stored on (n/i) */
-+	__be32	e_value_size;	/* size of attribute value */
-+	__be32	e_hash;		/* hash value of name and value */
-+	char	e_name[0];	/* attribute name */
-+};
++out3:
++	bdi_destroy(&pram_backing_dev_info);
++out2:
++	destroy_inodecache();
++out1:
++	exit_pram_xattr();
++	return rc;
++}
 +
-+#define PRAM_XATTR_PAD_BITS		2
-+#define PRAM_XATTR_PAD		(1<<PRAM_XATTR_PAD_BITS)
-+#define PRAM_XATTR_ROUND		(PRAM_XATTR_PAD-1)
-+#define PRAM_XATTR_LEN(name_len) \
-+	(((name_len) + PRAM_XATTR_ROUND + \
-+	sizeof(struct pram_xattr_entry)) & ~PRAM_XATTR_ROUND)
-+#define PRAM_XATTR_NEXT(entry) \
-+	((struct pram_xattr_entry *)( \
-+	  (char *)(entry) + PRAM_XATTR_LEN((entry)->e_name_len)))
-+#define PRAM_XATTR_SIZE(size) \
-+	(((size) + PRAM_XATTR_ROUND) & ~PRAM_XATTR_ROUND)
++static void __exit exit_pram_fs(void)
++{
++	unregister_filesystem(&pram_fs_type);
++	bdi_destroy(&pram_backing_dev_info);
++	destroy_inodecache();
++	exit_pram_xattr();
++}
 +
-+#endif	/* _UAPI_LINUX_PRAM_FS_H */
++MODULE_AUTHOR("Marco Stornelli <marco.stornelli@gmail.com>");
++MODULE_DESCRIPTION("Protected/Persistent RAM Filesystem");
++MODULE_LICENSE("GPL");
++
++module_init(init_pram_fs)
++module_exit(exit_pram_fs)
 -- 
 1.7.3.4
