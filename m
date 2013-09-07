@@ -1,115 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751039Ab3IGHTl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 03:19:41 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:49771 "EHLO
+	id S1751061Ab3IGHaP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 03:30:15 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:49788 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750920Ab3IGHTk (ORCPT
+	with ESMTP id S1750974Ab3IGHaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 03:19:40 -0400
+	Sat, 7 Sep 2013 03:30:13 -0400
 From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: tony@atomide.com, linux@arm.linux.org.uk, khilman@deeprootsystems.com
-Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
+To: dhowells@redhat.com, yasutake.koichi@jp.panasonic.com
+Cc: linux-am33-list@redhat.com, linux-kernel@vger.kernel.org,
         Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] ARM: OMAP: remove deprecated IRQF_DISABLED
-Date: Sat,  7 Sep 2013 09:19:25 +0200
-Message-Id: <1378538365-7353-1-git-send-email-michael.opdenacker@free-electrons.com>
+Subject: [PATCH] mn10300: remove deprecated IRQF_DISABLED
+Date: Sat,  7 Sep 2013 09:29:58 +0200
+Message-Id: <1378538998-7467-1-git-send-email-michael.opdenacker@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch proposes to remove the IRQF_DISABLED flag from OMAP code
-It's a NOOP since 2.6.35, and will be removed one day.
+This patch proposes to remove the IRQF_DISABLED flag from mn10300 architecture
+code. It's a NOOP since 2.6.35 and it will be removed one day.
 
 Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 ---
- arch/arm/mach-omap1/fpga.c     | 3 +--
- arch/arm/mach-omap1/pm.c       | 1 -
- arch/arm/mach-omap1/time.c     | 2 +-
- arch/arm/mach-omap1/timer32k.c | 2 +-
- arch/arm/mach-omap2/timer.c    | 2 +-
- arch/arm/plat-omap/dma.c       | 1 -
- 6 files changed, 4 insertions(+), 7 deletions(-)
+ arch/mn10300/kernel/cevt-mn10300.c   | 2 +-
+ arch/mn10300/kernel/mn10300-serial.c | 6 +++---
+ arch/mn10300/kernel/smp.c            | 2 +-
+ arch/mn10300/unit-asb2364/irq-fpga.c | 2 +-
+ 4 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/mach-omap1/fpga.c b/arch/arm/mach-omap1/fpga.c
-index 8bd71b2..3c0e422 100644
---- a/arch/arm/mach-omap1/fpga.c
-+++ b/arch/arm/mach-omap1/fpga.c
-@@ -135,8 +135,7 @@ static struct irq_chip omap_fpga_irq = {
-  * mask_ack routine for all of the FPGA interrupts has been changed from
-  * fpga_mask_ack_irq() to fpga_ack_irq() so that the specific FPGA interrupt
-  * being serviced is left unmasked.  We can do this because the FPGA cascade
-- * interrupt is installed with the IRQF_DISABLED flag, which leaves all
-- * interrupts masked at the CPU while an FPGA interrupt handler executes.
-+ * interrupt is run with all interrupts masked.
-  *
-  * Limited testing indicates that this workaround appears to be effective
-  * for the smc9194 Ethernet driver used on the Innovator.  It should work
-diff --git a/arch/arm/mach-omap1/pm.c b/arch/arm/mach-omap1/pm.c
-index 358b82c..40a1ae3 100644
---- a/arch/arm/mach-omap1/pm.c
-+++ b/arch/arm/mach-omap1/pm.c
-@@ -628,7 +628,6 @@ static irqreturn_t omap_wakeup_interrupt(int irq, void *dev)
+diff --git a/arch/mn10300/kernel/cevt-mn10300.c b/arch/mn10300/kernel/cevt-mn10300.c
+index ccce35e..60f64ca 100644
+--- a/arch/mn10300/kernel/cevt-mn10300.c
++++ b/arch/mn10300/kernel/cevt-mn10300.c
+@@ -113,7 +113,7 @@ int __init init_clockevents(void)
+ 	cd->set_next_event	= next_event;
  
- static struct irqaction omap_wakeup_irq = {
- 	.name		= "peripheral wakeup",
--	.flags		= IRQF_DISABLED,
- 	.handler	= omap_wakeup_interrupt
+ 	iact = &per_cpu(timer_irq, cpu);
+-	iact->flags = IRQF_DISABLED | IRQF_SHARED | IRQF_TIMER;
++	iact->flags = IRQF_SHARED | IRQF_TIMER;
+ 	iact->handler = timer_interrupt;
+ 
+ 	clockevents_register_device(cd);
+diff --git a/arch/mn10300/kernel/mn10300-serial.c b/arch/mn10300/kernel/mn10300-serial.c
+index bf6e949..7ecf698 100644
+--- a/arch/mn10300/kernel/mn10300-serial.c
++++ b/arch/mn10300/kernel/mn10300-serial.c
+@@ -985,17 +985,17 @@ static int mn10300_serial_startup(struct uart_port *_port)
+ 	irq_set_chip(port->tm_irq, &mn10300_serial_pic);
+ 
+ 	if (request_irq(port->rx_irq, mn10300_serial_interrupt,
+-			IRQF_DISABLED | IRQF_NOBALANCING,
++			IRQF_NOBALANCING,
+ 			port->rx_name, port) < 0)
+ 		goto error;
+ 
+ 	if (request_irq(port->tx_irq, mn10300_serial_interrupt,
+-			IRQF_DISABLED | IRQF_NOBALANCING,
++			IRQF_NOBALANCING,
+ 			port->tx_name, port) < 0)
+ 		goto error2;
+ 
+ 	if (request_irq(port->tm_irq, mn10300_serial_interrupt,
+-			IRQF_DISABLED | IRQF_NOBALANCING,
++			IRQF_NOBALANCING,
+ 			port->tm_name, port) < 0)
+ 		goto error3;
+ 	mn10300_serial_mask_ack(port->tm_irq);
+diff --git a/arch/mn10300/kernel/smp.c b/arch/mn10300/kernel/smp.c
+index a17f9c9..f984193 100644
+--- a/arch/mn10300/kernel/smp.c
++++ b/arch/mn10300/kernel/smp.c
+@@ -143,7 +143,7 @@ static struct irqaction call_function_ipi = {
+ static irqreturn_t smp_ipi_timer_interrupt(int irq, void *dev_id);
+ static struct irqaction local_timer_ipi = {
+ 	.handler	= smp_ipi_timer_interrupt,
+-	.flags		= IRQF_DISABLED | IRQF_NOBALANCING,
++	.flags		= IRQF_NOBALANCING,
+ 	.name		= "smp local timer IPI"
  };
- 
-diff --git a/arch/arm/mach-omap1/time.c b/arch/arm/mach-omap1/time.c
-index 80603d2..6b5f298 100644
---- a/arch/arm/mach-omap1/time.c
-+++ b/arch/arm/mach-omap1/time.c
-@@ -160,7 +160,7 @@ static irqreturn_t omap_mpu_timer1_interrupt(int irq, void *dev_id)
- 
- static struct irqaction omap_mpu_timer1_irq = {
- 	.name		= "mpu_timer1",
--	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
-+	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
- 	.handler	= omap_mpu_timer1_interrupt,
+ #endif
+diff --git a/arch/mn10300/unit-asb2364/irq-fpga.c b/arch/mn10300/unit-asb2364/irq-fpga.c
+index e16c216..073e2cc 100644
+--- a/arch/mn10300/unit-asb2364/irq-fpga.c
++++ b/arch/mn10300/unit-asb2364/irq-fpga.c
+@@ -76,7 +76,7 @@ static irqreturn_t fpga_interrupt(int irq, void *_mask)
+ static struct irqaction fpga_irq[]  = {
+ 	[0] = {
+ 		.handler	= fpga_interrupt,
+-		.flags		= IRQF_DISABLED | IRQF_SHARED,
++		.flags		= IRQF_SHARED,
+ 		.name		= "fpga",
+ 	},
  };
- 
-diff --git a/arch/arm/mach-omap1/timer32k.c b/arch/arm/mach-omap1/timer32k.c
-index 0b74246..107e7ab 100644
---- a/arch/arm/mach-omap1/timer32k.c
-+++ b/arch/arm/mach-omap1/timer32k.c
-@@ -156,7 +156,7 @@ static irqreturn_t omap_32k_timer_interrupt(int irq, void *dev_id)
- 
- static struct irqaction omap_32k_timer_irq = {
- 	.name		= "32KHz timer",
--	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
-+	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
- 	.handler	= omap_32k_timer_interrupt,
- };
- 
-diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
-index b37e1fc..6552cd9 100644
---- a/arch/arm/mach-omap2/timer.c
-+++ b/arch/arm/mach-omap2/timer.c
-@@ -78,7 +78,7 @@ static irqreturn_t omap2_gp_timer_interrupt(int irq, void *dev_id)
- 
- static struct irqaction omap2_gp_timer_irq = {
- 	.name		= "gp_timer",
--	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
-+	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
- 	.handler	= omap2_gp_timer_interrupt,
- };
- 
-diff --git a/arch/arm/plat-omap/dma.c b/arch/arm/plat-omap/dma.c
-index 4d463ca..848eab5 100644
---- a/arch/arm/plat-omap/dma.c
-+++ b/arch/arm/plat-omap/dma.c
-@@ -1965,7 +1965,6 @@ static irqreturn_t omap2_dma_irq_handler(int irq, void *dev_id)
- static struct irqaction omap24xx_dma_irq = {
- 	.name = "DMA",
- 	.handler = omap2_dma_irq_handler,
--	.flags = IRQF_DISABLED
- };
- 
- #else
 -- 
 1.8.1.2
 
