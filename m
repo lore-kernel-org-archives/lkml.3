@@ -1,70 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751252Ab3IGNKe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 09:10:34 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:31621 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750938Ab3IGNKc (ORCPT
+	id S1751234Ab3IGNqN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 09:46:13 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:49158 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985Ab3IGNqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 09:10:32 -0400
-Message-ID: <522B25B5.6000808@oracle.com>
-Date: Sat, 07 Sep 2013 09:10:13 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Sat, 7 Sep 2013 09:46:12 -0400
 MIME-Version: 1.0
-To: pablo@netfilter.org, kaber@trash.net, kadlec@blackhole.kfki.hu,
-        "David S. Miller" <davem@davemloft.net>
-CC: netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: netfilter: active obj WARN when cleaning up
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Originating-IP: [89.2.206.189]
+In-Reply-To: <CANq1E4RAoLo2=fdZ4SCAnOtbCuJkAAf-BOfUFuK5S+gijpS8ng@mail.gmail.com>
+References: <CAG-2HqVruXZxO1xLvYeAPa1RYmy044UiBXFLAtX5WcHVQVAtfA@mail.gmail.com>
+ <CANq1E4RAoLo2=fdZ4SCAnOtbCuJkAAf-BOfUFuK5S+gijpS8ng@mail.gmail.com>
+From: Tom Gundersen <teg@jklm.no>
+Date: Sat, 7 Sep 2013 15:45:50 +0200
+Message-ID: <CAG-2HqVpAGOgvYKAsOCAac5F4SHB8nEtKtyTor2TYqp_fi7S7w@mail.gmail.com>
+Subject: Re: [REGRESSION] v3.12-rc1: i915_driver_load oopses when sysfb enabled
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Sat, Sep 7, 2013 at 2:40 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> On Fri, Sep 6, 2013 at 2:10 PM, Tom Gundersen <teg@jklm.no> wrote:
+>> Hi guys,
+>>
+>> With current git (v3.11-5058-g57d7309) I get the following oops:
+>>
+>> [    5.434312] ------------[ cut here ]------------
+>> [    5.434318] WARNING: CPU: 2 PID: 199 at arch/x86/mm/ioremap.c:171
+>> __ioremap_caller+0x2e3/0x390()
+>> [    5.434321] Info: mapping multiple BARs. Your kernel is fine.
+>> [    5.434323] Modules linked in:
+>> [    5.434326]  arc4 coretemp x86_pkg_temp_thermal intel_powerclamp
+>> brcmsmac kvm_intel kvm cordic brcmutil crc32_pclmul mac80211
+>> crc32c_intel ghash_clmulni_intel cfg80211 rfkill iTCO_wdt evdev
+>> iTCO_vendor_support aesni_intel aes_x86_64 glue_helper lrw gf128mul
+>> ablk_helper cryptd applesmc input_polldev hwmon microcode bcma
+>> snd_hda_codec_hdmi snd_hda_codec_cirrus fbcon bitblit fbcon_rotate
+>> fbcon_ccw fbcon_ud fbcon_cw softcursor font i915(+) snd_hda_intel
+>> snd_hda_codec ac video snd_hwdep intel_agp apple_bl battery button
+>> snd_pcm intel_gtt snd_page_alloc drm_kms_helper shpchp backlight
+>> snd_timer i2c_i801 lpc_ich snd mfd_core soundcore processor ext4 crc16
+>> mbcache jbd2 sd_mod crc_t10dif ahci libahci libata ehci_pci scsi_mod
+>> xhci_hcd ehci_hcd usbcore usb_common
+>> [    5.434383] CPU: 2 PID: 199 Comm: systemd-udevd Not tainted
+>> 3.11.0-TEG-05060-g0312d0c #81
+>> [    5.434386] Hardware name: Apple Inc.
+>> MacBookAir5,1/Mac-66F35F19FE2A0D05, BIOS MBA51.88Z.00EF.B01.1207271122
+>> 07/27/2012
+>> [    5.434390]  0000000000000009 ffff880168f87898 ffffffff8145be63
+>> ffff880168f878e0
+>> [    5.434394]  ffff880168f878d0 ffffffff8104b17d ffffc9000c080000
+>> 00000000a0000000
+>> [    5.434398]  ffffc9000c080000 ffffc9000c080000 0000000010000000
+>> ffff880168f87930
+>> [    5.434403] Call Trace:
+>> [    5.434409]  [<ffffffff8145be63>] dump_stack+0x54/0x8d
+>> [    5.434413]  [<ffffffff8104b17d>] warn_slowpath_common+0x7d/0xa0
+>> [    5.434417]  [<ffffffff8104b1ec>] warn_slowpath_fmt+0x4c/0x50
+>> [    5.434421]  [<ffffffff81051fdc>] ? iomem_map_sanity_check+0xac/0xe0
+>> [    5.434425]  [<ffffffff8103e8b3>] __ioremap_caller+0x2e3/0x390
+>> [    5.434430]  [<ffffffff8103e9f2>] ioremap_wc+0x32/0x40
+>> [    5.434450]  [<ffffffffa043f960>] i915_driver_load+0x670/0xf50 [i915]
+>> [    5.434467]  [<ffffffff8131540d>] ? drm_get_minor+0x1ad/0x200
+>> [    5.434471]  [<ffffffff81317509>] drm_get_pci_dev+0x129/0x2f0
+>> [    5.434487]  [<ffffffffa043c63c>] i915_pci_probe+0x2c/0x70 [i915]
+>> [    5.434493]  [<ffffffff8127f624>] pci_device_probe+0x84/0xe0
+>> [    5.434502]  [<ffffffff81331977>] driver_probe_device+0x87/0x3a0
+>> [    5.434509]  [<ffffffff81331d63>] __driver_attach+0x93/0xa0
+>> [    5.434516]  [<ffffffff81331cd0>] ? __device_attach+0x40/0x40
+>> [    5.434521]  [<ffffffff8132f813>] bus_for_each_dev+0x63/0xa0
+>> [    5.434525]  [<ffffffff813313ce>] driver_attach+0x1e/0x20
+>> [    5.434529]  [<ffffffff81330f40>] bus_add_driver+0x200/0x2d0
+>> [    5.434533]  [<ffffffffa04dc000>] ? 0xffffffffa04dbfff
+>> [    5.434538]  [<ffffffff813323e4>] driver_register+0x64/0xf0
+>> [    5.434541]  [<ffffffffa04dc000>] ? 0xffffffffa04dbfff
+>> [    5.434545]  [<ffffffff8127f45d>] __pci_register_driver+0x4d/0x50
+>> [    5.434549]  [<ffffffff813177e5>] drm_pci_init+0x115/0x130
+>> [    5.434552]  [<ffffffffa04dc000>] ? 0xffffffffa04dbfff
+>> [    5.434567]  [<ffffffffa04dc066>] i915_init+0x66/0x68 [i915]
+>> [    5.434570]  [<ffffffff8100022a>] do_one_initcall+0x5a/0x1b0
+>> [    5.434575]  [<ffffffff81071588>] ? __blocking_notifier_call_chain+0x58/0x70
+>> [    5.434581]  [<ffffffff810af52a>] load_module+0x1b0a/0x25a0
+>> [    5.434584]  [<ffffffff810abf70>] ? store_uevent+0x40/0x40
+>> [    5.434589]  [<ffffffff810b0136>] SyS_finit_module+0x86/0xb0
+>> [    5.434594]  [<ffffffff81463da7>] tracesys+0xdd/0xe2
+>> [    5.434599] ---[ end trace 4f93e77fcaaac9b7 ]---
+>>
+>>
+>>
+>>
+>> This only happens when either simplefb or efifb is enabled. I can not
+>> reproduce the problem on v3.11 with efifb enabled so it appears to be
+>> new.
+>
+> It seems to be unrelated to the x86-sysfb changes. The WARN_ON
+> triggered here obviously means that i915 remaps VMEM before removing
+> efifb. So either i915 now calls ioremap and friends _before_ calling
+> remove_conflicting_framebuffers(), or efifb is not unloaded correctly.
 
-While fuzzing with trinity inside a KVM tools guest, running latest -next kernel, I've
-stumbled on the following:
+I redid all the tests, and I'm now not able to reproduce this with
+efifb, only with simplefb (not sure if I made a mistake before or if
+some config changed). I attached the two different dmesg outputs (only
+difference is X86_SYSFB).
 
-[  418.311956] ------------[ cut here ]------------
-[  418.312449] WARNING: CPU: 6 PID: 4178 at lib/debugobjects.c:260 debug_print_object+0x8d/0xb0()
-[  418.313243] ODEBUG: free active (active state 0) object type: timer_list hint: 
-delayed_work_timer_fn+0x0/0x20
-[  418.314038] Modules linked in:
-[  418.314038] CPU: 6 PID: 4178 Comm: kworker/u16:2 Tainted: G        W 
-3.11.0-next-20130906-sasha #3984
-[  418.314038] Workqueue: netns cleanup_net
-[  418.314038]  0000000000000104 ffff880410371a58 ffffffff841b7815 0000000000000104
-[  418.314038]  ffff880410371aa8 ffff880410371a98 ffffffff8112540c ffff880410371a78
-[  418.314038]  ffffffff853ea0ab ffff8800bdc68b80 ffffffff85a65c00 ffffffff87676658
-[  418.314038] Call Trace:
-[  418.314038]  [<ffffffff841b7815>] dump_stack+0x52/0x87
-[  418.320315]  [<ffffffff8112540c>] warn_slowpath_common+0x8c/0xc0
-[  418.321040]  [<ffffffff811254f6>] warn_slowpath_fmt+0x46/0x50
-[  418.321101]  [<ffffffff81a60ded>] debug_print_object+0x8d/0xb0
-[  418.321101]  [<ffffffff811444e0>] ? __queue_work+0x390/0x390
-[  418.321101]  [<ffffffff81a61605>] __debug_check_no_obj_freed+0xa5/0x220
-[  418.321101]  [<ffffffff81249e76>] ? kmem_cache_destroy+0x86/0xe0
-[  418.321101]  [<ffffffff81a61795>] debug_check_no_obj_freed+0x15/0x20
-[  418.321101]  [<ffffffff812874d7>] kmem_cache_free+0x197/0x340
-[  418.321101]  [<ffffffff81249e76>] kmem_cache_destroy+0x86/0xe0
-[  418.321101]  [<ffffffff83d5d681>] nf_conntrack_cleanup_net_list+0x131/0x170
-[  418.321101]  [<ffffffff83d5ec5d>] nf_conntrack_pernet_exit+0x5d/0x70
-[  418.321101]  [<ffffffff83cda1ce>] ops_exit_list+0x5e/0x70
-[  418.321101]  [<ffffffff83cda80b>] cleanup_net+0xfb/0x1c0
-[  418.321101]  [<ffffffff81145c28>] process_one_work+0x338/0x550
-[  418.321101]  [<ffffffff81145b50>] ? process_one_work+0x260/0x550
-[  418.321883]  [<ffffffff81147605>] worker_thread+0x215/0x350
-[  418.321883]  [<ffffffff811473f0>] ? manage_workers+0x180/0x180
-[  418.321883]  [<ffffffff81150887>] kthread+0xe7/0xf0
-[  418.321883]  [<ffffffff811507a0>] ? __init_kthread_worker+0x70/0x70
-[  418.321883]  [<ffffffff841c7a2c>] ret_from_fork+0x7c/0xb0
-[  418.321883]  [<ffffffff811507a0>] ? __init_kthread_worker+0x70/0x70
-[  418.321883] ---[ end trace c974221542b61d0d ]---
+> Tom, some things off the top of my head:
+> - Is efifb still running after i915 loaded? You can see that via:
+>   cat /sys/class/graphics/fb0/name
+>   (and also fb1, fb2, ... whatever is there)
+>   If it's not running, anymore, then it's quite likely an i915 issue.
 
+I only have /sys/class/graphics/fb0/name and it says inteldrmfb (this
+is after i915 has taken over from simplefb).
 
-Thanks,
-Sasha
+> - Do you get a "fb: conflicting hw usage ..." in your dmesg log?
+
+Yes: "fb: conflicting fb hw usage inteldrmfb vs simple - removing
+generic driver"
+
+-t
