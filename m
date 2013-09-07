@@ -1,68 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751900Ab3IGTAD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 15:00:03 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:57720 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751771Ab3IGTAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 15:00:00 -0400
-Date: Sat, 7 Sep 2013 11:59:42 -0700
+	id S1751927Ab3IGTCi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 15:02:38 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:48881 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751516Ab3IGTCg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Sep 2013 15:02:36 -0400
+Date: Sat, 7 Sep 2013 12:02:26 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        josh@joshtriplett.org, niv@us.ibm.com,
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Carsten Emde <C.Emde@osadl.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Howells <dhowells@redhat.com>, edumazet@google.com,
-        darren@dvhart.com,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Silas Boyd-Wickizer <sbw@mit.edu>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Subject: Re: [PATCH tip/core/rcu 8/9] nohz_full: Add full-system-idle state
- machine
-Message-ID: <20130907185942.GG3966@linux.vnet.ibm.com>
+        Clark Williams <williams@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: Re: [PATCH] cpufreq: Fix wrong time unit conversion
+Message-ID: <20130907190226.GI3966@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130820024700.GA31075@linux.vnet.ibm.com>
- <1376966841-31774-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1376966841-31774-8-git-send-email-paulmck@linux.vnet.ibm.com>
- <CAMuHMdWtZAD3G_miFOT9DPZpfTO3nJ9J4aG_zvHV_6eVf2jdQg@mail.gmail.com>
- <20130906173047.GT3966@linux.vnet.ibm.com>
- <CAMuHMdVS4jGFOuysknJ_4BcdWRrYU=7KVfO8o_gxf-pVg=5gKA@mail.gmail.com>
- <CAMuHMdXsAfo=LMF8E84_Lyhs+w5c3VKCEe7ZW5Bs7fwFV+J==w@mail.gmail.com>
+References: <1378571708-27825-1-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMuHMdXsAfo=LMF8E84_Lyhs+w5c3VKCEe7ZW5Bs7fwFV+J==w@mail.gmail.com>
+In-Reply-To: <1378571708-27825-1-git-send-email-fweisbec@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090718-0320-0000-0000-000000ECA473
+x-cbid: 13090719-0928-0000-0000-0000015AEF39
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 07, 2013 at 01:22:57PM +0200, Geert Uytterhoeven wrote:
-> On Fri, Sep 6, 2013 at 8:50 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> > On Fri, Sep 6, 2013 at 7:30 PM, Paul E. McKenney
-> > <paulmck@linux.vnet.ibm.com> wrote:
-> >>> Furthermore, it seems only hexagon, metag, mips, and x86 set NR_CPUS to 1
-> >>> if !SMP. On other architectures, NR_CPUS is not defined and presumed to be 0.
-> >>
-> >> Would it make sense to require that NR_CPUS=1 for !SMP?
-> >
-> > Yes, this looks reasonable to me.
+On Sat, Sep 07, 2013 at 06:35:08PM +0200, Frederic Weisbecker wrote:
+> The time spent by a CPU under a given frequency is stored in jiffies unit
+> in the cpu var cpufreq_stats_table->time_in_state[i], i being the index of
+> the frequency.
 > 
-> Perhaps we can invert the logic and define only NR_CPUS in arch-specific
-> code, and derive SMP from NR_CPUS != 1 in generic code?
+> This is what is displayed in the following file on the right column:
+> 
+>      cat /sys/devices/system/cpu/cpuX/cpufreq/stats/time_in_state
+>      2301000 19835820
+>      2300000 3172
+>      [...]
+> 
+> Now cpufreq converts this jiffies unit delta to clock_t before returning it
+> to the user as in the above file. And that conversion is achieved using the API
+> cputime64_to_clock_t().
+> 
+> Although it accidentally works on traditional tick based cputime accounting, where
+> cputime_t maps directly to jiffies, it doesn't work with other types of cputime
+> accounting such as CONFIG_VIRT_CPU_ACCOUNTING_* where cputime_t can map to nsecs
+> or any granularity preffered by the architecture.
+> 
+> For example we get a buggy zero delta on full dyntick configurations:
+> 
+>      cat /sys/devices/system/cpu/cpuX/cpufreq/stats/time_in_state
+>      2301000 0
+>      2300000 0
+>      [...]
+> 
+> Fix this with using the proper jiffies_64_t to clock_t conversion.
+> 
+> Reported-by: Carsten Emde <C.Emde@osadl.org>
+> Tested-by: Carsten Emde <C.Emde@osadl.org>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Carsten Emde <C.Emde@osadl.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Clark Williams <williams@redhat.com>
+> Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-If we always had NR_CPUS defined, that might be a good way to go.
-We would of course need acks from the various arch maintainers.  I am
-guessing that we are OK for m68k.  ;-)
+Good catch!
 
-							Thanx, Paul
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+> ---
+>  drivers/cpufreq/cpufreq_stats.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
+> index d37568c..10e6138 100644
+> --- a/drivers/cpufreq/cpufreq_stats.c
+> +++ b/drivers/cpufreq/cpufreq_stats.c
+> @@ -81,7 +81,7 @@ static ssize_t show_time_in_state(struct cpufreq_policy *policy, char *buf)
+>  	for (i = 0; i < stat->state_num; i++) {
+>  		len += sprintf(buf + len, "%u %llu\n", stat->freq_table[i],
+>  			(unsigned long long)
+> -			cputime64_to_clock_t(stat->time_in_state[i]));
+> +			jiffies_64_to_clock_t(stat->time_in_state[i]));
+>  	}
+>  	return len;
+>  }
+> -- 
+> 1.7.5.4
+> 
 
