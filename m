@@ -1,42 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751471Ab3IGOUn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 10:20:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62034 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140Ab3IGOUl (ORCPT
+	id S1751416Ab3IGOaI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 10:30:08 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:32772 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751140Ab3IGOaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 10:20:41 -0400
-Message-ID: <522B3636.1000103@gmail.com>
-Date: Sat, 07 Sep 2013 08:20:38 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Sat, 7 Sep 2013 10:30:05 -0400
 MIME-Version: 1.0
-To: Adrian Hunter <adrian.hunter@intel.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH V2 2/2] perf kvm: fix sample_type manipulation
-References: <1378496412-2424-1-git-send-email-adrian.hunter@intel.com> <1378496412-2424-3-git-send-email-adrian.hunter@intel.com>
-In-Reply-To: <1378496412-2424-3-git-send-email-adrian.hunter@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CANq1E4QPMKvDu5wA9meSt6hKRA7yTA1RhGY6NsSCMTBFmR5f0w@mail.gmail.com>
+References: <CAG-2HqVruXZxO1xLvYeAPa1RYmy044UiBXFLAtX5WcHVQVAtfA@mail.gmail.com>
+	<CANq1E4RAoLo2=fdZ4SCAnOtbCuJkAAf-BOfUFuK5S+gijpS8ng@mail.gmail.com>
+	<CAG-2HqVpAGOgvYKAsOCAac5F4SHB8nEtKtyTor2TYqp_fi7S7w@mail.gmail.com>
+	<CANq1E4QPMKvDu5wA9meSt6hKRA7yTA1RhGY6NsSCMTBFmR5f0w@mail.gmail.com>
+Date: Sat, 7 Sep 2013 16:30:03 +0200
+Message-ID: <CANq1E4QYrQ-YcL9eGAA4LUozVnPaDNisVex8eMe+Xpj8TaWdeA@mail.gmail.com>
+Subject: Re: [REGRESSION] v3.12-rc1: i915_driver_load oopses when sysfb enabled
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Tom Gundersen <teg@jklm.no>
+Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Content-Type: multipart/mixed; boundary=047d7b343ef2aee42b04e5cbfd4d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/6/13 1:40 PM, Adrian Hunter wrote:
-> Manipulating the sample_type of an evsel requires
-> the use of:
-> 	perf_evsel__set_sample_bit()
-> and	perf_evsel__reset_sample_bit()
+--047d7b343ef2aee42b04e5cbfd4d
+Content-Type: text/plain; charset=ISO-8859-1
+
+Hi Tom
+
+On Sat, Sep 7, 2013 at 3:52 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> Hi
 >
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+> On Sat, Sep 7, 2013 at 3:45 PM, Tom Gundersen <teg@jklm.no> wrote:
+>> On Sat, Sep 7, 2013 at 2:40 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>>>
+>>> It seems to be unrelated to the x86-sysfb changes. The WARN_ON
+>>> triggered here obviously means that i915 remaps VMEM before removing
+>>> efifb. So either i915 now calls ioremap and friends _before_ calling
+>>> remove_conflicting_framebuffers(), or efifb is not unloaded correctly.
+>>
+>> I redid all the tests, and I'm now not able to reproduce this with
+>> efifb, only with simplefb (not sure if I made a mistake before or if
+>> some config changed). I attached the two different dmesg outputs (only
+>> difference is X86_SYSFB).
+>>
+>>> Tom, some things off the top of my head:
+>>> - Is efifb still running after i915 loaded? You can see that via:
+>>>   cat /sys/class/graphics/fb0/name
+>>>   (and also fb1, fb2, ... whatever is there)
+>>>   If it's not running, anymore, then it's quite likely an i915 issue.
+>>
+>> I only have /sys/class/graphics/fb0/name and it says inteldrmfb (this
+>> is after i915 has taken over from simplefb).
+>>
+>>> - Do you get a "fb: conflicting hw usage ..." in your dmesg log?
+>>
+>> Yes: "fb: conflicting fb hw usage inteldrmfb vs simple - removing
+>> generic driver"
+>
+> Ok, now this makes sense. simplefb lacks the ->fb_destroy() callback
+> so it does not correctly react to remove_conflicting_framebuffer().
+> But you can safely ignore the warning as simplefb is still unloaded.
+> So it cannot be accessed anymore. It just leaks the remapping.
+>
+> I will send a patch later today which adds the fb_destroy() callback.
 
+Attached are two patches. The first one should fix this issue, the
+second one is the rebased ioremap_wc() patch from the other thread.
 
-Tested-by and Acked-by David Ahern <dsahern@gmail.com>
+Does this fix the issue (and the speed-problems)?
 
+Thanks
+David
 
+--047d7b343ef2aee42b04e5cbfd4d
+Content-Type: application/octet-stream; 
+	name="0001-simplefb-fix-unmapping-fb-during-destruction.patch"
+Content-Disposition: attachment; 
+	filename="0001-simplefb-fix-unmapping-fb-during-destruction.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hlaxjpqi0
+
+RnJvbSBkYjgxYTgyYjZkM2QwMGM1NzZkYzE5ZjQ4OWMyYmNkNjQ3YjRiN2Y3IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBEYXZpZCBIZXJybWFubiA8ZGguaGVycm1hbm5AZ21haWwuY29t
+PgpEYXRlOiBTYXQsIDcgU2VwIDIwMTMgMTY6MTc6MjkgKzAyMDAKU3ViamVjdDogW1BBVENIIDEv
+Ml0gc2ltcGxlZmI6IGZpeCB1bm1hcHBpbmcgZmIgZHVyaW5nIGRlc3RydWN0aW9uCgpVbmZvcnR1
+bmF0ZWx5LCBmYmRldiBkb2VzIG5vdCBjcmVhdGUgaXRzIG93biAic3RydWN0IGRldmljZSIgZm9y
+CmZyYW1lYnVmZmVycy4gSW5zdGVhZCwgaXQgYXR0YWNoZXMgdG8gdGhlIGRldmljZSBvZiB0aGUg
+cGFyZW50IGxheWVyLiBUaGlzCmhhcyB0aGUgc2lkZS1lZmZlY3QgdGhhdCBkZXZtXyogbWFuYWdl
+ZCByZXNvdXJjZXMgYXJlIG5vdCBjbGVhbmVkIHVwIG9uCmZyYW1lYnVmZmVyLWRlc3RydWN0aW9u
+IGJ1dCByYXRoZXIgZHVyaW5nIGRlc3RydWN0aW9uIG9mIHRoZQpwYXJlbnQtZGV2aWNlLiBJbiBj
+YXNlIG9mIGZiZGV2IHRoaXMgbWlnaHQgYmUgdG9vIGxhdGUsIHRob3VnaC4KClRoZXJlZm9yZSwg
+d2Ugbm93IHVzZSBwbGFpbiBpb3JlbWFwKCkgYW5kIHVubWFwIHRoZSBmcmFtZWJ1ZmZlciBpbiB0
+aGUKZmJfZGVzdHJveSgpIGNhbGxiYWNrLiBOb3RlIHRoYXQgd2UgbXVzdCBub3QgZnJlZSB0aGUg
+ZGV2aWNlIGhlcmUgYXMgdGhpcwptaWdodCByYWNlIHdpdGggdGhlIHBhcmVudC1kZXZpY2UgcmVt
+b3ZhbC4gSW5zdGVhZCwgd2UgcmVseSBvbgp1bnJlZ2lzdGVyX2ZyYW1lYnVmZmVyKCkgYXMgYmFy
+cmllciBhbmQgd2UncmUgc2FmZS4KClRoaXMgZml4ZXMgYSBidWcgd2hlcmUgcmVtb3ZlX2NvbmZs
+aWN0aW5nX2ZyYW1lYnVmZmVyKCkgcmVtb3ZlcyBhIHNpbXBsZWZiCmRldmljZSBvbiB4ODYgd2hp
+Y2ggdGhlbiBtaXNzZXMgdG8gdW5tYXAgdGhlIFBDSSBCQVIuClRoZSByZWxhdGVkIFdBUk4gbWVz
+c2FnZSBpczoKClsgICAgNS40MzQzMTJdIC0tLS0tLS0tLS0tLVsgY3V0IGhlcmUgXS0tLS0tLS0t
+LS0tLQpbICAgIDUuNDM0MzE4XSBXQVJOSU5HOiBDUFU6IDIgUElEOiAxOTkgYXQgYXJjaC94ODYv
+bW0vaW9yZW1hcC5jOjE3MSBfX2lvcmVtYXBfY2FsbGVyKzB4MmUzLzB4MzkwKCkKWyAgICA1LjQz
+NDMyMV0gSW5mbzogbWFwcGluZyBtdWx0aXBsZSBCQVJzLiBZb3VyIGtlcm5lbCBpcyBmaW5lLgpb
+ICAgIDUuNDM0MzIzXSBNb2R1bGVzIGxpbmtlZCBpbjoKWyAgICA1LjQzNDMyNl0gIFsuLnNuaXAu
+Ll0KWyAgICA1LjQzNDM4M10gQ1BVOiAyIFBJRDogMTk5IENvbW06IHN5c3RlbWQtdWRldmQgTm90
+IHRhaW50ZWQgMy4xMS4wLVRFRy0wNTA2MC1nMDMxMmQwYyAjODEKWyAgICA1LjQzNDM4Nl0gSGFy
+ZHdhcmUgbmFtZTogQXBwbGUgSW5jLiBNYWNCb29rQWlyNSwxL01hYy02NkYzNUYxOUZFMkEwRDA1
+LCBCSU9TIE1CQTUxLjg4Wi4wMEVGLkIwMS4xMjA3MjcxMTIyIDA3LzI3LzIwMTIKWyAgICA1LjQz
+NDM5MF0gIDAwMDAwMDAwMDAwMDAwMDkgZmZmZjg4MDE2OGY4Nzg5OCBmZmZmZmZmZjgxNDViZTYz
+IGZmZmY4ODAxNjhmODc4ZTAKWyAgICA1LjQzNDM5NF0gIGZmZmY4ODAxNjhmODc4ZDAgZmZmZmZm
+ZmY4MTA0YjE3ZCBmZmZmYzkwMDBjMDgwMDAwIDAwMDAwMDAwYTAwMDAwMDAKWyAgICA1LjQzNDM5
+OF0gIGZmZmZjOTAwMGMwODAwMDAgZmZmZmM5MDAwYzA4MDAwMCAwMDAwMDAwMDEwMDAwMDAwIGZm
+ZmY4ODAxNjhmODc5MzAKWyAgICA1LjQzNDQwM10gQ2FsbCBUcmFjZToKWyAgICA1LjQzNDQwOV0g
+IFs8ZmZmZmZmZmY4MTQ1YmU2Mz5dIGR1bXBfc3RhY2srMHg1NC8weDhkClsgICAgNS40MzQ0MTNd
+ICBbPGZmZmZmZmZmODEwNGIxN2Q+XSB3YXJuX3Nsb3dwYXRoX2NvbW1vbisweDdkLzB4YTAKWyAg
+ICA1LjQzNDQxN10gIFs8ZmZmZmZmZmY4MTA0YjFlYz5dIHdhcm5fc2xvd3BhdGhfZm10KzB4NGMv
+MHg1MApbICAgIDUuNDM0NDIxXSAgWzxmZmZmZmZmZjgxMDUxZmRjPl0gPyBpb21lbV9tYXBfc2Fu
+aXR5X2NoZWNrKzB4YWMvMHhlMApbICAgIDUuNDM0NDI1XSAgWzxmZmZmZmZmZjgxMDNlOGIzPl0g
+X19pb3JlbWFwX2NhbGxlcisweDJlMy8weDM5MApbICAgIDUuNDM0NDMwXSAgWzxmZmZmZmZmZjgx
+MDNlOWYyPl0gaW9yZW1hcF93YysweDMyLzB4NDAKWyAgICA1LjQzNDQ1MF0gIFs8ZmZmZmZmZmZh
+MDQzZjk2MD5dIGk5MTVfZHJpdmVyX2xvYWQrMHg2NzAvMHhmNTAgW2k5MTVdClsgICAgNS40MzQ0
+NjddICBbPGZmZmZmZmZmODEzMTU0MGQ+XSA/IGRybV9nZXRfbWlub3IrMHgxYWQvMHgyMDAKWyAg
+ICA1LjQzNDQ3MV0gIFs8ZmZmZmZmZmY4MTMxNzUwOT5dIGRybV9nZXRfcGNpX2RldisweDEyOS8w
+eDJmMApbICAgIDUuNDM0NDg3XSAgWzxmZmZmZmZmZmEwNDNjNjNjPl0gaTkxNV9wY2lfcHJvYmUr
+MHgyYy8weDcwIFtpOTE1XQpbICAgIDUuNDM0NDkzXSAgWzxmZmZmZmZmZjgxMjdmNjI0Pl0gcGNp
+X2RldmljZV9wcm9iZSsweDg0LzB4ZTAKWyAgICA1LjQzNDUwMl0gIFs8ZmZmZmZmZmY4MTMzMTk3
+Nz5dIGRyaXZlcl9wcm9iZV9kZXZpY2UrMHg4Ny8weDNhMApbICAgIDUuNDM0NTA5XSAgWzxmZmZm
+ZmZmZjgxMzMxZDYzPl0gX19kcml2ZXJfYXR0YWNoKzB4OTMvMHhhMApbICAgIDUuNDM0NTE2XSAg
+WzxmZmZmZmZmZjgxMzMxY2QwPl0gPyBfX2RldmljZV9hdHRhY2grMHg0MC8weDQwClsgICAgNS40
+MzQ1MjFdICBbPGZmZmZmZmZmODEzMmY4MTM+XSBidXNfZm9yX2VhY2hfZGV2KzB4NjMvMHhhMApb
+ICAgIDUuNDM0NTI1XSAgWzxmZmZmZmZmZjgxMzMxM2NlPl0gZHJpdmVyX2F0dGFjaCsweDFlLzB4
+MjAKWyAgICA1LjQzNDUyOV0gIFs8ZmZmZmZmZmY4MTMzMGY0MD5dIGJ1c19hZGRfZHJpdmVyKzB4
+MjAwLzB4MmQwClsgICAgNS40MzQ1MzNdICBbPGZmZmZmZmZmYTA0ZGMwMDA+XSA/IDB4ZmZmZmZm
+ZmZhMDRkYmZmZgpbICAgIDUuNDM0NTM4XSAgWzxmZmZmZmZmZjgxMzMyM2U0Pl0gZHJpdmVyX3Jl
+Z2lzdGVyKzB4NjQvMHhmMApbICAgIDUuNDM0NTQxXSAgWzxmZmZmZmZmZmEwNGRjMDAwPl0gPyAw
+eGZmZmZmZmZmYTA0ZGJmZmYKWyAgICA1LjQzNDU0NV0gIFs8ZmZmZmZmZmY4MTI3ZjQ1ZD5dIF9f
+cGNpX3JlZ2lzdGVyX2RyaXZlcisweDRkLzB4NTAKWyAgICA1LjQzNDU0OV0gIFs8ZmZmZmZmZmY4
+MTMxNzdlNT5dIGRybV9wY2lfaW5pdCsweDExNS8weDEzMApbICAgIDUuNDM0NTUyXSAgWzxmZmZm
+ZmZmZmEwNGRjMDAwPl0gPyAweGZmZmZmZmZmYTA0ZGJmZmYKWyAgICA1LjQzNDU2N10gIFs8ZmZm
+ZmZmZmZhMDRkYzA2Nj5dIGk5MTVfaW5pdCsweDY2LzB4NjggW2k5MTVdClsgICAgNS40MzQ1NzBd
+ICBbPGZmZmZmZmZmODEwMDAyMmE+XSBkb19vbmVfaW5pdGNhbGwrMHg1YS8weDFiMApbICAgIDUu
+NDM0NTc1XSAgWzxmZmZmZmZmZjgxMDcxNTg4Pl0gPyBfX2Jsb2NraW5nX25vdGlmaWVyX2NhbGxf
+Y2hhaW4rMHg1OC8weDcwClsgICAgNS40MzQ1ODFdICBbPGZmZmZmZmZmODEwYWY1MmE+XSBsb2Fk
+X21vZHVsZSsweDFiMGEvMHgyNWEwClsgICAgNS40MzQ1ODRdICBbPGZmZmZmZmZmODEwYWJmNzA+
+XSA/IHN0b3JlX3VldmVudCsweDQwLzB4NDAKWyAgICA1LjQzNDU4OV0gIFs8ZmZmZmZmZmY4MTBi
+MDEzNj5dIFN5U19maW5pdF9tb2R1bGUrMHg4Ni8weGIwClsgICAgNS40MzQ1OTRdICBbPGZmZmZm
+ZmZmODE0NjNkYTc+XSB0cmFjZXN5cysweGRkLzB4ZTIKWyAgICA1LjQzNDU5OV0gLS0tWyBlbmQg
+dHJhY2UgNGY5M2U3N2ZjYWFhYzliNyBdLS0tCgpSZXBvcnRlZC1ieTogVG9tIEd1bmRlcnNlbiA8
+dGVnQGprbG0ubm8+ClNpZ25lZC1vZmYtYnk6IERhdmlkIEhlcnJtYW5uIDxkaC5oZXJybWFubkBn
+bWFpbC5jb20+Ci0tLQogZHJpdmVycy92aWRlby9zaW1wbGVmYi5jIHwgMTIgKysrKysrKysrKy0t
+CiAxIGZpbGUgY2hhbmdlZCwgMTAgaW5zZXJ0aW9ucygrKSwgMiBkZWxldGlvbnMoLSkKCmRpZmYg
+LS1naXQgYS9kcml2ZXJzL3ZpZGVvL3NpbXBsZWZiLmMgYi9kcml2ZXJzL3ZpZGVvL3NpbXBsZWZi
+LmMKaW5kZXggOGQ3ODEwNi4uNzRiMDE2YyAxMDA2NDQKLS0tIGEvZHJpdmVycy92aWRlby9zaW1w
+bGVmYi5jCisrKyBiL2RyaXZlcnMvdmlkZW8vc2ltcGxlZmIuYwpAQCAtNjYsOCArNjYsMTUgQEAg
+c3RhdGljIGludCBzaW1wbGVmYl9zZXRjb2xyZWcodV9pbnQgcmVnbm8sIHVfaW50IHJlZCwgdV9p
+bnQgZ3JlZW4sIHVfaW50IGJsdWUsCiAJcmV0dXJuIDA7CiB9CiAKK3N0YXRpYyB2b2lkIHNpbXBs
+ZWZiX2Rlc3Ryb3koc3RydWN0IGZiX2luZm8gKmluZm8pCit7CisJaWYgKGluZm8tPnNjcmVlbl9i
+YXNlKQorCQlpb3VubWFwKGluZm8tPnNjcmVlbl9iYXNlKTsKK30KKwogc3RhdGljIHN0cnVjdCBm
+Yl9vcHMgc2ltcGxlZmJfb3BzID0gewogCS5vd25lcgkJPSBUSElTX01PRFVMRSwKKwkuZmJfZGVz
+dHJveQk9IHNpbXBsZWZiX2Rlc3Ryb3ksCiAJLmZiX3NldGNvbHJlZwk9IHNpbXBsZWZiX3NldGNv
+bHJlZywKIAkuZmJfZmlsbHJlY3QJPSBjZmJfZmlsbHJlY3QsCiAJLmZiX2NvcHlhcmVhCT0gY2Zi
+X2NvcHlhcmVhLApAQCAtMjEyLDggKzIxOSw4IEBAIHN0YXRpYyBpbnQgc2ltcGxlZmJfcHJvYmUo
+c3RydWN0IHBsYXRmb3JtX2RldmljZSAqcGRldikKIAogCWluZm8tPmZib3BzID0gJnNpbXBsZWZi
+X29wczsKIAlpbmZvLT5mbGFncyA9IEZCSU5GT19ERUZBVUxUIHwgRkJJTkZPX01JU0NfRklSTVdB
+UkU7Ci0JaW5mby0+c2NyZWVuX2Jhc2UgPSBkZXZtX2lvcmVtYXAoJnBkZXYtPmRldiwgaW5mby0+
+Zml4LnNtZW1fc3RhcnQsCi0JCQkJCSBpbmZvLT5maXguc21lbV9sZW4pOworCWluZm8tPnNjcmVl
+bl9iYXNlID0gaW9yZW1hcChpbmZvLT5maXguc21lbV9zdGFydCwKKwkJCQkgICAgaW5mby0+Zml4
+LnNtZW1fbGVuKTsKIAlpZiAoIWluZm8tPnNjcmVlbl9iYXNlKSB7CiAJCWZyYW1lYnVmZmVyX3Jl
+bGVhc2UoaW5mbyk7CiAJCXJldHVybiAtRU5PREVWOwpAQCAtMjIzLDYgKzIzMCw3IEBAIHN0YXRp
+YyBpbnQgc2ltcGxlZmJfcHJvYmUoc3RydWN0IHBsYXRmb3JtX2RldmljZSAqcGRldikKIAlyZXQg
+PSByZWdpc3Rlcl9mcmFtZWJ1ZmZlcihpbmZvKTsKIAlpZiAocmV0IDwgMCkgewogCQlkZXZfZXJy
+KCZwZGV2LT5kZXYsICJVbmFibGUgdG8gcmVnaXN0ZXIgc2ltcGxlZmI6ICVkXG4iLCByZXQpOwor
+CQlpb3VubWFwKGluZm8tPnNjcmVlbl9iYXNlKTsKIAkJZnJhbWVidWZmZXJfcmVsZWFzZShpbmZv
+KTsKIAkJcmV0dXJuIHJldDsKIAl9Ci0tIAoxLjguNAoK
+--047d7b343ef2aee42b04e5cbfd4d
+Content-Type: application/octet-stream; 
+	name="0002-simplefb-use-write-combined-remapping.patch"
+Content-Disposition: attachment; 
+	filename="0002-simplefb-use-write-combined-remapping.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hlaxjpso1
+
+RnJvbSBkN2I1MWZmODM4MmI5NzBiMThkZDhlMzQ5ZjY3NzI1MjNlMmUyNWRhIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBEYXZpZCBIZXJybWFubiA8ZGguaGVycm1hbm5AZ21haWwuY29t
+PgpEYXRlOiBTYXQsIDcgU2VwIDIwMTMgMTY6MjU6MTUgKzAyMDAKU3ViamVjdDogW1BBVENIIDIv
+Ml0gc2ltcGxlZmI6IHVzZSB3cml0ZS1jb21iaW5lZCByZW1hcHBpbmcKCkZyYW1lYnVmZmVycyBz
+aG91bGRuJ3QgYmUgY2FjaGVkIGFuZCBpdCBpcyB1c3VhbGx5IHZlcnkgdW5jb21tb24gdG8gcmVh
+ZAp0aGVtLiBUaGVyZWZvcmUsIHVzZSBpb3JlbWFwX3djKCkgdG8gZ2V0IHNpZ25pZmljYW50IHNw
+ZWVkIGltcHJvdmVtZW50cyBvbgpzeXN0ZW1zIHdoaWNoIHByb3ZpZGUgaXQuIE9uIGFsbCBvdGhl
+ciBzeXN0ZW1zIGl0J3MgYWxpYXNlZCB0bwppb3JlbWFwX25vY2FjaGUoKSB3aGljaCBpcyBhbHNv
+IGZpbmUuCgpSZXBvcnRlZC1ieTogVG9tIEd1bmRlcnNlbiA8dGVnQGprbG0ubm8+ClNpZ25lZC1v
+ZmYtYnk6IERhdmlkIEhlcnJtYW5uIDxkaC5oZXJybWFubkBnbWFpbC5jb20+Ci0tLQogZHJpdmVy
+cy92aWRlby9zaW1wbGVmYi5jIHwgNCArKy0tCiAxIGZpbGUgY2hhbmdlZCwgMiBpbnNlcnRpb25z
+KCspLCAyIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvdmlkZW8vc2ltcGxlZmIu
+YyBiL2RyaXZlcnMvdmlkZW8vc2ltcGxlZmIuYwppbmRleCA3NGIwMTZjLi42NGRiNTRhIDEwMDY0
+NAotLS0gYS9kcml2ZXJzL3ZpZGVvL3NpbXBsZWZiLmMKKysrIGIvZHJpdmVycy92aWRlby9zaW1w
+bGVmYi5jCkBAIC0yMTksOCArMjE5LDggQEAgc3RhdGljIGludCBzaW1wbGVmYl9wcm9iZShzdHJ1
+Y3QgcGxhdGZvcm1fZGV2aWNlICpwZGV2KQogCiAJaW5mby0+ZmJvcHMgPSAmc2ltcGxlZmJfb3Bz
+OwogCWluZm8tPmZsYWdzID0gRkJJTkZPX0RFRkFVTFQgfCBGQklORk9fTUlTQ19GSVJNV0FSRTsK
+LQlpbmZvLT5zY3JlZW5fYmFzZSA9IGlvcmVtYXAoaW5mby0+Zml4LnNtZW1fc3RhcnQsCi0JCQkJ
+ICAgIGluZm8tPmZpeC5zbWVtX2xlbik7CisJaW5mby0+c2NyZWVuX2Jhc2UgPSBpb3JlbWFwX3dj
+KGluZm8tPmZpeC5zbWVtX3N0YXJ0LAorCQkJCSAgICAgICBpbmZvLT5maXguc21lbV9sZW4pOwog
+CWlmICghaW5mby0+c2NyZWVuX2Jhc2UpIHsKIAkJZnJhbWVidWZmZXJfcmVsZWFzZShpbmZvKTsK
+IAkJcmV0dXJuIC1FTk9ERVY7Ci0tIAoxLjguNAoK
+--047d7b343ef2aee42b04e5cbfd4d--
