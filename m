@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751128Ab3IFX5l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 19:57:41 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:52876 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750727Ab3IFX5j (ORCPT
+	id S1751455Ab3IGAAt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 20:00:49 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:37892 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750846Ab3IGAAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 19:57:39 -0400
+	Fri, 6 Sep 2013 20:00:47 -0400
+Date: Sat, 7 Sep 2013 01:00:44 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Waiman Long <Waiman.Long@hp.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        George Spelvin <linux@horizon.com>, John Stoffel <john@stoffel.org>
+Subject: Re: [PATCH v3 1/1] dcache: Translating dentry into pathname without
+ taking rename_lock
+Message-ID: <20130907000044.GX13318@ZenIV.linux.org.uk>
+References: <1378483738-10129-1-git-send-email-Waiman.Long@hp.com>
+ <1378483738-10129-2-git-send-email-Waiman.Long@hp.com>
+ <CA+55aFw8UuEmKsSdGZPUmcekZheNimEt4U81i7Bz0LipGzsFmg@mail.gmail.com>
+ <20130906210546.GW13318@ZenIV.linux.org.uk>
+ <CA+55aFzf-reQNSQt_fhHfUe_tB19n2qEa=Rd=wFEBJEVALmezA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CANq1E4Rf4c4zj1mD1aPr93Q2_M65DCEJhuLqcBWa5uH9tcKuWA@mail.gmail.com>
-References: <alpine.LNX.2.00.1309061202050.26934@pobox.suse.cz>
-	<20130906202022.GA353@x4>
-	<CANq1E4Rf4c4zj1mD1aPr93Q2_M65DCEJhuLqcBWa5uH9tcKuWA@mail.gmail.com>
-Date: Fri, 6 Sep 2013 16:57:38 -0700
-X-Google-Sender-Auth: e-2bkYspLzUEBLFYwZQAY205dG4
-Message-ID: <CA+55aFzg-dv-N7UjXx2pxUJ+QQOOy0qtp_e94PDSM=tVd=LgUw@mail.gmail.com>
-Subject: Re: [GIT] HID for 3.12 merge window
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Jiri Kosina <jkosina@suse.cz>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzf-reQNSQt_fhHfUe_tB19n2qEa=Rd=wFEBJEVALmezA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 6, 2013 at 2:50 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> Hi
->
-> On Fri, Sep 6, 2013 at 10:20 PM, Markus Trippelsdorf
->>
->>  commit 61e00655e9cb82e034eb72b95a51072e718d14a7
->>  Author: David Herrmann <dh.herrmann@gmail.com>
->>  Date:   Mon Aug 26 19:14:46 2013 +0200
->>
->>      Input: introduce BTN/ABS bits for drums and guitars
->>
->> The commit above breaks my Logitech mouse. The mouse cursor just sits in
->> the middle of the screen and doesn't react to movements. dmesg is
->> normal, but Xorg.0.log says:
->
-> Ok, the issue is the kernel assumes ABS_MAX to be a power-of-2 minus 1
-> (used as mask). That wasn't really obvious to me. Attached is a patch
-> which should fix that. Could you apply it on top of linus/master and
-> give it a try?
+On Fri, Sep 06, 2013 at 02:48:32PM -0700, Linus Torvalds wrote:
+> On Fri, Sep 6, 2013 at 2:05 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > I can take that, but I'm really not convinced that we need writer lock
+> > there at all.  After all, if we really can get livelocks on that one,
+> > we would be getting them on d_lookup()...
+> 
+> d_lookup() does a _single_ path component. That's a *big* difference.
+> 
+> Sure, the hash chain that d_lookup() (well, __d_lookup()) ends up
+> walking is a bit more complicated than just following the dentry
+> parent pointer, but that's much harder to trigger than just creating a
+> really deep directory structure of single-letter nested directories,
+> and then doing a "getcwd()" that walks 1024+ parents, while another
+> thread is looping renaming things..
+> 
+> So I personally do feel a lot safer with the fallback to write locking here.
+> 
+> Especially since it's pretty simple, so there isn't really much downside.
 
-Gah. I just wasted too much time bisecting down my logitech wireless
-keyboard not working to within a few commits of this, and decided to
-just try your patch.
-
-And yes, it makes my keyboard work.
-
-Dmitry, should I just apply the patch, or should we revert and use
-other bits? Please, this needs to be resolved, I stopped merging when
-I noticed this problem..
-
-          Linus
+Er... what will happen if you have done just what you've described and have
+a process call d_lookup()?
