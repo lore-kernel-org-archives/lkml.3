@@ -1,199 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751326Ab3IGIbZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 04:31:25 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:33905 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185Ab3IGIbX (ORCPT
+	id S1751233Ab3IGIfZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 04:35:25 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:64522 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072Ab3IGIfW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 04:31:23 -0400
-Message-ID: <522AE2B6.2080404@gmail.com>
-Date: Sat, 07 Sep 2013 10:24:22 +0200
+	Sat, 7 Sep 2013 04:35:22 -0400
+Message-ID: <522AE3A5.7030807@gmail.com>
+Date: Sat, 07 Sep 2013 10:28:21 +0200
 From: Marco Stornelli <marco.stornelli@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
 To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
 CC: Vladimir Davydov <vdavydov@parallels.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 10/19] pramfs: block allocation
+Subject: [PATCH 11/19] pramfs: ioctl operations
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add block allocation operations.
+Add ioctl operations.
 
 Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
 ---
- fs/pramfs/balloc.c |  160 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 160 insertions(+), 0 deletions(-)
- create mode 100644 fs/pramfs/balloc.c
+ fs/pramfs/ioctl.c |  127 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 127 insertions(+), 0 deletions(-)
+ create mode 100644 fs/pramfs/ioctl.c
 
-diff --git a/fs/pramfs/balloc.c b/fs/pramfs/balloc.c
+diff --git a/fs/pramfs/ioctl.c b/fs/pramfs/ioctl.c
 new file mode 100644
-index 0000000..8291bf3
+index 0000000..565cc46
 --- /dev/null
-+++ b/fs/pramfs/balloc.c
-@@ -0,0 +1,160 @@
++++ b/fs/pramfs/ioctl.c
+@@ -0,0 +1,127 @@
 +/*
 + * BRIEF DESCRIPTION
 + *
-+ * The blocks allocation and deallocation routines.
++ * Ioctl operations.
 + *
-+ * Copyright 2009-2011 Marco Stornelli <marco.stornelli@gmail.com>
-+ * Copyright 2003 Sony Corporation
-+ * Copyright 2003 Matsushita Electric Industrial Co., Ltd.
-+ * 2003-2004 (c) MontaVista Software, Inc. , Steve Longerbeam
++ * Copyright 2010-2011 Marco Stornelli <marco.stornelli@gmail.com>
++ *
 + * This file is licensed under the terms of the GNU General Public
 + * License version 2. This program is licensed "as is" without any
 + * warranty of any kind, whether express or implied.
 + */
 +
-+#include <linux/fs.h>
-+#include <linux/bitops.h>
++#include <linux/capability.h>
++#include <linux/time.h>
++#include <linux/sched.h>
++#include <linux/compat.h>
++#include <linux/mount.h>
 +#include "pram.h"
 +
-+void pram_bitmap_fill(unsigned long *dst, int nbits)
++long pram_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 +{
-+	size_t nlongs = BITS_TO_LONGS(nbits);
-+	if (!small_const_nbits(nbits)) {
-+		int len = (nlongs - 1) * sizeof(unsigned long);
-+		memset(dst, 0xff,  len);
-+	}
-+	if (BITS_PER_LONG == 64)
-+		dst[nlongs - 1] = cpu_to_le64(BITMAP_LAST_WORD_MASK(nbits));
-+	else
-+		dst[nlongs - 1] = cpu_to_le32(BITMAP_LAST_WORD_MASK(nbits));
-+}
++	struct inode *inode = file_inode(filp);
++	struct pram_inode *pi;
++	unsigned int flags;
++	int ret;
 +
-+/*
-+ * This just marks in-use the blocks that make up the bitmap.
-+ * The bitmap must be writeable before calling.
-+ */
-+void pram_init_bitmap(struct super_block *sb)
-+{
-+	struct pram_super_block *ps = pram_get_super(sb);
-+	unsigned long *bitmap = pram_get_bitmap(sb);
-+	int blocks = be32_to_cpu(ps->s_bitmap_blocks);
++	pi = pram_get_inode(inode->i_sb, inode->i_ino);
++	if (!pi)
++		return -EACCES;
 +
-+	memset(bitmap, 0, blocks << sb->s_blocksize_bits);
++	switch (cmd) {
++	case FS_IOC_GETFLAGS:
++		flags = be32_to_cpu(pi->i_flags) & PRAM_FL_USER_VISIBLE;
++		return put_user(flags, (int __user *) arg);
++	case FS_IOC_SETFLAGS: {
++		unsigned int oldflags;
 +
-+	pram_bitmap_fill(bitmap, blocks);
-+}
++		ret = mnt_want_write_file(filp);
++		if (ret)
++			return ret;
 +
-+
-+/* Free absolute blocknr */
-+void pram_free_block(struct super_block *sb, unsigned long blocknr)
-+{
-+	struct pram_super_block *ps;
-+	u64 bitmap_block;
-+	unsigned long bitmap_bnr;
-+	void *bitmap;
-+	void *bp;
-+
-+	mutex_lock(&PRAM_SB(sb)->s_lock);
-+
-+	bitmap = pram_get_bitmap(sb);
-+	/*
-+	 * find the block within the bitmap that contains the inuse bit
-+	 * for the block we need to free. We need to unlock this bitmap
-+	 * block to clear the inuse bit.
-+	 */
-+	bitmap_bnr = blocknr >> (3 + sb->s_blocksize_bits);
-+	bitmap_block = pram_get_block_off(sb, bitmap_bnr);
-+	bp = pram_get_block(sb, bitmap_block);
-+
-+	pram_memunlock_block(sb, bp);
-+	pram_clear_bit(blocknr, bitmap); /* mark the block free */
-+	pram_memlock_block(sb, bp);
-+
-+	ps = pram_get_super(sb);
-+	pram_memunlock_super(sb, ps);
-+
-+	if (blocknr < be32_to_cpu(ps->s_free_blocknr_hint))
-+		ps->s_free_blocknr_hint = cpu_to_be32(blocknr);
-+	be32_add_cpu(&ps->s_free_blocks_count, 1);
-+	pram_memlock_super(sb, ps);
-+
-+	mutex_unlock(&PRAM_SB(sb)->s_lock);
-+}
-+
-+
-+/*
-+ * allocate a block and return it's absolute blocknr. Zeroes out the
-+ * block if zero set.
-+ */
-+int pram_new_block(struct super_block *sb, unsigned long *blocknr, int zero)
-+{
-+	struct pram_super_block *ps;
-+	u64 bitmap_block;
-+	unsigned long bnr, bitmap_bnr;
-+	int errval;
-+	void *bitmap;
-+	void *bp;
-+
-+	mutex_lock(&PRAM_SB(sb)->s_lock);
-+	ps = pram_get_super(sb);
-+	bitmap = pram_get_bitmap(sb);
-+
-+	if (ps->s_free_blocks_count) {
-+		/* find the oldest unused block */
-+		bnr = pram_find_next_zero_bit(bitmap,
-+					 be32_to_cpu(ps->s_blocks_count),
-+					 be32_to_cpu(ps->s_free_blocknr_hint));
-+
-+		if (bnr < be32_to_cpu(ps->s_bitmap_blocks) ||
-+				bnr >= be32_to_cpu(ps->s_blocks_count)) {
-+			pram_dbg("no free blocks found!\n");
-+			errval = -ENOSPC;
-+			goto fail;
++		if (!inode_owner_or_capable(inode)) {
++			ret = -EPERM;
++			goto flags_out;
 +		}
 +
-+		pram_memunlock_super(sb, ps);
-+		be32_add_cpu(&ps->s_free_blocks_count, -1);
-+		if (bnr < (be32_to_cpu(ps->s_blocks_count)-1))
-+			ps->s_free_blocknr_hint = cpu_to_be32(bnr+1);
-+		else
-+			ps->s_free_blocknr_hint = 0;
-+		pram_memlock_super(sb, ps);
-+	} else {
-+		pram_dbg("all blocks allocated\n");
-+		errval = -ENOSPC;
-+		goto fail;
++		if (get_user(flags, (int __user *) arg)) {
++			ret = -EFAULT;
++			goto flags_out;
++		}
++
++		mutex_lock(&inode->i_mutex);
++		oldflags = be32_to_cpu(pi->i_flags);
++
++		if ((flags ^ oldflags) & (FS_APPEND_FL | FS_IMMUTABLE_FL)) {
++			if (!capable(CAP_LINUX_IMMUTABLE)) {
++				mutex_unlock(&inode->i_mutex);
++				ret = -EPERM;
++				goto flags_out;
++			}
++		}
++
++		if (!S_ISDIR(inode->i_mode))
++			flags &= ~FS_DIRSYNC_FL;
++
++		flags = flags & FS_FL_USER_MODIFIABLE;
++		flags |= oldflags & ~FS_FL_USER_MODIFIABLE;
++		pram_memunlock_inode(inode->i_sb, pi);
++		pi->i_flags = cpu_to_be32(flags);
++		inode->i_ctime = CURRENT_TIME_SEC;
++		pi->i_ctime = cpu_to_be32(inode->i_ctime.tv_sec);
++		pram_set_inode_flags(inode, pi);
++		pram_memlock_inode(inode->i_sb, pi);
++		mutex_unlock(&inode->i_mutex);
++flags_out:
++		mnt_drop_write_file(filp);
++		return ret;
 +	}
-+
-+	/*
-+	 * find the block within the bitmap that contains the inuse bit
-+	 * for the unused block we just found. We need to unlock it to
-+	 * set the inuse bit.
-+	 */
-+	bitmap_bnr = bnr >> (3 + sb->s_blocksize_bits);
-+	bitmap_block = pram_get_block_off(sb, bitmap_bnr);
-+	bp = pram_get_block(sb, bitmap_block);
-+
-+	pram_memunlock_block(sb, bp);
-+	pram_set_bit(bnr, bitmap); /* mark the new block in use */
-+	pram_memlock_block(sb, bp);
-+
-+	if (zero) {
-+		bp = pram_get_block(sb, pram_get_block_off(sb, bnr));
-+		pram_memunlock_block(sb, bp);
-+		memset(bp, 0, sb->s_blocksize);
-+		pram_memlock_block(sb, bp);
++	case FS_IOC_GETVERSION:
++		return put_user(inode->i_generation, (int __user *) arg);
++	case FS_IOC_SETVERSION: {
++		__u32 generation;
++		if (!inode_owner_or_capable(inode))
++			return -EPERM;
++		ret = mnt_want_write_file(filp);
++		if (ret)
++			return ret;
++		if (get_user(generation, (int __user *) arg)) {
++			ret = -EFAULT;
++			goto setversion_out;
++		}
++		mutex_lock(&inode->i_mutex);
++		inode->i_ctime = CURRENT_TIME_SEC;
++		inode->i_generation = generation;
++		pram_update_inode(inode);
++		mutex_unlock(&inode->i_mutex);
++setversion_out:
++		mnt_drop_write_file(filp);
++		return ret;
 +	}
-+
-+	*blocknr = bnr;
-+	pram_dbg("allocated blocknr %lu", bnr);
-+	errval = 0;
-+ fail:
-+	mutex_unlock(&PRAM_SB(sb)->s_lock);
-+	return errval;
++	default:
++		return -ENOTTY;
++	}
 +}
 +
-+unsigned long pram_count_free_blocks(struct super_block *sb)
++#ifdef CONFIG_COMPAT
++long pram_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 +{
-+	struct pram_super_block *ps = pram_get_super(sb);
-+	return be32_to_cpu(ps->s_free_blocks_count);
++	switch (cmd) {
++	case FS_IOC32_GETFLAGS:
++		cmd = FS_IOC_GETFLAGS;
++		break;
++	case FS_IOC32_SETFLAGS:
++		cmd = FS_IOC_SETFLAGS;
++		break;
++	case FS_IOC32_GETVERSION:
++		cmd = FS_IOC_GETVERSION;
++		break;
++	case FS_IOC32_SETVERSION:
++		cmd = FS_IOC_SETVERSION;
++		break;
++	default:
++		return -ENOIOCTLCMD;
++	}
++	return pram_ioctl(file, cmd, (unsigned long) compat_ptr(arg));
 +}
++#endif
 -- 
 1.7.3.4
