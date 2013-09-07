@@ -1,100 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751024Ab3IGJN6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 05:13:58 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:49531 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750751Ab3IGJNy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 05:13:54 -0400
-Date: Sat, 7 Sep 2013 11:13:48 +0200
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        josh@joshtriplett.org, niv@us.ibm.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Howells <dhowells@redhat.com>, edumazet@google.com,
-        darren@dvhart.com,
-        =?utf-8?B?RnLDqWTDqXJpYw==?= Weisbecker <fweisbec@gmail.com>,
-        sbw@mit.edu, Linux-Arch <linux-arch@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Subject: Re: [PATCH tip/core/rcu 8/9] nohz_full: Add full-system-idle state
- machine
-Message-ID: <20130907091348.GA3487@free.fr>
-References: <20130820024700.GA31075@linux.vnet.ibm.com>
- <1376966841-31774-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1376966841-31774-8-git-send-email-paulmck@linux.vnet.ibm.com>
- <CAMuHMdWtZAD3G_miFOT9DPZpfTO3nJ9J4aG_zvHV_6eVf2jdQg@mail.gmail.com>
- <20130906173047.GT3966@linux.vnet.ibm.com>
+	id S1751258Ab3IGJOG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 05:14:06 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751076Ab3IGJOC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Sep 2013 05:14:02 -0400
+Message-ID: <522AEE50.4090105@nod.at>
+Date: Sat, 07 Sep 2013 11:13:52 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130906173047.GT3966@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: torvalds@linux-foundation.org
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel <user-mode-linux-devel@lists.sourceforge.net>
+Subject: [PULL] UML updates for 3.12
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul, All,
+Linus,
 
-On 2013-09-06 10:30 -0700, Paul E. McKenney spake thusly:
-[--SNIP--]
-> I also tried using Kconfig "if":
-> 
-> if SMP
-> config NR_CPUS_REALLY
-> 	int "Fixed version of NR_CPUS"
-> 	default NR_CPUS
-> endif
-> if !SMP
-> config NR_CPUS_REALLY
-> 	int "Fixed version of NR_CPUS"
-> 	default 1 if !SMP
+please pull form:
 
-The 'if !SMP' here is unneeded, you're already in a 'if !SMP' if-block.
+  git://git.kernel.org/pub/scm/linux/kernel/git/rw/uml.git for-linus
 
-> endif
-> 
-> However, Kconfig complained about the use of NR_CPUS even though this
-> was under an "if" whose condition was not set.  Perhaps someone with
-> better Kconfig-fu than I have can come up with something.
+to receive UML updates for the 3.12 merge window.
 
-That's because the 'if' condition is added to the dependency list of the
-symbol(s) that is(are) enclosed in the if.
+This pile contains mostly fixes and improvements for issues identified
+by Richard W. M. Jones while adding UML as backend to libguestfs.
 
-'if' in Kconfig behaves the same way as an 'if' in C. What you expected
-(I believe) was the behaviour of '#ifdef', which is not the case. From
-Documentation/kbuild/kconfig-language.txt:
+Thanks,
+//richard
 
-    ---8<---
-    if:
+----------------------------------------------------------------
+Richard Weinberger (8):
+      um: hostfs: Fix writeback
+      um: Implement probe_kernel_read()
+      um: ubd: Add REQ_FLUSH suppport
+      um: ubd: Introduce submit_request()
+      um: Cleanup SIGTERM handling
+      um: Run UML in it's own session.
+      um: prctl: Do not include linux/ptrace.h
+      um: Add irq chip um/mask handlers
 
-            "if" <expr>
-            <if block>
-            "endif"
-
-    This defines an if block. The dependency expression <expr> is appended
-    to all enclosed menu entries.
-    ---8<---
-
-There's no equivlaent to '#ifdef' in Kconfig.
-
-I'll see if I can come up with a meaningfull construct that fixes your
-use-case. Don't hold your breath, though! ;-)
-
-Regards,
-Yann E. MORIN.
-
--- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
+ arch/um/drivers/ubd.h        |  1 -
+ arch/um/drivers/ubd_kern.c   | 72 ++++++++++++++++++++++++++++++++++++--------
+ arch/um/drivers/ubd_user.c   |  5 ---
+ arch/um/include/shared/os.h  |  3 ++
+ arch/um/kernel/Makefile      |  2 +-
+ arch/um/kernel/irq.c         |  4 +++
+ arch/um/kernel/maccess.c     | 24 +++++++++++++++
+ arch/um/os-Linux/aio.c       |  5 ++-
+ arch/um/os-Linux/file.c      |  9 ++++++
+ arch/um/os-Linux/main.c      |  2 ++
+ arch/um/os-Linux/process.c   | 53 +++++++++++++++++++++++++++++++-
+ arch/um/os-Linux/sigio.c     |  2 +-
+ arch/um/os-Linux/util.c      | 10 ++++++
+ arch/x86/um/os-Linux/prctl.c |  2 +-
+ fs/hostfs/hostfs_kern.c      |  9 +++++-
+ 15 files changed, 176 insertions(+), 27 deletions(-)
+ create mode 100644 arch/um/kernel/maccess.c
