@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751270Ab3IGI2J (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 04:28:09 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:49061 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105Ab3IGI2G (ORCPT
+	id S1751288Ab3IGI2v (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 04:28:51 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:58750 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125Ab3IGI2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 04:28:06 -0400
-Message-ID: <522AE1EE.1030203@gmail.com>
-Date: Sat, 07 Sep 2013 10:21:02 +0200
+	Sat, 7 Sep 2013 04:28:49 -0400
+Message-ID: <522AE21B.1050506@gmail.com>
+Date: Sat, 07 Sep 2013 10:21:47 +0200
 From: Marco Stornelli <marco.stornelli@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
 To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
 CC: linux-kernel@vger.kernel.org, Vladimir Davydov <vdavydov@parallels.com>
-Subject: [PATCH 06/19] pramfs: inode operations
+Subject: [PATCH 07/19] pramfs: file operations
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add inode operations.
+Add file operations.
 
 Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
 ---
- fs/pramfs/inode.c |  907 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 907 insertions(+), 0 deletions(-)
- create mode 100644 fs/pramfs/inode.c
+ fs/pramfs/file.c |  417 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 417 insertions(+), 0 deletions(-)
+ create mode 100644 fs/pramfs/file.c
 
-diff --git a/fs/pramfs/inode.c b/fs/pramfs/inode.c
+diff --git a/fs/pramfs/file.c b/fs/pramfs/file.c
 new file mode 100644
-index 0000000..d0f03b1
+index 0000000..5aaba99
 --- /dev/null
-+++ b/fs/pramfs/inode.c
-@@ -0,0 +1,907 @@
++++ b/fs/pramfs/file.c
+@@ -0,0 +1,417 @@
 +/*
 + * BRIEF DESCRIPTION
 + *
-+ * Inode methods (allocate/free/read/write).
++ * File operations for files.
 + *
 + * Copyright 2009-2011 Marco Stornelli <marco.stornelli@gmail.com>
 + * Copyright 2003 Sony Corporation
@@ -50,897 +50,407 @@ index 0000000..d0f03b1
 + */
 +
 +#include <linux/fs.h>
-+#include <linux/sched.h>
-+#include <linux/highuid.h>
-+#include <linux/module.h>
-+#include <linux/mpage.h>
-+#include <linux/backing-dev.h>
++#include <linux/aio.h>
++#include <linux/slab.h>
++#include <linux/uio.h>
++#include <linux/mm.h>
++#include <linux/uaccess.h>
++#include <linux/falloc.h>
 +#include "pram.h"
-+#include "xattr.h"
-+#include "xip.h"
 +#include "acl.h"
-+
-+struct backing_dev_info pram_backing_dev_info __read_mostly = {
-+	.ra_pages       = 0,    /* No readahead */
-+	.capabilities	= BDI_CAP_NO_ACCT_AND_WRITEBACK,
-+};
++#include "xip.h"
++#include "xattr.h"
 +
 +/*
-+ * allocate a data block for inode and return it's absolute blocknr.
-+ * Zeroes out the block if zero set. Increments inode->i_blocks.
++ * The following functions are helper routines to copy to/from
++ * user space and iter over io vectors (mainly for readv/writev).
++ * They are used in the direct IO path.
 + */
-+static int pram_new_data_block(struct inode *inode, unsigned long *blocknr,
-+			       int zero)
++static size_t __pram_iov_copy_from(char *vaddr,
++			const struct iovec *iov, size_t base, size_t bytes)
 +{
-+	int errval = pram_new_block(inode->i_sb, blocknr, zero);
++	size_t copied = 0, left = 0;
 +
-+	if (!errval) {
-+		struct pram_inode *pi = pram_get_inode(inode->i_sb,
-+							inode->i_ino);
-+		inode->i_blocks++;
-+		pram_memunlock_inode(inode->i_sb, pi);
-+		pi->i_blocks = cpu_to_be32(inode->i_blocks);
-+		pram_memlock_inode(inode->i_sb, pi);
++	while (bytes) {
++		char __user *buf = iov->iov_base + base;
++		int copy = min(bytes, iov->iov_len - base);
++
++		base = 0;
++		left = __copy_from_user(vaddr, buf, copy);
++		copied += copy;
++		bytes -= copy;
++		vaddr += copy;
++		iov++;
++
++		if (unlikely(left))
++			break;
 +	}
-+
-+	return errval;
++	return copied - left;
 +}
 +
-+/*
-+ * find the offset to the block represented by the given inode's file
-+ * relative block number.
-+ */
-+u64 pram_find_data_block(struct inode *inode, unsigned long file_blocknr)
++static size_t __pram_iov_copy_to(char *vaddr,
++			const struct iovec *iov, size_t base, size_t bytes)
 +{
-+	struct super_block *sb = inode->i_sb;
-+	struct pram_inode *pi;
-+	u64 *row; /* ptr to row block */
-+	u64 *col; /* ptr to column blocks */
-+	u64 bp = 0;
-+	unsigned int i_row, i_col;
-+	unsigned int N = sb->s_blocksize >> 3; /* num block ptrs per block */
-+	unsigned int Nbits = sb->s_blocksize_bits - 3;
++	size_t copied = 0, left = 0;
 +
-+	pi = pram_get_inode(sb, inode->i_ino);
++	while (bytes) {
++		char __user *buf = iov->iov_base + base;
++		int copy = min(bytes, iov->iov_len - base);
 +
-+	i_row = file_blocknr >> Nbits;
-+	i_col  = file_blocknr & (N-1);
++		base = 0;
++		left = __copy_to_user(buf, vaddr, copy);
++		copied += copy;
++		bytes -= copy;
++		vaddr += copy;
++		iov++;
 +
-+	row = pram_get_block(sb, be64_to_cpu(pi->i_type.reg.row_block));
-+	if (row) {
-+		col = pram_get_block(sb, be64_to_cpu(row[i_row]));
-+		if (col)
-+			bp = be64_to_cpu(col[i_col]);
++		if (unlikely(left))
++			break;
 +	}
-+
-+	return bp;
++	return copied - left;
 +}
 +
-+/*
-+ * find the file offset for SEEK_DATA/SEEK_HOLE
-+ */
-+int pram_find_region(struct inode *inode, loff_t *offset, int hole)
++static size_t pram_iov_copy_from(void *to, struct iov_iter *i, size_t bytes)
 +{
-+	struct super_block *sb = inode->i_sb;
-+	struct pram_inode *pi = pram_get_inode(sb, inode->i_ino);
-+	int N = sb->s_blocksize >> 3; /* num block ptrs per block */
-+	int first_row_index, last_row_index, i, j;
-+	unsigned long first_blocknr, last_blocknr, blocks = 0, offset_in_block;
-+	u64 *row; /* ptr to row block */
-+	u64 *col; /* ptr to column blocks */
-+	int data_found = 0, hole_found = 0;
++	size_t copied;
 +
-+	if (*offset >= inode->i_size)
-+		return -ENXIO;
-+
-+	if (!inode->i_blocks || !pi->i_type.reg.row_block) {
-+		if (hole)
-+			return inode->i_size;
-+		else
-+			return -ENXIO;
++	if (likely(i->nr_segs == 1)) {
++		int left;
++		char __user *buf = i->iov->iov_base + i->iov_offset;
++		left = __copy_from_user(to, buf, bytes);
++		copied = bytes - left;
++	} else {
++		copied = __pram_iov_copy_from(to, i->iov, i->iov_offset, bytes);
 +	}
 +
-+	offset_in_block = *offset & (sb->s_blocksize - 1);
++	return copied;
++}
 +
-+	first_blocknr = *offset >> sb->s_blocksize_bits;
-+	last_blocknr = inode->i_size >> sb->s_blocksize_bits;
++static size_t pram_iov_copy_to(void *from, struct iov_iter *i, size_t bytes)
++{
++	size_t copied;
 +
-+	first_row_index = first_blocknr >> (sb->s_blocksize_bits - 3);
-+	last_row_index  = last_blocknr >> (sb->s_blocksize_bits - 3);
++	if (likely(i->nr_segs == 1)) {
++		int left;
++		char __user *buf = i->iov->iov_base + i->iov_offset;
++		left = __copy_to_user(buf, from, bytes);
++		copied = bytes - left;
++	} else {
++		copied = __pram_iov_copy_to(from, i->iov, i->iov_offset, bytes);
++	}
 +
-+	row = pram_get_block(sb, be64_to_cpu(pi->i_type.reg.row_block));
++	return copied;
++}
 +
-+	for (i = first_row_index; i <= last_row_index; i++) {
-+		int first_col_index = (i == first_row_index) ?
-+			first_blocknr & (N-1) : 0;
-+		int last_col_index = (i == last_row_index) ?
-+			last_blocknr & (N-1) : N-1;
++static size_t __pram_clear_user(const struct iovec *iov, size_t base,
++				size_t bytes)
++{
++	size_t claened = 0, left = 0;
 +
-+		if (!row[i]) {
-+			hole_found = 1;
-+			if (!hole)
-+				blocks += sb->s_blocksize >> 3;
-+			continue;
-+		}
++	while (bytes) {
++		char __user *buf = iov->iov_base + base;
++		int clear = min(bytes, iov->iov_len - base);
 +
-+		col = pram_get_block(sb, be64_to_cpu(row[i]));
++		base = 0;
++		left = __clear_user(buf, clear);
++		claened += clear;
++		bytes -= clear;
++		iov++;
 +
-+		for (j = first_col_index; j <= last_col_index; j++) {
++		if (unlikely(left))
++			break;
++	}
++	return claened - left;
++}
 +
-+			if (col[j]) {
-+				data_found = 1;
-+				if (!hole)
++static size_t pram_clear_user(struct iov_iter *i, size_t bytes)
++{
++	size_t clear;
++
++	if (likely(i->nr_segs == 1)) {
++		int left;
++		char __user *buf = i->iov->iov_base + i->iov_offset;
++		left = __clear_user(buf, bytes);
++		clear = bytes - left;
++	} else {
++		clear = __pram_clear_user(i->iov, i->iov_offset, bytes);
++	}
++
++	return clear;
++}
++
++static int pram_open_file(struct inode *inode, struct file *filp)
++{
++	filp->f_flags |= O_DIRECT;
++	return generic_file_open(inode, filp);
++}
++
++ssize_t pram_direct_IO(int rw, struct kiocb *iocb,
++		   const struct iovec *iov,
++		   loff_t offset, unsigned long nr_segs)
++{
++	struct file *file = iocb->ki_filp;
++	struct inode *inode = file->f_mapping->host;
++	struct super_block *sb = inode->i_sb;
++	int progress = 0, hole = 0, alloc_once = 1;
++	ssize_t retval = 0;
++	unsigned long blocknr, blockoff, blocknr_start;
++	struct iov_iter iter;
++	unsigned int num_blocks;
++	size_t length = iov_length(iov, nr_segs);
++	loff_t size;
++
++	/*
++	 * If we are in the write path we are under i_mutex but no lock held
++	 * in the read, so we need to be sync with truncate to avoid race
++	 * conditions.
++	 */
++	if (rw == READ)
++		rcu_read_lock();
++
++	size = i_size_read(inode);
++
++	if (length < 0) {
++		retval = -EINVAL;
++		goto out;
++	}
++	if ((rw == READ) && (offset + length > size))
++		length = size - offset;
++	if (!length)
++		goto out;
++
++	/* find starting block number to access */
++	blocknr = offset >> sb->s_blocksize_bits;
++	/* find starting offset within starting block */
++	blockoff = offset & (sb->s_blocksize - 1);
++	/* find number of blocks to access */
++	num_blocks = (blockoff + length + sb->s_blocksize - 1) >>
++							sb->s_blocksize_bits;
++	blocknr_start = blocknr;
++
++	iov_iter_init(&iter, iov, nr_segs, length, 0);
++
++	while (length) {
++		int count;
++		u8 *bp = NULL;
++		u64 block = pram_find_data_block(inode, blocknr);
++		if (!block) {
++			if (alloc_once && rw == WRITE) {
++				/*
++				 * Allocate the data blocks starting from
++				 * blocknr to the end.
++				 */
++				retval = pram_alloc_blocks(inode, blocknr,
++							num_blocks - (blocknr -
++								blocknr_start));
++				if (retval)
 +					goto out;
-+			} else
-+				hole_found = 1;
-+
-+			if (!hole_found || !hole)
-+				blocks++;
-+		}
-+		cond_resched();
-+	}
-+ out:
-+	/* Searching data but only hole found till the end */
-+	if (!hole && !data_found && hole_found)
-+		return -ENXIO;
-+
-+	if (data_found && !hole_found) {
-+		/* Searching data but we are alredy into them */
-+		if (!hole)
-+			return 0;
-+		/* Searching hole but only data found, go to the end */
-+		else {
-+			*offset = inode->i_size;
-+			return 0;
-+		}
-+	}
-+
-+	/* Searching for hole, hole found and starting inside an hole */
-+	if (hole && hole_found && !blocks) {
-+			/* we found data after it */
-+			if (data_found)
-+				return 0;
-+			else {
-+				/* last hole */
-+				*offset = inode->i_size;
-+				return 0;
++				/* retry....*/
++				block = pram_find_data_block(inode, blocknr);
++				BUG_ON(!block);
++				alloc_once = 0;
++			} else if (unlikely(rw == READ)) {
++				/* We are falling in a hole */
++				hole = 1;
++				goto hole;
 +			}
-+	}
-+
-+	if (offset_in_block) {
-+		blocks--;
-+		*offset += (blocks << sb->s_blocksize_bits) +
-+					(sb->s_blocksize - offset_in_block);
-+	} else
-+		*offset += blocks << sb->s_blocksize_bits;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Free data blocks from inode in the range start <=> end
-+ */
-+static void __pram_truncate_blocks(struct inode *inode, loff_t start,
-+				   loff_t end)
-+{
-+	struct super_block *sb = inode->i_sb;
-+	struct pram_inode *pi = pram_get_inode(sb, inode->i_ino);
-+	int N = sb->s_blocksize >> 3; /* num block ptrs per block */
-+	int Nbits = sb->s_blocksize_bits - 3;
-+	int first_row_index, last_row_index, i, j;
-+	unsigned long blocknr, first_blocknr, last_blocknr;
-+	unsigned int freed = 0;
-+	u64 *row; /* ptr to row block */
-+	u64 *col; /* ptr to column blocks */
-+
-+	if (!pi->i_type.reg.row_block)
-+		return;
-+
-+	first_blocknr = (start + sb->s_blocksize - 1) >> sb->s_blocksize_bits;
-+
-+	if (pi->i_flags & cpu_to_be32(PRAM_EOFBLOCKS_FL))
-+		last_blocknr = (1UL << (2*sb->s_blocksize_bits - 6)) - 1;
-+	else
-+		last_blocknr = end >> sb->s_blocksize_bits;
-+
-+	if (first_blocknr > last_blocknr)
-+		return;
-+
-+	first_row_index = first_blocknr >> Nbits;
-+	last_row_index  = last_blocknr >> Nbits;
-+
-+	row = pram_get_block(sb, be64_to_cpu(pi->i_type.reg.row_block));
-+
-+	for (i = first_row_index; i <= last_row_index; i++) {
-+		int first_col_index = (i == first_row_index) ?
-+			first_blocknr & (N-1) : 0;
-+		int last_col_index = (i == last_row_index) ?
-+			last_blocknr & (N-1) : N-1;
-+
-+		if (unlikely(!row[i]))
-+			continue;
-+
-+		col = pram_get_block(sb, be64_to_cpu(row[i]));
-+
-+		for (j = first_col_index; j <= last_col_index; j++) {
-+
-+			if (unlikely(!col[j]))
-+				continue;
-+
-+			blocknr = pram_get_blocknr(sb, be64_to_cpu(col[j]));
-+			pram_free_block(sb, blocknr);
-+			freed++;
-+			pram_memunlock_block(sb, col);
-+			col[j] = 0;
-+			pram_memlock_block(sb, col);
 +		}
-+
-+		cond_resched();
-+
-+		if (first_col_index == 0) {
-+			blocknr = pram_get_blocknr(sb, be64_to_cpu(row[i]));
-+			pram_free_block(sb, blocknr);
-+			pram_memunlock_block(sb, row);
-+			row[i] = 0;
-+			pram_memlock_block(sb, row);
++		bp = (u8 *)pram_get_block(sb, block);
++		if (!bp) {
++			retval = -EACCES;
++			goto out;
 +		}
-+	}
++ hole:
++		++blocknr;
 +
-+	inode->i_blocks -= freed;
++		count = blockoff + length > sb->s_blocksize ?
++			sb->s_blocksize - blockoff : length;
 +
-+	if (start == 0) {
-+		blocknr = pram_get_blocknr(sb,
-+					be64_to_cpu(pi->i_type.reg.row_block));
-+		pram_free_block(sb, blocknr);
-+		pram_memunlock_inode(sb, pi);
-+		pi->i_type.reg.row_block = 0;
-+		goto update_blocks;
-+	}
-+	pram_memunlock_inode(sb, pi);
-+
-+ update_blocks:
-+	pi->i_blocks = cpu_to_be32(inode->i_blocks);
-+	pram_memlock_inode(sb, pi);
-+}
-+
-+static void pram_truncate_blocks(struct inode *inode, loff_t start, loff_t end)
-+{
-+	if (!(S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode) ||
-+	      S_ISLNK(inode->i_mode)))
-+		return;
-+
-+	__pram_truncate_blocks(inode, start, end);
-+	inode->i_mtime = inode->i_ctime = CURRENT_TIME_SEC;
-+	pram_update_inode(inode);
-+}
-+
-+/*
-+ * Allocate num data blocks for inode, starting at given file-relative
-+ * block number.
-+ */
-+int pram_alloc_blocks(struct inode *inode, int file_blocknr, unsigned int num)
-+{
-+	struct super_block *sb = inode->i_sb;
-+	struct pram_inode *pi = pram_get_inode(sb, inode->i_ino);
-+	int N = sb->s_blocksize >> 3; /* num block ptrs per block */
-+	int Nbits = sb->s_blocksize_bits - 3;
-+	int first_file_blocknr;
-+	int last_file_blocknr;
-+	int first_row_index, last_row_index;
-+	int i, j, errval;
-+	unsigned long blocknr;
-+	u64 *row;
-+	u64 *col;
-+
-+	if (!pi->i_type.reg.row_block) {
-+		/* alloc the 2nd order array block */
-+		errval = pram_new_block(sb, &blocknr, 1);
-+		if (errval) {
-+			pram_dbg("failed to alloc 2nd order array block\n");
-+			goto fail;
-+		}
-+		pram_memunlock_inode(sb, pi);
-+		pi->i_type.reg.row_block = cpu_to_be64(pram_get_block_off(sb,
-+								      blocknr));
-+		pram_memlock_inode(sb, pi);
-+	}
-+
-+	row = pram_get_block(sb, be64_to_cpu(pi->i_type.reg.row_block));
-+
-+	first_file_blocknr = file_blocknr;
-+	last_file_blocknr = file_blocknr + num - 1;
-+
-+	first_row_index = first_file_blocknr >> Nbits;
-+	last_row_index  = last_file_blocknr >> Nbits;
-+
-+	for (i = first_row_index; i <= last_row_index; i++) {
-+		int first_col_index, last_col_index;
-+
-+		/*
-+		 * we are starting a new row, so make sure
-+		 * there is a block allocated for the row.
-+		 */
-+		if (!row[i]) {
-+			/* allocate the row block */
-+			errval = pram_new_block(sb, &blocknr, 1);
-+			if (errval) {
-+				pram_dbg("failed to alloc row block\n");
-+				goto fail;
-+			}
-+			pram_memunlock_block(sb, row);
-+			row[i] = cpu_to_be64(pram_get_block_off(sb, blocknr));
-+			pram_memlock_block(sb, row);
-+		}
-+		col = pram_get_block(sb, be64_to_cpu(row[i]));
-+
-+		first_col_index = (i == first_row_index) ?
-+			first_file_blocknr & (N-1) : 0;
-+
-+		last_col_index = (i == last_row_index) ?
-+			last_file_blocknr & (N-1) : N-1;
-+
-+		for (j = first_col_index; j <= last_col_index; j++) {
-+			if (!col[j]) {
-+				errval = pram_new_data_block(inode, &blocknr,
-+							     1);
-+				if (errval) {
-+					pram_dbg("fail to alloc data block\n");
-+					if (j != first_col_index) {
-+						__pram_truncate_blocks(inode,
-+							inode->i_size,
-+					inode->i_size + ((j - first_col_index)
-+					<< inode->i_sb->s_blocksize_bits));
-+					}
-+					goto fail;
++		if (rw == READ) {
++			if (unlikely(hole)) {
++				retval = pram_clear_user(&iter, count);
++				if (retval != count) {
++					retval = -EFAULT;
++					goto out;
 +				}
-+				pram_memunlock_block(sb, col);
-+				col[j] = cpu_to_be64(pram_get_block_off(sb,
-+								      blocknr));
-+				pram_memlock_block(sb, col);
++			} else {
++				retval = pram_iov_copy_to(&bp[blockoff], &iter,
++							  count);
++				if (retval != count) {
++					retval = -EFAULT;
++					goto out;
++				}
 +			}
-+		}
-+	}
-+
-+	errval = 0;
-+ fail:
-+	return errval;
-+}
-+
-+static int pram_read_inode(struct inode *inode, struct pram_inode *pi)
-+{
-+	int ret = -EIO;
-+
-+	mutex_lock(&PRAM_I(inode)->i_meta_mutex);
-+
-+	if (pram_calc_checksum((u8 *)pi, PRAM_INODE_SIZE)) {
-+		pram_err(inode->i_sb, "checksum error in inode %08x\n",
-+			  (u32)inode->i_ino);
-+		goto bad_inode;
-+	}
-+
-+	inode->i_mode = be16_to_cpu(pi->i_mode);
-+	i_uid_write(inode, be32_to_cpu(pi->i_uid));
-+	i_gid_write(inode, be32_to_cpu(pi->i_gid));
-+	set_nlink(inode, be16_to_cpu(pi->i_links_count));
-+	inode->i_size = be32_to_cpu(pi->i_size);
-+	inode->i_atime.tv_sec = be32_to_cpu(pi->i_atime);
-+	inode->i_ctime.tv_sec = be32_to_cpu(pi->i_ctime);
-+	inode->i_mtime.tv_sec = be32_to_cpu(pi->i_mtime);
-+	inode->i_atime.tv_nsec = inode->i_mtime.tv_nsec =
-+		inode->i_ctime.tv_nsec = 0;
-+	inode->i_generation = be32_to_cpu(pi->i_generation);
-+	pram_set_inode_flags(inode, pi);
-+
-+	/* check if the inode is active. */
-+	if (inode->i_nlink == 0 && (inode->i_mode == 0 ||
-+				    be32_to_cpu(pi->i_dtime))) {
-+		/* this inode is deleted */
-+		pram_dbg("read inode: inode %lu not active", inode->i_ino);
-+		ret = -ESTALE;
-+		goto bad_inode;
-+	}
-+
-+	inode->i_blocks = be32_to_cpu(pi->i_blocks);
-+	inode->i_ino = pram_get_inodenr(inode->i_sb, pi);
-+	inode->i_mapping->a_ops = &pram_aops;
-+	inode->i_mapping->backing_dev_info = &pram_backing_dev_info;
-+
-+	switch (inode->i_mode & S_IFMT) {
-+	case S_IFREG:
-+		if (pram_use_xip(inode->i_sb)) {
-+			inode->i_mapping->a_ops = &pram_aops_xip;
-+			inode->i_fop = &pram_xip_file_operations;
 +		} else {
-+			inode->i_op = &pram_file_inode_operations;
-+			inode->i_fop = &pram_file_operations;
++			pram_memunlock_block(sb, bp);
++			retval = pram_iov_copy_from(&bp[blockoff], &iter,
++							count);
++			if (retval != count) {
++				retval = -EFAULT;
++				pram_memlock_block(sb, bp);
++				goto out;
++			}
++			pram_memlock_block(sb, bp);
 +		}
-+		break;
-+	case S_IFDIR:
-+		inode->i_op = &pram_dir_inode_operations;
-+		inode->i_fop = &pram_dir_operations;
-+		break;
-+	case S_IFLNK:
-+		inode->i_op = &pram_symlink_inode_operations;
-+		break;
-+	default:
-+		inode->i_size = 0;
-+		inode->i_op = &pram_special_inode_operations;
-+		init_special_inode(inode, inode->i_mode,
-+				   be32_to_cpu(pi->i_type.dev.rdev));
-+		break;
++
++		progress += count;
++		iov_iter_advance(&iter, count);
++		length -= count;
++		blockoff = 0;
++		hole = 0;
 +	}
 +
-+	mutex_unlock(&PRAM_I(inode)->i_meta_mutex);
-+	return 0;
-+
-+ bad_inode:
-+	mutex_unlock(&PRAM_I(inode)->i_meta_mutex);
-+	return ret;
-+}
-+
-+int pram_update_inode(struct inode *inode)
-+{
-+	struct pram_inode *pi;
-+	int retval = 0;
-+
-+	pi = pram_get_inode(inode->i_sb, inode->i_ino);
-+	if (!pi)
-+		return -EACCES;
-+
-+	mutex_lock(&PRAM_I(inode)->i_meta_mutex);
-+
-+	pram_memunlock_inode(inode->i_sb, pi);
-+	pi->i_mode = cpu_to_be16(inode->i_mode);
-+	pi->i_uid = cpu_to_be32(i_uid_read(inode));
-+	pi->i_gid = cpu_to_be32(i_gid_read(inode));
-+	pi->i_links_count = cpu_to_be16(inode->i_nlink);
-+	pi->i_size = cpu_to_be32(inode->i_size);
-+	pi->i_blocks = cpu_to_be32(inode->i_blocks);
-+	pi->i_atime = cpu_to_be32(inode->i_atime.tv_sec);
-+	pi->i_ctime = cpu_to_be32(inode->i_ctime.tv_sec);
-+	pi->i_mtime = cpu_to_be32(inode->i_mtime.tv_sec);
-+	pi->i_generation = cpu_to_be32(inode->i_generation);
-+	pram_get_inode_flags(inode, pi);
-+
-+	if (S_ISCHR(inode->i_mode) || S_ISBLK(inode->i_mode))
-+		pi->i_type.dev.rdev = cpu_to_be32(inode->i_rdev);
-+
-+	pram_memlock_inode(inode->i_sb, pi);
-+
-+	mutex_unlock(&PRAM_I(inode)->i_meta_mutex);
++	retval = progress;
++	/*
++	 * Check for the flag EOFBLOCKS is still valid after the extending
++	 * write.
++	 */
++	if (rw == WRITE && (offset + length >= size))
++		check_eof_blocks(inode, size + retval);
++ out:
++	if (rw == READ)
++		rcu_read_unlock();
 +	return retval;
 +}
 +
-+/*
-+ * NOTE! When we get the inode, we're the only people
-+ * that have access to it, and as such there are no
-+ * race conditions we have to worry about. The inode
-+ * is not on the hash-lists, and it cannot be reached
-+ * through the filesystem because the directory entry
-+ * has been deleted earlier.
-+ */
-+static void pram_free_inode(struct inode *inode)
++static int pram_check_flags(int flags)
 +{
-+	struct super_block *sb = inode->i_sb;
-+	struct pram_super_block *ps;
-+	struct pram_inode *pi;
-+	unsigned long inode_nr;
-+
-+	pram_xattr_delete_inode(inode);
-+
-+	mutex_lock(&PRAM_SB(sb)->s_lock);
-+
-+	inode_nr = (inode->i_ino - PRAM_ROOT_INO) >> PRAM_INODE_BITS;
-+
-+	pi = pram_get_inode(sb, inode->i_ino);
-+	pram_memunlock_inode(sb, pi);
-+	pi->i_dtime = cpu_to_be32(get_seconds());
-+	pi->i_type.reg.row_block = 0;
-+	pi->i_xattr = 0;
-+	pram_memlock_inode(sb, pi);
-+
-+	/* increment s_free_inodes_count */
-+	ps = pram_get_super(sb);
-+	pram_memunlock_super(sb, ps);
-+	if (inode_nr < be32_to_cpu(ps->s_free_inode_hint))
-+		ps->s_free_inode_hint = cpu_to_be32(inode_nr);
-+	be32_add_cpu(&ps->s_free_inodes_count, 1);
-+	if (be32_to_cpu(ps->s_free_inodes_count) ==
-+					 be32_to_cpu(ps->s_inodes_count) - 1) {
-+		/* filesystem is empty */
-+		pram_dbg("fs is empty!\n");
-+		ps->s_free_inode_hint = cpu_to_be32(1);
-+	}
-+	pram_memlock_super(sb, ps);
-+
-+	mutex_unlock(&PRAM_SB(sb)->s_lock);
-+}
-+
-+struct inode *pram_iget(struct super_block *sb, unsigned long ino)
-+{
-+	struct inode *inode;
-+	struct pram_inode *pi;
-+	int err;
-+
-+	inode = iget_locked(sb, ino);
-+	if (unlikely(!inode))
-+		return ERR_PTR(-ENOMEM);
-+	if (!(inode->i_state & I_NEW))
-+		return inode;
-+
-+	pi = pram_get_inode(sb, ino);
-+	if (!pi) {
-+		err = -EACCES;
-+		goto fail;
-+	}
-+	err = pram_read_inode(inode, pi);
-+	if (unlikely(err))
-+		goto fail;
-+
-+	unlock_new_inode(inode);
-+	return inode;
-+fail:
-+	iget_failed(inode);
-+	return ERR_PTR(err);
-+}
-+
-+void pram_evict_inode(struct inode *inode)
-+{
-+	int want_delete = 0;
-+
-+	if (!inode->i_nlink && !is_bad_inode(inode))
-+		want_delete = 1;
-+
-+	truncate_inode_pages(&inode->i_data, 0);
-+
-+	if (want_delete) {
-+		sb_start_intwrite(inode->i_sb);
-+		/* unlink from chain in the inode's directory */
-+		pram_remove_link(inode);
-+		pram_truncate_blocks(inode, 0, inode->i_size);
-+		inode->i_size = 0;
-+	}
-+
-+	clear_inode(inode);
-+
-+	if (want_delete) {
-+		pram_free_inode(inode);
-+		sb_end_intwrite(inode->i_sb);
-+	}
-+}
-+
-+
-+struct inode *pram_new_inode(struct inode *dir, umode_t mode,
-+			     const struct qstr *qstr)
-+{
-+	struct super_block *sb;
-+	struct pram_sb_info *sbi;
-+	struct pram_super_block *ps;
-+	struct inode *inode;
-+	struct pram_inode *pi = NULL;
-+	struct pram_inode *diri = NULL;
-+	int i, errval;
-+	ino_t ino = 0;
-+
-+	sb = dir->i_sb;
-+	sbi = (struct pram_sb_info *)sb->s_fs_info;
-+	inode = new_inode(sb);
-+	if (!inode)
-+		return ERR_PTR(-ENOMEM);
-+
-+	mutex_lock(&PRAM_SB(sb)->s_lock);
-+	ps = pram_get_super(sb);
-+
-+	if (ps->s_free_inodes_count) {
-+		/* find the oldest unused pram inode */
-+		for (i = be32_to_cpu(ps->s_free_inode_hint);
-+		     i < be32_to_cpu(ps->s_inodes_count); i++) {
-+			ino = PRAM_ROOT_INO + (i << PRAM_INODE_BITS);
-+			pi = pram_get_inode(sb, ino);
-+			/* check if the inode is active. */
-+			if (be16_to_cpu(pi->i_links_count) == 0 &&
-+			   (be16_to_cpu(pi->i_mode) == 0 ||
-+			   be32_to_cpu(pi->i_dtime))) {
-+				/* this inode is deleted */
-+				break;
-+			}
-+		}
-+
-+		if (unlikely(i >= be32_to_cpu(ps->s_inodes_count))) {
-+			pram_err(sb, "free inodes count!=0 but none free!?\n");
-+			errval = -ENOSPC;
-+			goto fail1;
-+		}
-+
-+		pram_dbg("allocating inode %lu\n", ino);
-+	} else {
-+		pram_dbg("no space left to create new inode!\n");
-+		errval = -ENOSPC;
-+		goto fail1;
-+	}
-+
-+	diri = pram_get_inode(sb, dir->i_ino);
-+	if (!diri) {
-+		errval = -EACCES;
-+		goto fail1;
-+	}
-+
-+	/* chosen inode is in ino */
-+	inode->i_ino = ino;
-+	inode_init_owner(inode, dir, mode);
-+	inode->i_blocks = inode->i_size = 0;
-+	inode->i_mtime = inode->i_atime = inode->i_ctime = CURRENT_TIME;
-+
-+	inode->i_generation = atomic_add_return(1, &sbi->next_generation);
-+
-+	pram_memunlock_inode(sb, pi);
-+	pi->i_d.d_next = 0;
-+	pi->i_d.d_prev = 0;
-+	pi->i_dtime = 0;
-+	pi->i_flags = pram_mask_flags(mode, diri->i_flags);
-+	pram_memlock_inode(sb, pi);
-+
-+	pram_set_inode_flags(inode, pi);
-+
-+	if (insert_inode_locked(inode) < 0) {
-+		errval = -EINVAL;
-+		goto fail1;
-+	}
-+	errval = pram_write_inode(inode, NULL);
-+	if (errval)
-+		goto fail2;
-+
-+	errval = pram_init_acl(inode, dir);
-+	if (errval)
-+		goto fail2;
-+
-+	errval = pram_init_security(inode, dir, qstr);
-+	if (errval)
-+		goto fail2;
-+
-+	pram_memunlock_super(sb, ps);
-+	be32_add_cpu(&ps->s_free_inodes_count, -1);
-+	if (i < be32_to_cpu(ps->s_inodes_count)-1)
-+		ps->s_free_inode_hint = cpu_to_be32(i+1);
-+	else
-+		ps->s_free_inode_hint = 0;
-+	pram_memlock_super(sb, ps);
-+
-+	mutex_unlock(&PRAM_SB(sb)->s_lock);
-+
-+	return inode;
-+fail2:
-+	mutex_unlock(&PRAM_SB(sb)->s_lock);
-+	clear_nlink(inode);
-+	unlock_new_inode(inode);
-+	iput(inode);
-+	return ERR_PTR(errval);
-+fail1:
-+	mutex_unlock(&PRAM_SB(sb)->s_lock);
-+	make_bad_inode(inode);
-+	iput(inode);
-+	return ERR_PTR(errval);
-+}
-+
-+int pram_write_inode(struct inode *inode, struct writeback_control *wbc)
-+{
-+	return pram_update_inode(inode);
-+}
-+
-+/*
-+ * dirty_inode() is called from __mark_inode_dirty()
-+ */
-+void pram_dirty_inode(struct inode *inode, int flags)
-+{
-+	pram_update_inode(inode);
-+}
-+
-+static int pram_readpage(struct file *file, struct page *page)
-+{
-+	struct inode *inode = page->mapping->host;
-+	struct super_block *sb = inode->i_sb;
-+	loff_t offset, size;
-+	unsigned long fillsize, blocknr, bytes_filled;
-+	u64 block;
-+	void *buf, *bp;
-+	int ret;
-+
-+	buf = kmap(page);
-+	if (!buf)
-+		return -ENOMEM;
-+
-+	offset = page_offset(page);
-+	size = i_size_read(inode);
-+	blocknr = page->index << (PAGE_CACHE_SHIFT - inode->i_blkbits);
-+	fillsize = 0;
-+	bytes_filled = 0;
-+	ret = 0;
-+	if (offset < size) {
-+		size -= offset;
-+		fillsize = size > PAGE_SIZE ? PAGE_SIZE : size;
-+		while (fillsize) {
-+			int count = fillsize > sb->s_blocksize ?
-+						sb->s_blocksize : fillsize;
-+			block = pram_find_data_block(inode, blocknr);
-+			if (likely(block)) {
-+				bp = pram_get_block(sb, block);
-+				if (!bp) {
-+					SetPageError(page);
-+					bytes_filled = 0;
-+					ret = -EIO;
-+					goto out;
-+				}
-+				memcpy(buf + bytes_filled, bp, count);
-+			} else {
-+				memset(buf + bytes_filled, 0, count);
-+			}
-+			bytes_filled += count;
-+			fillsize -= count;
-+			blocknr++;
-+		}
-+	}
-+ out:
-+	if (bytes_filled < PAGE_SIZE)
-+		memset(buf + bytes_filled, 0, PAGE_SIZE - bytes_filled);
-+	if (ret == 0)
-+		SetPageUptodate(page);
-+
-+	flush_dcache_page(page);
-+	kunmap(page);
-+	unlock_page(page);
-+	return ret;
-+}
-+
-+/*
-+ * Called to zeros out a single block. It's used in the "resize"
-+ * to avoid to keep data in case the file grow up again.
-+ */
-+static int pram_block_truncate_page(struct inode *inode, loff_t newsize)
-+{
-+	struct super_block *sb = inode->i_sb;
-+	unsigned long offset = newsize & (sb->s_blocksize - 1);
-+	unsigned long blocknr, length;
-+	u64 blockoff;
-+	char *bp;
-+	int ret = 0;
-+
-+	/* Block boundary or extending ? */
-+	if (!offset || newsize > inode->i_size)
-+		goto out;
-+
-+	length = sb->s_blocksize - offset;
-+	blocknr = newsize >> sb->s_blocksize_bits;
-+
-+	blockoff = pram_find_data_block(inode, blocknr);
-+
-+	/* Hole ? */
-+	if (!blockoff)
-+		goto out;
-+
-+	bp = pram_get_block(inode->i_sb, blockoff);
-+	if (!bp) {
-+		ret = -EACCES;
-+		goto out;
-+	}
-+	pram_memunlock_block(sb, bp);
-+	memset(bp + offset, 0, length);
-+	pram_memlock_block(sb, bp);
-+out:
-+	return ret;
-+}
-+
-+static int pram_setsize(struct inode *inode, loff_t newsize)
-+{
-+	int ret = 0;
-+	loff_t oldsize = inode->i_size;
-+
-+	if (!(S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode) ||
-+	    S_ISLNK(inode->i_mode)))
++	if (!(flags & O_DIRECT))
 +		return -EINVAL;
-+	if (IS_APPEND(inode) || IS_IMMUTABLE(inode))
-+		return -EPERM;
 +
-+	if (newsize != oldsize) {
-+		if (mapping_is_xip(inode->i_mapping))
-+			ret = xip_truncate_page(inode->i_mapping, newsize);
-+		else
-+			ret = pram_block_truncate_page(inode, newsize);
++	return 0;
++}
 +
++static long pram_fallocate(struct file *file, int mode, loff_t offset,
++			   loff_t len)
++{
++	struct inode *inode = file_inode(file);
++	long ret = 0;
++	unsigned long blocknr, blockoff;
++	int num_blocks, blocksize_mask;
++	struct pram_inode *pi;
++	loff_t new_size;
++
++	/* We only support the FALLOC_FL_KEEP_SIZE mode */
++	if (mode & ~FALLOC_FL_KEEP_SIZE)
++		return -EOPNOTSUPP;
++
++	if (S_ISDIR(inode->i_mode))
++		return -ENODEV;
++
++	mutex_lock(&inode->i_mutex);
++
++	new_size = len + offset;
++	if (!(mode & FALLOC_FL_KEEP_SIZE) && new_size > inode->i_size) {
++		ret = inode_newsize_ok(inode, new_size);
 +		if (ret)
-+			return ret;
-+		i_size_write(inode, newsize);
++			goto out;
 +	}
-+	/*
-+	 * Wait for any concurrent readers to finish before to truncate the
-+	 * blocks. Any new reader will see the new i_size so no problem.
-+	 * In addition we have to wait, in xip case, the call of xip_file_fault.
-+	 */
-+	synchronize_rcu();
-+	truncate_pagecache(inode, oldsize, newsize);
-+	__pram_truncate_blocks(inode, newsize, oldsize);
-+	/* Check for the flag EOFBLOCKS is still valid after the set size */
-+	check_eof_blocks(inode, newsize);
-+	inode->i_mtime = inode->i_ctime = CURRENT_TIME_SEC;
-+	pram_update_inode(inode);
 +
++	blocksize_mask = (1 << inode->i_sb->s_blocksize_bits) - 1;
++	blocknr = offset >> inode->i_sb->s_blocksize_bits;
++	blockoff = offset & blocksize_mask;
++	num_blocks = (blockoff + len + blocksize_mask) >>
++						inode->i_sb->s_blocksize_bits;
++	ret = pram_alloc_blocks(inode, blocknr, num_blocks);
++	if (ret)
++		goto out;
++
++	if (mode & FALLOC_FL_KEEP_SIZE) {
++		pi = pram_get_inode(inode->i_sb, inode->i_ino);
++		if (!pi) {
++			ret = -EACCES;
++			goto out;
++		}
++		pram_memunlock_inode(inode->i_sb, pi);
++		pi->i_flags |= cpu_to_be32(PRAM_EOFBLOCKS_FL);
++		pram_memlock_inode(inode->i_sb, pi);
++	}
++
++	inode->i_mtime = inode->i_ctime = CURRENT_TIME_SEC;
++	if (!(mode & FALLOC_FL_KEEP_SIZE) && new_size > inode->i_size)
++		inode->i_size = new_size;
++	ret = pram_update_inode(inode);
++ out:
++	mutex_unlock(&inode->i_mutex);
 +	return ret;
 +}
 +
-+int pram_notify_change(struct dentry *dentry, struct iattr *attr)
++loff_t pram_llseek(struct file *file, loff_t offset, int origin)
 +{
-+	struct inode *inode = dentry->d_inode;
-+	struct pram_inode *pi = pram_get_inode(inode->i_sb, inode->i_ino);
-+	int error;
++	struct inode *inode = file->f_mapping->host;
++	int retval;
 +
-+	if (!pi)
-+		return -EACCES;
++	if (origin != SEEK_DATA && origin != SEEK_HOLE)
++		return generic_file_llseek(file, offset, origin);
 +
-+	error = inode_change_ok(inode, attr);
-+	if (error)
-+		return error;
-+
-+	if (attr->ia_valid & ATTR_SIZE &&
-+	    (attr->ia_size != inode->i_size ||
-+	    pi->i_flags & cpu_to_be32(PRAM_EOFBLOCKS_FL))) {
-+		error = pram_setsize(inode, attr->ia_size);
-+		if (error)
-+			return error;
++	mutex_lock(&inode->i_mutex);
++	switch (origin) {
++	case SEEK_DATA:
++		retval = pram_find_region(inode, &offset, 0);
++		if (retval) {
++			mutex_unlock(&inode->i_mutex);
++			return retval;
++		}
++		break;
++	case SEEK_HOLE:
++		retval = pram_find_region(inode, &offset, 1);
++		if (retval) {
++			mutex_unlock(&inode->i_mutex);
++			return retval;
++		}
++		break;
 +	}
-+	setattr_copy(inode, attr);
-+	if (attr->ia_valid & ATTR_MODE)
-+		error = pram_acl_chmod(inode);
-+	error = pram_update_inode(inode);
 +
-+	return error;
++	offset = vfs_setpos(file, offset, inode->i_sb->s_maxbytes);
++
++	mutex_unlock(&inode->i_mutex);
++	return offset;
 +}
 +
-+void pram_set_inode_flags(struct inode *inode, struct pram_inode *pi)
-+{
-+	unsigned int flags = be32_to_cpu(pi->i_flags);
-+
-+	inode->i_flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
-+	if (flags & FS_SYNC_FL)
-+		inode->i_flags |= S_SYNC;
-+	if (flags & FS_APPEND_FL)
-+		inode->i_flags |= S_APPEND;
-+	if (flags & FS_IMMUTABLE_FL)
-+		inode->i_flags |= S_IMMUTABLE;
-+	if (flags & FS_NOATIME_FL)
-+		inode->i_flags |= S_NOATIME;
-+	if (flags & FS_DIRSYNC_FL)
-+		inode->i_flags |= S_DIRSYNC;
-+	if (!pi->i_xattr)
-+		inode_has_no_xattr(inode);
-+}
-+
-+void pram_get_inode_flags(struct inode *inode, struct pram_inode *pi)
-+{
-+	unsigned int flags = inode->i_flags;
-+	unsigned int pram_flags = be32_to_cpu(pi->i_flags);
-+
-+	pram_flags &= ~(FS_SYNC_FL|FS_APPEND_FL|FS_IMMUTABLE_FL|
-+			FS_NOATIME_FL|FS_DIRSYNC_FL);
-+	if (flags & S_SYNC)
-+		pram_flags |= FS_SYNC_FL;
-+	if (flags & S_APPEND)
-+		pram_flags |= FS_APPEND_FL;
-+	if (flags & S_IMMUTABLE)
-+		pram_flags |= FS_IMMUTABLE_FL;
-+	if (flags & S_NOATIME)
-+		pram_flags |= FS_NOATIME_FL;
-+	if (flags & S_DIRSYNC)
-+		pram_flags |= FS_DIRSYNC_FL;
-+
-+	pi->i_flags = cpu_to_be32(pram_flags);
-+}
-+
-+const struct address_space_operations pram_aops = {
-+	.readpage	= pram_readpage,
-+	.direct_IO	= pram_direct_IO,
++const struct file_operations pram_file_operations = {
++	.llseek		= pram_llseek,
++	.read		= do_sync_read,
++	.write		= do_sync_write,
++	.aio_read	= generic_file_aio_read,
++	.aio_write	= generic_file_aio_write,
++	.mmap		= generic_file_readonly_mmap,
++	.open		= pram_open_file,
++	.fsync		= noop_fsync,
++	.check_flags	= pram_check_flags,
++	.unlocked_ioctl	= pram_ioctl,
++	.splice_read	= generic_file_splice_read,
++	.fallocate	= pram_fallocate,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl	= pram_compat_ioctl,
++#endif
 +};
 +
-+const struct address_space_operations pram_aops_xip = {
-+	.get_xip_mem	= pram_get_xip_mem,
++#ifdef CONFIG_PRAMFS_XIP
++const struct file_operations pram_xip_file_operations = {
++	.llseek		= pram_llseek,
++	.read		= pram_xip_file_read,
++	.write		= xip_file_write,
++	.mmap		= pram_xip_file_mmap,
++	.open		= generic_file_open,
++	.fsync		= noop_fsync,
++	.unlocked_ioctl	= pram_ioctl,
++	.fallocate	= pram_fallocate,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl	= pram_compat_ioctl,
++#endif
++};
++#endif
++
++const struct inode_operations pram_file_inode_operations = {
++#ifdef CONFIG_PRAMFS_XATTR
++	.setxattr	= generic_setxattr,
++	.getxattr	= generic_getxattr,
++	.listxattr	= pram_listxattr,
++	.removexattr	= generic_removexattr,
++#endif
++	.setattr	= pram_notify_change,
++	.get_acl	= pram_get_acl,
 +};
 -- 
 1.7.3.4
