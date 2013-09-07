@@ -1,199 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751330Ab3IGIg7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 04:36:59 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:43791 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121Ab3IGIg4 (ORCPT
+	id S1751339Ab3IGIiE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 04:38:04 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:33238 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751091Ab3IGIiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 04:36:56 -0400
-Message-ID: <522AE403.7070103@gmail.com>
-Date: Sat, 07 Sep 2013 10:29:55 +0200
+	Sat, 7 Sep 2013 04:38:01 -0400
+Message-ID: <522AE443.30001@gmail.com>
+Date: Sat, 07 Sep 2013 10:30:59 +0200
 From: Marco Stornelli <marco.stornelli@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
 To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
 CC: Vladimir Davydov <vdavydov@parallels.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 13/19] pramfs: xip operations
+Subject: [PATCH 14/19] pramfs: extended attributes block description tree
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add xip operations.
+Add extended attributes block description tree.
 
 Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
 ---
- fs/pramfs/xip.c |  119 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/pramfs/xip.h |   33 +++++++++++++++
- 2 files changed, 152 insertions(+), 0 deletions(-)
- create mode 100644 fs/pramfs/xip.c
- create mode 100644 fs/pramfs/xip.h
+ fs/pramfs/desctree.c |  181 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/pramfs/desctree.h |   44 ++++++++++++
+ 2 files changed, 225 insertions(+), 0 deletions(-)
+ create mode 100644 fs/pramfs/desctree.c
+ create mode 100644 fs/pramfs/desctree.h
 
-diff --git a/fs/pramfs/xip.c b/fs/pramfs/xip.c
+diff --git a/fs/pramfs/desctree.c b/fs/pramfs/desctree.c
 new file mode 100644
-index 0000000..26b8afe
+index 0000000..fa1c9fc
 --- /dev/null
-+++ b/fs/pramfs/xip.c
-@@ -0,0 +1,119 @@
++++ b/fs/pramfs/desctree.c
+@@ -0,0 +1,181 @@
 +/*
 + * BRIEF DESCRIPTION
 + *
-+ * XIP operations.
++ * Extended attributes block descriptors tree.
 + *
-+ * Copyright 2009-2011 Marco Stornelli <marco.stornelli@gmail.com>
++ * Copyright 2010-2011 Marco Stornelli <marco.stornelli@gmail.com>
++ *
 + * This file is licensed under the terms of the GNU General Public
 + * License version 2. This program is licensed "as is" without any
 + * warranty of any kind, whether express or implied.
 + */
 +
-+#include <linux/mm.h>
-+#include <linux/fs.h>
-+#include <linux/buffer_head.h>
++#include <linux/spinlock.h>
++#include "desctree.h"
 +#include "pram.h"
-+#include "xip.h"
 +
-+/*
-+ * Wrappers. We need to use the rcu read lock to avoid
-+ * concurrent truncate operation. No problem for write because we held
-+ * i_mutex.
++/* xblock_desc_init_always()
++ *
++ * These are initializations that need to be done on every
++ * descriptor allocation as the fields are not initialised
++ * by slab allocation.
 + */
-+ssize_t pram_xip_file_read(struct file *filp, char __user *buf,
-+					size_t len, loff_t *ppos)
++void xblock_desc_init_always(struct pram_xblock_desc *desc)
 +{
-+	ssize_t res;
-+	rcu_read_lock();
-+	res = xip_file_read(filp, buf, len, ppos);
-+	rcu_read_unlock();
-+	return res;
++	atomic_set(&desc->refcount, 0);
++	desc->blocknr = 0;
++	desc->flags = 0;
 +}
 +
-+static int pram_xip_file_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
++/* xblock_desc_init_once()
++ *
++ * These are initializations that only need to be done
++ * once, because the fields are idempotent across use
++ * of the descriptor, so let the slab aware of that.
++ */
++void xblock_desc_init_once(struct pram_xblock_desc *desc)
 +{
-+	int ret = 0;
-+	rcu_read_lock();
-+	ret = xip_file_fault(vma, vmf);
-+	rcu_read_unlock();
-+	return ret;
++	mutex_init(&desc->lock);
 +}
 +
-+static const struct vm_operations_struct pram_xip_vm_ops = {
-+	.fault	= pram_xip_file_fault,
-+	.page_mkwrite = filemap_page_mkwrite,
-+        .remap_pages = generic_file_remap_pages,
++/* __insert_xblock_desc()
++ *
++ * Insert a new descriptor in the tree.
++ */
++static void __insert_xblock_desc(struct pram_sb_info *sbi,
++				 unsigned long blocknr, struct rb_node *node)
++{
++	struct rb_node **p = &(sbi->desc_tree.rb_node);
++	struct rb_node *parent = NULL;
++	struct pram_xblock_desc *desc;
++
++	while (*p) {
++		parent = *p;
++		desc = rb_entry(parent, struct pram_xblock_desc, node);
++
++		if (blocknr < desc->blocknr)
++			p = &(*p)->rb_left;
++		else if (blocknr > desc->blocknr)
++			p = &(*p)->rb_right;
++		else
++			/* Oops...an other descriptor for the same block ? */
++			BUG();
++	}
++
++	rb_link_node(node, parent, p);
++	rb_insert_color(node, &sbi->desc_tree);
++}
++
++void insert_xblock_desc(struct pram_sb_info *sbi, struct pram_xblock_desc *desc)
++{
++	spin_lock(&sbi->desc_tree_lock);
++	__insert_xblock_desc(sbi, desc->blocknr, &desc->node);
++	spin_unlock(&sbi->desc_tree_lock);
 +};
 +
-+int pram_xip_file_mmap(struct file * file, struct vm_area_struct * vma)
++/* __lookup_xblock_desc()
++ *
++ * Search an extended attribute descriptor in the tree via the
++ * block number. It returns the descriptor if it's found or
++ * NULL. If not found it creates a new descriptor if create is not 0.
++ */
++static struct pram_xblock_desc *__lookup_xblock_desc(struct pram_sb_info *sbi,
++					    unsigned long blocknr,
++					    struct kmem_cache *cache,
++					    int create)
 +{
-+	BUG_ON(!file->f_mapping->a_ops->get_xip_mem);
++	struct rb_node *n = sbi->desc_tree.rb_node;
++	struct pram_xblock_desc *desc = NULL;
 +
-+	file_accessed(file);
-+	vma->vm_ops = &pram_xip_vm_ops;
-+	vma->vm_flags |= VM_MIXEDMAP;
-+	return 0;
-+}
++	while (n) {
++		desc = rb_entry(n, struct pram_xblock_desc, node);
 +
-+static int pram_find_and_alloc_blocks(struct inode *inode, sector_t iblock,
-+				     sector_t *data_block, int create)
-+{
-+	int err = -EIO;
-+	u64 block;
-+
-+	block = pram_find_data_block(inode, iblock);
-+
-+	if (!block) {
-+		if (!create) {
-+			err = -ENODATA;
-+			goto err;
-+		}
-+
-+		err = pram_alloc_blocks(inode, iblock, 1);
-+		if (err)
-+			goto err;
-+
-+		block = pram_find_data_block(inode, iblock);
-+		if (!block) {
-+			err = -ENODATA;
-+			goto err;
++		if (blocknr < desc->blocknr)
++			n = n->rb_left;
++		else if (blocknr > desc->blocknr)
++			n = n->rb_right;
++		else {
++			atomic_inc(&desc->refcount);
++			goto out;
 +		}
 +	}
 +
-+	*data_block = block;
-+	err = 0;
-+
-+ err:
-+	return err;
++	/* not found */
++	if (create) {
++		desc = kmem_cache_alloc(cache, GFP_NOFS);
++		if (!desc)
++			return ERR_PTR(-ENOMEM);
++		xblock_desc_init_always(desc);
++		atomic_set(&desc->refcount, 1);
++		desc->blocknr = blocknr;
++		__insert_xblock_desc(sbi, desc->blocknr, &desc->node);
++	}
++out:
++	return desc;
 +}
 +
-+static inline int __pram_get_block(struct inode *inode, pgoff_t pgoff,
-+				   int create, sector_t *result)
++struct pram_xblock_desc *lookup_xblock_desc(struct pram_sb_info *sbi,
++					    unsigned long blocknr,
++					    struct kmem_cache *cache,
++					    int create)
 +{
-+	int rc = 0;
++	struct pram_xblock_desc *desc = NULL;
 +
-+	rc = pram_find_and_alloc_blocks(inode, (sector_t)pgoff, result, create);
-+
-+	if (rc == -ENODATA)
-+		BUG_ON(create);
-+
-+	return rc;
++	spin_lock(&sbi->desc_tree_lock);
++	desc = __lookup_xblock_desc(sbi, blocknr, cache, create);
++	spin_unlock(&sbi->desc_tree_lock);
++	return desc;
 +}
 +
-+int pram_get_xip_mem(struct address_space *mapping, pgoff_t pgoff, int create,
-+		     void **kmem, unsigned long *pfn)
++/* put_xblock_desc()
++ *
++ * Decrement the reference count and if it reaches zero and the
++ * desciptor has been marked to be free, then we free it.
++ * It returns 0 if the descriptor has been deleted and 1 otherwise.
++ */
++int put_xblock_desc(struct pram_sb_info *sbi, struct pram_xblock_desc *desc)
 +{
-+	int rc;
-+	sector_t block = 0;
++	int ret = 1;
++	if (!desc)
++		return ret;
 +
-+	/* first, retrieve the block */
-+	rc = __pram_get_block(mapping->host, pgoff, create, &block);
-+	if (rc)
-+		goto exit;
++	if (atomic_dec_and_lock(&desc->refcount, &sbi->desc_tree_lock)) {
++		if (test_bit(FREEING, &desc->flags)) {
++			rb_erase(&desc->node, &sbi->desc_tree);
++			pram_dbg("erasing desc for block %lu\n", desc->blocknr);
++			ret = 0;
++		}
++		spin_unlock(&sbi->desc_tree_lock);
++	}
++	return ret;
++};
 +
-+	*kmem = pram_get_block(mapping->host->i_sb, block);
-+	*pfn =  pram_get_pfn(mapping->host->i_sb, block);
-+
-+exit:
-+	return rc;
++/* mark_free_desc()
++ *
++ * Mark free a descriptor. The descriptor will be deleted later in the
++ * put_xblock_desc().
++ */
++void mark_free_desc(struct pram_xblock_desc *desc)
++{
++	set_bit(FREEING, &desc->flags);
 +}
-diff --git a/fs/pramfs/xip.h b/fs/pramfs/xip.h
++
++/* erase_tree()
++ *
++ * Free all objects in the tree.
++ */
++void erase_tree(struct pram_sb_info *sbi, struct kmem_cache *cachep)
++{
++	struct rb_node *n;
++	struct pram_xblock_desc *desc;
++
++	spin_lock(&sbi->desc_tree_lock);
++	n = rb_first(&sbi->desc_tree);
++	while (n) {
++		desc = rb_entry(n, struct pram_xblock_desc, node);
++		rb_erase(n, &sbi->desc_tree);
++		kmem_cache_free(cachep, desc);
++		n = rb_next(n);
++	}
++	spin_unlock(&sbi->desc_tree_lock);
++}
+diff --git a/fs/pramfs/desctree.h b/fs/pramfs/desctree.h
 new file mode 100644
-index 0000000..5bd82f2
+index 0000000..59f7958
 --- /dev/null
-+++ b/fs/pramfs/xip.h
-@@ -0,0 +1,33 @@
++++ b/fs/pramfs/desctree.h
+@@ -0,0 +1,44 @@
 +/*
 + * BRIEF DESCRIPTION
 + *
-+ * XIP operations.
++ * Extended attributes block descriptors tree.
 + *
-+ * Copyright 2009-2011 Marco Stornelli <marco.stornelli@gmail.com>
++ * Copyright 2010-2011 Marco Stornelli <marco.stornelli@gmail.com>
++ *
 + * This file is licensed under the terms of the GNU General Public
 + * License version 2. This program is licensed "as is" without any
 + * warranty of any kind, whether express or implied.
 + */
 +
-+#ifdef CONFIG_PRAMFS_XIP
-+int pram_get_xip_mem(struct address_space *, pgoff_t, int, void **,
-+							      unsigned long *);
-+ssize_t pram_xip_file_read(struct file *filp, char __user *buf,
-+					size_t len, loff_t *ppos);
-+int pram_xip_file_mmap(struct file * file, struct vm_area_struct * vma);
-+static inline int pram_use_xip(struct super_block *sb)
++#include <linux/atomic.h>
++#include <linux/slab.h>
++#include "pram.h"
++
++struct pram_xblock_desc {
++#define FREEING (1UL << 1)
++	unsigned long flags;	/* descriptor flags */
++	atomic_t refcount;	/* users count of this descriptor */
++	unsigned long blocknr;	/* absolute block number */
++	struct mutex lock;	/* block lock */
++	struct rb_node node;	/* node in the rb tree */
++};
++
++extern struct pram_xblock_desc *lookup_xblock_desc(struct pram_sb_info *sbi,
++						   unsigned long blocknr,
++						   struct kmem_cache *, int);
++extern void insert_xblock_desc(struct pram_sb_info *sbi,
++			       struct pram_xblock_desc *desc);
++extern void mark_free_desc(struct pram_xblock_desc *desc);
++extern int put_xblock_desc(struct pram_sb_info *sbi,
++			   struct pram_xblock_desc *desc);
++extern void xblock_desc_init_always(struct pram_xblock_desc *desc);
++extern void xblock_desc_init_once(struct pram_xblock_desc *desc);
++extern void erase_tree(struct pram_sb_info *sbi,
++		       struct kmem_cache *);
++
++static inline void xblock_desc_init(struct pram_xblock_desc *desc)
 +{
-+	struct pram_sb_info *sbi = PRAM_SB(sb);
-+	return sbi->s_mount_opt & PRAM_MOUNT_XIP;
-+}
-+#define mapping_is_xip(map) (map->a_ops->get_xip_mem)
++	xblock_desc_init_always(desc);
++	xblock_desc_init_once(desc);
++};
 +
-+#else
-+
-+#define mapping_is_xip(map)	0
-+#define pram_use_xip(sb)	0
-+#define pram_get_xip_mem	NULL
-+#define pram_xip_file_read	NULL
-+#define pram_xip_file_mmap	NULL
-+
-+#endif
 -- 
 1.7.3.4
