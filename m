@@ -1,46 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751275Ab3IGJWr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 05:22:47 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:49913 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750872Ab3IGJWq (ORCPT
+	id S1751184Ab3IGJ3N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 05:29:13 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:63300 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866Ab3IGJ3L convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 05:22:46 -0400
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: monstr@monstr.eu
-Cc: peter.crosthwaite@petalogix.com, microblaze-uclinux@itee.uq.edu.au,
-        linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] microblaze: remove deprecated IRQF_DISABLED
-Date: Sat,  7 Sep 2013 11:22:43 +0200
-Message-Id: <1378545763-8214-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+	Sat, 7 Sep 2013 05:29:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <522AEFE9.30402@gmail.com>
+References: <alpine.LNX.2.00.1309061202050.26934@pobox.suse.cz>
+	<20130906202022.GA353@x4>
+	<CANq1E4Rf4c4zj1mD1aPr93Q2_M65DCEJhuLqcBWa5uH9tcKuWA@mail.gmail.com>
+	<CA+55aFzg-dv-N7UjXx2pxUJ+QQOOy0qtp_e94PDSM=tVd=LgUw@mail.gmail.com>
+	<506b9d43-f734-40f9-b137-0749a496fd6d@email.android.com>
+	<CA+55aFzLy+-VF022ORuyWk-qQO7gDSQ1LZES1+bEUxz0QxrH-g@mail.gmail.com>
+	<20130907032240.GA1256@core.coreip.homeip.net>
+	<CANq1E4Q85ewwKs7VoooZVapC7-Cvy6-Xp4rGL1-1Ee7w1EcT6w@mail.gmail.com>
+	<CAN+gG=Ge2dKvNvT=cY-QFiV=LMV7rddMs9APCb0v68yMGns1Ew@mail.gmail.com>
+	<CANq1E4TqJME-aFaMgCUO6XGUpCcz6ms9KDL2uhdxnx3rz6nN0w@mail.gmail.com>
+	<522AEFE9.30402@gmail.com>
+Date: Sat, 7 Sep 2013 11:29:11 +0200
+Message-ID: <CANq1E4ROgWt2oZt9BVgt4uzmHDfTy6DBzTswHvH=ziVRkjfXvg@mail.gmail.com>
+Subject: Re: [GIT] HID for 3.12 merge window
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Jiri Kosina <jkosina@suse.cz>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch proposes to remove the IRQF_DISABLED flag from microblaze architecture
-code. It's a NOOP since 2.6.35 and it will be removed one day.
+Hi
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- arch/microblaze/kernel/timer.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Sat, Sep 7, 2013 at 11:20 AM, Benjamin Tissoires
+<benjamin.tissoires@gmail.com> wrote:
+>
+>
+> On 07/09/13 10:57, David Herrmann wrote:
+>> Hi
+>>
+>> On Sat, Sep 7, 2013 at 10:24 AM, Benjamin Tissoires
+>>> I'm not particularly in favor of adding semantic between ABS_MISC and
+>>> ABS_MT_SLOT. We already did that once with the ABS_MT_* stuff, and the
+>>> problem comes from devices showing several axes, not really mapped
+>>> (like joysticks). These axes are all mapped to ABS_MISC, but the input
+>>> core function map them to ABS_MISC+N. This way some joysticks show
+>>> multitouch axes and are treated as such, whereas the axis are just
+>>> regular absolute axes. (not sure I am clear enough... :( )
+>>>
+>>> Currently, nothing is done in X or in Wayland to detect these false
+>>> multitouch devices with a large number of absolute axes. But if we
+>>> keep a hole between ABS_MISC and ABS_MT_SLOT, we could add an
+>>> heuristic like:
+>>> "if all the axes between ABS_MISC and ABS_MT_SLOT are available, then
+>>> ABS_MT_SLOT does not mean multitouch, but ABS_MISC+6."
+>>
+>> So Xorg just took control over the unused ABS_* slots? Hmm, then I
+>> have no other idea than reverting the 3 patches.
+>> Sadly, that also means there's no way for us to easily extend the
+>> ABS_* bits. If someone has an idea, let me know. But for now I'll just
+>> put the drums/guitar patches on hold.
+>>
+>
+> Well, I would say the "problem" lies in hid-input.c, line 919:
+>>>>>>>>>>>>>>>>>>>
+>         while (usage->code <= max && test_and_set_bit(usage->code, bit))
+>                 usage->code = find_next_zero_bit(bit, max + 1, usage->code);
+>>>>>>>>>>>>>>>>>>>
+>
+> So if you try to map several times ABS_MISC or any other axis, then you are mapping ABS_MISC+N.
+>
+> Anyway, the only problematic axis is ABS_MISC, as it is a default fallback. IMO, we can extend the ABS_* definitions after ABS_MT_TOOL_Y, like the original patch you proposed without having to deal with the above problem (though this will report the patch series to v3.13).
+> To prevent future mistakes, we should just define ABS_MISC0 (0x29) to ABS_MISC5 (0x2e) to fill the hole.
 
-diff --git a/arch/microblaze/kernel/timer.c b/arch/microblaze/kernel/timer.c
-index aec5020..6f98815 100644
---- a/arch/microblaze/kernel/timer.c
-+++ b/arch/microblaze/kernel/timer.c
-@@ -162,7 +162,7 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
- 
- static struct irqaction timer_irqaction = {
- 	.handler = timer_interrupt,
--	.flags = IRQF_DISABLED | IRQF_TIMER,
-+	.flags = IRQF_TIMER,
- 	.name = "timer",
- 	.dev_id = &clockevent_microblaze_timer,
- };
--- 
-1.8.1.2
+As mentioned earlier in this thread, ABS_* is limited to 0x3f, so we
+have only 2 more free slots after ABS_MT_TOOL_Y.
+We will figure something out for 3.13.
 
+I will also prepare a patch for ABS_MISC0-MISC5.
+
+Regards
+David
