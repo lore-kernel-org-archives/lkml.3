@@ -1,568 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751875Ab3IGP3m (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 11:29:42 -0400
-Received: from mga14.intel.com ([143.182.124.37]:13413 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751587Ab3IGP3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 11:29:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,859,1371106800"; 
-   d="scan'208";a="357264150"
-From: Tom Zanussi <tom.zanussi@linux.intel.com>
-To: rostedt@goodmis.org
-Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org,
-        Tom Zanussi <tom.zanussi@linux.intel.com>
-Subject: [PATCH v9 03/10] tracing: Add 'traceon' and 'traceoff' event trigger commands
-Date: Sat,  7 Sep 2013 10:28:59 -0500
-Message-Id: <aa7cca136adcc8fe124aa6939d9a7467f353059b.1378565610.git.tom.zanussi@linux.intel.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <cover.1378565610.git.tom.zanussi@linux.intel.com>
-References: <cover.1378565610.git.tom.zanussi@linux.intel.com>
-In-Reply-To: <cover.1378565610.git.tom.zanussi@linux.intel.com>
-References: <cover.1378565610.git.tom.zanussi@linux.intel.com>
+	id S1750908Ab3IGQCh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 12:02:37 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:54280 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814Ab3IGQCf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Sep 2013 12:02:35 -0400
+X-Nat-Received: from [202.181.97.72]:56047 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1378569629.13785
+To: maarten.lankhorst@canonical.com
+Cc: linux-kernel@vger.kernel.org, daniel.vetter@ffwll.ch, robdclark@gmail.com,
+        a.p.zijlstra@chello.nl, mingo@kernel.org
+Subject: [3.11-rc1] CONFIG_DEBUG_MUTEXES=y using gcc 3.x makes unbootable kernel.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Message-Id: <201309080100.FFE90102.FFOVOtJQOFHSLM@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sun, 8 Sep 2013 01:00:26 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 07092013 #10996500, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add 'traceon' and 'traceoff' event_command commands.  traceon and
-traceoff event triggers are added by the user via these commands in a
-similar way and using practically the same syntax as the analagous
-'traceon' and 'traceoff' ftrace function commands, but instead of
-writing to the set_ftrace_filter file, the traceon and traceoff
-triggers are written to the per-event 'trigger' files:
+Hello.
 
-    echo 'traceon' > .../tracing/events/somesys/someevent/trigger
-    echo 'traceoff' > .../tracing/events/somesys/someevent/trigger
+I noticed that 3.11 and current linux.git do not boot (they hang before
+printing the "Linux version 3.10.0-rc7-00026-g040a0a3" line) when built with
+CONFIG_DEBUG_MUTEXES=y using gcc (GCC) 3.3.5 (Debian 1:3.3.5-13). They boot OK
+when built with the same config using gcc (Ubuntu/Linaro 4.6.3-1ubuntu5) 4.6.3.
 
-The above command will turn tracing on or off whenever someevent is
-hit.
+Bisection reached commit 040a0a37 "mutex: Add support for wound/wait style
+locks". This commit might contain gcc version dependent trick, but how can I
+find it?
 
-This also adds a 'count' version that limits the number of times the
-command will be invoked:
+Kernel config (only for testing whether the kernel version line is printed) is
+at http://I-love.SAKURA.ne.jp/tmp/config-3.11-mutex and the command line I used
+for testing is
 
-    echo 'traceon:N' > .../tracing/events/somesys/someevent/trigger
-    echo 'traceoff:N' > .../tracing/events/somesys/someevent/trigger
+  $ qemu-system-i386 -m 512 -nographic -kernel arch/x86/boot/bzImage --append "console=ttyS0,115200n8"
 
-Where N is the number of times the command will be invoked.
+.
 
-The above commands will will turn tracing on or off whenever someevent
-is hit, but only N times.
+Regards.
 
-Some common register/unregister_trigger() implementations of the
-event_command reg()/unreg() callbacks are also provided, which add and
-remove trigger instances to the per-event list of triggers, and
-arm/disarm them as appropriate.  event_trigger_callback() is a
-general-purpose event_command func() implementation that orchestrates
-command parsing and registration for most normal commands.
-
-Most event commands will use these, but some will override and
-possibly reuse them.
-
-The event_trigger_init(), event_trigger_free(), and
-event_trigger_print() functions are meant to be common implementations
-of the event_trigger_ops init(), free(), and print() ops,
-respectively.
-
-Most trigger_ops implementations will use these, but some will
-override and possibly reuse them.
-
-Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
----
- include/linux/ftrace_event.h        |   1 +
- kernel/trace/trace_events_trigger.c | 452 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 453 insertions(+)
-
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index f3bcb73..239738c 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -318,6 +318,7 @@ struct ftrace_event_file {
- 
- enum event_trigger_type {
- 	ETT_NONE		= (0),
-+	ETT_TRACE_ONOFF		= (1 << 0),
- };
- 
- extern void destroy_preds(struct ftrace_event_call *call);
-diff --git a/kernel/trace/trace_events_trigger.c b/kernel/trace/trace_events_trigger.c
-index 60a6a6d..3634061 100644
---- a/kernel/trace/trace_events_trigger.c
-+++ b/kernel/trace/trace_events_trigger.c
-@@ -28,6 +28,13 @@
- static LIST_HEAD(trigger_commands);
- static DEFINE_MUTEX(trigger_cmd_mutex);
- 
-+static void
-+trigger_data_free(struct event_trigger_data *data)
-+{
-+	synchronize_sched(); /* make sure current triggers exit before free */
-+	kfree(data);
-+}
-+
- /**
-  * event_triggers_call - Call triggers associated with a trace event
-  * @file: The ftrace_event_file associated with the event
-@@ -224,6 +231,129 @@ const struct file_operations event_trigger_fops = {
- 	.release = event_trigger_release,
- };
- 
-+/*
-+ * Currently we only register event commands from __init, so mark this
-+ * __init too.
-+ */
-+static __init int register_event_command(struct event_command *cmd)
-+{
-+	struct event_command *p;
-+	int ret = 0;
-+
-+	mutex_lock(&trigger_cmd_mutex);
-+	list_for_each_entry(p, &trigger_commands, list) {
-+		if (strcmp(cmd->name, p->name) == 0) {
-+			ret = -EBUSY;
-+			goto out_unlock;
-+		}
-+	}
-+	list_add(&cmd->list, &trigger_commands);
-+ out_unlock:
-+	mutex_unlock(&trigger_cmd_mutex);
-+
-+	return ret;
-+}
-+
-+/*
-+ * Currently we only unregister event commands from __init, so mark
-+ * this __init too.
-+ */
-+static __init int unregister_event_command(struct event_command *cmd)
-+{
-+	struct event_command *p, *n;
-+	int ret = -ENODEV;
-+
-+	mutex_lock(&trigger_cmd_mutex);
-+	list_for_each_entry_safe(p, n, &trigger_commands, list) {
-+		if (strcmp(cmd->name, p->name) == 0) {
-+			ret = 0;
-+			list_del_init(&p->list);
-+			goto out_unlock;
-+		}
-+	}
-+ out_unlock:
-+	mutex_unlock(&trigger_cmd_mutex);
-+
-+	return ret;
-+}
-+
-+/**
-+ * event_trigger_print - Generic event_trigger_ops @print implementation
-+ * @name: The name of the event trigger
-+ * @m: The seq_file being printed to
-+ * @data: Trigger-specific data
-+ * @filter_str: filter_str to print, if present
-+ *
-+ * Common implementation for event triggers to print themselves.
-+ *
-+ * Usually wrapped by a function that simply sets the @name of the
-+ * trigger command and then invokes this.
-+ *
-+ * Return: 0 on success, errno otherwise
-+ */
-+static int
-+event_trigger_print(const char *name, struct seq_file *m,
-+		    void *data, char *filter_str)
-+{
-+	long count = (long)data;
-+
-+	seq_printf(m, "%s", name);
-+
-+	if (count == -1)
-+		seq_puts(m, ":unlimited");
-+	else
-+		seq_printf(m, ":count=%ld", count);
-+
-+	if (filter_str)
-+		seq_printf(m, " if %s\n", filter_str);
-+	else
-+		seq_puts(m, "\n");
-+
-+	return 0;
-+}
-+
-+/**
-+ * event_trigger_init - Generic event_trigger_ops @init implementation
-+ * @ops: The trigger ops associated with the trigger
-+ * @data: Trigger-specific data
-+ *
-+ * Common implementation of event trigger initialization.
-+ *
-+ * Usually used directly as the @init method in event trigger
-+ * implementations.
-+ *
-+ * Return: 0 on success, errno otherwise
-+ */
-+static int
-+event_trigger_init(struct event_trigger_ops *ops,
-+		   struct event_trigger_data *data)
-+{
-+	data->ref++;
-+	return 0;
-+}
-+
-+/**
-+ * event_trigger_free - Generic event_trigger_ops @free implementation
-+ * @ops: The trigger ops associated with the trigger
-+ * @data: Trigger-specific data
-+ *
-+ * Common implementation of event trigger de-initialization.
-+ *
-+ * Usually used directly as the @free method in event trigger
-+ * implementations.
-+ */
-+static void
-+event_trigger_free(struct event_trigger_ops *ops,
-+		   struct event_trigger_data *data)
-+{
-+	if (WARN_ON_ONCE(data->ref <= 0))
-+		return;
-+
-+	data->ref--;
-+	if (!data->ref)
-+		trigger_data_free(data);
-+}
-+
- static int trace_event_trigger_enable_disable(struct ftrace_event_file *file,
- 					      int trigger_enable)
- {
-@@ -272,7 +402,329 @@ clear_event_triggers(struct trace_array *tr)
- 	}
- }
- 
-+/**
-+ * register_trigger - Generic event_command @reg implementation
-+ * @glob: The raw string used to register the trigger
-+ * @ops: The trigger ops associated with the trigger
-+ * @data: Trigger-specific data to associate with the trigger
-+ * @file: The ftrace_event_file associated with the event
-+ *
-+ * Common implementation for event trigger registration.
-+ *
-+ * Usually used directly as the @reg method in event command
-+ * implementations.
-+ *
-+ * Return: 0 on success, errno otherwise
-+ */
-+static int register_trigger(char *glob, struct event_trigger_ops *ops,
-+			    struct event_trigger_data *data,
-+			    struct ftrace_event_file *file)
-+{
-+	struct event_trigger_data *test;
-+	int ret = 0;
-+
-+	list_for_each_entry_rcu(test, &file->triggers, list) {
-+		if (test->cmd_ops->trigger_type == data->cmd_ops->trigger_type) {
-+			ret = -EEXIST;
-+			goto out;
-+		}
-+	}
-+
-+	if (data->ops->init) {
-+		ret = data->ops->init(data->ops, data);
-+		if (ret < 0)
-+			goto out;
-+	}
-+
-+	list_add_rcu(&data->list, &file->triggers);
-+	ret++;
-+
-+	if (trace_event_trigger_enable_disable(file, 1) < 0) {
-+		list_del_rcu(&data->list);
-+		ret--;
-+	}
-+out:
-+	return ret;
-+}
-+
-+/**
-+ * unregister_trigger - Generic event_command @unreg implementation
-+ * @glob: The raw string used to register the trigger
-+ * @ops: The trigger ops associated with the trigger
-+ * @test: Trigger-specific data used to find the trigger to remove
-+ * @file: The ftrace_event_file associated with the event
-+ *
-+ * Common implementation for event trigger unregistration.
-+ *
-+ * Usually used directly as the @unreg method in event command
-+ * implementations.
-+ */
-+static void unregister_trigger(char *glob, struct event_trigger_ops *ops,
-+			       struct event_trigger_data *test,
-+			       struct ftrace_event_file *file)
-+{
-+	struct event_trigger_data *data;
-+	bool unregistered = false;
-+
-+	list_for_each_entry_rcu(data, &file->triggers, list) {
-+		if (data->cmd_ops->trigger_type == test->cmd_ops->trigger_type) {
-+			unregistered = true;
-+			list_del_rcu(&data->list);
-+			trace_event_trigger_enable_disable(file, 0);
-+			break;
-+		}
-+	}
-+
-+	if (unregistered && data->ops->free)
-+		data->ops->free(data->ops, data);
-+}
-+
-+/**
-+ * event_trigger_callback - Generic event_command @func implementation
-+ * @cmd_ops: The command ops, used for trigger registration
-+ * @file: The ftrace_event_file associated with the event
-+ * @glob: The raw string used to register the trigger
-+ * @cmd: The cmd portion of the string used to register the trigger
-+ * @param: The params portion of the string used to register the trigger
-+ *
-+ * Common implementation for event command parsing and trigger
-+ * instantiation.
-+ *
-+ * Usually used directly as the @func method in event command
-+ * implementations.
-+ *
-+ * Return: 0 on success, errno otherwise
-+ */
-+static int
-+event_trigger_callback(struct event_command *cmd_ops,
-+		       struct ftrace_event_file *file,
-+		       char *glob, char *cmd, char *param)
-+{
-+	struct event_trigger_data *trigger_data;
-+	struct event_trigger_ops *trigger_ops;
-+	char *trigger = NULL;
-+	char *number;
-+	int ret;
-+
-+	/* separate the trigger from the filter (t:n [if filter]) */
-+	if (param && isdigit(param[0]))
-+		trigger = strsep(&param, " \t");
-+
-+	trigger_ops = cmd_ops->get_trigger_ops(cmd, trigger);
-+
-+	ret = -ENOMEM;
-+	trigger_data = kzalloc(sizeof(*trigger_data), GFP_KERNEL);
-+	if (!trigger_data)
-+		goto out;
-+
-+	trigger_data->count = -1;
-+	trigger_data->ops = trigger_ops;
-+	trigger_data->cmd_ops = cmd_ops;
-+	INIT_LIST_HEAD(&trigger_data->list);
-+
-+	if (glob[0] == '!') {
-+		cmd_ops->unreg(glob+1, trigger_ops, trigger_data, file);
-+		kfree(trigger_data);
-+		ret = 0;
-+		goto out;
-+	}
-+
-+	if (trigger) {
-+		number = strsep(&trigger, ":");
-+
-+		ret = -EINVAL;
-+		if (!strlen(number))
-+			goto out_free;
-+
-+		/*
-+		 * We use the callback data field (which is a pointer)
-+		 * as our counter.
-+		 */
-+		ret = kstrtoul(number, 0, &trigger_data->count);
-+		if (ret)
-+			goto out_free;
-+	}
-+
-+	if (!param) /* if param is non-empty, it's supposed to be a filter */
-+		goto out_reg;
-+
-+	if (!cmd_ops->set_filter)
-+		goto out_reg;
-+
-+	ret = cmd_ops->set_filter(param, trigger_data, file);
-+	if (ret < 0)
-+		goto out_free;
-+
-+ out_reg:
-+	ret = cmd_ops->reg(glob, trigger_ops, trigger_data, file);
-+	/*
-+	 * The above returns on success the # of functions enabled,
-+	 * but if it didn't find any functions it returns zero.
-+	 * Consider no functions a failure too.
-+	 */
-+	if (!ret) {
-+		ret = -ENOENT;
-+		goto out_free;
-+	} else if (ret < 0)
-+		goto out_free;
-+	ret = 0;
-+ out:
-+	return ret;
-+
-+ out_free:
-+	kfree(trigger_data);
-+	goto out;
-+}
-+
-+static void
-+traceon_trigger(struct event_trigger_data *data)
-+{
-+	if (tracing_is_on())
-+		return;
-+
-+	tracing_on();
-+}
-+
-+static void
-+traceon_count_trigger(struct event_trigger_data *data)
-+{
-+	if (!data->count)
-+		return;
-+
-+	if (data->count != -1)
-+		(data->count)--;
-+
-+	traceon_trigger(data);
-+}
-+
-+static void
-+traceoff_trigger(struct event_trigger_data *data)
-+{
-+	if (!tracing_is_on())
-+		return;
-+
-+	tracing_off();
-+}
-+
-+static void
-+traceoff_count_trigger(struct event_trigger_data *data)
-+{
-+	if (!data->count)
-+		return;
-+
-+	if (data->count != -1)
-+		(data->count)--;
-+
-+	traceoff_trigger(data);
-+}
-+
-+static int
-+traceon_trigger_print(struct seq_file *m, struct event_trigger_ops *ops,
-+		      struct event_trigger_data *data)
-+{
-+	return event_trigger_print("traceon", m, (void *)data->count,
-+				   data->filter_str);
-+}
-+
-+static int
-+traceoff_trigger_print(struct seq_file *m, struct event_trigger_ops *ops,
-+		       struct event_trigger_data *data)
-+{
-+	return event_trigger_print("traceoff", m, (void *)data->count,
-+				   data->filter_str);
-+}
-+
-+static struct event_trigger_ops traceon_trigger_ops = {
-+	.func			= traceon_trigger,
-+	.print			= traceon_trigger_print,
-+	.init			= event_trigger_init,
-+	.free			= event_trigger_free,
-+};
-+
-+static struct event_trigger_ops traceon_count_trigger_ops = {
-+	.func			= traceon_count_trigger,
-+	.print			= traceon_trigger_print,
-+	.init			= event_trigger_init,
-+	.free			= event_trigger_free,
-+};
-+
-+static struct event_trigger_ops traceoff_trigger_ops = {
-+	.func			= traceoff_trigger,
-+	.print			= traceoff_trigger_print,
-+	.init			= event_trigger_init,
-+	.free			= event_trigger_free,
-+};
-+
-+static struct event_trigger_ops traceoff_count_trigger_ops = {
-+	.func			= traceoff_count_trigger,
-+	.print			= traceoff_trigger_print,
-+	.init			= event_trigger_init,
-+	.free			= event_trigger_free,
-+};
-+
-+static struct event_trigger_ops *
-+onoff_get_trigger_ops(char *cmd, char *param)
-+{
-+	struct event_trigger_ops *ops;
-+
-+	/* we register both traceon and traceoff to this callback */
-+	if (strcmp(cmd, "traceon") == 0)
-+		ops = param ? &traceon_count_trigger_ops :
-+			&traceon_trigger_ops;
-+	else
-+		ops = param ? &traceoff_count_trigger_ops :
-+			&traceoff_trigger_ops;
-+
-+	return ops;
-+}
-+
-+static struct event_command trigger_traceon_cmd = {
-+	.name			= "traceon",
-+	.trigger_type		= ETT_TRACE_ONOFF,
-+	.func			= event_trigger_callback,
-+	.reg			= register_trigger,
-+	.unreg			= unregister_trigger,
-+	.get_trigger_ops	= onoff_get_trigger_ops,
-+};
-+
-+static struct event_command trigger_traceoff_cmd = {
-+	.name			= "traceoff",
-+	.trigger_type		= ETT_TRACE_ONOFF,
-+	.func			= event_trigger_callback,
-+	.reg			= register_trigger,
-+	.unreg			= unregister_trigger,
-+	.get_trigger_ops	= onoff_get_trigger_ops,
-+};
-+
-+static __init void unregister_trigger_traceon_traceoff_cmds(void)
-+{
-+	unregister_event_command(&trigger_traceon_cmd);
-+	unregister_event_command(&trigger_traceoff_cmd);
-+}
-+
-+static __init int register_trigger_traceon_traceoff_cmds(void)
-+{
-+	int ret;
-+
-+	ret = register_event_command(&trigger_traceon_cmd);
-+	if (WARN_ON(ret < 0))
-+		return ret;
-+	ret = register_event_command(&trigger_traceoff_cmd);
-+	if (WARN_ON(ret < 0))
-+		unregister_trigger_traceon_traceoff_cmds();
-+
-+	return ret;
-+}
-+
- __init int register_trigger_cmds(void)
- {
-+	int ret;
-+
-+	ret = register_trigger_traceon_traceoff_cmds();
-+	if (ret) {
-+		unregister_trigger_traceon_traceoff_cmds();
-+		return ret;
-+	}
-+
- 	return 0;
- }
--- 
-1.7.11.4
-
+---------- bisection log start ----------
+# bad: [ad81f0545ef01ea651886dddac4bef6cec930092] Linux 3.11-rc1
+# good: [8bb495e3f02401ee6f76d1b1d77f3ac9f079e376] Linux 3.10
+# good: [c1be5a5b1b355d40e6cf79cc979eb66dafa24ad1] Linux 3.9
+# good: [19f949f52599ba7c3f67a5897ac6be14bfcb1200] Linux 3.8
+# good: [29594404d7fe73cd80eaa4ee8c43dcc53970c60e] Linux 3.7
+# good: [a0d271cbfed1dd50278c6b06bead3d00ba0a88f9] Linux 3.6
+# good: [28a33cbc24e4256c143dce96c7d93bf423229f92] Linux 3.5
+# good: [76e10d158efb6d4516018846f60c2ab5501900bc] Linux 3.4
+# good: [c16fa4f2ad19908a47c63d8fa436a1178438c7e7] Linux 3.3
+# good: [805a6af8dba5dfdd35ec35dc52ec0122400b2610] Linux 3.2
+# good: [c3b92c8787367a8bb53d57d9789b558f1295cc96] Linux 3.1
+# good: [02f8c6aee8df3cdc935e9bdd4f2d020306035dbe] Linux 3.0
+git bisect start 'v3.11-rc1' 'v3.10' 'v3.9' 'v3.8' 'v3.7' 'v3.6' 'v3.5' 'v3.4' 'v3.3' 'v3.2' 'v3.1' 'v3.0'
+# bad: [1286da8bc009cb2aee7f285e94623fc974c0c983] Merge tag 'sound-3.11' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound
+git bisect bad 1286da8bc009cb2aee7f285e94623fc974c0c983
+# good: [ee1a8d402e7e204d57fb108aa40003b6d1633036] Merge tag 'dt-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc
+git bisect good ee1a8d402e7e204d57fb108aa40003b6d1633036
+# bad: [3e34131a65127e73fbae68c82748f32c8af7e4a4] Merge tag 'stable/for-linus-3.11-rc0-tag-two' of git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen
+git bisect bad 3e34131a65127e73fbae68c82748f32c8af7e4a4
+# bad: [790eac5640abf7a57fa3a644386df330e18c11b0] Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs
+git bisect bad 790eac5640abf7a57fa3a644386df330e18c11b0
+# bad: [f0bb4c0ab064a8aeeffbda1cee380151a594eaab] Merge branch 'perf-core-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+git bisect bad f0bb4c0ab064a8aeeffbda1cee380151a594eaab
+# good: [3e42dee676e8cf5adca817b1518b2e99d1c138ff] Merge branch 'core-locking-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+git bisect good 3e42dee676e8cf5adca817b1518b2e99d1c138ff
+# good: [130768b8c93cd8d21390a136ec8cef417153ca14] perf/x86/intel: Add Haswell PEBS record support
+git bisect good 130768b8c93cd8d21390a136ec8cef417153ca14
+# bad: [ab3d681e9d41816f90836ea8fe235168d973207f] Merge branch 'core-rcu-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+git bisect bad ab3d681e9d41816f90836ea8fe235168d973207f
+# good: [14961444696effb2e660fe876e5c1880f8bc3932] rcu: Shrink TINY_RCU by reworking CPU-stall ifdefs
+git bisect good 14961444696effb2e660fe876e5c1880f8bc3932
+# good: [be77f87c001b770f13fe742becb08b847d9542f1] Merge branches 'cbnum.2013.06.10a', 'doc.2013.06.10a', 'fixes.2013.06.10a', 'srcu.2013.06.10a' and 'tiny.2013.06.10a' into HEAD
+git bisect good be77f87c001b770f13fe742becb08b847d9542f1
+# bad: [2fe3d4b149ccebbb384062fbbe6634439f2bf120] mutex: Add more tests to lib/locking-selftest.c
+git bisect bad 2fe3d4b149ccebbb384062fbbe6634439f2bf120
+# bad: [040a0a37100563754bb1fee6ff6427420bcfa609] mutex: Add support for wound/wait style locks
+git bisect bad 040a0a37100563754bb1fee6ff6427420bcfa609
+# good: [a41b56efa70e060f650aeb54740aaf52044a1ead] arch: Make __mutex_fastpath_lock_retval return whether fastpath succeeded or not
+git bisect good a41b56efa70e060f650aeb54740aaf52044a1ead
+---------- bisection log end ----------
