@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751458Ab3IGOI5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 10:08:57 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:52359 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751150Ab3IGOIy (ORCPT
+	id S1751649Ab3IGOJh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 10:09:37 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:39798 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751432Ab3IGOI4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 10:08:54 -0400
+	Sat, 7 Sep 2013 10:08:56 -0400
 From: Konrad Rzeszutek Wilk <konrad@kernel.org>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
         boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
         stefan.bader@canonical.com, stefano.stabellini@eu.citrix.com,
         jeremy@goop.org
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 1/5] xen/spinlock: Fix locking path engaging too soon under PVHVM.
-Date: Sat,  7 Sep 2013 09:46:41 -0400
-Message-Id: <1378561605-18998-2-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 2/5] xen/spinlock: We don't need the old structure anymore
+Date: Sat,  7 Sep 2013 09:46:42 -0400
+Message-Id: <1378561605-18998-3-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1378561605-18998-1-git-send-email-konrad.wilk@oracle.com>
 References: <1378561605-18998-1-git-send-email-konrad.wilk@oracle.com>
@@ -23,67 +23,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The xen_lock_spinning has a check for the kicker interrupts
-and if it is not initialised it will spin normally (not enter
-the slowpath).
-
-But for PVHVM case we would initialise the kicker interrupt
-before the CPU came online. This meant that if the booting
-CPU used a spinlock and went in the slowpath - it would
-enter the slowpath and block forever. The forever part b/c
-during bootup the interrupts are disabled - so the CPU would
-never get an IPI kick and would stay stuck in the slowpath
-logic forever.
-
-Why would the booting CPU never get an IPI kick? B/c in both
-PV and PVHVM we consult the cpu_online_mask to determine whether
-the IPI should go to its CPU destination. Since the booting
-CPU has not yet finished and set that flag, it meant that
-if any spinlocks were taken before the booting CPU had gotten to:
-
-  set_cpu_online(smp_processor_id(), true);
-
-it (booting CPU) we would never get the unkicker IPI
-(from xen_unlock_kick) and block forever.
+As we are piggybacking on the generic ticketlock structs
+and these old structures are not needed anymore.
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/enlighten.c |    1 -
- arch/x86/xen/smp.c       |    9 +++++++++
- 2 files changed, 9 insertions(+), 1 deletions(-)
+ arch/x86/xen/spinlock.c |   18 ------------------
+ 1 files changed, 0 insertions(+), 18 deletions(-)
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 193097e..fbc002c 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1689,7 +1689,6 @@ static int xen_hvm_cpu_notify(struct notifier_block *self, unsigned long action,
- 	case CPU_UP_PREPARE:
- 		xen_vcpu_setup(cpu);
- 		if (xen_have_vector_callback) {
--			xen_init_lock_cpu(cpu);
- 			if (xen_feature(XENFEAT_hvm_safe_pvclock))
- 				xen_setup_timer(cpu);
- 		}
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 597655b..4db779d 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -703,6 +703,15 @@ static int xen_hvm_cpu_up(unsigned int cpu, struct task_struct *tidle)
- 	WARN_ON(rc);
- 	if (!rc)
- 		rc =  native_cpu_up(cpu, tidle);
-+
-+	/*
-+	 * We must initialize the slowpath CPU kicker _after_ the native
-+	 * path has executed. If we initialized it before none of the
-+	 * unlocker IPI kicks would reach the booting CPU as the booting
-+	 * CPU had not set itself 'online' in cpu_online_mask. That mask
-+	 * is checked when IPIs are sent (on HVM at least).
-+	 */
-+	xen_init_lock_cpu(cpu);
- 	return rc;
+diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
+index 0438b93..71db82c 100644
+--- a/arch/x86/xen/spinlock.c
++++ b/arch/x86/xen/spinlock.c
+@@ -81,7 +81,6 @@ static inline void spin_time_accum_blocked(u64 start)
+ 	spinlock_stats.time_blocked += delta;
  }
+ #else  /* !CONFIG_XEN_DEBUG_FS */
+-#define TIMEOUT			(1 << 10)
+ static inline void add_stats(enum xen_contention_stat var, u32 val)
+ {
+ }
+@@ -96,23 +95,6 @@ static inline void spin_time_accum_blocked(u64 start)
+ }
+ #endif  /* CONFIG_XEN_DEBUG_FS */
  
+-/*
+- * Size struct xen_spinlock so it's the same as arch_spinlock_t.
+- */
+-#if NR_CPUS < 256
+-typedef u8 xen_spinners_t;
+-# define inc_spinners(xl) \
+-	asm(LOCK_PREFIX " incb %0" : "+m" ((xl)->spinners) : : "memory");
+-# define dec_spinners(xl) \
+-	asm(LOCK_PREFIX " decb %0" : "+m" ((xl)->spinners) : : "memory");
+-#else
+-typedef u16 xen_spinners_t;
+-# define inc_spinners(xl) \
+-	asm(LOCK_PREFIX " incw %0" : "+m" ((xl)->spinners) : : "memory");
+-# define dec_spinners(xl) \
+-	asm(LOCK_PREFIX " decw %0" : "+m" ((xl)->spinners) : : "memory");
+-#endif
+-
+ struct xen_lock_waiting {
+ 	struct arch_spinlock *lock;
+ 	__ticket_t want;
 -- 
 1.7.7.6
 
