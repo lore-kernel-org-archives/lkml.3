@@ -1,94 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752019Ab3IGVc3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 17:32:29 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:46917 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751720Ab3IGVc2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 17:32:28 -0400
-Message-ID: <522B9B5D.4010207@oracle.com>
-Date: Sat, 07 Sep 2013 17:32:13 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1752035Ab3IGVoO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 17:44:14 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:38148 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751720Ab3IGVoK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Sep 2013 17:44:10 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: paulmck@linux.vnet.ibm.com, Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Carsten Emde <C.Emde@osadl.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <williams@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: Re: [PATCH] cpufreq: Fix wrong time unit conversion
+Date: Sat, 07 Sep 2013 23:55:06 +0200
+Message-ID: <9021008.7Ghm6LWgaH@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0-rc7+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20130907190226.GI3966@linux.vnet.ibm.com>
+References: <1378571708-27825-1-git-send-email-fweisbec@gmail.com> <20130907190226.GI3966@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, walken@google.com,
-        riel@redhat.com, hughd@google.com, khlebnikov@openvz.org,
-        trinity@vger.kernel.org
-Subject: mm: gpf in find_vma
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Saturday, September 07, 2013 12:02:26 PM Paul E. McKenney wrote:
+> On Sat, Sep 07, 2013 at 06:35:08PM +0200, Frederic Weisbecker wrote:
+> > The time spent by a CPU under a given frequency is stored in jiffies unit
+> > in the cpu var cpufreq_stats_table->time_in_state[i], i being the index of
+> > the frequency.
+> > 
+> > This is what is displayed in the following file on the right column:
+> > 
+> >      cat /sys/devices/system/cpu/cpuX/cpufreq/stats/time_in_state
+> >      2301000 19835820
+> >      2300000 3172
+> >      [...]
+> > 
+> > Now cpufreq converts this jiffies unit delta to clock_t before returning it
+> > to the user as in the above file. And that conversion is achieved using the API
+> > cputime64_to_clock_t().
+> > 
+> > Although it accidentally works on traditional tick based cputime accounting, where
+> > cputime_t maps directly to jiffies, it doesn't work with other types of cputime
+> > accounting such as CONFIG_VIRT_CPU_ACCOUNTING_* where cputime_t can map to nsecs
+> > or any granularity preffered by the architecture.
+> > 
+> > For example we get a buggy zero delta on full dyntick configurations:
+> > 
+> >      cat /sys/devices/system/cpu/cpuX/cpufreq/stats/time_in_state
+> >      2301000 0
+> >      2300000 0
+> >      [...]
+> > 
+> > Fix this with using the proper jiffies_64_t to clock_t conversion.
+> > 
+> > Reported-by: Carsten Emde <C.Emde@osadl.org>
+> > Tested-by: Carsten Emde <C.Emde@osadl.org>
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Carsten Emde <C.Emde@osadl.org>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: Clark Williams <williams@redhat.com>
+> > Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> Good catch!
+> 
+> Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-While fuzzing with trinity inside a KVM tools guest, running latest -next kernel, I've
-stumbled on the following:
+Applied, will push for 3.12-rc1.
 
-[13600.008029] general protection fault: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[13600.010235] Modules linked in:
-[13600.010742] CPU: 30 PID: 26329 Comm: kworker/u128:2 Tainted: G        W 
-3.11.0-next-20130906-sasha #3985
-[13600.012301] task: ffff880e54630000 ti: ffff880e52380000 task.ti: ffff880e52380000
-[13600.013553] RIP: 0010:[<ffffffff81258b82>]  [<ffffffff81258b82>] find_vma+0x12/0x70
-[13600.014929] RSP: 0018:ffff880e52381c38  EFLAGS: 00010282
-[13600.016808] RAX: f0000040f0000040 RBX: 00007fffffffe000 RCX: ffff880e54630000
-[13600.016808] RDX: 0000000000000000 RSI: 00007fffffffe000 RDI: ffff880000000000
-[13600.016808] RBP: ffff880e52381c38 R08: 0000000000000017 R09: ffff880e52381d70
-[13600.016808] R10: ffff880e52381d70 R11: 0000000000000007 R12: ffff880e54630000
-[13600.016808] R13: ffff880000000000 R14: 000000000000000f R15: 0000000000000000
-[13600.016808] FS:  0000000000000000(0000) GS:ffff880fe3200000(0000) knlGS:0000000000000000
-[13600.016808] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[13600.016808] CR2: 0000000004a66678 CR3: 0000000e520fe000 CR4: 00000000000006e0
-[13600.016808] Stack:
-[13600.016808]  ffff880e52381c68 ffffffff8125a36b ffff880fb7d373c8 ffff880fb6f82238
-[13600.016808]  ffff880e54630000 ffff880000000000 ffff880e52381d28 ffffffff8125622d
-[13600.016808]  ffff880e52381c98 ffffffff84109b7c 00000000b7d373c8 ffff880e52380010
-[13600.016808] Call Trace:
-[13600.016808]  [<ffffffff8125a36b>] find_extend_vma+0x2b/0x90
-[13600.016808]  [<ffffffff8125622d>] __get_user_pages+0xdd/0x630
-[13600.016808]  [<ffffffff84109b7c>] ? _raw_spin_unlock_irqrestore+0x7c/0xa0
-[13600.016808]  [<ffffffff81256832>] get_user_pages+0x52/0x60
-[13600.016808]  [<ffffffff812adecc>] get_arg_page+0x5c/0x100
-[13600.016808]  [<ffffffff812ade58>] ? get_user_arg_ptr+0x58/0x70
-[13600.016808]  [<ffffffff812ae084>] copy_strings+0x114/0x260
-[13600.016808]  [<ffffffff812ae21b>] copy_strings_kernel+0x4b/0x60
-[13600.016808]  [<ffffffff812b0203>] do_execve_common+0x2f3/0x4d0
-[13600.016808]  [<ffffffff812b001c>] ? do_execve_common+0x10c/0x4d0
-[13600.016808]  [<ffffffff812b04a7>] do_execve+0x37/0x40
-[13600.016808]  [<ffffffff81140721>] ____call_usermodehelper+0x111/0x130
-[13600.016808]  [<ffffffff8115f270>] ? schedule_tail+0x30/0xb0
-[13600.016808]  [<ffffffff81140610>] ? __call_usermodehelper+0xb0/0xb0
-[13600.016808]  [<ffffffff841125ec>] ret_from_fork+0x7c/0xb0
-[13600.016808]  [<ffffffff81140610>] ? __call_usermodehelper+0xb0/0xb0
-[13600.016808] Code: 40 20 83 f0 01 83 e0 01 eb 09 0f 1f 80 00 00 00 00 31 c0 c9 c3 0f 1f 40 00 55 
-48 89 e5 66 66 66 66 90 48 8b 47 10 48 85 c0 74 0b <48> 39 70 08 76 05 48 3b 30 73 4d 48 8b 57 08 31 
-c0 48 85 d2 74
-[13600.016808] RIP  [<ffffffff81258b82>] find_vma+0x12/0x70
-[13600.016808]  RSP <ffff880e52381c38>
+Thanks Frederic!
 
-The disassembly is:
-
-         /* Check the cache first. */
-         /* (Cache hit rate is typically around 35%.) */
-         vma = ACCESS_ONCE(mm->mmap_cache);
-      1f9:       48 8b 47 10             mov    0x10(%rdi),%rax
-         if (!(vma && vma->vm_end > addr && vma->vm_start <= addr)) {
-      1fd:       48 85 c0                test   %rax,%rax
-      200:       74 0b                   je     20d <find_vma+0x1d>
-      202:       48 39 70 08             cmp    %rsi,0x8(%rax)		<--- here
-      206:       76 05                   jbe    20d <find_vma+0x1d>
-      208:       48 3b 30                cmp    (%rax),%rsi
-      20b:       73 4d                   jae    25a <find_vma+0x6a>
-
-
-Note that I've started seeing this when I started testing with 64 vcpus.
-
-
-Thanks,
-Sasha
+> 
+> > ---
+> >  drivers/cpufreq/cpufreq_stats.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
+> > index d37568c..10e6138 100644
+> > --- a/drivers/cpufreq/cpufreq_stats.c
+> > +++ b/drivers/cpufreq/cpufreq_stats.c
+> > @@ -81,7 +81,7 @@ static ssize_t show_time_in_state(struct cpufreq_policy *policy, char *buf)
+> >  	for (i = 0; i < stat->state_num; i++) {
+> >  		len += sprintf(buf + len, "%u %llu\n", stat->freq_table[i],
+> >  			(unsigned long long)
+> > -			cputime64_to_clock_t(stat->time_in_state[i]));
+> > +			jiffies_64_to_clock_t(stat->time_in_state[i]));
+> >  	}
+> >  	return len;
+> >  }
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
