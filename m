@@ -1,75 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750907Ab3IGFVG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 01:21:06 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:49594 "EHLO
+	id S1750899Ab3IGFeA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 01:34:00 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:49603 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750825Ab3IGFVD (ORCPT
+	with ESMTP id S1750825Ab3IGFd7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 01:21:03 -0400
+	Sat, 7 Sep 2013 01:33:59 -0400
 From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: davem@davemloft.net
-Cc: emilio@elopez.com.ar, mugunthanvnm@ti.com, jg1.han@samsung.com,
-        hsweeten@visionengravers.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
+To: dhowells@redhat.com
+Cc: linux-kernel@vger.kernel.org,
         Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] net: korina: remove deprecated IRQF_DISABLED
-Date: Sat,  7 Sep 2013 07:20:57 +0200
-Message-Id: <1378531257-5446-1-git-send-email-michael.opdenacker@free-electrons.com>
+Subject: [PATCH] frv: remove deprecated IRQF_DISABLED
+Date: Sat,  7 Sep 2013 07:33:45 +0200
+Message-Id: <1378532025-5901-1-git-send-email-michael.opdenacker@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch proposes to remove the IRQF_DISABLED flag from
-drivers/net/ethernet/korina.c
-
-It's a NOOP since 2.6.35 and it will be removed one day.
+This patch proposes to remove the IRQF_DISABLED flag from FRV architecture
+code. It's a NOOP since 2.6.35 and it will be removed one day.
 
 Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 ---
- drivers/net/ethernet/korina.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/frv/kernel/irq-mb93091.c | 8 ++++----
+ arch/frv/kernel/irq-mb93093.c | 2 +-
+ arch/frv/kernel/irq-mb93493.c | 4 ++--
+ arch/frv/kernel/time.c        | 2 +-
+ 4 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/net/ethernet/korina.c b/drivers/net/ethernet/korina.c
-index 270e65f..a36fa80 100644
---- a/drivers/net/ethernet/korina.c
-+++ b/drivers/net/ethernet/korina.c
-@@ -996,14 +996,14 @@ static int korina_open(struct net_device *dev)
- 	 * that handles the Done Finished
- 	 * Ovr and Und Events */
- 	ret = request_irq(lp->rx_irq, korina_rx_dma_interrupt,
--			IRQF_DISABLED, "Korina ethernet Rx", dev);
-+			0, "Korina ethernet Rx", dev);
- 	if (ret < 0) {
- 		printk(KERN_ERR "%s: unable to get Rx DMA IRQ %d\n",
- 		    dev->name, lp->rx_irq);
- 		goto err_release;
+diff --git a/arch/frv/kernel/irq-mb93091.c b/arch/frv/kernel/irq-mb93091.c
+index 2cc327a..091b283 100644
+--- a/arch/frv/kernel/irq-mb93091.c
++++ b/arch/frv/kernel/irq-mb93091.c
+@@ -107,25 +107,25 @@ static irqreturn_t fpga_interrupt(int irq, void *_mask)
+ static struct irqaction fpga_irq[4]  = {
+ 	[0] = {
+ 		.handler	= fpga_interrupt,
+-		.flags		= IRQF_DISABLED | IRQF_SHARED,
++		.flags		= IRQF_SHARED,
+ 		.name		= "fpga.0",
+ 		.dev_id		= (void *) 0x0028UL,
+ 	},
+ 	[1] = {
+ 		.handler	= fpga_interrupt,
+-		.flags		= IRQF_DISABLED | IRQF_SHARED,
++		.flags		= IRQF_SHARED,
+ 		.name		= "fpga.1",
+ 		.dev_id		= (void *) 0x0050UL,
+ 	},
+ 	[2] = {
+ 		.handler	= fpga_interrupt,
+-		.flags		= IRQF_DISABLED | IRQF_SHARED,
++		.flags		= IRQF_SHARED,
+ 		.name		= "fpga.2",
+ 		.dev_id		= (void *) 0x1c00UL,
+ 	},
+ 	[3] = {
+ 		.handler	= fpga_interrupt,
+-		.flags		= IRQF_DISABLED | IRQF_SHARED,
++		.flags		= IRQF_SHARED,
+ 		.name		= "fpga.3",
+ 		.dev_id		= (void *) 0x6386UL,
  	}
- 	ret = request_irq(lp->tx_irq, korina_tx_dma_interrupt,
--			IRQF_DISABLED, "Korina ethernet Tx", dev);
-+			0, "Korina ethernet Tx", dev);
- 	if (ret < 0) {
- 		printk(KERN_ERR "%s: unable to get Tx DMA IRQ %d\n",
- 		    dev->name, lp->tx_irq);
-@@ -1012,7 +1012,7 @@ static int korina_open(struct net_device *dev)
+diff --git a/arch/frv/kernel/irq-mb93093.c b/arch/frv/kernel/irq-mb93093.c
+index 95e4eb4..cde55cf 100644
+--- a/arch/frv/kernel/irq-mb93093.c
++++ b/arch/frv/kernel/irq-mb93093.c
+@@ -105,7 +105,7 @@ static irqreturn_t fpga_interrupt(int irq, void *_mask)
+ static struct irqaction fpga_irq[1]  = {
+ 	[0] = {
+ 		.handler	= fpga_interrupt,
+-		.flags		= IRQF_DISABLED,
++		.flags		= 0,
+ 		.name		= "fpga.0",
+ 		.dev_id		= (void *) 0x0700UL,
+ 	}
+diff --git a/arch/frv/kernel/irq-mb93493.c b/arch/frv/kernel/irq-mb93493.c
+index ba648da..8ca5aa4 100644
+--- a/arch/frv/kernel/irq-mb93493.c
++++ b/arch/frv/kernel/irq-mb93493.c
+@@ -118,13 +118,13 @@ static irqreturn_t mb93493_interrupt(int irq, void *_piqsr)
+ static struct irqaction mb93493_irq[2]  = {
+ 	[0] = {
+ 		.handler	= mb93493_interrupt,
+-		.flags		= IRQF_DISABLED | IRQF_SHARED,
++		.flags		= IRQF_SHARED,
+ 		.name		= "mb93493.0",
+ 		.dev_id		= (void *) __addr_MB93493_IQSR(0),
+ 	},
+ 	[1] = {
+ 		.handler	= mb93493_interrupt,
+-		.flags		= IRQF_DISABLED | IRQF_SHARED,
++		.flags		= IRQF_SHARED,
+ 		.name		= "mb93493.1",
+ 		.dev_id		= (void *) __addr_MB93493_IQSR(1),
+ 	}
+diff --git a/arch/frv/kernel/time.c b/arch/frv/kernel/time.c
+index b457de4..94ced29 100644
+--- a/arch/frv/kernel/time.c
++++ b/arch/frv/kernel/time.c
+@@ -44,7 +44,7 @@ static irqreturn_t timer_interrupt(int irq, void *dummy);
  
- 	/* Install handler for overrun error. */
- 	ret = request_irq(lp->ovr_irq, korina_ovr_interrupt,
--			IRQF_DISABLED, "Ethernet Overflow", dev);
-+			0, "Ethernet Overflow", dev);
- 	if (ret < 0) {
- 		printk(KERN_ERR "%s: unable to get OVR IRQ %d\n",
- 		    dev->name, lp->ovr_irq);
-@@ -1021,7 +1021,7 @@ static int korina_open(struct net_device *dev)
+ static struct irqaction timer_irq  = {
+ 	.handler = timer_interrupt,
+-	.flags = IRQF_DISABLED,
++	.flags = 0,
+ 	.name = "timer",
+ };
  
- 	/* Install handler for underflow error. */
- 	ret = request_irq(lp->und_irq, korina_und_interrupt,
--			IRQF_DISABLED, "Ethernet Underflow", dev);
-+			0, "Ethernet Underflow", dev);
- 	if (ret < 0) {
- 		printk(KERN_ERR "%s: unable to get UND IRQ %d\n",
- 		    dev->name, lp->und_irq);
 -- 
 1.8.1.2
 
