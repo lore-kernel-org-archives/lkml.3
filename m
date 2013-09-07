@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751455Ab3IGAAt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Sep 2013 20:00:49 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:37892 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846Ab3IGAAr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Sep 2013 20:00:47 -0400
-Date: Sat, 7 Sep 2013 01:00:44 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Waiman Long <Waiman.Long@hp.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        George Spelvin <linux@horizon.com>, John Stoffel <john@stoffel.org>
-Subject: Re: [PATCH v3 1/1] dcache: Translating dentry into pathname without
- taking rename_lock
-Message-ID: <20130907000044.GX13318@ZenIV.linux.org.uk>
-References: <1378483738-10129-1-git-send-email-Waiman.Long@hp.com>
- <1378483738-10129-2-git-send-email-Waiman.Long@hp.com>
- <CA+55aFw8UuEmKsSdGZPUmcekZheNimEt4U81i7Bz0LipGzsFmg@mail.gmail.com>
- <20130906210546.GW13318@ZenIV.linux.org.uk>
- <CA+55aFzf-reQNSQt_fhHfUe_tB19n2qEa=Rd=wFEBJEVALmezA@mail.gmail.com>
+	id S1751788Ab3IGABF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Sep 2013 20:01:05 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:37393 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751132Ab3IGABD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Sep 2013 20:01:03 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: lenb@kernel.org, yinghai@kernel.org, bhelgaas@google.com,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 1/4] ACPI/Resource: Add memory prefetch check support
+Date: Sat, 07 Sep 2013 02:11:58 +0200
+Message-ID: <30641406.PKxpUfsNWU@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0-rc7+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1378477486-8758-2-git-send-email-tianyu.lan@intel.com>
+References: <1378477486-8758-1-git-send-email-tianyu.lan@intel.com> <1378477486-8758-2-git-send-email-tianyu.lan@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzf-reQNSQt_fhHfUe_tB19n2qEa=Rd=wFEBJEVALmezA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 06, 2013 at 02:48:32PM -0700, Linus Torvalds wrote:
-> On Fri, Sep 6, 2013 at 2:05 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> > I can take that, but I'm really not convinced that we need writer lock
-> > there at all.  After all, if we really can get livelocks on that one,
-> > we would be getting them on d_lookup()...
+On Friday, September 06, 2013 10:24:43 AM Lan Tianyu wrote:
+> This patch is to check mem address space's acpi resource caching ability
+> and set prefetch flag of struct resource if it's prefetchable.
 > 
-> d_lookup() does a _single_ path component. That's a *big* difference.
-> 
-> Sure, the hash chain that d_lookup() (well, __d_lookup()) ends up
-> walking is a bit more complicated than just following the dentry
-> parent pointer, but that's much harder to trigger than just creating a
-> really deep directory structure of single-letter nested directories,
-> and then doing a "getcwd()" that walks 1024+ parents, while another
-> thread is looping renaming things..
-> 
-> So I personally do feel a lot safer with the fallback to write locking here.
-> 
-> Especially since it's pretty simple, so there isn't really much downside.
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 
-Er... what will happen if you have done just what you've described and have
-a process call d_lookup()?
+Looks good to me.
+
+Thanks,
+Rafael
+
+
+> ---
+>  drivers/acpi/resource.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/drivers/acpi/resource.c b/drivers/acpi/resource.c
+> index b7201fc..929f416 100644
+> --- a/drivers/acpi/resource.c
+> +++ b/drivers/acpi/resource.c
+> @@ -202,6 +202,9 @@ bool acpi_dev_resource_address_space(struct acpi_resource *ares,
+>  		res->flags = acpi_dev_memresource_flags(len,
+>  						addr.info.mem.write_protect,
+>  						window);
+> +
+> +		if (addr.info.mem.caching == ACPI_PREFETCHABLE_MEMORY)
+> +			res->flags |= IORESOURCE_PREFETCH;
+>  		break;
+>  	case ACPI_IO_RANGE:
+>  		io_decode = addr.granularity == 0xfff ?
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
