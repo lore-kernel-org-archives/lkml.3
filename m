@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751137Ab3IGQwv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 12:52:51 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:39604 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750802Ab3IGQwt (ORCPT
+	id S1751266Ab3IGQyv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 12:54:51 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:47705 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751025Ab3IGQyu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 12:52:49 -0400
+	Sat, 7 Sep 2013 12:54:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <CANq1E4Q85ewwKs7VoooZVapC7-Cvy6-Xp4rGL1-1Ee7w1EcT6w@mail.gmail.com>
-References: <alpine.LNX.2.00.1309061202050.26934@pobox.suse.cz>
-	<20130906202022.GA353@x4>
-	<CANq1E4Rf4c4zj1mD1aPr93Q2_M65DCEJhuLqcBWa5uH9tcKuWA@mail.gmail.com>
-	<CA+55aFzg-dv-N7UjXx2pxUJ+QQOOy0qtp_e94PDSM=tVd=LgUw@mail.gmail.com>
-	<506b9d43-f734-40f9-b137-0749a496fd6d@email.android.com>
-	<CA+55aFzLy+-VF022ORuyWk-qQO7gDSQ1LZES1+bEUxz0QxrH-g@mail.gmail.com>
-	<20130907032240.GA1256@core.coreip.homeip.net>
-	<CANq1E4Q85ewwKs7VoooZVapC7-Cvy6-Xp4rGL1-1Ee7w1EcT6w@mail.gmail.com>
-Date: Sat, 7 Sep 2013 09:52:47 -0700
-X-Google-Sender-Auth: Ee20v37CYJXc9vAV6lJYrGCtkgs
-Message-ID: <CA+55aFye+TFiXPeJhB9fJjUcMR6LynjsZU+sjckKk2YoYOZDnw@mail.gmail.com>
-Subject: Re: [GIT] HID for 3.12 merge window
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Jiri Kosina <jkosina@suse.cz>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <522A5008.6060005@t-online.de>
+References: <522A5008.6060005@t-online.de>
+Date: Sat, 7 Sep 2013 18:54:49 +0200
+X-Google-Sender-Auth: T4h-4q4NiCCKYKpqz4CgA11BMiU
+Message-ID: <CAKMK7uHAMr_qzismVMB8m3za8UwogMVknPcj7LsZFuC7L8GnrQ@mail.gmail.com>
+Subject: Re: [Intel-gfx] [BUG kernel 3.11+] i915: pipe state doesn't match
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Knut Petersen <Knut_Petersen@t-online.de>
+Cc: intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 7, 2013 at 12:31 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+On Fri, Sep 6, 2013 at 11:58 PM, Knut Petersen
+<Knut_Petersen@t-online.de> wrote:
+> Someone might be interested ... kernel
+> 2e032852245b3dcfe5461d7353e34eb6da095ccf.
 >
-> The bug only occurs for multi-touch devices (their ABS_* bits are
->>0x1f), that's why I didn't see it happening during my tests..
+> [    0.000000] Linux version 3.11.0-main+ (knut@linux-ktth.site) (gcc
+> version 4.7.2 20130108 [gcc-4_7-branch revision 195012] (SUSE Linux) ) #34
+> PREEMPT Fri Sep 6 09:46:35 CEST 2013
 
-It definitely affects keyboards too. That's how I noticed it. That is
-with the logitech "universal" receiver, though, so maybe that counts
-as a potential multi-touch device..
 
-    Linus
+http://cgit.freedesktop.org/~danvet/drm-intel/commit/?id=4c6df4b4ca1b26f4532d403b544f649a1c801fd1
+
+could be of interest for you. If that doesn't help please boot with
+drm.debug=0xe and attach the complete dmesg.
+
+Thanks, Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
