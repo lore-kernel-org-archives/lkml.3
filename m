@@ -1,118 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751347Ab3IGMkZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 08:40:25 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:58968 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873Ab3IGMkX (ORCPT
+	id S1751007Ab3IGMwU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 08:52:20 -0400
+Received: from mailout05.t-online.de ([194.25.134.82]:43256 "EHLO
+	mailout05.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750880Ab3IGMwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 08:40:23 -0400
+	Sat, 7 Sep 2013 08:52:19 -0400
+Message-ID: <522B2173.4080405@t-online.de>
+Date: Sat, 07 Sep 2013 14:52:03 +0200
+From: Knut Petersen <Knut_Petersen@t-online.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <CAG-2HqVruXZxO1xLvYeAPa1RYmy044UiBXFLAtX5WcHVQVAtfA@mail.gmail.com>
-References: <CAG-2HqVruXZxO1xLvYeAPa1RYmy044UiBXFLAtX5WcHVQVAtfA@mail.gmail.com>
-Date: Sat, 7 Sep 2013 14:40:22 +0200
-Message-ID: <CANq1E4RAoLo2=fdZ4SCAnOtbCuJkAAf-BOfUFuK5S+gijpS8ng@mail.gmail.com>
-Subject: Re: [REGRESSION] v3.12-rc1: i915_driver_load oopses when sysfb enabled
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Tom Gundersen <teg@jklm.no>
-Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Content-Type: text/plain; charset=ISO-8859-1
+To: dhillf@sina.com
+CC: intel-gfx <intel-gfx@lists.freedesktop.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Hillf Danton <dhillf@gmail.com>
+Subject: Re: [BUG kernel 3.11+] i915: pipe state doesn't match
+References: <20130907041955.332534600D8@webmail.sinamail.sina.com.cn>
+In-Reply-To: <20130907041955.332534600D8@webmail.sinamail.sina.com.cn>
+Content-Type: text/plain; charset=gbk; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ID: r9Ub8eZSghyxKazTLOWCqGkd-o-SAClU27UCdtry1YjpIxRN3S4wWrSUBRjubN-gnm
+X-TOI-MSGID: 8a2615ea-dded-4e6b-9368-db3351fe557f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On 07.09.2013 06:19, Hillf Danton wrote:
+> If it works after reverting commit,
+>
+> 	3eaba51cd399f5362a9fd9ebd5fb8b625b454271
+> 	drm/i915: Don't call encoder's get_config unless encoder is active
 
-On Fri, Sep 6, 2013 at 2:10 PM, Tom Gundersen <teg@jklm.no> wrote:
-> Hi guys,
->
-> With current git (v3.11-5058-g57d7309) I get the following oops:
->
-> [    5.434312] ------------[ cut here ]------------
-> [    5.434318] WARNING: CPU: 2 PID: 199 at arch/x86/mm/ioremap.c:171
-> __ioremap_caller+0x2e3/0x390()
-> [    5.434321] Info: mapping multiple BARs. Your kernel is fine.
-> [    5.434323] Modules linked in:
-> [    5.434326]  arc4 coretemp x86_pkg_temp_thermal intel_powerclamp
-> brcmsmac kvm_intel kvm cordic brcmutil crc32_pclmul mac80211
-> crc32c_intel ghash_clmulni_intel cfg80211 rfkill iTCO_wdt evdev
-> iTCO_vendor_support aesni_intel aes_x86_64 glue_helper lrw gf128mul
-> ablk_helper cryptd applesmc input_polldev hwmon microcode bcma
-> snd_hda_codec_hdmi snd_hda_codec_cirrus fbcon bitblit fbcon_rotate
-> fbcon_ccw fbcon_ud fbcon_cw softcursor font i915(+) snd_hda_intel
-> snd_hda_codec ac video snd_hwdep intel_agp apple_bl battery button
-> snd_pcm intel_gtt snd_page_alloc drm_kms_helper shpchp backlight
-> snd_timer i2c_i801 lpc_ich snd mfd_core soundcore processor ext4 crc16
-> mbcache jbd2 sd_mod crc_t10dif ahci libahci libata ehci_pci scsi_mod
-> xhci_hcd ehci_hcd usbcore usb_common
-> [    5.434383] CPU: 2 PID: 199 Comm: systemd-udevd Not tainted
-> 3.11.0-TEG-05060-g0312d0c #81
-> [    5.434386] Hardware name: Apple Inc.
-> MacBookAir5,1/Mac-66F35F19FE2A0D05, BIOS MBA51.88Z.00EF.B01.1207271122
-> 07/27/2012
-> [    5.434390]  0000000000000009 ffff880168f87898 ffffffff8145be63
-> ffff880168f878e0
-> [    5.434394]  ffff880168f878d0 ffffffff8104b17d ffffc9000c080000
-> 00000000a0000000
-> [    5.434398]  ffffc9000c080000 ffffc9000c080000 0000000010000000
-> ffff880168f87930
-> [    5.434403] Call Trace:
-> [    5.434409]  [<ffffffff8145be63>] dump_stack+0x54/0x8d
-> [    5.434413]  [<ffffffff8104b17d>] warn_slowpath_common+0x7d/0xa0
-> [    5.434417]  [<ffffffff8104b1ec>] warn_slowpath_fmt+0x4c/0x50
-> [    5.434421]  [<ffffffff81051fdc>] ? iomem_map_sanity_check+0xac/0xe0
-> [    5.434425]  [<ffffffff8103e8b3>] __ioremap_caller+0x2e3/0x390
-> [    5.434430]  [<ffffffff8103e9f2>] ioremap_wc+0x32/0x40
-> [    5.434450]  [<ffffffffa043f960>] i915_driver_load+0x670/0xf50 [i915]
-> [    5.434467]  [<ffffffff8131540d>] ? drm_get_minor+0x1ad/0x200
-> [    5.434471]  [<ffffffff81317509>] drm_get_pci_dev+0x129/0x2f0
-> [    5.434487]  [<ffffffffa043c63c>] i915_pci_probe+0x2c/0x70 [i915]
-> [    5.434493]  [<ffffffff8127f624>] pci_device_probe+0x84/0xe0
-> [    5.434502]  [<ffffffff81331977>] driver_probe_device+0x87/0x3a0
-> [    5.434509]  [<ffffffff81331d63>] __driver_attach+0x93/0xa0
-> [    5.434516]  [<ffffffff81331cd0>] ? __device_attach+0x40/0x40
-> [    5.434521]  [<ffffffff8132f813>] bus_for_each_dev+0x63/0xa0
-> [    5.434525]  [<ffffffff813313ce>] driver_attach+0x1e/0x20
-> [    5.434529]  [<ffffffff81330f40>] bus_add_driver+0x200/0x2d0
-> [    5.434533]  [<ffffffffa04dc000>] ? 0xffffffffa04dbfff
-> [    5.434538]  [<ffffffff813323e4>] driver_register+0x64/0xf0
-> [    5.434541]  [<ffffffffa04dc000>] ? 0xffffffffa04dbfff
-> [    5.434545]  [<ffffffff8127f45d>] __pci_register_driver+0x4d/0x50
-> [    5.434549]  [<ffffffff813177e5>] drm_pci_init+0x115/0x130
-> [    5.434552]  [<ffffffffa04dc000>] ? 0xffffffffa04dbfff
-> [    5.434567]  [<ffffffffa04dc066>] i915_init+0x66/0x68 [i915]
-> [    5.434570]  [<ffffffff8100022a>] do_one_initcall+0x5a/0x1b0
-> [    5.434575]  [<ffffffff81071588>] ? __blocking_notifier_call_chain+0x58/0x70
-> [    5.434581]  [<ffffffff810af52a>] load_module+0x1b0a/0x25a0
-> [    5.434584]  [<ffffffff810abf70>] ? store_uevent+0x40/0x40
-> [    5.434589]  [<ffffffff810b0136>] SyS_finit_module+0x86/0xb0
-> [    5.434594]  [<ffffffff81463da7>] tracesys+0xdd/0xe2
-> [    5.434599] ---[ end trace 4f93e77fcaaac9b7 ]---
->
->
->
->
-> This only happens when either simplefb or efifb is enabled. I can not
-> reproduce the problem on v3.11 with efifb enabled so it appears to be
-> new.
+Hmm, after reverting 3eaba51cd399f5362a9fd9ebd5fb8b625b454271 I still see:
 
-It seems to be unrelated to the x86-sysfb changes. The WARN_ON
-triggered here obviously means that i915 remaps VMEM before removing
-efifb. So either i915 now calls ioremap and friends _before_ calling
-remove_conflicting_framebuffers(), or efifb is not unloaded correctly.
+[ 2.259897] Linux agpgart interface v0.103
+[ 2.260098] agpgart-intel 0000:00:00.0: Intel 915GM Chipset
+[ 2.260266] agpgart-intel 0000:00:00.0: detected gtt size: 262144K total, 262144K mappable
+[ 2.260975] agpgart-intel 0000:00:00.0: detected 8192K stolen memory
+[ 2.261441] agpgart-intel 0000:00:00.0: AGP aperture is 256M @ 0xc0000000
+[ 2.261585] [drm] Initialized drm 1.1.0 20060810
+[ 2.266079] [drm] Memory usable by graphics device = 256M
+[ 2.266223] i915 0000:00:02.0: setting latency timer to 64
+[ 2.267393] [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
+[ 2.267399] [drm] Driver supports precise vblank timestamp query.
+[ 2.268255] [drm:i915_stolen_to_physical] *ERROR* conflict detected with stolen region: [0x7f800000 - 0x80000000]
+[ 2.268935] vgaarb: device changed decodes: PCI:0000:00:02.0,olddecodes=io+mem,decodes=io+mem:owns=io+mem
+[ 2.269304] [drm] Skipping LVDS initialization for AOpen i915GMm-HFS
+[ 3.136204] tsc: Refined TSC clocksource calibration: 1199.999 MHz
+[ 3.171679] [drm] initialized overlay support
+[ 3.655174] [drm:intel_pipe_config_compare] *ERROR* mismatch in adjusted_mode.flags(DRM_MODE_FLAG_NHSYNC) (expected 2, found 0)
+[ 3.655252] ------------[ cut here ]------------
+[ 3.655268] WARNING: CPU: 0 PID: 1 at drivers/gpu/drm/i915/intel_display.c:8744 check_crtc_state+0x6b3/0x6e7()
+[ 3.655273] pipe state doesn't match!
+[ 3.655278] Modules linked in:
+[ 3.655288] CPU: 0 PID: 1 Comm: swapper Not tainted 3.11.0-main+ #36
+[ 3.655293] Hardware name: /i915GMm-HFS, BIOS 6.00 PG 11/04/2005
+[ 3.655299] 00000000 c0701a59 f60798a4 c053b528 f60798bc c012a930 c03c5b1d 00000000
+[ 3.655320] f6375000 f636cc48 f60798d4 c012a9ba 00000009 f60798cc c0701a59 f60798e8
+[ 3.655341] f6079b38 c03c5b1d c070091f 00002228 c0701a59 f623c024 f6374e44 f6079964
+[ 3.655362] Call Trace:
+[ 3.655375] [<c053b528>] dump_stack+0x16/0x18
+[ 3.655387] [<c012a930>] warn_slowpath_common+0x5f/0x76
+[ 3.655397] [<c03c5b1d>] ? check_crtc_state+0x6b3/0x6e7
+[ 3.655406] [<c012a9ba>] warn_slowpath_fmt+0x2b/0x2f
+[ 3.655417] [<c03c5b1d>] check_crtc_state+0x6b3/0x6e7
+[ 3.655445] [<c03cef88>] intel_modeset_check_state+0x30c/0x57b
+[ 3.655456] [<c03cf21d>] intel_set_mode+0x26/0x2f
+[ 3.655465] [<c03d014c>] intel_get_load_detect_pipe+0x2b4/0x308
+[ 3.655480] [<c03e9f33>] intel_tv_detect+0x108/0x444
+[ 3.655500] [<c038e12a>] drm_helper_probe_single_connector_modes+0xa0/0x270
+[ 3.655511] [<c038bc2e>] drm_fb_helper_probe_connector_modes+0x39/0x4c
+[ 3.655522] [<c038d113>] drm_fb_helper_initial_config+0x143/0x3ac
+[ 3.655532] [<c0540f48>] ? _raw_spin_unlock_irqrestore+0x38/0x5b
+[ 3.655541] [<c0540f54>] ? _raw_spin_unlock_irqrestore+0x44/0x5b
+[ 3.655551] [<c0540f54>] ? _raw_spin_unlock_irqrestore+0x44/0x5b
+[ 3.655562] [<c03e9883>] intel_fbdev_initial_config+0x1e/0x20
+[ 3.655571] [<c03a72a1>] i915_driver_load+0xb48/0xd23
+[ 3.655587] [<c0397a5a>] drm_get_pci_dev+0x172/0x266
+[ 3.655596] [<c0540f54>] ? _raw_spin_unlock_irqrestore+0x44/0x5b
+[ 3.655608] [<c03a4579>] i915_pci_probe+0x46/0x4f
+[ 3.655618] [<c0305243>] pci_device_probe+0x5e/0x96
+[ 3.655631] [<c0402279>] driver_probe_device+0x8c/0x186
+[ 3.655641] [<c04023cb>] __driver_attach+0x58/0x76
+[ 3.655651] [<c0400c26>] bus_for_each_dev+0x43/0x6d
+[ 3.655660] [<c0401e9f>] driver_attach+0x19/0x1b
+[ 3.655670] [<c0402373>] ? driver_probe_device+0x186/0x186
+[ 3.655679] [<c0401ada>] bus_add_driver+0xcc/0x1f7
+[ 3.655689] [<c04028e8>] driver_register+0x73/0xa5
+[ 3.655699] [<c0305326>] __pci_register_driver+0x4a/0x4d
+[ 3.655710] [<c07fb56a>] ? ftrace_define_fields_drm_vblank_event+0x45/0x45
+[ 3.655720] [<c0397bbb>] drm_pci_init+0x6d/0xc5
+[ 3.655729] [<c07fb56a>] ? ftrace_define_fields_drm_vblank_event+0x45/0x45
+[ 3.655739] [<c07fb5c8>] i915_init+0x5e/0x60
+[ 3.655748] [<c01003b5>] do_one_initcall+0x6f/0xea
+[ 3.655760] [<c07d2428>] ? repair_env_string+0x12/0x51
+[ 3.655769] [<c07d2400>] ? do_early_param+0x5f/0x75
+[ 3.655779] [<c01414bf>] ? parse_args+0x16b/0x209
+[ 3.655790] [<c07d29c2>] kernel_init_freeable+0xce/0x153
+[ 3.655800] [<c05358ca>] kernel_init+0xd/0xb9
+[ 3.655810] [<c05465f7>] ret_from_kernel_thread+0x1b/0x28
+[ 3.655818] [<c05358bd>] ? rest_init+0xa5/0xa5
+[ 3.655998] ---[ end trace 9f305b1183e512f6 ]---
+[ 3.829415] fbcon: inteldrmfb (fb0) is primary device
+[ 3.943020] Console: switching to colour frame buffer device 160x64
+[ 3.957357] i915 0000:00:02.0: fb0: inteldrmfb frame buffer device
+[ 3.957364] i915 0000:00:02.0: registered panic notifier
+[ 3.957434] [drm] Initialized i915 1.6.0 20080730 for 0000:00:02.0 on minor 0
 
-Daniel, any ideas?
-
-Tom, some things off the top of my head:
-- Is efifb still running after i915 loaded? You can see that via:
-  cat /sys/class/graphics/fb0/name
-  (and also fb1, fb2, ... whatever is there)
-  If it's not running, anymore, then it's quite likely an i915 issue.
-- Do you get a "fb: conflicting hw usage ..." in your dmesg log?
-- Do you get the same errors if you copy efifb.c from 3.11 over and
-use it instead of the new efifb.c?
-
-Thanks
-David
+cu,
+Knut
