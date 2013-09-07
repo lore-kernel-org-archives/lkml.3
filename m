@@ -1,57 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751217Ab3IGRbH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 13:31:07 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:53482 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821Ab3IGRbF (ORCPT
+	id S1751316Ab3IGRcu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 13:32:50 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:43300 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751001Ab3IGRcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 13:31:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFye+TFiXPeJhB9fJjUcMR6LynjsZU+sjckKk2YoYOZDnw@mail.gmail.com>
-References: <alpine.LNX.2.00.1309061202050.26934@pobox.suse.cz>
-	<20130906202022.GA353@x4>
-	<CANq1E4Rf4c4zj1mD1aPr93Q2_M65DCEJhuLqcBWa5uH9tcKuWA@mail.gmail.com>
-	<CA+55aFzg-dv-N7UjXx2pxUJ+QQOOy0qtp_e94PDSM=tVd=LgUw@mail.gmail.com>
-	<506b9d43-f734-40f9-b137-0749a496fd6d@email.android.com>
-	<CA+55aFzLy+-VF022ORuyWk-qQO7gDSQ1LZES1+bEUxz0QxrH-g@mail.gmail.com>
-	<20130907032240.GA1256@core.coreip.homeip.net>
-	<CANq1E4Q85ewwKs7VoooZVapC7-Cvy6-Xp4rGL1-1Ee7w1EcT6w@mail.gmail.com>
-	<CA+55aFye+TFiXPeJhB9fJjUcMR6LynjsZU+sjckKk2YoYOZDnw@mail.gmail.com>
-Date: Sat, 7 Sep 2013 19:31:02 +0200
-Message-ID: <CANq1E4Qag351rbnDb7M+tu2OJ5WWk6n2hzhatVukjrFyw8BL9g@mail.gmail.com>
-Subject: Re: [GIT] HID for 3.12 merge window
-From: David Herrmann <dh.herrmann@gmail.com>
+	Sat, 7 Sep 2013 13:32:48 -0400
+Date: Sat, 7 Sep 2013 18:32:43 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Jiri Kosina <jkosina@suse.cz>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: Waiman Long <Waiman.Long@hp.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        George Spelvin <linux@horizon.com>, John Stoffel <john@stoffel.org>,
+        Sage Weil <sage@inktank.com>, Ian Kent <raven@themaw.net>
+Subject: Re: [PATCH v3 1/1] dcache: Translating dentry into pathname without
+ taking rename_lock
+Message-ID: <20130907173243.GD13318@ZenIV.linux.org.uk>
+References: <1378483738-10129-1-git-send-email-Waiman.Long@hp.com>
+ <1378483738-10129-2-git-send-email-Waiman.Long@hp.com>
+ <CA+55aFw8UuEmKsSdGZPUmcekZheNimEt4U81i7Bz0LipGzsFmg@mail.gmail.com>
+ <20130906210546.GW13318@ZenIV.linux.org.uk>
+ <CA+55aFzf-reQNSQt_fhHfUe_tB19n2qEa=Rd=wFEBJEVALmezA@mail.gmail.com>
+ <20130907000044.GX13318@ZenIV.linux.org.uk>
+ <CA+55aFwy_x65HaLOgKuK7AyQayraU4M6q78L_hnAvLg1NSgTpw@mail.gmail.com>
+ <CA+55aFzwederWB135Ch+PjijjrN-kz9UKw+obC4+M_+xq648PA@mail.gmail.com>
+ <20130907030110.GY13318@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130907030110.GY13318@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus
+On Sat, Sep 07, 2013 at 04:01:10AM +0100, Al Viro wrote:
+> 	* plain seqretry loop (d_lookup(), is_subdir(), autofs4_getpath(),
+> ceph_misc_build_path(), [cifs] build_path_from_dentry(), nfs_path(),
+      _mds_, actually - sorry.
+> [audit] handle_path())
+> 	* try seqretry once, then switch to write_seqlock() (the things
+> that got unified into d_walk())
+> 	* try seqretry three times, then switch to write_seqlock() (d_path()
+> and friends)
+> 	* several pure write_seqlock() users (d_move(), d_set_mounted(),
+> d_materialize_unique())
 
-On Sat, Sep 7, 2013 at 6:52 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Sat, Sep 7, 2013 at 12:31 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
->>
->> The bug only occurs for multi-touch devices (their ABS_* bits are
->>>0x1f), that's why I didn't see it happening during my tests..
->
-> It definitely affects keyboards too. That's how I noticed it. That is
-> with the logitech "universal" receiver, though, so maybe that counts
-> as a potential multi-touch device..
+BTW, autofs4_getpath() looks really odd:
+static int autofs4_getpath(struct autofs_sb_info *sbi,
+                           struct dentry *dentry, char **name)
+and *name is never modified in it.  Why not simply pass it by value?
+Moreover, I'm not sure I understand what do we need sbi->fs_lock in
+there.  Other than that, it's very close to dentry_path() (well, that
+and different calling conventions).  Ian?
 
-I have been quite wrong with that statement, yepp. xorg-evdev fetches
-the whole device-information. So if a keyboard provides an affected
-ABS_* bit, it'll break, too. My ancient hardware didn't use any of the
-higher ABS bits, though.
-I'm sorry for the troubles caused. ABS_MAX must be at most 0x3f. So
-please, go ahead and revert the 3 mentioned patches.
+ceph_mds_build_path() is similar, but it does kmalloc to store the result
+and grabs ->d_lock for ->d_name protection.  This one, BTW, is much more
+likely to get stalls - it ends up doing kmalloc on each attempt (after
+having calculated the current length).  Bugger if I understand what's wrong
+with simply grabbing a page and doing that once - before everything else...
 
-Thanks
-David
+build_path_from_dentry() - same story, might very well have been the source
+of ceph_mds_build_path().
+
+nfs_path() - not far from open-coded dentry_path() with some postprocessing,
+uses ->d_lock for ->d_name protection.
