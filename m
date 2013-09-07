@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751864Ab3IGTop (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 15:44:45 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:57955 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751786Ab3IGToo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 15:44:44 -0400
-Message-ID: <522B903C.7040604@kernel.org>
-Date: Sat, 07 Sep 2013 21:44:44 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
+	id S1751905Ab3IGTwW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 15:52:22 -0400
+Received: from dcvr.yhbt.net ([64.71.152.64]:45751 "EHLO dcvr.yhbt.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751812Ab3IGTwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Sep 2013 15:52:21 -0400
+Date: Sat, 7 Sep 2013 19:52:20 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Mayk Eskila <meskilla@outlook.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Problems with splice
+Message-ID: <20130907195220.GB26022@dcvr.yhbt.net>
+References: <BLU0-SMTP1270709DA425DAB477295E0C43D0@phx.gbl>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Xie XiuQi <xiexiuqi@huawei.com>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Dmitry Torokhov <dtor@mail.ru>, Thomas Gleixner <tglx@linutronix.de>,
-        Andres Salomon <dilinger@queued.net>, Chris Ball <cjb@laptop.org>,
-        Jon Nettleton <jon.nettleton@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nadia Derbey <Nadia.Derbey@bull.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Bin <huawei.libin@huawei.com>,
-        "Hennerich, Michael" <Michael.Hennerich@analog.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: Re: [PATCH 1/5] iio: adc: remove unnecessary work pending test
-References: <5229B601.9090109@huawei.com> <5229B64A.1030304@huawei.com> <20130906152028.GA22763@mtj.dyndns.org>
-In-Reply-To: <20130906152028.GA22763@mtj.dyndns.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BLU0-SMTP1270709DA425DAB477295E0C43D0@phx.gbl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ccing Michael Hennerich and Lars-Peter Clausen,
+Mayk Eskila <meskilla@outlook.com> wrote:
+> Hello list,
+> 
+> I intend to upgrade my own disc and partition cloning program by
+> using splice. When running splice-cp.c from current git on my
+> average dualcore hardware with kernel 3.10 I found that copying 1G
+> files with splice is about twice as fast as using plain vanilla cp.
+> 
+> However I have encountered the following problems:
+> 
+> a) When trying to copy files with 2G size the program immediately
+> terminates with the error "open input: Value too large for defined
+> data type".
+> 
+> b) When trying to copy from a harddisc partition like /dev/sdb1 the
+> program immediately terminates without any error and without
+> copying.
+> 
+> c) When output is directed to /dev/null transfer speeds are extremely bad.
+> 
+> I guess that a+b might be due to size being larger than 32bit value.
+> Is this a bug in the kernel or how can it be prevented from a user
+> space program?
 
-On 09/06/13 16:20, Tejun Heo wrote:
-> On Fri, Sep 06, 2013 at 07:02:34PM +0800, Xie XiuQi wrote:
->> Remove unnecessary work pending test before calling schedule_work().
->> It has been tested in queue_work_on() already. No functional changed.
->>
->> Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
->> Cc: Tejun Heo <tj@kernel.org>
-> 
-> Reviewed-by: Tejun Heo <tj@kernel.org>
-> 
-> One nit below tho.
-> 
->> -	if (iio_buffer_enabled(indio_dev)) {
->> -		if (!work_pending(&st->poll_work))
->> -			schedule_work(&st->poll_work);
->> -	} else {
->> +	if (iio_buffer_enabled(indio_dev))
->> +		schedule_work(&st->poll_work);
->> +	else {
->>  		st->done = true;
->>  		wake_up_interruptible(&st->wq_data_avail);
->>  	}
-> 
-> Please don't drop the parentheses.  The convention is to have either
-> both or none on if/else.
+Probably just writing a loop and copying smaller values.  There's some
+FSes/drivers which don't handle values approaching INT_MAX well.
+INT_MAX/2 is probably a safe bet and still fast.
 
-I'll fix this up on applying if everyone is happy (can't see why the
-won't be, but best to check!) Michael is clearly given as the author of driver
-so should probably have been in the cc list. Whilst I might apply this directly
-as maintainer I much prefer if I get an ack from the driver author as if nothing
-else it gives me a warm fuzzy feeling ;)
+> c) I guess that the code run when outputting to /dev/null takes it's
+> time, but I intend to use that possibility for benchmarking pure
+> read throughputs. In the current program I detect that special case
+> and do not open the output file and in the copying loop skip all
+> writing code. How could this be done by using the splice
+> family and thus avoid copying data to user space?
 
-Also patch title should mention that a) this is a staging driver, b) which adc driver it
-applies to. I'll fix that up as well on applying it.
+I don't know about /dev/null performance.  Maybe it's just not
+optimized.  I sometimes splice small amounts to /dev/null myself for
+error recovery, but I've never noticed it being slow.
 
-Thanks for the patch though, it would probably never have been noticed otherwise!
+> d) I also intend to use it for wiping discs and partitions. I know
+> how to fill a buffer with zeros or pseudo random data, but how can I
+> avoid repeatedly copying that data into kernel space?
 
-> 
-> Thanks.
-> 
+using tee() instead of splice() should work
