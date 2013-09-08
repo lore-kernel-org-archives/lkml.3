@@ -1,170 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818Ab3IHHmz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 03:42:55 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:50436 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751613Ab3IHHmy (ORCPT
+	id S1751964Ab3IHHng (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 03:43:36 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:39153 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751874Ab3IHHne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 03:42:54 -0400
+	Sun, 8 Sep 2013 03:43:34 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Dave Martin <Dave.Martin@arm.com>, tony@atomide.com
+Subject: [PATCH v4 1/2] ARM: OMAP: Add secure function omap_smc3() which calling instruction smc #1
+Date: Sun, 8 Sep 2013 09:43:29 +0200
+User-Agent: KMail/1.13.7 (Linux/3.11.0-1+synaptics-generic; KDE/4.11.0; x86_64; ; )
+Cc: =?utf-8?q?=D0=98=D0=B2=D0=B0=D0=B9=D0=BB=D0=BE?=
+	 =?utf-8?q?_=D0=94=D0=B8=D0=BC=D0=B8=D1=82=D1=80=D0=BE=D0=B2?= 
+	<freemangordon@abv.bg>,
+        nm@ti.com, linux@arm.linux.org.uk, aaro.koskinen@iki.fi,
+        pdeschrijver@nvidia.com, linux-kernel@vger.kernel.org,
+        santosh.shilimkar@ti.com, pavel@ucw.cz, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+References: <20130904124303.GA2369@localhost.localdomain>
+In-Reply-To: <20130904124303.GA2369@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <201309081624.EBJ90176.OJStQOFLHVFFOM@I-love.SAKURA.ne.jp>
-References: <201309080100.FFE90102.FFOVOtJQOFHSLM@I-love.SAKURA.ne.jp>
-	<201309081332.FEJ52163.FHJOMQVOFOLStF@I-love.SAKURA.ne.jp>
-	<CAKb7UvjH1XZ3f-c=149s5=rqxkxVUhG_7-cfUYH3zrwJwr2_MQ@mail.gmail.com>
-	<201309081624.EBJ90176.OJStQOFLHVFFOM@I-love.SAKURA.ne.jp>
-Date: Sun, 8 Sep 2013 03:42:53 -0400
-X-Google-Sender-Auth: 4Y64SjUbQyMUzJw9RY2GGhLry14
-Message-ID: <CAKb7Uvh5fuFu2tRiOq8y5M+02QC5hi_t0+MbSgAKPM-i=Fc_PA@mail.gmail.com>
-Subject: Re: [3.11-rc1] CONFIG_DEBUG_MUTEXES=y using gcc 3.x makes unbootable kernel.
-From: Ilia Mirkin <imirkin@alum.mit.edu>
-To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Rob Clark <robdclark@gmail.com>, a.p.zijlstra@chello.nl,
-        mingo@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed;
+  boundary="nextPart5225140.5ByshU8eoQ";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201309080943.30542@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 8, 2013 at 3:24 AM, Tetsuo Handa
-<penguin-kernel@i-love.sakura.ne.jp> wrote:
-> Hello.
->
-> Ilia Mirkin wrote:
->> > Commit 040a0a37 "mutex: Add support for wound/wait style locks" used
->> > "!__builtin_constant_p(p == NULL)" which I guess the author meant that
->> > "__builtin_constant_p(p) && p", but gcc 3.x cannot handle such expression
->> > correctly, leading to boot failure when built with CONFIG_DEBUG_MUTEXES=y.
->>
->> I think that !__builtin_constant_p(p == NULL) is basically saying "I
->> am unable to conclude that p == NULL at build time", which would
->> translate to something along the lines of
->>
->> (__builtin_constant_p(p) && p) || !__builtin_constant_p(p)
->>
->
-> I think
->
->   (__builtin_constant_p(p) && p) && p->acquired > 0
->
-> is safe but
->
->   (!__builtin_constant_p(p)) && p->acquired > 0
->
-> is not safe, for "p != NULL" check is required for avoiding NULL pointer
-> dereference.
->
-> It seems to me that
->
->   (!__builtin_constant_p(p == NULL))
->
-> need to be translated to something along the lines of
->
->   (__builtin_constant_p(p) && p) || (!__builtin_constant_p(p) && p)
->
-> which can be simplified as
->
->   (p)
->
-> .
->
->> Or perhaps it's just equivalent to !__builtin_constant_p(p), since the
->> compiler's ability to conclude whether it is NULL at build-time should
->> be unaffected by whether it actually is NULL or not.
->
-> Likewise, it seems to me that
->
->   (!__builtin_constant_p(p == NULL))
->
-> need to be translated to something along the lines of
->
->   (!__builtin_constant_p(p) && p)
+--nextPart5225140.5ByshU8eoQ
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Well, I think the theory is that if p is not a compile-time constant
-then it must not be null. At least that's the implication of the
-current code. As I understand it, the == NULL is a no-op as far as gcc
-is concerned, since it's not evaluating the expr, only checking if it
-can be evaluated. Unless there can be a situation where it can know
-whether a value is null or not, but not know its actual value, in
-which case the && p is warranted.
+Here is new version (v4) of omap secure part patch:
 
->
-> . Well this change as well can fix "boot failure on gcc 3.x" and avoid "locking
-> selftests failure on gcc 3.x / 4.x". OK, let's wait for answer from the author.
+Other secure functions omap_smc1() and omap_smc2() calling instruction smc =
+#0
+but Nokia RX-51 board needs to call smc #1 for PPA access.
 
-Probably best to do that, yes. Maarten?
+Signed-off-by: Ivaylo Dimitrov <freemangordon@abv.bg>
+Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+=2D--
+diff --git a/arch/arm/mach-omap2/omap-secure.h b/arch/arm/mach-omap2/omap-s=
+ecure.h
+index 0e72917..c4586f4 100644
+=2D-- a/arch/arm/mach-omap2/omap-secure.h
++++ b/arch/arm/mach-omap2/omap-secure.h
+@@ -51,6 +51,7 @@
+ extern u32 omap_secure_dispatcher(u32 idx, u32 flag, u32 nargs,
+ 				u32 arg1, u32 arg2, u32 arg3, u32 arg4);
+ extern u32 omap_smc2(u32 id, u32 falg, u32 pargs);
++extern u32 omap_smc3(u32 id, u32 process, u32 flag, u32 pargs);
+ extern phys_addr_t omap_secure_ram_mempool_base(void);
+ extern int omap_secure_ram_reserve_memblock(void);
+=20
+diff --git a/arch/arm/mach-omap2/omap-smc.S b/arch/arm/mach-omap2/omap-smc.S
+index f6441c1..fd90125 100644
+=2D-- a/arch/arm/mach-omap2/omap-smc.S
++++ b/arch/arm/mach-omap2/omap-smc.S
+@@ -1,9 +1,11 @@
+ /*
+=2D * OMAP44xx secure APIs file.
++ * OMAP34xx and OMAP44xx secure APIs file.
+  *
+  * Copyright (C) 2010 Texas Instruments, Inc.
+  * Written by Santosh Shilimkar <santosh.shilimkar@ti.com>
+  *
++ * Copyright (C) 2012 Ivaylo Dimitrov <freemangordon@abv.bg>
++ * Copyright (C) 2013 Pali Roh=C3=A1r <pali.rohar@gmail.com>
+  *
+  * This program is free software,you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+@@ -54,6 +56,23 @@ ENTRY(omap_smc2)
+ 	ldmfd   sp!, {r4-r12, pc}
+ ENDPROC(omap_smc2)
+=20
++/**
++ * u32 omap_smc3(u32 service_id, u32 process_id, u32 flag, u32 pargs)
++ * Low level common routine for secure HAL and PPA APIs via smc #1
++ * r0 - @service_id: Secure Service ID
++ * r1 - @process_id: Process ID
++ * r2 - @flag: Flag to indicate the criticality of operation
++ * r3 - @pargs: Physical address of parameter list
++ */
++ENTRY(omap_smc3)
++	stmfd	sp!, {r4-r11, lr}
++	mov	r12, r0		@ Copy the secure service ID
++	mov	r6, #0xff	@ Indicate new Task call
++	dsb			@ Memory Barrier (not sure if needed, copied from omap_smc2)
++	smc	#1		@ Call PPA service
++	ldmfd	sp!, {r4-r11, pc}
++ENDPROC(omap_smc3)
++
+ ENTRY(omap_modify_auxcoreboot0)
+ 	stmfd   sp!, {r1-r12, lr}
+ 	ldr	r12, =3D0x104
 
->
-> Can I add "Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>" to below patch?
 
-I don't think that's the correct usage of "Signed-off-by", since I
-neither wrote the patch nor am I on the upstream path. If you really
-want to give credit, you could invent a "Suggested-by" tag, but I
-really don't care.
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
->
-> ---------- good patch start ----------
-> >From a8bbf6b3c2d44cb90d63820f146aaff119d871c9 Mon Sep 17 00:00:00 2001
-> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Date: Sun, 8 Sep 2013 16:09:27 +0900
-> Subject: [PATCH] mutex: Avoid gcc version dependent __builtin_constant_p() usage.
->
-> Commit 040a0a37 "mutex: Add support for wound/wait style locks" used
-> "!__builtin_constant_p(p == NULL)" but gcc 3.x cannot handle such expression
-> correctly, leading to boot failure when built with CONFIG_DEBUG_MUTEXES=y.
->
-> Fix it by changing from "!__builtin_constant_p(p == NULL)" to
-> "!__builtin_constant_p(p) && p".
->
-> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Cc: <stable@kernel.org> [3.11+]
-> ---
->  kernel/mutex.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
->
-> diff --git a/kernel/mutex.c b/kernel/mutex.c
-> index a52ee7bb..ef02003 100644
-> --- a/kernel/mutex.c
-> +++ b/kernel/mutex.c
-> @@ -448,7 +448,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->                 struct task_struct *owner;
->                 struct mspin_node  node;
->
-> -               if (!__builtin_constant_p(ww_ctx == NULL) && ww_ctx->acquired > 0) {
-> +               if (!__builtin_constant_p(ww_ctx) && ww_ctx && ww_ctx->acquired > 0) {
->                         struct ww_mutex *ww;
->
->                         ww = container_of(lock, struct ww_mutex, base);
-> @@ -478,7 +478,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->                 if ((atomic_read(&lock->count) == 1) &&
->                     (atomic_cmpxchg(&lock->count, 1, 0) == 1)) {
->                         lock_acquired(&lock->dep_map, ip);
-> -                       if (!__builtin_constant_p(ww_ctx == NULL)) {
-> +                       if (!__builtin_constant_p(ww_ctx) && ww_ctx) {
->                                 struct ww_mutex *ww;
->                                 ww = container_of(lock, struct ww_mutex, base);
->
-> @@ -548,7 +548,7 @@ slowpath:
->                         goto err;
->                 }
->
-> -               if (!__builtin_constant_p(ww_ctx == NULL) && ww_ctx->acquired > 0) {
-> +               if (!__builtin_constant_p(ww_ctx) && ww_ctx && ww_ctx->acquired > 0) {
->                         ret = __mutex_lock_check_stamp(lock, ww_ctx);
->                         if (ret)
->                                 goto err;
-> @@ -568,7 +568,7 @@ done:
->         mutex_remove_waiter(lock, &waiter, current_thread_info());
->         mutex_set_owner(lock);
->
-> -       if (!__builtin_constant_p(ww_ctx == NULL)) {
-> +       if (!__builtin_constant_p(ww_ctx) && ww_ctx) {
->                 struct ww_mutex *ww = container_of(lock,
->                                                       struct ww_mutex,
->                                                       base);
-> --
-> 1.7.8
-> ---------- good patch end ----------
+--nextPart5225140.5ByshU8eoQ
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlIsKqIACgkQi/DJPQPkQ1IxCgCgl+85ws5yUWVq4FR8cTqEgaAw
+sc4AoJlmLkQpUJgyaTpHgbFrlno8gypk
+=st2B
+-----END PGP SIGNATURE-----
+
+--nextPart5225140.5ByshU8eoQ--
