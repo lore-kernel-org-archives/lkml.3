@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657Ab3IHOkN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 10:40:13 -0400
-Received: from mail-by2lp0238.outbound.protection.outlook.com ([207.46.163.238]:58371
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751720Ab3IHOkK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 10:40:10 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "hpa@zytor.com" <hpa@zytor.com>
-Subject: Re: [PATCH V3 08/11] kexec: Disable at runtime if the kernel
- enforces module loading restrictions
-Thread-Topic: [PATCH V3 08/11] kexec: Disable at runtime if the kernel
- enforces module loading restrictions
-Thread-Index: AQHOqQBlTgRtcELUZ0K5HxHj5bQ8FZm7apqAgAALY9KAAHqeAA==
-Date: Sun, 8 Sep 2013 14:40:04 +0000
-Message-ID: <1378651204.2300.7.camel@x230>
-References: <1378252218-18798-1-git-send-email-matthew.garrett@nebula.com>
-	 <1378252218-18798-9-git-send-email-matthew.garrett@nebula.com>
-	 <20130908064027.GA3587@kroah.com> <1378622648.2300.4.camel@x230>
-	 <20130908072408.GA5092@kroah.com>
-In-Reply-To: <20130908072408.GA5092@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:470:1f07:1371:740c:5537:5f2f:efde]
-x-forefront-prvs: 09634B1196
-x-forefront-antispam-report: SFV:NSPM;SFS:(24454002)(51704005)(189002)(199002)(377424004)(74876001)(80976001)(53806001)(56816003)(77096001)(19580395003)(19580405001)(83322001)(76482001)(54356001)(79102001)(77982001)(59766001)(83072001)(56776001)(54316002)(80022001)(63696002)(46102001)(81342001)(81816001)(65816001)(69226001)(74366001)(47446002)(74706001)(31966008)(74662001)(74502001)(50986001)(47976001)(47736001)(49866001)(4396001)(51856001)(81686001)(81542001)(76786001)(76796001)(33646001)(33716001)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB221;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:740c:5537:5f2f:efde;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <C61926F65BC8554486FC9FB880DA7ED9@namprd05.prod.outlook.com>
+	id S1752945Ab3IHOoK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 10:44:10 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:38104 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751720Ab3IHOoI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Sep 2013 10:44:08 -0400
+Message-ID: <522C8D27.30600@oracle.com>
+Date: Sun, 08 Sep 2013 10:43:51 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+To: fweisbec@gmail.com, tglx@linutronix.de
+CC: LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org
+Subject: softirq: soft lockup in __do_softirq
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r88Eeilw015160
 
-On Sun, 2013-09-08 at 00:24 -0700, Greg KH wrote:
-> On Sun, Sep 08, 2013 at 06:44:08AM +0000, Matthew Garrett wrote:
+Hi all,
 
-> > At the most trivial level, grab the address of sig_enforce from
-> > kallsyms, jump to a kernel that doesn't enforce STRICT_DEVMEM, modify
-> > sig_enforce, jump back to the old kernel.
-> 
-> Which proves what?
+While fuzzing with trinity inside a KVM tools guest, running latest -next kernel, I've
+stumbled on the following:
 
-sig_enforce can be set, but once it's set can't be unset. Why do you
-think that is?
+[ 8096.714511] BUG: soft lockup - CPU#0 stuck for 22s! [trinity-child16:37848]
+[ 8096.715952] Modules linked in:
+[ 8096.716630] CPU: 0 PID: 37848 Comm: trinity-child16 Tainted: G        W 
+3.11.0-next-20130906-sasha #3985
+[ 8096.718709] task: ffff880e80b83000 ti: ffff880e7f0c0000 task.ti: ffff880e7f0c0000
+[ 8096.720639] RIP: 0010:[<ffffffff8112b12c>]  [<ffffffff8112b12c>] __do_softirq+0xdc/0x320
+[ 8096.722457] RSP: 0018:ffff880fdf603eb8  EFLAGS: 00000282
+[ 8096.723694] RAX: ffff880e7f0c0000 RBX: ffff880e80b83610 RCX: 0000000010000002
+[ 8096.724284] RDX: ffff880e7f0c0010 RSI: 0000000000000000 RDI: 0000000000000100
+[ 8096.724284] RBP: ffff880fdf603f58 R08: 00000000e272dc53 R09: 0000000000000001
+[ 8096.724284] R10: 0000000000000001 R11: 0000000000000000 R12: ffff880fdf603e28
+[ 8096.724284] R13: ffffffff8411335d R14: ffff880fdf603f58 R15: 0000000000000000
+[ 8096.724284] FS:  00007faf073b4700(0000) GS:ffff880fdf600000(0000) knlGS:0000000000000000
+[ 8096.724284] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[ 8096.724284] CR2: 00007faf073b8000 CR3: 0000000e7ff8a000 CR4: 00000000000006f0
+[ 8096.724284] DR0: 00007f90b2937000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 8096.724284] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+[ 8096.724284] Stack:
+[ 8096.724284]  ffff880e80b83628 0040604081168f4b ffff880e7f0c0000 0000000000000082
+[ 8096.724284]  ffff880e7f0c0010 00000001000bdcb6 ffff880e7f0c0010 ffff880e7f0c0010
+[ 8096.724284]  ffff880e7f0c0000 ffff880e7f0c0000 0000000a00000000 ffff880e80b83610
+[ 8096.724284] Call Trace:
+[ 8096.724284]  <IRQ>
+[ 8096.724284]  [<ffffffff84109bee>] ? _raw_spin_unlock+0x4e/0x60
+[ 8096.724284]  [<ffffffff8112b4be>] irq_exit+0x8e/0x140
+[ 8096.724284]  [<ffffffff84114975>] do_IRQ+0xb5/0xe0
+[ 8096.724284]  [<ffffffff8410a06d>] common_interrupt+0x6d/0x6d
+[ 8096.724284]  <EOI>
+[ 8096.724284]  [<ffffffff8115f19d>] ? finish_task_switch+0xad/0x150
+[ 8096.724284]  [<ffffffff84109acc>] ? _raw_spin_unlock_irq+0x4c/0x80
+[ 8096.724284]  [<ffffffff84109aab>] ? _raw_spin_unlock_irq+0x2b/0x80
+[ 8096.724284]  [<ffffffff8115f19d>] finish_task_switch+0xad/0x150
+[ 8096.724284]  [<ffffffff8115f160>] ? finish_task_switch+0x70/0x150
+[ 8096.724284]  [<ffffffff84106a29>] __schedule+0x719/0x7c0
+[ 8096.724284]  [<ffffffff84107114>] preempt_schedule_irq+0xb4/0x100
+[ 8096.724284]  [<ffffffff8410a226>] retint_kernel+0x26/0x30
+[ 8096.724284]  [<ffffffff812220c5>] ? context_tracking_user_enter+0x175/0x180
+[ 8096.724284]  [<ffffffff810768cf>] syscall_trace_leave+0xff/0x130
+[ 8096.724284]  [<ffffffff84112985>] int_check_syscall_exit_work+0x34/0x3d
+[ 8096.724284] Code: 48 89 55 80 0f 1f 00 65 c7 04 25 40 47 1d 00 00 00 00 00 48 83 3d dc b6 91 04 
+00 75 0a 0f 0b eb fe 66 0f 1f 44 00 00 fb 66 66 90 <66> 66 90 65 4c 8b 34 25 48 da 00 00 31 db 49 8d 
+96 28 e0 ff ff
 
--- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+
+Thanks,
+sasha
