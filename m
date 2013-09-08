@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932234Ab3IHQCO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 12:02:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13590 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753696Ab3IHP4q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 11:56:46 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=RuVHfuz9cSgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=vZTWnjI3nDAA:10 a=380GcQh12wOJ0zuRzTgA:9 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130908151448.353747225@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Sun, 08 Sep 2013 11:14:10 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 15/19] hwlat-detect/trace: Export trace_clock_local for hwlat-detector
-References: <20130908151355.362583092@goodmis.org>
-Content-Disposition: inline; filename=0015-hwlat-detect-trace-Export-trace_clock_local-for-hwla.patch
+	id S1756950Ab3IHQGV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 12:06:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3514 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754209Ab3IHQGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Sep 2013 12:06:19 -0400
+Date: Sun, 8 Sep 2013 18:00:07 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: =?utf-8?B?6rmA7J2A6riw?= <eunki_kim@samsung.com>,
+        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Subject: Re: CGROUP =?utf-8?B?6rSA66CoIOusuOydmA==?=
+Message-ID: <20130908160007.GA31903@redhat.com>
+References: <1286806.131871377667197297.JavaMail.weblogic@epv6ml01> <20130828134000.GA9295@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130828134000.GA9295@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Hi Tejun,
 
-The hwlat-detector needs a better clock than just ktime_get() as that
-can induce its own latencies. The trace clock is perfect for it, but
-it needs to be exported for use by modules.
+Sorry for delay, vacation.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace_clock.c |    1 +
- 1 file changed, 1 insertion(+)
+On 08/28, Tejun Heo wrote:
+>
+> Hey, oleg.
+>
+> Eunki is reporting a stall in the following loop in
+> kernel/cgroup.c::cgroup_attach_task()
+>
+> On Wed, Aug 28, 2013 at 05:19:57AM +0000, 김은기 wrote:
+> >
+> >      ---------------------------------------------------------------------------
+> >         rcu_read_lock();
+> >         do {
+> >                 struct task_and_cgroup ent;
+> >
+> >                 /* @tsk either already exited or can't exit until the end */
+> >                 if (tsk->flags & PF_EXITING)
+> >                         continue;
+> >
+> >                 /* as per above, nr_threads may decrease, but not increase. */
+> >                 BUG_ON(i >= group_size);
+> >                 ent.task = tsk;
+> >                 ent.cgrp = task_cgroup_from_root(tsk, root);
+> >                 /* nothing to do if this task is already in the cgroup */
+> >                 if (ent.cgrp == cgrp)
+> >                         continue;
+> >                 /*
+> >                  * saying GFP_ATOMIC has no effect here because we did prealloc
+> >                  * earlier, but it's good form to communicate our expectations.
+> >                  */
+> >                 retval = flex_array_put(group, i, &ent, GFP_ATOMIC);
+> >                 BUG_ON(retval != 0);
+> >                 i++;
+> >
+> >                 if (!threadgroup)
+> >                         break;
+> >         } while_each_thread(leader, tsk);
+> > ---------------------------------------------------------------------------------------------
+>
+> where the iteration goes like
+>
+>   leader -> Task1 -> Task2 -> Task3  -> Task1
+>
+> ie. leader seems RCU unlinked.  Looking at the users of
+> while_each_thread(), I'm confused about its locking requirements.
 
-diff --git a/kernel/trace/trace_clock.c b/kernel/trace/trace_clock.c
-index 3947835..1bbb1b2 100644
---- a/kernel/trace/trace_clock.c
-+++ b/kernel/trace/trace_clock.c
-@@ -44,6 +44,7 @@ u64 notrace trace_clock_local(void)
- 
- 	return clock;
- }
-+EXPORT_SYMBOL_GPL(trace_clock_local);
- 
- /*
-  * trace_clock(): 'between' trace clock. Not completely serialized,
--- 
-1.7.10.4
+In short: it is broken. This was already discussed several times but
+every time I was distracted.
 
+I already have the patches somewhere (probably not 100% finished),
+will try to return to this problem soon.
+
+Oleg.
 
