@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211Ab3IHDVE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:21:04 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56232 "EHLO
+	id S1759604Ab3IHDVA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:21:00 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56078 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756778Ab3IHDSz (ORCPT
+	by vger.kernel.org with ESMTP id S1755310Ab3IHDSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 7 Sep 2013 23:18:55 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Vince Weaver" <vincent.weaver@maine.edu>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        "Russell King" <rmk+kernel@arm.linux.org.uk>,
-        "Will Deacon" <will.deacon@arm.com>
+CC: akpm@linux-foundation.org, "Amit Shah" <amit.shah@redhat.com>,
+        "Rusty Russell" <rusty@rustcorp.com.au>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.604456037@decadent.org.uk>
+Message-ID: <lsq.1378608721.234294578@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [070/121] ARM: 7809/1: perf: fix event validation for software
- group leaders
+Subject: [044/121] virtio: console: fix race in port_fops_open() and port
+ unplug
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,46 +32,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Amit Shah <amit.shah@redhat.com>
 
-commit c95eb3184ea1a3a2551df57190c81da695e2144b upstream.
+commit 671bdea2b9f210566610603ecbb6584c8a201c8c upstream.
 
-It is possible to construct an event group with a software event as a
-group leader and then subsequently add a hardware event to the group.
-This results in the event group being validated by adding all members
-of the group to a fake PMU and attempting to allocate each event on
-their respective PMU.
+Between open() being called and processed, the port can be unplugged.
+Check if this happened, and bail out.
 
-Unfortunately, for software events wthout a corresponding arm_pmu, this
-results in a kernel crash attempting to dereference the ->get_event_idx
-function pointer.
+A simple test script to reproduce this is:
 
-This patch fixes the problem by checking explicitly for software events
-and ignoring those in event validation (since they can always be
-scheduled). We will probably want to revisit this for 3.12, since the
-validation checks don't appear to work correctly when dealing with
-multiple hardware PMUs anyway.
+while true; do for i in $(seq 1 100); do echo $i > /dev/vport0p3; done; done;
 
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
-Tested-by: Mark Rutland <mark.rutland@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+This opens and closes the port a lot of times; unplugging the port while
+this is happening triggers the bug.
+
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/kernel/perf_event.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/char/virtio_console.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -326,6 +326,9 @@ validate_event(struct pmu_hw_events *hw_
- 	struct hw_perf_event fake_event = event->hw;
- 	struct pmu *leader_pmu = event->group_leader->pmu;
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -798,6 +798,10 @@ static int port_fops_open(struct inode *
  
-+	if (is_software_event(event))
-+		return 1;
-+
- 	if (event->pmu != leader_pmu || event->state < PERF_EVENT_STATE_OFF)
- 		return 1;
+ 	/* We get the port with a kref here */
+ 	port = find_port_by_devt(cdev->dev);
++	if (!port) {
++		/* Port was unplugged before we could proceed */
++		return -ENXIO;
++	}
+ 	filp->private_data = port;
  
+ 	/*
 
