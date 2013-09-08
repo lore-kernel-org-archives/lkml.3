@@ -1,104 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751275Ab3IHTkP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 15:40:15 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:64502 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab3IHTkH (ORCPT
+	id S1751256Ab3IHUgb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 16:36:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51266 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab3IHUg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 15:40:07 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Cc: Rob Herring <rob.herring@calxeda.com>, Jonas Bonn <jonas@southpole.se>,
-        linux@openrisc.net
-Subject: [PATCH] openrisc: clean-up prom.h
-Date: Sun,  8 Sep 2013 14:39:36 -0500
-Message-Id: <1378669176-32548-1-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Sun, 8 Sep 2013 16:36:29 -0400
+Message-ID: <522CDFC8.9020903@canonical.com>
+Date: Sun, 08 Sep 2013 22:36:24 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+CC: imirkin@alum.mit.edu, linux-kernel@vger.kernel.org, daniel.vetter@ffwll.ch,
+        robdclark@gmail.com, a.p.zijlstra@chello.nl, mingo@kernel.org
+Subject: Re: [3.11-rc1] CONFIG_DEBUG_MUTEXES=y using gcc 3.x makes unbootablekernel.
+References: <201309080100.FFE90102.FFOVOtJQOFHSLM@I-love.SAKURA.ne.jp> <201309081332.FEJ52163.FHJOMQVOFOLStF@I-love.SAKURA.ne.jp> <CAKb7UvjH1XZ3f-c=149s5=rqxkxVUhG_7-cfUYH3zrwJwr2_MQ@mail.gmail.com> <201309081624.EBJ90176.OJStQOFLHVFFOM@I-love.SAKURA.ne.jp> <522C312A.7050705@canonical.com> <201309082053.FDB24195.FVOOJMStFQFLHO@I-love.SAKURA.ne.jp>
+In-Reply-To: <201309082053.FDB24195.FVOOJMStFQFLHO@I-love.SAKURA.ne.jp>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
-
-Clean-up some copy/paste declarations that are not necessary. All the
-functions either don't exist or are already declared in other headers.
-This is needed in preparation of of_irq.h clean-up.
-
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: Jonas Bonn <jonas@southpole.se>
-Cc: linux@lists.openrisc.net
----
-This is needed as part of of_irq.h clean-up done in this patch [1].
-
-Rob
-
-[1] http://www.spinics.net/lists/kernel/msg1597624.html
-
- arch/openrisc/include/asm/prom.h | 47 ----------------------------------------
- 1 file changed, 47 deletions(-)
-
-diff --git a/arch/openrisc/include/asm/prom.h b/arch/openrisc/include/asm/prom.h
-index bbb34e5..93c9980 100644
---- a/arch/openrisc/include/asm/prom.h
-+++ b/arch/openrisc/include/asm/prom.h
-@@ -14,56 +14,9 @@
-  * the Free Software Foundation; either version 2 of the License, or
-  * (at your option) any later version.
-  */
--
--#include <linux/of.h>	/* linux/of.h gets to determine #include ordering */
--
- #ifndef _ASM_OPENRISC_PROM_H
- #define _ASM_OPENRISC_PROM_H
--#ifdef __KERNEL__
--#ifndef __ASSEMBLY__
- 
--#include <linux/types.h>
--#include <asm/irq.h>
--#include <linux/irqdomain.h>
--#include <linux/atomic.h>
--#include <linux/of_irq.h>
--#include <linux/of_fdt.h>
--#include <linux/of_address.h>
--#include <linux/proc_fs.h>
--#include <linux/platform_device.h>
- #define HAVE_ARCH_DEVTREE_FIXUPS
- 
--/* Other Prototypes */
--extern int early_uartlite_console(void);
--
--/* Parse the ibm,dma-window property of an OF node into the busno, phys and
-- * size parameters.
-- */
--void of_parse_dma_window(struct device_node *dn, const void *dma_window_prop,
--		unsigned long *busno, unsigned long *phys, unsigned long *size);
--
--extern void kdump_move_device_tree(void);
--
--/* CPU OF node matching */
--struct device_node *of_get_cpu_node(int cpu, unsigned int *thread);
--
--/* Get the MAC address */
--extern const void *of_get_mac_address(struct device_node *np);
--
--/**
-- * of_irq_map_pci - Resolve the interrupt for a PCI device
-- * @pdev:	the device whose interrupt is to be resolved
-- * @out_irq:	structure of_irq filled by this function
-- *
-- * This function resolves the PCI interrupt for a given PCI device. If a
-- * device-node exists for a given pci_dev, it will use normal OF tree
-- * walking. If not, it will implement standard swizzling and walk up the
-- * PCI tree until an device-node is found, at which point it will finish
-- * resolving using the OF tree walking.
-- */
--struct pci_dev;
--extern int of_irq_map_pci(struct pci_dev *pdev, struct of_irq *out_irq);
--
--#endif /* __ASSEMBLY__ */
--#endif /* __KERNEL__ */
- #endif /* _ASM_OPENRISC_PROM_H */
--- 
-1.8.1.2
+Op 08-09-13 13:53, Tetsuo Handa schreef:
+> Hello.
+>
+> Maarten Lankhorst wrote:
+>> if it's broken for your compiler, please add a bool use_ww_ctx or something to __mutex_lock_common that's set directly instead, the __builtin_constant_p trick
+>> might be too gcc version specific.
+> I see. I tested that both gcc 3.x and gcc 4.x can generate bootable kernel
+> using below fix.
+> ----------
+> >From f71fb89bccaa7ed5b3a14e735a1b9cc1a0e7112d Mon Sep 17 00:00:00 2001
+> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Date: Sun, 8 Sep 2013 20:37:19 +0900
+> Subject: [PATCH] mutex: Avoid gcc version dependent __builtin_constant_p()
+>  usage.
+>
+> Commit 040a0a37 "mutex: Add support for wound/wait style locks" used
+> "!__builtin_constant_p(p == NULL)" but gcc 3.x cannot handle such expression
+> correctly, leading to boot failure when built with CONFIG_DEBUG_MUTEXES=y.
+>
+> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Cc: <stable@kernel.org> [3.11+]
+> ---
+>  kernel/mutex.c |    9 +++++----
+>  1 files changed, 5 insertions(+), 4 deletions(-)
+Almost correct. I meant passing it as parameter to __mutex_lock_common. Your version will still cause an extra pointless null check in the ww_mutex_lock case.
+> diff --git a/kernel/mutex.c b/kernel/mutex.c
+> index a52ee7bb..2e7984e 100644
+> --- a/kernel/mutex.c
+> +++ b/kernel/mutex.c
+> @@ -414,6 +414,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+>  	struct mutex_waiter waiter;
+>  	unsigned long flags;
+>  	int ret;
+> +	const bool use_ww_ctx = !!ww_ctx;
+>  
+>  	preempt_disable();
+>  	mutex_acquire_nest(&lock->dep_map, subclass, 0, nest_lock, ip);
+> @@ -448,7 +449,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+>  		struct task_struct *owner;
+>  		struct mspin_node  node;
+>  
+> -		if (!__builtin_constant_p(ww_ctx == NULL) && ww_ctx->acquired > 0) {
+> +		if (use_ww_ctx && ww_ctx->acquired > 0) {
+>  			struct ww_mutex *ww;
+>  
+>  			ww = container_of(lock, struct ww_mutex, base);
+> @@ -478,7 +479,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+>  		if ((atomic_read(&lock->count) == 1) &&
+>  		    (atomic_cmpxchg(&lock->count, 1, 0) == 1)) {
+>  			lock_acquired(&lock->dep_map, ip);
+> -			if (!__builtin_constant_p(ww_ctx == NULL)) {
+> +			if (use_ww_ctx) {
+>  				struct ww_mutex *ww;
+>  				ww = container_of(lock, struct ww_mutex, base);
+>  
+> @@ -548,7 +549,7 @@ slowpath:
+>  			goto err;
+>  		}
+>  
+> -		if (!__builtin_constant_p(ww_ctx == NULL) && ww_ctx->acquired > 0) {
+> +		if (use_ww_ctx && ww_ctx->acquired > 0) {
+>  			ret = __mutex_lock_check_stamp(lock, ww_ctx);
+>  			if (ret)
+>  				goto err;
+> @@ -568,7 +569,7 @@ done:
+>  	mutex_remove_waiter(lock, &waiter, current_thread_info());
+>  	mutex_set_owner(lock);
+>  
+> -	if (!__builtin_constant_p(ww_ctx == NULL)) {
+> +	if (use_ww_ctx) {
+>  		struct ww_mutex *ww = container_of(lock,
+>  						      struct ww_mutex,
+>  						      base);
 
