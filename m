@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759338Ab3IHDUL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:20:11 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56053 "EHLO
+	id S1759320Ab3IHDUJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:20:09 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56129 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755096Ab3IHDSr (ORCPT
+	by vger.kernel.org with ESMTP id S1756089Ab3IHDSr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 7 Sep 2013 23:18:47 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Imre Deak" <imre.deak@intel.com>,
-        "Paulo Zanoni" <paulo.r.zanoni@intel.com>,
-        "Daniel Vetter" <daniel.vetter@ffwll.ch>,
-        "Jeremy Moles" <cubicool@gmail.com>
+CC: akpm@linux-foundation.org, "Johannes Berg" <johannes@sipsolutions.net>,
+        "Johannes Berg" <johannes.berg@intel.com>,
+        "Emmanuel Grumbach" <emmanuel.grumbach@intel.com>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.310965394@decadent.org.uk>
+Message-ID: <lsq.1378608721.555847976@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [108/121] drm/i915: ivb: fix edp voltage swing reg val
+Subject: [027/121] iwlwifi: dvm: don't send BT_CONFIG on devices w/o Bluetooth
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,46 +32,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Imre Deak <imre.deak@intel.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 77fa4cbd5fa389e28419bbe8ac491b5fdd54840d upstream.
+commit 707aee401d2467baa785a697f40a6e2d9ee79ad5 upstream.
 
-Fix the typo introduced in
+The BT_CONFIG command that is sent to the device during
+startup will enable BT coex unless the module parameter
+turns it off, but on devices without Bluetooth this may
+cause problems, as reported in Redhat BZ 885407.
 
-commit 1a2eb4604b85c5efb343da8a4dcf41288fcfca85
-Author: Keith Packard <keithp@keithp.com>
-Date:   Wed Nov 16 16:26:07 2011 -0800
+Fix this by sending the BT_CONFIG command only when the
+device has Bluetooth.
 
-    drm/i915: Hook up Ivybridge eDP
-
-This fixes eDP link-training failures and cases where all voltage swing
-/pre-emphasis levels were tried and failed during clock recovery and -
-as a fallback - we go on to do channel equalization with the last voltage
-swing/pre-emphasis level which will succeed. Both issues can lead to a
-blank screen.
-
-v2:
-- improve commit message
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=64880
-Tested-by: Jeremy Moles <cubicool@gmail.com>
-Signed-off-by: Imre Deak <imre.deak@intel.com>
-Reviewed-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes@sipsolutions.net>
+[bwh: Backported to 3.2:
+ - Adjust filename
+ - s/priv->lib/priv->cfg/]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/i915_reg.h | 2 +-
+ drivers/net/wireless/iwlwifi/iwl-agn.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -3516,7 +3516,7 @@
- #define EDP_LINK_TRAIN_600MV_0DB_IVB		(0x30 <<22)
- #define EDP_LINK_TRAIN_600MV_3_5DB_IVB		(0x36 <<22)
- #define EDP_LINK_TRAIN_800MV_0DB_IVB		(0x38 <<22)
--#define EDP_LINK_TRAIN_800MV_3_5DB_IVB		(0x33 <<22)
-+#define EDP_LINK_TRAIN_800MV_3_5DB_IVB		(0x3e <<22)
- 
- /* legacy values */
- #define EDP_LINK_TRAIN_500MV_0DB_IVB		(0x00 <<22)
+--- a/drivers/net/wireless/iwlwifi/iwl-agn.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
+@@ -1297,7 +1297,7 @@ int iwl_alive_start(struct iwl_priv *pri
+ 					 BT_COEX_PRIO_TBL_EVT_INIT_CALIB2);
+ 		if (ret)
+ 			return ret;
+-	} else {
++	} else if (priv->cfg->bt_params) {
+ 		/*
+ 		 * default is 2-wire BT coexexistence support
+ 		 */
 
