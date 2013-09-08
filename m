@@ -1,122 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751419Ab3IHVr6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 17:47:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51480 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab3IHVr5 (ORCPT
+	id S1751358Ab3IHWB4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 18:01:56 -0400
+Received: from mout2.fh-giessen.de ([212.201.18.46]:52990 "EHLO
+	mout2.fh-giessen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751258Ab3IHWBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 17:47:57 -0400
-Date: Sun, 8 Sep 2013 14:51:00 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com,
-        kyungmin.park@samsung.com, Graeme Gregory <gg@slimlogic.co.uk>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: Re: [PATCH 3/3] extcon: Simplify extcon_dev_register() prototype by
- removing unnecessary parameter
-Message-ID: <20130908215100.GA29783@kroah.com>
-References: <1378081208-20274-1-git-send-email-cw00.choi@samsung.com>
- <1378081208-20274-4-git-send-email-cw00.choi@samsung.com>
- <20130902004024.GB10709@kroah.com>
- <5223E648.7020207@samsung.com>
- <20130903155744.GA21846@kroah.com>
- <52267BFE.3030106@samsung.com>
- <20130904011640.GA24275@kroah.com>
- <5226C2A6.9000805@samsung.com>
+	Sun, 8 Sep 2013 18:01:55 -0400
+Message-ID: <522CF3D1.2020303@mni.thm.de>
+Date: Mon, 09 Sep 2013 00:01:53 +0200
+From: Tobias Klausmann <tobias.johannes.klausmann@mni.thm.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:26.0) Gecko/20100101 Thunderbird/26.0a1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5226C2A6.9000805@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dave Airlie <airlied@gmail.com>
+CC: Ilia Mirkin <imirkin@alum.mit.edu>, Dave Airlie <airlied@linux.ie>,
+        nouveau <nouveau@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Nouveau] 3.12rc1-pre Nouveau? oops
+References: <CAKb7UviRb_ao_nB8Q3pa9ePm+yUGd8u7PDREv5wNfCheyGTZjQ@mail.gmail.com>	<1378675264-3005-1-git-send-email-tobias.johannes.klausmann@mni.thm.de> <CAPM=9tyCOdzC1NYy7jt+zh3WOuzubaO3b8vwFVast9ec=BWOkA@mail.gmail.com>
+In-Reply-To: <CAPM=9tyCOdzC1NYy7jt+zh3WOuzubaO3b8vwFVast9ec=BWOkA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 04, 2013 at 02:18:30PM +0900, Chanwoo Choi wrote:
-> On 09/04/2013 10:16 AM, Greg KH wrote:
-> > On Wed, Sep 04, 2013 at 09:17:02AM +0900, Chanwoo Choi wrote:
-> >> On 09/04/2013 12:57 AM, Greg KH wrote:
-> >>> On Mon, Sep 02, 2013 at 10:13:44AM +0900, Chanwoo Choi wrote:
-> >>>> Hi Greg,
-> >>>>
-> >>>> On 09/02/2013 09:40 AM, Greg KH wrote:
-> >>>>> On Mon, Sep 02, 2013 at 09:20:08AM +0900, Chanwoo Choi wrote:
-> >>>>>> This patch remove extcon_dev_register()'s second parameter which means
-> >>>>>> the pointer of parent device to simplify prototype of this function.
-> >>>>>
-> >>>>> No, please don't.  You want the parent to be passed in, as the core
-> >>>>> needs it when it is registered with the system, otherwise it will not
-> >>>>> show up in sysfs properly (i.e. you can't set it afterwards.)
-> >>>>
-> >>>> Currently, each extcon driver have allocated memory for extcon device
-> >>>> by using devm_kzalloc() in each extcon device driver.
-> >>>
-> >>> That seems backwards, the extcon core should be the one doing the
-> >>> allocation, and ownership of the device, like all other subsystem cores
-> >>> do.  That makes the driver logic much simpler, and the lifetime
-> >>> ownership correct (i.e. what happens when a device is unbound from a
-> >>> driver by userspace?  The driver can't control the device memory
-> >>> anymore...)
-> >>>
-> >>
-> >> OK,
-> >> The extcon core will control memory allocation instead of extcon device driver
-> >> as following.
-> >> - devm_extcon_allocate_device(struct device *dev)
-> > 
-> > Huh?  Why do you need a devm allocator?  This is a "real" child device,
-> > just create it with a "extcon_create_device()" or some such call, like
-> > all other busses do?
-> 
-> I refer Input/IIO subsystem to check the process of device registration.
-> Input subsystem has following functions for memory allocation of input device
-> and input device registration.
-> 
-> Input subsystem
-> - struct input_dev *devm_input_allocate_device(struct device *device)
-> - struct input_dev *input_allocate_device(void)
-> - int input_register_device(struct input_dev *dev)
-> drivers/input/input.c
-> 
-> devm_input_allocate_device()/input_allocate_device() can allocate
-> memory for input device in input core. And then created input device
-> pass input_register_device() as parameter.
-> 
-> So, input device driver haven't executed kmalloc() or devm_kmalloc()
-> to allocate memory of input device by using input_allocate_device()/
-> devm_input_allocate_device().
-> 
-> 
-> Also,IIO subsystem has separate iio_device_alloc() function
-> to allocate memory for iio device. But IIO subsystem hasn't
-> "devm_" allocator. So, If iio device driver fail initialization
-> in *_probe, should execute iio_device_free() to free allocated memory.
-> 
-> IIO Subsystem
-> - iio_device_alloc(int sizeof_priv)
-> - iio_device_register(struct iio_dev *indio_dev);
-> drivers/iio/industrialio-core.c
-> 
-> 
-> So, I think extcon subsystem need extcon_allocate_device()/devm_extcon_allocate_device()
-> to allocate for memory extcon device. To implement devm_extcon_allocate_device() function
-> , extcon subsystem need extcon_allocate_device() because devm_extcon_allocate_device()
-> must call extcon_allocate_device for memory allocation.
-> 
-> If extcon_allocate_device()/devm_extcon_allocate_device() is implemented to extcon core,
-> I think extcon core can control the memory operation of extcon device.
-> 
-> EXTCON Subsystem
-> - devm_extcon_allocate_device(struct device *dev)
-> - extcon_allocate_device(void)
-> - extcon_dev_register(struct extcon_dev *edev)
-> 
-> If I'm wrong, please correct me. Thanks.
 
-No, you are totally correct, I was wrong, nevermind, continue on doing a
-great job, my mistake :)
+On 08.09.2013 23:33, Dave Airlie wrote:
+>>> Looks like you have Optimus (intel + nvidia), and the backtrace has
+>>> runtime pm in it, which is something new Dave added for 3.12, adding
+>>> him in explicitly. The simplest explanation is that disp->init is
+>>> NULL. And it seems like there are no outputs from the earlier nouveau
+>>> init prints. I guess that the call to nouveau_display_resume from
+>>> nouveau_pmops_runtime_resume should be guarded by a if
+>>> (dev->mode_config.num_crtc) like it is everywhere else.
+>>>
+>>>    -ilia
+>> Your guess was right, this (hopefully attached patch) fixes it for me!
+> Does it look like this one?
+>
+> Dave.
+No, mine was quick and dirty, reverted it and took yours. But i'm a 
+little bit confused that this is a suspend/resume problem, i booted the 
+kernel for the first time while seeing the oops. But anyway i tested it 
+and it works.
 
-greg k-h
+Tobias
