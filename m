@@ -1,108 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751231Ab3IHXkn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 19:40:43 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:26694 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751171Ab3IHXkm (ORCPT
+	id S1751105Ab3IHXt6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 19:49:58 -0400
+Received: from nm6-vm7.access.bullet.mail.bf1.yahoo.com ([216.109.114.150]:33626
+	"EHLO nm6-vm7.access.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750847Ab3IHXt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 19:40:42 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhISAKEKLVJ5LJ62/2dsb2JhbABagwc4gxKrGQOOfoU3gSQXdIIlAQEFOhwjEAgDGAklDwUlAyETiAHFZBaON4EzB4QdA5d0kWeDMiqBLQ
-Date: Mon, 9 Sep 2013 09:40:31 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/19] pramfs
-Message-ID: <20130908234031.GS12779@dastard>
-References: <522AE04C.6000002@gmail.com>
+	Sun, 8 Sep 2013 19:49:57 -0400
+X-Yahoo-Newman-Id: 38311.70650.bm@smtp117.sbc.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: XWVCXskVM1mZVvoQRX.R6wL6cNb4Xtee13_PwgQho3oh6tt
+ Fgr3A4_rq.kYxc_xrUrjjRVc5ehqR9mvGZJwjWKnwYeJJbqaRnmxFVnDQ09u
+ LT_bZsQGQpzaAQJWx81QQC5i7ikVSzKhQLG.h6SYKBCy34VM9Qo9MtSFZNgY
+ LXtciVFq9EJXvxAM77bJ4sxFLdFw.mF4Pk64mwsKm5xc10zV6.FLNQVk_epS
+ IxU8EJNRv6tJoa_bI5Q6J2QTy62D4rVieJ6nB1spsoa46GxZ97S0gFo5ysUC
+ ZKBGFF.7tspcV5ndKGtmDoXkOdua3EJiicPXbfPKtcvphZmAYCbRdSLP_6Aj
+ yVl6GGbZvY.mINEZkCHN.3YS40qYL67QTv_trw1KtO8dJpVy_mFp55_HYF0x
+ GxTD5bsho.emKsJBKEt_HYLqGOBUv1gaMj1.ymBK7b6tClufOjB9mIzCH8Iz
+ .AEQXd9FjmgvNkvzXxQGw4K.z44x8nxyXq.9dWA8oPf9D2Lf_sHacM1r6DMc
+ xqOmUUdztFjR_f0BMHwOXbYufLuTyf55BOOCq5uPXRzh2zNK.j8vzWGDh1km
+ vj_xAyRKa1OhGOJqle1gclQyxA6q8pMR1Zbh2fcdBsSQUA8fMEUJjNSEUYQa
+ uBGmAta87XzRZNZo7IQ--
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+X-Rocket-Received: from [192.168.1.4] (danielfsantos@99.70.244.137 with )
+        by smtp117.sbc.mail.bf1.yahoo.com with SMTP; 08 Sep 2013 23:49:55 +0000 UTC
+Message-ID: <522D0D37.3050500@att.net>
+Date: Sun, 08 Sep 2013 18:50:15 -0500
+From: Daniel Santos <danielfsantos@att.net>
+Reply-To: Daniel Santos <daniel.santos@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130730 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <522AE04C.6000002@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Guenter Roeck <linux@roeck-us.net>
+CC: linux-gpio <linux-gpio@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        linux-spi <linux-spi@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: "Virtual" Interrupts -- Need help please
+References: <522BC27A.5080303@att.net> <522BCA33.6000701@roeck-us.net>
+In-Reply-To: <522BCA33.6000701@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 07, 2013 at 10:14:04AM +0200, Marco Stornelli wrote:
-> Hi all,
-> 
-> this is an attempt to include pramfs in mainline. At the moment pramfs
-> has been included in LTSI kernel. Since last review the code is more
-> or less the same but, with a really big thanks to Vladimir Davydov and
-> Parallels, the development of fsck has been started and we have now
-> the possibility to correct fs errors due to corruption. It's a "young"
-> tool but we are working on it. You can clone the code from our repos:
-> 
-> git clone git://git.code.sf.net/p/pramfs/code pramfs-code
-> git clone git://git.code.sf.net/p/pramfs/Tools pramfs-Tools
+On 09/07/2013 07:52 PM, Guenter Roeck wrote:
+> On 09/07/2013 05:19 PM, Daniel Santos wrote:
+>> I've posted a number of requests for aid on this and have gotten very 
+>> little responses and none that were helpful. I have spent at least 24 
+>> hours of research time on this and just a little direction from 
+>> somebody who knows this subsystem can help me immensely as the IRQ 
+>> subsystem is new to me.
+>>
+>> This is for the MCP2210 driver (a USB to SPI/GPIO bridge) and my 
+>> driver is the first of its class for the Linux kernel, giving me less 
+>> to look at as an example.  I intend to use standard drivers for 
+>> whatever I have connected at the other end.  For this to work, I need 
+>> to supply interrupts for some of these drivers to work correctly.  
+>> How do I do this? Every thing else on this driver is ready to go and 
+>> my handler functions for this are empty and waiting for some code.
+>>
+> Not really. Have a look at https://github.com/groeck/diolan even 
+> though the SPI part there
+> still isn't working and it is far from being acceptable upstream in 
+> its current form.
+> It also doesn't support interrupts.
 
-The 1980s are calling, and they want their filesytem back. :)
+Oh, this is wonderful to know!  While I like breaking new ground, I 
+certainly don't enjoy doing it when I'm trying to write my first device 
+driver and having to learn so many new things.
 
-So, Devil's Advocate time. Convince me as to why pramfs should be
-merged.
+>
+> It is modeled as mfd driver, which I think you might want to consider 
+> as well.
+>
+>> So do i create an IRQ domain and then call generic_handle_irq() from 
+>> my URB complete() function? If so, which type of IRQ Domain is 
+>> appropriate for this? Unlike typical platform devices, these are 
+>> dynamically added and removed throughout the life of the kernel, 
+>> adding to the challenge. So, if I understand correctly, my base IRQ 
+>> number needs to be dynamically generated.  How should I manage this?
+>>
+>> Finally, if you have any example drivers that are doing something 
+>> similar, that would be SO very helpful as well!
+>>
+> There are several drivers in drivers/mfd solving the same problem, ie 
+> using
+> irq domains to pass interrupts to client drivers. Look for 
+> irq_domain_add_simple().
+> drivers/mfd/tc3589x.c seems to be a good example.
 
-Why do we want a single threaded, block based filesystem (i.e. based
-on 1980s filesystem technology) as the basis for storing information
-in persistent memory in 2013?  Persistent memory over the next few
-years is going to require support for 10s to 100s of TB of storage
-and concurrency of 100s to 1000s of CPU cores banging on the memory
-at full speed. By design, pramfs is simply not sufficient for our
-future needs.
+Ahh, wonderful! I was looking at a lot of the code in mfd, but it 
+contains so many things that I don't understand yet, so it's been harder 
+to be clear on what the driver is doing and why w/o extensive 
+examination & study of the subsystems it's using.  This will help!
 
-pramfs uses indirect block indexing - not even extents - for file
-data.  That doesn't scale effectively to large files or fragmented
-files, which is what the single threaded bitmap block allocator will
-cause because it's a just a basic "find the next zero bit in the
-bitmap" allocator.
+>
+>> I have some secondary (and less important) questions about how to 
+>> integrate this with device drivers that want a DT / open firmware 
+>> config (which I know almost nothing about at this time), but that can 
+>> wait.
+>>
+> If you look into the mfd subsystem, you may notice that it handles at 
+> least some of the complexity
+> of interrupt handling as well as devicetree integration. One more 
+> reason to use it.
+>
+> Guenter
 
-It doesn't have any recovery mechanisms built in to it (like a redo
-log) nor can it do atomic multi-variable updates to persistent
-memory segments, so a crash at the wrong time will leave you with a
-corrupted filesystem. We learnt this lesson years ago - fsck on
-every boot does not scale and people hate having boot interrupted by
-needing to manually intervene in recovery operations to get their
-system back up and running.
+Even better, thank you very much!! If this thing had more EEPROM storage 
+I would consider using the OF format for it's settings, but I only have 
+256 bytes to play with so I'm using a custom compression/encoding.
 
-The directory structure is a linked list of inodes, linked by inode
-number. The operations to add or remove an inode are not atomic from
-a persistent memory perspsective and so a crash between them will
-result in a corrupt directory. Lookup has to iterate the linked list
-to find a name match - that's not going to scale at all, and it's
-completely serialised, too, so concurrent lookups into the same
-directory are out of the question.
+I'm hoping to present this for an initial review in a month or so. I'm 
+sure you guys will shred it, but I'm excited about it anyway! :)
 
-Further, the readdir cookie is the position of the inode in the
-linked list, which means telldir/seekdir are fundamentally broken in
-the presence of directory modification. It also uses the magic
-number of "3" to indicate the end of the directory, which is kinda
-weird.
-
-If we were in the 1980s, then pramfs would be wonderful. The reality
-is, though, it is 2013 and we have another 30-odd years of
-filesystem development knowledge under our belts. IMO, pramfs won't
-even effectively scale to the needs of a modern smart phone, let
-alone a server with a couple of terabytes of persistent memory.
-
->From that perspective, pramfs is really just a toy and not something
-we could use as the basis of future persistent memory storage
-development because we'd need to start again from scratch.
-
-IOWs, I'm looking at pramfs with an eye to 5-10 years in the future.
-I can see lots of problems just with 5 year old technology in pramfs
-and AFAIC just because it's been included in a LSTI kernel doesn't
-mean we should include it mainline. I'm not denying that We need a
-persistent memory filesystem in mainline, but we don't want to merge
-something that already borders on obsolesence and then have to both
-maintain it and simultaneously design a new filesystem that handles
-our current and future needs...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Thanks again!
+Daniel
