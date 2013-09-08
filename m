@@ -1,141 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826Ab3IHIvm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 04:51:42 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:51550 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752009Ab3IHIvj (ORCPT
+	id S1753002Ab3IHIwI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 04:52:08 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:58283 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752508Ab3IHIv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 04:51:39 -0400
-From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Tony Lindgren <tony@atomide.com>, Anton Vorontsov <anton@enomsg.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        freemangordon@abv.bg, aaro.koskinen@iki.fi, pavel@ucw.cz,
-        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
-Subject: [PATCH 4/4] RX-51: Add platform function and data for bq24150a charger
-Date: Sun,  8 Sep 2013 10:50:39 +0200
-Message-Id: <1378630239-10006-5-git-send-email-pali.rohar@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Sun, 8 Sep 2013 04:51:29 -0400
+X-Sasl-enc: eXh5L1Tl/xnkxwlUIu0+9Ztwo4LGarSon8Vxj12WUZJP 1378630288
+Message-ID: <1378630284.2642.10.camel@perseus.fritz.box>
+Subject: Re: [PATCH v3 1/1] dcache: Translating dentry into pathname without
+ taking rename_lock
+From: Ian Kent <raven@themaw.net>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <Waiman.Long@hp.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        George Spelvin <linux@horizon.com>, John Stoffel <john@stoffel.org>,
+        Sage Weil <sage@inktank.com>
+Date: Sun, 08 Sep 2013 16:51:24 +0800
+In-Reply-To: <20130908045814.GG13318@ZenIV.linux.org.uk>
+References: <1378483738-10129-2-git-send-email-Waiman.Long@hp.com>
+	 <CA+55aFw8UuEmKsSdGZPUmcekZheNimEt4U81i7Bz0LipGzsFmg@mail.gmail.com>
+	 <20130906210546.GW13318@ZenIV.linux.org.uk>
+	 <CA+55aFzf-reQNSQt_fhHfUe_tB19n2qEa=Rd=wFEBJEVALmezA@mail.gmail.com>
+	 <20130907000044.GX13318@ZenIV.linux.org.uk>
+	 <CA+55aFwy_x65HaLOgKuK7AyQayraU4M6q78L_hnAvLg1NSgTpw@mail.gmail.com>
+	 <CA+55aFzwederWB135Ch+PjijjrN-kz9UKw+obC4+M_+xq648PA@mail.gmail.com>
+	 <20130907030110.GY13318@ZenIV.linux.org.uk>
+	 <20130907173243.GD13318@ZenIV.linux.org.uk>
+	 <1378613746.2642.8.camel@perseus.fritz.box>
+	 <20130908045814.GG13318@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch will register bq24150a charger in RX-51 board data.
-Patch also adding platform function between isp1704 and bq2415x
-drivers for detecting charger type.
+On Sun, 2013-09-08 at 05:58 +0100, Al Viro wrote:
+> On Sun, Sep 08, 2013 at 12:15:46PM +0800, Ian Kent wrote:
+> > > and *name is never modified in it.  Why not simply pass it by value?
+> > > Moreover, I'm not sure I understand what do we need sbi->fs_lock in
+> > > there.  Other than that, it's very close to dentry_path() (well, that
+> > > and different calling conventions).  Ian?
+> > 
+> > Yes, it is close to dentry_path() but the path functions used to return
+> > the full path to the root, although I don't see where dentry_path() get
+> > the root, mmm ... 
+> 
+> dentry_path(), unlike d_path(), is relative to the root of filesystem
+> containing dentry in question.  There are 3 of those suckers:
+> 	d_path(): vfsmount/dentry => path to current process' root
+> 	d_absolute_path(): ditto, but ignores chroot jails (goes to
+> the absolute root of namespace)
+> 	dentry_path(): dentry => path from root of fs containing that
+> dentry.
+> 
+> IOW, if you have something mounted on /jail/mnt/foo and are chrooted into
+> /jail, passing vfsmount/dentry of /jail/mnt/foo/bar/baz to d_path() will
+> yield "/mnt/foo/bar/baz", to d_absolute_path() - "/jail/mnt/foo/bar/baz" and
+> passing the same dentry to dentry_path() - "/bar/baz".
 
-So finally charging battery on Nokia N900 (RX-51) working
-automatically without any proprietary Nokia bits in userspace.
+Right, so all I need to do is drop the leading "/" and I'll have what I
+need. I'll do that.
 
-Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
----
- arch/arm/mach-omap2/board-rx51-peripherals.c |   56 +++++++++++++++++++++++++-
- 1 file changed, 55 insertions(+), 1 deletion(-)
+Thanks
+Ian
 
-diff --git a/arch/arm/mach-omap2/board-rx51-peripherals.c b/arch/arm/mach-omap2/board-rx51-peripherals.c
-index 9c2dd10..a993ffe 100644
---- a/arch/arm/mach-omap2/board-rx51-peripherals.c
-+++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
-@@ -25,6 +25,7 @@
- #include <linux/gpio_keys.h>
- #include <linux/mmc/host.h>
- #include <linux/power/isp1704_charger.h>
-+#include <linux/power/bq2415x_charger.h>
- #include <linux/platform_data/spi-omap2-mcspi.h>
- #include <linux/platform_data/mtd-onenand-omap2.h>
- 
-@@ -270,6 +271,44 @@ static struct platform_device rx51_battery_device = {
- 	.id	= -1,
- };
- 
-+static enum bq2415x_mode rx51_charger_mode = BQ2415X_MODE_OFF;
-+static void *rx51_charger_hook_data;
-+static void (*rx51_charger_hook)(enum bq2415x_mode mode, void *data);
-+
-+static int rx51_charger_set_hook(
-+		void (*hook)(enum bq2415x_mode mode, void *data), void *data)
-+{
-+	rx51_charger_hook = hook;
-+	rx51_charger_hook_data = data;
-+	if (rx51_charger_hook)
-+		rx51_charger_hook(rx51_charger_mode, rx51_charger_hook_data);
-+	return 1;
-+}
-+
-+static void rx51_charger_set_current(int mA)
-+{
-+	enum bq2415x_mode mode;
-+
-+	pr_info("RX-51: Charger current limit is %d mA\n", mA);
-+
-+	if (mA == 0)
-+		mode = BQ2415X_MODE_OFF;
-+	else if (mA < 500)
-+		mode = BQ2415X_MODE_NONE;
-+	else if (mA < 1800)
-+		mode = BQ2415X_MODE_HOST_CHARGER;
-+	else
-+		mode = BQ2415X_MODE_DEDICATED_CHARGER;
-+
-+	if (rx51_charger_mode == mode)
-+		return;
-+
-+	rx51_charger_mode = mode;
-+
-+	if (rx51_charger_hook)
-+		rx51_charger_hook(rx51_charger_mode, rx51_charger_hook_data);
-+}
-+
- static void rx51_charger_set_power(bool on)
- {
- 	gpio_set_value(RX51_USB_TRANSCEIVER_RST_GPIO, on);
-@@ -277,6 +316,7 @@ static void rx51_charger_set_power(bool on)
- 
- static struct isp1704_charger_data rx51_charger_data = {
- 	.set_power	= rx51_charger_set_power,
-+	.set_current	= rx51_charger_set_current,
- };
- 
- static struct platform_device rx51_charger_device = {
-@@ -1017,6 +1057,16 @@ static struct aic3x_pdata rx51_aic3x_data2 = {
- 	.gpio_reset = 60,
- };
- 
-+static struct bq2415x_platform_data rx51_bq24150a_platform_data = {
-+	.current_limit = 100,			/* mA */
-+	.weak_battery_voltage = 3400,		/* mV */
-+	.battery_regulation_voltage = 4200,	/* mV */
-+	.charge_current = 650,			/* mA */
-+	.termination_current = 100,		/* mA */
-+	.resistor_sense = 68,			/* m ohm */
-+	.set_mode_hook = &rx51_charger_set_hook,
-+};
-+
- static struct i2c_board_info __initdata rx51_peripherals_i2c_board_info_2[] = {
- 	{
- 		I2C_BOARD_INFO("tlv320aic3x", 0x18),
-@@ -1044,7 +1094,11 @@ static struct i2c_board_info __initdata rx51_peripherals_i2c_board_info_2[] = {
- 	{
- 		I2C_BOARD_INFO("tpa6130a2", 0x60),
- 		.platform_data = &rx51_tpa6130a2_data,
--	}
-+	},
-+	{
-+		I2C_BOARD_INFO("bq24150a", 0x6b),
-+		.platform_data = &rx51_bq24150a_platform_data,
-+	},
- };
- 
- static struct i2c_board_info __initdata rx51_peripherals_i2c_board_info_3[] = {
--- 
-1.7.10.4
 
