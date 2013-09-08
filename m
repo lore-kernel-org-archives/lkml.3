@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757705Ab3IHQjO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 12:39:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22063 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753484Ab3IHQjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 12:39:13 -0400
-Date: Sun, 8 Sep 2013 18:32:32 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Hemant Kumar Shaw <hkshaw@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Mikhail.Kulemin@ru.ibm.com,
-        srikar@linux.vnet.ibm.com, peterz@infradead.org, mingo@redhat.com,
-        anton@redhat.com, systemtap@sourceware.org,
-        masami.hiramatsu.pt@hitachi.com
-Subject: Re: [PATCH] uprobes: Fix limiting un-nested return probes
-Message-ID: <20130908163232.GA32685@redhat.com>
-References: <20130903060959.1351.16587.stgit@hemant-fedora>
+	id S1757583Ab3IHQwN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 12:52:13 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:57539 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753853Ab3IHQwK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Sep 2013 12:52:10 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <522CAB38.2010909@roeck-us.net>
+Date: Sun, 08 Sep 2013 09:52:08 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130903060959.1351.16587.stgit@hemant-fedora>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Greg Ungerer <gerg@uclinux.org>, Ben Hutchings <ben@decadent.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>
+Subject: Re: [000/121] 3.2.51-rc1 review
+References: <lsq.1378608720.401499712@decadent.org.uk> <522C22DB.9080008@roeck-us.net> <CAMuHMdW6TGdfi+FH=hRWY_hhs5Cb5N9xV1OL0O9Dcs+PfXm2xA@mail.gmail.com>
+In-Reply-To: <CAMuHMdW6TGdfi+FH=hRWY_hhs5Cb5N9xV1OL0O9Dcs+PfXm2xA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for delay, vacation.
-
-On 09/03, Hemant Kumar Shaw wrote:
+On 09/08/2013 01:18 AM, Geert Uytterhoeven wrote:
+> On Sun, Sep 8, 2013 at 9:10 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> m68k-linux-ld: error: no memory region specified for loadable section
+>> `.note.gnu.build-id'
 >
-> There exists a limit to the number of nested return probes. The current limit is 64.
-> However this limit is getting enforced on even non nested return probes.
-> Hence, registering 64 independent non nested return probes results in failure of
-> return probes on the same task. The problem is utask->depth is getting incremented
-> unconditionally but decremented only if chained.
+> I can't seem to find an explicit fix for that since v3.2.
+> Perhaps the fix is a side effect of f84f52a5c15db7d14a534815f27253b001735183
+> ("m68knommu: clean up linker script").
+>
 
-Hmm. I'll try to recheck later, but at first glance this logic is indeed
-wrong, thanks.
+Kind of. Turns out it requires the following patches.
 
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -1442,7 +1442,8 @@ static void prepare_uretprobe(struct uprobe *uprobe, struct pt_regs *regs)
->  	ri->orig_ret_vaddr = orig_ret_vaddr;
->  	ri->chained = chained;
->  
-> -	utask->depth++;
-> +	if (chained)
-> +		utask->depth++;
+40c1b9cf (m68k: consolidate the vmlinux.lds linker scripts)
+ed865e31 (m68k: use non-MMU linker script for ColdFire MMU builds)
+f84f52a5 (m68knommu: clean up linker script)
 
-Not sure, but I can be easily wrong... afaics we need something like below, no?
+With those patches applied, all my m68k builds (mmu and nommu) pass with 3.2.
 
-Anton?
-
-Oleg.
-
---- x/kernel/events/uprobes.c
-+++ x/kernel/events/uprobes.c
-@@ -1682,12 +1682,10 @@ static bool handle_trampoline(struct pt_
- 		tmp = ri;
- 		ri = ri->next;
- 		kfree(tmp);
-+		utask->depth--;
- 
- 		if (!chained)
- 			break;
--
--		utask->depth--;
--
- 		BUG_ON(!ri);
- 	}
- 
+Guenter
 
