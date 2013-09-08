@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759646Ab3IHDVJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:21:09 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56109 "EHLO
+	id S1759633Ab3IHDVH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:21:07 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56104 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756288Ab3IHDSz (ORCPT
+	by vger.kernel.org with ESMTP id S1756021Ab3IHDSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 7 Sep 2013 23:18:55 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,11 +13,16 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Alex Deucher" <alexander.deucher@amd.com>
+CC: akpm@linux-foundation.org,
+        "Emmanuel Grumbach" <emmanuel.grumbach@intel.com>,
+        "Lukasz Jagiello" <jagiello.lukasz@gmail.com>,
+        "Johannes Berg" <johannes.berg@intel.com>,
+        "Stanislaw Gruszka" <sgruszka@redhat.com>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.880162062@decadent.org.uk>
+Message-ID: <lsq.1378608721.586600978@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [060/121] drm/radeon: always program the MC on startup
+Subject: [053/121] iwlwifi: dvm: fix calling ieee80211_chswitch_done()
+ with NULL
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,94 +35,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 6fab3febf6d949b0a12b1e4e73db38e4a177a79e upstream.
+commit 9186a1fd9ed190739423db84bc344d258ef3e3d7 upstream.
 
-For r6xx+ asics.  This mirrors the behavior of pre-r6xx
-asics.  We need to program the MC even if something
-else in startup() fails.  Failure to do so results in
-an unusable GPU.
+If channel switch is pending and we remove interface we can
+crash like showed below due to passing NULL vif to mac80211:
 
-Based on a fix from: Mark Kettenis <kettenis@openbsd.org>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-[bwh: Backported to 3.2: adjust context, drop changes to cik.c and si.c]
+BUG: unable to handle kernel paging request at fffffffffffff8cc
+IP: [<ffffffff8130924d>] strnlen+0xd/0x40
+Call Trace:
+ [<ffffffff8130ad2e>] string.isra.3+0x3e/0xd0
+ [<ffffffff8130bf99>] vsnprintf+0x219/0x640
+ [<ffffffff8130c481>] vscnprintf+0x11/0x30
+ [<ffffffff81061585>] vprintk_emit+0x115/0x4f0
+ [<ffffffff81657bd5>] printk+0x61/0x63
+ [<ffffffffa048987f>] ieee80211_chswitch_done+0xaf/0xd0 [mac80211]
+ [<ffffffffa04e7b34>] iwl_chswitch_done+0x34/0x40 [iwldvm]
+ [<ffffffffa04f83c3>] iwlagn_commit_rxon+0x2a3/0xdc0 [iwldvm]
+ [<ffffffffa04ebc50>] ? iwlagn_set_rxon_chain+0x180/0x2c0 [iwldvm]
+ [<ffffffffa04e5e76>] iwl_set_mode+0x36/0x40 [iwldvm]
+ [<ffffffffa04e5f0d>] iwlagn_mac_remove_interface+0x8d/0x1b0 [iwldvm]
+ [<ffffffffa0459b3d>] ieee80211_do_stop+0x29d/0x7f0 [mac80211]
+
+This is because we nulify ctx->vif in iwlagn_mac_remove_interface()
+before calling some other functions that teardown interface. To fix
+just check ctx->vif on iwl_chswitch_done(). We should not call
+ieee80211_chswitch_done() as channel switch works were already canceled
+by mac80211 in ieee80211_do_stop() -> ieee80211_mgd_stop().
+
+Resolve:
+https://bugzilla.redhat.com/show_bug.cgi?id=979581
+
+Reported-by: Lukasz Jagiello <jagiello.lukasz@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[bwh: Backported to 3.2: adjust context, filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -3036,6 +3036,8 @@ static int evergreen_startup(struct rade
- 	/* enable pcie gen2 link */
- 	evergreen_pcie_gen2_enable(rdev);
+ drivers/net/wireless/iwlwifi/iwl-core.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/wireless/iwlwifi/iwl-core.c
++++ b/drivers/net/wireless/iwlwifi/iwl-core.c
+@@ -808,8 +808,11 @@ void iwl_chswitch_done(struct iwl_priv *
+ 	if (test_bit(STATUS_EXIT_PENDING, &priv->shrd->status))
+ 		return;
  
-+	evergreen_mc_program(rdev);
+-	if (test_and_clear_bit(STATUS_CHANNEL_SWITCH_PENDING,
++	if (!test_and_clear_bit(STATUS_CHANNEL_SWITCH_PENDING,
+ 				&priv->shrd->status))
++		return;
 +
- 	if (ASIC_IS_DCE5(rdev)) {
- 		if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw || !rdev->mc_fw) {
- 			r = ni_init_microcode(rdev);
-@@ -3063,7 +3065,6 @@ static int evergreen_startup(struct rade
- 	if (r)
- 		return r;
++	if (ctx->vif)
+ 		ieee80211_chswitch_done(ctx->vif, is_success);
+ }
  
--	evergreen_mc_program(rdev);
- 	if (rdev->flags & RADEON_IS_AGP) {
- 		evergreen_agp_enable(rdev);
- 	} else {
---- a/drivers/gpu/drm/radeon/ni.c
-+++ b/drivers/gpu/drm/radeon/ni.c
-@@ -1353,6 +1353,8 @@ static int cayman_startup(struct radeon_
- 	/* enable pcie gen2 link */
- 	evergreen_pcie_gen2_enable(rdev);
- 
-+	evergreen_mc_program(rdev);
-+
- 	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw || !rdev->mc_fw) {
- 		r = ni_init_microcode(rdev);
- 		if (r) {
-@@ -1370,7 +1372,6 @@ static int cayman_startup(struct radeon_
- 	if (r)
- 		return r;
- 
--	evergreen_mc_program(rdev);
- 	r = cayman_pcie_gart_enable(rdev);
- 	if (r)
- 		return r;
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -2415,6 +2415,8 @@ int r600_startup(struct radeon_device *r
- 	/* enable pcie gen2 link */
- 	r600_pcie_gen2_enable(rdev);
- 
-+	r600_mc_program(rdev);
-+
- 	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw) {
- 		r = r600_init_microcode(rdev);
- 		if (r) {
-@@ -2427,7 +2429,6 @@ int r600_startup(struct radeon_device *r
- 	if (r)
- 		return r;
- 
--	r600_mc_program(rdev);
- 	if (rdev->flags & RADEON_IS_AGP) {
- 		r600_agp_enable(rdev);
- 	} else {
---- a/drivers/gpu/drm/radeon/rv770.c
-+++ b/drivers/gpu/drm/radeon/rv770.c
-@@ -1057,6 +1057,8 @@ static int rv770_startup(struct radeon_d
- 	/* enable pcie gen2 link */
- 	rv770_pcie_gen2_enable(rdev);
- 
-+	rv770_mc_program(rdev);
-+
- 	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw) {
- 		r = r600_init_microcode(rdev);
- 		if (r) {
-@@ -1069,7 +1071,6 @@ static int rv770_startup(struct radeon_d
- 	if (r)
- 		return r;
- 
--	rv770_mc_program(rdev);
- 	if (rdev->flags & RADEON_IS_AGP) {
- 		rv770_agp_enable(rdev);
- 	} else {
 
