@@ -1,112 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752354Ab3IHOKy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 10:10:54 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:55689 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab3IHOKw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 10:10:52 -0400
-From: Artem Savkov <artem.savkov@gmail.com>
-To: bcrl@kvack.org
-Cc: viro@zeniv.linux.org.uk, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Artem Savkov <artem.savkov@gmail.com>
-Subject: [PATCH] aio: rcu_read_lock protection for new rcu_dereference calls
-Date: Sun,  8 Sep 2013 18:10:43 +0400
-Message-Id: <1378649444-28054-1-git-send-email-artem.savkov@gmail.com>
-X-Mailer: git-send-email 1.8.4
+	id S1752871Ab3IHOMo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 10:12:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23651 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751974Ab3IHOMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Sep 2013 10:12:41 -0400
+Date: Sun, 8 Sep 2013 17:12:27 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+Cc: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kvm-ppc@vger.kernel.org
+Subject: Re: [PATCH v10 12/13] KVM: PPC: Add support for IOMMU in-kernel
+ handling
+Message-ID: <20130908141227.GK17294@redhat.com>
+References: <1377679841-3822-1-git-send-email-aik@ozlabs.ru>
+ <1378464026-32459-1-git-send-email-aik@ozlabs.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378464026-32459-1-git-send-email-aik@ozlabs.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch "aio: fix rcu sparse warnings introduced by ioctx table lookup patch"
-(77d30b14d24e557f89c41980011d72428514d729 in linux-next.git) introduced a
-couple of new rcu_dereference calls which are not protected by rcu_read_lock
-and result in following warnings during syscall fuzzing(trinity):
+On Fri, Sep 06, 2013 at 08:40:26PM +1000, Alexey Kardashevskiy wrote:
+> This allows the host kernel to handle H_PUT_TCE, H_PUT_TCE_INDIRECT
+> and H_STUFF_TCE requests targeted an IOMMU TCE table without passing
+> them to user space which saves time on switching to user space and back.
+> 
+> Both real and virtual modes are supported. The kernel tries to
+> handle a TCE request in the real mode, if fails it passes the request
+> to the virtual mode to complete the operation. If it a virtual mode
+> handler fails, the request is passed to user space.
+> 
+> The first user of this is VFIO on POWER. Trampolines to the VFIO external
+> user API functions are required for this patch.
+> 
+> This adds a "SPAPR TCE IOMMU" KVM device to associate a logical bus
+> number (LIOBN) with an VFIO IOMMU group fd and enable in-kernel handling
+> of map/unmap requests. The device supports a single attribute which is
+> a struct with LIOBN and IOMMU fd. When the attribute is set, the device
+> establishes the connection between KVM and VFIO.
+> 
+> Tests show that this patch increases transmission speed from 220MB/s
+> to 750..1020MB/s on 10Gb network (Chelsea CXGB3 10Gb ethernet card).
+> 
+> Signed-off-by: Paul Mackerras <paulus@samba.org>
+> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+> 
+> ---
+> 
+> Changes:
+> v10:
+> * all IOMMU TCE links are handled by one KVM device now
+> * KVM device has its own list of TCE descriptors
+> * the search-by-liobn function was extended to search through
+> emulated and IOMMU lists
+> 
+> v9:
+> * KVM_CAP_SPAPR_TCE_IOMMU ioctl to KVM replaced with "SPAPR TCE IOMMU"
+> KVM device
+> * release_spapr_tce_table() is not shared between different TCE types
+> * reduced the patch size by moving KVM device bits and VFIO external API
+> trampolines to separate patches
+> * moved documentation from Documentation/virtual/kvm/api.txt to
+> Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
+> 
+> v8:
+> * fixed warnings from check_patch.pl
+> 
+> 2013/07/11:
+> * removed multiple #ifdef IOMMU_API as IOMMU_API is always enabled
+> for KVM_BOOK3S_64
+> * kvmppc_gpa_to_hva_and_get also returns host phys address. Not much sense
+> for this here but the next patch for hugepages support will use it more.
+> 
+> 2013/07/06:
+> * added realmode arch_spin_lock to protect TCE table from races
+> in real and virtual modes
+> * POWERPC IOMMU API is changed to support real mode
+> * iommu_take_ownership and iommu_release_ownership are protected by
+> iommu_table's locks
+> * VFIO external user API use rewritten
+> * multiple small fixes
+> 
+> 2013/06/27:
+> * tce_list page is referenced now in order to protect it from accident
+> invalidation during H_PUT_TCE_INDIRECT execution
+> * added use of the external user VFIO API
+> 
+> 2013/06/05:
+> * changed capability number
+> * changed ioctl number
+> * update the doc article number
+> 
+> 2013/05/20:
+> * removed get_user() from real mode handlers
+> * kvm_vcpu_arch::tce_tmp usage extended. Now real mode handler puts there
+> translated TCEs, tries realmode_get_page() on those and if it fails, it
+> passes control over the virtual mode handler which tries to finish
+> the request handling
+> * kvmppc_lookup_pte() now does realmode_get_page() protected by BUSY bit
+> on a page
+> * The only reason to pass the request to user mode now is when the user mode
+> did not register TCE table in the kernel, in all other cases the virtual mode
+> handler is expected to do the job
+> ---
+>  .../virtual/kvm/devices/spapr_tce_iommu.txt        |  40 +++
+>  arch/powerpc/include/asm/kvm_host.h                |   8 +
+>  arch/powerpc/include/uapi/asm/kvm.h                |   5 -
+>  arch/powerpc/kvm/book3s_64_vio.c                   | 327 ++++++++++++++++++++-
+>  arch/powerpc/kvm/book3s_64_vio_hv.c                | 142 +++++++++
+>  arch/powerpc/kvm/powerpc.c                         |   1 +
+>  include/linux/kvm_host.h                           |   1 +
+>  virt/kvm/kvm_main.c                                |   5 +
+>  8 files changed, 517 insertions(+), 12 deletions(-)
+>  create mode 100644 Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
+> 
+> diff --git a/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt b/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
+> new file mode 100644
+> index 0000000..b911945
+> --- /dev/null
+> +++ b/Documentation/virtual/kvm/devices/spapr_tce_iommu.txt
+> @@ -0,0 +1,40 @@
+> +SPAPR TCE IOMMU device
+> +
+> +Capability: KVM_CAP_SPAPR_TCE_IOMMU
+> +Architectures: powerpc
+> +
+> +Device type supported: KVM_DEV_TYPE_SPAPR_TCE_IOMMU
+> +
+> +Groups:
+> +  KVM_DEV_SPAPR_TCE_IOMMU_ATTR_LINKAGE
+> +  Attributes: one VFIO IOMMU fd per LIOBN, indexed by LIOBN
+> +
+> +This is completely made up device which provides API to link
+> +logical bus number (LIOBN) and IOMMU group. The user space has
+> +to create a new SPAPR TCE IOMMU device once per KVM session
+> +and use "set_attr" to add or remove a logical bus.
+> +
+> +LIOBN is a PCI bus identifier from PPC64-server (sPAPR) DMA hypercalls
+> +(H_PUT_TCE, H_PUT_TCE_INDIRECT, H_STUFF_TCE).
+> +IOMMU group is a minimal isolated device set which can be passed to
+> +the user space via VFIO.
+> +
+> +The userspace adds the new LIOBN-IOMMU link by calling KVM_SET_DEVICE_ATTR
+> +with the attribute initialized as shown below:
+> +struct kvm_device_attr attr = {
+> +	.flags = 0,
+> +	.group = KVM_DEV_SPAPR_TCE_IOMMU_ATTR_LINKAGE,
+> +	.attr = liobn,
+> +	.addr = (uint64_t)(uintptr_t)&group_fd,
+> +};
+> +
+> +To remove the link, the userspace calls KVM_SET_DEVICE_ATTR with
+> +the group_fd equal to zero.
+> +
+Zero is a valid fd descriptor. Lest make it -1.
 
-[  471.646379] ===============================
-[  471.649727] [ INFO: suspicious RCU usage. ]
-[  471.653919] 3.11.0-next-20130906+ #496 Not tainted
-[  471.657792] -------------------------------
-[  471.661235] fs/aio.c:503 suspicious rcu_dereference_check() usage!
-[  471.665968]
-[  471.665968] other info that might help us debug this:
-[  471.665968]
-[  471.672141]
-[  471.672141] rcu_scheduler_active = 1, debug_locks = 1
-[  471.677549] 1 lock held by trinity-child0/3774:
-[  471.681675]  #0:  (&(&mm->ioctx_lock)->rlock){+.+...}, at: [<c119ba1a>] SyS_io_setup+0x63a/0xc70
-[  471.688721]
-[  471.688721] stack backtrace:
-[  471.692488] CPU: 1 PID: 3774 Comm: trinity-child0 Not tainted 3.11.0-next-20130906+ #496
-[  471.698437] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[  471.703151]  00000000 00000000 c58bbf30 c18a814b de2234c0 c58bbf58 c10a4ec6 c1b0d824
-[  471.709544]  c1b0f60e 00000001 00000001 c1af61b0 00000000 cb670ac0 c3aca000 c58bbfac
-[  471.716251]  c119bc7c 00000002 00000001 00000000 c119b8dd 00000000 c10cf684 c58bbfb4
-[  471.722902] Call Trace:
-[  471.724859]  [<c18a814b>] dump_stack+0x4b/0x66
-[  471.728772]  [<c10a4ec6>] lockdep_rcu_suspicious+0xc6/0x100
-[  471.733716]  [<c119bc7c>] SyS_io_setup+0x89c/0xc70
-[  471.737806]  [<c119b8dd>] ? SyS_io_setup+0x4fd/0xc70
-[  471.741689]  [<c10cf684>] ? __audit_syscall_entry+0x94/0xe0
-[  471.746080]  [<c18b1fcc>] syscall_call+0x7/0xb
-[  471.749723]  [<c1080000>] ? task_fork_fair+0x240/0x260
+> +As the device opens VFIO group fds and holds the file pointer,
+> +it does not need to keep an fd internally and therefore KVM_GET_DEVICE_ATTR
+> +is not supported.
+> +
+> +When KVM exits, all links are destroyed automatically.
+> +
+> +The kernel advertises this feature via KVM_CAP_SPAPR_TCE_IOMMU capability.
+Why KVM_CAP_SPAPR_TCE_IOMMU is needed? Supported devices are
+discoverable without capabilities.
 
-Signed-off-by: Artem Savkov <artem.savkov@gmail.com>
----
- fs/aio.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+> diff --git a/arch/powerpc/include/asm/kvm_host.h b/arch/powerpc/include/asm/kvm_host.h
+> index a23f132..a2a481e 100644
+> --- a/arch/powerpc/include/asm/kvm_host.h
+> +++ b/arch/powerpc/include/asm/kvm_host.h
+> @@ -181,9 +181,15 @@ struct kvmppc_spapr_tce_table {
+>  	struct kvm *kvm;
+>  	u64 liobn;
+>  	u32 window_size;
+> +	struct iommu_group *grp;		/* used for IOMMU groups */
+> +	struct vfio_group *vfio_grp;		/* used for IOMMU groups */
+>  	struct page *pages[0];
+>  };
+>  
+> +struct kvmppc_spapr_tce_iommu_device {
+> +	struct list_head tables;
+> +};
+> +
+>  struct kvmppc_linear_info {
+>  	void		*base_virt;
+>  	unsigned long	 base_pfn;
+> @@ -264,6 +270,7 @@ struct kvm_arch {
+>  #endif /* CONFIG_KVM_BOOK3S_64_HV */
+>  #ifdef CONFIG_PPC_BOOK3S_64
+>  	struct list_head spapr_tce_tables;
+> +	struct kvmppc_spapr_tce_iommu_device *tcedev;
+>  	struct list_head rtas_tokens;
+>  #endif
+>  #ifdef CONFIG_KVM_MPIC
+> @@ -612,6 +619,7 @@ struct kvm_vcpu_arch {
+>  	u64 busy_preempt;
+>  
+>  	unsigned long *tce_tmp_hpas;	/* TCE cache for TCE_PUT_INDIRECT */
+> +	unsigned long tce_tmp_num;	/* Number of handled TCEs in cache */
+>  	enum {
+>  		TCERM_NONE,
+>  		TCERM_GETPAGE,
+> diff --git a/arch/powerpc/include/uapi/asm/kvm.h b/arch/powerpc/include/uapi/asm/kvm.h
+> index c1ae1e5..a9d3d73 100644
+> --- a/arch/powerpc/include/uapi/asm/kvm.h
+> +++ b/arch/powerpc/include/uapi/asm/kvm.h
+> @@ -512,11 +512,6 @@ struct kvm_get_htab_header {
+>  #define  KVM_XICS_PENDING		(1ULL << 42)
+>  
+>  /* SPAPR TCE IOMMU device specification */
+> -struct kvm_create_spapr_tce_iommu_linkage {
+> -	__u64 liobn;
+> -	__u32 fd;
+> -	__u32 flags;
+> -};
+>  #define KVM_DEV_SPAPR_TCE_IOMMU_ATTR_LINKAGE	0
+>  
+>  #endif /* __LINUX_KVM_POWERPC_H */
+> diff --git a/arch/powerpc/kvm/book3s_64_vio.c b/arch/powerpc/kvm/book3s_64_vio.c
+> index 2880d2b..0978794 100644
+> --- a/arch/powerpc/kvm/book3s_64_vio.c
+> +++ b/arch/powerpc/kvm/book3s_64_vio.c
+> @@ -29,6 +29,8 @@
+>  #include <linux/anon_inodes.h>
+>  #include <linux/module.h>
+>  #include <linux/vfio.h>
+> +#include <linux/iommu.h>
+> +#include <linux/file.h>
+>  
+>  #include <asm/tlbflush.h>
+>  #include <asm/kvm_ppc.h>
+> @@ -158,10 +160,8 @@ long kvm_vm_ioctl_create_spapr_tce(struct kvm *kvm,
+>  	int i;
+>  
+>  	/* Check this LIOBN hasn't been previously allocated */
+> -	list_for_each_entry(stt, &kvm->arch.spapr_tce_tables, list) {
+> -		if (stt->liobn == args->liobn)
+> -			return -EBUSY;
+> -	}
+> +	if (kvmppc_find_tce_table(kvm, args->liobn))
+> +		return -EBUSY;
+>  
+>  	npages = kvmppc_stt_npages(args->window_size);
+>  
+> @@ -201,9 +201,175 @@ fail:
+>  	return ret;
+>  }
+>  
+> -/* Converts guest physical address to host virtual address */
+> +static void kvmppc_spapr_tce_iommu_table_destroy(
+> +		struct kvm_device *dev,
+> +		struct kvmppc_spapr_tce_table *tt)
+> +{
+> +	struct kvm *kvm = dev->kvm;
+> +
+> +	mutex_lock(&kvm->lock);
+> +	list_del(&tt->list);
+> +
+> +	if (tt->vfio_grp)
+> +		kvmppc_vfio_group_put_external_user(tt->vfio_grp);
+> +	iommu_group_put(tt->grp);
+> +
+> +	kfree(tt);
+> +	mutex_unlock(&kvm->lock);
+> +}
+> +
+> +static int kvmppc_spapr_tce_iommu_create(struct kvm_device *dev, u32 type)
+> +{
+> +	struct kvmppc_spapr_tce_iommu_device *tcedev;
+> +	int ret = 0;
+> +
+> +	tcedev = kzalloc(sizeof(*tcedev), GFP_KERNEL);
+> +	if (!tcedev)
+> +		return -ENOMEM;
+> +	dev->private = tcedev;
+> +
+> +	INIT_LIST_HEAD(&tcedev->tables);
+> +
+> +	/* Already there ? */
+> +	mutex_lock(&dev->kvm->lock);
+> +	if (dev->kvm->arch.tcedev)
+> +		ret = -EEXIST;
+> +	else
+> +		dev->kvm->arch.tcedev = tcedev;
+> +	mutex_unlock(&dev->kvm->lock);
+> +
+> +	if (ret)
+Need to free tcedev here.
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 9b8f9fa..2fb9160 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -470,6 +470,7 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
- 	struct aio_ring *ring;
- 
- 	spin_lock(&mm->ioctx_lock);
-+	rcu_read_lock();
- 	table = rcu_dereference(mm->ioctx_table);
- 
- 	while (1) {
-@@ -478,6 +479,7 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
- 				if (!table->table[i]) {
- 					ctx->id = i;
- 					table->table[i] = ctx;
-+					rcu_read_unlock();
- 					spin_unlock(&mm->ioctx_lock);
- 
- 					ring = kmap_atomic(ctx->ring_pages[0]);
-@@ -488,6 +490,7 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
- 
- 		new_nr = (table ? table->nr : 1) * 4;
- 
-+		rcu_read_unlock();
- 		spin_unlock(&mm->ioctx_lock);
- 
- 		table = kzalloc(sizeof(*table) + sizeof(struct kioctx *) *
-@@ -498,6 +501,7 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
- 		table->nr = new_nr;
- 
- 		spin_lock(&mm->ioctx_lock);
-+		rcu_read_lock();
- 		old = rcu_dereference(mm->ioctx_table);
- 
- 		if (!old) {
-@@ -622,10 +626,12 @@ static void kill_ioctx(struct mm_struct *mm, struct kioctx *ctx)
- 		struct kioctx_table *table;
- 
- 		spin_lock(&mm->ioctx_lock);
-+		rcu_read_lock();
- 		table = rcu_dereference(mm->ioctx_table);
- 
- 		WARN_ON(ctx != table->table[ctx->id]);
- 		table->table[ctx->id] = NULL;
-+		rcu_read_unlock();
- 		spin_unlock(&mm->ioctx_lock);
- 
- 		/* percpu_ref_kill() will do the necessary call_rcu() */
--- 
-1.8.4
+> +		return ret;
+> +
+> +	return 0;
+> +}
+> +
 
+--
+			Gleb.
