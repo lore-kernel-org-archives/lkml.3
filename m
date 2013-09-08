@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759103Ab3IHDTh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:19:37 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56098 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755945Ab3IHDSo (ORCPT
+	id S1759588Ab3IHDfV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:35:21 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:51030 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759497Ab3IHDfR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 23:18:44 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Sat, 7 Sep 2013 23:35:17 -0400
+Message-ID: <522BF072.8080807@free-electrons.com>
+Date: Sun, 08 Sep 2013 05:35:14 +0200
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>,
-        "Eldad Zack" <eldad@fogrefinery.com>
-Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.164888580@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [018/121] ALSA: usb-audio: skip UAC2 EFFECT_UNIT
-In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.101
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+CC: Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Andrew Morton <akpm@linux-foundation.org>, ak@linux.intel.com,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] h8300: remove deprecated IRQF_DISABLED
+References: <1378545345-8113-1-git-send-email-michael.opdenacker@free-electrons.com> <CAFLxGvw-OfsVcvqeCms5=V=pBhYPyvqjOZv04ZidMNPyB=7jBw@mail.gmail.com>
+In-Reply-To: <CAFLxGvw-OfsVcvqeCms5=V=pBhYPyvqjOZv04ZidMNPyB=7jBw@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.51-rc1 review patch.  If anyone has any objections, please let me know.
+Hi Richard,
 
-------------------
+On 09/07/2013 11:21 AM, richard -rw- weinberger wrote:
+> On Sat, Sep 7, 2013 at 11:15 AM, Michael Opdenacker
+> <michael.opdenacker@free-electrons.com> wrote:
+>> This patch proposes to remove the IRQF_DISABLED flag from h8300 architecture
+>> code. It's a NOOP since 2.6.35 and it will be removed one day.
+>>
+>> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+>> ---
+>>  arch/h8300/kernel/timer/itu.c     | 2 +-
+>>  arch/h8300/kernel/timer/timer16.c | 2 +-
+>>  arch/h8300/kernel/timer/timer8.c  | 2 +-
+>>  arch/h8300/kernel/timer/tpu.c     | 2 +-
+>>  4 files changed, 4 insertions(+), 4 deletions(-)
+> FYI, h8300 is gone:
+> https://lkml.org/lkml/2013/8/30/383
+Good to know, thanks! Then this patch is much more exhaustive than mine ;)
 
-From: Eldad Zack <eldad@fogrefinery.com>
+Cheers,
 
-commit 5dae5fd24071319bb67d3375217d5b0b6d16cb0b upstream.
+Michael.
 
-Current code mishandles the case where the device is a UAC2
-and the bDescriptorSubtype is a UAC2 Effect Unit (0x07).
-It tries to parse it as a Processing Unit (which is similar to two
-other UAC1 units with overlapping subtypes), but since the structure
-is different (See: 4.7.2.10, 4.7.2.11 in UAC2 standard), the parsing
-is done incorrectly and prevents the device from initializing.
-For now, just ignore the unit.
-
-Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- sound/usb/mixer.c | 13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
-
---- a/sound/usb/mixer.c
-+++ b/sound/usb/mixer.c
-@@ -720,8 +720,19 @@ static int check_input_term(struct mixer
- 			return 0;
- 		}
- 		case UAC1_PROCESSING_UNIT:
--		case UAC1_EXTENSION_UNIT: {
-+		case UAC1_EXTENSION_UNIT:
-+		/* UAC2_PROCESSING_UNIT_V2 */
-+		/* UAC2_EFFECT_UNIT */ {
- 			struct uac_processing_unit_descriptor *d = p1;
-+
-+			if (state->mixer->protocol == UAC_VERSION_2 &&
-+				hdr[2] == UAC2_EFFECT_UNIT) {
-+				/* UAC2/UAC1 unit IDs overlap here in an
-+				 * uncompatible way. Ignore this unit for now.
-+				 */
-+				return 0;
-+			}
-+
- 			if (d->bNrInPins) {
- 				id = d->baSourceID[0];
- 				break; /* continue to parse */
+-- 
+Michael Opdenacker, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
++33 484 258 098
 
