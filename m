@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759205Ab3IHDTs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:19:48 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56172 "EHLO
+	id S1759191Ab3IHDTq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:19:46 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56102 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756464Ab3IHDSq (ORCPT
+	by vger.kernel.org with ESMTP id S1756272Ab3IHDSo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 23:18:46 -0400
+	Sat, 7 Sep 2013 23:18:44 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Paul Gortmaker" <paul.gortmaker@windriver.com>,
-        "Bjorn Helgaas" <bhelgaas@google.com>,
-        "David Howells" <dhowells@redhat.com>
+CC: akpm@linux-foundation.org,
+        "Gustavo Padovan" <gustavo.padovan@collabora.co.uk>,
+        "AceLan Kao" <acelan.kao@canonical.com>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.716528088@decadent.org.uk>
+Message-ID: <lsq.1378608721.955248121@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [111/121] pci: frv architecture needs generic setup-bus
- infrastructure
+Subject: [035/121] Bluetooth: Add support for Atheros [0cf3:e003]
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,38 +32,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
+From: AceLan Kao <acelan.kao@canonical.com>
 
-commit cd0a2bfb77a3edeecd652081e0b1a163d3b0696b upstream.
+commit 1d5b569ef85d013a775560a90050dc630614c045 upstream.
 
-Otherwise we get this link failure for frv's defconfig:
+Add support for the AR9462 chip
 
-   LD      .tmp_vmlinux1
- drivers/built-in.o: In function `pci_assign_resource':
- (.text+0xbf0c): undefined reference to `pci_cardbus_resource_alignment'
- drivers/built-in.o: In function `pci_setup':
- pci.c:(.init.text+0x174): undefined reference to `pci_realloc_get_opt'
- pci.c:(.init.text+0x1a0): undefined reference to `pci_realloc_get_opt'
- make[1]: *** [.tmp_vmlinux1] Error 1
+T:  Bus=02 Lev=02 Prnt=02 Port=04 Cnt=01 Dev#=  4 Spd=12  MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0cf3 ProdID=e003 Rev=00.02
+C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:  If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
 
-Cc: David Howells <dhowells@redhat.com>
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/pci/Makefile | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/bluetooth/ath3k.c | 2 ++
+ drivers/bluetooth/btusb.c | 1 +
+ 2 files changed, 3 insertions(+)
 
-diff --git a/drivers/pci/Makefile b/drivers/pci/Makefile
-index 083a49f..165274c 100644
---- a/drivers/pci/Makefile
-+++ b/drivers/pci/Makefile
-@@ -42,6 +42,7 @@ obj-$(CONFIG_UNICORE32) += setup-bus.o setup-irq.o
- obj-$(CONFIG_PARISC) += setup-bus.o
- obj-$(CONFIG_SUPERH) += setup-bus.o setup-irq.o
- obj-$(CONFIG_PPC) += setup-bus.o
-+obj-$(CONFIG_FRV) += setup-bus.o
- obj-$(CONFIG_MIPS) += setup-bus.o setup-irq.o
- obj-$(CONFIG_X86_VISWS) += setup-irq.o
- obj-$(CONFIG_MN10300) += setup-bus.o
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -93,6 +93,7 @@ static struct usb_device_id ath3k_table[
+ 	{ USB_DEVICE(0x04c5, 0x1330) },
+ 	{ USB_DEVICE(0x13d3, 0x3402) },
+ 	{ USB_DEVICE(0x0cf3, 0x3121) },
++	{ USB_DEVICE(0x0cf3, 0xe003) },
+ 
+ 	/* Atheros AR5BBU12 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xE02C) },
+@@ -133,6 +134,7 @@ static struct usb_device_id ath3k_blist_
+ 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x3121), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0cf3, 0xe003), .driver_info = BTUSB_ATH3012 },
+ 
+ 	/* Atheros AR5BBU22 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xE03C), .driver_info = BTUSB_ATH3012 },
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -163,6 +163,7 @@ static struct usb_device_id blacklist_ta
+ 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x3121), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0cf3, 0xe003), .driver_info = BTUSB_ATH3012 },
+ 
+ 	/* Atheros AR5BBU12 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
 
