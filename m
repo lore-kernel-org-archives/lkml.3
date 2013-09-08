@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759771Ab3IHDu6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:50:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56065 "EHLO
+	id S1760177Ab3IHDvY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:51:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56151 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751770Ab3IHDTC (ORCPT
+	by vger.kernel.org with ESMTP id S1756886Ab3IHDTB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 23:19:02 -0400
+	Sat, 7 Sep 2013 23:19:01 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Cong Wang" <xiyou.wangcong@gmail.com>,
-        "James Bottomley" <JBottomley@Parallels.com>
+CC: akpm@linux-foundation.org, "H.J. Lu" <hjl.tools@gmail.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.582363644@decadent.org.uk>
+Message-ID: <lsq.1378608721.667859478@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [096/121] [PARISC] include <linux/prefetch.h> in drivers/parisc/iommu-helpers.h
+Subject: [037/121] x86, fpu: correct the asm constraints for fxsave,
+ unbreak mxcsr.daz
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,31 +32,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cong Wang <xiyou.wangcong@gmail.com>
+From: "H.J. Lu" <hjl.tools@gmail.com>
 
-commit 650275dbfb2f4c12bc91420ad5a99f955eabec98 upstream.
+commit eaa5a990191d204ba0f9d35dbe5505ec2cdd1460 upstream.
 
-drivers/parisc/iommu-helpers.h:62: error: implicit declaration of function 'prefetchw'
-make[3]: *** [drivers/parisc/sba_iommu.o] Error 1
+GCC will optimize mxcsr_feature_mask_init in arch/x86/kernel/i387.c:
 
-drivers/parisc/iommu-helpers.h needs to #include <linux/prefetch.h>
-where prefetchw is declared.
+		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
+		asm volatile("fxsave %0" : : "m" (fx_scratch));
+		mask = fx_scratch.mxcsr_mask;
+		if (mask == 0)
+			mask = 0x0000ffbf;
 
-Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+to
+
+		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
+		asm volatile("fxsave %0" : : "m" (fx_scratch));
+		mask = 0x0000ffbf;
+
+since asm statement doesn’t say it will update fx_scratch.  As the
+result, the DAZ bit will be cleared.  This patch fixes it. This bug
+dates back to at least kernel 2.6.12.
+
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/parisc/iommu-helpers.h | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/kernel/i387.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/parisc/iommu-helpers.h b/drivers/parisc/iommu-helpers.h
-index a9c46cc..8c33491 100644
---- a/drivers/parisc/iommu-helpers.h
-+++ b/drivers/parisc/iommu-helpers.h
-@@ -1,3 +1,5 @@
-+#include <linux/prefetch.h>
-+
- /**
-  * iommu_fill_pdir - Insert coalesced scatter/gather chunks into the I/O Pdir.
-  * @ioc: The I/O Controller.
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -51,7 +51,7 @@ void __cpuinit mxcsr_feature_mask_init(v
+ 	clts();
+ 	if (cpu_has_fxsr) {
+ 		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
+-		asm volatile("fxsave %0" : : "m" (fx_scratch));
++		asm volatile("fxsave %0" : "+m" (fx_scratch));
+ 		mask = fx_scratch.mxcsr_mask;
+ 		if (mask == 0)
+ 			mask = 0x0000ffbf;
 
