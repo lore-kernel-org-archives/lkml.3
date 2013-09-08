@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187Ab3IHDqA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:46:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56075 "EHLO
+	id S932164Ab3IHDp6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:45:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55972 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755760Ab3IHDTI (ORCPT
+	by vger.kernel.org with ESMTP id S1755645Ab3IHDTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 7 Sep 2013 23:19:08 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -14,13 +14,11 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        "Jan Beulich" <jbeulich@suse.com>,
-        "David Vrabel" <david.vrabel@citrix.com>
+        "Linus Torvalds" <torvalds@linux-foundation.org>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.533180772@decadent.org.uk>
+Message-ID: <lsq.1378608721.807946451@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [081/121] xen/events: mask events when changing their VCPU binding
+Subject: [024/121] vm: add no-mmu vm_iomap_memory() stub
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,66 +31,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 4704fe4f03a5ab27e3c36184af85d5000e0f8a48 upstream.
+commit 3c0b9de6d37a481673e81001c57ca0e410c72346 upstream.
 
-When a event is being bound to a VCPU there is a window between the
-EVTCHNOP_bind_vpcu call and the adjustment of the local per-cpu masks
-where an event may be lost.  The hypervisor upcalls the new VCPU but
-the kernel thinks that event is still bound to the old VCPU and
-ignores it.
+I think we could just move the full vm_iomap_memory() function into
+util.h or similar, but I didn't get any reply from anybody actually
+using nommu even to this trivial patch, so I'm not going to touch it any
+more than required.
 
-There is even a problem when the event is being bound to the same VCPU
-as there is a small window beween the clear_bit() and set_bit() calls
-in bind_evtchn_to_cpu().  When scanning for pending events, the kernel
-may read the bit when it is momentarily clear and ignore the event.
+Here's the fairly minimal stub to make the nommu case at least
+potentially work.  It doesn't seem like anybody cares, though.
 
-Avoid this by masking the event during the whole bind operation.
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Reviewed-by: Jan Beulich <jbeulich@suse.com>
-[bwh: Backported to 3.2: remove the BM() cast]
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/xen/events.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ mm/nommu.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -1340,8 +1340,10 @@ void rebind_evtchn_irq(int evtchn, int i
- /* Rebind an evtchn so that it gets delivered to a specific cpu */
- static int rebind_irq_to_cpu(unsigned irq, unsigned tcpu)
- {
-+	struct shared_info *s = HYPERVISOR_shared_info;
- 	struct evtchn_bind_vcpu bind_vcpu;
- 	int evtchn = evtchn_from_irq(irq);
-+	int masked;
- 
- 	if (!VALID_EVTCHN(evtchn))
- 		return -1;
-@@ -1358,6 +1360,12 @@ static int rebind_irq_to_cpu(unsigned ir
- 	bind_vcpu.vcpu = tcpu;
- 
- 	/*
-+	 * Mask the event while changing the VCPU binding to prevent
-+	 * it being delivered on an unexpected VCPU.
-+	 */
-+	masked = sync_test_and_set_bit(evtchn, s->evtchn_mask);
-+
-+	/*
- 	 * If this fails, it usually just indicates that we're dealing with a
- 	 * virq or IPI channel, which don't actually need to be rebound. Ignore
- 	 * it, but don't do the xenlinux-level rebind in that case.
-@@ -1365,6 +1373,9 @@ static int rebind_irq_to_cpu(unsigned ir
- 	if (HYPERVISOR_event_channel_op(EVTCHNOP_bind_vcpu, &bind_vcpu) >= 0)
- 		bind_evtchn_to_cpu(evtchn, tcpu);
- 
-+	if (!masked)
-+		unmask_evtchn(evtchn);
-+
- 	return 0;
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -1825,6 +1825,16 @@ int remap_pfn_range(struct vm_area_struc
  }
+ EXPORT_SYMBOL(remap_pfn_range);
  
++int vm_iomap_memory(struct vm_area_struct *vma, phys_addr_t start, unsigned long len)
++{
++	unsigned long pfn = start >> PAGE_SHIFT;
++	unsigned long vm_len = vma->vm_end - vma->vm_start;
++
++	pfn += vma->vm_pgoff;
++	return io_remap_pfn_range(vma, vma->vm_start, pfn, vm_len, vma->vm_page_prot);
++}
++EXPORT_SYMBOL(vm_iomap_memory);
++
+ int remap_vmalloc_range(struct vm_area_struct *vma, void *addr,
+ 			unsigned long pgoff)
+ {
 
