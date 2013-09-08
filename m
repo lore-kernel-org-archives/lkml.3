@@ -1,295 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab3IHM3H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 08:29:07 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4711 "EHLO
+	id S1753077Ab3IHM3D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 08:29:03 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14983 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282Ab3IHM1C (ORCPT
+	with ESMTP id S1751293Ab3IHM1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 8 Sep 2013 08:27:02 -0400
-X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=sl7d0L5bNnUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=WFY1YYRfjMsA:10 a=JfrnYn6hAAAA:8 a=VwQbUJbxAAAA:8 a=zoXEhvF-F7yDekewhzcA:9 a=Zh68SRI7RUMA:10 a=3Rfx1nUSh_UA:10 a=LI9Vle30uBYA:10 a=hHHxGNhm4NfO8lwy:21 a=i4AqH7oMDX5yhxDS:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=bJOBAaNtHCoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=I5-oX6zSL1kA:10 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=yZiWNbNhAAAA:8 a=-5pFszFYAAAA:8 a=vOalPaE7P0jNQKfK7rkA:9 a=ZSzxmXNk65QA:10 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130908122659.758218171@goodmis.org>
+Message-Id: <20130908122700.384774713@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Sun, 08 Sep 2013 08:25:46 -0400
+Date: Sun, 08 Sep 2013 08:25:50 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        <stable-rt@vger.kernel.org>
-Subject: [PATCH RT 01/10] sched: Distangle worker accounting from rqlock
+        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>,
+        Steven Rostedt <srostedt@redhat.com>
+Subject: [PATCH RT 05/10] hwlat-detector: Update hwlat_detector to add outer loop detection
 References: <20130908122545.421180629@goodmis.org>
-Content-Disposition: inline; filename=0001-sched-Distangle-worker-accounting-from-rqlock.patch
+Content-Disposition: inline; filename=0005-hwlat-detector-Update-hwlat_detector-to-add-outer-lo.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-The worker accounting for cpu bound workers is plugged into the core
-scheduler code and the wakeup code. This is not a hard requirement and
-can be avoided by keeping track of the state in the workqueue code
-itself.
+The hwlat_detector reads two timestamps in a row, then reports any
+gap between those calls. The problem is, it misses everything between
+the second reading of the time stamp to the first reading of the time stamp
+in the next loop. That's were most of the time is spent, which means,
+chances are likely that it will miss all hardware latencies. This
+defeats the purpose.
 
-Keep track of the sleeping state in the worker itself and call the
-notifier before entering the core scheduler. There might be false
-positives when the task is woken between that call and actually
-scheduling, but that's not really different from scheduling and being
-woken immediately after switching away. There is also no harm from
-updating nr_running when the task returns from scheduling instead of
-accounting it in the wakeup code.
+By also testing the first time stamp from the previous loop second
+time stamp (the outer loop), we are more likely to find a latency.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>
+Setting the threshold to 1, here's what the report now looks like:
+
+1347415723.0232202770	0	2
+1347415725.0234202822	0	2
+1347415727.0236202875	0	2
+1347415729.0238202928	0	2
+1347415731.0240202980	0	2
+1347415734.0243203061	0	2
+1347415736.0245203113	0	2
+1347415738.0247203166	2	0
+1347415740.0249203219	0	3
+1347415742.0251203272	0	3
+1347415743.0252203299	0	3
+1347415745.0254203351	0	2
+1347415747.0256203404	0	2
+1347415749.0258203457	0	2
+1347415751.0260203510	0	2
+1347415754.0263203589	0	2
+1347415756.0265203642	0	2
+1347415758.0267203695	0	2
+1347415760.0269203748	0	2
+1347415762.0271203801	0	2
+1347415764.0273203853	2	0
+
+There's some hardware latency that takes 2 microseconds to run.
+
 Cc: stable-rt@vger.kernel.org
-Link: http://lkml.kernel.org/r/20110622174919.135236139@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Steven Rostedt <srostedt@redhat.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- kernel/sched/core.c      |   70 ++++++++++------------------------------------
- kernel/workqueue.c       |   63 +++++++++++++++++++----------------------
- kernel/workqueue_sched.h |    5 ++--
- 3 files changed, 46 insertions(+), 92 deletions(-)
+ drivers/misc/hwlat_detector.c |   32 ++++++++++++++++++++++++++------
+ 1 file changed, 26 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 505e08f..d7c1471 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1321,10 +1321,6 @@ static void ttwu_activate(struct rq *rq, struct task_struct *p, int en_flags)
+diff --git a/drivers/misc/hwlat_detector.c b/drivers/misc/hwlat_detector.c
+index b7b7c90..f93b8ef 100644
+--- a/drivers/misc/hwlat_detector.c
++++ b/drivers/misc/hwlat_detector.c
+@@ -143,6 +143,7 @@ static void detector_exit(void);
+ struct sample {
+ 	u64		seqnum;		/* unique sequence */
+ 	u64		duration;	/* ktime delta */
++	u64		outer_duration;	/* ktime delta (outer loop) */
+ 	struct timespec	timestamp;	/* wall time */
+ 	unsigned long   lost;
+ };
+@@ -219,11 +220,13 @@ static struct sample *buffer_get_sample(struct sample *sample)
+  */
+ static int get_sample(void *unused)
  {
- 	activate_task(rq, p, en_flags);
- 	p->on_rq = 1;
--
--	/* if a worker is waking up, notify workqueue */
--	if (p->flags & PF_WQ_WORKER)
--		wq_worker_waking_up(p, cpu_of(rq));
- }
+-	ktime_t start, t1, t2;
++	ktime_t start, t1, t2, last_t2;
+ 	s64 diff, total = 0;
+ 	u64 sample = 0;
++	u64 outer_sample = 0;
+ 	int ret = 1;
  
- /*
-@@ -1551,42 +1547,6 @@ out:
- }
++	last_t2.tv64 = 0;
+ 	start = ktime_get(); /* start timestamp */
  
- /**
-- * try_to_wake_up_local - try to wake up a local task with rq lock held
-- * @p: the thread to be awakened
-- *
-- * Put @p on the run-queue if it's not already there. The caller must
-- * ensure that this_rq() is locked, @p is bound to this_rq() and not
-- * the current task.
-- */
--static void try_to_wake_up_local(struct task_struct *p)
--{
--	struct rq *rq = task_rq(p);
--
--	if (WARN_ON_ONCE(rq != this_rq()) ||
--	    WARN_ON_ONCE(p == current))
--		return;
--
--	lockdep_assert_held(&rq->lock);
--
--	if (!raw_spin_trylock(&p->pi_lock)) {
--		raw_spin_unlock(&rq->lock);
--		raw_spin_lock(&p->pi_lock);
--		raw_spin_lock(&rq->lock);
--	}
--
--	if (!(p->state & TASK_NORMAL))
--		goto out;
--
--	if (!p->on_rq)
--		ttwu_activate(rq, p, ENQUEUE_WAKEUP);
--
--	ttwu_do_wakeup(rq, p, 0);
--	ttwu_stat(p, smp_processor_id(), 0);
--out:
--	raw_spin_unlock(&p->pi_lock);
--}
--
--/**
-  * wake_up_process - Wake up a specific process
-  * @p: The process to be woken up.
-  *
-@@ -3139,21 +3099,6 @@ need_resched:
- 		} else {
- 			deactivate_task(rq, prev, DEQUEUE_SLEEP);
- 			prev->on_rq = 0;
--
--			/*
--			 * If a worker went to sleep, notify and ask workqueue
--			 * whether it wants to wake up a task to maintain
--			 * concurrency.
--			 * Only call wake up if prev isn't blocked on a sleeping
--			 * spin lock.
--			 */
--			if (prev->flags & PF_WQ_WORKER && !prev->saved_state) {
--				struct task_struct *to_wakeup;
--
--				to_wakeup = wq_worker_sleeping(prev, cpu);
--				if (to_wakeup)
--					try_to_wake_up_local(to_wakeup);
--			}
+ 	do {
+@@ -231,7 +234,22 @@ static int get_sample(void *unused)
+ 		t1 = ktime_get();	/* we'll look for a discontinuity */
+ 		t2 = ktime_get();
+ 
++		if (last_t2.tv64) {
++			/* Check the delta from the outer loop (t2 to next t1) */
++			diff = ktime_to_us(ktime_sub(t1, last_t2));
++			/* This shouldn't happen */
++			if (diff < 0) {
++				printk(KERN_ERR BANNER "time running backwards\n");
++				goto out;
++			}
++			if (diff > outer_sample)
++				outer_sample = diff;
++		}
++		last_t2 = t2;
++
+ 		total = ktime_to_us(ktime_sub(t2, start)); /* sample width */
++
++		/* This checks the inner loop (t1 to t2) */
+ 		diff = ktime_to_us(ktime_sub(t2, t1));     /* current diff */
+ 
+ 		/* This shouldn't happen */
+@@ -246,12 +264,13 @@ static int get_sample(void *unused)
+ 	} while (total <= data.sample_width);
+ 
+ 	/* If we exceed the threshold value, we have found a hardware latency */
+-	if (sample > data.threshold) {
++	if (sample > data.threshold || outer_sample > data.threshold) {
+ 		struct sample s;
+ 
+ 		data.count++;
+ 		s.seqnum = data.count;
+ 		s.duration = sample;
++		s.outer_duration = outer_sample;
+ 		s.timestamp = CURRENT_TIME;
+ 		__buffer_add_sample(&s);
+ 
+@@ -738,10 +757,11 @@ static ssize_t debug_sample_fread(struct file *filp, char __user *ubuf,
  		}
- 		switch_count = &prev->nvcsw;
  	}
-@@ -3197,6 +3142,14 @@ static inline void sched_submit_work(struct task_struct *tsk)
- {
- 	if (!tsk->state || tsk_is_pi_blocked(tsk))
- 		return;
-+
-+	/*
-+	 * If a worker went to sleep, notify and ask workqueue whether
-+	 * it wants to wake up a task to maintain concurrency.
-+	 */
-+	if (tsk->flags & PF_WQ_WORKER)
-+		wq_worker_sleeping(tsk);
-+
- 	/*
- 	 * If we are going to sleep and we have plugged IO queued,
- 	 * make sure to submit it to avoid deadlocks.
-@@ -3205,12 +3158,19 @@ static inline void sched_submit_work(struct task_struct *tsk)
- 		blk_schedule_flush_plug(tsk);
- }
  
-+static inline void sched_update_worker(struct task_struct *tsk)
-+{
-+	if (tsk->flags & PF_WQ_WORKER)
-+		wq_worker_running(tsk);
-+}
-+
- asmlinkage void __sched schedule(void)
- {
- 	struct task_struct *tsk = current;
+-	len = snprintf(buf, sizeof(buf), "%010lu.%010lu\t%llu\n",
+-		      sample->timestamp.tv_sec,
+-		      sample->timestamp.tv_nsec,
+-		      sample->duration);
++	len = snprintf(buf, sizeof(buf), "%010lu.%010lu\t%llu\t%llu\n",
++		       sample->timestamp.tv_sec,
++		       sample->timestamp.tv_nsec,
++		       sample->duration,
++		       sample->outer_duration);
  
- 	sched_submit_work(tsk);
- 	__schedule();
-+	sched_update_worker(tsk);
- }
- EXPORT_SYMBOL(schedule);
  
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 99855b3..788b017 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -149,6 +149,7 @@ struct worker {
- 	unsigned long		last_active;	/* L: last active timestamp */
- 	unsigned int		flags;		/* X: flags */
- 	int			id;		/* I: worker id */
-+	int			sleeping;	/* None */
- 
- 	/* for rebinding worker to CPU */
- 	struct work_struct	rebind_work;	/* L: for busy worker */
-@@ -730,54 +731,45 @@ static void wake_up_worker(struct worker_pool *pool)
- }
- 
- /**
-- * wq_worker_waking_up - a worker is waking up
-- * @task: task waking up
-- * @cpu: CPU @task is waking up to
-+ * wq_worker_running - a worker is running again
-+ * @task: task returning from sleep
-  *
-- * This function is called during try_to_wake_up() when a worker is
-- * being awoken.
-- *
-- * CONTEXT:
-- * spin_lock_irq(rq->lock)
-+ * This function is called when a worker returns from schedule()
-  */
--void wq_worker_waking_up(struct task_struct *task, unsigned int cpu)
-+void wq_worker_running(struct task_struct *task)
- {
- 	struct worker *worker = kthread_data(task);
- 
--	if (!(worker->flags & WORKER_NOT_RUNNING)) {
--		WARN_ON_ONCE(worker->pool->gcwq->cpu != cpu);
-+	if (!worker->sleeping)
-+		return;
-+	if (!(worker->flags & WORKER_NOT_RUNNING))
- 		atomic_inc(get_pool_nr_running(worker->pool));
--	}
-+	worker->sleeping = 0;
- }
- 
- /**
-  * wq_worker_sleeping - a worker is going to sleep
-  * @task: task going to sleep
-- * @cpu: CPU in question, must be the current CPU number
-- *
-- * This function is called during schedule() when a busy worker is
-- * going to sleep.  Worker on the same cpu can be woken up by
-- * returning pointer to its task.
-- *
-- * CONTEXT:
-- * spin_lock_irq(rq->lock)
-- *
-- * RETURNS:
-- * Worker task on @cpu to wake up, %NULL if none.
-+ * This function is called from schedule() when a busy worker is
-+ * going to sleep.
-  */
--struct task_struct *wq_worker_sleeping(struct task_struct *task,
--				       unsigned int cpu)
-+void wq_worker_sleeping(struct task_struct *task)
- {
--	struct worker *worker = kthread_data(task), *to_wakeup = NULL;
--	struct worker_pool *pool = worker->pool;
--	atomic_t *nr_running = get_pool_nr_running(pool);
-+	struct worker *next, *worker = kthread_data(task);
-+	struct worker_pool *pool;
-+	atomic_t *nr_running;
- 
- 	if (worker->flags & WORKER_NOT_RUNNING)
--		return NULL;
-+		return;
-+
-+	if (WARN_ON_ONCE(worker->sleeping))
-+		return;
- 
--	/* this can only happen on the local cpu */
--	BUG_ON(cpu != raw_smp_processor_id());
-+	pool = worker->pool;
-+	nr_running = get_pool_nr_running(pool);
- 
-+	worker->sleeping = 1;
-+	spin_lock_irq(&pool->gcwq->lock);
- 	/*
- 	 * The counterpart of the following dec_and_test, implied mb,
- 	 * worklist not empty test sequence is in insert_work().
-@@ -789,9 +781,12 @@ struct task_struct *wq_worker_sleeping(struct task_struct *task,
- 	 * manipulating idle_list, so dereferencing idle_list without gcwq
- 	 * lock is safe.
- 	 */
--	if (atomic_dec_and_test(nr_running) && !list_empty(&pool->worklist))
--		to_wakeup = first_worker(pool);
--	return to_wakeup ? to_wakeup->task : NULL;
-+	if (atomic_dec_and_test(nr_running) && !list_empty(&pool->worklist)) {
-+		next = first_worker(pool);
-+		if (next)
-+			wake_up_process(next->task);
-+	}
-+	spin_unlock_irq(&pool->gcwq->lock);
- }
- 
- /**
-diff --git a/kernel/workqueue_sched.h b/kernel/workqueue_sched.h
-index 2d10fc9..3bf73e2 100644
---- a/kernel/workqueue_sched.h
-+++ b/kernel/workqueue_sched.h
-@@ -4,6 +4,5 @@
-  * Scheduler hooks for concurrency managed workqueue.  Only to be
-  * included from sched.c and workqueue.c.
-  */
--void wq_worker_waking_up(struct task_struct *task, unsigned int cpu);
--struct task_struct *wq_worker_sleeping(struct task_struct *task,
--				       unsigned int cpu);
-+void wq_worker_running(struct task_struct *task);
-+void wq_worker_sleeping(struct task_struct *task);
+ 	/* handling partial reads is more trouble than it's worth */
 -- 
 1.7.10.4
 
