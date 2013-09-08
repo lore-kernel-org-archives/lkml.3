@@ -1,215 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751551Ab3IHM4q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 08:56:46 -0400
+	id S1752718Ab3IHM50 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 08:57:26 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31669 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751361Ab3IHM4o (ORCPT
+	with ESMTP id S1751383Ab3IHM4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 08:56:44 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=c3xxooaWsP4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=oifTI6OnsvIA:10 a=VwQbUJbxAAAA:8 a=ILSa-1RNdHgTr9NWcJsA:9 a=jeBq3FmKZ4MA:10 a=Zh68SRI7RUMA:10 a=mP2R4ycEUXQE7R-J:21 a=nk3MEWUmja_tVkRA:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Sun, 8 Sep 2013 08:56:45 -0400
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=CLgLdwHgccMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=qJjMsBi07U4A:10 a=VwQbUJbxAAAA:8 a=PRS0kguCKcSZEYgeq30A:9 a=Zh68SRI7RUMA:10 a=WJL2L8o7Km_543A3:21 a=pmKuV79opOfai7pd:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130908122700.859399124@goodmis.org>
+Message-Id: <20130908122701.038857462@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Sun, 08 Sep 2013 08:25:53 -0400
+Date: Sun, 08 Sep 2013 08:25:54 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>
-Subject: [PATCH RT 08/10] hwlat-detector: Use thread instead of stop machine
+Subject: [PATCH RT 09/10] genirq: do not invoke the affinity callback via a workqueue
 References: <20130908122545.421180629@goodmis.org>
-Content-Disposition: inline; filename=0008-hwlat-detector-Use-thread-instead-of-stop-machine.patch
+Content-Disposition: inline; filename=0009-genirq-do-not-invoke-the-affinity-callback-via-a-wor.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-There's no reason to use stop machine to search for hardware latency.
-Simply disabling interrupts while running the loop will do enough to
-check if something comes in that wasn't disabled by interrupts being
-off, which is exactly what stop machine does.
-
-Instead of using stop machine, just have the thread disable interrupts
-while it checks for hardware latency.
+Joe Korty reported, that __irq_set_affinity_locked() schedules a
+workqueue while holding a rawlock which results in a might_sleep()
+warning.
+This patch moves the invokation into a process context so that we only
+wakeup() a process while holding the lock.
 
 Cc: stable-rt@vger.kernel.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- drivers/misc/hwlat_detector.c |   59 +++++++++++++++++------------------------
- 1 file changed, 25 insertions(+), 34 deletions(-)
+ include/linux/interrupt.h |    1 +
+ kernel/irq/manage.c       |   79 +++++++++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 77 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/misc/hwlat_detector.c b/drivers/misc/hwlat_detector.c
-index 13443e9..6f61d5f 100644
---- a/drivers/misc/hwlat_detector.c
-+++ b/drivers/misc/hwlat_detector.c
-@@ -41,7 +41,6 @@
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/ring_buffer.h>
--#include <linux/stop_machine.h>
- #include <linux/time.h>
- #include <linux/hrtimer.h>
- #include <linux/kthread.h>
-@@ -107,7 +106,6 @@ struct data;					/* Global state */
- /* Sampling functions */
- static int __buffer_add_sample(struct sample *sample);
- static struct sample *buffer_get_sample(struct sample *sample);
--static int get_sample(void *unused);
- 
- /* Threading and state */
- static int kthread_fn(void *unused);
-@@ -149,7 +147,7 @@ struct sample {
- 	unsigned long   lost;
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index 11bdb1e..838d4bd 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -263,6 +263,7 @@ struct irq_affinity_notify {
+ 	unsigned int irq;
+ 	struct kref kref;
+ 	struct work_struct work;
++	struct list_head list;
+ 	void (*notify)(struct irq_affinity_notify *, const cpumask_t *mask);
+ 	void (*release)(struct kref *ref);
  };
- 
--/* keep the global state somewhere. Mostly used under stop_machine. */
-+/* keep the global state somewhere. */
- static struct data {
- 
- 	struct mutex lock;		/* protect changes */
-@@ -172,7 +170,7 @@ static struct data {
-  * @sample: The new latency sample value
-  *
-  * This receives a new latency sample and records it in a global ring buffer.
-- * No additional locking is used in this case - suited for stop_machine use.
-+ * No additional locking is used in this case.
-  */
- static int __buffer_add_sample(struct sample *sample)
- {
-@@ -229,18 +227,17 @@ static struct sample *buffer_get_sample(struct sample *sample)
- #endif
- /**
-  * get_sample - sample the CPU TSC and look for likely hardware latencies
-- * @unused: This is not used but is a part of the stop_machine API
-  *
-  * Used to repeatedly capture the CPU TSC (or similar), looking for potential
-- * hardware-induced latency. Called under stop_machine, with data.lock held.
-+ * hardware-induced latency. Called with interrupts disabled and with data.lock held.
-  */
--static int get_sample(void *unused)
-+static int get_sample(void)
- {
- 	time_type start, t1, t2, last_t2;
- 	s64 diff, total = 0;
- 	u64 sample = 0;
- 	u64 outer_sample = 0;
--	int ret = 1;
-+	int ret = -1;
- 
- 	init_time(last_t2, 0);
- 	start = time_get(); /* start timestamp */
-@@ -279,10 +276,14 @@ static int get_sample(void *unused)
- 
- 	} while (total <= data.sample_width);
- 
-+	ret = 0;
-+
- 	/* If we exceed the threshold value, we have found a hardware latency */
- 	if (sample > data.threshold || outer_sample > data.threshold) {
- 		struct sample s;
- 
-+		ret = 1;
-+
- 		data.count++;
- 		s.seqnum = data.count;
- 		s.duration = sample;
-@@ -295,7 +296,6 @@ static int get_sample(void *unused)
- 			data.max_sample = sample;
- 	}
- 
--	ret = 0;
- out:
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 81a28dd..cf5b5f7 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -163,6 +163,62 @@ int irq_do_set_affinity(struct irq_data *data, const struct cpumask *mask,
  	return ret;
  }
-@@ -305,32 +305,30 @@ out:
-  * @unused: A required part of the kthread API.
-  *
-  * Used to periodically sample the CPU TSC via a call to get_sample. We
-- * use stop_machine, whith does (intentionally) introduce latency since we
-+ * disable interrupts, which does (intentionally) introduce latency since we
-  * need to ensure nothing else might be running (and thus pre-empting).
-  * Obviously this should never be used in production environments.
-  *
-- * stop_machine will schedule us typically only on CPU0 which is fine for
-- * almost every real-world hardware latency situation - but we might later
-- * generalize this if we find there are any actualy systems with alternate
-- * SMI delivery or other non CPU0 hardware latencies.
-+ * Currently this runs on which ever CPU it was scheduled on, but most
-+ * real-worald hardware latency situations occur across several CPUs,
-+ * but we might later generalize this if we find there are any actualy
-+ * systems with alternate SMI delivery or other hardware latencies.
-  */
- static int kthread_fn(void *unused)
- {
--	int err = 0;
--	u64 interval = 0;
-+	int ret;
-+	u64 interval;
  
- 	while (!kthread_should_stop()) {
- 
- 		mutex_lock(&data.lock);
- 
--		err = stop_machine(get_sample, unused, 0);
--		if (err) {
--			/* Houston, we have a problem */
--			mutex_unlock(&data.lock);
--			goto err_out;
--		}
-+		local_irq_disable();
-+		ret = get_sample();
-+		local_irq_enable();
- 
--		wake_up(&data.wq); /* wake up reader(s) */
-+		if (ret > 0)
-+			wake_up(&data.wq); /* wake up reader(s) */
- 
- 		interval = data.sample_window - data.sample_width;
- 		do_div(interval, USEC_PER_MSEC); /* modifies interval value */
-@@ -338,15 +336,10 @@ static int kthread_fn(void *unused)
- 		mutex_unlock(&data.lock);
- 
- 		if (msleep_interruptible(interval))
--			goto out;
++#ifdef CONFIG_PREEMPT_RT_FULL
++static void _irq_affinity_notify(struct irq_affinity_notify *notify);
++static struct task_struct *set_affinity_helper;
++static LIST_HEAD(affinity_list);
++static DEFINE_RAW_SPINLOCK(affinity_list_lock);
++
++static int set_affinity_thread(void *unused)
++{
++	while (1) {
++		struct irq_affinity_notify *notify;
++		int empty;
++
++		set_current_state(TASK_INTERRUPTIBLE);
++
++		raw_spin_lock_irq(&affinity_list_lock);
++		empty = list_empty(&affinity_list);
++		raw_spin_unlock_irq(&affinity_list_lock);
++
++		if (empty)
++			schedule();
++		if (kthread_should_stop())
 +			break;
- 	}
--		goto out;
--err_out:
--	printk(KERN_ERR BANNER "could not call stop_machine, disabling\n");
--	enabled = 0;
--out:
--	return err;
- 
++		set_current_state(TASK_RUNNING);
++try_next:
++		notify = NULL;
++
++		raw_spin_lock_irq(&affinity_list_lock);
++		if (!list_empty(&affinity_list)) {
++			notify = list_first_entry(&affinity_list,
++					struct irq_affinity_notify, list);
++			list_del_init(&notify->list);
++		}
++		raw_spin_unlock_irq(&affinity_list_lock);
++
++		if (!notify)
++			continue;
++		_irq_affinity_notify(notify);
++		goto try_next;
++	}
 +	return 0;
++}
++
++static void init_helper_thread(void)
++{
++	if (set_affinity_helper)
++		return;
++	set_affinity_helper = kthread_run(set_affinity_thread, NULL,
++			"affinity-cb");
++	WARN_ON(IS_ERR(set_affinity_helper));
++}
++#else
++
++static inline void init_helper_thread(void) { }
++
++#endif
++
+ int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
+ {
+ 	struct irq_chip *chip = irq_data_get_irq_chip(data);
+@@ -181,7 +237,17 @@ int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
+ 
+ 	if (desc->affinity_notify) {
+ 		kref_get(&desc->affinity_notify->kref);
++
++#ifdef CONFIG_PREEMPT_RT_FULL
++		raw_spin_lock(&affinity_list_lock);
++		if (list_empty(&desc->affinity_notify->list))
++			list_add_tail(&affinity_list,
++					&desc->affinity_notify->list);
++		raw_spin_unlock(&affinity_list_lock);
++		wake_up_process(set_affinity_helper);
++#else
+ 		schedule_work(&desc->affinity_notify->work);
++#endif
+ 	}
+ 	irqd_set(data, IRQD_AFFINITY_SET);
+ 
+@@ -222,10 +288,8 @@ int irq_set_affinity_hint(unsigned int irq, const struct cpumask *m)
+ }
+ EXPORT_SYMBOL_GPL(irq_set_affinity_hint);
+ 
+-static void irq_affinity_notify(struct work_struct *work)
++static void _irq_affinity_notify(struct irq_affinity_notify *notify)
+ {
+-	struct irq_affinity_notify *notify =
+-		container_of(work, struct irq_affinity_notify, work);
+ 	struct irq_desc *desc = irq_to_desc(notify->irq);
+ 	cpumask_var_t cpumask;
+ 	unsigned long flags;
+@@ -247,6 +311,13 @@ out:
+ 	kref_put(&notify->kref, notify->release);
  }
  
++static void irq_affinity_notify(struct work_struct *work)
++{
++	struct irq_affinity_notify *notify =
++		container_of(work, struct irq_affinity_notify, work);
++	_irq_affinity_notify(notify);
++}
++
  /**
-@@ -442,8 +435,7 @@ out:
-  * This function provides a generic read implementation for the global state
-  * "data" structure debugfs filesystem entries. It would be nice to use
-  * simple_attr_read directly, but we need to make sure that the data.lock
-- * spinlock is held during the actual read (even though we likely won't ever
-- * actually race here as the updater runs under a stop_machine context).
-+ * is held during the actual read.
-  */
- static ssize_t simple_data_read(struct file *filp, char __user *ubuf,
- 				size_t cnt, loff_t *ppos, const u64 *entry)
-@@ -478,8 +470,7 @@ static ssize_t simple_data_read(struct file *filp, char __user *ubuf,
-  * This function provides a generic write implementation for the global state
-  * "data" structure debugfs filesystem entries. It would be nice to use
-  * simple_attr_write directly, but we need to make sure that the data.lock
-- * spinlock is held during the actual write (even though we likely won't ever
-- * actually race here as the updater runs under a stop_machine context).
-+ * is held during the actual write.
-  */
- static ssize_t simple_data_write(struct file *filp, const char __user *ubuf,
- 				 size_t cnt, loff_t *ppos, u64 *entry)
+  *	irq_set_affinity_notifier - control notification of IRQ affinity changes
+  *	@irq:		Interrupt for which to enable/disable notification
+@@ -276,6 +347,8 @@ irq_set_affinity_notifier(unsigned int irq, struct irq_affinity_notify *notify)
+ 		notify->irq = irq;
+ 		kref_init(&notify->kref);
+ 		INIT_WORK(&notify->work, irq_affinity_notify);
++		INIT_LIST_HEAD(&notify->list);
++		init_helper_thread();
+ 	}
+ 
+ 	raw_spin_lock_irqsave(&desc->lock, flags);
 -- 
 1.7.10.4
 
