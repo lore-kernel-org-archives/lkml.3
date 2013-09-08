@@ -1,118 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932143Ab3IHP7f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 11:59:35 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18000 "EHLO
+	id S932170Ab3IHP7t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 11:59:49 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13590 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756652Ab3IHP4r (ORCPT
+	with ESMTP id S1756548Ab3IHP4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 8 Sep 2013 11:56:47 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=izjLgYaVtYMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=1GToGMD1ptoA:10 a=VwQbUJbxAAAA:8 a=VcUiGOdTKjBeXruxuyoA:9 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=rpW4z8QB6e8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=SUI-plciMJgA:10 a=VwQbUJbxAAAA:8 a=JMmVheP2ipgur9K0H9QA:9 a=Zh68SRI7RUMA:10 a=IZwFEM60SIV5pQIB:21 a=zZer69hpkVGsyBAI:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130908151446.911305484@goodmis.org>
+Message-Id: <20130908151447.072858173@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Sun, 08 Sep 2013 11:14:02 -0400
+Date: Sun, 08 Sep 2013 11:14:03 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>
-Subject: [PATCH RT 07/19] kernel/cpu: fix cpu down problem if kthreads cpu is going down
+Subject: [PATCH RT 08/19] kernel/hotplug: restore original cpu mask oncpu/down
 References: <20130908151355.362583092@goodmis.org>
-Content-Disposition: inline; filename=0007-kernel-cpu-fix-cpu-down-problem-if-kthread-s-cpu-is-.patch
+Content-Disposition: inline; filename=0008-kernel-hotplug-restore-original-cpu-mask-oncpu-down.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-If kthread is pinned to CPUx and CPUx is going down then we get into
-trouble:
-- first the unplug thread is created
-- it will set itself to hp->unplug. As a result, every task that is
-  going to take a lock, has to leave the CPU.
-- the CPU_DOWN_PREPARE notifier are started. The worker thread will
-  start a new process for the "high priority worker".
-  Now kthread would like to take a lock but since it can't leave the CPU
-  it will never complete its task.
-
-We could fire the unplug thread after the notifier but then the cpu is
-no longer marked "online" and the unplug thread will run on CPU0 which
-was fixed before :)
-
-So instead the unplug thread is started and kept waiting until the
-notfier complete their work.
+If a task which is allowed to run only on CPU X puts CPU Y down then it
+will be allowed on all CPUs but the on CPU Y after it comes back from
+kernel. This patch ensures that we don't lose the initial setting unless
+the CPU the task is running is going down.
 
 Cc: stable-rt@vger.kernel.org
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- kernel/cpu.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ kernel/cpu.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 295bf9d..22063f3 100644
+index 22063f3..16ec791 100644
 --- a/kernel/cpu.c
 +++ b/kernel/cpu.c
-@@ -83,6 +83,7 @@ struct hotplug_pcp {
- 	int refcount;
- 	int grab_lock;
- 	struct completion synced;
-+	struct completion unplug_wait;
- #ifdef CONFIG_PREEMPT_RT_FULL
- 	spinlock_t lock;
- #else
-@@ -180,6 +181,7 @@ static int sync_unplug_thread(void *data)
- {
- 	struct hotplug_pcp *hp = data;
+@@ -563,6 +563,7 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 		.hcpu = hcpu,
+ 	};
+ 	cpumask_var_t cpumask;
++	cpumask_var_t cpumask_org;
  
-+	wait_for_completion(&hp->unplug_wait);
- 	preempt_disable();
- 	hp->unplug = current;
- 	wait_for_pinned_cpus(hp);
-@@ -245,6 +247,14 @@ static void __cpu_unplug_sync(struct hotplug_pcp *hp)
- 	wait_for_completion(&hp->synced);
- }
- 
-+static void __cpu_unplug_wait(unsigned int cpu)
-+{
-+	struct hotplug_pcp *hp = &per_cpu(hotplug_pcp, cpu);
+ 	if (num_online_cpus() == 1)
+ 		return -EBUSY;
+@@ -573,6 +574,12 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 	/* Move the downtaker off the unplug cpu */
+ 	if (!alloc_cpumask_var(&cpumask, GFP_KERNEL))
+ 		return -ENOMEM;
++	if (!alloc_cpumask_var(&cpumask_org, GFP_KERNEL))  {
++		free_cpumask_var(cpumask);
++		return -ENOMEM;
++	}
 +
-+	complete(&hp->unplug_wait);
-+	wait_for_completion(&hp->synced);
-+}
-+
- /*
-  * Start the sync_unplug_thread on the target cpu and wait for it to
-  * complete.
-@@ -268,6 +278,7 @@ static int cpu_unplug_begin(unsigned int cpu)
- 	tell_sched_cpu_down_begin(cpu);
- 
- 	init_completion(&hp->synced);
-+	init_completion(&hp->unplug_wait);
- 
- 	hp->sync_tsk = kthread_create(sync_unplug_thread, hp, "sync_unplug/%d", cpu);
- 	if (IS_ERR(hp->sync_tsk)) {
-@@ -283,8 +294,7 @@ static int cpu_unplug_begin(unsigned int cpu)
- 	 * wait for tasks that are going to enter these sections and
- 	 * we must not have them block.
- 	 */
--	__cpu_unplug_sync(hp);
--
-+	wake_up_process(hp->sync_tsk);
- 	return 0;
- }
- 
-@@ -590,6 +600,8 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
- 		goto out_release;
++	cpumask_copy(cpumask_org, tsk_cpus_allowed(current));
+ 	cpumask_andnot(cpumask, cpu_online_mask, cpumask_of(cpu));
+ 	set_cpus_allowed_ptr(current, cpumask);
+ 	free_cpumask_var(cpumask);
+@@ -581,7 +588,8 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 	if (mycpu == cpu) {
+ 		printk(KERN_ERR "Yuck! Still on unplug CPU\n!");
+ 		migrate_enable();
+-		return -EBUSY;
++		err = -EBUSY;
++		goto restore_cpus;
  	}
  
-+	__cpu_unplug_wait(cpu);
-+
- 	/* Notifiers are done. Don't let any more tasks pin this CPU. */
- 	cpu_unplug_sync(cpu);
+ 	cpu_hotplug_begin();
+@@ -639,6 +647,9 @@ out_cancel:
+ 	cpu_hotplug_done();
+ 	if (!err)
+ 		cpu_notify_nofail(CPU_POST_DEAD | mod, hcpu);
++restore_cpus:
++	set_cpus_allowed_ptr(current, cpumask_org);
++	free_cpumask_var(cpumask_org);
+ 	return err;
+ }
  
 -- 
 1.7.10.4
