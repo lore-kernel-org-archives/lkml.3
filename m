@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751032Ab3IHARx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 20:17:53 -0400
-Received: from zill.ext.symas.net ([69.43.206.106]:56679 "EHLO
-	zill.ext.symas.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770Ab3IHARw (ORCPT
-	<rfc822;Linux-Kernel@Vger.Kernel.ORG>);
-	Sat, 7 Sep 2013 20:17:52 -0400
-X-Greylist: delayed 999 seconds by postgrey-1.27 at vger.kernel.org; Sat, 07 Sep 2013 20:17:52 EDT
-Message-ID: <522BBE46.9060809@symas.com>
-Date: Sat, 07 Sep 2013 17:01:10 -0700
-From: Howard Chu <hyc@symas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:25.0) Gecko/20100101 Firefox/25.0 SeaMonkey/2.22a1
+	id S1751133Ab3IHASt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 20:18:49 -0400
+Received: from nm4-vm1.access.bullet.mail.bf1.yahoo.com ([216.109.114.112]:36703
+	"EHLO nm4-vm1.access.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750944Ab3IHASs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Sep 2013 20:18:48 -0400
+X-Yahoo-Newman-Id: 651948.36286.bm@smtp115.sbc.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 4QOiszQVM1lY.REj24IHflarpowMOiY1X8xst18cIOrY87V
+ VgAoDg1F1DO6ocJ4DJvciuDx0rgFvnUMCaYwsG_2nuRzBZuXsJ22wttA4pBf
+ B4uWTOmTbKjIEfgTb1N7oEC7nvKVz1huaTevMTDbB1uMdRr.CXXHrtGvsaL6
+ A8eDg1kenR2hfBVA8oGiN1dzoa7wlITUrz_ihArimkRmwgGnp42GFPiK2T0E
+ aYk.KhczOBBAU7NAdcdkmIOdgg9kVQYjQPST2NAx7UA9ZLGzIkewdQfhJ6bb
+ pqf7cFyDMBUnkEPi62gtVvnSPrVY_MUNUXy1C8Gi80H78mi.GcxL3oCzUwHi
+ HV9BqDVqbALdcdAqhMUQpLL35IVpVvMP3VbaDRAgo2Wfofw8lo8lRa1DaM.F
+ mjc5XUvrLAU9UqJvoeej9suiX0k09j4ai.sYJVFoLX3p2DMQQOy6BKDRo.zQ
+ lvWDQxHcuuXXMqvXS.aSMhjTptX1sLbtDES8_3yduUhB.XQN7B2UsGxa4X7B
+ cnKU169K_E3um12h3G1oLojQ8rpz9PvEGs50fFbO5pYfelzzLC1RhLj8ACZT
+ .3tnb04T18H26sPphvKQ.IVFzsDxrcuobm1f5O3JXQ8LLwPyoB_fbyyfr9c1
+ CSxyISbgOwNPqko8olk6KL1rJOh0NOra76nb1MA--
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+X-Rocket-Received: from [192.168.1.4] (danielfsantos@99.70.244.137 with )
+        by smtp115.sbc.mail.bf1.yahoo.com with SMTP; 07 Sep 2013 17:18:47 -0700 PDT
+Message-ID: <522BC27A.5080303@att.net>
+Date: Sat, 07 Sep 2013 19:19:06 -0500
+From: Daniel Santos <danielfsantos@att.net>
+Reply-To: Daniel Santos <daniel.santos@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130730 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <Linux-Kernel@vger.kernel.org>
-Subject: dirty_expire_centisecs, msync behavior
+To: linux-gpio <linux-gpio@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        linux-spi <linux-spi@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: "Virtual" Interrupts -- Need help please
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The documentation for dirty_expire_centisecs states: "Data which has been 
-dirty in-memory for longer than this interval will be written out next time a 
-flusher thread wakes up."
+I've posted a number of requests for aid on this and have gotten very 
+little responses and none that were helpful. I have spent at least 24 
+hours of research time on this and just a little direction from somebody 
+who knows this subsystem can help me immensely as the IRQ subsystem is 
+new to me.
 
-In practice, it appears that once the expire time has passed, all dirty pages 
-get flushed, regardless of their age. This behavior makes this setting fairly 
-useless. This appears to have been the behavior for most of 2.6 and 3.x. Can 
-anyone explain, is the current behavior really as intended, and is the doc 
-just out of date?
+This is for the MCP2210 driver (a USB to SPI/GPIO bridge) and my driver 
+is the first of its class for the Linux kernel, giving me less to look 
+at as an example.  I intend to use standard drivers for whatever I have 
+connected at the other end.  For this to work, I need to supply 
+interrupts for some of these drivers to work correctly.  How do I do 
+this? Every thing else on this driver is ready to go and my handler 
+functions for this are empty and waiting for some code.
 
-On a slightly related note, what was the key problem with this patch "msync: 
-support syncing a small part of the file"? 
-http://thread.gmane.org/gmane.linux.kernel/1313767/focus=1317498
+So do i create an IRQ domain and then call generic_handle_irq() from my 
+URB complete() function? If so, which type of IRQ Domain is appropriate 
+for this? Unlike typical platform devices, these are dynamically added 
+and removed throughout the life of the kernel, adding to the challenge.  
+So, if I understand correctly, my base IRQ number needs to be 
+dynamically generated.  How should I manage this?
 
-Andrew Morton's message states that Paolo's patch would break nonlinear 
-mappings, and the matter was dropped. Why wasn't it possible to write a patch 
-that would also work with nonlinear mappings? I couldn't find any earlier 
-context for that subject, pointers welcome.
+Finally, if you have any example drivers that are doing something 
+similar, that would be SO very helpful as well!
 
-My interest in both of these questions stems from what I've observed while 
-testing the LMDB memory-mapped database. On a machine with 32GB RAM, using a 
-database that occupies about 18GB of memory, doing continuous writes to the DB 
-without ever calling msync, and default writeback settings, I see DB 
-throughput spike downward every time the flusher wakes up. The DB is a mmap'd 
-file on an XFS partition, and a DB write operation simply dirties a random set 
-of pages. After the program has been running for more than 
-dirty_expire_centisecs, every dirty_writeback_centisecs the DB app basically 
-stops while the flusher writes out all the dirty pages.
+I have some secondary (and less important) questions about how to 
+integrate this with device drivers that want a DT / open firmware config 
+(which I know almost nothing about at this time), but that can wait.
 
-I'm curious about a couple things - since the DB knows which pages it is 
-dirtying in a given transaction, would it help overall throughput if the DB 
-told the OS (via msync) exactly which ranges to flush? Obviously not, in the 
-current implementation of msync, but can a patch like Paolo's make this 
-better? And can the dirty_expire_centisecs behavior be fixed, so that it's 
-only writing out a smaller set of pages on each wakeup? What else can we do to 
-minimize the impact of the flusher? If I turn it off completely the throughput 
-nearly doubles, from 5100 DB writes/sec to 9000/sec. If I turn off the timed 
-flush and just use dirty_background_bytes the throughput just slows to around 
-7000/sec.
+Any help *greatly* appreciated and thank you in advance!
 
-It seems to me the main slowdown is because the OS is locking dirty pages 
-indiscriminately. The DB does copy-on-write, so pages that it dirties in one 
-transaction will not be written again in the next transaction. I would have 
-expected read-only accesses to these pages to be able to progress without any 
-delay but that doesn't seem to be the case.
+Daniel
 
--- 
-   -- Howard Chu
-   CTO, Symas Corp.           http://www.symas.com
-   Director, Highland Sun     http://highlandsun.com/hyc/
-   Chief Architect, OpenLDAP  http://www.openldap.org/project/
+PS: If interested, my current driver here: 
+https://github.com/daniel-santos/mcp2210-linux. I  haven't sought review 
+yet because I want to finish it first.
+
