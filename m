@@ -1,72 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752450Ab3IHJlT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 05:41:19 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:51504 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752159Ab3IHJlR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 05:41:17 -0400
-Message-ID: <522C4496.2030009@gmail.com>
-Date: Sun, 08 Sep 2013 11:34:14 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1752344Ab3IHJyu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 05:54:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62892 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752096Ab3IHJys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Sep 2013 05:54:48 -0400
+Date: Sun, 8 Sep 2013 12:54:46 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] KVM: x86: prevent setting unsupported XSAVE states
+Message-ID: <20130908095446.GE17294@redhat.com>
+References: <1378383714-9723-2-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-CC: Vladimir Davydov <vdavydov@parallels.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/19] pramfs
-References: <522AE04C.6000002@gmail.com> <CAFLxGvw1mJ5GSWMMZhznU0jJn4pvM+jthyLAtKnL_WvGALB6dg@mail.gmail.com> <522B52BA.6030202@gmail.com> <522C3DDC.4090209@parallels.com>
-In-Reply-To: <522C3DDC.4090209@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378383714-9723-2-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 08/09/2013 11:05, Vladimir Davydov ha scritto:
-> On 09/07/2013 08:22 PM, Marco Stornelli wrote:
->> Il 07/09/2013 16:58, richard -rw- weinberger ha scritto:
->>> On Sat, Sep 7, 2013 at 10:14 AM, Marco Stornelli
->>> <marco.stornelli@gmail.com> wrote:
->>>> Hi all,
->>>>
->>>> this is an attempt to include pramfs in mainline. At the moment pramfs
->>>> has been included in LTSI kernel. Since last review the code is more
->>>> or less the same but, with a really big thanks to Vladimir Davydov and
->>>> Parallels, the development of fsck has been started and we have now
->>>> the possibility to correct fs errors due to corruption. It's a "young"
->>>> tool but we are working on it. You can clone the code from our repos:
->>>>
->>>> git clone git://git.code.sf.net/p/pramfs/code pramfs-code
->>>> git clone git://git.code.sf.net/p/pramfs/Tools pramfs-Tools
->>>
->>> I'm a bit confused, what kind of non-volatile RAM is your fs targeting?
->>> Wouldn't it make sense to use pstore like
->>> arch/powerpc/platforms/pseries/nvram.c does?
->>>
->>
->> Usually battery-backed SRAM, but actually it can be used in any piece
->> of ram directly accessible and it provides a normal and complete fs
->> interface. Usually I do the fs test remapping my system ram. You can
->> find documentation here:
->>
->> http://pramfs.sourceforge.net
->
-> I'd like to add that in contrast to pstore, pramfs allows storing any
-> files in it, not only system logs. This can be of value even on machines
-> w/o special devices like sram/nvram: one can store data that should be
-> quickly restored after reboot in conventional ram and use kexec to boot
-> to a new kernel. One of the use cases of this could be checkpointing
-> time-critical services to ram (using criu.org) to be quickly restored
-> after a kernel update providing almost zero-downtime.
->
+On Thu, Sep 05, 2013 at 02:21:54PM +0200, Paolo Bonzini wrote:
+> A guest can still attempt to save and restore XSAVE states even if they
+> have been masked in CPUID leaf 0Dh.  This usually is not visible to
+> the guest, but is still wrong: "Any attempt to set a reserved bit (as
+> determined by the contents of EAX and EDX after executing CPUID with
+> EAX=0DH, ECX= 0H) in XCR0 for a given processor will result in a #GP
+> exception".
+> 
+> The patch also performs the same checks as __kvm_set_xcr in KVM_SET_XSAVE.
+> This catches migration from newer to older kernel/processor before the
+> guest starts running.
+> 
+> Cc: kvm@vger.kernel.org
+> Cc: Gleb Natapov <gleb@redhat.com>
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>  arch/x86/kvm/cpuid.c |  2 +-
+>  arch/x86/kvm/x86.c   | 10 ++++++++--
+>  arch/x86/kvm/x86.h   |  1 +
+>  3 files changed, 10 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+> index a20ecb5..d7c465d 100644
+> --- a/arch/x86/kvm/cpuid.c
+> +++ b/arch/x86/kvm/cpuid.c
+> @@ -182,7 +182,7 @@ static bool supported_xcr0_bit(unsigned bit)
+>  {
+>  	u64 mask = ((u64)1 << bit);
+>  
+> -	return mask & (XSTATE_FP | XSTATE_SSE | XSTATE_YMM) & host_xcr0;
+> +	return mask & KVM_SUPPORTED_XCR0 & host_xcr0;
+>  }
+>  
+>  #define F(x) bit(X86_FEATURE_##x)
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 3625798..801a882 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -586,6 +586,8 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
+>  		return 1;
+>  	if ((xcr0 & XSTATE_YMM) && !(xcr0 & XSTATE_SSE))
+>  		return 1;
+> +	if (xcr0 & ~KVM_SUPPORTED_XCR0)
+> +		return 1;
+Shouldn't we check guest's cpuid here?
 
-Yep. I add that if you use your system ram, your bootloader must be 
-aware because it mustn't clear your memory after a reboot, indeed you 
-can find reference of Pramfs in Uboot documentation:
+>  	if (xcr0 & ~host_xcr0)
+>  		return 1;
+>  	kvm_put_guest_xcr0(vcpu);
+> @@ -2980,10 +2982,14 @@ static int kvm_vcpu_ioctl_x86_set_xsave(struct kvm_vcpu *vcpu,
+>  	u64 xstate_bv =
+>  		*(u64 *)&guest_xsave->region[XSAVE_HDR_OFFSET / sizeof(u32)];
+>  
+> -	if (cpu_has_xsave)
+> +	if (cpu_has_xsave) {
+> +		if (xstate_bv & ~KVM_SUPPORTED_XCR0)
+> +			return -EINVAL;
+> +		if (xstate_bv & ~host_xcr0)
+> +			return -EINVAL;
+And here?
 
-http://www.denx.de/wiki/view/DULG/PersistentRAMFileSystem
+>  		memcpy(&vcpu->arch.guest_fpu.state->xsave,
+>  			guest_xsave->region, xstate_size);
+> -	else {
+> +	} else {
+>  		if (xstate_bv & ~XSTATE_FPSSE)
+>  			return -EINVAL;
+>  		memcpy(&vcpu->arch.guest_fpu.state->fxsave,
+> diff --git a/arch/x86/kvm/x86.h b/arch/x86/kvm/x86.h
+> index e224f7a..587fb9e 100644
+> --- a/arch/x86/kvm/x86.h
+> +++ b/arch/x86/kvm/x86.h
+> @@ -122,6 +122,7 @@ int kvm_write_guest_virt_system(struct x86_emulate_ctxt *ctxt,
+>  	gva_t addr, void *val, unsigned int bytes,
+>  	struct x86_exception *exception);
+>  
+> +#define KVM_SUPPORTED_XCR0	(XSTATE_FP | XSTATE_SSE | XSTATE_YMM)
+>  extern u64 host_xcr0;
+>  
+>  extern struct static_key kvm_no_apic_vcpu;
+> -- 
+> 1.8.3.1
 
-Marco
+--
+			Gleb.
