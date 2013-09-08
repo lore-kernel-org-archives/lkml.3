@@ -1,99 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751419Ab3IHM1G (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 08:27:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10937 "EHLO
+	id S1751464Ab3IHM1Y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 08:27:24 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31039 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045Ab3IHM1C (ORCPT
+	with ESMTP id S1751025Ab3IHM1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 8 Sep 2013 08:27:02 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=E-kABC6sUUQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Zvybn3zlWHMA:10 a=VwQbUJbxAAAA:8 a=Dy9FSkG8L0gs_orUxm0A:9 a=U62fhAwekXMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=4hqIL5DWEuAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=0Irq6MuVi30A:10 a=VwQbUJbxAAAA:8 a=LD6OzeOfAdgjjmm37WYA:9 a=jeBq3FmKZ4MA:10 a=qs8Zmr-NzJv-wU3k:21 a=cRSj5ZD0sHXC8GFd:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130908122545.421180629@goodmis.org>
+Message-Id: <20130908122659.911522142@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Sun, 08 Sep 2013 08:25:45 -0400
+Date: Sun, 08 Sep 2013 08:25:47 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 00/10] 3.8.13-rt16-rc1 stable review
+        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>
+Subject: [PATCH RT 02/10] rt,ntp: Move call to schedule_delayed_work() to helper thread
+References: <20130908122545.421180629@goodmis.org>
+Content-Disposition: inline; filename=0002-rt-ntp-Move-call-to-schedule_delayed_work-to-helper-.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Steven Rostedt <rostedt@goodmis.org>
 
-Dear RT Folks,
+The ntp code for notify_cmos_timer() is called from a hard interrupt
+context. schedule_delayed_work() under PREEMPT_RT_FULL calls spinlocks
+that have been converted to mutexes, thus calling schedule_delayed_work()
+from interrupt is not safe.
 
-This is the RT stable review cycle of patch 3.8.13-rt16-rc1.
+Add a helper thread that does the call to schedule_delayed_work and wake
+up that thread instead of calling schedule_delayed_work() directly.
+This is only for CONFIG_PREEMPT_RT_FULL, otherwise the code still calls
+schedule_delayed_work() directly in irq context.
 
-Please scream at me if I messed something up. Please test the patches too.
+Note: There's a few places in the kernel that do this. Perhaps the RT
+code should have a dedicated thread that does the checks. Just register
+a notifier on boot up for your check and wake up the thread when
+needed. This will be a todo.
 
-The -rc release will be uploaded to kernel.org and will be deleted when
-the final release is out. This is just a review release (or release candidate).
-
-The pre-releases will not be pushed to the git repository, only the
-final release is.
-
-If all goes well, this patch will be converted to the next main release
-on 9/11/2013.
-
-Enjoy,
-
--- Steve
-
-
-To build 3.8.13-rt16-rc1 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.8.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.8.13.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.8/patch-3.8.13-rt16-rc1.patch.xz
-
-You can also build from 3.8.13-rt15 by applying the incremental patch:
-
-http://www.kernel.org/pub/linux/kernel/projects/rt/3.8/incr/patch-3.8.13-rt15-rt16-rc1.patch.xz
-
-
-Changes from 3.8.13-rt15:
-
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
+ kernel/time/ntp.c |   40 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
+
+diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
+index bb1edfa..3e93516 100644
+--- a/kernel/time/ntp.c
++++ b/kernel/time/ntp.c
+@@ -10,6 +10,7 @@
+ #include <linux/workqueue.h>
+ #include <linux/hrtimer.h>
+ #include <linux/jiffies.h>
++#include <linux/kthread.h>
+ #include <linux/math64.h>
+ #include <linux/timex.h>
+ #include <linux/time.h>
+@@ -529,10 +530,49 @@ static void sync_cmos_clock(struct work_struct *work)
+ 	schedule_delayed_work(&sync_cmos_work, timespec_to_jiffies(&next));
+ }
+ 
++#ifdef CONFIG_PREEMPT_RT_FULL
++/*
++ * RT can not call schedule_delayed_work from real interrupt context.
++ * Need to make a thread to do the real work.
++ */
++static struct task_struct *cmos_delay_thread;
++static bool do_cmos_delay;
++
++static int run_cmos_delay(void *ignore)
++{
++	while (!kthread_should_stop()) {
++		set_current_state(TASK_INTERRUPTIBLE);
++		if (do_cmos_delay) {
++			do_cmos_delay = false;
++			schedule_delayed_work(&sync_cmos_work, 0);
++		}
++		schedule();
++	}
++	__set_current_state(TASK_RUNNING);
++	return 0;
++}
++
++static void notify_cmos_timer(void)
++{
++	do_cmos_delay = true;
++	/* Make visible before waking up process */
++	smp_wmb();
++	wake_up_process(cmos_delay_thread);
++}
++
++static __init int create_cmos_delay_thread(void)
++{
++	cmos_delay_thread = kthread_run(run_cmos_delay, NULL, "kcmosdelayd");
++	BUG_ON(!cmos_delay_thread);
++	return 0;
++}
++early_initcall(create_cmos_delay_thread);
++#else
+ static void notify_cmos_timer(void)
+ {
+ 	schedule_delayed_work(&sync_cmos_work, 0);
+ }
++#endif /* CONFIG_PREEMPT_RT_FULL */
+ 
+ #else
+ static inline void notify_cmos_timer(void) { }
+-- 
+1.7.10.4
 
 
-John Kacur (1):
-      hpsa: fix warning with smp_processor_id() in preemptible section
-
-Sebastian Andrzej Siewior (2):
-      powerpc: 52xx: provide a default in mpc52xx_irqhost_map()
-      genirq: do not invoke the affinity callback via a workqueue
-
-Steven Rostedt (4):
-      rt,ntp: Move call to schedule_delayed_work() to helper thread
-      hwlat-detector: Update hwlat_detector to add outer loop detection
-      hwlat-detector: Use trace_clock_local if available
-      hwlat-detector: Use thread instead of stop machine
-
-Steven Rostedt (Red Hat) (2):
-      hwlat-detect/trace: Export trace_clock_local for hwlat-detector
-      Linux 3.8.13-rt16-rc1
-
-Thomas Gleixner (1):
-      sched: Distangle worker accounting from rqlock
-
-----
- arch/powerpc/platforms/52xx/mpc52xx_pic.c |    3 +-
- drivers/misc/hwlat_detector.c             |  117 ++++++++++++++++++-----------
- drivers/scsi/hpsa.c                       |    2 +-
- include/linux/interrupt.h                 |    1 +
- kernel/irq/manage.c                       |   79 ++++++++++++++++++-
- kernel/sched/core.c                       |   70 ++++-------------
- kernel/time/ntp.c                         |   40 ++++++++++
- kernel/trace/trace_clock.c                |    1 +
- kernel/workqueue.c                        |   63 +++++++---------
- kernel/workqueue_sched.h                  |    5 +-
- localversion-rt                           |    2 +-
- 11 files changed, 240 insertions(+), 143 deletions(-)
