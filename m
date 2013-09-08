@@ -1,30 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759713Ab3IHDVR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:21:17 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56213 "EHLO
+	id S932238Ab3IHDV1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:21:27 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56170 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756623Ab3IHDS4 (ORCPT
+	by vger.kernel.org with ESMTP id S1756563Ab3IHDS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 23:18:56 -0400
+	Sat, 7 Sep 2013 23:18:58 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David Ahern" <dsahern@gmail.com>,
-        "Andi Kleen" <andi@firstfloor.org>, "Ingo Molnar" <mingo@redhat.com>,
-        "Paul Mackerras" <paulus@samba.org>,
-        "Akihiro Nagai" <akihiro.nagai.hw@hitachi.com>,
-        "Arnaldo Carvalho de Melo" <acme@redhat.com>,
-        "Namhyung Kim" <namhyung@kernel.org>,
-        "Peter Zijlstra" <a.p.zijlstra@chello.nl>,
-        "Jiri Olsa" <jolsa@redhat.com>, "Joshua Zhu" <zhu.wen-jie@hp.com>
+CC: akpm@linux-foundation.org, "Michel Lespinasse" <walken@google.com>,
+        "Ingo Molnar" <mingo@elte.hu>, "Rik van Riel" <riel@redhat.com>,
+        "Adrian Sendroiu" <molecula2788@gmail.com>,
+        "Kamal Mostafa" <kamal@canonical.com>, "Greg KH" <greg@kroah.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Radu Caragea" <sinaelgl@gmail.com>, "Oleg Nesterov" <oleg@redhat.com>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.790344183@decadent.org.uk>
+Message-ID: <lsq.1378608721.715760886@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [007/121] perf tools: Add anonymous huge page recognition
+Subject: [110/121] x86 get_unmapped_area: Access mmap_legacy_base through
+ mm_struct member
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -37,45 +36,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joshua Zhu <zhu.wen-jie@hp.com>
+From: Radu Caragea <sinaelgl@gmail.com>
 
-commit d0528b5d71faf612014dd7672e44225c915344b2 upstream.
+commit 41aacc1eea645c99edbe8fbcf78a97dc9b862adc upstream.
 
-Judging anonymous memory's vm_area_struct, perf_mmap_event's filename
-will be set to "//anon" indicating this vma belongs to anonymous
-memory.
+This is the updated version of df54d6fa5427 ("x86 get_unmapped_area():
+use proper mmap base for bottom-up direction") that only randomizes the
+mmap base address once.
 
-Once hugepage is used, vma's vm_file points to hugetlbfs. In this way,
-this vma will not be regarded as anonymous memory by is_anon_memory() in
-perf user space utility.
-
-Signed-off-by: Joshua Zhu <zhu.wen-jie@hp.com>
-Cc: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Joshua Zhu <zhu.wen-jie@hp.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1357363797-3550-1-git-send-email-zhu.wen-jie@hp.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Radu Caragea <sinaelgl@gmail.com>
+Reported-and-tested-by: Jeff Shorey <shoreyjeff@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Adrian Sendroiu <molecula2788@gmail.com>
+Cc: Greg KH <greg@kroah.com>
+Cc: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- tools/perf/util/map.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/x86/kernel/sys_x86_64.c | 2 +-
+ arch/x86/mm/mmap.c           | 6 ++++--
+ include/linux/mm_types.h     | 1 +
+ 3 files changed, 6 insertions(+), 3 deletions(-)
 
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -15,7 +15,8 @@ const char *map_type__name[MAP__NR_TYPES
- 
- static inline int is_anon_memory(const char *filename)
- {
--	return strcmp(filename, "//anon") == 0;
-+	return !strcmp(filename, "//anon") ||
-+	       !strcmp(filename, "/anon_hugepage (deleted)");
+--- a/arch/x86/kernel/sys_x86_64.c
++++ b/arch/x86/kernel/sys_x86_64.c
+@@ -115,7 +115,7 @@ static void find_start_end(unsigned long
+ 				*begin = new_begin;
+ 		}
+ 	} else {
+-		*begin = TASK_UNMAPPED_BASE;
++		*begin = current->mm->mmap_legacy_base;
+ 		*end = TASK_SIZE;
+ 	}
  }
- 
- static inline int is_no_dso_memory(const char *filename)
+--- a/arch/x86/mm/mmap.c
++++ b/arch/x86/mm/mmap.c
+@@ -112,12 +112,14 @@ static unsigned long mmap_legacy_base(vo
+  */
+ void arch_pick_mmap_layout(struct mm_struct *mm)
+ {
++	mm->mmap_legacy_base = mmap_legacy_base();
++	mm->mmap_base = mmap_base();
++
+ 	if (mmap_is_legacy()) {
+-		mm->mmap_base = mmap_legacy_base();
++		mm->mmap_base = mm->mmap_legacy_base;
+ 		mm->get_unmapped_area = arch_get_unmapped_area;
+ 		mm->unmap_area = arch_unmap_area;
+ 	} else {
+-		mm->mmap_base = mmap_base();
+ 		mm->get_unmapped_area = arch_get_unmapped_area_topdown;
+ 		mm->unmap_area = arch_unmap_area_topdown;
+ 	}
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -297,6 +297,7 @@ struct mm_struct {
+ 	void (*unmap_area) (struct mm_struct *mm, unsigned long addr);
+ #endif
+ 	unsigned long mmap_base;		/* base of mmap area */
++	unsigned long mmap_legacy_base;         /* base of mmap area in bottom-up allocations */
+ 	unsigned long task_size;		/* size of task vm space */
+ 	unsigned long cached_hole_size; 	/* if non-zero, the largest hole below free_area_cache */
+ 	unsigned long free_area_cache;		/* first hole of size cached_hole_size or larger */
 
