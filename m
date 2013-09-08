@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759351Ab3IHDUN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:20:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56010 "EHLO
+	id S1759338Ab3IHDUL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:20:11 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56053 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754714Ab3IHDSr (ORCPT
+	by vger.kernel.org with ESMTP id S1755096Ab3IHDSr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 7 Sep 2013 23:18:47 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jussi Kivilinna" <jussi.kivilinna@iki.fi>,
-        "John W. Linville" <linville@tuxdriver.com>
+CC: akpm@linux-foundation.org, "Imre Deak" <imre.deak@intel.com>,
+        "Paulo Zanoni" <paulo.r.zanoni@intel.com>,
+        "Daniel Vetter" <daniel.vetter@ffwll.ch>,
+        "Jeremy Moles" <cubicool@gmail.com>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.617189924@decadent.org.uk>
+Message-ID: <lsq.1378608721.310965394@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [063/121] zd1201: do not use stack as URB transfer_buffer
+Subject: [108/121] drm/i915: ivb: fix edp voltage swing reg val
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,36 +33,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
+From: Imre Deak <imre.deak@intel.com>
 
-commit 1206ff4ff9d2ef7468a355328bc58ac6ebf5be44 upstream.
+commit 77fa4cbd5fa389e28419bbe8ac491b5fdd54840d upstream.
 
-Patch fixes zd1201 not to use stack as URB transfer_buffer. URB buffers need
-to be DMA-able, which stack is not.
+Fix the typo introduced in
 
-Patch is only compile tested.
+commit 1a2eb4604b85c5efb343da8a4dcf41288fcfca85
+Author: Keith Packard <keithp@keithp.com>
+Date:   Wed Nov 16 16:26:07 2011 -0800
 
-Signed-off-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+    drm/i915: Hook up Ivybridge eDP
+
+This fixes eDP link-training failures and cases where all voltage swing
+/pre-emphasis levels were tried and failed during clock recovery and -
+as a fallback - we go on to do channel equalization with the last voltage
+swing/pre-emphasis level which will succeed. Both issues can lead to a
+blank screen.
+
+v2:
+- improve commit message
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=64880
+Tested-by: Jeremy Moles <cubicool@gmail.com>
+Signed-off-by: Imre Deak <imre.deak@intel.com>
+Reviewed-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/zd1201.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_reg.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/zd1201.c
-+++ b/drivers/net/wireless/zd1201.c
-@@ -98,10 +98,12 @@ static int zd1201_fw_upload(struct usb_d
- 		goto exit;
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -3516,7 +3516,7 @@
+ #define EDP_LINK_TRAIN_600MV_0DB_IVB		(0x30 <<22)
+ #define EDP_LINK_TRAIN_600MV_3_5DB_IVB		(0x36 <<22)
+ #define EDP_LINK_TRAIN_800MV_0DB_IVB		(0x38 <<22)
+-#define EDP_LINK_TRAIN_800MV_3_5DB_IVB		(0x33 <<22)
++#define EDP_LINK_TRAIN_800MV_3_5DB_IVB		(0x3e <<22)
  
- 	err = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0), 0x4,
--	    USB_DIR_IN | 0x40, 0,0, &ret, sizeof(ret), ZD1201_FW_TIMEOUT);
-+	    USB_DIR_IN | 0x40, 0, 0, buf, sizeof(ret), ZD1201_FW_TIMEOUT);
- 	if (err < 0)
- 		goto exit;
- 
-+	memcpy(&ret, buf, sizeof(ret));
-+
- 	if (ret & 0x80) {
- 		err = -EIO;
- 		goto exit;
+ /* legacy values */
+ #define EDP_LINK_TRAIN_500MV_0DB_IVB		(0x00 <<22)
 
