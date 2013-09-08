@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758730Ab3IHDTR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:19:17 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56001 "EHLO
+	id S1759922Ab3IHDlM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:41:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56165 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754685Ab3IHDSh (ORCPT
+	by vger.kernel.org with ESMTP id S1756678Ab3IHDTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 23:18:37 -0400
+	Sat, 7 Sep 2013 23:19:16 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Johan Hovold" <jhovold@gmail.com>
+CC: akpm@linux-foundation.org, "Theodore Ts'o" <tytso@mit.edu>,
+        "Sage Weil" <sage@inktank.com>, "Jan Kara" <jack@suse.cz>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.669115870@decadent.org.uk>
+Message-ID: <lsq.1378608721.132647878@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [069/121] USB: ti_usb_3410_5052: fix big-endian firmware handling
+Subject: [067/121] jbd2: Fix use after free after error in jbd2_journal_dirty_metadata()
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,41 +31,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Jan Kara <jack@suse.cz>
 
-commit e877dd2f2581628b7119df707d4cf03d940cff49 upstream.
+commit 91aa11fae1cf8c2fd67be0609692ea9741cdcc43 upstream.
 
-Fix endianess bugs in firmware handling introduced by commits cb7a7c6a
-("ti_usb_3410_5052: add Multi-Tech modem support") and 05a3d905
-("ti_usb_3410_5052: support alternate firmware") which made the driver
-use the wrong firmware for certain devices on big-endian machines.
+When jbd2_journal_dirty_metadata() returns error,
+__ext4_handle_dirty_metadata() stops the handle. However callers of this
+function do not count with that fact and still happily used now freed
+handle. This use after free can result in various issues but very likely
+we oops soon.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: adjust context]
+The motivation of adding __ext4_journal_stop() into
+__ext4_handle_dirty_metadata() in commit 9ea7a0df seems to be only to
+improve error reporting. So replace __ext4_journal_stop() with
+ext4_journal_abort_handle() which was there before that commit and add
+WARN_ON_ONCE() to dump stack to provide useful information.
+
+Reported-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/ti_usb_3410_5052.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ fs/ext4/ext4_jbd2.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/serial/ti_usb_3410_5052.c
-+++ b/drivers/usb/serial/ti_usb_3410_5052.c
-@@ -1713,12 +1713,13 @@ static int ti_download_firmware(struct t
+--- a/fs/ext4/ext4_jbd2.c
++++ b/fs/ext4/ext4_jbd2.c
+@@ -109,10 +109,10 @@ int __ext4_handle_dirty_metadata(const c
  
- 	dbg("%s\n", __func__);
- 	/* try ID specific firmware first, then try generic firmware */
--	sprintf(buf, "ti_usb-v%04x-p%04x.fw", dev->descriptor.idVendor,
--	    dev->descriptor.idProduct);
-+	sprintf(buf, "ti_usb-v%04x-p%04x.fw",
-+			le16_to_cpu(dev->descriptor.idVendor),
-+			le16_to_cpu(dev->descriptor.idProduct));
- 	if ((status = request_firmware(&fw_p, buf, &dev->dev)) != 0) {
- 		buf[0] = '\0';
--		if (dev->descriptor.idVendor == MTS_VENDOR_ID) {
--			switch (dev->descriptor.idProduct) {
-+		if (le16_to_cpu(dev->descriptor.idVendor) == MTS_VENDOR_ID) {
-+			switch (le16_to_cpu(dev->descriptor.idProduct)) {
- 			case MTS_CDMA_PRODUCT_ID:
- 				strcpy(buf, "mts_cdma.fw");
- 				break;
+ 	if (ext4_handle_valid(handle)) {
+ 		err = jbd2_journal_dirty_metadata(handle, bh);
+-		if (err) {
+-			/* Errors can only happen if there is a bug */
+-			handle->h_err = err;
+-			__ext4_journal_stop(where, line, handle);
++		/* Errors can only happen if there is a bug */
++		if (WARN_ON_ONCE(err)) {
++			ext4_journal_abort_handle(where, line, __func__, bh,
++						  handle, err);
+ 		}
+ 	} else {
+ 		if (inode)
 
