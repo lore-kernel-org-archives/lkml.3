@@ -1,29 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932238Ab3IHDV1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:21:27 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56170 "EHLO
+	id S1759730Ab3IHDVT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:21:19 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56243 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756563Ab3IHDS6 (ORCPT
+	by vger.kernel.org with ESMTP id S1756836Ab3IHDS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 23:18:58 -0400
+	Sat, 7 Sep 2013 23:18:56 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Michel Lespinasse" <walken@google.com>,
-        "Ingo Molnar" <mingo@elte.hu>, "Rik van Riel" <riel@redhat.com>,
-        "Adrian Sendroiu" <molecula2788@gmail.com>,
-        "Kamal Mostafa" <kamal@canonical.com>, "Greg KH" <greg@kroah.com>,
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
         "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Radu Caragea" <sinaelgl@gmail.com>, "Oleg Nesterov" <oleg@redhat.com>
+        "Guenter Roeck" <linux@roeck-us.net>,
+        "Will Deacon" <will.deacon@arm.com>,
+        "Michael Cree" <mcree@orcon.net.nz>,
+        "Ivan Kokshaysky" <ink@jurassic.park.msu.ru>,
+        "Matt Turner" <mattst88@gmail.com>,
+        "Richard Henderson" <rth@twiddle.net>,
+        "Thorsten Kranzkowski" <dl8bcu@dl8bcu.de>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.715760886@decadent.org.uk>
+Message-ID: <lsq.1378608721.450384565@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [110/121] x86 get_unmapped_area: Access mmap_legacy_base through
- mm_struct member
+Subject: [095/121] alpha: makefile: don't enforce small data model for 
+ kernel builds
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -36,71 +40,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Radu Caragea <sinaelgl@gmail.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 41aacc1eea645c99edbe8fbcf78a97dc9b862adc upstream.
+commit cd8d2331756751b6aeb855a3c9cb0a92fbd9c725 upstream.
 
-This is the updated version of df54d6fa5427 ("x86 get_unmapped_area():
-use proper mmap base for bottom-up direction") that only randomizes the
-mmap base address once.
+Due to all of the goodness being packed into today's kernels, the
+resulting image isn't as slim as it once was.
 
-Signed-off-by: Radu Caragea <sinaelgl@gmail.com>
-Reported-and-tested-by: Jeff Shorey <shoreyjeff@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Adrian Sendroiu <molecula2788@gmail.com>
-Cc: Greg KH <greg@kroah.com>
-Cc: Kamal Mostafa <kamal@canonical.com>
+In light of this, don't pass -msmall-data to gcc, which otherwise results
+in link failures due to impossible relocations when compiling anything but
+the most trivial configurations.
+
+Reviewed-by: Matt Turner <mattst88@gmail.com>
+Cc: Richard Henderson <rth@twiddle.net>
+Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+Tested-by: Thorsten Kranzkowski <dl8bcu@dl8bcu.de>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Michael Cree <mcree@orcon.net.nz>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: adjust context]
+Cc: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/kernel/sys_x86_64.c | 2 +-
- arch/x86/mm/mmap.c           | 6 ++++--
- include/linux/mm_types.h     | 1 +
- 3 files changed, 6 insertions(+), 3 deletions(-)
+ arch/alpha/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/sys_x86_64.c
-+++ b/arch/x86/kernel/sys_x86_64.c
-@@ -115,7 +115,7 @@ static void find_start_end(unsigned long
- 				*begin = new_begin;
- 		}
- 	} else {
--		*begin = TASK_UNMAPPED_BASE;
-+		*begin = current->mm->mmap_legacy_base;
- 		*end = TASK_SIZE;
- 	}
- }
---- a/arch/x86/mm/mmap.c
-+++ b/arch/x86/mm/mmap.c
-@@ -112,12 +112,14 @@ static unsigned long mmap_legacy_base(vo
-  */
- void arch_pick_mmap_layout(struct mm_struct *mm)
- {
-+	mm->mmap_legacy_base = mmap_legacy_base();
-+	mm->mmap_base = mmap_base();
-+
- 	if (mmap_is_legacy()) {
--		mm->mmap_base = mmap_legacy_base();
-+		mm->mmap_base = mm->mmap_legacy_base;
- 		mm->get_unmapped_area = arch_get_unmapped_area;
- 		mm->unmap_area = arch_unmap_area;
- 	} else {
--		mm->mmap_base = mmap_base();
- 		mm->get_unmapped_area = arch_get_unmapped_area_topdown;
- 		mm->unmap_area = arch_unmap_area_topdown;
- 	}
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -297,6 +297,7 @@ struct mm_struct {
- 	void (*unmap_area) (struct mm_struct *mm, unsigned long addr);
- #endif
- 	unsigned long mmap_base;		/* base of mmap area */
-+	unsigned long mmap_legacy_base;         /* base of mmap area in bottom-up allocations */
- 	unsigned long task_size;		/* size of task vm space */
- 	unsigned long cached_hole_size; 	/* if non-zero, the largest hole below free_area_cache */
- 	unsigned long free_area_cache;		/* first hole of size cached_hole_size or larger */
+--- a/arch/alpha/Makefile
++++ b/arch/alpha/Makefile
+@@ -12,7 +12,7 @@ NM := $(NM) -B
+ 
+ LDFLAGS_vmlinux	:= -static -N #-relax
+ CHECKFLAGS	+= -D__alpha__ -m64
+-cflags-y	:= -pipe -mno-fp-regs -ffixed-8 -msmall-data
++cflags-y	:= -pipe -mno-fp-regs -ffixed-8
+ cflags-y	+= $(call cc-option, -fno-jump-tables)
+ 
+ cpuflags-$(CONFIG_ALPHA_EV4)		:= -mcpu=ev4
 
