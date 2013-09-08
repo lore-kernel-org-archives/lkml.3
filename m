@@ -1,97 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494Ab3IHV0A (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 17:26:00 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:60299 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab3IHVZ6 (ORCPT
+	id S1751351Ab3IHVdG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 17:33:06 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:58097 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217Ab3IHVdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 17:25:58 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>, linux-kernel@vger.kernel.org
-References: <20130829211114.GA20726@sergelap> <87mwo0xb9p.fsf@xmission.com>
-	<20130830144232.GA18281@mail.hallyn.com>
-	<87hae6vh0w.fsf_-_@xmission.com> <20130908175602.GA3172@redhat.com>
-	<20130908180137.GA4915@redhat.com>
-Date: Sun, 08 Sep 2013 14:25:50 -0700
-In-Reply-To: <20130908180137.GA4915@redhat.com> (Oleg Nesterov's message of
-	"Sun, 8 Sep 2013 20:01:37 +0200")
-Message-ID: <87bo43gg4h.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Sun, 8 Sep 2013 17:33:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX186QBkmYNgQRXbbga8JDd25K1vuCZsI1gY=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.2954]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Oleg Nesterov <oleg@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: free_pid() && PIDNS_HASH_ADDING
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+In-Reply-To: <1378675264-3005-1-git-send-email-tobias.johannes.klausmann@mni.thm.de>
+References: <CAKb7UviRb_ao_nB8Q3pa9ePm+yUGd8u7PDREv5wNfCheyGTZjQ@mail.gmail.com>
+	<1378675264-3005-1-git-send-email-tobias.johannes.klausmann@mni.thm.de>
+Date: Mon, 9 Sep 2013 07:33:02 +1000
+Message-ID: <CAPM=9tyCOdzC1NYy7jt+zh3WOuzubaO3b8vwFVast9ec=BWOkA@mail.gmail.com>
+Subject: Re: [Nouveau] 3.12rc1-pre Nouveau? oops
+From: Dave Airlie <airlied@gmail.com>
+To: Tobias Klausmann <tobias.johannes.klausmann@mni.thm.de>
+Cc: Ilia Mirkin <imirkin@alum.mit.edu>, Dave Airlie <airlied@linux.ie>,
+        nouveau <nouveau@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=001a11c379ec32522b04e5e60426
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov <oleg@redhat.com> writes:
+--001a11c379ec32522b04e5e60426
+Content-Type: text/plain; charset=ISO-8859-1
 
-> On 09/08, Oleg Nesterov wrote:
+>> Looks like you have Optimus (intel + nvidia), and the backtrace has
+>> runtime pm in it, which is something new Dave added for 3.12, adding
+>> him in explicitly. The simplest explanation is that disp->init is
+>> NULL. And it seems like there are no outputs from the earlier nouveau
+>> init prints. I guess that the call to nouveau_display_resume from
+>> nouveau_pmops_runtime_resume should be guarded by a if
+>> (dev->mode_config.num_crtc) like it is everywhere else.
 >>
->> Off topic. What if the first alloc_pid() succeeds and then later
->> copy_process() fails. In this case free_pid() is called but
->> PIDNS_HASH_ADDING was not cleared, we miss kern_unmount(), no?
+>>   -ilia
 >
-> Perhaps something like below?
+> Your guess was right, this (hopefully attached patch) fixes it for me!
 
-I am thinking more:
+Does it look like this one?
 
-diff --git a/kernel/pid.c b/kernel/pid.c
-index ab75add..ef59516 100644
---- a/kernel/pid.c
-+++ b/kernel/pid.c
-@@ -273,6 +273,10 @@ void free_pid(struct pid *pid)
-                         */
-                        wake_up_process(ns->child_reaper);
-                        break;
-+               case PIDNS_HASH_ADDING:
-+                       /* Handle a fork failure of the first process */
-+                       ns->nr_hashed = 0;
-+                       /* fall through */
-                case 0:
-                        schedule_work(&ns->proc_work);
-                        break;
+Dave.
 
-At which point I ask myself what of the pathlogocical case where the
-first fork fails but because we created the pid namespace with unshare
-there is a concurrent fork from another process into the pid namespace
-that succeeds.  Resulting in one pid in the pid namespace that is not
-the reaper.
+--001a11c379ec32522b04e5e60426
+Content-Type: application/octet-stream; 
+	name="0001-drm-nouveau-fix-oops-on-runtime-suspend-resume.patch"
+Content-Disposition: attachment; 
+	filename="0001-drm-nouveau-fix-oops-on-runtime-suspend-resume.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hlcs2cpf0
 
-So we also need something like this.
-
-@@ -324,6 +328,8 @@ struct pid *alloc_pid(struct pid_namespace *ns)
-        spin_lock_irq(&pidmap_lock);
-        if (!(ns->nr_hashed & PIDNS_HASH_ADDING))
-                goto out_unlock;
-+       if (!is_child_reaper(pid) && !ns->child_reaper)
-+               goto out_unlock;
-        for ( ; upid >= pid->numbers; --upid) {
-                hlist_add_head_rcu(&upid->pid_chain,
-                                &pid_hash[pid_hashfn(upid->nr, upid->ns)]);
-
-but I think my locking is wrong to safely test ns->child_reaper.
-
-Perhaps I should prevent setns if there is no reaper?
-
-Ideas?
-
-Eric
+RnJvbSA3NWRmMmFjZTc3MGY5YzE2MjliZjUyZGRlYTQyOGM0MWY0YWRiNDFjIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBEYXZlIEFpcmxpZSA8YWlybGllZEBnbWFpbC5jb20+CkRhdGU6
+IE1vbiwgOSBTZXAgMjAxMyAwNzozMDo1NiArMTAwMApTdWJqZWN0OiBbUEFUQ0hdIGRybS9ub3V2
+ZWF1OiBmaXggb29wcyBvbiBydW50aW1lIHN1c3BlbmQvcmVzdW1lCgppZiB3ZSBoYXZlIG5vIGNy
+dGNzIHdlIG5lZWQgdG8gbm90IGNhbGwgdGhlIGRpc3BsYXkgcmVzdW1lIGNvZGUuCgpSZXBvcnRl
+ZC1ieTogVG9iaWFzIEtsYXVzbWFubiA8dG9iaWFzLmpvaGFubmVzLmtsYXVzbWFubkBtbmkudGht
+LmRlPgpTaWduZWQtb2ZmLWJ5OiBEYXZlIEFpcmxpZSA8YWlybGllZEByZWRoYXQuY29tPgotLS0K
+IGRyaXZlcnMvZ3B1L2RybS9ub3V2ZWF1L25vdXZlYXVfZHJtLmMgfCA5ICsrKysrKy0tLQogMSBm
+aWxlIGNoYW5nZWQsIDYgaW5zZXJ0aW9ucygrKSwgMyBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQg
+YS9kcml2ZXJzL2dwdS9kcm0vbm91dmVhdS9ub3V2ZWF1X2RybS5jIGIvZHJpdmVycy9ncHUvZHJt
+L25vdXZlYXUvbm91dmVhdV9kcm0uYwppbmRleCA4ODYzNjQ0Li5lODkzYzUzIDEwMDY0NAotLS0g
+YS9kcml2ZXJzL2dwdS9kcm0vbm91dmVhdS9ub3V2ZWF1X2RybS5jCisrKyBiL2RyaXZlcnMvZ3B1
+L2RybS9ub3V2ZWF1L25vdXZlYXVfZHJtLmMKQEAgLTYzNiw3ICs2MzYsOCBAQCBpbnQgbm91dmVh
+dV9wbW9wc19yZXN1bWUoc3RydWN0IGRldmljZSAqZGV2KQogCQlub3V2ZWF1X2ZiY29uX3NldF9z
+dXNwZW5kKGRybV9kZXYsIDApOwogCiAJbm91dmVhdV9mYmNvbl96ZmlsbF9hbGwoZHJtX2Rldik7
+Ci0Jbm91dmVhdV9kaXNwbGF5X3Jlc3VtZShkcm1fZGV2KTsKKwlpZiAoZHJtX2Rldi0+bW9kZV9j
+b25maWcubnVtX2NydGMpCisJCW5vdXZlYXVfZGlzcGxheV9yZXN1bWUoZHJtX2Rldik7CiAJbnZf
+c3VzcGVuZF9zZXRfcHJpbnRrX2xldmVsKE5WX0RCR19ERUJVRyk7CiAJcmV0dXJuIDA7CiB9CkBA
+IC02NzEsNyArNjcyLDggQEAgc3RhdGljIGludCBub3V2ZWF1X3Btb3BzX3RoYXcoc3RydWN0IGRl
+dmljZSAqZGV2KQogCWlmIChkcm1fZGV2LT5tb2RlX2NvbmZpZy5udW1fY3J0YykKIAkJbm91dmVh
+dV9mYmNvbl9zZXRfc3VzcGVuZChkcm1fZGV2LCAwKTsKIAlub3V2ZWF1X2ZiY29uX3pmaWxsX2Fs
+bChkcm1fZGV2KTsKLQlub3V2ZWF1X2Rpc3BsYXlfcmVzdW1lKGRybV9kZXYpOworCWlmIChkcm1f
+ZGV2LT5tb2RlX2NvbmZpZy5udW1fY3J0YykKKwkJbm91dmVhdV9kaXNwbGF5X3Jlc3VtZShkcm1f
+ZGV2KTsKIAludl9zdXNwZW5kX3NldF9wcmludGtfbGV2ZWwoTlZfREJHX0RFQlVHKTsKIAlyZXR1
+cm4gMDsKIH0KQEAgLTkwNiw3ICs5MDgsOCBAQCBzdGF0aWMgaW50IG5vdXZlYXVfcG1vcHNfcnVu
+dGltZV9yZXN1bWUoc3RydWN0IGRldmljZSAqZGV2KQogCXBjaV9zZXRfbWFzdGVyKHBkZXYpOwog
+CiAJcmV0ID0gbm91dmVhdV9kb19yZXN1bWUoZHJtX2Rldik7Ci0Jbm91dmVhdV9kaXNwbGF5X3Jl
+c3VtZShkcm1fZGV2KTsKKwlpZiAoZHJtX2Rldi0+bW9kZV9jb25maWcubnVtX2NydGMpCisJCW5v
+dXZlYXVfZGlzcGxheV9yZXN1bWUoZHJtX2Rldik7CiAJZHJtX2ttc19oZWxwZXJfcG9sbF9lbmFi
+bGUoZHJtX2Rldik7CiAJLyogZG8gbWFnaWMgKi8KIAludl9tYXNrKGRldmljZSwgMHg4ODQ4OCwg
+KDEgPDwgMjUpLCAoMSA8PCAyNSkpOwotLSAKMS44LjEuNAoK
+--001a11c379ec32522b04e5e60426--
