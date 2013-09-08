@@ -1,265 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751588Ab3IHFbY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 01:31:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47114 "EHLO
+	id S1751671Ab3IHFbm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 01:31:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47118 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539Ab3IHFbW (ORCPT
+	with ESMTP id S1751623Ab3IHFbl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 01:31:22 -0400
-Date: Sat, 7 Sep 2013 22:34:24 -0700
+	Sun, 8 Sep 2013 01:31:41 -0400
+Date: Sat, 7 Sep 2013 22:34:43 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.0.95
-Message-ID: <20130908053424.GB1737@kroah.com>
-References: <20130908053416.GA1737@kroah.com>
+Subject: Linux 3.4.61
+Message-ID: <20130908053443.GA3236@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="u3/rZRmxL6MmkK24"
 Content-Disposition: inline
-In-Reply-To: <20130908053416.GA1737@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-diff --git a/Makefile b/Makefile
-index a88b035..58ce3d7 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 0
--SUBLEVEL = 94
-+SUBLEVEL = 95
- EXTRAVERSION =
- NAME = Sneaky Weasel
- 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index 9cb436a..af66776 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -968,6 +968,10 @@ static struct dmi_system_id __initdata ec_dmi_table[] = {
- 	ec_skip_dsdt_scan, "HP Folio 13", {
- 	DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
- 	DMI_MATCH(DMI_PRODUCT_NAME, "HP Folio 13"),}, NULL},
-+	{
-+	ec_validate_ecdt, "ASUS hardware", {
-+	DMI_MATCH(DMI_SYS_VENDOR, "ASUSTek Computer Inc."),
-+	DMI_MATCH(DMI_PRODUCT_NAME, "L4R"),}, NULL},
- 	{},
- };
- 
-diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-index 5fb6aae..02653fc 100644
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -172,6 +172,8 @@ static ssize_t show_mem_removable(struct sys_device *dev,
- 		container_of(dev, struct memory_block, sysdev);
- 
- 	for (i = 0; i < sections_per_block; i++) {
-+		if (!present_section_nr(mem->start_section_nr + i))
-+			continue;
- 		pfn = section_nr_to_pfn(mem->start_section_nr + i);
- 		ret &= is_mem_section_removable(pfn, PAGES_PER_SECTION);
- 	}
-diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c b/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
-index 2d81c70..3f2c88f 100644
---- a/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
-@@ -448,6 +448,7 @@ static void ath9k_htc_tx_process(struct ath9k_htc_priv *priv,
- 	struct ieee80211_conf *cur_conf = &priv->hw->conf;
- 	bool txok;
- 	int slot;
-+	int hdrlen, padsize;
- 
- 	slot = strip_drv_header(priv, skb);
- 	if (slot < 0) {
-@@ -504,6 +505,15 @@ send_mac80211:
- 
- 	ath9k_htc_tx_clear_slot(priv, slot);
- 
-+	/* Remove padding before handing frame back to mac80211 */
-+	hdrlen = ieee80211_get_hdrlen_from_skb(skb);
-+
-+	padsize = hdrlen & 3;
-+	if (padsize && skb->len > hdrlen + padsize) {
-+		memmove(skb->data + padsize, skb->data, hdrlen);
-+		skb_pull(skb, padsize);
-+	}
-+
- 	/* Send status to mac80211 */
- 	ieee80211_tx_status(priv->hw, skb);
- }
-diff --git a/drivers/target/target_core_cdb.c b/drivers/target/target_core_cdb.c
-index 0558401..f8c49ab 100644
---- a/drivers/target/target_core_cdb.c
-+++ b/drivers/target/target_core_cdb.c
-@@ -117,11 +117,12 @@ target_emulate_inquiry_std(struct se_cmd *cmd)
- 		return 0;
- 	}
- 
--	snprintf((unsigned char *)&buf[8], 8, "LIO-ORG");
--	snprintf((unsigned char *)&buf[16], 16, "%s",
--		 &DEV_T10_WWN(dev)->model[0]);
--	snprintf((unsigned char *)&buf[32], 4, "%s",
--		 &DEV_T10_WWN(dev)->revision[0]);
-+	memcpy(&buf[8], "LIO-ORG ", 8);
-+	memset(&buf[16], 0x20, 16);
-+	memcpy(&buf[16], dev->se_sub_dev->t10_wwn.model,
-+	       min_t(size_t, strlen(dev->se_sub_dev->t10_wwn.model), 16));
-+	memcpy(&buf[32], dev->se_sub_dev->t10_wwn.revision,
-+	       min_t(size_t, strlen(dev->se_sub_dev->t10_wwn.revision), 4));
- 	buf[4] = 31; /* Set additional length to 31 */
- 	return 0;
- }
-diff --git a/fs/bio.c b/fs/bio.c
-index 9bfade8..5a48044 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -786,12 +786,22 @@ static int __bio_copy_iov(struct bio *bio, struct bio_vec *iovecs,
- int bio_uncopy_user(struct bio *bio)
- {
- 	struct bio_map_data *bmd = bio->bi_private;
--	int ret = 0;
-+	struct bio_vec *bvec;
-+	int ret = 0, i;
- 
--	if (!bio_flagged(bio, BIO_NULL_MAPPED))
--		ret = __bio_copy_iov(bio, bmd->iovecs, bmd->sgvecs,
--				     bmd->nr_sgvecs, bio_data_dir(bio) == READ,
--				     0, bmd->is_our_pages);
-+	if (!bio_flagged(bio, BIO_NULL_MAPPED)) {
-+		/*
-+		 * if we're in a workqueue, the request is orphaned, so
-+		 * don't copy into a random user address space, just free.
-+		 */
-+		if (current->mm)
-+			ret = __bio_copy_iov(bio, bmd->iovecs, bmd->sgvecs,
-+					     bmd->nr_sgvecs, bio_data_dir(bio) == READ,
-+					     0, bmd->is_our_pages);
-+		else if (bmd->is_our_pages)
-+			__bio_for_each_segment(bvec, bio, i, 0)
-+				__free_page(bvec->bv_page);
-+	}
- 	bio_free_map_data(bmd);
- 	bio_put(bio);
- 	return ret;
-diff --git a/fs/jfs/jfs_dtree.c b/fs/jfs/jfs_dtree.c
-index 9197a1b..b6f17c0 100644
---- a/fs/jfs/jfs_dtree.c
-+++ b/fs/jfs/jfs_dtree.c
-@@ -3047,6 +3047,14 @@ int jfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
- 
- 		dir_index = (u32) filp->f_pos;
- 
-+		/*
-+		 * NFSv4 reserves cookies 1 and 2 for . and .. so we add
-+		 * the value we return to the vfs is one greater than the
-+		 * one we use internally.
-+		 */
-+		if (dir_index)
-+			dir_index--;
-+
- 		if (dir_index > 1) {
- 			struct dir_table_slot dirtab_slot;
- 
-@@ -3086,7 +3094,7 @@ int jfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
- 			if (p->header.flag & BT_INTERNAL) {
- 				jfs_err("jfs_readdir: bad index table");
- 				DT_PUTPAGE(mp);
--				filp->f_pos = -1;
-+				filp->f_pos = DIREND;
- 				return 0;
- 			}
- 		} else {
-@@ -3094,7 +3102,7 @@ int jfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
- 				/*
- 				 * self "."
- 				 */
--				filp->f_pos = 0;
-+				filp->f_pos = 1;
- 				if (filldir(dirent, ".", 1, 0, ip->i_ino,
- 					    DT_DIR))
- 					return 0;
-@@ -3102,7 +3110,7 @@ int jfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
- 			/*
- 			 * parent ".."
- 			 */
--			filp->f_pos = 1;
-+			filp->f_pos = 2;
- 			if (filldir(dirent, "..", 2, 1, PARENT(ip), DT_DIR))
- 				return 0;
- 
-@@ -3123,24 +3131,25 @@ int jfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
- 		/*
- 		 * Legacy filesystem - OS/2 & Linux JFS < 0.3.6
- 		 *
--		 * pn = index = 0:	First entry "."
--		 * pn = 0; index = 1:	Second entry ".."
-+		 * pn = 0; index = 1:	First entry "."
-+		 * pn = 0; index = 2:	Second entry ".."
- 		 * pn > 0:		Real entries, pn=1 -> leftmost page
- 		 * pn = index = -1:	No more entries
- 		 */
- 		dtpos = filp->f_pos;
--		if (dtpos == 0) {
-+		if (dtpos < 2) {
- 			/* build "." entry */
- 
-+			filp->f_pos = 1;
- 			if (filldir(dirent, ".", 1, filp->f_pos, ip->i_ino,
- 				    DT_DIR))
- 				return 0;
--			dtoffset->index = 1;
-+			dtoffset->index = 2;
- 			filp->f_pos = dtpos;
- 		}
- 
- 		if (dtoffset->pn == 0) {
--			if (dtoffset->index == 1) {
-+			if (dtoffset->index == 2) {
- 				/* build ".." entry */
- 
- 				if (filldir(dirent, "..", 2, filp->f_pos,
-@@ -3233,6 +3242,12 @@ int jfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
- 					}
- 					jfs_dirent->position = unique_pos++;
- 				}
-+				/*
-+				 * We add 1 to the index because we may
-+				 * use a value of 2 internally, and NFSv4
-+				 * doesn't like that.
-+				 */
-+				jfs_dirent->position++;
- 			} else {
- 				jfs_dirent->position = dtpos;
- 				len = min(d_namleft, DTLHDRDATALEN_LEGACY);
-diff --git a/sound/isa/opti9xx/opti92x-ad1848.c b/sound/isa/opti9xx/opti92x-ad1848.c
-index c35dc68..2b83557 100644
---- a/sound/isa/opti9xx/opti92x-ad1848.c
-+++ b/sound/isa/opti9xx/opti92x-ad1848.c
-@@ -173,11 +173,7 @@ MODULE_DEVICE_TABLE(pnp_card, snd_opti9xx_pnpids);
- 
- #endif	/* CONFIG_PNP */
- 
--#ifdef OPTi93X
--#define DEV_NAME "opti93x"
--#else
--#define DEV_NAME "opti92x"
--#endif
-+#define DEV_NAME KBUILD_MODNAME
- 
- static char * snd_opti9xx_names[] = {
- 	"unknown",
-@@ -1126,7 +1122,7 @@ static void __devexit snd_opti9xx_pnp_remove(struct pnp_card_link * pcard)
- 
- static struct pnp_card_driver opti9xx_pnpc_driver = {
- 	.flags		= PNP_DRIVER_RES_DISABLE,
--	.name		= "opti9xx",
-+	.name		= DEV_NAME,
- 	.id_table	= snd_opti9xx_pnpids,
- 	.probe		= snd_opti9xx_pnp_probe,
- 	.remove		= __devexit_p(snd_opti9xx_pnp_remove),
+--u3/rZRmxL6MmkK24
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+I'm announcing the release of the 3.4.61 kernel.
+
+All users of the 3.4 kernel series must upgrade.
+
+The updated 3.4.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
+x-3.4.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
+mmary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                                      |    2=20
+ arch/powerpc/Kconfig                          |    1=20
+ arch/powerpc/include/asm/page.h               |   10 ++++
+ drivers/acpi/ec.c                             |    4 +
+ drivers/base/memory.c                         |    2=20
+ drivers/base/regmap/regmap.c                  |    2=20
+ drivers/gpu/drm/i915/i915_reg.h               |    2=20
+ drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c           |   58 +++++++++++++++++----=
+-----
+ drivers/net/wireless/ath/ath9k/htc_drv_txrx.c |   10 ++++
+ drivers/net/wireless/iwlegacy/4965-mac.c      |    2=20
+ drivers/target/target_core_cdb.c              |    9 ++--
+ drivers/tty/hvc/hvsi_lib.c                    |    4 -
+ fs/bio.c                                      |   20 ++++++--
+ fs/jfs/jfs_dtree.c                            |   31 ++++++++++---
+ net/sunrpc/xdr.c                              |    9 ++--
+ sound/isa/opti9xx/opti92x-ad1848.c            |    8 ---
+ 16 files changed, 124 insertions(+), 50 deletions(-)
+
+Dave Kleikamp (1):
+      jfs: fix readdir cookie incompatibility with NFSv4
+
+Eugene Surovegin (1):
+      powerpc/hvsi: Increase handshake timeout from 200ms to 400ms.
+
+Greg Kroah-Hartman (1):
+      Linux 3.4.61
+
+Helmut Schaa (1):
+      ath9k_htc: Restore skb headroom when returning skb to mac80211
+
+Imre Deak (1):
+      drm/i915: ivb: fix edp voltage swing reg val
+
+Jakob Bornecrantz (1):
+      drm/vmwgfx: Split GMR2_REMAP commands if they are to large
+
+Lan Tianyu (1):
+      ACPI / EC: Add ASUSTEK L4R to quirk list in order to validate ECDT
+
+Nicholas Bellinger (1):
+      target: Fix trailing ASCII space usage in INQUIRY vendor+model
+
+Paul Bolle (1):
+      regmap: silence GCC warning
+
+Paul Mackerras (1):
+      powerpc: Work around gcc miscompilation of __pa() on 64-bit
+
+Roland Dreier (1):
+      SCSI: sg: Fix user memory corruption when SG_IO is interrupted by a s=
+ignal
+
+Russ Anderson (1):
+      drivers/base/memory.c: fix show_mem_removable() to handle missing sec=
+tions
+
+Stanislaw Gruszka (1):
+      iwl4965: fix rfkill set state regression
+
+Takashi Iwai (1):
+      ALSA: opti9xx: Fix conflicting driver object name
+
+Trond Myklebust (1):
+      SUNRPC: Fix memory corruption issue on 32-bit highmem systems
+
+
+--u3/rZRmxL6MmkK24
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSLAxzAAoJEDjbvchgkmk+JfEP/icNDi9dG6EbnWusHwgoP8Wc
+Qa/a8In12+XUAM28JQ0bdXx9GKhtGA770ohNiyorbu/iCA2X0xd8I1gsWKNqXyHd
+7yrOD51bJKmtLVZe3p9rFDxWVbmqG8DaqlAdlTFTOaGuHIeEjFQZbrA4UqwjBT9q
+HBF8W1l4GwGZ27fWTzFL5TSFcLTaJZQ7F6vbcpOezPri7H7CJ8agXSEYzWiMDGDL
+6by+SYl7Kr8biEnjRkdAu0JLI6XUfGVcdINBSr1BWDN0uhU8Ix1JgjGdxQpvnfhY
+dosGKF6RHXkqWe75Xxoga0CdWxYdNtOBPSPmlgU3wecBRM92od5qq3D5JoGj74MS
+XZOMygmycvYcCnEhJ/CTLqroLt87R7Mlr+bEuT1Gwy+UEwWqbpSMeX55IaZ37wjk
+sUADj7lG85m6fTy2FbQBnnf9CYdJH8ob4LKAZ+3I8eGpVgeEEQ/8sm7Qj+LmW4X0
+XIrpTov25d9Y6lnXe79dmLh3qKOD2H3dsODv8FyPS+lgGBwXIqUXZekUn/YODak6
+XeeimLRxpQPKv13b3ung2ODOulZ0XffplMDJSPeY52qHKiIhrVICMFciPJtIlvXB
+2AKFwFitK0oiAZ0r7oqx6cestbppTH8lURYxuJflWantzE1D6IkRHJ+auPOKjCPW
+fV7DRyoHbKsGoR8ZQ7/g
+=jkyP
+-----END PGP SIGNATURE-----
+
+--u3/rZRmxL6MmkK24--
