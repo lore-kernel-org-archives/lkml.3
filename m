@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932205Ab3IHDtY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:49:24 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56215 "EHLO
+	id S1760130Ab3IHDtp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:49:45 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56136 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756728Ab3IHDTF (ORCPT
+	by vger.kernel.org with ESMTP id S1756982Ab3IHDTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 23:19:05 -0400
+	Sat, 7 Sep 2013 23:19:04 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Andreas Schwab" <schwab@linux-m68k.org>
+CC: akpm@linux-foundation.org, "Sujith Manoharan" <sujith@msujith.org>,
+        "Gustavo Padovan" <gustavo.padovan@collabora.co.uk>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.255511353@decadent.org.uk>
+Message-ID: <lsq.1378608721.826007779@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [074/121] m68k: Truncate base in do_div()
+Subject: [033/121] Bluetooth: ath3k: Add support for ID 0x13d3/0x3402
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,42 +31,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Schwab <schwab@linux-m68k.org>
+From: Sujith Manoharan <sujith@msujith.org>
 
-commit ea077b1b96e073eac5c3c5590529e964767fc5f7 upstream.
+commit 5b77a1f3d7b7360dc2b7c6d2188d39b9f8432907 upstream.
 
-Explicitly truncate the second operand of do_div() to 32 bits to guard
-against bogus code calling it with a 64-bit divisor.
+T:  Bus=01 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  5 Spd=12   MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=13d3 ProdID=3402 Rev= 0.02
+S:  Manufacturer=Atheros Communications
+S:  Product=Bluetooth USB Host Controller
+S:  SerialNumber=Alaska Day 2006
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
 
-[Thorsten]
+Bug: https://bugzilla.kernel.org/show_bug.cgi?id=59701
 
-After upgrading from 3.2 to 3.10, mounting a btrfs volume fails with:
+Signed-off-by: Sujith Manoharan <sujith@msujith.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/bluetooth/ath3k.c | 2 ++
+ drivers/bluetooth/btusb.c | 1 +
+ 2 files changed, 3 insertions(+)
 
-btrfs: setting nodatacow, compression disabled
-btrfs: enabling auto recovery
-btrfs: disk space caching is enabled
---- a/arch/m68k/include/asm/div64.h
-+++ b/arch/m68k/include/asm/div64.h
-@@ -13,16 +13,17 @@
- 		unsigned long long n64;				\
- 	} __n;							\
- 	unsigned long __rem, __upper;				\
-+	unsigned long __base = (base);				\
- 								\
- 	__n.n64 = (n);						\
- 	if ((__upper = __n.n32[0])) {				\
- 		asm ("divul.l %2,%1:%0"				\
--			: "=d" (__n.n32[0]), "=d" (__upper)	\
--			: "d" (base), "0" (__n.n32[0]));	\
-+		     : "=d" (__n.n32[0]), "=d" (__upper)	\
-+		     : "d" (__base), "0" (__n.n32[0]));		\
- 	}							\
- 	asm ("divu.l %2,%1:%0"					\
--		: "=d" (__n.n32[1]), "=d" (__rem)		\
--		: "d" (base), "1" (__upper), "0" (__n.n32[1]));	\
-+	     : "=d" (__n.n32[1]), "=d" (__rem)			\
-+	     : "d" (__base), "1" (__upper), "0" (__n.n32[1]));	\
- 	(n) = __n.n64;						\
- 	__rem;							\
- })
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -91,6 +91,7 @@ static struct usb_device_id ath3k_table[
+ 	{ USB_DEVICE(0x0489, 0xe056) },
+ 	{ USB_DEVICE(0x0489, 0xe04d) },
+ 	{ USB_DEVICE(0x04c5, 0x1330) },
++	{ USB_DEVICE(0x13d3, 0x3402) },
+ 
+ 	/* Atheros AR5BBU12 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xE02C) },
+@@ -129,6 +130,7 @@ static struct usb_device_id ath3k_blist_
+ 	{ USB_DEVICE(0x0489, 0xe056), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0489, 0xe04d), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
+ 
+ 	/* Atheros AR5BBU22 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xE03C), .driver_info = BTUSB_ATH3012 },
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -161,6 +161,7 @@ static struct usb_device_id blacklist_ta
+ 	{ USB_DEVICE(0x0489, 0xe056), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0489, 0xe04d), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
+ 
+ 	/* Atheros AR5BBU12 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
 
