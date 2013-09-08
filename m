@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932225Ab3IHDVZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:21:25 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55998 "EHLO
+	id S1759761Ab3IHDVX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:21:23 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56182 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754065Ab3IHDS6 (ORCPT
+	by vger.kernel.org with ESMTP id S1756532Ab3IHDSq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 23:18:58 -0400
+	Sat, 7 Sep 2013 23:18:46 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "=?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?=" 
-	<u.kleine-koenig@pengutronix.de>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+CC: akpm@linux-foundation.org, "Sumit.Saxena@lsi.com" <Sumit.Saxena@lsi.com>,
+        "Sumit Saxena" <sumit.saxena@lsi.com>,
+        "Kashyap Desai" <kashyap.desai@lsi.com>,
+        "James Bottomley" <JBottomley@Parallels.com>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.183443551@decadent.org.uk>
+Message-ID: <lsq.1378608721.917550873@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [041/121] serial/mxs-auart: increase time to wait for transmitter
- to become idle
+Subject: [056/121] [SCSI] megaraid_sas: megaraid_sas driver init fails in
+ kdump kernel
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,70 +34,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+From: "Sumit.Saxena@lsi.com" <Sumit.Saxena@lsi.com>
 
-commit 079a036f4283e2b0e5c26080b8c5112bc0cc1831 upstream.
+commit 6431f5d7c6025f8b007af06ea090de308f7e6881 upstream.
 
-Without this patch the driver waits ~1 ms for the UART to become idle. At
-115200n8 this time is (theoretically) enough to transfer 11.5 characters
-(= 115200 bits/s / (10 Bits/char) * 1ms). As the mxs-auart has a fifo size
-of 16 characters the clock is gated too early. The problem is worse for
-lower baud rates.
+Problem: When Hardware IOMMU is on, megaraid_sas driver initialization fails
+in kdump kernel with LSI MegaRAID controller(device id-0x73).
 
-This only happens to really shut down the transmitter in the middle of a
-transfer if /dev/ttyAPPx isn't opened in userspace (e.g. by a getty) but
-was at least once (because the bootloader doesn't disable the transmitter).
+Actually this issue needs fix in firmware, but for firmware running in field,
+this driver fix is proposed to resolve the issue.  At firmware initialization
+time, if firmware does not come to ready state, driver will reset the adapter
+and retry for firmware transition to ready state unconditionally(not only
+executed for kdump kernel).
 
-So increase the timeout to 20 ms which should be enough for 9600n8, too.
-Moreover skip gating the clock if the timeout is elapsed.
-
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Sumit Saxena <sumit.saxena@lsi.com>
+Signed-off-by: Kashyap Desai <kashyap.desai@lsi.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/tty/serial/mxs-auart.c | 21 +++++++++++++--------
- 1 file changed, 13 insertions(+), 8 deletions(-)
+ drivers/scsi/megaraid/megaraid_sas_base.c | 20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
---- a/drivers/tty/serial/mxs-auart.c
-+++ b/drivers/tty/serial/mxs-auart.c
-@@ -543,7 +543,7 @@ auart_console_write(struct console *co,
- 	struct mxs_auart_port *s;
- 	struct uart_port *port;
- 	unsigned int old_ctrl0, old_ctrl2;
--	unsigned int to = 1000;
-+	unsigned int to = 20000;
- 
- 	if (co->index >	MXS_AUART_PORTS || co->index < 0)
- 		return;
-@@ -564,18 +564,23 @@ auart_console_write(struct console *co,
- 
- 	uart_console_write(port, str, count, mxs_auart_console_putchar);
- 
--	/*
--	 * Finally, wait for transmitter to become empty
--	 * and restore the TCR
--	 */
-+	/* Finally, wait for transmitter to become empty ... */
- 	while (readl(port->membase + AUART_STAT) & AUART_STAT_BUSY) {
-+		udelay(1);
- 		if (!to--)
- 			break;
--		udelay(1);
+--- a/drivers/scsi/megaraid/megaraid_sas_base.c
++++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+@@ -3547,11 +3547,21 @@ static int megasas_init_fw(struct megasa
+ 		break;
  	}
  
--	writel(old_ctrl0, port->membase + AUART_CTRL0);
--	writel(old_ctrl2, port->membase + AUART_CTRL2);
-+	/*
-+	 * ... and restore the TCR if we waited long enough for the transmitter
-+	 * to be idle. This might keep the transmitter enabled although it is
-+	 * unused, but that is better than to disable it while it is still
-+	 * transmitting.
-+	 */
-+	if (!(readl(port->membase + AUART_STAT) & AUART_STAT_BUSY)) {
-+		writel(old_ctrl0, port->membase + AUART_CTRL0);
-+		writel(old_ctrl2, port->membase + AUART_CTRL2);
+-	/*
+-	 * We expect the FW state to be READY
+-	 */
+-	if (megasas_transition_to_ready(instance, 0))
+-		goto fail_ready_state;
++	if (megasas_transition_to_ready(instance, 0)) {
++		atomic_set(&instance->fw_reset_no_pci_access, 1);
++		instance->instancet->adp_reset
++			(instance, instance->reg_set);
++		atomic_set(&instance->fw_reset_no_pci_access, 0);
++		dev_info(&instance->pdev->dev,
++			"megasas: FW restarted successfully from %s!\n",
++			__func__);
++
++		/*waitting for about 30 second before retry*/
++		ssleep(30);
++
++		if (megasas_transition_to_ready(instance, 0))
++			goto fail_ready_state;
 +	}
  
- 	clk_disable(s->clk);
- }
+ 	/* Check if MSI-X is supported while in ready state */
+ 	msix_enable = (instance->instancet->read_fw_status_reg(reg_set) &
 
