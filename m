@@ -1,283 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751369Ab3IHBzV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 21:55:21 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:54035 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151Ab3IHBzS (ORCPT
+	id S1751587Ab3IHB5R (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 21:57:17 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:36552 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151Ab3IHB5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 21:55:18 -0400
-Date: Sat, 7 Sep 2013 18:55:10 -0700
+	Sat, 7 Sep 2013 21:57:16 -0400
+Date: Sat, 7 Sep 2013 18:57:09 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, sbw@mit.edu
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
- section?
-Message-ID: <20130908015510.GJ3966@linux.vnet.ibm.com>
+To: Andreas Schwab <schwab@linux-m68k.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Carsten Emde <C.Emde@osadl.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <williams@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: Re: [PATCH] cpufreq: Fix wrong time unit conversion
+Message-ID: <20130908015709.GK3966@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130906151851.GQ3966@linux.vnet.ibm.com>
- <20130906113320.46b2ea3e@gandalf.local.home>
- <20130906164016.GB2706@somewhere>
- <20130906125238.3c5ef919@gandalf.local.home>
- <20130906170006.GC2706@somewhere>
- <20130906131631.6a0a192d@gandalf.local.home>
- <20130906175238.GV3966@linux.vnet.ibm.com>
- <20130906142135.438caba1@gandalf.local.home>
- <20130907004923.GD3966@linux.vnet.ibm.com>
- <20130907011930.GA19943@Krystal>
+References: <1378571708-27825-1-git-send-email-fweisbec@gmail.com>
+ <87txhwh07p.fsf@igel.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130907011930.GA19943@Krystal>
+In-Reply-To: <87txhwh07p.fsf@igel.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090801-0928-0000-0000-000001793F0A
+x-cbid: 13090801-7164-0000-0000-00000170E39A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 06, 2013 at 09:19:30PM -0400, Mathieu Desnoyers wrote:
-> * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> > On Fri, Sep 06, 2013 at 02:21:35PM -0400, Steven Rostedt wrote:
-> > > On Fri, 6 Sep 2013 10:52:38 -0700
-> > > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> > > 
-> > > > > What exactly does "extended quiescent state" mean? (Note, that's a
-> > > > > rhetorical question)
-> > > > 
-> > > > In which case my rhetorical (and therefore useless) answer has to be
-> > > > "it is a quiescent state that is extended".  ;-)
-> > > > 
-> > > > Sorry, couldn't resist...
-> > > 
-> > > Of course you couldn't ;)
-> > > 
-> > > > 
-> > > > > I wonder if we should change "rcu_cpu_ignore()" for "rcu_eqs_enter()"
-> > > > > and "rcu_cpu_heed()" for "rcu_eqs_exit()", as IMHO that's much more
-> > > > > straight forward to understand than trying to wrap you head around what
-> > > > > a quiescent state is, and why we are entering it or exiting it.
-> > > > > 
-> > > > > It also flat out explains to people that rcu is not processing that
-> > > > > current CPU, and things like rcu_read_lock() should not be used.
-> > > > > 
-> > > > > Then we can say "rcu_cpu_is_ignored()" for things like
-> > > > > "rcu_is_cpu_eqs()".
-> > > > 
-> > > > Currently, none of RCU's _eqs functions are exported, so they have
-> > > > the potential to confuse only people working on the RCU implementation
-> > > > itself, who had better understand what "eqs" means.
-> > > 
-> > > Yeah, that's what I thought, and never cared about the "eqs" meaning.
-> > > 
-> > > > 
-> > > > But I do count your vote against "eqs" appearing in the name of any
-> > > > function exported by RCU.
-> > > 
-> > > Right, their shouldn't be any "eqs" functions that are global to users
-> > > outside of the RCU infrastructure.
-> > > 
-> > > > 
-> > > > How about if I made rcu_is_cpu_idle() be as follows?
-> > > > 
-> > > > int rcu_is_cpu_idle(void)
-> > > > {
-> > > > 	int ret;
-> > > > 
-> > > > 	ret = (atomic_read(&per_cpu(rcu_dynticks.dynticks,
-> > > > 				    raw_smp_processor_id())) & 0x1) == 0;
-> > > > 	return ret;
-> > > > }
-> > > > 
-> > > > This should allow existing uses to function properly and should allow
-> > > > you to use it as well.
-> > > >
-> > > 
-> > > You already said it wont work, but I still would have been against
-> > > using it, because I wouldn't be checking if rcu thinks the CPU is idle,
-> > > as NO_HZ_FULL has nothing to do with idle.
-> > 
-> > OK then, how about the following?
-> > 
-> > 							Thanx, Paul
-> > 
-> > ------------------------------------------------------------------------
-> > 
-> > rcu: Is it safe to enter an RCU read-side critical section?
-> > 
-> > There is currently no way for kernel code to determine whether it
-> > is safe to enter an RCU read-side critical section, in other words,
-> > whether or not RCU is paying attention to the currently running CPU.
-> > Given the large and increasing quantity of code shared by the idle loop
-> > and non-idle code, the this shortcoming is becoming increasingly painful.
-> > 
-> > This commit therefore adds rcu_watching_this_cpu(), which returns true
-> > if it is safe to enter an RCU read-side critical section on the currently
-> > running CPU.  This function is quite fast, using only a __this_cpu_read().
-> > However, the caller must disable preemption.
-> 
-> Hi Paul,
-> 
-> Hopefully I won't be redundant with other prior comments, but how about
-> the following:
+On Sat, Sep 07, 2013 at 09:59:38PM +0200, Andreas Schwab wrote:
+> See also <http://permalink.gmane.org/gmane.linux.kernel.cpufreq/11672>.
 
-The naming discussion has been a bit fraught, so I was focusing initially
-on the functionality.  Which still isn't quite right.
+Does look quite similar, now that you mention it.
 
-> static inline __rcu_read_check(void):
->   - checks if it is safe to enter a RCU read-side critical section in
->     the current context.
->   - requires that the caller disable preemption.
-> 
-> static inline rcu_read_check(void):
->   - disables preemption and inlines __rcu_read_check().
-
-My fear, rightly or wrongly, is that this would get conflated with
-rcu_dereference_check().
-
-> I don't think it is semantically a good thing to bury the
-> implementation-specific detail (whether is RCU watched on this
-> particular CPU) into the API naming. Also, I think the generic version
-> of this check should require no "special knowledge" from the user, hence
-> my double-underscores proposal for the optimized version.
-
-I do agree that the "__" vs. no-"__" distinction does make a lot of sense.
-Especially now that I have them checking the same condition.  Which they
-need to be, or Steve might get false positives when tracing some of
-RCU's functions on the path to/from idle.
-
-That said, I would say that "RCU watching this CPU" is not so much
-implementation-specific as it is the semantic meaning.  I could imagine
-other variations on this theme, such as "CPU under RCU control",
-"CPU safe for RCU readers", and so on, but "RCU watching this CPU"
-seems a bit more direct.
-
-But please tell me more about what you have in mind here.
+Perhaps if Frederic has not already sent his patch he could add your
+Signed-off-by to his patch?
 
 							Thanx, Paul
-
-> Thoughts ?
-> 
-> Thanks,
-> 
-> Mathieu
-> 
-> > 
-> > Reported-by: Steven Rostedt <rostedt@goodmis.org>
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > 
-> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> > index 5b444e0..a41eb35 100644
-> > --- a/include/linux/rcupdate.h
-> > +++ b/include/linux/rcupdate.h
-> > @@ -261,6 +261,10 @@ static inline void rcu_user_hooks_switch(struct task_struct *prev,
-> >  		rcu_irq_exit(); \
-> >  	} while (0)
-> >  
-> > +#if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP)
-> > +extern int rcu_is_cpu_idle(void);
-> > +#endif /* #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) || defined(CONFIG_SMP) */
-> > +
-> >  /*
-> >   * Infrastructure to implement the synchronize_() primitives in
-> >   * TREE_RCU and rcu_barrier_() primitives in TINY_RCU.
-> > @@ -297,10 +301,6 @@ static inline void destroy_rcu_head_on_stack(struct rcu_head *head)
-> >  }
-> >  #endif	/* #else !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
-> >  
-> > -#if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_SMP)
-> > -extern int rcu_is_cpu_idle(void);
-> > -#endif /* #if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_SMP) */
-> > -
-> >  #if defined(CONFIG_HOTPLUG_CPU) && defined(CONFIG_PROVE_RCU)
-> >  bool rcu_lockdep_current_cpu_online(void);
-> >  #else /* #if defined(CONFIG_HOTPLUG_CPU) && defined(CONFIG_PROVE_RCU) */
-> > diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
-> > index e31005e..67fe672 100644
-> > --- a/include/linux/rcutiny.h
-> > +++ b/include/linux/rcutiny.h
-> > @@ -132,4 +132,13 @@ static inline void rcu_scheduler_starting(void)
-> >  }
-> >  #endif /* #else #ifdef CONFIG_DEBUG_LOCK_ALLOC */
-> >  
-> > +#ifdef CONFIG_RCU_TRACE
-> > +
-> > +static inline bool rcu_watching_this_cpu(void)
-> > +{
-> > +	return !rcu_is_cpu_idle();
-> > +}
-> > +
-> > +#endif /* #ifdef CONFIG_RCU_TRACE */
-> > +
-> >  #endif /* __LINUX_RCUTINY_H */
-> > diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
-> > index 226169d..c605b41 100644
-> > --- a/include/linux/rcutree.h
-> > +++ b/include/linux/rcutree.h
-> > @@ -90,4 +90,6 @@ extern void exit_rcu(void);
-> >  extern void rcu_scheduler_starting(void);
-> >  extern int rcu_scheduler_active __read_mostly;
-> >  
-> > +extern bool rcu_watching_this_cpu(void);
-> > +
-> >  #endif /* __LINUX_RCUTREE_H */
-> > diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-> > index 7e3b0d6..b14701f 100644
-> > --- a/kernel/rcutiny.c
-> > +++ b/kernel/rcutiny.c
-> > @@ -176,7 +176,7 @@ void rcu_irq_enter(void)
-> >  }
-> >  EXPORT_SYMBOL_GPL(rcu_irq_enter);
-> >  
-> > -#ifdef CONFIG_DEBUG_LOCK_ALLOC
-> > +#if defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE)
-> >  
-> >  /*
-> >   * Test whether RCU thinks that the current CPU is idle.
-> > @@ -187,7 +187,7 @@ int rcu_is_cpu_idle(void)
-> >  }
-> >  EXPORT_SYMBOL(rcu_is_cpu_idle);
-> >  
-> > -#endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
-> > +#endif /* defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) */
-> >  
-> >  /*
-> >   * Test whether the current CPU was interrupted from idle.  Nested
-> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > index a06d172..38c6883 100644
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -666,6 +666,19 @@ int rcu_is_cpu_idle(void)
-> >  }
-> >  EXPORT_SYMBOL(rcu_is_cpu_idle);
-> >  
-> > +/**
-> > + * rcu_watching_this_cpu - are RCU read-side critical sections safe?
-> > + *
-> > + * Return true if RCU is watching the running CPU, which means that
-> > + * this CPU can safely enter RCU read-side critical sections.  Unlike
-> > + * rcu_is_cpu_idle(), the caller of rcu_watching_this_cpu() must have at
-> > + * least disabled preemption.
-> > + */
-> > +bool rcu_watching_this_cpu(void)
-> > +{
-> > +	return !!__this_cpu_read(rcu_dynticks.dynticks_nesting);
-> > +}
-> > +
-> >  #if defined(CONFIG_PROVE_RCU) && defined(CONFIG_HOTPLUG_CPU)
-> >  
-> >  /*
-> > 
-> 
-> -- 
-> Mathieu Desnoyers
-> EfficiOS Inc.
-> http://www.efficios.com
-> 
 
