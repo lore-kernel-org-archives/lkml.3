@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203Ab3IHDss (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:48:48 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56145 "EHLO
+	id S1760112Ab3IHDsq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:48:46 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56101 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755704Ab3IHDTG (ORCPT
+	by vger.kernel.org with ESMTP id S1756974Ab3IHDTG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 7 Sep 2013 23:19:06 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,17 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Guenter Roeck" <linux@roeck-us.net>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Ralf Baechle" <ralf@linux-mips.org>, "Takashi Iwai" <tiwai@suse.de>
+CC: akpm@linux-foundation.org, "Wanpeng Li" <liwanp@linux.vnet.ibm.com>,
+        "Zhouping Liu" <zliu@redhat.com>,
+        "David Rientjes" <rientjes@google.com>,
+        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Michal Hocko" <mhocko@suse.cz>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.316090396@decadent.org.uk>
+Message-ID: <lsq.1378608721.274378007@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [092/121] sound: Fix make allmodconfig on MIPS
+Subject: [002/121] mm/memory-hotplug: fix lowmem count overflow when
+ offline pages
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,32 +36,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 
-commit d4702b189c6b951c1cb3260036ff998f719bfb62 upstream.
+commit cea27eb2a202959783f81254c48c250ddd80e129 upstream.
 
-The compile of soundcard.c is broken on MIPS when allmodconfig is used
-because of the missing MAX_DMA_CHANNELS definition.  As a simple
-workaround, just add a Kconfig dependency.
+The logic for the memory-remove code fails to correctly account the
+Total High Memory when a memory block which contains High Memory is
+offlined as shown in the example below.  The following patch fixes it.
 
-Reported-by: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Cc: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Before logic memory remove:
+
+MemTotal:        7603740 kB
+MemFree:         6329612 kB
+Buffers:           94352 kB
+Cached:           872008 kB
+SwapCached:            0 kB
+Active:           626932 kB
+Inactive:         519216 kB
+Active(anon):     180776 kB
+Inactive(anon):   222944 kB
+Active(file):     446156 kB
+Inactive(file):   296272 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+HighTotal:       7294672 kB
+HighFree:        5704696 kB
+LowTotal:         309068 kB
+LowFree:          624916 kB
+
+After logic memory remove:
+
+MemTotal:        7079452 kB
+MemFree:         5805976 kB
+Buffers:           94372 kB
+Cached:           872000 kB
+SwapCached:            0 kB
+Active:           626936 kB
+Inactive:         519236 kB
+Active(anon):     180780 kB
+Inactive(anon):   222944 kB
+Active(file):     446156 kB
+Inactive(file):   296292 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+HighTotal:       7294672 kB
+HighFree:        5181024 kB
+LowTotal:       4294752076 kB
+LowFree:          624952 kB
+
+[mhocko@suse.cz: fix CONFIG_HIGHMEM=n build]
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[Backported for 3.4-stable. Adjusted context.]
+Signed-off-by: Zhouping Liu <zliu@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/oss/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
+ mm/page_alloc.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/sound/oss/Kconfig
-+++ b/sound/oss/Kconfig
-@@ -250,6 +250,7 @@ config MSND_FIFOSIZE
- menuconfig SOUND_OSS
- 	tristate "OSS sound modules"
- 	depends on ISA_DMA_API && VIRT_TO_BUS
-+	depends on !ISA_DMA_SUPPORT_BROKEN
- 	help
- 	  OSS is the Open Sound System suite of sound card drivers.  They make
- 	  sound programming easier since they provide a common API.  Say Y or
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5777,6 +5777,10 @@ __offline_isolated_pages(unsigned long s
+ 		zone->free_area[order].nr_free--;
+ 		__mod_zone_page_state(zone, NR_FREE_PAGES,
+ 				      - (1UL << order));
++#ifdef CONFIG_HIGHMEM
++		if (PageHighMem(page))
++			totalhigh_pages -= 1 << order;
++#endif
+ 		for (i = 0; i < (1 << order); i++)
+ 			SetPageReserved((page+i));
+ 		pfn += (1 << order);
 
