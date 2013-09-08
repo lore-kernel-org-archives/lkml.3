@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759191Ab3IHDTq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:19:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56102 "EHLO
+	id S1759162Ab3IHDTn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:19:43 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56133 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756272Ab3IHDSo (ORCPT
+	by vger.kernel.org with ESMTP id S1755672Ab3IHDSp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 23:18:44 -0400
+	Sat, 7 Sep 2013 23:18:45 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Gustavo Padovan" <gustavo.padovan@collabora.co.uk>,
-        "AceLan Kao" <acelan.kao@canonical.com>
+CC: akpm@linux-foundation.org, "John W. Linville" <linville@tuxdriver.com>,
+        "Oleksij Rempel" <linux@rempel-privat.de>,
+        "Bo Shi" <cnshibo@gmail.com>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.955248121@decadent.org.uk>
+Message-ID: <lsq.1378608721.580427531@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [035/121] Bluetooth: Add support for Atheros [0cf3:e003]
+Subject: [029/121] ath9k_htc: do some initial hardware configuration
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,53 +32,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: AceLan Kao <acelan.kao@canonical.com>
+From: Oleksij Rempel <linux@rempel-privat.de>
 
-commit 1d5b569ef85d013a775560a90050dc630614c045 upstream.
+commit dc2a87f519a4d8cb376ab54f22b6b98a943b51ce upstream.
 
-Add support for the AR9462 chip
+Currently we configure harwdare and clock, only after
+interface start. In this case, if we reload module or
+reboot PC without configuring adapter, firmware will freeze.
+There is no software way to reset adpter.
 
-T:  Bus=02 Lev=02 Prnt=02 Port=04 Cnt=01 Dev#=  4 Spd=12  MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0cf3 ProdID=e003 Rev=00.02
-C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+This patch add initial configuration and set it in
+disabled state, to avoid this freeze. Behaviour of this patch
+should be similar to: ifconfig wlan0 up; ifconfig wlan0 down.
 
-Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Bug: https://github.com/qca/open-ath9k-htc-firmware/issues/1
+Tested-by: Bo Shi <cnshibo@gmail.com>
+Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/bluetooth/ath3k.c | 2 ++
- drivers/bluetooth/btusb.c | 1 +
- 2 files changed, 3 insertions(+)
+ drivers/net/wireless/ath/ath9k/htc_drv_init.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -93,6 +93,7 @@ static struct usb_device_id ath3k_table[
- 	{ USB_DEVICE(0x04c5, 0x1330) },
- 	{ USB_DEVICE(0x13d3, 0x3402) },
- 	{ USB_DEVICE(0x0cf3, 0x3121) },
-+	{ USB_DEVICE(0x0cf3, 0xe003) },
+--- a/drivers/net/wireless/ath/ath9k/htc_drv_init.c
++++ b/drivers/net/wireless/ath/ath9k/htc_drv_init.c
+@@ -851,6 +851,7 @@ static int ath9k_init_device(struct ath9
+ 	if (error != 0)
+ 		goto err_rx;
  
- 	/* Atheros AR5BBU12 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xE02C) },
-@@ -133,6 +134,7 @@ static struct usb_device_id ath3k_blist_
- 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x3121), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0cf3, 0xe003), .driver_info = BTUSB_ATH3012 },
- 
- 	/* Atheros AR5BBU22 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xE03C), .driver_info = BTUSB_ATH3012 },
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -163,6 +163,7 @@ static struct usb_device_id blacklist_ta
- 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x3121), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0cf3, 0xe003), .driver_info = BTUSB_ATH3012 },
- 
- 	/* Atheros AR5BBU12 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
++	ath9k_hw_disable(priv->ah);
+ #ifdef CONFIG_MAC80211_LEDS
+ 	/* must be initialized before ieee80211_register_hw */
+ 	priv->led_cdev.default_trigger = ieee80211_create_tpt_led_trigger(priv->hw,
 
