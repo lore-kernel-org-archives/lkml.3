@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759971Ab3IHDno (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:43:44 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56156 "EHLO
+	id S932135Ab3IHDnm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:43:42 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56024 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756285Ab3IHDTM (ORCPT
+	by vger.kernel.org with ESMTP id S1755711Ab3IHDTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 7 Sep 2013 23:19:12 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>
+CC: akpm@linux-foundation.org, "Torsten Schenk" <torsten.schenk@zoho.com>,
+        "Takashi Iwai" <tiwai@suse.de>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.829177920@decadent.org.uk>
+Message-ID: <lsq.1378608721.65468940@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [101/121] powerpc: Don't Oops when accessing /proc/powerpc/lparcfg
- without hypervisor
+Subject: [065/121] ALSA: 6fire: make buffers DMA-able (pcm)
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,83 +31,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Torsten Schenk <torsten.schenk@zoho.com>
 
-commit f5f6cbb61610b7bf9d9d96db9c3979d62a424bab upstream.
+commit 5ece263f1d93fba8d992e67e3ab8a71acf674db9 upstream.
 
-/proc/powerpc/lparcfg is an ancient facility (though still actively used)
-which allows access to some informations relative to the partition when
-running underneath a PAPR compliant hypervisor.
+Patch makes pcm buffers DMA-able by allocating each one separately.
 
-It makes no sense on non-pseries machines. However, currently, not only
-can it be created on these if the kernel has pseries support, but accessing
-it on such a machine will crash due to trying to do hypervisor calls.
-
-In fact, it should also not do HV calls on older pseries that didn't have
-an hypervisor either.
-
-Finally, it has the plumbing to be a module but is a "bool" Kconfig option.
-
-This fixes the whole lot by turning it into a machine_device_initcall
-that is only created on pseries, and adding the necessary hypervisor
-check before calling the H_GET_EM_PARMS hypercall
-
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-[bwh: Backported to 3.2: lparcfg_cleanup() was a bit different]
+Signed-off-by: Torsten Schenk <torsten.schenk@zoho.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/powerpc/kernel/lparcfg.c | 22 +++++++++-------------
- 1 file changed, 9 insertions(+), 13 deletions(-)
+ sound/usb/6fire/pcm.c | 41 ++++++++++++++++++++++++++++++++++++++++-
+ sound/usb/6fire/pcm.h |  2 +-
+ 2 files changed, 41 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/kernel/lparcfg.c
-+++ b/arch/powerpc/kernel/lparcfg.c
-@@ -37,7 +37,13 @@
- #include <asm/vdso_datapage.h>
- #include <asm/vio.h>
- #include <asm/mmu.h>
-+#include <asm/machdep.h>
+--- a/sound/usb/6fire/pcm.c
++++ b/sound/usb/6fire/pcm.c
+@@ -579,6 +579,33 @@ static void __devinit usb6fire_pcm_init_
+ 	urb->instance.number_of_packets = PCM_N_PACKETS_PER_URB;
+ }
  
++static int usb6fire_pcm_buffers_init(struct pcm_runtime *rt)
++{
++	int i;
 +
-+/*
-+ * This isn't a module but we expose that to userspace
-+ * via /proc so leave the definitions here
-+ */
- #define MODULE_VERS "1.9"
- #define MODULE_NAME "lparcfg"
- 
-@@ -487,7 +493,8 @@ static void parse_em_data(struct seq_fil
++	for (i = 0; i < PCM_N_URBS; i++) {
++		rt->out_urbs[i].buffer = kzalloc(PCM_N_PACKETS_PER_URB
++				* PCM_MAX_PACKET_SIZE, GFP_KERNEL);
++		if (!rt->out_urbs[i].buffer)
++			return -ENOMEM;
++		rt->in_urbs[i].buffer = kzalloc(PCM_N_PACKETS_PER_URB
++				* PCM_MAX_PACKET_SIZE, GFP_KERNEL);
++		if (!rt->in_urbs[i].buffer)
++			return -ENOMEM;
++	}
++	return 0;
++}
++
++static void usb6fire_pcm_buffers_destroy(struct pcm_runtime *rt)
++{
++	int i;
++
++	for (i = 0; i < PCM_N_URBS; i++) {
++		kfree(rt->out_urbs[i].buffer);
++		kfree(rt->in_urbs[i].buffer);
++	}
++}
++
+ int __devinit usb6fire_pcm_init(struct sfire_chip *chip)
  {
- 	unsigned long retbuf[PLPAR_HCALL_BUFSIZE];
+ 	int i;
+@@ -590,6 +617,13 @@ int __devinit usb6fire_pcm_init(struct s
+ 	if (!rt)
+ 		return -ENOMEM;
  
--	if (plpar_hcall(H_GET_EM_PARMS, retbuf) == H_SUCCESS)
-+	if (firmware_has_feature(FW_FEATURE_LPAR) &&
-+	    plpar_hcall(H_GET_EM_PARMS, retbuf) == H_SUCCESS)
- 		seq_printf(m, "power_mode_data=%016lx\n", retbuf[0]);
- }
++	ret = usb6fire_pcm_buffers_init(rt);
++	if (ret) {
++		usb6fire_pcm_buffers_destroy(rt);
++		kfree(rt);
++		return ret;
++	}
++
+ 	rt->chip = chip;
+ 	rt->stream_state = STREAM_DISABLED;
+ 	rt->rate = ARRAY_SIZE(rates);
+@@ -611,6 +645,7 @@ int __devinit usb6fire_pcm_init(struct s
  
-@@ -772,7 +779,6 @@ static int lparcfg_open(struct inode *in
- }
+ 	ret = snd_pcm_new(chip->card, "DMX6FireUSB", 0, 1, 1, &pcm);
+ 	if (ret < 0) {
++		usb6fire_pcm_buffers_destroy(rt);
+ 		kfree(rt);
+ 		snd_printk(KERN_ERR PREFIX "cannot create pcm instance.\n");
+ 		return ret;
+@@ -626,6 +661,7 @@ int __devinit usb6fire_pcm_init(struct s
+ 			snd_dma_continuous_data(GFP_KERNEL),
+ 			MAX_BUFSIZE, MAX_BUFSIZE);
+ 	if (ret) {
++		usb6fire_pcm_buffers_destroy(rt);
+ 		kfree(rt);
+ 		snd_printk(KERN_ERR PREFIX
+ 				"error preallocating pcm buffers.\n");
+@@ -670,6 +706,9 @@ void usb6fire_pcm_abort(struct sfire_chi
  
- static const struct file_operations lparcfg_fops = {
--	.owner		= THIS_MODULE,
- 	.read		= seq_read,
- 	.write		= lparcfg_write,
- 	.open		= lparcfg_open,
-@@ -799,15 +805,4 @@ static int __init lparcfg_init(void)
- 	proc_ppc64_lparcfg = ent;
- 	return 0;
+ void usb6fire_pcm_destroy(struct sfire_chip *chip)
+ {
+-	kfree(chip->pcm);
++	struct pcm_runtime *rt = chip->pcm;
++
++	usb6fire_pcm_buffers_destroy(rt);
++	kfree(rt);
+ 	chip->pcm = NULL;
  }
--
--static void __exit lparcfg_cleanup(void)
--{
--	if (proc_ppc64_lparcfg)
--		remove_proc_entry("lparcfg", proc_ppc64_lparcfg->parent);
--}
--
--module_init(lparcfg_init);
--module_exit(lparcfg_cleanup);
--MODULE_DESCRIPTION("Interface for LPAR configuration data");
--MODULE_AUTHOR("Dave Engebretsen");
--MODULE_LICENSE("GPL");
-+machine_device_initcall(pseries, lparcfg_init);
+--- a/sound/usb/6fire/pcm.h
++++ b/sound/usb/6fire/pcm.h
+@@ -33,7 +33,7 @@ struct pcm_urb {
+ 	struct urb instance;
+ 	struct usb_iso_packet_descriptor packets[PCM_N_PACKETS_PER_URB];
+ 	/* END DO NOT SEPARATE */
+-	u8 buffer[PCM_N_PACKETS_PER_URB * PCM_MAX_PACKET_SIZE];
++	u8 *buffer;
+ 
+ 	struct pcm_urb *peer;
+ };
 
