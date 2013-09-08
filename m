@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753625Ab3IHPva (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 11:51:30 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:48776 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752322Ab3IHPv2 (ORCPT
+	id S1754031Ab3IHPwP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 11:52:15 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:60731 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753365Ab3IHPwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 11:51:28 -0400
+	Sun, 8 Sep 2013 11:52:12 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130908072408.GA5092@kroah.com>
-References: <1378252218-18798-1-git-send-email-matthew.garrett@nebula.com>
-	<1378252218-18798-9-git-send-email-matthew.garrett@nebula.com>
-	<20130908064027.GA3587@kroah.com>
-	<1378622648.2300.4.camel@x230>
-	<20130908072408.GA5092@kroah.com>
-Date: Sun, 8 Sep 2013 08:51:27 -0700
-X-Google-Sender-Auth: mc5z__zI6q5K6py56Jisyes45WA
-Message-ID: <CAGXu5jLwCt6RtQC+kxcUC69tMydx8DO2QWDv3jK6_mOyT_iNbA@mail.gmail.com>
-Subject: Re: [PATCH V3 08/11] kexec: Disable at runtime if the kernel enforces
- module loading restrictions
+In-Reply-To: <CAGXu5jL4ojFEWAkW0NDSERUFTQhPgwb6ToOcAsg_4QySex1GfA@mail.gmail.com>
+References: <CAGXu5jJvuAC3paV5k_bmoHHrHVgc0Hi6ShSDk3iQUt1Lf0cioQ@mail.gmail.com>
+	<20130908013210.GA30627@gondor.apana.org.au>
+	<CAGXu5j+DoXK_9v430xhCzOO1bsuuhe84fjkf7+DZ0r35hUNBBg@mail.gmail.com>
+	<20130908043703.GA31554@gondor.apana.org.au>
+	<20130908045422.GA31896@gondor.apana.org.au>
+	<CAGXu5jL4ojFEWAkW0NDSERUFTQhPgwb6ToOcAsg_4QySex1GfA@mail.gmail.com>
+Date: Sun, 8 Sep 2013 08:52:11 -0700
+X-Google-Sender-Auth: mwWDeabTW6aWL80PWMbLVVdF0ww
+Message-ID: <CAGXu5jLQ8oex=PMftRsFcoB78SXSRM3LTVoib61agA392vSvTA@mail.gmail.com>
+Subject: Re: race condition in crypto larval handling
 From: Kees Cook <keescook@chromium.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-crypto <linux-crypto@vger.kernel.org>,
+        Tyler Hicks <tyhicks@canonical.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 8, 2013 at 12:24 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Sun, Sep 08, 2013 at 06:44:08AM +0000, Matthew Garrett wrote:
->> On Sat, 2013-09-07 at 23:40 -0700, Greg KH wrote:
->> > If you apply this, you break everyone who is currently relying on kexec
->> > (i.e. kdump, bootloaders, etc.), from using signed kernel modules, which
->> > personally, seems like a very bad idea.
+On Sat, Sep 7, 2013 at 11:01 PM, Kees Cook <keescook@chromium.org> wrote:
+> On Sat, Sep 7, 2013 at 9:54 PM, Herbert Xu <herbert@gondor.apana.org.au> wrote:
+>> On Sun, Sep 08, 2013 at 02:37:03PM +1000, Herbert Xu wrote:
+>>> On Sat, Sep 07, 2013 at 08:34:15PM -0700, Kees Cook wrote:
+>>> >
+>>> > However, I noticed on the "good" path (even without the above patch),
+>>> > I sometimes see a double-kfree triggered by the modprobe process. I
+>>> > can't, however, see how that's happening, since larval_destroy should
+>>> > only be called when refcnt == 0.
+>>>
+>>> Do you still see this double free with this patch? Without the
+>>> patch it is completely expected as killing the same lavral twice
+>>> will cause memory corruption leading to all sorts of weirdness,
+>>> even if you stop it from deleting the list entry twice.
 >>
->> Enforcing signed modules provides you with no additional security if you
->> have kexec enabled. It's better to make that obvious.
+>> Actually I know what it is.  sha512 registers two algorithms.
+>> Therefore, it will create two larvals in sequence and then destroy
+>> them in turn.  So it's not a double free at all.  If you put a
+>> printk in crypto_larval_alloc that should confirm this.
 >
-> Then document the heck out of it, don't disable a valid use case just
-> because it possibly could be used in some way that is different from the
-> original system.
->
-> If you take this to an extreme, kexec shouldn't be here at all, as it
-> can do anything in the kernel wherever it wants to.
->
-> kexec has nothing to do with signed modules, don't tie them together.
+> Ah! That would make sense; it just happens to re-allocate to the exact
+> same location, yes. Whew, that's certainly what's happening. I can
+> retest to confirm in my morning.
 
-It's not accurate to say it has "nothing to do" with signed modules.
-The purpose of signed modules is to ensure the integrity of the
-running system against the root user.
-
-It was, however, incomplete. Terrible analogy follows: signed modules
-was locking the front door, but we have all sorts of windows still
-open. This closes those windows. You're trying to say that shutting
-windows has nothing to do with lumber locks. While technically true,
-this is about the intent of the barriers.
-
-Anyone currently using signed modules (with sig_enforce) AND kexec is
-deluding themselves about what the state of their system's ring-0
-security stance is. Those people should be running without
-sig_enforce, and if they want both sig_enforce and kexec, then I would
-expect a follow-up patch from them to provide signed kexec support.
+Confirmed: 2 allocs happen, and then 2 kfrees. :)
 
 -Kees
 
