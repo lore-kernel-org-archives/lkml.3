@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759870Ab3IHDj6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:39:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56410 "EHLO
+	id S1759899Ab3IHDkh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:40:37 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56026 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757687Ab3IHDTS (ORCPT
+	by vger.kernel.org with ESMTP id S1755717Ab3IHDTR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 23:19:18 -0400
+	Sat, 7 Sep 2013 23:19:17 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, davem@davemloft.net,
-        "Vlad Yasevich" <vyasevich@gmail.com>,
-        "Neil Horman" <nhorman@tuxdriver.com>, netdev@vger.kernel.org,
-        "West, Steve (NSN - US/Fort Worth)" <steve.west@nsn.com>
+CC: akpm@linux-foundation.org, "Torsten Schenk" <torsten.schenk@zoho.com>,
+        "Takashi Iwai" <tiwai@suse.de>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.251863536@decadent.org.uk>
+Message-ID: <lsq.1378608721.811279630@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [010/121] sctp: fully initialize sctp_outq in sctp_outq_init
+Subject: [066/121] ALSA: 6fire: make buffers DMA-able (midi)
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,59 +31,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Torsten Schenk <torsten.schenk@zoho.com>
 
-[ Upstream commit c5c7774d7eb4397891edca9ebdf750ba90977a69 ]
+commit 4c2aee0032b70083dafebd733ed9c774633b2fa3 upstream.
 
-In commit 2f94aabd9f6c925d77aecb3ff020f1cc12ed8f86
-(refactor sctp_outq_teardown to insure proper re-initalization)
-we modified sctp_outq_teardown to use sctp_outq_init to fully re-initalize the
-outq structure.  Steve West recently asked me why I removed the q->error = 0
-initalization from sctp_outq_teardown.  I did so because I was operating under
-the impression that sctp_outq_init would properly initalize that value for us,
-but it doesn't.  sctp_outq_init operates under the assumption that the outq
-struct is all 0's (as it is when called from sctp_association_init), but using
-it in __sctp_outq_teardown violates that assumption. We should do a memset in
-sctp_outq_init to ensure that the entire structure is in a known state there
-instead.
+Patch makes midi output buffer DMA-able by allocating it separately.
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Reported-by: "West, Steve (NSN - US/Fort Worth)" <steve.west@nsn.com>
-CC: Vlad Yasevich <vyasevich@gmail.com>
-CC: netdev@vger.kernel.org
-CC: davem@davemloft.net
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Torsten Schenk <torsten.schenk@zoho.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/sctp/outqueue.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ sound/usb/6fire/midi.c | 16 +++++++++++++++-
+ sound/usb/6fire/midi.h |  6 +-----
+ 2 files changed, 16 insertions(+), 6 deletions(-)
 
-diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
-index 96eb168..3dd7207 100644
---- a/net/sctp/outqueue.c
-+++ b/net/sctp/outqueue.c
-@@ -205,6 +205,8 @@ static inline int sctp_cacc_skip(struct sctp_transport *primary,
-  */
- void sctp_outq_init(struct sctp_association *asoc, struct sctp_outq *q)
- {
-+	memset(q, 0, sizeof(struct sctp_outq));
+--- a/sound/usb/6fire/midi.c
++++ b/sound/usb/6fire/midi.c
+@@ -20,6 +20,10 @@
+ #include "chip.h"
+ #include "comm.h"
+ 
++enum {
++	MIDI_BUFSIZE = 64
++};
 +
- 	q->asoc = asoc;
- 	INIT_LIST_HEAD(&q->out_chunk_list);
- 	INIT_LIST_HEAD(&q->control_chunk_list);
-@@ -212,13 +214,7 @@ void sctp_outq_init(struct sctp_association *asoc, struct sctp_outq *q)
- 	INIT_LIST_HEAD(&q->sacked);
- 	INIT_LIST_HEAD(&q->abandoned);
+ static void usb6fire_midi_out_handler(struct urb *urb)
+ {
+ 	struct midi_runtime *rt = urb->context;
+@@ -157,6 +161,12 @@ int __devinit usb6fire_midi_init(struct
+ 	if (!rt)
+ 		return -ENOMEM;
  
--	q->fast_rtx = 0;
--	q->outstanding_bytes = 0;
- 	q->empty = 1;
--	q->cork  = 0;
--
--	q->malloced = 0;
--	q->out_qlen = 0;
++	rt->out_buffer = kzalloc(MIDI_BUFSIZE, GFP_KERNEL);
++	if (!rt->out_buffer) {
++		kfree(rt);
++		return -ENOMEM;
++	}
++
+ 	rt->chip = chip;
+ 	rt->in_received = usb6fire_midi_in_received;
+ 	rt->out_buffer[0] = 0x80; /* 'send midi' command */
+@@ -170,6 +180,7 @@ int __devinit usb6fire_midi_init(struct
+ 
+ 	ret = snd_rawmidi_new(chip->card, "6FireUSB", 0, 1, 1, &rt->instance);
+ 	if (ret < 0) {
++		kfree(rt->out_buffer);
+ 		kfree(rt);
+ 		snd_printk(KERN_ERR PREFIX "unable to create midi.\n");
+ 		return ret;
+@@ -198,6 +209,9 @@ void usb6fire_midi_abort(struct sfire_ch
+ 
+ void usb6fire_midi_destroy(struct sfire_chip *chip)
+ {
+-	kfree(chip->midi);
++	struct midi_runtime *rt = chip->midi;
++
++	kfree(rt->out_buffer);
++	kfree(rt);
+ 	chip->midi = NULL;
  }
+--- a/sound/usb/6fire/midi.h
++++ b/sound/usb/6fire/midi.h
+@@ -17,10 +17,6 @@
  
- /* Free the outqueue structure and any related pending chunks.
+ #include "common.h"
+ 
+-enum {
+-	MIDI_BUFSIZE = 64
+-};
+-
+ struct midi_runtime {
+ 	struct sfire_chip *chip;
+ 	struct snd_rawmidi *instance;
+@@ -33,7 +29,7 @@ struct midi_runtime {
+ 	struct snd_rawmidi_substream *out;
+ 	struct urb out_urb;
+ 	u8 out_serial; /* serial number of out packet */
+-	u8 out_buffer[MIDI_BUFSIZE];
++	u8 *out_buffer;
+ 	int buffer_offset;
+ 
+ 	void (*in_received)(struct midi_runtime *rt, u8 *data, int length);
 
