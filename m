@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932167Ab3IHDUT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:20:19 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56140 "EHLO
+	id S932139Ab3IHDUQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:20:16 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56128 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756957Ab3IHDSu (ORCPT
+	by vger.kernel.org with ESMTP id S1755663Ab3IHDSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 7 Sep 2013 23:18:50 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "John W. Linville" <linville@tuxdriver.com>,
-        "Stanislaw Gruszka" <sgruszka@redhat.com>
+CC: akpm@linux-foundation.org, "Johannes Berg" <johannes.berg@intel.com>,
+        "Michal Kazior" <michal.kazior@tieto.com>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.699211671@decadent.org.uk>
+Message-ID: <lsq.1378608721.297215628@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [054/121] iwl4965: set power mode early
+Subject: [025/121] nl80211: fix mgmt tx status and testmode reporting for
+ netns
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,42 +32,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Michal Kazior <michal.kazior@tieto.com>
 
-commit eca396d7a5bdcc1fd67b1b12f737c213ac78a6f4 upstream.
+commit a0ec570f4f69c4cb700d743a915096c2c8f56a99 upstream.
 
-If device was put into a sleep and system was restarted or module
-reloaded, we have to wake device up before sending other commands.
-Otherwise it will fail to start with Microcode error.
+These two events were sent to the default network
+namespace.
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[bwh: Backported to 3.2: adjust filename, context, naming]
+This caused AP mode in a non-default netns to not
+work correctly. Mgmt tx status was multicasted to
+a different (default) netns instead of the one the
+AP was in.
+
+Signed-off-by: Michal Kazior <michal.kazior@tieto.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/iwlegacy/iwl4965-base.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ net/wireless/nl80211.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/iwlegacy/iwl4965-base.c
-+++ b/drivers/net/wireless/iwlegacy/iwl4965-base.c
-@@ -1764,6 +1764,9 @@ static void iwl4965_alive_start(struct i
+--- a/net/wireless/nl80211.c
++++ b/net/wireless/nl80211.c
+@@ -4826,12 +4826,14 @@ EXPORT_SYMBOL(cfg80211_testmode_alloc_ev
  
- 	priv->active_rate = IWL_RATES_MASK;
+ void cfg80211_testmode_event(struct sk_buff *skb, gfp_t gfp)
+ {
++	struct cfg80211_registered_device *rdev = ((void **)skb->cb)[0];
+ 	void *hdr = ((void **)skb->cb)[1];
+ 	struct nlattr *data = ((void **)skb->cb)[2];
  
-+	iwl_legacy_power_update_mode(priv, true);
-+	IWL_DEBUG_INFO(priv, "Updated power mode\n");
-+
- 	if (iwl_legacy_is_associated_ctx(ctx)) {
- 		struct iwl_legacy_rxon_cmd *active_rxon =
- 				(struct iwl_legacy_rxon_cmd *)&ctx->active;
-@@ -1796,9 +1799,6 @@ static void iwl4965_alive_start(struct i
- 	IWL_DEBUG_INFO(priv, "ALIVE processing complete.\n");
- 	wake_up(&priv->wait_command_queue);
+ 	nla_nest_end(skb, data);
+ 	genlmsg_end(skb, hdr);
+-	genlmsg_multicast(skb, 0, nl80211_testmode_mcgrp.id, gfp);
++	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), skb, 0,
++				nl80211_testmode_mcgrp.id, gfp);
+ }
+ EXPORT_SYMBOL(cfg80211_testmode_event);
+ #endif
+@@ -7282,7 +7284,8 @@ void nl80211_send_mgmt_tx_status(struct
+ 		return;
+ 	}
  
--	iwl_legacy_power_update_mode(priv, true);
--	IWL_DEBUG_INFO(priv, "Updated power mode\n");
--
+-	genlmsg_multicast(msg, 0, nl80211_mlme_mcgrp.id, gfp);
++	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), msg, 0,
++				nl80211_mlme_mcgrp.id, gfp);
  	return;
  
-  restart:
+  nla_put_failure:
 
