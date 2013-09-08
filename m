@@ -1,29 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760112Ab3IHDsq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:48:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56101 "EHLO
+	id S932205Ab3IHDtY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:49:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56215 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756974Ab3IHDTG (ORCPT
+	by vger.kernel.org with ESMTP id S1756728Ab3IHDTF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 23:19:06 -0400
+	Sat, 7 Sep 2013 23:19:05 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Wanpeng Li" <liwanp@linux.vnet.ibm.com>,
-        "Zhouping Liu" <zliu@redhat.com>,
-        "David Rientjes" <rientjes@google.com>,
-        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Michal Hocko" <mhocko@suse.cz>
+CC: akpm@linux-foundation.org, "Andreas Schwab" <schwab@linux-m68k.org>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.274378007@decadent.org.uk>
+Message-ID: <lsq.1378608721.255511353@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [002/121] mm/memory-hotplug: fix lowmem count overflow when
- offline pages
+Subject: [074/121] m68k: Truncate base in do_div()
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -36,79 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+From: Andreas Schwab <schwab@linux-m68k.org>
 
-commit cea27eb2a202959783f81254c48c250ddd80e129 upstream.
+commit ea077b1b96e073eac5c3c5590529e964767fc5f7 upstream.
 
-The logic for the memory-remove code fails to correctly account the
-Total High Memory when a memory block which contains High Memory is
-offlined as shown in the example below.  The following patch fixes it.
+Explicitly truncate the second operand of do_div() to 32 bits to guard
+against bogus code calling it with a 64-bit divisor.
 
-Before logic memory remove:
+[Thorsten]
 
-MemTotal:        7603740 kB
-MemFree:         6329612 kB
-Buffers:           94352 kB
-Cached:           872008 kB
-SwapCached:            0 kB
-Active:           626932 kB
-Inactive:         519216 kB
-Active(anon):     180776 kB
-Inactive(anon):   222944 kB
-Active(file):     446156 kB
-Inactive(file):   296272 kB
-Unevictable:           0 kB
-Mlocked:               0 kB
-HighTotal:       7294672 kB
-HighFree:        5704696 kB
-LowTotal:         309068 kB
-LowFree:          624916 kB
+After upgrading from 3.2 to 3.10, mounting a btrfs volume fails with:
 
-After logic memory remove:
-
-MemTotal:        7079452 kB
-MemFree:         5805976 kB
-Buffers:           94372 kB
-Cached:           872000 kB
-SwapCached:            0 kB
-Active:           626936 kB
-Inactive:         519236 kB
-Active(anon):     180780 kB
-Inactive(anon):   222944 kB
-Active(file):     446156 kB
-Inactive(file):   296292 kB
-Unevictable:           0 kB
-Mlocked:               0 kB
-HighTotal:       7294672 kB
-HighFree:        5181024 kB
-LowTotal:       4294752076 kB
-LowFree:          624952 kB
-
-[mhocko@suse.cz: fix CONFIG_HIGHMEM=n build]
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[Backported for 3.4-stable. Adjusted context.]
-Signed-off-by: Zhouping Liu <zliu@redhat.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- mm/page_alloc.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5777,6 +5777,10 @@ __offline_isolated_pages(unsigned long s
- 		zone->free_area[order].nr_free--;
- 		__mod_zone_page_state(zone, NR_FREE_PAGES,
- 				      - (1UL << order));
-+#ifdef CONFIG_HIGHMEM
-+		if (PageHighMem(page))
-+			totalhigh_pages -= 1 << order;
-+#endif
- 		for (i = 0; i < (1 << order); i++)
- 			SetPageReserved((page+i));
- 		pfn += (1 << order);
+btrfs: setting nodatacow, compression disabled
+btrfs: enabling auto recovery
+btrfs: disk space caching is enabled
+--- a/arch/m68k/include/asm/div64.h
++++ b/arch/m68k/include/asm/div64.h
+@@ -13,16 +13,17 @@
+ 		unsigned long long n64;				\
+ 	} __n;							\
+ 	unsigned long __rem, __upper;				\
++	unsigned long __base = (base);				\
+ 								\
+ 	__n.n64 = (n);						\
+ 	if ((__upper = __n.n32[0])) {				\
+ 		asm ("divul.l %2,%1:%0"				\
+-			: "=d" (__n.n32[0]), "=d" (__upper)	\
+-			: "d" (base), "0" (__n.n32[0]));	\
++		     : "=d" (__n.n32[0]), "=d" (__upper)	\
++		     : "d" (__base), "0" (__n.n32[0]));		\
+ 	}							\
+ 	asm ("divu.l %2,%1:%0"					\
+-		: "=d" (__n.n32[1]), "=d" (__rem)		\
+-		: "d" (base), "1" (__upper), "0" (__n.n32[1]));	\
++	     : "=d" (__n.n32[1]), "=d" (__rem)			\
++	     : "d" (__base), "1" (__upper), "0" (__n.n32[1]));	\
+ 	(n) = __n.n64;						\
+ 	__rem;							\
+ })
 
