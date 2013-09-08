@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760210Ab3IHDwN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:52:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56062 "EHLO
+	id S1760192Ab3IHDwL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:52:11 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56229 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755607Ab3IHDS7 (ORCPT
+	by vger.kernel.org with ESMTP id S1756656Ab3IHDS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 7 Sep 2013 23:18:59 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jakob Bornecrantz" <jakob@vmware.com>,
-        "Zack Rusin" <zackr@vmware.com>, "Biran Paul" <brianp@vmware.com>,
-        "Dave Airlie" <airlied@gmail.com>
+CC: akpm@linux-foundation.org, "Thorsten Glaser" <tg@debian.org>,
+        "Geert Uytterhoeven" <geert@linux-m68k.org>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.487939736@decadent.org.uk>
+Message-ID: <lsq.1378608721.23860783@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [109/121] drm/vmwgfx: Split GMR2_REMAP commands if they are to large
+Subject: [073/121] m68k/atari: ARAnyM - Fix NatFeat module support
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,114 +31,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jakob Bornecrantz <jakob@vmware.com>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit 6e4dcff3adbf25acb87e74500a58e3c07bdec40f upstream.
+commit e8184e10f89736a23ea6eea8e24cd524c5c513d2 upstream.
 
-This fixes the piglit test texturing/max-texture-size
-causing the VM to die due to a too large SVGA command.
+As pointed out by Andreas Schwab, pointers passed to ARAnyM NatFeat calls
+should be physical addresses, not virtual addresses.
 
-Signed-off-by: Jakob Bornecrantz <jakob@vmware.com>
-Reviewed-by: Biran Paul <brianp@vmware.com>
-Reviewed-by: Zack Rusin <zackr@vmware.com>
-Signed-off-by: Dave Airlie <airlied@gmail.com>
+Fortunately on Atari, physical and virtual kernel addresses are the same,
+as long as normal kernel memory is concerned, so this usually worked fine
+without conversion.
+
+But for modules, pointers to literal strings are located in vmalloc()ed
+memory. Depending on the version of ARAnyM, this causes the nf_get_id()
+call to just fail, or worse, crash ARAnyM itself with e.g.
+
+    Gotcha! Illegal memory access. Atari PC = $968c
+
+This is a big issue for distro kernels, who want to have all drivers as
+loadable modules in an initrd.
+
+Add a wrapper for nf_get_id() that copies the literal to the stack to
+work around this issue.
+
+Reported-by: Thorsten Glaser <tg@debian.org>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c | 58 +++++++++++++++++++++++++------------
- 1 file changed, 39 insertions(+), 19 deletions(-)
+ arch/m68k/emu/natfeat.c | 23 +++++++++++++++++++----
+ 1 file changed, 19 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c
-@@ -29,7 +29,9 @@
- #include "drmP.h"
- #include "ttm/ttm_bo_driver.h"
+--- a/arch/m68k/emu/natfeat.c
++++ b/arch/m68k/emu/natfeat.c
+@@ -18,9 +18,11 @@
+ #include <asm/machdep.h>
+ #include <asm/natfeat.h>
  
--#define VMW_PPN_SIZE sizeof(unsigned long)
-+#define VMW_PPN_SIZE (sizeof(unsigned long))
-+/* A future safe maximum remap size. */
-+#define VMW_PPN_PER_REMAP ((31 * 1024) / VMW_PPN_SIZE)
++extern long nf_get_id2(const char *feature_name);
++
+ asm("\n"
+-"	.global nf_get_id,nf_call\n"
+-"nf_get_id:\n"
++"	.global nf_get_id2,nf_call\n"
++"nf_get_id2:\n"
+ "	.short	0x7300\n"
+ "	rts\n"
+ "nf_call:\n"
+@@ -29,12 +31,25 @@ asm("\n"
+ "1:	moveq.l	#0,%d0\n"
+ "	rts\n"
+ "	.section __ex_table,\"a\"\n"
+-"	.long	nf_get_id,1b\n"
++"	.long	nf_get_id2,1b\n"
+ "	.long	nf_call,1b\n"
+ "	.previous");
+-EXPORT_SYMBOL_GPL(nf_get_id);
+ EXPORT_SYMBOL_GPL(nf_call);
  
- static int vmw_gmr2_bind(struct vmw_private *dev_priv,
- 			 struct page *pages[],
-@@ -38,43 +40,61 @@ static int vmw_gmr2_bind(struct vmw_priv
++long nf_get_id(const char *feature_name)
++{
++	/* feature_name may be in vmalloc()ed memory, so make a copy */
++	char name_copy[32];
++	size_t n;
++
++	n = strlcpy(name_copy, feature_name, sizeof(name_copy));
++	if (n >= sizeof(name_copy))
++		return 0;
++
++	return nf_get_id2(name_copy);
++}
++EXPORT_SYMBOL_GPL(nf_get_id);
++
+ void nfprint(const char *fmt, ...)
  {
- 	SVGAFifoCmdDefineGMR2 define_cmd;
- 	SVGAFifoCmdRemapGMR2 remap_cmd;
--	uint32_t define_size = sizeof(define_cmd) + 4;
--	uint32_t remap_size = VMW_PPN_SIZE * num_pages + sizeof(remap_cmd) + 4;
- 	uint32_t *cmd;
- 	uint32_t *cmd_orig;
-+	uint32_t define_size = sizeof(define_cmd) + sizeof(*cmd);
-+	uint32_t remap_num = num_pages / VMW_PPN_PER_REMAP + ((num_pages % VMW_PPN_PER_REMAP) > 0);
-+	uint32_t remap_size = VMW_PPN_SIZE * num_pages + (sizeof(remap_cmd) + sizeof(*cmd)) * remap_num;
-+	uint32_t remap_pos = 0;
-+	uint32_t cmd_size = define_size + remap_size;
- 	uint32_t i;
- 
--	cmd_orig = cmd = vmw_fifo_reserve(dev_priv, define_size + remap_size);
-+	cmd_orig = cmd = vmw_fifo_reserve(dev_priv, cmd_size);
- 	if (unlikely(cmd == NULL))
- 		return -ENOMEM;
- 
- 	define_cmd.gmrId = gmr_id;
- 	define_cmd.numPages = num_pages;
- 
-+	*cmd++ = SVGA_CMD_DEFINE_GMR2;
-+	memcpy(cmd, &define_cmd, sizeof(define_cmd));
-+	cmd += sizeof(define_cmd) / sizeof(*cmd);
-+
-+	/*
-+	 * Need to split the command if there are too many
-+	 * pages that goes into the gmr.
-+	 */
-+
- 	remap_cmd.gmrId = gmr_id;
- 	remap_cmd.flags = (VMW_PPN_SIZE > sizeof(*cmd)) ?
- 		SVGA_REMAP_GMR2_PPN64 : SVGA_REMAP_GMR2_PPN32;
--	remap_cmd.offsetPages = 0;
--	remap_cmd.numPages = num_pages;
- 
--	*cmd++ = SVGA_CMD_DEFINE_GMR2;
--	memcpy(cmd, &define_cmd, sizeof(define_cmd));
--	cmd += sizeof(define_cmd) / sizeof(uint32);
-+	while (num_pages > 0) {
-+		unsigned long nr = min(num_pages, (unsigned long)VMW_PPN_PER_REMAP);
-+
-+		remap_cmd.offsetPages = remap_pos;
-+		remap_cmd.numPages = nr;
- 
--	*cmd++ = SVGA_CMD_REMAP_GMR2;
--	memcpy(cmd, &remap_cmd, sizeof(remap_cmd));
--	cmd += sizeof(remap_cmd) / sizeof(uint32);
--
--	for (i = 0; i < num_pages; ++i) {
--		if (VMW_PPN_SIZE <= 4)
--			*cmd = page_to_pfn(*pages++);
--		else
--			*((uint64_t *)cmd) = page_to_pfn(*pages++);
-+		*cmd++ = SVGA_CMD_REMAP_GMR2;
-+		memcpy(cmd, &remap_cmd, sizeof(remap_cmd));
-+		cmd += sizeof(remap_cmd) / sizeof(*cmd);
-+
-+		for (i = 0; i < nr; ++i) {
-+			if (VMW_PPN_SIZE <= 4)
-+				*cmd = page_to_pfn(*pages++);
-+			else
-+				*((uint64_t *)cmd) = page_to_pfn(*pages++);
- 
--		cmd += VMW_PPN_SIZE / sizeof(*cmd);
-+			cmd += VMW_PPN_SIZE / sizeof(*cmd);
-+		}
-+
-+		num_pages -= nr;
-+		remap_pos += nr;
- 	}
- 
--	vmw_fifo_commit(dev_priv, define_size + remap_size);
-+	BUG_ON(cmd != cmd_orig + cmd_size / sizeof(*cmd));
-+
-+	vmw_fifo_commit(dev_priv, cmd_size);
- 
- 	return 0;
- }
+ 	static char buf[256];
 
