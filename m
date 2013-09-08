@@ -1,63 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481Ab3IHF2V (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 01:28:21 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:53445 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365Ab3IHF2U (ORCPT
+	id S1751525Ab3IHFbP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 01:31:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47109 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365Ab3IHFbN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 01:28:20 -0400
+	Sun, 8 Sep 2013 01:31:13 -0400
+Date: Sat, 7 Sep 2013 22:34:16 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
+Subject: Linux 3.0.95
+Message-ID: <20130908053416.GA1737@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <201309081332.FEJ52163.FHJOMQVOFOLStF@I-love.SAKURA.ne.jp>
-References: <201309080100.FFE90102.FFOVOtJQOFHSLM@I-love.SAKURA.ne.jp>
-	<201309081332.FEJ52163.FHJOMQVOFOLStF@I-love.SAKURA.ne.jp>
-Date: Sun, 8 Sep 2013 01:28:19 -0400
-X-Google-Sender-Auth: xvk2ciWXq00GkHBes68NG91s8js
-Message-ID: <CAKb7UvjH1XZ3f-c=149s5=rqxkxVUhG_7-cfUYH3zrwJwr2_MQ@mail.gmail.com>
-Subject: Re: [3.11-rc1] CONFIG_DEBUG_MUTEXES=y using gcc 3.x makes unbootable kernel.
-From: Ilia Mirkin <imirkin@alum.mit.edu>
-To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Rob Clark <robdclark@gmail.com>, a.p.zijlstra@chello.nl,
-        mingo@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LQksG6bCIzRHxTLp"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 8, 2013 at 12:32 AM, Tetsuo Handa
-<penguin-kernel@i-love.sakura.ne.jp> wrote:
-> Hello.
->
-> I found what is wrong.
->
-> ---------- bad patch start ----------
-> >From 3c56dfbd32a9b67ba824ce96128bb513eb65de4b Mon Sep 17 00:00:00 2001
-> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Date: Sun, 8 Sep 2013 12:44:20 +0900
-> Subject: [PATCH] mutex: Avoid gcc version dependent __builtin_constant_p() usage.
->
-> Commit 040a0a37 "mutex: Add support for wound/wait style locks" used
-> "!__builtin_constant_p(p == NULL)" which I guess the author meant that
-> "__builtin_constant_p(p) && p", but gcc 3.x cannot handle such expression
-> correctly, leading to boot failure when built with CONFIG_DEBUG_MUTEXES=y.
 
-I think that !__builtin_constant_p(p == NULL) is basically saying "I
-am unable to conclude that p == NULL at build time", which would
-translate to something along the lines of
+--LQksG6bCIzRHxTLp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-(__builtin_constant_p(p) && p) || !__builtin_constant_p(p)
+I'm announcing the release of the 3.0.95 kernel.
 
-Your logic will be be false for non-built-in-constants supplied as p.
+All users of the 3.0 kernel series must upgrade.
 
-Or perhaps it's just equivalent to !__builtin_constant_p(p), since the
-compiler's ability to conclude whether it is NULL at build-time should
-be unaffected by whether it actually is NULL or not. Some simple
-experimentation with recent gcc's should be able to determine this.
-The more I think about it, the more likely the latter interpretation
-is correct and you can just drop the == NULL's. (Although perhaps the
-original intent was more like the former.)
+The updated 3.0.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.0.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
 
-  -ilia
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                                      |    2 -
+ drivers/acpi/ec.c                             |    4 +++
+ drivers/base/memory.c                         |    2 +
+ drivers/net/wireless/ath/ath9k/htc_drv_txrx.c |   10 ++++++++
+ drivers/target/target_core_cdb.c              |   11 +++++----
+ fs/bio.c                                      |   20 ++++++++++++----
+ fs/jfs/jfs_dtree.c                            |   31 +++++++++++++++++++-------
+ sound/isa/opti9xx/opti92x-ad1848.c            |    8 +-----
+ 8 files changed, 63 insertions(+), 25 deletions(-)
+
+Dave Kleikamp (1):
+      jfs: fix readdir cookie incompatibility with NFSv4
+
+Greg Kroah-Hartman (1):
+      Linux 3.0.95
+
+Helmut Schaa (1):
+      ath9k_htc: Restore skb headroom when returning skb to mac80211
+
+Lan Tianyu (1):
+      ACPI / EC: Add ASUSTEK L4R to quirk list in order to validate ECDT
+
+Nicholas Bellinger (1):
+      target: Fix trailing ASCII space usage in INQUIRY vendor+model
+
+Roland Dreier (1):
+      SCSI: sg: Fix user memory corruption when SG_IO is interrupted by a signal
+
+Russ Anderson (1):
+      drivers/base/memory.c: fix show_mem_removable() to handle missing sections
+
+Takashi Iwai (1):
+      ALSA: opti9xx: Fix conflicting driver object name
+
+
+--LQksG6bCIzRHxTLp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSLAxYAAoJEDjbvchgkmk+atIQAKPWR+jPC8Lixd6IJSbVOqAn
+sw7L+SJh1Hfj26XmW+59SK53gT8DrIxGrPcp8equf8CdBoLPb+EnuHTGiK5IKNHO
+i3WqC4HTISJbkTg8U51K5Sxw3DWH5xg4i5pzTykpCREGAm43BhdI3XxPpQf40uiv
+SzG8Mqa6wOEDsRt2VcbXj5te8bsUKAqdRhn9w0KZ9PuG+BdA1sbJg7aC6JKEznm+
+5RYtlWVF8DQ8EVw3BgbNZ4pJ0SkJ9LnidfoMeWtpSW9Jo3eEnEzVU4M++ZczLN7l
+P9QIgezrL3hEWrL99rXNgs+jO+hqZEg/tYxhtWnoAxO+ndmkTObwKzB64Rp0LvEv
+jPyD/w+92sZu7dj+iMGA5UufacCb5lByRbr4Z/PDB7vGbkaeAtFZB2xGKFnU3z1F
+6AJ1Cv8PTCDUs3RyW4dmB+3czdSdMcCJMu52B/0FWPUYbk/U9SW2aREGFT/6hswH
+uGj3erebX1DC4alI1HUBT0f+8RKlvCQyzxfwcpjrcAUYFEvA1amyq0qofToEe73H
+710fbeikrKYQi6pOlFiSBjgb2avdx9fCYG6/iA/eIPDwMb3es7EfKic+sNYj0Lwv
+04iA3WEVeJwO6R4AHhOTDsnDyKbqyChCeTNLhiupAYaR021h/1UOqgOC54vhIWbn
+kSQJVchh/axoDDnDDVze
+=ugiW
+-----END PGP SIGNATURE-----
+
+--LQksG6bCIzRHxTLp--
