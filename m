@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759633Ab3IHDVH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:21:07 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56104 "EHLO
+	id S1759618Ab3IHDVF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:21:05 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56211 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756021Ab3IHDSz (ORCPT
+	by vger.kernel.org with ESMTP id S1756922Ab3IHDSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 7 Sep 2013 23:18:55 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,16 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Emmanuel Grumbach" <emmanuel.grumbach@intel.com>,
-        "Lukasz Jagiello" <jagiello.lukasz@gmail.com>,
-        "Johannes Berg" <johannes.berg@intel.com>,
-        "Stanislaw Gruszka" <sgruszka@redhat.com>
+CC: akpm@linux-foundation.org, "Eugene Surovegin" <ebs@ebshome.net>,
+        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
+        "Eugene Surovegin" <surovegin@google.com>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.586600978@decadent.org.uk>
+Message-ID: <lsq.1378608721.313357386@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [053/121] iwlwifi: dvm: fix calling ieee80211_chswitch_done()
- with NULL
+Subject: [103/121] powerpc/hvsi: Increase handshake timeout from 200ms to
+ 400ms.
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,61 +33,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Eugene Surovegin <ebs@ebshome.net>
 
-commit 9186a1fd9ed190739423db84bc344d258ef3e3d7 upstream.
+commit d220980b701d838560a70de691b53be007e99e78 upstream.
 
-If channel switch is pending and we remove interface we can
-crash like showed below due to passing NULL vif to mac80211:
+This solves a problem observed in kexec'ed kernel where 200ms timeout is
+too short and bootconsole fails to initialize. Console did eventually
+become workable but much later into the boot process.
 
-BUG: unable to handle kernel paging request at fffffffffffff8cc
-IP: [<ffffffff8130924d>] strnlen+0xd/0x40
-Call Trace:
- [<ffffffff8130ad2e>] string.isra.3+0x3e/0xd0
- [<ffffffff8130bf99>] vsnprintf+0x219/0x640
- [<ffffffff8130c481>] vscnprintf+0x11/0x30
- [<ffffffff81061585>] vprintk_emit+0x115/0x4f0
- [<ffffffff81657bd5>] printk+0x61/0x63
- [<ffffffffa048987f>] ieee80211_chswitch_done+0xaf/0xd0 [mac80211]
- [<ffffffffa04e7b34>] iwl_chswitch_done+0x34/0x40 [iwldvm]
- [<ffffffffa04f83c3>] iwlagn_commit_rxon+0x2a3/0xdc0 [iwldvm]
- [<ffffffffa04ebc50>] ? iwlagn_set_rxon_chain+0x180/0x2c0 [iwldvm]
- [<ffffffffa04e5e76>] iwl_set_mode+0x36/0x40 [iwldvm]
- [<ffffffffa04e5f0d>] iwlagn_mac_remove_interface+0x8d/0x1b0 [iwldvm]
- [<ffffffffa0459b3d>] ieee80211_do_stop+0x29d/0x7f0 [mac80211]
+Observed timeout was around 260ms, but I decided to make it a little bigger
+for more reliability.
 
-This is because we nulify ctx->vif in iwlagn_mac_remove_interface()
-before calling some other functions that teardown interface. To fix
-just check ctx->vif on iwl_chswitch_done(). We should not call
-ieee80211_chswitch_done() as channel switch works were already canceled
-by mac80211 in ieee80211_do_stop() -> ieee80211_mgd_stop().
+This has been tested on Power7 machine with Petitboot as a primary
+bootloader and PowerNV firmware.
 
-Resolve:
-https://bugzilla.redhat.com/show_bug.cgi?id=979581
-
-Reported-by: Lukasz Jagiello <jagiello.lukasz@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-[bwh: Backported to 3.2: adjust context, filename]
+Signed-off-by: Eugene Surovegin <surovegin@google.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/iwlwifi/iwl-core.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/tty/hvc/hvsi_lib.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-core.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-core.c
-@@ -808,8 +808,11 @@ void iwl_chswitch_done(struct iwl_priv *
- 	if (test_bit(STATUS_EXIT_PENDING, &priv->shrd->status))
- 		return;
+--- a/drivers/tty/hvc/hvsi_lib.c
++++ b/drivers/tty/hvc/hvsi_lib.c
+@@ -341,8 +341,8 @@ void hvsilib_establish(struct hvsi_priv
  
--	if (test_and_clear_bit(STATUS_CHANNEL_SWITCH_PENDING,
-+	if (!test_and_clear_bit(STATUS_CHANNEL_SWITCH_PENDING,
- 				&priv->shrd->status))
-+		return;
-+
-+	if (ctx->vif)
- 		ieee80211_chswitch_done(ctx->vif, is_success);
- }
+ 	pr_devel("HVSI@%x:   ... waiting handshake\n", pv->termno);
  
+-	/* Try for up to 200s */
+-	for (timeout = 0; timeout < 20; timeout++) {
++	/* Try for up to 400ms */
++	for (timeout = 0; timeout < 40; timeout++) {
+ 		if (pv->established)
+ 			goto established;
+ 		if (!hvsi_get_packet(pv))
 
