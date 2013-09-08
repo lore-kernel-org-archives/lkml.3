@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932196Ab3IHDU4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:20:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56185 "EHLO
+	id S932182Ab3IHDUy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:20:54 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56058 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756307Ab3IHDSz (ORCPT
+	by vger.kernel.org with ESMTP id S1756275Ab3IHDSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 7 Sep 2013 23:18:55 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,11 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Gustavo Padovan" <gustavo.padovan@collabora.co.uk>,
-        "Noguchi Kazutosi" <linux@mofmof.scaltinof.net>
+CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.221883261@decadent.org.uk>
+Message-ID: <lsq.1378608721.630915814@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [030/121] Bluetooth: Add support for Foxconn/Hon Hai [0489:e04d]
+Subject: [118/121] ALSA: opti9xx: Fix conflicting driver object name
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,56 +30,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Noguchi Kazutosi <linux@scaltinof.net>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 0fc110f4e4f569e12c472f73f0af485e05631403 upstream.
+commit fb615499f0ad28ed74201c1cdfddf9e64e205424 upstream.
 
-Add support for the AR3012 chip.
+The recent commit to delay the release of kobject triggered NULL
+dereferences of opti9xx drivers.  The cause is that all
+snd-opti92x-ad1848, snd-opti92x-cs4231 and snd-opti93x drivers
+register the PnP card driver with the very same name, and also
+snd-opti92x-ad1848 and -cs4231 drivers register the ISA driver with
+the same name, too.  When these drivers are built in, quick
+"register-release-and-re-register" actions occur, and this results in
+Oops because of the same name is assigned to the kobject.
 
-T:  Bus=01 Lev=02 Prnt=02 Port=05 Cnt=03 Dev#= 21 Spd=12  MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0489 ProdID=e04d Rev=00.02
-S:  Manufacturer=Atheros Communications
-S:  Product=Bluetooth USB Host Controller
-S:  SerialNumber=Alaska Day 2006
-C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+The fix is simply to assign individual names.  As a bonus, by using
+KBUILD_MODNAME, the patch reduces more lines than it adds.
 
-Signed-off-by: Noguchi Kazutosi <linux@scaltinof.net>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+The fix is based on the suggestion by Russell King.
+
+Reported-and-tested-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/bluetooth/ath3k.c | 2 ++
- drivers/bluetooth/btusb.c | 1 +
- 2 files changed, 3 insertions(+)
+ sound/isa/opti9xx/opti92x-ad1848.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -89,6 +89,7 @@ static struct usb_device_id ath3k_table[
- 	{ USB_DEVICE(0x13d3, 0x3393) },
- 	{ USB_DEVICE(0x0489, 0xe04e) },
- 	{ USB_DEVICE(0x0489, 0xe056) },
-+	{ USB_DEVICE(0x0489, 0xe04d) },
+--- a/sound/isa/opti9xx/opti92x-ad1848.c
++++ b/sound/isa/opti9xx/opti92x-ad1848.c
+@@ -173,11 +173,7 @@ MODULE_DEVICE_TABLE(pnp_card, snd_opti9x
  
- 	/* Atheros AR5BBU12 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xE02C) },
-@@ -125,6 +126,7 @@ static struct usb_device_id ath3k_blist_
- 	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0489, 0xe04e), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0489, 0xe056), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0489, 0xe04d), .driver_info = BTUSB_ATH3012 },
+ #endif	/* CONFIG_PNP */
  
- 	/* Atheros AR5BBU22 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xE03C), .driver_info = BTUSB_ATH3012 },
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -156,6 +156,7 @@ static struct usb_device_id blacklist_ta
- 	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0489, 0xe04e), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0489, 0xe056), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0489, 0xe04d), .driver_info = BTUSB_ATH3012 },
+-#ifdef OPTi93X
+-#define DEV_NAME "opti93x"
+-#else
+-#define DEV_NAME "opti92x"
+-#endif
++#define DEV_NAME KBUILD_MODNAME
  
- 	/* Atheros AR5BBU12 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
+ static char * snd_opti9xx_names[] = {
+ 	"unknown",
+@@ -1126,7 +1122,7 @@ static void __devexit snd_opti9xx_pnp_re
+ 
+ static struct pnp_card_driver opti9xx_pnpc_driver = {
+ 	.flags		= PNP_DRIVER_RES_DISABLE,
+-	.name		= "opti9xx",
++	.name		= DEV_NAME,
+ 	.id_table	= snd_opti9xx_pnpids,
+ 	.probe		= snd_opti9xx_pnp_probe,
+ 	.remove		= __devexit_p(snd_opti9xx_pnp_remove),
 
