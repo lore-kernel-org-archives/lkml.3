@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759797Ab3IHDVb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:21:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56118 "EHLO
+	id S1759780Ab3IHDV3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:21:29 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56051 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756060Ab3IHDS7 (ORCPT
+	by vger.kernel.org with ESMTP id S1756241Ab3IHDS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 23:18:59 -0400
+	Sat, 7 Sep 2013 23:18:58 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Gustavo Padovan" <gustavo.padovan@collabora.co.uk>,
-        "AceLan Kao" <acelan.kao@canonical.com>
+CC: akpm@linux-foundation.org, "Dominik Dingel" <dingel@linux.vnet.ibm.com>,
+        "Paolo Bonzini" <pbonzini@redhat.com>,
+        "Christian Borntraeger" <borntraeger@de.ibm.com>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.155425969@decadent.org.uk>
+Message-ID: <lsq.1378608721.248353977@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [034/121] Bluetooth: Add support for Atheros [0cf3:3121]
+Subject: [120/121] KVM: s390: move kvm_guest_enter,exit closer to sie
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,53 +32,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: AceLan Kao <acelan.kao@canonical.com>
+From: Dominik Dingel <dingel@linux.vnet.ibm.com>
 
-commit 1ebd0b21ab14efb75950079840eac29afea2a26e upstream.
+commit 2b29a9fdcb92bfc6b6f4c412d71505869de61a56 upstream.
 
-Add support for the AR3012 chip.
+Any uaccess between guest_enter and guest_exit could trigger a page fault,
+the page fault handler would handle it as a guest fault and translate a
+user address as guest address.
 
-T:  Bus=03 Lev=01 Prnt=01 Port=06 Cnt=01 Dev#=  6 Spd=12  MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0cf3 ProdID=3121 Rev=00.02
-C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-
-Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+[bwh: Backported to 3.2: adjust context and add the rc variable]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/bluetooth/ath3k.c | 2 ++
- drivers/bluetooth/btusb.c | 1 +
- 2 files changed, 3 insertions(+)
+ arch/s390/kvm/kvm-s390.c | 21 ++++++++++++++-------
+ 1 file changed, 14 insertions(+), 7 deletions(-)
 
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -92,6 +92,7 @@ static struct usb_device_id ath3k_table[
- 	{ USB_DEVICE(0x0489, 0xe04d) },
- 	{ USB_DEVICE(0x04c5, 0x1330) },
- 	{ USB_DEVICE(0x13d3, 0x3402) },
-+	{ USB_DEVICE(0x0cf3, 0x3121) },
+--- a/arch/s390/kvm/kvm-s390.c
++++ b/arch/s390/kvm/kvm-s390.c
+@@ -469,6 +469,8 @@ int kvm_arch_vcpu_ioctl_set_mpstate(stru
  
- 	/* Atheros AR5BBU12 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xE02C) },
-@@ -131,6 +132,7 @@ static struct usb_device_id ath3k_blist_
- 	{ USB_DEVICE(0x0489, 0xe04d), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0cf3, 0x3121), .driver_info = BTUSB_ATH3012 },
+ static void __vcpu_run(struct kvm_vcpu *vcpu)
+ {
++	int rc;
++
+ 	memcpy(&vcpu->arch.sie_block->gg14, &vcpu->arch.guest_gprs[14], 16);
  
- 	/* Atheros AR5BBU22 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xE03C), .driver_info = BTUSB_ATH3012 },
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -162,6 +162,7 @@ static struct usb_device_id blacklist_ta
- 	{ USB_DEVICE(0x0489, 0xe04d), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0cf3, 0x3121), .driver_info = BTUSB_ATH3012 },
+ 	if (need_resched())
+@@ -479,21 +481,24 @@ static void __vcpu_run(struct kvm_vcpu *
  
- 	/* Atheros AR5BBU12 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
+ 	kvm_s390_deliver_pending_interrupts(vcpu);
+ 
++	VCPU_EVENT(vcpu, 6, "entering sie flags %x",
++		   atomic_read(&vcpu->arch.sie_block->cpuflags));
++
+ 	vcpu->arch.sie_block->icptcode = 0;
+ 	local_irq_disable();
+ 	kvm_guest_enter();
+ 	local_irq_enable();
+-	VCPU_EVENT(vcpu, 6, "entering sie flags %x",
+-		   atomic_read(&vcpu->arch.sie_block->cpuflags));
+-	if (sie64a(vcpu->arch.sie_block, vcpu->arch.guest_gprs)) {
++	rc = sie64a(vcpu->arch.sie_block, vcpu->arch.guest_gprs);
++	local_irq_disable();
++	kvm_guest_exit();
++	local_irq_enable();
++
++	if (rc) {
+ 		VCPU_EVENT(vcpu, 3, "%s", "fault in sie instruction");
+ 		kvm_s390_inject_program_int(vcpu, PGM_ADDRESSING);
+ 	}
+ 	VCPU_EVENT(vcpu, 6, "exit sie icptcode %d",
+ 		   vcpu->arch.sie_block->icptcode);
+-	local_irq_disable();
+-	kvm_guest_exit();
+-	local_irq_enable();
+ 
+ 	memcpy(&vcpu->arch.guest_gprs[14], &vcpu->arch.sie_block->gg14, 16);
+ }
 
