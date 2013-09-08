@@ -1,88 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932112Ab3IHP7N (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 11:59:13 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8228 "EHLO
+	id S932143Ab3IHP7f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 11:59:35 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18000 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756776Ab3IHP4s (ORCPT
+	with ESMTP id S1756652Ab3IHP4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 11:56:48 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=hfnr_yKHR2EA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=0Y4sWKI711YA:10 a=i0EeH86SAAAA:8 a=VwQbUJbxAAAA:8 a=6_mJPgj3Y11pTnSMgxAA:9 a=hPjdaMEvmhQA:10 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Sun, 8 Sep 2013 11:56:47 -0400
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=izjLgYaVtYMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=1GToGMD1ptoA:10 a=VwQbUJbxAAAA:8 a=VcUiGOdTKjBeXruxuyoA:9 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130908151446.754102670@goodmis.org>
+Message-Id: <20130908151446.911305484@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Sun, 08 Sep 2013 11:14:01 -0400
+Date: Sun, 08 Sep 2013 11:14:02 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>,
-        Zhao Hongjiang <zhaohongjiang@huawei.com>
-Subject: [PATCH RT 06/19] timers: prepare for full preemption improve
+        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>
+Subject: [PATCH RT 07/19] kernel/cpu: fix cpu down problem if kthreads cpu is going down
 References: <20130908151355.362583092@goodmis.org>
-Content-Disposition: inline; filename=0006-timers-prepare-for-full-preemption-improve.patch
+Content-Disposition: inline; filename=0007-kernel-cpu-fix-cpu-down-problem-if-kthread-s-cpu-is-.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhao Hongjiang <zhaohongjiang@huawei.com>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-wake_up should do nothing on the nort, so we should use wakeup_timer_waiters,
-also fix a spell mistake.
+If kthread is pinned to CPUx and CPUx is going down then we get into
+trouble:
+- first the unplug thread is created
+- it will set itself to hp->unplug. As a result, every task that is
+  going to take a lock, has to leave the CPU.
+- the CPU_DOWN_PREPARE notifier are started. The worker thread will
+  start a new process for the "high priority worker".
+  Now kthread would like to take a lock but since it can't leave the CPU
+  it will never complete its task.
+
+We could fire the unplug thread after the notifier but then the cpu is
+no longer marked "online" and the unplug thread will run on CPU0 which
+was fixed before :)
+
+So instead the unplug thread is started and kept waiting until the
+notfier complete their work.
 
 Cc: stable-rt@vger.kernel.org
-Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
-[bigeasy: s/CONFIG_PREEMPT_RT_BASE/CONFIG_PREEMPT_RT_FULL/]
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- kernel/timer.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ kernel/cpu.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 027ce4e..61b57c1 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -76,7 +76,9 @@ struct tvec_root {
- struct tvec_base {
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 295bf9d..22063f3 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -83,6 +83,7 @@ struct hotplug_pcp {
+ 	int refcount;
+ 	int grab_lock;
+ 	struct completion synced;
++	struct completion unplug_wait;
+ #ifdef CONFIG_PREEMPT_RT_FULL
  	spinlock_t lock;
- 	struct timer_list *running_timer;
-+#ifdef CONFIG_PREEMPT_RT_FULL
- 	wait_queue_head_t wait_for_running_timer;
-+#endif
- 	unsigned long timer_jiffies;
- 	unsigned long next_timer;
- 	unsigned long active_timers;
-@@ -1006,7 +1008,7 @@ static void wait_for_running_timer(struct timer_list *timer)
- 			   base->running_timer != timer);
- }
- 
--# define wakeup_timer_waiters(b)	wake_up(&(b)->wait_for_tunning_timer)
-+# define wakeup_timer_waiters(b)	wake_up(&(b)->wait_for_running_timer)
  #else
- static inline void wait_for_running_timer(struct timer_list *timer)
+@@ -180,6 +181,7 @@ static int sync_unplug_thread(void *data)
  {
-@@ -1251,7 +1253,7 @@ static inline void __run_timers(struct tvec_base *base)
- 			spin_lock_irq(&base->lock);
- 		}
- 	}
--	wake_up(&base->wait_for_running_timer);
-+	wakeup_timer_waiters(base);
- 	spin_unlock_irq(&base->lock);
+ 	struct hotplug_pcp *hp = data;
+ 
++	wait_for_completion(&hp->unplug_wait);
+ 	preempt_disable();
+ 	hp->unplug = current;
+ 	wait_for_pinned_cpus(hp);
+@@ -245,6 +247,14 @@ static void __cpu_unplug_sync(struct hotplug_pcp *hp)
+ 	wait_for_completion(&hp->synced);
  }
  
-@@ -1765,7 +1767,9 @@ static int __cpuinit init_timers_cpu(int cpu)
- 			base = &boot_tvec_bases;
- 		}
- 		spin_lock_init(&base->lock);
-+#ifdef CONFIG_PREEMPT_RT_FULL
- 		init_waitqueue_head(&base->wait_for_running_timer);
-+#endif
- 		tvec_base_done[cpu] = 1;
- 	} else {
- 		base = per_cpu(tvec_bases, cpu);
++static void __cpu_unplug_wait(unsigned int cpu)
++{
++	struct hotplug_pcp *hp = &per_cpu(hotplug_pcp, cpu);
++
++	complete(&hp->unplug_wait);
++	wait_for_completion(&hp->synced);
++}
++
+ /*
+  * Start the sync_unplug_thread on the target cpu and wait for it to
+  * complete.
+@@ -268,6 +278,7 @@ static int cpu_unplug_begin(unsigned int cpu)
+ 	tell_sched_cpu_down_begin(cpu);
+ 
+ 	init_completion(&hp->synced);
++	init_completion(&hp->unplug_wait);
+ 
+ 	hp->sync_tsk = kthread_create(sync_unplug_thread, hp, "sync_unplug/%d", cpu);
+ 	if (IS_ERR(hp->sync_tsk)) {
+@@ -283,8 +294,7 @@ static int cpu_unplug_begin(unsigned int cpu)
+ 	 * wait for tasks that are going to enter these sections and
+ 	 * we must not have them block.
+ 	 */
+-	__cpu_unplug_sync(hp);
+-
++	wake_up_process(hp->sync_tsk);
+ 	return 0;
+ }
+ 
+@@ -590,6 +600,8 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 		goto out_release;
+ 	}
+ 
++	__cpu_unplug_wait(cpu);
++
+ 	/* Notifiers are done. Don't let any more tasks pin this CPU. */
+ 	cpu_unplug_sync(cpu);
+ 
 -- 
 1.7.10.4
 
