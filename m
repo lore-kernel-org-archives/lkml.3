@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932223Ab3IHDwP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:52:15 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56020 "EHLO
+	id S1760210Ab3IHDwN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:52:13 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56062 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754499Ab3IHDS7 (ORCPT
+	by vger.kernel.org with ESMTP id S1755607Ab3IHDS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 7 Sep 2013 23:18:59 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,16 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Rusty Russell" <rusty@rustcorp.com.au>,
-        "FuXiangChun" <xfu@redhat.com>, "Sibiao Luo" <sluo@redhat.com>,
-        "chayang" <chayang@redhat.com>, "Qunfang Zhang" <qzhang@redhat.com>,
-        "Amit Shah" <amit.shah@redhat.com>,
-        "YOGANANTH SUBRAMANIAN" <anantyog@in.ibm.com>
+CC: akpm@linux-foundation.org, "Jakob Bornecrantz" <jakob@vmware.com>,
+        "Zack Rusin" <zackr@vmware.com>, "Biran Paul" <brianp@vmware.com>,
+        "Dave Airlie" <airlied@gmail.com>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.458374503@decadent.org.uk>
+Message-ID: <lsq.1378608721.487939736@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [045/121] virtio: console: clean up port data immediately at time
- of unplug
+Subject: [109/121] drm/vmwgfx: Split GMR2_REMAP commands if they are to large
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,124 +32,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amit Shah <amit.shah@redhat.com>
+From: Jakob Bornecrantz <jakob@vmware.com>
 
-commit ea3768b4386a8d1790f4cc9a35de4f55b92d6442 upstream.
+commit 6e4dcff3adbf25acb87e74500a58e3c07bdec40f upstream.
 
-We used to keep the port's char device structs and the /sys entries
-around till the last reference to the port was dropped.  This is
-actually unnecessary, and resulted in buggy behaviour:
+This fixes the piglit test texturing/max-texture-size
+causing the VM to die due to a too large SVGA command.
 
-1. Open port in guest
-2. Hot-unplug port
-3. Hot-plug a port with the same 'name' property as the unplugged one
-
-This resulted in hot-plug being unsuccessful, as a port with the same
-name already exists (even though it was unplugged).
-
-This behaviour resulted in a warning message like this one:
-
--------------------8<---------------------------------------
-WARNING: at fs/sysfs/dir.c:512 sysfs_add_one+0xc9/0x130() (Not tainted)
-Hardware name: KVM
-sysfs: cannot create duplicate filename
-'/devices/pci0000:00/0000:00:04.0/virtio0/virtio-ports/vport0p1'
-
-Call Trace:
- [<ffffffff8106b607>] ? warn_slowpath_common+0x87/0xc0
- [<ffffffff8106b6f6>] ? warn_slowpath_fmt+0x46/0x50
- [<ffffffff811f2319>] ? sysfs_add_one+0xc9/0x130
- [<ffffffff811f23e8>] ? create_dir+0x68/0xb0
- [<ffffffff811f2469>] ? sysfs_create_dir+0x39/0x50
- [<ffffffff81273129>] ? kobject_add_internal+0xb9/0x260
- [<ffffffff812733d8>] ? kobject_add_varg+0x38/0x60
- [<ffffffff812734b4>] ? kobject_add+0x44/0x70
- [<ffffffff81349de4>] ? get_device_parent+0xf4/0x1d0
- [<ffffffff8134b389>] ? device_add+0xc9/0x650
-
--------------------8<---------------------------------------
-
-Instead of relying on guest applications to release all references to
-the ports, we should go ahead and unregister the port from all the core
-layers.  Any open/read calls on the port will then just return errors,
-and an unplug/plug operation on the host will succeed as expected.
-
-This also caused buggy behaviour in case of the device removal (not just
-a port): when the device was removed (which means all ports on that
-device are removed automatically as well), the ports with active
-users would clean up only when the last references were dropped -- and
-it would be too late then to be referencing char device pointers,
-resulting in oopses:
-
--------------------8<---------------------------------------
-PID: 6162   TASK: ffff8801147ad500  CPU: 0   COMMAND: "cat"
- #0 [ffff88011b9d5a90] machine_kexec at ffffffff8103232b
- #1 [ffff88011b9d5af0] crash_kexec at ffffffff810b9322
- #2 [ffff88011b9d5bc0] oops_end at ffffffff814f4a50
- #3 [ffff88011b9d5bf0] die at ffffffff8100f26b
- #4 [ffff88011b9d5c20] do_general_protection at ffffffff814f45e2
- #5 [ffff88011b9d5c50] general_protection at ffffffff814f3db5
-    [exception RIP: strlen+2]
-    RIP: ffffffff81272ae2  RSP: ffff88011b9d5d00  RFLAGS: 00010246
-    RAX: 0000000000000000  RBX: ffff880118901c18  RCX: 0000000000000000
-    RDX: ffff88011799982c  RSI: 00000000000000d0  RDI: 3a303030302f3030
-    RBP: ffff88011b9d5d38   R8: 0000000000000006   R9: ffffffffa0134500
-    R10: 0000000000001000  R11: 0000000000001000  R12: ffff880117a1cc10
-    R13: 00000000000000d0  R14: 0000000000000017  R15: ffffffff81aff700
-    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
- #6 [ffff88011b9d5d00] kobject_get_path at ffffffff8126dc5d
- #7 [ffff88011b9d5d40] kobject_uevent_env at ffffffff8126e551
- #8 [ffff88011b9d5dd0] kobject_uevent at ffffffff8126e9eb
- #9 [ffff88011b9d5de0] device_del at ffffffff813440c7
-
--------------------8<---------------------------------------
-
-So clean up when we have all the context, and all that's left to do when
-the references to the port have dropped is to free up the port struct
-itself.
-
-Reported-by: chayang <chayang@redhat.com>
-Reported-by: YOGANANTH SUBRAMANIAN <anantyog@in.ibm.com>
-Reported-by: FuXiangChun <xfu@redhat.com>
-Reported-by: Qunfang Zhang <qzhang@redhat.com>
-Reported-by: Sibiao Luo <sluo@redhat.com>
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Jakob Bornecrantz <jakob@vmware.com>
+Reviewed-by: Biran Paul <brianp@vmware.com>
+Reviewed-by: Zack Rusin <zackr@vmware.com>
+Signed-off-by: Dave Airlie <airlied@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/char/virtio_console.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c | 58 +++++++++++++++++++++++++------------
+ 1 file changed, 39 insertions(+), 19 deletions(-)
 
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -1267,14 +1267,6 @@ static void remove_port(struct kref *kre
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c
+@@ -29,7 +29,9 @@
+ #include "drmP.h"
+ #include "ttm/ttm_bo_driver.h"
  
- 	port = container_of(kref, struct port, kref);
+-#define VMW_PPN_SIZE sizeof(unsigned long)
++#define VMW_PPN_SIZE (sizeof(unsigned long))
++/* A future safe maximum remap size. */
++#define VMW_PPN_PER_REMAP ((31 * 1024) / VMW_PPN_SIZE)
  
--	sysfs_remove_group(&port->dev->kobj, &port_attribute_group);
--	device_destroy(pdrvdata.class, port->dev->devt);
--	cdev_del(port->cdev);
+ static int vmw_gmr2_bind(struct vmw_private *dev_priv,
+ 			 struct page *pages[],
+@@ -38,43 +40,61 @@ static int vmw_gmr2_bind(struct vmw_priv
+ {
+ 	SVGAFifoCmdDefineGMR2 define_cmd;
+ 	SVGAFifoCmdRemapGMR2 remap_cmd;
+-	uint32_t define_size = sizeof(define_cmd) + 4;
+-	uint32_t remap_size = VMW_PPN_SIZE * num_pages + sizeof(remap_cmd) + 4;
+ 	uint32_t *cmd;
+ 	uint32_t *cmd_orig;
++	uint32_t define_size = sizeof(define_cmd) + sizeof(*cmd);
++	uint32_t remap_num = num_pages / VMW_PPN_PER_REMAP + ((num_pages % VMW_PPN_PER_REMAP) > 0);
++	uint32_t remap_size = VMW_PPN_SIZE * num_pages + (sizeof(remap_cmd) + sizeof(*cmd)) * remap_num;
++	uint32_t remap_pos = 0;
++	uint32_t cmd_size = define_size + remap_size;
+ 	uint32_t i;
+ 
+-	cmd_orig = cmd = vmw_fifo_reserve(dev_priv, define_size + remap_size);
++	cmd_orig = cmd = vmw_fifo_reserve(dev_priv, cmd_size);
+ 	if (unlikely(cmd == NULL))
+ 		return -ENOMEM;
+ 
+ 	define_cmd.gmrId = gmr_id;
+ 	define_cmd.numPages = num_pages;
+ 
++	*cmd++ = SVGA_CMD_DEFINE_GMR2;
++	memcpy(cmd, &define_cmd, sizeof(define_cmd));
++	cmd += sizeof(define_cmd) / sizeof(*cmd);
++
++	/*
++	 * Need to split the command if there are too many
++	 * pages that goes into the gmr.
++	 */
++
+ 	remap_cmd.gmrId = gmr_id;
+ 	remap_cmd.flags = (VMW_PPN_SIZE > sizeof(*cmd)) ?
+ 		SVGA_REMAP_GMR2_PPN64 : SVGA_REMAP_GMR2_PPN32;
+-	remap_cmd.offsetPages = 0;
+-	remap_cmd.numPages = num_pages;
+ 
+-	*cmd++ = SVGA_CMD_DEFINE_GMR2;
+-	memcpy(cmd, &define_cmd, sizeof(define_cmd));
+-	cmd += sizeof(define_cmd) / sizeof(uint32);
++	while (num_pages > 0) {
++		unsigned long nr = min(num_pages, (unsigned long)VMW_PPN_PER_REMAP);
++
++		remap_cmd.offsetPages = remap_pos;
++		remap_cmd.numPages = nr;
+ 
+-	*cmd++ = SVGA_CMD_REMAP_GMR2;
+-	memcpy(cmd, &remap_cmd, sizeof(remap_cmd));
+-	cmd += sizeof(remap_cmd) / sizeof(uint32);
 -
--	kfree(port->name);
--
--	debugfs_remove(port->debugfs_file);
--
- 	kfree(port);
+-	for (i = 0; i < num_pages; ++i) {
+-		if (VMW_PPN_SIZE <= 4)
+-			*cmd = page_to_pfn(*pages++);
+-		else
+-			*((uint64_t *)cmd) = page_to_pfn(*pages++);
++		*cmd++ = SVGA_CMD_REMAP_GMR2;
++		memcpy(cmd, &remap_cmd, sizeof(remap_cmd));
++		cmd += sizeof(remap_cmd) / sizeof(*cmd);
++
++		for (i = 0; i < nr; ++i) {
++			if (VMW_PPN_SIZE <= 4)
++				*cmd = page_to_pfn(*pages++);
++			else
++				*((uint64_t *)cmd) = page_to_pfn(*pages++);
+ 
+-		cmd += VMW_PPN_SIZE / sizeof(*cmd);
++			cmd += VMW_PPN_SIZE / sizeof(*cmd);
++		}
++
++		num_pages -= nr;
++		remap_pos += nr;
+ 	}
+ 
+-	vmw_fifo_commit(dev_priv, define_size + remap_size);
++	BUG_ON(cmd != cmd_orig + cmd_size / sizeof(*cmd));
++
++	vmw_fifo_commit(dev_priv, cmd_size);
+ 
+ 	return 0;
  }
- 
-@@ -1323,6 +1315,14 @@ static void unplug_port(struct port *por
- 	 */
- 	port->portdev = NULL;
- 
-+	sysfs_remove_group(&port->dev->kobj, &port_attribute_group);
-+	device_destroy(pdrvdata.class, port->dev->devt);
-+	cdev_del(port->cdev);
-+
-+	kfree(port->name);
-+
-+	debugfs_remove(port->debugfs_file);
-+
- 	/*
- 	 * Locks around here are not necessary - a port can't be
- 	 * opened after we removed the port struct from ports_list
 
