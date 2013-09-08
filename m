@@ -1,26 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758694Ab3IHDTO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:19:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55967 "EHLO
+	id S1759295Ab3IHDn2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:43:28 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56219 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751983Ab3IHDSh (ORCPT
+	by vger.kernel.org with ESMTP id S1756652Ab3IHDTN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 23:18:37 -0400
+	Sat, 7 Sep 2013 23:19:13 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Mathias Krause" <minipli@googlemail.com>,
-        "Dan Carpenter" <dan.carpenter@oracle.com>,
-        "Steffen Klassert" <steffen.klassert@secunet.com>
+CC: akpm@linux-foundation.org, "Frederic Weisbecker" <fweisbec@gmail.com>,
+        "Jiri Olsa" <jolsa@redhat.com>, "Vince Weaver" <vince@deater.net>,
+        "Stephane Eranian" <eranian@google.com>,
+        "Peter Zijlstra" <a.p.zijlstra@chello.nl>,
+        "Corey Ashford" <cjashfor@linux.vnet.ibm.com>,
+        "Namhyung Kim" <namhyung@kernel.org>,
+        "Arnaldo Carvalho de Melo" <acme@redhat.com>,
+        "Ingo Molnar" <mingo@kernel.org>,
+        "Andreas Hollmann" <hollmann@in.tum.de>,
+        "Paul Mackerras" <paulus@samba.org>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.413883412@decadent.org.uk>
+Message-ID: <lsq.1378608721.494945706@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [014/121] af_key: more info leaks in pfkey messages
+Subject: [006/121] perf: Fix event group context move
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,51 +39,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-[ Upstream commit ff862a4668dd6dba962b1d2d8bd344afa6375683 ]
+commit 0231bb5336758426b44ccd798ccd3c5419c95d58 upstream.
 
-This is inspired by a5cc68f3d6 "af_key: fix info leaks in notify
-messages".  There are some struct members which don't get initialized
-and could disclose small amounts of private information.
+When we have group with mixed events (hw/sw) we want to end up
+with group leader being in hw context. So if group leader is
+initialy sw event, we move all the events under hw context.
 
-Acked-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The move is done for each event by removing it from its context
+and adding it back into proper one. As a part of the removal the
+event is automatically disabled, which is not what we want at
+this stage of creating groups.
+
+The fix is to initialize event state after removal from sw
+context.
+
+This fix resulted from the following discussion:
+
+  http://thread.gmane.org/gmane.linux.kernel.perf.user/1144
+
+Reported-by: Andreas Hollmann <hollmann@in.tum.de>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Vince Weaver <vince@deater.net>
+Link: http://lkml.kernel.org/r/1359714225-4231-1-git-send-email-jolsa@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/key/af_key.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ kernel/events/core.c | 20 ++++++++++++++++++--
+ 1 file changed, 18 insertions(+), 2 deletions(-)
 
-diff --git a/net/key/af_key.c b/net/key/af_key.c
-index 6fefdfc..a71a938 100644
---- a/net/key/af_key.c
-+++ b/net/key/af_key.c
-@@ -2073,6 +2073,7 @@ static int pfkey_xfrm_policy2msg(struct sk_buff *skb, const struct xfrm_policy *
- 			pol->sadb_x_policy_type = IPSEC_POLICY_NONE;
- 	}
- 	pol->sadb_x_policy_dir = dir+1;
-+	pol->sadb_x_policy_reserved = 0;
- 	pol->sadb_x_policy_id = xp->index;
- 	pol->sadb_x_policy_priority = xp->priority;
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -900,6 +900,15 @@ list_add_event(struct perf_event *event,
+ }
  
-@@ -3108,7 +3109,9 @@ static int pfkey_send_acquire(struct xfrm_state *x, struct xfrm_tmpl *t, struct
- 	pol->sadb_x_policy_exttype = SADB_X_EXT_POLICY;
- 	pol->sadb_x_policy_type = IPSEC_POLICY_IPSEC;
- 	pol->sadb_x_policy_dir = dir+1;
-+	pol->sadb_x_policy_reserved = 0;
- 	pol->sadb_x_policy_id = xp->index;
-+	pol->sadb_x_policy_priority = xp->priority;
+ /*
++ * Initialize event state based on the perf_event_attr::disabled.
++ */
++static inline void perf_event__state_init(struct perf_event *event)
++{
++	event->state = event->attr.disabled ? PERF_EVENT_STATE_OFF :
++					      PERF_EVENT_STATE_INACTIVE;
++}
++
++/*
+  * Called at perf_event creation and when events are attached/detached from a
+  * group.
+  */
+@@ -6050,8 +6059,7 @@ perf_event_alloc(struct perf_event_attr
+ 	event->overflow_handler	= overflow_handler;
+ 	event->overflow_handler_context = context;
  
- 	/* Set sadb_comb's. */
- 	if (x->id.proto == IPPROTO_AH)
-@@ -3496,6 +3499,7 @@ static int pfkey_send_migrate(const struct xfrm_selector *sel, u8 dir, u8 type,
- 	pol->sadb_x_policy_exttype = SADB_X_EXT_POLICY;
- 	pol->sadb_x_policy_type = IPSEC_POLICY_IPSEC;
- 	pol->sadb_x_policy_dir = dir + 1;
-+	pol->sadb_x_policy_reserved = 0;
- 	pol->sadb_x_policy_id = 0;
- 	pol->sadb_x_policy_priority = 0;
+-	if (attr->disabled)
+-		event->state = PERF_EVENT_STATE_OFF;
++	perf_event__state_init(event);
  
+ 	pmu = NULL;
+ 
+@@ -6433,9 +6441,17 @@ SYSCALL_DEFINE5(perf_event_open,
+ 
+ 		mutex_lock(&gctx->mutex);
+ 		perf_remove_from_context(group_leader);
++
++		/*
++		 * Removing from the context ends up with disabled
++		 * event. What we want here is event in the initial
++		 * startup state, ready to be add into new context.
++		 */
++		perf_event__state_init(group_leader);
+ 		list_for_each_entry(sibling, &group_leader->sibling_list,
+ 				    group_entry) {
+ 			perf_remove_from_context(sibling);
++			perf_event__state_init(sibling);
+ 			put_ctx(gctx);
+ 		}
+ 		mutex_unlock(&gctx->mutex);
 
