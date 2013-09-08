@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751437Ab3IHMsq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 08:48:46 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:37474 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751304Ab3IHMsp (ORCPT
+	id S1751967Ab3IHM4r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 08:56:47 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23674 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377Ab3IHM4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 08:48:45 -0400
-Message-ID: <522C8044.6090502@kernel.org>
-Date: Sun, 08 Sep 2013 14:48:52 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Derek Basehore <dbasehore@chromium.org>
-CC: Jonathan Cameron <jic23@cam.ac.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bill Pemberton <wfp5p@virginia.edu>, Bryan Freed <bfreed@chromium.org>,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iio: isl29018: Fix uninitialized value
-References: <1377807250-30150-1-git-send-email-dbasehore@chromium.org>
-In-Reply-To: <1377807250-30150-1-git-send-email-dbasehore@chromium.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sun, 8 Sep 2013 08:56:45 -0400
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=TD0EPTe9uIQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=6vidgQ2l4MoA:10 a=WcQw1p1tIgrU-G_rG6gA:9 a=jeBq3FmKZ4MA:10 a=XzP_FcdOR4kA:10 a=SA2qyKo5q2UA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130908122701.330939318@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Sun, 08 Sep 2013 08:25:55 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Kacur <jkacur@redhat.com>
+Subject: [PATCH RT 10/10] Linux 3.8.13-rt16-rc1
+References: <20130908122545.421180629@goodmis.org>
+Content-Disposition: inline; filename=0010-Linux-3.8.13-rt16-rc1.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/13 21:14, Derek Basehore wrote:
-> The lux_uscale value is not initialized at probe. The value will be
-> uninitialized unless a value is written to it through the iio channel interface.
-> This fixes that.
-> 
-> Signed-off-by: Derek Basehore <dbasehore@chromium.org>
-> Reviewed-on: https://gerrit.chromium.org/gerrit/65998
-Thanks,
-Applied to the fixes-togreg branch of iio.git
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-I'll send this onwards in a few days.
+---
+ localversion-rt |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Jonathan
-> ---
->  drivers/staging/iio/light/isl29018.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/staging/iio/light/isl29018.c b/drivers/staging/iio/light/isl29018.c
-> index 82478a5..28c6386 100644
-> --- a/drivers/staging/iio/light/isl29018.c
-> +++ b/drivers/staging/iio/light/isl29018.c
-> @@ -564,6 +564,7 @@ static int isl29018_probe(struct i2c_client *client,
->  	mutex_init(&chip->lock);
->  
->  	chip->lux_scale = 1;
-> +	chip->lux_uscale = 0;
->  	chip->range = 1000;
->  	chip->adc_bit = 16;
->  	chip->suspended = false;
-> 
+diff --git a/localversion-rt b/localversion-rt
+index 18777ec..5d3eaf3 100644
+--- a/localversion-rt
++++ b/localversion-rt
+@@ -1 +1 @@
+--rt15
++-rt16-rc1
+-- 
+1.7.10.4
+
+
