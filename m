@@ -1,32 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759295Ab3IHDn2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:43:28 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56219 "EHLO
+	id S1758030Ab3IHDTM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:19:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55995 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756652Ab3IHDTN (ORCPT
+	by vger.kernel.org with ESMTP id S1754267Ab3IHDSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 23:19:13 -0400
+	Sat, 7 Sep 2013 23:18:37 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Frederic Weisbecker" <fweisbec@gmail.com>,
-        "Jiri Olsa" <jolsa@redhat.com>, "Vince Weaver" <vince@deater.net>,
-        "Stephane Eranian" <eranian@google.com>,
-        "Peter Zijlstra" <a.p.zijlstra@chello.nl>,
-        "Corey Ashford" <cjashfor@linux.vnet.ibm.com>,
-        "Namhyung Kim" <namhyung@kernel.org>,
-        "Arnaldo Carvalho de Melo" <acme@redhat.com>,
-        "Ingo Molnar" <mingo@kernel.org>,
-        "Andreas Hollmann" <hollmann@in.tum.de>,
-        "Paul Mackerras" <paulus@samba.org>
+CC: akpm@linux-foundation.org, "Dan Carpenter" <dan.carpenter@oracle.com>,
+        "John W. Linville" <linville@tuxdriver.com>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.494945706@decadent.org.uk>
+Message-ID: <lsq.1378608721.518830425@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [006/121] perf: Fix event group context move
+Subject: [064/121] Hostap: copying wrong data prism2_ioctl_giwaplist()
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -39,87 +31,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 0231bb5336758426b44ccd798ccd3c5419c95d58 upstream.
+commit 909bd5926d474e275599094acad986af79671ac9 upstream.
 
-When we have group with mixed events (hw/sw) we want to end up
-with group leader being in hw context. So if group leader is
-initialy sw event, we move all the events under hw context.
+We want the data stored in "addr" and "qual", but the extra ampersands
+mean we are copying stack data instead.
 
-The move is done for each event by removing it from its context
-and adding it back into proper one. As a part of the removal the
-event is automatically disabled, which is not what we want at
-this stage of creating groups.
-
-The fix is to initialize event state after removal from sw
-context.
-
-This fix resulted from the following discussion:
-
-  http://thread.gmane.org/gmane.linux.kernel.perf.user/1144
-
-Reported-by: Andreas Hollmann <hollmann@in.tum.de>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Vince Weaver <vince@deater.net>
-Link: http://lkml.kernel.org/r/1359714225-4231-1-git-send-email-jolsa@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/events/core.c | 20 ++++++++++++++++++--
- 1 file changed, 18 insertions(+), 2 deletions(-)
+ drivers/net/wireless/hostap/hostap_ioctl.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -900,6 +900,15 @@ list_add_event(struct perf_event *event,
- }
+--- a/drivers/net/wireless/hostap/hostap_ioctl.c
++++ b/drivers/net/wireless/hostap/hostap_ioctl.c
+@@ -522,9 +522,9 @@ static int prism2_ioctl_giwaplist(struct
  
- /*
-+ * Initialize event state based on the perf_event_attr::disabled.
-+ */
-+static inline void perf_event__state_init(struct perf_event *event)
-+{
-+	event->state = event->attr.disabled ? PERF_EVENT_STATE_OFF :
-+					      PERF_EVENT_STATE_INACTIVE;
-+}
-+
-+/*
-  * Called at perf_event creation and when events are attached/detached from a
-  * group.
-  */
-@@ -6050,8 +6059,7 @@ perf_event_alloc(struct perf_event_attr
- 	event->overflow_handler	= overflow_handler;
- 	event->overflow_handler_context = context;
+ 	data->length = prism2_ap_get_sta_qual(local, addr, qual, IW_MAX_AP, 1);
  
--	if (attr->disabled)
--		event->state = PERF_EVENT_STATE_OFF;
-+	perf_event__state_init(event);
+-	memcpy(extra, &addr, sizeof(struct sockaddr) * data->length);
++	memcpy(extra, addr, sizeof(struct sockaddr) * data->length);
+ 	data->flags = 1; /* has quality information */
+-	memcpy(extra + sizeof(struct sockaddr) * data->length, &qual,
++	memcpy(extra + sizeof(struct sockaddr) * data->length, qual,
+ 	       sizeof(struct iw_quality) * data->length);
  
- 	pmu = NULL;
- 
-@@ -6433,9 +6441,17 @@ SYSCALL_DEFINE5(perf_event_open,
- 
- 		mutex_lock(&gctx->mutex);
- 		perf_remove_from_context(group_leader);
-+
-+		/*
-+		 * Removing from the context ends up with disabled
-+		 * event. What we want here is event in the initial
-+		 * startup state, ready to be add into new context.
-+		 */
-+		perf_event__state_init(group_leader);
- 		list_for_each_entry(sibling, &group_leader->sibling_list,
- 				    group_entry) {
- 			perf_remove_from_context(sibling);
-+			perf_event__state_init(sibling);
- 			put_ctx(gctx);
- 		}
- 		mutex_unlock(&gctx->mutex);
+ 	kfree(addr);
 
