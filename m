@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932078Ab3IHDUA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:20:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56174 "EHLO
+	id S1759300Ab3IHDT7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:19:59 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56126 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756519Ab3IHDSs (ORCPT
+	by vger.kernel.org with ESMTP id S1756148Ab3IHDSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 7 Sep 2013 23:18:48 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Kyungmin Park" <kyungmin.park@samsung.com>,
-        "Piotr Sarna" <p.sarna@partner.samsung.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        "Bartlomiej Zolnierkiewicz" <b.zolnierkie@samsung.com>
+CC: akpm@linux-foundation.org, "Lan Tianyu" <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.546017633@decadent.org.uk>
+Message-ID: <lsq.1378608721.616770126@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [062/121] ext4: fix mount/remount error messages for incompatible
- mount options
+Subject: [050/121] ACPI / battery: Fix parsing _BIX return value
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,66 +31,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Piotr Sarna <p.sarna@partner.samsung.com>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit 6ae6514b33f941d3386da0dfbe2942766eab1577 upstream.
+commit 016d5baad04269e8559332df05f89bd95b52d6ad upstream.
 
-Commit 5688978 ("ext4: improve handling of conflicting mount options")
-introduced incorrect messages shown while choosing wrong mount options.
+The _BIX method returns extended battery info as a package.
+According the ACPI spec (ACPI 5, Section 10.2.2.2), the first member
+of that package should be "Revision".  However, the current ACPI
+battery driver treats the first member as "Power Unit" which should
+be the second member.  This causes the result of _BIX return data
+parsing to be incorrect.
 
-First of all, both cases of incorrect mount options,
-"data=journal,delalloc" and "data=journal,dioread_nolock" result in
-the same error message.
+Fix this by adding a new member called 'revision' to struct
+acpi_battery and adding the offsetof() information on it to
+extended_info_offsets[] as the first row.
 
-Secondly, the problem above isn't solved for remount option: the
-mismatched parameter is simply ignored.  Moreover, ext4_msg states
-that remount with options "data=journal,delalloc" succeeded, which is
-not true.
-
-To fix it up, I added a simple check after parse_options() call to
-ensure that data=journal and delalloc/dioread_nolock parameters are
-not present at the same time.
-
-Signed-off-by: Piotr Sarna <p.sarna@partner.samsung.com>
-Acked-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+[rjw: Changelog]
+Reported-and-tested-by: Jan Hoffmann <jan.christian.hoffmann@gmail.com>
+References: http://bugzilla.kernel.org/show_bug.cgi?id=60519
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ext4/super.c | 17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ drivers/acpi/battery.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -3372,7 +3372,7 @@ static int ext4_fill_super(struct super_
- 		}
- 		if (test_opt(sb, DIOREAD_NOLOCK)) {
- 			ext4_msg(sb, KERN_ERR, "can't mount with "
--				 "both data=journal and delalloc");
-+				 "both data=journal and dioread_nolock");
- 			goto failed_mount;
- 		}
- 		if (test_opt(sb, DELALLOC))
-@@ -4539,6 +4539,21 @@ static int ext4_remount(struct super_blo
- 		goto restore_opts;
- 	}
+--- a/drivers/acpi/battery.c
++++ b/drivers/acpi/battery.c
+@@ -117,6 +117,7 @@ struct acpi_battery {
+ 	struct acpi_device *device;
+ 	struct notifier_block pm_nb;
+ 	unsigned long update_time;
++	int revision;
+ 	int rate_now;
+ 	int capacity_now;
+ 	int voltage_now;
+@@ -350,6 +351,7 @@ static struct acpi_offsets info_offsets[
+ };
  
-+	if (test_opt(sb, DATA_FLAGS) == EXT4_MOUNT_JOURNAL_DATA) {
-+		if (test_opt2(sb, EXPLICIT_DELALLOC)) {
-+			ext4_msg(sb, KERN_ERR, "can't mount with "
-+				 "both data=journal and delalloc");
-+			err = -EINVAL;
-+			goto restore_opts;
-+		}
-+		if (test_opt(sb, DIOREAD_NOLOCK)) {
-+			ext4_msg(sb, KERN_ERR, "can't mount with "
-+				 "both data=journal and dioread_nolock");
-+			err = -EINVAL;
-+			goto restore_opts;
-+		}
-+	}
-+
- 	if (sbi->s_mount_flags & EXT4_MF_FS_ABORTED)
- 		ext4_abort(sb, "Abort forced by user");
- 
+ static struct acpi_offsets extended_info_offsets[] = {
++	{offsetof(struct acpi_battery, revision), 0},
+ 	{offsetof(struct acpi_battery, power_unit), 0},
+ 	{offsetof(struct acpi_battery, design_capacity), 0},
+ 	{offsetof(struct acpi_battery, full_charge_capacity), 0},
 
