@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759234Ab3IHDTw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:19:52 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55969 "EHLO
+	id S1759218Ab3IHDTu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:19:50 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56108 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752005Ab3IHDSq (ORCPT
+	by vger.kernel.org with ESMTP id S1755982Ab3IHDSq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 7 Sep 2013 23:18:46 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Christian Kujau" <lists@nerdbynature.de>,
-        "Dave Kleikamp" <dave.kleikamp@oracle.com>
+CC: akpm@linux-foundation.org, "Alex Deucher" <alexander.deucher@amd.com>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.761931207@decadent.org.uk>
+Message-ID: <lsq.1378608721.644794477@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [023/121] jfs: fix readdir cookie incompatibility with NFSv4
+Subject: [051/121] drm/radeon/atom: initialize more atom interpretor
+ elements to 0
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,115 +31,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 44512449c0ab368889dd13ae0031fba74ee7e1d2 upstream.
+commit 42a21826dc54583cdb79cc8477732e911ac9c376 upstream.
 
-NFSv4 reserves readdir cookie values 0-2 for special entries (. and ..),
-but jfs allows a value of 2 for a non-special entry. This incompatibility
-can result in the nfs client reporting a readdir loop.
+The ProcessAuxChannel table on some rv635 boards assumes
+the divmul members are initialized to 0 otherwise we get
+an invalid fb offset since it has a bad mask set when
+setting the fb base.  While here initialize all the
+atom interpretor elements to 0.
 
-This patch doesn't change the value stored internally, but adds one to
-the value exposed to the iterate method.
+Fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=60639
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Tested-by: Christian Kujau <lists@nerdbynature.de>
-[bwh: Backported to 3.2:
- - Adjust context
- - s/ctx->pos/filp->f_pos/]
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/jfs/jfs_dtree.c | 31 +++++++++++++++++++++++--------
- 1 file changed, 23 insertions(+), 8 deletions(-)
+ drivers/gpu/drm/radeon/atom.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/fs/jfs/jfs_dtree.c b/fs/jfs/jfs_dtree.c
-index 8743ba9..0ec767e 100644
---- a/fs/jfs/jfs_dtree.c
-+++ b/fs/jfs/jfs_dtree.c
-@@ -3047,6 +3047,14 @@ int jfs_readdir(struct file *file, struct dir_context *ctx)
+--- a/drivers/gpu/drm/radeon/atom.c
++++ b/drivers/gpu/drm/radeon/atom.c
+@@ -1220,12 +1220,17 @@ int atom_execute_table(struct atom_conte
+ 	int r;
  
- 		dir_index = (u32) filp->f_pos;
- 
-+		/*
-+		 * NFSv4 reserves cookies 1 and 2 for . and .. so the value
-+		 * we return to the vfs is one greater than the one we use
-+		 * internally.
-+		 */
-+		if (dir_index)
-+			dir_index--;
-+
- 		if (dir_index > 1) {
- 			struct dir_table_slot dirtab_slot;
- 
-@@ -3086,7 +3094,7 @@ int jfs_readdir(struct file *file, struct dir_context *ctx)
- 			if (p->header.flag & BT_INTERNAL) {
- 				jfs_err("jfs_readdir: bad index table");
- 				DT_PUTPAGE(mp);
--				filp->f_pos = -1;
-+				filp->f_pos = DIREND;
- 				return 0;
- 			}
- 		} else {
-@@ -3094,15 +3102,15 @@ int jfs_readdir(struct file *file, struct dir_context *ctx)
- 				/*
- 				 * self "."
- 				 */
--				filp->f_pos = 0;
-+				filp->f_pos = 1;
- 				if (filldir(dirent, ".", 1, 0, ip->i_ino,
- 					    DT_DIR))
- 					return 0;
- 			}
- 			/*
- 			 * parent ".."
- 			 */
--			filp->f_pos = 1;
-+			filp->f_pos = 2;
- 			if (filldir(dirent, "..", 2, 1, PARENT(ip), DT_DIR))
- 				return 0;
- 
-@@ -3123,24 +3131,25 @@ int jfs_readdir(struct file *file, struct dir_context *ctx)
- 		/*
- 		 * Legacy filesystem - OS/2 & Linux JFS < 0.3.6
- 		 *
--		 * pn = index = 0:	First entry "."
--		 * pn = 0; index = 1:	Second entry ".."
-+		 * pn = 0; index = 1:	First entry "."
-+		 * pn = 0; index = 2:	Second entry ".."
- 		 * pn > 0:		Real entries, pn=1 -> leftmost page
- 		 * pn = index = -1:	No more entries
- 		 */
- 		dtpos = filp->f_pos;
--		if (dtpos == 0) {
-+		if (dtpos < 2) {
- 			/* build "." entry */
- 
-+			filp->f_pos = 1;
- 			if (filldir(dirent, ".", 1, filp->f_pos, ip->i_ino,
- 				    DT_DIR))
- 				return 0;
--			dtoffset->index = 1;
-+			dtoffset->index = 2;
- 			filp->f_pos = dtpos;
- 		}
- 
- 		if (dtoffset->pn == 0) {
--			if (dtoffset->index == 1) {
-+			if (dtoffset->index == 2) {
- 				/* build ".." entry */
- 
- 				if (filldir(dirent, "..", 2, filp->f_pos,
-@@ -3233,6 +3242,12 @@ int jfs_readdir(struct file *file, struct dir_context *ctx)
- 					}
- 					jfs_dirent->position = unique_pos++;
- 				}
-+				/*
-+				 * We add 1 to the index because we may
-+				 * use a value of 2 internally, and NFSv4
-+				 * doesn't like that.
-+				 */
-+				jfs_dirent->position++;
- 			} else {
- 				jfs_dirent->position = dtpos;
- 				len = min(d_namleft, DTLHDRDATALEN_LEGACY);
+ 	mutex_lock(&ctx->mutex);
++	/* reset data block */
++	ctx->data_block = 0;
+ 	/* reset reg block */
+ 	ctx->reg_block = 0;
+ 	/* reset fb window */
+ 	ctx->fb_base = 0;
+ 	/* reset io mode */
+ 	ctx->io_mode = ATOM_IO_MM;
++	/* reset divmul */
++	ctx->divmul[0] = 0;
++	ctx->divmul[1] = 0;
+ 	r = atom_execute_table_locked(ctx, index, params);
+ 	mutex_unlock(&ctx->mutex);
+ 	return r;
 
