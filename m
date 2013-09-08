@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759474Ab3IHDUi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:20:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55994 "EHLO
+	id S1759457Ab3IHDUg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:20:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56017 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754049Ab3IHDSv (ORCPT
+	by vger.kernel.org with ESMTP id S1754734Ab3IHDSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 23:18:51 -0400
+	Sat, 7 Sep 2013 23:18:52 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Stanislaw Gruszka" <stf_xl@wp.pl>,
-        "John W. Linville" <linville@tuxdriver.com>
+CC: akpm@linux-foundation.org, "Terry Suereth" <terry.suereth@gmail.com>,
+        "Tejun Heo" <tj@kernel.org>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.351939738@decadent.org.uk>
+Message-ID: <lsq.1378608721.376051758@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [048/121] rt2x00: fix stop queue
+Subject: [079/121] libata: apply behavioral quirks to sil3826 PMP
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,72 +31,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <stf_xl@wp.pl>
+From: Terry Suereth <terry.suereth@gmail.com>
 
-commit e2288b66fe7ff0288382b2af671b4da558b44472 upstream.
+commit 8ffff94d20b7eb446e848e0046107d51b17a20a8 upstream.
 
-Since we clear QUEUE_STARTED in rt2x00queue_stop_queue(), following
-call to rt2x00queue_pause_queue() reduce to noop, i.e we do not
-stop queue in mac80211.
+Fixing support for the Silicon Image 3826 port multiplier, by applying
+to it the same quirks applied to the Silicon Image 3726.  Specifically
+fixes the repeated timeout/reset process which previously afflicted
+the 3726, as described from line 290.  Slightly based on notes from:
 
-To fix that introduce rt2x00queue_pause_queue_nocheck() function,
-which will stop queue in mac80211 directly.
+https://bugzilla.redhat.com/show_bug.cgi?id=890237
 
-Note that rt2x00_start_queue() explicitly set QUEUE_PAUSED bit.
-
-Note also that reordering operations i.e. first call to
-rt2x00queue_pause_queue() and then clear QUEUE_STARTED bit, will race
-with rt2x00queue_unpause_queue(), so calling ieee80211_stop_queue()
-directly is the only available solution to fix the problem without
-major rework.
-
-Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Terry Suereth <terry.suereth@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/rt2x00/rt2x00queue.c | 18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+ drivers/ata/libata-pmp.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2x00queue.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
-@@ -856,13 +856,8 @@ void rt2x00queue_index_inc(struct queue_
- 	spin_unlock_irqrestore(&queue->index_lock, irqflags);
- }
+--- a/drivers/ata/libata-pmp.c
++++ b/drivers/ata/libata-pmp.c
+@@ -289,24 +289,24 @@ static int sata_pmp_configure(struct ata
  
--void rt2x00queue_pause_queue(struct data_queue *queue)
-+void rt2x00queue_pause_queue_nocheck(struct data_queue *queue)
- {
--	if (!test_bit(DEVICE_STATE_PRESENT, &queue->rt2x00dev->flags) ||
--	    !test_bit(QUEUE_STARTED, &queue->flags) ||
--	    test_and_set_bit(QUEUE_PAUSED, &queue->flags))
--		return;
--
- 	switch (queue->qid) {
- 	case QID_AC_VO:
- 	case QID_AC_VI:
-@@ -878,6 +873,15 @@ void rt2x00queue_pause_queue(struct data
- 		break;
+ 	/* Disable sending Early R_OK.
+ 	 * With "cached read" HDD testing and multiple ports busy on a SATA
+-	 * host controller, 3726 PMP will very rarely drop a deferred
++	 * host controller, 3x26 PMP will very rarely drop a deferred
+ 	 * R_OK that was intended for the host. Symptom will be all
+ 	 * 5 drives under test will timeout, get reset, and recover.
+ 	 */
+-	if (vendor == 0x1095 && devid == 0x3726) {
++	if (vendor == 0x1095 && (devid == 0x3726 || devid == 0x3826)) {
+ 		u32 reg;
+ 
+ 		err_mask = sata_pmp_read(&ap->link, PMP_GSCR_SII_POL, &reg);
+ 		if (err_mask) {
+ 			rc = -EIO;
+-			reason = "failed to read Sil3726 Private Register";
++			reason = "failed to read Sil3x26 Private Register";
+ 			goto fail;
+ 		}
+ 		reg &= ~0x1;
+ 		err_mask = sata_pmp_write(&ap->link, PMP_GSCR_SII_POL, reg);
+ 		if (err_mask) {
+ 			rc = -EIO;
+-			reason = "failed to write Sil3726 Private Register";
++			reason = "failed to write Sil3x26 Private Register";
+ 			goto fail;
+ 		}
  	}
- }
-+void rt2x00queue_pause_queue(struct data_queue *queue)
-+{
-+	if (!test_bit(DEVICE_STATE_PRESENT, &queue->rt2x00dev->flags) ||
-+	    !test_bit(QUEUE_STARTED, &queue->flags) ||
-+	    test_and_set_bit(QUEUE_PAUSED, &queue->flags))
-+		return;
-+
-+	rt2x00queue_pause_queue_nocheck(queue);
-+}
- EXPORT_SYMBOL_GPL(rt2x00queue_pause_queue);
+@@ -383,8 +383,8 @@ static void sata_pmp_quirks(struct ata_p
+ 	u16 devid = sata_pmp_gscr_devid(gscr);
+ 	struct ata_link *link;
  
- void rt2x00queue_unpause_queue(struct data_queue *queue)
-@@ -939,7 +943,7 @@ void rt2x00queue_stop_queue(struct data_
- 		return;
- 	}
- 
--	rt2x00queue_pause_queue(queue);
-+	rt2x00queue_pause_queue_nocheck(queue);
- 
- 	queue->rt2x00dev->ops->lib->stop_queue(queue);
- 
+-	if (vendor == 0x1095 && devid == 0x3726) {
+-		/* sil3726 quirks */
++	if (vendor == 0x1095 && (devid == 0x3726 || devid == 0x3826)) {
++		/* sil3x26 quirks */
+ 		ata_for_each_link(link, ap, EDGE) {
+ 			/* link reports offline after LPM */
+ 			link->flags |= ATA_LFLAG_NO_LPM;
 
