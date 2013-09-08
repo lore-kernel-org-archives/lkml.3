@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759618Ab3IHDVF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:21:05 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56211 "EHLO
+	id S932211Ab3IHDVE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:21:04 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56232 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756922Ab3IHDSz (ORCPT
+	by vger.kernel.org with ESMTP id S1756778Ab3IHDSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 7 Sep 2013 23:18:55 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Eugene Surovegin" <ebs@ebshome.net>,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
-        "Eugene Surovegin" <surovegin@google.com>
+CC: akpm@linux-foundation.org, "Vince Weaver" <vincent.weaver@maine.edu>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        "Russell King" <rmk+kernel@arm.linux.org.uk>,
+        "Will Deacon" <will.deacon@arm.com>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.313357386@decadent.org.uk>
+Message-ID: <lsq.1378608721.604456037@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [103/121] powerpc/hvsi: Increase handshake timeout from 200ms to
- 400ms.
+Subject: [070/121] ARM: 7809/1: perf: fix event validation for software
+ group leaders
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,38 +34,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eugene Surovegin <ebs@ebshome.net>
+From: Will Deacon <will.deacon@arm.com>
 
-commit d220980b701d838560a70de691b53be007e99e78 upstream.
+commit c95eb3184ea1a3a2551df57190c81da695e2144b upstream.
 
-This solves a problem observed in kexec'ed kernel where 200ms timeout is
-too short and bootconsole fails to initialize. Console did eventually
-become workable but much later into the boot process.
+It is possible to construct an event group with a software event as a
+group leader and then subsequently add a hardware event to the group.
+This results in the event group being validated by adding all members
+of the group to a fake PMU and attempting to allocate each event on
+their respective PMU.
 
-Observed timeout was around 260ms, but I decided to make it a little bigger
-for more reliability.
+Unfortunately, for software events wthout a corresponding arm_pmu, this
+results in a kernel crash attempting to dereference the ->get_event_idx
+function pointer.
 
-This has been tested on Power7 machine with Petitboot as a primary
-bootloader and PowerNV firmware.
+This patch fixes the problem by checking explicitly for software events
+and ignoring those in event validation (since they can always be
+scheduled). We will probably want to revisit this for 3.12, since the
+validation checks don't appear to work correctly when dealing with
+multiple hardware PMUs anyway.
 
-Signed-off-by: Eugene Surovegin <surovegin@google.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+Tested-by: Vince Weaver <vincent.weaver@maine.edu>
+Tested-by: Mark Rutland <mark.rutland@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/tty/hvc/hvsi_lib.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/kernel/perf_event.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/tty/hvc/hvsi_lib.c
-+++ b/drivers/tty/hvc/hvsi_lib.c
-@@ -341,8 +341,8 @@ void hvsilib_establish(struct hvsi_priv
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -326,6 +326,9 @@ validate_event(struct pmu_hw_events *hw_
+ 	struct hw_perf_event fake_event = event->hw;
+ 	struct pmu *leader_pmu = event->group_leader->pmu;
  
- 	pr_devel("HVSI@%x:   ... waiting handshake\n", pv->termno);
++	if (is_software_event(event))
++		return 1;
++
+ 	if (event->pmu != leader_pmu || event->state < PERF_EVENT_STATE_OFF)
+ 		return 1;
  
--	/* Try for up to 200s */
--	for (timeout = 0; timeout < 20; timeout++) {
-+	/* Try for up to 400ms */
-+	for (timeout = 0; timeout < 40; timeout++) {
- 		if (pv->established)
- 			goto established;
- 		if (!hvsi_get_packet(pv))
 
