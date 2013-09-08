@@ -1,94 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234Ab3IHJjK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 05:39:10 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:64541 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054Ab3IHJjI (ORCPT
+	id S1752450Ab3IHJlT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 05:41:19 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:51504 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752159Ab3IHJlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 05:39:08 -0400
+	Sun, 8 Sep 2013 05:41:17 -0400
+Message-ID: <522C4496.2030009@gmail.com>
+Date: Sun, 08 Sep 2013 11:34:14 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-X-Originating-IP: [89.2.206.189]
-In-Reply-To: <CANq1E4QLCp4xzGsgceuGgX-k7JpiA_ayJy3e0iYoWAMAsc7fCA@mail.gmail.com>
-References: <CAG-2HqVruXZxO1xLvYeAPa1RYmy044UiBXFLAtX5WcHVQVAtfA@mail.gmail.com>
- <CANq1E4RAoLo2=fdZ4SCAnOtbCuJkAAf-BOfUFuK5S+gijpS8ng@mail.gmail.com>
- <CAG-2HqVpAGOgvYKAsOCAac5F4SHB8nEtKtyTor2TYqp_fi7S7w@mail.gmail.com>
- <CANq1E4QPMKvDu5wA9meSt6hKRA7yTA1RhGY6NsSCMTBFmR5f0w@mail.gmail.com>
- <CANq1E4QYrQ-YcL9eGAA4LUozVnPaDNisVex8eMe+Xpj8TaWdeA@mail.gmail.com>
- <CAG-2HqXrpmZCsqXTG7pE9rtgPVrtvkU8gDxngGMtRjkoyqBMHA@mail.gmail.com>
- <CAG-2HqUG=Ocd6qZuy6LYRA49NvyKnguSdnpDgX1Br17SWvkS1A@mail.gmail.com> <CANq1E4QLCp4xzGsgceuGgX-k7JpiA_ayJy3e0iYoWAMAsc7fCA@mail.gmail.com>
-From: Tom Gundersen <teg@jklm.no>
-Date: Sun, 8 Sep 2013 11:38:47 +0200
-Message-ID: <CAG-2HqXbx4_Efsb-qUjGZYDr2u1sqc8uhd_R2iDMm-hSBBtWcA@mail.gmail.com>
-Subject: Re: [REGRESSION] v3.12-rc1: i915_driver_load oopses when sysfb enabled
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Content-Type: text/plain; charset=UTF-8
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+CC: Vladimir Davydov <vdavydov@parallels.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/19] pramfs
+References: <522AE04C.6000002@gmail.com> <CAFLxGvw1mJ5GSWMMZhznU0jJn4pvM+jthyLAtKnL_WvGALB6dg@mail.gmail.com> <522B52BA.6030202@gmail.com> <522C3DDC.4090209@parallels.com>
+In-Reply-To: <522C3DDC.4090209@parallels.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 8, 2013 at 2:13 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> Hi
->
-> On Sun, Sep 8, 2013 at 1:22 AM, Tom Gundersen <teg@jklm.no> wrote:
->> Hi David,
->>
->> On Sat, Sep 7, 2013 at 11:57 PM, Tom Gundersen <teg@jklm.no> wrote:
->>> On Sat, Sep 7, 2013 at 4:30 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
->>>> Attached are two patches. The first one should fix this issue, the
->>>> second one is the rebased ioremap_wc() patch from the other thread.
+Il 08/09/2013 11:05, Vladimir Davydov ha scritto:
+> On 09/07/2013 08:22 PM, Marco Stornelli wrote:
+>> Il 07/09/2013 16:58, richard -rw- weinberger ha scritto:
+>>> On Sat, Sep 7, 2013 at 10:14 AM, Marco Stornelli
+>>> <marco.stornelli@gmail.com> wrote:
+>>>> Hi all,
 >>>>
->>>> Does this fix the issue (and the speed-problems)?
+>>>> this is an attempt to include pramfs in mainline. At the moment pramfs
+>>>> has been included in LTSI kernel. Since last review the code is more
+>>>> or less the same but, with a really big thanks to Vladimir Davydov and
+>>>> Parallels, the development of fsck has been started and we have now
+>>>> the possibility to correct fs errors due to corruption. It's a "young"
+>>>> tool but we are working on it. You can clone the code from our repos:
+>>>>
+>>>> git clone git://git.code.sf.net/p/pramfs/code pramfs-code
+>>>> git clone git://git.code.sf.net/p/pramfs/Tools pramfs-Tools
 >>>
->>> Sadly, no. I added a few printk's to verify that the function you
->>> added is called (it is), but still the same oops.
+>>> I'm a bit confused, what kind of non-volatile RAM is your fs targeting?
+>>> Wouldn't it make sense to use pstore like
+>>> arch/powerpc/platforms/pseries/nvram.c does?
+>>>
 >>
->> A few more datapoints:
+>> Usually battery-backed SRAM, but actually it can be used in any piece
+>> of ram directly accessible and it provides a normal and complete fs
+>> interface. Usually I do the fs test remapping my system ram. You can
+>> find documentation here:
 >>
->> Triggers:
->> X86_SYSFB=y and FB_SIMPLE=n (so no fbdev until i915 is loaded)
->> X86_SYSFB=y and FB_SIMPLE=y
->>
->> Does not trigger:
->> X86_SYSFB=y, FB_EFI=yes, and without the overflow fix (i.e., so we
->> fall back to efifb)
->> X86_SYSFB=n and FB_EFI=y
->> X86_SYSFB=n and FB_EFI=n (so no fbdev until i915 is loaded)
->>
->> Does this make any sense?
+>> http://pramfs.sourceforge.net
 >
-> Thanks a lot for these results. I think I got it know. I will write a
-> patch that marks the resource as busy. See:
->   kernel/resource.c iomem_map_sanity_check()
-> It also contains a hint that we should set this for driver-resources
-> which not directly map to hardware resources (such as veasfb and,
-> obviously, simplefb).
+> I'd like to add that in contrast to pstore, pramfs allows storing any
+> files in it, not only system logs. This can be of value even on machines
+> w/o special devices like sram/nvram: one can store data that should be
+> quickly restored after reboot in conventional ram and use kexec to boot
+> to a new kernel. One of the use cases of this could be checkpointing
+> time-critical services to ram (using criu.org) to be quickly restored
+> after a kernel update providing almost zero-downtime.
 >
-> Following a diff which hopefully fixes this. The other two patches
-> should still be required, though. I will try to write a proper patch
-> tomorrow.
->
-> Thanks a lot for these extensive tests, Tom!
 
-No problem. Thanks for the fix, it works for me!
+Yep. I add that if you use your system ram, your bootloader must be 
+aware because it mustn't clear your memory after a reboot, indeed you 
+can find reference of Pramfs in Uboot documentation:
 
-Cheers,
+http://www.denx.de/wiki/view/DULG/PersistentRAMFileSystem
 
-Tom
-
-> diff --git a/arch/x86/kernel/sysfb_simplefb.c b/arch/x86/kernel/sysfb_simplefb.c
-> index 22513e9..b7bb615 100644
-> --- a/arch/x86/kernel/sysfb_simplefb.c
-> +++ b/arch/x86/kernel/sysfb_simplefb.c
-> @@ -79,7 +79,7 @@ __init int create_simplefb(const struct screen_info *si,
->
->         /* setup IORESOURCE_MEM as framebuffer memory */
->         memset(&res, 0, sizeof(res));
-> -       res.flags = IORESOURCE_MEM;
-> +       res.flags = IORESOURCE_MEM | IORESOURCE_BUSY;
->         res.name = simplefb_resname;
->         res.start = si->lfb_base;
->         res.end = si->lfb_base + len - 1;
+Marco
