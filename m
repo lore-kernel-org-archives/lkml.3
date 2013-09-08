@@ -1,117 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759017Ab3IHQBO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 12:01:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13590 "EHLO
+	id S932208Ab3IHQBt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 12:01:49 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18000 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753815Ab3IHP4q (ORCPT
+	with ESMTP id S1753774Ab3IHP4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 8 Sep 2013 11:56:46 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=ExUpVQylWvYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=0Irq6MuVi30A:10 a=VwQbUJbxAAAA:8 a=LD6OzeOfAdgjjmm37WYA:9 a=jeBq3FmKZ4MA:10 a=q5_7Wjg6fdrZFh_S:21 a=aEl8eKc7-qe0HRI0:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=MHWLlBLng4EA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=I5-oX6zSL1kA:10 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=vOalPaE7P0jNQKfK7rkA:9 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130908151447.881758917@goodmis.org>
+Message-Id: <20130908151448.202985066@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Sun, 08 Sep 2013 11:14:07 -0400
+Date: Sun, 08 Sep 2013 11:14:09 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>
-Subject: [PATCH RT 12/19] rt,ntp: Move call to schedule_delayed_work() to helper thread
+        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>,
+        Steven Rostedt <srostedt@redhat.com>
+Subject: [PATCH RT 14/19] hwlat-detector: Update hwlat_detector to add outer loop detection
 References: <20130908151355.362583092@goodmis.org>
-Content-Disposition: inline; filename=0012-rt-ntp-Move-call-to-schedule_delayed_work-to-helper-.patch
+Content-Disposition: inline; filename=0014-hwlat-detector-Update-hwlat_detector-to-add-outer-lo.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <rostedt@goodmis.org>
 
-The ntp code for notify_cmos_timer() is called from a hard interrupt
-context. schedule_delayed_work() under PREEMPT_RT_FULL calls spinlocks
-that have been converted to mutexes, thus calling schedule_delayed_work()
-from interrupt is not safe.
+The hwlat_detector reads two timestamps in a row, then reports any
+gap between those calls. The problem is, it misses everything between
+the second reading of the time stamp to the first reading of the time stamp
+in the next loop. That's were most of the time is spent, which means,
+chances are likely that it will miss all hardware latencies. This
+defeats the purpose.
 
-Add a helper thread that does the call to schedule_delayed_work and wake
-up that thread instead of calling schedule_delayed_work() directly.
-This is only for CONFIG_PREEMPT_RT_FULL, otherwise the code still calls
-schedule_delayed_work() directly in irq context.
+By also testing the first time stamp from the previous loop second
+time stamp (the outer loop), we are more likely to find a latency.
 
-Note: There's a few places in the kernel that do this. Perhaps the RT
-code should have a dedicated thread that does the checks. Just register
-a notifier on boot up for your check and wake up the thread when
-needed. This will be a todo.
+Setting the threshold to 1, here's what the report now looks like:
+
+1347415723.0232202770	0	2
+1347415725.0234202822	0	2
+1347415727.0236202875	0	2
+1347415729.0238202928	0	2
+1347415731.0240202980	0	2
+1347415734.0243203061	0	2
+1347415736.0245203113	0	2
+1347415738.0247203166	2	0
+1347415740.0249203219	0	3
+1347415742.0251203272	0	3
+1347415743.0252203299	0	3
+1347415745.0254203351	0	2
+1347415747.0256203404	0	2
+1347415749.0258203457	0	2
+1347415751.0260203510	0	2
+1347415754.0263203589	0	2
+1347415756.0265203642	0	2
+1347415758.0267203695	0	2
+1347415760.0269203748	0	2
+1347415762.0271203801	0	2
+1347415764.0273203853	2	0
+
+There's some hardware latency that takes 2 microseconds to run.
 
 Cc: stable-rt@vger.kernel.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Steven Rostedt <srostedt@redhat.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- kernel/time/ntp.c |   40 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
+ drivers/misc/hwlat_detector.c |   32 ++++++++++++++++++++++++++------
+ 1 file changed, 26 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-index bb1edfa..3e93516 100644
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -10,6 +10,7 @@
- #include <linux/workqueue.h>
- #include <linux/hrtimer.h>
- #include <linux/jiffies.h>
-+#include <linux/kthread.h>
- #include <linux/math64.h>
- #include <linux/timex.h>
- #include <linux/time.h>
-@@ -529,10 +530,49 @@ static void sync_cmos_clock(struct work_struct *work)
- 	schedule_delayed_work(&sync_cmos_work, timespec_to_jiffies(&next));
- }
- 
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+/*
-+ * RT can not call schedule_delayed_work from real interrupt context.
-+ * Need to make a thread to do the real work.
-+ */
-+static struct task_struct *cmos_delay_thread;
-+static bool do_cmos_delay;
-+
-+static int run_cmos_delay(void *ignore)
-+{
-+	while (!kthread_should_stop()) {
-+		set_current_state(TASK_INTERRUPTIBLE);
-+		if (do_cmos_delay) {
-+			do_cmos_delay = false;
-+			schedule_delayed_work(&sync_cmos_work, 0);
-+		}
-+		schedule();
-+	}
-+	__set_current_state(TASK_RUNNING);
-+	return 0;
-+}
-+
-+static void notify_cmos_timer(void)
-+{
-+	do_cmos_delay = true;
-+	/* Make visible before waking up process */
-+	smp_wmb();
-+	wake_up_process(cmos_delay_thread);
-+}
-+
-+static __init int create_cmos_delay_thread(void)
-+{
-+	cmos_delay_thread = kthread_run(run_cmos_delay, NULL, "kcmosdelayd");
-+	BUG_ON(!cmos_delay_thread);
-+	return 0;
-+}
-+early_initcall(create_cmos_delay_thread);
-+#else
- static void notify_cmos_timer(void)
+diff --git a/drivers/misc/hwlat_detector.c b/drivers/misc/hwlat_detector.c
+index b7b7c90..f93b8ef 100644
+--- a/drivers/misc/hwlat_detector.c
++++ b/drivers/misc/hwlat_detector.c
+@@ -143,6 +143,7 @@ static void detector_exit(void);
+ struct sample {
+ 	u64		seqnum;		/* unique sequence */
+ 	u64		duration;	/* ktime delta */
++	u64		outer_duration;	/* ktime delta (outer loop) */
+ 	struct timespec	timestamp;	/* wall time */
+ 	unsigned long   lost;
+ };
+@@ -219,11 +220,13 @@ static struct sample *buffer_get_sample(struct sample *sample)
+  */
+ static int get_sample(void *unused)
  {
- 	schedule_delayed_work(&sync_cmos_work, 0);
- }
-+#endif /* CONFIG_PREEMPT_RT_FULL */
+-	ktime_t start, t1, t2;
++	ktime_t start, t1, t2, last_t2;
+ 	s64 diff, total = 0;
+ 	u64 sample = 0;
++	u64 outer_sample = 0;
+ 	int ret = 1;
  
- #else
- static inline void notify_cmos_timer(void) { }
++	last_t2.tv64 = 0;
+ 	start = ktime_get(); /* start timestamp */
+ 
+ 	do {
+@@ -231,7 +234,22 @@ static int get_sample(void *unused)
+ 		t1 = ktime_get();	/* we'll look for a discontinuity */
+ 		t2 = ktime_get();
+ 
++		if (last_t2.tv64) {
++			/* Check the delta from the outer loop (t2 to next t1) */
++			diff = ktime_to_us(ktime_sub(t1, last_t2));
++			/* This shouldn't happen */
++			if (diff < 0) {
++				printk(KERN_ERR BANNER "time running backwards\n");
++				goto out;
++			}
++			if (diff > outer_sample)
++				outer_sample = diff;
++		}
++		last_t2 = t2;
++
+ 		total = ktime_to_us(ktime_sub(t2, start)); /* sample width */
++
++		/* This checks the inner loop (t1 to t2) */
+ 		diff = ktime_to_us(ktime_sub(t2, t1));     /* current diff */
+ 
+ 		/* This shouldn't happen */
+@@ -246,12 +264,13 @@ static int get_sample(void *unused)
+ 	} while (total <= data.sample_width);
+ 
+ 	/* If we exceed the threshold value, we have found a hardware latency */
+-	if (sample > data.threshold) {
++	if (sample > data.threshold || outer_sample > data.threshold) {
+ 		struct sample s;
+ 
+ 		data.count++;
+ 		s.seqnum = data.count;
+ 		s.duration = sample;
++		s.outer_duration = outer_sample;
+ 		s.timestamp = CURRENT_TIME;
+ 		__buffer_add_sample(&s);
+ 
+@@ -738,10 +757,11 @@ static ssize_t debug_sample_fread(struct file *filp, char __user *ubuf,
+ 		}
+ 	}
+ 
+-	len = snprintf(buf, sizeof(buf), "%010lu.%010lu\t%llu\n",
+-		      sample->timestamp.tv_sec,
+-		      sample->timestamp.tv_nsec,
+-		      sample->duration);
++	len = snprintf(buf, sizeof(buf), "%010lu.%010lu\t%llu\t%llu\n",
++		       sample->timestamp.tv_sec,
++		       sample->timestamp.tv_nsec,
++		       sample->duration,
++		       sample->outer_duration);
+ 
+ 
+ 	/* handling partial reads is more trouble than it's worth */
 -- 
 1.7.10.4
 
