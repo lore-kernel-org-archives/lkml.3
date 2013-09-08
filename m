@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758988Ab3IHDtm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:49:42 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56071 "EHLO
+	id S1757410Ab3IHDTD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:19:03 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55973 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756915Ab3IHDTE (ORCPT
+	by vger.kernel.org with ESMTP id S1752397Ab3IHDSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 23:19:04 -0400
+	Sat, 7 Sep 2013 23:18:34 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        "David Vrabel" <david.vrabel@citrix.com>
+CC: akpm@linux-foundation.org, "Teck Choon Giam" <giamteckchoon@gmail.com>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.194950544@decadent.org.uk>
+Message-ID: <lsq.1378608721.943543236@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [080/121] xen/events: initialize local per-cpu mask for all
- possible events
+Subject: [001/121] ifb: Include <linux/sched.h>
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,41 +30,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 84ca7a8e45dafb49cd5ca90a343ba033e2885c17 upstream.
+commit b51c3427e95b ('ifb: fix rcu_sched self-detected stalls', commit
+440d57bc5ff5 upstream) added a call to cond_resched(), which is
+declared in '#include <linux/sched.h>'.  In Linux 3.2.y that header is
+included indirectly in some but not all configurations, so add a
+direct #include.
 
-The sizeof() argument in init_evtchn_cpu_bindings() is incorrect
-resulting in only the first 64 (or 32 in 32-bit guests) ports having
-their bindings being initialized to VCPU 0.
-
-In most cases this does not cause a problem as request_irq() will set
-the irq affinity which will set the correct local per-cpu mask.
-However, if the request_irq() is called on a VCPU other than 0, there
-is a window between the unmasking of the event and the affinity being
-set were an event may be lost because it is not locally unmasked on
-any VCPU. If request_irq() is called on VCPU 0 then local irqs are
-disabled during the window and the race does not occur.
-
-Fix this by initializing all NR_EVENT_CHANNEL bits in the local
-per-cpu masks.
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reported-by: Teck Choon Giam <giamteckchoon@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/xen/events.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -316,7 +316,7 @@ static void init_evtchn_cpu_bindings(voi
+--- a/drivers/net/ifb.c
++++ b/drivers/net/ifb.c
+@@ -34,6 +34,7 @@
+ #include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/moduleparam.h>
++#include <linux/sched.h>
+ #include <net/pkt_sched.h>
+ #include <net/net_namespace.h>
  
- 	for_each_possible_cpu(i)
- 		memset(per_cpu(cpu_evtchn_mask, i),
--		       (i == 0) ? ~0 : 0, sizeof(*per_cpu(cpu_evtchn_mask, i)));
-+		       (i == 0) ? ~0 : 0, NR_EVENT_CHANNELS/8);
- }
- 
- static inline void clear_evtchn(int port)
 
