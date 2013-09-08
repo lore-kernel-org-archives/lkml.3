@@ -1,88 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752225Ab3IHJcp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 05:32:45 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:56237 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054Ab3IHJco (ORCPT
+	id S1752234Ab3IHJjK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 05:39:10 -0400
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:64541 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752054Ab3IHJjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 05:32:44 -0400
-Date: Sun, 8 Sep 2013 12:31:22 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Minchan Kim <minchan@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] staging: zram: minimize `slot_free_lock' usage (v3)
-Message-ID: <20130908093122.GA2267@swordfish>
+	Sun, 8 Sep 2013 05:39:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [89.2.206.189]
+In-Reply-To: <CANq1E4QLCp4xzGsgceuGgX-k7JpiA_ayJy3e0iYoWAMAsc7fCA@mail.gmail.com>
+References: <CAG-2HqVruXZxO1xLvYeAPa1RYmy044UiBXFLAtX5WcHVQVAtfA@mail.gmail.com>
+ <CANq1E4RAoLo2=fdZ4SCAnOtbCuJkAAf-BOfUFuK5S+gijpS8ng@mail.gmail.com>
+ <CAG-2HqVpAGOgvYKAsOCAac5F4SHB8nEtKtyTor2TYqp_fi7S7w@mail.gmail.com>
+ <CANq1E4QPMKvDu5wA9meSt6hKRA7yTA1RhGY6NsSCMTBFmR5f0w@mail.gmail.com>
+ <CANq1E4QYrQ-YcL9eGAA4LUozVnPaDNisVex8eMe+Xpj8TaWdeA@mail.gmail.com>
+ <CAG-2HqXrpmZCsqXTG7pE9rtgPVrtvkU8gDxngGMtRjkoyqBMHA@mail.gmail.com>
+ <CAG-2HqUG=Ocd6qZuy6LYRA49NvyKnguSdnpDgX1Br17SWvkS1A@mail.gmail.com> <CANq1E4QLCp4xzGsgceuGgX-k7JpiA_ayJy3e0iYoWAMAsc7fCA@mail.gmail.com>
+From: Tom Gundersen <teg@jklm.no>
+Date: Sun, 8 Sep 2013 11:38:47 +0200
+Message-ID: <CAG-2HqXbx4_Efsb-qUjGZYDr2u1sqc8uhd_R2iDMm-hSBBtWcA@mail.gmail.com>
+Subject: Re: [REGRESSION] v3.12-rc1: i915_driver_load oopses when sysfb enabled
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calling handle_pending_slot_free() for every RW operation may
-cause unneccessary slot_free_lock locking, because most likely
-process will see NULL slot_free_rq. handle_pending_slot_free()
-only when current detects that slot_free_rq is not NULL.
+On Sun, Sep 8, 2013 at 2:13 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> Hi
+>
+> On Sun, Sep 8, 2013 at 1:22 AM, Tom Gundersen <teg@jklm.no> wrote:
+>> Hi David,
+>>
+>> On Sat, Sep 7, 2013 at 11:57 PM, Tom Gundersen <teg@jklm.no> wrote:
+>>> On Sat, Sep 7, 2013 at 4:30 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>>>> Attached are two patches. The first one should fix this issue, the
+>>>> second one is the rebased ioremap_wc() patch from the other thread.
+>>>>
+>>>> Does this fix the issue (and the speed-problems)?
+>>>
+>>> Sadly, no. I added a few printk's to verify that the function you
+>>> added is called (it is), but still the same oops.
+>>
+>> A few more datapoints:
+>>
+>> Triggers:
+>> X86_SYSFB=y and FB_SIMPLE=n (so no fbdev until i915 is loaded)
+>> X86_SYSFB=y and FB_SIMPLE=y
+>>
+>> Does not trigger:
+>> X86_SYSFB=y, FB_EFI=yes, and without the overflow fix (i.e., so we
+>> fall back to efifb)
+>> X86_SYSFB=n and FB_EFI=y
+>> X86_SYSFB=n and FB_EFI=n (so no fbdev until i915 is loaded)
+>>
+>> Does this make any sense?
+>
+> Thanks a lot for these results. I think I got it know. I will write a
+> patch that marks the resource as busy. See:
+>   kernel/resource.c iomem_map_sanity_check()
+> It also contains a hint that we should set this for driver-resources
+> which not directly map to hardware resources (such as veasfb and,
+> obviously, simplefb).
+>
+> Following a diff which hopefully fixes this. The other two patches
+> should still be required, though. I will try to write a proper patch
+> tomorrow.
+>
+> Thanks a lot for these extensive tests, Tom!
 
-v3: do not acquire zram lock in zram_slot_free().
-v2: protect handle_pending_slot_free() with zram rw_lock.
+No problem. Thanks for the fix, it works for me!
 
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cheers,
 
----
+Tom
 
- drivers/staging/zram/zram_drv.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 91d94b5..a8261b4 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -517,6 +517,7 @@ static void handle_pending_slot_free(struct zram *zram)
- {
- 	struct zram_slot_free *free_rq;
- 
-+	down_write(&zram->lock);
- 	spin_lock(&zram->slot_free_lock);
- 	while (zram->slot_free_rq) {
- 		free_rq = zram->slot_free_rq;
-@@ -525,6 +526,7 @@ static void handle_pending_slot_free(struct zram *zram)
- 		kfree(free_rq);
- 	}
- 	spin_unlock(&zram->slot_free_lock);
-+	up_write(&zram->lock);
- }
- 
- static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
-@@ -532,14 +534,15 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
- {
- 	int ret;
- 
-+	if (zram->slot_free_rq)
-+		handle_pending_slot_free(zram);
-+
- 	if (rw == READ) {
- 		down_read(&zram->lock);
--		handle_pending_slot_free(zram);
- 		ret = zram_bvec_read(zram, bvec, index, offset, bio);
- 		up_read(&zram->lock);
- 	} else {
- 		down_write(&zram->lock);
--		handle_pending_slot_free(zram);
- 		ret = zram_bvec_write(zram, bvec, index, offset);
- 		up_write(&zram->lock);
- 	}
-@@ -753,9 +756,7 @@ static void zram_slot_free(struct work_struct *work)
- 	struct zram *zram;
- 
- 	zram = container_of(work, struct zram, free_work);
--	down_write(&zram->lock);
- 	handle_pending_slot_free(zram);
--	up_write(&zram->lock);
- }
- 
- static void add_slot_free(struct zram *zram, struct zram_slot_free *free_rq)
-
+> diff --git a/arch/x86/kernel/sysfb_simplefb.c b/arch/x86/kernel/sysfb_simplefb.c
+> index 22513e9..b7bb615 100644
+> --- a/arch/x86/kernel/sysfb_simplefb.c
+> +++ b/arch/x86/kernel/sysfb_simplefb.c
+> @@ -79,7 +79,7 @@ __init int create_simplefb(const struct screen_info *si,
+>
+>         /* setup IORESOURCE_MEM as framebuffer memory */
+>         memset(&res, 0, sizeof(res));
+> -       res.flags = IORESOURCE_MEM;
+> +       res.flags = IORESOURCE_MEM | IORESOURCE_BUSY;
+>         res.name = simplefb_resname;
+>         res.start = si->lfb_base;
+>         res.end = si->lfb_base + len - 1;
