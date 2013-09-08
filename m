@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758030Ab3IHDTM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:19:12 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55995 "EHLO
+	id S1759971Ab3IHDno (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:43:44 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56156 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754267Ab3IHDSh (ORCPT
+	by vger.kernel.org with ESMTP id S1756285Ab3IHDTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 23:18:37 -0400
+	Sat, 7 Sep 2013 23:19:12 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Dan Carpenter" <dan.carpenter@oracle.com>,
-        "John W. Linville" <linville@tuxdriver.com>
+CC: akpm@linux-foundation.org,
+        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.518830425@decadent.org.uk>
+Message-ID: <lsq.1378608721.829177920@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [064/121] Hostap: copying wrong data prism2_ioctl_giwaplist()
+Subject: [101/121] powerpc: Don't Oops when accessing /proc/powerpc/lparcfg
+ without hypervisor
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,32 +32,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 909bd5926d474e275599094acad986af79671ac9 upstream.
+commit f5f6cbb61610b7bf9d9d96db9c3979d62a424bab upstream.
 
-We want the data stored in "addr" and "qual", but the extra ampersands
-mean we are copying stack data instead.
+/proc/powerpc/lparcfg is an ancient facility (though still actively used)
+which allows access to some informations relative to the partition when
+running underneath a PAPR compliant hypervisor.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+It makes no sense on non-pseries machines. However, currently, not only
+can it be created on these if the kernel has pseries support, but accessing
+it on such a machine will crash due to trying to do hypervisor calls.
+
+In fact, it should also not do HV calls on older pseries that didn't have
+an hypervisor either.
+
+Finally, it has the plumbing to be a module but is a "bool" Kconfig option.
+
+This fixes the whole lot by turning it into a machine_device_initcall
+that is only created on pseries, and adding the necessary hypervisor
+check before calling the H_GET_EM_PARMS hypercall
+
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+[bwh: Backported to 3.2: lparcfg_cleanup() was a bit different]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/hostap/hostap_ioctl.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/lparcfg.c | 22 +++++++++-------------
+ 1 file changed, 9 insertions(+), 13 deletions(-)
 
---- a/drivers/net/wireless/hostap/hostap_ioctl.c
-+++ b/drivers/net/wireless/hostap/hostap_ioctl.c
-@@ -522,9 +522,9 @@ static int prism2_ioctl_giwaplist(struct
+--- a/arch/powerpc/kernel/lparcfg.c
++++ b/arch/powerpc/kernel/lparcfg.c
+@@ -37,7 +37,13 @@
+ #include <asm/vdso_datapage.h>
+ #include <asm/vio.h>
+ #include <asm/mmu.h>
++#include <asm/machdep.h>
  
- 	data->length = prism2_ap_get_sta_qual(local, addr, qual, IW_MAX_AP, 1);
++
++/*
++ * This isn't a module but we expose that to userspace
++ * via /proc so leave the definitions here
++ */
+ #define MODULE_VERS "1.9"
+ #define MODULE_NAME "lparcfg"
  
--	memcpy(extra, &addr, sizeof(struct sockaddr) * data->length);
-+	memcpy(extra, addr, sizeof(struct sockaddr) * data->length);
- 	data->flags = 1; /* has quality information */
--	memcpy(extra + sizeof(struct sockaddr) * data->length, &qual,
-+	memcpy(extra + sizeof(struct sockaddr) * data->length, qual,
- 	       sizeof(struct iw_quality) * data->length);
+@@ -487,7 +493,8 @@ static void parse_em_data(struct seq_fil
+ {
+ 	unsigned long retbuf[PLPAR_HCALL_BUFSIZE];
  
- 	kfree(addr);
+-	if (plpar_hcall(H_GET_EM_PARMS, retbuf) == H_SUCCESS)
++	if (firmware_has_feature(FW_FEATURE_LPAR) &&
++	    plpar_hcall(H_GET_EM_PARMS, retbuf) == H_SUCCESS)
+ 		seq_printf(m, "power_mode_data=%016lx\n", retbuf[0]);
+ }
+ 
+@@ -772,7 +779,6 @@ static int lparcfg_open(struct inode *in
+ }
+ 
+ static const struct file_operations lparcfg_fops = {
+-	.owner		= THIS_MODULE,
+ 	.read		= seq_read,
+ 	.write		= lparcfg_write,
+ 	.open		= lparcfg_open,
+@@ -799,15 +805,4 @@ static int __init lparcfg_init(void)
+ 	proc_ppc64_lparcfg = ent;
+ 	return 0;
+ }
+-
+-static void __exit lparcfg_cleanup(void)
+-{
+-	if (proc_ppc64_lparcfg)
+-		remove_proc_entry("lparcfg", proc_ppc64_lparcfg->parent);
+-}
+-
+-module_init(lparcfg_init);
+-module_exit(lparcfg_cleanup);
+-MODULE_DESCRIPTION("Interface for LPAR configuration data");
+-MODULE_AUTHOR("Dave Engebretsen");
+-MODULE_LICENSE("GPL");
++machine_device_initcall(pseries, lparcfg_init);
 
