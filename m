@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759780Ab3IHDV3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:21:29 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56051 "EHLO
+	id S932225Ab3IHDVZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:21:25 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55998 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756241Ab3IHDS6 (ORCPT
+	by vger.kernel.org with ESMTP id S1754065Ab3IHDS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 7 Sep 2013 23:18:58 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Dominik Dingel" <dingel@linux.vnet.ibm.com>,
-        "Paolo Bonzini" <pbonzini@redhat.com>,
-        "Christian Borntraeger" <borntraeger@de.ibm.com>
+CC: akpm@linux-foundation.org,
+        "=?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?=" 
+	<u.kleine-koenig@pengutronix.de>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.248353977@decadent.org.uk>
+Message-ID: <lsq.1378608721.183443551@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [120/121] KVM: s390: move kvm_guest_enter,exit closer to sie
+Subject: [041/121] serial/mxs-auart: increase time to wait for transmitter
+ to become idle
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,63 +34,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dominik Dingel <dingel@linux.vnet.ibm.com>
+From: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 
-commit 2b29a9fdcb92bfc6b6f4c412d71505869de61a56 upstream.
+commit 079a036f4283e2b0e5c26080b8c5112bc0cc1831 upstream.
 
-Any uaccess between guest_enter and guest_exit could trigger a page fault,
-the page fault handler would handle it as a guest fault and translate a
-user address as guest address.
+Without this patch the driver waits ~1 ms for the UART to become idle. At
+115200n8 this time is (theoretically) enough to transfer 11.5 characters
+(= 115200 bits/s / (10 Bits/char) * 1ms). As the mxs-auart has a fifo size
+of 16 characters the clock is gated too early. The problem is worse for
+lower baud rates.
 
-Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-[bwh: Backported to 3.2: adjust context and add the rc variable]
+This only happens to really shut down the transmitter in the middle of a
+transfer if /dev/ttyAPPx isn't opened in userspace (e.g. by a getty) but
+was at least once (because the bootloader doesn't disable the transmitter).
+
+So increase the timeout to 20 ms which should be enough for 9600n8, too.
+Moreover skip gating the clock if the timeout is elapsed.
+
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/s390/kvm/kvm-s390.c | 21 ++++++++++++++-------
- 1 file changed, 14 insertions(+), 7 deletions(-)
+ drivers/tty/serial/mxs-auart.c | 21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
 
---- a/arch/s390/kvm/kvm-s390.c
-+++ b/arch/s390/kvm/kvm-s390.c
-@@ -469,6 +469,8 @@ int kvm_arch_vcpu_ioctl_set_mpstate(stru
+--- a/drivers/tty/serial/mxs-auart.c
++++ b/drivers/tty/serial/mxs-auart.c
+@@ -543,7 +543,7 @@ auart_console_write(struct console *co,
+ 	struct mxs_auart_port *s;
+ 	struct uart_port *port;
+ 	unsigned int old_ctrl0, old_ctrl2;
+-	unsigned int to = 1000;
++	unsigned int to = 20000;
  
- static void __vcpu_run(struct kvm_vcpu *vcpu)
- {
-+	int rc;
-+
- 	memcpy(&vcpu->arch.sie_block->gg14, &vcpu->arch.guest_gprs[14], 16);
+ 	if (co->index >	MXS_AUART_PORTS || co->index < 0)
+ 		return;
+@@ -564,18 +564,23 @@ auart_console_write(struct console *co,
  
- 	if (need_resched())
-@@ -479,21 +481,24 @@ static void __vcpu_run(struct kvm_vcpu *
+ 	uart_console_write(port, str, count, mxs_auart_console_putchar);
  
- 	kvm_s390_deliver_pending_interrupts(vcpu);
- 
-+	VCPU_EVENT(vcpu, 6, "entering sie flags %x",
-+		   atomic_read(&vcpu->arch.sie_block->cpuflags));
-+
- 	vcpu->arch.sie_block->icptcode = 0;
- 	local_irq_disable();
- 	kvm_guest_enter();
- 	local_irq_enable();
--	VCPU_EVENT(vcpu, 6, "entering sie flags %x",
--		   atomic_read(&vcpu->arch.sie_block->cpuflags));
--	if (sie64a(vcpu->arch.sie_block, vcpu->arch.guest_gprs)) {
-+	rc = sie64a(vcpu->arch.sie_block, vcpu->arch.guest_gprs);
-+	local_irq_disable();
-+	kvm_guest_exit();
-+	local_irq_enable();
-+
-+	if (rc) {
- 		VCPU_EVENT(vcpu, 3, "%s", "fault in sie instruction");
- 		kvm_s390_inject_program_int(vcpu, PGM_ADDRESSING);
+-	/*
+-	 * Finally, wait for transmitter to become empty
+-	 * and restore the TCR
+-	 */
++	/* Finally, wait for transmitter to become empty ... */
+ 	while (readl(port->membase + AUART_STAT) & AUART_STAT_BUSY) {
++		udelay(1);
+ 		if (!to--)
+ 			break;
+-		udelay(1);
  	}
- 	VCPU_EVENT(vcpu, 6, "exit sie icptcode %d",
- 		   vcpu->arch.sie_block->icptcode);
--	local_irq_disable();
--	kvm_guest_exit();
--	local_irq_enable();
  
- 	memcpy(&vcpu->arch.guest_gprs[14], &vcpu->arch.sie_block->gg14, 16);
+-	writel(old_ctrl0, port->membase + AUART_CTRL0);
+-	writel(old_ctrl2, port->membase + AUART_CTRL2);
++	/*
++	 * ... and restore the TCR if we waited long enough for the transmitter
++	 * to be idle. This might keep the transmitter enabled although it is
++	 * unused, but that is better than to disable it while it is still
++	 * transmitting.
++	 */
++	if (!(readl(port->membase + AUART_STAT) & AUART_STAT_BUSY)) {
++		writel(old_ctrl0, port->membase + AUART_CTRL0);
++		writel(old_ctrl2, port->membase + AUART_CTRL2);
++	}
+ 
+ 	clk_disable(s->clk);
  }
 
