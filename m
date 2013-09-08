@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758392Ab3IHQ7q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 12:59:46 -0400
-Received: from mail-bl2lp0207.outbound.protection.outlook.com ([207.46.163.207]:57796
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753834Ab3IHQ7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 12:59:45 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Kees Cook <keescook@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>
-Subject: Re: [PATCH V3 08/11] kexec: Disable at runtime if the kernel
- enforces module loading restrictions
-Thread-Topic: [PATCH V3 08/11] kexec: Disable at runtime if the kernel
- enforces module loading restrictions
-Thread-Index: AQHOqQBlTgRtcELUZ0K5HxHj5bQ8FZm7apqAgAALY9KAAI6QgIAAB7GAgAAE4lqAAAZ8AA==
-Date: Sun, 8 Sep 2013 16:59:40 +0000
-Message-ID: <1378659580.2300.15.camel@x230>
-References: <1378252218-18798-1-git-send-email-matthew.garrett@nebula.com>
-	 <1378252218-18798-9-git-send-email-matthew.garrett@nebula.com>
-	 <20130908064027.GA3587@kroah.com> <1378622648.2300.4.camel@x230>
-	 <20130908072408.GA5092@kroah.com>
-	 <CAGXu5jLwCt6RtQC+kxcUC69tMydx8DO2QWDv3jK6_mOyT_iNbA@mail.gmail.com>
-	 <20130908161859.GA18946@kroah.com> <1378657487.2300.10.camel@x230>
-	 <20130908163926.GA19665@kroah.com>
-In-Reply-To: <20130908163926.GA19665@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:470:1f07:1371:740c:5537:5f2f:efde]
-x-forefront-prvs: 09634B1196
-x-forefront-antispam-report: SFV:NSPM;SFS:(377424004)(24454002)(189002)(199002)(81816001)(81342001)(69226001)(65816001)(80022001)(46102001)(63696002)(51856001)(4396001)(76796001)(76786001)(81686001)(81542001)(50986001)(47976001)(49866001)(47736001)(33716001)(33646001)(74366001)(47446002)(74706001)(74662001)(74502001)(31966008)(74876001)(80976001)(83072001)(77982001)(59766001)(56776001)(54316002)(79102001)(77096001)(56816003)(53806001)(76482001)(54356001)(83322001)(19580405001)(19580395003)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB221;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:740c:5537:5f2f:efde;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <EA8EF98376F32C48B29FAF8AB34D7607@namprd05.prod.outlook.com>
-MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+	id S1758449Ab3IHRBn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 13:01:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55434 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752572Ab3IHRBm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Sep 2013 13:01:42 -0400
+Message-ID: <1378659692.2631.18.camel@ul30vt.home>
+Subject: [GIT PULL] VFIO for v3.12
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, Yann Droneaud <ydroneaud@opteya.com>,
+        Zi Shen Lim <zishen.lim@linaro.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>
+Date: Sun, 08 Sep 2013 11:01:32 -0600
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r88GxpmH015518
 
-On Sun, 2013-09-08 at 09:39 -0700, Greg KH wrote:
+Hi Linus,
 
-> But I want, for other reasons (i.e. safety in layers), signed kernel
-> modules.  I also might actually want some debugfs files in some random
-> driver (like this series removes).
+The following changes since commit cb3e4330e697dffaf3d9cefebc9c7e7d39c89f2e:
 
-You want a configuration that makes no sense. There's no reason that the
-kernel should make that easy.
+  Merge branch 'x86-mm-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip (2013-09-04 09:39:26 -0700)
 
-> Heck, look at Red Hat.  They have been shipping signed kernel modules
-> for _years_ and yet they do not disable kexec.  Have they been "doing it
-> wrong" all of this time?   Perhaps people want signed modules just for
-> support reasons, not "security" reasons.
+are available in the git repository at:
 
-Then they do what Red Hat does and don't set CONFIG_SIG_ENFORCE.
 
-> Don't take away those options.
+  git://github.com/awilliam/linux-vfio.git tags/vfio-v3.12-rc0
 
-Where's the option to let me let unprivileged users set random MSRs?
-Where's the option to let root disable STRICT_DEVMEM at runtime? We
-don't offer these options because *they make no sense*. Locking your
-door while leaving your window open may make you feel better, but it
-doesn't improve the security of your house.
+for you to fetch changes up to dac09b57c0ff57e55dd6fa5109076c8af0468a75:
 
--- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+  vfio: fix documentation (2013-09-05 16:36:21 -0600)
+
+----------------------------------------------------------------
+VFIO updates include safer default file flags for VFIO device fds,
+an external user interface exported to allow other modules to hold
+references to VFIO groups, a fix to test for extended config space
+on PCIe and PCI-x, and new hot reset interfaces for PCI devices
+which allows the user to do PCI bus/slot resets when all of the
+devices affected by the reset are owned by the user.
+
+For this last feature, the PCI bus reset interface, I depend on
+changes already merged from Bjorn's PCI pull request.  I therefore
+merged my tree up to commit cb3e433, which I think was the correct
+action, but as Stephen Rothwell noted, I failed to provide a commit
+message indicating why the merge was required.  Sorry for that.
+Thanks,
+Alex
+
+----------------------------------------------------------------
+Alex Williamson (5):
+      vfio: Add O_CLOEXEC flag to vfio device fd
+      vfio-pci: Use fdget() rather than eventfd_fget()
+      vfio-pci: Test for extended config space
+      Merge remote branch 'origin/master' into next-merge
+      vfio-pci: PCI hot reset interface
+
+Alexey Kardashevskiy (1):
+      vfio: add external user support
+
+Yann Droneaud (1):
+      vfio: use get_unused_fd_flags(0) instead of get_unused_fd()
+
+Zi Shen Lim (1):
+      vfio: fix documentation
+
+ Documentation/vfio.txt             |   8 +-
+ drivers/vfio/pci/vfio_pci.c        | 286 ++++++++++++++++++++++++++++++++++++-
+ drivers/vfio/pci/vfio_pci_config.c |  11 +-
+ drivers/vfio/pci/vfio_pci_intrs.c  |  35 +++--
+ drivers/vfio/vfio.c                |  64 ++++++++-
+ include/linux/vfio.h               |   7 +
+ include/uapi/linux/vfio.h          |  38 +++++
+ 7 files changed, 421 insertions(+), 28 deletions(-)
+
