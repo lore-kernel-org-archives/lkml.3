@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760143Ab3IHDvU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:51:20 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56241 "EHLO
+	id S932223Ab3IHDwP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:52:15 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56020 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756936Ab3IHDTB (ORCPT
+	by vger.kernel.org with ESMTP id S1754499Ab3IHDS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 23:19:01 -0400
+	Sat, 7 Sep 2013 23:18:59 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "YOKOTA Hiroshi" <yokota@netlab.is.tsukuba.ac.jp>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "Guenter Roeck" <linux@roeck-us.net>,
-        "GOTO Masanori" <gotom@debian.or.jp>, "Arnd Bergmann" <arnd@arndb.de>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+CC: akpm@linux-foundation.org, "Rusty Russell" <rusty@rustcorp.com.au>,
+        "FuXiangChun" <xfu@redhat.com>, "Sibiao Luo" <sluo@redhat.com>,
+        "chayang" <chayang@redhat.com>, "Qunfang Zhang" <qzhang@redhat.com>,
+        "Amit Shah" <amit.shah@redhat.com>,
+        "YOGANANTH SUBRAMANIAN" <anantyog@in.ibm.com>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.611131777@decadent.org.uk>
+Message-ID: <lsq.1378608721.458374503@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [090/121] SCSI: nsp32: use mdelay instead of large udelay  constants
+Subject: [045/121] virtio: console: clean up port data immediately at time
+ of unplug
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,33 +35,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Amit Shah <amit.shah@redhat.com>
 
-commit b497ceb964a80ebada3b9b3cea4261409039e25a upstream.
+commit ea3768b4386a8d1790f4cc9a35de4f55b92d6442 upstream.
 
-ARM cannot handle udelay for more than 2 miliseconds, so we
-should use mdelay instead for those.
+We used to keep the port's char device structs and the /sys entries
+around till the last reference to the port was dropped.  This is
+actually unnecessary, and resulted in buggy behaviour:
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: GOTO Masanori <gotom@debian.or.jp>
-Cc: YOKOTA Hiroshi <yokota@netlab.is.tsukuba.ac.jp>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+1. Open port in guest
+2. Hot-unplug port
+3. Hot-plug a port with the same 'name' property as the unplugged one
+
+This resulted in hot-plug being unsuccessful, as a port with the same
+name already exists (even though it was unplugged).
+
+This behaviour resulted in a warning message like this one:
+
+-------------------8<---------------------------------------
+WARNING: at fs/sysfs/dir.c:512 sysfs_add_one+0xc9/0x130() (Not tainted)
+Hardware name: KVM
+sysfs: cannot create duplicate filename
+'/devices/pci0000:00/0000:00:04.0/virtio0/virtio-ports/vport0p1'
+
+Call Trace:
+ [<ffffffff8106b607>] ? warn_slowpath_common+0x87/0xc0
+ [<ffffffff8106b6f6>] ? warn_slowpath_fmt+0x46/0x50
+ [<ffffffff811f2319>] ? sysfs_add_one+0xc9/0x130
+ [<ffffffff811f23e8>] ? create_dir+0x68/0xb0
+ [<ffffffff811f2469>] ? sysfs_create_dir+0x39/0x50
+ [<ffffffff81273129>] ? kobject_add_internal+0xb9/0x260
+ [<ffffffff812733d8>] ? kobject_add_varg+0x38/0x60
+ [<ffffffff812734b4>] ? kobject_add+0x44/0x70
+ [<ffffffff81349de4>] ? get_device_parent+0xf4/0x1d0
+ [<ffffffff8134b389>] ? device_add+0xc9/0x650
+
+-------------------8<---------------------------------------
+
+Instead of relying on guest applications to release all references to
+the ports, we should go ahead and unregister the port from all the core
+layers.  Any open/read calls on the port will then just return errors,
+and an unplug/plug operation on the host will succeed as expected.
+
+This also caused buggy behaviour in case of the device removal (not just
+a port): when the device was removed (which means all ports on that
+device are removed automatically as well), the ports with active
+users would clean up only when the last references were dropped -- and
+it would be too late then to be referencing char device pointers,
+resulting in oopses:
+
+-------------------8<---------------------------------------
+PID: 6162   TASK: ffff8801147ad500  CPU: 0   COMMAND: "cat"
+ #0 [ffff88011b9d5a90] machine_kexec at ffffffff8103232b
+ #1 [ffff88011b9d5af0] crash_kexec at ffffffff810b9322
+ #2 [ffff88011b9d5bc0] oops_end at ffffffff814f4a50
+ #3 [ffff88011b9d5bf0] die at ffffffff8100f26b
+ #4 [ffff88011b9d5c20] do_general_protection at ffffffff814f45e2
+ #5 [ffff88011b9d5c50] general_protection at ffffffff814f3db5
+    [exception RIP: strlen+2]
+    RIP: ffffffff81272ae2  RSP: ffff88011b9d5d00  RFLAGS: 00010246
+    RAX: 0000000000000000  RBX: ffff880118901c18  RCX: 0000000000000000
+    RDX: ffff88011799982c  RSI: 00000000000000d0  RDI: 3a303030302f3030
+    RBP: ffff88011b9d5d38   R8: 0000000000000006   R9: ffffffffa0134500
+    R10: 0000000000001000  R11: 0000000000001000  R12: ffff880117a1cc10
+    R13: 00000000000000d0  R14: 0000000000000017  R15: ffffffff81aff700
+    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
+ #6 [ffff88011b9d5d00] kobject_get_path at ffffffff8126dc5d
+ #7 [ffff88011b9d5d40] kobject_uevent_env at ffffffff8126e551
+ #8 [ffff88011b9d5dd0] kobject_uevent at ffffffff8126e9eb
+ #9 [ffff88011b9d5de0] device_del at ffffffff813440c7
+
+-------------------8<---------------------------------------
+
+So clean up when we have all the context, and all that's left to do when
+the references to the port have dropped is to free up the port struct
+itself.
+
+Reported-by: chayang <chayang@redhat.com>
+Reported-by: YOGANANTH SUBRAMANIAN <anantyog@in.ibm.com>
+Reported-by: FuXiangChun <xfu@redhat.com>
+Reported-by: Qunfang Zhang <qzhang@redhat.com>
+Reported-by: Sibiao Luo <sluo@redhat.com>
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/scsi/nsp32.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/char/virtio_console.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/scsi/nsp32.c
-+++ b/drivers/scsi/nsp32.c
-@@ -2927,7 +2927,7 @@ static void nsp32_do_bus_reset(nsp32_hw_
- 	 * reset SCSI bus
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -1267,14 +1267,6 @@ static void remove_port(struct kref *kre
+ 
+ 	port = container_of(kref, struct port, kref);
+ 
+-	sysfs_remove_group(&port->dev->kobj, &port_attribute_group);
+-	device_destroy(pdrvdata.class, port->dev->devt);
+-	cdev_del(port->cdev);
+-
+-	kfree(port->name);
+-
+-	debugfs_remove(port->debugfs_file);
+-
+ 	kfree(port);
+ }
+ 
+@@ -1323,6 +1315,14 @@ static void unplug_port(struct port *por
  	 */
- 	nsp32_write1(base, SCSI_BUS_CONTROL, BUSCTL_RST);
--	udelay(RESET_HOLD_TIME);
-+	mdelay(RESET_HOLD_TIME / 1000);
- 	nsp32_write1(base, SCSI_BUS_CONTROL, 0);
- 	for(i = 0; i < 5; i++) {
- 		intrdat = nsp32_read2(base, IRQ_STATUS); /* dummy read */
+ 	port->portdev = NULL;
+ 
++	sysfs_remove_group(&port->dev->kobj, &port_attribute_group);
++	device_destroy(pdrvdata.class, port->dev->devt);
++	cdev_del(port->cdev);
++
++	kfree(port->name);
++
++	debugfs_remove(port->debugfs_file);
++
+ 	/*
+ 	 * Locks around here are not necessary - a port can't be
+ 	 * opened after we removed the port struct from ports_list
 
