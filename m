@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759283Ab3IHDT6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:19:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56088 "EHLO
+	id S1759265Ab3IHDT4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:19:56 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56041 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756320Ab3IHDSs (ORCPT
+	by vger.kernel.org with ESMTP id S1754779Ab3IHDSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 7 Sep 2013 23:18:48 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org
+CC: akpm@linux-foundation.org, "Richard Kuo" <rkuo@codeaurora.org>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.929768188@decadent.org.uk>
+Message-ID: <lsq.1378608721.55222056@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [089/121] Revert "PM / Domains: Fix handling of wakeup devices
- during system resume"
+Subject: [098/121] Hexagon: misc compile warning/error cleanup due to
+ missing headers
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,26 +31,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Richard Kuo <rkuo@codeaurora.org>
 
-This reverts commit 5c6156fac087f551cbd57499f4bed2fc614d70cd, which
-was commit cc85b20780562d404e18a47b9b55b4a5102ae53e upstream.
+commit 6bbbc30ce6b0ae428575c8af7c2a6c342c534e19 upstream.
 
-It broke ARM && PM configurations by adding a call to
-genpd_dev_active_wakeup() which was only added in Linux 3.3.
+Fixed warnings/errors for EXPORT_SYMBOL, linux_binprm, elf related
+defines
 
+Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/base/power/domain.c
-+++ b/drivers/base/power/domain.c
-@@ -751,8 +751,7 @@
- 	if (IS_ERR(genpd))
- 		return -EINVAL;
+ arch/hexagon/kernel/dma.c    | 1 +
+ arch/hexagon/kernel/ptrace.c | 1 +
+ arch/hexagon/kernel/time.c   | 1 +
+ arch/hexagon/kernel/vdso.c   | 1 +
+ 4 files changed, 4 insertions(+)
+
+--- a/arch/hexagon/kernel/dma.c
++++ b/arch/hexagon/kernel/dma.c
+@@ -22,6 +22,7 @@
+ #include <linux/bootmem.h>
+ #include <linux/genalloc.h>
+ #include <asm/dma-mapping.h>
++#include <linux/module.h>
  
--	if (genpd->suspend_power_off
--	    || (dev->power.wakeup_path && genpd_dev_active_wakeup(genpd, dev)))
-+	if (genpd->suspend_power_off)
- 		return 0;
+ struct dma_map_ops *dma_ops;
+ EXPORT_SYMBOL(dma_ops);
+--- a/arch/hexagon/kernel/ptrace.c
++++ b/arch/hexagon/kernel/ptrace.c
+@@ -28,6 +28,7 @@
+ #include <linux/ptrace.h>
+ #include <linux/regset.h>
+ #include <linux/user.h>
++#include <linux/elf.h>
  
- 	/*
+ #include <asm/system.h>
+ #include <asm/user.h>
+--- a/arch/hexagon/kernel/time.c
++++ b/arch/hexagon/kernel/time.c
+@@ -28,6 +28,7 @@
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+ #include <linux/of_irq.h>
++#include <linux/module.h>
+ 
+ #include <asm/timer-regs.h>
+ #include <asm/hexagon_vm.h>
+--- a/arch/hexagon/kernel/vdso.c
++++ b/arch/hexagon/kernel/vdso.c
+@@ -21,6 +21,7 @@
+ #include <linux/err.h>
+ #include <linux/mm.h>
+ #include <linux/vmalloc.h>
++#include <linux/binfmts.h>
+ 
+ #include <asm/vdso.h>
+ 
 
