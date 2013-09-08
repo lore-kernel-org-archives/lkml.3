@@ -1,85 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751351Ab3IHVdG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 17:33:06 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:58097 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab3IHVdE (ORCPT
+	id S1751353Ab3IHVpg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 17:45:36 -0400
+Received: from mail-vb0-f41.google.com ([209.85.212.41]:63298 "EHLO
+	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217Ab3IHVpe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 17:33:04 -0400
+	Sun, 8 Sep 2013 17:45:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <1378675264-3005-1-git-send-email-tobias.johannes.klausmann@mni.thm.de>
-References: <CAKb7UviRb_ao_nB8Q3pa9ePm+yUGd8u7PDREv5wNfCheyGTZjQ@mail.gmail.com>
-	<1378675264-3005-1-git-send-email-tobias.johannes.klausmann@mni.thm.de>
-Date: Mon, 9 Sep 2013 07:33:02 +1000
-Message-ID: <CAPM=9tyCOdzC1NYy7jt+zh3WOuzubaO3b8vwFVast9ec=BWOkA@mail.gmail.com>
-Subject: Re: [Nouveau] 3.12rc1-pre Nouveau? oops
-From: Dave Airlie <airlied@gmail.com>
-To: Tobias Klausmann <tobias.johannes.klausmann@mni.thm.de>
-Cc: Ilia Mirkin <imirkin@alum.mit.edu>, Dave Airlie <airlied@linux.ie>,
-        nouveau <nouveau@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=001a11c379ec32522b04e5e60426
+In-Reply-To: <CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
+References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com>
+	<1375758759-29629-2-git-send-email-Waiman.Long@hp.com>
+	<CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
+	<1377751465.4028.20.camel@pasglop>
+	<20130829070012.GC27322@gmail.com>
+	<CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
+	<CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
+	<CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
+Date: Sun, 8 Sep 2013 14:45:32 -0700
+X-Google-Sender-Auth: HbuJqVgK6BEIUKNXaKlTIf24Y5U
+Message-ID: <CA+55aFxEjDYhY3i6B2okMWZXFiiq7hibTdeOD+OHAhNA7=XV1A@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Waiman Long <Waiman.Long@hp.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11c379ec32522b04e5e60426
-Content-Type: text/plain; charset=ISO-8859-1
+Al, this is mainly a rambling question for you, but others left on the
+Cc just FYI..
 
->> Looks like you have Optimus (intel + nvidia), and the backtrace has
->> runtime pm in it, which is something new Dave added for 3.12, adding
->> him in explicitly. The simplest explanation is that disp->init is
->> NULL. And it seems like there are no outputs from the earlier nouveau
->> init prints. I guess that the call to nouveau_display_resume from
->> nouveau_pmops_runtime_resume should be guarded by a if
->> (dev->mode_config.num_crtc) like it is everywhere else.
->>
->>   -ilia
+On Thu, Aug 29, 2013 at 4:42 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-> Your guess was right, this (hopefully attached patch) fixes it for me!
+> So I fixed the VFS layer instead. With dput() and friends using
+> lockrefs, the only thing remaining in the hot RCU dentry lookup path
+> was the nasty __d_rcu_to_refcount() thing in complete_walk(). I
+> rewrote that to locklessly increment the refcount when it was nonzero,
+> and get the lock if it was zero, and that all seems to work fine.
 
-Does it look like this one?
+Today I realized that my new simplified d_rcu_to_refcount() was
+fundamentally buggy in a really annoying way.
 
-Dave.
+I had worried mainly about the races with the dentry being
+invalidated, and how we must not touch the dentry reference count if
+it might be dead, because once the dentry has been killed, it cannot
+be killed again.
 
---001a11c379ec32522b04e5e60426
-Content-Type: application/octet-stream; 
-	name="0001-drm-nouveau-fix-oops-on-runtime-suspend-resume.patch"
-Content-Disposition: attachment; 
-	filename="0001-drm-nouveau-fix-oops-on-runtime-suspend-resume.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hlcs2cpf0
+My lockref_get_or_lock() avoided all that by making sure that it
+always got the reference on a dentry that was still live, and this
+everything was fine. If it turns out that the sequence count says that
+the lookup wasn't valid, we could just dput() that dentry, and
+everything was fine.
 
-RnJvbSA3NWRmMmFjZTc3MGY5YzE2MjliZjUyZGRlYTQyOGM0MWY0YWRiNDFjIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBEYXZlIEFpcmxpZSA8YWlybGllZEBnbWFpbC5jb20+CkRhdGU6
-IE1vbiwgOSBTZXAgMjAxMyAwNzozMDo1NiArMTAwMApTdWJqZWN0OiBbUEFUQ0hdIGRybS9ub3V2
-ZWF1OiBmaXggb29wcyBvbiBydW50aW1lIHN1c3BlbmQvcmVzdW1lCgppZiB3ZSBoYXZlIG5vIGNy
-dGNzIHdlIG5lZWQgdG8gbm90IGNhbGwgdGhlIGRpc3BsYXkgcmVzdW1lIGNvZGUuCgpSZXBvcnRl
-ZC1ieTogVG9iaWFzIEtsYXVzbWFubiA8dG9iaWFzLmpvaGFubmVzLmtsYXVzbWFubkBtbmkudGht
-LmRlPgpTaWduZWQtb2ZmLWJ5OiBEYXZlIEFpcmxpZSA8YWlybGllZEByZWRoYXQuY29tPgotLS0K
-IGRyaXZlcnMvZ3B1L2RybS9ub3V2ZWF1L25vdXZlYXVfZHJtLmMgfCA5ICsrKysrKy0tLQogMSBm
-aWxlIGNoYW5nZWQsIDYgaW5zZXJ0aW9ucygrKSwgMyBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQg
-YS9kcml2ZXJzL2dwdS9kcm0vbm91dmVhdS9ub3V2ZWF1X2RybS5jIGIvZHJpdmVycy9ncHUvZHJt
-L25vdXZlYXUvbm91dmVhdV9kcm0uYwppbmRleCA4ODYzNjQ0Li5lODkzYzUzIDEwMDY0NAotLS0g
-YS9kcml2ZXJzL2dwdS9kcm0vbm91dmVhdS9ub3V2ZWF1X2RybS5jCisrKyBiL2RyaXZlcnMvZ3B1
-L2RybS9ub3V2ZWF1L25vdXZlYXVfZHJtLmMKQEAgLTYzNiw3ICs2MzYsOCBAQCBpbnQgbm91dmVh
-dV9wbW9wc19yZXN1bWUoc3RydWN0IGRldmljZSAqZGV2KQogCQlub3V2ZWF1X2ZiY29uX3NldF9z
-dXNwZW5kKGRybV9kZXYsIDApOwogCiAJbm91dmVhdV9mYmNvbl96ZmlsbF9hbGwoZHJtX2Rldik7
-Ci0Jbm91dmVhdV9kaXNwbGF5X3Jlc3VtZShkcm1fZGV2KTsKKwlpZiAoZHJtX2Rldi0+bW9kZV9j
-b25maWcubnVtX2NydGMpCisJCW5vdXZlYXVfZGlzcGxheV9yZXN1bWUoZHJtX2Rldik7CiAJbnZf
-c3VzcGVuZF9zZXRfcHJpbnRrX2xldmVsKE5WX0RCR19ERUJVRyk7CiAJcmV0dXJuIDA7CiB9CkBA
-IC02NzEsNyArNjcyLDggQEAgc3RhdGljIGludCBub3V2ZWF1X3Btb3BzX3RoYXcoc3RydWN0IGRl
-dmljZSAqZGV2KQogCWlmIChkcm1fZGV2LT5tb2RlX2NvbmZpZy5udW1fY3J0YykKIAkJbm91dmVh
-dV9mYmNvbl9zZXRfc3VzcGVuZChkcm1fZGV2LCAwKTsKIAlub3V2ZWF1X2ZiY29uX3pmaWxsX2Fs
-bChkcm1fZGV2KTsKLQlub3V2ZWF1X2Rpc3BsYXlfcmVzdW1lKGRybV9kZXYpOworCWlmIChkcm1f
-ZGV2LT5tb2RlX2NvbmZpZy5udW1fY3J0YykKKwkJbm91dmVhdV9kaXNwbGF5X3Jlc3VtZShkcm1f
-ZGV2KTsKIAludl9zdXNwZW5kX3NldF9wcmludGtfbGV2ZWwoTlZfREJHX0RFQlVHKTsKIAlyZXR1
-cm4gMDsKIH0KQEAgLTkwNiw3ICs5MDgsOCBAQCBzdGF0aWMgaW50IG5vdXZlYXVfcG1vcHNfcnVu
-dGltZV9yZXN1bWUoc3RydWN0IGRldmljZSAqZGV2KQogCXBjaV9zZXRfbWFzdGVyKHBkZXYpOwog
-CiAJcmV0ID0gbm91dmVhdV9kb19yZXN1bWUoZHJtX2Rldik7Ci0Jbm91dmVhdV9kaXNwbGF5X3Jl
-c3VtZShkcm1fZGV2KTsKKwlpZiAoZHJtX2Rldi0+bW9kZV9jb25maWcubnVtX2NydGMpCisJCW5v
-dXZlYXVfZGlzcGxheV9yZXN1bWUoZHJtX2Rldik7CiAJZHJtX2ttc19oZWxwZXJfcG9sbF9lbmFi
-bGUoZHJtX2Rldik7CiAJLyogZG8gbWFnaWMgKi8KIAludl9tYXNrKGRldmljZSwgMHg4ODQ4OCwg
-KDEgPDwgMjUpLCAoMSA8PCAyNSkpOwotLSAKMS44LjEuNAoK
---001a11c379ec32522b04e5e60426--
+And you know what? That's even true. It's true from a dentry standpoint.
+
+But today I was - for totally unrelated reasons, just as a result of
+looking at performance profiles - looking at dput(), and realized that
+dput() really *can* sleep. Not for any actual dentry reasons, but
+because the inode associated with the dentry is being released. And
+the reason I noticed this from the performance profile was that the
+dput code did
+
+      if (dentry->d_lockref.count == 1)
+            might_sleep();
+
+where reading that lockref count showed up in the profile.
+
+But that test never triggered any of my thinking, and it's racy
+anyway, and the condition we care about is another race, which means
+that it not only didn't trigger my thinking, it doesn't trigger in any
+normal testing either. The fact is, dput() can always sleep,
+regardless of count, because of the race (ok, the exception being that
+you actually have multiple references to the same dentry _yourself_,
+but who does that? Nobody).
+
+Anyway, the reason the new d_rcu_to_refcount() is buggy isn't because
+it does bad things to dentries - the dentry reference counts and
+lifetimes are perfectly fine. No, the reason it does bad things is
+that it does an otherwise perfectly fine dput() in a context where it
+definitely is _not_ fine to sleep. We are in RCU lookup, so we are in
+a RCU-locked region, we hold the percpu vfsmount_lock spinlock, and in
+fact in unlazy_walk() we also potentially hold the "fs->lock"
+spinlock.
+
+Ugh, ugh, ugh.
+
+I really like the much simplified d_rcu_to_refcount() conceptually,
+though. So my current plan is to keep it, but to just delay the
+"dput()" it does until after we've done the "unlock_rcu_walk()".
+
+"complete_walk()" is actually quite simple to fix, because it does the
+unlock_rcu_walk() itself - so it's fairly trivial to just move the
+dput() to be after it. In preparation for this, I already ended up
+committing my "dead lockref" dentry code, because that simplifies
+d_rcu_to_refcount() to the degree that splitting the code up into the
+callers and then moving the dput() looks like the right thing to do.
+
+The problem I see right now is unlazy_walk(). It does *not* do the
+unlock_rcu_walk() itself for the error case (and it's the error case
+that needs this), but instead just returns -ECHILD and expects the
+caller to do it. Even then it happens fairly obscurely in
+"terminate_walk()".
+
+So Al, any ideas? I currently have two:
+
+ - always do that unlock_rcu_walk() in unlazy_walk(), and exit RCU
+mode even for the error case (similar to how complete_walk() does it).
+
+   That makes solving this for unlazy_walk() as straightforward as it
+is for complete_walk(), and this is, I think, the right thing to do.
+
+ - add a couple of "to be freed" dentry pointers to the 'nd' and let
+terminate_walk() do the dput(). This leaves the unlazy_walk()
+semantics alone.
+
+The second one is hacky, but it doesn't change the semantics of
+unlzay_walk(). I think the current semantics (drop out of RCU mode on
+success, but not on failure) are nasty, but I wonder if there is some
+really subtle reason for it. So the hacky second solution has got that
+whole "no change to odd/subtle semantics" thing going for it..
+
+Comments?
+
+                 Linus
