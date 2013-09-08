@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759218Ab3IHDTu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:19:50 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56108 "EHLO
+	id S1759205Ab3IHDTs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:19:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56172 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755982Ab3IHDSq (ORCPT
+	by vger.kernel.org with ESMTP id S1756464Ab3IHDSq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 7 Sep 2013 23:18:46 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Alex Deucher" <alexander.deucher@amd.com>
+CC: akpm@linux-foundation.org, "Paul Gortmaker" <paul.gortmaker@windriver.com>,
+        "Bjorn Helgaas" <bhelgaas@google.com>,
+        "David Howells" <dhowells@redhat.com>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.644794477@decadent.org.uk>
+Message-ID: <lsq.1378608721.716528088@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [051/121] drm/radeon/atom: initialize more atom interpretor
- elements to 0
+Subject: [111/121] pci: frv architecture needs generic setup-bus
+ infrastructure
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,43 +33,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-commit 42a21826dc54583cdb79cc8477732e911ac9c376 upstream.
+commit cd0a2bfb77a3edeecd652081e0b1a163d3b0696b upstream.
 
-The ProcessAuxChannel table on some rv635 boards assumes
-the divmul members are initialized to 0 otherwise we get
-an invalid fb offset since it has a bad mask set when
-setting the fb base.  While here initialize all the
-atom interpretor elements to 0.
+Otherwise we get this link failure for frv's defconfig:
 
-Fixes:
-https://bugzilla.kernel.org/show_bug.cgi?id=60639
+   LD      .tmp_vmlinux1
+ drivers/built-in.o: In function `pci_assign_resource':
+ (.text+0xbf0c): undefined reference to `pci_cardbus_resource_alignment'
+ drivers/built-in.o: In function `pci_setup':
+ pci.c:(.init.text+0x174): undefined reference to `pci_realloc_get_opt'
+ pci.c:(.init.text+0x1a0): undefined reference to `pci_realloc_get_opt'
+ make[1]: *** [.tmp_vmlinux1] Error 1
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Cc: David Howells <dhowells@redhat.com>
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/radeon/atom.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/pci/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/radeon/atom.c
-+++ b/drivers/gpu/drm/radeon/atom.c
-@@ -1220,12 +1220,17 @@ int atom_execute_table(struct atom_conte
- 	int r;
- 
- 	mutex_lock(&ctx->mutex);
-+	/* reset data block */
-+	ctx->data_block = 0;
- 	/* reset reg block */
- 	ctx->reg_block = 0;
- 	/* reset fb window */
- 	ctx->fb_base = 0;
- 	/* reset io mode */
- 	ctx->io_mode = ATOM_IO_MM;
-+	/* reset divmul */
-+	ctx->divmul[0] = 0;
-+	ctx->divmul[1] = 0;
- 	r = atom_execute_table_locked(ctx, index, params);
- 	mutex_unlock(&ctx->mutex);
- 	return r;
+diff --git a/drivers/pci/Makefile b/drivers/pci/Makefile
+index 083a49f..165274c 100644
+--- a/drivers/pci/Makefile
++++ b/drivers/pci/Makefile
+@@ -42,6 +42,7 @@ obj-$(CONFIG_UNICORE32) += setup-bus.o setup-irq.o
+ obj-$(CONFIG_PARISC) += setup-bus.o
+ obj-$(CONFIG_SUPERH) += setup-bus.o setup-irq.o
+ obj-$(CONFIG_PPC) += setup-bus.o
++obj-$(CONFIG_FRV) += setup-bus.o
+ obj-$(CONFIG_MIPS) += setup-bus.o setup-irq.o
+ obj-$(CONFIG_X86_VISWS) += setup-irq.o
+ obj-$(CONFIG_MN10300) += setup-bus.o
 
