@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751502Ab3IHE6V (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 00:58:21 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:45116 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023Ab3IHE6U (ORCPT
+	id S1751481Ab3IHF2V (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 01:28:21 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:53445 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365Ab3IHF2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 00:58:20 -0400
-Date: Sun, 8 Sep 2013 05:58:14 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Ian Kent <raven@themaw.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Waiman Long <Waiman.Long@hp.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        George Spelvin <linux@horizon.com>, John Stoffel <john@stoffel.org>,
-        Sage Weil <sage@inktank.com>
-Subject: Re: [PATCH v3 1/1] dcache: Translating dentry into pathname without
- taking rename_lock
-Message-ID: <20130908045814.GG13318@ZenIV.linux.org.uk>
-References: <1378483738-10129-2-git-send-email-Waiman.Long@hp.com>
- <CA+55aFw8UuEmKsSdGZPUmcekZheNimEt4U81i7Bz0LipGzsFmg@mail.gmail.com>
- <20130906210546.GW13318@ZenIV.linux.org.uk>
- <CA+55aFzf-reQNSQt_fhHfUe_tB19n2qEa=Rd=wFEBJEVALmezA@mail.gmail.com>
- <20130907000044.GX13318@ZenIV.linux.org.uk>
- <CA+55aFwy_x65HaLOgKuK7AyQayraU4M6q78L_hnAvLg1NSgTpw@mail.gmail.com>
- <CA+55aFzwederWB135Ch+PjijjrN-kz9UKw+obC4+M_+xq648PA@mail.gmail.com>
- <20130907030110.GY13318@ZenIV.linux.org.uk>
- <20130907173243.GD13318@ZenIV.linux.org.uk>
- <1378613746.2642.8.camel@perseus.fritz.box>
+	Sun, 8 Sep 2013 01:28:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378613746.2642.8.camel@perseus.fritz.box>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201309081332.FEJ52163.FHJOMQVOFOLStF@I-love.SAKURA.ne.jp>
+References: <201309080100.FFE90102.FFOVOtJQOFHSLM@I-love.SAKURA.ne.jp>
+	<201309081332.FEJ52163.FHJOMQVOFOLStF@I-love.SAKURA.ne.jp>
+Date: Sun, 8 Sep 2013 01:28:19 -0400
+X-Google-Sender-Auth: xvk2ciWXq00GkHBes68NG91s8js
+Message-ID: <CAKb7UvjH1XZ3f-c=149s5=rqxkxVUhG_7-cfUYH3zrwJwr2_MQ@mail.gmail.com>
+Subject: Re: [3.11-rc1] CONFIG_DEBUG_MUTEXES=y using gcc 3.x makes unbootable kernel.
+From: Ilia Mirkin <imirkin@alum.mit.edu>
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Rob Clark <robdclark@gmail.com>, a.p.zijlstra@chello.nl,
+        mingo@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 08, 2013 at 12:15:46PM +0800, Ian Kent wrote:
-> > and *name is never modified in it.  Why not simply pass it by value?
-> > Moreover, I'm not sure I understand what do we need sbi->fs_lock in
-> > there.  Other than that, it's very close to dentry_path() (well, that
-> > and different calling conventions).  Ian?
-> 
-> Yes, it is close to dentry_path() but the path functions used to return
-> the full path to the root, although I don't see where dentry_path() get
-> the root, mmm ... 
+On Sun, Sep 8, 2013 at 12:32 AM, Tetsuo Handa
+<penguin-kernel@i-love.sakura.ne.jp> wrote:
+> Hello.
+>
+> I found what is wrong.
+>
+> ---------- bad patch start ----------
+> >From 3c56dfbd32a9b67ba824ce96128bb513eb65de4b Mon Sep 17 00:00:00 2001
+> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Date: Sun, 8 Sep 2013 12:44:20 +0900
+> Subject: [PATCH] mutex: Avoid gcc version dependent __builtin_constant_p() usage.
+>
+> Commit 040a0a37 "mutex: Add support for wound/wait style locks" used
+> "!__builtin_constant_p(p == NULL)" which I guess the author meant that
+> "__builtin_constant_p(p) && p", but gcc 3.x cannot handle such expression
+> correctly, leading to boot failure when built with CONFIG_DEBUG_MUTEXES=y.
 
-dentry_path(), unlike d_path(), is relative to the root of filesystem
-containing dentry in question.  There are 3 of those suckers:
-	d_path(): vfsmount/dentry => path to current process' root
-	d_absolute_path(): ditto, but ignores chroot jails (goes to
-the absolute root of namespace)
-	dentry_path(): dentry => path from root of fs containing that
-dentry.
+I think that !__builtin_constant_p(p == NULL) is basically saying "I
+am unable to conclude that p == NULL at build time", which would
+translate to something along the lines of
 
-IOW, if you have something mounted on /jail/mnt/foo and are chrooted into
-/jail, passing vfsmount/dentry of /jail/mnt/foo/bar/baz to d_path() will
-yield "/mnt/foo/bar/baz", to d_absolute_path() - "/jail/mnt/foo/bar/baz" and
-passing the same dentry to dentry_path() - "/bar/baz".
+(__builtin_constant_p(p) && p) || !__builtin_constant_p(p)
+
+Your logic will be be false for non-built-in-constants supplied as p.
+
+Or perhaps it's just equivalent to !__builtin_constant_p(p), since the
+compiler's ability to conclude whether it is NULL at build-time should
+be unaffected by whether it actually is NULL or not. Some simple
+experimentation with recent gcc's should be able to determine this.
+The more I think about it, the more likely the latter interpretation
+is correct and you can just drop the == NULL's. (Although perhaps the
+original intent was more like the former.)
+
+  -ilia
