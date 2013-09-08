@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646Ab3IHK4s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 06:56:48 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:35166 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752188Ab3IHK4r (ORCPT
+	id S1752842Ab3IHK7k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 06:59:40 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:38909 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752635Ab3IHK7j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 06:56:47 -0400
-Date: Sun, 8 Sep 2013 12:56:43 +0200
+	Sun, 8 Sep 2013 06:59:39 -0400
+Date: Sun, 8 Sep 2013 12:59:33 +0200
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 Cc: Stanislaw Gruszka <sgruszka@redhat.com>, Ingo Molnar <mingo@redhat.com>,
@@ -16,7 +16,7 @@ Cc: Stanislaw Gruszka <sgruszka@redhat.com>, Ingo Molnar <mingo@redhat.com>,
         Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
 Subject: Re: [sched next] overflowed cpu time for kernel threads in
  /proc/PID/stat
-Message-ID: <20130908105642.GD4501@somewhere>
+Message-ID: <20130908105932.GE4501@somewhere>
 References: <20130820111426.GA27828@swordfish.datadirectnet.com>
  <20130820151509.GA17441@somewhere>
  <20130820153549.GB2315@swordfish.minsk.epam.com>
@@ -62,6 +62,4 @@ On Sat, Aug 31, 2013 at 10:01:17PM +0300, Sergey Senozhatsky wrote:
 > 
 > 	-ss
 
-Do you have this patch in?
-
-http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?h=timers-urgent-for-linus&id=5a8e01f8fa51f5cbce8f37acc050eb2319d12956
+Sorry, I did not realize this message was posted before you tested the patch.
