@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760093Ab3IHDsH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:48:07 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56029 "EHLO
+	id S1759688Ab3IHDs1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:48:27 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56116 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755331Ab3IHDTI (ORCPT
+	by vger.kernel.org with ESMTP id S1756072Ab3IHDTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 23:19:08 -0400
+	Sat, 7 Sep 2013 23:19:07 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Daniel Vetter" <daniel.vetter@ffwll.ch>,
-        "Thiago Macieira" <thiago@kde.org>,
-        "Chris Wilson" <chris@chris-wilson.co.uk>
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Guenter Roeck" <linux@roeck-us.net>,
+        "Michal Simek" <michal.simek@xilinx.com>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.177708502@decadent.org.uk>
+Message-ID: <lsq.1378608721.569900800@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [078/121] drm/i915: Invalidate TLBs for the rings after a reset
+Subject: [091/121] microblaze: Update microblaze defconfigs
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,73 +33,248 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Michal Simek <michal.simek@xilinx.com>
 
-commit 884020bf3d2a3787a1cc6df902e98e0eec60330b upstream.
+commit d0e045401f268a8de6f87d65678214748b772680 upstream.
 
-After any "soft gfx reset" we must manually invalidate the TLBs
-associated with each ring. Empirically, it seems that a
-suspend/resume or D3-D0 cycle count as a "soft reset". The symptom is
-that the hardware would fail to note the new address for its status
-page, and so it would continue to write the shadow registers and
-breadcrumbs into the old physical address (now used by something
-completely different, scary). Whereas the driver would read the new
-status page and never see any progress, it would appear that the GPU
-hung immediately upon resume.
+The main reason is 0-day testing system which can directly
+use these defconfigs for testing.
 
-Based on a patch by naresh kumar kachhi <naresh.kumar.kacchi@intel.com>
+Enable support for all xilinx drivers which Microblaze
+can use and disable dependency on external rootfs.cpio.
+There is only one exception which is axi ethernet driver
+which still uses NO_IRQ which is not defined for Microblaze.
 
-Reported-by: Thiago Macieira <thiago@kde.org>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=64725
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Tested-by: Thiago Macieira <thiago@kde.org>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[bwh: Backported to 3.2: add definition of RING_INSTPM() from
- commit c1cd90ed7957 'drm/i915: collect more per ring error state']
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+Cc: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/i915_reg.h         |  2 ++
- drivers/gpu/drm/i915/intel_ringbuffer.c | 12 ++++++++++++
- 2 files changed, 14 insertions(+)
+ arch/microblaze/configs/mmu_defconfig   | 49 +++++++++++++++--------
+ arch/microblaze/configs/nommu_defconfig | 71 +++++++++++++++++++--------------
+ 2 files changed, 75 insertions(+), 45 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -362,6 +362,7 @@
- #define IPEIR_I965	0x02064
- #define IPEHR_I965	0x02068
- #define INSTDONE_I965	0x0206c
-+#define RING_INSTPM(base)      ((base)+0xc0)
- #define INSTPS		0x02070 /* 965+ only */
- #define INSTDONE1	0x0207c /* 965+ only */
- #define ACTHD_I965	0x02074
-@@ -458,6 +459,8 @@
- 					will not assert AGPBUSY# and will only
- 					be delivered when out of C3. */
- #define   INSTPM_FORCE_ORDERING				(1<<7) /* GEN6+ */
-+#define   INSTPM_TLB_INVALIDATE	(1<<9)
-+#define   INSTPM_SYNC_FLUSH	(1<<5)
- #define ACTHD	        0x020c8
- #define FW_BLC		0x020d8
- #define FW_BLC2		0x020dc
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -776,6 +776,18 @@ void intel_ring_setup_status_page(struct
- 
- 	I915_WRITE(mmio, (u32)ring->status_page.gfx_addr);
- 	POSTING_READ(mmio);
-+
-+	/* Flush the TLB for this page */
-+	if (INTEL_INFO(dev)->gen >= 6) {
-+		u32 reg = RING_INSTPM(ring->mmio_base);
-+		I915_WRITE(reg,
-+			   _MASKED_BIT_ENABLE(INSTPM_TLB_INVALIDATE |
-+					      INSTPM_SYNC_FLUSH));
-+		if (wait_for((I915_READ(reg) & INSTPM_SYNC_FLUSH) == 0,
-+			     1000))
-+			DRM_ERROR("%s: wait for SyncFlush to complete for TLB invalidation timed out\n",
-+				  ring->name);
-+	}
- }
- 
- static int
+--- a/arch/microblaze/configs/mmu_defconfig
++++ b/arch/microblaze/configs/mmu_defconfig
+@@ -1,25 +1,22 @@
+ CONFIG_EXPERIMENTAL=y
+ CONFIG_SYSVIPC=y
++CONFIG_POSIX_MQUEUE=y
++CONFIG_FHANDLE=y
++CONFIG_AUDIT=y
++CONFIG_AUDIT_LOGINUID_IMMUTABLE=y
+ CONFIG_IKCONFIG=y
+ CONFIG_IKCONFIG_PROC=y
++CONFIG_SYSFS_DEPRECATED=y
+ CONFIG_SYSFS_DEPRECATED_V2=y
+-CONFIG_BLK_DEV_INITRD=y
+-CONFIG_INITRAMFS_SOURCE="rootfs.cpio"
+-CONFIG_INITRAMFS_COMPRESSION_GZIP=y
+-# CONFIG_CC_OPTIMIZE_FOR_SIZE is not set
+-CONFIG_EXPERT=y
+ CONFIG_KALLSYMS_ALL=y
+-CONFIG_KALLSYMS_EXTRA_PASS=y
+-# CONFIG_HOTPLUG is not set
+ # CONFIG_BASE_FULL is not set
+-# CONFIG_FUTEX is not set
+-# CONFIG_EPOLL is not set
+-# CONFIG_SIGNALFD is not set
+-# CONFIG_SHMEM is not set
++CONFIG_EMBEDDED=y
+ CONFIG_SLAB=y
+ CONFIG_MODULES=y
+ CONFIG_MODULE_UNLOAD=y
+ # CONFIG_BLK_DEV_BSG is not set
++CONFIG_PARTITION_ADVANCED=y
++# CONFIG_EFI_PARTITION is not set
+ CONFIG_OPT_LIB_ASM=y
+ CONFIG_XILINX_MICROBLAZE0_USE_MSR_INSTR=1
+ CONFIG_XILINX_MICROBLAZE0_USE_PCMP_INSTR=1
+@@ -37,33 +34,53 @@ CONFIG_UNIX=y
+ CONFIG_INET=y
+ # CONFIG_INET_LRO is not set
+ # CONFIG_IPV6 is not set
++CONFIG_MTD=y
+ CONFIG_PROC_DEVICETREE=y
+ CONFIG_BLK_DEV_RAM=y
+ CONFIG_BLK_DEV_RAM_SIZE=8192
+ CONFIG_NETDEVICES=y
+-CONFIG_NET_ETHERNET=y
+ CONFIG_XILINX_EMACLITE=y
++CONFIG_XILINX_LL_TEMAC=y
+ # CONFIG_INPUT is not set
+ # CONFIG_SERIO is not set
+ # CONFIG_VT is not set
++CONFIG_SERIAL_8250=y
++CONFIG_SERIAL_8250_CONSOLE=y
+ CONFIG_SERIAL_UARTLITE=y
+ CONFIG_SERIAL_UARTLITE_CONSOLE=y
+ # CONFIG_HW_RANDOM is not set
++CONFIG_XILINX_HWICAP=y
++CONFIG_I2C=y
++CONFIG_I2C_XILINX=y
++CONFIG_SPI=y
++CONFIG_SPI_XILINX=y
++CONFIG_GPIOLIB=y
++CONFIG_GPIO_SYSFS=y
++CONFIG_GPIO_XILINX=y
+ # CONFIG_HWMON is not set
++CONFIG_WATCHDOG=y
++CONFIG_XILINX_WATCHDOG=y
++CONFIG_FB=y
++CONFIG_FB_XILINX=y
+ # CONFIG_USB_SUPPORT is not set
++CONFIG_UIO=y
++CONFIG_UIO_PDRV=y
++CONFIG_UIO_PDRV_GENIRQ=y
++CONFIG_UIO_DMEM_GENIRQ=y
+ CONFIG_EXT2_FS=y
+ # CONFIG_DNOTIFY is not set
++CONFIG_CRAMFS=y
++CONFIG_ROMFS_FS=y
+ CONFIG_NFS_FS=y
+-CONFIG_NFS_V3=y
+ CONFIG_CIFS=y
+ CONFIG_CIFS_STATS=y
+ CONFIG_CIFS_STATS2=y
+-CONFIG_PARTITION_ADVANCED=y
+-CONFIG_DEBUG_KERNEL=y
+ CONFIG_DETECT_HUNG_TASK=y
+ CONFIG_DEBUG_SLAB=y
+ CONFIG_DEBUG_SPINLOCK=y
+ CONFIG_DEBUG_INFO=y
+-# CONFIG_RCU_CPU_STALL_DETECTOR is not set
+ CONFIG_EARLY_PRINTK=y
++CONFIG_KEYS=y
++CONFIG_ENCRYPTED_KEYS=y
++CONFIG_KEYS_DEBUG_PROC_KEYS=y
+ # CONFIG_CRYPTO_ANSI_CPRNG is not set
+--- a/arch/microblaze/configs/nommu_defconfig
++++ b/arch/microblaze/configs/nommu_defconfig
+@@ -1,41 +1,40 @@
+ CONFIG_EXPERIMENTAL=y
+ CONFIG_SYSVIPC=y
+ CONFIG_POSIX_MQUEUE=y
++CONFIG_FHANDLE=y
++CONFIG_AUDIT=y
++CONFIG_AUDIT_LOGINUID_IMMUTABLE=y
+ CONFIG_BSD_PROCESS_ACCT=y
+ CONFIG_BSD_PROCESS_ACCT_V3=y
+ CONFIG_IKCONFIG=y
+ CONFIG_IKCONFIG_PROC=y
++CONFIG_SYSFS_DEPRECATED=y
+ CONFIG_SYSFS_DEPRECATED_V2=y
+-CONFIG_EXPERT=y
+ CONFIG_KALLSYMS_ALL=y
+-CONFIG_KALLSYMS_EXTRA_PASS=y
+-# CONFIG_HOTPLUG is not set
+ # CONFIG_BASE_FULL is not set
++CONFIG_EMBEDDED=y
+ CONFIG_SLAB=y
+ CONFIG_MODULES=y
+ CONFIG_MODULE_UNLOAD=y
+ # CONFIG_BLK_DEV_BSG is not set
+-# CONFIG_OPT_LIB_FUNCTION is not set
++CONFIG_PARTITION_ADVANCED=y
++# CONFIG_EFI_PARTITION is not set
+ CONFIG_XILINX_MICROBLAZE0_USE_MSR_INSTR=1
+ CONFIG_XILINX_MICROBLAZE0_USE_PCMP_INSTR=1
+ CONFIG_XILINX_MICROBLAZE0_USE_BARREL=1
+ CONFIG_XILINX_MICROBLAZE0_USE_DIV=1
+ CONFIG_XILINX_MICROBLAZE0_USE_HW_MUL=2
+ CONFIG_XILINX_MICROBLAZE0_USE_FPU=2
+-CONFIG_HIGH_RES_TIMERS=y
+ CONFIG_HZ_100=y
+ CONFIG_CMDLINE_BOOL=y
+-CONFIG_BINFMT_FLAT=y
++CONFIG_CMDLINE_FORCE=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+ CONFIG_INET=y
+ # CONFIG_INET_LRO is not set
+ # CONFIG_IPV6 is not set
+-# CONFIG_PREVENT_FIRMWARE_BUILD is not set
+ CONFIG_MTD=y
+-CONFIG_MTD_CONCAT=y
+-CONFIG_MTD_PARTITIONS=y
+ CONFIG_MTD_CMDLINE_PARTS=y
+ CONFIG_MTD_CHAR=y
+ CONFIG_MTD_BLOCK=y
+@@ -45,41 +44,55 @@ CONFIG_MTD_CFI_AMDSTD=y
+ CONFIG_MTD_RAM=y
+ CONFIG_MTD_UCLINUX=y
+ CONFIG_PROC_DEVICETREE=y
+-CONFIG_BLK_DEV_NBD=y
+ CONFIG_BLK_DEV_RAM=y
++CONFIG_BLK_DEV_RAM_SIZE=8192
+ CONFIG_NETDEVICES=y
+-CONFIG_NET_ETHERNET=y
++CONFIG_XILINX_EMACLITE=y
++CONFIG_XILINX_LL_TEMAC=y
+ # CONFIG_INPUT is not set
+ # CONFIG_SERIO is not set
+ # CONFIG_VT is not set
++CONFIG_SERIAL_8250=y
++CONFIG_SERIAL_8250_CONSOLE=y
+ CONFIG_SERIAL_UARTLITE=y
+ CONFIG_SERIAL_UARTLITE_CONSOLE=y
+-CONFIG_HW_RANDOM=y
++# CONFIG_HW_RANDOM is not set
++CONFIG_XILINX_HWICAP=y
++CONFIG_I2C=y
++CONFIG_I2C_XILINX=y
++CONFIG_SPI=y
++CONFIG_SPI_XILINX=y
++CONFIG_GPIOLIB=y
++CONFIG_GPIO_SYSFS=y
++CONFIG_GPIO_XILINX=y
+ # CONFIG_HWMON is not set
+-CONFIG_VIDEO_OUTPUT_CONTROL=y
++CONFIG_WATCHDOG=y
++CONFIG_XILINX_WATCHDOG=y
++CONFIG_FB=y
++CONFIG_FB_XILINX=y
++# CONFIG_USB_SUPPORT is not set
++CONFIG_UIO=y
++CONFIG_UIO_PDRV=y
++CONFIG_UIO_PDRV_GENIRQ=y
++CONFIG_UIO_DMEM_GENIRQ=y
+ CONFIG_EXT2_FS=y
+ # CONFIG_DNOTIFY is not set
+ CONFIG_CRAMFS=y
+ CONFIG_ROMFS_FS=y
+ CONFIG_NFS_FS=y
+-CONFIG_NFS_V3=y
+ CONFIG_NFS_V3_ACL=y
+-CONFIG_UNUSED_SYMBOLS=y
+-CONFIG_DEBUG_FS=y
+-CONFIG_DEBUG_KERNEL=y
+-CONFIG_DEBUG_SHIRQ=y
++CONFIG_NLS=y
+ CONFIG_DETECT_HUNG_TASK=y
+-CONFIG_SCHEDSTATS=y
+-CONFIG_TIMER_STATS=y
+-CONFIG_DEBUG_OBJECTS=y
+-CONFIG_DEBUG_OBJECTS_SELFTEST=y
+-CONFIG_DEBUG_OBJECTS_FREE=y
+-CONFIG_DEBUG_OBJECTS_TIMERS=y
++CONFIG_DEBUG_SLAB=y
++CONFIG_DEBUG_SPINLOCK=y
+ CONFIG_DEBUG_INFO=y
+-CONFIG_DEBUG_LIST=y
+-CONFIG_DEBUG_SG=y
+-# CONFIG_RCU_CPU_STALL_DETECTOR is not set
+-CONFIG_SYSCTL_SYSCALL_CHECK=y
+ CONFIG_EARLY_PRINTK=y
++CONFIG_KEYS=y
++CONFIG_ENCRYPTED_KEYS=y
++CONFIG_KEYS_DEBUG_PROC_KEYS=y
++CONFIG_CRYPTO_ECB=y
++CONFIG_CRYPTO_MD4=y
++CONFIG_CRYPTO_MD5=y
++CONFIG_CRYPTO_ARC4=y
++CONFIG_CRYPTO_DES=y
+ # CONFIG_CRYPTO_ANSI_CPRNG is not set
+-# CONFIG_CRC32 is not set
 
