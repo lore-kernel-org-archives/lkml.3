@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759773Ab3IHDjC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:39:02 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56049 "EHLO
+	id S1759824Ab3IHDjX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:39:23 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56125 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755098Ab3IHDTU (ORCPT
+	by vger.kernel.org with ESMTP id S1756344Ab3IHDTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 23:19:20 -0400
+	Sat, 7 Sep 2013 23:19:19 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Tejun Heo" <tj@kernel.org>,
-        "Jamie Liu" <jamieliu@google.com>
+CC: akpm@linux-foundation.org, "Johannes Berg" <johannes.berg@intel.com>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.335265157@decadent.org.uk>
+Message-ID: <lsq.1378608721.374721875@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [107/121] workqueue: cond_resched() after processing each work item
+Subject: [026/121] mac80211: fix duplicate retransmission detection
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,53 +30,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit b22ce2785d97423846206cceec4efee0c4afd980 upstream.
+commit 6b0f32745dcfba01d7be33acd1b40306c7a914c6 upstream.
 
-If !PREEMPT, a kworker running work items back to back can hog CPU.
-This becomes dangerous when a self-requeueing work item which is
-waiting for something to happen races against stop_machine.  Such
-self-requeueing work item would requeue itself indefinitely hogging
-the kworker and CPU it's running on while stop_machine would wait for
-that CPU to enter stop_machine while preventing anything else from
-happening on all other CPUs.  The two would deadlock.
+The duplicate retransmission detection code in mac80211
+erroneously attempts to do the check for every frame,
+even frames that don't have a sequence control field or
+that don't use it (QoS-Null frames.)
 
-Jamie Liu reports that this deadlock scenario exists around
-scsi_requeue_run_queue() and libata port multiplier support, where one
-port may exclude command processing from other ports.  With the right
-timing, scsi_requeue_run_queue() can end up requeueing itself trying
-to execute an IO which is asked to be retried while another device has
-an exclusive access, which in turn can't make forward progress due to
-stop_machine.
+This is problematic because it causes the code to access
+data beyond the end of the SKB and depending on the data
+there will drop packets erroneously.
 
-Fix it by invoking cond_resched() after executing each work item.
+Correct the code to not do duplicate detection for such
+frames.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Jamie Liu <jamieliu@google.com>
-References: http://thread.gmane.org/gmane.linux.kernel/1552567
-[bwh: Backported to 3.2: adjust context]
+I found this error while testing AP powersave, it lead
+to retransmitted PS-Poll frames being dropped entirely
+as the data beyond the end of the SKB was always zero.
+
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/workqueue.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ net/mac80211/rx.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1920,6 +1920,15 @@ __acquires(&gcwq->lock)
- 		dump_stack();
- 	}
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -821,8 +821,14 @@ ieee80211_rx_h_check(struct ieee80211_rx
+ 	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)rx->skb->data;
+ 	struct ieee80211_rx_status *status = IEEE80211_SKB_RXCB(rx->skb);
  
+-	/* Drop duplicate 802.11 retransmissions (IEEE 802.11 Chap. 9.2.9) */
+-	if (rx->sta && !is_multicast_ether_addr(hdr->addr1)) {
 +	/*
-+	 * The following prevents a kworker from hogging CPU on !PREEMPT
-+	 * kernels, where a requeueing work item waiting for something to
-+	 * happen could deadlock with stop_machine as such work item could
-+	 * indefinitely requeue itself while all other CPUs are trapped in
-+	 * stop_machine.
++	 * Drop duplicate 802.11 retransmissions
++	 * (IEEE 802.11-2012: 9.3.2.10 "Duplicate detection and recovery")
 +	 */
-+	cond_resched();
-+
- 	spin_lock_irq(&gcwq->lock);
- 
- 	/* clear cpu intensive status */
++	if (rx->skb->len >= 24 && rx->sta &&
++	    !ieee80211_is_ctl(hdr->frame_control) &&
++	    !ieee80211_is_qos_nullfunc(hdr->frame_control) &&
++	    !is_multicast_ether_addr(hdr->addr1)) {
+ 		if (unlikely(ieee80211_has_retry(hdr->frame_control) &&
+ 			     rx->sta->last_seq_ctrl[rx->seqno_idx] ==
+ 			     hdr->seq_ctrl)) {
 
