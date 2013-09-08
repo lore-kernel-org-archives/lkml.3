@@ -1,91 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756541Ab3IHP4r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 11:56:47 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18000 "EHLO
+	id S1759043Ab3IHQBQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 12:01:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8228 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753322Ab3IHP4o (ORCPT
+	with ESMTP id S1753798Ab3IHP4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 11:56:44 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=P5MvtLRHFjEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=_hvWx0eUMykA:10 a=VwQbUJbxAAAA:8 a=1J0JeIo9MnkITmv3CngA:9 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Sun, 8 Sep 2013 11:56:46 -0400
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=cxJSlJIEkFEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=T0vaTpGz_joA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=cH6R9-kdAAAA:8 a=ZWkigBNIbSQrd9Nb2oAA:9 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130908151447.559319819@goodmis.org>
+Message-Id: <20130908151448.045841633@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Sun, 08 Sep 2013 11:14:05 -0400
+Date: Sun, 08 Sep 2013 11:14:08 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>,
-        Joakim Hernberg <jbh@alchemy.lu>
-Subject: [PATCH RT 10/19] drm/i915: drop trace_i915_gem_ring_dispatch on rt
+        Stephen <scameron@beardog.cce.hp.com>
+Subject: [PATCH RT 13/19] hpsa: fix warning with smp_processor_id() in preemptible section
 References: <20130908151355.362583092@goodmis.org>
-Content-Disposition: inline; filename=0010-drm-i915-drop-trace_i915_gem_ring_dispatch-on-rt.patch
+Content-Disposition: inline; filename=0013-hpsa-fix-warning-with-smp_processor_id-in-preemptibl.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: John Kacur <jkacur@redhat.com>
 
-This tracepoint is responsible for:
+On a 3.6-rt (real-time patch) kernel we are seeing the following BUG
+However, it appears to be relevant for non-realtime (mainline) as well.
 
-|[<814cc358>] __schedule_bug+0x4d/0x59
-|[<814d24cc>] __schedule+0x88c/0x930
-|[<814d3b90>] ? _raw_spin_unlock_irqrestore+0x40/0x50
-|[<814d3b95>] ? _raw_spin_unlock_irqrestore+0x45/0x50
-|[<810b57b5>] ? task_blocks_on_rt_mutex+0x1f5/0x250
-|[<814d27d9>] schedule+0x29/0x70
-|[<814d3423>] rt_spin_lock_slowlock+0x15b/0x278
-|[<814d3786>] rt_spin_lock+0x26/0x30
-|[<a00dced9>] gen6_gt_force_wake_get+0x29/0x60 [i915]
-|[<a00e183f>] gen6_ring_get_irq+0x5f/0x100 [i915]
-|[<a00b2a33>] ftrace_raw_event_i915_gem_ring_dispatch+0xe3/0x100 [i915]
-|[<a00ac1b3>] i915_gem_do_execbuffer.isra.13+0xbd3/0x1430 [i915]
-|[<810f8943>] ? trace_buffer_unlock_commit+0x43/0x60
-|[<8113e8d2>] ? ftrace_raw_event_kmem_alloc+0xd2/0x180
-|[<8101d063>] ? native_sched_clock+0x13/0x80
-|[<a00acf29>] i915_gem_execbuffer2+0x99/0x280 [i915]
-|[<a00114a3>] drm_ioctl+0x4c3/0x570 [drm]
-|[<8101d0d9>] ? sched_clock+0x9/0x10
-|[<a00ace90>] ? i915_gem_execbuffer+0x480/0x480 [i915]
-|[<810f1c18>] ? rb_commit+0x68/0xa0
-|[<810f1c6c>] ? ring_buffer_unlock_commit+0x1c/0xa0
-|[<81197467>] do_vfs_ioctl+0x97/0x540
-|[<81021318>] ? ftrace_raw_event_sys_enter+0xd8/0x130
-|[<811979a1>] sys_ioctl+0x91/0xb0
-|[<814db931>] tracesys+0xe1/0xe6
+|hpsa 0000:03:00.0: hpsa0: <0x323a> at IRQ 67 using DAC
+|scsi0 : hpsa
+|BUG: using smp_processor_id() in preemptible [0000000000000000] code: kworker/u:0/6
+|caller is enqueue_cmd_and_start_io+0x5a/0x100 [hpsa]
+|Pid: 6, comm: kworker/u:0 Not tainted 3.6.11.5-rt37.52.el6rt.x86_64.debug #1
+|Call Trace:
+| [<ffffffff812abe83>] debug_smp_processor_id+0x123/0x150
+| [<ffffffffa009043a>] enqueue_cmd_and_start_io+0x5a/0x100 [hpsa]
+| [<ffffffffa00905cb>] hpsa_scsi_do_simple_cmd_core+0xeb/0x110 [hpsa]
+| [<ffffffff812b09c8>] ? swiotlb_dma_mapping_error+0x18/0x30
+| [<ffffffff812b09c8>] ? swiotlb_dma_mapping_error+0x18/0x30
+| [<ffffffffa0090701>] hpsa_scsi_do_simple_cmd_with_retry+0x91/0x280 [hpsa]
+| [<ffffffffa0093558>] hpsa_scsi_do_report_luns.clone.2+0xd8/0x130 [hpsa]
+| [<ffffffffa00935ea>] hpsa_gather_lun_info.clone.3+0x3a/0x1a0 [hpsa]
+| [<ffffffffa00963df>] hpsa_update_scsi_devices+0x11f/0x4f0 [hpsa]
+| [<ffffffff81592019>] ? sub_preempt_count+0xa9/0xe0
+| [<ffffffffa00968ad>] hpsa_scan_start+0xfd/0x150 [hpsa]
+| [<ffffffff8158cba8>] ? rt_spin_lock_slowunlock+0x78/0x90
+| [<ffffffff813b04d7>] do_scsi_scan_host+0x37/0xa0
+| [<ffffffff813b05da>] do_scan_async+0x1a/0x30
+| [<ffffffff8107c4ab>] async_run_entry_fn+0x9b/0x1d0
+| [<ffffffff8106ae92>] process_one_work+0x1f2/0x620
+| [<ffffffff8106ae20>] ? process_one_work+0x180/0x620
+| [<ffffffff8106d4fe>] ? worker_thread+0x5e/0x3a0
+| [<ffffffff8107c410>] ? async_schedule+0x20/0x20
+| [<ffffffff8106d5d3>] worker_thread+0x133/0x3a0
+| [<ffffffff8106d4a0>] ? manage_workers+0x190/0x190
+| [<ffffffff81073236>] kthread+0xa6/0xb0
+| [<ffffffff815970a4>] kernel_thread_helper+0x4/0x10
+| [<ffffffff81082a7c>] ? finish_task_switch+0x8c/0x110
+| [<ffffffff8158e44b>] ? _raw_spin_unlock_irq+0x3b/0x70
+| [<ffffffff8158e85d>] ? retint_restore_args+0xe/0xe
+| [<ffffffff81073190>] ? kthreadd+0x1e0/0x1e0
+| [<ffffffff815970a0>] ? gs_change+0xb/0xb
 
-Chris Wilson does not like to move i915_trace_irq_get() out of the macro
+-------------------
 
-|No. This enables the IRQ, as well as making a number of
-|very expensively serialised read, unconditionally.
+This is caused by
+enqueue_cmd_and_start_io()->
+        set_performant_mode()->
+                smp_processor_id()
+Which if you have debugging enabled calls debug_processor_id() and triggers the warning.
 
-so it is gone now on RT.
+The code here is
+ c->Header.ReplyQueue = smp_processor_id() % h->nreply_queues;
+
+Since it is not critical that the code complete on the same processor,
+but the cpu is a hint used in generating the ReplyQueue and will still work if
+the cpu migrates or is preempted, it is safe to use the raw_smp_processor_id()
+to surpress the false positve warning.
 
 Cc: stable-rt@vger.kernel.org
-Reported-by: Joakim Hernberg <jbh@alchemy.lu>
+Signed-off-by: John Kacur <jkacur@redhat.com>
+Acked-by: Stephen <scameron@beardog.cce.hp.com>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/scsi/hpsa.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_gem_execbuffer.c b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-index c26a8f8a..14df3f6 100644
---- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-+++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-@@ -1259,7 +1259,9 @@ i915_gem_do_execbuffer(struct drm_device *dev, void *data,
- 			goto err;
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index f9823f2..be83a15 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -565,7 +565,7 @@ static void set_performant_mode(struct ctlr_info *h, struct CommandList *c)
+ 		c->busaddr |= 1 | (h->blockFetchTable[c->Header.SGList] << 1);
+ 		if (likely(h->msix_vector))
+ 			c->Header.ReplyQueue =
+-				smp_processor_id() % h->nreply_queues;
++				raw_smp_processor_id() % h->nreply_queues;
  	}
+ }
  
-+#ifndef CONFIG_PREEMPT_RT_BASE
- 	trace_i915_gem_ring_dispatch(ring, seqno);
-+#endif
- 
- 	exec_start = batch_obj->gtt_offset + args->batch_start_offset;
- 	exec_len = args->batch_len;
 -- 
 1.7.10.4
 
