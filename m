@@ -1,87 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750961Ab3IHAN3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 20:13:29 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:52283 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770Ab3IHAN0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 20:13:26 -0400
+	id S1751032Ab3IHARx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 20:17:53 -0400
+Received: from zill.ext.symas.net ([69.43.206.106]:56679 "EHLO
+	zill.ext.symas.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770Ab3IHARw (ORCPT
+	<rfc822;Linux-Kernel@Vger.Kernel.ORG>);
+	Sat, 7 Sep 2013 20:17:52 -0400
+X-Greylist: delayed 999 seconds by postgrey-1.27 at vger.kernel.org; Sat, 07 Sep 2013 20:17:52 EDT
+Message-ID: <522BBE46.9060809@symas.com>
+Date: Sat, 07 Sep 2013 17:01:10 -0700
+From: Howard Chu <hyc@symas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:25.0) Gecko/20100101 Firefox/25.0 SeaMonkey/2.22a1
 MIME-Version: 1.0
-In-Reply-To: <CAG-2HqUG=Ocd6qZuy6LYRA49NvyKnguSdnpDgX1Br17SWvkS1A@mail.gmail.com>
-References: <CAG-2HqVruXZxO1xLvYeAPa1RYmy044UiBXFLAtX5WcHVQVAtfA@mail.gmail.com>
-	<CANq1E4RAoLo2=fdZ4SCAnOtbCuJkAAf-BOfUFuK5S+gijpS8ng@mail.gmail.com>
-	<CAG-2HqVpAGOgvYKAsOCAac5F4SHB8nEtKtyTor2TYqp_fi7S7w@mail.gmail.com>
-	<CANq1E4QPMKvDu5wA9meSt6hKRA7yTA1RhGY6NsSCMTBFmR5f0w@mail.gmail.com>
-	<CANq1E4QYrQ-YcL9eGAA4LUozVnPaDNisVex8eMe+Xpj8TaWdeA@mail.gmail.com>
-	<CAG-2HqXrpmZCsqXTG7pE9rtgPVrtvkU8gDxngGMtRjkoyqBMHA@mail.gmail.com>
-	<CAG-2HqUG=Ocd6qZuy6LYRA49NvyKnguSdnpDgX1Br17SWvkS1A@mail.gmail.com>
-Date: Sun, 8 Sep 2013 02:13:26 +0200
-Message-ID: <CANq1E4QLCp4xzGsgceuGgX-k7JpiA_ayJy3e0iYoWAMAsc7fCA@mail.gmail.com>
-Subject: Re: [REGRESSION] v3.12-rc1: i915_driver_load oopses when sysfb enabled
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Tom Gundersen <teg@jklm.no>
-Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linux Kernel Mailing List <Linux-Kernel@vger.kernel.org>
+Subject: dirty_expire_centisecs, msync behavior
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+The documentation for dirty_expire_centisecs states: "Data which has been 
+dirty in-memory for longer than this interval will be written out next time a 
+flusher thread wakes up."
 
-On Sun, Sep 8, 2013 at 1:22 AM, Tom Gundersen <teg@jklm.no> wrote:
-> Hi David,
->
-> On Sat, Sep 7, 2013 at 11:57 PM, Tom Gundersen <teg@jklm.no> wrote:
->> On Sat, Sep 7, 2013 at 4:30 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
->>> Attached are two patches. The first one should fix this issue, the
->>> second one is the rebased ioremap_wc() patch from the other thread.
->>>
->>> Does this fix the issue (and the speed-problems)?
->>
->> Sadly, no. I added a few printk's to verify that the function you
->> added is called (it is), but still the same oops.
->
-> A few more datapoints:
->
-> Triggers:
-> X86_SYSFB=y and FB_SIMPLE=n (so no fbdev until i915 is loaded)
-> X86_SYSFB=y and FB_SIMPLE=y
->
-> Does not trigger:
-> X86_SYSFB=y, FB_EFI=yes, and without the overflow fix (i.e., so we
-> fall back to efifb)
-> X86_SYSFB=n and FB_EFI=y
-> X86_SYSFB=n and FB_EFI=n (so no fbdev until i915 is loaded)
->
-> Does this make any sense?
+In practice, it appears that once the expire time has passed, all dirty pages 
+get flushed, regardless of their age. This behavior makes this setting fairly 
+useless. This appears to have been the behavior for most of 2.6 and 3.x. Can 
+anyone explain, is the current behavior really as intended, and is the doc 
+just out of date?
 
-Thanks a lot for these results. I think I got it know. I will write a
-patch that marks the resource as busy. See:
-  kernel/resource.c iomem_map_sanity_check()
-It also contains a hint that we should set this for driver-resources
-which not directly map to hardware resources (such as veasfb and,
-obviously, simplefb).
+On a slightly related note, what was the key problem with this patch "msync: 
+support syncing a small part of the file"? 
+http://thread.gmane.org/gmane.linux.kernel/1313767/focus=1317498
 
-Following a diff which hopefully fixes this. The other two patches
-should still be required, though. I will try to write a proper patch
-tomorrow.
+Andrew Morton's message states that Paolo's patch would break nonlinear 
+mappings, and the matter was dropped. Why wasn't it possible to write a patch 
+that would also work with nonlinear mappings? I couldn't find any earlier 
+context for that subject, pointers welcome.
 
-Thanks a lot for these extensive tests, Tom!
-David
+My interest in both of these questions stems from what I've observed while 
+testing the LMDB memory-mapped database. On a machine with 32GB RAM, using a 
+database that occupies about 18GB of memory, doing continuous writes to the DB 
+without ever calling msync, and default writeback settings, I see DB 
+throughput spike downward every time the flusher wakes up. The DB is a mmap'd 
+file on an XFS partition, and a DB write operation simply dirties a random set 
+of pages. After the program has been running for more than 
+dirty_expire_centisecs, every dirty_writeback_centisecs the DB app basically 
+stops while the flusher writes out all the dirty pages.
 
-diff --git a/arch/x86/kernel/sysfb_simplefb.c b/arch/x86/kernel/sysfb_simplefb.c
-index 22513e9..b7bb615 100644
---- a/arch/x86/kernel/sysfb_simplefb.c
-+++ b/arch/x86/kernel/sysfb_simplefb.c
-@@ -79,7 +79,7 @@ __init int create_simplefb(const struct screen_info *si,
+I'm curious about a couple things - since the DB knows which pages it is 
+dirtying in a given transaction, would it help overall throughput if the DB 
+told the OS (via msync) exactly which ranges to flush? Obviously not, in the 
+current implementation of msync, but can a patch like Paolo's make this 
+better? And can the dirty_expire_centisecs behavior be fixed, so that it's 
+only writing out a smaller set of pages on each wakeup? What else can we do to 
+minimize the impact of the flusher? If I turn it off completely the throughput 
+nearly doubles, from 5100 DB writes/sec to 9000/sec. If I turn off the timed 
+flush and just use dirty_background_bytes the throughput just slows to around 
+7000/sec.
 
-        /* setup IORESOURCE_MEM as framebuffer memory */
-        memset(&res, 0, sizeof(res));
--       res.flags = IORESOURCE_MEM;
-+       res.flags = IORESOURCE_MEM | IORESOURCE_BUSY;
-        res.name = simplefb_resname;
-        res.start = si->lfb_base;
-        res.end = si->lfb_base + len - 1;
+It seems to me the main slowdown is because the OS is locking dirty pages 
+indiscriminately. The DB does copy-on-write, so pages that it dirties in one 
+transaction will not be written again in the next transaction. I would have 
+expected read-only accesses to these pages to be able to progress without any 
+delay but that doesn't seem to be the case.
+
+-- 
+   -- Howard Chu
+   CTO, Symas Corp.           http://www.symas.com
+   Director, Highland Sun     http://highlandsun.com/hyc/
+   Chief Architect, OpenLDAP  http://www.openldap.org/project/
