@@ -1,48 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147Ab3IHPOr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 11:14:47 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:41917 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752745Ab3IHPOq convert rfc822-to-8bit (ORCPT
+	id S1753516Ab3IHPWk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 11:22:40 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:37167 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752748Ab3IHPWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 11:14:46 -0400
-MIME-Version: 1.0
-Message-ID: <3b488375-6998-4681-b105-e4c6d12ceca2@default>
-Date: Sun, 8 Sep 2013 08:14:23 -0700 (PDT)
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-To: <michael.opdenacker@free-electrons.com>
-Cc: <mingo@redhat.com>, <konrad.wilk@oracle.com>, <x86@kernel.org>,
-        <tglx@linutronix.de>, <xen-devel@lists.xenproject.org>,
-        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
-        <hpa@zytor.com>
-Subject: Re: [PATCH] x86/xen: remove deprecated IRQF_DISABLED
-X-Mailer: Zimbra on Oracle Beehive
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Sun, 8 Sep 2013 11:22:38 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Shaohua Li <shli@kernel.org>,
+        Wang YanQing <udknight@gmail.com>
+Cc: liuj97@gmail.com, Jiang Liu <jiang.liu@huawei.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        liguang <lig.fnst@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v1 1/3] SMP: kill redundant call_function_data->cpumask_ipi field
+Date: Sun,  8 Sep 2013 23:22:23 +0800
+Message-Id: <1378653745-8343-1-git-send-email-liuj97@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jiang Liu <jiang.liu@huawei.com>
 
------ michael.opdenacker@free-electrons.com wrote:
+Commit f44310b98ddb7 "smp: Fix SMP function call empty cpu mask race"
+introduced field call_function_data->cpumask_ipi to resolve a race
+condition in smp_call_function_many().
 
-> This patch proposes to remove the IRQF_DISABLED flag from x86/xen
-> code. It's a NOOP since 2.6.35 and it will be removed one day.
-> 
-> Signed-off-by: Michael Opdenacker
-> <michael.opdenacker@free-electrons.com>
-> ---
->  arch/x86/xen/smp.c      | 10 +++++-----
->  arch/x86/xen/spinlock.c |  2 +-
->  arch/x86/xen/time.c     |  3 +--
->  3 files changed, 7 insertions(+), 8 deletions(-)
+Later commit 9a46ad6d6df3 "smp: make smp_call_function_many() use logic
+similar to smp_call_function_single()" fixed the same issue in another
+way when optimizing smp_call_function_many(), which then obsoletes
+changes introduced by commit f44310b98ddb7. So revert it.
 
+We may also keep call_function_data->cpumask_ipi field and use it to
+optimize smp_call_function_many() as below:
+diff --git a/kernel/smp.c b/kernel/smp.c
+index fe9f773..dd852fb 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -428,6 +428,8 @@ void smp_call_function_many(const struct cpumask *mask,
+                csd->info = info;
 
-If you are cleaning up Xen's use of IRQF_DISABLED then you should
-probably also update drivers/xen/evtchn.c and drivers/xen/platform-pci.c
+                raw_spin_lock_irqsave(&dst->lock, flags);
++               if (list_empty(&dst->list))
++                       cpumask_clear_cpu(cpu, cfd->cpumask_ipi);
+                list_add_tail(&csd->list, &dst->list);
+                raw_spin_unlock_irqrestore(&dst->lock, flags);
+        }
 
--boris
+But I have no platforms to verify the optimization effect,
+so simpify the code first.
+
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Jiang Liu <liuj97@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Wang YanQing <udknight@gmail.com>
+Cc: Shaohua Li <shli@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: liguang <lig.fnst@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+---
+ kernel/smp.c | 16 ++--------------
+ 1 file changed, 2 insertions(+), 14 deletions(-)
+
+diff --git a/kernel/smp.c b/kernel/smp.c
+index fe9f773..a034712 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -23,7 +23,6 @@ enum {
+ struct call_function_data {
+ 	struct call_single_data	__percpu *csd;
+ 	cpumask_var_t		cpumask;
+-	cpumask_var_t		cpumask_ipi;
+ };
+ 
+ static DEFINE_PER_CPU_SHARED_ALIGNED(struct call_function_data, cfd_data);
+@@ -47,9 +46,6 @@ hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 		if (!zalloc_cpumask_var_node(&cfd->cpumask, GFP_KERNEL,
+ 				cpu_to_node(cpu)))
+ 			return notifier_from_errno(-ENOMEM);
+-		if (!zalloc_cpumask_var_node(&cfd->cpumask_ipi, GFP_KERNEL,
+-				cpu_to_node(cpu)))
+-			return notifier_from_errno(-ENOMEM);
+ 		cfd->csd = alloc_percpu(struct call_single_data);
+ 		if (!cfd->csd) {
+ 			free_cpumask_var(cfd->cpumask);
+@@ -64,7 +60,6 @@ hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 	case CPU_DEAD:
+ 	case CPU_DEAD_FROZEN:
+ 		free_cpumask_var(cfd->cpumask);
+-		free_cpumask_var(cfd->cpumask_ipi);
+ 		free_percpu(cfd->csd);
+ 		break;
+ #endif
+@@ -255,9 +250,9 @@ int smp_call_function_single(int cpu, smp_call_func_t func, void *info,
+ 				csd = &__get_cpu_var(csd_data);
+ 
+ 			csd_lock(csd);
+-
+ 			csd->func = func;
+ 			csd->info = info;
++
+ 			generic_exec_single(cpu, csd, wait);
+ 		} else {
+ 			err = -ENXIO;	/* CPU not online */
+@@ -410,13 +405,6 @@ void smp_call_function_many(const struct cpumask *mask,
+ 	if (unlikely(!cpumask_weight(cfd->cpumask)))
+ 		return;
+ 
+-	/*
+-	 * After we put an entry into the list, cfd->cpumask may be cleared
+-	 * again when another CPU sends another IPI for a SMP function call, so
+-	 * cfd->cpumask will be zero.
+-	 */
+-	cpumask_copy(cfd->cpumask_ipi, cfd->cpumask);
+-
+ 	for_each_cpu(cpu, cfd->cpumask) {
+ 		struct call_single_data *csd = per_cpu_ptr(cfd->csd, cpu);
+ 		struct call_single_queue *dst =
+@@ -433,7 +421,7 @@ void smp_call_function_many(const struct cpumask *mask,
+ 	}
+ 
+ 	/* Send a message to all CPUs in the map */
+-	arch_send_call_function_ipi_mask(cfd->cpumask_ipi);
++	arch_send_call_function_ipi_mask(cfd->cpumask);
+ 
+ 	if (wait) {
+ 		for_each_cpu(cpu, cfd->cpumask) {
+-- 
+1.8.1.2
 
