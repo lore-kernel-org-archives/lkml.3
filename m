@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759397Ab3IHDU0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:20:26 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55960 "EHLO
+	id S1759382Ab3IHDUY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:20:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56086 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751934Ab3IHDSu (ORCPT
+	by vger.kernel.org with ESMTP id S1756276Ab3IHDSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 23:18:50 -0400
+	Sat, 7 Sep 2013 23:18:49 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Eric Dumazet" <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
+CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>,
+        "Dan Carpenter" <dan.carpenter@oracle.com>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.990890425@decadent.org.uk>
+Message-ID: <lsq.1378608721.743555284@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [012/121] usbnet: do not pretend to support SG/TSO
+Subject: [020/121] ALSA: ak4xx-adda: info leak in ak4xxx_capture_source_info()
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,71 +31,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit 20f0170377264e8449b6987041f0bcc4d746d3ed ]
+commit bd5fe738e388ceaa32e5171481e0d3ec59f0ccfe upstream.
 
-usbnet doesn't support yet SG, so drivers should not advertise SG or TSO
-capabilities, as they allow TCP stack to build large TSO packets that
-need to be linearized and might use order-5 pages.
+"idx" is controled by the user and can be a negative offset into the
+input_names[] array.
 
-This adds an extra copy overhead and possible allocation failures.
-
-Current code ignore skb_linearize() return code so crashes are even
-possible.
-
-Best is to not pretend SG/TSO is supported, and add this again when/if
-usbnet really supports SG for devices who could get a performance gain.
-
-Based on a prior patch from Freddy Xin <freddy@asix.com.tw>
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/usb/smsc75xx.c | 12 +++---------
- 1 file changed, 3 insertions(+), 9 deletions(-)
+ sound/i2c/other/ak4xxx-adda.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/usb/smsc75xx.c b/drivers/net/usb/smsc75xx.c
-index f3d17f8..a8e4640 100644
---- a/drivers/net/usb/smsc75xx.c
-+++ b/drivers/net/usb/smsc75xx.c
-@@ -43,7 +43,6 @@
- #define EEPROM_MAC_OFFSET		(0x01)
- #define DEFAULT_TX_CSUM_ENABLE		(true)
- #define DEFAULT_RX_CSUM_ENABLE		(true)
--#define DEFAULT_TSO_ENABLE		(true)
- #define SMSC75XX_INTERNAL_PHY_ID	(1)
- #define SMSC75XX_TX_OVERHEAD		(8)
- #define MAX_RX_FIFO_SIZE		(20 * 1024)
-@@ -1035,17 +1034,14 @@ static int smsc75xx_bind(struct usbnet *dev, struct usb_interface *intf)
+diff --git a/sound/i2c/other/ak4xxx-adda.c b/sound/i2c/other/ak4xxx-adda.c
+index cef813d..ed726d1 100644
+--- a/sound/i2c/other/ak4xxx-adda.c
++++ b/sound/i2c/other/ak4xxx-adda.c
+@@ -571,7 +571,7 @@ static int ak4xxx_capture_source_info(struct snd_kcontrol *kcontrol,
+ 	struct snd_akm4xxx *ak = snd_kcontrol_chip(kcontrol);
+ 	int mixer_ch = AK_GET_SHIFT(kcontrol->private_value);
+ 	const char **input_names;
+-	int  num_names, idx;
++	unsigned int num_names, idx;
  
- 	INIT_WORK(&pdata->set_multicast, smsc75xx_deferred_multicast_write);
- 
--	if (DEFAULT_TX_CSUM_ENABLE) {
-+	if (DEFAULT_TX_CSUM_ENABLE)
- 		dev->net->features |= NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM;
--		if (DEFAULT_TSO_ENABLE)
--			dev->net->features |= NETIF_F_SG |
--				NETIF_F_TSO | NETIF_F_TSO6;
--	}
-+
- 	if (DEFAULT_RX_CSUM_ENABLE)
- 		dev->net->features |= NETIF_F_RXCSUM;
- 
- 	dev->net->hw_features = NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
--		NETIF_F_SG | NETIF_F_TSO | NETIF_F_TSO6 | NETIF_F_RXCSUM;
-+				NETIF_F_RXCSUM;
- 
- 	/* Init all registers */
- 	ret = smsc75xx_reset(dev);
-@@ -1170,8 +1166,6 @@ static struct sk_buff *smsc75xx_tx_fixup(struct usbnet *dev,
- {
- 	u32 tx_cmd_a, tx_cmd_b;
- 
--	skb_linearize(skb);
--
- 	if (skb_headroom(skb) < SMSC75XX_TX_OVERHEAD) {
- 		struct sk_buff *skb2 =
- 			skb_copy_expand(skb, SMSC75XX_TX_OVERHEAD, 0, flags);
+ 	num_names = ak4xxx_capture_num_inputs(ak, mixer_ch);
+ 	if (!num_names)
 
