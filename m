@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758002Ab3IHRL3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 13:11:29 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:57354 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752572Ab3IHRL1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 13:11:27 -0400
-Message-ID: <1378660284.2429.11.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH V3 08/11] kexec: Disable at runtime if the kernel
- enforces module loading restrictions
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
+	id S1758434Ab3IHRPt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 13:15:49 -0400
+Received: from mail-bl2lp0208.outbound.protection.outlook.com ([207.46.163.208]:21014
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753093Ab3IHRPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Sep 2013 13:15:47 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Kees Cook <keescook@chromium.org>, Greg KH <gregkh@linuxfoundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
         "hpa@zytor.com" <hpa@zytor.com>
-Date: Sun, 08 Sep 2013 10:11:24 -0700
-In-Reply-To: <CAGXu5jLwCt6RtQC+kxcUC69tMydx8DO2QWDv3jK6_mOyT_iNbA@mail.gmail.com>
+Subject: Re: [PATCH V3 08/11] kexec: Disable at runtime if the kernel
+ enforces module loading restrictions
+Thread-Topic: [PATCH V3 08/11] kexec: Disable at runtime if the kernel
+ enforces module loading restrictions
+Thread-Index: AQHOqQBlTgRtcELUZ0K5HxHj5bQ8FZm7apqAgAALY9KAAI6QgIAAFlYAgAABMoA=
+Date: Sun, 8 Sep 2013 17:15:42 +0000
+Message-ID: <1378660541.2300.19.camel@x230>
 References: <1378252218-18798-1-git-send-email-matthew.garrett@nebula.com>
 	 <1378252218-18798-9-git-send-email-matthew.garrett@nebula.com>
 	 <20130908064027.GA3587@kroah.com> <1378622648.2300.4.camel@x230>
 	 <20130908072408.GA5092@kroah.com>
 	 <CAGXu5jLwCt6RtQC+kxcUC69tMydx8DO2QWDv3jK6_mOyT_iNbA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.5 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	 <1378660284.2429.11.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1378660284.2429.11.camel@dabdike.int.hansenpartnership.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:470:1f07:1371:740c:5537:5f2f:efde]
+x-forefront-prvs: 09634B1196
+x-forefront-antispam-report: SFV:NSPM;SFS:(24454002)(189002)(199002)(377424004)(74876001)(80976001)(53806001)(56816003)(77096001)(19580395003)(19580405001)(83322001)(76482001)(54356001)(79102001)(77982001)(59766001)(83072001)(56776001)(54316002)(80022001)(63696002)(46102001)(81342001)(81816001)(65816001)(69226001)(74366001)(47446002)(74706001)(31966008)(74662001)(74502001)(50986001)(47976001)(47736001)(49866001)(4396001)(51856001)(81686001)(81542001)(76786001)(76796001)(33646001)(33716001)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB222;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:740c:5537:5f2f:efde;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <254C8BA269DE7E40A11C6FC7D4CBEE43@namprd05.prod.outlook.com>
+MIME-Version: 1.0
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r88HFsUS015580
 
-On Sun, 2013-09-08 at 08:51 -0700, Kees Cook wrote:
-> On Sun, Sep 8, 2013 at 12:24 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Sun, Sep 08, 2013 at 06:44:08AM +0000, Matthew Garrett wrote:
-> >> On Sat, 2013-09-07 at 23:40 -0700, Greg KH wrote:
-> >> > If you apply this, you break everyone who is currently relying on kexec
-> >> > (i.e. kdump, bootloaders, etc.), from using signed kernel modules, which
-> >> > personally, seems like a very bad idea.
-> >>
-> >> Enforcing signed modules provides you with no additional security if you
-> >> have kexec enabled. It's better to make that obvious.
-> >
-> > Then document the heck out of it, don't disable a valid use case just
-> > because it possibly could be used in some way that is different from the
-> > original system.
-> >
-> > If you take this to an extreme, kexec shouldn't be here at all, as it
-> > can do anything in the kernel wherever it wants to.
-> >
-> > kexec has nothing to do with signed modules, don't tie them together.
-> 
-> It's not accurate to say it has "nothing to do" with signed modules.
-> The purpose of signed modules is to ensure the integrity of the
-> running system against the root user.
+On Sun, 2013-09-08 at 10:11 -0700, James Bottomley wrote:
 
-That's not true if you look at the use cases.  Distros use signed
-modules to taint the kernel:  insert an unsigned one and the kernel
-taints; insert a properly signed one and it doesn't.  They use it for
-support to tell if you've been adhering to your contract.  That use case
-has nothing to do with security.
+> That's not true if you look at the use cases.  Distros use signed
+> modules to taint the kernel:  insert an unsigned one and the kernel
+> taints; insert a properly signed one and it doesn't.  They use it for
+> support to tell if you've been adhering to your contract.  That use case
+> has nothing to do with security.
 
-> It was, however, incomplete. Terrible analogy follows: signed modules
-> was locking the front door, but we have all sorts of windows still
-> open. This closes those windows. You're trying to say that shutting
-> windows has nothing to do with lumber locks. While technically true,
-> this is about the intent of the barriers.
-> 
-> Anyone currently using signed modules (with sig_enforce) AND kexec is
-> deluding themselves about what the state of their system's ring-0
-> security stance is. Those people should be running without
-> sig_enforce, and if they want both sig_enforce and kexec, then I would
-> expect a follow-up patch from them to provide signed kexec support.
+That use case has nothing to do with this patch, either. It's completely
+unaffected. This only triggers if the kernel is configured to refuse the
+loading of unsigned modules.
 
-The analogy is rubbish.  I can give away CAP_SYS_MODULE and enforce what
-modules those I've given the permission to can insert by signing them.
-I keep CAP_SYS_BOOT, so they can't use kexec to subvert this.
+> The analogy is rubbish.  I can give away CAP_SYS_MODULE and enforce what
+> modules those I've given the permission to can insert by signing them.
+> I keep CAP_SYS_BOOT, so they can't use kexec to subvert this.
 
-Your analogy seems to be giving away the whole root and then crying Dr
-it hurts when I do this ...
+Yeah, that's a good argument for why capabilities are mostly pointless.
+If I have CAP_SYS_BOOT I can give myself any other capabilities. Why
+bother?
 
-James
-
-
+-- 
+Matthew Garrett <matthew.garrett@nebula.com>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
