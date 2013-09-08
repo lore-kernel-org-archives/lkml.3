@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932182Ab3IHDUy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:20:54 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56058 "EHLO
+	id S1759560Ab3IHDUw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:20:52 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56157 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756275Ab3IHDSz (ORCPT
+	by vger.kernel.org with ESMTP id S1756476Ab3IHDSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 7 Sep 2013 23:18:55 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,11 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>
+CC: akpm@linux-foundation.org,
+        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
+        "Paul Mackerras" <paulus@samba.org>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.630915814@decadent.org.uk>
+Message-ID: <lsq.1378608721.76578814@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [118/121] ALSA: opti9xx: Fix conflicting driver object name
+Subject: [102/121] powerpc: Work around gcc miscompilation of __pa() on 64-bit
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,53 +32,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Paul Mackerras <paulus@samba.org>
 
-commit fb615499f0ad28ed74201c1cdfddf9e64e205424 upstream.
+commit bdbc29c19b2633b1d9c52638fb732bcde7a2031a upstream.
 
-The recent commit to delay the release of kobject triggered NULL
-dereferences of opti9xx drivers.  The cause is that all
-snd-opti92x-ad1848, snd-opti92x-cs4231 and snd-opti93x drivers
-register the PnP card driver with the very same name, and also
-snd-opti92x-ad1848 and -cs4231 drivers register the ISA driver with
-the same name, too.  When these drivers are built in, quick
-"register-release-and-re-register" actions occur, and this results in
-Oops because of the same name is assigned to the kobject.
+On 64-bit, __pa(&static_var) gets miscompiled by recent versions of
+gcc as something like:
 
-The fix is simply to assign individual names.  As a bonus, by using
-KBUILD_MODNAME, the patch reduces more lines than it adds.
+        addis 3,2,.LANCHOR1+4611686018427387904@toc@ha
+        addi 3,3,.LANCHOR1+4611686018427387904@toc@l
 
-The fix is based on the suggestion by Russell King.
+This ends up effectively ignoring the offset, since its bottom 32 bits
+are zero, and means that the result of __pa() still has 0xC in the top
+nibble.  This happens with gcc 4.8.1, at least.
 
-Reported-and-tested-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+To work around this, for 64-bit we make __pa() use an AND operator,
+and for symmetry, we make __va() use an OR operator.  Using an AND
+operator rather than a subtraction ends up with slightly shorter code
+since it can be done with a single clrldi instruction, whereas it
+takes three instructions to form the constant (-PAGE_OFFSET) and add
+it on.  (Note that MEMORY_START is always 0 on 64-bit.)
+
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/isa/opti9xx/opti92x-ad1848.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ arch/powerpc/Kconfig            |  1 +
+ arch/powerpc/include/asm/page.h | 10 ++++++++++
+ 2 files changed, 11 insertions(+)
 
---- a/sound/isa/opti9xx/opti92x-ad1848.c
-+++ b/sound/isa/opti9xx/opti92x-ad1848.c
-@@ -173,11 +173,7 @@ MODULE_DEVICE_TABLE(pnp_card, snd_opti9x
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -937,6 +937,7 @@ config RELOCATABLE
+ 	  must live at a different physical address than the primary
+ 	  kernel.
  
- #endif	/* CONFIG_PNP */
++# This value must have zeroes in the bottom 60 bits otherwise lots will break
+ config PAGE_OFFSET
+ 	hex
+ 	default "0xc000000000000000"
+--- a/arch/powerpc/include/asm/page.h
++++ b/arch/powerpc/include/asm/page.h
+@@ -132,9 +132,19 @@ extern phys_addr_t kernstart_addr;
+ #define __va(x) ((void *)(unsigned long)((phys_addr_t)(x) - PHYSICAL_START + KERNELBASE))
+ #define __pa(x) ((unsigned long)(x) + PHYSICAL_START - KERNELBASE)
+ #else
++#ifdef CONFIG_PPC64
++/*
++ * gcc miscompiles (unsigned long)(&static_var) - PAGE_OFFSET
++ * with -mcmodel=medium, so we use & and | instead of - and + on 64-bit.
++ */
++#define __va(x) ((void *)(unsigned long)((phys_addr_t)(x) | PAGE_OFFSET))
++#define __pa(x) ((unsigned long)(x) & 0x0fffffffffffffffUL)
++
++#else /* 32-bit, non book E */
+ #define __va(x) ((void *)(unsigned long)((phys_addr_t)(x) + PAGE_OFFSET - MEMORY_START))
+ #define __pa(x) ((unsigned long)(x) - PAGE_OFFSET + MEMORY_START)
+ #endif
++#endif
  
--#ifdef OPTi93X
--#define DEV_NAME "opti93x"
--#else
--#define DEV_NAME "opti92x"
--#endif
-+#define DEV_NAME KBUILD_MODNAME
- 
- static char * snd_opti9xx_names[] = {
- 	"unknown",
-@@ -1126,7 +1122,7 @@ static void __devexit snd_opti9xx_pnp_re
- 
- static struct pnp_card_driver opti9xx_pnpc_driver = {
- 	.flags		= PNP_DRIVER_RES_DISABLE,
--	.name		= "opti9xx",
-+	.name		= DEV_NAME,
- 	.id_table	= snd_opti9xx_pnpids,
- 	.probe		= snd_opti9xx_pnp_probe,
- 	.remove		= __devexit_p(snd_opti9xx_pnp_remove),
+ /*
+  * Unfortunately the PLT is in the BSS in the PPC32 ELF ABI,
 
