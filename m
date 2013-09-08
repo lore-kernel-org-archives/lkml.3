@@ -1,266 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752365Ab3IHJF3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 05:05:29 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:20027 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752009Ab3IHJF1 (ORCPT
+	id S1752515Ab3IHJFg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 05:05:36 -0400
+Received: from relay.parallels.com ([195.214.232.42]:45120 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752382Ab3IHJFd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 05:05:27 -0400
-Message-ID: <522C3DB8.3060002@oracle.com>
-Date: Sun, 08 Sep 2013 17:04:56 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Sun, 8 Sep 2013 05:05:33 -0400
+Message-ID: <522C3DDC.4090209@parallels.com>
+Date: Sun, 8 Sep 2013 13:05:32 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130827 Icedove/17.0.8
 MIME-Version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-CC: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dave Hansen <dave.hansen@intel.com>, Minchan Kim <minchan@kernel.org>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>
-Subject: Re: [RFC PATCH 1/4] zbud: use page ref counter for zbud pages
-References: <1377852176-30970-1-git-send-email-k.kozlowski@samsung.com> <1377852176-30970-2-git-send-email-k.kozlowski@samsung.com>
-In-Reply-To: <1377852176-30970-2-git-send-email-k.kozlowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Marco Stornelli <marco.stornelli@gmail.com>
+CC: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/19] pramfs
+References: <522AE04C.6000002@gmail.com> <CAFLxGvw1mJ5GSWMMZhznU0jJn4pvM+jthyLAtKnL_WvGALB6dg@mail.gmail.com> <522B52BA.6030202@gmail.com>
+In-Reply-To: <522B52BA.6030202@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Originating-IP: [81.5.110.170]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Krzysztof,
+On 09/07/2013 08:22 PM, Marco Stornelli wrote:
+> Il 07/09/2013 16:58, richard -rw- weinberger ha scritto:
+>> On Sat, Sep 7, 2013 at 10:14 AM, Marco Stornelli
+>> <marco.stornelli@gmail.com> wrote:
+>>> Hi all,
+>>>
+>>> this is an attempt to include pramfs in mainline. At the moment pramfs
+>>> has been included in LTSI kernel. Since last review the code is more
+>>> or less the same but, with a really big thanks to Vladimir Davydov and
+>>> Parallels, the development of fsck has been started and we have now
+>>> the possibility to correct fs errors due to corruption. It's a "young"
+>>> tool but we are working on it. You can clone the code from our repos:
+>>>
+>>> git clone git://git.code.sf.net/p/pramfs/code pramfs-code
+>>> git clone git://git.code.sf.net/p/pramfs/Tools pramfs-Tools
+>>
+>> I'm a bit confused, what kind of non-volatile RAM is your fs targeting?
+>> Wouldn't it make sense to use pstore like
+>> arch/powerpc/platforms/pseries/nvram.c does?
+>>
+>
+> Usually battery-backed SRAM, but actually it can be used in any piece 
+> of ram directly accessible and it provides a normal and complete fs 
+> interface. Usually I do the fs test remapping my system ram. You can 
+> find documentation here:
+>
+> http://pramfs.sourceforge.net
 
-On 08/30/2013 04:42 PM, Krzysztof Kozlowski wrote:
-> Use page reference counter for zbud pages. The ref counter replaces
-> zbud_header.under_reclaim flag and ensures that zbud page won't be freed
-> when zbud_free() is called during reclaim. It allows implementation of
-> additional reclaim paths.
-> 
-> The page count is incremented when:
->  - a handle is created and passed to zswap (in zbud_alloc()),
->  - user-supplied eviction callback is called (in zbud_reclaim_page()).
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
-> Reviewed-by: Bob Liu <bob.liu@oracle.com>
+I'd like to add that in contrast to pstore, pramfs allows storing any 
+files in it, not only system logs. This can be of value even on machines 
+w/o special devices like sram/nvram: one can store data that should be 
+quickly restored after reboot in conventional ram and use kexec to boot 
+to a new kernel. One of the use cases of this could be checkpointing 
+time-critical services to ram (using criu.org) to be quickly restored 
+after a kernel update providing almost zero-downtime.
 
-AFAIR, the previous version you sent out has a function  called
-rebalance_lists() which I think is a good clean up.
-But I didn't see that function any more in this version.
+>
+> Marco
 
-Thanks,
--Bob
-
-
-> ---
->  mm/zbud.c |   97 +++++++++++++++++++++++++++++++++----------------------------
->  1 file changed, 52 insertions(+), 45 deletions(-)
-> 
-> diff --git a/mm/zbud.c b/mm/zbud.c
-> index ad1e781..aa9a15c 100644
-> --- a/mm/zbud.c
-> +++ b/mm/zbud.c
-> @@ -109,7 +109,6 @@ struct zbud_header {
->  	struct list_head lru;
->  	unsigned int first_chunks;
->  	unsigned int last_chunks;
-> -	bool under_reclaim;
->  };
->  
->  /*****************
-> @@ -138,16 +137,9 @@ static struct zbud_header *init_zbud_page(struct page *page)
->  	zhdr->last_chunks = 0;
->  	INIT_LIST_HEAD(&zhdr->buddy);
->  	INIT_LIST_HEAD(&zhdr->lru);
-> -	zhdr->under_reclaim = 0;
->  	return zhdr;
->  }
->  
-> -/* Resets the struct page fields and frees the page */
-> -static void free_zbud_page(struct zbud_header *zhdr)
-> -{
-> -	__free_page(virt_to_page(zhdr));
-> -}
-> -
->  /*
->   * Encodes the handle of a particular buddy within a zbud page
->   * Pool lock should be held as this function accesses first|last_chunks
-> @@ -188,6 +180,31 @@ static int num_free_chunks(struct zbud_header *zhdr)
->  	return NCHUNKS - zhdr->first_chunks - zhdr->last_chunks - 1;
->  }
->  
-> +/*
-> + * Increases ref count for zbud page.
-> + */
-> +static void get_zbud_page(struct zbud_header *zhdr)
-> +{
-> +	get_page(virt_to_page(zhdr));
-> +}
-> +
-> +/*
-> + * Decreases ref count for zbud page and frees the page if it reaches 0
-> + * (no external references, e.g. handles).
-> + *
-> + * Returns 1 if page was freed and 0 otherwise.
-> + */
-> +static int put_zbud_page(struct zbud_header *zhdr)
-> +{
-> +	struct page *page = virt_to_page(zhdr);
-> +	if (put_page_testzero(page)) {
-> +		free_hot_cold_page(page, 0);
-> +		return 1;
-> +	}
-> +	return 0;
-> +}
-> +
-> +
->  /*****************
->   * API Functions
->  *****************/
-> @@ -250,7 +267,7 @@ void zbud_destroy_pool(struct zbud_pool *pool)
->  int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
->  			unsigned long *handle)
->  {
-> -	int chunks, i, freechunks;
-> +	int chunks, i;
->  	struct zbud_header *zhdr = NULL;
->  	enum buddy bud;
->  	struct page *page;
-> @@ -273,6 +290,7 @@ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
->  				bud = FIRST;
->  			else
->  				bud = LAST;
-> +			get_zbud_page(zhdr);
->  			goto found;
->  		}
->  	}
-> @@ -284,6 +302,10 @@ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
->  		return -ENOMEM;
->  	spin_lock(&pool->lock);
->  	pool->pages_nr++;
-> +	/*
-> +	 * We will be using zhdr instead of page, so
-> +	 * don't increase the page count.
-> +	 */
->  	zhdr = init_zbud_page(page);
->  	bud = FIRST;
->  
-> @@ -295,7 +317,7 @@ found:
->  
->  	if (zhdr->first_chunks == 0 || zhdr->last_chunks == 0) {
->  		/* Add to unbuddied list */
-> -		freechunks = num_free_chunks(zhdr);
-> +		int freechunks = num_free_chunks(zhdr);
->  		list_add(&zhdr->buddy, &pool->unbuddied[freechunks]);
->  	} else {
->  		/* Add to buddied list */
-> @@ -326,7 +348,6 @@ found:
->  void zbud_free(struct zbud_pool *pool, unsigned long handle)
->  {
->  	struct zbud_header *zhdr;
-> -	int freechunks;
->  
->  	spin_lock(&pool->lock);
->  	zhdr = handle_to_zbud_header(handle);
-> @@ -337,26 +358,19 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle)
->  	else
->  		zhdr->first_chunks = 0;
->  
-> -	if (zhdr->under_reclaim) {
-> -		/* zbud page is under reclaim, reclaim will free */
-> -		spin_unlock(&pool->lock);
-> -		return;
-> -	}
-> -
->  	/* Remove from existing buddy list */
->  	list_del(&zhdr->buddy);
->  
->  	if (zhdr->first_chunks == 0 && zhdr->last_chunks == 0) {
-> -		/* zbud page is empty, free */
->  		list_del(&zhdr->lru);
-> -		free_zbud_page(zhdr);
->  		pool->pages_nr--;
->  	} else {
->  		/* Add to unbuddied list */
-> -		freechunks = num_free_chunks(zhdr);
-> +		int freechunks = num_free_chunks(zhdr);
->  		list_add(&zhdr->buddy, &pool->unbuddied[freechunks]);
->  	}
->  
-> +	put_zbud_page(zhdr);
->  	spin_unlock(&pool->lock);
->  }
->  
-> @@ -400,7 +414,7 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle)
->   */
->  int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
->  {
-> -	int i, ret, freechunks;
-> +	int i, ret;
->  	struct zbud_header *zhdr;
->  	unsigned long first_handle = 0, last_handle = 0;
->  
-> @@ -411,11 +425,24 @@ int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
->  		return -EINVAL;
->  	}
->  	for (i = 0; i < retries; i++) {
-> +		if (list_empty(&pool->lru)) {
-> +			/*
-> +			 * LRU was emptied during evict calls in previous
-> +			 * iteration but put_zbud_page() returned 0 meaning
-> +			 * that someone still holds the page. This may
-> +			 * happen when some other mm mechanism increased
-> +			 * the page count.
-> +			 * In such case we succedded with reclaim.
-> +			 */
-> +			spin_unlock(&pool->lock);
-> +			return 0;
-> +		}
->  		zhdr = list_tail_entry(&pool->lru, struct zbud_header, lru);
-> +		/* Move this last element to beginning of LRU */
->  		list_del(&zhdr->lru);
-> -		list_del(&zhdr->buddy);
-> +		list_add(&zhdr->lru, &pool->lru);
->  		/* Protect zbud page against free */
-> -		zhdr->under_reclaim = true;
-> +		get_zbud_page(zhdr);
->  		/*
->  		 * We need encode the handles before unlocking, since we can
->  		 * race with free that will set (first|last)_chunks to 0
-> @@ -440,29 +467,9 @@ int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
->  				goto next;
->  		}
->  next:
-> -		spin_lock(&pool->lock);
-> -		zhdr->under_reclaim = false;
-> -		if (zhdr->first_chunks == 0 && zhdr->last_chunks == 0) {
-> -			/*
-> -			 * Both buddies are now free, free the zbud page and
-> -			 * return success.
-> -			 */
-> -			free_zbud_page(zhdr);
-> -			pool->pages_nr--;
-> -			spin_unlock(&pool->lock);
-> +		if (put_zbud_page(zhdr))
->  			return 0;
-> -		} else if (zhdr->first_chunks == 0 ||
-> -				zhdr->last_chunks == 0) {
-> -			/* add to unbuddied list */
-> -			freechunks = num_free_chunks(zhdr);
-> -			list_add(&zhdr->buddy, &pool->unbuddied[freechunks]);
-> -		} else {
-> -			/* add to buddied list */
-> -			list_add(&zhdr->buddy, &pool->buddied);
-> -		}
-> -
-> -		/* add to beginning of LRU */
-> -		list_add(&zhdr->lru, &pool->lru);
-> +		spin_lock(&pool->lock);
->  	}
->  	spin_unlock(&pool->lock);
->  	return -EAGAIN;
-> 
