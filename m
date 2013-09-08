@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759175Ab3IHDTo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:19:44 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56111 "EHLO
+	id S932124Ab3IHDUH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:20:07 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55983 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755583Ab3IHDSp (ORCPT
+	by vger.kernel.org with ESMTP id S1753991Ab3IHDSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 23:18:45 -0400
+	Sat, 7 Sep 2013 23:18:35 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Sam Ravnborg" <sam@ravnborg.org>
+CC: akpm@linux-foundation.org, "Amit Shah" <amit.shah@redhat.com>,
+        "Rusty Russell" <rusty@rustcorp.com.au>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.81950593@decadent.org.uk>
+Message-ID: <lsq.1378608721.402660700@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [097/121] sparc32: support atomic64_t
+Subject: [047/121] virtio: console: return -ENODEV on all read operations
+ after unplug
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,57 +32,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sam Ravnborg <sam@ravnborg.org>
+From: Amit Shah <amit.shah@redhat.com>
 
-commit aea1181b0bd0a09c54546399768f359d1e198e45 upstream.
+commit 96f97a83910cdb9d89d127c5ee523f8fc040a804 upstream.
 
-There is no-one that really require atomic64_t support on sparc32.
-But several drivers fails to build without proper atomic64 support.
-And for an allyesconfig build for sparc32 this is annoying.
+If a port gets unplugged while a user is blocked on read(), -ENODEV is
+returned.  However, subsequent read()s returned 0, indicating there's no
+host-side connection (but not indicating the device went away).
 
-Include the generic atomic64_t support for sparc32.
-This has a text footprint cost:
+This also happened when a port was unplugged and the user didn't have
+any blocking operation pending.  If the user didn't monitor the SIGIO
+signal, they won't have a chance to find out if the port went away.
 
-$size vmlinux (before atomic64_t support)
-   text    data     bss     dec     hex filename
-3578860  134260  108781 3821901  3a514d vmlinux
+Fix by returning -ENODEV on all read()s after the port gets unplugged.
+write() already behaves this way.
 
-$size vmlinux (after atomic64_t support)
-   text    data     bss     dec     hex filename
-3579892  130684  108781 3819357  3a475d vmlinux
-
-text increase (3579892 - 3578860) = 1032 bytes
-
-data decreases - but I fail to explain why!
-I have rebuild twice to check my numbers.
-
-Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/sparc/Kconfig                 | 1 +
- arch/sparc/include/asm/atomic_32.h | 2 ++
- 2 files changed, 3 insertions(+)
+ drivers/char/virtio_console.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -31,6 +31,7 @@ config SPARC
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -637,6 +637,10 @@ static ssize_t port_fops_read(struct fil
  
- config SPARC32
- 	def_bool !64BIT
-+	select GENERIC_ATOMIC64
+ 	port = filp->private_data;
  
- config SPARC64
- 	def_bool 64BIT
---- a/arch/sparc/include/asm/atomic_32.h
-+++ b/arch/sparc/include/asm/atomic_32.h
-@@ -15,6 +15,8 @@
- 
- #ifdef __KERNEL__
- 
-+#include <asm-generic/atomic64.h>
++	/* Port is hot-unplugged. */
++	if (!port->guest_connected)
++		return -ENODEV;
 +
- #include <asm/system.h>
- 
- #define ATOMIC_INIT(i)  { (i) }
+ 	if (!port_has_data(port)) {
+ 		/*
+ 		 * If nothing's connected on the host just return 0 in
+@@ -653,7 +657,7 @@ static ssize_t port_fops_read(struct fil
+ 		if (ret < 0)
+ 			return ret;
+ 	}
+-	/* Port got hot-unplugged. */
++	/* Port got hot-unplugged while we were waiting above. */
+ 	if (!port->guest_connected)
+ 		return -ENODEV;
+ 	/*
 
