@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759588Ab3IHDfV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:35:21 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:51030 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759497Ab3IHDfR (ORCPT
+	id S1759086Ab3IHDTf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:19:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56045 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755007Ab3IHDSp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 23:35:17 -0400
-Message-ID: <522BF072.8080807@free-electrons.com>
-Date: Sun, 08 Sep 2013 05:35:14 +0200
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Sat, 7 Sep 2013 23:18:45 -0400
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-CC: Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Andrew Morton <akpm@linux-foundation.org>, ak@linux.intel.com,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] h8300: remove deprecated IRQF_DISABLED
-References: <1378545345-8113-1-git-send-email-michael.opdenacker@free-electrons.com> <CAFLxGvw-OfsVcvqeCms5=V=pBhYPyvqjOZv04ZidMNPyB=7jBw@mail.gmail.com>
-In-Reply-To: <CAFLxGvw-OfsVcvqeCms5=V=pBhYPyvqjOZv04ZidMNPyB=7jBw@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Guenter Roeck" <linux@roeck-us.net>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Sun, 08 Sep 2013 03:52:01 +0100
+Message-ID: <lsq.1378608721.669594911@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [117/121] sparc32: Add ucmpdi2.o to obj-y instead of lib-y.
+In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
+3.2.51-rc1 review patch.  If anyone has any objections, please let me know.
 
-On 09/07/2013 11:21 AM, richard -rw- weinberger wrote:
-> On Sat, Sep 7, 2013 at 11:15 AM, Michael Opdenacker
-> <michael.opdenacker@free-electrons.com> wrote:
->> This patch proposes to remove the IRQF_DISABLED flag from h8300 architecture
->> code. It's a NOOP since 2.6.35 and it will be removed one day.
->>
->> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
->> ---
->>  arch/h8300/kernel/timer/itu.c     | 2 +-
->>  arch/h8300/kernel/timer/timer16.c | 2 +-
->>  arch/h8300/kernel/timer/timer8.c  | 2 +-
->>  arch/h8300/kernel/timer/tpu.c     | 2 +-
->>  4 files changed, 4 insertions(+), 4 deletions(-)
-> FYI, h8300 is gone:
-> https://lkml.org/lkml/2013/8/30/383
-Good to know, thanks! Then this patch is much more exhaustive than mine ;)
+------------------
 
-Cheers,
+From: "David S. Miller" <davem@davemloft.net>
 
-Michael.
+commit 74c7b28953d4eaa6a479c187aeafcfc0280da5e8 upstream.
 
--- 
-Michael Opdenacker, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-+33 484 258 098
+Otherwise if no references exist in the static kernel image,
+we won't export the symbol properly to modules.
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ arch/sparc/lib/Makefile | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/sparc/lib/Makefile b/arch/sparc/lib/Makefile
+index f6f5f38..4961516 100644
+--- a/arch/sparc/lib/Makefile
++++ b/arch/sparc/lib/Makefile
+@@ -15,7 +15,7 @@ lib-$(CONFIG_SPARC32) += divdi3.o udivdi3.o
+ lib-$(CONFIG_SPARC32) += copy_user.o locks.o
+ lib-y                 += atomic_$(BITS).o
+ lib-$(CONFIG_SPARC32) += lshrdi3.o ashldi3.o
+-lib-$(CONFIG_SPARC32) += muldi3.o bitext.o cmpdi2.o ucmpdi2.o
++lib-$(CONFIG_SPARC32) += muldi3.o bitext.o cmpdi2.o
+ 
+ lib-$(CONFIG_SPARC64) += copy_page.o clear_page.o bzero.o
+ lib-$(CONFIG_SPARC64) += csum_copy.o csum_copy_from_user.o csum_copy_to_user.o
+@@ -40,7 +40,7 @@ lib-$(CONFIG_SPARC64) += copy_in_user.o user_fixup.o memmove.o
+ lib-$(CONFIG_SPARC64) += mcount.o ipcsum.o xor.o hweight.o ffs.o
+ 
+ obj-y                 += iomap.o
+-obj-$(CONFIG_SPARC32) += atomic32.o
++obj-$(CONFIG_SPARC32) += atomic32.o ucmpdi2.o
+ obj-y                 += ksyms.o
+ obj-$(CONFIG_SPARC64) += PeeCeeI.o
+ obj-y                 += usercopy.o
 
