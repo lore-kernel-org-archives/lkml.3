@@ -1,118 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751464Ab3IHM1Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 08:27:24 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31039 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751025Ab3IHM1C (ORCPT
+	id S1751804Ab3IHM1g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 08:27:36 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:59028 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482Ab3IHM1d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 08:27:02 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=4hqIL5DWEuAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=0Irq6MuVi30A:10 a=VwQbUJbxAAAA:8 a=LD6OzeOfAdgjjmm37WYA:9 a=jeBq3FmKZ4MA:10 a=qs8Zmr-NzJv-wU3k:21 a=cRSj5ZD0sHXC8GFd:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130908122659.911522142@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Sun, 08 Sep 2013 08:25:47 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>
-Subject: [PATCH RT 02/10] rt,ntp: Move call to schedule_delayed_work() to helper thread
-References: <20130908122545.421180629@goodmis.org>
-Content-Disposition: inline; filename=0002-rt-ntp-Move-call-to-schedule_delayed_work-to-helper-.patch
+	Sun, 8 Sep 2013 08:27:33 -0400
+MIME-Version: 1.0
+X-Originating-IP: [89.139.56.158]
+In-Reply-To: <5220F099.1020002@nvidia.com>
+References: <5220F099.1020002@nvidia.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Sun, 8 Sep 2013 14:27:11 +0200
+Message-ID: <CAK=WgbZ2JgtAonvdyeDZazYBGdKpPAieJtjzi7MM6nwqhVfs7g@mail.gmail.com>
+Subject: Re: permission to move definition of struct rpmsg_channel_info
+To: Arjun Gopalan <agopalan@nvidia.com>
+Cc: Brian Swetland <swetland@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Paul Walmsley <pwalmsley@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
+Hi Arjun,
 
-The ntp code for notify_cmos_timer() is called from a hard interrupt
-context. schedule_delayed_work() under PREEMPT_RT_FULL calls spinlocks
-that have been converted to mutexes, thus calling schedule_delayed_work()
-from interrupt is not safe.
+On Fri, Aug 30, 2013 at 9:20 PM, Arjun Gopalan <agopalan@nvidia.com> wrote:
+>
+> Hi Ohad/Brian,
+>
+> I have been working on rpmsg and I need to be able to create static rpmsg channels. Channel information needs to be specified by other drivers and for this, the drivers need access to struct rpmsg_channel_info.
 
-Add a helper thread that does the call to schedule_delayed_work and wake
-up that thread instead of calling schedule_delayed_work() directly.
-This is only for CONFIG_PREEMPT_RT_FULL, otherwise the code still calls
-schedule_delayed_work() directly in irq context.
+I'm not convinced how useful it is for other Linux drivers to create
+static rpmsg channels?
 
-Note: There's a few places in the kernel that do this. Perhaps the RT
-code should have a dedicated thread that does the checks. Just register
-a notifier on boot up for your check and wake up the thread when
-needed. This will be a todo.
+Usually these channels reflect the existence of services running on
+the remote processor, and their creation (or lack thereof) should be
+specified in the remote image. This way an rpmsg channel is published
+iff there is a matching remote service.
 
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/time/ntp.c |   40 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
+The way we were planning to add static channels functionality (I
+should still have preliminary patches doing this somewhere but the
+entire work was put on hold since TI changed its focus) is by
+statically publishing them in the resource table, which is coupled
+with a specific remote image.
 
-diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-index bb1edfa..3e93516 100644
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -10,6 +10,7 @@
- #include <linux/workqueue.h>
- #include <linux/hrtimer.h>
- #include <linux/jiffies.h>
-+#include <linux/kthread.h>
- #include <linux/math64.h>
- #include <linux/timex.h>
- #include <linux/time.h>
-@@ -529,10 +530,49 @@ static void sync_cmos_clock(struct work_struct *work)
- 	schedule_delayed_work(&sync_cmos_work, timespec_to_jiffies(&next));
- }
- 
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+/*
-+ * RT can not call schedule_delayed_work from real interrupt context.
-+ * Need to make a thread to do the real work.
-+ */
-+static struct task_struct *cmos_delay_thread;
-+static bool do_cmos_delay;
-+
-+static int run_cmos_delay(void *ignore)
-+{
-+	while (!kthread_should_stop()) {
-+		set_current_state(TASK_INTERRUPTIBLE);
-+		if (do_cmos_delay) {
-+			do_cmos_delay = false;
-+			schedule_delayed_work(&sync_cmos_work, 0);
-+		}
-+		schedule();
-+	}
-+	__set_current_state(TASK_RUNNING);
-+	return 0;
-+}
-+
-+static void notify_cmos_timer(void)
-+{
-+	do_cmos_delay = true;
-+	/* Make visible before waking up process */
-+	smp_wmb();
-+	wake_up_process(cmos_delay_thread);
-+}
-+
-+static __init int create_cmos_delay_thread(void)
-+{
-+	cmos_delay_thread = kthread_run(run_cmos_delay, NULL, "kcmosdelayd");
-+	BUG_ON(!cmos_delay_thread);
-+	return 0;
-+}
-+early_initcall(create_cmos_delay_thread);
-+#else
- static void notify_cmos_timer(void)
- {
- 	schedule_delayed_work(&sync_cmos_work, 0);
- }
-+#endif /* CONFIG_PREEMPT_RT_FULL */
- 
- #else
- static inline void notify_cmos_timer(void) { }
--- 
-1.7.10.4
-
-
+Best,
+Ohad.
