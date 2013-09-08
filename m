@@ -1,29 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759746Ab3IHDVV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:21:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56259 "EHLO
+	id S1759696Ab3IHDVP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:21:15 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56056 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757007Ab3IHDSz (ORCPT
+	by vger.kernel.org with ESMTP id S1755545Ab3IHDS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Sep 2013 23:18:55 -0400
+	Sat, 7 Sep 2013 23:18:56 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Paul Turner" <pjt@google.com>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Steven Rostedt" <rostedt@goodmis.org>,
-        "Peter Zijlstra" <peterz@infradead.org>,
-        "Ingo Molnar" <mingo@kernel.org>,
-        "Zhu Yanhai" <gaoyang.zyh@taobao.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>
+CC: akpm@linux-foundation.org, "Curt Brune" <curt@cumulusnetworks.com>,
+        "Guenter Roeck" <linux@roeck-us.net>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.203000298@decadent.org.uk>
+Message-ID: <lsq.1378608721.511846892@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [004/121] sched: Fix the broken sched_rr_get_interval()
+Subject: [061/121] hwmon: (adt7470) Fix incorrect return code check
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -36,49 +31,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhu Yanhai <gaoyang.zyh@taobao.com>
+From: Curt Brune <curt@cumulusnetworks.com>
 
-commit a59f4e079d19464eebb9b06513a1d4f55fdae5ba upstream.
+commit 93d783bcca69bfacc8dc739d8a050498402587b5 upstream.
 
-The caller of sched_sliced() should pass se.cfs_rq and se as the
-arguments, however in sched_rr_get_interval() we gave it
-rq.cfs_rq and se, which made the following computation obviously
-wrong.
+In adt7470_write_word_data(), which writes two bytes using
+i2c_smbus_write_byte_data(), the return codes are incorrectly AND-ed
+together when they should be OR-ed together.
 
-The change was introduced by commit:
+The return code of i2c_smbus_write_byte_data() is zero for success.
 
-  77034937dc45 sched: fix crash in sys_sched_rr_get_interval()
+The upshot is only the first byte was ever written to the hardware.
+The 2nd byte was never written out.
 
-... 5 years ago, while it had been the correct 'cfs_rq_of' before
-the commit. The change seems to be irrelevant to the commit
-msg, which was to return a 0 timeslice for tasks that are on an
-idle runqueue. So I believe that was just a plain typo.
+I noticed that trying to set the fan speed limits was not working
+correctly on my system.  Setting the fan speed limits is the only
+code that uses adt7470_write_word_data().  After making the change
+the limit settings work and the alarms work also.
 
-Signed-off-by: Zhu Yanhai <gaoyang.zyh@taobao.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Turner <pjt@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1357621012-15039-1-git-send-email-gaoyang.zyh@taobao.com
-[ Since this is an ABI and an old bug, we'll test this via a
-  slow upstream route, to hopefully discover any app breakage. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Curt Brune <curt@cumulusnetworks.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/sched/fair.c | 2 +-
+ drivers/hwmon/adt7470.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -5033,7 +5033,7 @@ static unsigned int get_rr_interval_fair
- 	 * idle runqueue:
- 	 */
- 	if (rq->cfs.load.weight)
--		rr_interval = NS_TO_JIFFIES(sched_slice(&rq->cfs, se));
-+		rr_interval = NS_TO_JIFFIES(sched_slice(cfs_rq_of(se), se));
- 
- 	return rr_interval;
+--- a/drivers/hwmon/adt7470.c
++++ b/drivers/hwmon/adt7470.c
+@@ -215,7 +215,7 @@ static inline int adt7470_write_word_dat
+ 					  u16 value)
+ {
+ 	return i2c_smbus_write_byte_data(client, reg, value & 0xFF)
+-	       && i2c_smbus_write_byte_data(client, reg + 1, value >> 8);
++	       || i2c_smbus_write_byte_data(client, reg + 1, value >> 8);
  }
+ 
+ static void adt7470_init_client(struct i2c_client *client)
 
