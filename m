@@ -1,62 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751166Ab3IHXCj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 19:02:39 -0400
-Received: from mout1.fh-giessen.de ([212.201.18.42]:38098 "EHLO
-	mout1.fh-giessen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750811Ab3IHXCi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 19:02:38 -0400
-Message-ID: <522D020C.6070402@mni.thm.de>
-Date: Mon, 09 Sep 2013 01:02:36 +0200
-From: Tobias Klausmann <tobias.johannes.klausmann@mni.thm.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:26.0) Gecko/20100101 Thunderbird/26.0a1
+	id S1751056Ab3IHXi1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 19:38:27 -0400
+Received: from mout.gmx.net ([212.227.17.20]:55649 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750847Ab3IHXi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Sep 2013 19:38:26 -0400
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: drivers/net/ethernet/nvidia/forcedeth.c saved_config_space[size] access patch
+From: Marc Weber <marco-oweber@gmx.de>
+To: netdev@vger.kernel.org
+Date: Mon, 09 Sep 2013 01:39:15 +0200
+Message-Id: <1378682421-sup-4422@nixos>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-To: Dave Airlie <airlied@gmail.com>
-CC: Ilia Mirkin <imirkin@alum.mit.edu>,
-        nouveau <nouveau@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Nouveau] 3.12rc1-pre Nouveau? oops
-References: <CAKb7UviRb_ao_nB8Q3pa9ePm+yUGd8u7PDREv5wNfCheyGTZjQ@mail.gmail.com>	<1378675264-3005-1-git-send-email-tobias.johannes.klausmann@mni.thm.de>	<CAPM=9tyCOdzC1NYy7jt+zh3WOuzubaO3b8vwFVast9ec=BWOkA@mail.gmail.com>	<522CF3D1.2020303@mni.thm.de> <CAPM=9twkyQGbnPEerqCpJNfXxSRo1pw7MBvGMuz8zs1pQ+Fcng@mail.gmail.com>
-In-Reply-To: <CAPM=9twkyQGbnPEerqCpJNfXxSRo1pw7MBvGMuz8zs1pQ+Fcng@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; boundary="=-1378683555-269612-11122-8933-1-="
+X-Provags-ID: V03:K0:TqLnfS+ONKWYrDphKHnC1WQaNEYYFCNiJSHRdfe2UUnvRujEwxa
+ JeqMSiO8XXKMfxGSEIQ0PX8JRWoXZSRXK8bTUI41LllJ7m8f1NmWaOFRJDGvJ7o1SOzeTj8
+ hPDKzL/ybkQP5FO7vg7w/6V8Un+oK4IU/nIyP0pra0IC7z3YHyRAkEfHHgKigkifUeeH08G
+ 0AsyC+xtBZ1LaTjrWH0dQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 09.09.2013 00:29, Dave Airlie wrote:
-> On Mon, Sep 9, 2013 at 8:01 AM, Tobias Klausmann
-> <tobias.johannes.klausmann@mni.thm.de> wrote:
->> On 08.09.2013 23:33, Dave Airlie wrote:
->>>>> Looks like you have Optimus (intel + nvidia), and the backtrace has
->>>>> runtime pm in it, which is something new Dave added for 3.12, adding
->>>>> him in explicitly. The simplest explanation is that disp->init is
->>>>> NULL. And it seems like there are no outputs from the earlier nouveau
->>>>> init prints. I guess that the call to nouveau_display_resume from
->>>>> nouveau_pmops_runtime_resume should be guarded by a if
->>>>> (dev->mode_config.num_crtc) like it is everywhere else.
->>>>>
->>>>>     -ilia
->>>> Your guess was right, this (hopefully attached patch) fixes it for me!
->>> Does it look like this one?
->>>
->>> Dave.
->> No, mine was quick and dirty, reverted it and took yours. But i'm a little
->> bit confused that this is a suspend/resume problem, i booted the kernel for
->> the first time while seeing the oops. But anyway i tested it and it works.
-> It's runtime suspend/resume - so it turns the nvidia gpu off at boot since it
-> isn't being used.
->
-> you should see longer battery life.
-> Dave.
-Ah thanks for the explanation.
-Can we see the state in /sys somewhere? I looked around but did not find 
-something to determine the state?
-/sys/bus/pci/drivers/nouveau/0000:01:00.0/drm/card0/power/runtime_status 
-gives me "unsupported".
-But i suspect thats because of nouveaus lack to properly reclock my 
-nvidia gpu. Anyway i'm better of asking you for the right anyswer.
-Thanks for your time,
-Tobias
+--=-1378683555-269612-11122-8933-1-=
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+
+  1) VER3 and _MAX are of same size:
+  #define NV_PCI_REGSZ_VER3       0x604
+  #define NV_PCI_REGSZ_MAX        0x604
+
+
+  2) It looks like there is a case where VER3 get's assigned to
+      register_size:
+
+  if (id->driver_data &
+  (DEV_HAS_VLAN|DEV_HAS_MSI_X|DEV_HAS_POWER_CNTRL|DEV_HAS_STATISTICS_V2|DEV_HAS_STATISTICS_V
+                  np->register_size = NV_PCI_REGSZ_VER3;
+
+  3) the definition of saved_config_space is MAX divided by 4 (size of u32)
+  struct fe_priv {
+    [...]
+    u32 saved_config_space[NV_PCI_REGSZ_MAX/4]
+
+  4) This doesn't stop loop at [size-1]:
+    Thus there is the risk that it overrides the field after
+    saved_config_space. If that's desired behaviour at least a comment
+    is missing IMHO:
+
+  for (i = 0; i <= np->register_size/sizeof(u32); i++)
+     np->saved_config_space[i] = readl(base + i*sizeof(u32));
+
+  Such for loop is used twice in forcedeth.c
+
+Patch againstn 4de9ad9bc08 (Fri Sep 6 11:14:33) attached fixing both
+using < instead of <=.
+
+If you think I've hit a small bug just fix and commit.
+I don't care much about my ownership of this patch.
+
+I didn't test this patch because I don't have the hardware and I think
+its a trivial case.
+
+Marc Weber
+
+--=-1378683555-269612-11122-8933-1-=
+Content-Disposition: attachment; filename="0001-forcedepth-fix-possible-out-of-bounds-access.patch"
+Content-Type: application/octet-stream; name="0001-forcedepth-fix-possible-out-of-bounds-access.patch"
+Content-Transfer-Encoding: base64
+
+RnJvbSAyN2NiM2VmMmUwNzk3NTk3YjY0NzczMDk4YWUwZTRkMTY4MGM1NWNm
+IE1vbiBTZXAgMTcgMDA6MDA6MDAgMjAwMQpGcm9tOiBNYXJjIFdlYmVyIDxt
+YXJjLW93ZWJlckBnbXguZGU+CkRhdGU6IFN1biwgOCBTZXAgMjAxMyAyMzoz
+NToyOCArMDIwMApTdWJqZWN0OiBbUEFUQ0hdIGZvcmNlZGVwdGg6IGZpeCBw
+b3NzaWJsZSBvdXQgb2YgYm91bmRzIGFjY2VzcwoKLS0tCiBkcml2ZXJzL25l
+dC9ldGhlcm5ldC9udmlkaWEvZm9yY2VkZXRoLmMgfCA0ICsrLS0KIDEgZmls
+ZSBjaGFuZ2VkLCAyIGluc2VydGlvbnMoKyksIDIgZGVsZXRpb25zKC0pCgpk
+aWZmIC0tZ2l0IGEvZHJpdmVycy9uZXQvZXRoZXJuZXQvbnZpZGlhL2ZvcmNl
+ZGV0aC5jIGIvZHJpdmVycy9uZXQvZXRoZXJuZXQvbnZpZGlhL2ZvcmNlZGV0
+aC5jCmluZGV4IDA5OGI5NmQuLmQwOGY2ZWYgMTAwNjQ0Ci0tLSBhL2RyaXZl
+cnMvbmV0L2V0aGVybmV0L252aWRpYS9mb3JjZWRldGguYworKysgYi9kcml2
+ZXJzL25ldC9ldGhlcm5ldC9udmlkaWEvZm9yY2VkZXRoLmMKQEAgLTYxMDYs
+NyArNjEwNiw3IEBAIHN0YXRpYyBpbnQgbnZfc3VzcGVuZChzdHJ1Y3QgZGV2
+aWNlICpkZXZpY2UpCiAJbmV0aWZfZGV2aWNlX2RldGFjaChkZXYpOwogCiAJ
+Lyogc2F2ZSBub24tcGNpIGNvbmZpZ3VyYXRpb24gc3BhY2UgKi8KLQlmb3Ig
+KGkgPSAwOyBpIDw9IG5wLT5yZWdpc3Rlcl9zaXplL3NpemVvZih1MzIpOyBp
+KyspCisJZm9yIChpID0gMDsgaSA8IG5wLT5yZWdpc3Rlcl9zaXplL3NpemVv
+Zih1MzIpOyBpKyspCiAJCW5wLT5zYXZlZF9jb25maWdfc3BhY2VbaV0gPSBy
+ZWFkbChiYXNlICsgaSpzaXplb2YodTMyKSk7CiAKIAlyZXR1cm4gMDsKQEAg
+LTYxMjEsNyArNjEyMSw3IEBAIHN0YXRpYyBpbnQgbnZfcmVzdW1lKHN0cnVj
+dCBkZXZpY2UgKmRldmljZSkKIAlpbnQgaSwgcmMgPSAwOwogCiAJLyogcmVz
+dG9yZSBub24tcGNpIGNvbmZpZ3VyYXRpb24gc3BhY2UgKi8KLQlmb3IgKGkg
+PSAwOyBpIDw9IG5wLT5yZWdpc3Rlcl9zaXplL3NpemVvZih1MzIpOyBpKysp
+CisJZm9yIChpID0gMDsgaSA8IG5wLT5yZWdpc3Rlcl9zaXplL3NpemVvZih1
+MzIpOyBpKyspCiAJCXdyaXRlbChucC0+c2F2ZWRfY29uZmlnX3NwYWNlW2ld
+LCBiYXNlK2kqc2l6ZW9mKHUzMikpOwogCiAJaWYgKG5wLT5kcml2ZXJfZGF0
+YSAmIERFVl9ORUVEX01TSV9GSVgpCi0tIAoxLjguMy40Cgo=
+
+--=-1378683555-269612-11122-8933-1-=--
