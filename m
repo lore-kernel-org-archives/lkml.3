@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622Ab3IHKqr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 06:46:47 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:40659 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752155Ab3IHKqp (ORCPT
+	id S1752646Ab3IHK4s (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 06:56:48 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:35166 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752188Ab3IHK4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 06:46:45 -0400
-Date: Sun, 8 Sep 2013 12:46:41 +0200
+	Sun, 8 Sep 2013 06:56:47 -0400
+Date: Sun, 8 Sep 2013 12:56:43 +0200
 From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        josh@joshtriplett.org, niv@us.ibm.com,
-        Thomas Gleixner <tglx@linutronix.de>,
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>, Ingo Molnar <mingo@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Howells <dhowells@redhat.com>, edumazet@google.com,
-        darren@dvhart.com, sbw@mit.edu,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Subject: Re: [PATCH tip/core/rcu 8/9] nohz_full: Add full-system-idle state
- machine
-Message-ID: <20130908104639.GC4501@somewhere>
-References: <20130820024700.GA31075@linux.vnet.ibm.com>
- <1376966841-31774-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1376966841-31774-8-git-send-email-paulmck@linux.vnet.ibm.com>
- <CAMuHMdWtZAD3G_miFOT9DPZpfTO3nJ9J4aG_zvHV_6eVf2jdQg@mail.gmail.com>
- <20130906173047.GT3966@linux.vnet.ibm.com>
- <20130907091348.GA3487@free.fr>
- <20130907185710.GF3966@linux.vnet.ibm.com>
- <20130908103250.GA3698@free.fr>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
+Subject: Re: [sched next] overflowed cpu time for kernel threads in
+ /proc/PID/stat
+Message-ID: <20130908105642.GD4501@somewhere>
+References: <20130820111426.GA27828@swordfish.datadirectnet.com>
+ <20130820151509.GA17441@somewhere>
+ <20130820153549.GB2315@swordfish.minsk.epam.com>
+ <20130820154257.GD17441@somewhere>
+ <20130821153957.GA2969@swordfish.minsk.epam.com>
+ <20130830230402.GA14760@somewhere>
+ <20130831190117.GA2213@swordfish>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130908103250.GA3698@free.fr>
+In-Reply-To: <20130831190117.GA2213@swordfish>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 08, 2013 at 12:32:50PM +0200, Yann E. MORIN wrote:
-> Paul, All,
-> 
-> On 2013-09-07 11:57 -0700, Paul E. McKenney spake thusly:
-> > On Sat, Sep 07, 2013 at 11:13:48AM +0200, Yann E. MORIN wrote:
-> [--SNIP--]
-> > > I'll see if I can come up with a meaningfull construct that fixes your
-> > > use-case. Don't hold your breath, though! ;-)
+On Sat, Aug 31, 2013 at 10:01:17PM +0300, Sergey Senozhatsky wrote:
+> On (08/31/13 01:04), Frederic Weisbecker wrote:
+> > But stime should always be below rtime due to the calculation done by scale_stime()
+> > which roughly sums up to:
 > > 
-> > If not, we need to add NR_CPUS to the architectures lacking them...
+> >       stime = (stime / stime + utime) * rtime
+> > 
+> > So this shouldn't happen.
+> > 
+> > I couldn't manage to reproduce it though. Can you still trigger it with latest -next?
+> > 
+> > Thanks.
 > 
-> Unfortunately, I was not able to come up with anything suitable.
+> Hello,
+> I can't pull current -next (away from good network connection for a
+> couple of days). What I have is 3.11.0-rc7-next-20130829:
 > 
-> I think your proposal to always define NR_CPUS=1 for architectures
-> without SMP support is a good solution.
+> ps aux | grep rcu
+> root         8  0.0  0.0      0     0 ?        S    Aug30   0:00 [rcuc/0]
+> root         9  0.0  0.0      0     0 ?        S    Aug30   0:00 [rcub/0]
+> root        10 21376376  0.0  0     0 ?        S    Aug30 21114581:36 [rcu_preempt]
+> root        11 21376376  0.0  0     0 ?        S    Aug30 21114581:35 [rcuop/0]
+> root        12 21376376  0.0  0     0 ?        S    Aug30 21114581:35 [rcuop/1]
 > 
-> After all, if !SMP because the architecture does not support it, I
-> believe it makes sense that NR_CPUS be defined to 1.
+> cat /proc/10/stat
+> 10 (rcu_preempt) S 2 0 0 0 -1 2129984 0 0 0 0 1844674407370 715 0 0 20 0 1 0 10 0 0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 18446744073709551615 0 0 17 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 > 
-> Unless NR_CPUS carries with it a hidden meaning about SMP being
-> possible, that is, which would probably be wrong anyway, since we have
-> SMP for this.
+> 	-ss
 
-Right, if possible, the best would be to define CONFIG_NR_CPUS to a single
-central place, like arch/Kconfig:
+Do you have this patch in?
 
-	config NR_CPUS
-	default 1 if !SMP
-
-It's a single int after all. Specific arch constraints can probably be overriden
-from the arch.
-
-> 
-> Regards,
-> Yann E. MORIN.
-> 
-> -- 
-> .-----------------.--------------------.------------------.--------------------.
-> |  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-> | +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-> | +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-> | http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-> '------------------------------^-------^------------------^--------------------'
+http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?h=timers-urgent-for-linus&id=5a8e01f8fa51f5cbce8f37acc050eb2319d12956
