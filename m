@@ -1,93 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751994Ab3IHHVI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 03:21:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47570 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751730Ab3IHHVG (ORCPT
+	id S1751836Ab3IHHYx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 03:24:53 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:58998 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751673Ab3IHHYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 03:21:06 -0400
-Date: Sun, 8 Sep 2013 00:24:08 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "hpa@zytor.com" <hpa@zytor.com>
-Subject: Re: [PATCH V3 08/11] kexec: Disable at runtime if the kernel
- enforces module loading restrictions
-Message-ID: <20130908072408.GA5092@kroah.com>
-References: <1378252218-18798-1-git-send-email-matthew.garrett@nebula.com>
- <1378252218-18798-9-git-send-email-matthew.garrett@nebula.com>
- <20130908064027.GA3587@kroah.com>
- <1378622648.2300.4.camel@x230>
-MIME-Version: 1.0
+	Sun, 8 Sep 2013 03:24:52 -0400
+X-Nat-Received: from [202.181.97.72]:65178 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1378625075.30330
+To: imirkin@alum.mit.edu, maarten.lankhorst@canonical.com
+Cc: linux-kernel@vger.kernel.org, daniel.vetter@ffwll.ch, robdclark@gmail.com,
+        a.p.zijlstra@chello.nl, mingo@kernel.org
+Subject: Re: [3.11-rc1] CONFIG_DEBUG_MUTEXES=y using gcc 3.x makes unbootable kernel.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201309080100.FFE90102.FFOVOtJQOFHSLM@I-love.SAKURA.ne.jp>
+	<201309081332.FEJ52163.FHJOMQVOFOLStF@I-love.SAKURA.ne.jp>
+	<CAKb7UvjH1XZ3f-c=149s5=rqxkxVUhG_7-cfUYH3zrwJwr2_MQ@mail.gmail.com>
+In-Reply-To: <CAKb7UvjH1XZ3f-c=149s5=rqxkxVUhG_7-cfUYH3zrwJwr2_MQ@mail.gmail.com>
+Message-Id: <201309081624.EBJ90176.OJStQOFLHVFFOM@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sun, 8 Sep 2013 16:24:34 +0900
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378622648.2300.4.camel@x230>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 08092013 #10998723, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 08, 2013 at 06:44:08AM +0000, Matthew Garrett wrote:
-> On Sat, 2013-09-07 at 23:40 -0700, Greg KH wrote:
-> > On Tue, Sep 03, 2013 at 07:50:15PM -0400, Matthew Garrett wrote:
-> > > kexec permits the loading and execution of arbitrary code in ring 0, which
-> > > is something that module signing enforcement is meant to prevent. It makes
-> > > sense to disable kexec in this situation.
-> > 
-> > I see no match between kexec and signed kernel modules.
+Hello.
+
+Ilia Mirkin wrote:
+> > Commit 040a0a37 "mutex: Add support for wound/wait style locks" used
+> > "!__builtin_constant_p(p == NULL)" which I guess the author meant that
+> > "__builtin_constant_p(p) && p", but gcc 3.x cannot handle such expression
+> > correctly, leading to boot failure when built with CONFIG_DEBUG_MUTEXES=y.
 > 
-> sig_enforce is there to prevent anyone (including root) from installing
-> new kernel code in the running kernel.
-
-No, it's to enforce kernel modules to be signed or not.  That's all.
-
-> Allowing kexec to run untrusted code allows root to install new kernel
-> code in the running kernel.
-
-Which has nothing to do with signed kernel modules.
-
-> At the most trivial level, grab the address of sig_enforce from
-> kallsyms, jump to a kernel that doesn't enforce STRICT_DEVMEM, modify
-> sig_enforce, jump back to the old kernel.
-
-Which proves what?
-
-> > In fact, I personally _want_ signed kernel modules, and still the option
-> > to run kexec.  kexec is to run a whole new kernel/OS, not a tiny kernel
-> > module.
+> I think that !__builtin_constant_p(p == NULL) is basically saying "I
+> am unable to conclude that p == NULL at build time", which would
+> translate to something along the lines of
 > 
-> No, kexec is to run anything. It's expressly not limited to launching
-> new kernels. It's easiest to demonstrate an attack using a Linux kernel,
-> but you could launch a toy payload that did nothing other than modify
-> one byte and then returned to the launch kernel.
-
-Fair enough, but again, this has nothing to do with signed kernel
-modules.
-
-If you are really worried about kexec doing something like this, then
-add signed kexec binary support, but don't suddenly stop kexec from
-working just because signed modules are enabled, the two have nothing to
-do with each other.
-
-> > If you apply this, you break everyone who is currently relying on kexec
-> > (i.e. kdump, bootloaders, etc.), from using signed kernel modules, which
-> > personally, seems like a very bad idea.
+> (__builtin_constant_p(p) && p) || !__builtin_constant_p(p)
 > 
-> Enforcing signed modules provides you with no additional security if you
-> have kexec enabled. It's better to make that obvious.
 
-Then document the heck out of it, don't disable a valid use case just
-because it possibly could be used in some way that is different from the
-original system.
+I think
 
-If you take this to an extreme, kexec shouldn't be here at all, as it
-can do anything in the kernel wherever it wants to.
+  (__builtin_constant_p(p) && p) && p->acquired > 0
 
-kexec has nothing to do with signed modules, don't tie them together.
+is safe but
 
-thanks,
+  (!__builtin_constant_p(p)) && p->acquired > 0
 
-greg k-h
+is not safe, for "p != NULL" check is required for avoiding NULL pointer
+dereference.
+
+It seems to me that
+
+  (!__builtin_constant_p(p == NULL))
+
+need to be translated to something along the lines of
+
+  (__builtin_constant_p(p) && p) || (!__builtin_constant_p(p) && p)
+
+which can be simplified as
+
+  (p)
+
+.
+
+> Or perhaps it's just equivalent to !__builtin_constant_p(p), since the
+> compiler's ability to conclude whether it is NULL at build-time should
+> be unaffected by whether it actually is NULL or not.
+
+Likewise, it seems to me that
+
+  (!__builtin_constant_p(p == NULL))
+
+need to be translated to something along the lines of
+
+  (!__builtin_constant_p(p) && p)
+
+. Well this change as well can fix "boot failure on gcc 3.x" and avoid "locking
+selftests failure on gcc 3.x / 4.x". OK, let's wait for answer from the author.
+
+Can I add "Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>" to below patch?
+
+---------- good patch start ----------
+>From a8bbf6b3c2d44cb90d63820f146aaff119d871c9 Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Sun, 8 Sep 2013 16:09:27 +0900
+Subject: [PATCH] mutex: Avoid gcc version dependent __builtin_constant_p() usage.
+
+Commit 040a0a37 "mutex: Add support for wound/wait style locks" used
+"!__builtin_constant_p(p == NULL)" but gcc 3.x cannot handle such expression
+correctly, leading to boot failure when built with CONFIG_DEBUG_MUTEXES=y.
+
+Fix it by changing from "!__builtin_constant_p(p == NULL)" to
+"!__builtin_constant_p(p) && p".
+
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: <stable@kernel.org> [3.11+]
+---
+ kernel/mutex.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/mutex.c b/kernel/mutex.c
+index a52ee7bb..ef02003 100644
+--- a/kernel/mutex.c
++++ b/kernel/mutex.c
+@@ -448,7 +448,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+ 		struct task_struct *owner;
+ 		struct mspin_node  node;
+ 
+-		if (!__builtin_constant_p(ww_ctx == NULL) && ww_ctx->acquired > 0) {
++		if (!__builtin_constant_p(ww_ctx) && ww_ctx && ww_ctx->acquired > 0) {
+ 			struct ww_mutex *ww;
+ 
+ 			ww = container_of(lock, struct ww_mutex, base);
+@@ -478,7 +478,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+ 		if ((atomic_read(&lock->count) == 1) &&
+ 		    (atomic_cmpxchg(&lock->count, 1, 0) == 1)) {
+ 			lock_acquired(&lock->dep_map, ip);
+-			if (!__builtin_constant_p(ww_ctx == NULL)) {
++			if (!__builtin_constant_p(ww_ctx) && ww_ctx) {
+ 				struct ww_mutex *ww;
+ 				ww = container_of(lock, struct ww_mutex, base);
+ 
+@@ -548,7 +548,7 @@ slowpath:
+ 			goto err;
+ 		}
+ 
+-		if (!__builtin_constant_p(ww_ctx == NULL) && ww_ctx->acquired > 0) {
++		if (!__builtin_constant_p(ww_ctx) && ww_ctx && ww_ctx->acquired > 0) {
+ 			ret = __mutex_lock_check_stamp(lock, ww_ctx);
+ 			if (ret)
+ 				goto err;
+@@ -568,7 +568,7 @@ done:
+ 	mutex_remove_waiter(lock, &waiter, current_thread_info());
+ 	mutex_set_owner(lock);
+ 
+-	if (!__builtin_constant_p(ww_ctx == NULL)) {
++	if (!__builtin_constant_p(ww_ctx) && ww_ctx) {
+ 		struct ww_mutex *ww = container_of(lock,
+ 						      struct ww_mutex,
+ 						      base);
+-- 
+1.7.8
+---------- good patch end ----------
