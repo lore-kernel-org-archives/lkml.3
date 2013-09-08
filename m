@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759560Ab3IHDUw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:20:52 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56157 "EHLO
+	id S1759547Ab3IHDUr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:20:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55974 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756476Ab3IHDSz (ORCPT
+	by vger.kernel.org with ESMTP id S1755652Ab3IHDSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 7 Sep 2013 23:18:55 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
-        "Paul Mackerras" <paulus@samba.org>
+CC: akpm@linux-foundation.org, "Torstein Hegge" <hegge@resisty.net>,
+        "Daniel Mack" <zonque@gmail.com>, "Takashi Iwai" <tiwai@suse.de>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.76578814@decadent.org.uk>
+Message-ID: <lsq.1378608721.639929663@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [102/121] powerpc: Work around gcc miscompilation of __pa() on 64-bit
+Subject: [019/121] ALSA: usb: Parse UAC2 extension unit like for UAC1
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,65 +31,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Mackerras <paulus@samba.org>
+From: Torstein Hegge <hegge@resisty.net>
 
-commit bdbc29c19b2633b1d9c52638fb732bcde7a2031a upstream.
+commit 61ac51301e6c6d4ed977d7674ce2b8e713619a9b upstream.
 
-On 64-bit, __pa(&static_var) gets miscompiled by recent versions of
-gcc as something like:
+UAC2_EXTENSION_UNIT_V2 differs from UAC1_EXTENSION_UNIT, but can be handled in
+the same way when parsing the unit. Otherwise parse_audio_unit() fails when it
+sees an extension unit on a UAC2 device.
 
-        addis 3,2,.LANCHOR1+4611686018427387904@toc@ha
-        addi 3,3,.LANCHOR1+4611686018427387904@toc@l
+UAC2_EXTENSION_UNIT_V2 is outside the range allocated by UAC1.
 
-This ends up effectively ignoring the offset, since its bottom 32 bits
-are zero, and means that the result of __pa() still has 0xC in the top
-nibble.  This happens with gcc 4.8.1, at least.
-
-To work around this, for 64-bit we make __pa() use an AND operator,
-and for symmetry, we make __va() use an OR operator.  Using an AND
-operator rather than a subtraction ends up with slightly shorter code
-since it can be done with a single clrldi instruction, whereas it
-takes three instructions to form the constant (-PAGE_OFFSET) and add
-it on.  (Note that MEMORY_START is always 0 on 64-bit.)
-
-Signed-off-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Torstein Hegge <hegge@resisty.net>
+Acked-by: Daniel Mack <zonque@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/powerpc/Kconfig            |  1 +
- arch/powerpc/include/asm/page.h | 10 ++++++++++
- 2 files changed, 11 insertions(+)
+ sound/usb/mixer.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -937,6 +937,7 @@ config RELOCATABLE
- 	  must live at a different physical address than the primary
- 	  kernel.
+--- a/sound/usb/mixer.c
++++ b/sound/usb/mixer.c
+@@ -722,7 +722,8 @@ static int check_input_term(struct mixer
+ 		case UAC1_PROCESSING_UNIT:
+ 		case UAC1_EXTENSION_UNIT:
+ 		/* UAC2_PROCESSING_UNIT_V2 */
+-		/* UAC2_EFFECT_UNIT */ {
++		/* UAC2_EFFECT_UNIT */
++		case UAC2_EXTENSION_UNIT_V2: {
+ 			struct uac_processing_unit_descriptor *d = p1;
  
-+# This value must have zeroes in the bottom 60 bits otherwise lots will break
- config PAGE_OFFSET
- 	hex
- 	default "0xc000000000000000"
---- a/arch/powerpc/include/asm/page.h
-+++ b/arch/powerpc/include/asm/page.h
-@@ -132,9 +132,19 @@ extern phys_addr_t kernstart_addr;
- #define __va(x) ((void *)(unsigned long)((phys_addr_t)(x) - PHYSICAL_START + KERNELBASE))
- #define __pa(x) ((unsigned long)(x) + PHYSICAL_START - KERNELBASE)
- #else
-+#ifdef CONFIG_PPC64
-+/*
-+ * gcc miscompiles (unsigned long)(&static_var) - PAGE_OFFSET
-+ * with -mcmodel=medium, so we use & and | instead of - and + on 64-bit.
-+ */
-+#define __va(x) ((void *)(unsigned long)((phys_addr_t)(x) | PAGE_OFFSET))
-+#define __pa(x) ((unsigned long)(x) & 0x0fffffffffffffffUL)
-+
-+#else /* 32-bit, non book E */
- #define __va(x) ((void *)(unsigned long)((phys_addr_t)(x) + PAGE_OFFSET - MEMORY_START))
- #define __pa(x) ((unsigned long)(x) - PAGE_OFFSET + MEMORY_START)
- #endif
-+#endif
- 
- /*
-  * Unfortunately the PLT is in the BSS in the PPC32 ELF ABI,
+ 			if (state->mixer->protocol == UAC_VERSION_2 &&
+@@ -1967,6 +1968,8 @@ static int parse_audio_unit(struct mixer
+ 			return parse_audio_extension_unit(state, unitid, p1);
+ 		else /* UAC_VERSION_2 */
+ 			return parse_audio_processing_unit(state, unitid, p1);
++	case UAC2_EXTENSION_UNIT_V2:
++		return parse_audio_extension_unit(state, unitid, p1);
+ 	default:
+ 		snd_printk(KERN_ERR "usbaudio: unit %u: unexpected type 0x%02x\n", unitid, p1[2]);
+ 		return -EINVAL;
 
