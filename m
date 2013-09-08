@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759950Ab3IHDmE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Sep 2013 23:42:04 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56180 "EHLO
+	id S1759961Ab3IHDmY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Sep 2013 23:42:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56038 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756669Ab3IHDTP (ORCPT
+	by vger.kernel.org with ESMTP id S1757154Ab3IHDTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 7 Sep 2013 23:19:15 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,17 +13,11 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Yinghai Lu" <yinghai@kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "Russ Anderson" <rja@sgi.com>,
-        "Yasuaki Ishimatsu" <isimatu.yasuaki@jp.fujitsu.com>
+CC: akpm@linux-foundation.org, "Cong Wang" <amwang@redhat.com>
 Date: Sun, 08 Sep 2013 03:52:01 +0100
-Message-ID: <lsq.1378608721.511138087@decadent.org.uk>
+Message-ID: <lsq.1378608721.232612349@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [106/121] drivers/base/memory.c: fix show_mem_removable() to
- handle missing sections
+Subject: [104/121] sunrpc: remove the second argument of k[un]map_atomic()
 In-Reply-To: <lsq.1378608720.401499712@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -36,87 +30,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russ Anderson <rja@sgi.com>
+From: Cong Wang <amwang@redhat.com>
 
-commit 21ea9f5ace3a7317cc3ba1fbc749758021a83136 upstream.
+commit b85417860172ff693dc115d7999805fc240cec1c upstream.
 
-"cat /sys/devices/system/memory/memory*/removable" crashed the system.
-
-The problem is that show_mem_removable() is passing a
-bad pfn to is_mem_section_removable(), which causes
-
-    if (!node_online(page_to_nid(page)))
-
-to blow up.  Why is it passing in a bad pfn?
-
-The reason is that show_mem_removable() will loop sections_per_block
-times.  sections_per_block is 16, but mem->section_count is 8,
-indicating holes in this memory block.  Checking that the memory section
-is present before checking to see if the memory section is removable
-fixes the problem.
-
-   harp5-sys:~ # cat /sys/devices/system/memory/memory*/removable
-   0
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   BUG: unable to handle kernel paging request at ffffea00c3200000
-   IP: [<ffffffff81117ed1>] is_pageblock_removable_nolock+0x1/0x90
-   PGD 83ffd4067 PUD 37bdfce067 PMD 0
-   Oops: 0000 [#1] SMP
-   Modules linked in: autofs4 binfmt_misc rdma_ucm rdma_cm iw_cm ib_addr ib_srp scsi_transport_srp scsi_tgt ib_ipoib ib_cm ib_uverbs ib_umad iw_cxgb3 cxgb3 mdio mlx4_en mlx4_ib ib_sa mlx4_core ib_mthca ib_mad ib_core fuse nls_iso8859_1 nls_cp437 vfat fat joydev loop hid_generic usbhid hid hwperf(O) numatools(O) dm_mod iTCO_wdt ipv6 iTCO_vendor_support igb i2c_i801 ioatdma i2c_algo_bit ehci_pci pcspkr lpc_ich i2c_core ehci_hcd ptp sg mfd_core dca rtc_cmos pps_core mperf button xhci_hcd sd_mod crc_t10dif usbcore usb_common scsi_dh_emc scsi_dh_hp_sw scsi_dh_alua scsi_dh_rdac scsi_dh gru(O) xvma(O) xfs crc32c libcrc32c thermal sata_nv processor piix mptsas mptscsih scsi_transport_sas mptbase megaraid_sas fan thermal_sys hwmon ext3 jbd ata_piix ahci libahci libata scsi_mod
-   CPU: 4 PID: 5991 Comm: cat Tainted: G           O 3.11.0-rc5-rja-uv+ #10
-   Hardware name: SGI UV2000/ROMLEY, BIOS SGI UV 2000/3000 series BIOS 01/15/2013
-   task: ffff88081f034580 ti: ffff880820022000 task.ti: ffff880820022000
-   RIP: 0010:[<ffffffff81117ed1>]  [<ffffffff81117ed1>] is_pageblock_removable_nolock+0x1/0x90
-   RSP: 0018:ffff880820023df8  EFLAGS: 00010287
-   RAX: 0000000000040000 RBX: ffffea00c3200000 RCX: 0000000000000004
-   RDX: ffffea00c30b0000 RSI: 00000000001c0000 RDI: ffffea00c3200000
-   RBP: ffff880820023e38 R08: 0000000000000000 R09: 0000000000000001
-   R10: 0000000000000000 R11: 0000000000000001 R12: ffffea00c33c0000
-   R13: 0000160000000000 R14: 6db6db6db6db6db7 R15: 0000000000000001
-   FS:  00007ffff7fb2700(0000) GS:ffff88083fc80000(0000) knlGS:0000000000000000
-   CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-   CR2: ffffea00c3200000 CR3: 000000081b954000 CR4: 00000000000407e0
-   Call Trace:
-     show_mem_removable+0x41/0x70
-     dev_attr_show+0x2a/0x60
-     sysfs_read_file+0xf7/0x1c0
-     vfs_read+0xc8/0x130
-     SyS_read+0x5d/0xa0
-     system_call_fastpath+0x16/0x1b
-
-Signed-off-by: Russ Anderson <rja@sgi.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Cong Wang <amwang@redhat.com>
+[bwh: Cherry-picked for 3.2 to let the next fix apply cleanly]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/base/memory.c | 2 ++
- 1 file changed, 2 insertions(+)
+ net/sunrpc/auth_gss/gss_krb5_wrap.c |  4 ++--
+ net/sunrpc/socklib.c                |  4 ++--
+ net/sunrpc/xdr.c                    | 20 ++++++++++----------
+ net/sunrpc/xprtrdma/rpc_rdma.c      |  8 ++++----
+ 4 files changed, 18 insertions(+), 18 deletions(-)
 
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -172,6 +172,8 @@ static ssize_t show_mem_removable(struct
- 		container_of(dev, struct memory_block, sysdev);
+diff --git a/net/sunrpc/auth_gss/gss_krb5_wrap.c b/net/sunrpc/auth_gss/gss_krb5_wrap.c
+index 2763e3e..38f388c 100644
+--- a/net/sunrpc/auth_gss/gss_krb5_wrap.c
++++ b/net/sunrpc/auth_gss/gss_krb5_wrap.c
+@@ -82,9 +82,9 @@ gss_krb5_remove_padding(struct xdr_buf *buf, int blocksize)
+ 					>>PAGE_CACHE_SHIFT;
+ 		unsigned int offset = (buf->page_base + len - 1)
+ 					& (PAGE_CACHE_SIZE - 1);
+-		ptr = kmap_atomic(buf->pages[last], KM_USER0);
++		ptr = kmap_atomic(buf->pages[last]);
+ 		pad = *(ptr + offset);
+-		kunmap_atomic(ptr, KM_USER0);
++		kunmap_atomic(ptr);
+ 		goto out;
+ 	} else
+ 		len -= buf->page_len;
+diff --git a/net/sunrpc/socklib.c b/net/sunrpc/socklib.c
+index 145e6784..0a648c5 100644
+--- a/net/sunrpc/socklib.c
++++ b/net/sunrpc/socklib.c
+@@ -114,7 +114,7 @@ ssize_t xdr_partial_copy_from_skb(struct xdr_buf *xdr, unsigned int base, struct
+ 		}
  
- 	for (i = 0; i < sections_per_block; i++) {
-+		if (!present_section_nr(mem->start_section_nr + i))
-+			continue;
- 		pfn = section_nr_to_pfn(mem->start_section_nr + i);
- 		ret &= is_mem_section_removable(pfn, PAGES_PER_SECTION);
- 	}
+ 		len = PAGE_CACHE_SIZE;
+-		kaddr = kmap_atomic(*ppage, KM_SKB_SUNRPC_DATA);
++		kaddr = kmap_atomic(*ppage);
+ 		if (base) {
+ 			len -= base;
+ 			if (pglen < len)
+@@ -127,7 +127,7 @@ ssize_t xdr_partial_copy_from_skb(struct xdr_buf *xdr, unsigned int base, struct
+ 			ret = copy_actor(desc, kaddr, len);
+ 		}
+ 		flush_dcache_page(*ppage);
+-		kunmap_atomic(kaddr, KM_SKB_SUNRPC_DATA);
++		kunmap_atomic(kaddr);
+ 		copied += ret;
+ 		if (ret != len || !desc->count)
+ 			goto out;
+diff --git a/net/sunrpc/xdr.c b/net/sunrpc/xdr.c
+index 593f4c6..b97a3dd 100644
+--- a/net/sunrpc/xdr.c
++++ b/net/sunrpc/xdr.c
+@@ -122,9 +122,9 @@ xdr_terminate_string(struct xdr_buf *buf, const u32 len)
+ {
+ 	char *kaddr;
+ 
+-	kaddr = kmap_atomic(buf->pages[0], KM_USER0);
++	kaddr = kmap_atomic(buf->pages[0]);
+ 	kaddr[buf->page_base + len] = '\0';
+-	kunmap_atomic(kaddr, KM_USER0);
++	kunmap_atomic(kaddr);
+ }
+ EXPORT_SYMBOL_GPL(xdr_terminate_string);
+ 
+@@ -232,12 +232,12 @@ _shift_data_right_pages(struct page **pages, size_t pgto_base,
+ 		pgto_base -= copy;
+ 		pgfrom_base -= copy;
+ 
+-		vto = kmap_atomic(*pgto, KM_USER0);
+-		vfrom = kmap_atomic(*pgfrom, KM_USER1);
++		vto = kmap_atomic(*pgto);
++		vfrom = kmap_atomic(*pgfrom);
+ 		memmove(vto + pgto_base, vfrom + pgfrom_base, copy);
+ 		flush_dcache_page(*pgto);
+-		kunmap_atomic(vfrom, KM_USER1);
+-		kunmap_atomic(vto, KM_USER0);
++		kunmap_atomic(vfrom);
++		kunmap_atomic(vto);
+ 
+ 	} while ((len -= copy) != 0);
+ }
+@@ -267,9 +267,9 @@ _copy_to_pages(struct page **pages, size_t pgbase, const char *p, size_t len)
+ 		if (copy > len)
+ 			copy = len;
+ 
+-		vto = kmap_atomic(*pgto, KM_USER0);
++		vto = kmap_atomic(*pgto);
+ 		memcpy(vto + pgbase, p, copy);
+-		kunmap_atomic(vto, KM_USER0);
++		kunmap_atomic(vto);
+ 
+ 		len -= copy;
+ 		if (len == 0)
+@@ -311,9 +311,9 @@ _copy_from_pages(char *p, struct page **pages, size_t pgbase, size_t len)
+ 		if (copy > len)
+ 			copy = len;
+ 
+-		vfrom = kmap_atomic(*pgfrom, KM_USER0);
++		vfrom = kmap_atomic(*pgfrom);
+ 		memcpy(p, vfrom + pgbase, copy);
+-		kunmap_atomic(vfrom, KM_USER0);
++		kunmap_atomic(vfrom);
+ 
+ 		pgbase += copy;
+ 		if (pgbase == PAGE_CACHE_SIZE) {
+diff --git a/net/sunrpc/xprtrdma/rpc_rdma.c b/net/sunrpc/xprtrdma/rpc_rdma.c
+index 554d081..1776e57 100644
+--- a/net/sunrpc/xprtrdma/rpc_rdma.c
++++ b/net/sunrpc/xprtrdma/rpc_rdma.c
+@@ -338,9 +338,9 @@ rpcrdma_inline_pullup(struct rpc_rqst *rqst, int pad)
+ 			curlen = copy_len;
+ 		dprintk("RPC:       %s: page %d destp 0x%p len %d curlen %d\n",
+ 			__func__, i, destp, copy_len, curlen);
+-		srcp = kmap_atomic(ppages[i], KM_SKB_SUNRPC_DATA);
++		srcp = kmap_atomic(ppages[i]);
+ 		memcpy(destp, srcp+page_base, curlen);
+-		kunmap_atomic(srcp, KM_SKB_SUNRPC_DATA);
++		kunmap_atomic(srcp);
+ 		rqst->rq_svec[0].iov_len += curlen;
+ 		destp += curlen;
+ 		copy_len -= curlen;
+@@ -639,10 +639,10 @@ rpcrdma_inline_fixup(struct rpc_rqst *rqst, char *srcp, int copy_len, int pad)
+ 			dprintk("RPC:       %s: page %d"
+ 				" srcp 0x%p len %d curlen %d\n",
+ 				__func__, i, srcp, copy_len, curlen);
+-			destp = kmap_atomic(ppages[i], KM_SKB_SUNRPC_DATA);
++			destp = kmap_atomic(ppages[i]);
+ 			memcpy(destp + page_base, srcp, curlen);
+ 			flush_dcache_page(ppages[i]);
+-			kunmap_atomic(destp, KM_SKB_SUNRPC_DATA);
++			kunmap_atomic(destp);
+ 			srcp += curlen;
+ 			copy_len -= curlen;
+ 			if (copy_len == 0)
 
