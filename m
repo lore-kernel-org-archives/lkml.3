@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752819Ab3IHPJS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 11:09:18 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11684 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751886Ab3IHPJR (ORCPT
+	id S1753147Ab3IHPOr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 11:14:47 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:41917 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752745Ab3IHPOq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 11:09:17 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=eIhxMilvRf8A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=5ZiJo7iLPt7elsQvGpQA:9 a=CjuIK1q_8ugA:10 a=gpb9S1TPLMoA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Sun, 8 Sep 2013 11:09:15 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [ANNOUNCE] 3.6.11.8-rt40
-Message-ID: <20130908110915.69f94951@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 8 Sep 2013 11:14:46 -0400
+MIME-Version: 1.0
+Message-ID: <3b488375-6998-4681-b105-e4c6d12ceca2@default>
+Date: Sun, 8 Sep 2013 08:14:23 -0700 (PDT)
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+To: <michael.opdenacker@free-electrons.com>
+Cc: <mingo@redhat.com>, <konrad.wilk@oracle.com>, <x86@kernel.org>,
+        <tglx@linutronix.de>, <xen-devel@lists.xenproject.org>,
+        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
+        <hpa@zytor.com>
+Subject: Re: [PATCH] x86/xen: remove deprecated IRQF_DISABLED
+X-Mailer: Zimbra on Oracle Beehive
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Dear RT Folks,
+----- michael.opdenacker@free-electrons.com wrote:
 
-I'm pleased to announce the 3.6.11.8-rt40 stable release.
-
-
-This release is just an update to the new stable 3.6.11.8 version
-and no RT specific changes have been made.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  branch: v3.6-rt
-  Head SHA1: 119ba33488d29385b941cdbadd720449f59f11b3
+> This patch proposes to remove the IRQF_DISABLED flag from x86/xen
+> code. It's a NOOP since 2.6.35 and it will be removed one day.
+> 
+> Signed-off-by: Michael Opdenacker
+> <michael.opdenacker@free-electrons.com>
+> ---
+>  arch/x86/xen/smp.c      | 10 +++++-----
+>  arch/x86/xen/spinlock.c |  2 +-
+>  arch/x86/xen/time.c     |  3 +--
+>  3 files changed, 7 insertions(+), 8 deletions(-)
 
 
-Or to build 3.6.11.8-rt40 directly, the following patches should be applied:
+If you are cleaning up Xen's use of IRQF_DISABLED then you should
+probably also update drivers/xen/evtchn.c and drivers/xen/platform-pci.c
 
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.6.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.6.11.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/stable/patch-3.6.11.8.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patch-3.6.11.8-rt40.patch.xz
-
-
-
-
-Enjoy,
-
--- Steve
+-boris
 
