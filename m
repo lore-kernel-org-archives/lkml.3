@@ -1,98 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756010Ab3IIVfc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 17:35:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42317 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755603Ab3IIVfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 17:35:30 -0400
-Date: Mon, 9 Sep 2013 17:35:26 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: linux-fsdevel@vger.kernel.org,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        linux-security-module@vger.kernel.org
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, viro@ZenIV.linux.org.uk,
-        matthew.garrett@nebula.com
-Subject: [RFC PATCH] mount: Add a flag to not follow symlink at the end of
- mount point
-Message-ID: <20130909213526.GB2799@redhat.com>
+	id S1755667Ab3IIVij (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 17:38:39 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:38403 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752806Ab3IIVii (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 17:38:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1378762380-13152-2-git-send-email-apinski@cavium.com>
+References: <1378762380-13152-1-git-send-email-apinski@cavium.com>
+	<1378762380-13152-2-git-send-email-apinski@cavium.com>
+Date: Mon, 9 Sep 2013 14:38:36 -0700
+Message-ID: <CA+=Sn1mj1c_k=-++K1jqU1DnYe0sUspbsuP0MMyWx+J-+JZfcw@mail.gmail.com>
+Subject: Re: [PATCH 2/5] ARM64: Move some signal code to a seperate file to be
+ reused by ILP32.
+From: Andrew Pinski <pinskia@gmail.com>
+To: linux-arm-kernel@lists.infradead.org, LKML <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Cc: Andrew Pinski <apinski@cavium.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a requirement where I want to make sure that mount() fails if
-mount point is a symlink. Hence introducing a new mount flag MS_NOSYMLINK.
+On Mon, Sep 9, 2013 at 2:32 PM, Andrew Pinski <pinskia@gmail.com> wrote:
+> Since the ILP32 ABI uses similar signal code as the LP64 ABI, it makes sense to reuse rather
+> than copy the same code.
 
-Following is little more info on what I am trying to do. I am trying
-to write patches for signed /sbin/kexec. That is /sbin/kexec binary will
-be signed and in secureboot environment kernel will verify signature 
-of /sbin/kexec and upon successful verfication, /sbin/kexec will be
-trusted and allowed to load new kernel.
+I just noticed that signal_template.c was not part of this patch but
+it is included with patch number 5.
 
-/sbin/kexec gathers bunch of data from /sys and /proc. Given the fact that
-only /sbin/kexec is trusted and not other root processes, one need to make
-sure that a root process can not alter /sys or /proc to fool /sbin/kexec.
+Thanks,
+Andrew Pinski
 
-So requirement is that /sbin/kexec needs to make sure that it is
-looking at /proc and /sys as exported by kernel (and not an artificial
-view possibly created by a root process).
-
-Eric Biederman suggested that use per process mount name space functionality.
-/sbin/kexec runs as root. So create separate mount namespace. Make it
-recursively private to disable any event propogation. Unmount existing
-/proc and /sys and remount them.
-
-Actual code of what I am trying to do in kexec-tools is posted here.
-
-https://lists.fedoraproject.org/pipermail/kernel/2013-September/004463.html
-
-Al Viro mentioned that one needs to make sure /proc and /sys are not symlinks.
-Otherwise after remounting, root could remove symlinks and create /proc and
-/sys with its own files.
-
-And there comes the need to make sure mount point is not a symlink
-and hence this patch.
-
-I did basic testing by doing following and it seems to work.
-
-syscall(__NR_mount, "none", <mount-point>, "proc", 1<<25,"");
-
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
----
- fs/namespace.c          |    6 +++++-
- include/uapi/linux/fs.h |    1 +
- 2 files changed, 6 insertions(+), 1 deletion(-)
-
-Index: linux-2.6/include/uapi/linux/fs.h
-===================================================================
---- linux-2.6.orig/include/uapi/linux/fs.h	2013-05-03 22:05:19.000000000 -0400
-+++ linux-2.6/include/uapi/linux/fs.h	2013-09-10 04:42:08.372708254 -0400
-@@ -86,6 +86,7 @@ struct inodes_stat_t {
- #define MS_KERNMOUNT	(1<<22) /* this is a kern_mount call */
- #define MS_I_VERSION	(1<<23) /* Update inode I_version field */
- #define MS_STRICTATIME	(1<<24) /* Always perform atime updates */
-+#define MS_NOSYMLINK	(1<<25) /* Do not follow symlink at the end */
- 
- /* These sb flags are internal to the kernel */
- #define MS_NOSEC	(1<<28)
-Index: linux-2.6/fs/namespace.c
-===================================================================
---- linux-2.6.orig/fs/namespace.c	2013-09-09 21:50:45.000000000 -0400
-+++ linux-2.6/fs/namespace.c	2013-09-10 04:40:26.477709733 -0400
-@@ -2323,7 +2323,11 @@ long do_mount(const char *dev_name, cons
- 		((char *)data_page)[PAGE_SIZE - 1] = 0;
- 
- 	/* ... and get the mountpoint */
--	retval = kern_path(dir_name, LOOKUP_FOLLOW, &path);
-+	if (flags & MS_NOSYMLINK)
-+		retval = kern_path(dir_name, 0, &path);
-+	else
-+		retval = kern_path(dir_name, LOOKUP_FOLLOW, &path);
-+
- 	if (retval)
- 		return retval;
- 
+>
+>
+> Signed-off-by: Andrew Pinski <apinski@cavium.com>
+> ---
+>  arch/arm64/kernel/signal.c |  170 +-------------------------------------------
+>  1 files changed, 1 insertions(+), 169 deletions(-)
+>
+> diff --git a/arch/arm64/kernel/signal.c b/arch/arm64/kernel/signal.c
+> index 3fbd848..d97a0c0 100644
+> --- a/arch/arm64/kernel/signal.c
+> +++ b/arch/arm64/kernel/signal.c
+> @@ -95,176 +95,8 @@ static int restore_fpsimd_context(struct fpsimd_context __user *ctx)
+>         return err ? -EFAULT : 0;
+>  }
+>
+> -static int restore_sigframe(struct pt_regs *regs,
+> -                           struct rt_sigframe __user *sf)
+> -{
+> -       sigset_t set;
+> -       int i, err;
+> -       struct aux_context __user *aux =
+> -               (struct aux_context __user *)sf->uc.uc_mcontext.__reserved;
+> -
+> -       err = __copy_from_user(&set, &sf->uc.uc_sigmask, sizeof(set));
+> -       if (err == 0)
+> -               set_current_blocked(&set);
+> -
+> -       for (i = 0; i < 31; i++)
+> -               __get_user_error(regs->regs[i], &sf->uc.uc_mcontext.regs[i],
+> -                                err);
+> -       __get_user_error(regs->sp, &sf->uc.uc_mcontext.sp, err);
+> -       __get_user_error(regs->pc, &sf->uc.uc_mcontext.pc, err);
+> -       __get_user_error(regs->pstate, &sf->uc.uc_mcontext.pstate, err);
+> -
+> -       /*
+> -        * Avoid sys_rt_sigreturn() restarting.
+> -        */
+> -       regs->syscallno = ~0UL;
+> -
+> -       err |= !valid_user_regs(&regs->user_regs);
+> -
+> -       if (err == 0)
+> -               err |= restore_fpsimd_context(&aux->fpsimd);
+> -
+> -       return err;
+> -}
+> -
+> -asmlinkage long sys_rt_sigreturn(struct pt_regs *regs)
+> -{
+> -       struct rt_sigframe __user *frame;
+> -
+> -       /* Always make any pending restarted system calls return -EINTR */
+> -       current_thread_info()->restart_block.fn = do_no_restart_syscall;
+> -
+> -       /*
+> -        * Since we stacked the signal on a 128-bit boundary, then 'sp' should
+> -        * be word aligned here.
+> -        */
+> -       if (regs->sp & 15)
+> -               goto badframe;
+> -
+> -       frame = (struct rt_sigframe __user *)regs->sp;
+> -
+> -       if (!access_ok(VERIFY_READ, frame, sizeof (*frame)))
+> -               goto badframe;
+> -
+> -       if (restore_sigframe(regs, frame))
+> -               goto badframe;
+> -
+> -       if (restore_altstack(&frame->uc.uc_stack))
+> -               goto badframe;
+> -
+> -       return regs->regs[0];
+> -
+> -badframe:
+> -       if (show_unhandled_signals)
+> -               pr_info_ratelimited("%s[%d]: bad frame in %s: pc=%08llx sp=%08llx\n",
+> -                                   current->comm, task_pid_nr(current), __func__,
+> -                                   regs->pc, regs->sp);
+> -       force_sig(SIGSEGV, current);
+> -       return 0;
+> -}
+> -
+> -static int setup_sigframe(struct rt_sigframe __user *sf,
+> -                         struct pt_regs *regs, sigset_t *set)
+> -{
+> -       int i, err = 0;
+> -       struct aux_context __user *aux =
+> -               (struct aux_context __user *)sf->uc.uc_mcontext.__reserved;
+> -
+> -       /* set up the stack frame for unwinding */
+> -       __put_user_error(regs->regs[29], &sf->fp, err);
+> -       __put_user_error(regs->regs[30], &sf->lr, err);
+> -
+> -       for (i = 0; i < 31; i++)
+> -               __put_user_error(regs->regs[i], &sf->uc.uc_mcontext.regs[i],
+> -                                err);
+> -       __put_user_error(regs->sp, &sf->uc.uc_mcontext.sp, err);
+> -       __put_user_error(regs->pc, &sf->uc.uc_mcontext.pc, err);
+> -       __put_user_error(regs->pstate, &sf->uc.uc_mcontext.pstate, err);
+> -
+> -       __put_user_error(current->thread.fault_address, &sf->uc.uc_mcontext.fault_address, err);
+> -
+> -       err |= __copy_to_user(&sf->uc.uc_sigmask, set, sizeof(*set));
+> -
+> -       if (err == 0)
+> -               err |= preserve_fpsimd_context(&aux->fpsimd);
+> -
+> -       /* set the "end" magic */
+> -       __put_user_error(0, &aux->end.magic, err);
+> -       __put_user_error(0, &aux->end.size, err);
+> +#include "signal_template.c"
+>
+> -       return err;
+> -}
+> -
+> -static struct rt_sigframe __user *get_sigframe(struct k_sigaction *ka,
+> -                                              struct pt_regs *regs)
+> -{
+> -       unsigned long sp, sp_top;
+> -       struct rt_sigframe __user *frame;
+> -
+> -       sp = sp_top = regs->sp;
+> -
+> -       /*
+> -        * This is the X/Open sanctioned signal stack switching.
+> -        */
+> -       if ((ka->sa.sa_flags & SA_ONSTACK) && !sas_ss_flags(sp))
+> -               sp = sp_top = current->sas_ss_sp + current->sas_ss_size;
+> -
+> -       sp = (sp - sizeof(struct rt_sigframe)) & ~15;
+> -       frame = (struct rt_sigframe __user *)sp;
+> -
+> -       /*
+> -        * Check that we can actually write to the signal frame.
+> -        */
+> -       if (!access_ok(VERIFY_WRITE, frame, sp_top - sp))
+> -               frame = NULL;
+> -
+> -       return frame;
+> -}
+> -
+> -static void setup_return(struct pt_regs *regs, struct k_sigaction *ka,
+> -                        void __user *frame, int usig)
+> -{
+> -       __sigrestore_t sigtramp;
+> -
+> -       regs->regs[0] = usig;
+> -       regs->sp = (unsigned long)frame;
+> -       regs->regs[29] = regs->sp + offsetof(struct rt_sigframe, fp);
+> -       regs->pc = (unsigned long)ka->sa.sa_handler;
+> -
+> -       if (ka->sa.sa_flags & SA_RESTORER)
+> -               sigtramp = ka->sa.sa_restorer;
+> -       else
+> -               sigtramp = VDSO_SYMBOL(current->mm->context.vdso, sigtramp);
+> -
+> -       regs->regs[30] = (unsigned long)sigtramp;
+> -}
+> -
+> -static int setup_rt_frame(int usig, struct k_sigaction *ka, siginfo_t *info,
+> -                         sigset_t *set, struct pt_regs *regs)
+> -{
+> -       struct rt_sigframe __user *frame;
+> -       int err = 0;
+> -
+> -       frame = get_sigframe(ka, regs);
+> -       if (!frame)
+> -               return 1;
+> -
+> -       __put_user_error(0, &frame->uc.uc_flags, err);
+> -       __put_user_error(NULL, &frame->uc.uc_link, err);
+> -
+> -       err |= __save_altstack(&frame->uc.uc_stack, regs->sp);
+> -       err |= setup_sigframe(frame, regs, set);
+> -       if (err == 0) {
+> -               setup_return(regs, ka, frame, usig);
+> -               if (ka->sa.sa_flags & SA_SIGINFO) {
+> -                       err |= copy_siginfo_to_user(&frame->info, info);
+> -                       regs->regs[1] = (unsigned long)&frame->info;
+> -                       regs->regs[2] = (unsigned long)&frame->uc;
+> -               }
+> -       }
+> -
+> -       return err;
+> -}
+>
+>  static void setup_restart_syscall(struct pt_regs *regs)
+>  {
+> --
+> 1.7.2.5
+>
