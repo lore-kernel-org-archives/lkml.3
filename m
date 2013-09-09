@@ -1,110 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567Ab3IIQv3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 12:51:29 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:14682 "EHLO SMTP.CITRIX.COM"
+	id S1755066Ab3IIQwP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 12:52:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58600 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750873Ab3IIQv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 12:51:27 -0400
-X-IronPort-AV: E=Sophos;i="4.90,872,1371081600"; 
-   d="scan'208";a="52062611"
-Date: Mon, 9 Sep 2013 17:46:59 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Subject: Re: [PATCH v5 11/13] xen: introduce xen_alloc/free_coherent_pages
-In-Reply-To: <8492887B-2509-42B5-A5F9-A711C519D912@arm.com>
-Message-ID: <alpine.DEB.2.02.1309091732230.6397@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1308291917290.6397@kaball.uk.xensource.com> <1377801154-29215-11-git-send-email-stefano.stabellini@eu.citrix.com> <20130905160905.GI11887@arm.com> <alpine.DEB.2.02.1309051742390.6397@kaball.uk.xensource.com> <20130906141444.GE1946@arm.com>
- <alpine.DEB.2.02.1309061554260.6397@kaball.uk.xensource.com> <20130906155928.GH1946@arm.com> <alpine.DEB.2.02.1309061706480.6397@kaball.uk.xensource.com> <20130906162018.GJ1946@arm.com> <alpine.DEB.2.02.1309061740050.6397@kaball.uk.xensource.com>
- <8492887B-2509-42B5-A5F9-A711C519D912@arm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753618Ab3IIQwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 12:52:13 -0400
+Message-ID: <522DFCAC.40607@zytor.com>
+Date: Mon, 09 Sep 2013 09:51:56 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+To: Matthew Garrett <matthew.garrett@nebula.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH 01/12] Add BSD-style securelevel support
+References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>  <1378741786-18430-2-git-send-email-matthew.garrett@nebula.com>  <522DF6DC.1050303@zytor.com> <1378744207.17982.3.camel@x230.lan>  <522DFA93.50308@zytor.com> <1378745082.17982.4.camel@x230.lan>
+In-Reply-To: <1378745082.17982.4.camel@x230.lan>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Sep 2013, Catalin Marinas wrote:
-> >>> They could also happen in a DomU if we assign a physical device to it
-> >>> (and an SMMU is not available).
-> >> 
-> >> The problem is that you don't necessarily know one kind of coherency you
-> >> know for a physical device. As I said, we plan to do this DT-driven.
-> > 
-> > OK, but if I call arm64_swiotlb_dma_ops.alloc passing the right
-> > arguments to it, I should be able to get the right coherency for the
-> > right device, correct?
+On 09/09/2013 09:44 AM, Matthew Garrett wrote:
+> On Mon, 2013-09-09 at 09:42 -0700, H. Peter Anvin wrote:
 > 
-> I think it needs a bit more work on the Xen part.  Basically
-> dma_alloc_attrs() calls get_dma_ops() to obtain the best DMA operations
-> for a device.  arm64_swiotlb_dma_ops is just the default implementation
-> and I'll add a _noncoherent variant as well.  Default dma_ops will be
-> set to one of these during boot.  But a device is also allowed to have
-> its own dev->archdata.dma_ops, set via set_dma_ops().
+>> Neither of this tend to be true long time... which leads one back to
+>> capabilities.
 > 
-> So even if you set the default dma_ops to Xen ops, you may not get them
-> via dma_alloc_coherent().  I don't see any easier solution other than
-> patching the dma_alloc_attrs() function to issue a Hyp call after the
-> memory has been allocated with the get_dma_ops()->alloc().  But I don't
-> like this either.
+> We can't use capabilities. Doing so breaks existing userspace.
+> 
 
-I see. This problem affects arch/arm as well.
-Either we add an if (!xen_domain()) in get_dma_ops, or we could make
-get_dma_ops a function pointer and let people overwrite it.
-See below the first option implemented for arch/arm on top of the
-swiotlb series:
+Capabilities don't have to mean "POSIX capabilities"... although the
+POSIX capability system in Linux really is a massive fail which it would
+be nice to find some kind of fix for.
 
+	-hpa
 
-diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
-index 7d6e4f9..0b8b5e4 100644
---- a/arch/arm/include/asm/dma-mapping.h
-+++ b/arch/arm/include/asm/dma-mapping.h
-@@ -12,6 +12,8 @@
- #include <asm/memory.h>
- #include <asm/cacheflush.h>
- 
-+#include <xen/xen.h>
-+
- #define DMA_ERROR_CODE	(~0)
- extern struct dma_map_ops *dma_ops;
- extern struct dma_map_ops arm_dma_ops;
-@@ -19,7 +21,7 @@ extern struct dma_map_ops arm_coherent_dma_ops;
- 
- static inline struct dma_map_ops *get_dma_ops(struct device *dev)
- {
--	if (dev && dev->archdata.dma_ops)
-+	if (!xen_domain() && dev && dev->archdata.dma_ops)
- 		return dev->archdata.dma_ops;
- 	return dma_ops;
- }
-diff --git a/arch/arm/include/asm/xen/page-coherent.h b/arch/arm/include/asm/xen/page-coherent.h
-index af2cf8d..c2232fe 100644
---- a/arch/arm/include/asm/xen/page-coherent.h
-+++ b/arch/arm/include/asm/xen/page-coherent.h
-@@ -9,6 +9,8 @@ static inline void *xen_alloc_coherent_pages(struct device *hwdev, size_t size,
- 		dma_addr_t *dma_handle, gfp_t flags,
- 		struct dma_attrs *attrs)
- {
-+	if (hwdev && hwdev->archdata.dma_ops)
-+		return hwdev->archdata.dma_ops->alloc(hwdev, size, dma_handle, flags, attrs);
- 	return arm_dma_ops.alloc(hwdev, size, dma_handle, flags, attrs);
- }
- 
-@@ -16,6 +18,8 @@ static inline void xen_free_coherent_pages(struct device *hwdev, size_t size,
- 		void *cpu_addr, dma_addr_t dma_handle,
- 		struct dma_attrs *attrs)
- {
-+	if (hwdev && hwdev->archdata.dma_ops)
-+		return hwdev->archdata.dma_ops->free(hwdev, size, cpu_addr, dma_handle, attrs);
- 	return arm_dma_ops.free(hwdev, size, cpu_addr, dma_handle, attrs);
- }
- 
