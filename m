@@ -1,58 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752978Ab3IILTa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 07:19:30 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:60527 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464Ab3IILT2 (ORCPT
+	id S1752271Ab3IIL1M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 07:27:12 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:37176 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640Ab3IIL1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 07:19:28 -0400
-Message-ID: <522DAE69.4050608@ahsoftware.de>
-Date: Mon, 09 Sep 2013 13:18:01 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Mon, 9 Sep 2013 07:27:10 -0400
+Date: Mon, 9 Sep 2013 12:26:43 +0100
+From: Mark Brown <broonie@kernel.org>
+To: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
+Cc: Ashish Chavan <ashish.chavan@kpitcummins.com>, lrg <lrg@ti.com>,
+        alsa-devel <alsa-devel@alsa-project.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "kiran.padwal" <kiran.padwal@kpitcummins.com>
+Message-ID: <20130909112643.GX29403@sirena.org.uk>
+References: <1375717898.29528.23.camel@matrix>
+ <20130805162342.GS9858@sirena.org.uk>
+ <1377778108.15438.6.camel@matrix>
+ <2E89032DDAA8B9408CB92943514A033751E611AF@SW-EX-MBX01.diasemi.com>
+ <20130902103843.GL3084@sirena.org.uk>
+ <2E89032DDAA8B9408CB92943514A033751E612F5@SW-EX-MBX01.diasemi.com>
+ <20130902174121.GV3084@sirena.org.uk>
+ <2E89032DDAA8B9408CB92943514A033751E6157D@SW-EX-MBX01.diasemi.com>
+ <20130904183405.GX3084@sirena.org.uk>
+ <2E89032DDAA8B9408CB92943514A033751E61991@SW-EX-MBX01.diasemi.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Guenter Roeck <linux@roeck-us.net>,
-        Daniel Santos <daniel.santos@pobox.com>,
-        Daniel Santos <danielfsantos@att.net>,
-        linux-gpio <linux-gpio@vger.kernel.org>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        linux-spi <linux-spi@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: "Virtual" Interrupts -- Need help please
-References: <522BC27A.5080303@att.net> <522BCA33.6000701@roeck-us.net> <522D0D37.3050500@att.net> <522D17EC.3050908@roeck-us.net> <20130909110257.GU29403@sirena.org.uk>
-In-Reply-To: <20130909110257.GU29403@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JjNtGRvLZqzR8wa5"
+Content-Disposition: inline
+In-Reply-To: <2E89032DDAA8B9408CB92943514A033751E61991@SW-EX-MBX01.diasemi.com>
+X-Cookie: Your present plans will be successful.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [alsa-devel] [PATCH] ASoC: codecs: da9055: Update driver name to
+ fix breakage due to pmic driver with same name
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 09.09.2013 13:02, schrieb Mark Brown:
-> On Sun, Sep 08, 2013 at 05:35:56PM -0700, Guenter Roeck wrote:
->
-> Please fix your mailer to word wrap within paragraphs, not doing this
-> makes your mail very hard to read.  It looks like your mailer has also
-> reflowed Daniel's mail.
 
-That's just wrong. Mail readers should wrap lines, not senders. And 
-readers can do this since some decades.
+--JjNtGRvLZqzR8wa5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The reason is obvious: No sender knows the line width the receiver can 
-display. So, for example, if the sender hard breaks lines every 80 
-chars, a reader with a device which just displays 60 characters at max. 
-will see every second line with at most 20 characters. I assume you can 
-guess how such does look like. Furthermore there are still a lot of 
-people which do like to read mails with line length as long their 
-display is possible to show, and hard breaking lines on the receiver 
-side does make such impossible.
+On Fri, Sep 06, 2013 at 02:17:48PM +0000, Opensource [Adam Thomson] wrote:
 
-So the correct behaviour is to not hard break lines on the sender side 
-and leave that to the reader on the receiving side, as only the 
-receiving side knows the line width.
+> Bringing this back to DA9055 though, the current method of initialisation, for
+> PMIC and Codec, isn't complicated or confusing nor does it require a lot of
+> effort. As well as this the implementation is logically sound. It should
+> remain that way in my opinion. The only thing that should be updated is the I2C
+> Id of the Codec to make it more meaningful, and preferably sooner rather than
+> later so the issue can be finally put to bed.
 
-Alexander Holler
+Well, the obvious approach would seem to be to just do the registration
+of the CODEC I2C device from the MFD...
 
+--JjNtGRvLZqzR8wa5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSLbBvAAoJELSic+t+oim9aa0P/1yX17viQppBzB3kcGptNhC3
+DscLDJu0Cte4Y5D1UJGmuKQMDHNpU1mr4wlPdpevU/2sjqd4p2Mi1k3Nh773mT9f
+hgqJj/LQoqRlyLemfa53SVc7THPC+76yQCsoqaWl/egz+7Kc4hhEhto+NJyNQpA3
+sHux/0aA3tOykmCdQ4bIhWsyE1UcIHaxjrCw20P8MRf9I+iIqlSdW8lxj448HyFU
+uHsD+WvWFor9upmNbOG5agQG/tVSxlNfRKSzwjip/9ct8LClc/Y6NBly6It8hYb5
+M85UGG8Zixw0BC2it2Exu/+LZUfYWMxWlv6bajfm4sAtkynGXHyLqDEob7jN7dHe
+yO3Os24iuMk+UO6Rq2NBoWCmFeOm9Sut68AdRK6vHaxjt88gUglqUChApqgPNlpv
+tjX8XFMB4x7hXYhbPcQH0SMfEV07n7JZjTiQt6VyVJ3tKPNf7IBe7bMx6HUhSIha
+qSJVriLi+ID4OKYIMV9qiOpjZV8Df3A+ngRFsUJXDjeFVWH0bW8eqXPsFd66K4ht
+kwSeZgaTQAt4B5Bme+XRWZkGmqs49WjTCZIE4uAbBFUIHZZL2Y0CMGI+3Hbhh+cV
+v/FT8aZa8Unxt086k7ESKBZS5lOfcGtNJyYmOxHTpBrkBmksJQX5QFVM+/YQLybO
+8qmwYmtUYXGUVYfnG7CB
+=UZQZ
+-----END PGP SIGNATURE-----
+
+--JjNtGRvLZqzR8wa5--
