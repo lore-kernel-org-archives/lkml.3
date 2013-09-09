@@ -1,131 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612Ab3IIN6L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:58:11 -0400
-Received: from bizpsie4.9services.com ([84.96.93.162]:51146 "EHLO
-	bizpsie4.9services.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752195Ab3IIN6J (ORCPT
+	id S1753906Ab3IIN6X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:58:23 -0400
+Received: from mail-ye0-f180.google.com ([209.85.213.180]:33779 "EHLO
+	mail-ye0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab3IIN6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 09:58:09 -0400
-X-VRSPAM-SCORE: -100.00
-Message-ID: <522DD3E8.8070804@efixo.com>
-Date: Mon, 09 Sep 2013 15:58:00 +0200
-From: Emmanuel Deloget <emmanuel.deloget@efixo.com>
-Reply-To: emmanuel.deloget@efixo.com
-Organization: Efixo
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Mon, 9 Sep 2013 09:58:20 -0400
+Date: Mon, 9 Sep 2013 09:58:15 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 00/11] x86, memblock: Allocate memory near kernel image
+ before SRAT parsed.
+Message-ID: <20130909135815.GB25434@htj.dyndns.org>
+References: <1377596268-31552-1-git-send-email-tangchen@cn.fujitsu.com>
+ <20130904192215.GG26609@mtj.dyndns.org>
+ <52299935.0302450a.26c9.ffffb240SMTPIN_ADDED_BROKEN@mx.google.com>
+ <20130906151526.GA22423@mtj.dyndns.org>
+ <522db781.22ab440a.41b1.ffffd825SMTPIN_ADDED_BROKEN@mx.google.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "[ML] linux-kernel" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: /proc/$PID/sched does not take PID namespace into account
-References: <5225F0A9.5040100@efixo.com> <20130909110141.GM31370@twins.programming.kicks-ass.net>
-In-Reply-To: <20130909110141.GM31370@twins.programming.kicks-ass.net>
-Content-Type: multipart/mixed;
- boundary="------------040909030004080901050805"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <522db781.22ab440a.41b1.ffffd825SMTPIN_ADDED_BROKEN@mx.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------040909030004080901050805
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-
 Hello,
 
-On 09/09/2013 13:01, Peter Zijlstra wrote:
-> On Tue, Sep 03, 2013 at 04:22:33PM +0200, Emmanuel Deloget wrote:
->> The issue (if this is really an issue) lies in kernel/sched/debug.c,
->> function proc_sched_show_task(). The code says [1]:
->>
->>     SEQ_printf(m, "%s (%d, #threads: %d)\n", p->comm, p->pid,
->>                         get_nr_threads(p));
->>
->> I see a few options:
->>
->> * either it's a bug and it should be corrected (I'm not sure how to
->>   do it; the printed PID should reflect the current PID namespace
->>   and I don't how how to get this information).
-> I suppose something like the below ought to work? -- completely
-> untested, please confirm.
+On Mon, Sep 09, 2013 at 07:56:34PM +0800, Wanpeng Li wrote:
+> If allocate from low to high as what this patchset done will occupy the
+> precious memory you mentioned?
 
-Thanks !
+Yeah, and that'd be the reason why this behavior is dependent on a
+kernel option.  That said, allocating some megs on top of kernel isn't
+a big deal.  The wretched ISA DMA is mostly gone now and some megs
+isn't gonna hurt 32bit DMAs in any noticeable way.  I wouldn't be too
+surprised if nobody notices after switching the default behavior to
+allocate early mem close to kernel.  Maybe the only case which might
+be impacted is 32bit highmem configs, but they're messed up no matter
+what anyway and even they shouldn't be affected noticeably if large
+mapping is in use.
 
-I'll test that as soon as possible and I'll report to you.
-
-Best regards,
-
--- Emmanuel Deloget
-
->
-> ---
-> Subject: sched, debug: Use PID namespaces
->
-> Emmanuel reported that /proc/sched_debug didn't report the right PIDs
-> when using namespaces, cure this.
->
-> Reported-by: Emmanuel Deloget <emmanuel.deloget@efixo.com>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> ---
->  kernel/sched/debug.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-> index e076bdd..e30bf44 100644
-> --- a/kernel/sched/debug.c
-> +++ b/kernel/sched/debug.c
-> @@ -124,7 +124,7 @@ print_task(struct seq_file *m, struct rq *rq, struct task_struct *p)
->  		SEQ_printf(m, " ");
->  
->  	SEQ_printf(m, "%15s %5d %9Ld.%06ld %9Ld %5d ",
-> -		p->comm, p->pid,
-> +		p->comm, task_pid(p),,
->  		SPLIT_NS(p->se.vruntime),
->  		(long long)(p->nvcsw + p->nivcsw),
->  		p->prio);
-> @@ -289,7 +289,7 @@ do {									\
->  	P(nr_load_updates);
->  	P(nr_uninterruptible);
->  	PN(next_balance);
-> -	P(curr->pid);
-> +	P(task_pid(curr));
->  	PN(clock);
->  	P(cpu_load[0]);
->  	P(cpu_load[1]);
-> @@ -492,7 +492,7 @@ void proc_sched_show_task(struct task_struct *p, struct seq_file *m)
->  {
->  	unsigned long nr_switches;
->  
-> -	SEQ_printf(m, "%s (%d, #threads: %d)\n", p->comm, p->pid,
-> +	SEQ_printf(m, "%s (%d, #threads: %d)\n", p->comm, task_pid(p),
->  						get_nr_threads(p));
->  	SEQ_printf(m,
->  		"---------------------------------------------------------"
-> .
->
-
+Thanks.
 
 -- 
-
---------------040909030004080901050805
-Content-Type: text/x-vcard; charset=utf-8;
- name="emmanuel_deloget.vcf"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="emmanuel_deloget.vcf"
-
-begin:vcard
-fn:Emmanuel Deloget
-n:Deloget;Emmanuel
-org:efixo / SFR;DATA
-adr;quoted-printable:;;67 mont=C3=A9e de St Menet;MARSEILLE;;13011;FRANCE
-email;internet:emmanuel.deloget@efixo.com
-title:Team Leader
-tel;work:04 88 15 50 77
-url:www.sfr.fr
-version:2.1
-end:vcard
-
-
---------------040909030004080901050805--
+tejun
