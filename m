@@ -1,124 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549Ab3IIUMe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 16:12:34 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:39678 "EHLO hydra.sisk.pl"
+	id S1755706Ab3IIUNI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 16:13:08 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:54666 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752571Ab3IIUMb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 16:12:31 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Aaron Lu <aaron.lu@intel.com>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        Yves-Alexis Perez <corsac@debian.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Lee Chun-Yi <jlee@novell.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Subject: Re: [PATCH 2/2] ACPI / video / i915: Remove ACPI backlight if firmware expects Windows 8
-Date: Mon, 09 Sep 2013 22:23:27 +0200
-Message-ID: <5155010.Y1gov7SKhP@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20130909152118.GG27291@phenom.ffwll.local>
-References: <522D88C3.7000808@intel.com> <1793135.3qk7NfcINN@vostro.rjw.lan> <20130909152118.GG27291@phenom.ffwll.local>
+	id S1752571Ab3IIUND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 16:13:03 -0400
+Date: Mon, 9 Sep 2013 16:12:38 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: azurIt <azurit@pobox.sk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/7] improve memcg oom killer robustness v2
+Message-ID: <20130909201238.GH856@cmpxchg.org>
+References: <1375549200-19110-1-git-send-email-hannes@cmpxchg.org>
+ <20130803170831.GB23319@cmpxchg.org>
+ <20130830215852.3E5D3D66@pobox.sk>
+ <20130902123802.5B8E8CB1@pobox.sk>
+ <20130903204850.GA1412@cmpxchg.org>
+ <20130904101852.58E70042@pobox.sk>
+ <20130905115430.GB856@cmpxchg.org>
+ <20130909151010.3A3CBC6A@pobox.sk>
+ <20130909172849.GG856@cmpxchg.org>
+ <20130909215917.96932098@pobox.sk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130909215917.96932098@pobox.sk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, September 09, 2013 05:21:18 PM Daniel Vetter wrote:
-> On Mon, Sep 09, 2013 at 02:16:12PM +0200, Rafael J. Wysocki wrote:
-> > Hi,
-> > 
-> > On Monday, September 09, 2013 11:32:10 AM Daniel Vetter wrote:
-> > > Hi Aaaron,
-> > > 
-> > > Have we grown any clue meanwhile about which Intel boxes need this and for
-> > > which we still need to keep the acpi backlight around?
-> > 
-> > First of all, there is a bunch of boxes where ACPI backlight works incorrectly
-> > because of the Win8 compatibility issue.  [In short, if we say we are compatible
-> > with Win8, the backlight AML goes into a special code path that is broken on
-> > those machines. Presumably Win8 uses native backlight control on them and that
-> > AML code path is never executed there.]  The collection of machines with this
-> > problem appears to be kind of random (various models from various vendors), but
-> > I *think* they are machines that originally shipped with Win7 with a Win8
-> > "upgrade" option (which in practice requires the BIOS to be updated anyway).
-> > 
-> > Because of that, last time we tried to switch all of the systems using i915
-> > and telling the BIOS that they are compatible with Win8 over to native backlight
-> > control, but that didn't work for two reasons.  The first reason is that some
-> > user space doesn't know how to use intel_backlight and needs to be taught about
-> > that (so some systems are just not ready for that switch).  The second and more
-> > fundamental reason is that the native backlight control simply doesn't work on
-> > some machines and we don't seem to have any idea why and how to debug this
-> > particular problem (mostly because we don't have enough information and we
-> > don't know what to ask for).
-> > 
-> > > I've grown _very_ reluctant to just adding tons of quirks to our driver for
-> > > the backlight.
-> > >
-> > > Almost all the quirks we have added recently (or that have been proposed
-> > > to be added) are for the backlight. Imo that indicates we get something
-> > > fundamentally wrong ...
-> > 
-> > This thing isn't really a quirk.  It rather is an option for the users of
-> > the systems where ACPI backlight doesn't work to switch over to the native
-> > backlight control using a command line switch.  This way they can at least
-> > *see* if the native backlight control works for them and (hopefully) report
-> > problems if that's not the case.  This gives us a chance to get more
-> > information about what the problem is and possibly to make some progress
-> > without making changes for everyone, reverting those changes when they don't
-> > work etc.
-> > 
-> > An alternative for them is to pass acpi_osi="!Windows 2012" which will probably
-> > make the ACPI backlight work for them again, but this rather is a step back,
-> > because we can't possibly learn anything new from that.
+On Mon, Sep 09, 2013 at 09:59:17PM +0200, azurIt wrote:
+> >On Mon, Sep 09, 2013 at 03:10:10PM +0200, azurIt wrote:
+> >> >Hi azur,
+> >> >
+> >> >On Wed, Sep 04, 2013 at 10:18:52AM +0200, azurIt wrote:
+> >> >> > CC: "Andrew Morton" <akpm@linux-foundation.org>, "Michal Hocko" <mhocko@suse.cz>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+> >> >> >Hello azur,
+> >> >> >
+> >> >> >On Mon, Sep 02, 2013 at 12:38:02PM +0200, azurIt wrote:
+> >> >> >> >>Hi azur,
+> >> >> >> >>
+> >> >> >> >>here is the x86-only rollup of the series for 3.2.
+> >> >> >> >>
+> >> >> >> >>Thanks!
+> >> >> >> >>Johannes
+> >> >> >> >>---
+> >> >> >> >
+> >> >> >> >
+> >> >> >> >Johannes,
+> >> >> >> >
+> >> >> >> >unfortunately, one problem arises: I have (again) cgroup which cannot be deleted :( it's a user who had very high memory usage and was reaching his limit very often. Do you need any info which i can gather now?
+> >> >> >
+> >> >> >Did the OOM killer go off in this group?
+> >> >> >
+> >> >> >Was there a warning in the syslog ("Fixing unhandled memcg OOM
+> >> >> >context")?
+> >> >> 
+> >> >> 
+> >> >> 
+> >> >> Ok, i see this message several times in my syslog logs, one of them is also for this unremovable cgroup (but maybe all of them cannot be removed, should i try?). Example of the log is here (don't know where exactly it starts and ends so here is the full kernel log):
+> >> >> http://watchdog.sk/lkml/oom_syslog.gz
+> >> >There is an unfinished OOM invocation here:
+> >> >
+> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715112] Fixing unhandled memcg OOM context set up from:
+> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715191]  [<ffffffff811105c2>] T.1154+0x622/0x8f0
+> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715274]  [<ffffffff8111153e>] mem_cgroup_cache_charge+0xbe/0xe0
+> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715357]  [<ffffffff810cf31c>] add_to_page_cache_locked+0x4c/0x140
+> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715443]  [<ffffffff810cf432>] add_to_page_cache_lru+0x22/0x50
+> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715526]  [<ffffffff810cfdd3>] find_or_create_page+0x73/0xb0
+> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715608]  [<ffffffff811493ba>] __getblk+0xea/0x2c0
+> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715692]  [<ffffffff8114ca73>] __bread+0x13/0xc0
+> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715774]  [<ffffffff81196968>] ext3_get_branch+0x98/0x140
+> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715859]  [<ffffffff81197557>] ext3_get_blocks_handle+0xd7/0xdc0
+> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715942]  [<ffffffff81198304>] ext3_get_block+0xc4/0x120
+> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716023]  [<ffffffff81155c3a>] do_mpage_readpage+0x38a/0x690
+> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716107]  [<ffffffff81155f8f>] mpage_readpage+0x4f/0x70
+> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716188]  [<ffffffff811973a8>] ext3_readpage+0x28/0x60
+> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716268]  [<ffffffff810cfa48>] filemap_fault+0x308/0x560
+> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716350]  [<ffffffff810ef898>] __do_fault+0x78/0x5a0
+> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716433]  [<ffffffff810f2ab4>] handle_pte_fault+0x84/0x940
+> >> >
+> >> >__getblk() has this weird loop where it tries to instantiate the page,
+> >> >frees memory on failure, then retries.  If the memcg goes OOM, the OOM
+> >> >path might be entered multiple times and each time leak the memcg
+> >> >reference of the respective previous OOM invocation.
+> >> >
+> >> >There are a few more find_or_create() sites that do not propagate an
+> >> >error and it's incredibly hard to find out whether they are even taken
+> >> >during a page fault.  It's not practical to annotate them all with
+> >> >memcg OOM toggles, so let's just catch all OOM contexts at the end of
+> >> >handle_mm_fault() and clear them if !VM_FAULT_OOM instead of treating
+> >> >this like an error.
+> >> >
+> >> >azur, here is a patch on top of your modified 3.2.  Note that Michal
+> >> >might be onto something and we are looking at multiple issues here,
+> >> >but the log excert above suggests this fix is required either way.
+> >> 
+> >> 
+> >> 
+> >> 
+> >> Johannes, is this still up to date? Thank you.
+> >
+> >No, please use the following on top of 3.2 (i.e. full replacement, not
+> >incremental to what you have):
 > 
-> If Win8 is as broken as we are I'm ok with the module option. It just
-> sounded to me like right now we don't know of a way to make all machines
-> somewhat happy, combined with the other pile of random backlight issues
-> the assumption that we do something (maybe something a bit racy) that
-> windows doesn't do isn't too far-fetched. So I'm not wary of the machines
-> where the aml is busted for acpi_os=win8, but for the others where this
-> broke stuff.
 > 
-> Or do I miss something here?
+> 
+> Unfortunately it didn't compile:
+> 
+> 
+> 
+> 
+>   LD      vmlinux.o
+>   MODPOST vmlinux.o
+> WARNING: modpost: Found 4924 section mismatch(es).
+> To see full details build your kernel with:
+> 'make CONFIG_DEBUG_SECTION_MISMATCH=y'
+>   GEN     .version
+>   CHK     include/generated/compile.h
+>   UPD     include/generated/compile.h
+>   CC      init/version.o
+>   LD      init/built-in.o
+>   LD      .tmp_vmlinux1
+> arch/x86/built-in.o: In function `do_page_fault':
+> (.text+0x26a77): undefined reference to `handle_mm_fault'
+> mm/built-in.o: In function `fixup_user_fault':
+> (.text+0x224d3): undefined reference to `handle_mm_fault'
+> mm/built-in.o: In function `__get_user_pages':
+> (.text+0x24a0f): undefined reference to `handle_mm_fault'
+> make: *** [.tmp_vmlinux1] Error 1
 
-The ACPI video driver doesn't do anything new now.  It only does things that
-did work before we started to tell BIOSes we're compatible with Win8.  The
-reason why they don't work on some machines now is not related to whether or
-not Win8 is broken, but to what is there in the ACPI tables on those machines.
-That *is* pure garbage, but Win8 users don't see that (presumably, because
-Win8 does't execute the AML in question).  We don't see that either with
-acpi_osi="!Windows 2012" (because then we don't execute that AML either).
+Oops, sorry about that.  Must be configuration dependent because it
+works for me (and handle_mm_fault is obviously defined).
 
-Whether or not Win8 is broken doesn't matter here.  What matters is that we
-have to deal with broken AML somehow.
+Do you have warnings earlier in the compilation?  You can use make -s
+to filter out everything but warnings.
 
-One way may be to tell everyone affected by this to pass
-acpi_osi="!Windows 2012" in the kernel command line or possibly create a
-blacklist of those machines in the kernel (which Felipe has been pushing for
-recently) and wash our hands clean of this, but that leaves some exceptionally
-bad taste in my mouth.
+Or send me your configuration so I can try to reproduce it here.
 
-The alternative is to try to use native backlight in i915, which we did, but
-that didn't work on some machines.  I don't think we will know why it didn't
-work there before we collect some more information and that's not possible
-without user testing.  So, the idea is to make that testing possible without
-hacking the kernel and that's why we're introducing the new command line
-switch.  And we're going to ask users to try it and report back.
-
-Thanks,
-Rafael
+Thanks!
 
