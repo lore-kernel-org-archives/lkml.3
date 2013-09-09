@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234Ab3IIPys (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 11:54:48 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:65213 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754498Ab3IIPwJ (ORCPT
+	id S1755097Ab3IIPz0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 11:55:26 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:44952 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754499Ab3IIPwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Sep 2013 11:52:09 -0400
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+From: Matthew Garrett <matthew.garrett@nebula.com>
 To: linux-kernel@vger.kernel.org
-Cc: Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>, devicetree@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-Subject: [PATCH 1/2] DT: add a vendor prefix for Dialog Semiconductor
-Date: Mon,  9 Sep 2013 17:51:59 +0200
-Message-Id: <1378741920-11085-2-git-send-email-g.liakhovetski@gmx.de>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1378741920-11085-1-git-send-email-g.liakhovetski@gmx.de>
-References: <1378741920-11085-1-git-send-email-g.liakhovetski@gmx.de>
-X-Provags-ID: V02:K0:RMtoS4dPlSqwRHPSx2PWE2dhDBHixdqKBmwwCvKyrZG
- sNOumtWB/dU2Ciqz9yHDO3CokkZSzZ6+uDwJxbNSmdnTuBUohJ
- 4W5d+93VFoxYP9HyNoUi3/flpujitOb8r25IAFwoYEV7us/gZb
- sUnrhuMda4nJAYu8W8QlOUWojWk7YswZekAoZjp9W5iwU2zZKZ
- /W83BXwA4WFX6wFmH88yDLcOqo2TUiMmTbsBKhqc1x8dzBVf7a
- Z+s+4i1+qmLu5gdPctVNsrSb9gdUWJNAv/P4F9fCDHqIx7z0Xn
- Jf4g/8vA8roiRQpbRXUJza0+FPC97O2BCVGIc1NU4d0kbVZG9Y
- qRY6x71v4dAVIjhc+1wZs0rauah+DoOqZGWzOUwZTfxvcZ7YaU
- JiGGaalhRKF3w==
+Cc: keescook@chromium.org, gregkh@linuxfoundation.org, hpa@zytor.com,
+        linux-efi@vger.kernel.org, jmorris@namei.org,
+        linux-security-module@vger.kernel.org
+Subject: [PATCH 00/12] One more attempt at useful kernel lockdown 
+Date: Mon,  9 Sep 2013 11:49:34 -0400
+Message-Id: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
+X-Mailer: git-send-email 1.8.3.1
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 2001:470:1f07:1371:5d52:9ee3:3e84:6668
+X-SA-Exim-Mail-From: matthew.garrett@nebula.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a commonly used "diasemi" prefix for Dialog Semiconductor PLC.
+Some use cases require the ability to ensure that anything running in ring 0
+is trusted code. We have support for signing the kernel and kernel modules,
+but there's still a range of exported kernel interfaces that make it easy to
+modify the running kernel. Previous attempts to implement a generic interface
+to restrict this have included a new capability (breaks existing userspace)
+and tying it to a requirement for signed modules (breaks assumptions in
+certain situations where userspace is already running with restricted
+privileges).
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
----
- .../devicetree/bindings/vendor-prefixes.txt        |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index 2956800..f8d5a75 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -22,6 +22,7 @@ cortina	Cortina Systems, Inc.
- dallas	Maxim Integrated Products (formerly Dallas Semiconductor)
- davicom	DAVICOM Semiconductor, Inc.
- denx	Denx Software Engineering
-+diasemi	Dialog Semiconductor
- emmicro	EM Microelectronic
- epson	Seiko Epson Corp.
- est	ESTeem Wireless Modems
--- 
-1.7.2.5
+So, this is my final attempt at providing the functionality I'm interested
+in without inherently tying it to Secure Boot. There's strong parallels
+between the functionality that I'm interested in and the BSD securelevel
+interface, so here's a trivial implementation. 
 
