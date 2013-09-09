@@ -1,91 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646Ab3IIP1j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 11:27:39 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28335 "EHLO
+	id S1754948Ab3IIP2w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 11:28:52 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31424 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754389Ab3IIP0s (ORCPT
+	with ESMTP id S1754235Ab3IIP0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 11:26:48 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=LDl5kCb-hiwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Hnuq-vIbuuYA:10 a=VwQbUJbxAAAA:8 a=t7CeM3EgAAAA:8 a=6LBtxzwm5KIY_4GhPq8A:9 a=XNN-oNMjSfgA:10 a=2e6ZYRoF4I4A:10 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Mon, 9 Sep 2013 11:26:46 -0400
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=CFQ55G38UMUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5jOM9dmJ99oA:10 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=o1OHuDzbAAAA:8 a=wxkDSlGAAAAA:8 a=L8tPGqZhoyyWpDyi6ysA:9 a=f11Q_CvFJXMA:10 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130909143534.962146393@goodmis.org>
+Message-Id: <20130909143536.335503866@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Sep 2013 10:35:22 -0400
+Date: Mon, 09 Sep 2013 10:35:30 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: [PATCH RT 05/16] list_bl.h: fix it for for !SMP && !DEBUG_SPINLOCK
+        Steven Rostedt <srostedt@redhat.com>
+Subject: [PATCH RT 13/16] hwlat-detector: Use trace_clock_local if available
 References: <20130909143517.641735717@goodmis.org>
-Content-Disposition: inline; filename=0005-list_bl.h-fix-it-for-for-SMP-DEBUG_SPINLOCK.patch
+Content-Disposition: inline; filename=0013-hwlat-detector-Use-trace_clock_local-if-available.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-The patch "list_bl.h: make list head locking RT safe" introduced
-an unconditional
-
-	__set_bit(0, (unsigned long *)b);
-
-in void hlist_bl_lock(struct hlist_bl_head *b). This clobbers the value
-of b->first. When the value of b->first is retrieved using
-hlist_bl_first the clobbering is undone using
-
-	(unsigned long)h->first & ~LIST_BL_LOCKMASK
-
-and so depending on LIST_BL_LOCKMASK being one. But LIST_BL_LOCKMASK is
-only one if at least on of CONFIG_SMP and CONFIG_DEBUG_SPINLOCK are
-defined. Without these the value returned by hlist_bl_first has the
-zeroth bit set which likely results in a crash.
-
-So only do the clobbering in the cases where LIST_BL_LOCKMASK is one.
-An alternative would be to always define LIST_BL_LOCKMASK to one with
-CONFIG_PREEMPT_RT_BASE.
+As ktime_get() calls into the timing code which does a read_seq(), it
+may be affected by other CPUS that touch that lock. To remove this
+dependency, use the trace_clock_local() which is already exported
+for module use. If CONFIG_TRACING is enabled, use that as the clock,
+otherwise use ktime_get().
 
 Cc: stable-rt@vger.kernel.org
-Acked-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Tested-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Signed-off-by: Steven Rostedt <srostedt@redhat.com>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- include/linux/list_bl.h |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/misc/hwlat_detector.c |   34 +++++++++++++++++++++++++---------
+ 1 file changed, 25 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/list_bl.h b/include/linux/list_bl.h
-index ddfd46a..becd7a6 100644
---- a/include/linux/list_bl.h
-+++ b/include/linux/list_bl.h
-@@ -131,8 +131,10 @@ static inline void hlist_bl_lock(struct hlist_bl_head *b)
- 	bit_spin_lock(0, (unsigned long *)b);
- #else
- 	raw_spin_lock(&b->lock);
-+#if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_SPINLOCK)
- 	__set_bit(0, (unsigned long *)b);
- #endif
-+#endif
+diff --git a/drivers/misc/hwlat_detector.c b/drivers/misc/hwlat_detector.c
+index f93b8ef..13443e9 100644
+--- a/drivers/misc/hwlat_detector.c
++++ b/drivers/misc/hwlat_detector.c
+@@ -51,6 +51,7 @@
+ #include <linux/version.h>
+ #include <linux/delay.h>
+ #include <linux/slab.h>
++#include <linux/trace_clock.h>
+ 
+ #define BUF_SIZE_DEFAULT	262144UL		/* 8K*(sizeof(entry)) */
+ #define BUF_FLAGS		(RB_FL_OVERWRITE)	/* no block on full */
+@@ -211,6 +212,21 @@ static struct sample *buffer_get_sample(struct sample *sample)
+ 	return sample;
  }
  
- static inline void hlist_bl_unlock(struct hlist_bl_head *b)
-@@ -140,7 +142,9 @@ static inline void hlist_bl_unlock(struct hlist_bl_head *b)
- #ifndef CONFIG_PREEMPT_RT_BASE
- 	__bit_spin_unlock(0, (unsigned long *)b);
- #else
-+#if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_SPINLOCK)
- 	__clear_bit(0, (unsigned long *)b);
++#ifndef CONFIG_TRACING
++#define time_type	ktime_t
++#define time_get()	ktime_get()
++#define time_to_us(x)	ktime_to_us(x)
++#define time_sub(a, b)	ktime_sub(a, b)
++#define init_time(a, b)	(a).tv64 = b
++#define time_u64(a)	(a).tv64
++#else
++#define time_type	u64
++#define time_get()	trace_clock_local()
++#define time_to_us(x)	div_u64(x, 1000)
++#define time_sub(a, b)	((a) - (b))
++#define init_time(a, b)	a = b
++#define time_u64(a)	a
 +#endif
- 	raw_spin_unlock(&b->lock);
- #endif
- }
+ /**
+  * get_sample - sample the CPU TSC and look for likely hardware latencies
+  * @unused: This is not used but is a part of the stop_machine API
+@@ -220,23 +236,23 @@ static struct sample *buffer_get_sample(struct sample *sample)
+  */
+ static int get_sample(void *unused)
+ {
+-	ktime_t start, t1, t2, last_t2;
++	time_type start, t1, t2, last_t2;
+ 	s64 diff, total = 0;
+ 	u64 sample = 0;
+ 	u64 outer_sample = 0;
+ 	int ret = 1;
+ 
+-	last_t2.tv64 = 0;
+-	start = ktime_get(); /* start timestamp */
++	init_time(last_t2, 0);
++	start = time_get(); /* start timestamp */
+ 
+ 	do {
+ 
+-		t1 = ktime_get();	/* we'll look for a discontinuity */
+-		t2 = ktime_get();
++		t1 = time_get();	/* we'll look for a discontinuity */
++		t2 = time_get();
+ 
+-		if (last_t2.tv64) {
++		if (time_u64(last_t2)) {
+ 			/* Check the delta from the outer loop (t2 to next t1) */
+-			diff = ktime_to_us(ktime_sub(t1, last_t2));
++			diff = time_to_us(time_sub(t1, last_t2));
+ 			/* This shouldn't happen */
+ 			if (diff < 0) {
+ 				printk(KERN_ERR BANNER "time running backwards\n");
+@@ -247,10 +263,10 @@ static int get_sample(void *unused)
+ 		}
+ 		last_t2 = t2;
+ 
+-		total = ktime_to_us(ktime_sub(t2, start)); /* sample width */
++		total = time_to_us(time_sub(t2, start)); /* sample width */
+ 
+ 		/* This checks the inner loop (t1 to t2) */
+-		diff = ktime_to_us(ktime_sub(t2, t1));     /* current diff */
++		diff = time_to_us(time_sub(t2, t1));     /* current diff */
+ 
+ 		/* This shouldn't happen */
+ 		if (diff < 0) {
 -- 
 1.7.10.4
 
