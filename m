@@ -1,184 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754931Ab3IIQBS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 12:01:18 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:45194 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409Ab3IIQBN (ORCPT
+	id S1754649Ab3IIQCd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 12:02:33 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:40845 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753814Ab3IIQCc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 12:01:13 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: linux-kernel@vger.kernel.org
-Cc: keescook@chromium.org, gregkh@linuxfoundation.org, hpa@zytor.com,
-        linux-efi@vger.kernel.org, jmorris@namei.org,
-        linux-security-module@vger.kernel.org,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Subject: [PATCH 12/12] Add option to automatically set securelevel when in Secure Boot mode
-Date: Mon,  9 Sep 2013 11:49:46 -0400
-Message-Id: <1378741786-18430-13-git-send-email-matthew.garrett@nebula.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
-References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 2001:470:1f07:1371:5d52:9ee3:3e84:6668
-X-SA-Exim-Mail-From: matthew.garrett@nebula.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Mon, 9 Sep 2013 12:02:32 -0400
+Message-ID: <522DF112.9000205@arm.com>
+Date: Mon, 09 Sep 2013 17:02:26 +0100
+From: Jonathan Austin <jonathan.austin@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Matt Porter <matt.porter@linaro.org>
+CC: Koen Kooi <koen@dominion.thruhere.net>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "bcousson@baylibre.com" <bcousson@baylibre.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv3] ARM: OMAP2+: am335x-bone*: add DT for BeagleBone Black
+References: <1378638746-10627-1-git-send-email-koen@dominion.thruhere.net> <20130909133059.GD10973@ohporter.com> <522DD251.2030607@arm.com> <20130909135924.GE10973@ohporter.com> <20130909141606.GF10973@ohporter.com>
+In-Reply-To: <20130909141606.GF10973@ohporter.com>
+X-OriginalArrivalTime: 09 Sep 2013 16:02:27.0513 (UTC) FILETIME=[FB0E7290:01CEAD75]
+X-MC-Unique: 113090917022904701
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-UEFI Secure Boot provides a mechanism for ensuring that the firmware will
-only load signed bootloaders and kernels. Certain use cases may also
-require that the kernel prevent userspace from inserting untrusted kernel
-code at runtime. Add a configuration option that enforces this automatically
-when enabled.
+Hi Matt,
 
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
----
- Documentation/x86/zero-page.txt       |  2 ++
- arch/x86/Kconfig                      | 13 +++++++++++++
- arch/x86/boot/compressed/eboot.c      | 36 +++++++++++++++++++++++++++++++++++
- arch/x86/include/uapi/asm/bootparam.h |  3 ++-
- arch/x86/kernel/setup.c               |  7 +++++++
- 5 files changed, 60 insertions(+), 1 deletion(-)
+On 09/09/13 15:16, Matt Porter wrote:
+> On Mon, Sep 09, 2013 at 09:59:26AM -0400, Matt Porter wrote:
+>> On Mon, Sep 09, 2013 at 02:51:13PM +0100, Jonathan Austin wrote:
+>>> Hi Matt,
+>>>
+>>> On 09/09/13 14:31, Matt Porter wrote:
+>>>> On Sun, Sep 08, 2013 at 01:12:26PM +0200, Koen Kooi wrote:
+>>>>> The BeagleBone Black is basically a regular BeagleBone with eMMC and HDMI added,
+>>>>> so create a common dtsi both can use.
+>>>>>
+>>>>> IMPORTANT: booting the existing am335x-bone.dts will blow up the HDMI transceiver
+>>>>> after a dozen boots with an uSD card inserted because LDO will be at 3.3V instead
+>>>>> of 1.8.
+>>>>>
+>>>>> MMC support for AM335x still isn't in, so only the LDO change has been added.
+>>>>>
+>>>>> Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
+>>>>
+>>>> Tested-by: Matt Porter <matt.porter@linaro.org>
+>>>>
+>>>> Works fine for me on tip and 3.11. I did notice a regression in musb (worked
+>>>> on 3.11, now failing to probe but this is not related to your new dts as it
+>>>> happens on am335x-bone.dts too, assuming merge window volatility). One nit,
+>>>> git-am picked up a whitespace error on that extra line at EOF so you should
+>>>> trim that out.
+>>>>
+>>>> Only thing is...for a clear bug like this that will destroy hardware, it
+>>>> should be marked Cc: stable@vger.kernel.org to be picked up in stable.
+>>>>
+>>>
+>>> If I've understood Koen correctly then what he's saying is that if
+>>> you *were* to use the current (before this patch) am335x-bone.dts on
+>>> a Beagle Bone Black (which would be wrong, as that's not the board
+>>> you have...) then things would break.
+>>>
+>>> I don't see that this patch fixes that - as far as I can see, even
+>>> after the patch, using am335x-bone.dts with a Bone Black will risk
+>>> the damage?
+>>>
+>>> If so, I don't think this is a 'stable fix' kind of thing, as it
+>>> doesn't actually fix the problem?
+>>
+>> It fixes the problem by providing the correct dts for BBB which the
+>> vendor tree has had for sometime. In the absence of a specific dts
+>> for BBB, it appears everybody (TI and OMAP maintainers, included)
+>> has assumed that am335x-bone.dts is correct and safe.
+>>
+>> I'm sure there's plenty of systems represented in dts/* where you
+>> could cause damage by loading another dtb for a similar board from
+>> the same SoC family...it's a common risk if you get the wrong dtb
+>> with more-or-less arbitrary regulator settings.
+>
+> Sorry to reply to myself, but I probably didn't make it 100% clear as
+> to why this effectively fixes the problem. Both mainline u-boot *and*
+> the vendor u-boot have findfdt implemented to load an
+> am335x-boneblack.dtb based on board detection.
 
-diff --git a/Documentation/x86/zero-page.txt b/Documentation/x86/zero-page.txt
-index 199f453..ec38acf 100644
---- a/Documentation/x86/zero-page.txt
-+++ b/Documentation/x86/zero-page.txt
-@@ -30,6 +30,8 @@ Offset	Proto	Name		Meaning
- 1E9/001	ALL	eddbuf_entries	Number of entries in eddbuf (below)
- 1EA/001	ALL	edd_mbr_sig_buf_entries	Number of entries in edd_mbr_sig_buffer
- 				(below)
-+1EB/001	ALL     kbd_status      Numlock is enabled
-+1EC/001	ALL     secure_boot	Secure boot is enabled in the firmware
- 1EF/001	ALL	sentinel	Used to detect broken bootloaders
- 290/040	ALL	edd_mbr_sig_buffer EDD MBR signatures
- 2D0/A00	ALL	e820_map	E820 memory map table
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 30c40f0..6c2b0fd 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1595,6 +1595,19 @@ config EFI_STUB
- 
- 	  See Documentation/x86/efi-stub.txt for more information.
- 
-+config EFI_SECURE_BOOT_SECURELEVEL
-+        def_bool n
-+	depends on SECURITY_SECURELEVEL
-+	depends on EFI
-+	prompt "Automatically set securelevel when UEFI Secure Boot is enabled"
-+	---help---
-+	  UEFI Secure Boot provides a mechanism for ensuring that the
-+	  firmware will only load signed bootloaders and kernels. Certain
-+	  use cases may also require that the kernel restrict any userspace
-+	  mechanism that could insert untrusted code into the kernel.
-+	  Say Y here to automatically enable securelevel enforcement
-+	  when a system boots with UEFI Secure Boot enabled.
-+
- config SECCOMP
- 	def_bool y
- 	prompt "Enable seccomp to safely compute untrusted bytecode"
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index b7388a4..53bfe4f 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -12,6 +12,7 @@
- #include <asm/efi.h>
- #include <asm/setup.h>
- #include <asm/desc.h>
-+#include <asm/bootparam_utils.h>
- 
- #undef memcpy			/* Use memcpy from misc.c */
- 
-@@ -861,6 +862,37 @@ fail:
- 	return status;
- }
- 
-+static int get_secure_boot(void)
-+{
-+	u8 sb, setup;
-+	unsigned long datasize = sizeof(sb);
-+	efi_guid_t var_guid = EFI_GLOBAL_VARIABLE_GUID;
-+	efi_status_t status;
-+
-+	status = efi_call_phys5(sys_table->runtime->get_variable,
-+				L"SecureBoot", &var_guid, NULL, &datasize, &sb);
-+
-+	if (status != EFI_SUCCESS)
-+		return 0;
-+
-+	if (sb == 0)
-+		return 0;
-+
-+
-+	status = efi_call_phys5(sys_table->runtime->get_variable,
-+				L"SetupMode", &var_guid, NULL, &datasize,
-+				&setup);
-+
-+	if (status != EFI_SUCCESS)
-+		return 0;
-+
-+	if (setup == 1)
-+		return 0;
-+
-+	return 1;
-+}
-+
-+
- /*
-  * Because the x86 boot code expects to be passed a boot_params we
-  * need to create one ourselves (usually the bootloader would create
-@@ -1169,6 +1201,10 @@ struct boot_params *efi_main(void *handle, efi_system_table_t *_table,
- 	if (sys_table->hdr.signature != EFI_SYSTEM_TABLE_SIGNATURE)
- 		goto fail;
- 
-+	sanitize_boot_params(boot_params);
-+
-+	boot_params->secure_boot = get_secure_boot();
-+
- 	setup_graphics(boot_params);
- 
- 	setup_efi_pci(boot_params);
-diff --git a/arch/x86/include/uapi/asm/bootparam.h b/arch/x86/include/uapi/asm/bootparam.h
-index c15ddaf..85d7685 100644
---- a/arch/x86/include/uapi/asm/bootparam.h
-+++ b/arch/x86/include/uapi/asm/bootparam.h
-@@ -131,7 +131,8 @@ struct boot_params {
- 	__u8  eddbuf_entries;				/* 0x1e9 */
- 	__u8  edd_mbr_sig_buf_entries;			/* 0x1ea */
- 	__u8  kbd_status;				/* 0x1eb */
--	__u8  _pad5[3];					/* 0x1ec */
-+	__u8  secure_boot;				/* 0x1ec */
-+	__u8  _pad5[2];					/* 0x1ed */
- 	/*
- 	 * The sentinel is set to a nonzero value (0xff) in header.S.
- 	 *
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index f0de629..35ecc60 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -50,6 +50,7 @@
- #include <linux/init_ohci1394_dma.h>
- #include <linux/kvm_para.h>
- #include <linux/dma-contiguous.h>
-+#include <linux/security.h>
- 
- #include <linux/errno.h>
- #include <linux/kernel.h>
-@@ -1126,6 +1127,12 @@ void __init setup_arch(char **cmdline_p)
- 
- 	io_delay_init();
- 
-+#ifdef CONFIG_EFI_SECURE_BOOT_SECURELEVEL
-+	if (boot_params.secure_boot) {
-+		set_securelevel(1);
-+	}
-+#endif
-+
- 	/*
- 	 * Parse the ACPI tables for possible boot-time SMP configuration.
- 	 */
--- 
-1.8.3.1
+This makes more sense now, thanks. Not sure that it is still a good case 
+for CC:stable. Are people currently working around findfdt failing, etc? 
+If so, do you think backporting the fix will stop them doing that? I 
+don't really know what the workflow looks like...
+
+Generally the idea of backporting DT fixes to older kernels gives me the 
+Heebie-Jeebies - this case of being able to damage hardware is a great 
+example of why it might be scary (though I acknowledge that this 
+specific patch is unlikely to have a bad outcome)
+
+Jonny
+>
+> Hopefully this makes it clear why this fixes a bug in the kernel. If
+> you use appended dtb to include the wrong one, well, you shouldn't
+> be using appended dtb. It's a *hack* and loading it separately
+> works fine if you use the U-Boot that ships with BBB or mainline.
+>
+> -Matt
+>
+>>> Koen - is there a way for a booting kernel to detect which board it
+>>> is on and avoid any potential damage if someone gives it the wrong
+>>> DT?
+>>>
+>>> Jonny
+>>>
+>>>> -Matt
+>>>>
+>>>> _______________________________________________
+>>>> linux-arm-kernel mailing list
+>>>> linux-arm-kernel@lists.infradead.org
+>>>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>>>>
+>>>
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
 
