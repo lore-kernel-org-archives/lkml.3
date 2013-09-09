@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156Ab3IINvi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:51:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25225 "EHLO mx1.redhat.com"
+	id S1752699Ab3IINxn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:53:43 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:47170 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752415Ab3IINvg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 09:51:36 -0400
-Message-ID: <522DD25D.5030000@redhat.com>
-Date: Mon, 09 Sep 2013 15:51:25 +0200
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1751221Ab3IINxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 09:53:42 -0400
+Date: Mon, 9 Sep 2013 06:53:20 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, sbw@mit.edu, cl@linux.com
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+Message-ID: <20130909135320.GS3966@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130905195234.GA20555@linux.vnet.ibm.com>
+ <20130906105934.GF20519@somewhere>
+ <20130906151851.GQ3966@linux.vnet.ibm.com>
+ <1378488088.31445.39.camel@edumazet-glaptop>
+ <20130906174117.GU3966@linux.vnet.ibm.com>
+ <20130906185927.GE2706@somewhere>
+ <20130909105347.GK31370@twins.programming.kicks-ass.net>
+ <20130909132343.GN3966@linux.vnet.ibm.com>
+ <20130909133604.GC31370@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, Minchan Kim <minchan@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] staging: zram: remove init_done from zram struct
- (v2)
-References: <20130906152120.GF2238@swordfish.minsk.epam.com> <20130909123448.GA19256@mwanda>
-In-Reply-To: <20130909123448.GA19256@mwanda>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130909133604.GC31370@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090913-7182-0000-0000-00000856C5A5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2013 02:34 PM, Dan Carpenter wrote:
-> On Fri, Sep 06, 2013 at 06:21:20PM +0300, Sergey Senozhatsky wrote:
->> @@ -558,14 +563,12 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
->>  	flush_work(&zram->free_work);
->>  
->>  	down_write(&zram->init_lock);
->> -	if (!zram->init_done) {
->> +	if (!init_done(zram)) {
->>  		up_write(&zram->init_lock);
->>  		return;
->>  	}
->>  
->>  	meta = zram->meta;
->> -	zram->init_done = 0;
->> -
->>  	/* Free all pages that are still in this zram device */
->>  	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
->>  		unsigned long handle = meta->table[index].handle;
->> @@ -604,9 +607,7 @@ static void zram_init_device(struct zram *zram, struct zram_meta *meta)
->>  
->>  	/* zram devices sort of resembles non-rotational disks */
->>  	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
->> -
->>  	zram->meta = meta;
->> -	zram->init_done = 1;
->>  
->>  	pr_debug("Initialization done!\n");
->>  }
+On Mon, Sep 09, 2013 at 03:36:04PM +0200, Peter Zijlstra wrote:
+> On Mon, Sep 09, 2013 at 06:23:43AM -0700, Paul E. McKenney wrote:
+> > And guys, I have to say that the advice on which per-CPU primitive to use
+> > varies wildly and randomly.  For all I know, each of you individually
+> > might well be sticking to the same story, but taken together, your
+> > collective advice is strongly resembling white noise.
 > 
-> I am uncomfortable with the locking in zram_reset_device().  There
-> should be a check for init_done() in zram_slot_free_notify() otherwise
-> we could add more work at the same time we are calling flush_work().
-> 
-> It should be that as soon as we start to reset then we say init is not
-> done, we stop loading more work, we any existing work and then clean up.
-> (There are details involved that I haven't looked at, but the original
-> code looks racy to me).
+> Its partly because cl and I disagree on things. He doesn't seem to care
+> much about validation and believes that people will not make mistakes
+> with this stuff.
 
-Good point! I wonder why flush_work() isn't protected by init_lock.
-Minchan, any reason why you did it that way?
+At some point, my only recourse would be to require an Acked-by from one
+of you for any per-CPU changes proposed by the other.  I really hope that
+it doesn't come to that, but this situation is getting a bit annoying.
 
-Jerome
+> And partly because I didn't get what was going on. While Frederic's
+> explanation might be correct it was incomprehensible for me.
 
-> 
-> regards,
-> dan carpenter
-> 
-> 
+And I freely admit that the comments on rcu_is_cpu_idle() are completely
+inadequate, and I do apologize for that.  Seemed clear at the time.
+But then it always does, doesn't it?  ;-)
+
+							Thanx, Paul
 
