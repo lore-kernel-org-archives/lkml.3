@@ -1,625 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965Ab3IINqI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:46:08 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:49526 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751980Ab3IINqF (ORCPT
+	id S1753372Ab3IINqR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:46:17 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:40412 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753015Ab3IINqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 09:46:05 -0400
-From: Koen Kooi <koen@dominion.thruhere.net>
-To: linux-omap@vger.kernel.org
-Cc: bcousson@baylibre.com, tony@atomide.com, rob.herring@calxeda.com,
-        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
-        ijc+devicetree@hellion.org.uk, linux@arm.linux.org.uk,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, olof@lixom.net, stable@vger.kernel.org,
-        Koen Kooi <koen@dominion.thruhere.net>
-Subject: [PATCHv4] ARM: OMAP2+: am335x-bone*: add DT for BeagleBone Black
-Date: Mon,  9 Sep 2013 15:45:50 +0200
-Message-Id: <1378734350-30479-1-git-send-email-koen@dominion.thruhere.net>
-X-Mailer: git-send-email 1.8.2.1
+	Mon, 9 Sep 2013 09:46:14 -0400
+Date: Mon, 9 Sep 2013 06:46:05 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        sbw@mit.edu
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+Message-ID: <20130909134605.GP3966@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130906151851.GQ3966@linux.vnet.ibm.com>
+ <1378488088.31445.39.camel@edumazet-glaptop>
+ <20130906174117.GU3966@linux.vnet.ibm.com>
+ <20130906185927.GE2706@somewhere>
+ <20130909105347.GK31370@twins.programming.kicks-ass.net>
+ <20130909121329.GA16280@somewhere>
+ <20130909083926.3eceebef@gandalf.local.home>
+ <20130909124547.GB16280@somewhere>
+ <20130909085504.2ddd7e69@gandalf.local.home>
+ <20130909131452.GA31370@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130909131452.GA31370@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090913-0928-0000-0000-0000018142D2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The BeagleBone Black is basically a regular BeagleBone with eMMC and HDMI added,
-so create a common dtsi both can use.
+On Mon, Sep 09, 2013 at 03:14:52PM +0200, Peter Zijlstra wrote:
+> On Mon, Sep 09, 2013 at 08:55:04AM -0400, Steven Rostedt wrote:
+> > On Mon, 9 Sep 2013 14:45:49 +0200
+> > Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > 
+> >  
+> > > > This just proves that the caller of rcu_is_cpu_idle() must disable
+> > > > preemption itself for the entire time that it needs to use the result
+> > > > of rcu_is_cpu_idle().
+> > > 
+> > > Sorry, I don't understand your point here. What's wrong with checking the
+> > > ret from another CPU?
+> > 
+> > Hmm, OK, this is why that code is in desperate need of a comment.
+> > 
+> > From reading the context a bit more, it seems that the per cpu value is
+> > more a "per task" value that happens to be using per cpu variables, and
+> > changes on context switches. Is that correct?
+> > 
+> > Anyway, it requires a comment to explain that we are not checking the
+> > CPU state, but really the current task state, otherwise that 'ret'
+> > value wouldn't travel with the task, but would stick with the CPU.
+> 
+> Egads.. and the only reason we couldn't do the immediate load is because
+> of that atomic mess.
+> 
+> Also, if its per-task, why don't we have this in the task struct? The
+> current scheme makes the context switch more expensive -- is this the
+> right trade-off?
 
-IMPORTANT: booting the existing am335x-bone.dts will blow up the HDMI transceiver 
-after a dozen boots with an uSD card inserted because LDO will be at 3.3V instead
-of 1.8. 
+There are constraints based on the task, but RCU really is
+paying attention to CPUs, not than tasks.  (With the exception of
+TREE_PREEMPT_RCU, which does keep lists of tasks that it has to pay
+attention to, namely those that have been preempted within their current
+RCU read-side critical section.)
 
-MMC support for AM335x still isn't in, so only the LDO change has been added.
+I suppose that we could move it to the task structure, but that would
+make for some "interesting" interactions between context switch and RCU.
+Given previous experience with this sort of thing, I do not believe that
+this would be a win.
 
-Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
-Tested-by: Tom Rini <trini@ti.com>
-Tested-by: Matt Porter <matt.porter@linaro.org>
----
+Now, it might well be possible to make rcu_dynticks.dynticks be
+manipulated by non-atomic operations, and that is on my list, but it
+will require quite a bit of care and testing.
 
-Changes since v3:
-	removed stray whitespace, spotted by Matt Porter
-	added CC: stable
-Changes since v2:
-	Updated commit message to point out that the existing DT will damage the board.
-Changes since v1:
-	Added the Makefile entry for the new dts
+> So maybe something like:
+> 
+> int rcu_is_cpu_idle(void)
+> {
+> 	/*
+> 	 * Comment explaining that rcu_dynticks.dynticks really is a
+> 	 * per-task something and we need preemption-safe loading.
+> 	 */
+> 	atomic_t dynticks = this_cpu_read(rcu_dynticks.dynticks);
+> 	return !(__atomic_read(&dynticks) & 0x01);
+> }
+> 
+> Where __atomic_read() would be like atomic_read() but without the
+> volatile crap since that's entirely redundant here I think.
+> 
+> The this_cpu_read() should ensure we get a preemption-safe copy of the
+> value.
+> 
+> Once that this_cpu stuff grows preemption checks we'd need something
+> like __raw_this_cpu_read() or whatever the variant without preemption
+> checks will be called.
 
- arch/arm/boot/dts/Makefile                |   1 +
- arch/arm/boot/dts/am335x-bone-common.dtsi | 262 ++++++++++++++++++++++++++++++
- arch/arm/boot/dts/am335x-bone.dts         | 256 +----------------------------
- arch/arm/boot/dts/am335x-boneblack.dts    |  17 ++
- 4 files changed, 281 insertions(+), 255 deletions(-)
- create mode 100644 arch/arm/boot/dts/am335x-bone-common.dtsi
- create mode 100644 arch/arm/boot/dts/am335x-boneblack.dts
+Yay!  Yet another formulation of the per-CPU code for this function!  ;-)
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 000cf76..d515c54 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -183,6 +183,7 @@ dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
- 	am335x-evm.dtb \
- 	am335x-evmsk.dtb \
- 	am335x-bone.dtb \
-+	am335x-boneblack.dtb \
- 	am3517-evm.dtb \
- 	am3517_mt_ventoux.dtb \
- 	am43x-epos-evm.dtb
-diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
-new file mode 100644
-index 0000000..2f66ded
---- /dev/null
-+++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
-@@ -0,0 +1,262 @@
-+/*
-+ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+/ {
-+	model = "TI AM335x BeagleBone";
-+	compatible = "ti,am335x-bone", "ti,am33xx";
-+
-+	cpus {
-+		cpu@0 {
-+			cpu0-supply = <&dcdc2_reg>;
-+		};
-+	};
-+
-+	memory {
-+		device_type = "memory";
-+		reg = <0x80000000 0x10000000>; /* 256 MB */
-+	};
-+
-+	am33xx_pinmux: pinmux@44e10800 {
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&clkout2_pin>;
-+
-+		user_leds_s0: user_leds_s0 {
-+			pinctrl-single,pins = <
-+				0x54 (PIN_OUTPUT_PULLDOWN | MUX_MODE7)	/* gpmc_a5.gpio1_21 */
-+				0x58 (PIN_OUTPUT_PULLUP | MUX_MODE7)	/* gpmc_a6.gpio1_22 */
-+				0x5c (PIN_OUTPUT_PULLDOWN | MUX_MODE7)	/* gpmc_a7.gpio1_23 */
-+				0x60 (PIN_OUTPUT_PULLUP | MUX_MODE7)	/* gpmc_a8.gpio1_24 */
-+			>;
-+		};
-+
-+		i2c0_pins: pinmux_i2c0_pins {
-+			pinctrl-single,pins = <
-+				0x188 (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c0_sda.i2c0_sda */
-+				0x18c (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c0_scl.i2c0_scl */
-+			>;
-+		};
-+
-+		uart0_pins: pinmux_uart0_pins {
-+			pinctrl-single,pins = <
-+				0x170 (PIN_INPUT_PULLUP | MUX_MODE0)	/* uart0_rxd.uart0_rxd */
-+				0x174 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* uart0_txd.uart0_txd */
-+			>;
-+		};
-+
-+		clkout2_pin: pinmux_clkout2_pin {
-+			pinctrl-single,pins = <
-+				0x1b4 (PIN_OUTPUT_PULLDOWN | MUX_MODE3)	/* xdma_event_intr1.clkout2 */
-+			>;
-+		};
-+
-+		cpsw_default: cpsw_default {
-+			pinctrl-single,pins = <
-+				/* Slave 1 */
-+				0x110 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxerr.mii1_rxerr */
-+				0x114 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mii1_txen.mii1_txen */
-+				0x118 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxdv.mii1_rxdv */
-+				0x11c (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mii1_txd3.mii1_txd3 */
-+				0x120 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mii1_txd2.mii1_txd2 */
-+				0x124 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mii1_txd1.mii1_txd1 */
-+				0x128 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mii1_txd0.mii1_txd0 */
-+				0x12c (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_txclk.mii1_txclk */
-+				0x130 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxclk.mii1_rxclk */
-+				0x134 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxd3.mii1_rxd3 */
-+				0x138 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxd2.mii1_rxd2 */
-+				0x13c (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxd1.mii1_rxd1 */
-+				0x140 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxd0.mii1_rxd0 */
-+			>;
-+		};
-+
-+		cpsw_sleep: cpsw_sleep {
-+			pinctrl-single,pins = <
-+				/* Slave 1 reset value */
-+				0x110 (PIN_INPUT_PULLDOWN | MUX_MODE7)
-+				0x114 (PIN_INPUT_PULLDOWN | MUX_MODE7)
-+				0x118 (PIN_INPUT_PULLDOWN | MUX_MODE7)
-+				0x11c (PIN_INPUT_PULLDOWN | MUX_MODE7)
-+				0x120 (PIN_INPUT_PULLDOWN | MUX_MODE7)
-+				0x124 (PIN_INPUT_PULLDOWN | MUX_MODE7)
-+				0x128 (PIN_INPUT_PULLDOWN | MUX_MODE7)
-+				0x12c (PIN_INPUT_PULLDOWN | MUX_MODE7)
-+				0x130 (PIN_INPUT_PULLDOWN | MUX_MODE7)
-+				0x134 (PIN_INPUT_PULLDOWN | MUX_MODE7)
-+				0x138 (PIN_INPUT_PULLDOWN | MUX_MODE7)
-+				0x13c (PIN_INPUT_PULLDOWN | MUX_MODE7)
-+				0x140 (PIN_INPUT_PULLDOWN | MUX_MODE7)
-+			>;
-+		};
-+
-+		davinci_mdio_default: davinci_mdio_default {
-+			pinctrl-single,pins = <
-+				/* MDIO */
-+				0x148 (PIN_INPUT_PULLUP | SLEWCTRL_FAST | MUX_MODE0)	/* mdio_data.mdio_data */
-+				0x14c (PIN_OUTPUT_PULLUP | MUX_MODE0)			/* mdio_clk.mdio_clk */
-+			>;
-+		};
-+
-+		davinci_mdio_sleep: davinci_mdio_sleep {
-+			pinctrl-single,pins = <
-+				/* MDIO reset value */
-+				0x148 (PIN_INPUT_PULLDOWN | MUX_MODE7)
-+				0x14c (PIN_INPUT_PULLDOWN | MUX_MODE7)
-+			>;
-+		};
-+	};
-+
-+	ocp {
-+		uart0: serial@44e09000 {
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&uart0_pins>;
-+
-+			status = "okay";
-+		};
-+
-+		musb: usb@47400000 {
-+			status = "okay";
-+
-+			control@44e10000 {
-+				status = "okay";
-+			};
-+
-+			usb-phy@47401300 {
-+				status = "okay";
-+			};
-+
-+			usb-phy@47401b00 {
-+				status = "okay";
-+			};
-+
-+			usb@47401000 {
-+				status = "okay";
-+			};
-+
-+			usb@47401800 {
-+				status = "okay";
-+				dr_mode = "host";
-+			};
-+
-+			dma-controller@07402000  {
-+				status = "okay";
-+			};
-+		};
-+
-+		i2c0: i2c@44e0b000 {
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&i2c0_pins>;
-+
-+			status = "okay";
-+			clock-frequency = <400000>;
-+
-+			tps: tps@24 {
-+				reg = <0x24>;
-+			};
-+
-+		};
-+	};
-+
-+	leds {
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&user_leds_s0>;
-+
-+		compatible = "gpio-leds";
-+
-+		led@2 {
-+			label = "beaglebone:green:heartbeat";
-+			gpios = <&gpio1 21 GPIO_ACTIVE_HIGH>;
-+			linux,default-trigger = "heartbeat";
-+			default-state = "off";
-+		};
-+
-+		led@3 {
-+			label = "beaglebone:green:mmc0";
-+			gpios = <&gpio1 22 GPIO_ACTIVE_HIGH>;
-+			linux,default-trigger = "mmc0";
-+			default-state = "off";
-+		};
-+
-+		led@4 {
-+			label = "beaglebone:green:usr2";
-+			gpios = <&gpio1 23 GPIO_ACTIVE_HIGH>;
-+			default-state = "off";
-+		};
-+
-+		led@5 {
-+			label = "beaglebone:green:usr3";
-+			gpios = <&gpio1 24 GPIO_ACTIVE_HIGH>;
-+			default-state = "off";
-+		};
-+	};
-+};
-+
-+/include/ "tps65217.dtsi"
-+
-+&tps {
-+	regulators {
-+		dcdc1_reg: regulator@0 {
-+			regulator-always-on;
-+		};
-+
-+		dcdc2_reg: regulator@1 {
-+			/* VDD_MPU voltage limits 0.95V - 1.26V with +/-4% tolerance */
-+			regulator-name = "vdd_mpu";
-+			regulator-min-microvolt = <925000>;
-+			regulator-max-microvolt = <1325000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+		};
-+
-+		dcdc3_reg: regulator@2 {
-+			/* VDD_CORE voltage limits 0.95V - 1.1V with +/-4% tolerance */
-+			regulator-name = "vdd_core";
-+			regulator-min-microvolt = <925000>;
-+			regulator-max-microvolt = <1150000>;
-+			regulator-boot-on;
-+			regulator-always-on;
-+		};
-+
-+		ldo1_reg: regulator@3 {
-+			regulator-always-on;
-+		};
-+
-+		ldo2_reg: regulator@4 {
-+			regulator-always-on;
-+		};
-+
-+		ldo3_reg: regulator@5 {
-+			regulator-always-on;
-+		};
-+
-+		ldo4_reg: regulator@6 {
-+			regulator-always-on;
-+		};
-+	};
-+};
-+
-+&cpsw_emac0 {
-+	phy_id = <&davinci_mdio>, <0>;
-+	phy-mode = "mii";
-+};
-+
-+&cpsw_emac1 {
-+	phy_id = <&davinci_mdio>, <1>;
-+	phy-mode = "mii";
-+};
-+
-+&mac {
-+	pinctrl-names = "default", "sleep";
-+	pinctrl-0 = <&cpsw_default>;
-+	pinctrl-1 = <&cpsw_sleep>;
-+
-+};
-+
-+&davinci_mdio {
-+	pinctrl-names = "default", "sleep";
-+	pinctrl-0 = <&davinci_mdio_default>;
-+	pinctrl-1 = <&davinci_mdio_sleep>;
-+};
-diff --git a/arch/arm/boot/dts/am335x-bone.dts b/arch/arm/boot/dts/am335x-bone.dts
-index d318987..7993c48 100644
---- a/arch/arm/boot/dts/am335x-bone.dts
-+++ b/arch/arm/boot/dts/am335x-bone.dts
-@@ -8,258 +8,4 @@
- /dts-v1/;
- 
- #include "am33xx.dtsi"
--
--/ {
--	model = "TI AM335x BeagleBone";
--	compatible = "ti,am335x-bone", "ti,am33xx";
--
--	cpus {
--		cpu@0 {
--			cpu0-supply = <&dcdc2_reg>;
--		};
--	};
--
--	memory {
--		device_type = "memory";
--		reg = <0x80000000 0x10000000>; /* 256 MB */
--	};
--
--	am33xx_pinmux: pinmux@44e10800 {
--		pinctrl-names = "default";
--		pinctrl-0 = <&clkout2_pin>;
--
--		user_leds_s0: user_leds_s0 {
--			pinctrl-single,pins = <
--				0x54 (PIN_OUTPUT_PULLDOWN | MUX_MODE7)	/* gpmc_a5.gpio1_21 */
--				0x58 (PIN_OUTPUT_PULLUP | MUX_MODE7)	/* gpmc_a6.gpio1_22 */
--				0x5c (PIN_OUTPUT_PULLDOWN | MUX_MODE7)	/* gpmc_a7.gpio1_23 */
--				0x60 (PIN_OUTPUT_PULLUP | MUX_MODE7)	/* gpmc_a8.gpio1_24 */
--			>;
--		};
--
--		i2c0_pins: pinmux_i2c0_pins {
--			pinctrl-single,pins = <
--				0x188 (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c0_sda.i2c0_sda */
--				0x18c (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c0_scl.i2c0_scl */
--			>;
--		};
--
--		uart0_pins: pinmux_uart0_pins {
--			pinctrl-single,pins = <
--				0x170 (PIN_INPUT_PULLUP | MUX_MODE0)	/* uart0_rxd.uart0_rxd */
--				0x174 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* uart0_txd.uart0_txd */
--			>;
--		};
--
--		clkout2_pin: pinmux_clkout2_pin {
--			pinctrl-single,pins = <
--				0x1b4 (PIN_OUTPUT_PULLDOWN | MUX_MODE3)	/* xdma_event_intr1.clkout2 */
--			>;
--		};
--
--		cpsw_default: cpsw_default {
--			pinctrl-single,pins = <
--				/* Slave 1 */
--				0x110 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxerr.mii1_rxerr */
--				0x114 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mii1_txen.mii1_txen */
--				0x118 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxdv.mii1_rxdv */
--				0x11c (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mii1_txd3.mii1_txd3 */
--				0x120 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mii1_txd2.mii1_txd2 */
--				0x124 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mii1_txd1.mii1_txd1 */
--				0x128 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mii1_txd0.mii1_txd0 */
--				0x12c (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_txclk.mii1_txclk */
--				0x130 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxclk.mii1_rxclk */
--				0x134 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxd3.mii1_rxd3 */
--				0x138 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxd2.mii1_rxd2 */
--				0x13c (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxd1.mii1_rxd1 */
--				0x140 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxd0.mii1_rxd0 */
--			>;
--		};
--
--		cpsw_sleep: cpsw_sleep {
--			pinctrl-single,pins = <
--				/* Slave 1 reset value */
--				0x110 (PIN_INPUT_PULLDOWN | MUX_MODE7)
--				0x114 (PIN_INPUT_PULLDOWN | MUX_MODE7)
--				0x118 (PIN_INPUT_PULLDOWN | MUX_MODE7)
--				0x11c (PIN_INPUT_PULLDOWN | MUX_MODE7)
--				0x120 (PIN_INPUT_PULLDOWN | MUX_MODE7)
--				0x124 (PIN_INPUT_PULLDOWN | MUX_MODE7)
--				0x128 (PIN_INPUT_PULLDOWN | MUX_MODE7)
--				0x12c (PIN_INPUT_PULLDOWN | MUX_MODE7)
--				0x130 (PIN_INPUT_PULLDOWN | MUX_MODE7)
--				0x134 (PIN_INPUT_PULLDOWN | MUX_MODE7)
--				0x138 (PIN_INPUT_PULLDOWN | MUX_MODE7)
--				0x13c (PIN_INPUT_PULLDOWN | MUX_MODE7)
--				0x140 (PIN_INPUT_PULLDOWN | MUX_MODE7)
--			>;
--		};
--
--		davinci_mdio_default: davinci_mdio_default {
--			pinctrl-single,pins = <
--				/* MDIO */
--				0x148 (PIN_INPUT_PULLUP | SLEWCTRL_FAST | MUX_MODE0)	/* mdio_data.mdio_data */
--				0x14c (PIN_OUTPUT_PULLUP | MUX_MODE0)			/* mdio_clk.mdio_clk */
--			>;
--		};
--
--		davinci_mdio_sleep: davinci_mdio_sleep {
--			pinctrl-single,pins = <
--				/* MDIO reset value */
--				0x148 (PIN_INPUT_PULLDOWN | MUX_MODE7)
--				0x14c (PIN_INPUT_PULLDOWN | MUX_MODE7)
--			>;
--		};
--	};
--
--	ocp {
--		uart0: serial@44e09000 {
--			pinctrl-names = "default";
--			pinctrl-0 = <&uart0_pins>;
--
--			status = "okay";
--		};
--
--		musb: usb@47400000 {
--			status = "okay";
--
--			control@44e10000 {
--				status = "okay";
--			};
--
--			usb-phy@47401300 {
--				status = "okay";
--			};
--
--			usb-phy@47401b00 {
--				status = "okay";
--			};
--
--			usb@47401000 {
--				status = "okay";
--			};
--
--			usb@47401800 {
--				status = "okay";
--				dr_mode = "host";
--			};
--
--			dma-controller@07402000  {
--				status = "okay";
--			};
--		};
--
--		i2c0: i2c@44e0b000 {
--			pinctrl-names = "default";
--			pinctrl-0 = <&i2c0_pins>;
--
--			status = "okay";
--			clock-frequency = <400000>;
--
--			tps: tps@24 {
--				reg = <0x24>;
--			};
--
--		};
--	};
--
--	leds {
--		pinctrl-names = "default";
--		pinctrl-0 = <&user_leds_s0>;
--
--		compatible = "gpio-leds";
--
--		led@2 {
--			label = "beaglebone:green:heartbeat";
--			gpios = <&gpio1 21 GPIO_ACTIVE_HIGH>;
--			linux,default-trigger = "heartbeat";
--			default-state = "off";
--		};
--
--		led@3 {
--			label = "beaglebone:green:mmc0";
--			gpios = <&gpio1 22 GPIO_ACTIVE_HIGH>;
--			linux,default-trigger = "mmc0";
--			default-state = "off";
--		};
--
--		led@4 {
--			label = "beaglebone:green:usr2";
--			gpios = <&gpio1 23 GPIO_ACTIVE_HIGH>;
--			default-state = "off";
--		};
--
--		led@5 {
--			label = "beaglebone:green:usr3";
--			gpios = <&gpio1 24 GPIO_ACTIVE_HIGH>;
--			default-state = "off";
--		};
--	};
--};
--
--/include/ "tps65217.dtsi"
--
--&tps {
--	regulators {
--		dcdc1_reg: regulator@0 {
--			regulator-always-on;
--		};
--
--		dcdc2_reg: regulator@1 {
--			/* VDD_MPU voltage limits 0.95V - 1.26V with +/-4% tolerance */
--			regulator-name = "vdd_mpu";
--			regulator-min-microvolt = <925000>;
--			regulator-max-microvolt = <1325000>;
--			regulator-boot-on;
--			regulator-always-on;
--		};
--
--		dcdc3_reg: regulator@2 {
--			/* VDD_CORE voltage limits 0.95V - 1.1V with +/-4% tolerance */
--			regulator-name = "vdd_core";
--			regulator-min-microvolt = <925000>;
--			regulator-max-microvolt = <1150000>;
--			regulator-boot-on;
--			regulator-always-on;
--		};
--
--		ldo1_reg: regulator@3 {
--			regulator-always-on;
--		};
--
--		ldo2_reg: regulator@4 {
--			regulator-always-on;
--		};
--
--		ldo3_reg: regulator@5 {
--			regulator-always-on;
--		};
--
--		ldo4_reg: regulator@6 {
--			regulator-always-on;
--		};
--	};
--};
--
--&cpsw_emac0 {
--	phy_id = <&davinci_mdio>, <0>;
--	phy-mode = "mii";
--};
--
--&cpsw_emac1 {
--	phy_id = <&davinci_mdio>, <1>;
--	phy-mode = "mii";
--};
--
--&mac {
--	pinctrl-names = "default", "sleep";
--	pinctrl-0 = <&cpsw_default>;
--	pinctrl-1 = <&cpsw_sleep>;
--
--};
--
--&davinci_mdio {
--	pinctrl-names = "default", "sleep";
--	pinctrl-0 = <&davinci_mdio_default>;
--	pinctrl-1 = <&davinci_mdio_sleep>;
--};
-+#include "am335x-bone-common.dtsi"
-diff --git a/arch/arm/boot/dts/am335x-boneblack.dts b/arch/arm/boot/dts/am335x-boneblack.dts
-new file mode 100644
-index 0000000..197cadf
---- /dev/null
-+++ b/arch/arm/boot/dts/am335x-boneblack.dts
-@@ -0,0 +1,17 @@
-+/*
-+ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+/dts-v1/;
-+
-+#include "am33xx.dtsi"
-+#include "am335x-bone-common.dtsi"
-+
-+&ldo3_reg {
-+	regulator-min-microvolt = <1800000>;
-+	regulator-max-microvolt = <1800000>;
-+	regulator-always-on;
-+};
--- 
-1.8.2.1
+							Thanx, Paul
 
