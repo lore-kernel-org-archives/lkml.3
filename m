@@ -1,62 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755960Ab3IIQ75 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 12:59:57 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:59977 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409Ab3IIQ7z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 12:59:55 -0400
-Date: Mon, 9 Sep 2013 09:59:49 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        sbw@mit.edu, cl@linux.com
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
- section?
-Message-ID: <20130909165949.GC3966@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130906105934.GF20519@somewhere>
- <20130906151851.GQ3966@linux.vnet.ibm.com>
- <1378488088.31445.39.camel@edumazet-glaptop>
- <20130906174117.GU3966@linux.vnet.ibm.com>
- <20130906185927.GE2706@somewhere>
- <20130909105347.GK31370@twins.programming.kicks-ass.net>
- <20130909132343.GN3966@linux.vnet.ibm.com>
- <20130909142155.GC26785@twins.programming.kicks-ass.net>
- <20130909162632.GZ3966@linux.vnet.ibm.com>
- <20130909124205.37926095@gandalf.local.home>
+	id S1754529Ab3IIRE4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 13:04:56 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:33746 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753534Ab3IIREz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 13:04:55 -0400
+Date: Mon, 9 Sep 2013 12:03:49 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Weijie Yang <weijie.yang@samsung.com>
+Cc: minchan@kernel.org, bob.liu@oracle.com, weijie.yang.kh@gmail.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/4] mm/zswap: bugfix: memory leak when re-swapon
+Message-ID: <20130909170349.GD4701@variantweb.net>
+References: <000901ceaac0$a5f28420$f1d78c60$%yang@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130909124205.37926095@gandalf.local.home>
+In-Reply-To: <000901ceaac0$a5f28420$f1d78c60$%yang@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090916-8236-0000-0000-0000019821A0
+x-cbid: 13090917-0320-0000-0000-000000EFAB77
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 12:42:05PM -0400, Steven Rostedt wrote:
-> On Mon, 9 Sep 2013 09:26:32 -0700
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+On Fri, Sep 06, 2013 at 01:16:45PM +0800, Weijie Yang wrote:
+> zswap_tree is not freed when swapoff, and it got re-kmalloc in swapon,
+> so memory-leak occurs.
 > 
+> Modify: free memory of zswap_tree in zswap_frontswap_invalidate_area().
 > 
-> > Now if we can agree on the naming and the exact per-CPU incantation...  ;-)
+> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+> ---
+>  mm/zswap.c |    4 ++++
+>  1 file changed, 4 insertions(+)
 > 
-> s/per-CPU/per-task/
-> 
-> /me runs away!!!
+> diff --git a/mm/zswap.c b/mm/zswap.c
+> index deda2b6..cbd9578 100644
+> --- a/mm/zswap.c
+> +++ b/mm/zswap.c
+> @@ -816,6 +816,10 @@ static void zswap_frontswap_invalidate_area(unsigned type)
+>  	}
+>  	tree->rbroot = RB_ROOT;
+>  	spin_unlock(&tree->lock);
+> +
+> +	zbud_destroy_pool(tree->pool);
+> +	kfree(tree);
+> +	zswap_trees[type] = NULL;
 
-Me too, given my previous experiences attempting to bind RCU that
-closely to the scheduler!  ;-)
+You changed how this works from v1.  Any particular reason?
 
-							Thanx, Paul
+In this version you free the tree structure, which is fine as long as we
+know for sure nothing will try to access it afterward unless there is a
+swapon to reactivate it.
+
+I'm just a little worried about a race here between a store and
+invalidate_area.  I think there is probably some mechanism to prevent
+this, I just haven't been able to demonstrate it to myself.
+
+The situation I'm worried about is:
+
+shrink_page_list()
+add_to_swap() then return (gets the swap entry)
+try_to_unmap() then return (sets the swap entry in the pte)
+pageout()
+swap_writepage()
+zswap_frontswap_store()
+
+interacting with a swapoff operation.
+
+When zswap_frontswap_store() is called, we continue to hold the page
+lock.  I think that might block the loop in try_to_unuse(), called by
+swapoff, until we release it after the store.
+
+I think it should be fine.  Just wanted to think it through.
+
+Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+
+>  }
+> 
+>  static struct zbud_ops zswap_zbud_ops = {
+> -- 
+> 1.7.10.4
+> 
+> 
 
