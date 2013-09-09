@@ -1,111 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661Ab3IIPnw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 11:43:52 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:33889 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753604Ab3IIPnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 11:43:49 -0400
-Date: Mon, 9 Sep 2013 10:43:57 -0500
-From: Alex Thorlton <athorlton@sgi.com>
-To: Daniel J Blueman <daniel@numascale.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andi Kleen <andi@firstfloor.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        kirill.shutemov@linux.intel.com,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steffen Persvold <sp@numascale.com>
-Subject: Re: [PATCH 2/2] thp: support split page table lock
-Message-ID: <20130909154357.GC12435@sgi.com>
-References: <522D33C5.9050707@numascale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <522D33C5.9050707@numascale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753618Ab3IIPrF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 11:47:05 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28378 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751880Ab3IIPrD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 11:47:03 -0400
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=JDfofD-L5ZgA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5p3hctMY2UsA:10 a=NufY4J3AAAAA:8 a=fxJcL_dCAAAA:8 a=cuYFA6U4GeWgkUuDIpsA:9 a=CjuIK1q_8ugA:10 a=jeBq3FmKZ4MA:10 a=re9sYKne76oA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Mon, 9 Sep 2013 11:47:00 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Christoph Lameter <cl@linux.com>, Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        sbw@mit.edu
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+Message-ID: <20130909114700.76290b50@gandalf.local.home>
+In-Reply-To: <20130909114116.209aa16b@gandalf.local.home>
+References: <20130905195234.GA20555@linux.vnet.ibm.com>
+	<20130906105934.GF20519@somewhere>
+	<20130906151851.GQ3966@linux.vnet.ibm.com>
+	<1378488088.31445.39.camel@edumazet-glaptop>
+	<20130906174117.GU3966@linux.vnet.ibm.com>
+	<20130906185927.GE2706@somewhere>
+	<20130909105347.GK31370@twins.programming.kicks-ass.net>
+	<20130909132343.GN3966@linux.vnet.ibm.com>
+	<20130909133604.GC31370@twins.programming.kicks-ass.net>
+	<000001410333127c-486c74ec-3209-4c5e-a92f-0c11e00fa141-000000@email.amazonses.com>
+	<20130909150854.GD26785@twins.programming.kicks-ass.net>
+	<0000014103534c88-48ee11a3-a581-4e52-b2df-3a1168047d96-000000@email.amazonses.com>
+	<20130909114116.209aa16b@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 10:34:45AM +0800, Daniel J Blueman wrote:
-> On Saturday, 7 September 2013 02:10:02 UTC+8, Naoya Horiguchi  wrote:
-> >Hi Alex,
-> >
-> >On Fri, Sep 06, 2013 at 11:04:23AM -0500, Alex Thorlton wrote:
-> >> On Thu, Sep 05, 2013 at 05:27:46PM -0400, Naoya Horiguchi wrote:
-> >> > Thp related code also uses per process mm->page_table_lock now.
-> >> > So making it fine-grained can provide better performance.
-> >> >
-> >> > This patch makes thp support split page table lock by using page->ptl
-> >> > of the pages storing "pmd_trans_huge" pmds.
-> >> >
-> >> > Some functions like pmd_trans_huge_lock() and
-> page_check_address_pmd()
-> >> > are expected by their caller to pass back the pointer of ptl, so this
-> >> > patch adds to those functions new arguments for that. Rather than
-> that,
-> >> > this patch gives only straightforward replacement.
-> >> >
-> >> > ChangeLog v3:
-> >> >  - fixed argument of huge_pmd_lockptr() in copy_huge_pmd()
-> >> >  - added missing declaration of ptl in do_huge_pmd_anonymous_page()
-> >>
-> >> I've applied these and tested them using the same tests program that I
-> >> used when I was working on the same issue, and I'm running into some
-> >> bugs.  Here's a stack trace:
-> >
-> >Thank you for helping testing. This bug is new to me.
+On Mon, 9 Sep 2013 11:41:16 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
+
+> On Mon, 9 Sep 2013 15:24:55 +0000
+> Christoph Lameter <cl@linux.com> wrote:
 > 
-> With 3.11, this patch series and CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS,
-> I consistently hit the same failure when exiting one of my
-> stress-testers [1] when using eg 24 cores.
+> > On Mon, 9 Sep 2013, Peter Zijlstra wrote:
+> > 
+> > > > Slander. Certainly validation is good. Its just that PREEMPT kernels are
+> > > > not in use
+> > >
+> > > Complete bullshit, its part of the mainline kernel, lots of people run
+> > > them -- including me, and any patch is supposed to keep it working.
+> > 
+> > Nonsense. There is no main line distro that supports full preempt. Its an
+> > academic exercise.
 > 
-> Doesn't happen with 8 cores, so likely needs enough virtual memory
-> to use multiple split locks. Otherwise, this is very promising work!
+> Red Hat MRG supports PREEMPT_RT. And Debian has an option to use
+> PREEMPT_RT too. Two big main line distros.
+> 
+> So please, cut out the "academic exercise" crap.
 
-Daniel,
+Ubuntu Lucid supplies a CONFIG_PREEMPT kernel too:
 
-Hillf Danton (dhillf@gmail.com) suggested putting the big
-page_table_lock back into the two functions seen below.  I re-tested
-with this change and it seems to resolve the issue.  
+http://kernel.ubuntu.com/~kernel-ppa/configs/lucid/amd64--preempt
 
-- Alex
-
---- a/mm/pgtable-generic.c      Sat Sep  7 15:17:52 2013
-+++ b/mm/pgtable-generic.c      Sat Sep  7 15:20:28 2013
-@@ -127,12 +127,14 @@ void pmdp_splitting_flush(struct vm_area
- void pgtable_trans_huge_deposit(struct mm_struct *mm, pmd_t *pmdp,
-                                pgtable_t pgtable)
- {
-+       spin_lock(&mm->page_table_lock);
-        /* FIFO */
-        if (!mm->pmd_huge_pte)
-                INIT_LIST_HEAD(&pgtable->lru);
-        else
-                list_add(&pgtable->lru, &mm->pmd_huge_pte->lru);
-        mm->pmd_huge_pte = pgtable;
-+       spin_unlock(&mm->page_table_lock);
- }
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
- #endif
-@@ -144,6 +146,7 @@ pgtable_t pgtable_trans_huge_withdraw(st
- {
-        pgtable_t pgtable;
-
-+       spin_lock(&mm->page_table_lock);
-        /* FIFO */
-        pgtable = mm->pmd_huge_pte;
-        if (list_empty(&pgtable->lru))
-@@ -153,6 +156,7 @@ pgtable_t pgtable_trans_huge_withdraw(st
-                                              struct page, lru);
-                list_del(&pgtable->lru);
-        }
-+       spin_unlock(&mm->page_table_lock);
-        return pgtable;
- }
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
---
+-- Steve
