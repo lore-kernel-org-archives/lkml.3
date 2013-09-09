@@ -1,99 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753338Ab3IINaT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:30:19 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8201 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753583Ab3IIN0y (ORCPT
+	id S1754079Ab3IINay (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:30:54 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50767 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753218Ab3IINaw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 09:26:54 -0400
-X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=bhxVZlKqwjsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=xPLaIx7fqxsA:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=ayC55rCoAAAA:8 a=RvlEQHu-AAAA:8 a=_UZCbbHauV_kxHeOyvkA:9 a=E6k37eg1NvgA:10 a=MSl-tDqOz04A:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130909124556.319103947@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 09 Sep 2013 08:45:34 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>,
-        Ivo Sieben <meltedpianoman@gmail.com>
-Subject: [PATCH RT 03/16] genirq: Set irq thread to RT priority on creation
-References: <20130909124531.445392664@goodmis.org>
-Content-Disposition: inline; filename=0003-genirq-Set-irq-thread-to-RT-priority-on-creation.patch
+	Mon, 9 Sep 2013 09:30:52 -0400
+Date: Mon, 9 Sep 2013 15:30:44 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, ethan.kernel@gmail.com
+Subject: Re: [PATCH V3]hrtimer: Fix a performance regression by disable
+ reprogramming in remove_hrtimer
+Message-ID: <20130909133044.GB31370@twins.programming.kicks-ass.net>
+References: <alpine.DEB.2.02.1307291146060.4089@ionos.tec.linutronix.de>
+ <20130729115701.GD3008@twins.programming.kicks-ass.net>
+ <24EECBCC-F655-404F-8946-73CC36095A5F@gmail.com>
+ <1378362989.18435.2.camel@marge.simpson.net>
+ <20130905111428.GB23362@gmail.com>
+ <1378386697.6567.9.camel@marge.simpson.net>
+ <20130905133750.GA26637@gmail.com>
+ <1378445942.5434.31.camel@marge.simpson.net>
+ <20130909122325.GX31370@twins.programming.kicks-ass.net>
+ <1378730538.5586.30.camel@marge.simpson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378730538.5586.30.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ivo Sieben <meltedpianoman@gmail.com>
 
-When a threaded irq handler is installed the irq thread is initially
-created on normal scheduling priority. Only after the irq thread is
-woken up it sets its priority to RT_FIFO MAX_USER_RT_PRIO/2 itself.
+Lets go back to the list with this.. 
 
-This means that interrupts that occur directly after the irq handler
-is installed will be handled on a normal scheduling priority instead
-of the realtime priority that one would expect.
+On Mon, Sep 09, 2013 at 02:42:18PM +0200, Mike Galbraith wrote:
+> On Mon, 2013-09-09 at 14:23 +0200, Peter Zijlstra wrote: 
+> > On Fri, Sep 06, 2013 at 07:39:02AM +0200, Mike Galbraith wrote:
+> > > The patch takes a large bite out of regressions.  What's left for a
+> > > Westmere box is the introduction of reschedule_interrupt overhead
+> > > introduced by 7d1a9417 x86: Use generic idle loop. 
+> > 
+> > How exactly does that commit cause extra IPIs? Did the entire TS_POLLING
+> > stuff break or so?
+> 
+> Seems so.
+> 
+> > > Core2 eats that,
+> > > plus Intel making mwait_idle() go away with no way for them to get to
+> > > the remaining mwait_idle_with_hints().
+> > 
+> > but but but drivers/idle/intel_idle.c still uses mwait.. what's the
+> > exact complaint?
+> 
+> reschedule_interrupt overhead for cross core pipe-test appeared in
+> westmere box at 7d1a9417.
 
-Fix this by setting the RT priority on creation of the irq_thread.
+So that patch does indeed loose the TS_POLLING stuff for all of x86. I'm
+not entirely sure where we want to add it back, but the best place to me
+seems the idle loop implementations themselves.
 
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Ivo Sieben <meltedpianoman@gmail.com>
-Cc: Sebastian Andrzej Siewior  <bigeasy@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1370254322-17240-1-git-send-email-meltedpianoman@gmail.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Below a patch that does intel_idle.c which is what your WSM would be
+using I suppose. We'll probably want to iterate all idle implementations
+and do what needs doing.
+
 ---
- kernel/irq/manage.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 22ca55a..ff54ceb 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -797,9 +797,6 @@ static void wake_threads_waitq(struct irq_desc *desc)
-  */
- static int irq_thread(void *data)
- {
--	static const struct sched_param param = {
--		.sched_priority = MAX_USER_RT_PRIO/2,
--	};
- 	struct irqaction *action = data;
- 	struct irq_desc *desc = irq_to_desc(action->irq);
- 	irqreturn_t (*handler_fn)(struct irq_desc *desc,
-@@ -811,7 +808,6 @@ static int irq_thread(void *data)
- 	else
- 		handler_fn = irq_thread_fn;
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+index fa6964d..486c0ba 100644
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -359,6 +359,14 @@ static int intel_idle(struct cpuidle_device *dev,
+ 	if (!(lapic_timer_reliable_states & (1 << (cstate))))
+ 		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
  
--	sched_setscheduler(current, SCHED_FIFO, &param);
- 	current->irq_thread = 1;
- 
- 	while (!irq_wait_for_interrupt(action)) {
-@@ -944,6 +940,9 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 	 */
- 	if (new->thread_fn && !nested) {
- 		struct task_struct *t;
-+		static const struct sched_param param = {
-+			.sched_priority = MAX_USER_RT_PRIO/2,
-+		};
- 
- 		t = kthread_create(irq_thread, new, "irq/%d-%s", irq,
- 				   new->name);
-@@ -951,6 +950,9 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 			ret = PTR_ERR(t);
- 			goto out_mput;
- 		}
++	current_thread_into()->status |= TS_POLLING;
 +
-+		sched_setscheduler(t, SCHED_FIFO, &param);
++	/*
++	 * Order against setting of TS_POLLING against the reading of
++	 * NEED_RESCHED, matched by resched_task().
++	 */
++	smp_mb();
 +
- 		/*
- 		 * We keep the reference to the task struct even if
- 		 * the thread dies to avoid that the interrupt code
--- 
-1.7.10.4
-
-
+ 	if (!need_resched()) {
+ 
+ 		__monitor((void *)&current_thread_info()->flags, 0, 0);
+@@ -367,6 +375,8 @@ static int intel_idle(struct cpuidle_device *dev,
+ 			__mwait(eax, ecx);
+ 	}
+ 
++	current_thread_into()->status &= ~TS_POLLING;
++
+ 	if (!(lapic_timer_reliable_states & (1 << (cstate))))
+ 		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
+ 
