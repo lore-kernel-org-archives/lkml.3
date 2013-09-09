@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756090Ab3IIW5o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 18:57:44 -0400
-Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:31023 "EHLO
-	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755841Ab3IIW5m (ORCPT
+	id S1756139Ab3IIXAv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 19:00:51 -0400
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:55948 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755890Ab3IIXAt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 18:57:42 -0400
-Message-ID: <522E5259.7090000@hp.com>
-Date: Mon, 09 Sep 2013 18:57:29 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Mon, 9 Sep 2013 19:00:49 -0400
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+To: Pavel Machek <pavel@denx.de>, kernel list <linux-kernel@vger.kernel.org>,
+        "matthijs@stdin.nl" <matthijs@stdin.nl>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: RE: TODO list for drivers/staging/dwc2?
+Thread-Topic: TODO list for drivers/staging/dwc2?
+Thread-Index: AQHOqKS3VzRSskVrKEWmyTgxDJyTgZm+BbEA
+Date: Mon, 9 Sep 2013 23:00:47 +0000
+Message-ID: <A2CA0424C0A6F04399FB9E1CD98E030458E00E31@US01WEMBX2.internal.synopsys.com>
+References: <20130903125421.GA11846@amd.pavel.ucw.cz>
+In-Reply-To: <20130903125421.GA11846@amd.pavel.ucw.cz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.9.64.240]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        George Spelvin <linux@horizon.com>, John Stoffel <john@stoffel.org>
-Subject: Re: [PATCH v4 1/1] dcache: Translating dentry into pathname without
- taking rename_lock
-References: <1378743493-33546-1-git-send-email-Waiman.Long@hp.com> <1378743493-33546-2-git-send-email-Waiman.Long@hp.com> <20130909172905.GN13318@ZenIV.linux.org.uk> <CA+55aFx_pUwHg35Ueb4Ewy8ZrBA_UtFbQqdRzL64_Q7iQ=V-rA@mail.gmail.com> <20130909180604.GO13318@ZenIV.linux.org.uk> <20130909182111.GQ13318@ZenIV.linux.org.uk> <20130909183608.GR13318@ZenIV.linux.org.uk> <522E17A1.1020205@hp.com> <20130909191028.GT13318@ZenIV.linux.org.uk> <20130909192835.GU13318@ZenIV.linux.org.uk>
-In-Reply-To: <20130909192835.GU13318@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2013 03:28 PM, Al Viro wrote:
-> On Mon, Sep 09, 2013 at 08:10:29PM +0100, Al Viro wrote:
->> On Mon, Sep 09, 2013 at 02:46:57PM -0400, Waiman Long wrote:
->>
->>> I am fine with your proposed change as long as it gets the job done.
->> I suspect that the real problem is the unlock part of read_seqretry_or_unlock();
->> for d_walk() we want to be able to check if we need retry and continue walking
->> if we do not.  Let's do it that way: I've applied your patch as is, with the
->> next step being
->> 	* split read_seqretry_or_unlock():
->> need_seqretry() (return (!(seq&  1)&&  read_seqretry(lock, seq))
->> done_seqretry() (if (seq&  1) write_sequnlock(lock, seq)),
->> your if (read_seqretry_or_unlock(&rename_lock,&seq))
->> 		goto restart;
->> becoming
->> 	if (need_seqretry(&rename_lock, seq)) {
->> 		seq = 1;
->> 		goto restart;
->> 	}
->> 	done_seqretry(&rename_lock, seq);
->>
->> Then d_walk() is trivially massaged to use of read_seqbegin_or_lock(),
->> need_seqretry() and done_seqretry().  Give me a few, I'll post it...
-> OK, how about this?  It splits read_seqretry_or_unlock(), takes
-> rcu_read_{lock,unlock} in the callers and converts d_walk() to those
-> primitives.  I've pushed that and your commit into vfs.git#experimental
-> (head at 48f5ec2, should propagate in a few); guys, please give it a look
-> and comment.
+> From: Pavel Machek [mailto:pavel@denx.de]
+> Sent: Tuesday, September 03, 2013 5:54 AM
+> 
+> Hi!
+> 
+> Is there TODO list for `subj`? I'll need that code on socfpga cyclone
+> 5, so it makes sense to help with cleanups, but it looks in pretty
+> good shape already...
 
-The changes look good to me. I was planning to take rcu_read_lock() out 
-and doing something similar, but your change is good. BTW, I think Linus 
-want to add some comments on why RCU lock is needed without the 
-rename_lock, but I can put that in with a follow-up patch once the 
-current change is merged.
+Hi Pavel,
 
-Thank for your help and inspiration on this patch.
+Here is the TODO list:
 
--Longman
+- Need to merge the microframe scheduler patch from Denx/Raspberry Pi
+(see http://marc.info/?l=linux-usb&m=137625068103835). I will resubmit
+that one after the merge window closes and Greg is taking patches again.
+But even after that more scheduling improvements may be needed.
+
+- Should merge the NAK holdoff patch from Raspberry Pi
+(http://marc.info/?l=linux-usb&m=137625067103833). But that patch is
+incomplete, it needs more investigation to see if it can be made to work
+for non-Raspberry Pi platforms that lack the special FIQ interrupt that
+the Pi has. Without this, the driver has a high interrupt rate (8K/sec).
+
+- The Raspberry Pi platform needs to have support for its FIQ interrupt
+added, to get the same level of functionality as the downstream driver
+has. The raspberrypi.org developers have indicated they are willing to
+help with that.
+
+- Some of the default driver parameters (see 'struct dwc2_core_params'
+in core.h) won't work for many platforms. So DT attributes will need to
+be added for some of these. But that can be done as-needed as new
+platforms are added.
+
+- Eventually the driver should be merged with the s3c-hsotg peripheral
+mode driver, so that both modes of operation can be supported with a
+single driver. I think that can wait till after the driver has been
+moved to mainline.
+
+- After that, OTG support can be added. I'm not sure how much demand
+there is for that, though, so I have that as a low priority.
+
+I think after the first two items are done the driver can be moved to
+mainline.
+
+Matthijs, do you have anything to add?
+
+-- 
+Paul
+
