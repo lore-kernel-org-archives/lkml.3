@@ -1,108 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753790Ab3IIN5W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:57:22 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54334 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753465Ab3IIN5T (ORCPT
+	id S1753612Ab3IIN6L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:58:11 -0400
+Received: from bizpsie4.9services.com ([84.96.93.162]:51146 "EHLO
+	bizpsie4.9services.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752195Ab3IIN6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 09:57:19 -0400
-Message-ID: <522DD386.2080003@pengutronix.de>
-Date: Mon, 09 Sep 2013 15:56:22 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130518 Icedove/17.0.5
+	Mon, 9 Sep 2013 09:58:09 -0400
+X-VRSPAM-SCORE: -100.00
+Message-ID: <522DD3E8.8070804@efixo.com>
+Date: Mon, 09 Sep 2013 15:58:00 +0200
+From: Emmanuel Deloget <emmanuel.deloget@efixo.com>
+Reply-To: emmanuel.deloget@efixo.com
+Organization: Efixo
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Ronald Wahl <ronald.wahl@raritan.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        arm@kernel.org, John Stultz <john.stultz@linaro.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        Andres Salomon <dilinger@queued.net>, Shawn Guo <shawn.guo@linaro.org>,
-        linux-ar@jasper.es
-Subject: Re: RFC: [PATCH] clocksource: tcb: fix min_delta calculation
-References: <517687AB.1040309@pengutronix.de> <1366722524-25991-1-git-send-email-mkl@pengutronix.de> <alpine.LFD.2.02.1304251618590.21884@ionos> <51794385.1030308@pengutronix.de> <51C31926.3060400@pengutronix.de> <522D843A.60401@raritan.com>
-In-Reply-To: <522D843A.60401@raritan.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="2DnFRu5IJqau5nuXsGoDK62rT8wJFTB13"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "[ML] linux-kernel" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: /proc/$PID/sched does not take PID namespace into account
+References: <5225F0A9.5040100@efixo.com> <20130909110141.GM31370@twins.programming.kicks-ass.net>
+In-Reply-To: <20130909110141.GM31370@twins.programming.kicks-ass.net>
+Content-Type: multipart/mixed;
+ boundary="------------040909030004080901050805"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---2DnFRu5IJqau5nuXsGoDK62rT8wJFTB13
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+This is a multi-part message in MIME format.
+--------------040909030004080901050805
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-On 09/09/2013 10:18 AM, Ronald Wahl wrote:
-> On 20.06.2013 17:00, Marc Kleine-Budde wrote:
->> Hello Thomas,
+Hello,
+
+On 09/09/2013 13:01, Peter Zijlstra wrote:
+> On Tue, Sep 03, 2013 at 04:22:33PM +0200, Emmanuel Deloget wrote:
+>> The issue (if this is really an issue) lies in kernel/sched/debug.c,
+>> function proc_sched_show_task(). The code says [1]:
 >>
->> On 04/25/2013 04:53 PM, Marc Kleine-Budde wrote:
->>> On 04/25/2013 04:21 PM, Thomas Gleixner wrote:
->>>> On Tue, 23 Apr 2013, Marc Kleine-Budde wrote:
->>>>> The commit
->>>>>
->>>>>      77cc982 clocksource: use clockevents_config_and_register()
->>>>> where possible
->>>>>
->>>>> switches from manually calculating min_delta_ns (and others) and
->>>>> clockevents_register_device() to automatic calculation via
->>>>> clockevents_config_and_register(). During this conversation the "+
->>>>> 1" in
->>>>>
->>>>>      min_delta_ns =3D clockevent_delta2ns(1, &clkevt.clkevt) + 1;
->>>>>
->>>>> was lost. This leads to problems with schedule_delayed_work() with
->>>>> a delay of
->>>>> "1". Resulting in the work not scheduled in time.
->>>>
->>>> Errm. How is schedule_delayed_work() related to this?
->=20
-> I also stumbled over this issue now after upgrading from 3.4.57 to
-> 3.10.10. Even sleep() is unreliable - sleeping for 2 seconds often
-> sleeps just more than 3 seconds.
->=20
-> The now lost +1 has actually been added in 2007 to solve a rounding iss=
-ue:
->=20
->   http://permalink.gmane.org/gmane.linux.kernel/549744
->=20
-> So I think this should either be fixed by always rounding up in
-> clockevent_delta2ns() or by adding +1 to the min_delta_ns in the
-> clockevents_config_and_register() function. Dunno if rounding up will
-> cause problems with the max_delta_ns as it might be too big then so
-> probably the second approach is better.
->=20
-> Opinions?
+>>     SEQ_printf(m, "%s (%d, #threads: %d)\n", p->comm, p->pid,
+>>                         get_nr_threads(p));
+>>
+>> I see a few options:
+>>
+>> * either it's a bug and it should be corrected (I'm not sure how to
+>>   do it; the printed PID should reflect the current PID namespace
+>>   and I don't how how to get this information).
+> I suppose something like the below ought to work? -- completely
+> untested, please confirm.
 
-Thomas, any thoughts on this?
+Thanks !
 
-Marc
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+I'll test that as soon as possible and I'll report to you.
+
+Best regards,
+
+-- Emmanuel Deloget
+
+>
+> ---
+> Subject: sched, debug: Use PID namespaces
+>
+> Emmanuel reported that /proc/sched_debug didn't report the right PIDs
+> when using namespaces, cure this.
+>
+> Reported-by: Emmanuel Deloget <emmanuel.deloget@efixo.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> ---
+>  kernel/sched/debug.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+> index e076bdd..e30bf44 100644
+> --- a/kernel/sched/debug.c
+> +++ b/kernel/sched/debug.c
+> @@ -124,7 +124,7 @@ print_task(struct seq_file *m, struct rq *rq, struct task_struct *p)
+>  		SEQ_printf(m, " ");
+>  
+>  	SEQ_printf(m, "%15s %5d %9Ld.%06ld %9Ld %5d ",
+> -		p->comm, p->pid,
+> +		p->comm, task_pid(p),,
+>  		SPLIT_NS(p->se.vruntime),
+>  		(long long)(p->nvcsw + p->nivcsw),
+>  		p->prio);
+> @@ -289,7 +289,7 @@ do {									\
+>  	P(nr_load_updates);
+>  	P(nr_uninterruptible);
+>  	PN(next_balance);
+> -	P(curr->pid);
+> +	P(task_pid(curr));
+>  	PN(clock);
+>  	P(cpu_load[0]);
+>  	P(cpu_load[1]);
+> @@ -492,7 +492,7 @@ void proc_sched_show_task(struct task_struct *p, struct seq_file *m)
+>  {
+>  	unsigned long nr_switches;
+>  
+> -	SEQ_printf(m, "%s (%d, #threads: %d)\n", p->comm, p->pid,
+> +	SEQ_printf(m, "%s (%d, #threads: %d)\n", p->comm, task_pid(p),
+>  						get_nr_threads(p));
+>  	SEQ_printf(m,
+>  		"---------------------------------------------------------"
+> .
+>
 
 
---2DnFRu5IJqau5nuXsGoDK62rT8wJFTB13
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+-- 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+--------------040909030004080901050805
+Content-Type: text/x-vcard; charset=utf-8;
+ name="emmanuel_deloget.vcf"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="emmanuel_deloget.vcf"
 
-iEYEARECAAYFAlIt04YACgkQjTAFq1RaXHOqnwCfZsYoy4tpbnBHdH7dqZsW4IKN
-xU8AoJVKAdg5PlvaZJFUCD5+q5VjiAOa
-=w0Jj
------END PGP SIGNATURE-----
+begin:vcard
+fn:Emmanuel Deloget
+n:Deloget;Emmanuel
+org:efixo / SFR;DATA
+adr;quoted-printable:;;67 mont=C3=A9e de St Menet;MARSEILLE;;13011;FRANCE
+email;internet:emmanuel.deloget@efixo.com
+title:Team Leader
+tel;work:04 88 15 50 77
+url:www.sfr.fr
+version:2.1
+end:vcard
 
---2DnFRu5IJqau5nuXsGoDK62rT8wJFTB13--
+
+--------------040909030004080901050805--
