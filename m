@@ -1,132 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753089Ab3IIMvI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 08:51:08 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:39339 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475Ab3IIMvG (ORCPT
+	id S1753189Ab3IIMzJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 08:55:09 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5811 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751960Ab3IIMzG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 08:51:06 -0400
-Date: Mon, 9 Sep 2013 15:49:42 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, Minchan Kim <minchan@kernel.org>,
-        Jerome Marchand <jmarchan@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] staging: zram: minimize `slot_free_lock' usage (v2)
-Message-ID: <20130909124942.GA2221@swordfish.minsk.epam.com>
-References: <20130906151255.GE2238@swordfish.minsk.epam.com>
- <20130909123329.GZ19256@mwanda>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130909123329.GZ19256@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 9 Sep 2013 08:55:06 -0400
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=JDfofD-L5ZgA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5p3hctMY2UsA:10 a=pGLkceISAAAA:8 a=Uf78agF8koMlbh_WU-0A:9 a=CjuIK1q_8ugA:10 a=MSl-tDqOz04A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Mon, 9 Sep 2013 08:55:04 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        sbw@mit.edu
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+Message-ID: <20130909085504.2ddd7e69@gandalf.local.home>
+In-Reply-To: <20130909124547.GB16280@somewhere>
+References: <20130905195234.GA20555@linux.vnet.ibm.com>
+	<20130906105934.GF20519@somewhere>
+	<20130906151851.GQ3966@linux.vnet.ibm.com>
+	<1378488088.31445.39.camel@edumazet-glaptop>
+	<20130906174117.GU3966@linux.vnet.ibm.com>
+	<20130906185927.GE2706@somewhere>
+	<20130909105347.GK31370@twins.programming.kicks-ass.net>
+	<20130909121329.GA16280@somewhere>
+	<20130909083926.3eceebef@gandalf.local.home>
+	<20130909124547.GB16280@somewhere>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Calling handle_pending_slot_free() for every RW operation may
-> > cause unneccessary slot_free_lock locking, because most likely
-> > process will see NULL slot_free_rq. handle_pending_slot_free()
-> > only when current detects that slot_free_rq is not NULL.
-> > 
-> > v2: protect handle_pending_slot_free() with zram rw_lock.
-> > 
+On Mon, 9 Sep 2013 14:45:49 +0200
+Frederic Weisbecker <fweisbec@gmail.com> wrote:
+
+ 
+> > This just proves that the caller of rcu_is_cpu_idle() must disable
+> > preemption itself for the entire time that it needs to use the result
+> > of rcu_is_cpu_idle().
 > 
-> zram->slot_free_lock protects zram->slot_free_rq but shouldn't the zram
-> rw_lock be wrapped around the whole operation like the original code
-> does?  I don't know the zram code, but the original looks like it makes
-> sense but in this one it looks like the locks are duplicative.
-> 
-> Is the down_read() in the original code be changed to down_write()?
->
+> Sorry, I don't understand your point here. What's wrong with checking the
+> ret from another CPU?
 
-I'm not touching locking around existing READ/WRITE commands.
+Hmm, OK, this is why that code is in desperate need of a comment.
 
-the original code:
+>From reading the context a bit more, it seems that the per cpu value is
+more a "per task" value that happens to be using per cpu variables, and
+changes on context switches. Is that correct?
 
-static void handle_pending_slot_free(struct zram *zram)
-{
-        struct zram_slot_free *free_rq;
+Anyway, it requires a comment to explain that we are not checking the
+CPU state, but really the current task state, otherwise that 'ret'
+value wouldn't travel with the task, but would stick with the CPU.
 
-        spin_lock(&zram->slot_free_lock);
-        while (zram->slot_free_rq) {
-                free_rq = zram->slot_free_rq;
-                zram->slot_free_rq = free_rq->next;
-                zram_free_page(zram, free_rq->index);
-                kfree(free_rq);
-        }
-        spin_unlock(&zram->slot_free_lock);
-}
+-- Steve
 
-static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
-                        int offset, struct bio *bio, int rw)
-{
-        int ret;
-
-        if (rw == READ) {
-                down_read(&zram->lock);
-                handle_pending_slot_free(zram);
-                ret = zram_bvec_read(zram, bvec, index, offset, bio);
-                up_read(&zram->lock);
-        } else {
-                down_write(&zram->lock);
-                handle_pending_slot_free(zram);
-                ret = zram_bvec_write(zram, bvec, index, offset);
-                up_write(&zram->lock);
-        }
-
-        return ret;
-}
-
-
-
-the new one:
-
-static void handle_pending_slot_free(struct zram *zram)
-{
-        struct zram_slot_free *free_rq;
-
-        down_write(&zram->lock);
-        spin_lock(&zram->slot_free_lock);
-        while (zram->slot_free_rq) {
-                free_rq = zram->slot_free_rq;
-                zram->slot_free_rq = free_rq->next;
-                zram_free_page(zram, free_rq->index);
-                kfree(free_rq);
-        }
-        spin_unlock(&zram->slot_free_lock);
-        up_write(&zram->lock);
-}
-
-static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
-                        int offset, struct bio *bio, int rw)
-{
-        int ret;
-
-        if (zram->slot_free_rq)
-                handle_pending_slot_free(zram);
-
-        if (rw == READ) {
-                down_read(&zram->lock);
-                ret = zram_bvec_read(zram, bvec, index, offset, bio);
-                up_read(&zram->lock);
-        } else {
-                down_write(&zram->lock);
-                ret = zram_bvec_write(zram, bvec, index, offset);
-                up_write(&zram->lock);
-        }
-
-        return ret;
-}
-
-
-both READ and WRITE operations are still protected by down_read() for READ path
-and down_write() for WRITE path. however, there is no handle_pending_slot_free()
-and zram->slot_free_lock locking on every READ/WRITE, instead handle_pending_slot_free()
-is called only when zram->slot_free_rq is not NULL. handle_pending_slot_free() in
-turn protects zram_free_page() call by down_write(), so no READ/WRITE operations
-are affected.
-
-	-ss
