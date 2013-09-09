@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628Ab3IIQA3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 12:00:29 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:39478 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753760Ab3IIQA2 (ORCPT
+	id S1754780Ab3IIQA4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 12:00:56 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:45179 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754408Ab3IIQAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 12:00:28 -0400
-Date: Mon, 9 Sep 2013 18:00:24 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, sbw@mit.edu
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
- section?
-Message-ID: <20130909160024.GA25555@gmail.com>
-References: <20130906151851.GQ3966@linux.vnet.ibm.com>
- <1378488088.31445.39.camel@edumazet-glaptop>
- <20130906174117.GU3966@linux.vnet.ibm.com>
- <20130906185927.GE2706@somewhere>
- <20130909105347.GK31370@twins.programming.kicks-ass.net>
- <20130909132343.GN3966@linux.vnet.ibm.com>
- <20130909133604.GC31370@twins.programming.kicks-ass.net>
- <000001410333127c-486c74ec-3209-4c5e-a92f-0c11e00fa141-000000@email.amazonses.com>
- <20130909150854.GD26785@twins.programming.kicks-ass.net>
- <0000014103534c88-48ee11a3-a581-4e52-b2df-3a1168047d96-000000@email.amazonses.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0000014103534c88-48ee11a3-a581-4e52-b2df-3a1168047d96-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 9 Sep 2013 12:00:54 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: linux-kernel@vger.kernel.org
+Cc: keescook@chromium.org, gregkh@linuxfoundation.org, hpa@zytor.com,
+        linux-efi@vger.kernel.org, jmorris@namei.org,
+        linux-security-module@vger.kernel.org,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Subject: [PATCH 11/12] asus-wmi: Restrict debugfs interface when securelevel is set
+Date: Mon,  9 Sep 2013 11:49:45 -0400
+Message-Id: <1378741786-18430-12-git-send-email-matthew.garrett@nebula.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
+References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 2001:470:1f07:1371:5d52:9ee3:3e84:6668
+X-SA-Exim-Mail-From: matthew.garrett@nebula.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We have no way of validating what all of the Asus WMI methods do on a
+given machine, and there's a risk that some will allow hardware state to
+be manipulated in such a way that arbitrary code can be executed in the
+kernel. Prevent that if securelevel is set.
 
-* Christoph Lameter <cl@linux.com> wrote:
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+---
+ drivers/platform/x86/asus-wmi.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-> On Mon, 9 Sep 2013, Peter Zijlstra wrote:
-> 
-> > > Slander. Certainly validation is good. Its just that PREEMPT kernels 
-> > > are not in use
-> >
-> > Complete bullshit, its part of the mainline kernel, lots of people run 
-> > them -- including me, and any patch is supposed to keep it working.
-> 
-> Nonsense. There is no main line distro that supports full preempt. Its 
-> an academic exercise.
+diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
+index 19c313b..1a9847b 100644
+--- a/drivers/platform/x86/asus-wmi.c
++++ b/drivers/platform/x86/asus-wmi.c
+@@ -45,6 +45,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/platform_device.h>
+ #include <linux/thermal.h>
++#include <linux/security.h>
+ #include <acpi/acpi_bus.h>
+ #include <acpi/acpi_drivers.h>
+ #include <acpi/video.h>
+@@ -1618,6 +1619,9 @@ static int show_dsts(struct seq_file *m, void *data)
+ 	int err;
+ 	u32 retval = -1;
+ 
++	if (get_securelevel() > 0)
++		return -EPERM;
++
+ 	err = asus_wmi_get_devstate(asus, asus->debug.dev_id, &retval);
+ 
+ 	if (err < 0)
+@@ -1634,6 +1638,9 @@ static int show_devs(struct seq_file *m, void *data)
+ 	int err;
+ 	u32 retval = -1;
+ 
++	if (get_securelevel() > 0)
++		return -EPERM;
++
+ 	err = asus_wmi_set_devstate(asus->debug.dev_id, asus->debug.ctrl_param,
+ 				    &retval);
+ 
+@@ -1658,6 +1665,9 @@ static int show_call(struct seq_file *m, void *data)
+ 	union acpi_object *obj;
+ 	acpi_status status;
+ 
++	if (get_securelevel() > 0)
++		return -EPERM;
++
+ 	status = wmi_evaluate_method(ASUS_WMI_MGMT_GUID,
+ 				     1, asus->debug.method_id,
+ 				     &input, &output);
+-- 
+1.8.3.1
 
-You are dead wrong on multiple levels.
-
-Firstly, here's a "popularity list" of preempt kernel config options, 
-distilled from kernel configs sent to lkml, from a time span of a couple 
-of months:
-
-     73 CONFIG_PREEMPT_NONE=y
-     81 CONFIG_PREEMPT_VOLUNTARY=y
-    135 CONFIG_PREEMPT=y
-
-CONFIG_PREEMPT=y is in fact more popular than the other two modes of 
-preemption, amongst kernel testers who post configs to lkml.
-
-Secondly, even if, hypotethically, in an alternate universe, 
-CONFIG_PREEMPT=y was used only rarely, the preempt debug checks are still 
-very important for automated testing: they often catch bugs that are 
-relevant on !PREEMPT as well. (such as accidental unlocked access) The 
-last thing we want to do is to reduce the 'reach' of debug checks.
-
-Distros typically go for the lowest overhead preemption option with server 
-loads in mind - still even they enjoy the bug fixes generated by the 
-preempt checks.
-
-So my NAK stands: you are still in denial, you should stop the silly 
-arguing and you should stop wasting maintainer time. You need to address 
-PeterZ's review feedback and fix the bugs in your patches, ASAP.
-
-Thanks,
-
-	Ingo
