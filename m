@@ -1,83 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616Ab3IIUHA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 16:07:00 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:59023 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755483Ab3IIUGp (ORCPT
+	id S1755677Ab3IIUHP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 16:07:15 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:37882 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755632Ab3IIUHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 16:06:45 -0400
+	Mon, 9 Sep 2013 16:07:11 -0400
+Date: Mon, 9 Sep 2013 13:07:08 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Sergey Dyasly <dserrg@gmail.com>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Rusty Russell <rusty@rustcorp.com.au>,
+        Sha Zhengju <handai.szj@taobao.com>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH] OOM killer: wait for tasks with pending SIGKILL to
+ exit
+In-Reply-To: <1378740624-2456-1-git-send-email-dserrg@gmail.com>
+Message-ID: <alpine.DEB.2.02.1309091303010.12523@chino.kir.corp.google.com>
+References: <1378740624-2456-1-git-send-email-dserrg@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-X-Originating-IP: [85.250.18.220]
-In-Reply-To: <20130909125745.GD22197@ulmo>
-References: <5220F099.1020002@nvidia.com> <CAK=WgbZ2JgtAonvdyeDZazYBGdKpPAieJtjzi7MM6nwqhVfs7g@mail.gmail.com>
- <20130909125745.GD22197@ulmo>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Mon, 9 Sep 2013 22:06:24 +0200
-Message-ID: <CAK=Wgbbxp5pfQm1mvCZ2phigXe_e2_J_Zkrof9tx2jggi8EMjQ@mail.gmail.com>
-Subject: Re: permission to move definition of struct rpmsg_channel_info
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Arjun Gopalan <agopalan@nvidia.com>, Brian Swetland <swetland@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Paul Walmsley <pwalmsley@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 9, 2013 at 2:57 PM, Thierry Reding <thierry.reding@gmail.com> wrote:
-> If I understand correctly, the way that the services should be announced
-> is via RSC_VDEV entries in the resource table?
+On Mon, 9 Sep 2013, Sergey Dyasly wrote:
 
-Yes.
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> index 98e75f2..ef83b81 100644
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -275,13 +275,16 @@ enum oom_scan_t oom_scan_process_thread(struct task_struct *task,
+>  	if (oom_task_origin(task))
+>  		return OOM_SCAN_SELECT;
+>  
+> -	if (task->flags & PF_EXITING && !force_kill) {
+> +	if ((task->flags & PF_EXITING || fatal_signal_pending(task)) &&
+> +	    !force_kill) {
 
-> Looking at the remoteproc core and ELF loader, it seems like the way to
-> pass in the resource table is either via an extra ELF section or driver
-> specific. TI drivers seem to use ELF, but the STE modem driver seems to
-> employ some custom format.
->
-> From what I understand this resource table can also be processed by the
-> host to provide some of the resources such as carveout memory. So that
-> the normal way for this to work would be something like:
->
->         - load firmware image
->           - obtain pointer to resource table
->         - process resource table
->           - allocate resources
->           - update table
->         - upload firmware to remote processor
->
-> Upon which the remote processor probably needs to parse the resource
-> table to set itself up. Does that sound about right?
+This makes sense.
 
-Yeah, it generally does.
+>  		/*
+>  		 * If this task is not being ptraced on exit, then wait for it
+>  		 * to finish before killing some other task unnecessarily.
+>  		 */
+> -		if (!(task->group_leader->ptrace & PT_TRACE_EXIT))
+> +		if (!(task->group_leader->ptrace & PT_TRACE_EXIT)) {
+> +			set_tsk_thread_flag(task, TIF_MEMDIE);
 
-> > The way we were planning to add static channels functionality (I
-> > should still have preliminary patches doing this somewhere but the
-> > entire work was put on hold since TI changed its focus) is by
-> > statically publishing them in the resource table, which is coupled
-> > with a specific remote image.
->
-> While I see that the format of all this is pretty well documented, are
-> there any standard tools that can be used to embed the resource table
-> into an ELF binary?
+This does not, we do not give access to memory reserves unless the process 
+needs it to allocate memory.  The task here, which is not current, can 
+call into the oom killer and be granted memory reserves if necessary.
 
-I'm not aware of any.
+>  			return OOM_SCAN_ABORT;
+> +		}
+>  	}
+>  	return OOM_SCAN_OK;
+>  }
+> @@ -412,16 +415,6 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+>  	static DEFINE_RATELIMIT_STATE(oom_rs, DEFAULT_RATELIMIT_INTERVAL,
+>  					      DEFAULT_RATELIMIT_BURST);
+>  
+> -	/*
+> -	 * If the task is already exiting, don't alarm the sysadmin or kill
+> -	 * its children or threads, just set TIF_MEMDIE so it can die quickly
+> -	 */
+> -	if (p->flags & PF_EXITING) {
+> -		set_tsk_thread_flag(p, TIF_MEMDIE);
+> -		put_task_struct(p);
+> -		return;
+> -	}
 
-> I have a pretty good idea on how it could be done,
-> but I wonder if it might make sense to provide some kind of a standard
-> set of headers to make things easier so that not everyone has to
-> reinvent the wheel.
->
-> Looking at the remoteproc core, it seems that there's no direct way to
-> change the firmware running on a remoteproc at runtime.
+I think you misunderstood the point of this; if a selected process is 
+already in the exit path then this is simply avoiding dumping oom kill 
+lines to the kernel log.  We want to keep doing that.
 
-One way is to unload and load the driver, but you can also use the
-bind/unbind sysfs files of your driver (echo -n device-name >
-/sys/..../{un}bind).
-
-Does that help?
-
-Best,
-Ohad.
+> -
+>  	if (__ratelimit(&oom_rs))
+>  		dump_header(p, gfp_mask, order, memcg, nodemask);
+>  
