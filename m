@@ -1,157 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691Ab3IIOyj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 10:54:39 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:36042 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752850Ab3IIOyg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 10:54:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <87zjrmujzu.fsf@linaro.org>
-References: <1378449204-8601-1-git-send-email-koen@dominion.thruhere.net>
-	<52297CCF.3090200@ti.com>
-	<50E637BB-5A62-477C-B943-9687BC3488BC@dominion.thruhere.net>
-	<A83CF7D5-0A26-4740-9F4D-51E5C1592EEF@dominion.thruhere.net>
-	<13CEC5D4-080F-499B-8451-7AFEDE065F27@dominion.thruhere.net>
-	<87zjrmujzu.fsf@linaro.org>
-Date: Mon, 9 Sep 2013 07:54:35 -0700
-Message-ID: <CAGa+x85rS5No2gH4jcfxeaEgr2fw=b5_Av5-mMw_6yW04PpL9Q@mail.gmail.com>
-Subject: Re: [PATCH] ARM: OMAP2+: am335x-bone*: add DT for BeagleBone Black
-From: Kevin Hilman <khilman@linaro.org>
-To: Koen Kooi <koen@dominion.thruhere.net>
-Cc: George Cherian <george.cherian@ti.com>,
-        linux-omap <linux-omap@vger.kernel.org>, bcousson@baylibre.com,
-        Tony Lindgren <tony@atomide.com>, rob.herring@calxeda.com,
-        pawel.moll@arm.com, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, ijc+devicetree@hellion.org.uk,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        devicetree@vger.kernel.org,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754097Ab3IIOyu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 10:54:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25464 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753993Ab3IIOyt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 10:54:49 -0400
+Date: Mon, 9 Sep 2013 10:54:43 -0400
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, oleg@redhat.com, eparis@redhat.com,
+        akpm@linux-foundation.org, rgb@redhat.com
+Subject: Re: [RFC] audit: avoid soft lockup in audit_log_start()
+Message-ID: <20130909105443.72e525cb@redhat.com>
+In-Reply-To: <522DDBED.2020505@openvz.org>
+References: <20130828182114.6b67ea90@redhat.com>
+	<522DDBED.2020505@openvz.org>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 9, 2013 at 7:50 AM, Kevin Hilman <khilman@linaro.org> wrote:
-> Koen Kooi <koen@dominion.thruhere.net> writes:
->
->> Op 6 sep. 2013, om 10:51 heeft Koen Kooi <koen@dominion.thruhere.net> het volgende geschreven:
->>
->>>
->>> Op 6 sep. 2013, om 09:10 heeft Koen Kooi <koen@dominion.thruhere.net> het volgende geschreven:
->>>
->>>>
->>>> Op 6 sep. 2013, om 08:57 heeft George Cherian <george.cherian@ti.com> het volgende geschreven:
->>>>
->>>>> On 9/6/2013 12:03 PM, Koen Kooi wrote:
->>>>>> The BeagleBone Black is basically a regular BeagleBone with eMMC and HDMI added,
->>>>>> so create a common dtsi both can use. MMC support for AM335x still isn't in, so
->>>>>> only the LDO change has been added.
->>>>>>
->>>>>> Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
->>>>>> ---
->>>>>> .../{am335x-bone.dts => am335x-bone-common.dtsi}   |   3 -
->>>>>> arch/arm/boot/dts/am335x-bone.dts                  | 256 +--------------------
->>>>>> arch/arm/boot/dts/am335x-boneblack.dts             |  18 ++
->>>>>> 3 files changed, 19 insertions(+), 258 deletions(-)
->>>>>> copy arch/arm/boot/dts/{am335x-bone.dts => am335x-bone-common.dtsi} (99%)
->>>>>> create mode 100644 arch/arm/boot/dts/am335x-boneblack.dts
->>>>> How did you test am335x-boneblack.dtb? where are the Makefile changes for boneblack?
->>>>
->>>> Ah, I missed the makefile in my commit. I have a bunch of other patches on top to make more stuff work.
->>>>
->>>> [..]
->>>>
->>>>>>
->>>>>> --- /dev/null
->>>>>> +++ b/arch/arm/boot/dts/am335x-boneblack.dts
->>>>>> @@ -0,0 +1,18 @@
->>>>>> +/*
->>>>>> + * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
->>>>>> + *
->>>>>> + * This program is free software; you can redistribute it and/or modify
->>>>>> + * it under the terms of the GNU General Public License version 2 as
->>>>>> + * published by the Free Software Foundation.
->>>>>> + */
->>>>>> +/dts-v1/;
->>>>>> +
->>>>>> +#include "am33xx.dtsi"
->>>>> Why cant we add am33xx.dtsi  in am335x-bone-common.dtsi ?
->>>>
->>>> That didn't work when I tried it. It did work before the preprocessor changes when using /include/
->>>>
->>>>>> +#include "am335x-bone-common.dtsi"
->>>>>> +
->>>>>> +&ldo3_reg {
->>>>>> + regulator-min-microvolt = <1800000>;
->>>>>> + regulator-max-microvolt = <1800000>;
->>>>>> + regulator-always-on;
->>>>>> +};
->>>>>> +
->>>>> With this ldo values mmc was not working for me on Boneblack.
->>>>> got it working with
->>>>>
->>>>> &ldo3_reg {
->>>>>    regulator-min-microvolt = <1800000>;
->>>>>    regulator-max-microvolt = <3300000>;
->>>>>    regulator-always-on;
->>>>> };
->>>>
->>>> That LDO is shared, the other consumer will get fried if you use 3.3V. I forget if it's DDR3 or HDMI.
->>>
->>> On the black the LDOs changed, so for mmc (which (*$)@()$@) still isn't in mainline) you need:
->>>
->>> diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
->>> index e76d575..ae90a30 100644
->>> --- a/arch/arm/boot/dts/am335x-bone-common.dtsi
->>> +++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
->>> @@ -362,6 +362,13 @@
->>>                        regulator-always-on;
->>>                };
->>>        };
->>> +
->>> +       vmmcsd_fixed: fixedregulator@0 {
->>> +               compatible = "regulator-fixed";
->>> +               regulator-name = "vmmcsd_fixed";
->>> +               regulator-min-microvolt = <3300000>;
->>> +               regulator-max-microvolt = <3300000>;
->>> +       };
->>> };
->>>
->>> &cpsw_emac0 {
->>> diff --git a/arch/arm/boot/dts/am335x-boneblack.dts b/arch/arm/boot/dts/am335x-boneblack.dts
->>> index b4237fc..e092a61 100644
->>> --- a/arch/arm/boot/dts/am335x-boneblack.dts
->>> +++ b/arch/arm/boot/dts/am335x-boneblack.dts
->>> @@ -16,7 +16,12 @@
->>>        regulator-always-on;
->>> };
->>>
->>> -&mmc2 {
->>> +&mmc1 {
->>> +       vmmc-supply = <&vmmcsd_fixed>;
->>> +};
->>> +
->>> +&mmc2 {
->>> +       vmmc-supply = <&vmmcsd_fixed>;
->>>        pinctrl-names = "default";
->>>        pinctrl-0 = <&emmc_pins>;
->>>        vmmc-supply = <&ldo3_reg>;
->>
->> And links to all the patches:
->>
->> Card-detect fix: https://github.com/koenkooi/linux/commit/c3c87f330812275ce6aa791e2a81f4c124fe981b
->> Add eMMC DT node: https://github.com/koenkooi/linux/commit/22459b61a7e80e05ab1cd02b9ec0a4467bf9fa4b
->> Fix mmc regulator: https://github.com/koenkooi/linux/commit/8007217893b7d809782e08fa1f0d56b1083ec00d
->>
->> As soon as TI gets their act together and the EDMA/MMC patchset is in
->> Linus' tree I'll rebase and submit the above properly.
->
-> In the meantime, can you resubmit the minimal splitup with the LDO
-> change?
+On Mon, 09 Sep 2013 18:32:13 +0400
+Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
 
-doh, I see you already did, sorry for the noise.
+> Luiz Capitulino wrote:
+> > I'm getting the following soft lockup:
+> >
+> > CPU: 6 PID: 2278 Comm: killall5 Tainted: GF            3.11.0-rc7+ #1
+> > Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> >   0000000000000099 ffff88011fd83de8 ffffffff815324df 0000000000002800
+> >   ffffffff817d48f9 ffff88011fd83e68 ffffffff8152e669 ffff88011fd83e68
+> >   ffffffff00000008 ffff88011fd83e78 ffff88011fd83e18 0000004081dac040
+> > Call Trace:
+> >   <IRQ>   [<ffffffff815324df>] dump_stack+0x46/0x58
+> >   [<ffffffff8152e669>] panic+0xbb/0x1c4
+> >   [<ffffffff810d03c3>] watchdog_timer_fn+0x163/0x170
+> >   [<ffffffff8106c691>] __run_hrtimer+0x81/0x1c0
+> >   [<ffffffff810d0260>] ? watchdog+0x30/0x30
+> >   [<ffffffff8106cea7>] hrtimer_interrupt+0x107/0x240
+> >   [<ffffffff8102f61b>] local_apic_timer_interrupt+0x3b/0x60
+> >   [<ffffffff81542465>] smp_apic_timer_interrupt+0x45/0x60
+> >   [<ffffffff8154124a>] apic_timer_interrupt+0x6a/0x70
+> >   <EOI>   [<ffffffff810c2f5f>] ? audit_log_start+0xbf/0x430
+> >   [<ffffffff810c2fe7>] ? audit_log_start+0x147/0x430
+> >   [<ffffffff81079030>] ? try_to_wake_up+0x2a0/0x2a0
+> >   [<ffffffff810c86be>] audit_log_exit+0x6ae/0xc30
+> >   [<ffffffff81188662>] ? __alloc_fd+0x42/0x100
+> >   [<ffffffff810c98e7>] __audit_syscall_exit+0x257/0x2b0
+> >   [<ffffffff81540794>] sysret_audit+0x17/0x21
+> >
+> > The reproducer is somewhat unusual:
+> >
+> >   1. Install RHEL6.5 (maybe a similar older user-space will do)
+> >   2. Boot the just installed system
+> >   3. In this first boot you'll meet the firstboot script, which
+> >      will do some setup and (depending on your answers) it will
+> >      reboot the machine
+> >   4. During that first reboot the system hangs while terminating
+> >      all processes:
+> >
+> >         Sending all processes the TERM signal...
+> >
+> >      It's when the soft lockup above happens. And yes, I managed
+> >      to get this with latest upstream kernel (HEAD fa8218def1b1)
+> >
+> > I'm reproducing it on a VM, but the first report was on bare-metal.
+> >
+> > This is what is happening:
+> >
+> >   1. audit_log_start() is called
+> >   2. As we have SKBs waiting in audit_skb_queue and all conditions
+> >      evaluate to true, we sleep in wait_for_auditd()
+> >   3. Go to 2, until sleep_time gets negative and audit_log_start()
+> >      just busy-waits
+> >
+> > Now, *why* this is happening is a mistery to me. I tried debugging
+> > it, but all I could find is that at some point the kauditd thread
+> > never wakes up after having called schedule(). I even tried waking
+> > it up before calling wait_for_auditd(), but it didn't.
+> 
+> We run into the same problem in rhel6 kernel.
+> 
+> "readahead-collector" uses audit interface and sometimes stuck in 'stopped' state.
 
-Kevin
+Yes, please also see:
+
+ http://marc.info/?l=linux-kernel&m=137818375024600&w=2
+
+> After commit 829199197a430dade2519d54f5545c4a094393b8
+> (which was backported by RH into their kernel)
+> audit emiters will block forever if userspace daemon cannot handle backlog.
+> That commit just breaks timeout condition, after timeout waiting loop turns
+> into busy loop until deamon dies or returns back to work.
+> 
+> this trivial patch should fix that problem
+> 
+> --- a/kernel/audit.c
+> +++ b/kernel/audit.c
+> @@ -1215,9 +1215,10 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
+> 
+>                          sleep_time = timeout_start + audit_backlog_wait_time -
+>                                          jiffies;
+> -                       if ((long)sleep_time > 0)
+> +                       if ((long)sleep_time > 0) {
+>                                  wait_for_auditd(sleep_time);
+> -                       continue;
+> +                               continue;
+> +                       }
+>                  }
+
+
+Chuck Anderson posted a similar fix:
+
+ http://marc.info/?l=linux-kernel&m=137817994623832&w=2
+
+I still get a hang for around a minute with Chuck's fix, I believe I'll
+get the same thing with yours.
