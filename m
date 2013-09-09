@@ -1,136 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755055Ab3IIPaD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 11:30:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27981 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754661Ab3IIPaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 11:30:00 -0400
-Date: Mon, 9 Sep 2013 11:29:53 -0400
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, oleg@redhat.com, eparis@redhat.com,
-        akpm@linux-foundation.org, rgb@redhat.com
-Subject: Re: [RFC] audit: avoid soft lockup in audit_log_start()
-Message-ID: <20130909112953.10ac2e28@redhat.com>
-In-Reply-To: <522DE6F2.50607@openvz.org>
-References: <20130828182114.6b67ea90@redhat.com>
-	<522DDBED.2020505@openvz.org>
-	<20130909105443.72e525cb@redhat.com>
-	<522DE6F2.50607@openvz.org>
-Organization: Red Hat
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754342Ab3IIP3o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 11:29:44 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28335 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754231Ab3IIP0q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 11:26:46 -0400
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=9AhsZS3F4UEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=oifTI6OnsvIA:10 a=VwQbUJbxAAAA:8 a=ILSa-1RNdHgTr9NWcJsA:9 a=jeBq3FmKZ4MA:10 a=Zh68SRI7RUMA:10 a=g9nnz0wX_P2DqB7O:21 a=fHj4w-rigW9gPsGb:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130909143536.507282575@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Mon, 09 Sep 2013 10:35:31 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>
+Subject: [PATCH RT 14/16] hwlat-detector: Use thread instead of stop machine
+References: <20130909143517.641735717@goodmis.org>
+Content-Disposition: inline; filename=0014-hwlat-detector-Use-thread-instead-of-stop-machine.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 09 Sep 2013 19:19:14 +0400
-Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
+From: Steven Rostedt <rostedt@goodmis.org>
 
-> Luiz Capitulino wrote:
-> > On Mon, 09 Sep 2013 18:32:13 +0400
-> > Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
-> >
-> >> Luiz Capitulino wrote:
-> >>> I'm getting the following soft lockup:
-> >>>
-> >>> CPU: 6 PID: 2278 Comm: killall5 Tainted: GF            3.11.0-rc7+ #1
-> >>> Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> >>>    0000000000000099 ffff88011fd83de8 ffffffff815324df 0000000000002800
-> >>>    ffffffff817d48f9 ffff88011fd83e68 ffffffff8152e669 ffff88011fd83e68
-> >>>    ffffffff00000008 ffff88011fd83e78 ffff88011fd83e18 0000004081dac040
-> >>> Call Trace:
-> >>>    <IRQ>    [<ffffffff815324df>] dump_stack+0x46/0x58
-> >>>    [<ffffffff8152e669>] panic+0xbb/0x1c4
-> >>>    [<ffffffff810d03c3>] watchdog_timer_fn+0x163/0x170
-> >>>    [<ffffffff8106c691>] __run_hrtimer+0x81/0x1c0
-> >>>    [<ffffffff810d0260>] ? watchdog+0x30/0x30
-> >>>    [<ffffffff8106cea7>] hrtimer_interrupt+0x107/0x240
-> >>>    [<ffffffff8102f61b>] local_apic_timer_interrupt+0x3b/0x60
-> >>>    [<ffffffff81542465>] smp_apic_timer_interrupt+0x45/0x60
-> >>>    [<ffffffff8154124a>] apic_timer_interrupt+0x6a/0x70
-> >>>    <EOI>    [<ffffffff810c2f5f>] ? audit_log_start+0xbf/0x430
-> >>>    [<ffffffff810c2fe7>] ? audit_log_start+0x147/0x430
-> >>>    [<ffffffff81079030>] ? try_to_wake_up+0x2a0/0x2a0
-> >>>    [<ffffffff810c86be>] audit_log_exit+0x6ae/0xc30
-> >>>    [<ffffffff81188662>] ? __alloc_fd+0x42/0x100
-> >>>    [<ffffffff810c98e7>] __audit_syscall_exit+0x257/0x2b0
-> >>>    [<ffffffff81540794>] sysret_audit+0x17/0x21
-> >>>
-> >>> The reproducer is somewhat unusual:
-> >>>
-> >>>    1. Install RHEL6.5 (maybe a similar older user-space will do)
-> >>>    2. Boot the just installed system
-> >>>    3. In this first boot you'll meet the firstboot script, which
-> >>>       will do some setup and (depending on your answers) it will
-> >>>       reboot the machine
-> >>>    4. During that first reboot the system hangs while terminating
-> >>>       all processes:
-> >>>
-> >>>          Sending all processes the TERM signal...
-> >>>
-> >>>       It's when the soft lockup above happens. And yes, I managed
-> >>>       to get this with latest upstream kernel (HEAD fa8218def1b1)
-> >>>
-> >>> I'm reproducing it on a VM, but the first report was on bare-metal.
-> >>>
-> >>> This is what is happening:
-> >>>
-> >>>    1. audit_log_start() is called
-> >>>    2. As we have SKBs waiting in audit_skb_queue and all conditions
-> >>>       evaluate to true, we sleep in wait_for_auditd()
-> >>>    3. Go to 2, until sleep_time gets negative and audit_log_start()
-> >>>       just busy-waits
-> >>>
-> >>> Now, *why* this is happening is a mistery to me. I tried debugging
-> >>> it, but all I could find is that at some point the kauditd thread
-> >>> never wakes up after having called schedule(). I even tried waking
-> >>> it up before calling wait_for_auditd(), but it didn't.
-> >>
-> >> We run into the same problem in rhel6 kernel.
-> >>
-> >> "readahead-collector" uses audit interface and sometimes stuck in 'stopped' state.
-> >
-> > Yes, please also see:
-> >
-> >   http://marc.info/?l=linux-kernel&m=137818375024600&w=2
-> >
-> >> After commit 829199197a430dade2519d54f5545c4a094393b8
-> >> (which was backported by RH into their kernel)
-> >> audit emiters will block forever if userspace daemon cannot handle backlog.
-> >> That commit just breaks timeout condition, after timeout waiting loop turns
-> >> into busy loop until deamon dies or returns back to work.
-> >>
-> >> this trivial patch should fix that problem
-> >>
-> >> --- a/kernel/audit.c
-> >> +++ b/kernel/audit.c
-> >> @@ -1215,9 +1215,10 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
-> >>
-> >>                           sleep_time = timeout_start + audit_backlog_wait_time -
-> >>                                           jiffies;
-> >> -                       if ((long)sleep_time>  0)
-> >> +                       if ((long)sleep_time>  0) {
-> >>                                   wait_for_auditd(sleep_time);
-> >> -                       continue;
-> >> +                               continue;
-> >> +                       }
-> >>                   }
-> >
-> >
-> > Chuck Anderson posted a similar fix:
-> >
-> >   http://marc.info/?l=linux-kernel&m=137817994623832&w=2
-> >
-> > I still get a hang for around a minute with Chuck's fix, I believe I'll
-> > get the same thing with yours.
-> 
-> Yep, this is normal behaviour -- default audit_backlog_wait_time is 60 seconds.
+There's no reason to use stop machine to search for hardware latency.
+Simply disabling interrupts while running the loop will do enough to
+check if something comes in that wasn't disabled by interrupts being
+off, which is exactly what stop machine does.
 
-Yes, I know that's the cause but I don't call it normal behavior to
-be unable to use my system during 60 seconds.
+Instead of using stop machine, just have the thread disable interrupts
+while it checks for hardware latency.
 
-> But this logic is really strange, I don't see any interface for tuning that timeout
-> and seems like kernel set it to zero after first disaster and never recovers it back.
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/misc/hwlat_detector.c |   59 +++++++++++++++++------------------------
+ 1 file changed, 25 insertions(+), 34 deletions(-)
+
+diff --git a/drivers/misc/hwlat_detector.c b/drivers/misc/hwlat_detector.c
+index 13443e9..6f61d5f 100644
+--- a/drivers/misc/hwlat_detector.c
++++ b/drivers/misc/hwlat_detector.c
+@@ -41,7 +41,6 @@
+ #include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/ring_buffer.h>
+-#include <linux/stop_machine.h>
+ #include <linux/time.h>
+ #include <linux/hrtimer.h>
+ #include <linux/kthread.h>
+@@ -107,7 +106,6 @@ struct data;					/* Global state */
+ /* Sampling functions */
+ static int __buffer_add_sample(struct sample *sample);
+ static struct sample *buffer_get_sample(struct sample *sample);
+-static int get_sample(void *unused);
+ 
+ /* Threading and state */
+ static int kthread_fn(void *unused);
+@@ -149,7 +147,7 @@ struct sample {
+ 	unsigned long   lost;
+ };
+ 
+-/* keep the global state somewhere. Mostly used under stop_machine. */
++/* keep the global state somewhere. */
+ static struct data {
+ 
+ 	struct mutex lock;		/* protect changes */
+@@ -172,7 +170,7 @@ static struct data {
+  * @sample: The new latency sample value
+  *
+  * This receives a new latency sample and records it in a global ring buffer.
+- * No additional locking is used in this case - suited for stop_machine use.
++ * No additional locking is used in this case.
+  */
+ static int __buffer_add_sample(struct sample *sample)
+ {
+@@ -229,18 +227,17 @@ static struct sample *buffer_get_sample(struct sample *sample)
+ #endif
+ /**
+  * get_sample - sample the CPU TSC and look for likely hardware latencies
+- * @unused: This is not used but is a part of the stop_machine API
+  *
+  * Used to repeatedly capture the CPU TSC (or similar), looking for potential
+- * hardware-induced latency. Called under stop_machine, with data.lock held.
++ * hardware-induced latency. Called with interrupts disabled and with data.lock held.
+  */
+-static int get_sample(void *unused)
++static int get_sample(void)
+ {
+ 	time_type start, t1, t2, last_t2;
+ 	s64 diff, total = 0;
+ 	u64 sample = 0;
+ 	u64 outer_sample = 0;
+-	int ret = 1;
++	int ret = -1;
+ 
+ 	init_time(last_t2, 0);
+ 	start = time_get(); /* start timestamp */
+@@ -279,10 +276,14 @@ static int get_sample(void *unused)
+ 
+ 	} while (total <= data.sample_width);
+ 
++	ret = 0;
++
+ 	/* If we exceed the threshold value, we have found a hardware latency */
+ 	if (sample > data.threshold || outer_sample > data.threshold) {
+ 		struct sample s;
+ 
++		ret = 1;
++
+ 		data.count++;
+ 		s.seqnum = data.count;
+ 		s.duration = sample;
+@@ -295,7 +296,6 @@ static int get_sample(void *unused)
+ 			data.max_sample = sample;
+ 	}
+ 
+-	ret = 0;
+ out:
+ 	return ret;
+ }
+@@ -305,32 +305,30 @@ out:
+  * @unused: A required part of the kthread API.
+  *
+  * Used to periodically sample the CPU TSC via a call to get_sample. We
+- * use stop_machine, whith does (intentionally) introduce latency since we
++ * disable interrupts, which does (intentionally) introduce latency since we
+  * need to ensure nothing else might be running (and thus pre-empting).
+  * Obviously this should never be used in production environments.
+  *
+- * stop_machine will schedule us typically only on CPU0 which is fine for
+- * almost every real-world hardware latency situation - but we might later
+- * generalize this if we find there are any actualy systems with alternate
+- * SMI delivery or other non CPU0 hardware latencies.
++ * Currently this runs on which ever CPU it was scheduled on, but most
++ * real-worald hardware latency situations occur across several CPUs,
++ * but we might later generalize this if we find there are any actualy
++ * systems with alternate SMI delivery or other hardware latencies.
+  */
+ static int kthread_fn(void *unused)
+ {
+-	int err = 0;
+-	u64 interval = 0;
++	int ret;
++	u64 interval;
+ 
+ 	while (!kthread_should_stop()) {
+ 
+ 		mutex_lock(&data.lock);
+ 
+-		err = stop_machine(get_sample, unused, 0);
+-		if (err) {
+-			/* Houston, we have a problem */
+-			mutex_unlock(&data.lock);
+-			goto err_out;
+-		}
++		local_irq_disable();
++		ret = get_sample();
++		local_irq_enable();
+ 
+-		wake_up(&data.wq); /* wake up reader(s) */
++		if (ret > 0)
++			wake_up(&data.wq); /* wake up reader(s) */
+ 
+ 		interval = data.sample_window - data.sample_width;
+ 		do_div(interval, USEC_PER_MSEC); /* modifies interval value */
+@@ -338,15 +336,10 @@ static int kthread_fn(void *unused)
+ 		mutex_unlock(&data.lock);
+ 
+ 		if (msleep_interruptible(interval))
+-			goto out;
++			break;
+ 	}
+-		goto out;
+-err_out:
+-	printk(KERN_ERR BANNER "could not call stop_machine, disabling\n");
+-	enabled = 0;
+-out:
+-	return err;
+ 
++	return 0;
+ }
+ 
+ /**
+@@ -442,8 +435,7 @@ out:
+  * This function provides a generic read implementation for the global state
+  * "data" structure debugfs filesystem entries. It would be nice to use
+  * simple_attr_read directly, but we need to make sure that the data.lock
+- * spinlock is held during the actual read (even though we likely won't ever
+- * actually race here as the updater runs under a stop_machine context).
++ * is held during the actual read.
+  */
+ static ssize_t simple_data_read(struct file *filp, char __user *ubuf,
+ 				size_t cnt, loff_t *ppos, const u64 *entry)
+@@ -478,8 +470,7 @@ static ssize_t simple_data_read(struct file *filp, char __user *ubuf,
+  * This function provides a generic write implementation for the global state
+  * "data" structure debugfs filesystem entries. It would be nice to use
+  * simple_attr_write directly, but we need to make sure that the data.lock
+- * spinlock is held during the actual write (even though we likely won't ever
+- * actually race here as the updater runs under a stop_machine context).
++ * is held during the actual write.
+  */
+ static ssize_t simple_data_write(struct file *filp, const char __user *ubuf,
+ 				 size_t cnt, loff_t *ppos, u64 *entry)
+-- 
+1.7.10.4
+
+
