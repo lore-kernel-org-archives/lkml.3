@@ -1,178 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996Ab3IINf3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:35:29 -0400
-Received: from mga03.intel.com ([143.182.124.21]:57524 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753608Ab3IINeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 09:34:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,866,1371106800"; 
-   d="scan'208";a="357858167"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-i2c@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lv Zheng <lv.zheng@intel.com>, Aaron Lu <aaron.lu@intel.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH RESEND 1/2] i2c: prepare runtime PM support for I2C client devices
-Date: Mon,  9 Sep 2013 16:34:38 +0300
-Message-Id: <1378733679-19500-2-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1378733679-19500-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1378733679-19500-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S1754543Ab3IINek (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:34:40 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11424 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752227Ab3IIN0s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 09:26:48 -0400
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=dvIvxJ4_SCsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=1GToGMD1ptoA:10 a=VwQbUJbxAAAA:8 a=VcUiGOdTKjBeXruxuyoA:9 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130909124759.956936932@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Mon, 09 Sep 2013 08:47:52 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>
+Subject: [PATCH RT 07/16] kernel/cpu: fix cpu down problem if kthreads cpu is going down
+References: <20130909124745.590777496@goodmis.org>
+Content-Disposition: inline; filename=0007-kernel-cpu-fix-cpu-down-problem-if-kthread-s-cpu-is-.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Aaron Lu <aaron.lu@intel.com>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-This patch adds runtime PM support for the I2C bus in a similar way that
-has been done for PCI bus already. This means that the I2C bus core
-prepares runtime PM for a client device just before a driver is about to be
-bound to it. Devices that are not bound to any driver are not prepared for
-runtime PM.
+If kthread is pinned to CPUx and CPUx is going down then we get into
+trouble:
+- first the unplug thread is created
+- it will set itself to hp->unplug. As a result, every task that is
+  going to take a lock, has to leave the CPU.
+- the CPU_DOWN_PREPARE notifier are started. The worker thread will
+  start a new process for the "high priority worker".
+  Now kthread would like to take a lock but since it can't leave the CPU
+  it will never complete its task.
 
-In order to take advantage of this runtime PM support, the client device
-driver needs drop the device runtime PM reference count by calling
-pm_runtime_put() in its ->probe() callback and possibly implement rest of
-the runtime PM callbacks.
+We could fire the unplug thread after the notifier but then the cpu is
+no longer marked "online" and the unplug thread will run on CPU0 which
+was fixed before :)
 
-However, this does not yet make runtime PM happen for the device, it has to
-be explicitly allowed from userspace per each I2C client device. The
-reason for this is that things like HID over I2C might not work as smoothly
-when runtime PM is active. So we leave it to the user to balance between
-performance and power efficiency.
+So instead the unplug thread is started and kept waiting until the
+notfier complete their work.
 
-User can allow runtime PM for the client device by running:
-
-	# echo auto > /sys/bus/i2c/devices/<device>/power/control
-
-and it can be forbidden again by:
-
-	# echo on > /sys/bus/i2c/devices/<device>/power/control
-
-Status of the device can be monitored by reading files under the device
-power directory.
-
-If the driver doesn't support runtime PM (like most of the existing I2C
-client drivers), the device in question is regarded as being runtime PM
-active and powered on.
-
-The patch adds also runtime PM support for the adapter device because it is
-needed to be able to runtime power manage the I2C controller device. The
-adapter device is handled along with the I2C controller device (it uses
-pm_runtime_no_callbacks()).
-
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- drivers/i2c/i2c-core.c | 48 +++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 47 insertions(+), 1 deletion(-)
+ kernel/cpu.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index 3d44292..8fad5ac 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -254,11 +254,34 @@ static int i2c_device_probe(struct device *dev)
- 					client->flags & I2C_CLIENT_WAKE);
- 	dev_dbg(dev, "probe\n");
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 5ef0c31..f56a8ec 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -78,6 +78,7 @@ struct hotplug_pcp {
+ 	int refcount;
+ 	int grab_lock;
+ 	struct completion synced;
++	struct completion unplug_wait;
+ #ifdef CONFIG_PREEMPT_RT_FULL
+ 	spinlock_t lock;
+ #else
+@@ -175,6 +176,7 @@ static int sync_unplug_thread(void *data)
+ {
+ 	struct hotplug_pcp *hp = data;
  
-+	/* Make sure the adapter is active */
-+	pm_runtime_get_sync(&client->adapter->dev);
-+
-+	/*
-+	 * Enable runtime PM for the client device. If the client wants to
-+	 * participate on runtime PM it should call pm_runtime_put() in its
-+	 * probe() callback.
-+	 *
-+	 * User still needs to allow the PM runtime before it can actually
-+	 * happen.
-+	 */
-+	pm_runtime_forbid(&client->dev);
-+	pm_runtime_get_noresume(&client->dev);
-+	pm_runtime_set_active(&client->dev);
-+	pm_runtime_enable(&client->dev);
-+
- 	status = driver->probe(client, i2c_match_id(driver->id_table, client));
- 	if (status) {
- 		client->driver = NULL;
- 		i2c_set_clientdata(client, NULL);
-+
-+		pm_runtime_disable(&client->dev);
-+		pm_runtime_set_suspended(&client->dev);
-+		pm_runtime_put_noidle(&client->dev);
- 	}
-+
-+	pm_runtime_put(&client->adapter->dev);
-+
- 	return status;
++	wait_for_completion(&hp->unplug_wait);
+ 	preempt_disable();
+ 	hp->unplug = current;
+ 	wait_for_pinned_cpus(hp);
+@@ -240,6 +242,14 @@ static void __cpu_unplug_sync(struct hotplug_pcp *hp)
+ 	wait_for_completion(&hp->synced);
  }
  
-@@ -271,6 +294,8 @@ static int i2c_device_remove(struct device *dev)
- 	if (!client || !dev->driver)
- 		return 0;
- 
-+	pm_runtime_get_sync(&client->adapter->dev);
++static void __cpu_unplug_wait(unsigned int cpu)
++{
++	struct hotplug_pcp *hp = &per_cpu(hotplug_pcp, cpu);
 +
- 	driver = to_i2c_driver(dev->driver);
- 	if (driver->remove) {
- 		dev_dbg(dev, "remove\n");
-@@ -283,6 +308,13 @@ static int i2c_device_remove(struct device *dev)
- 		client->driver = NULL;
- 		i2c_set_clientdata(client, NULL);
- 	}
++	complete(&hp->unplug_wait);
++	wait_for_completion(&hp->synced);
++}
 +
-+	/* Undo the runtime PM done in i2c_probe() */
-+	pm_runtime_disable(&client->dev);
-+	pm_runtime_set_suspended(&client->dev);
-+	pm_runtime_put_noidle(&client->dev);
-+
-+	pm_runtime_put(&client->adapter->dev);
- 	return status;
- }
+ /*
+  * Start the sync_unplug_thread on the target cpu and wait for it to
+  * complete.
+@@ -263,6 +273,7 @@ static int cpu_unplug_begin(unsigned int cpu)
+ 	tell_sched_cpu_down_begin(cpu);
  
-@@ -294,8 +326,11 @@ static void i2c_device_shutdown(struct device *dev)
- 	if (!client || !dev->driver)
- 		return;
- 	driver = to_i2c_driver(dev->driver);
--	if (driver->shutdown)
-+	if (driver->shutdown) {
-+		pm_runtime_get_sync(&client->adapter->dev);
- 		driver->shutdown(client);
-+		pm_runtime_put(&client->adapter->dev);
-+	}
- }
+ 	init_completion(&hp->synced);
++	init_completion(&hp->unplug_wait);
  
- #ifdef CONFIG_PM_SLEEP
-@@ -1263,6 +1298,15 @@ exit_recovery:
- 	bus_for_each_drv(&i2c_bus_type, NULL, adap, __process_new_adapter);
- 	mutex_unlock(&core_lock);
- 
-+	/*
-+	 * Make sure the adapter runtime PM follows the parent device (the
-+	 * host controller) so that we can suspend it once there aren't any
-+	 * active clients anymore.
-+	 */
-+	pm_runtime_set_active(&adap->dev);
-+	pm_runtime_no_callbacks(&adap->dev);
-+	pm_runtime_enable(&adap->dev);
-+
+ 	hp->sync_tsk = kthread_create(sync_unplug_thread, hp, "sync_unplug/%d", cpu);
+ 	if (IS_ERR(hp->sync_tsk)) {
+@@ -278,8 +289,7 @@ static int cpu_unplug_begin(unsigned int cpu)
+ 	 * wait for tasks that are going to enter these sections and
+ 	 * we must not have them block.
+ 	 */
+-	__cpu_unplug_sync(hp);
+-
++	wake_up_process(hp->sync_tsk);
  	return 0;
+ }
  
- out_list:
-@@ -1427,6 +1471,8 @@ void i2c_del_adapter(struct i2c_adapter *adap)
- 		return;
+@@ -545,6 +555,8 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 		goto out_release;
  	}
  
-+	pm_runtime_disable(&adap->dev);
++	__cpu_unplug_wait(cpu);
 +
- 	/* Tell drivers about this removal */
- 	mutex_lock(&core_lock);
- 	bus_for_each_drv(&i2c_bus_type, NULL, adap,
+ 	/* Notifiers are done. Don't let any more tasks pin this CPU. */
+ 	cpu_unplug_sync(cpu);
+ 
 -- 
-1.8.4.rc2
+1.7.10.4
+
 
