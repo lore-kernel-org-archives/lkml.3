@@ -1,93 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754367Ab3IIPjJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 11:39:09 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28878 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751731Ab3IIPjH (ORCPT
+	id S1754097Ab3IIPk4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 11:40:56 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50017 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751196Ab3IIPky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 11:39:07 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=JDfofD-L5ZgA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5p3hctMY2UsA:10 a=uwYOJEjIlVa52CM69hYA:9 a=CjuIK1q_8ugA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Mon, 9 Sep 2013 11:39:05 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        sbw@mit.edu
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
- section?
-Message-ID: <20130909113905.0c7d65d7@gandalf.local.home>
-In-Reply-To: <20130909112057.35403440@gandalf.local.home>
-References: <20130906174117.GU3966@linux.vnet.ibm.com>
-	<20130906185927.GE2706@somewhere>
-	<20130909105347.GK31370@twins.programming.kicks-ass.net>
-	<20130909121329.GA16280@somewhere>
-	<20130909083926.3eceebef@gandalf.local.home>
-	<20130909124547.GB16280@somewhere>
-	<20130909085504.2ddd7e69@gandalf.local.home>
-	<20130909130851.GC16280@somewhere>
-	<20130909092142.05780991@gandalf.local.home>
-	<20130909092917.0c99b71a@gandalf.local.home>
-	<20130909144037.GH16280@somewhere>
-	<20130909112057.35403440@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Sep 2013 11:40:54 -0400
+Date: Mon, 9 Sep 2013 16:40:28 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-i2c@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lv Zheng <lv.zheng@intel.com>, Aaron Lu <aaron.lu@intel.com>,
+        linux-arm-kernel@lists.infradead.org
+Message-ID: <20130909154028.GP29403@sirena.org.uk>
+References: <1378733679-19500-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1378733679-19500-2-git-send-email-mika.westerberg@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gAsw9DVneI/FTEJd"
+Content-Disposition: inline
+In-Reply-To: <1378733679-19500-2-git-send-email-mika.westerberg@linux.intel.com>
+X-Cookie: Your present plans will be successful.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH RESEND 1/2] i2c: prepare runtime PM support for I2C
+ client devices
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Sep 2013 11:20:57 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
 
-> > It's a bit the same with spinlocks. spinlocks aren't a task synchronization
-> > but a CPU synchronization. It's low level. Of course a task can't sleep
-> > with a spinlock held (not talking about -rt) so it could be defined as a per
-> > task property. But it's just not relevant.
-> 
-> Again, this is where we get into trouble. No it is not a CPU
-> synchronization. We only disable preemption because of implementation
-> details. Not the concept. A spin lock is only used to protect critical
-> data, and not to disable preemption. Those that use it to disable
-> preemption has caused us issues in -rt.
-> 
-> This is again the problem with confusing implementation with concepts.
-> -rt proved that a spin lock has nothing to do with cpu state, nor
-> preemption.
-> 
+--gAsw9DVneI/FTEJd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Let me expand on this. Note, using a implementation detail from a item
-is known as a side effect, and is frowned on when doing so.
+On Mon, Sep 09, 2013 at 04:34:38PM +0300, Mika Westerberg wrote:
 
-In fact, when spin_locks() were created, it was just to point out where
-critical sections are that prevent more than one task from accessing
-some data at the same time. This was needed for multiple CPUs. This was
-done before CONFIG_PREEMPT was even created.
+> +	/*
+> +	 * Enable runtime PM for the client device. If the client wants to
+> +	 * participate on runtime PM it should call pm_runtime_put() in its
+> +	 * probe() callback.
+> +	 *
+> +	 * User still needs to allow the PM runtime before it can actually
+> +	 * happen.
+> +	 */
+> +	pm_runtime_forbid(&client->dev);
+> +	pm_runtime_get_noresume(&client->dev);
+> +	pm_runtime_set_active(&client->dev);
+> +	pm_runtime_enable(&client->dev);
 
-Then Robert Love built on that concept where these same locations
-had a characteristic that showed where two tasks can not access the
-same data, and used that as preemption points. Points where we can not
-be preempted, and let the kernel become preemptible.
+How is this going to interact with client devices which are already
+enabling runtime PM for themselves, and what are the advantages of doing
+this over having the client device enable runtime PM for itself (given
+that the client still needs an explicit put() adding)?
 
-Then -rt built further on the concept, and made these locations able to
-sleep by removing the areas that could not sleep before (by threading
-IRQs).
+Given that it's relatively common for devices to have both I2C and SPI
+control it seems like it'd be sensible to keep the policy common between
+the two buses to simplify driver implementation.
 
-Again, the concept of a spin lock is not about the CPU or even the
-task. It is about accessing some data in a safe way. When we stick to
-concepts, we can expand on them as we did with CONFIG_PREEMPT and
-CONFIG_PREEMPT_RT. It's when people use side effects (disabled
-preemption) that breaks this expansion (like those that use spin_locks
-and access per_cpu data).
+--gAsw9DVneI/FTEJd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- Steve
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSLevpAAoJELSic+t+oim9s3IP/iZpmbUH+6uxtJTlHnrHrQJW
+HqP9yX7CyAfxdna0s/v5Oy8jqZzpHrBPSuBf/6NQcex94W8d7ZCM2a66rOO1Qpl+
+BgBHTG4Ttl9hzqjiAwkebG25fPUiRyacF2Btwx6kTeibKi2kvxtg8c388kN8gO/5
+RLJg2/t9daiI/jeaJmtDlCaPlO1wvHfJl/CYw8OoikewvGzaP3bdNE/5mYWmNHom
+CI9IE/NeDaP82Q5FCV260OMG2sEFo9tPgBRe0eVx9piUsQ126ZnBxLxnoBFNwWau
+aONZrMNeaqwaZNCakGslCmyY7w8JRPvUlJ6YmH3cor4AEs5EfZaCGHMcsus1i0Zh
+1bPTYFJNWAkZD0ZE8/4XIa9Omqdf9M8Sl4ZezLbWY5VIUc9qxVasxHdfJEBOLTui
+kJGPRaHueaKyNVKFEAb4LFzXNATRR9WYAS17kwrGIBF6Y2xem88g27lyHB85BjzE
+hs1Dl1SRcIFKkvZLT31W8JFZcMZt190g7FNA+5wN81eIjEmde4CP0PVIAIDSaN2e
+i7ADjXa0U9Ro2QN8+zJLRNvXYzq+TpZrOYXiaiawea3PDnfaFtafyhw2QBD+qHJq
+us10IO56AgPQDyLCRfB1mnYRF3/d+MwLqBMcwjmqPl8RjSu1dAv8jg7CYFhU8F7z
+T/TGDS2HJJck+nQ/P7QQ
+=rXnG
+-----END PGP SIGNATURE-----
+
+--gAsw9DVneI/FTEJd--
