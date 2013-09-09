@@ -1,120 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908Ab3IIP2u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 11:28:50 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28335 "EHLO
+	id S1754868Ab3IIP2t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 11:28:49 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31424 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754272Ab3IIP0r (ORCPT
+	with ESMTP id S1754282Ab3IIP0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Sep 2013 11:26:47 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=0R1hYCFCeCQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=0Irq6MuVi30A:10 a=VwQbUJbxAAAA:8 a=BzcpA60qLsQmd2d8w4QA:9 a=jeBq3FmKZ4MA:10 a=oSyOWUg5ok3-PGW_:21 a=3QSgYePpgmxBa_t1:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=5h2nd_9qxKYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=_hvWx0eUMykA:10 a=VwQbUJbxAAAA:8 a=1J0JeIo9MnkITmv3CngA:9 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130909143535.749287955@goodmis.org>
+Message-Id: <20130909143535.590582560@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Sep 2013 10:35:27 -0400
+Date: Mon, 09 Sep 2013 10:35:26 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>
-Subject: [PATCH RT 10/16] rt,ntp: Move call to schedule_delayed_work() to helper thread
+        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>,
+        Joakim Hernberg <jbh@alchemy.lu>
+Subject: [PATCH RT 09/16] drm/i915: drop trace_i915_gem_ring_dispatch on rt
 References: <20130909143517.641735717@goodmis.org>
-Content-Disposition: inline; filename=0010-rt-ntp-Move-call-to-schedule_delayed_work-to-helper-.patch
+Content-Disposition: inline; filename=0009-drm-i915-drop-trace_i915_gem_ring_dispatch-on-rt.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-The ntp code for notify_cmos_timer() is called from a hard interrupt
-context. schedule_delayed_work() under PREEMPT_RT_FULL calls spinlocks
-that have been converted to mutexes, thus calling schedule_delayed_work()
-from interrupt is not safe.
+This tracepoint is responsible for:
 
-Add a helper thread that does the call to schedule_delayed_work and wake
-up that thread instead of calling schedule_delayed_work() directly.
-This is only for CONFIG_PREEMPT_RT_FULL, otherwise the code still calls
-schedule_delayed_work() directly in irq context.
+|[<814cc358>] __schedule_bug+0x4d/0x59
+|[<814d24cc>] __schedule+0x88c/0x930
+|[<814d3b90>] ? _raw_spin_unlock_irqrestore+0x40/0x50
+|[<814d3b95>] ? _raw_spin_unlock_irqrestore+0x45/0x50
+|[<810b57b5>] ? task_blocks_on_rt_mutex+0x1f5/0x250
+|[<814d27d9>] schedule+0x29/0x70
+|[<814d3423>] rt_spin_lock_slowlock+0x15b/0x278
+|[<814d3786>] rt_spin_lock+0x26/0x30
+|[<a00dced9>] gen6_gt_force_wake_get+0x29/0x60 [i915]
+|[<a00e183f>] gen6_ring_get_irq+0x5f/0x100 [i915]
+|[<a00b2a33>] ftrace_raw_event_i915_gem_ring_dispatch+0xe3/0x100 [i915]
+|[<a00ac1b3>] i915_gem_do_execbuffer.isra.13+0xbd3/0x1430 [i915]
+|[<810f8943>] ? trace_buffer_unlock_commit+0x43/0x60
+|[<8113e8d2>] ? ftrace_raw_event_kmem_alloc+0xd2/0x180
+|[<8101d063>] ? native_sched_clock+0x13/0x80
+|[<a00acf29>] i915_gem_execbuffer2+0x99/0x280 [i915]
+|[<a00114a3>] drm_ioctl+0x4c3/0x570 [drm]
+|[<8101d0d9>] ? sched_clock+0x9/0x10
+|[<a00ace90>] ? i915_gem_execbuffer+0x480/0x480 [i915]
+|[<810f1c18>] ? rb_commit+0x68/0xa0
+|[<810f1c6c>] ? ring_buffer_unlock_commit+0x1c/0xa0
+|[<81197467>] do_vfs_ioctl+0x97/0x540
+|[<81021318>] ? ftrace_raw_event_sys_enter+0xd8/0x130
+|[<811979a1>] sys_ioctl+0x91/0xb0
+|[<814db931>] tracesys+0xe1/0xe6
 
-Note: There's a few places in the kernel that do this. Perhaps the RT
-code should have a dedicated thread that does the checks. Just register
-a notifier on boot up for your check and wake up the thread when
-needed. This will be a todo.
+Chris Wilson does not like to move i915_trace_irq_get() out of the macro
+
+|No. This enables the IRQ, as well as making a number of
+|very expensively serialised read, unconditionally.
+
+so it is gone now on RT.
 
 Cc: stable-rt@vger.kernel.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Joakim Hernberg <jbh@alchemy.lu>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- kernel/time/ntp.c |   42 ++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 42 insertions(+)
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-index 8b3a185..fa0c206 100644
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -10,6 +10,7 @@
- #include <linux/workqueue.h>
- #include <linux/hrtimer.h>
- #include <linux/jiffies.h>
-+#include <linux/kthread.h>
- #include <linux/math64.h>
- #include <linux/timex.h>
- #include <linux/time.h>
-@@ -494,11 +495,52 @@ static void sync_cmos_clock(struct work_struct *work)
- 	schedule_delayed_work(&sync_cmos_work, timespec_to_jiffies(&next));
- }
+diff --git a/drivers/gpu/drm/i915/i915_gem_execbuffer.c b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+index 1ca53ff..4d04a9f 100644
+--- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
++++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+@@ -1189,7 +1189,9 @@ i915_gem_do_execbuffer(struct drm_device *dev, void *data,
+ 		}
+ 	}
  
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+/*
-+ * RT can not call schedule_delayed_work from real interrupt context.
-+ * Need to make a thread to do the real work.
-+ */
-+static struct task_struct *cmos_delay_thread;
-+static bool do_cmos_delay;
-+
-+static int run_cmos_delay(void *ignore)
-+{
-+	while (!kthread_should_stop()) {
-+		set_current_state(TASK_INTERRUPTIBLE);
-+		if (do_cmos_delay) {
-+			do_cmos_delay = false;
-+			schedule_delayed_work(&sync_cmos_work, 0);
-+		}
-+		schedule();
-+	}
-+	__set_current_state(TASK_RUNNING);
-+	return 0;
-+}
-+
-+static void notify_cmos_timer(void)
-+{
-+	if (!no_sync_cmos_clock) {
-+		do_cmos_delay = true;
-+		/* Make visible before waking up process */
-+		smp_wmb();
-+		wake_up_process(cmos_delay_thread);
-+	}
-+}
-+
-+static __init int create_cmos_delay_thread(void)
-+{
-+	cmos_delay_thread = kthread_run(run_cmos_delay, NULL, "kcmosdelayd");
-+	BUG_ON(!cmos_delay_thread);
-+	return 0;
-+}
-+early_initcall(create_cmos_delay_thread);
-+#else
- static void notify_cmos_timer(void)
- {
- 	if (!no_sync_cmos_clock)
- 		schedule_delayed_work(&sync_cmos_work, 0);
- }
-+#endif /* CONFIG_PREEMPT_RT_FULL */
++#ifndef CONFIG_PREEMPT_RT_BASE
+ 	trace_i915_gem_ring_dispatch(ring, seqno);
++#endif
  
- #else
- static inline void notify_cmos_timer(void) { }
+ 	exec_start = batch_obj->gtt_offset + args->batch_start_offset;
+ 	exec_len = args->batch_len;
 -- 
 1.7.10.4
 
