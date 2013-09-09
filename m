@@ -1,85 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754989Ab3IITrw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 15:47:52 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:49185 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255Ab3IITrv (ORCPT
+	id S1755342Ab3IITr7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 15:47:59 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:45081 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755181Ab3IITrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 15:47:51 -0400
-Date: Mon, 9 Sep 2013 16:47:45 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        ak@linux.intel.com, jolsa@redhat.com, namhyung.kim@lge.com,
-        dsahern@gmail.com
-Subject: Re: [PATCH v2 2/2] perf tools: add attr->mmap2 support
-Message-ID: <20130909192810.GA3825@infradead.org>
+	Mon, 9 Sep 2013 15:47:55 -0400
+Date: Mon, 9 Sep 2013 14:47:33 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bob Liu <bob.liu@oracle.com>, Mel Gorman <mgorman@suse.de>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Dave Hansen <dave.hansen@intel.com>, Minchan Kim <minchan@kernel.org>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>
+Subject: Re: [RFC PATCH 1/4] zbud: use page ref counter for zbud pages
+Message-ID: <20130909194733.GE4701@variantweb.net>
+References: <1377852176-30970-1-git-send-email-k.kozlowski@samsung.com>
+ <1377852176-30970-2-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1377079825-19057-3-git-send-email-eranian@google.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1377852176-30970-2-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090919-8236-0000-0000-0000019949B0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Aug 21, 2013 at 12:10:25PM +0200, Stephane Eranian escreveu:
-> This patch adds support for the new PERF_RECORD_MMAP2
-> record type exposed by the kernel. This is an extended
-> PERF_RECORD_MMAP record. It adds for each file-backed
-> mapping the device major, minor number and the inode
-> number and generation. This triplet uniquely identifies
-> the source of a file-backed mapping. It can be used to
-> detect identical virtual mappings between processes, for
-> instance.
+On Fri, Aug 30, 2013 at 10:42:53AM +0200, Krzysztof Kozlowski wrote:
+> Use page reference counter for zbud pages. The ref counter replaces
+> zbud_header.under_reclaim flag and ensures that zbud page won't be freed
+> when zbud_free() is called during reclaim. It allows implementation of
+> additional reclaim paths.
+
+I like this idea.
+
 > 
-> The patch will prefer MMAP2 over MMAP.
+> The page count is incremented when:
+>  - a handle is created and passed to zswap (in zbud_alloc()),
+>  - user-supplied eviction callback is called (in zbud_reclaim_page()).
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
+> Reviewed-by: Bob Liu <bob.liu@oracle.com>
+> ---
+>  mm/zbud.c |   97 +++++++++++++++++++++++++++++++++----------------------------
+>  1 file changed, 52 insertions(+), 45 deletions(-)
+> 
+> diff --git a/mm/zbud.c b/mm/zbud.c
+> index ad1e781..aa9a15c 100644
+> --- a/mm/zbud.c
+> +++ b/mm/zbud.c
+> @@ -109,7 +109,6 @@ struct zbud_header {
+>  	struct list_head lru;
+>  	unsigned int first_chunks;
+>  	unsigned int last_chunks;
+> -	bool under_reclaim;
+>  };
+> 
+>  /*****************
+> @@ -138,16 +137,9 @@ static struct zbud_header *init_zbud_page(struct page *page)
+>  	zhdr->last_chunks = 0;
+>  	INIT_LIST_HEAD(&zhdr->buddy);
+>  	INIT_LIST_HEAD(&zhdr->lru);
+> -	zhdr->under_reclaim = 0;
+>  	return zhdr;
+>  }
+> 
+> -/* Resets the struct page fields and frees the page */
+> -static void free_zbud_page(struct zbud_header *zhdr)
+> -{
+> -	__free_page(virt_to_page(zhdr));
+> -}
+> -
+>  /*
+>   * Encodes the handle of a particular buddy within a zbud page
+>   * Pool lock should be held as this function accesses first|last_chunks
+> @@ -188,6 +180,31 @@ static int num_free_chunks(struct zbud_header *zhdr)
+>  	return NCHUNKS - zhdr->first_chunks - zhdr->last_chunks - 1;
+>  }
+> 
+> +/*
+> + * Increases ref count for zbud page.
+> + */
+> +static void get_zbud_page(struct zbud_header *zhdr)
+> +{
+> +	get_page(virt_to_page(zhdr));
+> +}
+> +
+> +/*
+> + * Decreases ref count for zbud page and frees the page if it reaches 0
+> + * (no external references, e.g. handles).
+> + *
+> + * Returns 1 if page was freed and 0 otherwise.
+> + */
+> +static int put_zbud_page(struct zbud_header *zhdr)
+> +{
+> +	struct page *page = virt_to_page(zhdr);
+> +	if (put_page_testzero(page)) {
+> +		free_hot_cold_page(page, 0);
+> +		return 1;
+> +	}
+> +	return 0;
+> +}
+> +
+> +
+>  /*****************
+>   * API Functions
+>  *****************/
+> @@ -250,7 +267,7 @@ void zbud_destroy_pool(struct zbud_pool *pool)
+>  int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
+>  			unsigned long *handle)
+>  {
+> -	int chunks, i, freechunks;
+> +	int chunks, i;
 
-I noticed the kernel part is in, and I'm going to use MMAP2 on that new
-tool, so tried merging it, but:
+This change (make freechunks a block local variable) is unrelated to the
+patch description and should be its own patch.
 
-I fixed it up wrt another patch that makes machine__find_thread receive pid/tid
-but then 'perf test' complains about it, see below, trying to fix...
+>  	struct zbud_header *zhdr = NULL;
+>  	enum buddy bud;
+>  	struct page *page;
+> @@ -273,6 +290,7 @@ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
+>  				bud = FIRST;
+>  			else
+>  				bud = LAST;
+> +			get_zbud_page(zhdr);
+>  			goto found;
+>  		}
+>  	}
+> @@ -284,6 +302,10 @@ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
+>  		return -ENOMEM;
+>  	spin_lock(&pool->lock);
+>  	pool->pages_nr++;
+> +	/*
+> +	 * We will be using zhdr instead of page, so
+> +	 * don't increase the page count.
+> +	 */
+>  	zhdr = init_zbud_page(page);
+>  	bud = FIRST;
+> 
+> @@ -295,7 +317,7 @@ found:
+> 
+>  	if (zhdr->first_chunks == 0 || zhdr->last_chunks == 0) {
+>  		/* Add to unbuddied list */
+> -		freechunks = num_free_chunks(zhdr);
+> +		int freechunks = num_free_chunks(zhdr);
 
-- Arnaldo
+Same here.
 
+>  		list_add(&zhdr->buddy, &pool->unbuddied[freechunks]);
+>  	} else {
+>  		/* Add to buddied list */
+> @@ -326,7 +348,6 @@ found:
+>  void zbud_free(struct zbud_pool *pool, unsigned long handle)
+>  {
+>  	struct zbud_header *zhdr;
+> -	int freechunks;
 
-[root@sandy ~]# perf test -v 7
- 7: Validate PERF_RECORD_* events & perf_sample fields     :
---- start ---
-57503587100282 0 PERF_RECORD_SAMPLE
-57503587104415 0 PERF_RECORD_SAMPLE
-57503587106039 0 PERF_RECORD_SAMPLE
-57503587107362 0 PERF_RECORD_SAMPLE
-57503588263263 0 PERF_RECORD_COMM: sleep:1439
-6180457940383 -1728826693 PERF_RECORD_MMAP2 1439/1439: [0x400000(0x7000) @ 0 00:1d 311442 9016]: /usr/bin/sleep
-MMAP2 going backwards in time, prev=57503588263263, curr=6180457940383
-MMAP2 with unexpected cpu, expected 0, got -1728826693
-MMAP2 with unexpected pid, expected 1439, got 1701606191
-MMAP2 with unexpected tid, expected 1439, got 28773
-Unexpected perf_event->header.type 10!
-6180457940383 -1728754371 PERF_RECORD_MMAP2 1439/1439: [0x3b7e000000(0x223000) @ 0 00:1d 309186 9016]: /usr/lib64/ld-2.16.so
-MMAP2 with unexpected cpu, expected 0, got -1728754371
-MMAP2 with unexpected pid, expected 1439, got 1932408369
-MMAP2 with unexpected tid, expected 1439, got 111
-Unexpected perf_event->header.type 10!
-6180457940383 -1728699354 PERF_RECORD_MMAP2 1439/1439: [0x7fff2bdff000(0x1000) @ 0x7fff2bdff000 00:00 0 0]: [vdso]
-MMAP2 with unexpected cpu, expected 0, got -1728699354
-MMAP2 with unexpected pid, expected 1439, got 1935963739
-MMAP2 with unexpected tid, expected 1439, got 23919
-Unexpected perf_event->header.type 10!
-6180457940383 -1728433298 PERF_RECORD_MMAP2 1439/1439: [0x3b7e400000(0x3b8000) @ 0 00:1d 309187 9016]: /usr/lib64/libc-2.16.so
-MMAP2 with unexpected cpu, expected 0, got -1728433298
-MMAP2 with unexpected pid, expected 1439, got 909192754
-MMAP2 with unexpected tid, expected 1439, got 7303982
-Unexpected perf_event->header.type 10!
-57504589856948 0 PERF_RECORD_EXIT(1439:1439):(1439:1439)
-PERF_RECORD_MMAP for sleep missing!
-PERF_RECORD_MMAP for libc missing!
-PERF_RECORD_MMAP for ld missing!
-PERF_RECORD_MMAP for [vdso] missing!
----- end ----
-Validate PERF_RECORD_* events & perf_sample fields: FAILED!
-[root@sandy ~]#
+And here.
+
+> 
+>  	spin_lock(&pool->lock);
+>  	zhdr = handle_to_zbud_header(handle);
+> @@ -337,26 +358,19 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle)
+>  	else
+>  		zhdr->first_chunks = 0;
+> 
+> -	if (zhdr->under_reclaim) {
+> -		/* zbud page is under reclaim, reclaim will free */
+> -		spin_unlock(&pool->lock);
+> -		return;
+> -	}
+> -
+>  	/* Remove from existing buddy list */
+>  	list_del(&zhdr->buddy);
+> 
+>  	if (zhdr->first_chunks == 0 && zhdr->last_chunks == 0) {
+> -		/* zbud page is empty, free */
+>  		list_del(&zhdr->lru);
+> -		free_zbud_page(zhdr);
+>  		pool->pages_nr--;
+>  	} else {
+>  		/* Add to unbuddied list */
+> -		freechunks = num_free_chunks(zhdr);
+> +		int freechunks = num_free_chunks(zhdr);
+
+Last one.
+
+>  		list_add(&zhdr->buddy, &pool->unbuddied[freechunks]);
+>  	}
+> 
+> +	put_zbud_page(zhdr);
+>  	spin_unlock(&pool->lock);
+>  }
+> 
+> @@ -400,7 +414,7 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle)
+>   */
+>  int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
+>  {
+> -	int i, ret, freechunks;
+> +	int i, ret;
+>  	struct zbud_header *zhdr;
+>  	unsigned long first_handle = 0, last_handle = 0;
+> 
+> @@ -411,11 +425,24 @@ int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
+>  		return -EINVAL;
+>  	}
+>  	for (i = 0; i < retries; i++) {
+> +		if (list_empty(&pool->lru)) {
+> +			/*
+> +			 * LRU was emptied during evict calls in previous
+> +			 * iteration but put_zbud_page() returned 0 meaning
+> +			 * that someone still holds the page. This may
+> +			 * happen when some other mm mechanism increased
+> +			 * the page count.
+> +			 * In such case we succedded with reclaim.
+> +			 */
+> +			spin_unlock(&pool->lock);
+> +			return 0;
+> +		}
+>  		zhdr = list_tail_entry(&pool->lru, struct zbud_header, lru);
+> +		/* Move this last element to beginning of LRU */
+>  		list_del(&zhdr->lru);
+> -		list_del(&zhdr->buddy);
+> +		list_add(&zhdr->lru, &pool->lru);
+
+This adds the entry back to the lru list, but the entry is never removed
+from the list.  I'm not sure how this could work.
+
+>  		/* Protect zbud page against free */
+> -		zhdr->under_reclaim = true;
+> +		get_zbud_page(zhdr);
+>  		/*
+>  		 * We need encode the handles before unlocking, since we can
+>  		 * race with free that will set (first|last)_chunks to 0
+> @@ -440,29 +467,9 @@ int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
+>  				goto next;
+>  		}
+>  next:
+> -		spin_lock(&pool->lock);
+> -		zhdr->under_reclaim = false;
+> -		if (zhdr->first_chunks == 0 && zhdr->last_chunks == 0) {
+> -			/*
+> -			 * Both buddies are now free, free the zbud page and
+> -			 * return success.
+> -			 */
+> -			free_zbud_page(zhdr);
+> -			pool->pages_nr--;
+> -			spin_unlock(&pool->lock);
+> +		if (put_zbud_page(zhdr))
+
+There is a single put_zbud_page() regardless of result of the eviction
+attempts.  What if both buddies of a buddied zbud page are evicted?
+Then you leak the zbud page.  What if the eviction in an unbuddied zbud
+page failed?  Then you prematurely free the page and crash later.
+
+Seth
+
+>  			return 0;
+> -		} else if (zhdr->first_chunks == 0 ||
+> -				zhdr->last_chunks == 0) {
+> -			/* add to unbuddied list */
+> -			freechunks = num_free_chunks(zhdr);
+> -			list_add(&zhdr->buddy, &pool->unbuddied[freechunks]);
+> -		} else {
+> -			/* add to buddied list */
+> -			list_add(&zhdr->buddy, &pool->buddied);
+> -		}
+> -
+> -		/* add to beginning of LRU */
+> -		list_add(&zhdr->lru, &pool->lru);
+> +		spin_lock(&pool->lock);
+>  	}
+>  	spin_unlock(&pool->lock);
+>  	return -EAGAIN;
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+
