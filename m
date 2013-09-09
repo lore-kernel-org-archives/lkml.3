@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755966Ab3IISrt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 14:47:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:57144 "EHLO
+	id S1755989Ab3IISrz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 14:47:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57153 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753920Ab3IISrr (ORCPT
+	with ESMTP id S1755968Ab3IISrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 14:47:47 -0400
+	Mon, 9 Sep 2013 14:47:52 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
+Cc: Russ Anderson <rja@sgi.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 23/24] af_key: initialize satype in key_notify_policy_flush()
-Date: Mon,  9 Sep 2013 11:45:13 -0700
-Message-Id: <1378752314-2416-24-git-send-email-kamal@canonical.com>
+Subject: [PATCH 18/24] drivers/base/memory.c: fix show_mem_removable() to handle missing sections
+Date: Mon,  9 Sep 2013 11:45:08 -0700
+Message-Id: <1378752314-2416-19-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378752314-2416-1-git-send-email-kamal@canonical.com>
 References: <1378752314-2416-1-git-send-email-kamal@canonical.com>
@@ -28,32 +32,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+From: Russ Anderson <rja@sgi.com>
 
-commit 85dfb745ee40232876663ae206cba35f24ab2a40 upstream.
+commit 21ea9f5ace3a7317cc3ba1fbc749758021a83136 upstream.
 
-This field was left uninitialized. Some user daemons perform check against this
-field.
+"cat /sys/devices/system/memory/memory*/removable" crashed the system.
 
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+The problem is that show_mem_removable() is passing a
+bad pfn to is_mem_section_removable(), which causes
+
+    if (!node_online(page_to_nid(page)))
+
+to blow up.  Why is it passing in a bad pfn?
+
+The reason is that show_mem_removable() will loop sections_per_block
+times.  sections_per_block is 16, but mem->section_count is 8,
+indicating holes in this memory block.  Checking that the memory section
+is present before checking to see if the memory section is removable
+fixes the problem.
+
+   harp5-sys:~ # cat /sys/devices/system/memory/memory*/removable
+   0
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   1
+   BUG: unable to handle kernel paging request at ffffea00c3200000
+   IP: [<ffffffff81117ed1>] is_pageblock_removable_nolock+0x1/0x90
+   PGD 83ffd4067 PUD 37bdfce067 PMD 0
+   Oops: 0000 [#1] SMP
+   Modules linked in: autofs4 binfmt_misc rdma_ucm rdma_cm iw_cm ib_addr ib_srp scsi_transport_srp scsi_tgt ib_ipoib ib_cm ib_uverbs ib_umad iw_cxgb3 cxgb3 mdio mlx4_en mlx4_ib ib_sa mlx4_core ib_mthca ib_mad ib_core fuse nls_iso8859_1 nls_cp437 vfat fat joydev loop hid_generic usbhid hid hwperf(O) numatools(O) dm_mod iTCO_wdt ipv6 iTCO_vendor_support igb i2c_i801 ioatdma i2c_algo_bit ehci_pci pcspkr lpc_ich i2c_core ehci_hcd ptp sg mfd_core dca rtc_cmos pps_core mperf button xhci_hcd sd_mod crc_t10dif usbcore usb_common scsi_dh_emc scsi_dh_hp_sw scsi_dh_alua scsi_dh_rdac scsi_dh gru(O) xvma(O) xfs crc32c libcrc32c thermal sata_nv processor piix mptsas mptscsih scsi_transport_sas mptbase megaraid_sas fan thermal_sys hwmon ext3 jbd ata_piix ahci libahci libata scsi_mod
+   CPU: 4 PID: 5991 Comm: cat Tainted: G           O 3.11.0-rc5-rja-uv+ #10
+   Hardware name: SGI UV2000/ROMLEY, BIOS SGI UV 2000/3000 series BIOS 01/15/2013
+   task: ffff88081f034580 ti: ffff880820022000 task.ti: ffff880820022000
+   RIP: 0010:[<ffffffff81117ed1>]  [<ffffffff81117ed1>] is_pageblock_removable_nolock+0x1/0x90
+   RSP: 0018:ffff880820023df8  EFLAGS: 00010287
+   RAX: 0000000000040000 RBX: ffffea00c3200000 RCX: 0000000000000004
+   RDX: ffffea00c30b0000 RSI: 00000000001c0000 RDI: ffffea00c3200000
+   RBP: ffff880820023e38 R08: 0000000000000000 R09: 0000000000000001
+   R10: 0000000000000000 R11: 0000000000000001 R12: ffffea00c33c0000
+   R13: 0000160000000000 R14: 6db6db6db6db6db7 R15: 0000000000000001
+   FS:  00007ffff7fb2700(0000) GS:ffff88083fc80000(0000) knlGS:0000000000000000
+   CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+   CR2: ffffea00c3200000 CR3: 000000081b954000 CR4: 00000000000407e0
+   Call Trace:
+     show_mem_removable+0x41/0x70
+     dev_attr_show+0x2a/0x60
+     sysfs_read_file+0xf7/0x1c0
+     vfs_read+0xc8/0x130
+     SyS_read+0x5d/0xa0
+     system_call_fastpath+0x16/0x1b
+
+Signed-off-by: Russ Anderson <rja@sgi.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/key/af_key.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/base/memory.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/net/key/af_key.c b/net/key/af_key.c
-index e1cc508..2c698fc 100644
---- a/net/key/af_key.c
-+++ b/net/key/af_key.c
-@@ -2690,6 +2690,7 @@ static int key_notify_policy_flush(const struct km_event *c)
- 	hdr->sadb_msg_pid = c->portid;
- 	hdr->sadb_msg_version = PF_KEY_V2;
- 	hdr->sadb_msg_errno = (uint8_t) 0;
-+	hdr->sadb_msg_satype = SADB_SATYPE_UNSPEC;
- 	hdr->sadb_msg_len = (sizeof(struct sadb_msg) / sizeof(uint64_t));
- 	hdr->sadb_msg_reserved = 0;
- 	pfkey_broadcast(skb_out, GFP_ATOMIC, BROADCAST_ALL, NULL, c->net);
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+index 987604d..a53c280 100644
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -162,6 +162,8 @@ static ssize_t show_mem_removable(struct device *dev,
+ 		container_of(dev, struct memory_block, dev);
+ 
+ 	for (i = 0; i < sections_per_block; i++) {
++		if (!present_section_nr(mem->start_section_nr + i))
++			continue;
+ 		pfn = section_nr_to_pfn(mem->start_section_nr + i);
+ 		ret &= is_mem_section_removable(pfn, PAGES_PER_SECTION);
+ 	}
 -- 
 1.8.1.2
 
