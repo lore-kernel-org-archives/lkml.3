@@ -1,79 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755388Ab3IIQEh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 12:04:37 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:39698 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753760Ab3IIQEe (ORCPT
+	id S1755448Ab3IIQFI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 12:05:08 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:64946 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755243Ab3IIQEA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 12:04:34 -0400
-Date: Mon, 9 Sep 2013 17:04:06 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        linux-sh@vger.kernel.org, devicetree@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
+	Mon, 9 Sep 2013 12:04:00 -0400
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+To: linux-kernel@vger.kernel.org
+Cc: Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
         Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-Message-ID: <20130909160406.GS29403@sirena.org.uk>
-References: <1378741920-11085-1-git-send-email-g.liakhovetski@gmx.de>
- <1378741920-11085-3-git-send-email-g.liakhovetski@gmx.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XlarKorwDmMoGA5O"
-Content-Disposition: inline
-In-Reply-To: <1378741920-11085-3-git-send-email-g.liakhovetski@gmx.de>
-X-Cookie: Your present plans will be successful.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] regulator: da9210: add Device Tree support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Subject: [PATCH 2/4] ARM: shmobile: r8a7790: add I2C support in Device Tree mode
+Date: Mon,  9 Sep 2013 18:03:54 +0200
+Message-Id: <1378742636-11215-3-git-send-email-g.liakhovetski@gmx.de>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1378742636-11215-1-git-send-email-g.liakhovetski@gmx.de>
+References: <1378742636-11215-1-git-send-email-g.liakhovetski@gmx.de>
+X-Provags-ID: V02:K0:4RkZ5yzZGkaacuVrYXCq7mFOkXIgaNPfauoymAQ9cMW
+ 0y2nSxr1Kf7XKfKShMnRegsa0yqkpbGlOBII7XUihBIr0+xMjt
+ peYLkcnTmF7Jx6D67HbxrHdnb2iPgmoFhqOCHaH2JPYbfUk2iq
+ R15wAnCED8Om0cdPeVOqKz5mdb9dS6ryTIW33l0Le2u17f3x66
+ gpJN3thnkf2l62EE2W/nOw0gphRoIfpE9Ff0PXz0K2KG3V1CWU
+ zx5xLAswOcPjt5t6WM8yW6OW+TZteO4O0gwhgojZXLdWXoubmf
+ F36zDxN6z5X5B3NjJX68Rqp7GQfXqBe2JHgq1jOoY/cPllQa45
+ tUpHx1uVGpMEoTXrhXyEAfzgo8F1uZdD242n0LNiLXhfDwXov9
+ nxyeZIzq5OQKA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds clocks and clock lookup entries for the four I2C
+controllers on r8a7790 and respective Device Tree nodes.
 
---XlarKorwDmMoGA5O
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+---
+ arch/arm/boot/dts/r8a7790.dtsi         |   36 ++++++++++++++++++++++++++++++++
+ arch/arm/mach-shmobile/clock-r8a7790.c |   10 ++++++++
+ 2 files changed, 46 insertions(+), 0 deletions(-)
 
-On Mon, Sep 09, 2013 at 05:52:00PM +0200, Guennadi Liakhovetski wrote:
-> This patch adds basic Device Tree support to the da9210 regulator driver -
-> with no special properties, since also driver's platform data only contai=
-ns
-> standard regulator initialisation parameters.
->=20
-> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-> ---
->  drivers/regulator/da9210-regulator.c |    9 ++++++---
+diff --git a/arch/arm/boot/dts/r8a7790.dtsi b/arch/arm/boot/dts/r8a7790.dtsi
+index 885f9f4..a5021112 100644
+--- a/arch/arm/boot/dts/r8a7790.dtsi
++++ b/arch/arm/boot/dts/r8a7790.dtsi
+@@ -127,6 +127,42 @@
+ 		interrupts = <0 0 4>, <0 1 4>, <0 2 4>,	<0 3 4>;
+ 	};
+ 
++	i2c0: i2c@e6508000 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "renesas,i2c-rcar-h2";
++		reg = <0 0xe6508000 0 0x40>;
++		interrupt-parent = <&gic>;
++		interrupts = <0 287 0x4>;
++	};
++
++	i2c1: i2c@e6518000 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "renesas,i2c-rcar-h2";
++		reg = <0 0xe6518000 0 0x40>;
++		interrupt-parent = <&gic>;
++		interrupts = <0 288 0x4>;
++	};
++
++	i2c2: i2c@e6530000 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "renesas,i2c-rcar-h2";
++		reg = <0 0xe6530000 0 0x40>;
++		interrupt-parent = <&gic>;
++		interrupts = <0 286 0x4>;
++	};
++
++	i2c3: i2c@e6540000 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "renesas,i2c-rcar-h2";
++		reg = <0 0xe6540000 0 0x40>;
++		interrupt-parent = <&gic>;
++		interrupts = <0 290 0x4>;
++	};
++
+ 	mmcif0: mmcif@ee200000 {
+ 		compatible = "renesas,sh-mmcif";
+ 		reg = <0 0xee200000 0 0x80>;
+diff --git a/arch/arm/mach-shmobile/clock-r8a7790.c b/arch/arm/mach-shmobile/clock-r8a7790.c
+index fc36d3d..8e5e90b 100644
+--- a/arch/arm/mach-shmobile/clock-r8a7790.c
++++ b/arch/arm/mach-shmobile/clock-r8a7790.c
+@@ -52,6 +52,7 @@
+ #define SMSTPCR5 0xe6150144
+ #define SMSTPCR7 0xe615014c
+ #define SMSTPCR8 0xe6150990
++#define SMSTPCR9 0xe6150994
+ 
+ #define SDCKCR		0xE6150074
+ #define SD2CKCR		0xE6150078
+@@ -181,6 +182,7 @@ static struct clk div6_clks[DIV6_NR] = {
+ 
+ /* MSTP */
+ enum {
++	MSTP931, MSTP930, MSTP929, MSTP928,
+ 	MSTP813,
+ 	MSTP721, MSTP720,
+ 	MSTP717, MSTP716,
+@@ -192,6 +194,10 @@ enum {
+ };
+ 
+ static struct clk mstp_clks[MSTP_NR] = {
++	[MSTP931] = SH_CLK_MSTP32(&hp_clk, SMSTPCR9, 31, 0), /* I2C0 */
++	[MSTP930] = SH_CLK_MSTP32(&hp_clk, SMSTPCR9, 30, 0), /* I2C1 */
++	[MSTP929] = SH_CLK_MSTP32(&hp_clk, SMSTPCR9, 29, 0), /* I2C2 */
++	[MSTP928] = SH_CLK_MSTP32(&hp_clk, SMSTPCR9, 28, 0), /* I2C3 */
+ 	[MSTP813] = SH_CLK_MSTP32(&p_clk, SMSTPCR8, 13, 0), /* Ether */
+ 	[MSTP721] = SH_CLK_MSTP32(&p_clk, SMSTPCR7, 21, 0), /* SCIF0 */
+ 	[MSTP720] = SH_CLK_MSTP32(&p_clk, SMSTPCR7, 20, 0), /* SCIF1 */
+@@ -261,6 +267,10 @@ static struct clk_lookup lookups[] = {
+ 	CLKDEV_DEV_ID("sh-sci.7", &mstp_clks[MSTP720]),
+ 	CLKDEV_DEV_ID("sh-sci.8", &mstp_clks[MSTP717]),
+ 	CLKDEV_DEV_ID("sh-sci.9", &mstp_clks[MSTP716]),
++	CLKDEV_DEV_ID("e6508000.i2c", &mstp_clks[MSTP931]),
++	CLKDEV_DEV_ID("e6518000.i2c", &mstp_clks[MSTP930]),
++	CLKDEV_DEV_ID("e6530000.i2c", &mstp_clks[MSTP929]),
++	CLKDEV_DEV_ID("e6540000.i2c", &mstp_clks[MSTP928]),
+ 	CLKDEV_DEV_ID("r8a7790-ether", &mstp_clks[MSTP813]),
+ 	CLKDEV_DEV_ID("rcar_thermal", &mstp_clks[MSTP522]),
+ 	CLKDEV_DEV_ID("ee200000.mmcif", &mstp_clks[MSTP315]),
+-- 
+1.7.2.5
 
-I'd expect to see a binding document, even if it is just a very brief
-one documenting the prefix and pointing to the standard regulator
-properties.
-
---XlarKorwDmMoGA5O
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSLfFzAAoJELSic+t+oim9jtIP/1Mocp62UXAiXIdHeUcEimQu
-KD6Q8qc/wjnLPzmReNJ1/IrJi1yv9u4rewCDCTMvEVLxqLzgXpbn4yJYUAllw2LU
-f1hdc1BQfEZ5LebqtVz8jxT4PnzwXZ69YjZ6rZLxoZE0yAUYj9g9gjUANNaBIBdh
-KGVe9xjPmXUJWOARq9PjN1lELdn2QJKpueck5K/U2GZpg7DCGzj1KJ+pfU/SXKUf
-banRQixjOis9a+X+wKYZrH+TBxMj3YeMPw2pRMInKp6v/DOGSnETnKm3KPb1l6nk
-lEH4E5iurqVhkx9viOWyTEp0Bgs/svZEB+TTXaLvvKrAMxXQgq9t5jp2lcPyPk/F
-qpn7ph7BX4B57HtAH6KuhcMrTPWhTzT/6/7PbeIfOP5VTEyezNTjqKTAJcjabNT4
-d2HdcdJrPpgm+hhecV+YIC9BWIKzpBFWGDuGv5x4XTRz/B93Jyu+D3YibafXereR
-6HeZt/NUOftIeoVqJaOq0bpyREQEuiz7NT9/v3kmr3Kfiig+HK11geOcA5BM3wUP
-tnJUdN4HnNNre2kZNLQeav0peCFYkltuc5rp8wQzgekLE/G2pg6WxVjDzQvNbcJt
-LYQJht6ssXjlXRyg7XNJmflC2FHFESztFJ5CGrpJO3kuAN87k4qgHtDkB6CbRqse
-q+WeAY4sRB6hgpNpFItS
-=L25T
------END PGP SIGNATURE-----
-
---XlarKorwDmMoGA5O--
