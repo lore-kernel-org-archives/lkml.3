@@ -1,122 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756141Ab3IIXpI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 19:45:08 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:43855 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755700Ab3IIXpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 19:45:05 -0400
-Message-ID: <522E5CF2.3080108@ti.com>
-Date: Mon, 9 Sep 2013 18:42:42 -0500
-From: Joel Fernandes <joelf@ti.com>
-Reply-To: <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1756184Ab3IIXtZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 19:49:25 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:57209 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755807Ab3IIXtY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 19:49:24 -0400
 MIME-Version: 1.0
-To: Koen Kooi <koen@dominion.thruhere.net>
-CC: Kevin Hilman <khilman@linaro.org>, <bcousson@baylibre.com>,
-        <linux-omap@vger.kernel.org>, <tony@atomide.com>,
-        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ijc+devicetree@hellion.org.uk>, <linux@arm.linux.org.uk>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <olof@lixom.net>
-Subject: Re: [PATCH] ARM: OMAP2+: am335x-bone*: add DT for BeagleBone Black
-References: <1378736961-21005-1-git-send-email-koen@dominion.thruhere.net> <87zjrm81dl.fsf@linaro.org> <BBAC0939-A4F9-4FEA-B137-0307D8787DC3@dominion.thruhere.net> <522E1325.8050906@ti.com> <41952E65-1037-4117-A1AE-8310FED59E3A@dominion.thruhere.net> <522E18C0.9010909@ti.com> <522E269B.7000802@ti.com> <73968C64-F0B0-4ED6-82B8-BD1966ED9D84@dominion.thruhere.net> <522E2B9E.8050404@ti.com>
-In-Reply-To: <522E2B9E.8050404@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1378766555-9679-1-git-send-email-khilman@linaro.org>
+References: <1378766555-9679-1-git-send-email-khilman@linaro.org>
+Date: Mon, 9 Sep 2013 16:49:23 -0700
+X-Google-Sender-Auth: Pl4t2A9kZyB2qLPwNJq5EOc_mRE
+Message-ID: <CA+55aFxNbH+G6DVQNxE9di_btA5hxFH93af_vjN2v0eH8e5W-g@mail.gmail.com>
+Subject: Re: [GIT PULL 0/3] ARM: SoC: Second round of changes for v3.12
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: ARM SoC <arm@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2013 03:12 PM, Joel Fernandes wrote:
-> On 09/09/2013 03:00 PM, Koen Kooi wrote:
->>
->> Op 9 sep. 2013, om 21:50 heeft Joel Fernandes <joelf@ti.com> het volgende geschreven:
->>
->>> On 09/09/2013 01:51 PM, Joel Fernandes wrote:
->>>> On 09/09/2013 01:43 PM, Koen Kooi wrote:
->>>>>
->>>>> Op 9 sep. 2013, om 20:27 heeft Joel Fernandes <joelf@ti.com> het volgende geschreven:
->>>>>
->>>>>> On 09/09/2013 10:51 AM, Koen Kooi wrote:
->>>>>>>
->>>>>>> Op 9 sep. 2013, om 17:23 heeft Kevin Hilman <khilman@linaro.org> het volgende geschreven:
->>>>>>>
->>>>>>>> Koen Kooi <koen@dominion.thruhere.net> writes:
->>>>>>>>
->>>>>>>>> The BeagleBone Black is basically a regular BeagleBone with eMMC and HDMI added,
->>>>>>>>> so create a common dtsi both can use.
->>>>>>>>>
->>>>>>>>> IMPORTANT: booting the existing am335x-bone.dts will blow up the HDMI transceiver
->>>>>>>>> after a dozen boots with an uSD card inserted because LDO will be at 3.3V instead
->>>>>>>>> of 1.8.
->>>>>>>>>
->>>>>>>>> MMC support for AM335x still isn't in, so only the LDO change has been added.
->>>>>>>>>
->>>>>>>>> Cc: stable@vger.kernel.org
->>>>>>>>>
->>>>>>>>> Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
->>>>>>>>> Tested-by: Tom Rini <trini@ti.com>
->>>>>>>>> Tested-by: Matt Porter <matt.porter@linaro.org>
->>>>>>>>
->>>>>>>> I guess the subject should've included v5?
->>>>>>>
->>>>>>> Yes, I blame it on being monday :)
->>>>>>
->>>>>> The series you're posting will require rebasing on the current MMC DT series
->>>>>> that is being discussed last couple of weeks on the mailing list which were
->>>>>> waiting until now as DMA support was missing. Now that DMA support is pulled in,
->>>>>> it is safe to apply those patches so I will be reposting them shortly.
->>>>>>
->>>>>> Please hold off any changes until those patches are posted. This will avoid
->>>>>> unnecessary conflicts.
->>>>>
->>>>> Or you can rebase on top of this patch since it has no dependencies *and* fixes blowing up boards. FWIW, git-rebase, git-cherry-pick and git-am -3 track the rename in my patch just fine.
->>>>>
->>>>
->>>> That's fair enough, since  Kevin Acked and Benoit is pulling it, I'm fine with
->>>> rebasing on top of it and we avoid any merge conflicts.
->>>>
->>>
->>> I noticed - there were still some comments from Felipe on the v4 series of this
->>> patch regarding RF cape and HDMI may be breaking it. How are you addressing that?
->>
->> Capes will never go into the .dts and HDMI support needs some serious patching before it can get enabled in the DT. And the RF cape isn't being sold since it has no sw support. No need to worry about things in the 3.15/3.16 timeframe. Unless you want this LDO3 fix not to go in ASAP.
->>
->> Joel, is there anything relevant *right now* blocking this patch going in? If not, please test it and add your Tested-by: line.
->>
-> 
-> We don't merge things in hurry and focus is to do things the right way.. I just
-> want to make sure that all possible comments have been addressed.
-> 
-> Otherwise patch looks OK and hope everyone else thinks so too. I am dealing with
-> some merge conflicts right now with my series on top of this though, but they
-> should be easy enough to fix up. That's delaying my testing, but otherwise as
-> such I don't have any objection to this patch (provided the conclusion is that
-> all comments have been addressed..). Thanks!
+On Mon, Sep 9, 2013 at 3:42 PM, Kevin Hilman <khilman@linaro.org> wrote:
+>
+> The main thing of note (or of potential annoyance factor) here is the
+> handful of conflicts in PULL 2/3 coming from platform changes
+> conflicting with driver changes going in to the V4L tree.  I've listed
+> them in detail in that pull request, and we will work with the
+> platform maintainer on the workflow to avoid this in the future.
 
-Koen,
+Ok. I still really despise the absolute incredible sh*t that is
+non-discoverable buses, and I hope that ARM SoC hardware designers all
+die in some incredibly painful accident.  DT only does so much.
 
-One note though, since I don't use HDMI (or BBB much for that matter), I was ok
-with taking a risk of upping the ldo3 regulator voltage to 3.3v on my board
-which I needed to do to get to the boot prompt.
+So if you see any, send them my love, and possibly puncture the
+brake-lines on their car and put a little surprise in their coffee,
+ok?
 
-I applied my AM335x DMA and MMC patches and tried to boot with rootfs as MMC1.
+> For future reference, when it comes to these conflicts, do you want to
+> see a summary of the suggested resolutions, a published branch with
+> the resolutions, both or neither?  Just curious.
 
-With 1.8v, I get the following during boot:
-[    2.236043] mmc0: host doesn't support card's voltages
-[    2.241659] mmc0: error -22 whilst initialising SD card
+I'll basically always end up re-doing the conflict resolution by hand
+anyway unless it's just *incredibly* messy (and I think that has
+happened all of once or twice), so anything you send me ends up being
+just confirmation.
 
-That's strange because I do have an SDHC card. With 3.3v it works fine.
+In this case, for example, I didn't end up looking at your pre-merged
+stuff, because the summaries were enough for me to just say "ok, that
+confirms my resolution". In other cases, people don't write detailed
+summaries, and I end up confirming my resolution by just doing a
+separate test-merge against their pre-merged branch and comparing.
 
-I will add a note about this to my series. Since this more of an MMC issue than
-anything, and your patch series doesn't enable MMC, you can add my tested-by:
+And in most cases, the resolution is trivial enough that I don't
+bother with either.
 
-Tested-by: Joel Fernandes <joelf@ti.com>
+And in *all* cases I appreciate it when people do the preparation. It
+hopefully also makes submaintainers themselves more aware of
+development flow conflicts and more aware of possible problem issues
+(same reason I prefer doing all the resolutions by hand myself), so I
+suspect all of this is healthy even if I don't end up using it.
 
-Later on, the regulator voltage may need to be tweaked for MMC support.
+Final note: putting the conflict resolution explanation in the tag
+message is unnecessary, since it's not really worth it after-the-fact
+- so I'll just edit it away. It's not a problem, but in general I'd
+suggest the tag message just contain the "here's the highlights", and
+you do the conflict resolution notes just in the email. But I suspect
+you may find the use of the tags a convenient way to jot down the
+resolution for then sending the email later, and it's not like it
+hurts me to edit it away afterwards, so not a big deal. Whatever works
+for you.
 
-Regards,
-
--Joel
+            Linus
