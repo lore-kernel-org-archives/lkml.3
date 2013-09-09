@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141Ab3IINkR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:40:17 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:33511 "EHLO
+	id S1753252Ab3IINle (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:41:34 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:33517 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753220Ab3IINkP (ORCPT
+	with ESMTP id S1751721Ab3IINlc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 09:40:15 -0400
-Date: Mon, 9 Sep 2013 06:40:12 -0700
+	Mon, 9 Sep 2013 09:41:32 -0400
+Date: Mon, 9 Sep 2013 06:41:31 -0700
 From: Christoph Hellwig <hch@infradead.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, Peng Tao <tao.peng@emc.com>,
-        Peng Tao <bergwolf@gmail.com>
-Subject: Re: [PATCH] staging: Disable lustre file system for MIPS, SH, and
- XTENSA
-Message-ID: <20130909134012.GA24738@infradead.org>
-References: <1378688580-11935-1-git-send-email-linux@roeck-us.net>
- <20130909015945.GA4029@kroah.com>
+To: Joe Jin <joe.jin@oracle.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] [scsi] enclosure: remove all possible sysfs entries
+ before add device
+Message-ID: <20130909134131.GB24738@infradead.org>
+References: <522D685D.5060201@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130909015945.GA4029@kroah.com>
+In-Reply-To: <522D685D.5060201@oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
@@ -29,14 +28,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 08, 2013 at 06:59:45PM -0700, Greg Kroah-Hartman wrote:
-> Can't we just export the functions for those arches?  Surely lutre
-> isn't the first/only driver that needs this?
+> Modules linked in: oracleacfs(P)(U) oracleadvm(P)(U) oracleoks(P)(U)
 
-Lustre is.  These are core mm helpers, and lustre uses them to
-reimplement another core VM function.  It then uses it to access
-userspace environment variable.
-
-In short all this code should be nuked, and no new symbols should be
-exported.
+Please reproduce without this weird crap loaded.
 
