@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461Ab3IIEcW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 00:32:22 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42549 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752415Ab3IIEcU (ORCPT
+	id S1752490Ab3IIEdn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 00:33:43 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:34987 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751930Ab3IIEdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 00:32:20 -0400
-X-AuditID: 9c93016f-b7cf0ae00000518f-3d-522d4f53c14e
-Date: Mon, 9 Sep 2013 13:32:34 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [REPOST PATCH 1/4] slab: factor out calculate nr objects in
- cache_estimate
-Message-ID: <20130909043233.GC22390@lge.com>
-References: <1378447067-19832-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1378447067-19832-2-git-send-email-iamjoonsoo.kim@lge.com>
- <00000140f3f56efb-1b2035a6-b81f-433f-aa2d-d1af50018b6a-000000@email.amazonses.com>
+	Mon, 9 Sep 2013 00:33:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <00000140f3f56efb-1b2035a6-b81f-433f-aa2d-d1af50018b6a-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <522C8DA8.6030701@oracle.com>
+References: <522C8DA8.6030701@oracle.com>
+Date: Mon, 9 Sep 2013 12:33:40 +0800
+Message-ID: <CAJd=RBAd6-kX127cdTs10Ty7LJ+cGQX8NvX9H1bb4QSh4erzLw@mail.gmail.com>
+Subject: Re: hugetlb: NULL ptr deref in region_truncate
+From: Hillf Danton <dhillf@gmail.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>, trinity@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 06, 2013 at 03:48:04PM +0000, Christoph Lameter wrote:
-> On Fri, 6 Sep 2013, Joonsoo Kim wrote:
-> 
-> >  	}
-> >  	*num = nr_objs;
-> > -	*left_over = slab_size - nr_objs*buffer_size - mgmt_size;
-> > +	*left_over = slab_size - (nr_objs * buffer_size) - mgmt_size;
-> >  }
-> 
-> What is the point of this change? Drop it.
+On Sun, Sep 8, 2013 at 10:46 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
+> Hi all,
+>
+> While fuzzing with trinity inside a KVM tools guest, running latest -next
+> kernel, I've
+> stumbled on the following:
+>
+> [  998.281867] BUG: unable to handle kernel NULL pointer dereference at
+> 0000000000000274
+> [  998.283333] IP: [<ffffffff812707c4>] region_truncate+0x64/0xd0
+> [  998.284288] PGD 0
+> [  998.284717] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [  998.286506] Modules linked in:
+> [  998.287101] CPU: 88 PID: 24650 Comm: trinity-child85 Tainted: G    B   W
+> 3.11.0-next-20130906-sasha #3985
 
-Okay. I will drop it.
-
-> 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+ *  'B' - System has hit bad_page?
