@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661Ab3IISNb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 14:13:31 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57681 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752168Ab3IISNa (ORCPT
+	id S1754841Ab3IISPt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 14:15:49 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:49707 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753161Ab3IISPr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 14:13:30 -0400
-Message-ID: <522E0FA3.6060900@infradead.org>
-Date: Mon, 09 Sep 2013 11:12:51 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Mon, 9 Sep 2013 14:15:47 -0400
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jon Mason <jon.mason@intel.com>
-Subject: Re: linux-next: Tree for Sep 9 (ntb)
-References: <20130909161616.0d663a37c9d5b6b3a2a2735a@canb.auug.org.au>
-In-Reply-To: <20130909161616.0d663a37c9d5b6b3a2a2735a@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130909180604.GO13318@ZenIV.linux.org.uk>
+References: <1378743493-33546-1-git-send-email-Waiman.Long@hp.com>
+	<1378743493-33546-2-git-send-email-Waiman.Long@hp.com>
+	<20130909172905.GN13318@ZenIV.linux.org.uk>
+	<CA+55aFx_pUwHg35Ueb4Ewy8ZrBA_UtFbQqdRzL64_Q7iQ=V-rA@mail.gmail.com>
+	<20130909180604.GO13318@ZenIV.linux.org.uk>
+Date: Mon, 9 Sep 2013 11:15:46 -0700
+X-Google-Sender-Auth: lCVQzYfDRndxkXdjQXXwaYCzbo0
+Message-ID: <CA+55aFxZ1F4U7kM56W+wWDevh8hRktp+aPat=miaKdxB1rsang@mail.gmail.com>
+Subject: Re: [PATCH v4 1/1] dcache: Translating dentry into pathname without
+ taking rename_lock
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Waiman Long <Waiman.Long@hp.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        George Spelvin <linux@horizon.com>, John Stoffel <john@stoffel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/13 23:16, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Please do not add any code for v3.13 to your linux-next included branches
-> until after v3.12-rc1 is released.
-> 
-> Changes since 20130906:
-> 
+On Mon, Sep 9, 2013 at 11:06 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>>
+>> And while the rename sequence lock protects against _renames_, it does
+>> not protect against just plain dentries getting free'd under memory
+>> pressure.
+>
+> It protects the chain of ->d_parent, so they'd better not get freeds at
+> all...
 
+Yeah, I think you're right because of the other constraints.. Holding
+just the rename-lock for writing is actually sufficient, because
+ (a) you are guaranteed to already hold on to the end-point of the
+walk (it's where you begin your path lookup), and so the memory
+pressure issue is actually irrelevant.
+ (b) the only dentry lookup thing that remains is the parenthood chain
+which is recursively reference-count-protected from the end, and yes,
+in the absense of normal memory pressure, renames are the only thing
+that will mess with that.
 
-on x86_64:
+So even without holding d_lock, I guess we're actually safe even
+without a real rcu read lock if we hold the rename lock for writing.
 
-drivers/built-in.o: In function `ntb_transport_free_queue':
-(.text+0x150344): undefined reference to `dma_sync_wait'
-drivers/built-in.o: In function `ntb_transport_create_queue':
-(.text+0x1504b5): undefined reference to `dma_find_channel'
-drivers/built-in.o: In function `ntb_transport_rx':
-ntb_transport.c:(.text+0x150c65): undefined reference to `dma_sync_wait'
+That actually argues for doing the rcu_read_lock() inside the helper
+function. HOWEVER, I'd like a comment to that effect, to show why we
+can access all those dentries without any other synchronization.
 
-
-ntb_transport.c uses several dma_*() interfaces.
-It looks like it needs to select DMA_ENGINE at a minimum.
-
-
--- 
-~Randy
+          Linus
