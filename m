@@ -1,103 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755531Ab3IIQ6K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 12:58:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36569 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755654Ab3IIQ56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 12:57:58 -0400
-Date: Mon, 9 Sep 2013 19:57:55 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH] KVM: x86: prevent setting unsupported XSAVE states
-Message-ID: <20130909165755.GA4008@redhat.com>
-References: <1378383714-9723-2-git-send-email-pbonzini@redhat.com>
- <20130908095446.GE17294@redhat.com>
- <522DD6AB.1030303@redhat.com>
+	id S1755960Ab3IIQ75 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 12:59:57 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:59977 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751409Ab3IIQ7z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 12:59:55 -0400
+Date: Mon, 9 Sep 2013 09:59:49 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        sbw@mit.edu, cl@linux.com
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+Message-ID: <20130909165949.GC3966@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130906105934.GF20519@somewhere>
+ <20130906151851.GQ3966@linux.vnet.ibm.com>
+ <1378488088.31445.39.camel@edumazet-glaptop>
+ <20130906174117.GU3966@linux.vnet.ibm.com>
+ <20130906185927.GE2706@somewhere>
+ <20130909105347.GK31370@twins.programming.kicks-ass.net>
+ <20130909132343.GN3966@linux.vnet.ibm.com>
+ <20130909142155.GC26785@twins.programming.kicks-ass.net>
+ <20130909162632.GZ3966@linux.vnet.ibm.com>
+ <20130909124205.37926095@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <522DD6AB.1030303@redhat.com>
+In-Reply-To: <20130909124205.37926095@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090916-8236-0000-0000-0000019821A0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 04:09:47PM +0200, Paolo Bonzini wrote:
-> Il 08/09/2013 11:54, Gleb Natapov ha scritto:
-> > On Thu, Sep 05, 2013 at 02:21:54PM +0200, Paolo Bonzini wrote:
-> >> A guest can still attempt to save and restore XSAVE states even if they
-> >> have been masked in CPUID leaf 0Dh.  This usually is not visible to
-> >> the guest, but is still wrong: "Any attempt to set a reserved bit (as
-> >> determined by the contents of EAX and EDX after executing CPUID with
-> >> EAX=0DH, ECX= 0H) in XCR0 for a given processor will result in a #GP
-> >> exception".
-> >>
-> >> The patch also performs the same checks as __kvm_set_xcr in KVM_SET_XSAVE.
-> >> This catches migration from newer to older kernel/processor before the
-> >> guest starts running.
-> >>
-> >> Cc: kvm@vger.kernel.org
-> >> Cc: Gleb Natapov <gleb@redhat.com>
-> >> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> >> ---
-> >>  arch/x86/kvm/cpuid.c |  2 +-
-> >>  arch/x86/kvm/x86.c   | 10 ++++++++--
-> >>  arch/x86/kvm/x86.h   |  1 +
-> >>  3 files changed, 10 insertions(+), 3 deletions(-)
-> >>
-> >> diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
-> >> index a20ecb5..d7c465d 100644
-> >> --- a/arch/x86/kvm/cpuid.c
-> >> +++ b/arch/x86/kvm/cpuid.c
-> >> @@ -182,7 +182,7 @@ static bool supported_xcr0_bit(unsigned bit)
-> >>  {
-> >>  	u64 mask = ((u64)1 << bit);
-> >>  
-> >> -	return mask & (XSTATE_FP | XSTATE_SSE | XSTATE_YMM) & host_xcr0;
-> >> +	return mask & KVM_SUPPORTED_XCR0 & host_xcr0;
-> >>  }
-> >>  
-> >>  #define F(x) bit(X86_FEATURE_##x)
-> >> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> >> index 3625798..801a882 100644
-> >> --- a/arch/x86/kvm/x86.c
-> >> +++ b/arch/x86/kvm/x86.c
-> >> @@ -586,6 +586,8 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
-> >>  		return 1;
-> >>  	if ((xcr0 & XSTATE_YMM) && !(xcr0 & XSTATE_SSE))
-> >>  		return 1;
-> >> +	if (xcr0 & ~KVM_SUPPORTED_XCR0)
-> >> +		return 1;
-> > Shouldn't we check guest's cpuid here?
+On Mon, Sep 09, 2013 at 12:42:05PM -0400, Steven Rostedt wrote:
+> On Mon, 9 Sep 2013 09:26:32 -0700
+> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
 > 
-> Yes.
 > 
-> >>  	if (xcr0 & ~host_xcr0)
-> >>  		return 1;
-> >>  	kvm_put_guest_xcr0(vcpu);
-> >> @@ -2980,10 +2982,14 @@ static int kvm_vcpu_ioctl_x86_set_xsave(struct kvm_vcpu *vcpu,
-> >>  	u64 xstate_bv =
-> >>  		*(u64 *)&guest_xsave->region[XSAVE_HDR_OFFSET / sizeof(u32)];
-> >>  
-> >> -	if (cpu_has_xsave)
-> >> +	if (cpu_has_xsave) {
-> >> +		if (xstate_bv & ~KVM_SUPPORTED_XCR0)
-> >> +			return -EINVAL;
-> >> +		if (xstate_bv & ~host_xcr0)
-> >> +			return -EINVAL;
-> > And here?
+> > Now if we can agree on the naming and the exact per-CPU incantation...  ;-)
 > 
-> Here it'd be nice, but we cannot due to backwards compatibility.  We
-> agreed to change KVM_GET_XSAVE and make it only report states that are
-> included in CPUID, but we still need to do migration from old kernels
-> that report all states.
+> s/per-CPU/per-task/
 > 
-> If we change KVM_SET_XSAVE to look at CPUID, and the CPUID does not
-> include AVX, migration will fail from old kernel (KVM_GET_XSAVE reports
-> all states) to new kernel (KVM_SET_XSAVES checks against CPUID).
-> 
-Yeah :(
+> /me runs away!!!
 
---
-			Gleb.
+Me too, given my previous experiences attempting to bind RCU that
+closely to the scheduler!  ;-)
+
+							Thanx, Paul
+
