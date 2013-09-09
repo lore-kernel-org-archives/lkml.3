@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493Ab3IINtZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:49:25 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:43326 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752062Ab3IINtY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 09:49:24 -0400
-Date: Mon, 9 Sep 2013 15:49:21 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
+	id S1753804Ab3IINtl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:49:41 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:38787 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753696Ab3IINtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 09:49:39 -0400
+Date: Mon, 9 Sep 2013 06:48:57 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
         Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
         mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
@@ -20,7 +19,8 @@ Cc: Peter Zijlstra <peterz@infradead.org>,
         sbw@mit.edu
 Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
  section?
-Message-ID: <20130909134919.GG16280@somewhere>
+Message-ID: <20130909134857.GQ3966@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 References: <20130906174117.GU3966@linux.vnet.ibm.com>
  <20130906185927.GE2706@somewhere>
  <20130909105347.GK31370@twins.programming.kicks-ass.net>
@@ -28,40 +28,61 @@ References: <20130906174117.GU3966@linux.vnet.ibm.com>
  <20130909083926.3eceebef@gandalf.local.home>
  <20130909124547.GB16280@somewhere>
  <20130909085504.2ddd7e69@gandalf.local.home>
- <20130909131452.GA31370@twins.programming.kicks-ass.net>
- <20130909132900.GE16280@somewhere>
- <20130909094132.74f1dd57@gandalf.local.home>
+ <20130909130851.GC16280@somewhere>
+ <20130909092142.05780991@gandalf.local.home>
+ <20130909092917.0c99b71a@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130909094132.74f1dd57@gandalf.local.home>
+In-Reply-To: <20130909092917.0c99b71a@gandalf.local.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090913-0320-0000-0000-000000EF0FCC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 09:41:32AM -0400, Steven Rostedt wrote:
-> On Mon, 9 Sep 2013 15:29:02 +0200
-> Frederic Weisbecker <fweisbec@gmail.com> wrote:
+On Mon, Sep 09, 2013 at 09:29:17AM -0400, Steven Rostedt wrote:
+> On Mon, 9 Sep 2013 09:21:42 -0400
+> Steven Rostedt <rostedt@goodmis.org> wrote:
 > 
->  
-> > No, putting that on the task_struct won't help much in this regard I think.
-> > Regular schedule() calls don't change that per cpu state.
 > 
-> But is there a place that it would need to?
-
-I don't have any in mind.
-
+> > Especially since the function name itself is "rcu_is_cpu_idle()" which
+> > tells you it's a cpu state, and not a task state. Why would you care in
+> > RCU if CPU 1 is idle if you are on CPU 2? The name should be changed.
 > 
-> I mean, if RCU is not tracking a CPU, is it safe to call schedule().
+> > Actually, preempt_count is more a CPU state than a task state. When
+> > preempt_count is set, that CPU can not schedule out the current task.
+> > It really has nothing to do with the task itself. It's the CPU that
+> > can't do something. Preempt count should never traverse with a task
+> > from one CPU to another.
+> 
+> I'll take this a step further. Here's a simple rule to determine if
+> something is a task state or a CPU state.
+> 
+> If the state migrates with a task from one CPU to another, it's a task
+> state.
+> 
+> If the state never leaves a CPU with a task, then it's a CPU state.
+> 
+> According to the above rules, rcu_is_cpu_idle() is a task state, and
+> really should be in task_struct, and preempt_count is a CPU state, and
+> should be a per_cpu variable.
 
-Nope, a CPU is not allowed to call schedule() if RCU is not tracking it.
+Ahem.  The rcu_dynticks.dynticks field really is per-CPU state: it is
+tracking whether or not RCU is paying attention to the corresponding
+-CPU-, not to any particular task.  When RCU wants to track tasks, it
+does so with the blkd_tasks field of the rcu_node structure.
 
-> And then how would the new task know that RCU is ignoring that CPU?
+							Thanx, Paul
 
-On return from schedule(), it's (supposed to be) guaranteed that the CPU
-is always tracked by RCU.
-
+> I think the reason preempt_count never was a per cpu variable, is that
+> having it in the stack (thread info) made it easier to test in assembly
+> than having to grab the per cpu info. But I believe it's easier to grab
+> per cpu info in assembly today than it once was, which is why there is
+> a push to move preempt_count to per_cpu where it truly belongs.
 > 
 > -- Steve
 > 
+
