@@ -1,87 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752035Ab3IINLZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:11:25 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:36486 "EHLO
+	id S1752128Ab3IINMb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:12:31 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:37010 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab3IINLY (ORCPT
+	with ESMTP id S1751178Ab3IINMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 09:11:24 -0400
-Date: Mon, 9 Sep 2013 09:11:09 -0400
+	Mon, 9 Sep 2013 09:12:30 -0400
+Date: Mon, 9 Sep 2013 09:12:18 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: David Vrabel <david.vrabel@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com,
-        stefan.bader@canonical.com, stefano.stabellini@eu.citrix.com,
-        jeremy@goop.org
-Subject: Re: [PATCH 3/5] xen/smp: Update pv_lock_ops functions before
- alternative code starts under PVHVM
-Message-ID: <20130909131109.GC21435@phenom.dumpdata.com>
+Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>, jeremy@goop.org,
+        stefano.stabellini@eu.citrix.com, linux-kernel@vger.kernel.org,
+        stefan.bader@canonical.com, xen-devel@lists.xenproject.org,
+        boris.ostrovsky@oracle.com
+Subject: Re: [Xen-devel] [PATCH] Bug-fixes to enable PV ticketlock to work
+ under Xen PVHVM with Linux v3.12. (v1)
+Message-ID: <20130909131218.GD21435@phenom.dumpdata.com>
 References: <1378561605-18998-1-git-send-email-konrad.wilk@oracle.com>
- <1378561605-18998-4-git-send-email-konrad.wilk@oracle.com>
- <522DA394.1020305@citrix.com>
+ <522DA442.4050803@citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <522DA394.1020305@citrix.com>
+In-Reply-To: <522DA442.4050803@citrix.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 11:31:48AM +0100, David Vrabel wrote:
+On Mon, Sep 09, 2013 at 11:34:42AM +0100, David Vrabel wrote:
 > On 07/09/13 14:46, Konrad Rzeszutek Wilk wrote:
-> > Before this patch we would patch all of the pv_lock_ops sites
-> > using alternative assembler. Then later in the bootup cycle
-> > change the unlock_kick and lock_spinning to the Xen specific -
-> > without re patching.
+> > After a bit of false starts, lots of debugging, and tons of help from Stefano and
+> > David on how event mechanism is suppose to work I am happy to present a set
+> > of bug-fixes that make PV ticketlocks work under Xen PVHVM with Linux v3.12.
 > > 
-> > That meant that for the core of the kernel we would be running
-> > with the baremetal version of unlock_kick and lock_spinning while
-> > for modules we would have the proper Xen specific slowpaths.
+> > v3.12 has now thanks to commit 816434ec4a674fcdb3c2221a6dffdc8f34020550
+> > (Merge branch 'x86-spinlocks-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip)
+> > PV ticketlocks. That means:
+> >  - Xen PV bytelock has been replaced by Xen PV ticketlock.
+> >  - Xen PVHVM is using ticketlock (not PV variant) - this patch makes it PV.
+> >  - baremetal is still using ticketlocks.
 > > 
-> > As most of the module uses some API from the core kernel that ended
-> > up with slowpath lockers waiting forever to be kicked (b/c they
-> > would be using the Xen specific slowpath logic). And the
-> > kick never came b/c the unlock path that was taken was the
-> > baremetal one.
+> > In other words everything in the kernel is ticketlock based with the virtualizations
+> > having the 'PV' part to aid.
 > > 
-> > On PV we do not have the problem as we initialise before the
-> > alternative code kicks in.
+> > Please take a look at the patches. If you are interested in testing them
+> > out I will post a git tree on Monday based on v3.11 and v3.12-rc0. 
 > > 
-> > The fix is to move the updating of the pv_lock_ops function
-> > before the alternative code starts patching.
+> > Note that I had not run any performance tests and I am not sure when I will
+> > be able to (got other bugs to squash now). I've asked our internal performance
+> > engineer to do some benchmarking - but those results won't be available for
+> > some time as it takes time to do good benchmarking.
 > 
-> This comment seems odd.  The xen_spinlock_init() call is added not moved.
+> If there was favourable performance data I would be happy for these to
+> go in 3.12, without I think they'll have to wait for 3.13.
 
-Ah, yes. The joy of rebasing and having the patches out of sync.
-It was originally removed by git commit f10cd522c5fbfec9ae3cc01967868c9c2401ed23
-(xen: disable PV spinlocks on HVM) which as part of the patch
-series I had reverted. Then I dropped the revert :-)
+Then they will have to wait.
 
-> 
-> > --- a/arch/x86/xen/smp.c
-> > +++ b/arch/x86/xen/smp.c
-> > @@ -731,4 +731,12 @@ void __init xen_hvm_smp_init(void)
-> >  	smp_ops.cpu_die = xen_hvm_cpu_die;
-> >  	smp_ops.send_call_func_ipi = xen_smp_send_call_function_ipi;
-> >  	smp_ops.send_call_func_single_ipi = xen_smp_send_call_function_single_ipi;
-> > +
-> > +	/*
-> > +	 * The alternative logic (which patches the unlock/lock) runs before
-> > +	 * the smp bootup up code is activated. That meant we would never patch
-> > +	 * the core of the kernel with proper paravirt interfaces but would patch
-> > +	 * modules.
-> > +	 */
-> > +	xen_init_spinlocks();
-> 
-> PV does this in xen_smp_prepare_boot_cpu.  It would be better if the
-> PVHVM case followed this same pattern and provide a smp_prepare_boot_cpu
-> implementation to do this?
-
-Good eye. I can certainly try it out that way and see how it behaves. It would
-make it more consistent.
-
+I am not going to be able to provide those within this month.
 > 
 > David
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
