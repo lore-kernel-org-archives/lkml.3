@@ -1,124 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab3IIOQN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 10:16:13 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:45389 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167Ab3IIOQK (ORCPT
+	id S1753565Ab3IIOQd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 10:16:33 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20323 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752933Ab3IIOQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 10:16:10 -0400
-Date: Mon, 9 Sep 2013 10:16:07 -0400
-From: Matt Porter <matt.porter@linaro.org>
-To: Jonathan Austin <jonathan.austin@arm.com>
-Cc: Koen Kooi <koen@dominion.thruhere.net>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "bcousson@baylibre.com" <bcousson@baylibre.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv3] ARM: OMAP2+: am335x-bone*: add DT for BeagleBone Black
-Message-ID: <20130909141606.GF10973@ohporter.com>
-References: <1378638746-10627-1-git-send-email-koen@dominion.thruhere.net>
- <20130909133059.GD10973@ohporter.com>
- <522DD251.2030607@arm.com>
- <20130909135924.GE10973@ohporter.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130909135924.GE10973@ohporter.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 9 Sep 2013 10:16:32 -0400
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=JDfofD-L5ZgA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5p3hctMY2UsA:10 a=VnNF1IyMAAAA:8 a=knhLouBK5m0vlhZZwPUA:9 a=CjuIK1q_8ugA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Mon, 9 Sep 2013 10:16:29 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        sbw@mit.edu
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+Message-ID: <20130909101629.32df27a2@gandalf.local.home>
+In-Reply-To: <20130909135656.GT3966@linux.vnet.ibm.com>
+References: <20130906174117.GU3966@linux.vnet.ibm.com>
+	<20130906185927.GE2706@somewhere>
+	<20130909105347.GK31370@twins.programming.kicks-ass.net>
+	<20130909121329.GA16280@somewhere>
+	<20130909083926.3eceebef@gandalf.local.home>
+	<20130909124547.GB16280@somewhere>
+	<20130909085504.2ddd7e69@gandalf.local.home>
+	<20130909130851.GC16280@somewhere>
+	<20130909092142.05780991@gandalf.local.home>
+	<20130909134505.GF16280@somewhere>
+	<20130909135656.GT3966@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 09:59:26AM -0400, Matt Porter wrote:
-> On Mon, Sep 09, 2013 at 02:51:13PM +0100, Jonathan Austin wrote:
-> > Hi Matt,
-> > 
-> > On 09/09/13 14:31, Matt Porter wrote:
-> > >On Sun, Sep 08, 2013 at 01:12:26PM +0200, Koen Kooi wrote:
-> > >>The BeagleBone Black is basically a regular BeagleBone with eMMC and HDMI added,
-> > >>so create a common dtsi both can use.
-> > >>
-> > >>IMPORTANT: booting the existing am335x-bone.dts will blow up the HDMI transceiver
-> > >>after a dozen boots with an uSD card inserted because LDO will be at 3.3V instead
-> > >>of 1.8.
-> > >>
-> > >>MMC support for AM335x still isn't in, so only the LDO change has been added.
-> > >>
-> > >>Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
-> > >
-> > >Tested-by: Matt Porter <matt.porter@linaro.org>
-> > >
-> > >Works fine for me on tip and 3.11. I did notice a regression in musb (worked
-> > >on 3.11, now failing to probe but this is not related to your new dts as it
-> > >happens on am335x-bone.dts too, assuming merge window volatility). One nit,
-> > >git-am picked up a whitespace error on that extra line at EOF so you should
-> > >trim that out.
-> > >
-> > >Only thing is...for a clear bug like this that will destroy hardware, it
-> > >should be marked Cc: stable@vger.kernel.org to be picked up in stable.
-> > >
-> > 
-> > If I've understood Koen correctly then what he's saying is that if
-> > you *were* to use the current (before this patch) am335x-bone.dts on
-> > a Beagle Bone Black (which would be wrong, as that's not the board
-> > you have...) then things would break.
-> > 
-> > I don't see that this patch fixes that - as far as I can see, even
-> > after the patch, using am335x-bone.dts with a Bone Black will risk
-> > the damage?
-> > 
-> > If so, I don't think this is a 'stable fix' kind of thing, as it
-> > doesn't actually fix the problem?
+On Mon, 9 Sep 2013 06:56:56 -0700
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+
+
+> Indeed, there is on ongoing naming debate as well.  About the only point
+> of agreement thus far is that the current names are inadequate. ;-)
 > 
-> It fixes the problem by providing the correct dts for BBB which the
-> vendor tree has had for sometime. In the absence of a specific dts
-> for BBB, it appears everybody (TI and OMAP maintainers, included)
-> has assumed that am335x-bone.dts is correct and safe.
-> 
-> I'm sure there's plenty of systems represented in dts/* where you
-> could cause damage by loading another dtb for a similar board from
-> the same SoC family...it's a common risk if you get the wrong dtb
-> with more-or-less arbitrary regulator settings.
+> My current feeling is that rcu_is_cpu_idle() should be called
+> rcu_watching_this_cpu() and what is called rcu_watching_this_cpu()
+> in my local tree should be called __rcu_watching_this_cpu().
 
-Sorry to reply to myself, but I probably didn't make it 100% clear as
-to why this effectively fixes the problem. Both mainline u-boot *and*
-the vendor u-boot have findfdt implemented to load an
-am335x-boneblack.dtb based on board detection.
+I disagree. Then it would not make sense if we take a return value of
+"__rcu_watching_this_cpu()" and use it on another CPU to make other
+decisions for that other CPU.
 
-Hopefully this makes it clear why this fixes a bug in the kernel. If
-you use appended dtb to include the wrong one, well, you shouldn't
-be using appended dtb. It's a *hack* and loading it separately
-works fine if you use the U-Boot that ships with BBB or mainline.
+I still think we are confusing concepts with implementation. Yes, the
+RCU implementation tracks CPU state, but the concept is still based on
+the task.
 
--Matt
+But you are right, with dynamic ticks, things get a little more
+complex, as dynamic ticks is a CPU state, not a task state, as it can
+be something other than the running task that changes the state
+(another task gets scheduled on that CPU).
 
-> > Koen - is there a way for a booting kernel to detect which board it
-> > is on and avoid any potential damage if someone gives it the wrong
-> > DT?
-> > 
-> > Jonny
-> > 
-> > >-Matt
-> > >
-> > >_______________________________________________
-> > >linux-arm-kernel mailing list
-> > >linux-arm-kernel@lists.infradead.org
-> > >http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> > >
-> > 
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+But I think we are coupling RCU a bit too much with dynamic ticks here.
+Maybe we need to take a step back to visualize concepts again.
+
+The state of being in dynamic tick mode is determined by what a task or
+tasks are doing on the CPU. One of those things is if the task needs to
+be tracked by RCU. And here, is where I think we are getting our
+confusion from. The dynamic tick state needs to check if the running
+task is requiring RCU or not, and thus we ask for "is rcu needed on
+this CPU?" when the real question is "is the task running on this CPU
+requiring RCU?"
+
+Again, if we keep things in a conceptual mode, and not look too much at
+the implementation details, I think more people will understand what's
+going on. Especially those that don't know why something was
+implemented the way it was.
+
+-- Steve
