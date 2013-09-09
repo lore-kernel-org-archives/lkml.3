@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754979Ab3IITHI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 15:07:08 -0400
-Received: from mail-bn1lp0151.outbound.protection.outlook.com ([207.46.163.151]:38489
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752631Ab3IITHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 15:07:06 -0400
+	id S1755172Ab3IITIX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 15:08:23 -0400
+Received: from mail-bl2lp0210.outbound.protection.outlook.com ([207.46.163.210]:25205
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753706Ab3IITIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 15:08:21 -0400
 From: Matthew Garrett <matthew.garrett@nebula.com>
-To: David Lang <david@lang.hm>
-CC: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
+To: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>
+CC: David Lang <david@lang.hm>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "keescook@chromium.org" <keescook@chromium.org>,
         "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
@@ -20,40 +20,45 @@ CC: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
 	<linux-security-module@vger.kernel.org>
 Subject: Re: [PATCH 00/12] One more attempt at useful kernel lockdown
 Thread-Topic: [PATCH 00/12] One more attempt at useful kernel lockdown
-Thread-Index: AQHOrYDL2QYLBLFVskGOdCrAsfX2cpm9uPUAgAAESG6AAAOVwIAAA7CA
-Date: Mon, 9 Sep 2013 19:06:59 +0000
-Message-ID: <1378753619.17982.16.camel@x230.lan>
+Thread-Index: AQHOrYDL2QYLBLFVskGOdCrAsfX2cpm9uPUAgAAKHLaAAAHMgA==
+Date: Mon, 9 Sep 2013 19:08:16 +0000
+Message-ID: <1378753695.17982.17.camel@x230.lan>
 References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
 	 <19562.1378747124@turing-police.cc.vt.edu>
 	 <alpine.DEB.2.02.1309091119330.2479@nftneq.ynat.uz>
-	 <1378751318.17982.10.camel@x230.lan>
-	 <alpine.DEB.2.02.1309091139490.2479@nftneq.ynat.uz>
-	 <1378752158.17982.15.camel@x230.lan>
-	 <alpine.DEB.2.02.1309091150570.2479@nftneq.ynat.uz>
-In-Reply-To: <alpine.DEB.2.02.1309091150570.2479@nftneq.ynat.uz>
+	 <27562.1378753264@turing-police.cc.vt.edu>
+In-Reply-To: <27562.1378753264@turing-police.cc.vt.edu>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 x-originating-ip: [2001:470:1f07:1371:5d52:9ee3:3e84:6668]
 x-forefront-prvs: 09645BAC66
-x-forefront-antispam-report: SFV:NSPM;SFS:(199002)(189002)(24454002)(377424004)(558084003)(77096001)(56816003)(63696002)(74876001)(83072001)(76482001)(74706001)(74502001)(53806001)(47446002)(31966008)(74662001)(80976001)(54356001)(80022001)(83322001)(19580405001)(56776001)(54316002)(65816001)(51856001)(59766001)(77982001)(69226001)(74366001)(79102001)(46102001)(81816001)(19580395003)(33646001)(81686001)(49866001)(36756003)(81342001)(76796001)(76786001)(50986001)(47976001)(81542001)(4396001)(47736001)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB221;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:5d52:9ee3:3e84:6668;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+x-forefront-antispam-report: SFV:NSPM;SFS:(377424004)(24454002)(51704005)(189002)(199002)(81816001)(81342001)(69226001)(65816001)(80022001)(46102001)(63696002)(51856001)(4396001)(76786001)(76796001)(81542001)(81686001)(47736001)(49866001)(50986001)(47976001)(36756003)(33646001)(74366001)(47446002)(74706001)(31966008)(74502001)(74662001)(74876001)(80976001)(83072001)(77982001)(59766001)(56776001)(54316002)(79102001)(77096001)(56816003)(53806001)(54356001)(76482001)(83322001)(19580405001)(19580395003)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB223;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:5d52:9ee3:3e84:6668;RD:InfoNoRecords;MX:1;A:1;LANG:en;
 Content-Type: text/plain; charset="utf-8"
-Content-ID: <E0807FC6775E3A4CB513A0D54E64D56C@namprd05.prod.outlook.com>
+Content-ID: <C1AEED5C55AFCE43A291A75B206CC97D@namprd05.prod.outlook.com>
 MIME-Version: 1.0
 X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r89J7Kqx022458
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r89J8PXD022464
 
-On Mon, 2013-09-09 at 11:53 -0700, David Lang wrote:
+On Mon, 2013-09-09 at 15:01 -0400, Valdis.Kletnieks@vt.edu wrote:
+> On Mon, 09 Sep 2013 11:25:38 -0700, David Lang said:
+> 
+> > Given that we know that people want signed binaries without blocking kexec, you
+> > should have '1' just enforce module signing and '2' (or higher) implement a full
+> > lockdown including kexec.
+> 
+> > Or, eliminate the -1  permanently insecure option and make this a bitmask, if
+> > someone wants to enable every possible lockdown, have them set it to "all 1's",
+> > define the bits only as you need them.
+> 
+> This strikes me as much more workable than one big sledgehammer.
 
-> So is there a way to unify these different things rather than creating yet 
-> another different knob?
-
-We haven't found one that people consider generally acceptable.
+Which combinations are you envisioning as being useful?
 
 -- 
 Matthew Garrett <matthew.garrett@nebula.com>
