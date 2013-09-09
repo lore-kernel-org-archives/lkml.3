@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754340Ab3IIP71 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 11:59:27 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33622 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754067Ab3IIP7Z (ORCPT
+	id S1754628Ab3IIQA3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 12:00:29 -0400
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:39478 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753760Ab3IIQA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 11:59:25 -0400
-Message-ID: <522DF058.8020509@wwwdotorg.org>
-Date: Mon, 09 Sep 2013 09:59:20 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 9 Sep 2013 12:00:28 -0400
+Date: Mon, 9 Sep 2013 18:00:24 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, sbw@mit.edu
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+Message-ID: <20130909160024.GA25555@gmail.com>
+References: <20130906151851.GQ3966@linux.vnet.ibm.com>
+ <1378488088.31445.39.camel@edumazet-glaptop>
+ <20130906174117.GU3966@linux.vnet.ibm.com>
+ <20130906185927.GE2706@somewhere>
+ <20130909105347.GK31370@twins.programming.kicks-ass.net>
+ <20130909132343.GN3966@linux.vnet.ibm.com>
+ <20130909133604.GC31370@twins.programming.kicks-ass.net>
+ <000001410333127c-486c74ec-3209-4c5e-a92f-0c11e00fa141-000000@email.amazonses.com>
+ <20130909150854.GD26785@twins.programming.kicks-ass.net>
+ <0000014103534c88-48ee11a3-a581-4e52-b2df-3a1168047d96-000000@email.amazonses.com>
 MIME-Version: 1.0
-To: Alexandre Courbot <gnurou@gmail.com>
-CC: Alexandre Courbot <acourbot@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tomasz Figa <t.figa@samsung.com>, Dave Martin <Dave.Martin@arm.com>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Kevin Hilman <khilman@linaro.org>, devicetree@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 1/5] ARM: add basic Trusted Foundations support
-References: <1378351680-14696-1-git-send-email-acourbot@nvidia.com> <1378351680-14696-2-git-send-email-acourbot@nvidia.com> <522A2D1B.3010508@wwwdotorg.org> <CAAVeFuJF-cu9aPCruGPQk9WHV7VAGhGpU0bU6LToxP38YBnS_g@mail.gmail.com>
-In-Reply-To: <CAAVeFuJF-cu9aPCruGPQk9WHV7VAGhGpU0bU6LToxP38YBnS_g@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0000014103534c88-48ee11a3-a581-4e52-b2df-3a1168047d96-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2013 12:38 AM, Alexandre Courbot wrote:
-> On Sat, Sep 7, 2013 at 4:29 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> On 09/04/2013 09:27 PM, Alexandre Courbot wrote:
->>> Trusted Foundations is a TrustZone-based secure monitor for ARM that
->>> can be invoked  using a consistent SMC-based API on all supported
->>> platforms. This patch adds initial basic support for Trusted
->>> Foundations using the ARM firmware API. Current features are limited
->>> to the ability to boot secondary processors.
 
->>> diff --git a/arch/arm/include/asm/trusted_foundations.h b/arch/arm/include/asm/trusted_foundations.h
->>
->> Do we need to add the following here:
->>
->> #if !IS_ENABLED(CONFIG_OF)
->> static inline void register_trusted_foundations(...) {}
->> #endif
+* Christoph Lameter <cl@linux.com> wrote:
 
-Uggh. I meant to write **of_**register_trusted_foundations() there.
-
->> So that there is a dummy no-op function for the non-DT-support case? I
->> guess Tegra always has CONFIG_OF enabled so that call from
->> mach-tegra/common.c in patch 2 will never be an issue, but perhaps it
->> might if anyone else uses this?
+> On Mon, 9 Sep 2013, Peter Zijlstra wrote:
 > 
-> My expectation is that register_trusted_foundations() is called by the
-> platform code once it has established (through whatever mean it likes)
-> that Trusted Foundations is required. For platforms supporting DT,
-> of_register_trusted_foundations() takes care of that. Platforms that
-> don't support DT need another way to decide whether they *need* TF or
-> not. Once a platform decided that it needs TF, its absence is not an
-> option, and therefore I'd think that register_trusted_foundations()
-> should hard-fail if support is not compiled in. Or maybe I missed your
-> point?
+> > > Slander. Certainly validation is good. Its just that PREEMPT kernels 
+> > > are not in use
+> >
+> > Complete bullshit, its part of the mainline kernel, lots of people run 
+> > them -- including me, and any patch is supposed to keep it working.
+> 
+> Nonsense. There is no main line distro that supports full preempt. Its 
+> an academic exercise.
 
-So yes, you missed my point, but it was my fault:-)
+You are dead wrong on multiple levels.
 
-Most of_* can be called irrespective of CONFIG_OF, and since
-of_register_trusted_foundations() is meant to handle internally the "do
-I need to do anything" case, I think it makes sense to be allowed to
-call it unconditionally without determining anything about either
-CONFIG_OF or TF DT node presence?
+Firstly, here's a "popularity list" of preempt kernel config options, 
+distilled from kernel configs sent to lkml, from a time span of a couple 
+of months:
+
+     73 CONFIG_PREEMPT_NONE=y
+     81 CONFIG_PREEMPT_VOLUNTARY=y
+    135 CONFIG_PREEMPT=y
+
+CONFIG_PREEMPT=y is in fact more popular than the other two modes of 
+preemption, amongst kernel testers who post configs to lkml.
+
+Secondly, even if, hypotethically, in an alternate universe, 
+CONFIG_PREEMPT=y was used only rarely, the preempt debug checks are still 
+very important for automated testing: they often catch bugs that are 
+relevant on !PREEMPT as well. (such as accidental unlocked access) The 
+last thing we want to do is to reduce the 'reach' of debug checks.
+
+Distros typically go for the lowest overhead preemption option with server 
+loads in mind - still even they enjoy the bug fixes generated by the 
+preempt checks.
+
+So my NAK stands: you are still in denial, you should stop the silly 
+arguing and you should stop wasting maintainer time. You need to address 
+PeterZ's review feedback and fix the bugs in your patches, ASAP.
+
+Thanks,
+
+	Ingo
