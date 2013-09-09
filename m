@@ -1,71 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754331Ab3IINdi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:33:38 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12599 "EHLO
+	id S1754415Ab3IINeM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:34:12 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10158 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752686Ab3IIN0u (ORCPT
+	with ESMTP id S1753513Ab3IIN0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 09:26:50 -0400
-X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=BP604nfWqvwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=tVU5si3swWsA:10 a=VwQbUJbxAAAA:8 a=aEvpvKATvMdsf35bc-8A:9 a=9J5VuaLb3qoA:10 a=jeBq3FmKZ4MA:10 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Mon, 9 Sep 2013 09:26:49 -0400
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=C6u6bv4baTcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Qus6zTA8wZAA:10 a=t7CeM3EgAAAA:8 a=VwQbUJbxAAAA:8 a=xt1Mke5GkH6e2Q2BLK4A:9 a=2e6ZYRoF4I4A:10 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130909124758.826663268@goodmis.org>
+Message-Id: <20130909124759.365944350@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Sep 2013 08:47:47 -0400
+Date: Mon, 09 Sep 2013 08:47:49 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>,
-        Mike Galbraith <bitbucket@online.de>
-Subject: [PATCH RT 02/16] x86/mce: fix mce timer interval
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH RT 04/16] list_bl.h: make list head locking RT safe
 References: <20130909124745.590777496@goodmis.org>
-Content-Disposition: inline; filename=0002-x86-mce-fix-mce-timer-interval.patch
+Content-Disposition: inline; filename=0004-list_bl.h-make-list-head-locking-RT-safe.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Galbraith <bitbucket@online.de>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-Seems mce timer fire at the wrong frequency in -rt kernels since roughly
-forever due to 32 bit overflow.  3.8-rt is also missing a multiplier.
+As per changes in include/linux/jbd_common.h for avoiding the
+bit_spin_locks on RT ("fs: jbd/jbd2: Make state lock and journal
+head lock rt safe") we do the same thing here.
 
-Add missing us -> ns conversion and 32 bit overflow prevention.
+We use the non atomic __set_bit and __clear_bit inside the scope of
+the lock to preserve the ability of the existing LIST_DEBUG code to
+use the zero'th bit in the sanity checks.
+
+As a bit spinlock, we had no lockdep visibility into the usage
+of the list head locking.  Now, if we were to implement it as a
+standard non-raw spinlock, we would see:
+
+BUG: sleeping function called from invalid context at kernel/rtmutex.c:658
+in_atomic(): 1, irqs_disabled(): 0, pid: 122, name: udevd
+5 locks held by udevd/122:
+ #0:  (&sb->s_type->i_mutex_key#7/1){+.+.+.}, at: [<ffffffff811967e8>] lock_rename+0xe8/0xf0
+ #1:  (rename_lock){+.+...}, at: [<ffffffff811a277c>] d_move+0x2c/0x60
+ #2:  (&dentry->d_lock){+.+...}, at: [<ffffffff811a0763>] dentry_lock_for_move+0xf3/0x130
+ #3:  (&dentry->d_lock/2){+.+...}, at: [<ffffffff811a0734>] dentry_lock_for_move+0xc4/0x130
+ #4:  (&dentry->d_lock/3){+.+...}, at: [<ffffffff811a0747>] dentry_lock_for_move+0xd7/0x130
+Pid: 122, comm: udevd Not tainted 3.4.47-rt62 #7
+Call Trace:
+ [<ffffffff810b9624>] __might_sleep+0x134/0x1f0
+ [<ffffffff817a24d4>] rt_spin_lock+0x24/0x60
+ [<ffffffff811a0c4c>] __d_shrink+0x5c/0xa0
+ [<ffffffff811a1b2d>] __d_drop+0x1d/0x40
+ [<ffffffff811a24be>] __d_move+0x8e/0x320
+ [<ffffffff811a278e>] d_move+0x3e/0x60
+ [<ffffffff81199598>] vfs_rename+0x198/0x4c0
+ [<ffffffff8119b093>] sys_renameat+0x213/0x240
+ [<ffffffff817a2de5>] ? _raw_spin_unlock+0x35/0x60
+ [<ffffffff8107781c>] ? do_page_fault+0x1ec/0x4b0
+ [<ffffffff817a32ca>] ? retint_swapgs+0xe/0x13
+ [<ffffffff813eb0e6>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff8119b0db>] sys_rename+0x1b/0x20
+ [<ffffffff817a3b96>] system_call_fastpath+0x1a/0x1f
+
+Since we are only taking the lock during short lived list operations,
+lets assume for now that it being raw won't be a significant latency
+concern.
 
 Cc: stable-rt@vger.kernel.org
-Signed-off-by: Mike Galbraith <bitbucket@online.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[bigeasy: use ULL instead of u64 cast]
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- arch/x86/kernel/cpu/mcheck/mce.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/list_bl.h |   24 ++++++++++++++++++++++--
+ 1 file changed, 22 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 8ceb100..b08a373 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1139,7 +1139,7 @@ static enum hrtimer_restart mce_start_timer(struct hrtimer *timer)
- 		*n = min(*n*2, round_jiffies_relative(check_interval*HZ));
+diff --git a/include/linux/list_bl.h b/include/linux/list_bl.h
+index 31f9d75..ddfd46a 100644
+--- a/include/linux/list_bl.h
++++ b/include/linux/list_bl.h
+@@ -2,6 +2,7 @@
+ #define _LINUX_LIST_BL_H
  
- 	hrtimer_forward(timer, timer->base->get_time(),
--			ns_to_ktime(jiffies_to_usecs(*n) * 1000));
-+			ns_to_ktime(jiffies_to_usecs(*n) * 1000ULL));
- 	return HRTIMER_RESTART;
+ #include <linux/list.h>
++#include <linux/spinlock.h>
+ #include <linux/bit_spinlock.h>
+ 
+ /*
+@@ -32,13 +33,22 @@
+ 
+ struct hlist_bl_head {
+ 	struct hlist_bl_node *first;
++#ifdef CONFIG_PREEMPT_RT_BASE
++	raw_spinlock_t lock;
++#endif
+ };
+ 
+ struct hlist_bl_node {
+ 	struct hlist_bl_node *next, **pprev;
+ };
+-#define INIT_HLIST_BL_HEAD(ptr) \
+-	((ptr)->first = NULL)
++
++static inline void INIT_HLIST_BL_HEAD(struct hlist_bl_head *h)
++{
++	h->first = NULL;
++#ifdef CONFIG_PREEMPT_RT_BASE
++	raw_spin_lock_init(&h->lock);
++#endif
++}
+ 
+ static inline void INIT_HLIST_BL_NODE(struct hlist_bl_node *h)
+ {
+@@ -117,12 +127,22 @@ static inline void hlist_bl_del_init(struct hlist_bl_node *n)
+ 
+ static inline void hlist_bl_lock(struct hlist_bl_head *b)
+ {
++#ifndef CONFIG_PREEMPT_RT_BASE
+ 	bit_spin_lock(0, (unsigned long *)b);
++#else
++	raw_spin_lock(&b->lock);
++	__set_bit(0, (unsigned long *)b);
++#endif
  }
  
-@@ -1435,7 +1435,7 @@ static void __mcheck_cpu_init_timer(void)
- 	if (!*n)
- 		return;
- 
--	hrtimer_start_range_ns(t, ns_to_ktime(jiffies_to_usecs(*n) * 1000),
-+	hrtimer_start_range_ns(t, ns_to_ktime(jiffies_to_usecs(*n) * 1000ULL),
- 			       0 , HRTIMER_MODE_REL_PINNED);
+ static inline void hlist_bl_unlock(struct hlist_bl_head *b)
+ {
++#ifndef CONFIG_PREEMPT_RT_BASE
+ 	__bit_spin_unlock(0, (unsigned long *)b);
++#else
++	__clear_bit(0, (unsigned long *)b);
++	raw_spin_unlock(&b->lock);
++#endif
  }
  
+ /**
 -- 
 1.7.10.4
 
