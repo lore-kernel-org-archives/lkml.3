@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755693Ab3IISqG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 14:46:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:57118 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755418Ab3IISpZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755572Ab3IISpZ (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 9 Sep 2013 14:45:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57044 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752509Ab3IISpV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 14:45:21 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bruce Fields <bfields@fieldses.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 17/24] SUNRPC: Fix memory corruption issue on 32-bit highmem systems
-Date: Mon,  9 Sep 2013 11:45:07 -0700
-Message-Id: <1378752314-2416-18-git-send-email-kamal@canonical.com>
+Subject: [PATCH 01/24] ARM: update FIQ support for relocation of vectors
+Date: Mon,  9 Sep 2013 11:44:51 -0700
+Message-Id: <1378752314-2416-2-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378752314-2416-1-git-send-email-kamal@canonical.com>
 References: <1378752314-2416-1-git-send-email-kamal@canonical.com>
@@ -28,52 +27,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 347e2233b7667e336d9f671f1a52dfa3f0416e2c upstream.
+commit e39e3f3ebfef03450cf7bfa7a974a8c61f7980c8 upstream.
 
-Some architectures, such as ARM-32 do not return the same base address
-when you call kmap_atomic() twice on the same page.
-This causes problems for the memmove() call in the XDR helper routine
-"_shift_data_right_pages()", since it defeats the detection of
-overlapping memory ranges, and has been seen to corrupt memory.
+FIQ should no longer copy the FIQ code into the user visible vector
+page.  Instead, it should use the hidden page.  This change makes
+that happen.
 
-The fix is to distinguish between the case where we're doing an
-inter-page copy or not. In the former case of we know that the memory
-ranges cannot possibly overlap, so we can additionally micro-optimise
-by replacing memmove() with memcpy().
-
-Reported-by: Mark Young <MYoung@nvidia.com>
-Reported-by: Matt Craighead <mcraighead@nvidia.com>
-Cc: Bruce Fields <bfields@fieldses.org>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Tested-by: Matt Craighead <mcraighead@nvidia.com>
+Acked-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/sunrpc/xdr.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ arch/arm/kernel/entry-armv.S |  3 +++
+ arch/arm/kernel/fiq.c        | 19 ++++++++++++++-----
+ 2 files changed, 17 insertions(+), 5 deletions(-)
 
-diff --git a/net/sunrpc/xdr.c b/net/sunrpc/xdr.c
-index 5605563..ddbec19 100644
---- a/net/sunrpc/xdr.c
-+++ b/net/sunrpc/xdr.c
-@@ -207,10 +207,13 @@ _shift_data_right_pages(struct page **pages, size_t pgto_base,
- 		pgfrom_base -= copy;
+diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
+index f7488fd..5492d72 100644
+--- a/arch/arm/kernel/entry-armv.S
++++ b/arch/arm/kernel/entry-armv.S
+@@ -1165,6 +1165,9 @@ vector_addrexcptn:
+ vector_fiq:
+ 	subs	pc, lr, #4
  
- 		vto = kmap_atomic(*pgto);
--		vfrom = kmap_atomic(*pgfrom);
--		memmove(vto + pgto_base, vfrom + pgfrom_base, copy);
-+		if (*pgto != *pgfrom) {
-+			vfrom = kmap_atomic(*pgfrom);
-+			memcpy(vto + pgto_base, vfrom + pgfrom_base, copy);
-+			kunmap_atomic(vfrom);
-+		} else
-+			memmove(vto + pgto_base, vto + pgfrom_base, copy);
- 		flush_dcache_page(*pgto);
--		kunmap_atomic(vfrom);
- 		kunmap_atomic(vto);
++	.globl	vector_fiq_offset
++	.equ	vector_fiq_offset, vector_fiq
++
+ 	.section .vectors, "ax", %progbits
+ __vectors_start:
+ 	W(b)	vector_rst
+diff --git a/arch/arm/kernel/fiq.c b/arch/arm/kernel/fiq.c
+index 2adda11..25442f4 100644
+--- a/arch/arm/kernel/fiq.c
++++ b/arch/arm/kernel/fiq.c
+@@ -47,6 +47,11 @@
+ #include <asm/irq.h>
+ #include <asm/traps.h>
  
- 	} while ((len -= copy) != 0);
++#define FIQ_OFFSET ({					\
++		extern void *vector_fiq_offset;		\
++		(unsigned)&vector_fiq_offset;		\
++	})
++
+ static unsigned long no_fiq_insn;
+ 
+ /* Default reacquire function
+@@ -80,13 +85,16 @@ int show_fiq_list(struct seq_file *p, int prec)
+ void set_fiq_handler(void *start, unsigned int length)
+ {
+ #if defined(CONFIG_CPU_USE_DOMAINS)
+-	memcpy((void *)0xffff001c, start, length);
++	void *base = (void *)0xffff0000;
+ #else
+-	memcpy(vectors_page + 0x1c, start, length);
++	void *base = vectors_page;
+ #endif
+-	flush_icache_range(0xffff001c, 0xffff001c + length);
++	unsigned offset = FIQ_OFFSET;
++
++	memcpy(base + offset, start, length);
++	flush_icache_range(0xffff0000 + offset, 0xffff0000 + offset + length);
+ 	if (!vectors_high())
+-		flush_icache_range(0x1c, 0x1c + length);
++		flush_icache_range(offset, offset + length);
+ }
+ 
+ int claim_fiq(struct fiq_handler *f)
+@@ -144,6 +152,7 @@ EXPORT_SYMBOL(disable_fiq);
+ 
+ void __init init_FIQ(int start)
+ {
+-	no_fiq_insn = *(unsigned long *)0xffff001c;
++	unsigned offset = FIQ_OFFSET;
++	no_fiq_insn = *(unsigned long *)(0xffff0000 + offset);
+ 	fiq_start = start;
+ }
 -- 
 1.8.1.2
 
