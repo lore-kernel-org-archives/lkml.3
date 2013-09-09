@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751397Ab3IIBUf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 21:20:35 -0400
-Received: from ozlabs.org ([203.10.76.45]:33730 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751099Ab3IIBUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 21:20:33 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Kyle McMartin <kyle@infradead.org>, Frantisek Hrbata <fhrbata@redhat.com>
-Cc: linux-kernel@vger.kernel.org, jstancek@redhat.com, keescook@chromium.org,
-        peter.oberparleiter@de.ibm.com, linux-arch@vger.kernel.org,
-        arnd@arndb.de, mgahagan@redhat.com, agospoda@redhat.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH v2 4/4] kernel: add support for init_array constructors
-In-Reply-To: <20130906180751.GD25882@merlin.infradead.org>
-References: <1378305776-3644-1-git-send-email-fhrbata@redhat.com> <1378305776-3644-5-git-send-email-fhrbata@redhat.com> <87vc2e66kr.fsf@rustcorp.com.au> <20130906175118.GB2332@localhost.localdomain> <20130906180751.GD25882@merlin.infradead.org>
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 09 Sep 2013 10:44:03 +0930
-Message-ID: <87d2oi6bl0.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751329Ab3IIBpm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 21:45:42 -0400
+Received: from vps11.idhosting.pl ([91.231.140.110]:46148 "EHLO
+	vps11.idhosting.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751147Ab3IIBpk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Sep 2013 21:45:40 -0400
+X-Greylist: delayed 540 seconds by postgrey-1.27 at vger.kernel.org; Sun, 08 Sep 2013 21:45:40 EDT
+From: "Grafolog" <grafolog2@grafologia.pisz.pl>
+Subject: Twoj portret psychografologiczny (osobopoznawczy) !
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8bit
+Reply-To: grafolog2@grafologia.pisz.pl
+Date: Mon, 9 Sep 2013 03:34:51 +0200
+X-Priority: 4
+X-Rozsylacz-AntySpam-Nadawca-Adres: grafolog2@grafologia.pisz.pl
+X-Rozsylacz-AntySpam-Nadawca-Host: 7-AF
+X-Rozsylacz-AntySpam-Nadawca-IP: 192.168.43.70
+X-Rozsylacz-AntySpam-SerwerPocztowy-Adres: grafologia.pisz.pl
+X-Rozsylacz-AntySpam-SerwerPocztowy-Uzytkownik: grafolog2
+X-Mailer: Rozsylacz
+Message-Id: <20130909013450.735A51047C99@vps11.idhosting.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kyle McMartin <kyle@infradead.org> writes:
-> On Fri, Sep 06, 2013 at 07:51:18PM +0200, Frantisek Hrbata wrote:
->> > > v2: - reuse mod->ctors for .init_array section for modules, because gcc uses
->> > >       .ctors or .init_array, but not both at the same time
->> > >
->> > > Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
->> > 
->> > Might be nice to document which gcc version changed this, so people can
->> > choose whether to cherry-pick this change?
->> 
->> Thank you for pointing this out. As per gcc git this was introduced by commit
->> ef1da80 and released in 4.7 version.
->> 
->> $ git describe --contains ef1da80
->> gcc-4_7_0-release~4358
->> 
->> Do you want me to post v3 with this info included in the descrition?
->> 
->
-> It actually depends on the combination of binutils/ld and gcc you use, not
-> simply which gcc version you use. :/
 
-Indeed, and seems it was binutils 20110507 which actually handled it
-properly.
+‘
 
-AFAICT it's theoretically possible to have .ctors and .init_array in a
-module.  Unlikely, but the patch should check for both and refuse to
-load the module in that case.  Otherwise weird things would happen.
 
-Cheers,
-Rusty.
+Twoj portret osobopoznawczy!
+
+
+Dowiedz sie jakie cechy osobnicze
+ujawniasz w swoim pismie recznym. 
+A moze rozpoznaj je w pismie innej osoby.
+
+Masz prawo wiedziec czy twoj 
+szef / sasiad / kolega / nauczyciel dziecka
+nie jest przypadkiem PSYCHOPATA?
+
+Mozesz to sprawdzic dysponujac 
+jego probka pisma recznego!
+
+Pierwszy Bezplatny i Ogolnodostepny
+SERWIS WIEDZY GRAFOLOGICZNEJ
+
+www.GRAFOLOG.waw.pl
+
+
+
+=======================================
+
+
+
+Wykonujemy takze uslugi zlecone:
+
+
+PORTRET PSYCHOLOGICZNY 
+lub rozpoznanie wybranych cech 
+charakterologicznych (osobniczych)
+dowolnej osoby na podstawie jej pisma 
+recznego wykonuje GRAFOLOG.
+
+stacjonarnie – korespondencyjnie – anonimowo
+
+INFO: 
+w dziale USLUGI Serwisu Grafologicznego
+
+www.GRAFOLOG.waw.pl
+
+
+szybko / profesjonalnie / w rozsadnej cenie
+
+
+.
+
