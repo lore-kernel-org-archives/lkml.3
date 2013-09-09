@@ -1,167 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934Ab3IIKFa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 06:05:30 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57405 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750871Ab3IIKF2 (ORCPT
+	id S1752089Ab3IIKGB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 06:06:01 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46783 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751714Ab3IIKF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 06:05:28 -0400
-Date: Mon, 9 Sep 2013 10:59:12 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: "behanw@converseincode.com" <behanw@converseincode.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>,
-        Mark Charlebois <charlebm@gmail.com>,
-        "moderated list:ARM PORT" <linux-arm-kernel@lists.infradead.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] arm: LLVMLinux: use current_stack_pointer for percpu
-Message-ID: <20130909095912.GA5426@mudshark.cambridge.arm.com>
-References: <1378502899-1241-1-git-send-email-behanw@converseincode.com>
- <1378502899-1241-3-git-send-email-behanw@converseincode.com>
- <alpine.LFD.2.03.1309070101330.20709@syhkavp.arg>
+	Mon, 9 Sep 2013 06:05:59 -0400
+Date: Mon, 9 Sep 2013 12:05:44 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, eranian@googlemail.com,
+        andi@firstfloor.org
+Subject: Re: [GIT PULL] perf changes for v3.12
+Message-ID: <20130909100544.GI31370@twins.programming.kicks-ass.net>
+References: <20130903132933.GA24955@gmail.com>
+ <CA+55aFxBTjfx304zstOVq3Hm3vmjgC5gOJaxXG5E_iWq_WXGTw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LFD.2.03.1309070101330.20709@syhkavp.arg>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFxBTjfx304zstOVq3Hm3vmjgC5gOJaxXG5E_iWq_WXGTw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
-
-On Sat, Sep 07, 2013 at 06:12:03AM +0100, Nicolas Pitre wrote:
-> On Fri, 6 Sep 2013, behanw@converseincode.com wrote:
-> > From: Behan Webster <behanw@converseincode.com>
-> > 
-> > The existing code uses named registers to get the value of the stack pointer.
-> > The new current_stack_pointer macro is more readable and allows for a central
-> > portable implementation of how to get the stack pointer with ASM.  This change
-> > supports being able to compile the kernel with both gcc and Clang.
-> > 
-> > Signed-off-by: Mark Charlebois <charlebm@gmail.com>
-> > Signed-off-by: Behan Webster <behanw@converseincode.com>
-> > Reviewed-by: Jan-Simon Möller <dl9pf@gmx.de>
-> > ---
-> >  arch/arm/include/asm/percpu.h | 4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/arch/arm/include/asm/percpu.h b/arch/arm/include/asm/percpu.h
-> > index 209e650..629a975 100644
-> > --- a/arch/arm/include/asm/percpu.h
-> > +++ b/arch/arm/include/asm/percpu.h
-> > @@ -30,14 +30,14 @@ static inline void set_my_cpu_offset(unsigned long off)
-> >  static inline unsigned long __my_cpu_offset(void)
-> >  {
-> >  	unsigned long off;
-> > -	register unsigned long *sp asm ("sp");
-> > +	unsigned long sp = current_stack_pointer;
-> >  
-> >  	/*
-> >  	 * Read TPIDRPRW.
-> >  	 * We want to allow caching the value, so avoid using volatile and
-> >  	 * instead use a fake stack read to hazard against barrier().
-> >  	 */
-> > -	asm("mrc p15, 0, %0, c13, c0, 4" : "=r" (off) : "Q" (*sp));
-> > +	asm("mrc p15, 0, %0, c13, c0, 4" : "=r" (off) : "Q" (sp));
+On Sat, Sep 07, 2013 at 07:17:28PM -0700, Linus Torvalds wrote:
+> This is new for me, but I suspect it is more related to the new
+> Haswell CPU I have than necessarily the 3.12 perf pull request.
 > 
-> This change doesn't look to be equivalent.  Previously the *sp implied a 
-> memory location which doesn't appear to be the case anymore.
+> Regardless, nothing bad happened, but my dmesg has this in it:
+> 
+>    Unexpected number of pebs records 10
+> 
+> when I was profiling some git workloads. Full trace appended.
 
-Having looked at the other comments in this thread, I had a crack with the
-following diff:
+>  ------------[ cut here ]------------
+>  WARNING: CPU: 1 PID: 3270 at
+> arch/x86/kernel/cpu/perf_event_intel_ds.c:1003
+> intel_pmu_drain_pebs_hsw+0x91/0xa0()
+>  Unexpected number of pebs records 10
+>  Modules linked in: fuse ip6t_REJECT nf_conntrack_ipv4
+> nf_conntrack_ipv6 nf_defrag_ipv4 nf_defrag_ipv6 xt_conntrack
+> ip6table_filter nf_conntrack ip6_tables snd_hda_codec_realtek
+> snd_hda_codec_hdmi snd_hda_intel snd_hda_codec snd_hwdep snd_seq
+> snd_seq_device snd_pcm e1000e serio_raw snd_page_alloc snd_timer ptp
+> lpc_ich snd i2c_i801 pps_core mfd_core soundcore uinput nfsd
+> auth_rpcgss nfs_acl lockd sunrpc binfmt_misc hid_logitech_dj i915
+> i2c_algo_bit drm_kms_helper drm i2c_core video
+>  CPU: 1 PID: 3270 Comm: git Not tainted 3.11.0-07749-ge7d33bb5ea82-dirty #4
+>  Hardware name:                  /DH87RL, BIOS
+> RLH8710H.86A.0317.2013.0426.1724 04/26/2013
+>   0000000000000009 ffff88041fa46ca0 ffffffff815fc637 ffff88041fa46ce8
+>   ffff88041fa46cd8 ffffffff81051e78 ffff88040f42f000 ffff88040f42f780
+>   ffff88041fa46ef8 ffffffff81c15860 0000000000000002 ffff88041fa46d38
+>  Call Trace:
+>   <NMI>  [<ffffffff815fc637>] dump_stack+0x45/0x56
+>   [<ffffffff81051e78>] warn_slowpath_common+0x78/0xa0
+>   [<ffffffff81051ee7>] warn_slowpath_fmt+0x47/0x50
+>   [<ffffffff8101b051>] intel_pmu_drain_pebs_hsw+0x91/0xa0
+>   [<ffffffff8101c5d0>] intel_pmu_handle_irq+0x210/0x390
+>   [<ffffffff81604deb>] perf_event_nmi_handler+0x2b/0x50
+>   [<ffffffff81604670>] nmi_handle.isra.3+0x80/0x180
+>   [<ffffffff81604840>] do_nmi+0xd0/0x310
+>   [<ffffffff81603d37>] end_repeat_nmi+0x1e/0x2e
+>   <<EOE>>  [<ffffffff810167df>] perf_events_lapic_init+0x2f/0x40
+>   [<ffffffff81016a50>] x86_pmu_enable+0x260/0x310
+>   [<ffffffff81111d87>] perf_pmu_enable+0x27/0x30
+>   [<ffffffff81112140>] perf_event_context_sched_in+0x80/0xc0
+>   [<ffffffff811127eb>] __perf_event_task_sched_in+0x16b/0x180
+>   [<ffffffff8107c300>] finish_task_switch+0x70/0xa0
+>   [<ffffffff81600f48>] __schedule+0x368/0x7c0
+>   [<ffffffff816013c4>] schedule+0x24/0x70
+>   [<ffffffff816038a4>] retint_careful+0xd/0x21
+>  ---[ end trace 52dad7a9d8d96b5f ]---
 
-diff --git a/arch/arm/include/asm/percpu.h b/arch/arm/include/asm/percpu.h
-index 209e650..ae0ac4e 100644
---- a/arch/arm/include/asm/percpu.h
-+++ b/arch/arm/include/asm/percpu.h
-@@ -30,7 +30,8 @@ static inline void set_my_cpu_offset(unsigned long off)
- static inline unsigned long __my_cpu_offset(void)
+So I'm not entirely sure how this can happen. We do _not_ set
+ds->pebs_event_reset[] so once a PEBS assist happens we do not
+automatically re-engage. We wait for the PMI to happen, consume the data
+and reprogram the hardware.
+
+We allow for up to x86_pmu.max_pebs_events (4 on hsw afaik) of PEBS
+entries to be in the buffer so each PEBS capable counter can trigger the
+assist once while we 'wait' for the PMI to hit.
+
+There's a little 'funny' with the hsw PEBS code in that it doesn't
+unconditionally clear the buffer in intel_pmu_drain_pebs_hsw() but that
+would only make a difference if n actually was < 0 -- again something
+that shouldn't ever happen.
+
+That said, there's two peculiar things about your report. First and
+foremost HSW; I'm not at all sure how it deals with a transaction being
+undone if a PEBS assist had happened during it. Does it reset the
+hardware but not remove the data? If so, this could cause excess
+entries. 
+
+Stephane, Andi, it this at all possible?, section 18.10.5.1 (June 2013)
+seems to suggest not; the way I read it PEBS assist will cause an abort
+(and the PMI certainly would) and we'll process the entire thing outside
+of transaction context.
+
+That said, 18.10.5.1 mentions that entries from inside a transaction
+will only have 0xb0 and 0xb8 aka perf_record::real_ip and
+perf_record::tsx_tuning set, I don't think __intel_pmu_drain_pebs_nhm()
+will do the right thing for them. In particular, when no
+perf_record::status bit is set we'll drop the event on the ground.
+
+Dropping them means we do not do intel_pmu_save_and_restart() to
+reprogram the hardware and the counter would get 'stuck'. Then again,
+without a status bit we have no idea what event to re-program so we're
+pretty much up shit creek without no stinkin' paddle.
+
+Another possibility is that the meaning of pebs_record::status has
+changed -- it was 'broken' and Peggy agreed and said she would look into
+it, not sure this has been 'fixed' but I couldn't find anything on it.
+That said, I think the code always assumed it was 'sane' so it having
+been fixed shouldn't matter.
+
+Secondly you seem to have triggered the nested NMI replay path. I'm not
+immediately sure how that could have messed up the PEBS state, but it
+sure is a complication.
+
+I think we can do something like the below as a pure code reduction --
+completely untested:
+
+---
+ arch/x86/kernel/cpu/perf_event_intel_ds.c | 109 +++++++++---------------------
+ 1 file changed, 32 insertions(+), 77 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 63438aa..bfda50e 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -178,20 +178,14 @@ struct pebs_record_nhm {
+ 	u64 status, dla, dse, lat;
+ };
+ 
+-/*
+- * Same as pebs_record_nhm, with two additional fields.
+- */
+ struct pebs_record_hsw {
+-	struct pebs_record_nhm nhm;
+-	/*
+-	 * Real IP of the event. In the Intel documentation this
+-	 * is called eventingrip.
+-	 */
+-	u64 real_ip;
+-	/*
+-	 * TSX tuning information field: abort cycles and abort flags.
+-	 */
+-	u64 tsx_tuning;
++	u64 flags, ip;
++	u64 ax, bx, cx, dx;
++	u64 si, di, bp, sp;
++	u64 r8,  r9,  r10, r11;
++	u64 r12, r13, r14, r15;
++	u64 status, dla, dse, lat;
++	u64 real_ip, tsx_tuning;
+ };
+ 
+ void init_debug_store_on_cpu(int cpu)
+@@ -789,12 +783,11 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 				   struct pt_regs *iregs, void *__pebs)
  {
-        unsigned long off;
--       register unsigned long *sp asm ("sp");
-+//     register unsigned long *sp asm ("sp");
-+       unsigned long *sp = (unsigned long *)current_stack_pointer;
+ 	/*
+-	 * We cast to pebs_record_nhm to get the load latency data
+-	 * if extra_reg MSR_PEBS_LD_LAT_THRESHOLD used
++	 * We cast to the biggest pebs_record but are careful not to
++	 * unconditionally access the 'extra' entries.
+ 	 */
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+-	struct pebs_record_nhm *pebs = __pebs;
+-	struct pebs_record_hsw *pebs_hsw = __pebs;
++	struct pebs_record_hsw *pebs = __pebs;
+ 	struct perf_sample_data data;
+ 	struct pt_regs regs;
+ 	u64 sample_type;
+@@ -853,7 +846,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 	regs.sp = pebs->sp;
  
-        /*
-         * Read TPIDRPRW.
-diff --git a/arch/arm/include/asm/thread_info.h b/arch/arm/include/asm/thread_info.h
-index 2b8114f..88a587c 100644
---- a/arch/arm/include/asm/thread_info.h
-+++ b/arch/arm/include/asm/thread_info.h
-@@ -89,6 +89,15 @@ struct thread_info {
- #define init_stack             (init_thread_union.stack)
+ 	if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format >= 2) {
+-		regs.ip = pebs_hsw->real_ip;
++		regs.ip = pebs->real_ip;
+ 		regs.flags |= PERF_EFLAGS_EXACT;
+ 	} else if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
+ 		regs.flags |= PERF_EFLAGS_EXACT;
+@@ -912,17 +905,34 @@ static void intel_pmu_drain_pebs_core(struct pt_regs *iregs)
+ 	__intel_pmu_pebs_event(event, iregs, at);
+ }
  
- /*
-+ * how to get the current stack pointer from C
-+ */
-+#define current_stack_pointer ({ \
-+       unsigned long current_sp; \
-+       asm ("mov %0, r13" : "=r" (current_sp)); \
-+       current_sp; \
-+})
+-static void __intel_pmu_drain_pebs_nhm(struct pt_regs *iregs, void *at,
+-					void *top)
++static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct debug_store *ds = cpuc->ds;
+ 	struct perf_event *event = NULL;
++	void *at, *top;
+ 	u64 status = 0;
+-	int bit;
++	int bit, n;
 +
-+/*
-  * how to get the thread information struct from C
++	if (!x86_pmu.pebs_active)
++		return;
++
++	at  = (struct pebs_record_nhm *)(unsigned long)ds->pebs_buffer_base;
++	top = (struct pebs_record_nhm *)(unsigned long)ds->pebs_index;
+ 
+ 	ds->pebs_index = ds->pebs_buffer_base;
+ 
++	n = (top - at) / x86_pmu.pebs_record_size;
++	if (n <= 0)
++		return;
++
++	/*
++	 * Should not happen, we program the threshold at 1 and do not
++	 * set a reset value.
++	 */
++	WARN_ONCE(n > x86_pmu.max_pebs_events,
++		  "Unexpected number of pebs records %d\n", n);
++
+ 	for (; at < top; at += x86_pmu.pebs_record_size) {
+ 		struct pebs_record_nhm *p = at;
+ 
+@@ -950,61 +960,6 @@ static void __intel_pmu_drain_pebs_nhm(struct pt_regs *iregs, void *at,
+ 	}
+ }
+ 
+-static void intel_pmu_drain_pebs_nhm(struct pt_regs *iregs)
+-{
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+-	struct debug_store *ds = cpuc->ds;
+-	struct pebs_record_nhm *at, *top;
+-	int n;
+-
+-	if (!x86_pmu.pebs_active)
+-		return;
+-
+-	at  = (struct pebs_record_nhm *)(unsigned long)ds->pebs_buffer_base;
+-	top = (struct pebs_record_nhm *)(unsigned long)ds->pebs_index;
+-
+-	ds->pebs_index = ds->pebs_buffer_base;
+-
+-	n = top - at;
+-	if (n <= 0)
+-		return;
+-
+-	/*
+-	 * Should not happen, we program the threshold at 1 and do not
+-	 * set a reset value.
+-	 */
+-	WARN_ONCE(n > x86_pmu.max_pebs_events,
+-		  "Unexpected number of pebs records %d\n", n);
+-
+-	return __intel_pmu_drain_pebs_nhm(iregs, at, top);
+-}
+-
+-static void intel_pmu_drain_pebs_hsw(struct pt_regs *iregs)
+-{
+-	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+-	struct debug_store *ds = cpuc->ds;
+-	struct pebs_record_hsw *at, *top;
+-	int n;
+-
+-	if (!x86_pmu.pebs_active)
+-		return;
+-
+-	at  = (struct pebs_record_hsw *)(unsigned long)ds->pebs_buffer_base;
+-	top = (struct pebs_record_hsw *)(unsigned long)ds->pebs_index;
+-
+-	n = top - at;
+-	if (n <= 0)
+-		return;
+-	/*
+-	 * Should not happen, we program the threshold at 1 and do not
+-	 * set a reset value.
+-	 */
+-	WARN_ONCE(n > x86_pmu.max_pebs_events,
+-		  "Unexpected number of pebs records %d\n", n);
+-
+-	return __intel_pmu_drain_pebs_nhm(iregs, at, top);
+-}
+-
+ /*
+  * BTS, PEBS probe and setup
   */
- static inline struct thread_info *current_thread_info(void) __attribute_const__;
-
-> this sp trickery was introduced in commit 509eb76ebf97 to solve bad code 
-> generation (the commit log has the details).  It would be good if Will 
-> Deacon could confirm that his test case still works fine with your 
-> change.
-
-I resurrected your original test case for the patch in question (see below)
-and the code is worse with the new sp accessor, since it insists on moving
-sp into r3, which forces us to push r4 onto the stack:
-
-Before:
-
-c001ce6c:       ee1d3f90        mrc     15, 0, r3, cr13, cr0, {4}
-c001ce70:       e790c103        ldr     ip, [r0, r3, lsl #2]
-c001ce74:       ee1d3f90        mrc     15, 0, r3, cr13, cr0, {4}
-c001ce78:       e7911103        ldr     r1, [r1, r3, lsl #2]
-c001ce7c:       e7d22003        ldrb    r2, [r2, r3]
-c001ce80:       ee1d3f90        mrc     15, 0, r3, cr13, cr0, {4}
-c001ce84:       e7903103        ldr     r3, [r0, r3, lsl #2]
-c001ce88:       e08c0001        add     r0, ip, r1
-c001ce8c:       e0800002        add     r0, r0, r2
-c001ce90:       e0800003        add     r0, r0, r3
-c001ce94:       e12fff1e        bx      lr
-
-After:
-
-c001ce74:       e52d4004        push    {r4}            ; (str r4, [sp, #-4]!)
-c001ce78:       e1a0300d        mov     r3, sp
-c001ce7c:       ee1dcf90        mrc     15, 0, ip, cr13, cr0, {4}
-c001ce80:       e790410c        ldr     r4, [r0, ip, lsl #2]
-c001ce84:       ee1dcf90        mrc     15, 0, ip, cr13, cr0, {4}
-c001ce88:       e791110c        ldr     r1, [r1, ip, lsl #2]
-c001ce8c:       e7d2200c        ldrb    r2, [r2, ip]
-c001ce90:       ee1d3f90        mrc     15, 0, r3, cr13, cr0, {4}
-c001ce94:       e7903103        ldr     r3, [r0, r3, lsl #2]
-c001ce98:       e0840001        add     r0, r4, r1
-c001ce9c:       e0800002        add     r0, r0, r2
-c001cea0:       e0800003        add     r0, r0, r3
-c001cea4:       e8bd0010        pop     {r4}
-c001cea8:       e12fff1e        bx      lr
-
-Will
-
---->8
-
-int foo(int *a, int *b, char *c)
-{
-	int x, y, z;
-
-	x = a[__my_cpu_offset];
-	barrier();
-	y = b[__my_cpu_offset];
-	z = c[__my_cpu_offset];
-	barrier();
-	return  x + y + z + a[__my_cpu_offset];
-}
-
+@@ -1039,7 +994,7 @@ void intel_ds_init(void)
+ 		case 2:
+ 			pr_cont("PEBS fmt2%c, ", pebs_type);
+ 			x86_pmu.pebs_record_size = sizeof(struct pebs_record_hsw);
+-			x86_pmu.drain_pebs = intel_pmu_drain_pebs_hsw;
++			x86_pmu.drain_pebs = intel_pmu_drain_pebs_nhm;
+ 			break;
+ 
+ 		default:
