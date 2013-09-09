@@ -1,100 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab3IIOWc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 10:22:32 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52193 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167Ab3IIOW3 (ORCPT
+	id S1753604Ab3IIOWa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 10:22:30 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:60156 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751178Ab3IIOW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Sep 2013 10:22:29 -0400
-Date: Mon, 9 Sep 2013 16:21:55 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, sbw@mit.edu, cl@linux.com
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
- section?
-Message-ID: <20130909142155.GC26785@twins.programming.kicks-ass.net>
-References: <20130905195234.GA20555@linux.vnet.ibm.com>
- <20130906105934.GF20519@somewhere>
- <20130906151851.GQ3966@linux.vnet.ibm.com>
- <1378488088.31445.39.camel@edumazet-glaptop>
- <20130906174117.GU3966@linux.vnet.ibm.com>
- <20130906185927.GE2706@somewhere>
- <20130909105347.GK31370@twins.programming.kicks-ass.net>
- <20130909132343.GN3966@linux.vnet.ibm.com>
+Message-ID: <522DD977.2040504@ahsoftware.de>
+Date: Mon, 09 Sep 2013 16:21:43 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130712 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130909132343.GN3966@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Mark Brown <broonie@kernel.org>
+CC: Guenter Roeck <linux@roeck-us.net>,
+        Daniel Santos <daniel.santos@pobox.com>,
+        linux-gpio <linux-gpio@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        linux-spi <linux-spi@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: "Virtual" Interrupts -- Need help please
+References: <522BC27A.5080303@att.net> <522BCA33.6000701@roeck-us.net> <522D0D37.3050500@att.net> <522D17EC.3050908@roeck-us.net> <20130909110257.GU29403@sirena.org.uk> <522DAE69.4050608@ahsoftware.de> <20130909134558.GY29403@sirena.org.uk>
+In-Reply-To: <20130909134558.GY29403@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 06:23:43AM -0700, Paul E. McKenney wrote:
-> Peter, in the general case, you are quite correct.  But this is a special
-> case where it really does work.
+Am 09.09.2013 15:45, schrieb Mark Brown:
+> On Mon, Sep 09, 2013 at 01:18:01PM +0200, Alexander Holler wrote:
+>> Am 09.09.2013 13:02, schrieb Mark Brown:
 > 
-> The key point here is that preemption and migration cannot move a task
-> from a CPU to which RCU is paying attention to a CPU that RCU is ignoring.
-
-But there's no constraint placed on the migration mask (aka
-task_struct::cpus_allowed) and therefore it can move it thusly.
-
-What you're trying to say is that by the time the task is running on
-another cpu, that cpu's state will match the state of the previous cpu,
-no?
-
-> So yes, by the time the task sees the return value from rcu_is_cpu_idle(),
-> that task might be running on some other CPU.  But that is OK, because
-> if RCU was paying attention to the old CPU, then RCU must also be paying
-> attention to the new CPU.
-
-OK, fair enough.
-
-> Here is an example of how this works:
+>>> makes your mail very hard to read.  It looks like your mailer has also
+>>> reflowed Daniel's mail.
 > 
-> 1.	Some task running on a CPU 0 (which RCU is paying attention to)
-> 	calls rcu_is_cpu_idle(), which disables preemption, checks the
-> 	per-CPU variable, sets ret to zero, then enables preemption.
+>> That's just wrong. Mail readers should wrap lines, not senders. And
+>> readers can do this since some decades.
 > 
-> 	At this point, the task is preempted by some high-priority task.
+> There's a specific way for senders to request that if it's desired, set
+> format=flowed in the MIME type to tell the recipient that the formatting
+> isn't important.
 > 
-> 2.	CPU 1 is currently idle, so RCU is -not- paying attention to it.
-> 	However, it is decided that our low-priority task should migrate
-> 	to CPU 1.
+>> The reason is obvious: No sender knows the line width the receiver
+>> can display. So, for example, if the sender hard breaks lines every
+>> 80 chars, a reader with a device which just displays 60 characters
+>> at max. will see every second line with at most 20 characters. I
+>> assume you can guess how such does look like. Furthermore there are
+>> still a lot of people which do like to read mails with line length
+>> as long their display is possible to show, and hard breaking lines
+>> on the receiver side does make such impossible.
 > 
-> 3.	CPU 1 is sent an IPI, which forces this CPU out of idle.  This
-> 	causes rcu_idle_exit() to be called, which causes RCU to start
-> 	paying attention to CPU 1.
+>> So the correct behaviour is to not hard break lines on the sender
+>> side and leave that to the reader on the receiving side, as only the
+>> receiving side knows the line width.
 > 
+> This doesn't work well with lots of content (like patches) commonly
+> handled in technical contexts - the line breaks actually mean something
+> and it's hard fo the mail client to figure out what is going on unless
+> someone tells it.
 
-Just a nit, we typically try to avoid using IPIs to wake idle CPUs,
-doesn't change the story much though.
+I wonder what all the hard line breaks you added to your mail do mean?
 
-> 4.	CPU 1 switches to the low-priority task, which now sees the
-> 	return value of rcu_is_cpu_idle().  Now, this return value did
-> 	in fact reflect the old state of CPU 0, and the state of CPU 0
-> 	might have changed.  (For example, the high-priority task might
-> 	have blocked, so that CPU 0 is now idle, which in turn would
-> 	mean that RCU is no longer paying attention to it, so that
-> 	if rcu_is_cpu_idle() was called right now, it would return
-> 	true rather than the false return computed in step 1 above.)
-> 
-> 5.	But that is OK.  Because of the way RCU and idle interact,
-> 	if a call from a given task to rcu_is_cpu_idle() returned false
-> 	some time in the past, a call from that same task will also
-> 	return false right now.
-> 
-> So yes, in general it is wrong to disable preemption, grab the value
-> of a per-CPU variable, re-enable preemption, and then return the result.
-> But there are a number of special cases where it is OK, and this is
-> one of them.
+Hard line breaks in paragraphs, as you've requested, doesn't mean
+anything. They just make eamils extremly ugly, e.g. your one is
+displayed here with a whole lot of unused white space because I'm not
+using a CGA screen. And people who do read your mail on a phone with
+less than 80 or 75 chars will see it as even more ugly.
 
-Right, worthy of comments though :-)
+And imho it just works if hard line breaks are used where they belong
+too, the code or to end paragraphs or otherwise where they have a
+meaning, but not just always after 75 or 80 chars.
+
+Regards,
+
+Alexander Holler
