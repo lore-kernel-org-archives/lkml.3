@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756177Ab3IISw3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 14:52:29 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43845 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754280Ab3IISw0 (ORCPT
+	id S1756152Ab3IISwQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 14:52:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57061 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753140Ab3IISpV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 14:52:26 -0400
-Message-ID: <522E18C0.9010909@ti.com>
-Date: Mon, 9 Sep 2013 13:51:44 -0500
-From: Joel Fernandes <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Koen Kooi <koen@dominion.thruhere.net>
-CC: Kevin Hilman <khilman@linaro.org>, <bcousson@baylibre.com>,
-        <linux-omap@vger.kernel.org>, <tony@atomide.com>,
-        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ijc+devicetree@hellion.org.uk>, <linux@arm.linux.org.uk>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <olof@lixom.net>
-Subject: Re: [PATCH] ARM: OMAP2+: am335x-bone*: add DT for BeagleBone Black
-References: <1378736961-21005-1-git-send-email-koen@dominion.thruhere.net> <87zjrm81dl.fsf@linaro.org> <BBAC0939-A4F9-4FEA-B137-0307D8787DC3@dominion.thruhere.net> <522E1325.8050906@ti.com> <41952E65-1037-4117-A1AE-8310FED59E3A@dominion.thruhere.net>
-In-Reply-To: <41952E65-1037-4117-A1AE-8310FED59E3A@dominion.thruhere.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Sep 2013 14:45:21 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 16/24] ALSA: opti9xx: Fix conflicting driver object name
+Date: Mon,  9 Sep 2013 11:45:06 -0700
+Message-Id: <1378752314-2416-17-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1378752314-2416-1-git-send-email-kamal@canonical.com>
+References: <1378752314-2416-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2013 01:43 PM, Koen Kooi wrote:
-> 
-> Op 9 sep. 2013, om 20:27 heeft Joel Fernandes <joelf@ti.com> het volgende geschreven:
-> 
->> On 09/09/2013 10:51 AM, Koen Kooi wrote:
->>>
->>> Op 9 sep. 2013, om 17:23 heeft Kevin Hilman <khilman@linaro.org> het volgende geschreven:
->>>
->>>> Koen Kooi <koen@dominion.thruhere.net> writes:
->>>>
->>>>> The BeagleBone Black is basically a regular BeagleBone with eMMC and HDMI added,
->>>>> so create a common dtsi both can use.
->>>>>
->>>>> IMPORTANT: booting the existing am335x-bone.dts will blow up the HDMI transceiver
->>>>> after a dozen boots with an uSD card inserted because LDO will be at 3.3V instead
->>>>> of 1.8.
->>>>>
->>>>> MMC support for AM335x still isn't in, so only the LDO change has been added.
->>>>>
->>>>> Cc: stable@vger.kernel.org
->>>>>
->>>>> Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
->>>>> Tested-by: Tom Rini <trini@ti.com>
->>>>> Tested-by: Matt Porter <matt.porter@linaro.org>
->>>>
->>>> I guess the subject should've included v5?
->>>
->>> Yes, I blame it on being monday :)
->>
->> The series you're posting will require rebasing on the current MMC DT series
->> that is being discussed last couple of weeks on the mailing list which were
->> waiting until now as DMA support was missing. Now that DMA support is pulled in,
->> it is safe to apply those patches so I will be reposting them shortly.
->>
->> Please hold off any changes until those patches are posted. This will avoid
->> unnecessary conflicts.
-> 
-> Or you can rebase on top of this patch since it has no dependencies *and* fixes blowing up boards. FWIW, git-rebase, git-cherry-pick and git-am -3 track the rename in my patch just fine.
-> 
+3.8.13.9 -stable review patch.  If anyone has any objections, please let me know.
 
-That's fair enough, since  Kevin Acked and Benoit is pulling it, I'm fine with
-rebasing on top of it and we avoid any merge conflicts.
+------------------
 
-Regards,
+From: Takashi Iwai <tiwai@suse.de>
 
--Joel
+commit fb615499f0ad28ed74201c1cdfddf9e64e205424 upstream.
+
+The recent commit to delay the release of kobject triggered NULL
+dereferences of opti9xx drivers.  The cause is that all
+snd-opti92x-ad1848, snd-opti92x-cs4231 and snd-opti93x drivers
+register the PnP card driver with the very same name, and also
+snd-opti92x-ad1848 and -cs4231 drivers register the ISA driver with
+the same name, too.  When these drivers are built in, quick
+"register-release-and-re-register" actions occur, and this results in
+Oops because of the same name is assigned to the kobject.
+
+The fix is simply to assign individual names.  As a bonus, by using
+KBUILD_MODNAME, the patch reduces more lines than it adds.
+
+The fix is based on the suggestion by Russell King.
+
+Reported-and-tested-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ sound/isa/opti9xx/opti92x-ad1848.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
+
+diff --git a/sound/isa/opti9xx/opti92x-ad1848.c b/sound/isa/opti9xx/opti92x-ad1848.c
+index b41ed86..e427dbf 100644
+--- a/sound/isa/opti9xx/opti92x-ad1848.c
++++ b/sound/isa/opti9xx/opti92x-ad1848.c
+@@ -173,11 +173,7 @@ MODULE_DEVICE_TABLE(pnp_card, snd_opti9xx_pnpids);
+ 
+ #endif	/* CONFIG_PNP */
+ 
+-#ifdef OPTi93X
+-#define DEV_NAME "opti93x"
+-#else
+-#define DEV_NAME "opti92x"
+-#endif
++#define DEV_NAME KBUILD_MODNAME
+ 
+ static char * snd_opti9xx_names[] = {
+ 	"unknown",
+@@ -1168,7 +1164,7 @@ static int snd_opti9xx_pnp_resume(struct pnp_card_link *pcard)
+ 
+ static struct pnp_card_driver opti9xx_pnpc_driver = {
+ 	.flags		= PNP_DRIVER_RES_DISABLE,
+-	.name		= "opti9xx",
++	.name		= DEV_NAME,
+ 	.id_table	= snd_opti9xx_pnpids,
+ 	.probe		= snd_opti9xx_pnp_probe,
+ 	.remove		= snd_opti9xx_pnp_remove,
+-- 
+1.8.1.2
+
