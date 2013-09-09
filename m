@@ -1,120 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752107Ab3IICly (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 22:41:54 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:28232 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665Ab3IIClv (ORCPT
+	id S1751809Ab3IICoP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 22:44:15 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:14942 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751564Ab3IICoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 22:41:51 -0400
-Message-ID: <522D353F.8090209@huawei.com>
-Date: Mon, 9 Sep 2013 10:41:03 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>, <linux-kernel@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, Hanjun Guo <guohanjun@huawei.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Anil Gurumurthy <agurumur@brocade.com>,
-        Vijaya Mohan Guvva <vmohan@brocade.com>, <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH v2 1/6] scsi/bfa: use pcie_set/get_readrq to simplify
- code
-References: <1378367730-25996-1-git-send-email-wangyijing@huawei.com> <20130906221425.GA10152@google.com>
-In-Reply-To: <20130906221425.GA10152@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.76.69]
+	Sun, 8 Sep 2013 22:44:14 -0400
+X-AuditID: cbfee68d-b7fe86d0000077a5-69-522d35fbaeed
+Message-id: <522D35FB.6060106@samsung.com>
+Date: Mon, 09 Sep 2013 11:44:11 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com, Graeme Gregory <gg@slimlogic.co.uk>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH 3/3] extcon: Simplify extcon_dev_register() prototype by
+ removing unnecessary parameter
+References: <1378081208-20274-1-git-send-email-cw00.choi@samsung.com>
+ <1378081208-20274-4-git-send-email-cw00.choi@samsung.com>
+ <20130902004024.GB10709@kroah.com> <5223E648.7020207@samsung.com>
+ <20130903155744.GA21846@kroah.com> <52267BFE.3030106@samsung.com>
+ <20130904011640.GA24275@kroah.com> <5226C2A6.9000805@samsung.com>
+ <20130908215100.GA29783@kroah.com>
+In-reply-to: <20130908215100.GA29783@kroah.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsWyRsSkQPe3qW6QwYUzJhZTHz5hs/g35Qa7
+	Rf8WF4vmxevZLC487WGzONv0ht3i8q45bBa3G1ewOXB4bFrVyeaxf+4ado+XE3+zefRtWcXo
+	MXXKX0aP4ze2M3l83iQXwB7FZZOSmpNZllqkb5fAlXFnVVjBF7mKWcfzGhivSXYxcnJICJhI
+	/P6+hR3CFpO4cG89WxcjF4eQwFJGiY8P7zHDFF3adJoVIjGdUWLlg1VQzitGiTd/N7GBVPEK
+	aEmsuLeLBcRmEVCV6D95FqybDSi+/8UNsBpRgTCJldOvsEDUC0r8mHwPzBYR0JB4efQWC8hQ
+	ZoFGJomLi+cDORwcwgK5EkuOhkMs+8Qk8W5+D9itnAL6EnOmbQcbyiygI7G/dRqULS+xec1b
+	ZpAGCYFH7BKnl89hhbhIQOLb5ENgQyUEZCU2HYB6TVLi4IobLBMYxWYhuWkWkrGzkIxdwMi8
+	ilE0tSC5oDgpvchQrzgxt7g0L10vOT93EyMwJk//e9a7g/H2AetDjMlAKycyS4km5wNjOq8k
+	3tDYzMjC1MTU2Mjc0ow0YSVxXrUW60AhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjHccAtYb
+	pDFJnghQL8mfv1FWdv09H41FZzWXeSxR+brnlO+pmW8nrGXIZrz3qM5bMP9E767sbiHnY5/v
+	ZUmqx+Yfd2oP+cc97fLvdWuMhOR+XLuzTfZjXX2Xy7QHU/u4InZk+pUKfTx38+CUp5MDBGq/
+	1FlpWkyasWrL6nNtc5dunGl8ctJtVz0lluKMREMt5qLiRADrJyJw3wIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsVy+t9jQd3fprpBBrMn6VhMffiEzeLflBvs
+	Fv1bXCyaF69ns7jwtIfN4mzTG3aLy7vmsFncblzB5sDhsWlVJ5vH/rlr2D1eTvzN5tG3ZRWj
+	x9Qpfxk9jt/YzuTxeZNcAHtUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJC
+	XmJuqq2Si0+ArltmDtBVSgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaM
+	O6vCCr7IVcw6ntfAeE2yi5GTQ0LAROLSptOsELaYxIV769m6GLk4hASmM0qsfLCKFcJ5xSjx
+	5u8mNpAqXgEtiRX3drGA2CwCqhL9J88yg9hsQPH9L26A1YgKhEmsnH6FBaJeUOLH5HtgtoiA
+	hsTLo7dYQIYyCzQySVxcPB/I4eAQFsiVWHI0HGLZJyaJd/N72EEaOAX0JeZM2w42lFlAR2J/
+	6zQoW15i85q3zBMYBWYh2TELSdksJGULGJlXMYqmFiQXFCel5xrqFSfmFpfmpesl5+duYgRH
+	/DOpHYwrGywOMQpwMCrx8Er81wkSYk0sK67MPcQowcGsJMJ7/jlQiDclsbIqtSg/vqg0J7X4
+	EGMyMAgmMkuJJucDk1FeSbyhsYmZkaWRuaGFkbE5acJK4rwHWq0DhQTSE0tSs1NTC1KLYLYw
+	cXBKNTAG/pvu5bXpY802pUohB2mv7L0Gyfpi4Wt2zbnK5T6H30BZfdUO6+5QkVXvkgIUrwW2
+	Gs5+V8uicSZoyyyHwgPLGnYou2xvsy8puvfj45Qz4u7S38+6evapuT9aVK9aohtSqNqbdTKq
+	cqex4GLm9/u1tFa3qgpUaK74J817aUP8z6zJ57X5niuxFGckGmoxFxUnAgDs2VLuPAMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/9/7 6:14, Bjorn Helgaas wrote:
-> On Thu, Sep 05, 2013 at 03:55:25PM +0800, Yijing Wang wrote:
->> v1->v2: use pcie_get/set_readrq to simplify code
->> a lot suggestd by Bjorn.
+Hi Greg, 
+On 09/09/2013 06:51 AM, Greg KH wrote:
+> On Wed, Sep 04, 2013 at 02:18:30PM +0900, Chanwoo Choi wrote:
+>> On 09/04/2013 10:16 AM, Greg KH wrote:
+>>> On Wed, Sep 04, 2013 at 09:17:02AM +0900, Chanwoo Choi wrote:
+>>>> On 09/04/2013 12:57 AM, Greg KH wrote:
+>>>>> On Mon, Sep 02, 2013 at 10:13:44AM +0900, Chanwoo Choi wrote:
+>>>>>> Hi Greg,
+>>>>>>
+>>>>>> On 09/02/2013 09:40 AM, Greg KH wrote:
+>>>>>>> On Mon, Sep 02, 2013 at 09:20:08AM +0900, Chanwoo Choi wrote:
+>>>>>>>> This patch remove extcon_dev_register()'s second parameter which means
+>>>>>>>> the pointer of parent device to simplify prototype of this function.
+>>>>>>>
+>>>>>>> No, please don't.  You want the parent to be passed in, as the core
+>>>>>>> needs it when it is registered with the system, otherwise it will not
+>>>>>>> show up in sysfs properly (i.e. you can't set it afterwards.)
+>>>>>>
+>>>>>> Currently, each extcon driver have allocated memory for extcon device
+>>>>>> by using devm_kzalloc() in each extcon device driver.
+>>>>>
+>>>>> That seems backwards, the extcon core should be the one doing the
+>>>>> allocation, and ownership of the device, like all other subsystem cores
+>>>>> do.  That makes the driver logic much simpler, and the lifetime
+>>>>> ownership correct (i.e. what happens when a device is unbound from a
+>>>>> driver by userspace?  The driver can't control the device memory
+>>>>> anymore...)
+>>>>>
+>>>>
+>>>> OK,
+>>>> The extcon core will control memory allocation instead of extcon device driver
+>>>> as following.
+>>>> - devm_extcon_allocate_device(struct device *dev)
+>>>
+>>> Huh?  Why do you need a devm allocator?  This is a "real" child device,
+>>> just create it with a "extcon_create_device()" or some such call, like
+>>> all other busses do?
 >>
->> Use pcie_get_readrq()/pcie_set_readrq() to simplify
->> code.
+>> I refer Input/IIO subsystem to check the process of device registration.
+>> Input subsystem has following functions for memory allocation of input device
+>> and input device registration.
 >>
->> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
->> Cc: Jiang Liu <jiang.liu@huawei.com>
->> Cc: Anil Gurumurthy <agurumur@brocade.com>
->> Cc: Vijaya Mohan Guvva <vmohan@brocade.com>
->> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
->> Cc: linux-scsi@vger.kernel.org
->> Cc: linux-kernel@vger.kernel.org
->> ---
->>  drivers/scsi/bfa/bfad.c |   48 +++++-----------------------------------------
->>  1 files changed, 6 insertions(+), 42 deletions(-)
-
-Hi Bjorn,
-   Thanks for your patience guidance! Now I know more about how to write
-a patch or patchset. I will check my patch follow the advices below before
-I send out every time. Make it easier for you and other maintainers to
-review and apply.
-
-> 
-> I applied all these with some tweaks to my pci/yijing-pci_is_pcie-v2
-> branch [1].  This will be rebased after v3.12-rc1, and may be amended
-> if any patches are picked up by others.
-> 
-> Hints (not just for you; I hope other people pay attention, too,
-> because I'm obsessive and I pay attention to these details):
-> 
->   - Include a "[PATCH v2 0/6]" email.  That's a good place for you to
->     put an overall description of the series, and a good place for
->     responses like this one that apply to the whole series.
-> 
->> -
->> -		pcie_cap_reg = pci_find_capability(pdev, PCI_CAP_ID_EXP);
->> -		if (mask != 0xffff && pcie_cap_reg) {
->> -			pcie_cap_reg += 0x08;
->> -			pci_read_config_word(pdev, pcie_cap_reg, &pcie_dev_ctl);
->> -			if ((pcie_dev_ctl & 0x7000) != mask) {
->> -				printk(KERN_WARNING "BFA[%s]: "
->> +	if (pcie_max_read_reqsz > 0 && pci_is_pcie(pdev)) {
->> +		int max_rq = pcie_get_readrq(pdev);
->> +		if (max_rq > 128 && max_rq < 4096 && is_power_of_2(max_rq))
-> 
-> I think you meant to validate pcie_max_read_reqsz (the module parameter),
-> not max_rq.  I made this change on my branch.
-
-Yes, thanks for your fix.
-
-Thanks!
-Yijing.
-
-> 
->> +			printk(KERN_WARNING "BFA[%s]: "
->>  				"pcie_max_read_request_size is %d, "
->> -				"reset to %d\n", bfad->pci_name,
->> -				(1 << ((pcie_dev_ctl & 0x7000) >> 12)) << 7,
->> +				"reset to %d\n", bfad->pci_name, max_rq,
->>  				pcie_max_read_reqsz);
->> -
->> -				pcie_dev_ctl &= ~0x7000;
->> -				pci_write_config_word(pdev, pcie_cap_reg,
->> -						pcie_dev_ctl | mask);
->> -			}
->> -		}
->> +		pcie_set_readrq(pdev, pcie_max_read_reqsz);
->>  	}
->>  
->>  	pci_save_state(pdev);
->> -- 
->> 1.7.1
+>> Input subsystem
+>> - struct input_dev *devm_input_allocate_device(struct device *device)
+>> - struct input_dev *input_allocate_device(void)
+>> - int input_register_device(struct input_dev *dev)
+>> drivers/input/input.c
+>>
+>> devm_input_allocate_device()/input_allocate_device() can allocate
+>> memory for input device in input core. And then created input device
+>> pass input_register_device() as parameter.
+>>
+>> So, input device driver haven't executed kmalloc() or devm_kmalloc()
+>> to allocate memory of input device by using input_allocate_device()/
+>> devm_input_allocate_device().
 >>
 >>
+>> Also,IIO subsystem has separate iio_device_alloc() function
+>> to allocate memory for iio device. But IIO subsystem hasn't
+>> "devm_" allocator. So, If iio device driver fail initialization
+>> in *_probe, should execute iio_device_free() to free allocated memory.
+>>
+>> IIO Subsystem
+>> - iio_device_alloc(int sizeof_priv)
+>> - iio_device_register(struct iio_dev *indio_dev);
+>> drivers/iio/industrialio-core.c
+>>
+>>
+>> So, I think extcon subsystem need extcon_allocate_device()/devm_extcon_allocate_device()
+>> to allocate for memory extcon device. To implement devm_extcon_allocate_device() function
+>> , extcon subsystem need extcon_allocate_device() because devm_extcon_allocate_device()
+>> must call extcon_allocate_device for memory allocation.
+>>
+>> If extcon_allocate_device()/devm_extcon_allocate_device() is implemented to extcon core,
+>> I think extcon core can control the memory operation of extcon device.
+>>
+>> EXTCON Subsystem
+>> - devm_extcon_allocate_device(struct device *dev)
+>> - extcon_allocate_device(void)
+>> - extcon_dev_register(struct extcon_dev *edev)
+>>
+>> If I'm wrong, please correct me. Thanks.
 > 
-> .
+> No, you are totally correct, I was wrong, nevermind, continue on doing a
+> great job, my mistake :)
 > 
+> greg k-h
 
+Thanks for your comment always.
 
--- 
-Thanks!
-Yijing
+Best Regards,
+Chanwoo Choi
+
 
