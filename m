@@ -1,126 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179Ab3IICVF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 22:21:05 -0400
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:25571 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751510Ab3IICTc (ORCPT
+	id S1751751Ab3IICYX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 22:24:23 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:50916 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751302Ab3IICYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 22:19:32 -0400
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-        Aswin Chandramouleeswaran <aswin@hp.com>, linux-kernel@vger.kernel.org,
-        Davidlohr Bueso <davidlohr@hp.com>
-Subject: [PATCH 2/7] perf lock: return proper code in report_lock_*_event
-Date: Sun,  8 Sep 2013 19:19:14 -0700
-Message-Id: <1378693159-8747-3-git-send-email-davidlohr@hp.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1378693159-8747-1-git-send-email-davidlohr@hp.com>
-References: <1378693159-8747-1-git-send-email-davidlohr@hp.com>
+	Sun, 8 Sep 2013 22:24:23 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <522D3153.5000102@roeck-us.net>
+Date: Sun, 08 Sep 2013 19:24:19 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Peng Tao <tao.peng@emc.com>, Peng Tao <bergwolf@gmail.com>
+Subject: Re: [PATCH] staging: Disable lustre file system for MIPS, SH, and
+ XTENSA
+References: <1378688580-11935-1-git-send-email-linux@roeck-us.net> <20130909015945.GA4029@kroah.com>
+In-Reply-To: <20130909015945.GA4029@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The report_lock_*_event() functions return -1 when lock_stat_findnew(),
-thread_stat_findnew() or get_seq() return NULL. These functions only return
-this value when failing to allocate memory, this return -ENOMEM instead.
+On 09/08/2013 06:59 PM, Greg Kroah-Hartman wrote:
+> On Sun, Sep 08, 2013 at 06:03:00PM -0700, Guenter Roeck wrote:
+>> mips allmodconfig fails with
+>>
+>> ERROR: "copy_from_user_page" [drivers/staging/lustre/lustre/libcfs/libcfs.ko]
+>> undefined!
+>>
+>> which is due to LUSTRE using copy_from_user_page which is not exported by any
+>> architecture.
+>
+> Any, or just these arches?
+>
+Other architectures implement it as define as far as I can see.
 
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
----
- tools/perf/builtin-lock.c | 24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+>> Unfortunately, LUSTRE can only be built as module, so there is no
+>> easy fix.
+>
+> Can't we just export the functions for those arches?  Surely lutre
+> isn't the first/only driver that needs this?
+>
+That would be another option.
 
-diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-index 148f7e2..d318862 100644
---- a/tools/perf/builtin-lock.c
-+++ b/tools/perf/builtin-lock.c
-@@ -400,17 +400,17 @@ static int report_lock_acquire_event(struct perf_evsel *evsel,
- 
- 	ls = lock_stat_findnew(addr, name);
- 	if (!ls)
--		return -1;
-+		return -ENOMEM;
- 	if (ls->discard)
- 		return 0;
- 
- 	ts = thread_stat_findnew(sample->tid);
- 	if (!ts)
--		return -1;
-+		return -ENOMEM;
- 
- 	seq = get_seq(ts, addr);
- 	if (!seq)
--		return -1;
-+		return -ENOMEM;
- 
- 	switch (seq->state) {
- 	case SEQ_STATE_UNINITIALIZED:
-@@ -472,17 +472,17 @@ static int report_lock_acquired_event(struct perf_evsel *evsel,
- 
- 	ls = lock_stat_findnew(addr, name);
- 	if (!ls)
--		return -1;
-+		return -ENOMEM;
- 	if (ls->discard)
- 		return 0;
- 
- 	ts = thread_stat_findnew(sample->tid);
- 	if (!ts)
--		return -1;
-+		return -ENOMEM;
- 
- 	seq = get_seq(ts, addr);
- 	if (!seq)
--		return -1;
-+		return -ENOMEM;
- 
- 	switch (seq->state) {
- 	case SEQ_STATE_UNINITIALIZED:
-@@ -533,17 +533,17 @@ static int report_lock_contended_event(struct perf_evsel *evsel,
- 
- 	ls = lock_stat_findnew(addr, name);
- 	if (!ls)
--		return -1;
-+		return -ENOMEM;
- 	if (ls->discard)
- 		return 0;
- 
- 	ts = thread_stat_findnew(sample->tid);
- 	if (!ts)
--		return -1;
-+		return -ENOMEM;
- 
- 	seq = get_seq(ts, addr);
- 	if (!seq)
--		return -1;
-+		return -ENOMEM;
- 
- 	switch (seq->state) {
- 	case SEQ_STATE_UNINITIALIZED:
-@@ -587,17 +587,17 @@ static int report_lock_release_event(struct perf_evsel *evsel,
- 
- 	ls = lock_stat_findnew(addr, name);
- 	if (!ls)
--		return -1;
-+		return -ENOMEM;
- 	if (ls->discard)
- 		return 0;
- 
- 	ts = thread_stat_findnew(sample->tid);
- 	if (!ts)
--		return -1;
-+		return -ENOMEM;
- 
- 	seq = get_seq(ts, addr);
- 	if (!seq)
--		return -1;
-+		return -ENOMEM;
- 
- 	switch (seq->state) {
- 	case SEQ_STATE_UNINITIALIZED:
--- 
-1.7.11.7
+Actually, turns out Geert submitted a patch to do this for mips already, and Ralf applied it:
+
+https://lkml.org/lkml/2013/9/5/111
+
+So please forget this patch. If sh/xtensa actually need it, we can do the same there.
+
+Guenter
 
