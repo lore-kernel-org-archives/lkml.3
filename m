@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117Ab3IIXTu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 19:19:50 -0400
-Received: from mga02.intel.com ([134.134.136.20]:46597 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756037Ab3IIXTs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 19:19:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,874,1371106800"; 
-   d="scan'208";a="375760562"
-Date: Mon, 9 Sep 2013 16:19:47 -0700
-From: Jon Mason <jon.mason@intel.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>
-Subject: Re: linux-next: Tree for Sep 9 (ntb)
-Message-ID: <20130909231947.GB17587@jonmason-lab>
-References: <20130909161616.0d663a37c9d5b6b3a2a2735a@canb.auug.org.au>
- <522E0FA3.6060900@infradead.org>
+	id S1756166Ab3IIXUV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 19:20:21 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:33350 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755807Ab3IIXUT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 19:20:19 -0400
+Message-ID: <522E57B7.6010603@linaro.org>
+Date: Mon, 09 Sep 2013 18:20:23 -0500
+From: Alex Elder <alex.elder@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <522E0FA3.6060900@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mike Turquette <mturquette@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] clk: clean up everything on debugfs error
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 11:12:51AM -0700, Randy Dunlap wrote:
-> On 09/08/13 23:16, Stephen Rothwell wrote:
-> > Hi all,
-> > 
-> > Please do not add any code for v3.13 to your linux-next included branches
-> > until after v3.12-rc1 is released.
-> > 
-> > Changes since 20130906:
-> > 
-> 
-> 
-> on x86_64:
-> 
-> drivers/built-in.o: In function `ntb_transport_free_queue':
-> (.text+0x150344): undefined reference to `dma_sync_wait'
-> drivers/built-in.o: In function `ntb_transport_create_queue':
-> (.text+0x1504b5): undefined reference to `dma_find_channel'
-> drivers/built-in.o: In function `ntb_transport_rx':
-> ntb_transport.c:(.text+0x150c65): undefined reference to `dma_sync_wait'
-> 
-> 
-> ntb_transport.c uses several dma_*() interfaces.
-> It looks like it needs to select DMA_ENGINE at a minimum.
+If CONFIG_COMMON_CLK_DEBUG is defined, clk_debug_create_one() is
+called to populate a debugfs directory with a few entries that are
+common for all clock types.
 
-Discussed it with Dan Williams, and will have a patch out shortly
-correct it.
+If an error happens after creating the first one debugfs_remove() is
+called on the clock's directory.  The problem with this is that no
+cleanup is done on the debugfs files already created in that
+directory, so the directory never actually gets removed.   This
+problem is silently ignored.
 
-Thanks,
-Jon
+Fix this by calling debugfs_remove_recursive() instead.  Reset the
+clk->dentry field to null afterward, to ensure it can't be mistaken
+as a valid pointer.
 
-> 
-> 
-> -- 
-> ~Randy
+Signed-off-by: Alex Elder <elder@linaro.org>
+---
+ drivers/clk/clk.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 54a191c..727ae7b 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -272,7 +272,8 @@ static int clk_debug_create_one(struct clk *clk,
+struct dentry *pdentry)
+ 	goto out;
+
+ err_out:
+-	debugfs_remove(clk->dentry);
++	debugfs_remove_recursive(clk->dentry);
++	clk->dentry = NULL;
+ out:
+ 	return ret;
+ }
+-- 
+1.7.9.5
+
