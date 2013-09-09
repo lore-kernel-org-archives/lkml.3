@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780Ab3IIQA4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 12:00:56 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:45179 "EHLO
+	id S1754859Ab3IIQBI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 12:01:08 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:45188 "EHLO
 	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754408Ab3IIQAy (ORCPT
+	with ESMTP id S1751409Ab3IIQBF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 12:00:54 -0400
+	Mon, 9 Sep 2013 12:01:05 -0400
 From: Matthew Garrett <matthew.garrett@nebula.com>
 To: linux-kernel@vger.kernel.org
 Cc: keescook@chromium.org, gregkh@linuxfoundation.org, hpa@zytor.com,
         linux-efi@vger.kernel.org, jmorris@namei.org,
         linux-security-module@vger.kernel.org,
         Matthew Garrett <matthew.garrett@nebula.com>
-Subject: [PATCH 11/12] asus-wmi: Restrict debugfs interface when securelevel is set
-Date: Mon,  9 Sep 2013 11:49:45 -0400
-Message-Id: <1378741786-18430-12-git-send-email-matthew.garrett@nebula.com>
+Subject: [PATCH 10/12] x86: Restrict MSR access when securelevel is set
+Date: Mon,  9 Sep 2013 11:49:44 -0400
+Message-Id: <1378741786-18430-11-git-send-email-matthew.garrett@nebula.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
 References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
@@ -27,58 +27,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have no way of validating what all of the Asus WMI methods do on a
-given machine, and there's a risk that some will allow hardware state to
-be manipulated in such a way that arbitrary code can be executed in the
-kernel. Prevent that if securelevel is set.
+Permitting write access to MSRs allows userspace to modify the running
+kernel. Prevent this if securelevel has been set. Based on a patch by Kees
+Cook.
 
+Cc: Kees Cook <keescook@chromium.org>
 Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 ---
- drivers/platform/x86/asus-wmi.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/x86/kernel/msr.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
-index 19c313b..1a9847b 100644
---- a/drivers/platform/x86/asus-wmi.c
-+++ b/drivers/platform/x86/asus-wmi.c
-@@ -45,6 +45,7 @@
- #include <linux/seq_file.h>
- #include <linux/platform_device.h>
- #include <linux/thermal.h>
+diff --git a/arch/x86/kernel/msr.c b/arch/x86/kernel/msr.c
+index 88458fa..6b6cb4f 100644
+--- a/arch/x86/kernel/msr.c
++++ b/arch/x86/kernel/msr.c
+@@ -37,6 +37,7 @@
+ #include <linux/notifier.h>
+ #include <linux/uaccess.h>
+ #include <linux/gfp.h>
 +#include <linux/security.h>
- #include <acpi/acpi_bus.h>
- #include <acpi/acpi_drivers.h>
- #include <acpi/video.h>
-@@ -1618,6 +1619,9 @@ static int show_dsts(struct seq_file *m, void *data)
- 	int err;
- 	u32 retval = -1;
+ 
+ #include <asm/processor.h>
+ #include <asm/msr.h>
+@@ -103,6 +104,9 @@ static ssize_t msr_write(struct file *file, const char __user *buf,
+ 	int err = 0;
+ 	ssize_t bytes = 0;
  
 +	if (get_securelevel() > 0)
 +		return -EPERM;
 +
- 	err = asus_wmi_get_devstate(asus, asus->debug.dev_id, &retval);
+ 	if (count % 8)
+ 		return -EINVAL;	/* Invalid chunk size */
  
- 	if (err < 0)
-@@ -1634,6 +1638,9 @@ static int show_devs(struct seq_file *m, void *data)
- 	int err;
- 	u32 retval = -1;
- 
-+	if (get_securelevel() > 0)
-+		return -EPERM;
-+
- 	err = asus_wmi_set_devstate(asus->debug.dev_id, asus->debug.ctrl_param,
- 				    &retval);
- 
-@@ -1658,6 +1665,9 @@ static int show_call(struct seq_file *m, void *data)
- 	union acpi_object *obj;
- 	acpi_status status;
- 
-+	if (get_securelevel() > 0)
-+		return -EPERM;
-+
- 	status = wmi_evaluate_method(ASUS_WMI_MGMT_GUID,
- 				     1, asus->debug.method_id,
- 				     &input, &output);
+@@ -150,6 +154,10 @@ static long msr_ioctl(struct file *file, unsigned int ioc, unsigned long arg)
+ 			err = -EBADF;
+ 			break;
+ 		}
++		if (get_securelevel() > 0) {
++			err = -EPERM;
++			break;
++		}
+ 		if (copy_from_user(&regs, uregs, sizeof regs)) {
+ 			err = -EFAULT;
+ 			break;
 -- 
 1.8.3.1
 
