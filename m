@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751176Ab3IIFMi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 01:12:38 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:64705 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769Ab3IIFMh (ORCPT
+	id S1751373Ab3IIFOP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 01:14:15 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:25923 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751257Ab3IIFOO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 01:12:37 -0400
+	Mon, 9 Sep 2013 01:14:14 -0400
 From: Libin <huawei.libin@huawei.com>
 To: <tj@kernel.org>
 CC: <linux-kernel@vger.kernel.org>, <wangyijing@huawei.com>,
         <guohanjun@huawei.com>, <huawei.libin@huawei.com>
-Subject: [PATCH] workqueue: fix potential reentrancy issue
-Date: Mon, 9 Sep 2013 13:12:14 +0800
-Message-ID: <1378703534-4496-1-git-send-email-huawei.libin@huawei.com>
+Subject: [PATCH] workqueue: fix comment typo for __queue_work()
+Date: Mon, 9 Sep 2013 13:13:58 +0800
+Message-ID: <1378703638-7176-1-git-send-email-huawei.libin@huawei.com>
 X-Mailer: git-send-email 1.8.1.msysgit.1
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -25,51 +25,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Li Bin <huawei.libin@huawei.com>
 
-When one work starts execution, the high bits of work's data contain
-pool ID. It can represent a maximum of WORK_OFFQ_POOL_NONE. Pool ID
-is assigned WORK_OFFQ_POOL_NONE when the work being initialized
-indicating that no pool is associated and get_work_pool() uses it to
-check the associated pool. So if worker_pool_assign_id() assigns a
-ID greater than or equal WORK_OFFQ_POOL_NONE to a pool, it may break
-the non-reentrance guarantee.
-
-This patch fix this issue by modifying the worker_pool_assign_id()
-function to add the WORK_OFFQ_POOL_NONE check condition.
+It seems the "dying" should be "draining" here.
 
 Signed-off-by: Li Bin <huawei.libin@huawei.com>
 ---
- kernel/workqueue.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ kernel/workqueue.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 41019b1..97d9ff7 100644
+index 987293d..e390f3a 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -518,7 +518,14 @@ static inline void debug_work_activate(struct work_struct *work) { }
- static inline void debug_work_deactivate(struct work_struct *work) { }
- #endif
+@@ -1320,7 +1320,7 @@ static void __queue_work(int cpu, struct workqueue_struct *wq,
  
--/* allocate ID and assign it to @pool */
-+/**
-+ * worker_pool_assign_id - allocate ID and assing it to @pool
-+ * @pool: the pool pointer of interest
-+ *
-+ * Return 0 if ID assigned successful.
-+ * Return non-zero if the allocation fails or the ID number out of
-+ * %WORK_OFFQ_POOL_NONE range.
-+ */
- static int worker_pool_assign_id(struct worker_pool *pool)
- {
- 	int ret;
-@@ -526,6 +533,8 @@ static int worker_pool_assign_id(struct worker_pool *pool)
- 	lockdep_assert_held(&wq_pool_mutex);
+ 	debug_work_activate(work);
  
- 	ret = idr_alloc(&worker_pool_idr, pool, 0, 0, GFP_KERNEL);
-+	if (ret >= WORK_OFFQ_POOL_NONE)
-+		return ret;
- 	if (ret >= 0) {
- 		pool->id = ret;
- 		return 0;
+-	/* if dying, only works from the same workqueue are allowed */
++	/* if draining, only works from the same workqueue are allowed */
+ 	if (unlikely(wq->flags & __WQ_DRAINING) &&
+ 	    WARN_ON_ONCE(!is_chained_work(wq)))
+ 		return;
 -- 
 1.8.2.1
 
