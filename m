@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561Ab3IIR3M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 13:29:12 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:53759 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753829Ab3IIR3L (ORCPT
+	id S1754802Ab3IIR3P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 13:29:15 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:40593 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754543Ab3IIR3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 13:29:11 -0400
-Date: Mon, 9 Sep 2013 18:29:05 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        George Spelvin <linux@horizon.com>, John Stoffel <john@stoffel.org>
-Subject: Re: [PATCH v4 1/1] dcache: Translating dentry into pathname without
- taking rename_lock
-Message-ID: <20130909172905.GN13318@ZenIV.linux.org.uk>
-References: <1378743493-33546-1-git-send-email-Waiman.Long@hp.com>
- <1378743493-33546-2-git-send-email-Waiman.Long@hp.com>
+	Mon, 9 Sep 2013 13:29:12 -0400
+Date: Mon, 9 Sep 2013 13:29:08 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, sbw@mit.edu
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+	section?
+Message-ID: <20130909172908.GA31239@Krystal>
+References: <20130909124547.GB16280@somewhere> <20130909085504.2ddd7e69@gandalf.local.home> <20130909130851.GC16280@somewhere> <20130909092142.05780991@gandalf.local.home> <20130909134505.GF16280@somewhere> <20130909135656.GT3966@linux.vnet.ibm.com> <20130909101629.32df27a2@gandalf.local.home> <20130909161708.GX3966@linux.vnet.ibm.com> <20130909123422.7936e868@gandalf.local.home> <20130909165836.GB3966@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1378743493-33546-2-git-send-email-Waiman.Long@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130909165836.GB3966@linux.vnet.ibm.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 12:18:13PM -0400, Waiman Long wrote:
-> +/**
-> + * read_seqbegin_or_lock - begin a sequence number check or locking block
-> + * lock: sequence lock
-> + * seq : sequence number to be checked
-> + *
-> + * First try it once optimistically without taking the lock. If that fails,
-> + * take the lock. The sequence number is also used as a marker for deciding
-> + * whether to be a reader (even) or writer (odd).
-> + * N.B. seq must be initialized to an even number to begin with.
-> + */
-> +static inline void read_seqbegin_or_lock(seqlock_t *lock, int *seq)
-> +{
-> +	if (!(*seq & 1)) {	/* Even */
-> +		*seq = read_seqbegin(lock);
-> +		rcu_read_lock();
-> +	} else			/* Odd */
-> +		write_seqlock(lock);
-> +}
+* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> On Mon, Sep 09, 2013 at 12:34:22PM -0400, Steven Rostedt wrote:
+[...]
+> > "rcu_is_ignored()" or "rcu_is_not_active()", "rcu_is_watching_you()"
+> 
+> You know, I am strongly tempted by "rcu_is_watching_you()", but I have
+> this feeling that it is too cute for its own good.  ;-)
 
-> +static inline int read_seqretry_or_unlock(seqlock_t *lock, int *seq)
-> +{
-> +	if (!(*seq & 1)) {	/* Even */
-> +		rcu_read_unlock();
-> +		if (read_seqretry(lock, *seq)) {
-> +			(*seq)++;	/* Take writer lock */
-> +			return 1;
-> +		}
-> +	} else			/* Odd */
-> +		write_sequnlock(lock);
-> +	return 0;
-> +}
+Wow, I just got off the plane, and look at what happened to this thread
+;-)
 
-I'm not sure I like mixing rcu_read_lock() into that - d_path() and friends
-can do that themselves just fine (it needs to be taken when seq is even),
-and e.g. d_walk() doesn't need it at all.  Other than that, I'm OK with
-this variant.
+Referring to your earlier question Paul, what I meant by my earlier
+email on naming has been addressed by Steven: when exposing a new RCU
+API, even if it is just for in-kernel use, we should be really cautious
+not to tie it to implementation, but rather to concepts. Basically, my
+original thought is that we should be able to express the exact same
+concept in the kernel RCU implementation and in Userspace RCU. Here,
+binding the name on whether the CPU is watching RCU really makes no
+sense for urcu, since all the RCU flavors we currently have are watching
+threads, not CPUs.
+
+Hence my proposal for "rcu_read_check()". It could be "rcu_is_active()"
+too, I don't really mind. It really minds: Is RCU actively watching the
+current execution context ? This can be translated to a runtime check
+too: is it safe to call rcu_read_lock() form this context ?
+
+Thanks,
+
+Mathieu
+
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
