@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755344Ab3IIQiZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 12:38:25 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:42418 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409Ab3IIQiY (ORCPT
+	id S1755393Ab3IIQjG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 12:39:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58026 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753604Ab3IIQjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 12:38:24 -0400
+	Mon, 9 Sep 2013 12:39:04 -0400
+Date: Mon, 9 Sep 2013 09:39:02 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, Peng Tao <tao.peng@emc.com>,
+        Peng Tao <bergwolf@gmail.com>
+Subject: Re: [PATCH] staging: Disable lustre file system for MIPS, SH, and
+ XTENSA
+Message-ID: <20130909163902.GA28685@kroah.com>
+References: <1378688580-11935-1-git-send-email-linux@roeck-us.net>
+ <20130909015945.GA4029@kroah.com>
+ <20130909134012.GA24738@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <CAG-2HqXVR5rFCa0XGmFpJcPWgPBKKaELgmFxhWKxxOYQRc-m2A@mail.gmail.com>
-References: <CAG-2HqXVR5rFCa0XGmFpJcPWgPBKKaELgmFxhWKxxOYQRc-m2A@mail.gmail.com>
-Date: Mon, 9 Sep 2013 18:38:23 +0200
-Message-ID: <CANq1E4QNE7v1fV71E8EwPiKRR1A63erVKVYO07mJ0ySD+etG6g@mail.gmail.com>
-Subject: Re: [BUG?] HID: uhid: add devname module alias
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Tom Gundersen <teg@jklm.no>
-Cc: Marcel Holtmann <marcel@holtmann.org>, Jiri Kosina <jkosina@suse.cz>,
-        Kay Sievers <kay@vrfy.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130909134012.GA24738@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tom
+On Mon, Sep 09, 2013 at 06:40:12AM -0700, Christoph Hellwig wrote:
+> On Sun, Sep 08, 2013 at 06:59:45PM -0700, Greg Kroah-Hartman wrote:
+> > Can't we just export the functions for those arches?  Surely lutre
+> > isn't the first/only driver that needs this?
+> 
+> Lustre is.  These are core mm helpers, and lustre uses them to
+> reimplement another core VM function.  It then uses it to access
+> userspace environment variable.
+> 
+> In short all this code should be nuked, and no new symbols should be
+> exported.
 
-On Mon, Sep 9, 2013 at 5:43 PM, Tom Gundersen <teg@jklm.no> wrote:
-> Hi Marcel,
->
-> The above commit (60cbd53 in mainline) doesn't appear to work for me.
-> I.e., depmod does not create an entry in modules.devname and hence no
-> device node is created on boot.
->
-> If I understand correctly, you'd also need to create the correct
-> "char-major-<MAJOR>-<MINOR>" alias (which I don't think you can do as
-> long as you are using MISC_DYNAMIC_MINOR).
->
-> Or am I missing something?
+Ugh, you are right, the lustre code needs to be fixed here.
 
-Nope, that's correct as discussed on IRC. Patch pending as:
-  Subject: [PATCH] HID: uhid: allocate static minor
-  Message-Id: <1378744434-10883-1-git-send-email-dh.herrmann@gmail.com>
-
-Thanks
-David
+greg k-h
