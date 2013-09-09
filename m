@@ -1,143 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754075Ab3IINaV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:30:21 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12599 "EHLO
+	id S1753338Ab3IINaT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:30:19 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8201 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753580Ab3IIN0y (ORCPT
+	with ESMTP id S1753583Ab3IIN0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Sep 2013 09:26:54 -0400
-X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=C6u6bv4baTcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Qus6zTA8wZAA:10 a=t7CeM3EgAAAA:8 a=VwQbUJbxAAAA:8 a=xt1Mke5GkH6e2Q2BLK4A:9 a=2e6ZYRoF4I4A:10 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=bhxVZlKqwjsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=xPLaIx7fqxsA:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=ayC55rCoAAAA:8 a=RvlEQHu-AAAA:8 a=_UZCbbHauV_kxHeOyvkA:9 a=E6k37eg1NvgA:10 a=MSl-tDqOz04A:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130909124556.478659945@goodmis.org>
+Message-Id: <20130909124556.319103947@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Sep 2013 08:45:35 -0400
+Date: Mon, 09 Sep 2013 08:45:34 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH RT 04/16] list_bl.h: make list head locking RT safe
+        Ivo Sieben <meltedpianoman@gmail.com>
+Subject: [PATCH RT 03/16] genirq: Set irq thread to RT priority on creation
 References: <20130909124531.445392664@goodmis.org>
-Content-Disposition: inline; filename=0004-list_bl.h-make-list-head-locking-RT-safe.patch
+Content-Disposition: inline; filename=0003-genirq-Set-irq-thread-to-RT-priority-on-creation.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
+From: Ivo Sieben <meltedpianoman@gmail.com>
 
-As per changes in include/linux/jbd_common.h for avoiding the
-bit_spin_locks on RT ("fs: jbd/jbd2: Make state lock and journal
-head lock rt safe") we do the same thing here.
+When a threaded irq handler is installed the irq thread is initially
+created on normal scheduling priority. Only after the irq thread is
+woken up it sets its priority to RT_FIFO MAX_USER_RT_PRIO/2 itself.
 
-We use the non atomic __set_bit and __clear_bit inside the scope of
-the lock to preserve the ability of the existing LIST_DEBUG code to
-use the zero'th bit in the sanity checks.
+This means that interrupts that occur directly after the irq handler
+is installed will be handled on a normal scheduling priority instead
+of the realtime priority that one would expect.
 
-As a bit spinlock, we had no lockdep visibility into the usage
-of the list head locking.  Now, if we were to implement it as a
-standard non-raw spinlock, we would see:
-
-BUG: sleeping function called from invalid context at kernel/rtmutex.c:658
-in_atomic(): 1, irqs_disabled(): 0, pid: 122, name: udevd
-5 locks held by udevd/122:
- #0:  (&sb->s_type->i_mutex_key#7/1){+.+.+.}, at: [<ffffffff811967e8>] lock_rename+0xe8/0xf0
- #1:  (rename_lock){+.+...}, at: [<ffffffff811a277c>] d_move+0x2c/0x60
- #2:  (&dentry->d_lock){+.+...}, at: [<ffffffff811a0763>] dentry_lock_for_move+0xf3/0x130
- #3:  (&dentry->d_lock/2){+.+...}, at: [<ffffffff811a0734>] dentry_lock_for_move+0xc4/0x130
- #4:  (&dentry->d_lock/3){+.+...}, at: [<ffffffff811a0747>] dentry_lock_for_move+0xd7/0x130
-Pid: 122, comm: udevd Not tainted 3.4.47-rt62 #7
-Call Trace:
- [<ffffffff810b9624>] __might_sleep+0x134/0x1f0
- [<ffffffff817a24d4>] rt_spin_lock+0x24/0x60
- [<ffffffff811a0c4c>] __d_shrink+0x5c/0xa0
- [<ffffffff811a1b2d>] __d_drop+0x1d/0x40
- [<ffffffff811a24be>] __d_move+0x8e/0x320
- [<ffffffff811a278e>] d_move+0x3e/0x60
- [<ffffffff81199598>] vfs_rename+0x198/0x4c0
- [<ffffffff8119b093>] sys_renameat+0x213/0x240
- [<ffffffff817a2de5>] ? _raw_spin_unlock+0x35/0x60
- [<ffffffff8107781c>] ? do_page_fault+0x1ec/0x4b0
- [<ffffffff817a32ca>] ? retint_swapgs+0xe/0x13
- [<ffffffff813eb0e6>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff8119b0db>] sys_rename+0x1b/0x20
- [<ffffffff817a3b96>] system_call_fastpath+0x1a/0x1f
-
-Since we are only taking the lock during short lived list operations,
-lets assume for now that it being raw won't be a significant latency
-concern.
+Fix this by setting the RT priority on creation of the irq_thread.
 
 Cc: stable-rt@vger.kernel.org
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Ivo Sieben <meltedpianoman@gmail.com>
+Cc: Sebastian Andrzej Siewior  <bigeasy@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1370254322-17240-1-git-send-email-meltedpianoman@gmail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- include/linux/list_bl.h |   24 ++++++++++++++++++++++--
- 1 file changed, 22 insertions(+), 2 deletions(-)
+ kernel/irq/manage.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/list_bl.h b/include/linux/list_bl.h
-index 31f9d75..ddfd46a 100644
---- a/include/linux/list_bl.h
-+++ b/include/linux/list_bl.h
-@@ -2,6 +2,7 @@
- #define _LINUX_LIST_BL_H
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 22ca55a..ff54ceb 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -797,9 +797,6 @@ static void wake_threads_waitq(struct irq_desc *desc)
+  */
+ static int irq_thread(void *data)
+ {
+-	static const struct sched_param param = {
+-		.sched_priority = MAX_USER_RT_PRIO/2,
+-	};
+ 	struct irqaction *action = data;
+ 	struct irq_desc *desc = irq_to_desc(action->irq);
+ 	irqreturn_t (*handler_fn)(struct irq_desc *desc,
+@@ -811,7 +808,6 @@ static int irq_thread(void *data)
+ 	else
+ 		handler_fn = irq_thread_fn;
  
- #include <linux/list.h>
-+#include <linux/spinlock.h>
- #include <linux/bit_spinlock.h>
+-	sched_setscheduler(current, SCHED_FIFO, &param);
+ 	current->irq_thread = 1;
  
- /*
-@@ -32,13 +33,22 @@
+ 	while (!irq_wait_for_interrupt(action)) {
+@@ -944,6 +940,9 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+ 	 */
+ 	if (new->thread_fn && !nested) {
+ 		struct task_struct *t;
++		static const struct sched_param param = {
++			.sched_priority = MAX_USER_RT_PRIO/2,
++		};
  
- struct hlist_bl_head {
- 	struct hlist_bl_node *first;
-+#ifdef CONFIG_PREEMPT_RT_BASE
-+	raw_spinlock_t lock;
-+#endif
- };
- 
- struct hlist_bl_node {
- 	struct hlist_bl_node *next, **pprev;
- };
--#define INIT_HLIST_BL_HEAD(ptr) \
--	((ptr)->first = NULL)
+ 		t = kthread_create(irq_thread, new, "irq/%d-%s", irq,
+ 				   new->name);
+@@ -951,6 +950,9 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+ 			ret = PTR_ERR(t);
+ 			goto out_mput;
+ 		}
 +
-+static inline void INIT_HLIST_BL_HEAD(struct hlist_bl_head *h)
-+{
-+	h->first = NULL;
-+#ifdef CONFIG_PREEMPT_RT_BASE
-+	raw_spin_lock_init(&h->lock);
-+#endif
-+}
- 
- static inline void INIT_HLIST_BL_NODE(struct hlist_bl_node *h)
- {
-@@ -117,12 +127,22 @@ static inline void hlist_bl_del_init(struct hlist_bl_node *n)
- 
- static inline void hlist_bl_lock(struct hlist_bl_head *b)
- {
-+#ifndef CONFIG_PREEMPT_RT_BASE
- 	bit_spin_lock(0, (unsigned long *)b);
-+#else
-+	raw_spin_lock(&b->lock);
-+	__set_bit(0, (unsigned long *)b);
-+#endif
- }
- 
- static inline void hlist_bl_unlock(struct hlist_bl_head *b)
- {
-+#ifndef CONFIG_PREEMPT_RT_BASE
- 	__bit_spin_unlock(0, (unsigned long *)b);
-+#else
-+	__clear_bit(0, (unsigned long *)b);
-+	raw_spin_unlock(&b->lock);
-+#endif
- }
- 
- /**
++		sched_setscheduler(t, SCHED_FIFO, &param);
++
+ 		/*
+ 		 * We keep the reference to the task struct even if
+ 		 * the thread dies to avoid that the interrupt code
 -- 
 1.7.10.4
 
