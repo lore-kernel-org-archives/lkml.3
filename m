@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351Ab3IISWg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 14:22:36 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:47960 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754289Ab3IISWe (ORCPT
+	id S1754756Ab3IIS1A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 14:27:00 -0400
+Received: from smtp-out002.kontent.com ([81.88.40.216]:50188 "EHLO
+	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754184Ab3IIS07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 14:22:34 -0400
-Message-ID: <201309091822.r89IMXmA032018@farm-0002.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Mon, 9 Sep 2013 14:11:54 -0400
-Subject: [PATCH] net: tilegx driver: avoid compiler warning
-To: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 9 Sep 2013 14:26:59 -0400
+Message-ID: <1378744818.1381.4.camel@linux-fkkt.site>
+Subject: Re: Doubts on IO requests in USB subsystem
+From: Oliver Neukum <oliver@neukum.org>
+To: "Morales, Alejandra" <alejandra.morales@tum.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <9E3F9C2076C45D4783F09B90D5BE77CE189C61@BADWLRZ-SWMBX13.ads.mwn.de>
+References: <9E3F9C2076C45D4783F09B90D5BE77CE189C61@BADWLRZ-SWMBX13.ads.mwn.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 09 Sep 2013 18:40:18 +0200
+Mime-Version: 1.0
+X-Mailer: Evolution 3.9.4 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "id" variable was being incremented in common code, but only
-initialized and used in IPv4 code.  We move the increment to the IPv4
-code too, and then legitimately use the uninitialized_var() macro to
-avoid the gcc 4.6 warning that 'id' may be used uninitialized.
-Note that gcc 4.7 does not warn.
+On Mon, 2013-09-09 at 08:20 +0000, Morales, Alejandra wrote:
+> mounted and there is no application using them at the moment, so that
+> I was expecting that none
+> of them receive file system requests. Indeed the SATA HD does not
+> receive any requests unless I
+> mount or unmount it, but the USB HD receives a large number of file
+> system requests and it seems
+> that it never enters into an idle state. Since any application is
+> using it I think these requests may
+> come from the USB subsystem. Am I right? If so, how could I determine
+> whether a request comes
+> from the USB subsystem or it is a file system request that actually
+> moves blocks?
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- drivers/net/ethernet/tile/tilegx.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Your prime suspect is the detection of medium change which was
+moved into the kernel in 3.2 or so. It can be disabled by sysfs.
+Generally the notion that a certain task originates a read or write
+on a block device is iffy. Read-ahead and shared data structures
+make it impossible to accurately tell.
 
-diff --git a/drivers/net/ethernet/tile/tilegx.c b/drivers/net/ethernet/tile/tilegx.c
-index 949076f..13e6fff 100644
---- a/drivers/net/ethernet/tile/tilegx.c
-+++ b/drivers/net/ethernet/tile/tilegx.c
-@@ -1734,7 +1734,8 @@ static void tso_headers_prepare(struct sk_buff *skb, unsigned char *headers,
- 	unsigned int data_len = skb->len - sh_len;
- 	unsigned char *data = skb->data;
- 	unsigned int ih_off, th_off, p_len;
--	unsigned int isum_seed, tsum_seed, id, seq;
-+	unsigned int isum_seed, tsum_seed, seq;
-+	unsigned int uninitialized_var(id);
- 	int is_ipv6;
- 	long f_id = -1;    /* id of the current fragment */
- 	long f_size = skb_headlen(skb) - sh_len;  /* current fragment size */
-@@ -1781,7 +1782,7 @@ static void tso_headers_prepare(struct sk_buff *skb, unsigned char *headers,
- 		} else {
- 			ih = (struct iphdr *)(buf + ih_off);
- 			ih->tot_len = htons(sh_len + p_len - ih_off);
--			ih->id = htons(id);
-+			ih->id = htons(id++);
- 			ih->check = csum_long(isum_seed + ih->tot_len +
- 					      ih->id) ^ 0xffff;
- 		}
-@@ -1818,7 +1819,6 @@ static void tso_headers_prepare(struct sk_buff *skb, unsigned char *headers,
- 			slot++;
- 		}
- 
--		id++;
- 		seq += p_len;
- 
- 		/* The last segment may be less than gso_size. */
--- 
-1.8.3.1
+USB storage devices are notorious for setting the removable bit
+even if they have no removable medium.
+
+	Regards
+		Oliver
+
 
