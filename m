@@ -1,43 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359Ab3IIObq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 10:31:46 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:44936 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237Ab3IIObp (ORCPT
+	id S1753779Ab3IIObw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 10:31:52 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:14654 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237Ab3IIObt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 10:31:45 -0400
+	Mon, 9 Sep 2013 10:31:49 -0400
+Message-ID: <522DDBC8.8020201@hp.com>
+Date: Mon, 09 Sep 2013 10:31:36 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-In-Reply-To: <20130908084606.GA3938@cantor.Home>
-References: <20130908084606.GA3938@cantor.Home>
-Date: Mon, 9 Sep 2013 07:31:44 -0700
-X-Google-Sender-Auth: 0Wnl0yJCCucjTPa7qzyjtQ6wzWg
-Message-ID: <CA+55aFyvmOTb9J55c5D_0O0ydaf9ZYaaph1Y0ZVjpiDwU9fv6w@mail.gmail.com>
-Subject: Re: suspicious RCU usage with unlazy_walk()
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jerry Snitselaar <jerry.snitselaar@oracle.com>
-Cc: Waiman Long <Waiman.Long@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        George Spelvin <linux@horizon.com>, John Stoffel <john@stoffel.org>
+Subject: Re: [PATCH v3 1/1] dcache: Translating dentry into pathname without
+ taking rename_lock
+References: <1378483738-10129-1-git-send-email-Waiman.Long@hp.com> <1378483738-10129-2-git-send-email-Waiman.Long@hp.com> <CA+55aFw8UuEmKsSdGZPUmcekZheNimEt4U81i7Bz0LipGzsFmg@mail.gmail.com> <20130906210546.GW13318@ZenIV.linux.org.uk> <CA+55aFzf-reQNSQt_fhHfUe_tB19n2qEa=Rd=wFEBJEVALmezA@mail.gmail.com> <20130907000044.GX13318@ZenIV.linux.org.uk> <CA+55aFwy_x65HaLOgKuK7AyQayraU4M6q78L_hnAvLg1NSgTpw@mail.gmail.com> <CA+55aFzwederWB135Ch+PjijjrN-kz9UKw+obC4+M_+xq648PA@mail.gmail.com> <20130907030110.GY13318@ZenIV.linux.org.uk> <CA+55aFyJ8CvfYzh8LFRY_6tx+GgzVfps1hSwJeSUz=G=FrsgkQ@mail.gmail.com> <20130907180724.GE13318@ZenIV.linux.org.uk>
+In-Reply-To: <20130907180724.GE13318@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 8, 2013 at 1:46 AM, Jerry Snitselaar
-<jerry.snitselaar@oracle.com> wrote:
-> Running 3.11.0-07547-g44598f9 I hit the following last night. I have
-> not had it reproduce since then. Should there be some lock cleanup in
-> the error path prior to the dput() call like unlock_rcu_walk()?
+On 09/07/2013 02:07 PM, Al Viro wrote:
+> On Sat, Sep 07, 2013 at 10:52:02AM -0700, Linus Torvalds wrote:
+>
+>> So I think we could make a more complicated data structure that looks
+>> something like this:
+>>
+>>     struct seqlock_retry {
+>>        unsigned int seq_no;
+>>        int state;
+>>     };
+>>
+>> and pass that around. Gcc should do pretty well, especially if we
+>> inline things (but even if not, small structures that fit in 64 bytes
+>> generate reasonable code even on 32-bit targets, because gcc knows
+>> about using two registers for passing data around)..
+>>
+>> Then you can make "state" have a retry counter in it, and have a
+>> negative value mean "I hold the lock for writing". Add a couple of
+>> helper functions, and you can fairly easily handle the mixed "try for
+>> reading first, then fall back to writing".
+>>
+>> That said, __d_lookup() still shows up as very performance-critical on
+>> some loads (symlinks in particular cause us to fall out of the RCU
+>> cases) so I'd like to keep that using the simple pure read case. I
+>> don't believe you can livelock it, as mentioned. But the other ones
+>> might well be worth moving to a "fall back to write-locking after<n>
+>> tries" model. They might all traverse user-specified paths of fairly
+>> arbitrary depth, no?
+>>
+>> So this "seqlock_retry" thing wouldn't _replace_ bare seqlocks, it
+>> would just be a helper thing for this kind of behavior where we want
+>> to normally do things with just the read-lock, but want to guarantee
+>> that we don't live-lock.
+>>
+>> Sounds reasonable?
+> More or less; I just wonder if we are overdesigning here - if we don't
+> do "repeat more than once", we can simply use the lower bit of seq -
+> read_seqlock() always returns an even value.  So we could do something
+> like seqretry_and_lock(lock,&seq):
+> 	if ((*seq&  1) || !read_seqretry(lock, *seq))
+> 		return true;
+> 	*seq |= 1;
+> 	write_seqlock(lock);
+> 	return false;
+> and seqretry_done(lock, seq):
+> 	if (seq&  1)
+> 		write_sequnlock(lock);
+> with these loops turning into
+> 	seq = read_seqlock(&rename_lock);
+> 	...
+> 	if (!seqretry_and_lock(&rename_lock,&seq))
+> 		goto again;
+> 	...
+> 	seqretry_done(&rename_lock);
 
-Heh. I should have read more email yesterday, but I was too busy
-looking at the dentry code, so I didn't get to some of my mailbox
-until now.
+I am fine with try it once and then lock instead of trying it a few 
+times. Now are you planning to have these helper functions for the 
+dcache layer only or as part of the seqlock infrastructure? If we are 
+going to touch the seqlock layer, I would suggest adding a blocking 
+reader that takes the lock, but won't update the sequence number so that 
+it won't block other sequence readers as my original seqlock patch was 
+doing.
 
-Happily, the reason I was too busy was that I had noticed that my
-d_rcu_to_refcount() changes were bad, and spent that time cleaning it
-up and fixing this bug.
-
-So this should be fixed in the current tree (current top of tree,
-commit e5c832d55588 in particular).
-
-               Linus
+-Longman
