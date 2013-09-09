@@ -1,195 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751613Ab3IIJQQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 05:16:16 -0400
-Received: from alvesta.synopsys.com ([198.182.60.77]:41389 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab3IIJQL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 05:16:11 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        <linux-mm@kvack.org>
-CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Borislav Petkov <bp@suse.de>, Vincent Palatin <vpalatin@chromium.org>,
-        Len Brown <len.brown@intel.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Pekka Riikonen <priikone@iki.fi>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH 2/3] x86: Move fpu_counter into ARCH specific thread_struct
-Date: Mon, 9 Sep 2013 14:45:22 +0530
-Message-ID: <1378718123-7372-2-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1378718123-7372-1-git-send-email-vgupta@synopsys.com>
-References: <1378718123-7372-1-git-send-email-vgupta@synopsys.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.12.197.111]
+	id S1751219Ab3IIJW2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 05:22:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39079 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750852Ab3IIJW1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 05:22:27 -0400
+Subject: GFS2: Pull request (merge window)
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-2zscOioLiWCx2cSIm66K"
+Organization: Red Hat UK Ltd
+Date: Mon, 09 Sep 2013 10:22:28 +0100
+Message-ID: <1378718548.2728.4.camel@menhir>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only a couple of arches (sh/x86) use fpu_counter in task_struct so it
-can be moved out into ARCH specific thread_struct, reducing the size of
-task_struct for other arches.
 
-Compile tested i386_defconfig + gcc 4.7.3
+--=-2zscOioLiWCx2cSIm66K
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Vincent Palatin <vpalatin@chromium.org>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Pekka Riikonen <priikone@iki.fi>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
----
- arch/x86/include/asm/fpu-internal.h | 10 +++++-----
- arch/x86/include/asm/processor.h    |  9 +++++++++
- arch/x86/kernel/i387.c              |  2 +-
- arch/x86/kernel/process_32.c        |  4 ++--
- arch/x86/kernel/process_64.c        |  2 +-
- arch/x86/kernel/traps.c             |  2 +-
- 6 files changed, 19 insertions(+), 10 deletions(-)
+Hi,
 
-diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
-index 4d0bda7..c49a613 100644
---- a/arch/x86/include/asm/fpu-internal.h
-+++ b/arch/x86/include/asm/fpu-internal.h
-@@ -365,7 +365,7 @@ static inline void drop_fpu(struct task_struct *tsk)
- 	 * Forget coprocessor state..
- 	 */
- 	preempt_disable();
--	tsk->fpu_counter = 0;
-+	tsk->thread.fpu_counter = 0;
- 	__drop_fpu(tsk);
- 	clear_used_math();
- 	preempt_enable();
-@@ -424,7 +424,7 @@ static inline fpu_switch_t switch_fpu_prepare(struct task_struct *old, struct ta
- 	 * or if the past 5 consecutive context-switches used math.
- 	 */
- 	fpu.preload = tsk_used_math(new) && (use_eager_fpu() ||
--					     new->fpu_counter > 5);
-+					     new->thread.fpu_counter > 5);
- 	if (__thread_has_fpu(old)) {
- 		if (!__save_init_fpu(old))
- 			cpu = ~0;
-@@ -433,16 +433,16 @@ static inline fpu_switch_t switch_fpu_prepare(struct task_struct *old, struct ta
- 
- 		/* Don't change CR0.TS if we just switch! */
- 		if (fpu.preload) {
--			new->fpu_counter++;
-+			new->thread.fpu_counter++;
- 			__thread_set_has_fpu(new);
- 			prefetch(new->thread.fpu.state);
- 		} else if (!use_eager_fpu())
- 			stts();
- 	} else {
--		old->fpu_counter = 0;
-+		old->thread.fpu_counter = 0;
- 		old->thread.fpu.last_cpu = ~0;
- 		if (fpu.preload) {
--			new->fpu_counter++;
-+			new->thread.fpu_counter++;
- 			if (!use_eager_fpu() && fpu_lazy_restore(new, cpu))
- 				fpu.preload = 0;
- 			else
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 24cf5ae..e331f3a 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -488,6 +488,15 @@ struct thread_struct {
- 	unsigned long		iopl;
- 	/* Max allowed port in the bitmap, in bytes: */
- 	unsigned		io_bitmap_max;
-+	/*
-+	 * fpu_counter contains the number of consecutive context switches
-+	 * that the FPU is used. If this is over a threshold, the lazy fpu
-+	 * saving becomes unlazy to save the trap. This is an unsigned char
-+	 * so that after 256 times the counter wraps and the behavior turns
-+	 * lazy again; this to deal with bursty apps that only use FPU for
-+	 * a short time
-+	 */
-+	unsigned char fpu_counter;
- };
- 
- /*
-diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index 5d576ab..e8368c6 100644
---- a/arch/x86/kernel/i387.c
-+++ b/arch/x86/kernel/i387.c
-@@ -100,7 +100,7 @@ void unlazy_fpu(struct task_struct *tsk)
- 		__save_init_fpu(tsk);
- 		__thread_fpu_end(tsk);
- 	} else
--		tsk->fpu_counter = 0;
-+		tsk->thread.fpu_counter = 0;
- 	preempt_enable();
- }
- EXPORT_SYMBOL(unlazy_fpu);
-diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
-index f8adefc..4de6e36 100644
---- a/arch/x86/kernel/process_32.c
-+++ b/arch/x86/kernel/process_32.c
-@@ -153,7 +153,7 @@ int copy_thread(unsigned long clone_flags, unsigned long sp,
- 		childregs->orig_ax = -1;
- 		childregs->cs = __KERNEL_CS | get_kernel_rpl();
- 		childregs->flags = X86_EFLAGS_IF | X86_EFLAGS_FIXED;
--		p->fpu_counter = 0;
-+		p->thread.fpu_counter = 0;
- 		p->thread.io_bitmap_ptr = NULL;
- 		memset(p->thread.ptrace_bps, 0, sizeof(p->thread.ptrace_bps));
- 		return 0;
-@@ -166,7 +166,7 @@ int copy_thread(unsigned long clone_flags, unsigned long sp,
- 	p->thread.ip = (unsigned long) ret_from_fork;
- 	task_user_gs(p) = get_user_gs(current_pt_regs());
- 
--	p->fpu_counter = 0;
-+	p->thread.fpu_counter = 0;
- 	p->thread.io_bitmap_ptr = NULL;
- 	tsk = current;
- 	err = -ENOMEM;
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index 05646ba..9b97949 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -163,7 +163,7 @@ int copy_thread(unsigned long clone_flags, unsigned long sp,
- 	p->thread.sp = (unsigned long) childregs;
- 	p->thread.usersp = me->thread.usersp;
- 	set_tsk_thread_flag(p, TIF_FORK);
--	p->fpu_counter = 0;
-+	p->thread.fpu_counter = 0;
- 	p->thread.io_bitmap_ptr = NULL;
- 
- 	savesegment(gs, p->thread.gsindex);
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 1b23a1c..f350d7e 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -649,7 +649,7 @@ void math_state_restore(void)
- 		return;
- 	}
- 
--	tsk->fpu_counter++;
-+	tsk->thread.fpu_counter++;
- }
- EXPORT_SYMBOL_GPL(math_state_restore);
- 
--- 
-1.8.1.2
+Please consider pulling the following changes,
+
+Steve.
+------------------------------------------------------
+The following changes since commit d6a5e06cd17a3f901231e345e4acc1c3dab9fbb8=
+:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-3.0-fixes =
+(2013-08-19 09:30:12 -0700)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-3.0-nmw.git tags=
+/gfs2-merge-window
+
+for you to fetch changes up to 0c9018097fe2966d80fe39e5c9ca94bb436ec369:
+
+  GFS2: dirty inode correctly in gfs2_write_end (2013-09-05 09:04:24 +0100)
+
+----------------------------------------------------------------
+This is possibly the smallest ever set of GFS2 patches for a merge
+window. Also, most of them are bug fixes this time. Two of my
+three patches (moving gfs2_sync_meta and merging the two writepage
+implementations) are clean ups with the third (taking the glock ref
+in examine_bucket) being a fix for a difficult to hit race condition.
+
+The removal of an unused memory barrier is a clean up from Bob Peterson,
+and the "spectator" relates to a rarely used mount option. Ben
+Marzinski's patch fixes a corner case where the incorrect inode
+flags were being set, resulting in incorrect behaviour on fsync.
+
+----------------------------------------------------------------
+Benjamin Marzinski (1):
+      GFS2: dirty inode correctly in gfs2_write_end
+
+Bob Peterson (2):
+      GFS2: Remove unnecessary memory barrier
+      GFS2: Don't flag consistency error if first mounter is a spectator
+
+Steven Whitehouse (3):
+      GFS2: Move gfs2_sync_meta to lops.c
+      GFS2: Take glock reference in examine_bucket()
+      GFS2: Merge ordered and writeback writepage
+
+ fs/gfs2/aops.c       | 44 +++++++++++--------------------------------
+ fs/gfs2/file.c       |  4 +++-
+ fs/gfs2/glock.c      | 13 +++++--------
+ fs/gfs2/lops.c       | 18 ++++++++++++++++++
+ fs/gfs2/meta_io.c    | 18 ------------------
+ fs/gfs2/meta_io.h    | 26 +++++++++++---------------
+ fs/gfs2/ops_fstype.c | 53 ++++++++++++++++++++++++++++++++++++++++++++++++=
+++--
+ 7 files changed, 99 insertions(+), 77 deletions(-)
+
+
+
+--=-2zscOioLiWCx2cSIm66K
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJSLZNOAAoJEMrg3m4a/8jSFskP/3RrZcrGXUCY7LM1fQHPzre3
+dPrWp1kTTULHfYjdj4GA3eUhQcW/8H/GJv5yJ99LGX9jfgVgsgn8Q1em6s6OF/c+
+FbhfiLjvQbjnRspXxVHeVuwmIhVAchGBtl8q04uGwU0w+qyzGulsL9kefOlV8y5r
+ca58H0rClLswomCsQaIcmoUzSJ51SBW1Fz4YWnREKBD9axY54E4+Zxs3lIWKN5uU
+iwbgrBjyNKGffkSzsxI6v8WmBsDiDM7ep1dAKi60CqOSswHpVwKvYxFIH9PCIOaA
+/wvoJB96FEgZLQ6zL3883LYRA2CAxSguJM/MONdTOj3gC9bW9HG2ZbpEpL5hAt1o
+eAjXk80/ZhTEsVRuFhXxtUrewe15uaMpyhnLKoXpVgUOSe0s00jdH0YyV33YHqcR
+y+FN6B/K8XxEN1/O7ECa5b/kLTfRPWGpAiq00epOcIQVnB8V4+XR6U/sgeHfAo01
+ZUpoKQGiiIjZtkz4JLUC3SmB02DhuYsH9RdepdMpHDbizajJdR50uVxu4vK2UFX/
+34m7I4y3OhquTs8/70NWhkJOXOuc/IQvA9LSqp+ZvxESz9uSzHEGNwN+5ktlHTT6
+jgF2RdTNT05XqQKfyqff5ovTcHqRZSSZ8lf7MHsKZLNpRcqkNPGB9ud0PQgcVpTM
+PN2ch3QeDjrhJHFBiS6G
+=vwLj
+-----END PGP SIGNATURE-----
+
+--=-2zscOioLiWCx2cSIm66K--
 
