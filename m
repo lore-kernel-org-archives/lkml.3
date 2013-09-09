@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751436Ab3IIBDI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 21:03:08 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:46658 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119Ab3IIBDG (ORCPT
+	id S1751464Ab3IIBFz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 21:05:55 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:33234 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056Ab3IIBFy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 21:03:06 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-kernel@vger.kernel.org
-Cc: devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peng Tao <tao.peng@emc.com>, Guenter Roeck <linux@roeck-us.net>,
-        Peng Tao <bergwolf@gmail.com>
-Subject: [PATCH] staging: Disable lustre file system for MIPS, SH, and XTENSA
-Date: Sun,  8 Sep 2013 18:03:00 -0700
-Message-Id: <1378688580-11935-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
+	Sun, 8 Sep 2013 21:05:54 -0400
+Date: Sun, 08 Sep 2013 20:05:50 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH] kernel-doc: Update script to find more "Return:"
+ sections
+To: Joe Perches <joe@perches.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org
+In-Reply-To: <1378254868.7347.40.camel@joe-AO722> (from joe@perches.com on
+	Tue Sep  3 19:34:28 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1378688750.8385.5@driftwood>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mips allmodconfig fails with
+On 09/03/2013 07:34:28 PM, Joe Perches wrote:
+> Many kernel-doc return description sections headers
+> use variants of the "Return:" section prefix.
+> 
+> (some or maybe even most of these aren't in
+>  kernel-doc sections, but many are)
+> 
+> $ git grep -E -i "^\s*\*\s*return[s]?:"| \
+>   cut -f2- -d":" | awk '{print $1 $2}' | \
+>   sort | uniq -c
+>     121 *return:
+>     838 *Return:
+>     778 *RETURN:
+>     191 *returns:
+>    1965 *Returns:
+>     603 *RETURNS:
+> 
+> Rather than change all of the variants to the
+> canonical "Return:", adapt the script to accept
+> case insensitive "Return:" and "Returns:"
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+> 
+> I don't know that this actually works.
+> It does seem right though.
+> 
+> Randy?  Rob?  Can you test this please?
 
-ERROR: "copy_from_user_page" [drivers/staging/lustre/lustre/libcfs/libcfs.ko]
-undefined!
+I stopped reading this file at the line "#!/usr/bin/perl -w", but I'm  
+not sure if this is the right approach. Something that finds these and  
+lets us patch them to the cannonical version might be more appropriate.
 
-which is due to LUSTRE using copy_from_user_page which is not exported by any
-architecture. Unfortunately, LUSTRE can only be built as module, so there is no
-easy fix.
+Or are you going to add similar fuzzy matching for all the other  
+keywords?
 
-MIPS, SH, and optionally XTENSA implement copy_from_user_page as unexported
-functions. Disable LUSTRE for those.
-
-Cc: Peng Tao <bergwolf@gmail.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
- drivers/staging/lustre/lustre/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/staging/lustre/lustre/Kconfig b/drivers/staging/lustre/lustre/Kconfig
-index 4e898e4..07ce43d 100644
---- a/drivers/staging/lustre/lustre/Kconfig
-+++ b/drivers/staging/lustre/lustre/Kconfig
-@@ -1,6 +1,6 @@
- config LUSTRE_FS
- 	tristate "Lustre file system client support"
--	depends on INET && m
-+	depends on INET && m && !MIPS && !XTENSA && !SUPERH
- 	select LNET
- 	select CRYPTO
- 	select CRYPTO_CRC32
--- 
-1.7.9.7
-
+Rob
