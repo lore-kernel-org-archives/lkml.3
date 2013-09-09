@@ -1,74 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751726Ab3IINQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:16:57 -0400
-Received: from outbound-mail04.westnet.com.au ([203.10.1.245]:29615 "EHLO
-	outbound-mail04.westnet.com.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751012Ab3IINQx (ORCPT
+	id S1752845Ab3IINRN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:17:13 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:19157 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752610Ab3IINRK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 09:16:53 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvYCACnJLVKVhxBY/2dsb2JhbAANToM/g3uqMpQ4gTiDGQEBAQMBIxUWKgEQCxgCAgUWCwICCQMCAQIBHyYGCAUBBQIBARkEh1sSsid0kSKBKYtygmUHgmmBNAOZJJNp
-X-IronPort-AV: E=Sophos;i="4.90,866,1371052800"; 
-   d="scan'208";a="120910622"
-X-WN-REMOTEIP: 149.135.16.88
-X-WN-ENVELOPESENDER: gerg@uclinux.org
-X-WN-MID: 120910622
-X-WN-SMTPAUTHID: gregungerer@westnet.com.au
-Message-ID: <522DCA39.4090505@uclinux.org>
-Date: Mon, 09 Sep 2013 23:16:41 +1000
-From: Greg Ungerer <gerg@uclinux.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	Mon, 9 Sep 2013 09:17:10 -0400
+From: Yijing Wang <wangyijing@huawei.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Chris Metcalf <cmetcalf@tilera.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        David Airlie <airlied@linux.ie>,
+        Mike Marciniszyn <infinipath@intel.com>,
+        Roland Dreier <roland@kernel.org>,
+        Roland Dreier <roland@purestorage.com>
+CC: <linux-kernel@vger.kernel.org>, Mark Einon <mark.einon@gmail.com>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        <linux-rdma@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        Yijing Wang <wangyijing@huawei.com>, Hanjun Guo <guohanjun@huawei.com>
+Subject: [PATCH 4/6] IB/qib: Use pcie_set_mps() and pcie_get_mps() to simplify code
+Date: Mon, 9 Sep 2013 21:13:06 +0800
+Message-ID: <1378732388-4508-5-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
+In-Reply-To: <1378732388-4508-1-git-send-email-wangyijing@huawei.com>
+References: <1378732388-4508-1-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Guenter Roeck <linux@roeck-us.net>, Ben Hutchings <ben@decadent.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>
-Subject: Re: [000/121] 3.2.51-rc1 review
-References: <lsq.1378608720.401499712@decadent.org.uk> <522C22DB.9080008@roeck-us.net> <CAMuHMdW6TGdfi+FH=hRWY_hhs5Cb5N9xV1OL0O9Dcs+PfXm2xA@mail.gmail.com>
-In-Reply-To: <CAMuHMdW6TGdfi+FH=hRWY_hhs5Cb5N9xV1OL0O9Dcs+PfXm2xA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/13 18:18, Geert Uytterhoeven wrote:
-> On Sun, Sep 8, 2013 at 9:10 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->> m68k-linux-ld: error: no memory region specified for loadable section
->> `.note.gnu.build-id'
->
-> I can't seem to find an explicit fix for that since v3.2.
-> Perhaps the fix is a side effect of f84f52a5c15db7d14a534815f27253b001735183
-> ("m68knommu: clean up linker script").
->
-> Greg, any idea?
+Refactor qib_tune_pcie_caps() function, use pcie_set_mps()
+and pcie_get_mps() to simply code. Because pci core caches
+the "PCI-E Max Payload Size Supported" in pci_dev->pcie_mpss,
+so use that instead of pcie_capability_read_word(). Remove
+the unused val2fld() and fld2val().
 
-Looks like Guenter found follow up patches that fix it. I don't recall
-this specific change breaking like this at the time though.
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+---
+ drivers/infiniband/hw/qib/qib_pcie.c |   96 +++++++++++-----------------------
+ 1 files changed, 30 insertions(+), 66 deletions(-)
 
-Regards
-Greg
+diff --git a/drivers/infiniband/hw/qib/qib_pcie.c b/drivers/infiniband/hw/qib/qib_pcie.c
+index 3a5b99b..f52a2fe 100644
+--- a/drivers/infiniband/hw/qib/qib_pcie.c
++++ b/drivers/infiniband/hw/qib/qib_pcie.c
+@@ -476,30 +476,6 @@ void qib_pcie_reenable(struct qib_devdata *dd, u16 cmd, u8 iline, u8 cline)
+ 			"pci_enable_device failed after reset: %d\n", r);
+ }
+ 
+-/* code to adjust PCIe capabilities. */
+-
+-static int fld2val(int wd, int mask)
+-{
+-	int lsbmask;
+-
+-	if (!mask)
+-		return 0;
+-	wd &= mask;
+-	lsbmask = mask ^ (mask & (mask - 1));
+-	wd /= lsbmask;
+-	return wd;
+-}
+-
+-static int val2fld(int wd, int mask)
+-{
+-	int lsbmask;
+-
+-	if (!mask)
+-		return 0;
+-	lsbmask = mask ^ (mask & (mask - 1));
+-	wd *= lsbmask;
+-	return wd;
+-}
+ 
+ static int qib_pcie_coalesce;
+ module_param_named(pcie_coalesce, qib_pcie_coalesce, int, S_IRUGO);
+@@ -584,9 +560,8 @@ static int qib_tune_pcie_caps(struct qib_devdata *dd)
+ {
+ 	int ret = 1; /* Assume the worst */
+ 	struct pci_dev *parent;
+-	u16 pcaps, pctl, ecaps, ectl;
+-	int rc_sup, ep_sup;
+-	int rc_cur, ep_cur;
++	u16 rc_mpss, rc_mps, ep_mpss, ep_mps;
++	u16 rc_mrrs, ep_mrrs, max_mrrs;
+ 
+ 	/* Find out supported and configured values for parent (root) */
+ 	parent = dd->pcidev->bus->self;
+@@ -597,38 +572,29 @@ static int qib_tune_pcie_caps(struct qib_devdata *dd)
+ 
+ 	if (!pci_is_pcie(parent) || !pci_is_pcie(dd->pcidev))
+ 		goto bail;
+-	pcie_capability_read_word(parent, PCI_EXP_DEVCAP, &pcaps);
+-	pcie_capability_read_word(parent, PCI_EXP_DEVCTL, &pctl);
++	rc_mpss = parent->pcie_mpss;
++	rc_mps = ffs(pcie_get_mps(parent)) - 8;
+ 	/* Find out supported and configured values for endpoint (us) */
+-	pcie_capability_read_word(dd->pcidev, PCI_EXP_DEVCAP, &ecaps);
+-	pcie_capability_read_word(dd->pcidev, PCI_EXP_DEVCTL, &ectl);
++	ep_mpss = dd->pcidev->pcie_mpss;
++	ep_mps = ffs(pcie_get_mps(dd->pcidev)) - 8;
+ 
+ 	ret = 0;
+ 	/* Find max payload supported by root, endpoint */
+-	rc_sup = fld2val(pcaps, PCI_EXP_DEVCAP_PAYLOAD);
+-	ep_sup = fld2val(ecaps, PCI_EXP_DEVCAP_PAYLOAD);
+-	if (rc_sup > ep_sup)
+-		rc_sup = ep_sup;
+-
+-	rc_cur = fld2val(pctl, PCI_EXP_DEVCTL_PAYLOAD);
+-	ep_cur = fld2val(ectl, PCI_EXP_DEVCTL_PAYLOAD);
++	if (rc_mpss > ep_mpss)
++		rc_mpss = ep_mpss;
+ 
+ 	/* If Supported greater than limit in module param, limit it */
+-	if (rc_sup > (qib_pcie_caps & 7))
+-		rc_sup = qib_pcie_caps & 7;
++	if (rc_mpss > (qib_pcie_caps & 7))
++		rc_mpss = qib_pcie_caps & 7;
+ 	/* If less than (allowed, supported), bump root payload */
+-	if (rc_sup > rc_cur) {
+-		rc_cur = rc_sup;
+-		pctl = (pctl & ~PCI_EXP_DEVCTL_PAYLOAD) |
+-			val2fld(rc_cur, PCI_EXP_DEVCTL_PAYLOAD);
+-		pcie_capability_write_word(parent, PCI_EXP_DEVCTL, pctl);
++	if (rc_mpss > rc_mps) {
++		rc_mps = rc_mpss;
++		pcie_set_mps(parent, 128 << rc_mps);
+ 	}
+ 	/* If less than (allowed, supported), bump endpoint payload */
+-	if (rc_sup > ep_cur) {
+-		ep_cur = rc_sup;
+-		ectl = (ectl & ~PCI_EXP_DEVCTL_PAYLOAD) |
+-			val2fld(ep_cur, PCI_EXP_DEVCTL_PAYLOAD);
+-		pcie_capability_write_word(dd->pcidev, PCI_EXP_DEVCTL, ectl);
++	if (rc_mpss > ep_mps) {
++		ep_mps = rc_mpss;
++		pcie_set_mps(dd->pcidev, 128 << ep_mps);
+ 	}
+ 
+ 	/*
+@@ -636,23 +602,21 @@ static int qib_tune_pcie_caps(struct qib_devdata *dd)
+ 	 * No field for max supported, but PCIe spec limits it to 4096,
+ 	 * which is code '5' (log2(4096) - 7)
+ 	 */
+-	rc_sup = 5;
+-	if (rc_sup > ((qib_pcie_caps >> 4) & 7))
+-		rc_sup = (qib_pcie_caps >> 4) & 7;
+-	rc_cur = fld2val(pctl, PCI_EXP_DEVCTL_READRQ);
+-	ep_cur = fld2val(ectl, PCI_EXP_DEVCTL_READRQ);
+-
+-	if (rc_sup > rc_cur) {
+-		rc_cur = rc_sup;
+-		pctl = (pctl & ~PCI_EXP_DEVCTL_READRQ) |
+-			val2fld(rc_cur, PCI_EXP_DEVCTL_READRQ);
+-		pcie_capability_write_word(parent, PCI_EXP_DEVCTL, pctl);
++	max_mrrs = 5;
++	if (max_mrrs > ((qib_pcie_caps >> 4) & 7))
++		max_mrrs = (qib_pcie_caps >> 4) & 7;
++
++	max_mrrs = 128 << max_mrrs;
++	rc_mrrs = pcie_get_readrq(parent);
++	ep_mrrs = pcie_get_readrq(dd->pcidev);
++
++	if (max_mrrs > rc_mrrs) {
++		rc_mrrs = max_mrrs;
++		pcie_set_readrq(parent, rc_mrrs);
+ 	}
+-	if (rc_sup > ep_cur) {
+-		ep_cur = rc_sup;
+-		ectl = (ectl & ~PCI_EXP_DEVCTL_READRQ) |
+-			val2fld(ep_cur, PCI_EXP_DEVCTL_READRQ);
+-		pcie_capability_write_word(dd->pcidev, PCI_EXP_DEVCTL, ectl);
++	if (max_mrrs > ep_mrrs) {
++		ep_mrrs = max_mrrs;
++		pcie_set_readrq(dd->pcidev, ep_mrrs);
+ 	}
+ bail:
+ 	return ret;
+-- 
+1.7.1
 
-
->> Details are at http://server.roeck-us.net:8010/builders.
->
-> Gr{oetje,eeting}s,
->
->                          Geert
->
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
->
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                  -- Linus Torvalds
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-m68k" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
 
