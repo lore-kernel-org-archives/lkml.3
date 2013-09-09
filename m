@@ -1,66 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751464Ab3IIBFz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 21:05:55 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:33234 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751056Ab3IIBFy convert rfc822-to-8bit (ORCPT
+	id S1751311Ab3IIBUW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 21:20:22 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:7617 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099Ab3IIBUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 21:05:54 -0400
-Date: Sun, 08 Sep 2013 20:05:50 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH] kernel-doc: Update script to find more "Return:"
- sections
-To: Joe Perches <joe@perches.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org
-In-Reply-To: <1378254868.7347.40.camel@joe-AO722> (from joe@perches.com on
-	Tue Sep  3 19:34:28 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1378688750.8385.5@driftwood>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+	Sun, 8 Sep 2013 21:20:21 -0400
+Message-ID: <1378689618.2103.2.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: soft lockup in sysvipc code.
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>
+Date: Sun, 08 Sep 2013 18:20:18 -0700
+In-Reply-To: <522AEDBF.2050203@colorfullife.com>
+References: <20130904215022.GA30606@redhat.com>
+	 <522AEDBF.2050203@colorfullife.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/03/2013 07:34:28 PM, Joe Perches wrote:
-> Many kernel-doc return description sections headers
-> use variants of the "Return:" section prefix.
+On Sat, 2013-09-07 at 11:11 +0200, Manfred Spraul wrote:
+> Hi Dave,
 > 
-> (some or maybe even most of these aren't in
->  kernel-doc sections, but many are)
+> On 09/04/2013 11:50 PM, Dave Jones wrote:
+> > Haven't seen this before.
+> > Tree based on v3.11-3104-gf357a82
+> >
+> > BUG: soft lockup - CPU#0 stuck for 22s! [trinity-child0:25479]
+> > Modules linked in: sctp snd_seq_dummy fuse dlci rfcomm tun bnep hidp ipt_ULOG nfnetlink can_raw can_bcm scsi_transport_iscsi nfc caif_socket caif af_802154 phonet af_rxrpc bluetooth rfkill can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 xfs snd_hda_codec_realtek libcrc32c snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_page_alloc snd_timer snd soundcore pcspkr usb_debug e1000e ptp pps_core
+> > irq event stamp: 1143030
+> > hardirqs last  enabled at (1143029): [<ffffffff81715d5c>] restore_args+0x0/0x30
+> > hardirqs last disabled at (1143030): [<ffffffff8171f9aa>] apic_timer_interrupt+0x6a/0x80
+> > softirqs last  enabled at (1143028): [<ffffffff8105a938>] __do_softirq+0x198/0x460
+> > softirqs last disabled at (1143023): [<ffffffff8105ae55>] irq_exit+0x135/0x150
+> > CPU: 0 PID: 25479 Comm: trinity-child0 Not tainted 3.11.0+ #44
+> > task: ffff88022c013f90 ti: ffff88022bd8c000 task.ti: ffff88022bd8c000
+> > RIP: 0010:[<ffffffff8131014b>]  [<ffffffff8131014b>] idr_find_slowpath+0x9b/0x150
+> > RSP: 0018:ffff88022bd8dc88  EFLAGS: 00000206
+> > RAX: 0000000000000006 RBX: ffff000a6c0a0000 RCX: 0000000000000008
+> > RDX: 0000000000000008 RSI: ffffffff81c41040 RDI: ffff88022c014668
+> > RBP: ffff88022bd8dca0 R08: 0000000000000000 R09: 0000000000000000
+> > R10: 0000000000000001 R11: 0000000000000001 R12: ffff88023831a290
+> > R13: 0000000000000001 R14: ffff88022bd8dbe8 R15: ffff8802449dffff
+> > FS:  00007fcfcad2c740(0000) GS:ffff880244800000(0000) knlGS:0000000000000000
+> > CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> > CR2: 00007fcfc84cb968 CR3: 00000001de93f000 CR4: 00000000001407f0
+> > DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> > DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
+> > Stack:
+> >   0000000000000260 0000000000002dba ffffffff81c7e258 ffff88022bd8dcf8
+> >   ffffffff812b1131 ffff88022c013f90 ffff8801d37174c0 ffff88022bd8dd38
+> >   ffffffff81c7e2f0 ffff88022bd8dd38 ffff8801e065cec8 ffff880241d86ca8
+> > Call Trace:
+> >   [<ffffffff812b1131>] sysvipc_find_ipc+0x61/0x300
+> >   [<ffffffff812b1416>] sysvipc_proc_next+0x46/0xd0
+> >   [<ffffffff811e13b9>] traverse.isra.7+0xc9/0x260
+> >   [<ffffffff810c4078>] ? lock_release_non_nested+0x308/0x350
+> >   [<ffffffff811e1b61>] seq_read+0x3e1/0x450
+> >   [<ffffffff81228f10>] ? proc_reg_write+0x80/0x80
+> >   [<ffffffff81228f4d>] proc_reg_read+0x3d/0x80
+> Do you have any details about load?
 > 
-> $ git grep -E -i "^\s*\*\s*return[s]?:"| \
->   cut -f2- -d":" | awk '{print $1 $2}' | \
->   sort | uniq -c
->     121 *return:
->     838 *Return:
->     778 *RETURN:
->     191 *returns:
->    1965 *Returns:
->     603 *RETURNS:
+> I haven't seen it either - but I don't have a stress test that does
+> #while true;cat /proc/sysvipc/*>/dev/null;done
+> in parallel with create/remove/whatever operations.
 > 
-> Rather than change all of the variants to the
-> canonical "Return:", adapt the script to accept
-> case insensitive "Return:" and "Returns:"
+> Davidlohr: Have you done any stress tests for the /proc interface?
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
-> 
-> I don't know that this actually works.
-> It does seem right though.
-> 
-> Randy?  Rob?  Can you test this please?
 
-I stopped reading this file at the line "#!/usr/bin/perl -w", but I'm  
-not sure if this is the right approach. Something that finds these and  
-lets us patch them to the cannonical version might be more appropriate.
+I don't. I tried reproducing the issue by a trivial multithreaded
+program were each CPU does parallel reads to the
+different /proc/sysvipc/ files, but no luck triggering any lockups.
 
-Or are you going to add similar fuzzy matching for all the other  
-keywords?
+Dave, are you able to reproduce this on demand? Any chance of bisecting
+this?
 
-Rob
+Thanks,
+Davidlohr
+
+> --
+>      Manfred
+
+
