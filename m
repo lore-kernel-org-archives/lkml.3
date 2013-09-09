@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755077Ab3IIPau (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 11:30:50 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31424 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754117Ab3IIP0p (ORCPT
+	id S1755151Ab3IIPbK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 11:31:10 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:37674 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755106Ab3IIPbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 11:26:45 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=bhxVZlKqwjsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=xPLaIx7fqxsA:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=9HL7raVLAAAA:8 a=Yj-eAbKCAAAA:8 a=_UZCbbHauV_kxHeOyvkA:9 a=ucBF-G1wxy4A:10 a=MSl-tDqOz04A:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130909143534.655639785@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 09 Sep 2013 10:35:20 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>,
-        Ivo Sieben <meltedpianoman@gmail.com>
-Subject: [PATCH RT 03/16] genirq: Set irq thread to RT priority on creation
-References: <20130909143517.641735717@goodmis.org>
-Content-Disposition: inline; filename=0003-genirq-Set-irq-thread-to-RT-priority-on-creation.patch
+	Mon, 9 Sep 2013 11:31:07 -0400
+From: Sergey Dyasly <dserrg@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Sha Zhengju <handai.szj@taobao.com>, Oleg Nesterov <oleg@redhat.com>,
+        Sergey Dyasly <dserrg@gmail.com>
+Subject: [PATCH] OOM killer: wait for tasks with pending SIGKILL to exit
+Date: Mon,  9 Sep 2013 19:30:24 +0400
+Message-Id: <1378740624-2456-1-git-send-email-dserrg@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ivo Sieben <meltedpianoman@gmail.com>
+If OOM killer finds a task which is about to exit or is already doing so,
+there is no need to kill anyone. It should just wait until task dies.
 
-When a threaded irq handler is installed the irq thread is initially
-created on normal scheduling priority. Only after the irq thread is
-woken up it sets its priority to RT_FIFO MAX_USER_RT_PRIO/2 itself.
+Add missing fatal_signal_pending() check and allow selected task to use memory
+reserves in order to exit quickly.
 
-This means that interrupts that occur directly after the irq handler
-is installed will be handled on a normal scheduling priority instead
-of the realtime priority that one would expect.
+Also remove redundant PF_EXITING check after victim has been selected.
 
-Fix this by setting the RT priority on creation of the irq_thread.
-
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Ivo Sieben <meltedpianoman@gmail.com>
-Cc: Sebastian Andrzej Siewior  <bigeasy@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1370254322-17240-1-git-send-email-meltedpianoman@gmail.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Sergey Dyasly <dserrg@gmail.com>
 ---
- kernel/irq/manage.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ mm/oom_kill.c | 17 +++++------------
+ 1 file changed, 5 insertions(+), 12 deletions(-)
 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index d750268..9d702cf 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -780,9 +780,6 @@ static irqreturn_t irq_thread_fn(struct irq_desc *desc,
-  */
- static int irq_thread(void *data)
- {
--	static const struct sched_param param = {
--		.sched_priority = MAX_USER_RT_PRIO/2,
--	};
- 	struct irqaction *action = data;
- 	struct irq_desc *desc = irq_to_desc(action->irq);
- 	irqreturn_t (*handler_fn)(struct irq_desc *desc,
-@@ -795,7 +792,6 @@ static int irq_thread(void *data)
- 	else
- 		handler_fn = irq_thread_fn;
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 98e75f2..ef83b81 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -275,13 +275,16 @@ enum oom_scan_t oom_scan_process_thread(struct task_struct *task,
+ 	if (oom_task_origin(task))
+ 		return OOM_SCAN_SELECT;
  
--	sched_setscheduler(current, SCHED_FIFO, &param);
- 	current->irqaction = action;
- 
- 	while (!irq_wait_for_interrupt(action)) {
-@@ -932,11 +928,17 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 	 */
- 	if (new->thread_fn && !nested) {
- 		struct task_struct *t;
-+		static const struct sched_param param = {
-+			.sched_priority = MAX_USER_RT_PRIO/2,
-+		};
- 
- 		t = kthread_create(irq_thread, new, "irq/%d-%s", irq,
- 				   new->name);
- 		if (IS_ERR(t))
- 			return PTR_ERR(t);
-+
-+		sched_setscheduler(t, SCHED_FIFO, &param);
-+
+-	if (task->flags & PF_EXITING && !force_kill) {
++	if ((task->flags & PF_EXITING || fatal_signal_pending(task)) &&
++	    !force_kill) {
  		/*
- 		 * We keep the reference to the task struct even if
- 		 * the thread dies to avoid that the interrupt code
+ 		 * If this task is not being ptraced on exit, then wait for it
+ 		 * to finish before killing some other task unnecessarily.
+ 		 */
+-		if (!(task->group_leader->ptrace & PT_TRACE_EXIT))
++		if (!(task->group_leader->ptrace & PT_TRACE_EXIT)) {
++			set_tsk_thread_flag(task, TIF_MEMDIE);
+ 			return OOM_SCAN_ABORT;
++		}
+ 	}
+ 	return OOM_SCAN_OK;
+ }
+@@ -412,16 +415,6 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 	static DEFINE_RATELIMIT_STATE(oom_rs, DEFAULT_RATELIMIT_INTERVAL,
+ 					      DEFAULT_RATELIMIT_BURST);
+ 
+-	/*
+-	 * If the task is already exiting, don't alarm the sysadmin or kill
+-	 * its children or threads, just set TIF_MEMDIE so it can die quickly
+-	 */
+-	if (p->flags & PF_EXITING) {
+-		set_tsk_thread_flag(p, TIF_MEMDIE);
+-		put_task_struct(p);
+-		return;
+-	}
+-
+ 	if (__ratelimit(&oom_rs))
+ 		dump_header(p, gfp_mask, order, memcg, nodemask);
+ 
 -- 
-1.7.10.4
-
+1.8.1.2
 
