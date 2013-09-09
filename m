@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462Ab3IIG6o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 02:58:44 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:54623 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795Ab3IIG6n (ORCPT
+	id S1752035Ab3IIHFw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 03:05:52 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:52947 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751329Ab3IIHFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 02:58:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAJxxZ0PdAdfrH_2oBgCp81iTh72cxRzBEOT1jDzbYjwYJ=NhsA@mail.gmail.com>
-References: <1378196941-23390-1-git-send-email-sonic.adi@gmail.com>
-	<CAJxxZ0PdAdfrH_2oBgCp81iTh72cxRzBEOT1jDzbYjwYJ=NhsA@mail.gmail.com>
-Date: Mon, 9 Sep 2013 08:58:42 +0200
-Message-ID: <CACRpkdb+drhLHobtWBY-P2FsJt1urVR_4zrOEUETLdce4egCfQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3 v4] pinctrl: ADI PIN control driver for the GPIO
- controller on bf54x and bf60x.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sonic Zhang <sonic.adi@gmail.com>
-Cc: Grant Likely <grant.likely@linaro.org>, Steven Miao <realmz6@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        adi-buildroot-devel@lists.sourceforge.net,
-        Sonic Zhang <sonic.zhang@analog.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 9 Sep 2013 03:05:50 -0400
+Date: Mon, 9 Sep 2013 09:05:45 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        sparclinux@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: sparc32 defconfig build broken due to commit ebd97be63 (PCI:
+ remove ARCH_SUPPORTS_MSI kconfig option)
+Message-ID: <20130909090545.7c90880b@skate>
+In-Reply-To: <522D1DAE.5010100@roeck-us.net>
+References: <522D1DAE.5010100@roeck-us.net>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 9, 2013 at 7:07 AM, Sonic Zhang <sonic.adi@gmail.com> wrote:
+Dear Guenter Roeck,
 
-> PING
+On Sun, 08 Sep 2013 18:00:30 -0700, Guenter Roeck wrote:
 
-We are currently in the middle of the merge window, and all subsystem
-maintainers incl. me are very busy with testing the HEAD of Torvalds'
-tree, and fixing any regressions. Also we don't have a stable baseline
-for merging new drivers anyway.
+> "make ARCH=sparc32 defconfig; make ARCH=sparc32" on the current upstream kernel results in:
+> 
+> In file included from arch/sparc/kernel/pci_msi.c:10:0:
+> arch/sparc/kernel/pci_impl.h:142:18: error: field 'stc' has incomplete type
+> arch/sparc/kernel/pci_msi.c: In function 'sparc64_setup_msi_irq':
+> arch/sparc/kernel/pci_msi.c:131:2: error: implicit declaration of function 'irq_alloc' [-Werror=implicit-function-declaration]
+> arch/sparc/kernel/pci_msi.c:173:2: error: implicit declaration of function 'irq_free' [-Werror=implicit-function-declaration]
+> cc1: all warnings being treated as errors
+> make[2]: *** [arch/sparc/kernel/pci_msi.o] Error 1
+> 
+> Bisect points to commit ebd97be635 (PCI: remove ARCH_SUPPORTS_MSI kconfig option).
+> After reverting this commit, sparc32:defconfig builds fine.
+> 
+> sparc64 defconfig is unaffected.
 
-Please be patient for the time being.
+Thanks for the report, I'll have a look very soon.
 
-Yours,
-Linus Walleij
+Best regards,
+
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
