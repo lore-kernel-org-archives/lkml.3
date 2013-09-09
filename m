@@ -1,138 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620Ab3IINYL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:24:11 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:43707 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232Ab3IINYJ (ORCPT
+	id S1753296Ab3IINZO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:25:14 -0400
+Received: from mx-rz-3.rrze.uni-erlangen.de ([131.188.11.22]:41855 "EHLO
+	mx-rz-3.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752078Ab3IINZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 09:24:09 -0400
-Date: Mon, 9 Sep 2013 06:23:43 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, sbw@mit.edu, cl@linux.com
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
- section?
-Message-ID: <20130909132343.GN3966@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130905195234.GA20555@linux.vnet.ibm.com>
- <20130906105934.GF20519@somewhere>
- <20130906151851.GQ3966@linux.vnet.ibm.com>
- <1378488088.31445.39.camel@edumazet-glaptop>
- <20130906174117.GU3966@linux.vnet.ibm.com>
- <20130906185927.GE2706@somewhere>
- <20130909105347.GK31370@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130909105347.GK31370@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090913-8236-0000-0000-00000195C984
+	Mon, 9 Sep 2013 09:25:12 -0400
+X-Greylist: delayed 781 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Sep 2013 09:25:12 EDT
+X-RRZE-Submit-IP: 10.20.5.100
+From: Dominik Paulus <dominik.paulus@fau.de>
+To: linux-kernel@vger.kernel.org
+Cc: Matt Mooney <mfm@muteddisk.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@i4.cs.fau.de, Dominik Paulus <dominik.paulus@fau.de>,
+        Tobias Polzer <tobias.polzer@fau.de>
+Subject: [PATCH] Fix IPv6 support in usbipd
+Date: Mon,  9 Sep 2013 15:14:31 +0200
+Message-Id: <1378732471-5967-1-git-send-email-dominik.paulus@fau.de>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 12:53:47PM +0200, Peter Zijlstra wrote:
-> On Fri, Sep 06, 2013 at 08:59:29PM +0200, Frederic Weisbecker wrote:
-> > Imagine that you're running on an rcu read side critical section on CPU 0, which
-> > is not in extended quiescent state. Now you get preempted in the middle of your
-> > RCU read side critical section (you called rcu_read_lock() but not yet rcu_read_unlock()).
-> > 
-> > Later on, the task is woken up to be scheduled in CPU 1. If CPU 1 is in extended
-> > quiescent state because it runs is userspace, it receives a scheduler IPI,
-> > then schedule_user() is called by the end of the interrupt and in turns calls rcu_user_exit()
-> > before the task is resumed to the code it was running on CPU 0, in the middle of
-> > the rcu read side extended quiescent state.
-> > 
-> > See, the key here is the rcu_user_exit() that restore the CPU on RCU's state machine.
-> > There are other possible scheduler entrypoints when a CPU runs in user extended quiescent
-> > state: exception and syscall entries or even preempt_schedule_irq() in case we receive an irq
-> > in the kernel while we haven't yet reached the call to rcu_user_exit()... All of these should
-> > be covered, otherwise you bet RCU would be prompt to warn.
-> > 
-> > That's why when we call rcu_is_cpu_idle() from an RCU read side critical section, it's legit even
-> > if we can be preempted anytime around it.
-> > And preempt_disable() is probably not even necessary, except perhaps if __get_cpu_var() itself
-> > relies on non-preemptibility for its own correctness on the address calculation.
-> 
-> I've tried reading that trice now, still not making much sense.
+getaddrinfo() leaves the order of the returned addrinfo structs
+unspecified. On systems with bindv6only disabled (this is the default),
+PF_INET6 sockets bind to IPv4, too. Thus, IPv6 support in usbipd was
+broken when getaddrinfo returned first IPv4 and then IPv6 addrinfos, as
+the IPv6 bind failed with EADDRINUSE.
 
-Sorry, Frederic really is describing what is going on here.
+This patch uses seperate sockets for IPv4 and IPv6 and sets IPV6_V6ONLY
+on all IPv6 sockets. Two command line arguments, -4 and -6 were added to
+manually select the socket family.
 
-And it really does work.
+Signed-off-by: Tobias Polzer <tobias.polzer@fau.de>
+Signed-off-by: Dominik Paulus <dominik.paulus@fau.de>
+---
+ .../staging/usbip/userspace/src/usbip_network.c    | 12 ++++
+ .../staging/usbip/userspace/src/usbip_network.h    |  1 +
+ drivers/staging/usbip/userspace/src/usbipd.c       | 68 ++++++++++++++++------
+ 3 files changed, 63 insertions(+), 18 deletions(-)
 
-> In any case rcu_is_cpu_idle() is complete bollocks, either use
-> __raw_get_cpu_var() and add a _coherent_ explanation for why its right,
-> or its broken.
-
-Hmmmm...  Adding Christoph Lameter on CC, since he was the one pushing
-for the current formulation of that line of rcu_is_cpu_idle().
-
-And guys, I have to say that the advice on which per-CPU primitive to use
-varies wildly and randomly.  For all I know, each of you individually
-might well be sticking to the same story, but taken together, your
-collective advice is strongly resembling white noise.
-
-It is not that the primitives themselves are changing that quickly:
-__raw_get_cpu_var() has been around for three years.
-
-> In any case the preempt_disable/enable pair there is just plain wrong as
-> Eric pointed out.
-
-Peter, in the general case, you are quite correct.  But this is a special
-case where it really does work.
-
-The key point here is that preemption and migration cannot move a task
-from a CPU to which RCU is paying attention to a CPU that RCU is ignoring.
-So yes, by the time the task sees the return value from rcu_is_cpu_idle(),
-that task might be running on some other CPU.  But that is OK, because
-if RCU was paying attention to the old CPU, then RCU must also be paying
-attention to the new CPU.
-
-Frederic's description gives the details of how this is enforced.
-
-Here is an example of how this works:
-
-1.	Some task running on a CPU 0 (which RCU is paying attention to)
-	calls rcu_is_cpu_idle(), which disables preemption, checks the
-	per-CPU variable, sets ret to zero, then enables preemption.
-
-	At this point, the task is preempted by some high-priority task.
-
-2.	CPU 1 is currently idle, so RCU is -not- paying attention to it.
-	However, it is decided that our low-priority task should migrate
-	to CPU 1.
-
-3.	CPU 1 is sent an IPI, which forces this CPU out of idle.  This
-	causes rcu_idle_exit() to be called, which causes RCU to start
-	paying attention to CPU 1.
-
-4.	CPU 1 switches to the low-priority task, which now sees the
-	return value of rcu_is_cpu_idle().  Now, this return value did
-	in fact reflect the old state of CPU 0, and the state of CPU 0
-	might have changed.  (For example, the high-priority task might
-	have blocked, so that CPU 0 is now idle, which in turn would
-	mean that RCU is no longer paying attention to it, so that
-	if rcu_is_cpu_idle() was called right now, it would return
-	true rather than the false return computed in step 1 above.)
-
-5.	But that is OK.  Because of the way RCU and idle interact,
-	if a call from a given task to rcu_is_cpu_idle() returned false
-	some time in the past, a call from that same task will also
-	return false right now.
-
-So yes, in general it is wrong to disable preemption, grab the value
-of a per-CPU variable, re-enable preemption, and then return the result.
-But there are a number of special cases where it is OK, and this is
-one of them.
-
-							Thanx, Paul
+diff --git a/drivers/staging/usbip/userspace/src/usbip_network.c b/drivers/staging/usbip/userspace/src/usbip_network.c
+index c39a07f..e78279c 100644
+--- a/drivers/staging/usbip/userspace/src/usbip_network.c
++++ b/drivers/staging/usbip/userspace/src/usbip_network.c
+@@ -239,6 +239,18 @@ int usbip_net_set_keepalive(int sockfd)
+ 	return ret;
+ }
+ 
++int usbip_net_set_v6only(int sockfd)
++{
++	const int val = 1;
++	int ret;
++
++	ret = setsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, &val, sizeof(val));
++	if (ret < 0)
++		dbg("setsockopt: IPV6_V6ONLY");
++
++	return ret;
++}
++
+ /*
+  * IPv6 Ready
+  */
+diff --git a/drivers/staging/usbip/userspace/src/usbip_network.h b/drivers/staging/usbip/userspace/src/usbip_network.h
+index 2d0e427..f19ae19 100644
+--- a/drivers/staging/usbip/userspace/src/usbip_network.h
++++ b/drivers/staging/usbip/userspace/src/usbip_network.h
+@@ -180,6 +180,7 @@ int usbip_net_recv_op_common(int sockfd, uint16_t *code);
+ int usbip_net_set_reuseaddr(int sockfd);
+ int usbip_net_set_nodelay(int sockfd);
+ int usbip_net_set_keepalive(int sockfd);
++int usbip_net_set_v6only(int sockfd);
+ int usbip_net_tcp_connect(char *hostname, char *port);
+ 
+ #endif /* __USBIP_NETWORK_H */
+diff --git a/drivers/staging/usbip/userspace/src/usbipd.c b/drivers/staging/usbip/userspace/src/usbipd.c
+index 1c76cfd..d48eea8 100644
+--- a/drivers/staging/usbip/userspace/src/usbipd.c
++++ b/drivers/staging/usbip/userspace/src/usbipd.c
+@@ -56,6 +56,13 @@ static const char usbip_version_string[] = PACKAGE_STRING;
+ 
+ static const char usbipd_help_string[] =
+ 	"usage: usbipd [options]\n"
++	"\n"
++	"	-4, --ipv4\n"
++	"		Bind to IPv4. Default is both.\n"
++	"\n"
++	"	-6, --ipv6\n"
++	"		Bind to IPv6. Default is both.\n"
++	"\n"
+ 	"	-D, --daemon\n"
+ 	"		Run as a daemon process.\n"
+ 	"\n"
+@@ -354,14 +361,15 @@ static void addrinfo_to_text(struct addrinfo *ai, char buf[],
+ 	snprintf(buf, buf_size, "%s:%s", hbuf, sbuf);
+ }
+ 
+-static int listen_all_addrinfo(struct addrinfo *ai_head, int sockfdlist[])
++static int listen_all_addrinfo(struct addrinfo *ai_head, int sockfdlist[],
++			     int maxsockfd)
+ {
+ 	struct addrinfo *ai;
+ 	int ret, nsockfd = 0;
+ 	const size_t ai_buf_size = NI_MAXHOST + NI_MAXSERV + 2;
+ 	char ai_buf[ai_buf_size];
+ 
+-	for (ai = ai_head; ai && nsockfd < MAXSOCKFD; ai = ai->ai_next) {
++	for (ai = ai_head; ai && nsockfd < maxsockfd; ai = ai->ai_next) {
+ 		int sock;
+ 		addrinfo_to_text(ai, ai_buf, ai_buf_size);
+ 		dbg("opening %s", ai_buf);
+@@ -374,6 +382,9 @@ static int listen_all_addrinfo(struct addrinfo *ai_head, int sockfdlist[])
+ 
+ 		usbip_net_set_reuseaddr(sock);
+ 		usbip_net_set_nodelay(sock);
++		/* We use seperate sockets for IPv4 and IPv6
++		 * (see do_standalone_mode()) */
++		usbip_net_set_v6only(sock);
+ 
+ 		if (sock >= FD_SETSIZE) {
+ 			err("FD_SETSIZE: %s: sock=%d, max=%d",
+@@ -402,11 +413,6 @@ static int listen_all_addrinfo(struct addrinfo *ai_head, int sockfdlist[])
+ 		sockfdlist[nsockfd++] = sock;
+ 	}
+ 
+-	if (nsockfd == 0)
+-		return -1;
+-
+-	dbg("listening on %d address%s", nsockfd, (nsockfd == 1) ? "" : "es");
+-
+ 	return nsockfd;
+ }
+ 
+@@ -473,11 +479,11 @@ static void remove_pid_file()
+ 	}
+ }
+ 
+-static int do_standalone_mode(int daemonize)
++static int do_standalone_mode(int daemonize, int ipv4, int ipv6)
+ {
+ 	struct addrinfo *ai_head;
+ 	int sockfdlist[MAXSOCKFD];
+-	int nsockfd;
++	int nsockfd, family;
+ 	int i, terminate;
+ 	struct pollfd *fds;
+ 	struct timespec timeout;
+@@ -501,21 +507,35 @@ static int do_standalone_mode(int daemonize)
+ 	set_signal();
+ 	write_pid_file();
+ 
+-	ai_head = do_getaddrinfo(NULL, PF_UNSPEC);
++	info("starting " PROGNAME " (%s)", usbip_version_string);
++
++	/*
++	 * To suppress warnings on systems with bindv6only disabled
++	 * (default), we use seperate sockets for IPv6 and IPv4 and set
++	 * IPV6_V6ONLY on the IPv6 sockets.
++	 */
++	if (ipv4 && ipv6)
++		family = AF_UNSPEC;
++	else if (ipv4)
++		family = AF_INET;
++	else
++		family = AF_INET6;
++
++	ai_head = do_getaddrinfo(NULL, family);
+ 	if (!ai_head) {
+ 		usbip_host_driver_close();
+ 		return -1;
+ 	}
+-
+-	info("starting " PROGNAME " (%s)", usbip_version_string);
+-
+-	nsockfd = listen_all_addrinfo(ai_head, sockfdlist);
++	nsockfd = listen_all_addrinfo(ai_head, sockfdlist,
++		sizeof(sockfdlist) / sizeof(*sockfdlist));
+ 	if (nsockfd <= 0) {
+ 		err("failed to open a listening socket");
+-		freeaddrinfo(ai_head);
+ 		usbip_host_driver_close();
+ 		return -1;
+ 	}
++
++	dbg("listening on %d address%s", nsockfd, (nsockfd == 1) ? "" : "es");
++
+ 	fds = calloc(nsockfd, sizeof(struct pollfd));
+ 	for (i = 0; i < nsockfd; i++) {
+ 		fds[i].fd = sockfdlist[i];
+@@ -551,7 +571,6 @@ static int do_standalone_mode(int daemonize)
+ 
+ 	info("shutting down " PROGNAME);
+ 	free(fds);
+-	freeaddrinfo(ai_head);
+ 	usbip_host_driver_close();
+ 
+ 	return 0;
+@@ -560,6 +579,9 @@ static int do_standalone_mode(int daemonize)
+ int main(int argc, char *argv[])
+ {
+ 	static const struct option longopts[] = {
++		{ "ipv4",     no_argument,       NULL, '4' },
++		{ "ipv6",     no_argument,       NULL, '6' },
++		{ "daemon",   no_argument,       NULL, 'D' },
+ 		{ "daemon",   no_argument,       NULL, 'D' },
+ 		{ "debug",    no_argument,       NULL, 'd' },
+ 		{ "pid",      optional_argument, NULL, 'P' },
+@@ -576,6 +598,7 @@ int main(int argc, char *argv[])
+ 	} cmd;
+ 
+ 	int daemonize = 0;
++	int ipv4 = 0, ipv6 = 0;
+ 	int opt, rc = -1;
+ 	pid_file = NULL;
+ 
+@@ -587,12 +610,18 @@ int main(int argc, char *argv[])
+ 
+ 	cmd = cmd_standalone_mode;
+ 	for (;;) {
+-		opt = getopt_long(argc, argv, "DdP::t:hv", longopts, NULL);
++		opt = getopt_long(argc, argv, "46DdP::t:hv", longopts, NULL);
+ 
+ 		if (opt == -1)
+ 			break;
+ 
+ 		switch (opt) {
++		case '4':
++			ipv4 = 1;
++			break;
++		case '6':
++			ipv6 = 1;
++			break;
+ 		case 'D':
+ 			daemonize = 1;
+ 			break;
+@@ -618,9 +647,12 @@ int main(int argc, char *argv[])
+ 		}
+ 	}
+ 
++	if (!ipv4 && !ipv6)
++		ipv4 = ipv6 = 1;
++
+ 	switch (cmd) {
+ 	case cmd_standalone_mode:
+-		rc = do_standalone_mode(daemonize);
++		rc = do_standalone_mode(daemonize, ipv4, ipv6);
+ 		remove_pid_file();
+ 		break;
+ 	case cmd_version:
+-- 
+1.8.4
 
