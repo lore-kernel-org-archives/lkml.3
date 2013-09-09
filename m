@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012Ab3IISsF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 14:48:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:57164 "EHLO
+	id S1756031Ab3IISsQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 14:48:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57169 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754172Ab3IISsB (ORCPT
+	with ESMTP id S1755461Ab3IISsE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 14:48:01 -0400
+	Mon, 9 Sep 2013 14:48:04 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andrey Vagin <avagin@openvz.org>, Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux.com>, Glauber Costa <glommer@openvz.org>,
-        Joonsoo Kim <js1304@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Jakob Bornecrantz <jakob@vmware.com>, Dave Airlie <airlied@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 19/24] memcg: check that kmem_cache has memcg_params before accessing it
-Date: Mon,  9 Sep 2013 11:45:09 -0700
-Message-Id: <1378752314-2416-20-git-send-email-kamal@canonical.com>
+Subject: [PATCH 22/24] drm/vmwgfx: Split GMR2_REMAP commands if they are to large
+Date: Mon,  9 Sep 2013 11:45:12 -0700
+Message-Id: <1378752314-2416-23-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378752314-2416-1-git-send-email-kamal@canonical.com>
 References: <1378752314-2416-1-git-send-email-kamal@canonical.com>
@@ -32,78 +27,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Vagin <avagin@openvz.org>
+From: Jakob Bornecrantz <jakob@vmware.com>
 
-commit 6f6b8951897e487ea6f77b90ea01f70a9c363770 upstream.
+commit 6e4dcff3adbf25acb87e74500a58e3c07bdec40f upstream.
 
-If the system had a few memory groups and all of them were destroyed,
-memcg_limited_groups_array_size has non-zero value, but all new caches
-are created without memcg_params, because memcg_kmem_enabled() returns
-false.
+This fixes the piglit test texturing/max-texture-size
+causing the VM to die due to a too large SVGA command.
 
-We try to enumirate child caches in a few places and all of them are
-potentially dangerous.
-
-For example my kernel is compiled with CONFIG_SLAB and it crashed when I
-tryed to mount a NFS share after a few experiments with kmemcg.
-
-  BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-  IP: [<ffffffff8118166a>] do_tune_cpucache+0x8a/0xd0
-  PGD b942a067 PUD b999f067 PMD 0
-  Oops: 0000 [#1] SMP
-  Modules linked in: fscache(+) ip6table_filter ip6_tables iptable_filter ip_tables i2c_piix4 pcspkr virtio_net virtio_balloon i2c_core floppy
-  CPU: 0 PID: 357 Comm: modprobe Not tainted 3.11.0-rc7+ #59
-  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-  task: ffff8800b9f98240 ti: ffff8800ba32e000 task.ti: ffff8800ba32e000
-  RIP: 0010:[<ffffffff8118166a>]  [<ffffffff8118166a>] do_tune_cpucache+0x8a/0xd0
-  RSP: 0018:ffff8800ba32fb70  EFLAGS: 00010246
-  RAX: 0000000000000000 RBX: 0000000000000000 RCX: 0000000000000006
-  RDX: 0000000000000000 RSI: ffff8800b9f98910 RDI: 0000000000000246
-  RBP: ffff8800ba32fba0 R08: 0000000000000002 R09: 0000000000000004
-  R10: 0000000000000001 R11: 0000000000000001 R12: 0000000000000010
-  R13: 0000000000000008 R14: 00000000000000d0 R15: ffff8800375d0200
-  FS:  00007f55f1378740(0000) GS:ffff8800bfa00000(0000) knlGS:0000000000000000
-  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-  CR2: 00007f24feba57a0 CR3: 0000000037b51000 CR4: 00000000000006f0
-  Call Trace:
-    enable_cpucache+0x49/0x100
-    setup_cpu_cache+0x215/0x280
-    __kmem_cache_create+0x2fa/0x450
-    kmem_cache_create_memcg+0x214/0x350
-    kmem_cache_create+0x2b/0x30
-    fscache_init+0x19b/0x230 [fscache]
-    do_one_initcall+0xfa/0x1b0
-    load_module+0x1c41/0x26d0
-    SyS_finit_module+0x86/0xb0
-    system_call_fastpath+0x16/0x1b
-
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Glauber Costa <glommer@openvz.org>
-Cc: Joonsoo Kim <js1304@gmail.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jakob Bornecrantz <jakob@vmware.com>
+Reviewed-by: Biran Paul <brianp@vmware.com>
+Reviewed-by: Zack Rusin <zackr@vmware.com>
+Signed-off-by: Dave Airlie <airlied@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/slab.h | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c | 58 +++++++++++++++++++++++++------------
+ 1 file changed, 39 insertions(+), 19 deletions(-)
 
-diff --git a/mm/slab.h b/mm/slab.h
-index 34a98d6..3cdbd8f 100644
---- a/mm/slab.h
-+++ b/mm/slab.h
-@@ -153,6 +153,8 @@ static inline const char *cache_name(struct kmem_cache *s)
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c b/drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c
+index 3751730..1a0bf07 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c
+@@ -29,7 +29,9 @@
+ #include <drm/drmP.h>
+ #include <drm/ttm/ttm_bo_driver.h>
  
- static inline struct kmem_cache *cache_from_memcg(struct kmem_cache *s, int idx)
+-#define VMW_PPN_SIZE sizeof(unsigned long)
++#define VMW_PPN_SIZE (sizeof(unsigned long))
++/* A future safe maximum remap size. */
++#define VMW_PPN_PER_REMAP ((31 * 1024) / VMW_PPN_SIZE)
+ 
+ static int vmw_gmr2_bind(struct vmw_private *dev_priv,
+ 			 struct page *pages[],
+@@ -38,43 +40,61 @@ static int vmw_gmr2_bind(struct vmw_private *dev_priv,
  {
-+	if (!s->memcg_params)
-+		return NULL;
- 	return s->memcg_params->memcg_caches[idx];
- }
+ 	SVGAFifoCmdDefineGMR2 define_cmd;
+ 	SVGAFifoCmdRemapGMR2 remap_cmd;
+-	uint32_t define_size = sizeof(define_cmd) + 4;
+-	uint32_t remap_size = VMW_PPN_SIZE * num_pages + sizeof(remap_cmd) + 4;
+ 	uint32_t *cmd;
+ 	uint32_t *cmd_orig;
++	uint32_t define_size = sizeof(define_cmd) + sizeof(*cmd);
++	uint32_t remap_num = num_pages / VMW_PPN_PER_REMAP + ((num_pages % VMW_PPN_PER_REMAP) > 0);
++	uint32_t remap_size = VMW_PPN_SIZE * num_pages + (sizeof(remap_cmd) + sizeof(*cmd)) * remap_num;
++	uint32_t remap_pos = 0;
++	uint32_t cmd_size = define_size + remap_size;
+ 	uint32_t i;
  
+-	cmd_orig = cmd = vmw_fifo_reserve(dev_priv, define_size + remap_size);
++	cmd_orig = cmd = vmw_fifo_reserve(dev_priv, cmd_size);
+ 	if (unlikely(cmd == NULL))
+ 		return -ENOMEM;
+ 
+ 	define_cmd.gmrId = gmr_id;
+ 	define_cmd.numPages = num_pages;
+ 
++	*cmd++ = SVGA_CMD_DEFINE_GMR2;
++	memcpy(cmd, &define_cmd, sizeof(define_cmd));
++	cmd += sizeof(define_cmd) / sizeof(*cmd);
++
++	/*
++	 * Need to split the command if there are too many
++	 * pages that goes into the gmr.
++	 */
++
+ 	remap_cmd.gmrId = gmr_id;
+ 	remap_cmd.flags = (VMW_PPN_SIZE > sizeof(*cmd)) ?
+ 		SVGA_REMAP_GMR2_PPN64 : SVGA_REMAP_GMR2_PPN32;
+-	remap_cmd.offsetPages = 0;
+-	remap_cmd.numPages = num_pages;
+ 
+-	*cmd++ = SVGA_CMD_DEFINE_GMR2;
+-	memcpy(cmd, &define_cmd, sizeof(define_cmd));
+-	cmd += sizeof(define_cmd) / sizeof(uint32);
++	while (num_pages > 0) {
++		unsigned long nr = min(num_pages, (unsigned long)VMW_PPN_PER_REMAP);
++
++		remap_cmd.offsetPages = remap_pos;
++		remap_cmd.numPages = nr;
+ 
+-	*cmd++ = SVGA_CMD_REMAP_GMR2;
+-	memcpy(cmd, &remap_cmd, sizeof(remap_cmd));
+-	cmd += sizeof(remap_cmd) / sizeof(uint32);
++		*cmd++ = SVGA_CMD_REMAP_GMR2;
++		memcpy(cmd, &remap_cmd, sizeof(remap_cmd));
++		cmd += sizeof(remap_cmd) / sizeof(*cmd);
+ 
+-	for (i = 0; i < num_pages; ++i) {
+-		if (VMW_PPN_SIZE <= 4)
+-			*cmd = page_to_pfn(*pages++);
+-		else
+-			*((uint64_t *)cmd) = page_to_pfn(*pages++);
++		for (i = 0; i < nr; ++i) {
++			if (VMW_PPN_SIZE <= 4)
++				*cmd = page_to_pfn(*pages++);
++			else
++				*((uint64_t *)cmd) = page_to_pfn(*pages++);
+ 
+-		cmd += VMW_PPN_SIZE / sizeof(*cmd);
++			cmd += VMW_PPN_SIZE / sizeof(*cmd);
++		}
++
++		num_pages -= nr;
++		remap_pos += nr;
+ 	}
+ 
+-	vmw_fifo_commit(dev_priv, define_size + remap_size);
++	BUG_ON(cmd != cmd_orig + cmd_size / sizeof(*cmd));
++
++	vmw_fifo_commit(dev_priv, cmd_size);
+ 
+ 	return 0;
+ }
 -- 
 1.8.1.2
 
