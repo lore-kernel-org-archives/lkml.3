@@ -1,35 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751688Ab3IICjK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 22:39:10 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:59157 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366Ab3IICjI (ORCPT
+	id S1752001Ab3IICjj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 22:39:39 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48970 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751784Ab3IICji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 22:39:08 -0400
+	Sun, 8 Sep 2013 22:39:38 -0400
+X-AuditID: 9c930197-b7bc2ae0000060ef-06-522d34e75ff2
+Date: Mon, 9 Sep 2013 11:39:49 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, mhocko@suse.cz,
+        dhillf@gmail.com, liwanp@linux.vnet.ibm.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>, trinity@vger.kernel.org,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        aneesh.kumar@linux.vnet.ibm.com
+Subject: Re: hugetlb: NULL ptr deref in region_truncate
+Message-ID: <20130909023949.GA22390@lge.com>
+References: <522C8DA8.6030701@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <20130909023311.GB5329@kroah.com>
-References: <1378688580-11935-1-git-send-email-linux@roeck-us.net>
- <20130909015945.GA4029@kroah.com> <CALkWK0kx+71O074dfP4ikj4FayU6GWXOByTFPgVjv=CVO-btUQ@mail.gmail.com>
- <20130909023311.GB5329@kroah.com>
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-Date: Mon, 9 Sep 2013 08:08:28 +0530
-Message-ID: <CALkWK0mLUfJL0s-OxrmAD_RXpv0Qs-j23XedwPGAHKTq4JJjcA@mail.gmail.com>
-Subject: Re: [PATCH] staging: Disable lustre file system for MIPS, SH, and XTENSA
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Guenter Roeck <linux@roeck-us.net>, LKML <linux-kernel@vger.kernel.org>,
-        devel@driverdev.osuosl.org, Peng Tao <tao.peng@emc.com>,
-        Peng Tao <bergwolf@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <522C8DA8.6030701@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg Kroah-Hartman wrote:
-> What do you mean by this?  What "initial cost"?  You should be able to
-> cross-compile almost all arches on your desktop machine today with the
-> compilers we have on kernel.org.  If I can get them set up and working,
-> they can't be that hard for anyone else :)
+On Sun, Sep 08, 2013 at 10:46:00AM -0400, Sasha Levin wrote:
+> Hi all,
+> 
+> While fuzzing with trinity inside a KVM tools guest, running latest -next kernel, I've
+> stumbled on the following:
+> 
+> [  998.281867] BUG: unable to handle kernel NULL pointer dereference at 0000000000000274
+> [  998.283333] IP: [<ffffffff812707c4>] region_truncate+0x64/0xd0
+> [  998.284288] PGD 0
+> [  998.284717] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [  998.286506] Modules linked in:
+> [  998.287101] CPU: 88 PID: 24650 Comm: trinity-child85 Tainted: G
+> B   W 3.11.0-next-20130906-sasha #3985
+> [  998.288844] task: ffff8800c1110000 ti: ffff8800c544a000 task.ti: ffff8800c544a000
+> [  998.290257] RIP: 0010:[<ffffffff812707c4>]  [<ffffffff812707c4>] region_truncate+0x64/0xd0
+> [  998.290301] RSP: 0018:ffff8800c544ba58  EFLAGS: 00010293
+> [  998.290301] RAX: 0000000000000274 RBX: ffff880f47d3b0f8 RCX: 000000003fd075fc
+> [  998.290301] RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff880f47d3b0f8
+> [  998.290301] RBP: ffff8800c544ba78 R08: 0000000000000000 R09: 0000000000000000
+> [  998.290301] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
+> [  998.290301] R13: ffffffff8741bc60 R14: 0000000000000000 R15: ffff880e9d8b5590
+> [  998.290301] FS:  00007f47f28c2700(0000) GS:ffff880fe2200000(0000) knlGS:0000000000000000
+> [  998.290301] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [  998.290301] CR2: 0000000000000274 CR3: 0000000005a23000 CR4: 00000000000006e0
+> [  998.290301] Stack:
+> [  998.290301]  ffff880f47d3ad50 0000000000000000 ffffffff8741bc60 0000000000000000
+> [  998.290301]  ffff8800c544bac8 ffffffff81274856 0000000000000000 ffff8800c544bb18
+> [  998.290301]  0000000000000000 0000000000000000 0000000000000000 ffff8800c544bb18
+> [  998.290301] Call Trace:
+> [  998.290301]  [<ffffffff81274856>] hugetlb_unreserve_pages+0x46/0xd0
+> [  998.290301]  [<ffffffff8142abe2>] truncate_hugepages+0x202/0x220
+> [  998.290301]  [<ffffffff812d2ec8>] ? inode_wait_for_writeback+0x28/0x50
+> [  998.290301]  [<ffffffff81150fe7>] ? bit_waitqueue+0x17/0xc0
+> [  998.290301]  [<ffffffff812d2ed8>] ? inode_wait_for_writeback+0x38/0x50
+> [  998.290301]  [<ffffffff8142ac18>] hugetlbfs_evict_inode+0x18/0x30
+> [  998.290301]  [<ffffffff812c4001>] evict+0xc1/0x1a0
+> [  998.290301]  [<ffffffff812c4243>] iput_final+0x163/0x180
+> [  998.290301]  [<ffffffff812c42af>] iput+0x4f/0x60
+> [  998.290301]  [<ffffffff812bf5a8>] dentry_iput+0xc8/0xf0
+> [  998.290301]  [<ffffffff812c200a>] dput+0x17a/0x1a0
+> [  998.290301]  [<ffffffff812a9ea7>] __fput+0x2b7/0x2d0
+> [  998.290301]  [<ffffffff812a9f8e>] ____fput+0xe/0x10
+> [  998.290301]  [<ffffffff81149b4e>] task_work_run+0xae/0xf0
+> [  998.290301]  [<ffffffff81127c09>] do_exit+0x2d9/0x4d0
+> [  998.290301]  [<ffffffff81127ea9>] do_group_exit+0xa9/0xe0
+> [  998.290301]  [<ffffffff8113c185>] get_signal_to_deliver+0x475/0x4d0
+> [  998.290301]  [<ffffffff81067c2b>] do_signal+0x4b/0x120
+> [  998.290301]  [<ffffffff8114ba24>] ? __rcu_read_unlock+0x44/0x80
+> [  998.290301]  [<ffffffff8116911c>] ? vtime_account_user+0x5c/0x70
+> [  998.290301]  [<ffffffff81222215>] ? context_tracking_user_exit+0x145/0x150
+> [  998.290301]  [<ffffffff81067f8a>] do_notify_resume+0x5a/0xe0
+> [  998.290301]  [<ffffffff841129a0>] int_signal+0x12/0x17
+> [  998.290301] Code: 0e 48 8b 00 48 39 d8 75 ee eb 6c 0f 1f 40 00 45
+> 31 f6 48 3b 70 10 90 7e 0e 4c 8b 70 18 48 89 70 18 49 29 f6 48 8b 00
+> 48 8b 40 08 <4c> 8b 28 4d 8b 65 00 4c 89 ef 4d 3b 6d 08 74 44 4c 39
+> eb 75 12
+> [  998.290301] RIP  [<ffffffff812707c4>] region_truncate+0x64/0xd0
+> [  998.290301]  RSP <ffff8800c544ba58>
+> [  998.290301] CR2: 0000000000000274
 
-Won't you need to physically explore hardware? How will the hardware
-industry be driven otherwise?
+More ccing to experts.
+
+It looks like region tracking list corruption,
+but I'm not sure that it is related to recent changes,
+because, theoretically, the race is possible on region tracking long time ago.
+
+Sasha, Is it easily reproducible?
+If so, could you tell me how to reproduce it?
+
+Thanks.
