@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753326Ab3IINUA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:20:00 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35803 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752051Ab3IINT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 09:19:58 -0400
-Message-ID: <522DCAC6.8080705@ti.com>
-Date: Mon, 9 Sep 2013 09:19:02 -0400
-From: Tom Rini <trini@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752827Ab3IINVp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:21:45 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:41761 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751171Ab3IINVo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 09:21:44 -0400
+Date: Mon, 9 Sep 2013 16:21:24 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, Minchan Kim <minchan@kernel.org>,
+        Jerome Marchand <jmarchan@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] staging: zram: minimize `slot_free_lock' usage (v2)
+Message-ID: <20130909132124.GY6329@mwanda>
+References: <20130906151255.GE2238@swordfish.minsk.epam.com>
+ <20130909123329.GZ19256@mwanda>
+ <20130909124942.GA2221@swordfish.minsk.epam.com>
 MIME-Version: 1.0
-To: Koen Kooi <koen@dominion.thruhere.net>
-CC: <linux-omap@vger.kernel.org>, <bcousson@baylibre.com>, <tony@atomide.com>,
-        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ijc+devicetree@hellion.org.uk>, <linux@arm.linux.org.uk>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <olof@lixom.net>
-Subject: Re: [PATCHv3] ARM: OMAP2+: am335x-bone*: add DT for BeagleBone Black
-References: <1378638746-10627-1-git-send-email-koen@dominion.thruhere.net>
-In-Reply-To: <1378638746-10627-1-git-send-email-koen@dominion.thruhere.net>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130909124942.GA2221@swordfish.minsk.epam.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/2013 07:12 AM, Koen Kooi wrote:
-> The BeagleBone Black is basically a regular BeagleBone with eMMC and HDMI added,
-> so create a common dtsi both can use.
+On Mon, Sep 09, 2013 at 03:49:42PM +0300, Sergey Senozhatsky wrote:
+> > > Calling handle_pending_slot_free() for every RW operation may
+> > > cause unneccessary slot_free_lock locking, because most likely
+> > > process will see NULL slot_free_rq. handle_pending_slot_free()
+> > > only when current detects that slot_free_rq is not NULL.
+> > > 
+> > > v2: protect handle_pending_slot_free() with zram rw_lock.
+> > > 
+> > 
+> > zram->slot_free_lock protects zram->slot_free_rq but shouldn't the zram
+> > rw_lock be wrapped around the whole operation like the original code
+> > does?  I don't know the zram code, but the original looks like it makes
+> > sense but in this one it looks like the locks are duplicative.
+> > 
+> > Is the down_read() in the original code be changed to down_write()?
+> >
 > 
-> IMPORTANT: booting the existing am335x-bone.dts will blow up the HDMI transceiver 
-> after a dozen boots with an uSD card inserted because LDO will be at 3.3V instead
-> of 1.8. 
+> I'm not touching locking around existing READ/WRITE commands.
 > 
-> MMC support for AM335x still isn't in, so only the LDO change has been added.
-> 
-> Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
 
-Grabbed my beaglebone white and black and tested them both on top of
-e5c832d (top of Linus' tree atm), came up with a ramdisk.
+Your patch does change the locking because now instead of taking the
+zram lock once it takes it and then drops it and then retakes it.  This
+looks potentially racy to me but I don't know the code so I will defer
+to any zram maintainer.
 
-Tested-by: Tom Rini <trini@ti.com>
+1) You haven't given us any performance numbers so it's not clear if the
+   locking is even a problem.
 
--- 
-Tom
+2) The v2 patch introduces an obvious deadlock in zram_slot_free()
+   because now we take the rw_lock twice.  Fix your testing to catch
+   this kind of bug next time.
+
+3) Explain why it is safe to test zram->slot_free_rq when we are not
+   holding the lock.  I think it is unsafe.  I don't want to even think
+   about it without the numbers.
+
+regards,
+dan carpenter
+
