@@ -1,84 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756000Ab3IISyT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 14:54:19 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:34595 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879Ab3IISyS (ORCPT
+	id S1756195Ab3IISy1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 14:54:27 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:50583 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754172Ab3IISyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 14:54:18 -0400
-Date: Mon, 9 Sep 2013 15:54:10 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH V2 1/2] perf tools: fix id pos in perf_evlist__open()
-Message-ID: <20130909185410.GA28428@ghostprotocols.net>
-References: <1378496412-2424-1-git-send-email-adrian.hunter@intel.com>
- <1378496412-2424-2-git-send-email-adrian.hunter@intel.com>
- <522B361A.6030209@gmail.com>
+	Mon, 9 Sep 2013 14:54:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <522B361A.6030209@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <fd69f2052bc16d5a5de0104ca00ccc59478e3569.1378750714.git.milosz@adfin.com>
+References: <alpine.DEB.2.00.1309091042520.18214@cobra.newdream.net>
+	<fd69f2052bc16d5a5de0104ca00ccc59478e3569.1378750714.git.milosz@adfin.com>
+Date: Mon, 9 Sep 2013 14:54:23 -0400
+Message-ID: <CANP1eJHQhmYZomguVobCkkuvBK=JG8wzbJxMmgipSvJHF8vaQg@mail.gmail.com>
+Subject: Re: [PATCH] fscache: check consistency does not decrement refcount
+From: Milosz Tanski <milosz@adfin.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Sage Weil <sage@inktank.com>, "Yan, Zheng" <zheng.z.yan@intel.com>,
+        "linux-cachefs@redhat.com" <linux-cachefs@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, ceph-devel <ceph-devel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, Sep 07, 2013 at 08:20:10AM -0600, David Ahern escreveu:
-> On 9/6/13 1:40 PM, Adrian Hunter wrote:
-> >Ensure the id_pos is correct when perf_evlist__open()
-> >is used.
-> 
-> The commit log should reference 7556257 and breakage of 'kvm stat
-> live'; helps identify patches when backporting.
-> 
-> Other than that this patch fixes the problem.
+David,
 
-Thanks, I'm ammending the commit message log.
- 
-> Tested-by and Acked-by David Ahern <dsahern@gmail.com>
-> 
-> >
-> >Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-> >---
-> >  tools/perf/util/evlist.c | 12 ++++++++++++
-> >  1 file changed, 12 insertions(+)
-> >
-> >diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-> >index b8727ae..005c0eb 100644
-> >--- a/tools/perf/util/evlist.c
-> >+++ b/tools/perf/util/evlist.c
-> >@@ -64,6 +64,16 @@ void perf_evlist__set_id_pos(struct perf_evlist *evlist)
-> >  	evlist->is_pos = first->is_pos;
-> >  }
-> >
-> >+static void perf_evlist__update_id_pos(struct perf_evlist *evlist)
-> >+{
-> >+	struct perf_evsel *evsel;
-> >+
-> >+	list_for_each_entry(evsel, &evlist->entries, node)
-> >+		perf_evsel__calc_id_pos(evsel);
-> >+
-> >+	perf_evlist__set_id_pos(evlist);
-> >+}
-> >+
-> >  static void perf_evlist__purge(struct perf_evlist *evlist)
-> >  {
-> >  	struct perf_evsel *pos, *n;
-> >@@ -915,6 +925,8 @@ int perf_evlist__open(struct perf_evlist *evlist)
-> >  	struct perf_evsel *evsel;
-> >  	int err;
-> >
-> >+	perf_evlist__update_id_pos(evlist);
-> >+
-> >  	list_for_each_entry(evsel, &evlist->entries, node) {
-> >  		err = perf_evsel__open(evsel, evlist->cpus, evlist->threads);
-> >  		if (err < 0)
-> >
+Can I get a sign off on this?
+
+Thanks,
+- Milosz
+
+On Mon, Sep 9, 2013 at 2:28 PM, Milosz Tanski <milosz@adfin.com> wrote:
+> __fscache_check_consistency() does not decrement the count of operations
+> active after it finishes in the success case. This leads to a hung tasks on
+> cookie de-registration (commonly in inode eviction).
+>
+> INFO: task kworker/1:2:4214 blocked for more than 120 seconds.
+> kworker/1:2     D ffff880443513fc0     0  4214      2 0x00000000
+> Workqueue: ceph-msgr con_work [libceph]
+>   ...
+> Call Trace:
+>  [<ffffffff81569fc6>] ? _raw_spin_unlock_irqrestore+0x16/0x20
+>  [<ffffffffa0016570>] ? fscache_wait_bit_interruptible+0x30/0x30 [fscache]
+>  [<ffffffff81568d09>] schedule+0x29/0x70
+>  [<ffffffffa001657e>] fscache_wait_atomic_t+0xe/0x20 [fscache]
+>  [<ffffffff815665cf>] out_of_line_wait_on_atomic_t+0x9f/0xe0
+>  [<ffffffff81083560>] ? autoremove_wake_function+0x40/0x40
+>  [<ffffffffa0015a9c>] __fscache_relinquish_cookie+0x15c/0x310 [fscache]
+>  [<ffffffffa00a4fae>] ceph_fscache_unregister_inode_cookie+0x3e/0x50 [ceph]
+>  [<ffffffffa007e373>] ceph_destroy_inode+0x33/0x200 [ceph]
+>  [<ffffffff811c13ae>] ? __fsnotify_inode_delete+0xe/0x10
+>  [<ffffffff8119ba1c>] destroy_inode+0x3c/0x70
+>  [<ffffffff8119bb69>] evict+0x119/0x1b0
+>
+> Signed-off-by: Milosz Tanski <milosz@adfin.com>
+> ---
+>  fs/fscache/cookie.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/fs/fscache/cookie.c b/fs/fscache/cookie.c
+> index 318e843..b2a86e3 100644
+> --- a/fs/fscache/cookie.c
+> +++ b/fs/fscache/cookie.c
+> @@ -586,7 +586,8 @@ int __fscache_check_consistency(struct fscache_cookie *cookie)
+>
+>         fscache_operation_init(op, NULL, NULL);
+>         op->flags = FSCACHE_OP_MYTHREAD |
+> -               (1 << FSCACHE_OP_WAITING);
+> +               (1 << FSCACHE_OP_WAITING) |
+> +               (1 << FSCACHE_OP_UNUSE_COOKIE);
+>
+>         spin_lock(&cookie->lock);
+>
+> --
+> 1.7.9.5
+>
