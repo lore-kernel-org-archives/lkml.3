@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665Ab3IIS3B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 14:29:01 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:63008 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844Ab3IIS27 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 14:28:59 -0400
-Date: Mon, 9 Sep 2013 14:28:57 -0400
-From: Milosz Tanski <milosz@adfin.com>
-To: ceph-devel@vger.kernel.org
-Cc: sage@inktank.com, dhowells@redhat.com, zheng.z.yan@intel.com,
-        linux-cachefs@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] fscache: check consistency does not decrement refcount
-Message-ID: <fd69f2052bc16d5a5de0104ca00ccc59478e3569.1378750714.git.milosz@adfin.com>
-References: <alpine.DEB.2.00.1309091042520.18214@cobra.newdream.net>
+	id S1752803Ab3IISbN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 14:31:13 -0400
+Received: from mail-bn1lp0152.outbound.protection.outlook.com ([207.46.163.152]:17103
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751266Ab3IISbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 14:31:10 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH 01/12] Add BSD-style securelevel support
+Thread-Topic: [PATCH 01/12] Add BSD-style securelevel support
+Thread-Index: AQHOrXST0kcK6RTzv06SuZIfeWETyJm9l/EAgAAioQA=
+Date: Mon, 9 Sep 2013 18:31:05 +0000
+Message-ID: <1378751464.17982.13.camel@x230.lan>
+References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
+	 <1378741786-18430-2-git-send-email-matthew.garrett@nebula.com>
+	 <522DF6DC.1050303@zytor.com>
+In-Reply-To: <522DF6DC.1050303@zytor.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:470:1f07:1371:5d52:9ee3:3e84:6668]
+x-forefront-prvs: 09645BAC66
+x-forefront-antispam-report: SFV:NSPM;SFS:(377454003)(377424004)(479174003)(24454002)(51704005)(189002)(199002)(81816001)(81342001)(69226001)(65816001)(80022001)(46102001)(63696002)(51856001)(4396001)(76786001)(76796001)(81542001)(81686001)(47736001)(49866001)(50986001)(47976001)(36756003)(33646001)(74366001)(47446002)(74706001)(31966008)(74502001)(74662001)(74876001)(80976001)(83072001)(77982001)(59766001)(56776001)(54316002)(79102001)(77096001)(56816003)(53806001)(54356001)(76482001)(83322001)(19580405001)(19580395003)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB222;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:5d52:9ee3:3e84:6668;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <AAAADC9B8E65414AB9A274967479DDAC@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1309091042520.18214@cobra.newdream.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r89IVJIV022096
 
-__fscache_check_consistency() does not decrement the count of operations
-active after it finishes in the success case. This leads to a hung tasks on
-cookie de-registration (commonly in inode eviction).
+On Mon, 2013-09-09 at 09:27 -0700, H. Peter Anvin wrote:
+> On 09/09/2013 08:49 AM, Matthew Garrett wrote:
 
-INFO: task kworker/1:2:4214 blocked for more than 120 seconds.
-kworker/1:2     D ffff880443513fc0     0  4214      2 0x00000000
-Workqueue: ceph-msgr con_work [libceph]
-  ...
-Call Trace:
- [<ffffffff81569fc6>] ? _raw_spin_unlock_irqrestore+0x16/0x20
- [<ffffffffa0016570>] ? fscache_wait_bit_interruptible+0x30/0x30 [fscache]
- [<ffffffff81568d09>] schedule+0x29/0x70
- [<ffffffffa001657e>] fscache_wait_atomic_t+0xe/0x20 [fscache]
- [<ffffffff815665cf>] out_of_line_wait_on_atomic_t+0x9f/0xe0
- [<ffffffff81083560>] ? autoremove_wake_function+0x40/0x40
- [<ffffffffa0015a9c>] __fscache_relinquish_cookie+0x15c/0x310 [fscache]
- [<ffffffffa00a4fae>] ceph_fscache_unregister_inode_cookie+0x3e/0x50 [ceph]
- [<ffffffffa007e373>] ceph_destroy_inode+0x33/0x200 [ceph]
- [<ffffffff811c13ae>] ? __fsnotify_inode_delete+0xe/0x10
- [<ffffffff8119ba1c>] destroy_inode+0x3c/0x70
- [<ffffffff8119bb69>] evict+0x119/0x1b0
+> > +1:  Secure mode. If set, userspace will be unable to perform direct access
+> > +    to PCI devices, port IO access, access system memory directly via
+> > +    /dev/mem and /dev/kmem, perform kexec_load(), use the userspace
+> > +    software suspend mechanism, insert new ACPI code at runtime via the
+> > +    custom_method interface or modify CPU MSRs (on x86). Certain drivers
+> > +    may also limit additional interfaces.
+> > +
+> 
+> This will break or have to be redefined once you have signed kexec.
 
-Signed-off-by: Milosz Tanski <milosz@adfin.com>
----
- fs/fscache/cookie.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+So, thinking about this, how about defining it as:
 
-diff --git a/fs/fscache/cookie.c b/fs/fscache/cookie.c
-index 318e843..b2a86e3 100644
---- a/fs/fscache/cookie.c
-+++ b/fs/fscache/cookie.c
-@@ -586,7 +586,8 @@ int __fscache_check_consistency(struct fscache_cookie *cookie)
- 
- 	fscache_operation_init(op, NULL, NULL);
- 	op->flags = FSCACHE_OP_MYTHREAD |
--		(1 << FSCACHE_OP_WAITING);
-+		(1 << FSCACHE_OP_WAITING) |
-+		(1 << FSCACHE_OP_UNUSE_COOKIE);
- 
- 	spin_lock(&cookie->lock);
- 
+1:  Secure mode. If set, userspace will be prevented from performing any
+operation that would permit the insertion of untrusted code into the
+running kernel. At present this includes direct access to PCI devices,
+port IO access,  direct system memory access via /dev/mem and /dev/kmem,
+kexec_load(), the userspace software suspend mechanism, insertion of new
+ACPI code at runtime via the custom_method interface or modification of
+CPU MSRs (on x86). Certain drivers may also limit additional interfaces.
+
 -- 
-1.7.9.5
-
+Matthew Garrett <matthew.garrett@nebula.com>
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
