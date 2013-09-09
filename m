@@ -1,79 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604Ab3IIOWa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 10:22:30 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:60156 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab3IIOW3 (ORCPT
+	id S1753427Ab3IIO0n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 10:26:43 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:52223 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752256Ab3IIO0l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 10:22:29 -0400
-Message-ID: <522DD977.2040504@ahsoftware.de>
-Date: Mon, 09 Sep 2013 16:21:43 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130712 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Guenter Roeck <linux@roeck-us.net>,
-        Daniel Santos <daniel.santos@pobox.com>,
-        linux-gpio <linux-gpio@vger.kernel.org>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        linux-spi <linux-spi@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: "Virtual" Interrupts -- Need help please
-References: <522BC27A.5080303@att.net> <522BCA33.6000701@roeck-us.net> <522D0D37.3050500@att.net> <522D17EC.3050908@roeck-us.net> <20130909110257.GU29403@sirena.org.uk> <522DAE69.4050608@ahsoftware.de> <20130909134558.GY29403@sirena.org.uk>
-In-Reply-To: <20130909134558.GY29403@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Sep 2013 10:26:41 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 6.5 \(1508\))
+Subject: Re: [PATCHv4] ARM: OMAP2+: am335x-bone*: add DT for BeagleBone Black
+From: Koen Kooi <koen@dominion.thruhere.net>
+In-Reply-To: <20130909141531.GL9325@radagast>
+Date: Mon, 9 Sep 2013 16:26:38 +0200
+Cc: <linux-omap@vger.kernel.org>, <bcousson@baylibre.com>, <tony@atomide.com>,
+        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ijc+devicetree@hellion.org.uk>, <linux@arm.linux.org.uk>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <olof@lixom.net>,
+        <stable@vger.kernel.org>, George Cherian <george.cherian@ti.com>,
+        Sekhar Nori <nsekhar@ti.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <A84D17B9-D194-46CC-8D9C-8CB602F2A332@dominion.thruhere.net>
+References: <1378734350-30479-1-git-send-email-koen@dominion.thruhere.net> <20130909141531.GL9325@radagast>
+To: <balbi@ti.com>
+X-Mailer: Apple Mail (2.1508)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 09.09.2013 15:45, schrieb Mark Brown:
-> On Mon, Sep 09, 2013 at 01:18:01PM +0200, Alexander Holler wrote:
->> Am 09.09.2013 13:02, schrieb Mark Brown:
-> 
->>> makes your mail very hard to read.  It looks like your mailer has also
->>> reflowed Daniel's mail.
-> 
->> That's just wrong. Mail readers should wrap lines, not senders. And
->> readers can do this since some decades.
-> 
-> There's a specific way for senders to request that if it's desired, set
-> format=flowed in the MIME type to tell the recipient that the formatting
-> isn't important.
-> 
->> The reason is obvious: No sender knows the line width the receiver
->> can display. So, for example, if the sender hard breaks lines every
->> 80 chars, a reader with a device which just displays 60 characters
->> at max. will see every second line with at most 20 characters. I
->> assume you can guess how such does look like. Furthermore there are
->> still a lot of people which do like to read mails with line length
->> as long their display is possible to show, and hard breaking lines
->> on the receiver side does make such impossible.
-> 
->> So the correct behaviour is to not hard break lines on the sender
->> side and leave that to the reader on the receiving side, as only the
->> receiving side knows the line width.
-> 
-> This doesn't work well with lots of content (like patches) commonly
-> handled in technical contexts - the line breaks actually mean something
-> and it's hard fo the mail client to figure out what is going on unless
-> someone tells it.
 
-I wonder what all the hard line breaks you added to your mail do mean?
+Op 9 sep. 2013, om 16:15 heeft Felipe Balbi <balbi@ti.com> het volgende geschreven:
 
-Hard line breaks in paragraphs, as you've requested, doesn't mean
-anything. They just make eamils extremly ugly, e.g. your one is
-displayed here with a whole lot of unused white space because I'm not
-using a CGA screen. And people who do read your mail on a phone with
-less than 80 or 75 chars will see it as even more ugly.
+> Hi,
+> 
+> On Mon, Sep 09, 2013 at 03:45:50PM +0200, Koen Kooi wrote:
+>> The BeagleBone Black is basically a regular BeagleBone with eMMC and HDMI added,
+>> so create a common dtsi both can use.
+>> 
+>> IMPORTANT: booting the existing am335x-bone.dts will blow up the HDMI transceiver 
+>> after a dozen boots with an uSD card inserted because LDO will be at 3.3V instead
+>> of 1.8. 
+>> 
+>> MMC support for AM335x still isn't in, so only the LDO change has been added.
+>> 
+>> Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
+>> Tested-by: Tom Rini <trini@ti.com>
+>> Tested-by: Matt Porter <matt.porter@linaro.org>
+> 
+> not entirelly related to $SUBJECT but having HDMI listed in BBB DTS will
+> prevent the use of RF cape, no ?
 
-And imho it just works if hard line breaks are used where they belong
-too, the code or to end paragraphs or otherwise where they have a
-meaning, but not just always after 75 or 80 chars.
-
-Regards,
-
-Alexander Holler
+Complete and utter lack of software from TI for the RF cape is preventing the RF cape from working regardless of HDMI entries.
