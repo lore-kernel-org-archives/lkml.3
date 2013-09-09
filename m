@@ -1,112 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754257Ab3IINdB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:33:01 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25990 "EHLO
+	id S1754355Ab3IINdj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:33:39 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5157 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753522Ab3IIN0u (ORCPT
+	with ESMTP id S1753520Ab3IIN0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Sep 2013 09:26:50 -0400
-X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=iXTeu8aZBggA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Zvybn3zlWHMA:10 a=VwQbUJbxAAAA:8 a=Dy9FSkG8L0gs_orUxm0A:9 a=U62fhAwekXMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=bhxVZlKqwjsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=xPLaIx7fqxsA:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=_UZCbbHauV_kxHeOyvkA:9 a=MSl-tDqOz04A:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130909124745.590777496@goodmis.org>
+Message-Id: <20130909124759.180787247@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Sep 2013 08:47:45 -0400
+Date: Mon, 09 Sep 2013 08:47:48 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 00/16] 3.2.50-rt71-rc1 stable review
+        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>,
+        Ivo Sieben <meltedpianoman@gmail.com>
+Subject: [PATCH RT 03/16] genirq: Set irq thread to RT priority on creation
+References: <20130909124745.590777496@goodmis.org>
+Content-Disposition: inline; filename=0003-genirq-Set-irq-thread-to-RT-priority-on-creation.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Ivo Sieben <meltedpianoman@gmail.com>
 
-Dear RT Folks,
+When a threaded irq handler is installed the irq thread is initially
+created on normal scheduling priority. Only after the irq thread is
+woken up it sets its priority to RT_FIFO MAX_USER_RT_PRIO/2 itself.
 
-This is the RT stable review cycle of patch 3.2.50-rt71-rc1.
+This means that interrupts that occur directly after the irq handler
+is installed will be handled on a normal scheduling priority instead
+of the realtime priority that one would expect.
 
-Please scream at me if I messed something up. Please test the patches too.
+Fix this by setting the RT priority on creation of the irq_thread.
 
-The -rc release will be uploaded to kernel.org and will be deleted when
-the final release is out. This is just a review release (or release candidate).
-
-The pre-releases will not be pushed to the git repository, only the
-final release is.
-
-If all goes well, this patch will be converted to the next main release
-on 9/12/2013.
-
-Enjoy,
-
--- Steve
-
-
-To build 3.2.50-rt71-rc1 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.50.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.50-rt71-rc1.patch.xz
-
-You can also build from 3.2.50-rt70 by applying the incremental patch:
-
-http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/incr/patch-3.2.50-rt70-rt71-rc1.patch.xz
-
-
-Changes from 3.2.50-rt70:
-
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Ivo Sieben <meltedpianoman@gmail.com>
+Cc: Sebastian Andrzej Siewior  <bigeasy@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1370254322-17240-1-git-send-email-meltedpianoman@gmail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
+ kernel/irq/manage.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index b3c753e..2e8ca37 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -783,9 +783,6 @@ static irqreturn_t irq_thread_fn(struct irq_desc *desc,
+  */
+ static int irq_thread(void *data)
+ {
+-	static const struct sched_param param = {
+-		.sched_priority = MAX_USER_RT_PRIO/2,
+-	};
+ 	struct irqaction *action = data;
+ 	struct irq_desc *desc = irq_to_desc(action->irq);
+ 	irqreturn_t (*handler_fn)(struct irq_desc *desc,
+@@ -798,7 +795,6 @@ static int irq_thread(void *data)
+ 	else
+ 		handler_fn = irq_thread_fn;
+ 
+-	sched_setscheduler(current, SCHED_FIFO, &param);
+ 	current->irqaction = action;
+ 
+ 	while (!irq_wait_for_interrupt(action)) {
+@@ -961,6 +957,9 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+ 	 */
+ 	if (new->thread_fn && !nested) {
+ 		struct task_struct *t;
++		static const struct sched_param param = {
++			.sched_priority = MAX_USER_RT_PRIO/2,
++		};
+ 
+ 		t = kthread_create(irq_thread, new, "irq/%d-%s", irq,
+ 				   new->name);
+@@ -968,6 +967,9 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+ 			ret = PTR_ERR(t);
+ 			goto out_mput;
+ 		}
++
++		sched_setscheduler(t, SCHED_FIFO, &param);
++
+ 		/*
+ 		 * We keep the reference to the task struct even if
+ 		 * the thread dies to avoid that the interrupt code
+-- 
+1.7.10.4
 
 
-Ivo Sieben (1):
-      genirq: Set irq thread to RT priority on creation
-
-Mike Galbraith (1):
-      x86/mce: fix mce timer interval
-
-Paul Gortmaker (1):
-      list_bl.h: make list head locking RT safe
-
-Sebastian Andrzej Siewior (4):
-      kernel/cpu: fix cpu down problem if kthread's cpu is going down
-      kernel/hotplug: restore original cpu mask oncpu/down
-      drm/i915: drop trace_i915_gem_ring_dispatch on rt
-      genirq: do not invoke the affinity callback via a workqueue
-
-Steven Rostedt (5):
-      sched/workqueue: Only wake up idle workers if not blocked on sleeping spin lock
-      rt,ntp: Move call to schedule_delayed_work() to helper thread
-      hwlat-detector: Update hwlat_detector to add outer loop detection
-      hwlat-detector: Use trace_clock_local if available
-      hwlat-detector: Use thread instead of stop machine
-
-Steven Rostedt (Red Hat) (2):
-      hwlat-detect/trace: Export trace_clock_local for hwlat-detector
-      Linux 3.2.50-rt71-rc1
-
-Uwe Kleine-König (1):
-      list_bl.h: fix it for for !SMP && !DEBUG_SPINLOCK
-
-Zhao Hongjiang (1):
-      timers: prepare for full preemption improve
-
-----
- arch/x86/kernel/cpu/mcheck/mce.c           |    4 +-
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |    2 +
- drivers/misc/hwlat_detector.c              |  117 +++++++++++++++++-----------
- include/linux/interrupt.h                  |    1 +
- include/linux/list_bl.h                    |   28 ++++++-
- kernel/cpu.c                               |   29 ++++++-
- kernel/irq/manage.c                        |   89 +++++++++++++++++++--
- kernel/sched.c                             |    4 +-
- kernel/time/ntp.c                          |   42 ++++++++++
- kernel/timer.c                             |    8 +-
- kernel/trace/trace_clock.c                 |    1 +
- localversion-rt                            |    2 +-
- 12 files changed, 264 insertions(+), 63 deletions(-)
