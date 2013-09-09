@@ -1,61 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756166Ab3IIXUV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 19:20:21 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:33350 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755807Ab3IIXUT (ORCPT
+	id S1756195Ab3IIXU4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 19:20:56 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:63638 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755729Ab3IIXUy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 19:20:19 -0400
-Message-ID: <522E57B7.6010603@linaro.org>
-Date: Mon, 09 Sep 2013 18:20:23 -0500
-From: Alex Elder <alex.elder@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	Mon, 9 Sep 2013 19:20:54 -0400
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] clk: clean up everything on debugfs error
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <alpine.DEB.2.02.1309091614010.2479@nftneq.ynat.uz>
+References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
+	<19562.1378747124@turing-police.cc.vt.edu>
+	<alpine.DEB.2.02.1309091119330.2479@nftneq.ynat.uz>
+	<1378767723.17982.27.camel@x230.lan>
+	<alpine.DEB.2.02.1309091614010.2479@nftneq.ynat.uz>
+Date: Mon, 9 Sep 2013 16:20:53 -0700
+X-Google-Sender-Auth: w6NAmK9lw1NJ81nG6XB5IA2ePjM
+Message-ID: <CAGXu5jJdMXP84TPP-=dtExFkpcGKPGLWnOu1-PZMokz5WhCLwQ@mail.gmail.com>
+Subject: Re: [PATCH 00/12] One more attempt at useful kernel lockdown
+From: Kees Cook <keescook@chromium.org>
+To: David Lang <david@lang.hm>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If CONFIG_COMMON_CLK_DEBUG is defined, clk_debug_create_one() is
-called to populate a debugfs directory with a few entries that are
-common for all clock types.
+On Mon, Sep 9, 2013 at 4:19 PM, David Lang <david@lang.hm> wrote:
+> On Mon, 9 Sep 2013, Matthew Garrett wrote:
+>
+>> On Mon, 2013-09-09 at 11:25 -0700, David Lang wrote:
+>>
+>>> 1 lock down modules
+>>> 2 lock down kexec
+>>
+>>
+>> Having thought about this, the answer is no. It presents exactly the
+>> same problem as capabilities do - the set can never be meaningfully
+>> extended. If an application sets only the bits it knows about, and if a
+>> new security-sensitive feature is added to the kernel, the feature will
+>> be left enabled and the system will be insecure. Alternatively, if an
+>> application sets all the bits regardless of whether it knows them or
+>> not, it may enable a lockdown feature that it otherwise required.
+>
+>
+> In this case you are no less secure than you were before the feature was
+> added, you just can't take advantage of the new feature without updating
+> userspace.
+>
+> That's a very common situation
+>
+>
+>> The only way this is useful is if all the bits are semantically
+>> equivalent, and in that case there's no point in having anything other
+>> than a single bit. Users who want a more fine-grained interface should
+>> use one of the existing mechanisms for doing so - leave the kernel open
+>> and impose the security policy from userspace using either capabilities
+>> or selinux.
+>
+>
+> so if you only have a single bit, how do you deal with the case where that
+> bit locks down something that's required? (your reason for not just setting
+> all bits in the first approach)
+>
+> your arguments don't seem self consistent.
+>
+>
+> why should there only be one way to lock down a system? there are lots of
+> different use cases.
+>
+> If I'm building a kiosk PC (or voting machine), I want to disable a lot of
+> things that I could not get away with disabling on a generic laptop. Are we
+> going to have Securelevel, ReallySecurelevel, ReallyReallySecurelevel, etc?
+> or can we accept that security is not binary and allow users to disable
+> features in a more granualar way?
+>
+> And if SELinux can do the job, what is the reason for creating this new
+> option?
 
-If an error happens after creating the first one debugfs_remove() is
-called on the clock's directory.  The problem with this is that no
-cleanup is done on the debugfs files already created in that
-directory, so the directory never actually gets removed.   This
-problem is silently ignored.
+Not everyone uses SELinux. :) Also, it's rarely controlled the things
+we want to control here.
 
-Fix this by calling debugfs_remove_recursive() instead.  Reset the
-clk->dentry field to null afterward, to ensure it can't be mistaken
-as a valid pointer.
+-Kees
 
-Signed-off-by: Alex Elder <elder@linaro.org>
----
- drivers/clk/clk.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 54a191c..727ae7b 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -272,7 +272,8 @@ static int clk_debug_create_one(struct clk *clk,
-struct dentry *pdentry)
- 	goto out;
-
- err_out:
--	debugfs_remove(clk->dentry);
-+	debugfs_remove_recursive(clk->dentry);
-+	clk->dentry = NULL;
- out:
- 	return ret;
- }
 -- 
-1.7.9.5
-
+Kees Cook
+Chrome OS Security
