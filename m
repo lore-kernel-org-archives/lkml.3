@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957Ab3IIWOs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 18:14:48 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:55558 "EHLO
+	id S1756024Ab3IIWQB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 18:16:01 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:50215 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755899Ab3IIWOr (ORCPT
+	with ESMTP id S1755472Ab3IIWQA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 18:14:47 -0400
-Message-ID: <522E4854.1050800@wwwdotorg.org>
-Date: Mon, 09 Sep 2013 16:14:44 -0600
+	Mon, 9 Sep 2013 18:16:00 -0400
+Message-ID: <522E489D.6080903@wwwdotorg.org>
+Date: Mon, 09 Sep 2013 16:15:57 -0600
 From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Wei Ni <wni@nvidia.com>, khali@linux-fr.org, broonie@kernel.org,
+To: Wei Ni <wni@nvidia.com>
+CC: khali@linux-fr.org, linux@roeck-us.net, broonie@kernel.org,
         lm-sensors@lm-sensors.org, linux-tegra@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Subject: Re: [PATCH v3 2/2] Documentation: dt: hwmon: add OF document for
  LM90
-References: <1378722552-10357-1-git-send-email-wni@nvidia.com> <1378722552-10357-3-git-send-email-wni@nvidia.com> <522DA86B.6000603@roeck-us.net>
-In-Reply-To: <522DA86B.6000603@roeck-us.net>
+References: <1378722552-10357-1-git-send-email-wni@nvidia.com> <1378722552-10357-3-git-send-email-wni@nvidia.com>
+In-Reply-To: <1378722552-10357-3-git-send-email-wni@nvidia.com>
 X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -27,38 +27,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2013 04:52 AM, Guenter Roeck wrote:
-> On 09/09/2013 03:29 AM, Wei Ni wrote:
->> Add OF document for LM90 in Documentation/devicetree/.
+On 09/09/2013 04:29 AM, Wei Ni wrote:
+> Add OF document for LM90 in Documentation/devicetree/.
 
->> diff --git a/Documentation/devicetree/bindings/hwmon/lm90.txt
+> diff --git a/Documentation/devicetree/bindings/hwmon/lm90.txt
+> b/Documentation/devicetree/bindings/hwmon/lm90.txt
 
->> +* LM90 series thermometer.
->> +
->> +Required node properties:
->> +- compatible: manufacture and chip name, one of
-> 
-> manufacturer
-> 
->> +        "<manufacture>,adm1032"
-...
->> +        "<manufacture>,sa56004"
->
-> Shouldn't the manufacturers be listed explicitly ?
+> +Optional properties:
 
-Yes, and they must all be present in
-Documentation/devicetree/bindings/vendor-prefixes.txt.
+> +- interrupts: Contains a single interrupt specifier which
+> describes the +              LM90 pin6 output.
 
->> +Example LM90 node:
->> +
->> +temp-sensor {
->> +    compatible = "onnn,nct1008";
->> +    reg = <0x4c>;
->> +    vcc-supply = <&palmas_ldo6_reg>;
->> +    interrupt-parent = <&gpio>;
-> 
-> List above as optional property.
-
-I believe it's common not to document this, since it's implicitly
-supported as part of any node that is an interrupt source.
-
+Does the pin also have a standard name you could include here, rather
+than (or in addition to) just the pin number?
