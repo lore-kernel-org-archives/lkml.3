@@ -1,132 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755538Ab3IIT73 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 15:59:29 -0400
-Received: from gmmr8.centrum.cz ([46.255.227.254]:38545 "EHLO gmmr8.centrum.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754351Ab3IIT7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 15:59:25 -0400
-To: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
-Subject: =?utf-8?q?Re=3A_=5Bpatch_0=2F7=5D_improve_memcg_oom_killer_robustness_v2?=
-Date: Mon, 09 Sep 2013 21:59:17 +0200
-From: "azurIt" <azurit@pobox.sk>
-Cc: =?utf-8?q?Andrew_Morton?= <akpm@linux-foundation.org>,
-        =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>,
-        =?utf-8?q?David_Rientjes?= <rientjes@google.com>,
-        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
-        =?utf-8?q?KOSAKI_Motohiro?= <kosaki.motohiro@jp.fujitsu.com>,
-        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <x86@kernel.org>,
-        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <1375549200-19110-1-git-send-email-hannes@cmpxchg.org>, <20130803170831.GB23319@cmpxchg.org>, <20130830215852.3E5D3D66@pobox.sk>, <20130902123802.5B8E8CB1@pobox.sk>, <20130903204850.GA1412@cmpxchg.org>, <20130904101852.58E70042@pobox.sk>, <20130905115430.GB856@cmpxchg.org>, <20130909151010.3A3CBC6A@pobox.sk> <20130909172849.GG856@cmpxchg.org>
-In-Reply-To: <20130909172849.GG856@cmpxchg.org>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
-X-Original-From: azurit@pobox.sk
-MIME-Version: 1.0
-Message-Id: <20130909215917.96932098@pobox.sk>
-X-Maser: Georgo
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1755567Ab3IIUAN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 16:00:13 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:53007 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752265Ab3IIUAL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 16:00:11 -0400
+Content-Type: text/plain; charset=US-ASCII
+Mime-Version: 1.0 (Mac OS X Mail 6.5 \(1508\))
+Subject: Re: [PATCH] ARM: OMAP2+: am335x-bone*: add DT for BeagleBone Black
+From: Koen Kooi <koen@dominion.thruhere.net>
+In-Reply-To: <522E269B.7000802@ti.com>
+Date: Mon, 9 Sep 2013 22:00:07 +0200
+Cc: Kevin Hilman <khilman@linaro.org>, <bcousson@baylibre.com>,
+        <linux-omap@vger.kernel.org>, <tony@atomide.com>,
+        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ijc+devicetree@hellion.org.uk>, <linux@arm.linux.org.uk>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <olof@lixom.net>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <73968C64-F0B0-4ED6-82B8-BD1966ED9D84@dominion.thruhere.net>
+References: <1378736961-21005-1-git-send-email-koen@dominion.thruhere.net> <87zjrm81dl.fsf@linaro.org> <BBAC0939-A4F9-4FEA-B137-0307D8787DC3@dominion.thruhere.net> <522E1325.8050906@ti.com> <41952E65-1037-4117-A1AE-8310FED59E3A@dominion.thruhere.net> <522E18C0.9010909@ti.com> <522E269B.7000802@ti.com>
+To: Joel Fernandes <joelf@ti.com>
+X-Mailer: Apple Mail (2.1508)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->On Mon, Sep 09, 2013 at 03:10:10PM +0200, azurIt wrote:
->> >Hi azur,
->> >
->> >On Wed, Sep 04, 2013 at 10:18:52AM +0200, azurIt wrote:
->> >> > CC: "Andrew Morton" <akpm@linux-foundation.org>, "Michal Hocko" <mhocko@suse.cz>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
->> >> >Hello azur,
->> >> >
->> >> >On Mon, Sep 02, 2013 at 12:38:02PM +0200, azurIt wrote:
->> >> >> >>Hi azur,
->> >> >> >>
->> >> >> >>here is the x86-only rollup of the series for 3.2.
->> >> >> >>
->> >> >> >>Thanks!
->> >> >> >>Johannes
->> >> >> >>---
->> >> >> >
->> >> >> >
->> >> >> >Johannes,
->> >> >> >
->> >> >> >unfortunately, one problem arises: I have (again) cgroup which cannot be deleted :( it's a user who had very high memory usage and was reaching his limit very often. Do you need any info which i can gather now?
->> >> >
->> >> >Did the OOM killer go off in this group?
->> >> >
->> >> >Was there a warning in the syslog ("Fixing unhandled memcg OOM
->> >> >context")?
->> >> 
->> >> 
->> >> 
->> >> Ok, i see this message several times in my syslog logs, one of them is also for this unremovable cgroup (but maybe all of them cannot be removed, should i try?). Example of the log is here (don't know where exactly it starts and ends so here is the full kernel log):
->> >> http://watchdog.sk/lkml/oom_syslog.gz
->> >There is an unfinished OOM invocation here:
->> >
->> >  Aug 22 13:15:21 server01 kernel: [1251422.715112] Fixing unhandled memcg OOM context set up from:
->> >  Aug 22 13:15:21 server01 kernel: [1251422.715191]  [<ffffffff811105c2>] T.1154+0x622/0x8f0
->> >  Aug 22 13:15:21 server01 kernel: [1251422.715274]  [<ffffffff8111153e>] mem_cgroup_cache_charge+0xbe/0xe0
->> >  Aug 22 13:15:21 server01 kernel: [1251422.715357]  [<ffffffff810cf31c>] add_to_page_cache_locked+0x4c/0x140
->> >  Aug 22 13:15:21 server01 kernel: [1251422.715443]  [<ffffffff810cf432>] add_to_page_cache_lru+0x22/0x50
->> >  Aug 22 13:15:21 server01 kernel: [1251422.715526]  [<ffffffff810cfdd3>] find_or_create_page+0x73/0xb0
->> >  Aug 22 13:15:21 server01 kernel: [1251422.715608]  [<ffffffff811493ba>] __getblk+0xea/0x2c0
->> >  Aug 22 13:15:21 server01 kernel: [1251422.715692]  [<ffffffff8114ca73>] __bread+0x13/0xc0
->> >  Aug 22 13:15:21 server01 kernel: [1251422.715774]  [<ffffffff81196968>] ext3_get_branch+0x98/0x140
->> >  Aug 22 13:15:21 server01 kernel: [1251422.715859]  [<ffffffff81197557>] ext3_get_blocks_handle+0xd7/0xdc0
->> >  Aug 22 13:15:21 server01 kernel: [1251422.715942]  [<ffffffff81198304>] ext3_get_block+0xc4/0x120
->> >  Aug 22 13:15:21 server01 kernel: [1251422.716023]  [<ffffffff81155c3a>] do_mpage_readpage+0x38a/0x690
->> >  Aug 22 13:15:21 server01 kernel: [1251422.716107]  [<ffffffff81155f8f>] mpage_readpage+0x4f/0x70
->> >  Aug 22 13:15:21 server01 kernel: [1251422.716188]  [<ffffffff811973a8>] ext3_readpage+0x28/0x60
->> >  Aug 22 13:15:21 server01 kernel: [1251422.716268]  [<ffffffff810cfa48>] filemap_fault+0x308/0x560
->> >  Aug 22 13:15:21 server01 kernel: [1251422.716350]  [<ffffffff810ef898>] __do_fault+0x78/0x5a0
->> >  Aug 22 13:15:21 server01 kernel: [1251422.716433]  [<ffffffff810f2ab4>] handle_pte_fault+0x84/0x940
->> >
->> >__getblk() has this weird loop where it tries to instantiate the page,
->> >frees memory on failure, then retries.  If the memcg goes OOM, the OOM
->> >path might be entered multiple times and each time leak the memcg
->> >reference of the respective previous OOM invocation.
->> >
->> >There are a few more find_or_create() sites that do not propagate an
->> >error and it's incredibly hard to find out whether they are even taken
->> >during a page fault.  It's not practical to annotate them all with
->> >memcg OOM toggles, so let's just catch all OOM contexts at the end of
->> >handle_mm_fault() and clear them if !VM_FAULT_OOM instead of treating
->> >this like an error.
->> >
->> >azur, here is a patch on top of your modified 3.2.  Note that Michal
->> >might be onto something and we are looking at multiple issues here,
->> >but the log excert above suggests this fix is required either way.
+
+Op 9 sep. 2013, om 21:50 heeft Joel Fernandes <joelf@ti.com> het volgende geschreven:
+
+> On 09/09/2013 01:51 PM, Joel Fernandes wrote:
+>> On 09/09/2013 01:43 PM, Koen Kooi wrote:
+>>> 
+>>> Op 9 sep. 2013, om 20:27 heeft Joel Fernandes <joelf@ti.com> het volgende geschreven:
+>>> 
+>>>> On 09/09/2013 10:51 AM, Koen Kooi wrote:
+>>>>> 
+>>>>> Op 9 sep. 2013, om 17:23 heeft Kevin Hilman <khilman@linaro.org> het volgende geschreven:
+>>>>> 
+>>>>>> Koen Kooi <koen@dominion.thruhere.net> writes:
+>>>>>> 
+>>>>>>> The BeagleBone Black is basically a regular BeagleBone with eMMC and HDMI added,
+>>>>>>> so create a common dtsi both can use.
+>>>>>>> 
+>>>>>>> IMPORTANT: booting the existing am335x-bone.dts will blow up the HDMI transceiver
+>>>>>>> after a dozen boots with an uSD card inserted because LDO will be at 3.3V instead
+>>>>>>> of 1.8.
+>>>>>>> 
+>>>>>>> MMC support for AM335x still isn't in, so only the LDO change has been added.
+>>>>>>> 
+>>>>>>> Cc: stable@vger.kernel.org
+>>>>>>> 
+>>>>>>> Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
+>>>>>>> Tested-by: Tom Rini <trini@ti.com>
+>>>>>>> Tested-by: Matt Porter <matt.porter@linaro.org>
+>>>>>> 
+>>>>>> I guess the subject should've included v5?
+>>>>> 
+>>>>> Yes, I blame it on being monday :)
+>>>> 
+>>>> The series you're posting will require rebasing on the current MMC DT series
+>>>> that is being discussed last couple of weeks on the mailing list which were
+>>>> waiting until now as DMA support was missing. Now that DMA support is pulled in,
+>>>> it is safe to apply those patches so I will be reposting them shortly.
+>>>> 
+>>>> Please hold off any changes until those patches are posted. This will avoid
+>>>> unnecessary conflicts.
+>>> 
+>>> Or you can rebase on top of this patch since it has no dependencies *and* fixes blowing up boards. FWIW, git-rebase, git-cherry-pick and git-am -3 track the rename in my patch just fine.
+>>> 
 >> 
+>> That's fair enough, since  Kevin Acked and Benoit is pulling it, I'm fine with
+>> rebasing on top of it and we avoid any merge conflicts.
 >> 
->> 
->> 
->> Johannes, is this still up to date? Thank you.
->
->No, please use the following on top of 3.2 (i.e. full replacement, not
->incremental to what you have):
+> 
+> I noticed - there were still some comments from Felipe on the v4 series of this
+> patch regarding RF cape and HDMI may be breaking it. How are you addressing that?
 
+Capes will never go into the .dts and HDMI support needs some serious patching before it can get enabled in the DT. And the RF cape isn't being sold since it has no sw support. No need to worry about things in the 3.15/3.16 timeframe. Unless you want this LDO3 fix not to go in ASAP.
 
-
-Unfortunately it didn't compile:
-
-
-
-
-  LD      vmlinux.o
-  MODPOST vmlinux.o
-WARNING: modpost: Found 4924 section mismatch(es).
-To see full details build your kernel with:
-'make CONFIG_DEBUG_SECTION_MISMATCH=y'
-  GEN     .version
-  CHK     include/generated/compile.h
-  UPD     include/generated/compile.h
-  CC      init/version.o
-  LD      init/built-in.o
-  LD      .tmp_vmlinux1
-arch/x86/built-in.o: In function `do_page_fault':
-(.text+0x26a77): undefined reference to `handle_mm_fault'
-mm/built-in.o: In function `fixup_user_fault':
-(.text+0x224d3): undefined reference to `handle_mm_fault'
-mm/built-in.o: In function `__get_user_pages':
-(.text+0x24a0f): undefined reference to `handle_mm_fault'
-make: *** [.tmp_vmlinux1] Error 1
+Joel, is there anything relevant *right now* blocking this patch going in? If not, please test it and add your Tested-by: line.
