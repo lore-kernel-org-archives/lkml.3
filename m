@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755663Ab3IISpl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 14:45:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:57120 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752617Ab3IISp1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755596Ab3IISp1 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 9 Sep 2013 14:45:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57046 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752617Ab3IISpV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 14:45:21 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Helmut Schaa <helmut.schaa@googlemail.com>,
-        Marc Kleine-Budde <mkl@blackshift.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 07/24] ath9k_htc: Restore skb headroom when returning skb to mac80211
-Date: Mon,  9 Sep 2013 11:44:57 -0700
-Message-Id: <1378752314-2416-8-git-send-email-kamal@canonical.com>
+Subject: [PATCH 02/24] ARM: Fix FIQ code on VIVT CPUs
+Date: Mon,  9 Sep 2013 11:44:52 -0700
+Message-Id: <1378752314-2416-3-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378752314-2416-1-git-send-email-kamal@canonical.com>
 References: <1378752314-2416-1-git-send-email-kamal@canonical.com>
@@ -29,59 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helmut Schaa <helmut.schaa@googlemail.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit d2e9fc141e2aa21f4b35ee27072d84e9aa6e2ba0 upstream.
+commit 2ba85e7af4c639d933c9a87a6d7363f2983d5ada upstream.
 
-ath9k_htc adds padding between the 802.11 header and the payload during
-TX by moving the header. When handing the frame back to mac80211 for TX
-status handling the header is not moved back into its original position.
-This can result in a too small skb headroom when entering ath9k_htc
-again (due to a soft retransmission for example) causing an
-skb_under_panic oops.
+Aaro Koskinen reports the following oops:
+Installing fiq handler from c001b110, length 0x164
+Unable to handle kernel paging request at virtual address ffff1224
+pgd = c0004000
+[ffff1224] *pgd=00000000, *pte=11fff0cb, *ppte=11fff00a
+...
+[<c0013154>] (set_fiq_handler+0x0/0x6c) from [<c0365d38>] (ams_delta_init_fiq+0xa8/0x160)
+ r6:00000164 r5:c001b110 r4:00000000 r3:fefecb4c
+[<c0365c90>] (ams_delta_init_fiq+0x0/0x160) from [<c0365b14>] (ams_delta_init+0xd4/0x114)
+ r6:00000000 r5:fffece10 r4:c037a9e0
+[<c0365a40>] (ams_delta_init+0x0/0x114) from [<c03613b4>] (customize_machine+0x24/0x30)
 
-Fix this by moving the 802.11 header back into its original position
-before returning the frame to mac80211 as other drivers like rt2x00
-or ath5k do.
+This is because the vectors page is now write-protected, and to change
+code in there we must write to its original alias.  Make that change,
+and adjust the cache flushing such that the code will become visible
+to the instruction stream on VIVT CPUs.
 
-Reported-by: Marc Kleine-Budde <mkl@blackshift.org>
-Signed-off-by: Helmut Schaa <helmut.schaa@googlemail.com>
-Tested-by: Marc Kleine-Budde <mkl@blackshift.org>
-Signed-off-by: Marc Kleine-Budde <mkl@blackshift.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/ath/ath9k/htc_drv_txrx.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/arm/kernel/fiq.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c b/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
-index 8788621..be484b5 100644
---- a/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
-@@ -448,6 +448,7 @@ static void ath9k_htc_tx_process(struct ath9k_htc_priv *priv,
- 	struct ieee80211_conf *cur_conf = &priv->hw->conf;
- 	bool txok;
- 	int slot;
-+	int hdrlen, padsize;
+diff --git a/arch/arm/kernel/fiq.c b/arch/arm/kernel/fiq.c
+index 25442f4..fc79202 100644
+--- a/arch/arm/kernel/fiq.c
++++ b/arch/arm/kernel/fiq.c
+@@ -84,17 +84,13 @@ int show_fiq_list(struct seq_file *p, int prec)
  
- 	slot = strip_drv_header(priv, skb);
- 	if (slot < 0) {
-@@ -504,6 +505,15 @@ send_mac80211:
+ void set_fiq_handler(void *start, unsigned int length)
+ {
+-#if defined(CONFIG_CPU_USE_DOMAINS)
+-	void *base = (void *)0xffff0000;
+-#else
+ 	void *base = vectors_page;
+-#endif
+ 	unsigned offset = FIQ_OFFSET;
  
- 	ath9k_htc_tx_clear_slot(priv, slot);
- 
-+	/* Remove padding before handing frame back to mac80211 */
-+	hdrlen = ieee80211_get_hdrlen_from_skb(skb);
-+
-+	padsize = hdrlen & 3;
-+	if (padsize && skb->len > hdrlen + padsize) {
-+		memmove(skb->data + padsize, skb->data, hdrlen);
-+		skb_pull(skb, padsize);
-+	}
-+
- 	/* Send status to mac80211 */
- 	ieee80211_tx_status(priv->hw, skb);
+ 	memcpy(base + offset, start, length);
++	if (!cache_is_vipt_nonaliasing())
++		flush_icache_range(base + offset, offset + length);
+ 	flush_icache_range(0xffff0000 + offset, 0xffff0000 + offset + length);
+-	if (!vectors_high())
+-		flush_icache_range(offset, offset + length);
  }
+ 
+ int claim_fiq(struct fiq_handler *f)
 -- 
 1.8.1.2
 
