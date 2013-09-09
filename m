@@ -1,130 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab3IIQ6s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 12:58:48 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:59282 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755904Ab3IIQ6n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 12:58:43 -0400
-Date: Mon, 9 Sep 2013 09:58:36 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        sbw@mit.edu
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
- section?
-Message-ID: <20130909165836.GB3966@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130909083926.3eceebef@gandalf.local.home>
- <20130909124547.GB16280@somewhere>
- <20130909085504.2ddd7e69@gandalf.local.home>
- <20130909130851.GC16280@somewhere>
- <20130909092142.05780991@gandalf.local.home>
- <20130909134505.GF16280@somewhere>
- <20130909135656.GT3966@linux.vnet.ibm.com>
- <20130909101629.32df27a2@gandalf.local.home>
- <20130909161708.GX3966@linux.vnet.ibm.com>
- <20130909123422.7936e868@gandalf.local.home>
+	id S1755531Ab3IIQ6K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 12:58:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36569 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755654Ab3IIQ56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 12:57:58 -0400
+Date: Mon, 9 Sep 2013 19:57:55 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] KVM: x86: prevent setting unsupported XSAVE states
+Message-ID: <20130909165755.GA4008@redhat.com>
+References: <1378383714-9723-2-git-send-email-pbonzini@redhat.com>
+ <20130908095446.GE17294@redhat.com>
+ <522DD6AB.1030303@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130909123422.7936e868@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090916-9332-0000-0000-0000015B350C
+In-Reply-To: <522DD6AB.1030303@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 12:34:22PM -0400, Steven Rostedt wrote:
-> On Mon, 9 Sep 2013 09:17:08 -0700
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+On Mon, Sep 09, 2013 at 04:09:47PM +0200, Paolo Bonzini wrote:
+> Il 08/09/2013 11:54, Gleb Natapov ha scritto:
+> > On Thu, Sep 05, 2013 at 02:21:54PM +0200, Paolo Bonzini wrote:
+> >> A guest can still attempt to save and restore XSAVE states even if they
+> >> have been masked in CPUID leaf 0Dh.  This usually is not visible to
+> >> the guest, but is still wrong: "Any attempt to set a reserved bit (as
+> >> determined by the contents of EAX and EDX after executing CPUID with
+> >> EAX=0DH, ECX= 0H) in XCR0 for a given processor will result in a #GP
+> >> exception".
+> >>
+> >> The patch also performs the same checks as __kvm_set_xcr in KVM_SET_XSAVE.
+> >> This catches migration from newer to older kernel/processor before the
+> >> guest starts running.
+> >>
+> >> Cc: kvm@vger.kernel.org
+> >> Cc: Gleb Natapov <gleb@redhat.com>
+> >> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> >> ---
+> >>  arch/x86/kvm/cpuid.c |  2 +-
+> >>  arch/x86/kvm/x86.c   | 10 ++++++++--
+> >>  arch/x86/kvm/x86.h   |  1 +
+> >>  3 files changed, 10 insertions(+), 3 deletions(-)
+> >>
+> >> diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+> >> index a20ecb5..d7c465d 100644
+> >> --- a/arch/x86/kvm/cpuid.c
+> >> +++ b/arch/x86/kvm/cpuid.c
+> >> @@ -182,7 +182,7 @@ static bool supported_xcr0_bit(unsigned bit)
+> >>  {
+> >>  	u64 mask = ((u64)1 << bit);
+> >>  
+> >> -	return mask & (XSTATE_FP | XSTATE_SSE | XSTATE_YMM) & host_xcr0;
+> >> +	return mask & KVM_SUPPORTED_XCR0 & host_xcr0;
+> >>  }
+> >>  
+> >>  #define F(x) bit(X86_FEATURE_##x)
+> >> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> >> index 3625798..801a882 100644
+> >> --- a/arch/x86/kvm/x86.c
+> >> +++ b/arch/x86/kvm/x86.c
+> >> @@ -586,6 +586,8 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
+> >>  		return 1;
+> >>  	if ((xcr0 & XSTATE_YMM) && !(xcr0 & XSTATE_SSE))
+> >>  		return 1;
+> >> +	if (xcr0 & ~KVM_SUPPORTED_XCR0)
+> >> +		return 1;
+> > Shouldn't we check guest's cpuid here?
 > 
-> > On Mon, Sep 09, 2013 at 10:16:29AM -0400, Steven Rostedt wrote:
-> > > On Mon, 9 Sep 2013 06:56:56 -0700
-> > > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> > > 
-> > > 
-> > > > Indeed, there is on ongoing naming debate as well.  About the only point
-> > > > of agreement thus far is that the current names are inadequate. ;-)
-> > > > 
-> > > > My current feeling is that rcu_is_cpu_idle() should be called
-> > > > rcu_watching_this_cpu() and what is called rcu_watching_this_cpu()
-> > > > in my local tree should be called __rcu_watching_this_cpu().
-> > > 
-> > > I disagree. Then it would not make sense if we take a return value of
-> > > "__rcu_watching_this_cpu()" and use it on another CPU to make other
-> > > decisions for that other CPU.
-> > 
-> > Frederic and I both went through why this works.
+> Yes.
 > 
-> My concern is people stumbling over why preemption can be enabled here?
+> >>  	if (xcr0 & ~host_xcr0)
+> >>  		return 1;
+> >>  	kvm_put_guest_xcr0(vcpu);
+> >> @@ -2980,10 +2982,14 @@ static int kvm_vcpu_ioctl_x86_set_xsave(struct kvm_vcpu *vcpu,
+> >>  	u64 xstate_bv =
+> >>  		*(u64 *)&guest_xsave->region[XSAVE_HDR_OFFSET / sizeof(u32)];
+> >>  
+> >> -	if (cpu_has_xsave)
+> >> +	if (cpu_has_xsave) {
+> >> +		if (xstate_bv & ~KVM_SUPPORTED_XCR0)
+> >> +			return -EINVAL;
+> >> +		if (xstate_bv & ~host_xcr0)
+> >> +			return -EINVAL;
+> > And here?
 > 
-> If it must *always* be called with preemption disabled (no
-> rcu_watching_this_cpu() version that disables preemption for you) then
-> I would be OK with it.
+> Here it'd be nice, but we cannot due to backwards compatibility.  We
+> agreed to change KVM_GET_XSAVE and make it only report states that are
+> included in CPUID, but we still need to do migration from old kernels
+> that report all states.
 > 
-> The problem I'm having is, anything that uses "this_cpu()" can cause
-> problems with understanding the code, because the first thing I think
-> is "if we get the result for 'this_cpu', it may not be 'this_cpu' when
-> I use it".
+> If we change KVM_SET_XSAVE to look at CPUID, and the CPUID does not
+> include AVX, migration will fail from old kernel (KVM_GET_XSAVE reports
+> all states) to new kernel (KVM_SET_XSAVES checks against CPUID).
+> 
+Yeah :(
 
-Yep, this is an exception to the usual rule about not passing per-CPU
-variables out of preempt_disable() regions, and will need to be commented
-appropriately.
-
-> > > I still think we are confusing concepts with implementation. Yes, the
-> > > RCU implementation tracks CPU state, but the concept is still based on
-> > > the task.
-> > 
-> > You keep asserting this, but I am not seeing it.  Sure, you can argue
-> > that grace periods are based on tasks as well as or instead of CPUs.
-> > But I am not convinced that it helps at the dynticks interface.
-> > 
-> > > But you are right, with dynamic ticks, things get a little more
-> > > complex, as dynamic ticks is a CPU state, not a task state, as it can
-> > > be something other than the running task that changes the state
-> > > (another task gets scheduled on that CPU).
-> > > 
-> > > But I think we are coupling RCU a bit too much with dynamic ticks here.
-> > > Maybe we need to take a step back to visualize concepts again.
-> > 
-> > If we don't couple it pretty tightly, it won't work.  And whatever we
-> > want to call this thing that determines what RCU is paying attention to
-> > has to be at the implementation level.  For things like rcu_read_lock()
-> > and synchronize_rcu(), yes, the task view is important -- and in recent
-> > documentation is the POV I use.
-> > 
-> > > The state of being in dynamic tick mode is determined by what a task or
-> > > tasks are doing on the CPU. One of those things is if the task needs to
-> > > be tracked by RCU. And here, is where I think we are getting our
-> > > confusion from. The dynamic tick state needs to check if the running
-> > > task is requiring RCU or not, and thus we ask for "is rcu needed on
-> > > this CPU?" when the real question is "is the task running on this CPU
-> > > requiring RCU?"
-> > > 
-> > > Again, if we keep things in a conceptual mode, and not look too much at
-> > > the implementation details, I think more people will understand what's
-> > > going on. Especially those that don't know why something was
-> > > implemented the way it was.
-> > 
-> > All this aside, do you have a name you are nominating?
-> 
-> Something that doesn't specify "this_cpu" or "cpu" if the result can be
-> used on another cpu correctly.
-> 
-> "rcu_is_ignored()" or "rcu_is_not_active()", "rcu_is_watching_you()"
-
-You know, I am strongly tempted by "rcu_is_watching_you()", but I have
-this feeling that it is too cute for its own good.  ;-)
-
-							Thanx, Paul
-
+--
+			Gleb.
