@@ -1,127 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753650Ab3IIN0z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:26:55 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5157 "EHLO
+	id S1753928Ab3IIN2g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:28:36 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10715 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753554Ab3IIN0w (ORCPT
+	with ESMTP id S1753594Ab3IIN0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 09:26:52 -0400
-X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=CFQ55G38UMUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5jOM9dmJ99oA:10 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=L8tPGqZhoyyWpDyi6ysA:9 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Mon, 9 Sep 2013 09:26:54 -0400
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=ufeRskBYLQoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Zvybn3zlWHMA:10 a=VwQbUJbxAAAA:8 a=Dy9FSkG8L0gs_orUxm0A:9 a=U62fhAwekXMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130909124558.123751488@goodmis.org>
+Message-Id: <20130909124531.445392664@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Sep 2013 08:45:44 -0400
+Date: Mon, 09 Sep 2013 08:45:31 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>,
-        Steven Rostedt <srostedt@redhat.com>
-Subject: [PATCH RT 13/16] hwlat-detector: Use trace_clock_local if available
-References: <20130909124531.445392664@goodmis.org>
-Content-Disposition: inline; filename=0013-hwlat-detector-Use-trace_clock_local-if-available.patch
+        John Kacur <jkacur@redhat.com>
+Subject: [PATCH RT 00/16] 3.4.57-rt73-rc1 stable review
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
 
-As ktime_get() calls into the timing code which does a read_seq(), it
-may be affected by other CPUS that touch that lock. To remove this
-dependency, use the trace_clock_local() which is already exported
-for module use. If CONFIG_TRACING is enabled, use that as the clock,
-otherwise use ktime_get().
+Dear RT Folks,
 
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Steven Rostedt <srostedt@redhat.com>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+This is the RT stable review cycle of patch 3.4.57-rt73-rc1.
+
+Please scream at me if I messed something up. Please test the patches too.
+
+The -rc release will be uploaded to kernel.org and will be deleted when
+the final release is out. This is just a review release (or release candidate).
+
+The pre-releases will not be pushed to the git repository, only the
+final release is.
+
+If all goes well, this patch will be converted to the next main release
+on 9/12/2013.
+
+Enjoy,
+
+-- Steve
+
+
+To build 3.4.57-rt73-rc1 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.57.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.57-rt73-rc1.patch.xz
+
+You can also build from 3.4.57-rt72 by applying the incremental patch:
+
+http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/incr/patch-3.4.57-rt72-rt73-rc1.patch.xz
+
+
+Changes from 3.4.57-rt72:
+
 ---
- drivers/misc/hwlat_detector.c |   34 +++++++++++++++++++++++++---------
- 1 file changed, 25 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/misc/hwlat_detector.c b/drivers/misc/hwlat_detector.c
-index f93b8ef..13443e9 100644
---- a/drivers/misc/hwlat_detector.c
-+++ b/drivers/misc/hwlat_detector.c
-@@ -51,6 +51,7 @@
- #include <linux/version.h>
- #include <linux/delay.h>
- #include <linux/slab.h>
-+#include <linux/trace_clock.h>
- 
- #define BUF_SIZE_DEFAULT	262144UL		/* 8K*(sizeof(entry)) */
- #define BUF_FLAGS		(RB_FL_OVERWRITE)	/* no block on full */
-@@ -211,6 +212,21 @@ static struct sample *buffer_get_sample(struct sample *sample)
- 	return sample;
- }
- 
-+#ifndef CONFIG_TRACING
-+#define time_type	ktime_t
-+#define time_get()	ktime_get()
-+#define time_to_us(x)	ktime_to_us(x)
-+#define time_sub(a, b)	ktime_sub(a, b)
-+#define init_time(a, b)	(a).tv64 = b
-+#define time_u64(a)	(a).tv64
-+#else
-+#define time_type	u64
-+#define time_get()	trace_clock_local()
-+#define time_to_us(x)	div_u64(x, 1000)
-+#define time_sub(a, b)	((a) - (b))
-+#define init_time(a, b)	a = b
-+#define time_u64(a)	a
-+#endif
- /**
-  * get_sample - sample the CPU TSC and look for likely hardware latencies
-  * @unused: This is not used but is a part of the stop_machine API
-@@ -220,23 +236,23 @@ static struct sample *buffer_get_sample(struct sample *sample)
-  */
- static int get_sample(void *unused)
- {
--	ktime_t start, t1, t2, last_t2;
-+	time_type start, t1, t2, last_t2;
- 	s64 diff, total = 0;
- 	u64 sample = 0;
- 	u64 outer_sample = 0;
- 	int ret = 1;
- 
--	last_t2.tv64 = 0;
--	start = ktime_get(); /* start timestamp */
-+	init_time(last_t2, 0);
-+	start = time_get(); /* start timestamp */
- 
- 	do {
- 
--		t1 = ktime_get();	/* we'll look for a discontinuity */
--		t2 = ktime_get();
-+		t1 = time_get();	/* we'll look for a discontinuity */
-+		t2 = time_get();
- 
--		if (last_t2.tv64) {
-+		if (time_u64(last_t2)) {
- 			/* Check the delta from the outer loop (t2 to next t1) */
--			diff = ktime_to_us(ktime_sub(t1, last_t2));
-+			diff = time_to_us(time_sub(t1, last_t2));
- 			/* This shouldn't happen */
- 			if (diff < 0) {
- 				printk(KERN_ERR BANNER "time running backwards\n");
-@@ -247,10 +263,10 @@ static int get_sample(void *unused)
- 		}
- 		last_t2 = t2;
- 
--		total = ktime_to_us(ktime_sub(t2, start)); /* sample width */
-+		total = time_to_us(time_sub(t2, start)); /* sample width */
- 
- 		/* This checks the inner loop (t1 to t2) */
--		diff = ktime_to_us(ktime_sub(t2, t1));     /* current diff */
-+		diff = time_to_us(time_sub(t2, t1));     /* current diff */
- 
- 		/* This shouldn't happen */
- 		if (diff < 0) {
--- 
-1.7.10.4
 
 
+Ivo Sieben (1):
+      genirq: Set irq thread to RT priority on creation
+
+Mike Galbraith (1):
+      x86/mce: fix mce timer interval
+
+Paul Gortmaker (1):
+      list_bl.h: make list head locking RT safe
+
+Sebastian Andrzej Siewior (4):
+      kernel/cpu: fix cpu down problem if kthread's cpu is going down
+      kernel/hotplug: restore original cpu mask oncpu/down
+      drm/i915: drop trace_i915_gem_ring_dispatch on rt
+      genirq: do not invoke the affinity callback via a workqueue
+
+Steven Rostedt (5):
+      sched/workqueue: Only wake up idle workers if not blocked on sleeping spin lock
+      rt,ntp: Move call to schedule_delayed_work() to helper thread
+      hwlat-detector: Update hwlat_detector to add outer loop detection
+      hwlat-detector: Use trace_clock_local if available
+      hwlat-detector: Use thread instead of stop machine
+
+Steven Rostedt (Red Hat) (2):
+      hwlat-detect/trace: Export trace_clock_local for hwlat-detector
+      Linux 3.4.57-rt73-rc1
+
+Uwe Kleine-König (1):
+      list_bl.h: fix it for for !SMP && !DEBUG_SPINLOCK
+
+Zhao Hongjiang (1):
+      timers: prepare for full preemption improve
+
+----
+ arch/x86/kernel/cpu/mcheck/mce.c           |    4 +-
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |    2 +
+ drivers/misc/hwlat_detector.c              |  117 +++++++++++++++++-----------
+ include/linux/interrupt.h                  |    1 +
+ include/linux/list_bl.h                    |   28 ++++++-
+ kernel/cpu.c                               |   29 ++++++-
+ kernel/irq/manage.c                        |   89 +++++++++++++++++++--
+ kernel/sched/core.c                        |    4 +-
+ kernel/time/ntp.c                          |   40 ++++++++++
+ kernel/timer.c                             |    8 +-
+ kernel/trace/trace_clock.c                 |    1 +
+ localversion-rt                            |    2 +-
+ 12 files changed, 262 insertions(+), 63 deletions(-)
