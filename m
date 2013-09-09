@@ -1,85 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755567Ab3IIUAN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 16:00:13 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:53007 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752265Ab3IIUAL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 16:00:11 -0400
-Content-Type: text/plain; charset=US-ASCII
-Mime-Version: 1.0 (Mac OS X Mail 6.5 \(1508\))
-Subject: Re: [PATCH] ARM: OMAP2+: am335x-bone*: add DT for BeagleBone Black
-From: Koen Kooi <koen@dominion.thruhere.net>
-In-Reply-To: <522E269B.7000802@ti.com>
-Date: Mon, 9 Sep 2013 22:00:07 +0200
-Cc: Kevin Hilman <khilman@linaro.org>, <bcousson@baylibre.com>,
-        <linux-omap@vger.kernel.org>, <tony@atomide.com>,
-        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ijc+devicetree@hellion.org.uk>, <linux@arm.linux.org.uk>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <olof@lixom.net>
-Content-Transfer-Encoding: 7BIT
-Message-Id: <73968C64-F0B0-4ED6-82B8-BD1966ED9D84@dominion.thruhere.net>
-References: <1378736961-21005-1-git-send-email-koen@dominion.thruhere.net> <87zjrm81dl.fsf@linaro.org> <BBAC0939-A4F9-4FEA-B137-0307D8787DC3@dominion.thruhere.net> <522E1325.8050906@ti.com> <41952E65-1037-4117-A1AE-8310FED59E3A@dominion.thruhere.net> <522E18C0.9010909@ti.com> <522E269B.7000802@ti.com>
-To: Joel Fernandes <joelf@ti.com>
-X-Mailer: Apple Mail (2.1508)
+	id S1755639Ab3IIUAV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 16:00:21 -0400
+Received: from mail.lang.hm ([64.81.33.126]:50584 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754425Ab3IIUAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 16:00:17 -0400
+Date: Mon, 9 Sep 2013 12:59:50 -0700 (PDT)
+From: David Lang <david@lang.hm>
+X-X-Sender: dlang@asgard.lang.hm
+To: Matthew Garrett <matthew.garrett@nebula.com>
+cc: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH 00/12] One more attempt at useful kernel lockdown
+In-Reply-To: <1378753619.17982.16.camel@x230.lan>
+Message-ID: <alpine.DEB.2.02.1309091247340.2479@nftneq.ynat.uz>
+References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>  <19562.1378747124@turing-police.cc.vt.edu>  <alpine.DEB.2.02.1309091119330.2479@nftneq.ynat.uz>  <1378751318.17982.10.camel@x230.lan>  <alpine.DEB.2.02.1309091139490.2479@nftneq.ynat.uz>
+  <1378752158.17982.15.camel@x230.lan>  <alpine.DEB.2.02.1309091150570.2479@nftneq.ynat.uz> <1378753619.17982.16.camel@x230.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 9 Sep 2013, Matthew Garrett wrote:
 
-Op 9 sep. 2013, om 21:50 heeft Joel Fernandes <joelf@ti.com> het volgende geschreven:
+> On Mon, 2013-09-09 at 11:53 -0700, David Lang wrote:
+>
+>> So is there a way to unify these different things rather than creating yet
+>> another different knob?
+>
+> We haven't found one that people consider generally acceptable.
 
-> On 09/09/2013 01:51 PM, Joel Fernandes wrote:
->> On 09/09/2013 01:43 PM, Koen Kooi wrote:
->>> 
->>> Op 9 sep. 2013, om 20:27 heeft Joel Fernandes <joelf@ti.com> het volgende geschreven:
->>> 
->>>> On 09/09/2013 10:51 AM, Koen Kooi wrote:
->>>>> 
->>>>> Op 9 sep. 2013, om 17:23 heeft Kevin Hilman <khilman@linaro.org> het volgende geschreven:
->>>>> 
->>>>>> Koen Kooi <koen@dominion.thruhere.net> writes:
->>>>>> 
->>>>>>> The BeagleBone Black is basically a regular BeagleBone with eMMC and HDMI added,
->>>>>>> so create a common dtsi both can use.
->>>>>>> 
->>>>>>> IMPORTANT: booting the existing am335x-bone.dts will blow up the HDMI transceiver
->>>>>>> after a dozen boots with an uSD card inserted because LDO will be at 3.3V instead
->>>>>>> of 1.8.
->>>>>>> 
->>>>>>> MMC support for AM335x still isn't in, so only the LDO change has been added.
->>>>>>> 
->>>>>>> Cc: stable@vger.kernel.org
->>>>>>> 
->>>>>>> Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
->>>>>>> Tested-by: Tom Rini <trini@ti.com>
->>>>>>> Tested-by: Matt Porter <matt.porter@linaro.org>
->>>>>> 
->>>>>> I guess the subject should've included v5?
->>>>> 
->>>>> Yes, I blame it on being monday :)
->>>> 
->>>> The series you're posting will require rebasing on the current MMC DT series
->>>> that is being discussed last couple of weeks on the mailing list which were
->>>> waiting until now as DMA support was missing. Now that DMA support is pulled in,
->>>> it is safe to apply those patches so I will be reposting them shortly.
->>>> 
->>>> Please hold off any changes until those patches are posted. This will avoid
->>>> unnecessary conflicts.
->>> 
->>> Or you can rebase on top of this patch since it has no dependencies *and* fixes blowing up boards. FWIW, git-rebase, git-cherry-pick and git-am -3 track the rename in my patch just fine.
->>> 
->> 
->> That's fair enough, since  Kevin Acked and Benoit is pulling it, I'm fine with
->> rebasing on top of it and we avoid any merge conflicts.
->> 
-> 
-> I noticed - there were still some comments from Felipe on the v4 series of this
-> patch regarding RF cape and HDMI may be breaking it. How are you addressing that?
+At least you should be able to unify the implementation, even if you don't unify 
+the user visible knob
 
-Capes will never go into the .dts and HDMI support needs some serious patching before it can get enabled in the DT. And the RF cape isn't being sold since it has no sw support. No need to worry about things in the 3.15/3.16 timeframe. Unless you want this LDO3 fix not to go in ASAP.
+If you do this with a capabilities approach, then you can implement the 'only 
+load signed modules' bit and then have that bit call the existing kernel code, 
+or change that existing kernel code to internally set the capabilities bit.
 
-Joel, is there anything relevant *right now* blocking this patch going in? If not, please test it and add your Tested-by: line.
+I see you looking for two key things
+
+1. a sledgehammer to say "I want to be as secure as possible"
+
+2. no way to unset the setting (barring kernel bugs/vulnerabilities)
+
+implementing this as capabilities will still let you meet your goals, just have 
+your tools that lock things down set the value to -1 (all 1's)
+
+As long as a bit cannot be unset, only set, it still satisfies your second 
+requirement to not be able to back out.
+
+And for people who want a partial lockdown, the various capabilities bits allow 
+them to get the amount of lockdown that they want.
+
+but if you are really trying to lock down a system, there are things that you 
+want to do that will break normal users (things like disabling all module 
+loading, disabling mounting of filesystems, disable the connection of new USB 
+devices, etc)
+
+These are good tools to have available, but since using them will break some 
+normal use cases, you really do want to be able to enable some things without 
+enabling others.
+
+What you are seeing in this discussion is that even for the set of things that 
+you consider 'essential' to lock down, other people see valid cases to not lock 
+them down.
+
+If your tools only set 'known' or 'allocated' bits, you run the risk of not 
+locking things down as tightly as you could, but if new bits are only allocated 
+for new lockdown features, this is not a regression since you are no worse off 
+than you would have been with an old kernel.
+
+
+Since we are not talking POSIX capabilities here, we are talking 'secure the 
+system from even root' capabilities, there is no other system that we need to 
+copy. The BSD securelevel approach is a simple big hammer approach, and it's 
+easy to emulate with capabilities.
+
+David Lang
