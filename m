@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab3IIOfj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 10:35:39 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23533 "EHLO
+	id S1753616Ab3IIOfh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 10:35:37 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13417 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045Ab3IIOfg (ORCPT
+	with ESMTP id S1751397Ab3IIOff (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 10:35:36 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=BP604nfWqvwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=tVU5si3swWsA:10 a=VwQbUJbxAAAA:8 a=aEvpvKATvMdsf35bc-8A:9 a=9J5VuaLb3qoA:10 a=jeBq3FmKZ4MA:10 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Mon, 9 Sep 2013 10:35:35 -0400
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=azA17ehHRl8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=QZX9-uWsNf4A:10 a=VwQbUJbxAAAA:8 a=SwzNn0HwW6X4NKEoqz0A:9 a=jeBq3FmKZ4MA:10 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130909143534.516910911@goodmis.org>
+Message-Id: <20130909143534.370263404@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Sep 2013 10:35:19 -0400
+Date: Mon, 09 Sep 2013 10:35:18 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>,
-        Mike Galbraith <bitbucket@online.de>
-Subject: [PATCH RT 02/16] x86/mce: fix mce timer interval
+        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>
+Subject: [PATCH RT 01/16] sched/workqueue: Only wake up idle workers if not blocked on
+ sleeping spin lock
 References: <20130909143517.641735717@goodmis.org>
-Content-Disposition: inline; filename=0002-x86-mce-fix-mce-timer-interval.patch
+Content-Disposition: inline; filename=0001-sched-workqueue-Only-wake-up-idle-workers-if-not-blo.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Galbraith <bitbucket@online.de>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-Seems mce timer fire at the wrong frequency in -rt kernels since roughly
-forever due to 32 bit overflow.  3.8-rt is also missing a multiplier.
+In -rt, most spin_locks() turn into mutexes. One of these spin_lock
+conversions is performed on the workqueue gcwq->lock. When the idle
+worker is worken, the first thing it will do is grab that same lock and
+it too will block, possibly jumping into the same code, but because
+nr_running would already be decremented it prevents an infinite loop.
 
-Add missing us -> ns conversion and 32 bit overflow prevention.
+But this is still a waste of CPU cycles, and it doesn't follow the method
+of mainline, as new workers should only be woken when a worker thread is
+truly going to sleep, and not just blocked on a spin_lock().
+
+Check the saved_state too before waking up new workers.
 
 Cc: stable-rt@vger.kernel.org
-Signed-off-by: Mike Galbraith <bitbucket@online.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[bigeasy: use ULL instead of u64 cast]
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- arch/x86/kernel/cpu/mcheck/mce.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/sched.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index c859bb4..e51191f 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1171,7 +1171,7 @@ static enum hrtimer_restart mce_start_timer(struct hrtimer *timer)
- 		*n = min(*n*2, round_jiffies_relative(check_interval*HZ));
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 96dd9c2..59bb8bc 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -4436,8 +4436,10 @@ static inline void sched_submit_work(struct task_struct *tsk)
+ 	/*
+ 	 * If a worker went to sleep, notify and ask workqueue whether
+ 	 * it wants to wake up a task to maintain concurrency.
++	 * Only call wake up if prev isn't blocked on a sleeping
++	 * spin lock.
+ 	 */
+-	if (tsk->flags & PF_WQ_WORKER)
++	if (tsk->flags & PF_WQ_WORKER && !tsk->saved_state)
+ 		wq_worker_sleeping(tsk);
  
- 	hrtimer_forward(timer, timer->base->get_time(),
--			ns_to_ktime(jiffies_to_usecs(*n) * 1000));
-+			ns_to_ktime(jiffies_to_usecs(*n) * 1000ULL));
- 	return HRTIMER_RESTART;
- }
- 
-@@ -1452,7 +1452,7 @@ static void __mcheck_cpu_init_timer(void)
- 	if (!*n)
- 		return;
- 
--	hrtimer_start_range_ns(t, ns_to_ktime(jiffies_to_usecs(*n) * 1000),
-+	hrtimer_start_range_ns(t, ns_to_ktime(jiffies_to_usecs(*n) * 1000ULL),
- 			       0 , HRTIMER_MODE_REL_PINNED);
- }
- 
+ 	/*
 -- 
 1.7.10.4
 
