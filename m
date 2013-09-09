@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238Ab3IITBt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 15:01:49 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:52823 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752580Ab3IITBr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 15:01:47 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
+	id S1754979Ab3IITHI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 15:07:08 -0400
+Received: from mail-bn1lp0151.outbound.protection.outlook.com ([207.46.163.151]:38489
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752631Ab3IITHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 15:07:06 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
 To: David Lang <david@lang.hm>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, gregkh@linuxfoundation.org, hpa@zytor.com,
-        linux-efi@vger.kernel.org, jmorris@namei.org,
-        linux-security-module@vger.kernel.org
+CC: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>
 Subject: Re: [PATCH 00/12] One more attempt at useful kernel lockdown
-In-Reply-To: Your message of "Mon, 09 Sep 2013 11:25:38 -0700."
-             <alpine.DEB.2.02.1309091119330.2479@nftneq.ynat.uz>
-From: Valdis.Kletnieks@vt.edu
-References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com> <19562.1378747124@turing-police.cc.vt.edu>
-            <alpine.DEB.2.02.1309091119330.2479@nftneq.ynat.uz>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1378753264_1775P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Mon, 09 Sep 2013 15:01:04 -0400
-Message-ID: <27562.1378753264@turing-police.cc.vt.edu>
+Thread-Topic: [PATCH 00/12] One more attempt at useful kernel lockdown
+Thread-Index: AQHOrYDL2QYLBLFVskGOdCrAsfX2cpm9uPUAgAAESG6AAAOVwIAAA7CA
+Date: Mon, 9 Sep 2013 19:06:59 +0000
+Message-ID: <1378753619.17982.16.camel@x230.lan>
+References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
+	 <19562.1378747124@turing-police.cc.vt.edu>
+	 <alpine.DEB.2.02.1309091119330.2479@nftneq.ynat.uz>
+	 <1378751318.17982.10.camel@x230.lan>
+	 <alpine.DEB.2.02.1309091139490.2479@nftneq.ynat.uz>
+	 <1378752158.17982.15.camel@x230.lan>
+	 <alpine.DEB.2.02.1309091150570.2479@nftneq.ynat.uz>
+In-Reply-To: <alpine.DEB.2.02.1309091150570.2479@nftneq.ynat.uz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:470:1f07:1371:5d52:9ee3:3e84:6668]
+x-forefront-prvs: 09645BAC66
+x-forefront-antispam-report: SFV:NSPM;SFS:(199002)(189002)(24454002)(377424004)(558084003)(77096001)(56816003)(63696002)(74876001)(83072001)(76482001)(74706001)(74502001)(53806001)(47446002)(31966008)(74662001)(80976001)(54356001)(80022001)(83322001)(19580405001)(56776001)(54316002)(65816001)(51856001)(59766001)(77982001)(69226001)(74366001)(79102001)(46102001)(81816001)(19580395003)(33646001)(81686001)(49866001)(36756003)(81342001)(76796001)(76786001)(50986001)(47976001)(81542001)(4396001)(47736001)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB221;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:5d52:9ee3:3e84:6668;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <E0807FC6775E3A4CB513A0D54E64D56C@namprd05.prod.outlook.com>
+MIME-Version: 1.0
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r89J7Kqx022458
 
---==_Exmh_1378753264_1775P
-Content-Type: text/plain; charset=us-ascii
+On Mon, 2013-09-09 at 11:53 -0700, David Lang wrote:
 
-On Mon, 09 Sep 2013 11:25:38 -0700, David Lang said:
+> So is there a way to unify these different things rather than creating yet 
+> another different knob?
 
-> Given that we know that people want signed binaries without blocking kexec, you
-> should have '1' just enforce module signing and '2' (or higher) implement a full
-> lockdown including kexec.
+We haven't found one that people consider generally acceptable.
 
-> Or, eliminate the -1  permanently insecure option and make this a bitmask, if
-> someone wants to enable every possible lockdown, have them set it to "all 1's",
-> define the bits only as you need them.
-
-This strikes me as much more workable than one big sledgehammer.
-
---==_Exmh_1378753264_1775P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBUi4a7wdmEQWDXROgAQIX0xAAuoOiWQHKPd0PAvZL3IbV00dg2Npv4rh1
-PZTCVa/DDaOzZCSblRF83sqo4ElKFt3Oe8rZ8ewxRzKR8/L3QYKCrCtRjfb76Yyr
-NT92Ez3UA8H+qgyPmbMeN6u2ZQ22jjbznMpmf4jQCycFqW473TsAxk3cdQ3DhWdD
-yJgXqeucxWLL9YYD1NkBB/A5iWIacjpRd3nW8m3++0kkTqYbW17nUGyyuq3H+M4U
-M+3sIjMPaqzcTzeYti3criqhuudY2v1lO3kh65J5yZzRcO0zC974LYlkZQ4JEpsq
-GXhClJtKcgSdn53Ki0JuIAVZtoy59mcAIJOEh3INMK+/zPz77d5ZoQHM3bpNLXoY
-ow2vgWVfLxmVCtKGT8ohf4yE1T/w7Rc3xBQRxHM3mDPGc5/aEEkAGWSV/lBFNNwZ
-xPuGlZwTrbhxn8CeaMbOkVUHYW/EUgd+r2niZ5fXSv62Kn1OQC2c6dnqzM5tJIkN
-U7lUKqE2YnsAVbyF6MBGQH6yG7X8YQOG7valRbIRJFmZer1DXd2UHkZi2At7zUtO
-vmPNXalio1HpsGVwIegklmo8td8CM0ZGWHeoWUZD9gPC95lJHVb6kXfLs1nD5eRT
-KE+3bOEbR+hVaqh2skYjhmaVMfThIVOk1M2K7CoBmiEGtZswVFBuViVBUMKauZdw
-ewt/FkYKfxU=
-=M6sb
------END PGP SIGNATURE-----
-
---==_Exmh_1378753264_1775P--
+-- 
+Matthew Garrett <matthew.garrett@nebula.com>
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
