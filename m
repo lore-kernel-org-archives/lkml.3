@@ -1,129 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898Ab3IIM6n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 08:58:43 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:58790 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751073Ab3IIM6l (ORCPT
+	id S1753267Ab3IIM6y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 08:58:54 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50095 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751181Ab3IIM6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 08:58:41 -0400
-Date: Mon, 9 Sep 2013 14:57:46 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Arjun Gopalan <agopalan@nvidia.com>, Brian Swetland <swetland@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Paul Walmsley <pwalmsley@nvidia.com>
-Subject: Re: permission to move definition of struct rpmsg_channel_info
-Message-ID: <20130909125745.GD22197@ulmo>
-References: <5220F099.1020002@nvidia.com>
- <CAK=WgbZ2JgtAonvdyeDZazYBGdKpPAieJtjzi7MM6nwqhVfs7g@mail.gmail.com>
+	Mon, 9 Sep 2013 08:58:51 -0400
+Date: Mon, 9 Sep 2013 14:58:41 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: maarten.lankhorst@canonical.com, imirkin@alum.mit.edu,
+        linux-kernel@vger.kernel.org, daniel.vetter@ffwll.ch,
+        robdclark@gmail.com, mingo@kernel.org
+Subject: Re: [3.11-rc1] CONFIG_DEBUG_MUTEXES=y using gcc 3.x makes
+ unbootablekernel.
+Message-ID: <20130909125841.GZ31370@twins.programming.kicks-ass.net>
+References: <CAKb7UvjH1XZ3f-c=149s5=rqxkxVUhG_7-cfUYH3zrwJwr2_MQ@mail.gmail.com>
+ <201309081624.EBJ90176.OJStQOFLHVFFOM@I-love.SAKURA.ne.jp>
+ <522C312A.7050705@canonical.com>
+ <201309082053.FDB24195.FVOOJMStFQFLHO@I-love.SAKURA.ne.jp>
+ <522CDFC8.9020903@canonical.com>
+ <201309092056.GDH56750.OOMJtOHQVFFLSF@I-love.SAKURA.ne.jp>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="48TaNjbzBVislYPb"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAK=WgbZ2JgtAonvdyeDZazYBGdKpPAieJtjzi7MM6nwqhVfs7g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201309092056.GDH56750.OOMJtOHQVFFLSF@I-love.SAKURA.ne.jp>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 09, 2013 at 08:56:53PM +0900, Tetsuo Handa wrote:
+> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Date: Mon, 9 Sep 2013 20:48:13 +0900
+> Subject: [PATCH] mutex: Avoid gcc version dependent __builtin_constant_p() usage.
+> 
+> Commit 040a0a37 "mutex: Add support for wound/wait style locks" used
+> "!__builtin_constant_p(p == NULL)" but gcc 3.x cannot handle such expression
+> correctly, leading to boot failure when built with CONFIG_DEBUG_MUTEXES=y.
+> 
+> Fix it by explicitly passing a bool which tells whether p != NULL or not.
+> 
+> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Cc: <stable@kernel.org> [3.11+]
+> ---
+>  kernel/mutex.c |   32 ++++++++++++++++----------------
+>  1 files changed, 16 insertions(+), 16 deletions(-)
+> 
+> diff --git a/kernel/mutex.c b/kernel/mutex.c
+> index a52ee7bb..a2b80f1 100644
+> --- a/kernel/mutex.c
+> +++ b/kernel/mutex.c
+> @@ -408,7 +408,7 @@ ww_mutex_set_context_fastpath(struct ww_mutex *lock,
+>  static __always_inline int __sched
+>  __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+>  		    struct lockdep_map *nest_lock, unsigned long ip,
+> -		    struct ww_acquire_ctx *ww_ctx)
+> +		    struct ww_acquire_ctx *ww_ctx, const bool use_ww_ctx)
+>  {
+>  	struct task_struct *task = current;
+>  	struct mutex_waiter waiter;
+> @@ -448,7 +448,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+>  		struct task_struct *owner;
+>  		struct mspin_node  node;
+>  
+> -		if (!__builtin_constant_p(ww_ctx == NULL) && ww_ctx->acquired > 0) {
+> +		if (use_ww_ctx && ww_ctx->acquired > 0) {
+>  			struct ww_mutex *ww;
+>  
+>  			ww = container_of(lock, struct ww_mutex, base);
+> @@ -478,7 +478,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+>  		if ((atomic_read(&lock->count) == 1) &&
+>  		    (atomic_cmpxchg(&lock->count, 1, 0) == 1)) {
+>  			lock_acquired(&lock->dep_map, ip);
+> -			if (!__builtin_constant_p(ww_ctx == NULL)) {
+> +			if (use_ww_ctx) {
+>  				struct ww_mutex *ww;
+>  				ww = container_of(lock, struct ww_mutex, base);
+>  
+> @@ -548,7 +548,7 @@ slowpath:
+>  			goto err;
+>  		}
+>  
+> -		if (!__builtin_constant_p(ww_ctx == NULL) && ww_ctx->acquired > 0) {
+> +		if (use_ww_ctx && ww_ctx->acquired > 0) {
+>  			ret = __mutex_lock_check_stamp(lock, ww_ctx);
+>  			if (ret)
+>  				goto err;
+> @@ -568,7 +568,7 @@ done:
+>  	mutex_remove_waiter(lock, &waiter, current_thread_info());
+>  	mutex_set_owner(lock);
+>  
+> -	if (!__builtin_constant_p(ww_ctx == NULL)) {
+> +	if (use_ww_ctx) {
+>  		struct ww_mutex *ww = container_of(lock,
+>  						      struct ww_mutex,
+>  						      base);
+> @@ -618,7 +618,7 @@ mutex_lock_nested(struct mutex *lock, unsigned int subclass)
+>  {
+>  	might_sleep();
+>  	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE,
+> -			    subclass, NULL, _RET_IP_, NULL);
+> +			    subclass, NULL, _RET_IP_, NULL, 0);
+>  }
+>  
+>  EXPORT_SYMBOL_GPL(mutex_lock_nested);
 
---48TaNjbzBVislYPb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Sun, Sep 08, 2013 at 02:27:11PM +0200, Ohad Ben-Cohen wrote:
-> Hi Arjun,
->=20
-> On Fri, Aug 30, 2013 at 9:20 PM, Arjun Gopalan <agopalan@nvidia.com> wrot=
-e:
-> >
-> > Hi Ohad/Brian,
-> >
-> > I have been working on rpmsg and I need to be able to create static
-> > rpmsg channels. Channel information needs to be specified by other
-> > drivers and for this, the drivers need access to struct
-> > rpmsg_channel_info.
->=20
-> I'm not convinced how useful it is for other Linux drivers to create
-> static rpmsg channels?
->=20
-> Usually these channels reflect the existence of services running on
-> the remote processor, and their creation (or lack thereof) should be
-> specified in the remote image. This way an rpmsg channel is published
-> iff there is a matching remote service.
-
-If I understand correctly, the way that the services should be announced
-is via RSC_VDEV entries in the resource table?
-
-Looking at the remoteproc core and ELF loader, it seems like the way to
-pass in the resource table is either via an extra ELF section or driver
-specific. TI drivers seem to use ELF, but the STE modem driver seems to
-employ some custom format.
-
-=46rom what I understand this resource table can also be processed by the
-host to provide some of the resources such as carveout memory. So that
-the normal way for this to work would be something like:
-
-	- load firmware image
-	  - obtain pointer to resource table
-	- process resource table
-	  - allocate resources
-	  - update table
-	- upload firmware to remote processor
-
-Upon which the remote processor probably needs to parse the resource
-table to set itself up. Does that sound about right?
-
-> The way we were planning to add static channels functionality (I
-> should still have preliminary patches doing this somewhere but the
-> entire work was put on hold since TI changed its focus) is by
-> statically publishing them in the resource table, which is coupled
-> with a specific remote image.
-
-While I see that the format of all this is pretty well documented, are
-there any standard tools that can be used to embed the resource table
-into an ELF binary? I have a pretty good idea on how it could be done,
-but I wonder if it might make sense to provide some kind of a standard
-set of headers to make things easier so that not everyone has to
-reinvent the wheel.
-
-Looking at the remoteproc core, it seems that there's no direct way to
-change the firmware running on a remoteproc at runtime. The firmware
-image is bound to one specific struct rproc. Is there something
-fundamental that would prevent us from adding some sort of hotplug
-support so that we could reload the remote processor with a different
-firmware using a different resource table at runtime? A remote processor
-is only exposed via sysfs, so I assume that's probably where we'd need
-to hook that up to?
-
-Perhaps I should mention that I'm investigating on using remoteproc for
-something semi-related to what Arjun is working on, so I expect most of
-these questions to be relevant to his work as well.
-
-Thierry
-
---48TaNjbzBVislYPb
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSLcXJAAoJEN0jrNd/PrOhjJsP/1onbGK6687RoHtUZGo+uyGe
-/DMXQQtwVCj7zVP8sZ8F0K9sJwXmFENJ/ERVXnDzNGtzwkWFkGqM/En4XTDGrLqC
-3GqG9Ji+IHqEuAdXkh+ujpjb9oiEVBydY3vnFF2JQqXF+8veO5UL9I4EJoESUvSA
-IHO7ZW+hru3ZXvaEqHshXw9STD7a5OWd7ew2Z3CsrihChAwwy6Th1k265U9frkL+
-DI8O+X6LgjKv+VQEpzSHe9m2xbTMg5nD6Kz7qrH5zdHO6Ct3gG8XVXUQkf5MARRj
-ZrDRkxxMdPMcUGVuPTt8DfMqcWVAhk11RR8RI1pWhW8P7s93Ko91BNspwxGHETiZ
-3MBgmuTXccLkzzCCtDX//XpKho4NPZu5C/7rf/rabdIfGMin982xjUuU6XTagPUR
-bLRPlY1P/1fiRDGJLju+EvD5CEpI3O14PbcP+OgRUQ16KfqYu0akrRAFuEAptRV3
-M7lRcxuB3D5sbKh1/W3kvNZK98xaMwA2jNsI/RGcrLcSg/SN7n3hJrB/yD+wfkkI
-flrgJ+Kz9nMaMUifgCTBLg4HaucY+ubSIoPuFumAbwOvdWtgaEPCcWzzuSBEZr5e
-/eS6XS+3Qv6ssVez1w3ltAcyf1iTDWmDOraR5gcFF8dT4pEVfu03c0LC+LxAW1mU
-MO0HmmRcVhdarAjArB0t
-=yVlK
------END PGP SIGNATURE-----
-
---48TaNjbzBVislYPb--
+This is a sad patch, but provided it actually generates similar code I
+suppose its the best we can do bar whole sale deprecating gcc-3.
