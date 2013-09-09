@@ -1,201 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751572Ab3IIFiu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 01:38:50 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:60386 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050Ab3IIFit (ORCPT
+	id S1752060Ab3IIFjw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 01:39:52 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:61150 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212Ab3IIFju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 01:38:49 -0400
-Date: Mon, 9 Sep 2013 15:38:40 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Miklos Szeredi <mszeredi@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
-        Dave Chinner <dchinner@redhat.com>
-Subject: linux-next: manual merge of the akpm tree with Linus' tree
-Message-Id: <20130909153840.1783766acc78ea419e68b071@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__9_Sep_2013_15_38_40_+1000_ZHGpZ1T5KunzfwYt"
+	Mon, 9 Sep 2013 01:39:50 -0400
+X-AuditID: cbfee68f-b7f656d0000058e3-a3-522d5f25ea21
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: "'Joerg Roedel'" <joro@8bytes.org>, "'Suman Anna'" <s-anna@ti.com>,
+        linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH] iommu/omap: Remove casting the return value which is a void
+ pointer
+Date: Mon, 09 Sep 2013 14:39:49 +0900
+Message-id: <005601cead1e$ffe78470$ffb68d50$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac6tHvqUz/W8YEirQwmsXLZ7N3w7pA==
+Content-language: ko
+x-cr-hashedpuzzle: GSlZ HRyP L/pA QFLA RMY4 TuV6 YJw+ a5Rw bbud e8JZ rAUF uRrG
+ xeWg 0e4/ 2IZV
+ 6GuV;5;YQBrAHAAbQBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGoAZwAxAC4AaABhAG4AQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBqAG8AcgBvAEAAOABiAHkAdABlAHMALgBvAHIAZwA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBzAC0AYQBuAG4AYQBAAHQAaQAuAGMAbwBtAA==;Sosha1_v1;7;{4EC1CE94-D57B-4BA9-8BBB-61D2AA1B2671};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Mon,
+ 09 Sep 2013 05:39:40
+ GMT;WwBQAEEAVABDAEgAXQAgAGkAbwBtAG0AdQAvAG8AbQBhAHAAOgAgAFIAZQBtAG8AdgBlACAAYwBhAHMAdABpAG4AZwAgAHQAaABlACAAcgBlAHQAdQByAG4AIAB2AGEAbAB1AGUAIAB3AGgAaQBjAGgAIABpAHMAIABhACAAdgBvAGkAZAAgAHAAbwBpAG4AdABlAHIA
+x-cr-puzzleid: {4EC1CE94-D57B-4BA9-8BBB-61D2AA1B2671}
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJIsWRmVeSWpSXmKPExsVy+t8zY13VeN0gg5e7tSzmrF/DZnF54SVW
+	i87ZG9gtLu+aw2ax99c+VgdWjycH5zF5nJjxm8Wjb8sqRo/jN7YzeXzeJBfAGsVlk5Kak1mW
+	WqRvl8CVcfp7G2vBJbaKy2fusDYwXmLtYuTkkBAwkbi7fA87hC0mceHeerYuRi4OIYFljBL/
+	n6xmgilasH4pK0RiEaNE35MXTBDOL0aJjgNrwUaxCahJfPlyGGgUB4eIgL5EW4sGSA2zQBuj
+	xIV961hAaoQFwiT63/0Gm8oioCoxf/5tMJtXwFZi8+spULagxI/J98DqmQW0JNbvPM4EYctL
+	bF7zlhlkvoSAusSjv7ogYREBPYklCw6yQZSISOx78Y4RZK+EwBVWidlbbrBBfGAqceLJFqjE
+	I3aJNZ/fskIcISDxbfIhFoihshKbDjBD1EtKHFxxg2UCo8QsJCfNQnLSLCQnzUKyewEjyypG
+	0dSC5ILipPQiY73ixNzi0rx0veT83E2MkGjt38F494D1IcZkoPUTmaVEk/OB0Z5XEm9obGZk
+	YWpiamxkbmlGmrCSOK9ai3WgkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBsbdZ+rDiids/JFh
+	tHCTXuPmC82SWcKaZV9XR8zp1fdxfydSGGevE9NrUa3rs82hu/7Vx8uu23R8VquWC0l4PP24
+	tycv7DrD5YlVk7/Pt7MN8buq5NH21lrP+lOUv9GKR9kpAX/eJDDVPeNWP6o41/H+rDNbzNQn
+	PeMX3Lo41KLCqz1C4srhE0osxRmJhlrMRcWJANnFsxDsAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGKsWRmVeSWpSXmKPExsVy+t9jAV3VeN0gg0+n1CzmrF/DZnF54SVW
+	i87ZG9gtLu+aw2ax99c+VgdWjycH5zF5nJjxm8Wjb8sqRo/jN7YzeXzeJBfAGtXAaJORmpiS
+	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
+	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmHH6extrwSW2istn7rA2MF5i7WLk5JAQMJFY
+	sH4plC0mceHeerYuRi4OIYFFjBJ9T14wQTi/GCU6DqwFq2ITUJP48uUwexcjB4eIgL5EW4sG
+	SA2zQBujxIV961hAaoQFwiT63/1mArFZBFQl5s+/DWbzCthKbH49BcoWlPgx+R5YPbOAlsT6
+	nceZIGx5ic1r3jKDzJcQUJd49FcXJCwioCexZMFBNogSEYl9L94xguyVELjCKjF7yw02iA9M
+	JU482cI4gVFoFpIVs5CsmIVkxSwksxYwsqxiFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECE4F
+	z6R3MK5qsDjEKMDBqMTDe0NQN0iINbGsuDL3EKMEB7OSCO/55zpBQrwpiZVVqUX58UWlOanF
+	hxiTgSEwkVlKNDkfmKbySuINjU3MjCyNzCyMTMzNSRNWEuc92GodKCSQnliSmp2aWpBaBLOF
+	iYNTqoHR67ZZyi8Zz4DmFtO1EhsDzKzlnqee5OB6Puu1VEWFywt2iapyo19/KrteLZK5cOf9
+	/wOTu1WXTVnAuv7kd88OhyOvTn7JizU3kNx98aDz1jUHXF5lh9QkBU7PNbK0DL32dJmU9KLT
+	UWH3OJvyLD5eY9V9//+4bIjmT+mX+1qsJFaf7LBOKpNQYinOSDTUYi4qTgQAdJb+v0kDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__9_Sep_2013_15_38_40_+1000_ZHGpZ1T5KunzfwYt
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Casting the return value which is a void pointer is redundant.
+The conversion from void pointer to any other pointer type is
+guaranteed by the C programming language.
 
-Hi Andrew,
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/iommu/omap-iopgtable.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Today's linux-next merge of the akpm tree got a conflict in fs/dcache.c
-between commit db14fc3abcd5 ("vfs: add d_walk()") from Linus' tree and
-commit "dcache: convert to use new lru list infrastructure" from the akpm
-tree.
+diff --git a/drivers/iommu/omap-iopgtable.h b/drivers/iommu/omap-iopgtable.h
+index f4003d5..b6f9a51 100644
+--- a/drivers/iommu/omap-iopgtable.h
++++ b/drivers/iommu/omap-iopgtable.h
+@@ -95,4 +95,4 @@ static inline phys_addr_t omap_iommu_translate(u32 d, u32 va, u32 mask)
+ #define iopte_offset(iopgd, da)	(iopgd_page_vaddr(iopgd) + iopte_index(da))
+ 
+ #define to_iommu(dev)							\
+-	((struct omap_iommu *)platform_get_drvdata(to_platform_device(dev)))
++	(platform_get_drvdata(to_platform_device(dev)))
+-- 
+1.7.10.4
 
-I fixed it up (hopefully - see below) and can carry the fix as necessary
-(no action is required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc fs/dcache.c
-index fc05994,e4df9de..0000000
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@@ -1313,46 -1197,94 +1297,47 @@@ out
-   * drop the lock and return early due to latency
-   * constraints.
-   */
- -static int select_parent(struct dentry *parent, struct list_head *dispose)
- -{
- -	struct dentry *this_parent;
- -	struct list_head *next;
- -	unsigned seq;
- -	int found =3D 0;
- -	int locked =3D 0;
- =20
- -	seq =3D read_seqbegin(&rename_lock);
- -again:
- -	this_parent =3D parent;
- -	spin_lock(&this_parent->d_lock);
- -repeat:
- -	next =3D this_parent->d_subdirs.next;
- -resume:
- -	while (next !=3D &this_parent->d_subdirs) {
- -		struct list_head *tmp =3D next;
- -		struct dentry *dentry =3D list_entry(tmp, struct dentry, d_u.d_child);
- -		next =3D tmp->next;
- -
- -		spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
- +struct select_data {
- +	struct dentry *start;
- +	struct list_head dispose;
- +	int found;
- +};
- =20
- -		/*
- -		 * move only zero ref count dentries to the dispose list.
- -		 *
- -		 * Those which are presently on the shrink list, being processed
- -		 * by shrink_dentry_list(), shouldn't be moved.  Otherwise the
- -		 * loop in shrink_dcache_parent() might not make any progress
- -		 * and loop forever.
- -		 */
- -		if (dentry->d_lockref.count) {
- -			dentry_lru_del(dentry);
- -		} else if (!(dentry->d_flags & DCACHE_SHRINK_LIST)) {
- -			dentry_lru_del(dentry);
- -			list_add_tail(&dentry->d_lru, dispose);
- -			dentry->d_flags |=3D DCACHE_SHRINK_LIST;
- -			found++;
- -		}
- -		/*
- -		 * We can return to the caller if we have found some (this
- -		 * ensures forward progress). We'll be coming back to find
- -		 * the rest.
- -		 */
- -		if (found && need_resched()) {
- -			spin_unlock(&dentry->d_lock);
- -			goto out;
- -		}
- +static enum d_walk_ret select_collect(void *_data, struct dentry *dentry)
- +{
- +	struct select_data *data =3D _data;
- +	enum d_walk_ret ret =3D D_WALK_CONTINUE;
- =20
- -		/*
- -		 * Descend a level if the d_subdirs list is non-empty.
- -		 */
- -		if (!list_empty(&dentry->d_subdirs)) {
- -			spin_unlock(&this_parent->d_lock);
- -			spin_release(&dentry->d_lock.dep_map, 1, _RET_IP_);
- -			this_parent =3D dentry;
- -			spin_acquire(&this_parent->d_lock.dep_map, 0, 1, _RET_IP_);
- -			goto repeat;
- -		}
- +	if (data->start =3D=3D dentry)
- +		goto out;
- =20
- -		spin_unlock(&dentry->d_lock);
- -	}
-  	/*
- -	 * All done at this level ... ascend and resume the search.
- +	 * move only zero ref count dentries to the dispose list.
- +	 *
- +	 * Those which are presently on the shrink list, being processed
- +	 * by shrink_dentry_list(), shouldn't be moved.  Otherwise the
- +	 * loop in shrink_dcache_parent() might not make any progress
- +	 * and loop forever.
-  	 */
- -	if (this_parent !=3D parent) {
- -		struct dentry *child =3D this_parent;
- -		this_parent =3D try_to_ascend(this_parent, locked, seq);
- -		if (!this_parent)
- -			goto rename_retry;
- -		next =3D child->d_u.d_child.next;
- -		goto resume;
- +	if (dentry->d_lockref.count) {
- +		dentry_lru_del(dentry);
- +	} else if (!(dentry->d_flags & DCACHE_SHRINK_LIST)) {
-- 		dentry_lru_move_list(dentry, &data->dispose);
-++		dentry_lru_del(dentry);
-++		list_add_tail(&dentry->d_lru, &data->dispose);
- +		dentry->d_flags |=3D DCACHE_SHRINK_LIST;
- +		data->found++;
- +		ret =3D D_WALK_NORETRY;
-  	}
- +	/*
- +	 * We can return to the caller if we have found some (this
- +	 * ensures forward progress). We'll be coming back to find
- +	 * the rest.
- +	 */
- +	if (data->found && need_resched())
- +		ret =3D D_WALK_QUIT;
-  out:
- -	spin_unlock(&this_parent->d_lock);
- -	if (!locked && read_seqretry(&rename_lock, seq))
- -		goto rename_retry;
- -	if (locked)
- -		write_sequnlock(&rename_lock);
- -	return found;
- -
- -rename_retry:
- -	if (found)
- -		return found;
- -	if (locked)
- -		goto again;
- -	locked =3D 1;
- -	write_seqlock(&rename_lock);
- -	goto again;
- +	return ret;
-  }
- =20
-  /**
-
---Signature=_Mon__9_Sep_2013_15_38_40_+1000_ZHGpZ1T5KunzfwYt
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSLV7lAAoJEECxmPOUX5FE+s4P/080WAY/64Q6SR2i2xuyh4J9
-/WzDBkAh1YdvHrATHXFa9QJmzV6fAIdh8jc9PUcIF5I1eL+FJ5hV0HIK3/E9Bafm
-qevzC51G2ggiUz0l8//B06L6HGoF+SPs20cF5BhMuPFqPeuvbNgWKgW71iyPiGTq
-POo/6B7uuwcjmB3wd8QuiJxg+Gi33HtZ0cvY29oZdoXXuF38DxHSpIhXYWPjoPuT
-yDOzYN7aHPg05w4EUaopHLir3Z2M02MJHQV60d0DyLSvZIFqzN8AjsRuI3vXnwZJ
-hWgd6nwBWNjFS58bDJ7FDCL+YXcX4sMnKJreXb+KlF/G7bW9lYZXFjkm2DeiUQqt
-ViBdGzLDVWk1SjHWBqX1HQI4RfDag3H5BQRXyGsAajh2YubL8JjZIk/yNNalzWWy
-OnYKuv6wPl8ufRcgi4qToxafwe683MXVJMNgKAcWFXfxhuik0mdxuW/ylCJQE3I9
-1p6Y3ykSfSDE5CShrBUZdTdpv1bPVQq9l7vPkBSkmab1KixQrZh0ihz6armzIJ8O
-X2lkOLpL8n1Sjbz1Ge/1V/5AbGgKZaleWxXy8Jo8SxxTT+GcrUghddHFqQ3fsfT2
-6TAcv1AvODt3t1wRpmlUwWJaMBpAoYC2rG6uDs5OE8/JWBEiqTk3k2zjes3HmsfS
-WNkOmJJjnnX+s8XYWynh
-=Pa+p
------END PGP SIGNATURE-----
-
---Signature=_Mon__9_Sep_2013_15_38_40_+1000_ZHGpZ1T5KunzfwYt--
