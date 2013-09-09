@@ -1,76 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755873Ab3IIUN7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 16:13:59 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:40962 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755461Ab3IIUN4 (ORCPT
+	id S1755707Ab3IIUOp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 16:14:45 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:55184 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753837Ab3IIUOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 16:13:56 -0400
+	Mon, 9 Sep 2013 16:14:44 -0400
+Message-ID: <522E3A47.3000307@kernel.org>
+Date: Mon, 09 Sep 2013 22:14:47 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1309091300420.2479@nftneq.ynat.uz>
-References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
-	<19562.1378747124@turing-police.cc.vt.edu>
-	<alpine.DEB.2.02.1309091119330.2479@nftneq.ynat.uz>
-	<27562.1378753264@turing-police.cc.vt.edu>
-	<522E2487.90109@zytor.com>
-	<CA+5PVA4mu=ykBMgWYaEagCsDexR-qFYH0tfjK+4B+xOCPonNXg@mail.gmail.com>
-	<alpine.DEB.2.02.1309091300420.2479@nftneq.ynat.uz>
-Date: Mon, 9 Sep 2013 16:13:56 -0400
-Message-ID: <CA+5PVA44KDyQxtmfiyjO323kOOoFo2cbD2pj-GnF1B3fhdms=Q@mail.gmail.com>
-Subject: Re: [PATCH 00/12] One more attempt at useful kernel lockdown
-From: Josh Boyer <jwboyer@gmail.com>
-To: David Lang <david@lang.hm>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        James Morris <jmorris@namei.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
+To: michael.hennerich@analog.com
+CC: Tejun Heo <tj@kernel.org>, Xie XiuQi <xiexiuqi@huawei.com>,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dmitry Torokhov <dtor@mail.ru>, Thomas Gleixner <tglx@linutronix.de>,
+        Andres Salomon <dilinger@queued.net>, Chris Ball <cjb@laptop.org>,
+        Jon Nettleton <jon.nettleton@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nadia Derbey <Nadia.Derbey@bull.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Li Bin <huawei.libin@huawei.com>, Lars-Peter Clausen <lars@metafoo.de>
+Subject: Re: [PATCH 1/5] iio: adc: remove unnecessary work pending test
+References: <5229B601.9090109@huawei.com> <5229B64A.1030304@huawei.com> <20130906152028.GA22763@mtj.dyndns.org> <522B903C.7040604@kernel.org> <522DE7F4.1050202@analog.com>
+In-Reply-To: <522DE7F4.1050202@analog.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 9, 2013 at 4:10 PM, David Lang <david@lang.hm> wrote:
-> On Mon, 9 Sep 2013, Josh Boyer wrote:
->
->> On Mon, Sep 9, 2013 at 3:41 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>>
->>> On 09/09/2013 12:01 PM, Valdis.Kletnieks@vt.edu wrote:
->>>>
->>>> On Mon, 09 Sep 2013 11:25:38 -0700, David Lang said:
->>>>
->>>>> Given that we know that people want signed binaries without
->>>>> blocking kexec, you should have '1' just enforce module signing
->>>>> and '2' (or higher) implement a full lockdown including kexec.
->>>>
->>>>
->>>>> Or, eliminate the -1  permanently insecure option and make this a
->>>>> bitmask, if someone wants to enable every possible lockdown, have
->>>>> them set it to "all 1's", define the bits only as you need them.
->>>>
->>>>
->>>> This strikes me as much more workable than one big sledgehammer.
->>>>
->>>
->>> I.e. capabilities ;)
->>
->>
->> Circles.  All I see here are circles.
->
->
-> the thing is that these are not circles. they are separate orthoginal things
-> that you may or may not want to allow.
->
-> If this was a simple set of circles, then this could be defined as a vector
-> instead of bitmap, the further you go the more secure you are.
+On 09/09/13 16:23, Michael Hennerich wrote:
+> On 09/07/2013 10:44 PM, Jonathan Cameron wrote:
+>> ccing Michael Hennerich and Lars-Peter Clausen,
+> 
+> Looks good to me!
+> 
+> /Acked-by/: /Michael Hennerich/ <michael.hennerich@analog.com>
+Applied to the togreg branch of iio.git.
 
-I didn't mean your recommendation of using a bitmask.  I understood
-your proposal and I don't even disagree with it really.  I was
-replying to something else.
-
-josh
+Thanks
+> 
+>>
+>> On 09/06/13 16:20, Tejun Heo wrote:
+>>> On Fri, Sep 06, 2013 at 07:02:34PM +0800, Xie XiuQi wrote:
+>>>> Remove unnecessary work pending test before calling schedule_work().
+>>>> It has been tested in queue_work_on() already. No functional changed.
+>>>>
+>>>> Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
+>>>> Cc: Tejun Heo <tj@kernel.org>
+>>> Reviewed-by: Tejun Heo <tj@kernel.org>
+>>>
+>>> One nit below tho.
+>>>
+>>>> -	if (iio_buffer_enabled(indio_dev)) {
+>>>> -		if (!work_pending(&st->poll_work))
+>>>> -			schedule_work(&st->poll_work);
+>>>> -	} else {
+>>>> +	if (iio_buffer_enabled(indio_dev))
+>>>> +		schedule_work(&st->poll_work);
+>>>> +	else {
+>>>>  		st->done = true;
+>>>>  		wake_up_interruptible(&st->wq_data_avail);
+>>>>  	}
+>>> Please don't drop the parentheses.  The convention is to have either
+>>> both or none on if/else.
+>> I'll fix this up on applying if everyone is happy (can't see why the
+>> won't be, but best to check!) Michael is clearly given as the author of driver
+>> so should probably have been in the cc list. Whilst I might apply this directly
+>> as maintainer I much prefer if I get an ack from the driver author as if nothing
+>> else it gives me a warm fuzzy feeling ;)
+>>
+>> Also patch title should mention that a) this is a staging driver, b) which adc driver it
+>> applies to. I'll fix that up as well on applying it.
+>>
+>> Thanks for the patch though, it would probably never have been noticed otherwise!
+>>
+>>> Thanks.
+>>>
+> 
+> 
+> -- 
+> Greetings,
+> Michael
+> 
+> --
+> Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
+> Sitz der Gesellschaft: Muenchen; Registergericht: Muenchen HRB 40368;
+> Geschaeftsfuehrer:Dr.Carsten Suckrow, Thomas Wessel, William A. Martin,
+> Margaret Seif
+> 
