@@ -1,170 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771Ab3IIKMN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 06:12:13 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:43166 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752450Ab3IIKKc (ORCPT
+	id S1752811Ab3IIKMY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 06:12:24 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:45568 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135Ab3IIKMU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 06:10:32 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        jic23@cam.ac.uk
-Cc: arnd@arndb.de, linus.walleij@linaro.org, denis.ciocca@st.com,
-        linux-iio@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 09/14] iio: pressure: st: Add support for new LPS001WP pressure sensor
-Date: Mon,  9 Sep 2013 11:10:05 +0100
-Message-Id: <1378721410-30937-10-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1378721410-30937-1-git-send-email-lee.jones@linaro.org>
-References: <1378721410-30937-1-git-send-email-lee.jones@linaro.org>
+	Mon, 9 Sep 2013 06:12:20 -0400
+Message-ID: <522D9F07.6030009@redhat.com>
+Date: Mon, 09 Sep 2013 12:12:23 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org, kvm@vger.kernel.org,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2] KVM: mmu: allow page tables to be in read-only slots
+References: <1378383714-9723-1-git-send-email-pbonzini@redhat.com> <20130908090448.GD17294@redhat.com>
+In-Reply-To: <20130908090448.GD17294@redhat.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here we use existing practices to introduce support for another
-pressure/temperature sensor, the LPS001WP.
+Il 08/09/2013 11:04, Gleb Natapov ha scritto:
+> On Thu, Sep 05, 2013 at 02:21:53PM +0200, Paolo Bonzini wrote:
+>> Page tables in a read-only memory slot will currently cause a triple
+>> fault when running with shadow paging, because the page walker uses
+>> gfn_to_hva and it fails on such a slot.
+>>
+>> TianoCore uses such a page table.  The idea is that, on real hardware,
+>> the firmware can already run in 64-bit flat mode when setting up the
+>> memory controller.  Real hardware seems to be fine with that as long as
+>> the accessed/dirty bits are set.  Thus, this patch saves whether the
+>> slot is readonly, and later checks it when updating the accessed and
+>> dirty bits.
+>>
+>> Note that this scenario is not supported by NPT at all, as explained by
+>> comments in the code.
+>>
+>> Cc: stable@vger.kernel.org
+>> Cc: kvm@vger.kernel.org
+>> Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> Cc: Gleb Natapov <gleb@redhat.com>
+>> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> I would prefer to change gfn_to_hva_read() to gfn_to_hva_prot() in this
+> patch already, it will not make it any bigger
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/iio/pressure/st_pressure.h      |  1 +
- drivers/iio/pressure/st_pressure_core.c | 84 +++++++++++++++++++++++++++++++++
- drivers/iio/pressure/st_pressure_i2c.c  |  1 +
- 3 files changed, 86 insertions(+)
+Sure.
 
-diff --git a/drivers/iio/pressure/st_pressure.h b/drivers/iio/pressure/st_pressure.h
-index b0b6306..e5bfe3c 100644
---- a/drivers/iio/pressure/st_pressure.h
-+++ b/drivers/iio/pressure/st_pressure.h
-@@ -15,6 +15,7 @@
- #include <linux/iio/common/st_sensors.h>
- 
- #define LPS331AP_PRESS_DEV_NAME		"lps331ap"
-+#define LPS001WP_PRESS_DEV_NAME		"lps001wp"
- 
- /**
-  * struct st_sensors_platform_data - default press platform data
-diff --git a/drivers/iio/pressure/st_pressure_core.c b/drivers/iio/pressure/st_pressure_core.c
-index d918e76..c5fe03f 100644
---- a/drivers/iio/pressure/st_pressure_core.c
-+++ b/drivers/iio/pressure/st_pressure_core.c
-@@ -64,6 +64,21 @@
- #define ST_PRESS_LPS331AP_OUT_XL_ADDR		0x28
- #define ST_TEMP_LPS331AP_OUT_L_ADDR		0x2b
- 
-+/* CUSTOM VALUES FOR LPS001WP SENSOR */
-+#define ST_PRESS_LPS001WP_WAI_EXP		0xba
-+#define ST_PRESS_LPS001WP_ODR_ADDR		0x20
-+#define ST_PRESS_LPS001WP_ODR_MASK		0x30
-+#define ST_PRESS_LPS001WP_ODR_AVL_1HZ_VAL	0x01
-+#define ST_PRESS_LPS001WP_ODR_AVL_7HZ_VAL	0x02
-+#define ST_PRESS_LPS001WP_ODR_AVL_13HZ_VAL	0x03
-+#define ST_PRESS_LPS001WP_PW_ADDR		0x20
-+#define ST_PRESS_LPS001WP_PW_MASK		0x40
-+#define ST_PRESS_LPS001WP_BDU_ADDR		0x20
-+#define ST_PRESS_LPS001WP_BDU_MASK		0x04
-+#define ST_PRESS_LPS001WP_MULTIREAD_BIT		true
-+#define ST_PRESS_LPS001WP_OUT_L_ADDR		0x28
-+#define ST_TEMP_LPS001WP_OUT_L_ADDR		0x2a
-+
- static const struct iio_chan_spec st_press_lps331ap_channels[] = {
- 	{
- 		.type = IIO_PRESSURE,
-@@ -100,6 +115,40 @@ static const struct iio_chan_spec st_press_lps331ap_channels[] = {
- 	IIO_CHAN_SOFT_TIMESTAMP(1)
- };
- 
-+static const struct iio_chan_spec st_press_lps001wp_channels[] = {
-+	{
-+		.type = IIO_PRESSURE,
-+		.channel2 = IIO_NO_MOD,
-+		.address = ST_PRESS_LPS001WP_OUT_L_ADDR,
-+		.scan_index = ST_SENSORS_SCAN_X,
-+		.scan_type = {
-+			.sign = 'u',
-+			.realbits = 16,
-+			.storagebits = 16,
-+			.endianness = IIO_LE,
-+		},
-+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
-+		.modified = 0,
-+	},
-+	{
-+		.type = IIO_TEMP,
-+		.channel2 = IIO_NO_MOD,
-+		.address = ST_TEMP_LPS001WP_OUT_L_ADDR,
-+		.scan_index = -1,
-+		.scan_type = {
-+			.sign = 'u',
-+			.realbits = 16,
-+			.storagebits = 16,
-+			.endianness = IIO_LE,
-+		},
-+		.info_mask_separate =
-+			BIT(IIO_CHAN_INFO_RAW) |
-+			BIT(IIO_CHAN_INFO_OFFSET),
-+		.modified = 0,
-+	},
-+	IIO_CHAN_SOFT_TIMESTAMP(1)
-+};
-+
- static const struct st_sensors st_press_sensors[] = {
- 	{
- 		.wai = ST_PRESS_LPS331AP_WAI_EXP,
-@@ -148,6 +197,41 @@ static const struct st_sensors st_press_sensors[] = {
- 		.multi_read_bit = ST_PRESS_LPS331AP_MULTIREAD_BIT,
- 		.bootime = 2,
- 	},
-+	{
-+		.wai = ST_PRESS_LPS001WP_WAI_EXP,
-+		.sensors_supported = {
-+			[0] = LPS001WP_PRESS_DEV_NAME,
-+		},
-+		.ch = (struct iio_chan_spec *)st_press_lps001wp_channels,
-+		.num_ch = ARRAY_SIZE(st_press_lps001wp_channels),
-+		.odr = {
-+			.addr = ST_PRESS_LPS001WP_ODR_ADDR,
-+			.mask = ST_PRESS_LPS001WP_ODR_MASK,
-+			.odr_avl = {
-+				{ 1, ST_PRESS_LPS001WP_ODR_AVL_1HZ_VAL, },
-+				{ 7, ST_PRESS_LPS001WP_ODR_AVL_7HZ_VAL, },
-+				{ 13, ST_PRESS_LPS001WP_ODR_AVL_13HZ_VAL, },
-+			},
-+		},
-+		.pw = {
-+			.addr = ST_PRESS_LPS001WP_PW_ADDR,
-+			.mask = ST_PRESS_LPS001WP_PW_MASK,
-+			.value_on = ST_SENSORS_DEFAULT_POWER_ON_VALUE,
-+			.value_off = ST_SENSORS_DEFAULT_POWER_OFF_VALUE,
-+		},
-+		.fs = {
-+			.addr = 0,
-+		},
-+		.bdu = {
-+			.addr = ST_PRESS_LPS001WP_BDU_ADDR,
-+			.mask = ST_PRESS_LPS001WP_BDU_MASK,
-+		},
-+		.drdy_irq = {
-+			.addr = 0,
-+		},
-+		.multi_read_bit = ST_PRESS_LPS001WP_MULTIREAD_BIT,
-+		.bootime = 2,
-+	},
- };
- 
- static int st_press_read_raw(struct iio_dev *indio_dev,
-diff --git a/drivers/iio/pressure/st_pressure_i2c.c b/drivers/iio/pressure/st_pressure_i2c.c
-index 08aac5e..ada5cbd 100644
---- a/drivers/iio/pressure/st_pressure_i2c.c
-+++ b/drivers/iio/pressure/st_pressure_i2c.c
-@@ -50,6 +50,7 @@ static int st_press_i2c_remove(struct i2c_client *client)
- 
- static const struct i2c_device_id st_press_id_table[] = {
- 	{ LPS331AP_PRESS_DEV_NAME },
-+	{ LPS001WP_PRESS_DEV_NAME },
- 	{},
- };
- MODULE_DEVICE_TABLE(i2c, st_press_id_table);
--- 
-1.8.1.2
+Paolo
 
