@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754297Ab3IIPVW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 11:21:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57546 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754249Ab3IIPVS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 11:21:18 -0400
-Date: Mon, 9 Sep 2013 08:24:24 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Andreas Larsson <andreas@gaisler.com>
-Cc: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, software@gaisler.com
-Subject: Re: [PATCH] usb: gadget: Add UDC driver for Aeroflex Gaisler GRUSBDC
-Message-ID: <20130909152424.GA26404@kroah.com>
-References: <1376316310-27989-1-git-send-email-andreas@gaisler.com>
- <521DBC9E.9080001@gaisler.com>
- <522D5DAB.2060707@gaisler.com>
+	id S1754378Ab3IIPVo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 11:21:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62543 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752673Ab3IIPVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 11:21:42 -0400
+Date: Mon, 9 Sep 2013 17:15:30 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>, linux-kernel@vger.kernel.org
+Subject: Re: free_pid() && PIDNS_HASH_ADDING
+Message-ID: <20130909151530.GA6755@redhat.com>
+References: <20130829211114.GA20726@sergelap> <87mwo0xb9p.fsf@xmission.com> <20130830144232.GA18281@mail.hallyn.com> <87hae6vh0w.fsf_-_@xmission.com> <20130908175602.GA3172@redhat.com> <20130908180137.GA4915@redhat.com> <87bo43gg4h.fsf@xmission.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <522D5DAB.2060707@gaisler.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87bo43gg4h.fsf@xmission.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 07:33:31AM +0200, Andreas Larsson wrote:
-> On 2013-08-28 11:02, Andreas Larsson wrote:
-> > On 2013-08-12 16:05, Andreas Larsson wrote:
-> >> This adds an UDC driver for GRUSBDC USB Device Controller cores
-> >> available in the
-> >> GRLIB VHDL IP core library. The driver only supports DMA mode.
+On 09/08, Eric W. Biederman wrote:
+>
+> Oleg Nesterov <oleg@redhat.com> writes:
+>
+> > On 09/08, Oleg Nesterov wrote:
+> >>
+> >> Off topic. What if the first alloc_pid() succeeds and then later
+> >> copy_process() fails. In this case free_pid() is called but
+> >> PIDNS_HASH_ADDING was not cleared, we miss kern_unmount(), no?
 > >
-> > Any comments? It would be great to get feedback soon in case some things
-> > need to be changed for this driver to be accepted. Thanks!
-> 
-> Anyone?
-> 
-> Is there anything holding it back from being accepted into mainline?
+> > Perhaps something like below?
+>
+> I am thinking more:
+>
+> diff --git a/kernel/pid.c b/kernel/pid.c
+> index ab75add..ef59516 100644
+> --- a/kernel/pid.c
+> +++ b/kernel/pid.c
+> @@ -273,6 +273,10 @@ void free_pid(struct pid *pid)
+>                          */
+>                         wake_up_process(ns->child_reaper);
+>                         break;
+> +               case PIDNS_HASH_ADDING:
+> +                       /* Handle a fork failure of the first process */
+> +                       ns->nr_hashed = 0;
 
-This is the middle of the merge window, nothing can be accepted at the
-moment, please wait until 3.12-rc1 comes out and our trees open up again
-to expect a response.
+Agreed, it also makes sense to clear ->nr_hashed. But I still think
+that WARN_ON(ns->child_reaper) makes sense too.
 
-thanks,
+> At which point I ask myself what of the pathlogocical case where the
+> first fork fails but because we created the pid namespace with unshare
+> there is a concurrent fork from another process into the pid namespace
+> that succeeds.  Resulting in one pid in the pid namespace that is not
+> the reaper.
 
-greg k-h
+But how can setns() work before the first fork() succeeds and makes the
+->child_reaper visible in /proc ?
+
+Probably I missed something obvious, I didn't sleep today...
+
+Oleg.
+
