@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751442Ab3IIJAa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 05:00:30 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:47082 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368Ab3IIJA2 (ORCPT
+	id S1751556Ab3IIJDU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 05:03:20 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:60998 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753Ab3IIJDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 05:00:28 -0400
-Date: Mon, 9 Sep 2013 02:00:26 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Michal Hocko <mhocko@suse.cz>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch] mm, memcg: store memcg name for oom kill log
- consistency
-In-Reply-To: <20130905135219.GE13666@dhcp22.suse.cz>
-Message-ID: <alpine.DEB.2.02.1309090200110.1935@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1308282302450.14291@chino.kir.corp.google.com> <20130829133032.GB12077@dhcp22.suse.cz> <20130905135219.GE13666@dhcp22.suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 9 Sep 2013 05:03:18 -0400
+Date: Mon, 9 Sep 2013 10:03:13 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH] mfd: sm501: dbg_regs attribute must be read-only
+Message-ID: <20130909090313.GD22938@lee--X1>
+References: <1378625136-8823-1-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1378625136-8823-1-git-send-email-linux@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Sep 2013, Michal Hocko wrote:
+On Sun, 08 Sep 2013, Guenter Roeck wrote:
 
-> From 4cee36f56100f5689fe1ae22f468016ce5a0cbae Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <mhocko@suse.cz>
-> Date: Thu, 5 Sep 2013 15:39:20 +0200
-> Subject: [PATCH] memcg, oom: lock mem_cgroup_print_oom_info
+> Fix:
 > 
-> mem_cgroup_print_oom_info uses a static buffer (memcg_name) to store the
-> name of the cgroup. This is not safe as pointed out by David Rientjes
-> because although memcg oom is locked for its hierarchy nothing prevents
-> another parallel hierarchy to trigger oom as well and overwrite the
-> already in-use buffer.
+> sm501 sm501: SM501 At b3e00000: Version 050100a0, 8 Mb, IRQ 100
+> Attribute dbg_regs: write permission without 'store'
+> ------------[ cut here ]------------
+> WARNING: at drivers/base/core.c:620
 > 
-> This patch introduces oom_info_lock hidden inside mem_cgroup_print_oom_info
-> which is held throughout the function. It make access to memcg_name safe
-> and as a bonus it also prevents parallel memcg ooms to interleave their
-> statistics which would make the printed data hard to analyze otherwise.
+> dbg_regs does not have a write function and must therefore be marked
+> as read-only.
 > 
-> Using the spinlock is OK here because this path is not hot and
-> meaningful data is much more important.
-> 
-> Reported-by: David Rientjes <rientjes@google.com>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+>  drivers/mfd/sm501.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Remove this.
+Applied, thanks.
 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
