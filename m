@@ -1,137 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187Ab3IIMLW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 08:11:22 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:39297 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752683Ab3IIMLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 08:11:20 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Linux PCI <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Aaron Lu <aaron.lu@intel.com>,
-        Peter Wu <lekensteyn@gmail.com>
-Subject: [PATCH] ACPI / bind: Prefer device objects with _STA to those without it
-Date: Mon, 09 Sep 2013 14:22:19 +0200
-Message-ID: <5039378.mVJXDJKcfO@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+	id S1753252Ab3IIMNh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 08:13:37 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:63319 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753023Ab3IIMNf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 08:13:35 -0400
+Date: Mon, 9 Sep 2013 14:13:31 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, sbw@mit.edu
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+Message-ID: <20130909121329.GA16280@somewhere>
+References: <20130905195234.GA20555@linux.vnet.ibm.com>
+ <20130906105934.GF20519@somewhere>
+ <20130906151851.GQ3966@linux.vnet.ibm.com>
+ <1378488088.31445.39.camel@edumazet-glaptop>
+ <20130906174117.GU3966@linux.vnet.ibm.com>
+ <20130906185927.GE2706@somewhere>
+ <20130909105347.GK31370@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130909105347.GK31370@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Mon, Sep 09, 2013 at 12:53:47PM +0200, Peter Zijlstra wrote:
+> On Fri, Sep 06, 2013 at 08:59:29PM +0200, Frederic Weisbecker wrote:
+> > Imagine that you're running on an rcu read side critical section on CPU 0, which
+> > is not in extended quiescent state. Now you get preempted in the middle of your
+> > RCU read side critical section (you called rcu_read_lock() but not yet rcu_read_unlock()).
+> > 
+> > Later on, the task is woken up to be scheduled in CPU 1. If CPU 1 is in extended
+> > quiescent state because it runs is userspace, it receives a scheduler IPI,
+> > then schedule_user() is called by the end of the interrupt and in turns calls rcu_user_exit()
+> > before the task is resumed to the code it was running on CPU 0, in the middle of
+> > the rcu read side extended quiescent state.
+> > 
+> > See, the key here is the rcu_user_exit() that restore the CPU on RCU's state machine.
+> > There are other possible scheduler entrypoints when a CPU runs in user extended quiescent
+> > state: exception and syscall entries or even preempt_schedule_irq() in case we receive an irq
+> > in the kernel while we haven't yet reached the call to rcu_user_exit()... All of these should
+> > be covered, otherwise you bet RCU would be prompt to warn.
+> > 
+> > That's why when we call rcu_is_cpu_idle() from an RCU read side critical section, it's legit even
+> > if we can be preempted anytime around it.
+> > And preempt_disable() is probably not even necessary, except perhaps if __get_cpu_var() itself
+> > relies on non-preemptibility for its own correctness on the address calculation.
+> 
+> I've tried reading that trice now, still not making much sense.
+> 
+> In any case rcu_is_cpu_idle() is complete bollocks, either use
+> __raw_get_cpu_var() and add a _coherent_ explanation for why its right,
+> or its broken.
+> 
+> In any case the preempt_disable/enable pair there is just plain wrong as
+> Eric pointed out.
 
-As reported at https://bugzilla.kernel.org/show_bug.cgi?id=60829,
-there still are cases in which do_find_child() doesn't choose the
-ACPI device object it is "expected" to choose if there are more such
-objects matching one PCI device present.  This particular problem may
-be worked around by making do_find_child() return device obejcts witn
-_STA whose result indicates that the device is enabled before device
-objects without _STA if there's more than one device object to choose
-from.
+Check this:
 
-This change doesn't affect the case in which there's only one
-matching ACPI device object per PCI device.
-
-References: https://bugzilla.kernel.org/show_bug.cgi?id=60829
-Reported-by: Peter Wu <lekensteyn@gmail.com>
-Tested-by: Felix Lisczyk <felix.lisczyk@gmail.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/glue.c |   35 ++++++++++++++++++++++++-----------
- 1 file changed, 24 insertions(+), 11 deletions(-)
-
-Index: linux-pm/drivers/acpi/glue.c
-===================================================================
---- linux-pm.orig/drivers/acpi/glue.c
-+++ linux-pm/drivers/acpi/glue.c
-@@ -79,6 +79,9 @@ static struct acpi_bus_type *acpi_get_bu
- 	return ret;
- }
- 
-+#define FIND_CHILD_MIN_SCORE	1
-+#define FIND_CHILD_MAX_SCORE	2
-+
- static acpi_status acpi_dev_present(acpi_handle handle, u32 lvl_not_used,
- 				  void *not_used, void **ret_p)
- {
-@@ -92,14 +95,17 @@ static acpi_status acpi_dev_present(acpi
- 	return AE_OK;
- }
- 
--static bool acpi_extra_checks_passed(acpi_handle handle, bool is_bridge)
-+static int do_find_child_checks(acpi_handle handle, bool is_bridge)
- {
-+	bool sta_present = true;
- 	unsigned long long sta;
- 	acpi_status status;
- 
--	status = acpi_bus_get_status_handle(handle, &sta);
--	if (ACPI_FAILURE(status) || !(sta & ACPI_STA_DEVICE_ENABLED))
--		return false;
-+	status = acpi_evaluate_integer(handle, "_STA", NULL, &sta);
-+	if (status == AE_NOT_FOUND)
-+		sta_present = false;
-+	else if (ACPI_FAILURE(status) || !(sta & ACPI_STA_DEVICE_ENABLED))
-+		return -ENODEV;
- 
- 	if (is_bridge) {
- 		void *test = NULL;
-@@ -107,16 +113,17 @@ static bool acpi_extra_checks_passed(acp
- 		/* Check if this object has at least one child device. */
- 		acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, 1,
- 				    acpi_dev_present, NULL, NULL, &test);
--		return !!test;
-+		if (!test)
-+			return -ENODEV;
- 	}
--	return true;
-+	return sta_present ? FIND_CHILD_MAX_SCORE : FIND_CHILD_MIN_SCORE;
- }
- 
- struct find_child_context {
- 	u64 addr;
- 	bool is_bridge;
- 	acpi_handle ret;
--	bool ret_checked;
-+	int ret_score;
- };
- 
- static acpi_status do_find_child(acpi_handle handle, u32 lvl_not_used,
-@@ -125,6 +132,7 @@ static acpi_status do_find_child(acpi_ha
- 	struct find_child_context *context = data;
- 	unsigned long long addr;
- 	acpi_status status;
-+	int score;
- 
- 	status = acpi_evaluate_integer(handle, METHOD_NAME__ADR, NULL, &addr);
- 	if (ACPI_FAILURE(status) || addr != context->addr)
-@@ -144,15 +152,20 @@ static acpi_status do_find_child(acpi_ha
- 	 * its handle if so.  Second, check the same for the object that we've
- 	 * just found.
- 	 */
--	if (!context->ret_checked) {
--		if (acpi_extra_checks_passed(context->ret, context->is_bridge))
-+	if (!context->ret_score) {
-+		score = do_find_child_checks(context->ret, context->is_bridge);
-+		if (score == FIND_CHILD_MAX_SCORE)
- 			return AE_CTRL_TERMINATE;
- 		else
--			context->ret_checked = true;
-+			context->ret_score = score;
- 	}
--	if (acpi_extra_checks_passed(handle, context->is_bridge)) {
-+	score = do_find_child_checks(handle, context->is_bridge);
-+	if (score == FIND_CHILD_MAX_SCORE) {
- 		context->ret = handle;
- 		return AE_CTRL_TERMINATE;
-+	} else if (score > context->ret_score) {
-+		context->ret = handle;
-+		context->ret_score = score;
- 	}
- 	return AE_OK;
- }
-
+34240697d619c439c55f21989680024dcb604aab "rcu: Disable preemption in rcu_is_cpu_idle()"
