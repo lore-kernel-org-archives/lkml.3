@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754014Ab3IIN3I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:29:08 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:44661 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751942Ab3IIN3F (ORCPT
+	id S1754042Ab3IIN3U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:29:20 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:44562 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752862Ab3IIN3Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 09:29:05 -0400
-Date: Mon, 9 Sep 2013 15:29:02 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Mon, 9 Sep 2013 09:29:16 -0400
+Date: Mon, 9 Sep 2013 06:29:08 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
         Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
         mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
@@ -20,9 +20,9 @@ Cc: Steven Rostedt <rostedt@goodmis.org>,
         sbw@mit.edu
 Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
  section?
-Message-ID: <20130909132900.GE16280@somewhere>
-References: <20130906151851.GQ3966@linux.vnet.ibm.com>
- <1378488088.31445.39.camel@edumazet-glaptop>
+Message-ID: <20130909132908.GO3966@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1378488088.31445.39.camel@edumazet-glaptop>
  <20130906174117.GU3966@linux.vnet.ibm.com>
  <20130906185927.GE2706@somewhere>
  <20130909105347.GK31370@twins.programming.kicks-ass.net>
@@ -30,74 +30,57 @@ References: <20130906151851.GQ3966@linux.vnet.ibm.com>
  <20130909083926.3eceebef@gandalf.local.home>
  <20130909124547.GB16280@somewhere>
  <20130909085504.2ddd7e69@gandalf.local.home>
- <20130909131452.GA31370@twins.programming.kicks-ass.net>
+ <20130909130851.GC16280@somewhere>
+ <20130909092142.05780991@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130909131452.GA31370@twins.programming.kicks-ass.net>
+In-Reply-To: <20130909092142.05780991@gandalf.local.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090913-9332-0000-0000-0000015A8DA9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 03:14:52PM +0200, Peter Zijlstra wrote:
-> On Mon, Sep 09, 2013 at 08:55:04AM -0400, Steven Rostedt wrote:
-> > On Mon, 9 Sep 2013 14:45:49 +0200
-> > Frederic Weisbecker <fweisbec@gmail.com> wrote:
+On Mon, Sep 09, 2013 at 09:21:42AM -0400, Steven Rostedt wrote:
+> On Mon, 9 Sep 2013 15:08:53 +0200
+> Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> 
+> > On Mon, Sep 09, 2013 at 08:55:04AM -0400, Steven Rostedt wrote:
+> 
+> > > From reading the context a bit more, it seems that the per cpu value is
+> > > more a "per task" value that happens to be using per cpu variables, and
+> > > changes on context switches. Is that correct?
 > > 
-> >  
-> > > > This just proves that the caller of rcu_is_cpu_idle() must disable
-> > > > preemption itself for the entire time that it needs to use the result
-> > > > of rcu_is_cpu_idle().
-> > > 
-> > > Sorry, I don't understand your point here. What's wrong with checking the
-> > > ret from another CPU?
-> > 
-> > Hmm, OK, this is why that code is in desperate need of a comment.
-> > 
-> > From reading the context a bit more, it seems that the per cpu value is
-> > more a "per task" value that happens to be using per cpu variables, and
-> > changes on context switches. Is that correct?
-> > 
-> > Anyway, it requires a comment to explain that we are not checking the
-> > CPU state, but really the current task state, otherwise that 'ret'
-> > value wouldn't travel with the task, but would stick with the CPU.
+> > Yeah that's probably what confuse so many people. It's indeed at the same
+> > time a task state and a per cpu state.
 > 
-> Egads.. and the only reason we couldn't do the immediate load is because
-> of that atomic mess.
-> 
-> Also, if its per-task, why don't we have this in the task struct? The
-> current scheme makes the context switch more expensive -- is this the
-> right trade-off?
+> Especially since the function name itself is "rcu_is_cpu_idle()" which
+> tells you it's a cpu state, and not a task state. Why would you care in
+> RCU if CPU 1 is idle if you are on CPU 2? The name should be changed.
 
-No, putting that on the task_struct won't help much in this regard I think.
-Regular schedule() calls don't change that per cpu state.
+I could call it rcu_watching_this_cpu(), and rename the current
+rcu_watching_this_cpu() to __rcu_watching_this_cpu().
 
-Only preempt_schedule_irq() and schedule_user() are concerned with rcu eqs state
-exit/restore. But still storing that on task struct won't help.
+It should be possible to make a straightforward comment that helps.
+I will let Frederic take first crack at it.
 
+> > Pretty much like tsk->ti->preempt_count that people now try to implement
+> > through a per cpu value.
 > 
-> So maybe something like:
-> 
-> int rcu_is_cpu_idle(void)
-> {
-> 	/*
-> 	 * Comment explaining that rcu_dynticks.dynticks really is a
-> 	 * per-task something and we need preemption-safe loading.
-> 	 */
-> 	atomic_t dynticks = this_cpu_read(rcu_dynticks.dynticks);
-> 	return !(__atomic_read(&dynticks) & 0x01);
-> }
-> 
-> Where __atomic_read() would be like atomic_read() but without the
-> volatile crap since that's entirely redundant here I think.
-> 
-> The this_cpu_read() should ensure we get a preemption-safe copy of the
-> value.
-> 
-> Once that this_cpu stuff grows preemption checks we'd need something
-> like __raw_this_cpu_read() or whatever the variant without preemption
-> checks will be called.
+> Actually, preempt_count is more a CPU state than a task state. When
+> preempt_count is set, that CPU can not schedule out the current task.
+> It really has nothing to do with the task itself. It's the CPU that
+> can't do something. Preempt count should never traverse with a task
+> from one CPU to another.
 
-Yeah I thought about using this_cpu_read() too, lets wait for the preemption
-checks to get in.
+And this is similar to what is happening with rcu_is_cpu_idle().  The
+rcu_dynticks.dynticks per-CPU variable cannot transition between zero
+and non-zero while a given non-idle task is running.  So what about
+the idle tasks?  Well, they run with preemption disabled, so they can
+safely access per-CPU variables.
+
+							Thanx, Paul
+
