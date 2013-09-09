@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756054Ab3IIWan (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 18:30:43 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:54108 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755729Ab3IIWal (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 18:30:41 -0400
-Message-ID: <522E4C0C.6080309@codeaurora.org>
-Date: Mon, 09 Sep 2013 15:30:36 -0700
-From: Rohit Vaswani <rvaswani@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1756003Ab3IIWeh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 18:34:37 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:57629 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755667Ab3IIWeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 18:34:36 -0400
+Date: Mon, 9 Sep 2013 15:34:26 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, sbw@mit.edu
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+Message-ID: <20130909223426.GM3966@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130909134505.GF16280@somewhere>
+ <20130909135656.GT3966@linux.vnet.ibm.com>
+ <20130909101629.32df27a2@gandalf.local.home>
+ <20130909161708.GX3966@linux.vnet.ibm.com>
+ <20130909123422.7936e868@gandalf.local.home>
+ <20130909165836.GB3966@linux.vnet.ibm.com>
+ <20130909172908.GA31239@Krystal>
+ <20130909175656.GF3966@linux.vnet.ibm.com>
+ <20130909214026.GA8830@Krystal>
+ <20130909175917.794b19bd@gandalf.local.home>
 MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: Stephen Warren <swarren@wwwdotorg.org>, Olof Johansson <olof@lixom.net>,
-        David Brown <davidb@codeaurora.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCHv3 1/2] ARM: msm: Add support for APQ8074 Dragonboard
-References: <1378495943-2572-1-git-send-email-rvaswani@codeaurora.org> <20130906215051.GA29253@quad.lixom.net> <522E09E6.8040300@codeaurora.org> <FFE100A7-8AD6-4E0D-9F64-120DA3564F89@codeaurora.org> <522E21A8.4060408@wwwdotorg.org> <FA33E8F4-3F85-4D8B-83E1-96F5A8F76CE6@codeaurora.org> <522E3BC9.1030105@wwwdotorg.org> <CA05A23E-41CF-4EC6-BB2D-36105048700B@codeaurora.org> <522E40B2.9010301@codeaurora.org> <49CC46F4-F6CE-4B1A-B0D5-E4BB779755B8@codeaurora.org>
-In-Reply-To: <49CC46F4-F6CE-4B1A-B0D5-E4BB779755B8@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130909175917.794b19bd@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090922-0320-0000-0000-000000F0B292
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/9/2013 3:04 PM, Kumar Gala wrote:
-> On Sep 9, 2013, at 4:42 PM, Rohit Vaswani wrote:
->
->> On 9/9/2013 2:25 PM, Kumar Gala wrote:
->>> <snip>
->>> On Fri, Sep 06, 2013 at 12:32:22PM -0700, Rohit Vaswani wrote:
->>>>>>>>>> This patch adds basic board support for APQ8074 Dragonboard
->>>>>>>>>> <snip>
->>>>>>>>>> dtb-$(CONFIG_ARCH_MSM) += msm8660-surf.dtb \
->>>>>>>>>> -	msm8960-cdp.dtb
->>>>>>>>>> +	msm8960-cdp.dtb \
->>>>>>>>>> +	apq8074-dragonboard.dtb
->>>>>>>>> Please add boards alphabetically.
->>>>>>>> Will do.
->>>>>>>>>> dtb-$(CONFIG_ARCH_MVEBU) += armada-370-db.dtb \
->>>>>>>>>> 	armada-370-mirabox.dtb \
->>>>>>>>>> 	armada-370-rd.dtb \
->>>>>>>>>> diff --git a/arch/arm/boot/dts/apq8074-dragonboard.dts b/arch/arm/boot/dts/apq8074-dragonboard.dts
->>>>>>>>>> new file mode 100644
->>>>>>>>>> index 0000000..5b7b6a0
->>>>>>>>>> --- /dev/null
->>>>>>>>>> +++ b/arch/arm/boot/dts/apq8074-dragonboard.dts
->>>>>>>>> arch/arm/boot/dts/ is getting really crowded. It's been working best if the SoC
->>>>>>>>> family or vendor is used as a prefix to keep things a bit more organized. In
->>>>>>>>> that spirit, prefixing these with msm-<foo> makes sense. Can you please do so?
->>>>>>>> Sure. But the board is called an APQ8074 and we wanted to keep the naming consistent with that.
->>>>>>> If we do this we should use qcom, not msm as the prefix.  Match the device tree vendor prefix.
->> Coming back to this, it would be better if the naming to be consistent with what we call our ARCH - msm and not qcom.
->> msm8974-dragonboard signifies quite clearly what the board is.
-> I was saying qcom,apq8074-dragonboard or we can do the dir thing as we don't have that mean qcom/msm device trees.
->
-> - k
+On Mon, Sep 09, 2013 at 05:59:17PM -0400, Steven Rostedt wrote:
+> On Mon, 9 Sep 2013 17:40:26 -0400
+> Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+> 
+> > Agreed. So how about rcu_is_online() ?
+> 
+> Nope, what about all_your_base_are_belong_to_rcu()?
 
-Sure, that's fine. If there's a consensus on the name to match the 
-compatible strings, could you send a patch out to rename the older 
-dtsi's and I can add the Dragonboard support with it.
+Let's see if I can remember the candidates...
 
-Thanks,
-Rohit Vaswani
+	rcu_is_cpu_idle() # reversed sense from the others
+	rcu_is_ignored() # reversed sense from the others
+	rcu_is_not_active() # reversed sense from the others
+	rcu_is_watching_cpu()
+	rcu_read_check()
+	rcu_is_active()
+	rcu_is_active_local()
+	rcu_is_online()
+	rcu_is_watching_task()
+	rcu_is_watching_thread()
+	rcu_is_watching_you()
+	all_your_base_are_belong_to_rcu()
+	rcu_is_active_loco()
+	rcu_kilroy_was_here()
 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, hosted by The Linux Foundation
+Maybe I should just lock them all in a room overnight and see which
+are still alive in the morning.
+
+							Thanx, Paul
 
