@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711Ab3IISqJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 14:46:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:57117 "EHLO
+	id S1755693Ab3IISqG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 14:46:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57118 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755394Ab3IISpZ (ORCPT
+	with ESMTP id S1755418Ab3IISpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Sep 2013 14:45:25 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chen Gang <gang.chen@asianux.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Bruce Fields <bfields@fieldses.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 11/24] powerpc/pseries/lparcfg: Fix possible overflow are more than 1026
-Date: Mon,  9 Sep 2013 11:45:01 -0700
-Message-Id: <1378752314-2416-12-git-send-email-kamal@canonical.com>
+Subject: [PATCH 17/24] SUNRPC: Fix memory corruption issue on 32-bit highmem systems
+Date: Mon,  9 Sep 2013 11:45:07 -0700
+Message-Id: <1378752314-2416-18-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378752314-2416-1-git-send-email-kamal@canonical.com>
 References: <1378752314-2416-1-git-send-email-kamal@canonical.com>
@@ -28,38 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chen Gang <gang.chen@asianux.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 5676005acf26ab7e924a8438ea4746e47d405762 upstream.
+commit 347e2233b7667e336d9f671f1a52dfa3f0416e2c upstream.
 
-need set '\0' for 'local_buffer'.
+Some architectures, such as ARM-32 do not return the same base address
+when you call kmap_atomic() twice on the same page.
+This causes problems for the memmove() call in the XDR helper routine
+"_shift_data_right_pages()", since it defeats the detection of
+overlapping memory ranges, and has been seen to corrupt memory.
 
-SPLPAR_MAXLENGTH is 1026, RTAS_DATA_BUF_SIZE is 4096. so the contents of
-rtas_data_buf may truncated in memcpy.
+The fix is to distinguish between the case where we're doing an
+inter-page copy or not. In the former case of we know that the memory
+ranges cannot possibly overlap, so we can additionally micro-optimise
+by replacing memmove() with memcpy().
 
-if contents are really truncated.
-  the splpar_strlen is more than 1026. the next while loop checking will
-  not find the end of buffer. that will cause memory access violation.
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reported-by: Mark Young <MYoung@nvidia.com>
+Reported-by: Matt Craighead <mcraighead@nvidia.com>
+Cc: Bruce Fields <bfields@fieldses.org>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Tested-by: Matt Craighead <mcraighead@nvidia.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/kernel/lparcfg.c | 1 +
- 1 file changed, 1 insertion(+)
+ net/sunrpc/xdr.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/arch/powerpc/kernel/lparcfg.c b/arch/powerpc/kernel/lparcfg.c
-index 801a757..d92f387 100644
---- a/arch/powerpc/kernel/lparcfg.c
-+++ b/arch/powerpc/kernel/lparcfg.c
-@@ -299,6 +299,7 @@ static void parse_system_parameter_string(struct seq_file *m)
- 				__pa(rtas_data_buf),
- 				RTAS_DATA_BUF_SIZE);
- 	memcpy(local_buffer, rtas_data_buf, SPLPAR_MAXLENGTH);
-+	local_buffer[SPLPAR_MAXLENGTH - 1] = '\0';
- 	spin_unlock(&rtas_data_buf_lock);
+diff --git a/net/sunrpc/xdr.c b/net/sunrpc/xdr.c
+index 5605563..ddbec19 100644
+--- a/net/sunrpc/xdr.c
++++ b/net/sunrpc/xdr.c
+@@ -207,10 +207,13 @@ _shift_data_right_pages(struct page **pages, size_t pgto_base,
+ 		pgfrom_base -= copy;
  
- 	if (call_status != 0) {
+ 		vto = kmap_atomic(*pgto);
+-		vfrom = kmap_atomic(*pgfrom);
+-		memmove(vto + pgto_base, vfrom + pgfrom_base, copy);
++		if (*pgto != *pgfrom) {
++			vfrom = kmap_atomic(*pgfrom);
++			memcpy(vto + pgto_base, vfrom + pgfrom_base, copy);
++			kunmap_atomic(vfrom);
++		} else
++			memmove(vto + pgto_base, vto + pgfrom_base, copy);
+ 		flush_dcache_page(*pgto);
+-		kunmap_atomic(vfrom);
+ 		kunmap_atomic(vto);
+ 
+ 	} while ((len -= copy) != 0);
 -- 
 1.8.1.2
 
