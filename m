@@ -1,44 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490Ab3IIEdn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 00:33:43 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:34987 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930Ab3IIEdm (ORCPT
+	id S1751992Ab3IIElD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 00:41:03 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:52683 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751359Ab3IIElB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 00:33:42 -0400
+	Mon, 9 Sep 2013 00:41:01 -0400
+Message-ID: <522D515A.30308@free-electrons.com>
+Date: Mon, 09 Sep 2013 06:40:58 +0200
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <522C8DA8.6030701@oracle.com>
-References: <522C8DA8.6030701@oracle.com>
-Date: Mon, 9 Sep 2013 12:33:40 +0800
-Message-ID: <CAJd=RBAd6-kX127cdTs10Ty7LJ+cGQX8NvX9H1bb4QSh4erzLw@mail.gmail.com>
-Subject: Re: hugetlb: NULL ptr deref in region_truncate
-From: Hillf Danton <dhillf@gmail.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, trinity@vger.kernel.org
+To: Josh Triplett <josh@joshtriplett.org>
+CC: paul.mckenney@linaro.org, akpm@linux-foundation.org, decot@googlers.com,
+        amirv@mellanox.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH] genirq: add IRQF_NONE
+References: <1378698519-4780-1-git-send-email-michael.opdenacker@free-electrons.com> <20130909040244.GA1157@leaf>
+In-Reply-To: <20130909040244.GA1157@leaf>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 8, 2013 at 10:46 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> Hi all,
->
-> While fuzzing with trinity inside a KVM tools guest, running latest -next
-> kernel, I've
-> stumbled on the following:
->
-> [  998.281867] BUG: unable to handle kernel NULL pointer dereference at
-> 0000000000000274
-> [  998.283333] IP: [<ffffffff812707c4>] region_truncate+0x64/0xd0
-> [  998.284288] PGD 0
-> [  998.284717] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [  998.286506] Modules linked in:
-> [  998.287101] CPU: 88 PID: 24650 Comm: trinity-child85 Tainted: G    B   W
-> 3.11.0-next-20130906-sasha #3985
+Hi Josh,
 
- *  'B' - System has hit bad_page?
+On 09/09/2013 06:02 AM, Josh Triplett wrote:
+> On Mon, Sep 09, 2013 at 05:48:39AM +0200, Michael Opdenacker wrote:
+>> What about adding an IRQF_NONE flag as in the below patch?
+>>
+>> I'm currently working on removing the use of the deprecated
+>> IRQF_DISABLED flag, and frequently have to replace
+>> IRQF_DISABLED by 0, typically in request_irq() arguments.
+>>
+>> Using IRQF_NONE instead of 0 would make the code more readable,
+>> at least for people reading driver code for the first time.
+>>
+>> Would it worth it?
+>>
+>> I'm sure this kind of idea has come up many times before...
+>>
+>> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> I don't think it makes sense, no; it's a flags field, meant to receive a
+> set of flags, and 0 is the standard empty set of flags.  I think
+> IRQF_NONE would actually reduce readability, especially for readers who
+> haven't seen it before, because it isn't immediately obvious that it
+> just corresponds to the 0 of "no flags".  My first guess reading it
+> would be that it's some non-zero flag with some non-obvious semantic,
+> such as "don't actually allocate an IRQ", or something strange like
+Thanks for your feedback. It's true that 0 for a flag is clear enough,
+and that IRQF_NONE will be more confusing.
+
+I was just thinking the IRQF_NONE would make it clearer that the
+corresponding argument is a flag. This way, people reading "0" wouldn't
+have to lookup the prototype of request_irq() to know what type of
+argument this is (flag, number of resources, boolean....)
+
+So, this may be a little helpful for completely new people, but more
+confusing for people with a little more experience, as you explained.
+
+I agree not to sacrifice the latter.
+
+Thanks again,
+
+Michael.
+
+-- 
+Michael Opdenacker, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
++33 484 258 098
+
