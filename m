@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab3IIWmt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 18:42:49 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:55879 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756067Ab3IIWmn (ORCPT
+	id S1756177Ab3IIWnD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 18:43:03 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:50379 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755807Ab3IIWmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 18:42:43 -0400
+	Mon, 9 Sep 2013 18:42:46 -0400
 From: Kevin Hilman <khilman@linaro.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: [GIT PULL 2/3] ARM: Renesas SoC cleanup, refactoring and more SMP support
-Date: Mon,  9 Sep 2013 15:42:34 -0700
-Message-Id: <1378766555-9679-3-git-send-email-khilman@linaro.org>
+Subject: [GIT PULL 3/3] ARM: SoC late changes for v3.12
+Date: Mon,  9 Sep 2013 15:42:35 -0700
+Message-Id: <1378766555-9679-4-git-send-email-khilman@linaro.org>
 X-Mailer: git-send-email 1.8.3
 In-Reply-To: <1378766555-9679-1-git-send-email-khilman@linaro.org>
 References: <1378766555-9679-1-git-send-email-khilman@linaro.org>
@@ -21,231 +21,236 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lots of cleanup and refactoring and some SMP additions for Renesas
-platforms.  Due to some inter-dependencies with other arm-soc
-branches, this Renesas stuff was separated out for sending after the
-other branches were merged.
+These are changes that arrived a little late before the merge window,
+or had dependencies on previous branches.
 
 Highlights:
-- remove unused board support and cleanup of unused headers
-- refactoring of init and device registration
-- simplify IRQ initialization
-
-Conflicts: Too many. Most of these are because Simon chose to send
-some board updates through the V4L tree that ends up colliding with
-the main platform changes. We'll work with him on sorting out his
-workflow:
-
-arch/arm/boot/dts/r8a7740.dtsi:
-- Add/add conflict in a devicetree file (keep both)
-
-arch/arm/mach-shmobile/Makefile:
-- Splitting out of clock files collides with intc move to DT.
-Keep HEAD version but remove intc-* files for R8A7740 and R8A7779.
-
-arch/arm/mach-shmobile/board-bockw.c:
-- Keep HEAD but remove i2c, hspi and mmc device init calls
-
-arch/arm/mach-shmobile/board-marzen.c
-- Remove mach/hardware.h include and r8a7779_add_usb_phy_device() call,
-everything else stays.
-
-arch/arm/mach-shmobile/include/mach/r8a7778.h:
-- From HEAD, Keep camera-rcar.h include and r8a7778_add_vin_device()
-- From branch, keep everything
-
-arch/arm/mach-shmobile/include/mach/r8a7779.h:
-- From HEAD, Keep only camera-rcar.h include and r8a7779_add_vin_device()
-
-arch/arm/mach-shmobile/setup-r8a7778.c
-- Keep HEAD, but drop the MMC section (struct resource + add_mmc_device())
-- take the new function name from our side (r8a7778_add_dt_devices())
-
-arch/arm/mach-shmobile/setup-r8a7779.c
-- Keep HEAD, but drop r8a7779_add_usb_phy_device()
-
-I've also pushed a test-merge2 branch where you can see how I resolved
-them.
+- ux500: misc. cleanup, fixup I2C devices
+- exynos: DT updates for RTC; PM updates
+- at91: DT updates for NAND; new platforms added to generic defconfig
+- sunxi: DT updates: cubieboard2, pinctrl driver, gated clocks
+- highbank: LPAE fixes, select necessary ARM errata
+- omap: PM fixes and improvements; OMAP5 mailbox support
+- omap: basic support for new DRA7xx SoCs
 
 ----------------------------------------------------------------
 
-The following changes since commit b41cfc8c3745f729393af57400377997b484701c:
+The following changes since commit 5d96cd70c979a7b93d8a4806c91a1af329833a64:
 
-  Merge tag 'drivers-for-linus' into test-merge2
+  Merge tag 'renesas-for-linus' into test-merge2
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/renesas-for-linus
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/late-for-linus
 
-for you to fetch changes up to 25475030ec0e2c4c05f3ecb2c068f6e42944fd04:
+for you to fetch changes up to a2bdc32a527e817fdfa6c56eaa6c70f217da6c6c:
 
-  Merge tag 'renesas-smp-for-v3.12' of git://git.kernel.org/pub/scm/linux/kernel/git/horms/renesas into next/renesas
+  ARM: dts: vexpress: Add CCI node to TC2 device-tree
 
 ----------------------------------------------------------------
 
-Guennadi Liakhovetski (3):
-      ARM: shmobile: ape6evm: add DT reference
-      ARM: shmobile: ape6evm-reference: add CPUFreq support
-      ARM: shmobile: ape6evm-reference: switch PFC to DT
+Aida Mynzhasova (1):
+      ARM: OMAP: TI81XX: add always-on powerdomain for TI81XX
 
-Kuninori Morimoto (16):
-      ARM: shmobile: bockw: add DT reference
-      ARM: shmobile: r8a7779: cleanup registration of usb phy
-      ARM: shmobile: armadillo800eva: Use DT for GIC
-      ARM: shmobile: marzen: Use DT for GIC
-      ARM: shmobile: r8a7778: cleanup registration of mmcif
-      ARM: shmobile: r8a7778: cleanup registration of usb phy
-      ARM: shmobile: r8a7778: cleanup registration of sdhi
-      ARM: shmobile: r8a7778: cleanup registration of i2c
-      ARM: shmobile: r8a7778: cleanup registration of hspi
-      ARM: shmobile: r8a7779: add missing __initdata
-      ARM: shmobile: r8a7790: add missing __initdata
-      ARM: shmobile: bockw: add missing __initdata
-      ARM: shmobile: r8a7740: move r8a7740_init_irq_of() to setup
-      ARM: shmobile: r8a7779: move r8a7779_init_irq_xxx() to setup
-      ARM: shmobile: armadillo800eva: remove nfsroot settings from bootargs
-      ARM: shmobile: kzm9d: remove nfsroot settings from bootargs
+Ambresh K (7):
+      ARM: OMAP: DRA7: PRM: Add DRA7XX register definitions
+      ARM: OMAP: DRA7: CM: Add DRA7XX register defines
+      ARM: OMAP: DRA7: PRCM: Add DRA7XX local MPU PRCM regsiters
+      ARM: OMAP: DRA7: clockdomain: Add DRA7XX data and update header
+      ARM: OMAP: DRA7: powerdomain: Add DRA7XX data and update header
+      ARM: OMAP: DRA7: hwmod: Create initial DRA7XX SoC data
+      ARM: OMAP: DRA7: Enable PM framework initializations
 
-Laurent Pinchart (4):
-      ARM: shmobile: lager-reference: Add LED6-LED8 to the device tree
-      ARM: shmobile: Mount root file systems in r/w mode for all DT platforms
-      ARM: shmobile: r8a7740: Add TPU node to the device tree
-      ARM: shmobile: sh73a0: Remove global GPIO_NR definition
+Amit Daniel Kachhap (2):
+      ARM: EXYNOS: enable ARCH_HAS_BANDGAP
+      ARM: EXYNOS: Skip C1 cpuidle state for exynos5440
 
-Lee Jones (1):
-      ARM: shmobile: r8a7779: Remove '0x's from R8A7779 DTS file
+Andre Przywara (2):
+      DMA: fix AMBA PL08x compilation issue with 64bit DMA address type
+      DMA: fix printk warning in AMBA PL08x DMA driver
 
-Magnus Damm (38):
-      ARM: shmobile: Minor update for the Lager DT reference code
-      ARM: shmobile: Remove sh73a0 use of <mach/hardware.h>
-      ARM: shmobile: Remove sh7372 use of <mach/hardware.h>
-      ARM: shmobile: Remove EMEV2 use of <mach/hardware.h>
-      ARM: shmobile: Remove r8a7779 use of <mach/hardware.h>
-      ARM: shmobile: Remove Marzen use of <mach/hardware.h>
-      ARM: shmobile: Remove include <mach/hardware.h>
-      ARM: shmobile: r8a73a4: Remove ->init_machine() special case
-      ARM: shmobile: Use pm-rmobile on sh7372 and r8a7740 only
-      ARM: shmobile: No need to use INTC demux on r8a7740
-      ARM: shmobile: No need to use INTC header on r8a7779
-      ARM: shmobile: sh73a0: Rely on DT for SMP CPU info
-      ARM: shmobile: marzen: Switch to DT_MACHINE_START
-      ARM: shmobile: r8a7740: add PMU information to r8a7740.dtsi
-      ARM: shmobile: sh73a0: add PMU information to sh73a0.dtsi
-      ARM: shmobile: emev2: add PMU information to emev2.dtsi
-      ARM: shmobile: Use default ->init_time() on r8a73a4
-      ARM: shmobile: Use default ->init_time() on r8a7740
-      ARM: shmobile: Use default ->init_time() on r8a7778
-      ARM: shmobile: Use default ->init_time() on r8a7779
-      ARM: shmobile: Use default ->init_time() on Bockw
-      ARM: shmobile: Use default ->init_time() on Bockw DT ref
-      ARM: shmobile: Use default ->init_time() on Armadillo DT ref
-      ARM: shmobile: Use default ->init_time() on APE6EVM
-      ARM: shmobile: Use default ->init_time() on APE6EVM DT ref
-      ARM: shmobile: Use default ->init_time() on Marzen DT ref
-      ARM: shmobile: Use default ->init_time() on KZM9G DT ref
-      ARM: shmobile: Use clocksource_of_init() on r8a7790
-      ARM: shmobile: Remove unused shmobile_init_time()
-      ARM: shmobile: Introduce shared SCU SMP boot code
-      ARM: shmobile: Use shared SCU SMP boot code on sh73a0
-      ARM: shmobile: Use shared SCU SMP boot code on r8a7779
-      ARM: shmobile: Use shared SCU SMP boot code on emev2
-      ARM: shmobile: Add shared SCU CPU Hotplug code
-      ARM: shmobile: Use shared SCU CPU Hotplug code on sh73a0
-      ARM: shmobile: Use shared SCU CPU Hotplug code on r8a7779
-      ARM: shmobile: Introduce per-CPU SMP boot / sleep code
-      ARM: shmobile: Per-CPU SMP boot / sleep code for SCU SoCs
+Bartlomiej Zolnierkiewicz (1):
+      ARM: EXYNOS: always enable PM domains support for EXYNOS4X12
 
-Olof Johansson (3):
-      Merge tag 'renesas-cleanup2-for-v3.12' of git://git.kernel.org/.../horms/renesas into next/renesas
-      Merge tag 'renesas-cleanup3-for-v3.12' of git://git.kernel.org/.../horms/renesas into next/renesas
-      Merge tag 'renesas-smp-for-v3.12' of git://git.kernel.org/.../horms/renesas into next/renesas
+Bo Shen (4):
+      ARM: at91: sama5d3: add definition for usart base address
+      ARM: at91: include sama5d3.h into hardware.h
+      ARM: at91: sama5: enable kernel uncompress info output
+      ARM: at91: sam9n12: enable kernel uncompress info output
 
-Simon Horman (8):
-      ARM: shmobile: lager: Add DT reference
-      Merge branches 'tpu-pwm', 'backlight' and 'soc' into cleanup2-base
-      ARCH: ARM: shmobile: Remove kota2 board support
-      ARCH: ARM: shmobile: Remove ag5evm board support
-      ARM: shmobile: marzen: Add  r8a7779-marzen.dtb
-      ARM: shmobile: r8a7779: Rely on DT for SMP CPU info
-      ARM: shmobile: lager: enable nfsroot in DTS
-      Merge branch 'dt2' into cleanup3-base
+Haojian Zhuang (4):
+      irqchip: move mmp irq driver
+      irqchip: mmp: support irqchip
+      ARM: mmp: avoid to include head file in mach-mmp
+      irqchip: mmp: avoid to include irqs head file
+
+Jean-Christophe PLAGNIOL-VILLARD (1):
+      ARM: at91: at91_dt_defconfig: enable rm9200 support
+
+Jon Hunter (1):
+      ARM: OMAP2+: Only write the sysconfig on idle when necessary
+
+Jon Medhurst (Tixy) (1):
+      ARM: dts: vexpress: Add CCI node to TC2 device-tree
+
+Josh Wu (3):
+      ARM: at91/dt: sama5d3xek: remove the useless NFC dt parameters
+      ARM: at91/dt: sama5d3xek: Enable NFC support in dts
+      ARM: at91/dt: sama5d3xek: reduce the ROM code mapping for pmecc lookup table
+
+Julia Lawall (1):
+      arch/arm/mach-ux500/cpu-db8500.c: Avoid using ARRAY_AND_SIZE(e) as a function argument
+
+Linus Walleij (2):
+      ARM: ux500: delete oldschool pin defines
+      ARM: ux500: fix up the I2C devices
+
+Lokesh Vutla (1):
+      ARM: OMAP: AM33xx: clock: Add RNG clock data
+
+Maxime Ripard (11):
+      ARM: sunxi: dt: Add PIO controller to A31 DTSI
+      ARM: sun6i: Add UART0 muxing options
+      ARM: sun6i: colombus: Add uart0 muxing
+      ARM: sun7i: Add the PIO controller node to the DTSI
+      ARM: sun7i: DT: Add UART muxing options to the DTSI
+      ARM: sun7i: a20-olinuxino: Enable UARTs muxing
+      ARM: sun7i: a20-olinuxino: Enable the user LED
+      ARM: sun7i: Add Cubieboard2 Device Tree
+      ARM: sun5i: dt: Use the A10s gates in the DTSI
+      ARM: sun6i: Enable clock support in the DTSI
+      ARM: sun7i: Enable the A20 clocks in the DTSI
+
+Naveen Krishna Chatradhi (1):
+      ARM: dts: add ADC device tree node for exynos5420/5250
+
+Olof Johansson (10):
+      Merge tag 'ux500-core-for-arm-soc-2' of git://git.kernel.org/.../linusw/linux-stericsson into late/all
+      Merge tag 'mmp-irq' of git://git.kernel.org/.../hzhuang1/linux into late/all
+      Merge tag 'samsung-dt-2' of git://git.kernel.org/.../kgene/linux-samsung into late/all
+      Merge tag 'samsung-mach-exynos-v2' of git://git.kernel.org/.../kgene/linux-samsung into late/all
+      Merge tag 'at91-dt' of git://github.com/at91linux/linux-at91 into late/all
+      Merge tag 'sunxi-dt-for-3.12-4' of https://github.com/mripard/linux into late/all
+      Merge tag 'at91-soc' of git://github.com/at91linux/linux-at91 into late/all
+      Merge tag 'highbank-for-3.12' of git://sources.calxeda.com/kernel/linux into late/all
+      Merge tag 'omap-for-v3.12/prcm-signed' of git://git.kernel.org/.../tmlind/linux-omap into late/all
+      Merge tag 'omap-for-v3.12/dra7xx-prcm' of git://git.kernel.org/.../tmlind/linux-omap into late/all
+
+Paul Walmsley (1):
+      Merge branches 'hwmod_devel_v3.12', 'prcm_devel_v3.12' and 'am33xx_devel_v3.12' into prcm_a_for_v3.12
+
+Rajendra Nayak (4):
+      ARM: OMAP: DRA7: CM: Add minimal regbit shifts
+      ARM: OMAP: DRA7: powerdomain: Handle missing vc/vp
+      ARM: OMAP: DRA7: Reuse the omap44xx_restart and fix the device instance
+      ARM: OMAP4: clock: Lock PLLs in the right sequence
+
+Rob Herring (8):
+      ARM: use phys_addr_t for DMA zone sizes
+      ARM: highbank: enable DMA zone for LPAE
+      ARM: highbank: select ARCH_HAS_HOLES_MEMORYMODEL
+      ARM: highbank: select required errata work-arounds
+      ARM: highbank: select ARCH_DMA_ADDR_T_64BIT for LPAE
+      ARM: move outer_cache declaration out of ifdef
+      ARM: highbank: avoid L2 cache smc calls when PL310 is not present
+      ARM: highbank: clean-up some unused includes
+
+Suman Anna (1):
+      ARM: OMAP5: hwmod data: Add mailbox data
+
+Tony Lindgren (2):
+      Merge tag 'for-v3.12/dra7xx' of git://git.kernel.org/.../pjw/omap-pending into omap-for-v3.12/soc
+      Merge tag 'for-v3.12/omap-prcm-hwmod' of git://git.kernel.org/.../pjw/omap-pending into omap-for-v3.12/prcm
+
+Vaibhav Hiremath (1):
+      ARM: OMAP: AM33XX: hwmod: Add hwmod data for debugSS
+
+Vikas Sajjan (3):
+      ARM: dts: Fix the RTC DT node name for Exynos5250
+      ARM: dts: Update the "status" property of RTC DT node for Exynos5250 SoC
+      ARM: dts: Add RTC DT node to Exynos5420 SoC
 
 
- arch/arm/boot/dts/Makefile                      |   4 +
- arch/arm/boot/dts/emev2-kzm9d-reference.dts     |   2 +-
- arch/arm/boot/dts/emev2-kzm9d.dts               |   2 +-
- arch/arm/boot/dts/emev2.dtsi                    |   6 +
- arch/arm/boot/dts/r8a73a4-ape6evm-reference.dts |  65 ++
- arch/arm/boot/dts/r8a73a4-ape6evm.dts           |   2 +-
- .../dts/r8a7740-armadillo800eva-reference.dts   |   2 +-
- arch/arm/boot/dts/r8a7740-armadillo800eva.dts   |   2 +-
- arch/arm/boot/dts/r8a7740.dtsi                  |  12 +
- arch/arm/boot/dts/r8a7778-bockw-reference.dts   |  32 +
- arch/arm/boot/dts/r8a7778-bockw.dts             |   2 +-
- arch/arm/boot/dts/r8a7779-marzen-reference.dts  |   2 +-
- arch/arm/boot/dts/r8a7779-marzen.dts            |  27 +
- arch/arm/boot/dts/r8a7779.dtsi                  |   8 +-
- arch/arm/boot/dts/r8a7790-lager-reference.dts   |  45 ++
- arch/arm/boot/dts/r8a7790-lager.dts             |   2 +-
- arch/arm/boot/dts/sh73a0-kzm9g-reference.dts    |   2 +-
- arch/arm/boot/dts/sh73a0-kzm9g.dts              |   2 +-
- arch/arm/boot/dts/sh73a0.dtsi                   |   6 +
- arch/arm/configs/ag5evm_defconfig               |  83 ---
- arch/arm/configs/kota2_defconfig                | 121 ----
- arch/arm/mach-shmobile/Kconfig                  |  50 +-
- arch/arm/mach-shmobile/Makefile                 |  23 +-
- arch/arm/mach-shmobile/Makefile.boot            |   5 +-
- arch/arm/mach-shmobile/board-ag5evm.c           | 639 -------------------
- .../arm/mach-shmobile/board-ape6evm-reference.c |  63 ++
- arch/arm/mach-shmobile/board-ape6evm.c          |   1 -
- .../board-armadillo800eva-reference.c           |   1 -
- arch/arm/mach-shmobile/board-armadillo800eva.c  |   2 +-
- arch/arm/mach-shmobile/board-bockw-reference.c  |  61 ++
- arch/arm/mach-shmobile/board-bockw.c            |  49 +-
- arch/arm/mach-shmobile/board-kota2.c            | 550 ----------------
- arch/arm/mach-shmobile/board-kzm9g-reference.c  |   1 -
- arch/arm/mach-shmobile/board-kzm9g.c            |  16 +-
- arch/arm/mach-shmobile/board-lager-reference.c  |  45 ++
- arch/arm/mach-shmobile/board-marzen-reference.c |   1 -
- arch/arm/mach-shmobile/board-marzen.c           |  36 +-
- arch/arm/mach-shmobile/headsmp.S                |  49 ++
- arch/arm/mach-shmobile/include/mach/common.h    |  10 +-
- arch/arm/mach-shmobile/include/mach/hardware.h  |   4 -
- arch/arm/mach-shmobile/include/mach/r8a73a4.h   |   1 +
- arch/arm/mach-shmobile/include/mach/r8a7740.h   |   1 -
- arch/arm/mach-shmobile/include/mach/r8a7778.h   |   9 +-
- arch/arm/mach-shmobile/include/mach/r8a7779.h   |   3 -
- arch/arm/mach-shmobile/include/mach/r8a7790.h   |   1 +
- arch/arm/mach-shmobile/include/mach/sh73a0.h    |   2 -
- arch/arm/mach-shmobile/intc-r8a7740.c           |  68 --
- arch/arm/mach-shmobile/intc-r8a7779.c           | 131 ----
- arch/arm/mach-shmobile/platsmp-scu.c            |  81 +++
- arch/arm/mach-shmobile/platsmp.c                |  18 +
- arch/arm/mach-shmobile/setup-emev2.c            |   1 -
- arch/arm/mach-shmobile/setup-r8a73a4.c          |  16 +-
- arch/arm/mach-shmobile/setup-r8a7740.c          |  33 +-
- arch/arm/mach-shmobile/setup-r8a7778.c          |  71 +--
- arch/arm/mach-shmobile/setup-r8a7779.c          | 102 ++-
- arch/arm/mach-shmobile/setup-r8a7790.c          |  16 +-
- arch/arm/mach-shmobile/setup-sh7372.c           |   1 -
- arch/arm/mach-shmobile/setup-sh73a0.c           |   1 -
- arch/arm/mach-shmobile/smp-emev2.c              |  19 +-
- arch/arm/mach-shmobile/smp-r8a7779.c            |  70 +-
- arch/arm/mach-shmobile/smp-sh73a0.c             |  72 +--
- arch/arm/mach-shmobile/timer.c                  |   4 -
- 62 files changed, 856 insertions(+), 1900 deletions(-)
- create mode 100644 arch/arm/boot/dts/r8a73a4-ape6evm-reference.dts
- create mode 100644 arch/arm/boot/dts/r8a7778-bockw-reference.dts
- create mode 100644 arch/arm/boot/dts/r8a7779-marzen.dts
- create mode 100644 arch/arm/boot/dts/r8a7790-lager-reference.dts
- delete mode 100644 arch/arm/configs/ag5evm_defconfig
- delete mode 100644 arch/arm/configs/kota2_defconfig
- delete mode 100644 arch/arm/mach-shmobile/board-ag5evm.c
- create mode 100644 arch/arm/mach-shmobile/board-ape6evm-reference.c
- create mode 100644 arch/arm/mach-shmobile/board-bockw-reference.c
- delete mode 100644 arch/arm/mach-shmobile/board-kota2.c
- create mode 100644 arch/arm/mach-shmobile/board-lager-reference.c
- delete mode 100644 arch/arm/mach-shmobile/include/mach/hardware.h
- delete mode 100644 arch/arm/mach-shmobile/intc-r8a7740.c
- delete mode 100644 arch/arm/mach-shmobile/intc-r8a7779.c
- create mode 100644 arch/arm/mach-shmobile/platsmp-scu.c
+ arch/arm/Kconfig                                |    1 +
+ arch/arm/boot/dts/Makefile                      |    1 +
+ arch/arm/boot/dts/exynos5.dtsi                  |    2 +-
+ arch/arm/boot/dts/exynos5250-arndale.dts        |    4 -
+ arch/arm/boot/dts/exynos5250-snow.dts           |    4 -
+ arch/arm/boot/dts/exynos5250.dtsi               |   14 +-
+ arch/arm/boot/dts/exynos5420.dtsi               |   17 +
+ arch/arm/boot/dts/sama5d3.dtsi                  |   19 +-
+ arch/arm/boot/dts/sama5d3xcm.dtsi               |    2 -
+ arch/arm/boot/dts/sun5i-a10s.dtsi               |   36 +-
+ arch/arm/boot/dts/sun6i-a31-colombus.dts        |    2 +
+ arch/arm/boot/dts/sun6i-a31.dtsi                |  161 +-
+ arch/arm/boot/dts/sun7i-a20-cubieboard2.dts     |   53 +
+ arch/arm/boot/dts/sun7i-a20-olinuxino-micro.dts |   27 +
+ arch/arm/boot/dts/sun7i-a20.dtsi                |  157 +-
+ arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts      |   25 +
+ arch/arm/configs/at91_dt_defconfig              |    4 +-
+ arch/arm/include/asm/mach/arch.h                |    2 +-
+ arch/arm/include/asm/outercache.h               |    4 +-
+ arch/arm/mach-at91/include/mach/hardware.h      |    1 +
+ arch/arm/mach-at91/include/mach/sama5d3.h       |    8 +
+ arch/arm/mach-at91/include/mach/uncompress.h    |   13 +
+ arch/arm/mach-exynos/Kconfig                    |    7 +
+ arch/arm/mach-exynos/cpuidle.c                  |    3 +
+ arch/arm/mach-highbank/Kconfig                  |    6 +
+ arch/arm/mach-highbank/highbank.c               |   20 +-
+ arch/arm/mach-mmp/Makefile                      |    2 +-
+ arch/arm/mach-mmp/common.h                      |    1 -
+ arch/arm/mach-mmp/include/mach/entry-macro.S    |   26 -
+ arch/arm/mach-mmp/include/mach/pxa168.h         |    1 +
+ arch/arm/mach-mmp/include/mach/pxa910.h         |    1 +
+ arch/arm/mach-mmp/mmp-dt.c                      |    8 +-
+ arch/arm/mach-mmp/mmp2-dt.c                     |    8 +-
+ arch/arm/mach-mmp/mmp2.c                        |    6 +
+ arch/arm/mach-mmp/pxa910.c                      |    7 +
+ arch/arm/mach-omap2/Makefile                    |    4 +
+ arch/arm/mach-omap2/board-generic.c             |    1 +
+ arch/arm/mach-omap2/cclock33xx_data.c           |    5 +
+ arch/arm/mach-omap2/cclock44xx_data.c           |   20 +-
+ arch/arm/mach-omap2/clockdomain.h               |    1 +
+ arch/arm/mach-omap2/clockdomains7xx_data.c      |  740 +++++
+ arch/arm/mach-omap2/cm-regbits-7xx.h            |   51 +
+ arch/arm/mach-omap2/cm1_7xx.h                   |  324 +++
+ arch/arm/mach-omap2/cm2_7xx.h                   |  513 ++++
+ arch/arm/mach-omap2/io.c                        |    5 +
+ arch/arm/mach-omap2/omap_hwmod.c                |    4 +-
+ arch/arm/mach-omap2/omap_hwmod.h                |    1 +
+ arch/arm/mach-omap2/omap_hwmod_33xx_data.c      |   69 +-
+ arch/arm/mach-omap2/omap_hwmod_54xx_data.c      |   42 +
+ arch/arm/mach-omap2/omap_hwmod_7xx_data.c       | 2724 ++++++++++++++++++
+ arch/arm/mach-omap2/powerdomain.h               |    1 +
+ arch/arm/mach-omap2/powerdomains3xxx_data.c     |    8 +
+ arch/arm/mach-omap2/powerdomains7xx_data.c      |  454 +++
+ arch/arm/mach-omap2/prcm-common.h               |    1 +
+ arch/arm/mach-omap2/prcm44xx.h                  |    5 +
+ arch/arm/mach-omap2/prcm_mpu7xx.h               |   78 +
+ arch/arm/mach-omap2/prm44xx.c                   |   12 +-
+ arch/arm/mach-omap2/prm7xx.h                    |  678 +++++
+ arch/arm/mach-omap2/prminst44xx.c               |   20 +-
+ arch/arm/mach-ux500/board-mop500-audio.c        |    1 -
+ arch/arm/mach-ux500/board-mop500-pins.c         |    1 -
+ arch/arm/mach-ux500/board-mop500.c              |   33 +-
+ arch/arm/mach-ux500/cpu-db8500.c                |    3 +-
+ arch/arm/mach-ux500/pins-db8500.h               |  746 -----
+ arch/arm/mm/init.c                              |    2 +-
+ drivers/dma/amba-pl08x.c                        |   23 +-
+ drivers/irqchip/Makefile                        |    1 +
+ .../mach-mmp/irq.c => drivers/irqchip/irq-mmp.c |  338 ++-
+ include/linux/irqchip/mmp.h                     |    6 +
+ 69 files changed, 6486 insertions(+), 1082 deletions(-)
+ create mode 100644 arch/arm/boot/dts/sun7i-a20-cubieboard2.dts
+ delete mode 100644 arch/arm/mach-mmp/include/mach/entry-macro.S
+ create mode 100644 arch/arm/mach-omap2/clockdomains7xx_data.c
+ create mode 100644 arch/arm/mach-omap2/cm-regbits-7xx.h
+ create mode 100644 arch/arm/mach-omap2/cm1_7xx.h
+ create mode 100644 arch/arm/mach-omap2/cm2_7xx.h
+ create mode 100644 arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+ create mode 100644 arch/arm/mach-omap2/powerdomains7xx_data.c
+ create mode 100644 arch/arm/mach-omap2/prcm_mpu7xx.h
+ create mode 100644 arch/arm/mach-omap2/prm7xx.h
+ delete mode 100644 arch/arm/mach-ux500/pins-db8500.h
+ rename arch/arm/mach-mmp/irq.c => drivers/irqchip/irq-mmp.c (63%)
+ create mode 100644 include/linux/irqchip/mmp.h
