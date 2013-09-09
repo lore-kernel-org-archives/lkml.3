@@ -1,38 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922Ab3IIOSZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 10:18:25 -0400
-Received: from mail-yh0-f49.google.com ([209.85.213.49]:50064 "EHLO
-	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752979Ab3IIOSY (ORCPT
+	id S1753140Ab3IIOUH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 10:20:07 -0400
+Received: from asav4.altibox.net ([81.167.36.153]:43024 "EHLO
+	asav4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565Ab3IIOUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 10:18:24 -0400
-Date: Mon, 9 Sep 2013 10:18:20 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Libin <huawei.libin@huawei.com>
-Cc: linux-kernel@vger.kernel.org, wangyijing@huawei.com, guohanjun@huawei.com
-Subject: Re: [PATCH] workqueue: remove meaningless BUILD_BUG_ON() in
- init_workqueues()
-Message-ID: <20130909141820.GF25434@htj.dyndns.org>
-References: <1378703400-4536-1-git-send-email-huawei.libin@huawei.com>
- <20130909141302.GC25434@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130909141302.GC25434@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 9 Sep 2013 10:20:04 -0400
+X-Greylist: delayed 865 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Sep 2013 10:20:04 EDT
+From: Henrik Austad <henrik@austad.u>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Henrik Austad <henrik@austad.us>, Dave Young <dyoung@redhat.com>,
+        Zhouping Liu <sanweidaying@gmail.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        David Howells <dhowells@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH] mm: update 00-INDEX
+Date: Mon,  9 Sep 2013 16:05:31 +0200
+Message-Id: <1378735531-17148-1-git-send-email-henrik@austad.u>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 10:13:02AM -0400, Tejun Heo wrote:
-> Indeed, but can you please update worker_pool_assign_id() so that it
-> doesn't allocate ids >= WORK_OFFQ_POOL_NONE?
+From: Henrik Austad <henrik@austad.us>
 
-So, you did this separately on the next patch.  Can you please roll
-that patch into this one with the suggested update?
+The following files moved files out of Documentation/vm/
+c6dd897f ("mm: move page-types.c from Documentation to tools/vm")
+f0f57b2b ("move hugepage test examples to tools/testing/selftests/vm)
 
-Thanks.
+Remove these files from vm/00-INDEX.
 
+The following commits added new files do Documentation/vm/
+4fe4746a ("mm/fs: cleancache documentation") added vm/cleancache.txt
+d65bfacb ("mm: highmem documentation") added vm/highmem.txt
+1c9bf22c ("thp: transparent hugepage support documentation") added
+           vm/transhuge.txt
+0f8975ec ("mm: soft-dirty bits for user memory changes tracking")
+61b0d760 ("zswap: add documentation")
+27c6aec2 ("mm: frontswap: config and doc files")
+
+Add the missing documentation-files with a short description to 00-INDEX
+
+CC: Dave Young <dyoung@redhat.com>
+CC: Zhouping Liu <sanweidaying@gmail.com>
+CC: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: David Howells <dhowells@redhat.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Andrea Arcangeli <aarcange@redhat.com>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Henrik Austad <henrik@austad.us>
+---
+ Documentation/vm/00-INDEX |   20 ++++++++++++--------
+ 1 file changed, 12 insertions(+), 8 deletions(-)
+
+diff --git a/Documentation/vm/00-INDEX b/Documentation/vm/00-INDEX
+index 5481c8b..a39d066 100644
+--- a/Documentation/vm/00-INDEX
++++ b/Documentation/vm/00-INDEX
+@@ -4,10 +4,12 @@ active_mm.txt
+ 	- An explanation from Linus about tsk->active_mm vs tsk->mm.
+ balance
+ 	- various information on memory balancing.
+-hugepage-mmap.c
+-	- Example app using huge page memory with the mmap system call.
+-hugepage-shm.c
+-	- Example app using huge page memory with Sys V shared memory system calls.
++cleancache.txt
++	- Intro to cleancache and page-granularity victim cache.
++frontswap.txt
++	- Outline frontswap, part of the transcendent memory frontend.
++highmem.txt
++	- Outline of highmem and common issues.
+ hugetlbpage.txt
+ 	- a brief summary of hugetlbpage support in the Linux kernel.
+ hwpoison.txt
+@@ -16,21 +18,23 @@ ksm.txt
+ 	- how to use the Kernel Samepage Merging feature.
+ locking
+ 	- info on how locking and synchronization is done in the Linux vm code.
+-map_hugetlb.c
+-	- an example program that uses the MAP_HUGETLB mmap flag.
+ numa
+ 	- information about NUMA specific code in the Linux vm.
+ numa_memory_policy.txt
+ 	- documentation of concepts and APIs of the 2.6 memory policy support.
+ overcommit-accounting
+ 	- description of the Linux kernels overcommit handling modes.
+-page-types.c
+-	- Tool for querying page flags
+ page_migration
+ 	- description of page migration in NUMA systems.
+ pagemap.txt
+ 	- pagemap, from the userspace perspective
+ slub.txt
+ 	- a short users guide for SLUB.
++soft-dirty.txt
++	- short explanation for soft-dirty PTEs
++transhuge.txt
++	- Transparent Hugepage Support, alternative way of using hugepages.
+ unevictable-lru.txt
+ 	- Unevictable LRU infrastructure
++zswap.txt
++	- Intro to compressed cache for swap pages
 -- 
-tejun
+1.7.10.4
+
