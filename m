@@ -1,94 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755932Ab3IIVdh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 17:33:37 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:33629 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755275Ab3IIVdK (ORCPT
+	id S1755967Ab3IIVdj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 17:33:39 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:49923 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755325Ab3IIVdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Sep 2013 17:33:10 -0400
 From: Andrew Pinski <pinskia@gmail.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: Andrew Pinski <apinski@cavium.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: [PATCH 3/5] FS: Export poll_select_copy_remaining and rename poll_select_copy_remaining in compat.c so it does not pick the wrong copy.
-Date: Mon,  9 Sep 2013 14:32:57 -0700
-Message-Id: <1378762380-13152-3-git-send-email-apinski@cavium.com>
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Subject: [PATCH 4/5] ARM64: Move copy_siginfo_to_user32 and copy_siginfo_from_user32 to signal.c to be able to use from non AARCH32 code.
+Date: Mon,  9 Sep 2013 14:32:58 -0700
+Message-Id: <1378762380-13152-4-git-send-email-apinski@cavium.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1378762380-13152-1-git-send-email-apinski@cavium.com>
 References: <1378762380-13152-1-git-send-email-apinski@cavium.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-To: linux-fsdevel@vger.kernel.org
+To: Catalin Marinas <catalin.marinas@arm.com>
+To: Will Deacon <will.deacon@arm.com>
+To: linux-arm-kernel@lists.infradead.org
 To: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-  The ILP32 ABI in ARM64 uses a slightly different pselect from either the compat or even the native LP64 ABI.  We would want to reuse some of the code path that are used as the size of the timespec is the same, so this patch exports poll_select_copy_remaining from fs/select.c and renames the copy in fs/compat.c to make sure that it is not being used.
+
+The signal code for ILP32 uses one extra function from signal32.c; it does not make sense to enable the whole signal32.c code so we move the function which was being used to signal.c.
+
 
 Signed-off-by: Andrew Pinski <apinski@cavium.com>
 ---
- fs/compat.c |    8 ++++----
- fs/select.c |    4 ++--
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ arch/arm64/kernel/signal.c   |   85 ++++++++++++++++++++++++++++++++++++++++++
+ arch/arm64/kernel/signal32.c |   81 ----------------------------------------
+ 2 files changed, 85 insertions(+), 81 deletions(-)
 
-diff --git a/fs/compat.c b/fs/compat.c
-index 6af20de..298e3e1 100644
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@ -1088,7 +1088,7 @@ COMPAT_SYSCALL_DEFINE4(openat, int, dfd, const char __user *, filename, int, fla
- 
- #define __COMPAT_NFDBITS       (8 * sizeof(compat_ulong_t))
- 
--static int poll_select_copy_remaining(struct timespec *end_time, void __user *p,
-+static int compat_poll_select_copy_remaining(struct timespec *end_time, void __user *p,
- 				      int timeval, int ret)
- {
- 	struct timespec ts;
-@@ -1307,7 +1307,7 @@ asmlinkage long compat_sys_select(int n, compat_ulong_t __user *inp,
+diff --git a/arch/arm64/kernel/signal.c b/arch/arm64/kernel/signal.c
+index d97a0c0..5986b7f 100644
+--- a/arch/arm64/kernel/signal.c
++++ b/arch/arm64/kernel/signal.c
+@@ -249,3 +249,88 @@ asmlinkage void do_notify_resume(struct pt_regs *regs,
+ 		tracehook_notify_resume(regs);
  	}
- 
- 	ret = compat_core_sys_select(n, inp, outp, exp, to);
--	ret = poll_select_copy_remaining(&end_time, tvp, 1, ret);
-+	ret = compat_poll_select_copy_remaining(&end_time, tvp, 1, ret);
- 
- 	return ret;
  }
-@@ -1362,7 +1362,7 @@ static long do_compat_pselect(int n, compat_ulong_t __user *inp,
- 	}
- 
- 	ret = compat_core_sys_select(n, inp, outp, exp, to);
--	ret = poll_select_copy_remaining(&end_time, tsp, 0, ret);
-+	ret = compat_poll_select_copy_remaining(&end_time, tsp, 0, ret);
- 
- 	if (ret == -ERESTARTNOHAND) {
- 		/*
-@@ -1448,7 +1448,7 @@ asmlinkage long compat_sys_ppoll(struct pollfd __user *ufds,
- 	} else if (sigmask)
- 		sigprocmask(SIG_SETMASK, &sigsaved, NULL);
- 
--	ret = poll_select_copy_remaining(&end_time, tsp, 0, ret);
-+	ret = compat_poll_select_copy_remaining(&end_time, tsp, 0, ret);
- 
- 	return ret;
- }
-diff --git a/fs/select.c b/fs/select.c
-index 35d4adc7..aef2c10 100644
---- a/fs/select.c
-+++ b/fs/select.c
-@@ -287,8 +287,8 @@ int poll_select_set_timeout(struct timespec *to, long sec, long nsec)
++
++
++#ifdef CONFIG_COMPAT
++int copy_siginfo_to_user32(compat_siginfo_t __user *to, siginfo_t *from)
++{
++	int err;
++
++	if (!access_ok(VERIFY_WRITE, to, sizeof(*to)))
++		return -EFAULT;
++
++	/* If you change siginfo_t structure, please be sure
++	 * this code is fixed accordingly.
++	 * It should never copy any pad contained in the structure
++	 * to avoid security leaks, but must copy the generic
++	 * 3 ints plus the relevant union member.
++	 * This routine must convert siginfo from 64bit to 32bit as well
++	 * at the same time.
++	 */
++	err = __put_user(from->si_signo, &to->si_signo);
++	err |= __put_user(from->si_errno, &to->si_errno);
++	err |= __put_user((short)from->si_code, &to->si_code);
++	if (from->si_code < 0)
++		err |= __copy_to_user(&to->_sifields._pad, &from->_sifields._pad,
++				      SI_PAD_SIZE);
++	else switch (from->si_code & __SI_MASK) {
++	case __SI_KILL:
++		err |= __put_user(from->si_pid, &to->si_pid);
++		err |= __put_user(from->si_uid, &to->si_uid);
++		break;
++	case __SI_TIMER:
++		 err |= __put_user(from->si_tid, &to->si_tid);
++		 err |= __put_user(from->si_overrun, &to->si_overrun);
++		 err |= __put_user((compat_uptr_t)(unsigned long)from->si_ptr,
++				   &to->si_ptr);
++		break;
++	case __SI_POLL:
++		err |= __put_user(from->si_band, &to->si_band);
++		err |= __put_user(from->si_fd, &to->si_fd);
++		break;
++	case __SI_FAULT:
++		err |= __put_user((compat_uptr_t)(unsigned long)from->si_addr,
++				  &to->si_addr);
++#ifdef BUS_MCEERR_AO
++		/*
++		 * Other callers might not initialize the si_lsb field,
++		 * so check explicitely for the right codes here.
++		 */
++		if (from->si_code == BUS_MCEERR_AR || from->si_code == BUS_MCEERR_AO)
++			err |= __put_user(from->si_addr_lsb, &to->si_addr_lsb);
++#endif
++		break;
++	case __SI_CHLD:
++		err |= __put_user(from->si_pid, &to->si_pid);
++		err |= __put_user(from->si_uid, &to->si_uid);
++		err |= __put_user(from->si_status, &to->si_status);
++		err |= __put_user(from->si_utime, &to->si_utime);
++		err |= __put_user(from->si_stime, &to->si_stime);
++		break;
++	case __SI_RT: /* This is not generated by the kernel as of now. */
++	case __SI_MESGQ: /* But this is */
++		err |= __put_user(from->si_pid, &to->si_pid);
++		err |= __put_user(from->si_uid, &to->si_uid);
++		err |= __put_user((compat_uptr_t)(unsigned long)from->si_ptr, &to->si_ptr);
++		break;
++	default: /* this is just in case for now ... */
++		err |= __put_user(from->si_pid, &to->si_pid);
++		err |= __put_user(from->si_uid, &to->si_uid);
++		break;
++	}
++	return err;
++}
++
++int copy_siginfo_from_user32(siginfo_t *to, compat_siginfo_t __user *from)
++{
++	memset(to, 0, sizeof *to);
++
++	if (copy_from_user(to, from, __ARCH_SI_PREAMBLE_SIZE) ||
++	    copy_from_user(to->_sifields._pad,
++			   from->_sifields._pad, SI_PAD_SIZE))
++		return -EFAULT;
++
++	return 0;
++}
++#endif
++
+diff --git a/arch/arm64/kernel/signal32.c b/arch/arm64/kernel/signal32.c
+index e393174..dadcb6c 100644
+--- a/arch/arm64/kernel/signal32.c
++++ b/arch/arm64/kernel/signal32.c
+@@ -150,87 +150,6 @@ static inline int get_sigset_t(sigset_t *set,
  	return 0;
  }
  
--static int poll_select_copy_remaining(struct timespec *end_time, void __user *p,
--				      int timeval, int ret)
-+int poll_select_copy_remaining(struct timespec *end_time, void __user *p,
-+			       int timeval, int ret)
- {
- 	struct timespec rts;
- 	struct timeval rtv;
+-int copy_siginfo_to_user32(compat_siginfo_t __user *to, siginfo_t *from)
+-{
+-	int err;
+-
+-	if (!access_ok(VERIFY_WRITE, to, sizeof(*to)))
+-		return -EFAULT;
+-
+-	/* If you change siginfo_t structure, please be sure
+-	 * this code is fixed accordingly.
+-	 * It should never copy any pad contained in the structure
+-	 * to avoid security leaks, but must copy the generic
+-	 * 3 ints plus the relevant union member.
+-	 * This routine must convert siginfo from 64bit to 32bit as well
+-	 * at the same time.
+-	 */
+-	err = __put_user(from->si_signo, &to->si_signo);
+-	err |= __put_user(from->si_errno, &to->si_errno);
+-	err |= __put_user((short)from->si_code, &to->si_code);
+-	if (from->si_code < 0)
+-		err |= __copy_to_user(&to->_sifields._pad, &from->_sifields._pad,
+-				      SI_PAD_SIZE);
+-	else switch (from->si_code & __SI_MASK) {
+-	case __SI_KILL:
+-		err |= __put_user(from->si_pid, &to->si_pid);
+-		err |= __put_user(from->si_uid, &to->si_uid);
+-		break;
+-	case __SI_TIMER:
+-		 err |= __put_user(from->si_tid, &to->si_tid);
+-		 err |= __put_user(from->si_overrun, &to->si_overrun);
+-		 err |= __put_user((compat_uptr_t)(unsigned long)from->si_ptr,
+-				   &to->si_ptr);
+-		break;
+-	case __SI_POLL:
+-		err |= __put_user(from->si_band, &to->si_band);
+-		err |= __put_user(from->si_fd, &to->si_fd);
+-		break;
+-	case __SI_FAULT:
+-		err |= __put_user((compat_uptr_t)(unsigned long)from->si_addr,
+-				  &to->si_addr);
+-#ifdef BUS_MCEERR_AO
+-		/*
+-		 * Other callers might not initialize the si_lsb field,
+-		 * so check explicitely for the right codes here.
+-		 */
+-		if (from->si_code == BUS_MCEERR_AR || from->si_code == BUS_MCEERR_AO)
+-			err |= __put_user(from->si_addr_lsb, &to->si_addr_lsb);
+-#endif
+-		break;
+-	case __SI_CHLD:
+-		err |= __put_user(from->si_pid, &to->si_pid);
+-		err |= __put_user(from->si_uid, &to->si_uid);
+-		err |= __put_user(from->si_status, &to->si_status);
+-		err |= __put_user(from->si_utime, &to->si_utime);
+-		err |= __put_user(from->si_stime, &to->si_stime);
+-		break;
+-	case __SI_RT: /* This is not generated by the kernel as of now. */
+-	case __SI_MESGQ: /* But this is */
+-		err |= __put_user(from->si_pid, &to->si_pid);
+-		err |= __put_user(from->si_uid, &to->si_uid);
+-		err |= __put_user((compat_uptr_t)(unsigned long)from->si_ptr, &to->si_ptr);
+-		break;
+-	default: /* this is just in case for now ... */
+-		err |= __put_user(from->si_pid, &to->si_pid);
+-		err |= __put_user(from->si_uid, &to->si_uid);
+-		break;
+-	}
+-	return err;
+-}
+-
+-int copy_siginfo_from_user32(siginfo_t *to, compat_siginfo_t __user *from)
+-{
+-	memset(to, 0, sizeof *to);
+-
+-	if (copy_from_user(to, from, __ARCH_SI_PREAMBLE_SIZE) ||
+-	    copy_from_user(to->_sifields._pad,
+-			   from->_sifields._pad, SI_PAD_SIZE))
+-		return -EFAULT;
+-
+-	return 0;
+-}
+-
+ /*
+  * VFP save/restore code.
+  */
 -- 
 1.7.2.5
 
