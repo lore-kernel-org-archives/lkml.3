@@ -1,294 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342Ab3IITr7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 15:47:59 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:45081 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755181Ab3IITrz (ORCPT
+	id S1755437Ab3IITsK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 15:48:10 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:43050 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755181Ab3IITsH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 15:47:55 -0400
-Date: Mon, 9 Sep 2013 14:47:33 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bob Liu <bob.liu@oracle.com>, Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dave Hansen <dave.hansen@intel.com>, Minchan Kim <minchan@kernel.org>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>
-Subject: Re: [RFC PATCH 1/4] zbud: use page ref counter for zbud pages
-Message-ID: <20130909194733.GE4701@variantweb.net>
-References: <1377852176-30970-1-git-send-email-k.kozlowski@samsung.com>
- <1377852176-30970-2-git-send-email-k.kozlowski@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1377852176-30970-2-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090919-8236-0000-0000-0000019949B0
+	Mon, 9 Sep 2013 15:48:07 -0400
+Subject: Re: [PATCHv3 1/2] ARM: msm: Add support for APQ8074 Dragonboard
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=US-ASCII
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <522E21A8.4060408@wwwdotorg.org>
+Date: Mon, 9 Sep 2013 14:48:08 -0500
+Cc: Rohit Vaswani <rvaswani@codeaurora.org>, Olof Johansson <olof@lixom.net>,
+        David Brown <davidb@codeaurora.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Content-Transfer-Encoding: 7BIT
+Message-Id: <FA33E8F4-3F85-4D8B-83E1-96F5A8F76CE6@codeaurora.org>
+References: <1378495943-2572-1-git-send-email-rvaswani@codeaurora.org> <20130906215051.GA29253@quad.lixom.net> <522E09E6.8040300@codeaurora.org> <FFE100A7-8AD6-4E0D-9F64-120DA3564F89@codeaurora.org> <522E21A8.4060408@wwwdotorg.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 30, 2013 at 10:42:53AM +0200, Krzysztof Kozlowski wrote:
-> Use page reference counter for zbud pages. The ref counter replaces
-> zbud_header.under_reclaim flag and ensures that zbud page won't be freed
-> when zbud_free() is called during reclaim. It allows implementation of
-> additional reclaim paths.
 
-I like this idea.
+On Sep 9, 2013, at 2:29 PM, Stephen Warren wrote:
 
+> On 09/09/2013 01:17 PM, Kumar Gala wrote:
+>> 
+>> On Sep 9, 2013, at 12:48 PM, Rohit Vaswani wrote:
+>> 
+>>> On 9/6/2013 2:50 PM, Olof Johansson wrote:
+>>>> Hi,
+>>>> 
+>>>> Some comments below.
+>>>> 
+>>>> On Fri, Sep 06, 2013 at 12:32:22PM -0700, Rohit Vaswani wrote:
+>>>>> This patch adds basic board support for APQ8074 Dragonboard
+>>>>> <snip>
+>>>>> dtb-$(CONFIG_ARCH_MSM) += msm8660-surf.dtb \
+>>>>> -	msm8960-cdp.dtb
+>>>>> +	msm8960-cdp.dtb \
+>>>>> +	apq8074-dragonboard.dtb
+>>>> Please add boards alphabetically.
+>>> Will do.
+>>>> 
+>>>>> dtb-$(CONFIG_ARCH_MVEBU) += armada-370-db.dtb \
+>>>>> 	armada-370-mirabox.dtb \
+>>>>> 	armada-370-rd.dtb \
+>>>>> diff --git a/arch/arm/boot/dts/apq8074-dragonboard.dts b/arch/arm/boot/dts/apq8074-dragonboard.dts
+>>>>> new file mode 100644
+>>>>> index 0000000..5b7b6a0
+>>>>> --- /dev/null
+>>>>> +++ b/arch/arm/boot/dts/apq8074-dragonboard.dts
+>>>> arch/arm/boot/dts/ is getting really crowded. It's been working best if the SoC
+>>>> family or vendor is used as a prefix to keep things a bit more organized. In
+>>>> that spirit, prefixing these with msm-<foo> makes sense. Can you please do so?
+>>> 
+>>> Sure. But the board is called an APQ8074 and we wanted to keep the naming consistent with that.
+>> 
+>> If we do this we should use qcom, not msm as the prefix.  Match the device tree vendor prefix.
 > 
-> The page count is incremented when:
->  - a handle is created and passed to zswap (in zbud_alloc()),
->  - user-supplied eviction callback is called (in zbud_reclaim_page()).
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
-> Reviewed-by: Bob Liu <bob.liu@oracle.com>
-> ---
->  mm/zbud.c |   97 +++++++++++++++++++++++++++++++++----------------------------
->  1 file changed, 52 insertions(+), 45 deletions(-)
-> 
-> diff --git a/mm/zbud.c b/mm/zbud.c
-> index ad1e781..aa9a15c 100644
-> --- a/mm/zbud.c
-> +++ b/mm/zbud.c
-> @@ -109,7 +109,6 @@ struct zbud_header {
->  	struct list_head lru;
->  	unsigned int first_chunks;
->  	unsigned int last_chunks;
-> -	bool under_reclaim;
->  };
-> 
->  /*****************
-> @@ -138,16 +137,9 @@ static struct zbud_header *init_zbud_page(struct page *page)
->  	zhdr->last_chunks = 0;
->  	INIT_LIST_HEAD(&zhdr->buddy);
->  	INIT_LIST_HEAD(&zhdr->lru);
-> -	zhdr->under_reclaim = 0;
->  	return zhdr;
->  }
-> 
-> -/* Resets the struct page fields and frees the page */
-> -static void free_zbud_page(struct zbud_header *zhdr)
-> -{
-> -	__free_page(virt_to_page(zhdr));
-> -}
-> -
->  /*
->   * Encodes the handle of a particular buddy within a zbud page
->   * Pool lock should be held as this function accesses first|last_chunks
-> @@ -188,6 +180,31 @@ static int num_free_chunks(struct zbud_header *zhdr)
->  	return NCHUNKS - zhdr->first_chunks - zhdr->last_chunks - 1;
->  }
-> 
-> +/*
-> + * Increases ref count for zbud page.
-> + */
-> +static void get_zbud_page(struct zbud_header *zhdr)
-> +{
-> +	get_page(virt_to_page(zhdr));
-> +}
-> +
-> +/*
-> + * Decreases ref count for zbud page and frees the page if it reaches 0
-> + * (no external references, e.g. handles).
-> + *
-> + * Returns 1 if page was freed and 0 otherwise.
-> + */
-> +static int put_zbud_page(struct zbud_header *zhdr)
-> +{
-> +	struct page *page = virt_to_page(zhdr);
-> +	if (put_page_testzero(page)) {
-> +		free_hot_cold_page(page, 0);
-> +		return 1;
-> +	}
-> +	return 0;
-> +}
-> +
-> +
->  /*****************
->   * API Functions
->  *****************/
-> @@ -250,7 +267,7 @@ void zbud_destroy_pool(struct zbud_pool *pool)
->  int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
->  			unsigned long *handle)
->  {
-> -	int chunks, i, freechunks;
-> +	int chunks, i;
+> Hmm. It'd be nice for the filenames to be ${soc}-${board} so that e.g.
+> U-Boot can easily calculate the DTB filename based on its soc/board
+> environment variables... Luckily in my case for Tegra, all the Tegra
+> chip names start with "Tegra", so we already sort all our DTB filenames
+> together in the directory listing:-)
 
-This change (make freechunks a block local variable) is unrelated to the
-patch description and should be its own patch.
+u-boot's not supported on MSM platforms, so not sure what purpose this serves.
 
->  	struct zbud_header *zhdr = NULL;
->  	enum buddy bud;
->  	struct page *page;
-> @@ -273,6 +290,7 @@ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
->  				bud = FIRST;
->  			else
->  				bud = LAST;
-> +			get_zbud_page(zhdr);
->  			goto found;
->  		}
->  	}
-> @@ -284,6 +302,10 @@ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
->  		return -ENOMEM;
->  	spin_lock(&pool->lock);
->  	pool->pages_nr++;
-> +	/*
-> +	 * We will be using zhdr instead of page, so
-> +	 * don't increase the page count.
-> +	 */
->  	zhdr = init_zbud_page(page);
->  	bud = FIRST;
-> 
-> @@ -295,7 +317,7 @@ found:
-> 
->  	if (zhdr->first_chunks == 0 || zhdr->last_chunks == 0) {
->  		/* Add to unbuddied list */
-> -		freechunks = num_free_chunks(zhdr);
-> +		int freechunks = num_free_chunks(zhdr);
+we might want to just introduce vendor dirs so its arch/arm/boot/dts/{vendor}/{soc}-{board}
 
-Same here.
+Not sure if we want to argue about {vendor} vs {sub-arch}.
 
->  		list_add(&zhdr->buddy, &pool->unbuddied[freechunks]);
->  	} else {
->  		/* Add to buddied list */
-> @@ -326,7 +348,6 @@ found:
->  void zbud_free(struct zbud_pool *pool, unsigned long handle)
->  {
->  	struct zbud_header *zhdr;
-> -	int freechunks;
-
-And here.
-
-> 
->  	spin_lock(&pool->lock);
->  	zhdr = handle_to_zbud_header(handle);
-> @@ -337,26 +358,19 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle)
->  	else
->  		zhdr->first_chunks = 0;
-> 
-> -	if (zhdr->under_reclaim) {
-> -		/* zbud page is under reclaim, reclaim will free */
-> -		spin_unlock(&pool->lock);
-> -		return;
-> -	}
-> -
->  	/* Remove from existing buddy list */
->  	list_del(&zhdr->buddy);
-> 
->  	if (zhdr->first_chunks == 0 && zhdr->last_chunks == 0) {
-> -		/* zbud page is empty, free */
->  		list_del(&zhdr->lru);
-> -		free_zbud_page(zhdr);
->  		pool->pages_nr--;
->  	} else {
->  		/* Add to unbuddied list */
-> -		freechunks = num_free_chunks(zhdr);
-> +		int freechunks = num_free_chunks(zhdr);
-
-Last one.
-
->  		list_add(&zhdr->buddy, &pool->unbuddied[freechunks]);
->  	}
-> 
-> +	put_zbud_page(zhdr);
->  	spin_unlock(&pool->lock);
->  }
-> 
-> @@ -400,7 +414,7 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle)
->   */
->  int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
->  {
-> -	int i, ret, freechunks;
-> +	int i, ret;
->  	struct zbud_header *zhdr;
->  	unsigned long first_handle = 0, last_handle = 0;
-> 
-> @@ -411,11 +425,24 @@ int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
->  		return -EINVAL;
->  	}
->  	for (i = 0; i < retries; i++) {
-> +		if (list_empty(&pool->lru)) {
-> +			/*
-> +			 * LRU was emptied during evict calls in previous
-> +			 * iteration but put_zbud_page() returned 0 meaning
-> +			 * that someone still holds the page. This may
-> +			 * happen when some other mm mechanism increased
-> +			 * the page count.
-> +			 * In such case we succedded with reclaim.
-> +			 */
-> +			spin_unlock(&pool->lock);
-> +			return 0;
-> +		}
->  		zhdr = list_tail_entry(&pool->lru, struct zbud_header, lru);
-> +		/* Move this last element to beginning of LRU */
->  		list_del(&zhdr->lru);
-> -		list_del(&zhdr->buddy);
-> +		list_add(&zhdr->lru, &pool->lru);
-
-This adds the entry back to the lru list, but the entry is never removed
-from the list.  I'm not sure how this could work.
-
->  		/* Protect zbud page against free */
-> -		zhdr->under_reclaim = true;
-> +		get_zbud_page(zhdr);
->  		/*
->  		 * We need encode the handles before unlocking, since we can
->  		 * race with free that will set (first|last)_chunks to 0
-> @@ -440,29 +467,9 @@ int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
->  				goto next;
->  		}
->  next:
-> -		spin_lock(&pool->lock);
-> -		zhdr->under_reclaim = false;
-> -		if (zhdr->first_chunks == 0 && zhdr->last_chunks == 0) {
-> -			/*
-> -			 * Both buddies are now free, free the zbud page and
-> -			 * return success.
-> -			 */
-> -			free_zbud_page(zhdr);
-> -			pool->pages_nr--;
-> -			spin_unlock(&pool->lock);
-> +		if (put_zbud_page(zhdr))
-
-There is a single put_zbud_page() regardless of result of the eviction
-attempts.  What if both buddies of a buddied zbud page are evicted?
-Then you leak the zbud page.  What if the eviction in an unbuddied zbud
-page failed?  Then you prematurely free the page and crash later.
-
-Seth
-
->  			return 0;
-> -		} else if (zhdr->first_chunks == 0 ||
-> -				zhdr->last_chunks == 0) {
-> -			/* add to unbuddied list */
-> -			freechunks = num_free_chunks(zhdr);
-> -			list_add(&zhdr->buddy, &pool->unbuddied[freechunks]);
-> -		} else {
-> -			/* add to buddied list */
-> -			list_add(&zhdr->buddy, &pool->buddied);
-> -		}
-> -
-> -		/* add to beginning of LRU */
-> -		list_add(&zhdr->lru, &pool->lru);
-> +		spin_lock(&pool->lock);
->  	}
->  	spin_unlock(&pool->lock);
->  	return -EAGAIN;
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+- k
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
