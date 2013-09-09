@@ -1,378 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753238Ab3IIM5G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 08:57:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47472 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751822Ab3IIM5C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 08:57:02 -0400
-Date: Mon, 9 Sep 2013 14:56:59 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>, Glauber Costa <glommer@gmail.com>
-Cc: azurIt <azurit@pobox.sk>, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/7] improve memcg oom killer robustness v2
-Message-ID: <20130909125659.GD22212@dhcp22.suse.cz>
-References: <1375549200-19110-1-git-send-email-hannes@cmpxchg.org>
- <20130803170831.GB23319@cmpxchg.org>
- <20130830215852.3E5D3D66@pobox.sk>
- <20130902123802.5B8E8CB1@pobox.sk>
- <20130903204850.GA1412@cmpxchg.org>
- <20130904101852.58E70042@pobox.sk>
- <20130905115430.GB856@cmpxchg.org>
- <20130905124352.GB13666@dhcp22.suse.cz>
- <20130905161817.GD856@cmpxchg.org>
- <20130909123625.GC22212@dhcp22.suse.cz>
+	id S1751898Ab3IIM6n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 08:58:43 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:58790 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073Ab3IIM6l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 08:58:41 -0400
+Date: Mon, 9 Sep 2013 14:57:46 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Arjun Gopalan <agopalan@nvidia.com>, Brian Swetland <swetland@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Paul Walmsley <pwalmsley@nvidia.com>
+Subject: Re: permission to move definition of struct rpmsg_channel_info
+Message-ID: <20130909125745.GD22197@ulmo>
+References: <5220F099.1020002@nvidia.com>
+ <CAK=WgbZ2JgtAonvdyeDZazYBGdKpPAieJtjzi7MM6nwqhVfs7g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="48TaNjbzBVislYPb"
 Content-Disposition: inline
-In-Reply-To: <20130909123625.GC22212@dhcp22.suse.cz>
+In-Reply-To: <CAK=WgbZ2JgtAonvdyeDZazYBGdKpPAieJtjzi7MM6nwqhVfs7g@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Adding Glauber - the full patch is here https://lkml.org/lkml/2013/9/5/319]
 
-On Mon 09-09-13 14:36:25, Michal Hocko wrote:
-> On Thu 05-09-13 12:18:17, Johannes Weiner wrote:
-> [...]
-> > From: Johannes Weiner <hannes@cmpxchg.org>
-> > Subject: [patch] mm: memcg: do not trap chargers with full callstack on OOM
-> > 
-> [...]
-> > 
-> > To fix this, never do any OOM handling directly in the charge context.
-> > When an OOM situation is detected, let the task remember the memcg and
-> > then handle the OOM (kill or wait) only after the page fault stack is
-> > unwound and about to return to userspace.
-> 
-> OK, this is indeed nicer because the oom setup is trivial and the
-> handling is not split into two parts and everything happens close to
-> out_of_memory where it is expected.
+--48TaNjbzBVislYPb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hmm, wait a second. I have completely forgot about the kmem charging
-path during the review.
+On Sun, Sep 08, 2013 at 02:27:11PM +0200, Ohad Ben-Cohen wrote:
+> Hi Arjun,
+>=20
+> On Fri, Aug 30, 2013 at 9:20 PM, Arjun Gopalan <agopalan@nvidia.com> wrot=
+e:
+> >
+> > Hi Ohad/Brian,
+> >
+> > I have been working on rpmsg and I need to be able to create static
+> > rpmsg channels. Channel information needs to be specified by other
+> > drivers and for this, the drivers need access to struct
+> > rpmsg_channel_info.
+>=20
+> I'm not convinced how useful it is for other Linux drivers to create
+> static rpmsg channels?
+>=20
+> Usually these channels reflect the existence of services running on
+> the remote processor, and their creation (or lack thereof) should be
+> specified in the remote image. This way an rpmsg channel is published
+> iff there is a matching remote service.
 
-So while previously memcg_charge_kmem could have oom killed a
-task if the it couldn't charge to the u-limit after it managed
-to charge k-limit, now it would simply fail because there is no
-mem_cgroup_{enable,disable}_oom around __mem_cgroup_try_charge it relies
-on. The allocation will fail in the end but I am not sure whether the
-missing oom is an issue or not for existing use cases.
+If I understand correctly, the way that the services should be announced
+is via RSC_VDEV entries in the resource table?
 
-My original objection about oom triggered from kmem paths was that oom
-is not kmem aware so the oom decisions might be totally bogus. But we
-still have that:
+Looking at the remoteproc core and ELF loader, it seems like the way to
+pass in the resource table is either via an extra ELF section or driver
+specific. TI drivers seem to use ELF, but the STE modem driver seems to
+employ some custom format.
 
-        /*
-         * Conditions under which we can wait for the oom_killer. Those are
-         * the same conditions tested by the core page allocator
-         */
-        may_oom = (gfp & __GFP_FS) && !(gfp & __GFP_NORETRY);
+=46rom what I understand this resource table can also be processed by the
+host to provide some of the resources such as carveout memory. So that
+the normal way for this to work would be something like:
 
-        _memcg = memcg;
-        ret = __mem_cgroup_try_charge(NULL, gfp, size >> PAGE_SHIFT,
-                                      &_memcg, may_oom);
+	- load firmware image
+	  - obtain pointer to resource table
+	- process resource table
+	  - allocate resources
+	  - update table
+	- upload firmware to remote processor
 
-I do not mind having may_oom = false unconditionally in that path but I
-would like to hear fromm Glauber first.
+Upon which the remote processor probably needs to parse the resource
+table to set itself up. Does that sound about right?
 
-> > Reported-by: Reported-by: azurIt <azurit@pobox.sk>
-> > Debugged-by: Michal Hocko <mhocko@suse.cz>
-> > Not-yet-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> 
-> Acked-by: Michal Hocko <mhocko@suse.cz>
-> 
-> Thanks!
-> 
-> > ---
-> >  include/linux/memcontrol.h | 17 ++++++++
-> >  include/linux/sched.h      |  2 +
-> >  mm/memcontrol.c            | 96 +++++++++++++++++++++++++++++++---------------
-> >  mm/memory.c                | 11 +++++-
-> >  mm/oom_kill.c              |  2 +
-> >  5 files changed, 96 insertions(+), 32 deletions(-)
-> > 
-> > diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> > index b344b3a..325da07 100644
-> > --- a/include/linux/memcontrol.h
-> > +++ b/include/linux/memcontrol.h
-> > @@ -132,6 +132,13 @@ static inline void mem_cgroup_disable_oom(void)
-> >  	current->memcg_oom.may_oom = 0;
-> >  }
-> >  
-> > +static inline bool task_in_memcg_oom(struct task_struct *p)
-> > +{
-> > +	return p->memcg_oom.memcg;
-> > +}
-> > +
-> > +bool mem_cgroup_oom_synchronize(bool wait);
-> > +
-> >  #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
-> >  extern int do_swap_account;
-> >  #endif
-> > @@ -353,6 +360,16 @@ static inline void mem_cgroup_disable_oom(void)
-> >  {
-> >  }
-> >  
-> > +static inline bool task_in_memcg_oom(struct task_struct *p)
-> > +{
-> > +	return false;
-> > +}
-> > +
-> > +static inline bool mem_cgroup_oom_synchronize(bool wait)
-> > +{
-> > +	return false;
-> > +}
-> > +
-> >  static inline void mem_cgroup_inc_page_stat(struct page *page,
-> >  					    enum mem_cgroup_page_stat_item idx)
-> >  {
-> > diff --git a/include/linux/sched.h b/include/linux/sched.h
-> > index 21834a9..fb1f145 100644
-> > --- a/include/linux/sched.h
-> > +++ b/include/linux/sched.h
-> > @@ -1569,6 +1569,8 @@ struct task_struct {
-> >  		unsigned long memsw_nr_pages; /* uncharged mem+swap usage */
-> >  	} memcg_batch;
-> >  	struct memcg_oom_info {
-> > +		struct mem_cgroup *memcg;
-> > +		gfp_t gfp_mask;
-> >  		unsigned int may_oom:1;
-> >  	} memcg_oom;
-> >  #endif
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index 36bb58f..56643fe 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -1858,14 +1858,59 @@ static void memcg_oom_recover(struct mem_cgroup *memcg)
-> >  		memcg_wakeup_oom(memcg);
-> >  }
-> >  
-> > -/*
-> > - * try to call OOM killer. returns false if we should exit memory-reclaim loop.
-> > +static void mem_cgroup_oom(struct mem_cgroup *memcg, gfp_t mask)
-> > +{
-> > +	if (!current->memcg_oom.may_oom)
-> > +		return;
-> > +	/*
-> > +	 * We are in the middle of the charge context here, so we
-> > +	 * don't want to block when potentially sitting on a callstack
-> > +	 * that holds all kinds of filesystem and mm locks.
-> > +	 *
-> > +	 * Also, the caller may handle a failed allocation gracefully
-> > +	 * (like optional page cache readahead) and so an OOM killer
-> > +	 * invocation might not even be necessary.
-> > +	 *
-> > +	 * That's why we don't do anything here except remember the
-> > +	 * OOM context and then deal with it at the end of the page
-> > +	 * fault when the stack is unwound, the locks are released,
-> > +	 * and when we know whether the fault was overall successful.
-> > +	 */
-> > +	css_get(&memcg->css);
-> > +	current->memcg_oom.memcg = memcg;
-> > +	current->memcg_oom.gfp_mask = mask;
-> > +}
-> > +
-> > +/**
-> > + * mem_cgroup_oom_synchronize - complete memcg OOM handling
-> > + * @handle: actually kill/wait or just clean up the OOM state
-> > + *
-> > + * This has to be called at the end of a page fault if the memcg OOM
-> > + * handler was enabled.
-> > + *
-> > + * Memcg supports userspace OOM handling where failed allocations must
-> > + * sleep on a waitqueue until the userspace task resolves the
-> > + * situation.  Sleeping directly in the charge context with all kinds
-> > + * of locks held is not a good idea, instead we remember an OOM state
-> > + * in the task and mem_cgroup_oom_synchronize() has to be called at
-> > + * the end of the page fault to complete the OOM handling.
-> > + *
-> > + * Returns %true if an ongoing memcg OOM situation was detected and
-> > + * completed, %false otherwise.
-> >   */
-> > -bool mem_cgroup_handle_oom(struct mem_cgroup *memcg, gfp_t mask)
-> > +bool mem_cgroup_oom_synchronize(bool handle)
-> >  {
-> > +	struct mem_cgroup *memcg = current->memcg_oom.memcg;
-> >  	struct oom_wait_info owait;
-> >  	bool locked;
-> >  
-> > +	/* OOM is global, do not handle */
-> > +	if (!memcg)
-> > +		return false;
-> > +
-> > +	if (!handle)
-> > +		goto cleanup;
-> > +
-> >  	owait.mem = memcg;
-> >  	owait.wait.flags = 0;
-> >  	owait.wait.func = memcg_oom_wake_function;
-> > @@ -1894,7 +1939,7 @@ bool mem_cgroup_handle_oom(struct mem_cgroup *memcg, gfp_t mask)
-> >  	if (locked && !memcg->oom_kill_disable) {
-> >  		mem_cgroup_unmark_under_oom(memcg);
-> >  		finish_wait(&memcg_oom_waitq, &owait.wait);
-> > -		mem_cgroup_out_of_memory(memcg, mask);
-> > +		mem_cgroup_out_of_memory(memcg, current->memcg_oom.gfp_mask);
-> >  	} else {
-> >  		schedule();
-> >  		mem_cgroup_unmark_under_oom(memcg);
-> > @@ -1910,11 +1955,9 @@ bool mem_cgroup_handle_oom(struct mem_cgroup *memcg, gfp_t mask)
-> >  		 */
-> >  		memcg_oom_recover(memcg);
-> >  	}
-> > -
-> > -	if (test_thread_flag(TIF_MEMDIE) || fatal_signal_pending(current))
-> > -		return false;
-> > -	/* Give chance to dying process */
-> > -	schedule_timeout_uninterruptible(1);
-> > +cleanup:
-> > +	current->memcg_oom.memcg = NULL;
-> > +	css_put(&memcg->css);
-> >  	return true;
-> >  }
-> >  
-> > @@ -2204,11 +2247,10 @@ enum {
-> >  	CHARGE_RETRY,		/* need to retry but retry is not bad */
-> >  	CHARGE_NOMEM,		/* we can't do more. return -ENOMEM */
-> >  	CHARGE_WOULDBLOCK,	/* GFP_WAIT wasn't set and no enough res. */
-> > -	CHARGE_OOM_DIE,		/* the current is killed because of OOM */
-> >  };
-> >  
-> >  static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
-> > -				unsigned int nr_pages, bool oom_check)
-> > +				unsigned int nr_pages, bool invoke_oom)
-> >  {
-> >  	unsigned long csize = nr_pages * PAGE_SIZE;
-> >  	struct mem_cgroup *mem_over_limit;
-> > @@ -2266,14 +2308,10 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
-> >  	if (mem_cgroup_wait_acct_move(mem_over_limit))
-> >  		return CHARGE_RETRY;
-> >  
-> > -	/* If we don't need to call oom-killer at el, return immediately */
-> > -	if (!oom_check || !current->memcg_oom.may_oom)
-> > -		return CHARGE_NOMEM;
-> > -	/* check OOM */
-> > -	if (!mem_cgroup_handle_oom(mem_over_limit, gfp_mask))
-> > -		return CHARGE_OOM_DIE;
-> > +	if (invoke_oom)
-> > +		mem_cgroup_oom(mem_over_limit, gfp_mask);
-> >  
-> > -	return CHARGE_RETRY;
-> > +	return CHARGE_NOMEM;
-> >  }
-> >  
-> >  /*
-> > @@ -2301,6 +2339,12 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
-> >  		goto bypass;
-> >  
-> >  	/*
-> > +	 * Task already OOMed, just get out of here.
-> > +	 */
-> > +	if (unlikely(current->memcg_oom.memcg))
-> > +		goto nomem;
-> > +
-> > +	/*
-> >  	 * We always charge the cgroup the mm_struct belongs to.
-> >  	 * The mm_struct's mem_cgroup changes on task migration if the
-> >  	 * thread group leader migrates. It's possible that mm is not
-> > @@ -2358,7 +2402,7 @@ again:
-> >  	}
-> >  
-> >  	do {
-> > -		bool oom_check;
-> > +		bool invoke_oom = oom && !nr_oom_retries;
-> >  
-> >  		/* If killed, bypass charge */
-> >  		if (fatal_signal_pending(current)) {
-> > @@ -2366,13 +2410,7 @@ again:
-> >  			goto bypass;
-> >  		}
-> >  
-> > -		oom_check = false;
-> > -		if (oom && !nr_oom_retries) {
-> > -			oom_check = true;
-> > -			nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
-> > -		}
-> > -
-> > -		ret = mem_cgroup_do_charge(memcg, gfp_mask, batch, oom_check);
-> > +		ret = mem_cgroup_do_charge(memcg, gfp_mask, batch, invoke_oom);
-> >  		switch (ret) {
-> >  		case CHARGE_OK:
-> >  			break;
-> > @@ -2385,16 +2423,12 @@ again:
-> >  			css_put(&memcg->css);
-> >  			goto nomem;
-> >  		case CHARGE_NOMEM: /* OOM routine works */
-> > -			if (!oom) {
-> > +			if (!oom || invoke_oom) {
-> >  				css_put(&memcg->css);
-> >  				goto nomem;
-> >  			}
-> > -			/* If oom, we never return -ENOMEM */
-> >  			nr_oom_retries--;
-> >  			break;
-> > -		case CHARGE_OOM_DIE: /* Killed by OOM Killer */
-> > -			css_put(&memcg->css);
-> > -			goto bypass;
-> >  		}
-> >  	} while (ret != CHARGE_OK);
-> >  
-> > diff --git a/mm/memory.c b/mm/memory.c
-> > index 7b66056..20c43a0 100644
-> > --- a/mm/memory.c
-> > +++ b/mm/memory.c
-> > @@ -3517,8 +3517,17 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
-> >  
-> >  	ret = __handle_mm_fault(mm, vma, address, flags);
-> >  
-> > -	if (flags & FAULT_FLAG_USER)
-> > +	if (flags & FAULT_FLAG_USER) {
-> >  		mem_cgroup_disable_oom();
-> > +		/*
-> > +		 * The task may have entered a memcg OOM situation but
-> > +		 * if the allocation error was handled gracefully (no
-> > +		 * VM_FAULT_OOM), there is no need to kill anything.
-> > +		 * Just clean up the OOM state peacefully.
-> > +		 */
-> > +		if (task_in_memcg_oom(current) && !(ret & VM_FAULT_OOM))
-> > +			mem_cgroup_oom_synchronize(false);
-> > +	}
-> >  
-> >  	return ret;
-> >  }
-> > diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> > index 069b64e..3bf664c 100644
-> > --- a/mm/oom_kill.c
-> > +++ b/mm/oom_kill.c
-> > @@ -785,6 +785,8 @@ out:
-> >   */
-> >  void pagefault_out_of_memory(void)
-> >  {
-> > +	if (mem_cgroup_oom_synchronize(true))
-> > +		return;
-> >  	if (try_set_system_oom()) {
-> >  		out_of_memory(NULL, 0, 0, NULL);
-> >  		clear_system_oom();
-> > -- 
-> > 1.8.4
-> > 
-> 
-> -- 
-> Michal Hocko
-> SUSE Labs
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> The way we were planning to add static channels functionality (I
+> should still have preliminary patches doing this somewhere but the
+> entire work was put on hold since TI changed its focus) is by
+> statically publishing them in the resource table, which is coupled
+> with a specific remote image.
 
--- 
-Michal Hocko
-SUSE Labs
+While I see that the format of all this is pretty well documented, are
+there any standard tools that can be used to embed the resource table
+into an ELF binary? I have a pretty good idea on how it could be done,
+but I wonder if it might make sense to provide some kind of a standard
+set of headers to make things easier so that not everyone has to
+reinvent the wheel.
+
+Looking at the remoteproc core, it seems that there's no direct way to
+change the firmware running on a remoteproc at runtime. The firmware
+image is bound to one specific struct rproc. Is there something
+fundamental that would prevent us from adding some sort of hotplug
+support so that we could reload the remote processor with a different
+firmware using a different resource table at runtime? A remote processor
+is only exposed via sysfs, so I assume that's probably where we'd need
+to hook that up to?
+
+Perhaps I should mention that I'm investigating on using remoteproc for
+something semi-related to what Arjun is working on, so I expect most of
+these questions to be relevant to his work as well.
+
+Thierry
+
+--48TaNjbzBVislYPb
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSLcXJAAoJEN0jrNd/PrOhjJsP/1onbGK6687RoHtUZGo+uyGe
+/DMXQQtwVCj7zVP8sZ8F0K9sJwXmFENJ/ERVXnDzNGtzwkWFkGqM/En4XTDGrLqC
+3GqG9Ji+IHqEuAdXkh+ujpjb9oiEVBydY3vnFF2JQqXF+8veO5UL9I4EJoESUvSA
+IHO7ZW+hru3ZXvaEqHshXw9STD7a5OWd7ew2Z3CsrihChAwwy6Th1k265U9frkL+
+DI8O+X6LgjKv+VQEpzSHe9m2xbTMg5nD6Kz7qrH5zdHO6Ct3gG8XVXUQkf5MARRj
+ZrDRkxxMdPMcUGVuPTt8DfMqcWVAhk11RR8RI1pWhW8P7s93Ko91BNspwxGHETiZ
+3MBgmuTXccLkzzCCtDX//XpKho4NPZu5C/7rf/rabdIfGMin982xjUuU6XTagPUR
+bLRPlY1P/1fiRDGJLju+EvD5CEpI3O14PbcP+OgRUQ16KfqYu0akrRAFuEAptRV3
+M7lRcxuB3D5sbKh1/W3kvNZK98xaMwA2jNsI/RGcrLcSg/SN7n3hJrB/yD+wfkkI
+flrgJ+Kz9nMaMUifgCTBLg4HaucY+ubSIoPuFumAbwOvdWtgaEPCcWzzuSBEZr5e
+/eS6XS+3Qv6ssVez1w3ltAcyf1iTDWmDOraR5gcFF8dT4pEVfu03c0LC+LxAW1mU
+MO0HmmRcVhdarAjArB0t
+=yVlK
+-----END PGP SIGNATURE-----
+
+--48TaNjbzBVislYPb--
