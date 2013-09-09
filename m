@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755712Ab3IISuS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 14:50:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:57099 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755013Ab3IISpW (ORCPT
+	id S1755589Ab3IISvA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 14:51:00 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:58604 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755437Ab3IISu5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 14:45:22 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 15/24] net: Check the correct namespace when spoofing pid over SCM_RIGHTS
-Date: Mon,  9 Sep 2013 11:45:05 -0700
-Message-Id: <1378752314-2416-16-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1378752314-2416-1-git-send-email-kamal@canonical.com>
-References: <1378752314-2416-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Mon, 9 Sep 2013 14:50:57 -0400
+Date: Mon, 9 Sep 2013 11:50:47 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, sbw@mit.edu
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+Message-ID: <20130909185046.GH3966@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130909092142.05780991@gandalf.local.home>
+ <20130909134505.GF16280@somewhere>
+ <20130909135656.GT3966@linux.vnet.ibm.com>
+ <20130909101629.32df27a2@gandalf.local.home>
+ <20130909161708.GX3966@linux.vnet.ibm.com>
+ <20130909123422.7936e868@gandalf.local.home>
+ <20130909165836.GB3966@linux.vnet.ibm.com>
+ <20130909172908.GA31239@Krystal>
+ <20130909175656.GF3966@linux.vnet.ibm.com>
+ <20130909143639.66ba6c7c@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130909143639.66ba6c7c@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090918-1344-0000-0000-00000187F11D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.9 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, Sep 09, 2013 at 02:36:39PM -0400, Steven Rostedt wrote:
+> On Mon, 9 Sep 2013 10:56:56 -0700
+> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> 
+> > Although I do like rcu_is_active() better than rcu_read_check(), my
+> > concern with rcu_is_active() is that it can easily be mistaken for a
+> > global state rather than a per-CPU/thread/task/whatever state.
+> 
+> rcu_is_active_local();
 
-------------------
+rcu_is_active_here()?
 
-From: Andy Lutomirski <luto@amacapital.net>
+> Although, even though it's cute. I think "rcu_is_watching_you()" has no
+> ambiguity.
 
-commit d661684cf6820331feae71146c35da83d794467e upstream.
+Like I said, I am tempted...
 
-This is a security bug.
-
-The follow-up will fix nsproxy to discourage this type of issue from
-happening again.
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- net/core/scm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/core/scm.c b/net/core/scm.c
-index 2dc6cda..7b6d0d9 100644
---- a/net/core/scm.c
-+++ b/net/core/scm.c
-@@ -54,7 +54,7 @@ static __inline__ int scm_check_creds(struct ucred *creds)
- 		return -EINVAL;
- 
- 	if ((creds->pid == task_tgid_vnr(current) ||
--	     ns_capable(current->nsproxy->pid_ns->user_ns, CAP_SYS_ADMIN)) &&
-+	     ns_capable(task_active_pid_ns(current)->user_ns, CAP_SYS_ADMIN)) &&
- 	    ((uid_eq(uid, cred->uid)   || uid_eq(uid, cred->euid) ||
- 	      uid_eq(uid, cred->suid)) || nsown_capable(CAP_SETUID)) &&
- 	    ((gid_eq(gid, cred->gid)   || gid_eq(gid, cred->egid) ||
--- 
-1.8.1.2
+							Thanx, Paul
 
