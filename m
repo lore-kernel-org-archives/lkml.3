@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913Ab3IISxr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 14:53:47 -0400
-Received: from mail.lang.hm ([64.81.33.126]:54084 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755136Ab3IISxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 14:53:45 -0400
-Date: Mon, 9 Sep 2013 11:53:39 -0700 (PDT)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: Matthew Garrett <matthew.garrett@nebula.com>
-cc: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH 00/12] One more attempt at useful kernel lockdown
-In-Reply-To: <1378752158.17982.15.camel@x230.lan>
-Message-ID: <alpine.DEB.2.02.1309091150570.2479@nftneq.ynat.uz>
-References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>  <19562.1378747124@turing-police.cc.vt.edu>  <alpine.DEB.2.02.1309091119330.2479@nftneq.ynat.uz>  <1378751318.17982.10.camel@x230.lan>  <alpine.DEB.2.02.1309091139490.2479@nftneq.ynat.uz>
- <1378752158.17982.15.camel@x230.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756000Ab3IISyT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 14:54:19 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:34595 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750879Ab3IISyS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 14:54:18 -0400
+Date: Mon, 9 Sep 2013 15:54:10 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH V2 1/2] perf tools: fix id pos in perf_evlist__open()
+Message-ID: <20130909185410.GA28428@ghostprotocols.net>
+References: <1378496412-2424-1-git-send-email-adrian.hunter@intel.com>
+ <1378496412-2424-2-git-send-email-adrian.hunter@intel.com>
+ <522B361A.6030209@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <522B361A.6030209@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Sep 2013, Matthew Garrett wrote:
+Em Sat, Sep 07, 2013 at 08:20:10AM -0600, David Ahern escreveu:
+> On 9/6/13 1:40 PM, Adrian Hunter wrote:
+> >Ensure the id_pos is correct when perf_evlist__open()
+> >is used.
+> 
+> The commit log should reference 7556257 and breakage of 'kvm stat
+> live'; helps identify patches when backporting.
+> 
+> Other than that this patch fixes the problem.
 
-> On Mon, 2013-09-09 at 11:40 -0700, David Lang wrote:
->> On Mon, 9 Sep 2013, Matthew Garrett wrote:
->>
->>> On Mon, 2013-09-09 at 11:25 -0700, David Lang wrote:
->>>
->>>> Given that we know that people want signed binaries without blocking kexec, you
->>>> should have '1' just enforce module signing and '2' (or higher) implement a full
->>>> lockdown including kexec.
->>>
->>> There's already a kernel option for that.
->>
->> So, if there is an existing kernel option for this, why do we need a new one?
->
-> There's an existing kernel option for "I want to enforce module
-> signatures but I don't care about anything else". There isn't for "I
-> want to prevent userspace from modifying my running kernel".
-
-So is there a way to unify these different things rather than creating yet 
-another different knob?
-
-David Lang
+Thanks, I'm ammending the commit message log.
+ 
+> Tested-by and Acked-by David Ahern <dsahern@gmail.com>
+> 
+> >
+> >Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+> >---
+> >  tools/perf/util/evlist.c | 12 ++++++++++++
+> >  1 file changed, 12 insertions(+)
+> >
+> >diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+> >index b8727ae..005c0eb 100644
+> >--- a/tools/perf/util/evlist.c
+> >+++ b/tools/perf/util/evlist.c
+> >@@ -64,6 +64,16 @@ void perf_evlist__set_id_pos(struct perf_evlist *evlist)
+> >  	evlist->is_pos = first->is_pos;
+> >  }
+> >
+> >+static void perf_evlist__update_id_pos(struct perf_evlist *evlist)
+> >+{
+> >+	struct perf_evsel *evsel;
+> >+
+> >+	list_for_each_entry(evsel, &evlist->entries, node)
+> >+		perf_evsel__calc_id_pos(evsel);
+> >+
+> >+	perf_evlist__set_id_pos(evlist);
+> >+}
+> >+
+> >  static void perf_evlist__purge(struct perf_evlist *evlist)
+> >  {
+> >  	struct perf_evsel *pos, *n;
+> >@@ -915,6 +925,8 @@ int perf_evlist__open(struct perf_evlist *evlist)
+> >  	struct perf_evsel *evsel;
+> >  	int err;
+> >
+> >+	perf_evlist__update_id_pos(evlist);
+> >+
+> >  	list_for_each_entry(evsel, &evlist->entries, node) {
+> >  		err = perf_evsel__open(evsel, evlist->cpus, evlist->threads);
+> >  		if (err < 0)
+> >
