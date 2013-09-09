@@ -1,110 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755729Ab3IIVZT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 17:25:19 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:49277 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752806Ab3IIVZQ convert rfc822-to-8bit (ORCPT
+	id S1755612Ab3IIVdM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 17:33:12 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:64192 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752806Ab3IIVdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 17:25:16 -0400
-Subject: Re: [PATCHv3 1/2] ARM: msm: Add support for APQ8074 Dragonboard
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=US-ASCII
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <522E3BC9.1030105@wwwdotorg.org>
-Date: Mon, 9 Sep 2013 16:25:15 -0500
-Cc: Rohit Vaswani <rvaswani@codeaurora.org>, Olof Johansson <olof@lixom.net>,
-        David Brown <davidb@codeaurora.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Content-Transfer-Encoding: 7BIT
-Message-Id: <CA05A23E-41CF-4EC6-BB2D-36105048700B@codeaurora.org>
-References: <1378495943-2572-1-git-send-email-rvaswani@codeaurora.org> <20130906215051.GA29253@quad.lixom.net> <522E09E6.8040300@codeaurora.org> <FFE100A7-8AD6-4E0D-9F64-120DA3564F89@codeaurora.org> <522E21A8.4060408@wwwdotorg.org> <FA33E8F4-3F85-4D8B-83E1-96F5A8F76CE6@codeaurora.org> <522E3BC9.1030105@wwwdotorg.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-X-Mailer: Apple Mail (2.1283)
+	Mon, 9 Sep 2013 17:33:09 -0400
+From: Andrew Pinski <pinskia@gmail.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Andrew Pinski <apinski@cavium.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Subject: [PATCH 2/5] ARM64: Move some signal code to a seperate file to be reused by ILP32.
+Date: Mon,  9 Sep 2013 14:32:56 -0700
+Message-Id: <1378762380-13152-2-git-send-email-apinski@cavium.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1378762380-13152-1-git-send-email-apinski@cavium.com>
+References: <1378762380-13152-1-git-send-email-apinski@cavium.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+To: Will Deacon <will.deacon@arm.com>
+To: linux-arm-kernel@lists.infradead.org
+To: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Since the ILP32 ABI uses similar signal code as the LP64 ABI, it makes sense to reuse rather
+than copy the same code.
 
-On Sep 9, 2013, at 4:21 PM, Stephen Warren wrote:
 
-> On 09/09/2013 01:48 PM, Kumar Gala wrote:
->> 
->> On Sep 9, 2013, at 2:29 PM, Stephen Warren wrote:
->> 
->>> On 09/09/2013 01:17 PM, Kumar Gala wrote:
->>>> 
->>>> On Sep 9, 2013, at 12:48 PM, Rohit Vaswani wrote:
->>>> 
->>>>> On 9/6/2013 2:50 PM, Olof Johansson wrote:
->>>>>> Hi,
->>>>>> 
->>>>>> Some comments below.
->>>>>> 
->>>>>> On Fri, Sep 06, 2013 at 12:32:22PM -0700, Rohit Vaswani wrote:
->>>>>>> This patch adds basic board support for APQ8074 Dragonboard
->>>>>>> <snip>
->>>>>>> dtb-$(CONFIG_ARCH_MSM) += msm8660-surf.dtb \
->>>>>>> -	msm8960-cdp.dtb
->>>>>>> +	msm8960-cdp.dtb \
->>>>>>> +	apq8074-dragonboard.dtb
->>>>>> Please add boards alphabetically.
->>>>> Will do.
->>>>>> 
->>>>>>> dtb-$(CONFIG_ARCH_MVEBU) += armada-370-db.dtb \
->>>>>>> 	armada-370-mirabox.dtb \
->>>>>>> 	armada-370-rd.dtb \
->>>>>>> diff --git a/arch/arm/boot/dts/apq8074-dragonboard.dts b/arch/arm/boot/dts/apq8074-dragonboard.dts
->>>>>>> new file mode 100644
->>>>>>> index 0000000..5b7b6a0
->>>>>>> --- /dev/null
->>>>>>> +++ b/arch/arm/boot/dts/apq8074-dragonboard.dts
->>>>>> arch/arm/boot/dts/ is getting really crowded. It's been working best if the SoC
->>>>>> family or vendor is used as a prefix to keep things a bit more organized. In
->>>>>> that spirit, prefixing these with msm-<foo> makes sense. Can you please do so?
->>>>> 
->>>>> Sure. But the board is called an APQ8074 and we wanted to keep the naming consistent with that.
->>>> 
->>>> If we do this we should use qcom, not msm as the prefix.  Match the device tree vendor prefix.
->>> 
->>> Hmm. It'd be nice for the filenames to be ${soc}-${board} so that e.g.
->>> U-Boot can easily calculate the DTB filename based on its soc/board
->>> environment variables... Luckily in my case for Tegra, all the Tegra
->>> chip names start with "Tegra", so we already sort all our DTB filenames
->>> together in the directory listing:-)
->> 
->> u-boot's not supported on MSM platforms, so not sure what purpose this serves.
-> 
-> Presumably that's just because nobody has ported the code; it could be
-> supported couldn't it?
+Signed-off-by: Andrew Pinski <apinski@cavium.com>
+---
+ arch/arm64/kernel/signal.c |  170 +-------------------------------------------
+ 1 files changed, 1 insertions(+), 169 deletions(-)
 
-In theory.
-
->> we might want to just introduce vendor dirs so its arch/arm/boot/dts/{vendor}/{soc}-{board}
-> 
-> That seems reasonable to me, although people will complain about the
-> files moving again. Perhaps it's worth doing that as part of the move of
-> *.dts out of the kernel?
-
-Agreed, probably best since we'll probably be merging different arch dts's as well at that point
-
->> Not sure if we want to argue about {vendor} vs {sub-arch}.
-> 
-> sub-arch being the mach-xxx/plat-xxx directory? If so, I think that's a
-> Linux-ism that shouldn't affect the DT directory layout.
-
-Yeah, the mach-xxx/plat-xxx dir, and agree that it being a Linux-ism we shouldn't apply to this.
-
-- k
-
+diff --git a/arch/arm64/kernel/signal.c b/arch/arm64/kernel/signal.c
+index 3fbd848..d97a0c0 100644
+--- a/arch/arm64/kernel/signal.c
++++ b/arch/arm64/kernel/signal.c
+@@ -95,176 +95,8 @@ static int restore_fpsimd_context(struct fpsimd_context __user *ctx)
+ 	return err ? -EFAULT : 0;
+ }
+ 
+-static int restore_sigframe(struct pt_regs *regs,
+-			    struct rt_sigframe __user *sf)
+-{
+-	sigset_t set;
+-	int i, err;
+-	struct aux_context __user *aux =
+-		(struct aux_context __user *)sf->uc.uc_mcontext.__reserved;
+-
+-	err = __copy_from_user(&set, &sf->uc.uc_sigmask, sizeof(set));
+-	if (err == 0)
+-		set_current_blocked(&set);
+-
+-	for (i = 0; i < 31; i++)
+-		__get_user_error(regs->regs[i], &sf->uc.uc_mcontext.regs[i],
+-				 err);
+-	__get_user_error(regs->sp, &sf->uc.uc_mcontext.sp, err);
+-	__get_user_error(regs->pc, &sf->uc.uc_mcontext.pc, err);
+-	__get_user_error(regs->pstate, &sf->uc.uc_mcontext.pstate, err);
+-
+-	/*
+-	 * Avoid sys_rt_sigreturn() restarting.
+-	 */
+-	regs->syscallno = ~0UL;
+-
+-	err |= !valid_user_regs(&regs->user_regs);
+-
+-	if (err == 0)
+-		err |= restore_fpsimd_context(&aux->fpsimd);
+-
+-	return err;
+-}
+-
+-asmlinkage long sys_rt_sigreturn(struct pt_regs *regs)
+-{
+-	struct rt_sigframe __user *frame;
+-
+-	/* Always make any pending restarted system calls return -EINTR */
+-	current_thread_info()->restart_block.fn = do_no_restart_syscall;
+-
+-	/*
+-	 * Since we stacked the signal on a 128-bit boundary, then 'sp' should
+-	 * be word aligned here.
+-	 */
+-	if (regs->sp & 15)
+-		goto badframe;
+-
+-	frame = (struct rt_sigframe __user *)regs->sp;
+-
+-	if (!access_ok(VERIFY_READ, frame, sizeof (*frame)))
+-		goto badframe;
+-
+-	if (restore_sigframe(regs, frame))
+-		goto badframe;
+-
+-	if (restore_altstack(&frame->uc.uc_stack))
+-		goto badframe;
+-
+-	return regs->regs[0];
+-
+-badframe:
+-	if (show_unhandled_signals)
+-		pr_info_ratelimited("%s[%d]: bad frame in %s: pc=%08llx sp=%08llx\n",
+-				    current->comm, task_pid_nr(current), __func__,
+-				    regs->pc, regs->sp);
+-	force_sig(SIGSEGV, current);
+-	return 0;
+-}
+-
+-static int setup_sigframe(struct rt_sigframe __user *sf,
+-			  struct pt_regs *regs, sigset_t *set)
+-{
+-	int i, err = 0;
+-	struct aux_context __user *aux =
+-		(struct aux_context __user *)sf->uc.uc_mcontext.__reserved;
+-
+-	/* set up the stack frame for unwinding */
+-	__put_user_error(regs->regs[29], &sf->fp, err);
+-	__put_user_error(regs->regs[30], &sf->lr, err);
+-
+-	for (i = 0; i < 31; i++)
+-		__put_user_error(regs->regs[i], &sf->uc.uc_mcontext.regs[i],
+-				 err);
+-	__put_user_error(regs->sp, &sf->uc.uc_mcontext.sp, err);
+-	__put_user_error(regs->pc, &sf->uc.uc_mcontext.pc, err);
+-	__put_user_error(regs->pstate, &sf->uc.uc_mcontext.pstate, err);
+-
+-	__put_user_error(current->thread.fault_address, &sf->uc.uc_mcontext.fault_address, err);
+-
+-	err |= __copy_to_user(&sf->uc.uc_sigmask, set, sizeof(*set));
+-
+-	if (err == 0)
+-		err |= preserve_fpsimd_context(&aux->fpsimd);
+-
+-	/* set the "end" magic */
+-	__put_user_error(0, &aux->end.magic, err);
+-	__put_user_error(0, &aux->end.size, err);
++#include "signal_template.c"
+ 
+-	return err;
+-}
+-
+-static struct rt_sigframe __user *get_sigframe(struct k_sigaction *ka,
+-					       struct pt_regs *regs)
+-{
+-	unsigned long sp, sp_top;
+-	struct rt_sigframe __user *frame;
+-
+-	sp = sp_top = regs->sp;
+-
+-	/*
+-	 * This is the X/Open sanctioned signal stack switching.
+-	 */
+-	if ((ka->sa.sa_flags & SA_ONSTACK) && !sas_ss_flags(sp))
+-		sp = sp_top = current->sas_ss_sp + current->sas_ss_size;
+-
+-	sp = (sp - sizeof(struct rt_sigframe)) & ~15;
+-	frame = (struct rt_sigframe __user *)sp;
+-
+-	/*
+-	 * Check that we can actually write to the signal frame.
+-	 */
+-	if (!access_ok(VERIFY_WRITE, frame, sp_top - sp))
+-		frame = NULL;
+-
+-	return frame;
+-}
+-
+-static void setup_return(struct pt_regs *regs, struct k_sigaction *ka,
+-			 void __user *frame, int usig)
+-{
+-	__sigrestore_t sigtramp;
+-
+-	regs->regs[0] = usig;
+-	regs->sp = (unsigned long)frame;
+-	regs->regs[29] = regs->sp + offsetof(struct rt_sigframe, fp);
+-	regs->pc = (unsigned long)ka->sa.sa_handler;
+-
+-	if (ka->sa.sa_flags & SA_RESTORER)
+-		sigtramp = ka->sa.sa_restorer;
+-	else
+-		sigtramp = VDSO_SYMBOL(current->mm->context.vdso, sigtramp);
+-
+-	regs->regs[30] = (unsigned long)sigtramp;
+-}
+-
+-static int setup_rt_frame(int usig, struct k_sigaction *ka, siginfo_t *info,
+-			  sigset_t *set, struct pt_regs *regs)
+-{
+-	struct rt_sigframe __user *frame;
+-	int err = 0;
+-
+-	frame = get_sigframe(ka, regs);
+-	if (!frame)
+-		return 1;
+-
+-	__put_user_error(0, &frame->uc.uc_flags, err);
+-	__put_user_error(NULL, &frame->uc.uc_link, err);
+-
+-	err |= __save_altstack(&frame->uc.uc_stack, regs->sp);
+-	err |= setup_sigframe(frame, regs, set);
+-	if (err == 0) {
+-		setup_return(regs, ka, frame, usig);
+-		if (ka->sa.sa_flags & SA_SIGINFO) {
+-			err |= copy_siginfo_to_user(&frame->info, info);
+-			regs->regs[1] = (unsigned long)&frame->info;
+-			regs->regs[2] = (unsigned long)&frame->uc;
+-		}
+-	}
+-
+-	return err;
+-}
+ 
+ static void setup_restart_syscall(struct pt_regs *regs)
+ {
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+1.7.2.5
 
