@@ -1,129 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751855Ab3IIJIH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 05:08:07 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43368 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751640Ab3IIJIB (ORCPT
+	id S1751914Ab3IIJIQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 05:08:16 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:33344 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701Ab3IIJIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 05:08:01 -0400
-Message-ID: <1378717612.4151.6.camel@pizza.hi.pengutronix.de>
-Subject: Re: [PATCH RFC 0/6] ARM: OMAP2+: AM43x/AM335x prcm reset driver
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Afzal Mohammed <afzal@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-        Paul Walmsley <paul@pwsan.com>, Benoit Cousson <bcousson@baylibre.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Pavel Machek <pavel@ucw.cz>
-Date: Mon, 09 Sep 2013 11:06:52 +0200
-In-Reply-To: <5228A99D.4020702@ti.com>
-References: <cover.1378129416.git.afzal@ti.com>
-	 <1378375634.3948.10.camel@pizza.hi.pengutronix.de>
-	 <5228A99D.4020702@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 9 Sep 2013 05:08:13 -0400
+Date: Mon, 9 Sep 2013 12:06:49 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Jerome Marchand <jmarchan@redhat.com>, devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH 1/2] staging: zram: minimize `slot_free_lock' usage
+Message-ID: <20130909090649.GA2236@swordfish.minsk.epam.com>
+References: <20130906134706.GA2238@swordfish.minsk.epam.com>
+ <5229E9BF.5020604@redhat.com>
+ <20130906145545.GC2238@swordfish.minsk.epam.com>
+ <20130909083327.GX6329@mwanda>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130909083327.GX6329@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, den 05.09.2013, 21:26 +0530 schrieb Afzal Mohammed:
-> Hi Philipp,
-> 
-> On Thursday 05 September 2013 03:37 PM, Philipp Zabel wrote:
-> > Am Montag, den 02.09.2013, 19:41 +0530 schrieb Afzal Mohammed:
-> 
-> >> Two new reset API's are provided to check whether reset is ready and
-> >> to clear reset. This would be required in case IP needs to mix reset
-> >> handling procedure with power/clock managment procedure to achieve
-> >> proper reset and these procedures are sometimes IP specific that would
-> >> make it difficult to handle reset fully in pm_runtime platform support.
-> 
-> >> client IP handling s/w (DT based) should do as follows:
-> 
-> >> 2. In driver, that require reset to be deasserted,
-> >>  (this is the sequence required for gfx on AM43x/AM335x, this would
-> >>   depend on requirements of the IP)
-> >>
-> >> 	mydriver_probe(struct platform device *pdev)
-> >> 	{
-> >> 		:
-> >> 		:
-> >> 		reset_control_get(&pdev->dev, NULL);
-> >> 		reset_control_clear_reset();
-> >> 		reset_control_deassert();
-> >> 		pm_runtime_get_sync();
-> >> 		if (reset_control_is_reset() != true)
-> >> 			goto err;
-> >> 		reset_control_put();
-> >> 		:
-> >> 		:
-> >> 	}
-> 
-> > if possible, I'd like to move this logic into the reset controller
-> > driver. Can this be reordered to enable power before deasserting the
-> > reset line (assuming it is initially asserted)? In this case, I'd
-> > suggest to just call device_reset:
+On (09/09/13 11:33), Dan Carpenter wrote:
+> On Fri, Sep 06, 2013 at 05:55:45PM +0300, Sergey Senozhatsky wrote:
+> > On (09/06/13 16:42), Jerome Marchand wrote:
+> > > On 09/06/2013 03:47 PM, Sergey Senozhatsky wrote:
+> > > > Calling handle_pending_slot_free() for every RW operation may
+> > > > cause unneccessary slot_free_lock locking, because most likely
+> > > > process will see NULL slot_free_rq. handle_pending_slot_free()
+> > > > only when current detects that slot_free_rq is not NULL.
+> > > > 
+> > > > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> > > > 
+> > > > ---
+> > > > 
+> > > >  drivers/staging/zram/zram_drv.c | 5 +++--
+> > > >  1 file changed, 3 insertions(+), 2 deletions(-)
+> > > > 
+> > > > diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> > > > index 91d94b5..17386e2 100644
+> > > > --- a/drivers/staging/zram/zram_drv.c
+> > > > +++ b/drivers/staging/zram/zram_drv.c
+> > > > @@ -532,14 +532,15 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
+> > > >  {
+> > > >  	int ret;
+> > > >  
+> > > > +	if (zram->slot_free_rq)
+> > > > +		handle_pending_slot_free(zram);
+> > > > +
+> > > 
+> > > Calling handle_pending_slot_free() without holding zram->lock?
+> > > That's racy.
 > > 
-> > 	pm_runtime_get_sync(&pdev->dev);
-> > 	ret = device_reset(&pdev->dev);
-> > 	if (ret)
-> > 		goto err;
+> > sorry, my bad. it should take down_write() lock.
 > > 
-> > The ops.reset callback in the prcm driver then can handle clearing
-> > the reset status bit, deasserting the reset control bit, and waiting for
-> > the reset status bit to be set (or timing out with an error).
 > 
-> I too would have loved to have it in such a clean way and was initially
-> proceeding in that direction, but there is an issue specific to OMAP
-> family SoC's, which was required to be taken care of (even though
-> present use case for AM335x/AM43x would work [as it does not have
-> hardware supervised clockdomain mode] with a small change in platform
-> level power management support code - a generic one shared with other
-> OMAP family SoC's)
+> Or down_read() on the read path.  We leave the original as-is?
 > 
-> For a module to be reset, clock domain to which the module clock belongs
-> should be set to software supervised mode. During "pm_runtime_get_sync",
-> in OMAP platform level handling code, it first put clockdomain into
-> software supervised mode, enables clock to module, and once module is
-> ready, module will be put to hardware supervised mode. In hardware
-> supervised mode, reset may not happen.
-> 
-> So if device_reset() is done after pm_runtime_get_sync(), reset may not
-> happen as by the time device_reset() is called, clockdomain would be in
-> hardware supervised mode. But in other case, as reset is already
-> deasserted when pm_runtime_get_sync() is called, module would be reset
-> as it first puts to software supervised mode.
-> 
-> And device reset would happen only upon enabling clock to module (if
-> reset was deasserted) by pm_runtime_get_sync(), so reset status has to
-> be checked after pm call, preventing us having device_reset() before
-> pm_runtime_get_sync(), or else in that case we have to sacrifice on
-> reset status checking (which may not be reliable)
-> 
-> Another alternative would have been to integrate this reset handling in
-> low level power management code thus hiding all reset handling from
-> driver, but as far as I know the reset sequence to be done is sometimes
-> IP specific, preventing it.
 
-So if I understand correctly, the only problem is that on OMAP the clock
-needs to be enabled to deassert the reset, but as long as the clock
-domain is in hardware supervised mode, it won't be enabled?
-Would it be possible to create an internal API to switch the clock
-domain to software supervised mode, which can be used both by the code
-behind pm_runtime_get_sync and reset_control_deassert?
+Hello,
 
-regards
-Philipp
+down_write() for both READ and WRITE looks ok to me (+down_write()
+for zram_slot_free()). is there something I miss?
 
+down_read() for READ in case of N active readers will force N-1
+processes to spin on zram->slot_free_lock in handle_pending_slot_free().
+
+it probably makes sense to add extra zram->slot_free_rq check for
+the case when process slept on rw lock while someone was freeing
+pages:
+
+static void handle_pending_slot_free(struct zram *zram)
+{
+        struct zram_slot_free *free_rq;
+
+        down_write(&zram->lock);
++	if (!zram->slot_free_rq)
++		goto out;
+        spin_lock(&zram->slot_free_lock);
+        while (zram->slot_free_rq) {
+                free_rq = zram->slot_free_rq;
+                zram->slot_free_rq = free_rq->next;
+                zram_free_page(zram, free_rq->index);
+                kfree(free_rq);
+        }
+        spin_unlock(&zram->slot_free_lock);
++out:
+        up_write(&zram->lock);
+}
+
+	-ss
+
+> regards,
+> dan carpenter
+> 
