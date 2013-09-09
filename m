@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756Ab3IIS1A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 14:27:00 -0400
-Received: from smtp-out002.kontent.com ([81.88.40.216]:50188 "EHLO
-	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754184Ab3IIS07 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 14:26:59 -0400
-Message-ID: <1378744818.1381.4.camel@linux-fkkt.site>
-Subject: Re: Doubts on IO requests in USB subsystem
-From: Oliver Neukum <oliver@neukum.org>
-To: "Morales, Alejandra" <alejandra.morales@tum.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <9E3F9C2076C45D4783F09B90D5BE77CE189C61@BADWLRZ-SWMBX13.ads.mwn.de>
-References: <9E3F9C2076C45D4783F09B90D5BE77CE189C61@BADWLRZ-SWMBX13.ads.mwn.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 09 Sep 2013 18:40:18 +0200
-Mime-Version: 1.0
-X-Mailer: Evolution 3.9.4 
-Content-Transfer-Encoding: 7bit
+	id S1755082Ab3IIS1P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 14:27:15 -0400
+Received: from mail.lang.hm ([64.81.33.126]:54932 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754649Ab3IIS1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 14:27:12 -0400
+Date: Mon, 9 Sep 2013 11:25:38 -0700 (PDT)
+From: David Lang <david@lang.hm>
+X-X-Sender: dlang@asgard.lang.hm
+To: Valdis.Kletnieks@vt.edu
+cc: Matthew Garrett <matthew.garrett@nebula.com>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, gregkh@linuxfoundation.org, hpa@zytor.com,
+        linux-efi@vger.kernel.org, jmorris@namei.org,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 00/12] One more attempt at useful kernel lockdown
+In-Reply-To: <19562.1378747124@turing-police.cc.vt.edu>
+Message-ID: <alpine.DEB.2.02.1309091119330.2479@nftneq.ynat.uz>
+References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com> <19562.1378747124@turing-police.cc.vt.edu>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-09-09 at 08:20 +0000, Morales, Alejandra wrote:
-> mounted and there is no application using them at the moment, so that
-> I was expecting that none
-> of them receive file system requests. Indeed the SATA HD does not
-> receive any requests unless I
-> mount or unmount it, but the USB HD receives a large number of file
-> system requests and it seems
-> that it never enters into an idle state. Since any application is
-> using it I think these requests may
-> come from the USB subsystem. Am I right? If so, how could I determine
-> whether a request comes
-> from the USB subsystem or it is a file system request that actually
-> moves blocks?
+On Mon, 9 Sep 2013, Valdis.Kletnieks@vt.edu wrote:
 
-Your prime suspect is the detection of medium change which was
-moved into the kernel in 3.2 or so. It can be disabled by sysfs.
-Generally the notion that a certain task originates a read or write
-on a block device is iffy. Read-ahead and shared data structures
-make it impossible to accurately tell.
+> On Mon, 09 Sep 2013 11:49:34 -0400, Matthew Garrett said:
+>
+>> So, this is my final attempt at providing the functionality I'm interested
+>> in without inherently tying it to Secure Boot. There's strong parallels
+>> between the functionality that I'm interested in and the BSD securelevel
+>> interface, so here's a trivial implementation.
+>
+> Although all the individual patches look like sane and reasonable things
+> to do, I'm not at all convinced that sticking them all under control of one
+> flag is really the right way to do it.  In particular, there probably needs
+> to be some re-thinking of the kexec, signed-module, and secure-boot stuff,
+> as it's still a moving target.
 
-USB storage devices are notorious for setting the removable bit
-even if they have no removable medium.
+Given that we know that people want signed binaries without blocking kexec, you 
+should have '1' just enforce module signing and '2' (or higher) implement a full 
+lockdown including kexec.
 
-	Regards
-		Oliver
+Or, eliminate the -1  permanently insecure option and make this a bitmask, if 
+someone wants to enable every possible lockdown, have them set it to "all 1's", 
+define the bits only as you need them.
 
+right now
+1 lock down modules
+2 lock down kexec
 
+etc
+
+you may also want to have a 'disable module loading after this point' in the 
+future.
+
+David Lang
