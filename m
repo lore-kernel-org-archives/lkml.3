@@ -1,61 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929Ab3IIDP4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 23:15:56 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:52558 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751643Ab3IIDPz (ORCPT
+	id S1752085Ab3IIDVO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 23:21:14 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:60577 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751677Ab3IIDVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 23:15:55 -0400
-Message-ID: <522D3D69.5000004@free-electrons.com>
-Date: Mon, 09 Sep 2013 05:15:53 +0200
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+	Sun, 8 Sep 2013 23:21:13 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <522D3EA6.3010301@roeck-us.net>
+Date: Sun, 08 Sep 2013 20:21:10 -0700
+From: Guenter Roeck <linux@roeck-us.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-CC: mingo@redhat.com, konrad.wilk@oracle.com, x86@kernel.org,
-        tglx@linutronix.de, xen-devel@lists.xenproject.org,
-        david.vrabel@citrix.com, linux-kernel@vger.kernel.org, hpa@zytor.com
-Subject: Re: [PATCH] x86/xen: remove deprecated IRQF_DISABLED
-References: <3b488375-6998-4681-b105-e4c6d12ceca2@default>
-In-Reply-To: <3b488375-6998-4681-b105-e4c6d12ceca2@default>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, devel@driverdev.osuosl.org,
+        Peng Tao <tao.peng@emc.com>, Peng Tao <bergwolf@gmail.com>
+Subject: Re: [PATCH] staging: Disable lustre file system for MIPS, SH, and
+ XTENSA
+References: <1378688580-11935-1-git-send-email-linux@roeck-us.net> <20130909015945.GA4029@kroah.com> <CALkWK0kx+71O074dfP4ikj4FayU6GWXOByTFPgVjv=CVO-btUQ@mail.gmail.com> <20130909023311.GB5329@kroah.com> <CALkWK0mLUfJL0s-OxrmAD_RXpv0Qs-j23XedwPGAHKTq4JJjcA@mail.gmail.com> <20130909025030.GA5963@kroah.com> <CALkWK0kL0z1kTgp6N4mNt65GN4nwwL9EaBg=7XVVCsy2zJyj7A@mail.gmail.com>
+In-Reply-To: <CALkWK0kL0z1kTgp6N4mNt65GN4nwwL9EaBg=7XVVCsy2zJyj7A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
-
-Thanks for your review!
-
-On 09/08/2013 05:14 PM, Boris Ostrovsky wrote:
-> ----- michael.opdenacker@free-electrons.com wrote:
->
->> This patch proposes to remove the IRQF_DISABLED flag from x86/xen
->> code. It's a NOOP since 2.6.35 and it will be removed one day.
+On 09/08/2013 07:55 PM, Ramkumar Ramachandra wrote:
+> Greg Kroah-Hartman wrote:
+>>> How will the hardware industry be driven otherwise?
 >>
->> Signed-off-by: Michael Opdenacker
->> <michael.opdenacker@free-electrons.com>
->> ---
->>  arch/x86/xen/smp.c      | 10 +++++-----
->>  arch/x86/xen/spinlock.c |  2 +-
->>  arch/x86/xen/time.c     |  3 +--
->>  3 files changed, 7 insertions(+), 8 deletions(-)
+>> I have no idea what you are referring to here, please explain.
 >
-> If you are cleaning up Xen's use of IRQF_DISABLED then you should
-> probably also update drivers/xen/evtchn.c and drivers/xen/platform-pci.c
-This definitely makes sense to do this at the same time. I've just
-submitted a separate patch for this.
+> For stability, hardware needs to be present. When I started out a
+> couple of days ago, I blamed my monitor for the data corruption: it's
+> one extra point of leverage.
+>
 
-Thanks again,
+I have no idea whatsoever what you are talking about.
 
-Michael.
-
--- 
-Michael Opdenacker, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-+33 484 258 098
+Guenter
 
