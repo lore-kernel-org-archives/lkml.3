@@ -1,69 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754463Ab3IIPlV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 11:41:21 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16514 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754340Ab3IIPlT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 11:41:19 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=JDfofD-L5ZgA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5p3hctMY2UsA:10 a=NufY4J3AAAAA:8 a=KJzKL0uiuE2XcxeWlBsA:9 a=CjuIK1q_8ugA:10 a=re9sYKne76oA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Mon, 9 Sep 2013 11:41:16 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        sbw@mit.edu
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
- section?
-Message-ID: <20130909114116.209aa16b@gandalf.local.home>
-In-Reply-To: <0000014103534c88-48ee11a3-a581-4e52-b2df-3a1168047d96-000000@email.amazonses.com>
-References: <20130905195234.GA20555@linux.vnet.ibm.com>
-	<20130906105934.GF20519@somewhere>
-	<20130906151851.GQ3966@linux.vnet.ibm.com>
-	<1378488088.31445.39.camel@edumazet-glaptop>
-	<20130906174117.GU3966@linux.vnet.ibm.com>
-	<20130906185927.GE2706@somewhere>
-	<20130909105347.GK31370@twins.programming.kicks-ass.net>
-	<20130909132343.GN3966@linux.vnet.ibm.com>
-	<20130909133604.GC31370@twins.programming.kicks-ass.net>
-	<000001410333127c-486c74ec-3209-4c5e-a92f-0c11e00fa141-000000@email.amazonses.com>
-	<20130909150854.GD26785@twins.programming.kicks-ass.net>
-	<0000014103534c88-48ee11a3-a581-4e52-b2df-3a1168047d96-000000@email.amazonses.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754516Ab3IIPlu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 11:41:50 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:58260 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750937Ab3IIPls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 11:41:48 -0400
+Message-ID: <522DEC11.106@imgtec.com>
+Date: Mon, 9 Sep 2013 16:41:05 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-metag <linux-metag@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] metag architecture changes for v3.12
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="xaVKES4ML4kOhJbBMMU2BjtbCXlJ4J3bB"
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_09_09_16_41_17
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Sep 2013 15:24:55 +0000
-Christoph Lameter <cl@linux.com> wrote:
+--xaVKES4ML4kOhJbBMMU2BjtbCXlJ4J3bB
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> On Mon, 9 Sep 2013, Peter Zijlstra wrote:
-> 
-> > > Slander. Certainly validation is good. Its just that PREEMPT kernels are
-> > > not in use
-> >
-> > Complete bullshit, its part of the mainline kernel, lots of people run
-> > them -- including me, and any patch is supposed to keep it working.
-> 
-> Nonsense. There is no main line distro that supports full preempt. Its an
-> academic exercise.
+Hi Linus,
 
-Red Hat MRG supports PREEMPT_RT. And Debian has an option to use
-PREEMPT_RT too. Two big main line distros.
+Please pull a few arch/metag changes for v3.12.
 
-So please, cut out the "academic exercise" crap.
+Thanks
+James
 
--- Steve
+---
+The following changes since commit 3b2f64d00c46e1e4e9bd0bb9bb12619adac27a=
+4b:
+
+  Linux 3.11-rc2 (2013-07-21 12:05:29 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jhogan/metag.git tags/met=
+ag-for-v3.12
+
+for you to fetch changes up to b6ef9161e43ad58c3824bd76dc87716276f0cd70:
+
+  irq-imgpdc: add ImgTec PDC irqchip driver (2013-08-21 14:17:56 +0100)
+
+----------------------------------------------------------------
+Metag architecture changes for v3.12
+
+- Device tree updates for TZ1090 GPIO drivers merged via GPIO tree.
+- Add driver for ImgTec PDC irqchip as found in TZ1090 SoC.
+- Add linux-metag mailing list to MAINTAINERS file.
+
+----------------------------------------------------------------
+James Hogan (5):
+      metag: tz1090: select and instantiate irq-imgpdc
+      metag: tz1090: select and instantiate gpio-tz1090
+      metag: tz1090: instantiate gpio-tz1090-pdc
+      MAINTAINERS: add linux-metag mailing list
+      irq-imgpdc: add ImgTec PDC irqchip driver
+
+ .../devicetree/bindings/metag/pdc-intc.txt         | 105 +++++
+ MAINTAINERS                                        |   1 +
+ arch/metag/Kconfig.soc                             |   2 +
+ arch/metag/boot/dts/tz1090.dtsi                    |  67 +++
+ drivers/irqchip/Kconfig                            |   5 +
+ drivers/irqchip/Makefile                           |   1 +
+ drivers/irqchip/irq-imgpdc.c                       | 499 +++++++++++++++=
+++++++
+ 7 files changed, 680 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/metag/pdc-intc.txt
+ create mode 100644 drivers/irqchip/irq-imgpdc.c
+
+
+--xaVKES4ML4kOhJbBMMU2BjtbCXlJ4J3bB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSLewbAAoJEKHZs+irPybfRSUP/39Ud+e+1ilv7BI3DIKvbyql
+DomQ+UgJUUskPwADW5QGRq42ueZITS+eEflotKKa+jIr9fTYguSnrttW1LqPyLOv
+//yBmNI9COTUrquhLbo8kkAs1CPo0Wozf1v4B7nCO3Zl2AI7x5GPc5dp7sAKcNNX
+N0aJ0EwH23udmjIwdh3K1pypiB8MFXXqhBCyThvKb0g/ZQ+JhRAAbA37n3aovUpz
+1u/4RbMf+nXJu797utsrSebBhvoueMmUrG0+/H9uFojvbTUtipJy32Vup0yfXUF8
+jvnt4BhGQuYvQv7MGzFqMl24yhsqLb4J3qNowmC6mtV+mYGoQruHzDIrUKaprAQo
+UppmEQiIsdoutjcWm9tgV5YkcE/SGdoleFY/OF8aP5sJXzPvf9hzP6qT+39y0rD3
+ajHMGB/8rrUXIuT2jb7rETNBxHes6QhZ02BjPUzg4mwbEo1RIpfoK9Hps2EKqLCG
+T2Bo3hKBQKoLFwm4W5dgzhMyeCcgk6xohXrQdM8LN0HTm3XfAz8opbIpWDfpK8fP
+yCoxARpzif4LMkGmO0sUMVS9PQfjWPRuZ0d/aQtcqxh6Hr3r+j+eRjYPHqrI0mnW
+596ucqBp0Qf1ij4h9cwdJQXC+k9QLQ3cb5dLSJK6WCJnO1/XKCd1lLO7ofX/u8Dg
+InM+ls9hH6wMvzrg8Z9a
+=MyaN
+-----END PGP SIGNATURE-----
+
+--xaVKES4ML4kOhJbBMMU2BjtbCXlJ4J3bB--
+
