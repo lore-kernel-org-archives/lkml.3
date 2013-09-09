@@ -1,114 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899Ab3IIVkc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 17:40:32 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:40886 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755673Ab3IIVkb (ORCPT
+	id S1755960Ab3IIVlH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 17:41:07 -0400
+Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:39650 "EHLO
+	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755673Ab3IIVlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 17:40:31 -0400
-Date: Mon, 9 Sep 2013 17:40:26 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, sbw@mit.edu
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
-	section?
-Message-ID: <20130909214026.GA8830@Krystal>
-References: <20130909130851.GC16280@somewhere> <20130909092142.05780991@gandalf.local.home> <20130909134505.GF16280@somewhere> <20130909135656.GT3966@linux.vnet.ibm.com> <20130909101629.32df27a2@gandalf.local.home> <20130909161708.GX3966@linux.vnet.ibm.com> <20130909123422.7936e868@gandalf.local.home> <20130909165836.GB3966@linux.vnet.ibm.com> <20130909172908.GA31239@Krystal> <20130909175656.GF3966@linux.vnet.ibm.com>
+	Mon, 9 Sep 2013 17:41:05 -0400
+Date: Tue, 10 Sep 2013 00:40:59 +0300
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Tony Lindgren <tony@atomide.com>,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Camera drivers for Nokia RX-51
+Message-ID: <20130909214058.GB2057@valkosipuli.retiisi.org.uk>
+References: <201302171616.50152@pali>
+ <20130403222228.GE10541@valkosipuli.retiisi.org.uk>
+ <2135333.iYIDmYH7CC@avalon>
+ <201309062235.18603@pali>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20130909175656.GF3966@linux.vnet.ibm.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201309062235.18603@pali>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> On Mon, Sep 09, 2013 at 01:29:08PM -0400, Mathieu Desnoyers wrote:
-> > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> > > On Mon, Sep 09, 2013 at 12:34:22PM -0400, Steven Rostedt wrote:
-> > [...]
-> > > > "rcu_is_ignored()" or "rcu_is_not_active()", "rcu_is_watching_you()"
-> > > 
-> > > You know, I am strongly tempted by "rcu_is_watching_you()", but I have
-> > > this feeling that it is too cute for its own good.  ;-)
+Hi Pali,
+
+On Fri, Sep 06, 2013 at 10:35:18PM +0200, Pali Rohár wrote:
+> On Thursday 04 April 2013 15:11:27 Laurent Pinchart wrote:
+> > Hi Sakari,
 > > 
-> > Wow, I just got off the plane, and look at what happened to this thread
-> > ;-)
+> > On Thursday 04 April 2013 01:22:28 Sakari Ailus wrote:
+> > > On Tue, Mar 26, 2013 at 12:07:01AM +0100, Laurent Pinchart 
+> wrote:
+> > > > On Sunday 24 March 2013 23:46:01 Sakari Ailus wrote:
+> > > > > Pali Rohár wrote:
+> > > > > > On Thursday 07 March 2013 23:18:27 Sakari Ailus wrote:
+> > > > > >> On Wed, Mar 06, 2013 at 10:44:41PM +0100, Sebastian 
+> Reichel wrote:
+> > > > > >>> On Wed, Mar 06, 2013 at 09:20:16PM +0100, Pali Rohár 
+> wrote:
+> > > > > >>>> On Wednesday 06 March 2013 21:12:06 Pali Rohár 
+> wrote:
+> > > > > >>>>> On Sunday 17 February 2013 20:03:03 Aaro Koskinen 
+> wrote:
+> > > > > >>>>>> On Sun, Feb 17, 2013 at 04:16:49PM +0100, Pali 
+> Rohár wrote:
+> > > > > >>>>>>> +/*
+> > > > > >>>>>>> + * arch/arm/mach-omap2/board-rx51-camera.c
+> > > > > >>>>>>> + *
+> > > > > >>>>>>> + * Copyright (C) 2008 Nokia Corporation
+> > > > > >>>>>>> + *
+> > > > > >>>>>>> + * Contact: Sakari Ailus
+> > > > > >>>>>>> <sakari.ailus@nokia.com> + *          Tuukka
+> > > > > >>>>>>> Toivonen <tuukka.o.toivonen@nokia.com>
+> > > > > >>>>>> 
+> > > > > >>>>>> You should put these people to CC... Just to see
+> > > > > >>>>>> if the addresses are still valid (which I
+> > > > > >>>>>> doubt).
+> > > > > >>>>> 
+> > > > > >>>>> Ok, trying :-)
+> > > > > >>>> 
+> > > > > >>>> I got "Delivery Status Notification (Failure)" for
+> > > > > >>>> both addresses.
+> > > > > >> 
+> > > > > >> This is expected.
+> > > > > >> 
+> > > > > >>> Sakari Ailus hosts some code on github [0], which
+> > > > > >>> has the following email address:
+> > > > > >>> sakari.ailus+gitorious@retiisi.org.uk
+> > > > > >>> 
+> > > > > >>> I added it to this mail's CC.
+> > > > > >>> 
+> > > > > >>> [0] https://gitorious.org/~sailus
+> > > > > >> 
+> > > > > >> Nice to hear people are interested in this. ;-)
+> > > > > >> 
+> > > > > >> The primary reason I haven't tried submitting this to
+> > > > > >> mainline is that ARM board code has a bad reputation
+> > > > > >> these days. The N900 does not have yet support for
+> > > > > >> device tree (AFAIK), which also would require a few
+> > > > > >> bits and pieces on the flash driver to work.
+> > > > > >> 
+> > > > > >> Also the sensor and lens drivers would need at least
+> > > > > >> some work before being ready for submission to
+> > > > > >> mainline for camera to be usable. Unfortunately I
+> > > > > >> haven't had recently time to work on this. N9(50)
+> > > > > >> support has higher priority for myself. That, too,
+> > > > > >> is pending the DT support for the device.
+> > > > > >> 
+> > > > > >> There's indeed more up-to-date code in my repository.
+> > > > > >> Even if it's not too close to mainline anymore it
+> > > > > >> should be a better starting point than the old
+> > > > > >> kernel from MeeGo.
+> > > > > >> 
+> > > > > >> <URL:https://gitorious.org/omap3camera/pages/Home>
+> > > > > > 
+> > > > > > Hi,
+> > > > > > 
+> > > > > > this board code is same in your git repository and on
+> > > > > > meego obs.
+> > > > > > 
+> > > > > > Patch only adding support for adp1653 driver which is
+> > > > > > already in upstream kernel.
+> > > > > > 
+> > > > > > Are there any other problems with this patch to go for
+> > > > > > upstream?
+> > > > > 
+> > > > > A few more things comes to mind. We depend a little bit
+> > > > > on actual board code; it's not only static data. That's
+> > > > > the configuration of the external clock from the ISP to
+> > > > > the sensor. That should move to the common clock
+> > > > > framework so that the ISP registers the clock and the
+> > > > > sensor driver can then use it. AFAIR Laurent has done
+> > > > > some work on that.
+> > > > 
+> > > > Yes. I hope to get the patches in v3.10.
+> > > 
+> > > Cool! :)
+> > 
+> > The patches have been posted to the linux-media mailing list.
+> > If the dependencies make it to v3.10 the OMAP3 ISP patches
+> > should get there too.
+> > 
+> > > > > The peculiar detail of the rx51 is that there's a switch
+> > > > > on the camera CCP2 bus that selects either sensor
+> > > > > (primary or secondary). Both sensors are connected to
+> > > > > the same receiver. That isn't properly modelled
+> > > > > currently at all, so that's why we have
+> > > > > rx51_camera_set_xshutdown(). I guess it'd still work if
+> > > > > you only power (i.e. open) either of the devices at a
+> > > > > time, though.
+> > > > 
+> > > > Have you thought about how we could model that ?
+> > > 
+> > > Well, the two dependent gpios could be modelled as two
+> > > independent ones ( for sensor drivers), but setting the
+> > > state of those gpios could fail, gpio_set_value() still
+> > > returns void. This isn't pretty perhaps but as a result the
+> > > initialisation of the secondary sensor to be powered up at
+> > > the same time will fail since it's in reset: the xshutdown
+> > > of both sensors is controlled by the same gpio as is the
+> > > mux (AFAIR).
+> > > 
+> > > So one N900 camera specific gpio driver would be needed.
+> > > It'd be a very simple driver. What do you think?
+> > 
+> > I think I'll need to see how the GPIOs are wired up on the
+> > board.
 > 
-> I had the same reaction when getting up this morning.  ;-)
-> 
-> > Referring to your earlier question Paul, what I meant by my earlier
-> > email on naming has been addressed by Steven: when exposing a new RCU
-> > API, even if it is just for in-kernel use, we should be really cautious
-> > not to tie it to implementation, but rather to concepts. Basically, my
-> > original thought is that we should be able to express the exact same
-> > concept in the kernel RCU implementation and in Userspace RCU. Here,
-> > binding the name on whether the CPU is watching RCU really makes no
-> > sense for urcu, since all the RCU flavors we currently have are watching
-> > threads, not CPUs.
-> 
-> More that that, userspace RCU doesn't have any energy management tie-ins.
+> Hello, after months, what is state of drivers now?
 
-So far! ;)
+I have no choice except to say, much to my regret, that it's not really
+better than it was half a year ago. That said, I have not taken that off my
+to-do list.
 
-> It instead expects the application threads to invoke rcu_thread_offline()
-> when that thread goes idle and rcu_thread_offline() when the thread wakes
-> up again.  There is therefore less need for the application to query the
-> state because it was the application that set the state.
-> 
-> In contrast, within the Linux kernel, the RCU-watching state gets set
-> asynchronously with respect to in-kernel users of RCU.
-> 
-> Given the rest of the userspace RCU primitives, something like
-> rcu_thread_is_online() might make sense for the userspace RCU if some
-> application needs to know the state.  Or some other name that fits in
-> with rcu_thread_offline() and rcu_thread_online().
+Please keep in mind that the user space interface used by the omap3camd (and
+implemented by omap34xxcam) is entirely unsupported in the mainline kernel.
+A wrapper would need to be implemented to mimic the old interface to that
+binary blob --- all the equivalent functionality is there, albeit much
+better but quite different. Or it could be re-implemented.
 
-I think calling it "rcu_thread_is_online()" would actually give away
-some of the implementation details. I would be tempted to go for
-something along the lines of "rcu_is_online()".
-
-> But such a name would
->be problematic in the kernel due to CPU hotplug's use of those terms.
-
-The kernel has a clearly defined notion of "online cpu". I don't see the
-semantic clash with "online rcu". Whenever the RCU machinery is not
-observing an execution context, it is considered "offline". Whether this
-is caused by an explicit call (e.g. rcu_thread_offline() for urcu) or
-done internally (kernel dynticks) should not matter.
-
-> 
-> > Hence my proposal for "rcu_read_check()". It could be "rcu_is_active()"
-> > too, I don't really mind. It really minds: Is RCU actively watching the
-> > current execution context ? This can be translated to a runtime check
-> > too: is it safe to call rcu_read_lock() form this context ?
-> 
-> Although I do like rcu_is_active() better than rcu_read_check(), my
-> concern with rcu_is_active() is that it can easily be mistaken for a
-> global state rather than a per-CPU/thread/task/whatever state.
-
-Agreed. So how about rcu_is_online() ?
-
-Thanks,
-
-Mathieu
-
-> 
-> 							Thanx, Paul
-> 
+Having working drivers is a pre-dependency to that; I agree.
 
 -- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+Kind regards,
+
+Sakari Ailus
+e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
