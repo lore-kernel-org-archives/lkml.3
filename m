@@ -1,111 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755607Ab3IIU4j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 16:56:39 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:62373 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752265Ab3IIU4h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 16:56:37 -0400
-Message-ID: <522E3606.9060504@kernel.org>
-Date: Mon, 09 Sep 2013 16:56:38 -0400
-From: Konstantin Ryabitsev <mricon@kernel.org>
-Organization: Linux Foundation/Kernel.org
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1755773Ab3IIU5a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 16:57:30 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:39726 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755673Ab3IIU52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 16:57:28 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, Greg KH <greg@kroah.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-pm@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-sh@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: "cpufreq: fix serialization issues with freq change notifiers" breaks cpufreq too
+Date: Mon, 09 Sep 2013 23:08:25 +0200
+Message-ID: <1883706.eFcILAzoo8@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.64.1309091656200.6602@axis700.grange>
+References: <Pine.LNX.4.64.1309091656200.6602@axis700.grange>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, akpm@linux-foundation.org,
-        Hauke Mehrtens <hauke@hauke-m.de>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [16/85] b43: ensue that BCMA is "y" when B43 is "y"
-References: <lsq.1374674564.753305150@decadent.org.uk> <lsq.1374674565.595401652@decadent.org.uk> <20130909180115.GC6276@home.goodmis.org> <20130909183904.GJ7729@decadent.org.uk> <20130909144642.7d61907a@gandalf.local.home>
-In-Reply-To: <20130909144642.7d61907a@gandalf.local.home>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="gnb01Q0929w9wl8Ruax8unlVQQTockf0A"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---gnb01Q0929w9wl8Ruax8unlVQQTockf0A
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-On 09/09/13 02:46 PM, Steven Rostedt wrote:
-> Initially, LKML would be archived on kernel.org, but that never
-> happened and doesn't seem it will after the whole security breach
-> incident.
+On Monday, September 09, 2013 05:11:10 PM Guennadi Liakhovetski wrote:
+> Sorry guys, I'm trying my best to stop this patch from propagating to 
+> stable and to get it fixed asap, so, the CC list might be a bit excessive. 
+> Also trying to fix the originally spare cc list, which makes it impossible 
+> for me to reply to the original thread, instead have to start a new one.
 
-I believe we're hoping vger will eventually start doing it on its own. :)=
+I'm not sure what you're talking about.  What exactly was wrong with the
+original CC list in particular?
 
+> Commit
+> 
+> commit dceff5ce18801dddc220d6238628619c93bc3cb6
+> Author: Viresh Kumar <viresh.kumar@linaro.org>
+> Date:   Sun Sep 1 22:19:37 2013 +0530
+> 
+>     cpufreq: fix serialization issues with freq change notifiers
+> 
+> breaks .transition_ongoing counting.
 
-We do archive some of it as part of patchwork, but only actual patches.
+Do you know how exactly it breaks that?  If so, care to share that knowledge?
 
-> But if mid.gname.org is a better link to forward to, then perhaps
-> Konstantin could update it.
+> This leads to cpufreq-cpu0 not working any more. In particular switching the
+> governor from performance to powersave directly after boot doesn't result in
+> a frequency switch any more. Reverting this patch fixes the problem again.
 
-If it's the general community opinion, I can easily change that. The
-trouble is, "sucks less (most of the time)" is a subjective opinion that
-may not necessarily be shared by others. :) I have to be very careful
-changing such tools, as someone's workflow may be disrupted by the change=
-=2E
+However, this is a regression fix, so I'd prefer to fix the problem on top of
+it instead of reverting this commit entirely.
 
-Therefore, for now I leave /r/ as-is, but you can use /g/ to direct to
-gmane instead of marc.info:
+> Tested with today's 
+> -next.
+> 
+> Please, refrain from including into "stable" until clarified!
 
-http://lkml.kernel.org/g/5187EB95.2060605@infradead.org
+Well, dropping the commit altogether and dropping the "CC stable" tag are
+equally disruptive at this point, so I think I'll just defer all of the
+cpufreq fixes I wanted to push for 3.12 before the ending of the merge
+window.
 
-Even further, if the message contained a patch, you can use '/p/' to
-refer to it:
+Thanks,
+Rafael
 
-http://lkml.kernel.org/p/20130909183608.GR13318@ZenIV.linux.org.uk
-
-You can just use that instead of /g/, since if a matching patchwork
-patch is not found, it'll fallback mid.gmane.org. E.g., this message
-does not have a patch, so no patchwork entry:
-
-http://lkml.kernel.org/p/5187EB95.2060605@infradead.org
-
-> In any case, as I would think kernel.org will be around as long as
-> Linux is still in use, having the link go to kernel.org, and then
-> kernel.org could point the result to where ever it liked, is still the
-> best option.
-
-Yes, do use lkml.kernel.org for this. If either marc.info or
-mid.gmane.org go away, we'll find some other places to redirect without
-losing historical context.
-
-Best,
---=20
-Konstantin Ryabitsev
-Senior Systems Administrator
-Linux Foundation Collab Projects
-Montr=C3=A9al, Qu=C3=A9bec
-
-
---gnb01Q0929w9wl8Ruax8unlVQQTockf0A
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQGcBAEBAgAGBQJSLjYGAAoJEI6WedmufEleGDUMAIfavC3kLGmI2C8xT8uvGjXG
-2zK/SDKdlVQvyDnbO0HBQyNrHhWs70eRcFYdinp8tRwvHV6wXqOD0IWXvNNjXAhr
-JqnvhPB2hGwEYHhTkK4gjEFnOir0fY5/eeTAeKafVcpS2A/dkHUYDjjmhe9sZIyG
-gudrRYUVpyucY76YUpvA4o/O85qiy+pzm/iwTaDqsjMIoo23a89qYmyJXPhE5gJn
-HvPb1IClkpPstrPs8uPpu0KOFhQovVyom0zkeffwgJ6SUm/JYzyDcRYH2gVMC2+/
-I8htow1HfsSUkhslJ1Q6e+JJLhSNL2ovZRzmdJ8fKcg7mODlxtpd88M6fuygserM
-1nlJrNdxe1W/ks0zEMfP23j3fzHxDRlMgI44OzxZBGhK3aMib0R8Ky/GEPqiQOxt
-hKMh31FidsmzzUo+9aQKrcDBiAdgYhrzTuEcLdNBRryLxCKwsjjeUDKh7zNiWmrv
-NxqqiXPR/v12+hpIWySw7PNUJgOFyBDtDYfjA1BVLQ==
-=OYkO
------END PGP SIGNATURE-----
-
---gnb01Q0929w9wl8Ruax8unlVQQTockf0A--
