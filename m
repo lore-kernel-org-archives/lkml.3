@@ -1,67 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820Ab3IISU4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 14:20:56 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:54426 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753283Ab3IISUz (ORCPT
+	id S1755265Ab3IISVP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 14:21:15 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:53981 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754860Ab3IISVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 14:20:55 -0400
-Message-ID: <522E0FDF.8000108@gmail.com>
-Date: Mon, 09 Sep 2013 20:13:51 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Mon, 9 Sep 2013 14:21:13 -0400
+Date: Mon, 9 Sep 2013 19:21:11 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Waiman Long <Waiman.Long@hp.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        George Spelvin <linux@horizon.com>, John Stoffel <john@stoffel.org>
+Subject: Re: [PATCH v4 1/1] dcache: Translating dentry into pathname without
+ taking rename_lock
+Message-ID: <20130909182111.GQ13318@ZenIV.linux.org.uk>
+References: <1378743493-33546-1-git-send-email-Waiman.Long@hp.com>
+ <1378743493-33546-2-git-send-email-Waiman.Long@hp.com>
+ <20130909172905.GN13318@ZenIV.linux.org.uk>
+ <CA+55aFx_pUwHg35Ueb4Ewy8ZrBA_UtFbQqdRzL64_Q7iQ=V-rA@mail.gmail.com>
+ <20130909180604.GO13318@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/19] pramfs
-References: <522AE04C.6000002@gmail.com> <20130908234031.GS12779@dastard>
-In-Reply-To: <20130908234031.GS12779@dastard>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130909180604.GO13318@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 09/09/2013 01:40, Dave Chinner ha scritto:
-> On Sat, Sep 07, 2013 at 10:14:04AM +0200, Marco Stornelli wrote:
->> Hi all,
->>
->> this is an attempt to include pramfs in mainline. At the moment pramfs
->> has been included in LTSI kernel. Since last review the code is more
->> or less the same but, with a really big thanks to Vladimir Davydov and
->> Parallels, the development of fsck has been started and we have now
->> the possibility to correct fs errors due to corruption. It's a "young"
->> tool but we are working on it. You can clone the code from our repos:
->>
->> git clone git://git.code.sf.net/p/pramfs/code pramfs-code
->> git clone git://git.code.sf.net/p/pramfs/Tools pramfs-Tools
->
-> The 1980s are calling, and they want their filesytem back. :)
->
-> So, Devil's Advocate time. Convince me as to why pramfs should be
-> merged.
->
+On Mon, Sep 09, 2013 at 07:06:04PM +0100, Al Viro wrote:
+> I like my proposal for the set of primitives better:
+> 
+> static inline bool seqretry_and_lock(seqlock_t *lock, unsigned *seq):
+> {
+>         if ((*seq & 1) || !read_seqretry(lock, *seq))
+>                 return true;
+>         *seq |= 1;
+>         write_seqlock(lock);
+>         return false;
+> }
+> 
+> static inline void seqretry_done(seqlock_t *lock, unsigned seq)
+> {
+>         if (seq & 1)
+>                 write_sequnlock(lock);
+> }
+> 
+> with the prepend_path() and friends becoming
+> 
+> 	rcu_read_lock();
+> 	seq = read_seqbegin(&rename_lock);
+> again:
+> 	....
+> 	if (!seqretry_and_lock(&rename_lock, seq))
+> 		goto again;	/* now as writer */
+> 	seqretry_done(&rename_lock, seq);
+> 	rcu_read_unlock();
 
-Never used in my embedded project with more of few mb, and maybe you are 
-asking for cases not targeted. Pramfs is in LTSI not why I asked Greg to 
-include it, but because there are several companies asked me to do. The 
-message wasn't "hey, pramfs is in LTSI, so we must include it in 
-mainline" but it was only a consideration and indication that there is 
-need of something like that out there. Sure we can talk about if it's 
-the best option or not, however this is the real world. In addition, 
-this comment is exactly why the kernel community is not really friendly 
-to be time-to-market, we have to say it. It's not possible to have a 10 
-years review. It's a never ending story. Maybe when there is a big 
-company behind a patch the behavior is different and I can do several 
-examples, but I don't want to say more, life is hard, I know, even in 
-the kernel community. I think I can close the review here, my delusion 
-is not for me, I can live well in each case, but for the companies and 
-all the people believes in the project.
+Actually, it's better for prepend_path() as well, because it's actually
+ 
+	rcu_read_lock();
+	seq = read_seqbegin(&rename_lock);
+again:
+	....
+	if (error)
+		goto done;
+	....
+	if (!seqretry_and_lock(&rename_lock, seq))
+		goto again;	/* now as writer */
+done:
+	seqretry_done(&rename_lock, seq);
+	rcu_read_unlock();
 
-Thanks to all.
+Posted variant will sometimes hit the following path:
+	* seq_readlock()
+	* start generating the output
+	* hit an error
+[another process has taken and released rename_lock for some reason]
+	* hit read_seqretry_and_unlock(), which returns 1.
+	* retry everything with seq_writelock(), despite the error.
 
-Marco
-
+It's not too horrible (we won't be looping indefinitely, ignoring error
+all along), but it's certainly subtle enough...
