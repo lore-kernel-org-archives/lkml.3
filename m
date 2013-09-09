@@ -1,54 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223Ab3IIGVS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 02:21:18 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35098 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751212Ab3IIGVR (ORCPT
+	id S1752227Ab3IIGZt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 02:25:49 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:40521 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751240Ab3IIGZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 02:21:17 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <522D681E.1030809@jp.fujitsu.com>
-Date: Mon, 09 Sep 2013 15:18:06 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Mon, 9 Sep 2013 02:25:48 -0400
+Message-ID: <522D69D9.4020403@huawei.com>
+Date: Mon, 9 Sep 2013 14:25:29 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: jingbai.ma@hp.com, kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        ebiederm@xmission.com, akpm@linux-foundation.org, hpa@linux.intel.com,
-        vgoyal@redhat.com
-Subject: Re: [PATCH 2/2] x86, apic: Disable BSP if boot cpu is AP
-References: <20130829092458.5476.10277.stgit@localhost6.localdomain6> <20130829092804.5476.95588.stgit@localhost6.localdomain6> <20130831052252.GC12617@x1.alien8.de> <5223F8DB.3040506@jp.fujitsu.com> <20130902071318.GA3406@x1.alien8.de> <52245D94.5050702@jp.fujitsu.com> <20130904061221.GA17791@x1.alien8.de>
-In-Reply-To: <20130904061221.GA17791@x1.alien8.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
+        <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        <kosaki.motohiro@gmail.com>
+Subject: Re: [PATCH 1/2] mm/hotplug: rename the function is_memblock_offlined_cb()
+References: <522D4038.7010609@huawei.com> <522D65F3.2030400@jp.fujitsu.com>
+In-Reply-To: <522D65F3.2030400@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/09/04 15:12), Borislav Petkov wrote:
-> On Mon, Sep 02, 2013 at 06:42:44PM +0900, HATAYAMA Daisuke wrote:
->> The reason why I don't lookup BSP flag in MSR is that it's impossible.
->> To read MSR of some CPU, we need to use rdmsr instruction on the CPU.
->> However, in case of this issue, the BSP is halting or running in
->> the kdump 1st kernel.
->
-> Yes, and on the AP, that flag would be cleared which makes it not a BSP.
->
->> A whole explanation is written in the patch description.
->
-> Those tend to get lost in git history when a bunch of whitespace jerk
-> offs appear ontop. So a nicely written comment in the code could be very
-> helpful.
->
-> Thanks.
->
+On 2013/9/9 14:08, Yasuaki Ishimatsu wrote:
 
-Yes, that's the point this patch series misses. I'll describe the explanation
-in Documentation/kexec/kexec.txt and point it in the comment of boot-up code.
+> [CCing Kosaki since he maintains mm/memory_hotplug.c]
+> 
+> (2013/09/09 12:27), Xishi Qiu wrote:
+>> Function is_memblock_offlined() return 1 means memory block is offlined,
+>> but is_memblock_offlined_cb() return 1 means memory block is not offlined,
+>> this will confuse somebody, so rename the function.
+>>
+> 
+>> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+>> Acked-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>> ---
+> 
+> I have not acked your previous patch yet. But this patch seems good to me.
+> So I acked the patch.
+> 
 
--- 
-Thanks.
-HATAYAMA, Daisuke
+Sorry, I mistakenly thought "seems good to me" was the same as acked, I'll pay 
+attention next time.
+
+Thanks,
+Xishi Qiu
+
+> Thanks,
+> Yasuaki Ishimatsu
+> 
+>>   mm/memory_hotplug.c |    4 ++--
+>>   1 files changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+>> index ca1dd3a..85f80b7 100644
+>> --- a/mm/memory_hotplug.c
+>> +++ b/mm/memory_hotplug.c
+>> @@ -1657,7 +1657,7 @@ int walk_memory_range(unsigned long start_pfn, unsigned long end_pfn,
+>>   }
+>>
+>>   #ifdef CONFIG_MEMORY_HOTREMOVE
+>> -static int is_memblock_offlined_cb(struct memory_block *mem, void *arg)
+>> +static int check_memblock_offlined_cb(struct memory_block *mem, void *arg)
+>>   {
+>>       int ret = !is_memblock_offlined(mem);
+>>
+>> @@ -1794,7 +1794,7 @@ void __ref remove_memory(int nid, u64 start, u64 size)
+>>        * if this is not the case.
+>>        */
+>>       ret = walk_memory_range(PFN_DOWN(start), PFN_UP(start + size - 1), NULL,
+>> -                is_memblock_offlined_cb);
+>> +                check_memblock_offlined_cb);
+>>       if (ret) {
+>>           unlock_memory_hotplug();
+>>           BUG();
+>>
+> 
+> 
+> 
+> 
+
+
 
