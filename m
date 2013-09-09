@@ -1,166 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751044Ab3IIIWo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 04:22:44 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:48442 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750819Ab3IIIWm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 04:22:42 -0400
-X-AuditID: 9c93017e-b7c76ae000003897-7b-522d8550152c
-Date: Mon, 9 Sep 2013 17:22:55 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH v3 06/20] mm, hugetlb: return a reserved page to a
- reserved pool if failed
-Message-ID: <20130909082255.GD22390@lge.com>
-References: <520c10eb.SqhfxPtrRlcvUrQR%akpm@linux-foundation.org>
- <1378444996-3426-1-git-send-email-iamjoonsoo.kim@lge.com>
+	id S1751296Ab3IIIXR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 04:23:17 -0400
+Received: from iron6.routit.net ([89.146.30.10]:46943 "EHLO iron6.routit.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751122Ab3IIIXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 04:23:13 -0400
+X-Greylist: delayed 303 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Sep 2013 04:23:13 EDT
+X-SenderBaseSpam: None
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqIEAGl6LVIuLKtN/2dsb2JhbABagz+De75rgTJ0giUBAQUjDwEFQQ4CCxgCAgUhAgIPAgo8BgEMAQUCAQGIAgi0ApEBBIEljSuBGBQHgmmBNAOZJIkAhzeDIjqBLg
+X-IPAS-Result: AqIEAGl6LVIuLKtN/2dsb2JhbABagz+De75rgTJ0giUBAQUjDwEFQQ4CCxgCAgUhAgIPAgo8BgEMAQUCAQGIAgi0ApEBBIEljSuBGBQHgmmBNAOZJIkAhzeDIjqBLg
+Message-ID: <522D843A.60401@raritan.com>
+Date: Mon, 09 Sep 2013 10:18:02 +0200
+From: Ronald Wahl <ronald.wahl@raritan.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378444996-3426-1-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Marc Kleine-Budde <mkl@pengutronix.de>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        arm@kernel.org, John Stultz <john.stultz@linaro.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        Andres Salomon <dilinger@queued.net>, Shawn Guo <shawn.guo@linaro.org>,
+        linux-ar@jasper.es
+Subject: Re: RFC: [PATCH] clocksource: tcb: fix min_delta calculation
+References: <517687AB.1040309@pengutronix.de> <1366722524-25991-1-git-send-email-mkl@pengutronix.de> <alpine.LFD.2.02.1304251618590.21884@ionos> <51794385.1030308@pengutronix.de> <51C31926.3060400@pengutronix.de>
+In-Reply-To: <51C31926.3060400@pengutronix.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 09 Sep 2013 08:18:04.0877 (UTC) FILETIME=[1BA197D0:01CEAD35]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 06, 2013 at 02:23:16PM +0900, Joonsoo Kim wrote:
-> If we fail with a reserved page, just calling put_page() is not sufficient,
-> because put_page() invoke free_huge_page() at last step and it doesn't
-> know whether a page comes from a reserved pool or not. So it doesn't do
-> anything related to reserved count. This makes reserve count lower
-> than how we need, because reserve count already decrease in
-> dequeue_huge_page_vma(). This patch fix this situation.
-> 
-> In this patch, PagePrivate() is used for tracking reservation.
-> When resereved pages are dequeued from reserved pool, Private flag is
-> assigned to the hugepage until properly mapped. On page returning process,
-> if there is a hugepage with Private flag, it is considered as the one
-> returned in certain error path, so that we should restore one
-> reserve count back in order to preserve certain user's reserved hugepage.
-> 
-> Using Private flag is safe for the hugepage, because it doesn't use the
-> LRU mechanism so that there is no other user of this page except us.
-> Therefore we can use this flag safely.
-> 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> ---
-> Replenishing commit message only.
+On 20.06.2013 17:00, Marc Kleine-Budde wrote:
+> Hello Thomas,
+>
+> On 04/25/2013 04:53 PM, Marc Kleine-Budde wrote:
+>> On 04/25/2013 04:21 PM, Thomas Gleixner wrote:
+>>> On Tue, 23 Apr 2013, Marc Kleine-Budde wrote:
+>>>> The commit
+>>>>
+>>>>      77cc982 clocksource: use clockevents_config_and_register() where possible
+>>>>
+>>>> switches from manually calculating min_delta_ns (and others) and
+>>>> clockevents_register_device() to automatic calculation via
+>>>> clockevents_config_and_register(). During this conversation the "+ 1" in
+>>>>
+>>>>      min_delta_ns = clockevent_delta2ns(1, &clkevt.clkevt) + 1;
+>>>>
+>>>> was lost. This leads to problems with schedule_delayed_work() with a delay of
+>>>> "1". Resulting in the work not scheduled in time.
+>>>
+>>> Errm. How is schedule_delayed_work() related to this?
 
-Hello, Andrew.
+I also stumbled over this issue now after upgrading from 3.4.57 to 
+3.10.10. Even sleep() is unreliable - sleeping for 2 seconds often 
+sleeps just more than 3 seconds.
 
-One fix is needed, so here are v4.
-What I fix is mentioned in commit message.
+The now lost +1 has actually been added in 2007 to solve a rounding issue:
 
------------------>8--------------------
->From 8ca7e41090a16fbb12dd33e8f15ee8c41c70a448 Mon Sep 17 00:00:00 2001
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Date: Tue, 6 Aug 2013 17:06:36 +0900
-Subject: [PATCH v4 06/20] mm, hugetlb: return a reserved page to a reserved pool
- if failed
+   http://permalink.gmane.org/gmane.linux.kernel/549744
 
-If we fail with a reserved page, just calling put_page() is not sufficient,
-because put_page() invoke free_huge_page() at last step and it doesn't
-know whether a page comes from a reserved pool or not. So it doesn't do
-anything related to reserved count. This makes reserve count lower
-than how we need, because reserve count already decrease in
-dequeue_huge_page_vma(). This patch fix this situation.
+So I think this should either be fixed by always rounding up in 
+clockevent_delta2ns() or by adding +1 to the min_delta_ns in the 
+clockevents_config_and_register() function. Dunno if rounding up will 
+cause problems with the max_delta_ns as it might be too big then so 
+probably the second approach is better.
 
-In this patch, PagePrivate() is used for tracking reservation.
-When resereved pages are dequeued from reserved pool, Private flag is
-assigned to the hugepage until properly mapped. On page returning process,
-if there is a hugepage with Private flag, it is considered as the one
-returned in certain error path, so that we should restore one
-reserve count back in order to preserve certain user's reserved hugepage.
+Opinions?
 
-Using Private flag is safe for the hugepage, because it doesn't use the
-LRU mechanism so that there is no other user of this page except us.
-Therefore we can use this flag safely.
+- ron
 
-v4:
-- ClearPagePrivate() is added in free_huge_page().
-
-v3:
-- commit message is added
-
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 6c8eec2..2b03666 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -572,6 +572,7 @@ retry_cpuset:
- 				if (!vma_has_reserves(vma, chg))
- 					break;
- 
-+				SetPagePrivate(page);
- 				h->resv_huge_pages--;
- 				break;
- 			}
-@@ -626,15 +627,22 @@ static void free_huge_page(struct page *page)
- 	int nid = page_to_nid(page);
- 	struct hugepage_subpool *spool =
- 		(struct hugepage_subpool *)page_private(page);
-+	bool restore_reserve;
- 
- 	set_page_private(page, 0);
- 	page->mapping = NULL;
- 	BUG_ON(page_count(page));
- 	BUG_ON(page_mapcount(page));
-+	restore_reserve = PagePrivate(page);
-+	if (restore_reserve)
-+		ClearPagePrivate(page);
- 
- 	spin_lock(&hugetlb_lock);
- 	hugetlb_cgroup_uncharge_page(hstate_index(h),
- 				     pages_per_huge_page(h), page);
-+	if (restore_reserve)
-+		h->resv_huge_pages++;
-+
- 	if (h->surplus_huge_pages_node[nid] && huge_page_order(h) < MAX_ORDER) {
- 		/* remove the page from active list */
- 		list_del(&page->lru);
-@@ -2616,6 +2624,8 @@ retry_avoidcopy:
- 	spin_lock(&mm->page_table_lock);
- 	ptep = huge_pte_offset(mm, address & huge_page_mask(h));
- 	if (likely(pte_same(huge_ptep_get(ptep), pte))) {
-+		ClearPagePrivate(new_page);
-+
- 		/* Break COW */
- 		huge_ptep_clear_flush(vma, address, ptep);
- 		set_huge_pte_at(mm, address, ptep,
-@@ -2727,6 +2737,7 @@ retry:
- 					goto retry;
- 				goto out;
- 			}
-+			ClearPagePrivate(page);
- 
- 			spin_lock(&inode->i_lock);
- 			inode->i_blocks += blocks_per_huge_page(h);
-@@ -2773,8 +2784,10 @@ retry:
- 	if (!huge_pte_none(huge_ptep_get(ptep)))
- 		goto backout;
- 
--	if (anon_rmap)
-+	if (anon_rmap) {
-+		ClearPagePrivate(page);
- 		hugepage_add_new_anon_rmap(page, vma, address);
-+	}
- 	else
- 		page_dup_rmap(page);
- 	new_pte = make_huge_pte(vma, page, ((vma->vm_flags & VM_WRITE)
 -- 
-1.7.9.5
-
+Ronald Wahl - ronald.wahl@raritan.com - Phone +49 375271349-0 Fax -99
+Raritan Deutschland GmbH, Kornmarkt 7, 08056 Zwickau, Germany
+USt-IdNr. DE813094160, Steuer-Nr. 227/117/01749
+Amtsgericht Chemnitz HRB 23605
+Geschäftsführung: Stuart Hopper, Ralf Ploenes
