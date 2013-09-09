@@ -1,93 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753697Ab3IIN5J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:57:09 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:60305 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753560Ab3IIN5G (ORCPT
+	id S1753790Ab3IIN5W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:57:22 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54334 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753465Ab3IIN5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 09:57:06 -0400
-Date: Mon, 9 Sep 2013 06:56:56 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        sbw@mit.edu
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
- section?
-Message-ID: <20130909135656.GT3966@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130906174117.GU3966@linux.vnet.ibm.com>
- <20130906185927.GE2706@somewhere>
- <20130909105347.GK31370@twins.programming.kicks-ass.net>
- <20130909121329.GA16280@somewhere>
- <20130909083926.3eceebef@gandalf.local.home>
- <20130909124547.GB16280@somewhere>
- <20130909085504.2ddd7e69@gandalf.local.home>
- <20130909130851.GC16280@somewhere>
- <20130909092142.05780991@gandalf.local.home>
- <20130909134505.GF16280@somewhere>
+	Mon, 9 Sep 2013 09:57:19 -0400
+Message-ID: <522DD386.2080003@pengutronix.de>
+Date: Mon, 09 Sep 2013 15:56:22 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130518 Icedove/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130909134505.GF16280@somewhere>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090913-0928-0000-0000-00000165DA1C
+To: Ronald Wahl <ronald.wahl@raritan.com>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        arm@kernel.org, John Stultz <john.stultz@linaro.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        Andres Salomon <dilinger@queued.net>, Shawn Guo <shawn.guo@linaro.org>,
+        linux-ar@jasper.es
+Subject: Re: RFC: [PATCH] clocksource: tcb: fix min_delta calculation
+References: <517687AB.1040309@pengutronix.de> <1366722524-25991-1-git-send-email-mkl@pengutronix.de> <alpine.LFD.2.02.1304251618590.21884@ionos> <51794385.1030308@pengutronix.de> <51C31926.3060400@pengutronix.de> <522D843A.60401@raritan.com>
+In-Reply-To: <522D843A.60401@raritan.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="2DnFRu5IJqau5nuXsGoDK62rT8wJFTB13"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 03:45:06PM +0200, Frederic Weisbecker wrote:
-> On Mon, Sep 09, 2013 at 09:21:42AM -0400, Steven Rostedt wrote:
-> > On Mon, 9 Sep 2013 15:08:53 +0200
-> > Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > 
-> > > On Mon, Sep 09, 2013 at 08:55:04AM -0400, Steven Rostedt wrote:
-> > 
-> > > > From reading the context a bit more, it seems that the per cpu value is
-> > > > more a "per task" value that happens to be using per cpu variables, and
-> > > > changes on context switches. Is that correct?
-> > > 
-> > > Yeah that's probably what confuse so many people. It's indeed at the same
-> > > time a task state and a per cpu state.
-> > 
-> > Especially since the function name itself is "rcu_is_cpu_idle()" which
-> > tells you it's a cpu state, and not a task state. Why would you care in
-> > RCU if CPU 1 is idle if you are on CPU 2? The name should be changed.
-> 
-> OTOH it's referring to RCU extended quiescent states that are really per
-> CPU from the RCU point of view, implementation and design wise.
-> 
-> Perhaps a name that has a meaning close to task_is_in_cpu_extqs().
-> 
-> I'm not sure it makes things clearer though.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--2DnFRu5IJqau5nuXsGoDK62rT8wJFTB13
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Indeed, there is on ongoing naming debate as well.  About the only point
-of agreement thus far is that the current names are inadequate. ;-)
+On 09/09/2013 10:18 AM, Ronald Wahl wrote:
+> On 20.06.2013 17:00, Marc Kleine-Budde wrote:
+>> Hello Thomas,
+>>
+>> On 04/25/2013 04:53 PM, Marc Kleine-Budde wrote:
+>>> On 04/25/2013 04:21 PM, Thomas Gleixner wrote:
+>>>> On Tue, 23 Apr 2013, Marc Kleine-Budde wrote:
+>>>>> The commit
+>>>>>
+>>>>>      77cc982 clocksource: use clockevents_config_and_register()
+>>>>> where possible
+>>>>>
+>>>>> switches from manually calculating min_delta_ns (and others) and
+>>>>> clockevents_register_device() to automatic calculation via
+>>>>> clockevents_config_and_register(). During this conversation the "+
+>>>>> 1" in
+>>>>>
+>>>>>      min_delta_ns =3D clockevent_delta2ns(1, &clkevt.clkevt) + 1;
+>>>>>
+>>>>> was lost. This leads to problems with schedule_delayed_work() with
+>>>>> a delay of
+>>>>> "1". Resulting in the work not scheduled in time.
+>>>>
+>>>> Errm. How is schedule_delayed_work() related to this?
+>=20
+> I also stumbled over this issue now after upgrading from 3.4.57 to
+> 3.10.10. Even sleep() is unreliable - sleeping for 2 seconds often
+> sleeps just more than 3 seconds.
+>=20
+> The now lost +1 has actually been added in 2007 to solve a rounding iss=
+ue:
+>=20
+>   http://permalink.gmane.org/gmane.linux.kernel/549744
+>=20
+> So I think this should either be fixed by always rounding up in
+> clockevent_delta2ns() or by adding +1 to the min_delta_ns in the
+> clockevents_config_and_register() function. Dunno if rounding up will
+> cause problems with the max_delta_ns as it might be too big then so
+> probably the second approach is better.
+>=20
+> Opinions?
 
-My current feeling is that rcu_is_cpu_idle() should be called
-rcu_watching_this_cpu() and what is called rcu_watching_this_cpu()
-in my local tree should be called __rcu_watching_this_cpu().
+Thomas, any thoughts on this?
+
+Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
 
-							Thanx, Paul
+--2DnFRu5IJqau5nuXsGoDK62rT8wJFTB13
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-> > > Pretty much like tsk->ti->preempt_count that people now try to implement
-> > > through a per cpu value.
-> > 
-> > Actually, preempt_count is more a CPU state than a task state. When
-> > preempt_count is set, that CPU can not schedule out the current task.
-> > It really has nothing to do with the task itself. It's the CPU that
-> > can't do something. Preempt count should never traverse with a task
-> > from one CPU to another.
-> 
-> Yep.
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
 
+iEYEARECAAYFAlIt04YACgkQjTAFq1RaXHOqnwCfZsYoy4tpbnBHdH7dqZsW4IKN
+xU8AoJVKAdg5PlvaZJFUCD5+q5VjiAOa
+=w0Jj
+-----END PGP SIGNATURE-----
+
+--2DnFRu5IJqau5nuXsGoDK62rT8wJFTB13--
