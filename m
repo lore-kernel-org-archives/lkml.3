@@ -1,111 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267Ab3IIM6y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 08:58:54 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50095 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab3IIM6v (ORCPT
+	id S1752559Ab3IINCR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:02:17 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:33888 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751128Ab3IINCQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 08:58:51 -0400
-Date: Mon, 9 Sep 2013 14:58:41 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: maarten.lankhorst@canonical.com, imirkin@alum.mit.edu,
-        linux-kernel@vger.kernel.org, daniel.vetter@ffwll.ch,
-        robdclark@gmail.com, mingo@kernel.org
-Subject: Re: [3.11-rc1] CONFIG_DEBUG_MUTEXES=y using gcc 3.x makes
- unbootablekernel.
-Message-ID: <20130909125841.GZ31370@twins.programming.kicks-ass.net>
-References: <CAKb7UvjH1XZ3f-c=149s5=rqxkxVUhG_7-cfUYH3zrwJwr2_MQ@mail.gmail.com>
- <201309081624.EBJ90176.OJStQOFLHVFFOM@I-love.SAKURA.ne.jp>
- <522C312A.7050705@canonical.com>
- <201309082053.FDB24195.FVOOJMStFQFLHO@I-love.SAKURA.ne.jp>
- <522CDFC8.9020903@canonical.com>
- <201309092056.GDH56750.OOMJtOHQVFFLSF@I-love.SAKURA.ne.jp>
+	Mon, 9 Sep 2013 09:02:16 -0400
+Date: Mon, 9 Sep 2013 14:02:11 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: wei_wang@realsil.com.cn
+Cc: sameo@linux.intel.com, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        rogerable@realtek.com, micky_ching@realsil.com.cn
+Subject: Re: [PATCH v2] mfd: rtsx: Modify rts5249_optimize_phy
+Message-ID: <20130909130211.GG22938@lee--X1>
+References: <cover.1378437776.git.wei_wang@realsil.com.cn>
+ <e858b38c5b87dd761c764c6214f49cf9a9b5ad1d.1378437776.git.wei_wang@realsil.com.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <201309092056.GDH56750.OOMJtOHQVFFLSF@I-love.SAKURA.ne.jp>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <e858b38c5b87dd761c764c6214f49cf9a9b5ad1d.1378437776.git.wei_wang@realsil.com.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 08:56:53PM +0900, Tetsuo Handa wrote:
-> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Date: Mon, 9 Sep 2013 20:48:13 +0900
-> Subject: [PATCH] mutex: Avoid gcc version dependent __builtin_constant_p() usage.
-> 
-> Commit 040a0a37 "mutex: Add support for wound/wait style locks" used
-> "!__builtin_constant_p(p == NULL)" but gcc 3.x cannot handle such expression
-> correctly, leading to boot failure when built with CONFIG_DEBUG_MUTEXES=y.
-> 
-> Fix it by explicitly passing a bool which tells whether p != NULL or not.
-> 
-> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Cc: <stable@kernel.org> [3.11+]
-> ---
->  kernel/mutex.c |   32 ++++++++++++++++----------------
->  1 files changed, 16 insertions(+), 16 deletions(-)
-> 
-> diff --git a/kernel/mutex.c b/kernel/mutex.c
-> index a52ee7bb..a2b80f1 100644
-> --- a/kernel/mutex.c
-> +++ b/kernel/mutex.c
-> @@ -408,7 +408,7 @@ ww_mutex_set_context_fastpath(struct ww_mutex *lock,
->  static __always_inline int __sched
->  __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->  		    struct lockdep_map *nest_lock, unsigned long ip,
-> -		    struct ww_acquire_ctx *ww_ctx)
-> +		    struct ww_acquire_ctx *ww_ctx, const bool use_ww_ctx)
->  {
->  	struct task_struct *task = current;
->  	struct mutex_waiter waiter;
-> @@ -448,7 +448,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->  		struct task_struct *owner;
->  		struct mspin_node  node;
->  
-> -		if (!__builtin_constant_p(ww_ctx == NULL) && ww_ctx->acquired > 0) {
-> +		if (use_ww_ctx && ww_ctx->acquired > 0) {
->  			struct ww_mutex *ww;
->  
->  			ww = container_of(lock, struct ww_mutex, base);
-> @@ -478,7 +478,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
->  		if ((atomic_read(&lock->count) == 1) &&
->  		    (atomic_cmpxchg(&lock->count, 1, 0) == 1)) {
->  			lock_acquired(&lock->dep_map, ip);
-> -			if (!__builtin_constant_p(ww_ctx == NULL)) {
-> +			if (use_ww_ctx) {
->  				struct ww_mutex *ww;
->  				ww = container_of(lock, struct ww_mutex, base);
->  
-> @@ -548,7 +548,7 @@ slowpath:
->  			goto err;
->  		}
->  
-> -		if (!__builtin_constant_p(ww_ctx == NULL) && ww_ctx->acquired > 0) {
-> +		if (use_ww_ctx && ww_ctx->acquired > 0) {
->  			ret = __mutex_lock_check_stamp(lock, ww_ctx);
->  			if (ret)
->  				goto err;
-> @@ -568,7 +568,7 @@ done:
->  	mutex_remove_waiter(lock, &waiter, current_thread_info());
->  	mutex_set_owner(lock);
->  
-> -	if (!__builtin_constant_p(ww_ctx == NULL)) {
-> +	if (use_ww_ctx) {
->  		struct ww_mutex *ww = container_of(lock,
->  						      struct ww_mutex,
->  						      base);
-> @@ -618,7 +618,7 @@ mutex_lock_nested(struct mutex *lock, unsigned int subclass)
->  {
->  	might_sleep();
->  	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE,
-> -			    subclass, NULL, _RET_IP_, NULL);
-> +			    subclass, NULL, _RET_IP_, NULL, 0);
->  }
->  
->  EXPORT_SYMBOL_GPL(mutex_lock_nested);
+On Fri, 06 Sep 2013, wei_wang@realsil.com.cn wrote:
 
-This is a sad patch, but provided it actually generates similar code I
-suppose its the best we can do bar whole sale deprecating gcc-3.
+> From: Wei WANG <wei_wang@realsil.com.cn>
+> 
+> In some platforms, specially Thinkpad series, rts5249 won't be
+> initialized properly. So we need adjust some phy parameters to
+> improve the compatibility issue.
+> 
+> Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
+> ---
+>  drivers/mfd/rts5249.c        |   35 ++++++++++++++++++++++++++++++++--
+>  include/linux/mfd/rtsx_pci.h |   43 ++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 76 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
+> index 3b835f5..7653638 100644
+> --- a/drivers/mfd/rts5249.c
+> +++ b/drivers/mfd/rts5249.c
+
+Ignoring the driver code for now.
+
+>  static int rts5249_turn_on_led(struct rtsx_pcr *pcr)
+> diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+> index d1382df..de20538 100644
+> --- a/include/linux/mfd/rtsx_pci.h
+> +++ b/include/linux/mfd/rtsx_pci.h
+> @@ -719,16 +719,41 @@
+>  
+>  /* Phy register */
+>  #define PHY_PCR				0x00
+> +#define  FORCE_CODE			0xB000
+> +#define  OOBS_CALI_50			0x0800
+> +#define  OOBS_VCM_08			0x0200
+> +#define  OOBS_SEN_90			0x0040
+> +#define  RSSI_EN			0x0002
+>  #define PHY_RCR0			0x01
+>  #define PHY_RCR1			0x02
+> +#define  ADP_TIME			0x0100
+> +#define  VCO_COARSE			0x001F
+>  #define PHY_RCR2			0x03
+> +#define  EMPHASE_EN			0x8000
+> +#define  NADJR				0x4000
+> +#define  CDR_CP_10			0x0400
+> +#define  CDR_SR_2			0x0100
+> +#define  FREQSEL_12			0x0040
+> +#define  CPADJEN			0x0020
+> +#define  CDR_SC_8			0x0008
+> +#define  CALIB_LATE			0x0002
+>  #define PHY_RTCR			0x04
+>  #define PHY_RDR				0x05
+> +#define  RXDSEL_1_9			0x4000
+>  #define PHY_TCR0			0x06
+>  #define PHY_TCR1			0x07
+>  #define PHY_TUNE			0x08
+> +#define  TUNEREF_1_0			0x4000
+> +#define  VBGSEL_1252			0x0C00
+> +#define  SDBUS_33			0x0200
+> +#define  TUNED18			0x01C0
+> +#define  TUNED12			0X0020
+>  #define PHY_IMR				0x09
+>  #define PHY_BPCR			0x0A
+> +#define  IBRXSEL			0x0400
+> +#define  IBTXSEL			0x0100
+> +#define  IB_FILTER			0x0080
+> +#define  CMIRROR_EN			0x0040
+>  #define PHY_BIST			0x0B
+>  #define PHY_RAW_L			0x0C
+>  #define PHY_RAW_H			0x0D
+> @@ -744,11 +769,29 @@
+>  #define PHY_BRNR2			0x17
+>  #define PHY_BENR			0x18
+>  #define PHY_REG_REV			0x19
+> +#define  REG_REV_RESV			0xE000
+> +#define  RXIDLE_LATCHED			0x1000
+> +#define  P1_EN				0x0800
+> +#define  RXIDLE_EN			0x0400
+> +#define  CLKREQ_DLY_TIMER_1_0		0x0040
+> +#define  STOP_CLKRD			0x0020
+> +#define  RX_PWST			0x0008
+> +#define  STOP_CLKWR			0x0004
+>  #define PHY_FLD0			0x1A
+>  #define PHY_FLD1			0x1B
+>  #define PHY_FLD2			0x1C
+>  #define PHY_FLD3			0x1D
+> +#define  TIMER_4			0x7800
+> +#define  TIMER_6			0x00E0
+> +#define  RXDELINK			0x0004
+>  #define PHY_FLD4			0x1E
+> +#define  FLDEN_SEL			0x4000
+> +#define  REQ_REF			0x2000
+> +#define  RXAMP_OFF			0x1000
+> +#define  REQ_ADDA			0x0800
+> +#define  BER_COUNT			0x00E0
+> +#define  BER_TIMER			0x000A
+> +#define  BER_CHK_EN			0x0001
+>  #define PHY_DUM_REG			0x1F
+>  
+>  #define LCTLR				0x80
+
+This doesn't look right.
+
+We had a nicely structured, ordered list and now you've seemingly
+randomly shoved a truck load of un-prefixed defines between them.
+
+Am I missing something? Is there method to the madness?
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
