@@ -1,103 +1,629 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230Ab3IIO2l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 10:28:41 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:63971 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751397Ab3IIO2j (ORCPT
+	id S1753650Ab3IIOaA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 10:30:00 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:42254 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753456Ab3IIO35 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 10:28:39 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-2b-522ddb15409b
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [GIT PULL] DMA-mapping updates for v3.12
-Date: Mon, 09 Sep 2013 16:27:51 +0200
-Message-id: <1378736871-22647-1-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNJMWRmVeSWpSXmKPExsVy+t9jAV3R27pBBv+X2Fhc3jWHzWLtkbvs
-	Fo/63rI7MHucmPGbxaNvyypGj8+b5AKYo7hsUlJzMstSi/TtErgyfnWsZil4JFHxb2szawNj
-	q1AXIweHhICJRGtjahcjJ5ApJnHh3nq2LkYuDiGBRYwSB3/fZIVw2pkkvuw6zQJSxSZgKNH1
-	tosNxBYRMJL4/OIKK4jNLOArcefVKrAaYaCa6Yu+MoMsYBFQlZjdVAMS5hXwkNjYuJQFYq+C
-	xJxJNhMYuRcwMqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECPbyM6kdjCsbLA4xCnAwKvHw
-	BhzTDRJiTSwrrsw9xCjBwawkwit6GCjEm5JYWZValB9fVJqTWnyIUZqDRUmc90CrdaCQQHpi
-	SWp2ampBahFMlomDU6qBcfWa9Yf+nudYtUVK7vyLzZU7Nn5nF+C4N+nhr1S7xgPtT0MVuxp7
-	DqkcSZksfXS7Xrax+Ds1lme+x3/VNVg0XZ0W/lu++rxUo+Y07zMWpd8uS80Icd+r9Gfq8UL2
-	zem9T5JkvrfodD8OqF7/0WVV8GXfpr7V++25GRpsvqWK7JjmGr0k6VZWvhJLcUaioRZzUXEi
-	AEhMWjzuAQAA
+	Mon, 9 Sep 2013 10:29:57 -0400
+From: Koen Kooi <koen@dominion.thruhere.net>
+To: linux-omap@vger.kernel.org
+Cc: bcousson@baylibre.com, tony@atomide.com, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
+        ijc+devicetree@hellion.org.uk, linux@arm.linux.org.uk,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, olof@lixom.net,
+        Koen Kooi <koen@dominion.thruhere.net>, stable@vger.kernel.org
+Subject: [PATCH] ARM: OMAP2+: am335x-bone*: add DT for BeagleBone Black
+Date: Mon,  9 Sep 2013 16:29:21 +0200
+Message-Id: <1378736961-21005-1-git-send-email-koen@dominion.thruhere.net>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+The BeagleBone Black is basically a regular BeagleBone with eMMC and HDMI added,
+so create a common dtsi both can use.
 
-I would like to ask You for pulling an update of Contiguous Memory
-Allocator driver for dma-mapping subsystem for v3.12.
+IMPORTANT: booting the existing am335x-bone.dts will blow up the HDMI transceiver
+after a dozen boots with an uSD card inserted because LDO will be at 3.3V instead
+of 1.8.
 
+MMC support for AM335x still isn't in, so only the LDO change has been added.
 
-The following changes since commit ad81f0545ef01ea651886dddac4bef6cec930092:
+Cc: stable@vger.kernel.org
 
-  Linux 3.11-rc1 (2013-07-14 15:18:27 -0700)
+Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
+Tested-by: Tom Rini <trini@ti.com>
+Tested-by: Matt Porter <matt.porter@linaro.org>
+---
 
-are available in the git repository at:
+Changes since v4:
+	attempting to correctly to the cc: stable@ thing
+Changes since v3:
+	removed stray whitespace, spotted by Matt Porter
+	added CC: stable
+Changes since v2:
+	Updated commit message to point out that the existing DT will damage the board.
+Changes since v1:
+	Added the Makefile entry for the new dts
 
-  git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git for-v3.12
+ arch/arm/boot/dts/Makefile                |   1 +
+ arch/arm/boot/dts/am335x-bone-common.dtsi | 262 ++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/am335x-bone.dts         | 256 +----------------------------
+ arch/arm/boot/dts/am335x-boneblack.dts    |  17 ++
+ 4 files changed, 281 insertions(+), 255 deletions(-)
+ create mode 100644 arch/arm/boot/dts/am335x-bone-common.dtsi
+ create mode 100644 arch/arm/boot/dts/am335x-boneblack.dts
 
-for you to fetch changes up to 10bcdfb8ba24760f715f0a700c3812747eddddf5:
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 000cf76..d515c54 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -183,6 +183,7 @@ dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
+ 	am335x-evm.dtb \
+ 	am335x-evmsk.dtb \
+ 	am335x-bone.dtb \
++	am335x-boneblack.dtb \
+ 	am3517-evm.dtb \
+ 	am3517_mt_ventoux.dtb \
+ 	am43x-epos-evm.dtb
+diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
+new file mode 100644
+index 0000000..2f66ded
+--- /dev/null
++++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
+@@ -0,0 +1,262 @@
++/*
++ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++/ {
++	model = "TI AM335x BeagleBone";
++	compatible = "ti,am335x-bone", "ti,am33xx";
++
++	cpus {
++		cpu@0 {
++			cpu0-supply = <&dcdc2_reg>;
++		};
++	};
++
++	memory {
++		device_type = "memory";
++		reg = <0x80000000 0x10000000>; /* 256 MB */
++	};
++
++	am33xx_pinmux: pinmux@44e10800 {
++		pinctrl-names = "default";
++		pinctrl-0 = <&clkout2_pin>;
++
++		user_leds_s0: user_leds_s0 {
++			pinctrl-single,pins = <
++				0x54 (PIN_OUTPUT_PULLDOWN | MUX_MODE7)	/* gpmc_a5.gpio1_21 */
++				0x58 (PIN_OUTPUT_PULLUP | MUX_MODE7)	/* gpmc_a6.gpio1_22 */
++				0x5c (PIN_OUTPUT_PULLDOWN | MUX_MODE7)	/* gpmc_a7.gpio1_23 */
++				0x60 (PIN_OUTPUT_PULLUP | MUX_MODE7)	/* gpmc_a8.gpio1_24 */
++			>;
++		};
++
++		i2c0_pins: pinmux_i2c0_pins {
++			pinctrl-single,pins = <
++				0x188 (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c0_sda.i2c0_sda */
++				0x18c (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c0_scl.i2c0_scl */
++			>;
++		};
++
++		uart0_pins: pinmux_uart0_pins {
++			pinctrl-single,pins = <
++				0x170 (PIN_INPUT_PULLUP | MUX_MODE0)	/* uart0_rxd.uart0_rxd */
++				0x174 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* uart0_txd.uart0_txd */
++			>;
++		};
++
++		clkout2_pin: pinmux_clkout2_pin {
++			pinctrl-single,pins = <
++				0x1b4 (PIN_OUTPUT_PULLDOWN | MUX_MODE3)	/* xdma_event_intr1.clkout2 */
++			>;
++		};
++
++		cpsw_default: cpsw_default {
++			pinctrl-single,pins = <
++				/* Slave 1 */
++				0x110 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxerr.mii1_rxerr */
++				0x114 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mii1_txen.mii1_txen */
++				0x118 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxdv.mii1_rxdv */
++				0x11c (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mii1_txd3.mii1_txd3 */
++				0x120 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mii1_txd2.mii1_txd2 */
++				0x124 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mii1_txd1.mii1_txd1 */
++				0x128 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mii1_txd0.mii1_txd0 */
++				0x12c (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_txclk.mii1_txclk */
++				0x130 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxclk.mii1_rxclk */
++				0x134 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxd3.mii1_rxd3 */
++				0x138 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxd2.mii1_rxd2 */
++				0x13c (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxd1.mii1_rxd1 */
++				0x140 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxd0.mii1_rxd0 */
++			>;
++		};
++
++		cpsw_sleep: cpsw_sleep {
++			pinctrl-single,pins = <
++				/* Slave 1 reset value */
++				0x110 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++				0x114 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++				0x118 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++				0x11c (PIN_INPUT_PULLDOWN | MUX_MODE7)
++				0x120 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++				0x124 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++				0x128 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++				0x12c (PIN_INPUT_PULLDOWN | MUX_MODE7)
++				0x130 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++				0x134 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++				0x138 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++				0x13c (PIN_INPUT_PULLDOWN | MUX_MODE7)
++				0x140 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++			>;
++		};
++
++		davinci_mdio_default: davinci_mdio_default {
++			pinctrl-single,pins = <
++				/* MDIO */
++				0x148 (PIN_INPUT_PULLUP | SLEWCTRL_FAST | MUX_MODE0)	/* mdio_data.mdio_data */
++				0x14c (PIN_OUTPUT_PULLUP | MUX_MODE0)			/* mdio_clk.mdio_clk */
++			>;
++		};
++
++		davinci_mdio_sleep: davinci_mdio_sleep {
++			pinctrl-single,pins = <
++				/* MDIO reset value */
++				0x148 (PIN_INPUT_PULLDOWN | MUX_MODE7)
++				0x14c (PIN_INPUT_PULLDOWN | MUX_MODE7)
++			>;
++		};
++	};
++
++	ocp {
++		uart0: serial@44e09000 {
++			pinctrl-names = "default";
++			pinctrl-0 = <&uart0_pins>;
++
++			status = "okay";
++		};
++
++		musb: usb@47400000 {
++			status = "okay";
++
++			control@44e10000 {
++				status = "okay";
++			};
++
++			usb-phy@47401300 {
++				status = "okay";
++			};
++
++			usb-phy@47401b00 {
++				status = "okay";
++			};
++
++			usb@47401000 {
++				status = "okay";
++			};
++
++			usb@47401800 {
++				status = "okay";
++				dr_mode = "host";
++			};
++
++			dma-controller@07402000  {
++				status = "okay";
++			};
++		};
++
++		i2c0: i2c@44e0b000 {
++			pinctrl-names = "default";
++			pinctrl-0 = <&i2c0_pins>;
++
++			status = "okay";
++			clock-frequency = <400000>;
++
++			tps: tps@24 {
++				reg = <0x24>;
++			};
++
++		};
++	};
++
++	leds {
++		pinctrl-names = "default";
++		pinctrl-0 = <&user_leds_s0>;
++
++		compatible = "gpio-leds";
++
++		led@2 {
++			label = "beaglebone:green:heartbeat";
++			gpios = <&gpio1 21 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "heartbeat";
++			default-state = "off";
++		};
++
++		led@3 {
++			label = "beaglebone:green:mmc0";
++			gpios = <&gpio1 22 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "mmc0";
++			default-state = "off";
++		};
++
++		led@4 {
++			label = "beaglebone:green:usr2";
++			gpios = <&gpio1 23 GPIO_ACTIVE_HIGH>;
++			default-state = "off";
++		};
++
++		led@5 {
++			label = "beaglebone:green:usr3";
++			gpios = <&gpio1 24 GPIO_ACTIVE_HIGH>;
++			default-state = "off";
++		};
++	};
++};
++
++/include/ "tps65217.dtsi"
++
++&tps {
++	regulators {
++		dcdc1_reg: regulator@0 {
++			regulator-always-on;
++		};
++
++		dcdc2_reg: regulator@1 {
++			/* VDD_MPU voltage limits 0.95V - 1.26V with +/-4% tolerance */
++			regulator-name = "vdd_mpu";
++			regulator-min-microvolt = <925000>;
++			regulator-max-microvolt = <1325000>;
++			regulator-boot-on;
++			regulator-always-on;
++		};
++
++		dcdc3_reg: regulator@2 {
++			/* VDD_CORE voltage limits 0.95V - 1.1V with +/-4% tolerance */
++			regulator-name = "vdd_core";
++			regulator-min-microvolt = <925000>;
++			regulator-max-microvolt = <1150000>;
++			regulator-boot-on;
++			regulator-always-on;
++		};
++
++		ldo1_reg: regulator@3 {
++			regulator-always-on;
++		};
++
++		ldo2_reg: regulator@4 {
++			regulator-always-on;
++		};
++
++		ldo3_reg: regulator@5 {
++			regulator-always-on;
++		};
++
++		ldo4_reg: regulator@6 {
++			regulator-always-on;
++		};
++	};
++};
++
++&cpsw_emac0 {
++	phy_id = <&davinci_mdio>, <0>;
++	phy-mode = "mii";
++};
++
++&cpsw_emac1 {
++	phy_id = <&davinci_mdio>, <1>;
++	phy-mode = "mii";
++};
++
++&mac {
++	pinctrl-names = "default", "sleep";
++	pinctrl-0 = <&cpsw_default>;
++	pinctrl-1 = <&cpsw_sleep>;
++
++};
++
++&davinci_mdio {
++	pinctrl-names = "default", "sleep";
++	pinctrl-0 = <&davinci_mdio_default>;
++	pinctrl-1 = <&davinci_mdio_sleep>;
++};
+diff --git a/arch/arm/boot/dts/am335x-bone.dts b/arch/arm/boot/dts/am335x-bone.dts
+index d318987..7993c48 100644
+--- a/arch/arm/boot/dts/am335x-bone.dts
++++ b/arch/arm/boot/dts/am335x-bone.dts
+@@ -8,258 +8,4 @@
+ /dts-v1/;
+ 
+ #include "am33xx.dtsi"
+-
+-/ {
+-	model = "TI AM335x BeagleBone";
+-	compatible = "ti,am335x-bone", "ti,am33xx";
+-
+-	cpus {
+-		cpu@0 {
+-			cpu0-supply = <&dcdc2_reg>;
+-		};
+-	};
+-
+-	memory {
+-		device_type = "memory";
+-		reg = <0x80000000 0x10000000>; /* 256 MB */
+-	};
+-
+-	am33xx_pinmux: pinmux@44e10800 {
+-		pinctrl-names = "default";
+-		pinctrl-0 = <&clkout2_pin>;
+-
+-		user_leds_s0: user_leds_s0 {
+-			pinctrl-single,pins = <
+-				0x54 (PIN_OUTPUT_PULLDOWN | MUX_MODE7)	/* gpmc_a5.gpio1_21 */
+-				0x58 (PIN_OUTPUT_PULLUP | MUX_MODE7)	/* gpmc_a6.gpio1_22 */
+-				0x5c (PIN_OUTPUT_PULLDOWN | MUX_MODE7)	/* gpmc_a7.gpio1_23 */
+-				0x60 (PIN_OUTPUT_PULLUP | MUX_MODE7)	/* gpmc_a8.gpio1_24 */
+-			>;
+-		};
+-
+-		i2c0_pins: pinmux_i2c0_pins {
+-			pinctrl-single,pins = <
+-				0x188 (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c0_sda.i2c0_sda */
+-				0x18c (PIN_INPUT_PULLUP | MUX_MODE0)	/* i2c0_scl.i2c0_scl */
+-			>;
+-		};
+-
+-		uart0_pins: pinmux_uart0_pins {
+-			pinctrl-single,pins = <
+-				0x170 (PIN_INPUT_PULLUP | MUX_MODE0)	/* uart0_rxd.uart0_rxd */
+-				0x174 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* uart0_txd.uart0_txd */
+-			>;
+-		};
+-
+-		clkout2_pin: pinmux_clkout2_pin {
+-			pinctrl-single,pins = <
+-				0x1b4 (PIN_OUTPUT_PULLDOWN | MUX_MODE3)	/* xdma_event_intr1.clkout2 */
+-			>;
+-		};
+-
+-		cpsw_default: cpsw_default {
+-			pinctrl-single,pins = <
+-				/* Slave 1 */
+-				0x110 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxerr.mii1_rxerr */
+-				0x114 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mii1_txen.mii1_txen */
+-				0x118 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxdv.mii1_rxdv */
+-				0x11c (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mii1_txd3.mii1_txd3 */
+-				0x120 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mii1_txd2.mii1_txd2 */
+-				0x124 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mii1_txd1.mii1_txd1 */
+-				0x128 (PIN_OUTPUT_PULLDOWN | MUX_MODE0)	/* mii1_txd0.mii1_txd0 */
+-				0x12c (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_txclk.mii1_txclk */
+-				0x130 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxclk.mii1_rxclk */
+-				0x134 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxd3.mii1_rxd3 */
+-				0x138 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxd2.mii1_rxd2 */
+-				0x13c (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxd1.mii1_rxd1 */
+-				0x140 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mii1_rxd0.mii1_rxd0 */
+-			>;
+-		};
+-
+-		cpsw_sleep: cpsw_sleep {
+-			pinctrl-single,pins = <
+-				/* Slave 1 reset value */
+-				0x110 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+-				0x114 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+-				0x118 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+-				0x11c (PIN_INPUT_PULLDOWN | MUX_MODE7)
+-				0x120 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+-				0x124 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+-				0x128 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+-				0x12c (PIN_INPUT_PULLDOWN | MUX_MODE7)
+-				0x130 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+-				0x134 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+-				0x138 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+-				0x13c (PIN_INPUT_PULLDOWN | MUX_MODE7)
+-				0x140 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+-			>;
+-		};
+-
+-		davinci_mdio_default: davinci_mdio_default {
+-			pinctrl-single,pins = <
+-				/* MDIO */
+-				0x148 (PIN_INPUT_PULLUP | SLEWCTRL_FAST | MUX_MODE0)	/* mdio_data.mdio_data */
+-				0x14c (PIN_OUTPUT_PULLUP | MUX_MODE0)			/* mdio_clk.mdio_clk */
+-			>;
+-		};
+-
+-		davinci_mdio_sleep: davinci_mdio_sleep {
+-			pinctrl-single,pins = <
+-				/* MDIO reset value */
+-				0x148 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+-				0x14c (PIN_INPUT_PULLDOWN | MUX_MODE7)
+-			>;
+-		};
+-	};
+-
+-	ocp {
+-		uart0: serial@44e09000 {
+-			pinctrl-names = "default";
+-			pinctrl-0 = <&uart0_pins>;
+-
+-			status = "okay";
+-		};
+-
+-		musb: usb@47400000 {
+-			status = "okay";
+-
+-			control@44e10000 {
+-				status = "okay";
+-			};
+-
+-			usb-phy@47401300 {
+-				status = "okay";
+-			};
+-
+-			usb-phy@47401b00 {
+-				status = "okay";
+-			};
+-
+-			usb@47401000 {
+-				status = "okay";
+-			};
+-
+-			usb@47401800 {
+-				status = "okay";
+-				dr_mode = "host";
+-			};
+-
+-			dma-controller@07402000  {
+-				status = "okay";
+-			};
+-		};
+-
+-		i2c0: i2c@44e0b000 {
+-			pinctrl-names = "default";
+-			pinctrl-0 = <&i2c0_pins>;
+-
+-			status = "okay";
+-			clock-frequency = <400000>;
+-
+-			tps: tps@24 {
+-				reg = <0x24>;
+-			};
+-
+-		};
+-	};
+-
+-	leds {
+-		pinctrl-names = "default";
+-		pinctrl-0 = <&user_leds_s0>;
+-
+-		compatible = "gpio-leds";
+-
+-		led@2 {
+-			label = "beaglebone:green:heartbeat";
+-			gpios = <&gpio1 21 GPIO_ACTIVE_HIGH>;
+-			linux,default-trigger = "heartbeat";
+-			default-state = "off";
+-		};
+-
+-		led@3 {
+-			label = "beaglebone:green:mmc0";
+-			gpios = <&gpio1 22 GPIO_ACTIVE_HIGH>;
+-			linux,default-trigger = "mmc0";
+-			default-state = "off";
+-		};
+-
+-		led@4 {
+-			label = "beaglebone:green:usr2";
+-			gpios = <&gpio1 23 GPIO_ACTIVE_HIGH>;
+-			default-state = "off";
+-		};
+-
+-		led@5 {
+-			label = "beaglebone:green:usr3";
+-			gpios = <&gpio1 24 GPIO_ACTIVE_HIGH>;
+-			default-state = "off";
+-		};
+-	};
+-};
+-
+-/include/ "tps65217.dtsi"
+-
+-&tps {
+-	regulators {
+-		dcdc1_reg: regulator@0 {
+-			regulator-always-on;
+-		};
+-
+-		dcdc2_reg: regulator@1 {
+-			/* VDD_MPU voltage limits 0.95V - 1.26V with +/-4% tolerance */
+-			regulator-name = "vdd_mpu";
+-			regulator-min-microvolt = <925000>;
+-			regulator-max-microvolt = <1325000>;
+-			regulator-boot-on;
+-			regulator-always-on;
+-		};
+-
+-		dcdc3_reg: regulator@2 {
+-			/* VDD_CORE voltage limits 0.95V - 1.1V with +/-4% tolerance */
+-			regulator-name = "vdd_core";
+-			regulator-min-microvolt = <925000>;
+-			regulator-max-microvolt = <1150000>;
+-			regulator-boot-on;
+-			regulator-always-on;
+-		};
+-
+-		ldo1_reg: regulator@3 {
+-			regulator-always-on;
+-		};
+-
+-		ldo2_reg: regulator@4 {
+-			regulator-always-on;
+-		};
+-
+-		ldo3_reg: regulator@5 {
+-			regulator-always-on;
+-		};
+-
+-		ldo4_reg: regulator@6 {
+-			regulator-always-on;
+-		};
+-	};
+-};
+-
+-&cpsw_emac0 {
+-	phy_id = <&davinci_mdio>, <0>;
+-	phy-mode = "mii";
+-};
+-
+-&cpsw_emac1 {
+-	phy_id = <&davinci_mdio>, <1>;
+-	phy-mode = "mii";
+-};
+-
+-&mac {
+-	pinctrl-names = "default", "sleep";
+-	pinctrl-0 = <&cpsw_default>;
+-	pinctrl-1 = <&cpsw_sleep>;
+-
+-};
+-
+-&davinci_mdio {
+-	pinctrl-names = "default", "sleep";
+-	pinctrl-0 = <&davinci_mdio_default>;
+-	pinctrl-1 = <&davinci_mdio_sleep>;
+-};
++#include "am335x-bone-common.dtsi"
+diff --git a/arch/arm/boot/dts/am335x-boneblack.dts b/arch/arm/boot/dts/am335x-boneblack.dts
+new file mode 100644
+index 0000000..197cadf
+--- /dev/null
++++ b/arch/arm/boot/dts/am335x-boneblack.dts
+@@ -0,0 +1,17 @@
++/*
++ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++/dts-v1/;
++
++#include "am33xx.dtsi"
++#include "am335x-bone-common.dtsi"
++
++&ldo3_reg {
++	regulator-min-microvolt = <1800000>;
++	regulator-max-microvolt = <1800000>;
++	regulator-always-on;
++};
+-- 
+1.8.2.1
 
-  ARM: init: add support for reserved memory defined by device tree (2013-08-27 10:53:45 +0200)
-
-----------------------------------------------------------------
-Aneesh Kumar K.V (1):
-      mm/cma: Move dma contiguous changes into a seperate config
-
-Marek Szyprowski (5):
-      Merge remote-tracking branch 'dma-public/for-v3.12-cma-dma' into for-next
-      drivers: dma-contiguous: clean source code and prepare for device tree
-      drivers: of: add function to scan fdt nodes given by path
-      drivers: of: add initialization code for dma reserved memory
-      ARM: init: add support for reserved memory defined by device tree
-
- Documentation/devicetree/bindings/memory.txt |  168 +++++++++++++++++++++++++
- arch/arm/include/asm/dma-contiguous.h        |    3 +-
- arch/arm/mm/dma-mapping.c                    |    6 +-
- arch/arm/mm/init.c                           |    3 +
- arch/x86/include/asm/dma-contiguous.h        |    1 -
- drivers/base/Kconfig                         |   20 +--
- drivers/base/Makefile                        |    2 +-
- drivers/base/dma-contiguous.c                |  119 +++++++-----------
- drivers/of/Kconfig                           |    6 +
- drivers/of/Makefile                          |    1 +
- drivers/of/fdt.c                             |   76 +++++++++++
- drivers/of/of_reserved_mem.c                 |  175 ++++++++++++++++++++++++++
- drivers/of/platform.c                        |    4 +
- include/asm-generic/dma-contiguous.h         |   28 -----
- include/linux/device.h                       |    2 +-
- include/linux/dma-contiguous.h               |   64 +++++++++-
- include/linux/of_fdt.h                       |    3 +
- include/linux/of_reserved_mem.h              |   14 +++
- mm/Kconfig                                   |   24 ++++
- 19 files changed, 589 insertions(+), 130 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/memory.txt
- create mode 100644 drivers/of/of_reserved_mem.c
- delete mode 100644 include/asm-generic/dma-contiguous.h
- create mode 100644 include/linux/of_reserved_mem.h
-
-----------------------------------------------------------------
-
-This pull request contains an addition of Device Tree support for
-reserved memory regions (Contiguous Memory Allocator is one of the
-drivers for it) and changes required by the KVM extensions for PowerPC
-architectue.
-
-This pull will conflict with your tree, please resolve it in the following
-way:
-mm/Kconfig: use the whole file from your tree
-drivers/base/dma-contiguous.c: use the whole file from my tree (it already
-contains the changes merged to Your tree)
-
-Thanks!
-
-Best regards
-Marek Szyprowski
-Samsung Poland R&D Center
