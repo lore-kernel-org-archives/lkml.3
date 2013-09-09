@@ -1,229 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755667Ab3IIVij (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 17:38:39 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:38403 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752806Ab3IIVii (ORCPT
+	id S1755899Ab3IIVkc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 17:40:32 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:40886 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755673Ab3IIVkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 17:38:38 -0400
+	Mon, 9 Sep 2013 17:40:31 -0400
+Date: Mon, 9 Sep 2013 17:40:26 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, sbw@mit.edu
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+	section?
+Message-ID: <20130909214026.GA8830@Krystal>
+References: <20130909130851.GC16280@somewhere> <20130909092142.05780991@gandalf.local.home> <20130909134505.GF16280@somewhere> <20130909135656.GT3966@linux.vnet.ibm.com> <20130909101629.32df27a2@gandalf.local.home> <20130909161708.GX3966@linux.vnet.ibm.com> <20130909123422.7936e868@gandalf.local.home> <20130909165836.GB3966@linux.vnet.ibm.com> <20130909172908.GA31239@Krystal> <20130909175656.GF3966@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1378762380-13152-2-git-send-email-apinski@cavium.com>
-References: <1378762380-13152-1-git-send-email-apinski@cavium.com>
-	<1378762380-13152-2-git-send-email-apinski@cavium.com>
-Date: Mon, 9 Sep 2013 14:38:36 -0700
-Message-ID: <CA+=Sn1mj1c_k=-++K1jqU1DnYe0sUspbsuP0MMyWx+J-+JZfcw@mail.gmail.com>
-Subject: Re: [PATCH 2/5] ARM64: Move some signal code to a seperate file to be
- reused by ILP32.
-From: Andrew Pinski <pinskia@gmail.com>
-To: linux-arm-kernel@lists.infradead.org, LKML <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Cc: Andrew Pinski <apinski@cavium.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130909175656.GF3966@linux.vnet.ibm.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 9, 2013 at 2:32 PM, Andrew Pinski <pinskia@gmail.com> wrote:
-> Since the ILP32 ABI uses similar signal code as the LP64 ABI, it makes sense to reuse rather
-> than copy the same code.
+* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> On Mon, Sep 09, 2013 at 01:29:08PM -0400, Mathieu Desnoyers wrote:
+> > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > > On Mon, Sep 09, 2013 at 12:34:22PM -0400, Steven Rostedt wrote:
+> > [...]
+> > > > "rcu_is_ignored()" or "rcu_is_not_active()", "rcu_is_watching_you()"
+> > > 
+> > > You know, I am strongly tempted by "rcu_is_watching_you()", but I have
+> > > this feeling that it is too cute for its own good.  ;-)
+> > 
+> > Wow, I just got off the plane, and look at what happened to this thread
+> > ;-)
+> 
+> I had the same reaction when getting up this morning.  ;-)
+> 
+> > Referring to your earlier question Paul, what I meant by my earlier
+> > email on naming has been addressed by Steven: when exposing a new RCU
+> > API, even if it is just for in-kernel use, we should be really cautious
+> > not to tie it to implementation, but rather to concepts. Basically, my
+> > original thought is that we should be able to express the exact same
+> > concept in the kernel RCU implementation and in Userspace RCU. Here,
+> > binding the name on whether the CPU is watching RCU really makes no
+> > sense for urcu, since all the RCU flavors we currently have are watching
+> > threads, not CPUs.
+> 
+> More that that, userspace RCU doesn't have any energy management tie-ins.
 
-I just noticed that signal_template.c was not part of this patch but
-it is included with patch number 5.
+So far! ;)
+
+> It instead expects the application threads to invoke rcu_thread_offline()
+> when that thread goes idle and rcu_thread_offline() when the thread wakes
+> up again.  There is therefore less need for the application to query the
+> state because it was the application that set the state.
+> 
+> In contrast, within the Linux kernel, the RCU-watching state gets set
+> asynchronously with respect to in-kernel users of RCU.
+> 
+> Given the rest of the userspace RCU primitives, something like
+> rcu_thread_is_online() might make sense for the userspace RCU if some
+> application needs to know the state.  Or some other name that fits in
+> with rcu_thread_offline() and rcu_thread_online().
+
+I think calling it "rcu_thread_is_online()" would actually give away
+some of the implementation details. I would be tempted to go for
+something along the lines of "rcu_is_online()".
+
+> But such a name would
+>be problematic in the kernel due to CPU hotplug's use of those terms.
+
+The kernel has a clearly defined notion of "online cpu". I don't see the
+semantic clash with "online rcu". Whenever the RCU machinery is not
+observing an execution context, it is considered "offline". Whether this
+is caused by an explicit call (e.g. rcu_thread_offline() for urcu) or
+done internally (kernel dynticks) should not matter.
+
+> 
+> > Hence my proposal for "rcu_read_check()". It could be "rcu_is_active()"
+> > too, I don't really mind. It really minds: Is RCU actively watching the
+> > current execution context ? This can be translated to a runtime check
+> > too: is it safe to call rcu_read_lock() form this context ?
+> 
+> Although I do like rcu_is_active() better than rcu_read_check(), my
+> concern with rcu_is_active() is that it can easily be mistaken for a
+> global state rather than a per-CPU/thread/task/whatever state.
+
+Agreed. So how about rcu_is_online() ?
 
 Thanks,
-Andrew Pinski
 
->
->
-> Signed-off-by: Andrew Pinski <apinski@cavium.com>
-> ---
->  arch/arm64/kernel/signal.c |  170 +-------------------------------------------
->  1 files changed, 1 insertions(+), 169 deletions(-)
->
-> diff --git a/arch/arm64/kernel/signal.c b/arch/arm64/kernel/signal.c
-> index 3fbd848..d97a0c0 100644
-> --- a/arch/arm64/kernel/signal.c
-> +++ b/arch/arm64/kernel/signal.c
-> @@ -95,176 +95,8 @@ static int restore_fpsimd_context(struct fpsimd_context __user *ctx)
->         return err ? -EFAULT : 0;
->  }
->
-> -static int restore_sigframe(struct pt_regs *regs,
-> -                           struct rt_sigframe __user *sf)
-> -{
-> -       sigset_t set;
-> -       int i, err;
-> -       struct aux_context __user *aux =
-> -               (struct aux_context __user *)sf->uc.uc_mcontext.__reserved;
-> -
-> -       err = __copy_from_user(&set, &sf->uc.uc_sigmask, sizeof(set));
-> -       if (err == 0)
-> -               set_current_blocked(&set);
-> -
-> -       for (i = 0; i < 31; i++)
-> -               __get_user_error(regs->regs[i], &sf->uc.uc_mcontext.regs[i],
-> -                                err);
-> -       __get_user_error(regs->sp, &sf->uc.uc_mcontext.sp, err);
-> -       __get_user_error(regs->pc, &sf->uc.uc_mcontext.pc, err);
-> -       __get_user_error(regs->pstate, &sf->uc.uc_mcontext.pstate, err);
-> -
-> -       /*
-> -        * Avoid sys_rt_sigreturn() restarting.
-> -        */
-> -       regs->syscallno = ~0UL;
-> -
-> -       err |= !valid_user_regs(&regs->user_regs);
-> -
-> -       if (err == 0)
-> -               err |= restore_fpsimd_context(&aux->fpsimd);
-> -
-> -       return err;
-> -}
-> -
-> -asmlinkage long sys_rt_sigreturn(struct pt_regs *regs)
-> -{
-> -       struct rt_sigframe __user *frame;
-> -
-> -       /* Always make any pending restarted system calls return -EINTR */
-> -       current_thread_info()->restart_block.fn = do_no_restart_syscall;
-> -
-> -       /*
-> -        * Since we stacked the signal on a 128-bit boundary, then 'sp' should
-> -        * be word aligned here.
-> -        */
-> -       if (regs->sp & 15)
-> -               goto badframe;
-> -
-> -       frame = (struct rt_sigframe __user *)regs->sp;
-> -
-> -       if (!access_ok(VERIFY_READ, frame, sizeof (*frame)))
-> -               goto badframe;
-> -
-> -       if (restore_sigframe(regs, frame))
-> -               goto badframe;
-> -
-> -       if (restore_altstack(&frame->uc.uc_stack))
-> -               goto badframe;
-> -
-> -       return regs->regs[0];
-> -
-> -badframe:
-> -       if (show_unhandled_signals)
-> -               pr_info_ratelimited("%s[%d]: bad frame in %s: pc=%08llx sp=%08llx\n",
-> -                                   current->comm, task_pid_nr(current), __func__,
-> -                                   regs->pc, regs->sp);
-> -       force_sig(SIGSEGV, current);
-> -       return 0;
-> -}
-> -
-> -static int setup_sigframe(struct rt_sigframe __user *sf,
-> -                         struct pt_regs *regs, sigset_t *set)
-> -{
-> -       int i, err = 0;
-> -       struct aux_context __user *aux =
-> -               (struct aux_context __user *)sf->uc.uc_mcontext.__reserved;
-> -
-> -       /* set up the stack frame for unwinding */
-> -       __put_user_error(regs->regs[29], &sf->fp, err);
-> -       __put_user_error(regs->regs[30], &sf->lr, err);
-> -
-> -       for (i = 0; i < 31; i++)
-> -               __put_user_error(regs->regs[i], &sf->uc.uc_mcontext.regs[i],
-> -                                err);
-> -       __put_user_error(regs->sp, &sf->uc.uc_mcontext.sp, err);
-> -       __put_user_error(regs->pc, &sf->uc.uc_mcontext.pc, err);
-> -       __put_user_error(regs->pstate, &sf->uc.uc_mcontext.pstate, err);
-> -
-> -       __put_user_error(current->thread.fault_address, &sf->uc.uc_mcontext.fault_address, err);
-> -
-> -       err |= __copy_to_user(&sf->uc.uc_sigmask, set, sizeof(*set));
-> -
-> -       if (err == 0)
-> -               err |= preserve_fpsimd_context(&aux->fpsimd);
-> -
-> -       /* set the "end" magic */
-> -       __put_user_error(0, &aux->end.magic, err);
-> -       __put_user_error(0, &aux->end.size, err);
-> +#include "signal_template.c"
->
-> -       return err;
-> -}
-> -
-> -static struct rt_sigframe __user *get_sigframe(struct k_sigaction *ka,
-> -                                              struct pt_regs *regs)
-> -{
-> -       unsigned long sp, sp_top;
-> -       struct rt_sigframe __user *frame;
-> -
-> -       sp = sp_top = regs->sp;
-> -
-> -       /*
-> -        * This is the X/Open sanctioned signal stack switching.
-> -        */
-> -       if ((ka->sa.sa_flags & SA_ONSTACK) && !sas_ss_flags(sp))
-> -               sp = sp_top = current->sas_ss_sp + current->sas_ss_size;
-> -
-> -       sp = (sp - sizeof(struct rt_sigframe)) & ~15;
-> -       frame = (struct rt_sigframe __user *)sp;
-> -
-> -       /*
-> -        * Check that we can actually write to the signal frame.
-> -        */
-> -       if (!access_ok(VERIFY_WRITE, frame, sp_top - sp))
-> -               frame = NULL;
-> -
-> -       return frame;
-> -}
-> -
-> -static void setup_return(struct pt_regs *regs, struct k_sigaction *ka,
-> -                        void __user *frame, int usig)
-> -{
-> -       __sigrestore_t sigtramp;
-> -
-> -       regs->regs[0] = usig;
-> -       regs->sp = (unsigned long)frame;
-> -       regs->regs[29] = regs->sp + offsetof(struct rt_sigframe, fp);
-> -       regs->pc = (unsigned long)ka->sa.sa_handler;
-> -
-> -       if (ka->sa.sa_flags & SA_RESTORER)
-> -               sigtramp = ka->sa.sa_restorer;
-> -       else
-> -               sigtramp = VDSO_SYMBOL(current->mm->context.vdso, sigtramp);
-> -
-> -       regs->regs[30] = (unsigned long)sigtramp;
-> -}
-> -
-> -static int setup_rt_frame(int usig, struct k_sigaction *ka, siginfo_t *info,
-> -                         sigset_t *set, struct pt_regs *regs)
-> -{
-> -       struct rt_sigframe __user *frame;
-> -       int err = 0;
-> -
-> -       frame = get_sigframe(ka, regs);
-> -       if (!frame)
-> -               return 1;
-> -
-> -       __put_user_error(0, &frame->uc.uc_flags, err);
-> -       __put_user_error(NULL, &frame->uc.uc_link, err);
-> -
-> -       err |= __save_altstack(&frame->uc.uc_stack, regs->sp);
-> -       err |= setup_sigframe(frame, regs, set);
-> -       if (err == 0) {
-> -               setup_return(regs, ka, frame, usig);
-> -               if (ka->sa.sa_flags & SA_SIGINFO) {
-> -                       err |= copy_siginfo_to_user(&frame->info, info);
-> -                       regs->regs[1] = (unsigned long)&frame->info;
-> -                       regs->regs[2] = (unsigned long)&frame->uc;
-> -               }
-> -       }
-> -
-> -       return err;
-> -}
->
->  static void setup_restart_syscall(struct pt_regs *regs)
->  {
-> --
-> 1.7.2.5
->
+Mathieu
+
+> 
+> 							Thanx, Paul
+> 
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
