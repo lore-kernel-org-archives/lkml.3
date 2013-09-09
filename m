@@ -1,55 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755077Ab3IIQaP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 12:30:15 -0400
-Received: from mail-bn1lp0158.outbound.protection.outlook.com ([207.46.163.158]:25995
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751792Ab3IIQaN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 12:30:13 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH 01/12] Add BSD-style securelevel support
-Thread-Topic: [PATCH 01/12] Add BSD-style securelevel support
-Thread-Index: AQHOrXST0kcK6RTzv06SuZIfeWETyJm9l/EAgAAA1oA=
-Date: Mon, 9 Sep 2013 16:30:08 +0000
-Message-ID: <1378744207.17982.3.camel@x230.lan>
-References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
-	 <1378741786-18430-2-git-send-email-matthew.garrett@nebula.com>
-	 <522DF6DC.1050303@zytor.com>
-In-Reply-To: <522DF6DC.1050303@zytor.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:470:1f07:1371:5d52:9ee3:3e84:6668]
-x-forefront-prvs: 09645BAC66
-x-forefront-antispam-report: SFV:NSPM;SFS:(377424004)(24454002)(189002)(199002)(81816001)(81342001)(69226001)(65816001)(80022001)(46102001)(63696002)(51856001)(4396001)(76786001)(76796001)(81686001)(81542001)(47736001)(47976001)(49866001)(50986001)(36756003)(33646001)(74366001)(47446002)(74706001)(31966008)(74502001)(74662001)(74876001)(80976001)(83072001)(77982001)(59766001)(56776001)(54316002)(79102001)(77096001)(56816003)(53806001)(76482001)(54356001)(83322001)(19580405001)(19580395003)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB222;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:5d52:9ee3:3e84:6668;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <860D3B99ABD6164DAEF4DC702AB14891@namprd05.prod.outlook.com>
-MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+	id S1755250Ab3IIQab (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 12:30:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13736 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755097Ab3IIQa3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 12:30:29 -0400
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=JDfofD-L5ZgA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5p3hctMY2UsA:10 a=VnNF1IyMAAAA:8 a=X9tyu8ftFkkhcBkNjOQA:9 a=CjuIK1q_8ugA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Mon, 9 Sep 2013 12:30:26 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        sbw@mit.edu
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+Message-ID: <20130909123026.4560fa19@gandalf.local.home>
+In-Reply-To: <20130909160920.GW3966@linux.vnet.ibm.com>
+References: <20130909105347.GK31370@twins.programming.kicks-ass.net>
+	<20130909121329.GA16280@somewhere>
+	<20130909083926.3eceebef@gandalf.local.home>
+	<20130909124547.GB16280@somewhere>
+	<20130909085504.2ddd7e69@gandalf.local.home>
+	<20130909130851.GC16280@somewhere>
+	<20130909092142.05780991@gandalf.local.home>
+	<20130909092917.0c99b71a@gandalf.local.home>
+	<20130909144037.GH16280@somewhere>
+	<20130909112057.35403440@gandalf.local.home>
+	<20130909160920.GW3966@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r89GULik021401
 
-On Mon, 2013-09-09 at 09:27 -0700, H. Peter Anvin wrote:
+On Mon, 9 Sep 2013 09:09:20 -0700
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+ 
+> Oddly enough, the earliest implementations of RCU that I worked with
+> back in the early 1990s had implementation but no concept.  The concepts
+> came later.  Something about how dragging people through 1500 lines
+> of highly optimized parallel C code not being a very effective way of
+> teaching RCU.  Surprisingly enough, there actually were some people who
+> managed to learn it that way...
 
-> This will break or have to be redefined once you have signed kexec.
+This is actually my point of my arguments :-)
 
-Yeah. I wasn't really sure how to define it based on an implementation
-that isn't there yet - saying "kexec_load() of untrusted binaries"
-implies that there's some way to do it for trusted binaries.
+Things that are shown outside of the rcu files should be an interface
+that reflects the concept, not the implementation (if possible). Just
+like there's nothing in "preempt_count()" that says the preempt count
+is stored on a per task field.
 
--- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+We can't expect the rest of the community to understand the RCU
+implementation, when there's still many that don't understand the
+concept ;-)
+
+You can implement RCU anyway you seem fit. My concern is where very
+smart people like Peter Zijlstra stumble over code used by others that
+show:
+
+	preempt_disable();
+	ret = yada_yada();
+	preempt_enable();
+
+	return ret;
+
+Where the function name states that we want CPU state, but if that's
+really true, then who ever wants CPU state must not preempt here.
+
+The point being, here the concept actually makes more sense than the
+implementation, because I think one thing we all can agree on, is that
+the interface throughout the kernel should be something people can
+understand quickly without too much effort. The better we all can
+understand, the better the kernel will be.
+
+I think we are starting to bike shed a bit too much. The real issue is,
+what can "rcu_is_cpu_idle()" be called that makes sense with those that
+need to look at this code?
+
+
+"rcu_is_not_active()" or "rcu_is_ignored()" where a user can see that,
+"Oh, RCU is ignored here, I shouldn't be using rcu_read_lock()" or if
+their code is called within something that does "rcu_is_ignored()" and
+they see that they used "rcu_read_lock()" they would understand what
+the issue is.
+
+If they see "rcu_is_cpu_idle()" they would get confused: "Hmm, the cpu
+isn't idle here?"
+
+Perhaps "rcu_watching_this_cpu()" may make sense, but again, if I see a
+the above preempt_enable() in that code, I would think it's a bug,
+because then the return value is not guaranteed to be on this cpu.
+
+-- Steve
+
