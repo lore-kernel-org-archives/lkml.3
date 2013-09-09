@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753676Ab3IINqs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:46:48 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51323 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753533Ab3IINqq (ORCPT
+	id S1753493Ab3IINtZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:49:25 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:43326 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752062Ab3IINtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 09:46:46 -0400
-Date: Mon, 9 Sep 2013 15:46:35 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, ethan.kernel@gmail.com,
-        rjw@sisk.pl, daniel.lezcano@linaro.org, linux-pm@vger.kernel.org,
-        lenb@kernel.org
-Subject: Re: [PATCH V3]hrtimer: Fix a performance regression by disable
- reprogramming in remove_hrtimer
-Message-ID: <20130909134635.GB26785@twins.programming.kicks-ass.net>
-References: <20130729115701.GD3008@twins.programming.kicks-ass.net>
- <24EECBCC-F655-404F-8946-73CC36095A5F@gmail.com>
- <1378362989.18435.2.camel@marge.simpson.net>
- <20130905111428.GB23362@gmail.com>
- <1378386697.6567.9.camel@marge.simpson.net>
- <20130905133750.GA26637@gmail.com>
- <1378445942.5434.31.camel@marge.simpson.net>
- <20130909122325.GX31370@twins.programming.kicks-ass.net>
- <1378730538.5586.30.camel@marge.simpson.net>
- <20130909133044.GB31370@twins.programming.kicks-ass.net>
+	Mon, 9 Sep 2013 09:49:24 -0400
+Date: Mon, 9 Sep 2013 15:49:21 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        sbw@mit.edu
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+Message-ID: <20130909134919.GG16280@somewhere>
+References: <20130906174117.GU3966@linux.vnet.ibm.com>
+ <20130906185927.GE2706@somewhere>
+ <20130909105347.GK31370@twins.programming.kicks-ass.net>
+ <20130909121329.GA16280@somewhere>
+ <20130909083926.3eceebef@gandalf.local.home>
+ <20130909124547.GB16280@somewhere>
+ <20130909085504.2ddd7e69@gandalf.local.home>
+ <20130909131452.GA31370@twins.programming.kicks-ass.net>
+ <20130909132900.GE16280@somewhere>
+ <20130909094132.74f1dd57@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130909133044.GB31370@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20130909094132.74f1dd57@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 03:30:44PM +0200, Peter Zijlstra wrote:
-> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-> index fa6964d..486c0ba 100644
-> --- a/drivers/idle/intel_idle.c
-> +++ b/drivers/idle/intel_idle.c
-> @@ -359,6 +359,14 @@ static int intel_idle(struct cpuidle_device *dev,
->  	if (!(lapic_timer_reliable_states & (1 << (cstate))))
->  		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
+On Mon, Sep 09, 2013 at 09:41:32AM -0400, Steven Rostedt wrote:
+> On Mon, 9 Sep 2013 15:29:02 +0200
+> Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> 
 >  
-> +	current_thread_into()->status |= TS_POLLING;
-> +
-> +	/*
-> +	 * Order against setting of TS_POLLING against the reading of
-> +	 * NEED_RESCHED, matched by resched_task().
-> +	 */
-> +	smp_mb();
-> +
->  	if (!need_resched()) {
->  
->  		__monitor((void *)&current_thread_info()->flags, 0, 0);
-> @@ -367,6 +375,8 @@ static int intel_idle(struct cpuidle_device *dev,
->  			__mwait(eax, ecx);
->  	}
->  
-> +	current_thread_into()->status &= ~TS_POLLING;
-> +
->  	if (!(lapic_timer_reliable_states & (1 << (cstate))))
->  		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
+> > No, putting that on the task_struct won't help much in this regard I think.
+> > Regular schedule() calls don't change that per cpu state.
+> 
+> But is there a place that it would need to?
 
-Hmm, arguably it would be better to set this from
-intel_idle_cpuidle_driver_init() and clear it whenever this goes away.
-Not sure how all that works, the cpuidle driver framework seems 'weird'.
+I don't have any in mind.
 
+> 
+> I mean, if RCU is not tracking a CPU, is it safe to call schedule().
+
+Nope, a CPU is not allowed to call schedule() if RCU is not tracking it.
+
+> And then how would the new task know that RCU is ignoring that CPU?
+
+On return from schedule(), it's (supposed to be) guaranteed that the CPU
+is always tracked by RCU.
+
+> 
+> -- Steve
+> 
