@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755589Ab3IISvA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 14:51:00 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:58604 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755437Ab3IISu5 (ORCPT
+	id S1756141Ab3IISvd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 14:51:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57065 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753363Ab3IISpV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 14:50:57 -0400
-Date: Mon, 9 Sep 2013 11:50:47 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, sbw@mit.edu
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
- section?
-Message-ID: <20130909185046.GH3966@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130909092142.05780991@gandalf.local.home>
- <20130909134505.GF16280@somewhere>
- <20130909135656.GT3966@linux.vnet.ibm.com>
- <20130909101629.32df27a2@gandalf.local.home>
- <20130909161708.GX3966@linux.vnet.ibm.com>
- <20130909123422.7936e868@gandalf.local.home>
- <20130909165836.GB3966@linux.vnet.ibm.com>
- <20130909172908.GA31239@Krystal>
- <20130909175656.GF3966@linux.vnet.ibm.com>
- <20130909143639.66ba6c7c@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130909143639.66ba6c7c@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090918-1344-0000-0000-00000187F11D
+	Mon, 9 Sep 2013 14:45:21 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Johannes Berg <johannes.berg@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 05/24] mac80211: add missing channel context release
+Date: Mon,  9 Sep 2013 11:44:55 -0700
+Message-Id: <1378752314-2416-6-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1378752314-2416-1-git-send-email-kamal@canonical.com>
+References: <1378752314-2416-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 02:36:39PM -0400, Steven Rostedt wrote:
-> On Mon, 9 Sep 2013 10:56:56 -0700
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> 
-> > Although I do like rcu_is_active() better than rcu_read_check(), my
-> > concern with rcu_is_active() is that it can easily be mistaken for a
-> > global state rather than a per-CPU/thread/task/whatever state.
-> 
-> rcu_is_active_local();
+3.8.13.9 -stable review patch.  If anyone has any objections, please let me know.
 
-rcu_is_active_here()?
+------------------
 
-> Although, even though it's cute. I think "rcu_is_watching_you()" has no
-> ambiguity.
+From: Johannes Berg <johannes.berg@intel.com>
 
-Like I said, I am tempted...
+commit 2a3ba63c235fdcd37f6451bdf4a0c7865a3930cf upstream.
 
-							Thanx, Paul
+IBSS needs to release the channel context when leaving
+but I evidently missed that. Fix it.
+
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ net/mac80211/ibss.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/net/mac80211/ibss.c b/net/mac80211/ibss.c
+index 6b7644e..34741ee 100644
+--- a/net/mac80211/ibss.c
++++ b/net/mac80211/ibss.c
+@@ -1207,6 +1207,7 @@ int ieee80211_ibss_leave(struct ieee80211_sub_if_data *sdata)
+ 	sdata->vif.bss_conf.ibss_creator = false;
+ 	ieee80211_bss_info_change_notify(sdata, BSS_CHANGED_BEACON_ENABLED |
+ 						BSS_CHANGED_IBSS);
++	ieee80211_vif_release_channel(sdata);
+ 	synchronize_rcu();
+ 	kfree_skb(skb);
+ 
+-- 
+1.8.1.2
 
