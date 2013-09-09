@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755165Ab3IIQLg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 12:11:36 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:46146 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880Ab3IIQLe (ORCPT
+	id S1754956Ab3IIQMg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 12:12:36 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:41478 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873Ab3IIQMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 12:11:34 -0400
-Date: Mon, 9 Sep 2013 18:11:30 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Christoph Lameter <cl@linux.com>, Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        sbw@mit.edu
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
- section?
-Message-ID: <20130909161130.GA27188@gmail.com>
-References: <20130906174117.GU3966@linux.vnet.ibm.com>
- <20130906185927.GE2706@somewhere>
- <20130909105347.GK31370@twins.programming.kicks-ass.net>
- <20130909132343.GN3966@linux.vnet.ibm.com>
- <20130909133604.GC31370@twins.programming.kicks-ass.net>
- <000001410333127c-486c74ec-3209-4c5e-a92f-0c11e00fa141-000000@email.amazonses.com>
- <20130909150854.GD26785@twins.programming.kicks-ass.net>
- <0000014103534c88-48ee11a3-a581-4e52-b2df-3a1168047d96-000000@email.amazonses.com>
- <20130909160024.GA25555@gmail.com>
- <20130909120328.583a586d@gandalf.local.home>
+	Mon, 9 Sep 2013 12:12:34 -0400
+Date: Mon, 9 Sep 2013 09:12:30 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Zubair Lutfullah <zubair.lutfullah@gmail.com>, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bigeasy@linutronix.de, gregkh@linuxfoundation.org
+Subject: Re: [PATCH 1/2] input: ti_am335x_tsc: Enable shared IRQ for TSC
+Message-ID: <20130909161230.GA25107@core.coreip.homeip.net>
+References: <1378034277-26728-1-git-send-email-zubair.lutfullah@gmail.com>
+ <1378034277-26728-2-git-send-email-zubair.lutfullah@gmail.com>
+ <522C5F96.20001@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130909120328.583a586d@gandalf.local.home>
+In-Reply-To: <522C5F96.20001@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> On Mon, 9 Sep 2013 18:00:24 +0200
-> Ingo Molnar <mingo@kernel.org> wrote:
+On Sun, Sep 08, 2013 at 12:29:26PM +0100, Jonathan Cameron wrote:
+> On 09/01/13 12:17, Zubair Lutfullah wrote:
+> > Enable shared IRQ to allow ADC to share IRQ line from
+> > parent MFD core. Only FIFO0 IRQs are for TSC and handled
+> > on the TSC side.
+> > 
+> > Step mask would be updated from cached variable only previously.
+> > In rare cases when both TSC and ADC are used, the cached
+> > variable gets mixed up.
+> > The step mask is written with the required mask every time.
+> > 
+> > Rachna Patil (TI) laid ground work for shared IRQ.
+> > 
+> > Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+> Whilst I would have prefered an mfd under these drivers and elegant handling
+> of the interrupts, I guess if this works it is at least not terribly invasive.
 > 
-> > So my NAK stands: you are still in denial, you should stop the silly 
-> > arguing and you should stop wasting maintainer time. You need to 
-> > address PeterZ's review feedback and fix the bugs in your patches, 
-> > ASAP.
-> 
-> To Christoph's credit. He did post patches with debug checks. We just 
-> need to get around to review them.
+> However, this does need an Ack from Dmitry before I can take it (or for
+> Dmitry to take it himself?)
 
-I saw those, he posted 'needs testing' patches. He still behaved 
-passive-aggressively, pretending that it was some difficult task to 
-perform, as if we were pulling his teeth.
+I completely agree with Jonathan, more elegant handling would be nice
+but current one will do for now.
 
-And in this thread he still arguing nonsense in the middle in the merge 
-window, claiming that CONFIG_PREEMPT=y is 'academic' - when just a cursory 
-look at lkml or just about anywhere else would tell him that amongst bug 
-reporters on lkml it's as popular as the other preempt options.
+Since most of the work on the driver is going through IIO tree I think
+it would make sense for this patch to go through it as well.
 
-Adding and keeping preempt checks is not rocket science.
+Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-The thing is, we should not be forced to shout at him at all: Christoph's 
-should be _proactive_ in addressing the shortcomings that were readily 
-pointed out literally years ago during review in a friendly fashion, 
-instead of wasting a lot of people's time trying to argue around it...
+Thanks.
 
-Thanks,
-
-	Ingo
+-- 
+Dmitry
