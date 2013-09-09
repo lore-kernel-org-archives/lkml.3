@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325Ab3IIQe0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 12:34:26 -0400
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:63529 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752929Ab3IIQeY (ORCPT
+	id S1754362Ab3IIQgu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 12:36:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57944 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977Ab3IIQgt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 12:34:24 -0400
-From: David Herrmann <dh.herrmann@gmail.com>
-To: linux-input@vger.kernel.org
-Cc: Tom Gundersen <teg@jklm.no>, Kay Sievers <kay.sievers@vrfy.org>,
-        Marcel Holtmann <marcel@holtmann.org>, linux-kernel@vger.kernel.org,
-        David Herrmann <dh.herrmann@gmail.com>
-Subject: [PATCH] HID: uhid: allocate static minor
-Date: Mon,  9 Sep 2013 18:33:54 +0200
-Message-Id: <1378744434-10883-1-git-send-email-dh.herrmann@gmail.com>
-X-Mailer: git-send-email 1.8.4
+	Mon, 9 Sep 2013 12:36:49 -0400
+Date: Mon, 9 Sep 2013 09:36:48 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Paul Chavent <Paul.Chavent@onera.fr>
+Cc: linux-usb@vger.kernel.org, jhovold@gmail.com, fschaefer.oss@googlemail.com,
+        jslaby@suse.cz, max@suse.de, giometti@enneenne.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] USB : serial : invoke dcd_change ldisc's handler.
+Message-ID: <20130909163648.GA26148@kroah.com>
+References: <1378742480-2146-1-git-send-email-paul.chavent@onera.fr>
+ <1378742480-2146-5-git-send-email-paul.chavent@onera.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378742480-2146-5-git-send-email-paul.chavent@onera.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-udev has this nice feature of creating "dead" /dev/<node> device-nodes if
-it finds a devnode:<node> modalias. Once the node is accessed, the kernel
-automatically loads the module that provides the node. However, this
-requires udev to know the major:minor code to use for the node. This
-feature was introduced by:
+On Mon, Sep 09, 2013 at 06:01:19PM +0200, Paul Chavent wrote:
+> In order to have the PPS line discipline to work with usb devices.
+> 
+> Signed-off-by: Paul Chavent <paul.chavent@onera.fr>
+> ---
+>  drivers/usb/serial/generic.c | 7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> diff --git a/drivers/usb/serial/generic.c b/drivers/usb/serial/generic.c
+> index 91f0592..a18a086 100644
+> --- a/drivers/usb/serial/generic.c
+> +++ b/drivers/usb/serial/generic.c
+> @@ -567,6 +567,13 @@ void usb_serial_handle_dcd_change(struct usb_serial_port *usb_port,
+>  {
+>  	struct tty_port *port = &usb_port->port;
+>  	struct tty_struct *tty = tty_port_tty_get(port);
+> +	struct tty_ldisc *ld = tty ? tty_ldisc_ref(tty) : NULL;
+> +
+> +	if (ld) {
 
-  commit 578454ff7eab61d13a26b568f99a89a2c9edc881
-  Author: Kay Sievers <kay.sievers@vrfy.org>
-  Date:   Thu May 20 18:07:20 2010 +0200
+Minor nit, I hate the ? : mode of C, and as you are doing another if
+statement right after it, it's pretty redundant here.  So can you just
+merge them together into one if chain?
 
-      driver core: add devname module aliases to allow module on-demand auto-loading
+thanks,
 
-However, uhid uses dynamic minor numbers so this doesn't actually work. We
-need to load uhid to know which minor it's going to use.
-
-Hence, allocate a static minor (just like uinput does) and we're good
-to go.
-
-Reported-by: Tom Gundersen <teg@jklm.no>
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
----
- drivers/hid/uhid.c         | 3 ++-
- include/linux/miscdevice.h | 1 +
- 2 files changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/hid/uhid.c b/drivers/hid/uhid.c
-index 5bf2fb7..93b00d7 100644
---- a/drivers/hid/uhid.c
-+++ b/drivers/hid/uhid.c
-@@ -615,7 +615,7 @@ static const struct file_operations uhid_fops = {
- 
- static struct miscdevice uhid_misc = {
- 	.fops		= &uhid_fops,
--	.minor		= MISC_DYNAMIC_MINOR,
-+	.minor		= UHID_MINOR,
- 	.name		= UHID_NAME,
- };
- 
-@@ -634,4 +634,5 @@ module_exit(uhid_exit);
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("David Herrmann <dh.herrmann@gmail.com>");
- MODULE_DESCRIPTION("User-space I/O driver support for HID subsystem");
-+MODULE_ALIAS_MISCDEV(UHID_MINOR);
- MODULE_ALIAS("devname:" UHID_NAME);
-diff --git a/include/linux/miscdevice.h b/include/linux/miscdevice.h
-index 09c2300..cb35835 100644
---- a/include/linux/miscdevice.h
-+++ b/include/linux/miscdevice.h
-@@ -45,6 +45,7 @@
- #define MAPPER_CTRL_MINOR	236
- #define LOOP_CTRL_MINOR		237
- #define VHOST_NET_MINOR		238
-+#define UHID_MINOR		239
- #define MISC_DYNAMIC_MINOR	255
- 
- struct device;
--- 
-1.8.4
-
+greg k-h
