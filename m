@@ -1,215 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754342Ab3IIP3o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 11:29:44 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28335 "EHLO
+	id S1755096Ab3IIPav (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 11:30:51 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21912 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754231Ab3IIP0q (ORCPT
+	with ESMTP id S1754102Ab3IIP0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 11:26:46 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=9AhsZS3F4UEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=oifTI6OnsvIA:10 a=VwQbUJbxAAAA:8 a=ILSa-1RNdHgTr9NWcJsA:9 a=jeBq3FmKZ4MA:10 a=Zh68SRI7RUMA:10 a=g9nnz0wX_P2DqB7O:21 a=fHj4w-rigW9gPsGb:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Mon, 9 Sep 2013 11:26:45 -0400
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=C6u6bv4baTcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Qus6zTA8wZAA:10 a=t7CeM3EgAAAA:8 a=VwQbUJbxAAAA:8 a=xt1Mke5GkH6e2Q2BLK4A:9 a=2e6ZYRoF4I4A:10 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130909143536.507282575@goodmis.org>
+Message-Id: <20130909143534.807208609@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Sep 2013 10:35:31 -0400
+Date: Mon, 09 Sep 2013 10:35:21 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>
-Subject: [PATCH RT 14/16] hwlat-detector: Use thread instead of stop machine
+        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH RT 04/16] list_bl.h: make list head locking RT safe
 References: <20130909143517.641735717@goodmis.org>
-Content-Disposition: inline; filename=0014-hwlat-detector-Use-thread-instead-of-stop-machine.patch
+Content-Disposition: inline; filename=0004-list_bl.h-make-list-head-locking-RT-safe.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-There's no reason to use stop machine to search for hardware latency.
-Simply disabling interrupts while running the loop will do enough to
-check if something comes in that wasn't disabled by interrupts being
-off, which is exactly what stop machine does.
+As per changes in include/linux/jbd_common.h for avoiding the
+bit_spin_locks on RT ("fs: jbd/jbd2: Make state lock and journal
+head lock rt safe") we do the same thing here.
 
-Instead of using stop machine, just have the thread disable interrupts
-while it checks for hardware latency.
+We use the non atomic __set_bit and __clear_bit inside the scope of
+the lock to preserve the ability of the existing LIST_DEBUG code to
+use the zero'th bit in the sanity checks.
+
+As a bit spinlock, we had no lockdep visibility into the usage
+of the list head locking.  Now, if we were to implement it as a
+standard non-raw spinlock, we would see:
+
+BUG: sleeping function called from invalid context at kernel/rtmutex.c:658
+in_atomic(): 1, irqs_disabled(): 0, pid: 122, name: udevd
+5 locks held by udevd/122:
+ #0:  (&sb->s_type->i_mutex_key#7/1){+.+.+.}, at: [<ffffffff811967e8>] lock_rename+0xe8/0xf0
+ #1:  (rename_lock){+.+...}, at: [<ffffffff811a277c>] d_move+0x2c/0x60
+ #2:  (&dentry->d_lock){+.+...}, at: [<ffffffff811a0763>] dentry_lock_for_move+0xf3/0x130
+ #3:  (&dentry->d_lock/2){+.+...}, at: [<ffffffff811a0734>] dentry_lock_for_move+0xc4/0x130
+ #4:  (&dentry->d_lock/3){+.+...}, at: [<ffffffff811a0747>] dentry_lock_for_move+0xd7/0x130
+Pid: 122, comm: udevd Not tainted 3.4.47-rt62 #7
+Call Trace:
+ [<ffffffff810b9624>] __might_sleep+0x134/0x1f0
+ [<ffffffff817a24d4>] rt_spin_lock+0x24/0x60
+ [<ffffffff811a0c4c>] __d_shrink+0x5c/0xa0
+ [<ffffffff811a1b2d>] __d_drop+0x1d/0x40
+ [<ffffffff811a24be>] __d_move+0x8e/0x320
+ [<ffffffff811a278e>] d_move+0x3e/0x60
+ [<ffffffff81199598>] vfs_rename+0x198/0x4c0
+ [<ffffffff8119b093>] sys_renameat+0x213/0x240
+ [<ffffffff817a2de5>] ? _raw_spin_unlock+0x35/0x60
+ [<ffffffff8107781c>] ? do_page_fault+0x1ec/0x4b0
+ [<ffffffff817a32ca>] ? retint_swapgs+0xe/0x13
+ [<ffffffff813eb0e6>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff8119b0db>] sys_rename+0x1b/0x20
+ [<ffffffff817a3b96>] system_call_fastpath+0x1a/0x1f
+
+Since we are only taking the lock during short lived list operations,
+lets assume for now that it being raw won't be a significant latency
+concern.
 
 Cc: stable-rt@vger.kernel.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- drivers/misc/hwlat_detector.c |   59 +++++++++++++++++------------------------
- 1 file changed, 25 insertions(+), 34 deletions(-)
+ include/linux/list_bl.h |   24 ++++++++++++++++++++++--
+ 1 file changed, 22 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/misc/hwlat_detector.c b/drivers/misc/hwlat_detector.c
-index 13443e9..6f61d5f 100644
---- a/drivers/misc/hwlat_detector.c
-+++ b/drivers/misc/hwlat_detector.c
-@@ -41,7 +41,6 @@
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/ring_buffer.h>
--#include <linux/stop_machine.h>
- #include <linux/time.h>
- #include <linux/hrtimer.h>
- #include <linux/kthread.h>
-@@ -107,7 +106,6 @@ struct data;					/* Global state */
- /* Sampling functions */
- static int __buffer_add_sample(struct sample *sample);
- static struct sample *buffer_get_sample(struct sample *sample);
--static int get_sample(void *unused);
+diff --git a/include/linux/list_bl.h b/include/linux/list_bl.h
+index 31f9d75..ddfd46a 100644
+--- a/include/linux/list_bl.h
++++ b/include/linux/list_bl.h
+@@ -2,6 +2,7 @@
+ #define _LINUX_LIST_BL_H
  
- /* Threading and state */
- static int kthread_fn(void *unused);
-@@ -149,7 +147,7 @@ struct sample {
- 	unsigned long   lost;
+ #include <linux/list.h>
++#include <linux/spinlock.h>
+ #include <linux/bit_spinlock.h>
+ 
+ /*
+@@ -32,13 +33,22 @@
+ 
+ struct hlist_bl_head {
+ 	struct hlist_bl_node *first;
++#ifdef CONFIG_PREEMPT_RT_BASE
++	raw_spinlock_t lock;
++#endif
  };
  
--/* keep the global state somewhere. Mostly used under stop_machine. */
-+/* keep the global state somewhere. */
- static struct data {
- 
- 	struct mutex lock;		/* protect changes */
-@@ -172,7 +170,7 @@ static struct data {
-  * @sample: The new latency sample value
-  *
-  * This receives a new latency sample and records it in a global ring buffer.
-- * No additional locking is used in this case - suited for stop_machine use.
-+ * No additional locking is used in this case.
-  */
- static int __buffer_add_sample(struct sample *sample)
- {
-@@ -229,18 +227,17 @@ static struct sample *buffer_get_sample(struct sample *sample)
- #endif
- /**
-  * get_sample - sample the CPU TSC and look for likely hardware latencies
-- * @unused: This is not used but is a part of the stop_machine API
-  *
-  * Used to repeatedly capture the CPU TSC (or similar), looking for potential
-- * hardware-induced latency. Called under stop_machine, with data.lock held.
-+ * hardware-induced latency. Called with interrupts disabled and with data.lock held.
-  */
--static int get_sample(void *unused)
-+static int get_sample(void)
- {
- 	time_type start, t1, t2, last_t2;
- 	s64 diff, total = 0;
- 	u64 sample = 0;
- 	u64 outer_sample = 0;
--	int ret = 1;
-+	int ret = -1;
- 
- 	init_time(last_t2, 0);
- 	start = time_get(); /* start timestamp */
-@@ -279,10 +276,14 @@ static int get_sample(void *unused)
- 
- 	} while (total <= data.sample_width);
- 
-+	ret = 0;
+ struct hlist_bl_node {
+ 	struct hlist_bl_node *next, **pprev;
+ };
+-#define INIT_HLIST_BL_HEAD(ptr) \
+-	((ptr)->first = NULL)
 +
- 	/* If we exceed the threshold value, we have found a hardware latency */
- 	if (sample > data.threshold || outer_sample > data.threshold) {
- 		struct sample s;
++static inline void INIT_HLIST_BL_HEAD(struct hlist_bl_head *h)
++{
++	h->first = NULL;
++#ifdef CONFIG_PREEMPT_RT_BASE
++	raw_spin_lock_init(&h->lock);
++#endif
++}
  
-+		ret = 1;
-+
- 		data.count++;
- 		s.seqnum = data.count;
- 		s.duration = sample;
-@@ -295,7 +296,6 @@ static int get_sample(void *unused)
- 			data.max_sample = sample;
- 	}
+ static inline void INIT_HLIST_BL_NODE(struct hlist_bl_node *h)
+ {
+@@ -117,12 +127,22 @@ static inline void hlist_bl_del_init(struct hlist_bl_node *n)
  
--	ret = 0;
- out:
- 	return ret;
+ static inline void hlist_bl_lock(struct hlist_bl_head *b)
+ {
++#ifndef CONFIG_PREEMPT_RT_BASE
+ 	bit_spin_lock(0, (unsigned long *)b);
++#else
++	raw_spin_lock(&b->lock);
++	__set_bit(0, (unsigned long *)b);
++#endif
  }
-@@ -305,32 +305,30 @@ out:
-  * @unused: A required part of the kthread API.
-  *
-  * Used to periodically sample the CPU TSC via a call to get_sample. We
-- * use stop_machine, whith does (intentionally) introduce latency since we
-+ * disable interrupts, which does (intentionally) introduce latency since we
-  * need to ensure nothing else might be running (and thus pre-empting).
-  * Obviously this should never be used in production environments.
-  *
-- * stop_machine will schedule us typically only on CPU0 which is fine for
-- * almost every real-world hardware latency situation - but we might later
-- * generalize this if we find there are any actualy systems with alternate
-- * SMI delivery or other non CPU0 hardware latencies.
-+ * Currently this runs on which ever CPU it was scheduled on, but most
-+ * real-worald hardware latency situations occur across several CPUs,
-+ * but we might later generalize this if we find there are any actualy
-+ * systems with alternate SMI delivery or other hardware latencies.
-  */
- static int kthread_fn(void *unused)
+ 
+ static inline void hlist_bl_unlock(struct hlist_bl_head *b)
  {
--	int err = 0;
--	u64 interval = 0;
-+	int ret;
-+	u64 interval;
- 
- 	while (!kthread_should_stop()) {
- 
- 		mutex_lock(&data.lock);
- 
--		err = stop_machine(get_sample, unused, 0);
--		if (err) {
--			/* Houston, we have a problem */
--			mutex_unlock(&data.lock);
--			goto err_out;
--		}
-+		local_irq_disable();
-+		ret = get_sample();
-+		local_irq_enable();
- 
--		wake_up(&data.wq); /* wake up reader(s) */
-+		if (ret > 0)
-+			wake_up(&data.wq); /* wake up reader(s) */
- 
- 		interval = data.sample_window - data.sample_width;
- 		do_div(interval, USEC_PER_MSEC); /* modifies interval value */
-@@ -338,15 +336,10 @@ static int kthread_fn(void *unused)
- 		mutex_unlock(&data.lock);
- 
- 		if (msleep_interruptible(interval))
--			goto out;
-+			break;
- 	}
--		goto out;
--err_out:
--	printk(KERN_ERR BANNER "could not call stop_machine, disabling\n");
--	enabled = 0;
--out:
--	return err;
- 
-+	return 0;
++#ifndef CONFIG_PREEMPT_RT_BASE
+ 	__bit_spin_unlock(0, (unsigned long *)b);
++#else
++	__clear_bit(0, (unsigned long *)b);
++	raw_spin_unlock(&b->lock);
++#endif
  }
  
  /**
-@@ -442,8 +435,7 @@ out:
-  * This function provides a generic read implementation for the global state
-  * "data" structure debugfs filesystem entries. It would be nice to use
-  * simple_attr_read directly, but we need to make sure that the data.lock
-- * spinlock is held during the actual read (even though we likely won't ever
-- * actually race here as the updater runs under a stop_machine context).
-+ * is held during the actual read.
-  */
- static ssize_t simple_data_read(struct file *filp, char __user *ubuf,
- 				size_t cnt, loff_t *ppos, const u64 *entry)
-@@ -478,8 +470,7 @@ static ssize_t simple_data_read(struct file *filp, char __user *ubuf,
-  * This function provides a generic write implementation for the global state
-  * "data" structure debugfs filesystem entries. It would be nice to use
-  * simple_attr_write directly, but we need to make sure that the data.lock
-- * spinlock is held during the actual write (even though we likely won't ever
-- * actually race here as the updater runs under a stop_machine context).
-+ * is held during the actual write.
-  */
- static ssize_t simple_data_write(struct file *filp, const char __user *ubuf,
- 				 size_t cnt, loff_t *ppos, u64 *entry)
 -- 
 1.7.10.4
 
