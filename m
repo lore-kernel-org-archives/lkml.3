@@ -1,112 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928Ab3IIN2g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:28:36 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10715 "EHLO
+	id S1753993Ab3IIN2x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:28:53 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11424 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753594Ab3IIN0y (ORCPT
+	with ESMTP id S1753587Ab3IIN0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Sep 2013 09:26:54 -0400
-X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=ufeRskBYLQoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Zvybn3zlWHMA:10 a=VwQbUJbxAAAA:8 a=Dy9FSkG8L0gs_orUxm0A:9 a=U62fhAwekXMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=BP604nfWqvwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=tVU5si3swWsA:10 a=VwQbUJbxAAAA:8 a=aEvpvKATvMdsf35bc-8A:9 a=9J5VuaLb3qoA:10 a=jeBq3FmKZ4MA:10 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130909124531.445392664@goodmis.org>
+Message-Id: <20130909124556.153398249@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Sep 2013 08:45:31 -0400
+Date: Mon, 09 Sep 2013 08:45:33 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 00/16] 3.4.57-rt73-rc1 stable review
+        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>,
+        Mike Galbraith <bitbucket@online.de>
+Subject: [PATCH RT 02/16] x86/mce: fix mce timer interval
+References: <20130909124531.445392664@goodmis.org>
+Content-Disposition: inline; filename=0002-x86-mce-fix-mce-timer-interval.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Mike Galbraith <bitbucket@online.de>
 
-Dear RT Folks,
+Seems mce timer fire at the wrong frequency in -rt kernels since roughly
+forever due to 32 bit overflow.  3.8-rt is also missing a multiplier.
 
-This is the RT stable review cycle of patch 3.4.57-rt73-rc1.
+Add missing us -> ns conversion and 32 bit overflow prevention.
 
-Please scream at me if I messed something up. Please test the patches too.
-
-The -rc release will be uploaded to kernel.org and will be deleted when
-the final release is out. This is just a review release (or release candidate).
-
-The pre-releases will not be pushed to the git repository, only the
-final release is.
-
-If all goes well, this patch will be converted to the next main release
-on 9/12/2013.
-
-Enjoy,
-
--- Steve
-
-
-To build 3.4.57-rt73-rc1 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.57.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.57-rt73-rc1.patch.xz
-
-You can also build from 3.4.57-rt72 by applying the incremental patch:
-
-http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/incr/patch-3.4.57-rt72-rt73-rc1.patch.xz
-
-
-Changes from 3.4.57-rt72:
-
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Mike Galbraith <bitbucket@online.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+[bigeasy: use ULL instead of u64 cast]
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
+ arch/x86/kernel/cpu/mcheck/mce.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 63c96f9..ab47f31 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -1274,7 +1274,7 @@ static enum hrtimer_restart mce_start_timer(struct hrtimer *timer)
+ 		*n = min(*n*2, round_jiffies_relative(check_interval*HZ));
+ 
+ 	hrtimer_forward(timer, timer->base->get_time(),
+-			ns_to_ktime(jiffies_to_usecs(*n) * 1000));
++			ns_to_ktime(jiffies_to_usecs(*n) * 1000ULL));
+ 	return HRTIMER_RESTART;
+ }
+ 
+@@ -1568,7 +1568,7 @@ static void __mcheck_cpu_init_timer(void)
+ 	if (!*n)
+ 		return;
+ 
+-	hrtimer_start_range_ns(t, ns_to_ktime(jiffies_to_usecs(*n) * 1000),
++	hrtimer_start_range_ns(t, ns_to_ktime(jiffies_to_usecs(*n) * 1000ULL),
+ 			       0 , HRTIMER_MODE_REL_PINNED);
+ }
+ 
+-- 
+1.7.10.4
 
 
-Ivo Sieben (1):
-      genirq: Set irq thread to RT priority on creation
-
-Mike Galbraith (1):
-      x86/mce: fix mce timer interval
-
-Paul Gortmaker (1):
-      list_bl.h: make list head locking RT safe
-
-Sebastian Andrzej Siewior (4):
-      kernel/cpu: fix cpu down problem if kthread's cpu is going down
-      kernel/hotplug: restore original cpu mask oncpu/down
-      drm/i915: drop trace_i915_gem_ring_dispatch on rt
-      genirq: do not invoke the affinity callback via a workqueue
-
-Steven Rostedt (5):
-      sched/workqueue: Only wake up idle workers if not blocked on sleeping spin lock
-      rt,ntp: Move call to schedule_delayed_work() to helper thread
-      hwlat-detector: Update hwlat_detector to add outer loop detection
-      hwlat-detector: Use trace_clock_local if available
-      hwlat-detector: Use thread instead of stop machine
-
-Steven Rostedt (Red Hat) (2):
-      hwlat-detect/trace: Export trace_clock_local for hwlat-detector
-      Linux 3.4.57-rt73-rc1
-
-Uwe Kleine-König (1):
-      list_bl.h: fix it for for !SMP && !DEBUG_SPINLOCK
-
-Zhao Hongjiang (1):
-      timers: prepare for full preemption improve
-
-----
- arch/x86/kernel/cpu/mcheck/mce.c           |    4 +-
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |    2 +
- drivers/misc/hwlat_detector.c              |  117 +++++++++++++++++-----------
- include/linux/interrupt.h                  |    1 +
- include/linux/list_bl.h                    |   28 ++++++-
- kernel/cpu.c                               |   29 ++++++-
- kernel/irq/manage.c                        |   89 +++++++++++++++++++--
- kernel/sched/core.c                        |    4 +-
- kernel/time/ntp.c                          |   40 ++++++++++
- kernel/timer.c                             |    8 +-
- kernel/trace/trace_clock.c                 |    1 +
- localversion-rt                            |    2 +-
- 12 files changed, 262 insertions(+), 63 deletions(-)
