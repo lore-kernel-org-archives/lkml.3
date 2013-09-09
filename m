@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771Ab3IILmK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 07:42:10 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:36856 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751784Ab3IILmJ (ORCPT
+	id S1752845Ab3IILpA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 07:45:00 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:41065 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005Ab3IILo6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 07:42:09 -0400
-Date: Mon, 9 Sep 2013 12:42:04 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        jic23@cam.ac.uk
-Cc: arnd@arndb.de, linus.walleij@linaro.org, denis.ciocca@st.com,
-        linux-iio@vger.kernel.org
-Subject: [PATCH v2 12/14] Documentation: dt: iio: Add binding for LPS001WP 
-Message-ID: <20130909114204.GF22938@lee--X1>
-References: <1378721410-30937-1-git-send-email-lee.jones@linaro.org>
- <1378721410-30937-13-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378721410-30937-13-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 9 Sep 2013 07:44:58 -0400
+Message-ID: <1378727093.13401.3.camel@ThinkPad-X230.localdomain>
+Subject: Re: [PATCH 2/2] ACPI / video / i915: Remove ACPI backlight if
+ firmware expects Windows 8
+From: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, Yves-Alexis Perez <corsac@debian.org>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Lee Chun-Yi <jlee@novell.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Date: Mon, 09 Sep 2013 15:44:53 +0400
+In-Reply-To: <522D89EC.6050103@intel.com>
+References: <522D88C3.7000808@intel.com> <522D89EC.6050103@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.9.91 (3.9.91-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LPS001WP is a Pressure and Temperature sensor.
+On Mon, 2013-09-09 at 16:42 +0800, Aaron Lu wrote:
+> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+> index f466980..75fba17 100644
+> --- a/drivers/gpu/drm/i915/i915_dma.c
+> +++ b/drivers/gpu/drm/i915/i915_dma.c
+> @@ -1650,7 +1650,7 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
+>  	if (INTEL_INFO(dev)->num_pipes) {
+>  		/* Must be done after probing outputs */
+>  		intel_opregion_init(dev);
+> -		acpi_video_register();
+> +		__acpi_video_register(i915_take_over_backlight);
+>  	}
+>  
+>  	if (IS_GEN5(dev))
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- .../devicetree/bindings/iio/pressure/lps001wp.txt   | 21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/iio/pressure/lps001wp.txt
+I can't compile:
 
-diff --git a/Documentation/devicetree/bindings/iio/pressure/lps001wp.txt b/Documentation/devicetree/bindings/iio/pressure/lps001wp.txt
-new file mode 100644
-index 0000000..45cb45c
---- /dev/null
-+++ b/Documentation/devicetree/bindings/iio/pressure/lps001wp.txt
-@@ -0,0 +1,21 @@
-+* STMicroelectronics Pressure Sensor
-+
-+Required properties:
-+  - compatible: Should be "st,lps001wp"
-+  - reg: The I2C address of the sensor
-+
-+Optional properties:
-+  - vdd-supply: Phandle to the Vdd supply regulator
-+  - vddio-supply: Phandle to the Vdd-IO supply regulator
-+
-+Example:
-+
-+i2c@80128000 {
-+        lps001wp@5c {
-+                compatible = "st,lps001wp";
-+                reg = <0x5c>;
-+
-+                vdd-supply = <&ab8500_ldo_aux1_reg>;
-+                vddio-supply = <&db8500_vsmps2_reg>;
-+        };
-+};
+
+DEBUG: drivers/gpu/drm/i915/i915_dma.c: In function 'i915_driver_load':
+DEBUG: drivers/gpu/drm/i915/i915_dma.c:1661:3: error: implicit
+declaration of function
+'__acpi_video_register' [-Werror=implicit-function-declaration]
+DEBUG:    __acpi_video_register(i915_take_over_backlight);
+DEBUG:    ^
+DEBUG: cc1: some warnings being treated as errors
+DEBUG: make[4]: *** [drivers/gpu/drm/i915/i915_dma.o] Error 1
+DEBUG: make[3]: *** [drivers/gpu/drm/i915] Error 2
+DEBUG: make[2]: *** [drivers/gpu/drm] Error 2
+DEBUG: make[1]: *** [drivers/gpu] Error 2
+DEBUG: make: *** [drivers] Error 2
+
+-- 
+Igor Gnatenko
+Fedora release 20 (Heisenbug)
+Linux 3.11.0-3.fc20.x86_64
+
