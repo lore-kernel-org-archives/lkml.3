@@ -1,147 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755310Ab3IIQdJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 12:33:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19945 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753814Ab3IIQdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 12:33:07 -0400
-Message-ID: <1378744377.2631.82.camel@ul30vt.home>
-Subject: Re: [PATCH] ACPI / hotplug / PCI: Avoid parent bus rescans on
- spurious device checks
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <liuj97@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Mon, 09 Sep 2013 10:32:57 -0600
-In-Reply-To: <2762291.l6lVgcWD3r@vostro.rjw.lan>
-References: <26431283.HJCKsss0rt@vostro.rjw.lan>
-	 <CAErSpo4WAh8A7nAeDhrLUOAKrLNyEoKfyxT7VN6cyH3vuSA+zg@mail.gmail.com>
-	 <1378481674.3246.288.camel@ul30vt.home> <2762291.l6lVgcWD3r@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
+	id S1755366Ab3IIQe1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 12:34:27 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10230 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753938Ab3IIQeY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 12:34:24 -0400
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=JDfofD-L5ZgA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5p3hctMY2UsA:10 a=VnNF1IyMAAAA:8 a=Ja4sHGzOgzDxmGXFrb0A:9 a=CjuIK1q_8ugA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Mon, 9 Sep 2013 12:34:22 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        sbw@mit.edu
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+Message-ID: <20130909123422.7936e868@gandalf.local.home>
+In-Reply-To: <20130909161708.GX3966@linux.vnet.ibm.com>
+References: <20130909105347.GK31370@twins.programming.kicks-ass.net>
+	<20130909121329.GA16280@somewhere>
+	<20130909083926.3eceebef@gandalf.local.home>
+	<20130909124547.GB16280@somewhere>
+	<20130909085504.2ddd7e69@gandalf.local.home>
+	<20130909130851.GC16280@somewhere>
+	<20130909092142.05780991@gandalf.local.home>
+	<20130909134505.GF16280@somewhere>
+	<20130909135656.GT3966@linux.vnet.ibm.com>
+	<20130909101629.32df27a2@gandalf.local.home>
+	<20130909161708.GX3966@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-09-08 at 00:16 +0200, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> In the current ACPIPHP notify handler we always go directly for a
-> rescan of the parent bus if we get a device check notification for
-> a device that is not a bridge.  However, this obviously is
-> overzealous if nothing really changes, because this way we may rescan
-> the whole PCI hierarchy pretty much in vain.
-> 
-> That happens on Alex Williamson's machine whose ACPI tables contain
-> device objects that are supposed to coresspond to PCIe root ports,
-> but those ports aren't physically present (or at least they aren't
-> visible in the PCI config space to us).  The BIOS generates multiple
-> device check notifies for those objects during boot and for each of
-> them we go straight for the parent bus rescan, but the parent bus is
-> the root bus in this particular case.  In consequence, we rescan the
-> whole PCI bus from the top several times in a row, which is
-> completely unnecessary, increases boot time by 50% (after previous
-> fixes) and generates excess dmesg output from the PCI subsystem.
-> 
-> Fix the problem by checking if we can find anything new in the
-> slot corresponding to the device we've got a device check notify
-> for and doing nothig if that's not the case.
-> 
-> The spec (ACPI 5.0, Section 5.6.6) appears to mandate this behavior,
-> as it says:
-> 
->   Device Check. Used to notify OSPM that the device either appeared
->   or disappeared. If the device has appeared, OSPM will re-enumerate
->   from the parent. If the device has disappeared, OSPM will
->   invalidate the state of the device. OSPM may optimize out
->   re-enumeration.
-> 
-> Therefore, according to the spec, we are free to do nothing if
-> nothing changes.
-> 
-> References: https://bugzilla.kernel.org/show_bug.cgi?id=60865
-> Reported-by: Alex Williamson <alex.williamson@redhat.com>
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
+On Mon, 9 Sep 2013 09:17:08 -0700
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
 
-Works for me.  Thanks!
-
-Tested-by: Alex Williamson <alex.williamson@redhat.com>
-
-> On top of linux-pm.git/linux-next.
+> On Mon, Sep 09, 2013 at 10:16:29AM -0400, Steven Rostedt wrote:
+> > On Mon, 9 Sep 2013 06:56:56 -0700
+> > "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> > 
+> > 
+> > > Indeed, there is on ongoing naming debate as well.  About the only point
+> > > of agreement thus far is that the current names are inadequate. ;-)
+> > > 
+> > > My current feeling is that rcu_is_cpu_idle() should be called
+> > > rcu_watching_this_cpu() and what is called rcu_watching_this_cpu()
+> > > in my local tree should be called __rcu_watching_this_cpu().
+> > 
+> > I disagree. Then it would not make sense if we take a return value of
+> > "__rcu_watching_this_cpu()" and use it on another CPU to make other
+> > decisions for that other CPU.
 > 
-> Thanks,
-> Rafael
-> 
-> ---
->  drivers/pci/hotplug/acpiphp_glue.c |   32 +++++++++++++++++++++++++-------
->  1 file changed, 25 insertions(+), 7 deletions(-)
-> 
-> Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-> ===================================================================
-> --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
-> +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-> @@ -528,6 +528,16 @@ static void check_hotplug_bridge(struct
->  	}
->  }
->  
-> +static int acpiphp_rescan_slot(struct acpiphp_slot *slot)
-> +{
-> +	struct acpiphp_func *func;
-> +
-> +	list_for_each_entry(func, &slot->funcs, sibling)
-> +		acpiphp_bus_add(func_to_handle(func));
-> +
-> +	return pci_scan_slot(slot->bus, PCI_DEVFN(slot->device, 0));
-> +}
-> +
->  /**
->   * enable_slot - enable, configure a slot
->   * @slot: slot to be enabled
-> @@ -544,10 +554,7 @@ static void __ref enable_slot(struct acp
->  	LIST_HEAD(add_list);
->  	int nr_found;
->  
-> -	list_for_each_entry(func, &slot->funcs, sibling)
-> -		acpiphp_bus_add(func_to_handle(func));
-> -
-> -	nr_found = pci_scan_slot(bus, PCI_DEVFN(slot->device, 0));
-> +	nr_found = acpiphp_rescan_slot(slot);
->  	max = acpiphp_max_busnr(bus);
->  	for (pass = 0; pass < 2; pass++) {
->  		list_for_each_entry(dev, &bus->devices, bus_list) {
-> @@ -840,11 +847,22 @@ static void hotplug_event(acpi_handle ha
->  	case ACPI_NOTIFY_DEVICE_CHECK:
->  		/* device check */
->  		dbg("%s: Device check notify on %s\n", __func__, objname);
-> -		if (bridge)
-> +		if (bridge) {
->  			acpiphp_check_bridge(bridge);
-> -		else
-> -			acpiphp_check_bridge(func->parent);
-> +		} else {
-> +			struct acpiphp_slot *slot = func->slot;
-> +			int ret;
->  
-> +			/*
-> +			 * Check if anything has changed in the slot and rescan
-> +			 * from the parent if that's the case.
-> +			 */
-> +			mutex_lock(&slot->crit_sect);
-> +			ret = acpiphp_rescan_slot(slot);
-> +			mutex_unlock(&slot->crit_sect);
-> +			if (ret)
-> +				acpiphp_check_bridge(func->parent);
-> +		}
->  		break;
->  
->  	case ACPI_NOTIFY_EJECT_REQUEST:
+> Frederic and I both went through why this works.
 
+
+My concern is people stumbling over why preemption can be enabled here?
+
+If it must *always* be called with preemption disabled (no
+rcu_watching_this_cpu() version that disables preemption for you) then
+I would be OK with it.
+
+The problem I'm having is, anything that uses "this_cpu()" can cause
+problems with understanding the code, because the first thing I think
+is "if we get the result for 'this_cpu', it may not be 'this_cpu' when
+I use it".
+
+> 
+> > I still think we are confusing concepts with implementation. Yes, the
+> > RCU implementation tracks CPU state, but the concept is still based on
+> > the task.
+> 
+> You keep asserting this, but I am not seeing it.  Sure, you can argue
+> that grace periods are based on tasks as well as or instead of CPUs.
+> But I am not convinced that it helps at the dynticks interface.
+> 
+> > But you are right, with dynamic ticks, things get a little more
+> > complex, as dynamic ticks is a CPU state, not a task state, as it can
+> > be something other than the running task that changes the state
+> > (another task gets scheduled on that CPU).
+> > 
+> > But I think we are coupling RCU a bit too much with dynamic ticks here.
+> > Maybe we need to take a step back to visualize concepts again.
+> 
+> If we don't couple it pretty tightly, it won't work.  And whatever we
+> want to call this thing that determines what RCU is paying attention to
+> has to be at the implementation level.  For things like rcu_read_lock()
+> and synchronize_rcu(), yes, the task view is important -- and in recent
+> documentation is the POV I use.
+> 
+> > The state of being in dynamic tick mode is determined by what a task or
+> > tasks are doing on the CPU. One of those things is if the task needs to
+> > be tracked by RCU. And here, is where I think we are getting our
+> > confusion from. The dynamic tick state needs to check if the running
+> > task is requiring RCU or not, and thus we ask for "is rcu needed on
+> > this CPU?" when the real question is "is the task running on this CPU
+> > requiring RCU?"
+> > 
+> > Again, if we keep things in a conceptual mode, and not look too much at
+> > the implementation details, I think more people will understand what's
+> > going on. Especially those that don't know why something was
+> > implemented the way it was.
+> 
+> All this aside, do you have a name you are nominating?
+
+Something that doesn't specify "this_cpu" or "cpu" if the result can be
+used on another cpu correctly.
+
+"rcu_is_ignored()" or "rcu_is_not_active()", "rcu_is_watching_you()"
+
+-- Steve
 
