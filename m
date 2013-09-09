@@ -1,82 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751335Ab3IIAf0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 20:35:26 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49119 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750848Ab3IIAfY (ORCPT
+	id S1751379Ab3IIAgD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 20:36:03 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:54323 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751329Ab3IIAf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 20:35:24 -0400
-Date: Mon, 9 Sep 2013 01:35:17 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Waiman Long <Waiman.Long@hp.com>, Jeff Layton <jlayton@redhat.com>,
-        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-Message-ID: <20130909003517.GJ13318@ZenIV.linux.org.uk>
-References: <1375758759-29629-2-git-send-email-Waiman.Long@hp.com>
- <CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
- <1377751465.4028.20.camel@pasglop>
- <20130829070012.GC27322@gmail.com>
- <CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
- <CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
- <CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
- <CA+55aFxEjDYhY3i6B2okMWZXFiiq7hibTdeOD+OHAhNA7=XV1A@mail.gmail.com>
- <20130909000300.GH13318@ZenIV.linux.org.uk>
- <CA+55aFy6=CvNet+fjcYiFxbb_E1gDPzudaJ+hVotYuG5zuMb5Q@mail.gmail.com>
+	Sun, 8 Sep 2013 20:35:59 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <522D17EC.3050908@roeck-us.net>
+Date: Sun, 08 Sep 2013 17:35:56 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFy6=CvNet+fjcYiFxbb_E1gDPzudaJ+hVotYuG5zuMb5Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Daniel Santos <daniel.santos@pobox.com>
+CC: Daniel Santos <danielfsantos@att.net>,
+        linux-gpio <linux-gpio@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        linux-spi <linux-spi@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: "Virtual" Interrupts -- Need help please
+References: <522BC27A.5080303@att.net> <522BCA33.6000701@roeck-us.net> <522D0D37.3050500@att.net>
+In-Reply-To: <522D0D37.3050500@att.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 08, 2013 at 05:25:40PM -0700, Linus Torvalds wrote:
-> On Sun, Sep 8, 2013 at 5:03 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> > Well...  unlazy_walk() is always followed by terminate_walk() very shortly,
-> > but there's a minor problem - terminate_walk() uses "are we in RCU
-> > mode?" for two things:
-> >         a) do we need to do path_put() here?
-> >         b) do we need to unlock?
-> > If you introduce the third case ("no need to do unlock and no need to
-> > do path_put()"), we'd better decide how to check for that case...
-> 
-> Actually, I decided to take advantage of those two cases instead, and
-> I have a patch that I think does the right thing. Basically, I start
-> off unlazy_walk() with just doing that lockref_get_not_dead() on the
-> parent dentry, and if that fails I just return an error in RCU mode
-> (so terminate_walk() does what it always used to do, and we haven't
-> done anything else to any refcounts).
-> 
-> Now, if the lockref_get_not_dead() succeeded, that means that we have
-> a reference on the nd->path.dentry, and we can now just do
-> "mntget(nd->path.mnt);". Ta-Daa! We now have everything done for the
-> non-RCU case for terminate_walk().
-> 
-> So after that point, we clear LOOKUP_RCU, and make the rule be that
-> any return (error or success) has to do unlock_rcu_walk(). And then
-> all the other refcounts are easy, we can just "dput(dentry);" after
-> that.
-> 
-> I haven't tested it yet, I was going to reboot into it just now. But
-> I'm attaching the patch here. Maybe I missed some detail, but it all
-> seems simpler.
-> 
-> Note that this patch requires the "lockref_get_not_dead()" cleanup at
-> the top of my current -git.
+On 09/08/2013 04:50 PM, Daniel Santos wrote:
+> On 09/07/2013 07:52 PM, Guenter Roeck wrote:
+>> On 09/07/2013 05:19 PM, Daniel Santos wrote:
+>>> I've posted a number of requests for aid on this and have gotten very little responses and none that were helpful. I have spent at least 24 hours of research time on this and just a little direction from somebody who knows this subsystem can help me immensely as the IRQ subsystem is new to me.
+>>>
+>>> This is for the MCP2210 driver (a USB to SPI/GPIO bridge) and my driver is the first of its class for the Linux kernel, giving me less to look at as an example.  I intend to use standard drivers for whatever I have connected at the other end.  For this to work, I need to supply interrupts for some of these drivers to work correctly. How do I do this? Every thing else on this driver is ready to go and my handler functions for this are empty and waiting for some code.
+>>>
+>> Not really. Have a look at https://github.com/groeck/diolan even though the SPI part there
+>> still isn't working and it is far from being acceptable upstream in its current form.
+>> It also doesn't support interrupts.
+>
+> Oh, this is wonderful to know!  While I like breaking new ground, I certainly don't enjoy doing it when I'm trying to write my first device driver and having to learn so many new things.
+>
+>>
+>> It is modeled as mfd driver, which I think you might want to consider as well.
+>>
+>>> So do i create an IRQ domain and then call generic_handle_irq() from my URB complete() function? If so, which type of IRQ Domain is appropriate for this? Unlike typical platform devices, these are dynamically added and removed throughout the life of the kernel, adding to the challenge. So, if I understand correctly, my base IRQ number needs to be dynamically generated.  How should I manage this?
+>>>
+>>> Finally, if you have any example drivers that are doing something similar, that would be SO very helpful as well!
+>>>
+>> There are several drivers in drivers/mfd solving the same problem, ie using
+>> irq domains to pass interrupts to client drivers. Look for irq_domain_add_simple().
+>> drivers/mfd/tc3589x.c seems to be a good example.
+>
+> Ahh, wonderful! I was looking at a lot of the code in mfd, but it contains so many things that I don't understand yet, so it's been harder to be clear on what the driver is doing and why w/o extensive examination & study of the subsystems it's using.  This will help!
+>
 
-That should also work, replacing the current tip of #for-next.  Do you
-prefer to merge those two diffs of yours into a single commit?
+Yes, one of the issues with mfd is its lack of documentation. I am sure the maintainer
+will appreciate if you solve that problem by writing it :).
+
+>>
+>>> I have some secondary (and less important) questions about how to integrate this with device drivers that want a DT / open firmware config (which I know almost nothing about at this time), but that can wait.
+>>>
+>> If you look into the mfd subsystem, you may notice that it handles at least some of the complexity
+>> of interrupt handling as well as devicetree integration. One more reason to use it.
+>>
+>> Guenter
+>
+> Even better, thank you very much!! If this thing had more EEPROM storage I would consider using the OF format for it's settings, but I only have 256 bytes to play with so I'm using a custom compression/encoding.
+>
+
+You should really use devicetree anyway. How you get it loaded on demand is another question. Lack of storage is not a reason.
+Custom data will likely not be accepted upstream, if you had that in mind.
+
+On the other side, we'll need PC/x86 support as well (or at least I do), so support for platform data based initialization
+data will be necessary as well.
+
+> I'm hoping to present this for an initial review in a month or so. I'm sure you guys will shred it, but I'm excited about it anyway! :)
+>
+
+Let me know when you have something to test. I just ordered an evaluation board for that chip, so I'll need it soon ;).
+
+Guenter
+
