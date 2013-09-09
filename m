@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750Ab3IIKyY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 06:54:24 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47861 "EHLO
+	id S1752812Ab3IIK4c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 06:56:32 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47932 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814Ab3IIKyX (ORCPT
+	with ESMTP id S1751966Ab3IIK4b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 06:54:23 -0400
-Date: Mon, 9 Sep 2013 12:53:47 +0200
+	Mon, 9 Sep 2013 06:56:31 -0400
+Date: Mon, 9 Sep 2013 12:56:06 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
         mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, sbw@mit.edu
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        sbw@mit.edu
 Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
  section?
-Message-ID: <20130909105347.GK31370@twins.programming.kicks-ass.net>
+Message-ID: <20130909105606.GL31370@twins.programming.kicks-ass.net>
 References: <20130905195234.GA20555@linux.vnet.ibm.com>
  <20130906105934.GF20519@somewhere>
  <20130906151851.GQ3966@linux.vnet.ibm.com>
- <1378488088.31445.39.camel@edumazet-glaptop>
- <20130906174117.GU3966@linux.vnet.ibm.com>
- <20130906185927.GE2706@somewhere>
+ <20130906113320.46b2ea3e@gandalf.local.home>
+ <20130906164016.GB2706@somewhere>
+ <20130906125238.3c5ef919@gandalf.local.home>
+ <20130906170006.GC2706@somewhere>
+ <20130906131631.6a0a192d@gandalf.local.home>
+ <20130906175238.GV3966@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130906185927.GE2706@somewhere>
+In-Reply-To: <20130906175238.GV3966@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 06, 2013 at 08:59:29PM +0200, Frederic Weisbecker wrote:
-> Imagine that you're running on an rcu read side critical section on CPU 0, which
-> is not in extended quiescent state. Now you get preempted in the middle of your
-> RCU read side critical section (you called rcu_read_lock() but not yet rcu_read_unlock()).
+On Fri, Sep 06, 2013 at 10:52:38AM -0700, Paul E. McKenney wrote:
+> How about if I made rcu_is_cpu_idle() be as follows?
 > 
-> Later on, the task is woken up to be scheduled in CPU 1. If CPU 1 is in extended
-> quiescent state because it runs is userspace, it receives a scheduler IPI,
-> then schedule_user() is called by the end of the interrupt and in turns calls rcu_user_exit()
-> before the task is resumed to the code it was running on CPU 0, in the middle of
-> the rcu read side extended quiescent state.
+> int rcu_is_cpu_idle(void)
+> {
+> 	int ret;
 > 
-> See, the key here is the rcu_user_exit() that restore the CPU on RCU's state machine.
-> There are other possible scheduler entrypoints when a CPU runs in user extended quiescent
-> state: exception and syscall entries or even preempt_schedule_irq() in case we receive an irq
-> in the kernel while we haven't yet reached the call to rcu_user_exit()... All of these should
-> be covered, otherwise you bet RCU would be prompt to warn.
-> 
-> That's why when we call rcu_is_cpu_idle() from an RCU read side critical section, it's legit even
-> if we can be preempted anytime around it.
-> And preempt_disable() is probably not even necessary, except perhaps if __get_cpu_var() itself
-> relies on non-preemptibility for its own correctness on the address calculation.
+> 	ret = (atomic_read(&per_cpu(rcu_dynticks.dynticks,
+> 				    raw_smp_processor_id())) & 0x1) == 0;
+> 	return ret;
+> }
 
-I've tried reading that trice now, still not making much sense.
 
-In any case rcu_is_cpu_idle() is complete bollocks, either use
-__raw_get_cpu_var() and add a _coherent_ explanation for why its right,
-or its broken.
-
-In any case the preempt_disable/enable pair there is just plain wrong as
-Eric pointed out.
+No, please use __raw_get_cpu_var(), that generates far better code. Also
+any such trickery needs a coherent comment.
