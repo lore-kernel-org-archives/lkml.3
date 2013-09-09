@@ -1,119 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab3IIN1D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:27:03 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10158 "EHLO
+	id S1753747Ab3IIN1B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:27:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10715 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753577Ab3IIN0x (ORCPT
+	with ESMTP id S1753571Ab3IIN0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Sep 2013 09:26:53 -0400
-X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=dvIvxJ4_SCsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=1GToGMD1ptoA:10 a=VwQbUJbxAAAA:8 a=VcUiGOdTKjBeXruxuyoA:9 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=5h2nd_9qxKYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=_hvWx0eUMykA:10 a=VwQbUJbxAAAA:8 a=1J0JeIo9MnkITmv3CngA:9 a=Zh68SRI7RUMA:10 a=kHDKEh1Unz4A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130909124556.947546623@goodmis.org>
+Message-Id: <20130909124557.340784265@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Sep 2013 08:45:38 -0400
+Date: Mon, 09 Sep 2013 08:45:40 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>
-Subject: [PATCH RT 07/16] kernel/cpu: fix cpu down problem if kthreads cpu is going down
+        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>,
+        Joakim Hernberg <jbh@alchemy.lu>
+Subject: [PATCH RT 09/16] drm/i915: drop trace_i915_gem_ring_dispatch on rt
 References: <20130909124531.445392664@goodmis.org>
-Content-Disposition: inline; filename=0007-kernel-cpu-fix-cpu-down-problem-if-kthread-s-cpu-is-.patch
+Content-Disposition: inline; filename=0009-drm-i915-drop-trace_i915_gem_ring_dispatch-on-rt.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-If kthread is pinned to CPUx and CPUx is going down then we get into
-trouble:
-- first the unplug thread is created
-- it will set itself to hp->unplug. As a result, every task that is
-  going to take a lock, has to leave the CPU.
-- the CPU_DOWN_PREPARE notifier are started. The worker thread will
-  start a new process for the "high priority worker".
-  Now kthread would like to take a lock but since it can't leave the CPU
-  it will never complete its task.
+This tracepoint is responsible for:
 
-We could fire the unplug thread after the notifier but then the cpu is
-no longer marked "online" and the unplug thread will run on CPU0 which
-was fixed before :)
+|[<814cc358>] __schedule_bug+0x4d/0x59
+|[<814d24cc>] __schedule+0x88c/0x930
+|[<814d3b90>] ? _raw_spin_unlock_irqrestore+0x40/0x50
+|[<814d3b95>] ? _raw_spin_unlock_irqrestore+0x45/0x50
+|[<810b57b5>] ? task_blocks_on_rt_mutex+0x1f5/0x250
+|[<814d27d9>] schedule+0x29/0x70
+|[<814d3423>] rt_spin_lock_slowlock+0x15b/0x278
+|[<814d3786>] rt_spin_lock+0x26/0x30
+|[<a00dced9>] gen6_gt_force_wake_get+0x29/0x60 [i915]
+|[<a00e183f>] gen6_ring_get_irq+0x5f/0x100 [i915]
+|[<a00b2a33>] ftrace_raw_event_i915_gem_ring_dispatch+0xe3/0x100 [i915]
+|[<a00ac1b3>] i915_gem_do_execbuffer.isra.13+0xbd3/0x1430 [i915]
+|[<810f8943>] ? trace_buffer_unlock_commit+0x43/0x60
+|[<8113e8d2>] ? ftrace_raw_event_kmem_alloc+0xd2/0x180
+|[<8101d063>] ? native_sched_clock+0x13/0x80
+|[<a00acf29>] i915_gem_execbuffer2+0x99/0x280 [i915]
+|[<a00114a3>] drm_ioctl+0x4c3/0x570 [drm]
+|[<8101d0d9>] ? sched_clock+0x9/0x10
+|[<a00ace90>] ? i915_gem_execbuffer+0x480/0x480 [i915]
+|[<810f1c18>] ? rb_commit+0x68/0xa0
+|[<810f1c6c>] ? ring_buffer_unlock_commit+0x1c/0xa0
+|[<81197467>] do_vfs_ioctl+0x97/0x540
+|[<81021318>] ? ftrace_raw_event_sys_enter+0xd8/0x130
+|[<811979a1>] sys_ioctl+0x91/0xb0
+|[<814db931>] tracesys+0xe1/0xe6
 
-So instead the unplug thread is started and kept waiting until the
-notfier complete their work.
+Chris Wilson does not like to move i915_trace_irq_get() out of the macro
+
+|No. This enables the IRQ, as well as making a number of
+|very expensively serialised read, unconditionally.
+
+so it is gone now on RT.
 
 Cc: stable-rt@vger.kernel.org
+Reported-by: Joakim Hernberg <jbh@alchemy.lu>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- kernel/cpu.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 58bda1e..d9837a1 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -78,6 +78,7 @@ struct hotplug_pcp {
- 	int refcount;
- 	int grab_lock;
- 	struct completion synced;
-+	struct completion unplug_wait;
- #ifdef CONFIG_PREEMPT_RT_FULL
- 	spinlock_t lock;
- #else
-@@ -175,6 +176,7 @@ static int sync_unplug_thread(void *data)
- {
- 	struct hotplug_pcp *hp = data;
- 
-+	wait_for_completion(&hp->unplug_wait);
- 	preempt_disable();
- 	hp->unplug = current;
- 	wait_for_pinned_cpus(hp);
-@@ -240,6 +242,14 @@ static void __cpu_unplug_sync(struct hotplug_pcp *hp)
- 	wait_for_completion(&hp->synced);
- }
- 
-+static void __cpu_unplug_wait(unsigned int cpu)
-+{
-+	struct hotplug_pcp *hp = &per_cpu(hotplug_pcp, cpu);
-+
-+	complete(&hp->unplug_wait);
-+	wait_for_completion(&hp->synced);
-+}
-+
- /*
-  * Start the sync_unplug_thread on the target cpu and wait for it to
-  * complete.
-@@ -263,6 +273,7 @@ static int cpu_unplug_begin(unsigned int cpu)
- 	tell_sched_cpu_down_begin(cpu);
- 
- 	init_completion(&hp->synced);
-+	init_completion(&hp->unplug_wait);
- 
- 	hp->sync_tsk = kthread_create(sync_unplug_thread, hp, "sync_unplug/%d", cpu);
- 	if (IS_ERR(hp->sync_tsk)) {
-@@ -278,8 +289,7 @@ static int cpu_unplug_begin(unsigned int cpu)
- 	 * wait for tasks that are going to enter these sections and
- 	 * we must not have them block.
- 	 */
--	__cpu_unplug_sync(hp);
--
-+	wake_up_process(hp->sync_tsk);
- 	return 0;
- }
- 
-@@ -544,6 +554,8 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
- 		goto out_release;
+diff --git a/drivers/gpu/drm/i915/i915_gem_execbuffer.c b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+index e97ed61..4fd9b3f 100644
+--- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
++++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+@@ -1297,7 +1297,9 @@ i915_gem_do_execbuffer(struct drm_device *dev, void *data,
+ 			goto err;
  	}
  
-+	__cpu_unplug_wait(cpu);
-+
- 	/* Notifiers are done. Don't let any more tasks pin this CPU. */
- 	cpu_unplug_sync(cpu);
++#ifndef CONFIG_PREEMPT_RT_BASE
+ 	trace_i915_gem_ring_dispatch(ring, seqno);
++#endif
  
+ 	exec_start = batch_obj->gtt_offset + args->batch_start_offset;
+ 	exec_len = args->batch_len;
 -- 
 1.7.10.4
 
