@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265Ab3IISVP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 14:21:15 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:53981 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754860Ab3IISVN (ORCPT
+	id S1755351Ab3IISWg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 14:22:36 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:47960 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754289Ab3IISWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 14:21:13 -0400
-Date: Mon, 9 Sep 2013 19:21:11 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Waiman Long <Waiman.Long@hp.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        George Spelvin <linux@horizon.com>, John Stoffel <john@stoffel.org>
-Subject: Re: [PATCH v4 1/1] dcache: Translating dentry into pathname without
- taking rename_lock
-Message-ID: <20130909182111.GQ13318@ZenIV.linux.org.uk>
-References: <1378743493-33546-1-git-send-email-Waiman.Long@hp.com>
- <1378743493-33546-2-git-send-email-Waiman.Long@hp.com>
- <20130909172905.GN13318@ZenIV.linux.org.uk>
- <CA+55aFx_pUwHg35Ueb4Ewy8ZrBA_UtFbQqdRzL64_Q7iQ=V-rA@mail.gmail.com>
- <20130909180604.GO13318@ZenIV.linux.org.uk>
+	Mon, 9 Sep 2013 14:22:34 -0400
+Message-ID: <201309091822.r89IMXmA032018@farm-0002.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Mon, 9 Sep 2013 14:11:54 -0400
+Subject: [PATCH] net: tilegx driver: avoid compiler warning
+To: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130909180604.GO13318@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 07:06:04PM +0100, Al Viro wrote:
-> I like my proposal for the set of primitives better:
-> 
-> static inline bool seqretry_and_lock(seqlock_t *lock, unsigned *seq):
-> {
->         if ((*seq & 1) || !read_seqretry(lock, *seq))
->                 return true;
->         *seq |= 1;
->         write_seqlock(lock);
->         return false;
-> }
-> 
-> static inline void seqretry_done(seqlock_t *lock, unsigned seq)
-> {
->         if (seq & 1)
->                 write_sequnlock(lock);
-> }
-> 
-> with the prepend_path() and friends becoming
-> 
-> 	rcu_read_lock();
-> 	seq = read_seqbegin(&rename_lock);
-> again:
-> 	....
-> 	if (!seqretry_and_lock(&rename_lock, seq))
-> 		goto again;	/* now as writer */
-> 	seqretry_done(&rename_lock, seq);
-> 	rcu_read_unlock();
+The "id" variable was being incremented in common code, but only
+initialized and used in IPv4 code.  We move the increment to the IPv4
+code too, and then legitimately use the uninitialized_var() macro to
+avoid the gcc 4.6 warning that 'id' may be used uninitialized.
+Note that gcc 4.7 does not warn.
 
-Actually, it's better for prepend_path() as well, because it's actually
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ drivers/net/ethernet/tile/tilegx.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/ethernet/tile/tilegx.c b/drivers/net/ethernet/tile/tilegx.c
+index 949076f..13e6fff 100644
+--- a/drivers/net/ethernet/tile/tilegx.c
++++ b/drivers/net/ethernet/tile/tilegx.c
+@@ -1734,7 +1734,8 @@ static void tso_headers_prepare(struct sk_buff *skb, unsigned char *headers,
+ 	unsigned int data_len = skb->len - sh_len;
+ 	unsigned char *data = skb->data;
+ 	unsigned int ih_off, th_off, p_len;
+-	unsigned int isum_seed, tsum_seed, id, seq;
++	unsigned int isum_seed, tsum_seed, seq;
++	unsigned int uninitialized_var(id);
+ 	int is_ipv6;
+ 	long f_id = -1;    /* id of the current fragment */
+ 	long f_size = skb_headlen(skb) - sh_len;  /* current fragment size */
+@@ -1781,7 +1782,7 @@ static void tso_headers_prepare(struct sk_buff *skb, unsigned char *headers,
+ 		} else {
+ 			ih = (struct iphdr *)(buf + ih_off);
+ 			ih->tot_len = htons(sh_len + p_len - ih_off);
+-			ih->id = htons(id);
++			ih->id = htons(id++);
+ 			ih->check = csum_long(isum_seed + ih->tot_len +
+ 					      ih->id) ^ 0xffff;
+ 		}
+@@ -1818,7 +1819,6 @@ static void tso_headers_prepare(struct sk_buff *skb, unsigned char *headers,
+ 			slot++;
+ 		}
  
-	rcu_read_lock();
-	seq = read_seqbegin(&rename_lock);
-again:
-	....
-	if (error)
-		goto done;
-	....
-	if (!seqretry_and_lock(&rename_lock, seq))
-		goto again;	/* now as writer */
-done:
-	seqretry_done(&rename_lock, seq);
-	rcu_read_unlock();
+-		id++;
+ 		seq += p_len;
+ 
+ 		/* The last segment may be less than gso_size. */
+-- 
+1.8.3.1
 
-Posted variant will sometimes hit the following path:
-	* seq_readlock()
-	* start generating the output
-	* hit an error
-[another process has taken and released rename_lock for some reason]
-	* hit read_seqretry_and_unlock(), which returns 1.
-	* retry everything with seq_writelock(), despite the error.
-
-It's not too horrible (we won't be looping indefinitely, ignoring error
-all along), but it's certainly subtle enough...
