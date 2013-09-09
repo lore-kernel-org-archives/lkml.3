@@ -1,180 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab3IINjY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:39:24 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10715 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753263Ab3IIN0p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 09:26:45 -0400
-X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=v8jgAOqRqeAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=qJjMsBi07U4A:10 a=VwQbUJbxAAAA:8 a=PRS0kguCKcSZEYgeq30A:9 a=Zh68SRI7RUMA:10 a=0QySdCgLBjdvkH4D:21 a=MvV0QZrHf-EfoWtc:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130909124801.672854008@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 09 Sep 2013 08:48:00 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>
-Subject: [PATCH RT 15/16] genirq: do not invoke the affinity callback via a workqueue
-References: <20130909124745.590777496@goodmis.org>
-Content-Disposition: inline; filename=0015-genirq-do-not-invoke-the-affinity-callback-via-a-wor.patch
+	id S1754746Ab3IINja (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:39:30 -0400
+Received: from ring0.de ([91.143.88.219]:37586 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753263Ab3IINj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 09:39:26 -0400
+X-Spam-Report: * -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+	*  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
+	*       See http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
+	*      for more information.
+	*      [URIs: lkml.org]
+Date: Mon, 9 Sep 2013 15:39:17 +0200
+From: Sebastian Reichel <sre@ring0.de>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Tony Lindgren <tony@atomide.com>, Anton Vorontsov <anton@enomsg.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        freemangordon@abv.bg, aaro.koskinen@iki.fi, pavel@ucw.cz
+Subject: Re: [PATCH 4/4] RX-51: Add platform function and data for bq24150a
+ charger
+Message-ID: <20130909133916.GA28917@earth.universe>
+Mail-Followup-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+	Tony Lindgren <tony@atomide.com>,
+	Anton Vorontsov <anton@enomsg.org>,
+	Russell King <linux@arm.linux.org.uk>,
+	David Woodhouse <dwmw2@infradead.org>, Felipe Balbi <balbi@ti.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+	linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+	freemangordon@abv.bg, aaro.koskinen@iki.fi, pavel@ucw.cz
+References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
+ <1378630239-10006-5-git-send-email-pali.rohar@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="OXfL5xGRrasGEqWY"
+Content-Disposition: inline
+In-Reply-To: <1378630239-10006-5-git-send-email-pali.rohar@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-Joe Korty reported, that __irq_set_affinity_locked() schedules a
-workqueue while holding a rawlock which results in a might_sleep()
-warning.
-This patch moves the invokation into a process context so that we only
-wakeup() a process while holding the lock.
+--OXfL5xGRrasGEqWY
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Cc: stable-rt@vger.kernel.org
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- include/linux/interrupt.h |    1 +
- kernel/irq/manage.c       |   79 +++++++++++++++++++++++++++++++++++++++++++--
- 2 files changed, 77 insertions(+), 3 deletions(-)
+Hi Pali,
 
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index f70a65b..42f79fb 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -271,6 +271,7 @@ struct irq_affinity_notify {
- 	unsigned int irq;
- 	struct kref kref;
- 	struct work_struct work;
-+	struct list_head list;
- 	void (*notify)(struct irq_affinity_notify *, const cpumask_t *mask);
- 	void (*release)(struct kref *ref);
- };
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 2e8ca37..88a4ff5 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -141,6 +141,62 @@ static inline void
- irq_get_pending(struct cpumask *mask, struct irq_desc *desc) { }
- #endif
- 
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+static void _irq_affinity_notify(struct irq_affinity_notify *notify);
-+static struct task_struct *set_affinity_helper;
-+static LIST_HEAD(affinity_list);
-+static DEFINE_RAW_SPINLOCK(affinity_list_lock);
-+
-+static int set_affinity_thread(void *unused)
-+{
-+	while (1) {
-+		struct irq_affinity_notify *notify;
-+		int empty;
-+
-+		set_current_state(TASK_INTERRUPTIBLE);
-+
-+		raw_spin_lock_irq(&affinity_list_lock);
-+		empty = list_empty(&affinity_list);
-+		raw_spin_unlock_irq(&affinity_list_lock);
-+
-+		if (empty)
-+			schedule();
-+		if (kthread_should_stop())
-+			break;
-+		set_current_state(TASK_RUNNING);
-+try_next:
-+		notify = NULL;
-+
-+		raw_spin_lock_irq(&affinity_list_lock);
-+		if (!list_empty(&affinity_list)) {
-+			notify = list_first_entry(&affinity_list,
-+					struct irq_affinity_notify, list);
-+			list_del_init(&notify->list);
-+		}
-+		raw_spin_unlock_irq(&affinity_list_lock);
-+
-+		if (!notify)
-+			continue;
-+		_irq_affinity_notify(notify);
-+		goto try_next;
-+	}
-+	return 0;
-+}
-+
-+static void init_helper_thread(void)
-+{
-+	if (set_affinity_helper)
-+		return;
-+	set_affinity_helper = kthread_run(set_affinity_thread, NULL,
-+			"affinity-cb");
-+	WARN_ON(IS_ERR(set_affinity_helper));
-+}
-+#else
-+
-+static inline void init_helper_thread(void) { }
-+
-+#endif
-+
- int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
- {
- 	struct irq_chip *chip = irq_data_get_irq_chip(data);
-@@ -166,7 +222,17 @@ int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
- 
- 	if (desc->affinity_notify) {
- 		kref_get(&desc->affinity_notify->kref);
-+
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+		raw_spin_lock(&affinity_list_lock);
-+		if (list_empty(&desc->affinity_notify->list))
-+			list_add_tail(&affinity_list,
-+					&desc->affinity_notify->list);
-+		raw_spin_unlock(&affinity_list_lock);
-+		wake_up_process(set_affinity_helper);
-+#else
- 		schedule_work(&desc->affinity_notify->work);
-+#endif
- 	}
- 	irqd_set(data, IRQD_AFFINITY_SET);
- 
-@@ -207,10 +273,8 @@ int irq_set_affinity_hint(unsigned int irq, const struct cpumask *m)
- }
- EXPORT_SYMBOL_GPL(irq_set_affinity_hint);
- 
--static void irq_affinity_notify(struct work_struct *work)
-+static void _irq_affinity_notify(struct irq_affinity_notify *notify)
- {
--	struct irq_affinity_notify *notify =
--		container_of(work, struct irq_affinity_notify, work);
- 	struct irq_desc *desc = irq_to_desc(notify->irq);
- 	cpumask_var_t cpumask;
- 	unsigned long flags;
-@@ -232,6 +296,13 @@ out:
- 	kref_put(&notify->kref, notify->release);
- }
- 
-+static void irq_affinity_notify(struct work_struct *work)
-+{
-+	struct irq_affinity_notify *notify =
-+		container_of(work, struct irq_affinity_notify, work);
-+	_irq_affinity_notify(notify);
-+}
-+
- /**
-  *	irq_set_affinity_notifier - control notification of IRQ affinity changes
-  *	@irq:		Interrupt for which to enable/disable notification
-@@ -261,6 +332,8 @@ irq_set_affinity_notifier(unsigned int irq, struct irq_affinity_notify *notify)
- 		notify->irq = irq;
- 		kref_init(&notify->kref);
- 		INIT_WORK(&notify->work, irq_affinity_notify);
-+		INIT_LIST_HEAD(&notify->list);
-+		init_helper_thread();
- 	}
- 
- 	raw_spin_lock_irqsave(&desc->lock, flags);
--- 
-1.7.10.4
+On Sun, Sep 08, 2013 at 10:50:39AM +0200, Pali Roh=E1r wrote:
+> This patch will register bq24150a charger in RX-51 board data.
+> Patch also adding platform function between isp1704 and bq2415x
+> drivers for detecting charger type.
+>=20
+> So finally charging battery on Nokia N900 (RX-51) working
+> automatically without any proprietary Nokia bits in userspace.
 
+cool :)
 
+> index 9c2dd10..a993ffe 100644
+> --- a/arch/arm/mach-omap2/board-rx51-peripherals.c
+> +++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
+
+AFAIK platform code for omap3 based boards is supposed to be removed
+in the near future [0]. Device Tree does not support the glue layer, so
+probably a small rx51 specific driver is needed.
+
+[0] https://lkml.org/lkml/2013/8/12/70
+
+-- Sebastian
+
+--OXfL5xGRrasGEqWY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSLc+EAAoJENju1/PIO/qaucEP/A5a1YZUYAT3jxMfHKFe8nQ3
+rge32Ym45yzUeJ2rNCTuc6idg8gqsJAA64nvfMjRhitwI9RyWKAW42+15BRt71ok
+jhISkLF34BBvdiRDAw1TSc564DVj4a16b7K4ORAHrlAvcDNU3h74tktkU5yzOs2v
+QECmHsS+DawLlb+vXH1nlr3uqevhXFMpzcjPmYNstgXBbUrRp1Vy8BQ2mAo4rPxu
+zifM9OzdzUdHeqe+Kr4gDc5hj/5HcDXVtU2LoTiuKLJgQNzyQW+Qxhu77T8bC4qO
+VO+2Fp9zN8PfbMXIsyavzUebYnuXPv/T3XimDeD8t5UagmKarwzpaGyK31Jqy2En
+kUIiLfaWQr0BIx09SuhbhkoM/Dk8T/PtptmgY9PVyz5GI0d8luXYRvVAFZ1GTqH9
+dIVCNUEYKzT/hjevtkdTwKKnNTaHHOJd1IYvCBbkSBuTf+ExCjyCXzsfJ+CwMA/f
+Gd7YMYW+IAAJX5TP9at7m60beIdaizkf5lHKgkFJDili/YSwjdd5qXlafIsQ+FlM
+epErx2x0/f3wBbkEZ5YsrThFiMXDcERXJ22Nru6cM0/JOfK6ImWBMlaKQXAuR/Fd
+ddscLt67nrbQuXeyl9VMTiKNHNRtE7FgvK/Ig7MVosrLPKmWfWA5DyoWUkthm1jA
+WedEJdnLjqhxnBDS9pF/
+=LqSM
+-----END PGP SIGNATURE-----
+
+--OXfL5xGRrasGEqWY--
