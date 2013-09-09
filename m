@@ -1,101 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755050Ab3IIPws (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 11:52:48 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:42012 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754995Ab3IIPwp (ORCPT
+	id S1754879Ab3IIPwZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 11:52:25 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:44957 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754529Ab3IIPwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 11:52:45 -0400
-Date: Mon, 9 Sep 2013 16:52:24 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Sagar Dharia <sdharia@codeaurora.org>,
-        Gilad Avidov <gavidov@codeaurora.org>,
-        Michael Bohan <mbohan@codeaurora.org>
-Message-ID: <20130909155224.GQ29403@sirena.org.uk>
-References: <cover.1377202730.git.joshc@codeaurora.org>
- <46db5901fe4d04d09cee8fd81ea1c62068ee9503.1377202730.git.joshc@codeaurora.org>
- <20130822231054.GA31973@kroah.com>
- <20130823160625.GP4035@joshc.qualcomm.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="d6UK98fIWRAfByB6"
-Content-Disposition: inline
-In-Reply-To: <20130823160625.GP4035@joshc.qualcomm.com>
-X-Cookie: Your present plans will be successful.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH RFC v2 2/5] spmi: Linux driver framework for SPMI
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Mon, 9 Sep 2013 11:52:10 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: linux-kernel@vger.kernel.org
+Cc: keescook@chromium.org, gregkh@linuxfoundation.org, hpa@zytor.com,
+        linux-efi@vger.kernel.org, jmorris@namei.org,
+        linux-security-module@vger.kernel.org,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Subject: [PATCH 01/12] Add BSD-style securelevel support
+Date: Mon,  9 Sep 2013 11:49:35 -0400
+Message-Id: <1378741786-18430-2-git-send-email-matthew.garrett@nebula.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
+References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 2001:470:1f07:1371:5d52:9ee3:3e84:6668
+X-SA-Exim-Mail-From: matthew.garrett@nebula.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Provide a coarse-grained runtime configuration option for restricting
+userspace's ability to modify the running kernel.
 
---d6UK98fIWRAfByB6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+---
+ Documentation/security/securelevel.txt |  23 +++++++
+ include/linux/security.h               |   8 +++
+ security/Kconfig                       |   8 +++
+ security/Makefile                      |   1 +
+ security/securelevel.c                 | 116 +++++++++++++++++++++++++++++++++
+ 5 files changed, 156 insertions(+)
+ create mode 100644 Documentation/security/securelevel.txt
+ create mode 100644 security/securelevel.c
 
-On Fri, Aug 23, 2013 at 11:06:25AM -0500, Josh Cartwright wrote:
-> On Thu, Aug 22, 2013 at 04:10:54PM -0700, Greg Kroah-Hartman wrote:
-> > On Fri, Aug 09, 2013 at 01:37:09PM -0700, Josh Cartwright wrote:
+diff --git a/Documentation/security/securelevel.txt b/Documentation/security/securelevel.txt
+new file mode 100644
+index 0000000..a1355a0
+--- /dev/null
++++ b/Documentation/security/securelevel.txt
+@@ -0,0 +1,23 @@
++Linux securelevel interface
++---------------------------
++
++The Linux securelevel interface (inspired by the BSD securelevel interface)
++is a runtime mechanism for configuring coarse-grained kernel-level security
++restrictions. It provides a runtime configuration variable at
++/sys/kernel/security/securelevel which can be written to by root. The
++following values are supported:
++
++-1: Permanently insecure mode. This level is equivalent to level 0, but once
++    set cannot be changed.
++
++0:  Insecure mode (default). This level imposes no additional kernel
++    restrictions.
++
++1:  Secure mode. If set, userspace will be unable to perform direct access
++    to PCI devices, port IO access, access system memory directly via
++    /dev/mem and /dev/kmem, perform kexec_load(), use the userspace
++    software suspend mechanism, insert new ACPI code at runtime via the
++    custom_method interface or modify CPU MSRs (on x86). Certain drivers
++    may also limit additional interfaces.
++
++Once the securelevel value is increased, it may not be decreased.
+diff --git a/include/linux/security.h b/include/linux/security.h
+index 9d37e2b..e8b69e0 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -3081,6 +3081,14 @@ static inline void security_audit_rule_free(void *lsmrule)
+ #endif /* CONFIG_SECURITY */
+ #endif /* CONFIG_AUDIT */
+ 
++#ifdef CONFIG_SECURITY_SECURELEVEL
++extern int get_securelevel(void);
++extern int set_securelevel(int new_securelevel);
++#else
++static inline int get_securelevel(void) { return 0; }
++static inline int set_securelevel(int new_securelevel) { return 0; }
++#endif /* CONFIG_SECURELEVEL */
++
+ #ifdef CONFIG_SECURITYFS
+ 
+ extern struct dentry *securityfs_create_file(const char *name, umode_t mode,
+diff --git a/security/Kconfig b/security/Kconfig
+index e9c6ac7..3605d24 100644
+--- a/security/Kconfig
++++ b/security/Kconfig
+@@ -70,6 +70,14 @@ config SECURITY_PATH
+ 	  implement pathname based access controls.
+ 	  If you are unsure how to answer this question, answer N.
+ 
++config SECURITY_SECURELEVEL
++        bool "Securelevel kernel restriction interface"
++	depends on SECURITY
++	help
++	  This enables support for adding a set of additional kernel security
++	  restrictions at runtime. See Documentation/security/securelevel.txt
++	  for further information.
++
+ config INTEL_TXT
+ 	bool "Enable Intel(R) Trusted Execution Technology (Intel(R) TXT)"
+ 	depends on HAVE_INTEL_TXT
+diff --git a/security/Makefile b/security/Makefile
+index c26c81e..d6c98ab 100644
+--- a/security/Makefile
++++ b/security/Makefile
+@@ -16,6 +16,7 @@ obj-$(CONFIG_MMU)			+= min_addr.o
+ # Object file lists
+ obj-$(CONFIG_SECURITY)			+= security.o capability.o
+ obj-$(CONFIG_SECURITYFS)		+= inode.o
++obj-$(CONFIG_SECURITY_SECURELEVEL)	+= securelevel.o
+ # Must precede capability.o in order to stack properly.
+ obj-$(CONFIG_SECURITY_SELINUX)		+= selinux/built-in.o
+ obj-$(CONFIG_SECURITY_SMACK)		+= smack/built-in.o
+diff --git a/security/securelevel.c b/security/securelevel.c
+new file mode 100644
+index 0000000..7128430
+--- /dev/null
++++ b/security/securelevel.c
+@@ -0,0 +1,116 @@
++/*
++ *  securelevel.c - support for generic kernel lockdown
++ *
++ *  Copyright Nebula, Inc <matthew.garrett@nebula.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ *
++ */
++
++#include <linux/fs.h>
++#include <linux/init.h>
++#include <linux/security.h>
++#include <linux/uaccess.h>
++
++static int securelevel;
++
++static DEFINE_SPINLOCK(securelevel_lock);
++
++#define MAX_SECURELEVEL 1
++
++int get_securelevel(void)
++{
++	return securelevel;
++}
++EXPORT_SYMBOL(get_securelevel);
++
++int set_securelevel(int new_securelevel)
++{
++	int ret = 0;
++
++	spin_lock(&securelevel_lock);
++
++	if ((securelevel == -1) || (new_securelevel < securelevel) ||
++	    (new_securelevel > MAX_SECURELEVEL)) {
++		ret = -EINVAL;
++		goto out;
++	}
++
++	securelevel = new_securelevel;
++out:
++	spin_unlock(&securelevel_lock);
++	return ret;
++}
++EXPORT_SYMBOL(set_securelevel);
++
++static ssize_t securelevel_read(struct file *filp, char __user *buf,
++				size_t count, loff_t *ppos)
++{
++	char tmpbuf[12];
++	ssize_t length;
++
++	length = scnprintf(tmpbuf, sizeof(tmpbuf), "%d", securelevel);
++	return simple_read_from_buffer(buf, count, ppos, tmpbuf, length);
++}
++
++static ssize_t securelevel_write(struct file *file, const char __user *buf,
++				 size_t count, loff_t *ppos)
++{
++	char *page = NULL;
++	ssize_t length;
++	int new_securelevel;
++
++	length = -ENOMEM;
++	if (count >= PAGE_SIZE)
++		goto out;
++
++	length = -EINVAL;
++	if (*ppos != 0)
++		goto out;
++
++	length = -ENOMEM;
++	page = (char *)get_zeroed_page(GFP_KERNEL);
++	if (!page)
++		goto out;
++
++	length = -EFAULT;
++	if (copy_from_user(page, buf, count))
++		goto out;
++
++	length = -EINVAL;
++	if (sscanf(page, "%d", &new_securelevel) != 1)
++		goto out;
++
++	length = set_securelevel(new_securelevel);
++	if (length)
++		goto out;
++
++	length = count;
++out:
++	free_page((unsigned long) page);
++	return length;
++}
++
++static const struct file_operations securelevel_fops = {
++	.read 	= securelevel_read,
++	.write 	= securelevel_write,
++	.llseek	= generic_file_llseek,
++};
++
++static __init int setup_securelevel(void)
++{
++	struct dentry *securelevel_file;
++
++	securelevel_file = securityfs_create_file("securelevel",
++						  S_IWUSR | S_IRUGO,
++						  NULL, NULL,
++						  &securelevel_fops);
++
++	if (IS_ERR(securelevel_file))
++		return PTR_ERR(securelevel_file);
++
++	return 0;
++}
++late_initcall(setup_securelevel);
+-- 
+1.8.3.1
 
-> > > +	"Example: Read 4 bytes starting at register address 0x1234 for SID 2\n"
-> > > +	"\n"
-> > > +	"echo 0x21234 > address\n"
-> > > +	"echo 4 > count\n"
-> > > +	"cat data\n"
-> > > +	"\n"
-> > > +	"Example: Write 3 bytes starting at register address 0x1008 for SID 1\n"
-> > > +	"\n"
-> > > +	"echo 0x11008 > address\n"
-> > > +	"echo 0x01 0x02 0x03 > data\n"
-> > > +	"\n"
-> > > +	"Note that the count file is not used for writes.  Since 3 bytes are\n"
-> > > +	"written to the 'data' file, then 3 bytes will be written across the\n"
-> > > +	"SPMI bus.\n\n";
-
-> > The help file within the kernel is a nice touch :)
-
-> > Or is this only for "debugging"?  If so, please document it as such.
-
-> It's there because it provides a useful interface for debugging of the
-> controller code, and for simple peek/poke of the slave registers without
-> having a full driver in place.  Will document this.
-
-This looks awfully like a version of the debugfs interfaces that regmap
-provides, and indeed the entire bus sounds like something that could
-idiomatically be supported via regmap.  Have you considered doing that?
-This would give access to standard tracepoints as well, plus the cache
-infrastructure.
-
---d6UK98fIWRAfByB6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSLe61AAoJELSic+t+oim94DwQAItDtnVxRCrURJGTpyF2B53+
-req1tbVvhFIwcaQ+obM55azChrTrkvEvgixfcRBi3THoX7u15+OyiDXKAV1g1zQ7
-p2EGvHe1OzLjVmsp2G/HYD0Dc1tDVlvhixRhaPSEsK92VVWFGXKhg0VrmLFJ73JJ
-jFjTyqS6vopVZQMk7v/850g3Hf9ujSXQdYPRvgrwsMV+sq2DdHxZkDD/HrxO3vCG
-eqUPgIw7ysBJSavzGX5r2xNONqhWT/GknTfv2ra0AJUJf01N0otXYVyIJxMoE9iI
-1wkqoMIspRMsLhdRSoX5pvcfTACSvuqiR9hkVKM7h61+FHGPaxnsN6KPuuJtG5uM
-Qm33GEL7FhOGEyHr3yqnMvRVmAbrkFyAUQq6lLpW6dwBV9/9sIktMI/MtlLmcMZB
-rrXjLTYJhCqbL/PX66jo4FoAWNekrSVmUVe0aUpRrFR2i9qiGCEU0G1ULpKmAxJ0
-wwJcIpTVppVh0e+HJA/FJAAq0IH7Z/Up8/Wwo8UEDCPelLReynSWZimBt4+q5O2U
-PrQzZ6OvBg5UxVUrp2aD2dH8bzcFdKTOVzlkv3vYJNL/MnIPzyok5xRyvdynMimr
-amKgZDQGnkqR5Q39Z3W1etamSFotwzQuX2bm4AhWZLWiM2MjEVZPJGWUw37ESnv0
-WugDTYETxIFIoAoc1X/E
-=W6fA
------END PGP SIGNATURE-----
-
---d6UK98fIWRAfByB6--
