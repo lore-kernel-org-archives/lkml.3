@@ -1,39 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537Ab3IIB7h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 21:59:37 -0400
-Received: from 173-212-243-67.static.hostnoc.net ([173.212.243.67]:52480 "EHLO
-	smtp3.moriyishu.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215Ab3IIB7g (ORCPT
+	id S1751431Ab3IICI0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 22:08:26 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:24266 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751240Ab3IICIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 21:59:36 -0400
-X-Greylist: delayed 613 seconds by postgrey-1.27 at vger.kernel.org; Sun, 08 Sep 2013 21:59:36 EDT
-Date: Mon, 9 Sep 2013 09:49:23 +0800
-From: "Pgpu" <sales@menjiechem.com>
-Reply-To: sales@menjiechem.com
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: ATTN:Manager---supply fumed silica---menjie chemicals co
-Message-ID: <201309090949232183680@moriyishu.com>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+	Sun, 8 Sep 2013 22:08:25 -0400
+Message-ID: <522D2D82.2070604@huawei.com>
+Date: Mon, 9 Sep 2013 10:08:02 +0800
+From: Xie XiuQi <xiexiuqi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
+To: Jiang Liu <liuj97@gmail.com>, Jiang Liu <jiang.liu@huawei.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Shaohua Li <shli@kernel.org>,
+        Wang YanQing <udknight@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        liguang <lig.fnst@cn.fujitsu.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1 2/3] SMP: simpilify function generic_smp_call_function_single_interrupt()
+References: <1378653745-8343-1-git-send-email-liuj97@gmail.com> <1378653745-8343-2-git-send-email-liuj97@gmail.com>
+In-Reply-To: <1378653745-8343-2-git-send-email-liuj97@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.69.18]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r891xfgP016694
 
-Dear Sir or Madam: 
-      Good Day! Glad to learn you`re on the market of fumed silica products.
-        We are a professional manufacturers of hydrophilic fumed silica products with many years experience,  now our featured products are: 
-Hydrophilic fumed silica : fumed silica (SiO2): A150 /200 /380
-     If you are interesting in any of our products, pls contact me, i will send you more details of the products for your reference!
-Best regards
-David tan
-Sales?Depart. Manager
-skype:tjyf512
-tel/fax:86 536 8980651
-company: Weifang Menjie Chemical Co.,Ltd      china
-Website: http://menjie.en.alibaba.com/
-                www.menjiechem.comÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On 2013/9/8 23:22, Jiang Liu wrote:
+> From: Jiang Liu <jiang.liu@huawei.com>
+> 
+> Now the call_single_data data structure is always locked by invoking
+> csd_lock() before inserting it into corresponding call_single_queue
+> list, so no need to save and check csd->flags in function
+> generic_smp_call_function_single_interrupt().
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Cc: Jiang Liu <liuj97@gmail.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Wang YanQing <udknight@gmail.com>
+> Cc: Shaohua Li <shli@kernel.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Cc: liguang <lig.fnst@cn.fujitsu.com>
+> Cc: linux-kernel@vger.kernel.org
+
+Hi, I've sent a same patch before and it has been applied by Ingo.
+See http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?id=46591962cb5bfd2bfb0baf42497119c816503598
+
+> ---
+>  kernel/smp.c | 16 +---------------
+>  1 file changed, 1 insertion(+), 15 deletions(-)
+> 
+> diff --git a/kernel/smp.c b/kernel/smp.c
+> index a034712..baa2a65 100644
+> --- a/kernel/smp.c
+> +++ b/kernel/smp.c
+> @@ -181,25 +181,11 @@ void generic_smp_call_function_single_interrupt(void)
+>  
+>  	while (!list_empty(&list)) {
+>  		struct call_single_data *csd;
+> -		unsigned int csd_flags;
+>  
+>  		csd = list_entry(list.next, struct call_single_data, list);
+>  		list_del(&csd->list);
+> -
+> -		/*
+> -		 * 'csd' can be invalid after this call if flags == 0
+> -		 * (when called through generic_exec_single()),
+> -		 * so save them away before making the call:
+> -		 */
+> -		csd_flags = csd->flags;
+> -
+>  		csd->func(csd->info);
+> -
+> -		/*
+> -		 * Unlocked CSDs are valid through generic_exec_single():
+> -		 */
+> -		if (csd_flags & CSD_FLAG_LOCK)
+> -			csd_unlock(csd);
+> +		csd_unlock(csd);
+>  	}
+>  }
+>  
+> 
+
+
