@@ -1,89 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437Ab3IITsK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 15:48:10 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:43050 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755181Ab3IITsH convert rfc822-to-8bit (ORCPT
+	id S1755497Ab3IITsv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 15:48:51 -0400
+Received: from mail-qe0-f45.google.com ([209.85.128.45]:65421 "EHLO
+	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755085Ab3IITsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 15:48:07 -0400
-Subject: Re: [PATCHv3 1/2] ARM: msm: Add support for APQ8074 Dragonboard
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=US-ASCII
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <522E21A8.4060408@wwwdotorg.org>
-Date: Mon, 9 Sep 2013 14:48:08 -0500
-Cc: Rohit Vaswani <rvaswani@codeaurora.org>, Olof Johansson <olof@lixom.net>,
-        David Brown <davidb@codeaurora.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Content-Transfer-Encoding: 7BIT
-Message-Id: <FA33E8F4-3F85-4D8B-83E1-96F5A8F76CE6@codeaurora.org>
-References: <1378495943-2572-1-git-send-email-rvaswani@codeaurora.org> <20130906215051.GA29253@quad.lixom.net> <522E09E6.8040300@codeaurora.org> <FFE100A7-8AD6-4E0D-9F64-120DA3564F89@codeaurora.org> <522E21A8.4060408@wwwdotorg.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-X-Mailer: Apple Mail (2.1283)
+	Mon, 9 Sep 2013 15:48:50 -0400
+Date: Mon, 9 Sep 2013 16:48:44 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        ak@linux.intel.com, jolsa@redhat.com, namhyung.kim@lge.com,
+        dsahern@gmail.com
+Subject: Re: [PATCH v2 2/2] perf tools: add attr->mmap2 support
+Message-ID: <20130909194844.GB28428@ghostprotocols.net>
+References: <1377079825-19057-3-git-send-email-eranian@google.com>
+ <20130909192810.GA3825@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130909192810.GA3825@infradead.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Sep 9, 2013, at 2:29 PM, Stephen Warren wrote:
-
-> On 09/09/2013 01:17 PM, Kumar Gala wrote:
->> 
->> On Sep 9, 2013, at 12:48 PM, Rohit Vaswani wrote:
->> 
->>> On 9/6/2013 2:50 PM, Olof Johansson wrote:
->>>> Hi,
->>>> 
->>>> Some comments below.
->>>> 
->>>> On Fri, Sep 06, 2013 at 12:32:22PM -0700, Rohit Vaswani wrote:
->>>>> This patch adds basic board support for APQ8074 Dragonboard
->>>>> <snip>
->>>>> dtb-$(CONFIG_ARCH_MSM) += msm8660-surf.dtb \
->>>>> -	msm8960-cdp.dtb
->>>>> +	msm8960-cdp.dtb \
->>>>> +	apq8074-dragonboard.dtb
->>>> Please add boards alphabetically.
->>> Will do.
->>>> 
->>>>> dtb-$(CONFIG_ARCH_MVEBU) += armada-370-db.dtb \
->>>>> 	armada-370-mirabox.dtb \
->>>>> 	armada-370-rd.dtb \
->>>>> diff --git a/arch/arm/boot/dts/apq8074-dragonboard.dts b/arch/arm/boot/dts/apq8074-dragonboard.dts
->>>>> new file mode 100644
->>>>> index 0000000..5b7b6a0
->>>>> --- /dev/null
->>>>> +++ b/arch/arm/boot/dts/apq8074-dragonboard.dts
->>>> arch/arm/boot/dts/ is getting really crowded. It's been working best if the SoC
->>>> family or vendor is used as a prefix to keep things a bit more organized. In
->>>> that spirit, prefixing these with msm-<foo> makes sense. Can you please do so?
->>> 
->>> Sure. But the board is called an APQ8074 and we wanted to keep the naming consistent with that.
->> 
->> If we do this we should use qcom, not msm as the prefix.  Match the device tree vendor prefix.
+Em Mon, Sep 09, 2013 at 04:47:45PM -0300, Arnaldo Carvalho de Melo escreveu:
+> Em Wed, Aug 21, 2013 at 12:10:25PM +0200, Stephane Eranian escreveu:
+> > This patch adds support for the new PERF_RECORD_MMAP2
+> > record type exposed by the kernel. This is an extended
+> > PERF_RECORD_MMAP record. It adds for each file-backed
+> > mapping the device major, minor number and the inode
+> > number and generation. This triplet uniquely identifies
+> > the source of a file-backed mapping. It can be used to
+> > detect identical virtual mappings between processes, for
+> > instance.
+> > 
+> > The patch will prefer MMAP2 over MMAP.
 > 
-> Hmm. It'd be nice for the filenames to be ${soc}-${board} so that e.g.
-> U-Boot can easily calculate the DTB filename based on its soc/board
-> environment variables... Luckily in my case for Tegra, all the Tegra
-> chip names start with "Tegra", so we already sort all our DTB filenames
-> together in the directory listing:-)
+> I noticed the kernel part is in, and I'm going to use MMAP2 on that new
+> tool, so tried merging it, but:
+> 
+> I fixed it up wrt another patch that makes machine__find_thread receive pid/tid
+> but then 'perf test' complains about it, see below, trying to fix...
 
-u-boot's not supported on MSM platforms, so not sure what purpose this serves.
+Following patch makes it progress a bit, still checking why it is not
+enough...
 
-we might want to just introduce vendor dirs so its arch/arm/boot/dts/{vendor}/{soc}-{board}
+- Arnaldo
 
-Not sure if we want to argue about {vendor} vs {sub-arch}.
-
-- k
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+diff --git a/tools/perf/tests/perf-record.c b/tools/perf/tests/perf-record.c
+index 72d8881..b8a7056 100644
+--- a/tools/perf/tests/perf-record.c
++++ b/tools/perf/tests/perf-record.c
+@@ -50,7 +50,7 @@ int test__PERF_RECORD(void)
+ 	struct perf_sample sample;
+ 	const char *cmd = "sleep";
+ 	const char *argv[] = { cmd, "1", NULL, };
+-	char *bname;
++	char *bname, *mmap_filename;
+ 	u64 prev_time = 0;
+ 	bool found_cmd_mmap = false,
+ 	     found_libc_mmap = false,
+@@ -212,6 +212,7 @@ int test__PERF_RECORD(void)
+ 
+ 				if ((type == PERF_RECORD_COMM ||
+ 				     type == PERF_RECORD_MMAP ||
++				     type == PERF_RECORD_MMAP2 ||
+ 				     type == PERF_RECORD_FORK ||
+ 				     type == PERF_RECORD_EXIT) &&
+ 				     (pid_t)event->comm.pid != evlist->workload.pid) {
+@@ -220,7 +221,8 @@ int test__PERF_RECORD(void)
+ 				}
+ 
+ 				if ((type == PERF_RECORD_COMM ||
+-				     type == PERF_RECORD_MMAP) &&
++				     type == PERF_RECORD_MMAP ||
++				     type == PERF_RECORD_MMAP2) &&
+ 				     event->comm.pid != event->comm.tid) {
+ 					pr_debug("%s with different pid/tid!\n", name);
+ 					++errs;
+@@ -236,7 +238,12 @@ int test__PERF_RECORD(void)
+ 				case PERF_RECORD_EXIT:
+ 					goto found_exit;
+ 				case PERF_RECORD_MMAP:
+-					bname = strrchr(event->mmap.filename, '/');
++					mmap_filename = event->mmap.filename;
++					goto check_bname;
++				case PERF_RECORD_MMAP2:
++					mmap_filename = event->mmap2.filename;
++				check_bname:
++					bname = strrchr(mmap_filename, '/');
+ 					if (bname != NULL) {
+ 						if (!found_cmd_mmap)
+ 							found_cmd_mmap = !strcmp(bname + 1, cmd);
+@@ -245,7 +252,7 @@ int test__PERF_RECORD(void)
+ 						if (!found_ld_mmap)
+ 							found_ld_mmap = !strncmp(bname + 1, "ld", 2);
+ 					} else if (!found_vdso_mmap)
+-						found_vdso_mmap = !strcmp(event->mmap.filename, "[vdso]");
++						found_vdso_mmap = !strcmp(mmap_filename, "[vdso]");
+ 					break;
+ 
+ 				case PERF_RECORD_SAMPLE:
