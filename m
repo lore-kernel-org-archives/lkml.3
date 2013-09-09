@@ -1,78 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126Ab3IIURu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 16:17:50 -0400
-Received: from mail-bn1lp0150.outbound.protection.outlook.com ([207.46.163.150]:39101
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1756181Ab3IIUSu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 16:18:50 -0400
+Received: from gmmr5.centrum.cz ([46.255.225.250]:38146 "EHLO gmmr5.centrum.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755694Ab3IIURr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 16:17:47 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: David Lang <david@lang.hm>
-CC: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH 00/12] One more attempt at useful kernel lockdown
-Thread-Topic: [PATCH 00/12] One more attempt at useful kernel lockdown
-Thread-Index: AQHOrYDL2QYLBLFVskGOdCrAsfX2cpm9uPUAgAAESG6AAAOVwIAAEpjdgAAEZKOAAAB0AA==
-Date: Mon, 9 Sep 2013 20:17:41 +0000
-Message-ID: <1378757860.17982.22.camel@x230.lan>
-References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
-	 <19562.1378747124@turing-police.cc.vt.edu>
-	 <alpine.DEB.2.02.1309091119330.2479@nftneq.ynat.uz>
-	 <1378751318.17982.10.camel@x230.lan>
-	 <alpine.DEB.2.02.1309091139490.2479@nftneq.ynat.uz>
-	 <1378752158.17982.15.camel@x230.lan>
-	 <alpine.DEB.2.02.1309091150570.2479@nftneq.ynat.uz>
-	 <1378753619.17982.16.camel@x230.lan>
-	 <alpine.DEB.2.02.1309091247340.2479@nftneq.ynat.uz>
-	 <1378757201.17982.20.camel@x230.lan>
-	 <alpine.DEB.2.02.1309091311040.2479@nftneq.ynat.uz>
-In-Reply-To: <alpine.DEB.2.02.1309091311040.2479@nftneq.ynat.uz>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:470:1f07:1371:5d52:9ee3:3e84:6668]
-x-forefront-prvs: 09645BAC66
-x-forefront-antispam-report: SFV:NSPM;SFS:(24454002)(51704005)(189002)(199002)(377424004)(74876001)(80976001)(53806001)(56816003)(77096001)(19580405001)(19580395003)(83322001)(76482001)(54356001)(79102001)(77982001)(59766001)(83072001)(56776001)(54316002)(80022001)(63696002)(46102001)(81342001)(81816001)(65816001)(69226001)(74366001)(47446002)(74706001)(31966008)(74662001)(74502001)(47736001)(50986001)(47976001)(49866001)(51856001)(4396001)(76786001)(81686001)(81542001)(76796001)(33646001)(36756003)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB222;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:5d52:9ee3:3e84:6668;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <E1663DDF9E8297439C5E7F6DA3C8A90A@namprd05.prod.outlook.com>
+	id S1755743Ab3IIUSr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 16:18:47 -0400
+To: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
+Subject: =?utf-8?q?Re=3A_=5Bpatch_0=2F7=5D_improve_memcg_oom_killer_robustness_v2?=
+Date: Mon, 09 Sep 2013 22:18:39 +0200
+From: "azurIt" <azurit@pobox.sk>
+Cc: =?utf-8?q?Andrew_Morton?= <akpm@linux-foundation.org>,
+        =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>,
+        =?utf-8?q?David_Rientjes?= <rientjes@google.com>,
+        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
+        =?utf-8?q?KOSAKI_Motohiro?= <kosaki.motohiro@jp.fujitsu.com>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <x86@kernel.org>,
+        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <1375549200-19110-1-git-send-email-hannes@cmpxchg.org>, <20130803170831.GB23319@cmpxchg.org>, <20130830215852.3E5D3D66@pobox.sk>, <20130902123802.5B8E8CB1@pobox.sk>, <20130903204850.GA1412@cmpxchg.org>, <20130904101852.58E70042@pobox.sk>, <20130905115430.GB856@cmpxchg.org>, <20130909151010.3A3CBC6A@pobox.sk>, <20130909172849.GG856@cmpxchg.org>, <20130909215917.96932098@pobox.sk> <20130909201238.GH856@cmpxchg.org>
+In-Reply-To: <20130909201238.GH856@cmpxchg.org>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+X-Original-From: azurit@pobox.sk
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+Message-Id: <20130909221839.B4FBB094@pobox.sk>
+X-Maser: Georgo
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r89KHuAl022929
 
-On Mon, 2013-09-09 at 13:15 -0700, David Lang wrote:
-> On Mon, 9 Sep 2013, Matthew Garrett wrote:
-> 
-> > On Mon, 2013-09-09 at 12:59 -0700, David Lang wrote:
-> >
-> >> At least you should be able to unify the implementation, even if you don't unify
-> >> the user visible knob
-> >
-> > Well sure, I could take this integer and merge another integer into it,
-> > but now you have the same value being modified by two different
-> > user-visible interfaces which aren't guaranteed to have the same
-> > semantics.
-> 
-> It's not that you merge integers, it's that the knob that currently sets the 
-> signed module only loading but not anything else would have it's implementation 
-> changed so that instead of doing whatever it currently does, it would instead 
-> make an internal call to set the "require signed modules" bit, and that one 
-> place would implement the lockdown.
+>On Mon, Sep 09, 2013 at 09:59:17PM +0200, azurIt wrote:
+>> >On Mon, Sep 09, 2013 at 03:10:10PM +0200, azurIt wrote:
+>> >> >Hi azur,
+>> >> >
+>> >> >On Wed, Sep 04, 2013 at 10:18:52AM +0200, azurIt wrote:
+>> >> >> > CC: "Andrew Morton" <akpm@linux-foundation.org>, "Michal Hocko" <mhocko@suse.cz>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+>> >> >> >Hello azur,
+>> >> >> >
+>> >> >> >On Mon, Sep 02, 2013 at 12:38:02PM +0200, azurIt wrote:
+>> >> >> >> >>Hi azur,
+>> >> >> >> >>
+>> >> >> >> >>here is the x86-only rollup of the series for 3.2.
+>> >> >> >> >>
+>> >> >> >> >>Thanks!
+>> >> >> >> >>Johannes
+>> >> >> >> >>---
+>> >> >> >> >
+>> >> >> >> >
+>> >> >> >> >Johannes,
+>> >> >> >> >
+>> >> >> >> >unfortunately, one problem arises: I have (again) cgroup which cannot be deleted :( it's a user who had very high memory usage and was reaching his limit very often. Do you need any info which i can gather now?
+>> >> >> >
+>> >> >> >Did the OOM killer go off in this group?
+>> >> >> >
+>> >> >> >Was there a warning in the syslog ("Fixing unhandled memcg OOM
+>> >> >> >context")?
+>> >> >> 
+>> >> >> 
+>> >> >> 
+>> >> >> Ok, i see this message several times in my syslog logs, one of them is also for this unremovable cgroup (but maybe all of them cannot be removed, should i try?). Example of the log is here (don't know where exactly it starts and ends so here is the full kernel log):
+>> >> >> http://watchdog.sk/lkml/oom_syslog.gz
+>> >> >There is an unfinished OOM invocation here:
+>> >> >
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715112] Fixing unhandled memcg OOM context set up from:
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715191]  [<ffffffff811105c2>] T.1154+0x622/0x8f0
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715274]  [<ffffffff8111153e>] mem_cgroup_cache_charge+0xbe/0xe0
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715357]  [<ffffffff810cf31c>] add_to_page_cache_locked+0x4c/0x140
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715443]  [<ffffffff810cf432>] add_to_page_cache_lru+0x22/0x50
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715526]  [<ffffffff810cfdd3>] find_or_create_page+0x73/0xb0
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715608]  [<ffffffff811493ba>] __getblk+0xea/0x2c0
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715692]  [<ffffffff8114ca73>] __bread+0x13/0xc0
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715774]  [<ffffffff81196968>] ext3_get_branch+0x98/0x140
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715859]  [<ffffffff81197557>] ext3_get_blocks_handle+0xd7/0xdc0
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715942]  [<ffffffff81198304>] ext3_get_block+0xc4/0x120
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716023]  [<ffffffff81155c3a>] do_mpage_readpage+0x38a/0x690
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716107]  [<ffffffff81155f8f>] mpage_readpage+0x4f/0x70
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716188]  [<ffffffff811973a8>] ext3_readpage+0x28/0x60
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716268]  [<ffffffff810cfa48>] filemap_fault+0x308/0x560
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716350]  [<ffffffff810ef898>] __do_fault+0x78/0x5a0
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716433]  [<ffffffff810f2ab4>] handle_pte_fault+0x84/0x940
+>> >> >
+>> >> >__getblk() has this weird loop where it tries to instantiate the page,
+>> >> >frees memory on failure, then retries.  If the memcg goes OOM, the OOM
+>> >> >path might be entered multiple times and each time leak the memcg
+>> >> >reference of the respective previous OOM invocation.
+>> >> >
+>> >> >There are a few more find_or_create() sites that do not propagate an
+>> >> >error and it's incredibly hard to find out whether they are even taken
+>> >> >during a page fault.  It's not practical to annotate them all with
+>> >> >memcg OOM toggles, so let's just catch all OOM contexts at the end of
+>> >> >handle_mm_fault() and clear them if !VM_FAULT_OOM instead of treating
+>> >> >this like an error.
+>> >> >
+>> >> >azur, here is a patch on top of your modified 3.2.  Note that Michal
+>> >> >might be onto something and we are looking at multiple issues here,
+>> >> >but the log excert above suggests this fix is required either way.
+>> >> 
+>> >> 
+>> >> 
+>> >> 
+>> >> Johannes, is this still up to date? Thank you.
+>> >
+>> >No, please use the following on top of 3.2 (i.e. full replacement, not
+>> >incremental to what you have):
+>> 
+>> 
+>> 
+>> Unfortunately it didn't compile:
+>> 
+>> 
+>> 
+>> 
+>>   LD      vmlinux.o
+>>   MODPOST vmlinux.o
+>> WARNING: modpost: Found 4924 section mismatch(es).
+>> To see full details build your kernel with:
+>> 'make CONFIG_DEBUG_SECTION_MISMATCH=y'
+>>   GEN     .version
+>>   CHK     include/generated/compile.h
+>>   UPD     include/generated/compile.h
+>>   CC      init/version.o
+>>   LD      init/built-in.o
+>>   LD      .tmp_vmlinux1
+>> arch/x86/built-in.o: In function `do_page_fault':
+>> (.text+0x26a77): undefined reference to `handle_mm_fault'
+>> mm/built-in.o: In function `fixup_user_fault':
+>> (.text+0x224d3): undefined reference to `handle_mm_fault'
+>> mm/built-in.o: In function `__get_user_pages':
+>> (.text+0x24a0f): undefined reference to `handle_mm_fault'
+>> make: *** [.tmp_vmlinux1] Error 1
+>
+>Oops, sorry about that.  Must be configuration dependent because it
+>works for me (and handle_mm_fault is obviously defined).
+>
+>Do you have warnings earlier in the compilation?  You can use make -s
+>to filter out everything but warnings.
+>
+>Or send me your configuration so I can try to reproduce it here.
+>
+>Thanks!
 
-Thanks.
 
--- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+
+
+Here it is:
+http://watchdog.sk/lkml/config
