@@ -1,47 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751316Ab3III00 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 04:26:26 -0400
-Received: from postout2.mail.lrz.de ([129.187.255.138]:35243 "EHLO
-	postout2.mail.lrz.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750835Ab3III0Y convert rfc822-to-8bit (ORCPT
+	id S1751155Ab3IIIbD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 04:31:03 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45169 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753Ab3IIIbA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 04:26:24 -0400
-X-Greylist: delayed 374 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Sep 2013 04:26:24 EDT
-From: "Morales, Alejandra" <alejandra.morales@tum.de>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Doubts on IO requests in USB subsystem
-Thread-Topic: Doubts on IO requests in USB subsystem
-Thread-Index: Ac6tNIxdeqg8/IyVTFGPG7NXqAfNbw==
-Date: Mon, 9 Sep 2013 08:20:06 +0000
-Message-ID: <9E3F9C2076C45D4783F09B90D5BE77CE189C61@BADWLRZ-SWMBX13.ads.mwn.de>
-Accept-Language: es-ES, en-US
-Content-Language: es-ES
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:4ca0:2001:40:180c:9e10:7674:37e7]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 9 Sep 2013 04:31:00 -0400
+Date: Mon, 9 Sep 2013 10:30:28 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Waiman Long <waiman.long@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+Message-ID: <20130909083028.GH31370@twins.programming.kicks-ass.net>
+References: <5220FD51.2010709@hp.com>
+ <CA+55aFzhiLMdSCnePX0OgFUXo7KC+aomM8URppDuV+7xUaaSpw@mail.gmail.com>
+ <20130830205404.GF13318@ZenIV.linux.org.uk>
+ <CA+55aFwwKEaTBX9Uoexpote7dOHBq+TiJ=RifzTpVL_jh24A9w@mail.gmail.com>
+ <20130830214452.GH13318@ZenIV.linux.org.uk>
+ <CA+55aFyyrihbLyMRSW9ahviNFiwi-NBKbcjeKW6fouWUW8fj6g@mail.gmail.com>
+ <20130831212355.GN13318@ZenIV.linux.org.uk>
+ <CA+55aFwxQ2zN+kbt0Atob-Rims4B1pxgFniXbbA=YDAfb+wWAg@mail.gmail.com>
+ <20130831232758.GO13318@ZenIV.linux.org.uk>
+ <20130901001306.GP13318@ZenIV.linux.org.uk>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130901001306.GP13318@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear all,
+On Sun, Sep 01, 2013 at 01:13:06AM +0100, Al Viro wrote:
 
-For my master thesis I am developing a user space power management tool. For that purpose
-I am implementing a kernel module and one task this module does is to intercept calls to the
-request_fn function for every scsi device in order to check when they are actually being requested
-an IO operation.
+> +static noinline_for_stack
+> +char *dentry_name(char *buf, char *end, const struct dentry *d, struct printf_spec spec,
+> +		  int depth)
+> +{
+> +	int i, n = 0;
+> +	const char *s;
+> +	char *p = buf;
+> +	const struct dentry *array[4];
+> +	char c;
+> +
+> +	if (depth < 0) {
+> +		depth = 1;
+> +		WARN_ON(1);
+> +	}
+> +	if (depth > 4) {
+> +		depth = 4;
+> +		WARN_ON(1);
+> +	}
+> +
+> +	rcu_read_lock();
+> +	for (i = 0; i < depth; i++) {
+> +		struct dentry *p = ACCESS_ONCE(d->d_parent);
+> +		array[i] = d;
+> +		if (d == p)
+> +			break;
+> +		d = p;
+> +	}
+> +	if (!i) {	/* root dentry has a bloody inconvenient name */
+> +		i++;
+> +		goto do_name;
+> +	}
+> +	if (i == depth)
+> +		goto do_name;
+> +	while (i && n != spec.precision) {
+> +		if (buf < end)
+> +			*buf = '/';
+> +		buf++;
+> +		n++;
+> +do_name:
+> +		s = ACCESS_ONCE(array[--i]->d_name.name);
+> +		while (n != spec.precision && (c = *s++) != '\0') {
+> +			if (buf < end)
+> +				*buf = c;
+> +			buf++;
+> +			n++;
+> +		}
+> +	}
+> +	rcu_read_unlock();
 
-I am testing with a regular SATA hard drive and with an external USB hard drive. Both are just
-mounted and there is no application using them at the moment, so that I was expecting that none
-of them receive file system requests. Indeed the SATA HD does not receive any requests unless I
-mount or unmount it, but the USB HD receives a large number of file system requests and it seems
-that it never enters into an idle state. Since any application is using it I think these requests may
-come from the USB subsystem. Am I right? If so, how could I determine whether a request comes
-from the USB subsystem or it is a file system request that actually moves blocks?
-
-Thanks in advance.
-Regards,
-Alejandra
+Should one or both of those ACCESS_ONCE()s be an rcu_dereference()?
