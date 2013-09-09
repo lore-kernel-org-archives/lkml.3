@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab3IIQmK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 12:42:10 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25761 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753382Ab3IIQmI (ORCPT
+	id S1755209Ab3IIQmX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 12:42:23 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:33301 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753571Ab3IIQmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 12:42:08 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=JDfofD-L5ZgA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5p3hctMY2UsA:10 a=VnNF1IyMAAAA:8 a=7zWjzF3xIDRxBTF1BW0A:9 a=CjuIK1q_8ugA:10 a=tyIGqtuLRSMA:10 a=KxqS7gh_mc4A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Mon, 9 Sep 2013 12:42:05 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        sbw@mit.edu, cl@linux.com
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
- section?
-Message-ID: <20130909124205.37926095@gandalf.local.home>
-In-Reply-To: <20130909162632.GZ3966@linux.vnet.ibm.com>
-References: <20130905195234.GA20555@linux.vnet.ibm.com>
-	<20130906105934.GF20519@somewhere>
-	<20130906151851.GQ3966@linux.vnet.ibm.com>
-	<1378488088.31445.39.camel@edumazet-glaptop>
-	<20130906174117.GU3966@linux.vnet.ibm.com>
-	<20130906185927.GE2706@somewhere>
-	<20130909105347.GK31370@twins.programming.kicks-ass.net>
-	<20130909132343.GN3966@linux.vnet.ibm.com>
-	<20130909142155.GC26785@twins.programming.kicks-ass.net>
-	<20130909162632.GZ3966@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Sep 2013 12:42:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAG-2HqWaoovz+-pY2JnA4BSTULa4Hq=_5Oy4hzWOdQbrkijQKw@mail.gmail.com>
+References: <CAG-2HqWaoovz+-pY2JnA4BSTULa4Hq=_5Oy4hzWOdQbrkijQKw@mail.gmail.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Mon, 9 Sep 2013 18:41:48 +0200
+Message-ID: <CAPXgP11XKqsQB96t=NPB1sQT5ppxUOnz4FZyFtXsE0PyF2jArA@mail.gmail.com>
+Subject: Re: [BUG?] staging: zram: Add auto loading of module if user opens /dev/zram.
+To: Tom Gundersen <teg@jklm.no>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Minchan Kim <minchan@kernel.org>, devel@driverdev.osuosl.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Sep 2013 09:26:32 -0700
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+On Mon, Sep 9, 2013 at 5:58 PM, Tom Gundersen <teg@jklm.no> wrote:
+> Hi Konrad,
+>
+> The above commit (c70bda9 in mainline) doesn't appear to work for me.
+> I.e., depmod does not create an entry in modules.devname and hence no
+> device node is created on boot.
+>
+> If I understand correctly, you'd also need to create the correct
+> "char-major-<MAJOR>-<MINOR>" alias. But I don't really see how this is
+> meant to work as I thought zram only created /dev/zramX type device
+> nodes, and not /dev/zram, or am I missing something?
 
+Please just remove it. "devname" is meant to be used for
+single-instance devices with a static dev_t, never for things like
+zramX.
 
-> Now if we can agree on the naming and the exact per-CPU incantation...  ;-)
+It will not do anything useful here, it does nothing really without a
+statically assigned dev_t, and it should not be used for devices of
+this kind anyway.
 
-s/per-CPU/per-task/
-
-/me runs away!!!
-
--- Steve
+Thanks,
+Kay
