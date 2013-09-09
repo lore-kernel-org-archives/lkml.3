@@ -1,56 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755199Ab3IIQot (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 12:44:49 -0400
-Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:21787
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753741Ab3IIQor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 12:44:47 -0400
-X-Greylist: delayed 873 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Sep 2013 12:44:46 EDT
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH 01/12] Add BSD-style securelevel support
-Thread-Topic: [PATCH 01/12] Add BSD-style securelevel support
-Thread-Index: AQHOrXST0kcK6RTzv06SuZIfeWETyJm9l/EAgAAEfuGAAABrAA==
-Date: Mon, 9 Sep 2013 16:44:42 +0000
-Message-ID: <1378745082.17982.4.camel@x230.lan>
-References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
-	 <1378741786-18430-2-git-send-email-matthew.garrett@nebula.com>
-	 <522DF6DC.1050303@zytor.com> <1378744207.17982.3.camel@x230.lan>
-	 <522DFA93.50308@zytor.com>
-In-Reply-To: <522DFA93.50308@zytor.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:470:1f07:1371:5d52:9ee3:3e84:6668]
-x-forefront-prvs: 09645BAC66
-x-forefront-antispam-report: SFV:NSPM;SFS:(377424004)(24454002)(199002)(189002)(51856001)(59766001)(56776001)(19580405001)(54316002)(83322001)(80022001)(65816001)(81342001)(76796001)(36756003)(49866001)(4396001)(47736001)(81542001)(47976001)(76786001)(50986001)(79102001)(46102001)(74366001)(77982001)(69226001)(33646001)(81686001)(81816001)(19580395003)(63696002)(56816003)(77096001)(83072001)(74876001)(558084003)(80976001)(54356001)(74502001)(53806001)(47446002)(74662001)(31966008)(76482001)(74706001)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB221;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:5d52:9ee3:3e84:6668;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <C86F9D3FBC12644497466A7D1D722418@namprd05.prod.outlook.com>
+	id S1755418Ab3IIQp4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 12:45:56 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:56399 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754345Ab3IIQpx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 12:45:53 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <20130909143954.GE1612@quack.suse.cz>
+References: <20130906171916.41b5f48d1aaccca594d1e760@canb.auug.org.au>
+	<CAMuHMdXib30o3-70EuYj3to0==b7LfwPbivF9DaBrpHPejsDFg@mail.gmail.com>
+	<20130909032154.GA18168@quad.lixom.net>
+	<20130909143954.GE1612@quack.suse.cz>
+Date: Mon, 9 Sep 2013 09:45:52 -0700
+Message-ID: <CAOesGMjyFVGXGiK9uccg+jeANP6EH4nbbpCHgkucvo9au8kjvQ@mail.gmail.com>
+Subject: Re: linux-next: build warning after merge of the final tree (Linus'
+ tree related - vai vfs tree)
+From: Olof Johansson <olof@lixom.net>
+To: Jan Kara <jack@suse.cz>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux-Next <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r89Gis0o021530
 
-On Mon, 2013-09-09 at 09:42 -0700, H. Peter Anvin wrote:
+On Mon, Sep 9, 2013 at 7:39 AM, Jan Kara <jack@suse.cz> wrote:
+> On Sun 08-09-13 20:21:54, Olof Johansson wrote:
+>> On Fri, Sep 06, 2013 at 10:52:52AM +0200, Geert Uytterhoeven wrote:
+>> > On Fri, Sep 6, 2013 at 9:19 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> > > After merging the final tree, today's linux-next build (arm defconfig)
+>> > > produced this warning:
+>> > >
+>> > > fs/direct-io.c: In function 'sb_init_dio_done_wq':
+>> > > fs/direct-io.c:557:2: warning: value computed is not used [-Wunused-value]
+>> > >
+>> > > This is:
+>> > >
+>> > >         cmpxchg(&sb->s_dio_done_wq, NULL, wq);
+>> > >
+>> > > Introduced by commit 7b7a8665edd8 ("direct-io: Implement generic deferred
+>> > > AIO completions").
+>> >
+>> > This happens for include/asm-generic/cmpxchg.h and several other
+>> > arch-specific implementations that cast the return value of cmpxchg()
+>> > like
+>> >
+>> > #define cmpxchg(ptr, o, n)   ((__typeof__(*(ptr)))__cmpxchg(....
+>> >
+>> > If the caller of cmpxchg() doesn't use the return value, we get a
+>> > compiler warning,
+>> > at least with some versions of gcc.
+>> >
+>> > Any idea how to fix this once and for good?
+>>
+>> Should it be fixed? Chances are that the caller needs to do actions
+>> depending on if the change happened, and checking the value afterwards
+>> is inherently racy.
+>>
+>> For this specific fs/direct-io.c case it seems to be safe since the
+>> workqueue is only ever set and never cleared, but it might still be a
+>> good idea to do:
+>   I'm not against this change - feel free to add my:
+> Reviewed-by: Jan Kara <jack@suse.cz>
+>
+>   to it and merge it. However I maintain there are valid usecases where you
+> do not care about the return value so warning about it doesn't seem right.
 
-> Neither of this tend to be true long time... which leads one back to
-> capabilities.
+Yes, similar to (some) __must_check-annotated functions.
 
-We can't use capabilities. Doing so breaks existing userspace.
+> OTOH thinking about it some more I agree we have other precedents where
+> sometimes-correct-often-bugs constructs are warned about and I can see how
+> people can consider cmpxchg() to be that case. But in that case we should:
+>   a) be consistent among architectures about the warning
+>   b) comment at cmpxchg definition that you are supposed to check its
+>      return value. If you really know what you are doing, you can cast the
+>      return value to (void) and comment why it's safe.
 
--- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Unfortunately cmpxchg() is a #define since it needs to use __typeof__.
+Marking it __must_check isn't feasible. I'm open for better
+suggestions.
+
+
+-Olof
