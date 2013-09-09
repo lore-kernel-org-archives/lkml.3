@@ -1,71 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755773Ab3IIU5a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 16:57:30 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:39726 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755673Ab3IIU52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 16:57:28 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, Greg KH <greg@kroah.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pm@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-sh@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: "cpufreq: fix serialization issues with freq change notifiers" breaks cpufreq too
-Date: Mon, 09 Sep 2013 23:08:25 +0200
-Message-ID: <1883706.eFcILAzoo8@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <Pine.LNX.4.64.1309091656200.6602@axis700.grange>
-References: <Pine.LNX.4.64.1309091656200.6602@axis700.grange>
+	id S1755703Ab3IIVFA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 17:05:00 -0400
+Received: from eurynome.mirbsd.org ([81.169.181.30]:44003 "EHLO
+	eurynome.mirbsd.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755381Ab3IIVE6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 17:04:58 -0400
+X-Greylist: delayed 1113 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Sep 2013 17:01:13 EDT
+Date: Mon, 9 Sep 2013 20:35:23 +0000 (UTC)
+From: Thorsten Glaser <tg@mirbsd.de>
+X-X-Sender: tg@herc.mirbsd.org
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+cc: linux-m68k@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] m68k: Add infrastructure for machine-specific
+ get_cycles()
+In-Reply-To: <1378754774-25804-1-git-send-email-geert@linux-m68k.org>
+Message-ID: <Pine.BSM.4.64L.1309092033110.15325@herc.mirbsd.org>
+References: <1378754774-25804-1-git-send-email-geert@linux-m68k.org>
+X-Message-Flag: Your mailer is broken. Get an update at http://www.washington.edu/pine/getpine/pcpine.html for free.
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Geert Uytterhoeven dixit:
 
-On Monday, September 09, 2013 05:11:10 PM Guennadi Liakhovetski wrote:
-> Sorry guys, I'm trying my best to stop this patch from propagating to 
-> stable and to get it fixed asap, so, the CC list might be a bit excessive. 
-> Also trying to fix the originally spare cc list, which makes it impossible 
-> for me to reply to the original thread, instead have to start a new one.
+>Currently get_cycles() always returns zero.  As get_cycles() is called to
+>add entropy to the random number generator pool, security can be increased
 
-I'm not sure what you're talking about.  What exactly was wrong with the
-original CC list in particular?
+You rock for having something before MIPS ;-) (Note that other
+architectures like CRIS are also affected… just, MIPS probably
+has the broadest impact… even I have a FreeWRT WLAN AP.)
 
-> Commit
-> 
-> commit dceff5ce18801dddc220d6238628619c93bc3cb6
-> Author: Viresh Kumar <viresh.kumar@linaro.org>
-> Date:   Sun Sep 1 22:19:37 2013 +0530
-> 
->     cpufreq: fix serialization issues with freq change notifiers
-> 
-> breaks .transition_ongoing counting.
+Sorry I can’t provide any feedback because I’m out of my depth on
+both the hardware and the requirements aspect.
 
-Do you know how exactly it breaks that?  If so, care to share that knowledge?
-
-> This leads to cpufreq-cpu0 not working any more. In particular switching the
-> governor from performance to powersave directly after boot doesn't result in
-> a frequency switch any more. Reverting this patch fixes the problem again.
-
-However, this is a regression fix, so I'd prefer to fix the problem on top of
-it instead of reverting this commit entirely.
-
-> Tested with today's 
-> -next.
-> 
-> Please, refrain from including into "stable" until clarified!
-
-Well, dropping the commit altogether and dropping the "CC stable" tag are
-equally disruptive at this point, so I think I'll just defer all of the
-cpufreq fixes I wanted to push for 3.12 before the ending of the merge
-window.
-
-Thanks,
-Rafael
-
+bye,
+//mirabilos
+-- 
+Sometimes they [people] care too much: pretty printers [and syntax highligh-
+ting, d.A.] mechanically produce pretty output that accentuates irrelevant
+detail in the program, which is as sensible as putting all the prepositions
+in English text in bold font.	-- Rob Pike in "Notes on Programming in C"
