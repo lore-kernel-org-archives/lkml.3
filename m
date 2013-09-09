@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332Ab3IITKg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 15:10:36 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:54200 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752580Ab3IITKf (ORCPT
+	id S1755404Ab3IITL1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 15:11:27 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:46012 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753996Ab3IITLZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 15:10:35 -0400
-Date: Mon, 9 Sep 2013 20:10:29 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        George Spelvin <linux@horizon.com>, John Stoffel <john@stoffel.org>
-Subject: Re: [PATCH v4 1/1] dcache: Translating dentry into pathname without
- taking rename_lock
-Message-ID: <20130909191028.GT13318@ZenIV.linux.org.uk>
-References: <1378743493-33546-1-git-send-email-Waiman.Long@hp.com>
- <1378743493-33546-2-git-send-email-Waiman.Long@hp.com>
- <20130909172905.GN13318@ZenIV.linux.org.uk>
- <CA+55aFx_pUwHg35Ueb4Ewy8ZrBA_UtFbQqdRzL64_Q7iQ=V-rA@mail.gmail.com>
- <20130909180604.GO13318@ZenIV.linux.org.uk>
- <20130909182111.GQ13318@ZenIV.linux.org.uk>
- <20130909183608.GR13318@ZenIV.linux.org.uk>
- <522E17A1.1020205@hp.com>
+	Mon, 9 Sep 2013 15:11:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <522E17A1.1020205@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130909172232.GA10029@kroah.com>
+References: <1378688580-11935-1-git-send-email-linux@roeck-us.net>
+	<20130909015945.GA4029@kroah.com>
+	<20130909134012.GA24738@infradead.org>
+	<20130909163902.GA28685@kroah.com>
+	<20130909170819.GA22764@roeck-us.net>
+	<20130909172232.GA10029@kroah.com>
+Date: Mon, 9 Sep 2013 21:11:25 +0200
+X-Google-Sender-Auth: Omb9CP_7ZJ9AaAxFBjMrmHvpFVQ
+Message-ID: <CAMuHMdWwFwWeenfsiF+yBYS29rwJTJ1YP5waf=ePK+MRCru3qg@mail.gmail.com>
+Subject: Re: [PATCH] staging: Disable lustre file system for MIPS, SH, and XTENSA
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: Guenter Roeck <linux@roeck-us.net>, Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        driverdevel <devel@driverdev.osuosl.org>, Peng Tao <tao.peng@emc.com>,
+        Peng Tao <bergwolf@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 02:46:57PM -0400, Waiman Long wrote:
+On Mon, Sep 9, 2013 at 7:22 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Mon, Sep 09, 2013 at 10:08:19AM -0700, Guenter Roeck wrote:
+>> On Mon, Sep 09, 2013 at 09:39:02AM -0700, Greg Kroah-Hartman wrote:
+>> > On Mon, Sep 09, 2013 at 06:40:12AM -0700, Christoph Hellwig wrote:
+>> > > On Sun, Sep 08, 2013 at 06:59:45PM -0700, Greg Kroah-Hartman wrote:
+>> > > > Can't we just export the functions for those arches?  Surely lutre
+>> > > > isn't the first/only driver that needs this?
+>> > >
+>> > > Lustre is.  These are core mm helpers, and lustre uses them to
+>> > > reimplement another core VM function.  It then uses it to access
+>> > > userspace environment variable.
+>> > >
+>> > > In short all this code should be nuked, and no new symbols should be
+>> > > exported.
+>> >
+>> > Ugh, you are right, the lustre code needs to be fixed here.
+>> >
+>> Given that, should I send another patch marking it as BROKEN again ?
+>
+> Well, on those arches it's "broken", so I'll dig up your original patch
+> on this thread.  It's just "normal" for staging drivers to duplicate
+> core code, it needs to be fixed up before it can be merged into the
+> kernel tree, so no need to do anything special.
 
-> I am fine with your proposed change as long as it gets the job done.
+It's not only broken on MIPS, SH, and XTENSA, but also on at least parisc
+and m68k[*].
 
-I suspect that the real problem is the unlock part of read_seqretry_or_unlock();
-for d_walk() we want to be able to check if we need retry and continue walking
-if we do not.  Let's do it that way: I've applied your patch as is, with the
-next step being
-	* split read_seqretry_or_unlock():
-need_seqretry() (return (!(seq & 1) && read_seqretry(lock, seq))
-done_seqretry() (if (seq & 1) write_sequnlock(lock, seq)),
-your if (read_seqretry_or_unlock(&rename_lock, &seq))
-		goto restart;
-becoming
-	if (need_seqretry(&rename_lock, seq)) {
-		seq = 1;
-		goto restart;
-	}
-	done_seqretry(&rename_lock, seq);
+It's no longer broken on sparc64, as the missing export already got
+into mainline.
+In light of the above, perhaps that should be reverted?
 
-Then d_walk() is trivially massaged to use of read_seqbegin_or_lock(),
-need_seqretry() and done_seqretry().  Give me a few, I'll post it...
+[*] Why does m68k allmodconfig still succeed on kissb???
+    It does fail for me, as m68k's copy_from_user_page() calls
+    flush_icache_user_range(), which is not exported.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
