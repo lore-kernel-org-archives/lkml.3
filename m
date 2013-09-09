@@ -1,70 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751252Ab3IIIgx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 04:36:53 -0400
-Received: from mga11.intel.com ([192.55.52.93]:51118 "EHLO mga11.intel.com"
+	id S1751497Ab3IIIhO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 04:37:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57007 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750835Ab3IIIgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 04:36:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,866,1371106800"; 
-   d="scan'208";a="398652431"
-Message-ID: <522D88C3.7000808@intel.com>
-Date: Mon, 09 Sep 2013 16:37:23 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1751442Ab3IIIhL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 04:37:11 -0400
+Date: Mon, 9 Sep 2013 10:36:35 +0200
+From: Anton Arapov <anton@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Hemant Kumar Shaw <hkshaw@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Mikhail.Kulemin@ru.ibm.com,
+        srikar@linux.vnet.ibm.com, peterz@infradead.org, mingo@redhat.com,
+        systemtap@sourceware.org, masami.hiramatsu.pt@hitachi.com
+Subject: Re: [PATCH] uprobes: Fix limiting un-nested return probes
+Message-ID: <20130909083635.GA3270@bandura.laptop>
+References: <20130903060959.1351.16587.stgit@hemant-fedora>
+ <20130908163232.GA32685@redhat.com>
 MIME-Version: 1.0
-To: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        Yves-Alexis Perez <corsac@debian.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Lee Chun-Yi <jlee@novell.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Subject: [PATCH 0/2] Rework ACPI video driver
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130908163232.GA32685@redhat.com>
+X-PGP-Key: http://people.redhat.com/aarapov/gpg
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ACPI video module provides two functionalities: backlight control
-and backlight hotkey event delivery. It is possible the backlight
-control interface is broken while the system still needs its event
-delivery, so it's worth to seperate the two interfaces clearly.
+On Sun, Sep 08, 2013 at 06:32:32PM +0200, Oleg Nesterov wrote:
+> Sorry for delay, vacation.
+> 
+> On 09/03, Hemant Kumar Shaw wrote:
+> >
+> > There exists a limit to the number of nested return probes. The current limit is 64.
+> > However this limit is getting enforced on even non nested return probes.
+> > Hence, registering 64 independent non nested return probes results in failure of
+> > return probes on the same task. The problem is utask->depth is getting incremented
+> > unconditionally but decremented only if chained.
+> 
+> Hmm. I'll try to recheck later, but at first glance this logic is indeed
+> wrong, thanks.
+> 
+> > --- a/kernel/events/uprobes.c
+> > +++ b/kernel/events/uprobes.c
+> > @@ -1442,7 +1442,8 @@ static void prepare_uretprobe(struct uprobe *uprobe, struct pt_regs *regs)
+> >  	ri->orig_ret_vaddr = orig_ret_vaddr;
+> >  	ri->chained = chained;
+> >  
+> > -	utask->depth++;
+> > +	if (chained)
+> > +		utask->depth++;
+> 
+> Not sure, but I can be easily wrong... afaics we need something like below, no?
+> Anton?
 
-This patchset has two patches, the first is to sepeate the two
-interfaces in the ACPI video module and the second one solves some
-Win8 backlight control problems by removing ACPI video's backlight
-interface while still keeping its event delivery functionality. Due
-to some systems whose firmware claims win8 compatible have problems
-with i915's backlight control interface, a module param is introduced
-to give user a chance to select if they want to remove ACPI video's
-backlight control interface. The param is set to false by default.
+Oleg, your guess is correct. 
 
-Aaron Lu (2):
-  ACPI / video: seperate backlight control and event interface
-  ACPI / video / i915: Remove ACPI backlight if firmware expects Windows
-    8
+My original intention was to limit by depth the chained only probes. But later,
+after your review, we've decided /based on safety concerns/ to limit it hard.
 
- drivers/acpi/internal.h         |   2 +
- drivers/acpi/video.c            | 473 +++++++++++++++++++++++-----------------
- drivers/acpi/video_detect.c     |  15 +-
- drivers/gpu/drm/i915/i915_dma.c |   2 +-
- drivers/gpu/drm/i915/i915_drv.c |   5 +
- drivers/gpu/drm/i915/i915_drv.h |   1 +
- include/acpi/video.h            |  11 +-
- include/linux/acpi.h            |   1 +
- 8 files changed, 310 insertions(+), 200 deletions(-)
+The decrement 'utask->depth--;' in my own tree is above the 'if (!chained)' 
+check. I think it got mangled somehow when I rebased the code before I sent it
+to lkml.
 
--- 
-1.8.4.12.g2ea3df6
+Anton.
 
+
+> Oleg.
+> 
+> --- x/kernel/events/uprobes.c
+> +++ x/kernel/events/uprobes.c
+> @@ -1682,12 +1682,10 @@ static bool handle_trampoline(struct pt_
+>  		tmp = ri;
+>  		ri = ri->next;
+>  		kfree(tmp);
+> +		utask->depth--;
+>  
+>  		if (!chained)
+>  			break;
+> -
+> -		utask->depth--;
+> -
+>  		BUG_ON(!ri);
+>  	}
