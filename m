@@ -1,72 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946Ab3IIVmR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 17:42:17 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:51175 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752806Ab3IIVmP (ORCPT
+	id S1756037Ab3IIVnR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 17:43:17 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:55459 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755787Ab3IIVnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 17:42:15 -0400
-Message-ID: <522E40B2.9010301@codeaurora.org>
-Date: Mon, 09 Sep 2013 14:42:10 -0700
-From: Rohit Vaswani <rvaswani@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Mon, 9 Sep 2013 17:43:15 -0400
+Date: Mon, 9 Sep 2013 23:42:41 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Viresh Kumar <viresh.kumar@linaro.org>, Greg KH <greg@kroah.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-pm@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-sh@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: "cpufreq: fix serialization issues with freq change notifiers"
+ breaks cpufreq too
+In-Reply-To: <1883706.eFcILAzoo8@vostro.rjw.lan>
+Message-ID: <Pine.LNX.4.64.1309092330560.12376@axis700.grange>
+References: <Pine.LNX.4.64.1309091656200.6602@axis700.grange>
+ <1883706.eFcILAzoo8@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: Stephen Warren <swarren@wwwdotorg.org>, Olof Johansson <olof@lixom.net>,
-        David Brown <davidb@codeaurora.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCHv3 1/2] ARM: msm: Add support for APQ8074 Dragonboard
-References: <1378495943-2572-1-git-send-email-rvaswani@codeaurora.org> <20130906215051.GA29253@quad.lixom.net> <522E09E6.8040300@codeaurora.org> <FFE100A7-8AD6-4E0D-9F64-120DA3564F89@codeaurora.org> <522E21A8.4060408@wwwdotorg.org> <FA33E8F4-3F85-4D8B-83E1-96F5A8F76CE6@codeaurora.org> <522E3BC9.1030105@wwwdotorg.org> <CA05A23E-41CF-4EC6-BB2D-36105048700B@codeaurora.org>
-In-Reply-To: <CA05A23E-41CF-4EC6-BB2D-36105048700B@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:H2XxsKDuBtKqW/U7mvq4b88vyaGlyWLOckW3iRYfDQa
+ IC9DQdO9DYeKRjmafXidpxA9bsZJ2ZJ9cAl12RiOg012IV2sVM
+ P2qIJknHTbJKhT/ER294bc0QLFRtKCq/jaJkKaI3yO46HgVHRq
+ kfdtsxSTAaZDfk1ML7rQX6FmUKJD1iyltOTW0WMaWOH3Z+fDww
+ C7ruQUaLkDWl8JNex1HWVRm/EKfHnqcZ/Xo6EKzaVptn+qchBx
+ fQ1vZ423AqPLIUvOPewTeE4KZOe5lx8YFkrExJEvOFeVv+BVWW
+ W1l4Uv6ng2EW/2uZ4vIDEFc2DS48ZwLga+r2zJZ9VGShNYZ7s5
+ Y8WHvn8CU3ahHpnruYUbg7pDnf6bcOr5yi1JNnS0AzkdkhABI2
+ La/up8pKvpBQg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/9/2013 2:25 PM, Kumar Gala wrote:
-> <snip>
-> On Fri, Sep 06, 2013 at 12:32:22PM -0700, Rohit Vaswani wrote:
->>>>>>>> This patch adds basic board support for APQ8074 Dragonboard
->>>>>>>> <snip>
->>>>>>>> dtb-$(CONFIG_ARCH_MSM) += msm8660-surf.dtb \
->>>>>>>> -	msm8960-cdp.dtb
->>>>>>>> +	msm8960-cdp.dtb \
->>>>>>>> +	apq8074-dragonboard.dtb
->>>>>>> Please add boards alphabetically.
->>>>>> Will do.
->>>>>>>> dtb-$(CONFIG_ARCH_MVEBU) += armada-370-db.dtb \
->>>>>>>> 	armada-370-mirabox.dtb \
->>>>>>>> 	armada-370-rd.dtb \
->>>>>>>> diff --git a/arch/arm/boot/dts/apq8074-dragonboard.dts b/arch/arm/boot/dts/apq8074-dragonboard.dts
->>>>>>>> new file mode 100644
->>>>>>>> index 0000000..5b7b6a0
->>>>>>>> --- /dev/null
->>>>>>>> +++ b/arch/arm/boot/dts/apq8074-dragonboard.dts
->>>>>>> arch/arm/boot/dts/ is getting really crowded. It's been working best if the SoC
->>>>>>> family or vendor is used as a prefix to keep things a bit more organized. In
->>>>>>> that spirit, prefixing these with msm-<foo> makes sense. Can you please do so?
->>>>>> Sure. But the board is called an APQ8074 and we wanted to keep the naming consistent with that.
->>>>> If we do this we should use qcom, not msm as the prefix.  Match the device tree vendor prefix.
+Hi Rafael
 
-Coming back to this, it would be better if the naming to be consistent 
-with what we call our ARCH - msm and not qcom.
-msm8974-dragonboard signifies quite clearly what the board is.
+On Mon, 9 Sep 2013, Rafael J. Wysocki wrote:
 
->>>> <snip> 
+> Hi,
+> 
+> On Monday, September 09, 2013 05:11:10 PM Guennadi Liakhovetski wrote:
+> > Sorry guys, I'm trying my best to stop this patch from propagating to 
+> > stable and to get it fixed asap, so, the CC list might be a bit excessive. 
+> > Also trying to fix the originally spare cc list, which makes it impossible 
+> > for me to reply to the original thread, instead have to start a new one.
+> 
+> I'm not sure what you're talking about.  What exactly was wrong with the
+> original CC list in particular?
 
+I think you advised once to cc cpufreq related mails to linux-pm too at 
+least. I haven't found this patch in my pm archive, have I missed it 
+there?
 
-Thanks,
-Rohit Vaswani
+> > Commit
+> > 
+> > commit dceff5ce18801dddc220d6238628619c93bc3cb6
+> > Author: Viresh Kumar <viresh.kumar@linaro.org>
+> > Date:   Sun Sep 1 22:19:37 2013 +0530
+> > 
+> >     cpufreq: fix serialization issues with freq change notifiers
+> > 
+> > breaks .transition_ongoing counting.
+> 
+> Do you know how exactly it breaks that?  If so, care to share that knowledge?
 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, hosted by The Linux Foundation
+No, I don't. I only know that in __cpufreq_driver_target() the check for
 
+	if (policy->transition_ongoing) {
+		write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+		return -EBUSY;
+	}
+
+is failing with this patch and cpufreq-cpu0.
+
+> > This leads to cpufreq-cpu0 not working any more. In particular switching the
+> > governor from performance to powersave directly after boot doesn't result in
+> > a frequency switch any more. Reverting this patch fixes the problem again.
+> 
+> However, this is a regression fix, so I'd prefer to fix the problem on top of
+> it instead of reverting this commit entirely.
+
+If I understood correctly, this patch fixed some warnings, that, however, 
+didn't disrupt functionality, is this right? Whereas the patch really 
+seems to break working set ups.
+
+Anyway, we know about the problem now and I believe it'll get fixed one 
+way or another.
+
+Thanks
+Guennadi
+
+> > Tested with today's 
+> > -next.
+> > 
+> > Please, refrain from including into "stable" until clarified!
+> 
+> Well, dropping the commit altogether and dropping the "CC stable" tag are
+> equally disruptive at this point, so I think I'll just defer all of the
+> cpufreq fixes I wanted to push for 3.12 before the ending of the merge
+> window.
+> 
+> Thanks,
+> Rafael
+> 
+
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
