@@ -1,95 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779Ab3IIObw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 10:31:52 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:14654 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237Ab3IIObt (ORCPT
+	id S1753919Ab3IIOcU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 10:32:20 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:37674 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753851Ab3IIOcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 10:31:49 -0400
-Message-ID: <522DDBC8.8020201@hp.com>
-Date: Mon, 09 Sep 2013 10:31:36 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Mon, 9 Sep 2013 10:32:18 -0400
+Message-ID: <522DDBED.2020505@openvz.org>
+Date: Mon, 09 Sep 2013 18:32:13 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130823 Firefox/10.0.11esrpre Iceape/2.7.12
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        George Spelvin <linux@horizon.com>, John Stoffel <john@stoffel.org>
-Subject: Re: [PATCH v3 1/1] dcache: Translating dentry into pathname without
- taking rename_lock
-References: <1378483738-10129-1-git-send-email-Waiman.Long@hp.com> <1378483738-10129-2-git-send-email-Waiman.Long@hp.com> <CA+55aFw8UuEmKsSdGZPUmcekZheNimEt4U81i7Bz0LipGzsFmg@mail.gmail.com> <20130906210546.GW13318@ZenIV.linux.org.uk> <CA+55aFzf-reQNSQt_fhHfUe_tB19n2qEa=Rd=wFEBJEVALmezA@mail.gmail.com> <20130907000044.GX13318@ZenIV.linux.org.uk> <CA+55aFwy_x65HaLOgKuK7AyQayraU4M6q78L_hnAvLg1NSgTpw@mail.gmail.com> <CA+55aFzwederWB135Ch+PjijjrN-kz9UKw+obC4+M_+xq648PA@mail.gmail.com> <20130907030110.GY13318@ZenIV.linux.org.uk> <CA+55aFyJ8CvfYzh8LFRY_6tx+GgzVfps1hSwJeSUz=G=FrsgkQ@mail.gmail.com> <20130907180724.GE13318@ZenIV.linux.org.uk>
-In-Reply-To: <20130907180724.GE13318@ZenIV.linux.org.uk>
+To: Luiz Capitulino <lcapitulino@redhat.com>
+CC: linux-kernel@vger.kernel.org, oleg@redhat.com, eparis@redhat.com,
+        akpm@linux-foundation.org, rgb@redhat.com
+Subject: Re: [RFC] audit: avoid soft lockup in audit_log_start()
+References: <20130828182114.6b67ea90@redhat.com>
+In-Reply-To: <20130828182114.6b67ea90@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/2013 02:07 PM, Al Viro wrote:
-> On Sat, Sep 07, 2013 at 10:52:02AM -0700, Linus Torvalds wrote:
+Luiz Capitulino wrote:
+> I'm getting the following soft lockup:
 >
->> So I think we could make a more complicated data structure that looks
->> something like this:
->>
->>     struct seqlock_retry {
->>        unsigned int seq_no;
->>        int state;
->>     };
->>
->> and pass that around. Gcc should do pretty well, especially if we
->> inline things (but even if not, small structures that fit in 64 bytes
->> generate reasonable code even on 32-bit targets, because gcc knows
->> about using two registers for passing data around)..
->>
->> Then you can make "state" have a retry counter in it, and have a
->> negative value mean "I hold the lock for writing". Add a couple of
->> helper functions, and you can fairly easily handle the mixed "try for
->> reading first, then fall back to writing".
->>
->> That said, __d_lookup() still shows up as very performance-critical on
->> some loads (symlinks in particular cause us to fall out of the RCU
->> cases) so I'd like to keep that using the simple pure read case. I
->> don't believe you can livelock it, as mentioned. But the other ones
->> might well be worth moving to a "fall back to write-locking after<n>
->> tries" model. They might all traverse user-specified paths of fairly
->> arbitrary depth, no?
->>
->> So this "seqlock_retry" thing wouldn't _replace_ bare seqlocks, it
->> would just be a helper thing for this kind of behavior where we want
->> to normally do things with just the read-lock, but want to guarantee
->> that we don't live-lock.
->>
->> Sounds reasonable?
-> More or less; I just wonder if we are overdesigning here - if we don't
-> do "repeat more than once", we can simply use the lower bit of seq -
-> read_seqlock() always returns an even value.  So we could do something
-> like seqretry_and_lock(lock,&seq):
-> 	if ((*seq&  1) || !read_seqretry(lock, *seq))
-> 		return true;
-> 	*seq |= 1;
-> 	write_seqlock(lock);
-> 	return false;
-> and seqretry_done(lock, seq):
-> 	if (seq&  1)
-> 		write_sequnlock(lock);
-> with these loops turning into
-> 	seq = read_seqlock(&rename_lock);
-> 	...
-> 	if (!seqretry_and_lock(&rename_lock,&seq))
-> 		goto again;
-> 	...
-> 	seqretry_done(&rename_lock);
+> CPU: 6 PID: 2278 Comm: killall5 Tainted: GF            3.11.0-rc7+ #1
+> Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+>   0000000000000099 ffff88011fd83de8 ffffffff815324df 0000000000002800
+>   ffffffff817d48f9 ffff88011fd83e68 ffffffff8152e669 ffff88011fd83e68
+>   ffffffff00000008 ffff88011fd83e78 ffff88011fd83e18 0000004081dac040
+> Call Trace:
+>   <IRQ>   [<ffffffff815324df>] dump_stack+0x46/0x58
+>   [<ffffffff8152e669>] panic+0xbb/0x1c4
+>   [<ffffffff810d03c3>] watchdog_timer_fn+0x163/0x170
+>   [<ffffffff8106c691>] __run_hrtimer+0x81/0x1c0
+>   [<ffffffff810d0260>] ? watchdog+0x30/0x30
+>   [<ffffffff8106cea7>] hrtimer_interrupt+0x107/0x240
+>   [<ffffffff8102f61b>] local_apic_timer_interrupt+0x3b/0x60
+>   [<ffffffff81542465>] smp_apic_timer_interrupt+0x45/0x60
+>   [<ffffffff8154124a>] apic_timer_interrupt+0x6a/0x70
+>   <EOI>   [<ffffffff810c2f5f>] ? audit_log_start+0xbf/0x430
+>   [<ffffffff810c2fe7>] ? audit_log_start+0x147/0x430
+>   [<ffffffff81079030>] ? try_to_wake_up+0x2a0/0x2a0
+>   [<ffffffff810c86be>] audit_log_exit+0x6ae/0xc30
+>   [<ffffffff81188662>] ? __alloc_fd+0x42/0x100
+>   [<ffffffff810c98e7>] __audit_syscall_exit+0x257/0x2b0
+>   [<ffffffff81540794>] sysret_audit+0x17/0x21
+>
+> The reproducer is somewhat unusual:
+>
+>   1. Install RHEL6.5 (maybe a similar older user-space will do)
+>   2. Boot the just installed system
+>   3. In this first boot you'll meet the firstboot script, which
+>      will do some setup and (depending on your answers) it will
+>      reboot the machine
+>   4. During that first reboot the system hangs while terminating
+>      all processes:
+>
+>         Sending all processes the TERM signal...
+>
+>      It's when the soft lockup above happens. And yes, I managed
+>      to get this with latest upstream kernel (HEAD fa8218def1b1)
+>
+> I'm reproducing it on a VM, but the first report was on bare-metal.
+>
+> This is what is happening:
+>
+>   1. audit_log_start() is called
+>   2. As we have SKBs waiting in audit_skb_queue and all conditions
+>      evaluate to true, we sleep in wait_for_auditd()
+>   3. Go to 2, until sleep_time gets negative and audit_log_start()
+>      just busy-waits
+>
+> Now, *why* this is happening is a mistery to me. I tried debugging
+> it, but all I could find is that at some point the kauditd thread
+> never wakes up after having called schedule(). I even tried waking
+> it up before calling wait_for_auditd(), but it didn't.
 
-I am fine with try it once and then lock instead of trying it a few 
-times. Now are you planning to have these helper functions for the 
-dcache layer only or as part of the seqlock infrastructure? If we are 
-going to touch the seqlock layer, I would suggest adding a blocking 
-reader that takes the lock, but won't update the sequence number so that 
-it won't block other sequence readers as my original seqlock patch was 
-doing.
+We run into the same problem in rhel6 kernel.
 
--Longman
+"readahead-collector" uses audit interface and sometimes stuck in 'stopped' state.
+
+After commit 829199197a430dade2519d54f5545c4a094393b8
+(which was backported by RH into their kernel)
+audit emiters will block forever if userspace daemon cannot handle backlog.
+That commit just breaks timeout condition, after timeout waiting loop turns
+into busy loop until deamon dies or returns back to work.
+
+this trivial patch should fix that problem
+
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -1215,9 +1215,10 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
+
+                         sleep_time = timeout_start + audit_backlog_wait_time -
+                                         jiffies;
+-                       if ((long)sleep_time > 0)
++                       if ((long)sleep_time > 0) {
+                                 wait_for_auditd(sleep_time);
+-                       continue;
++                               continue;
++                       }
+                 }
+                 if (audit_rate_check() && printk_ratelimit())
+                         printk(KERN_WARNING
+
+>
+> This patch is a RFC because it doesn't actually fix anything. It
+> just bails out before we busy-wait. Which is better than nothing,
+> but the system will still give a long pause when terminating all
+> processes. Besides, we risk papering over the real bug...
+>
+> Signed-off-by: Luiz Capitulino<lcapitulino@redhat.com>
+> ---
+>   kernel/audit.c | 9 ++++-----
+>   1 file changed, 4 insertions(+), 5 deletions(-)
+>
+> diff --git a/kernel/audit.c b/kernel/audit.c
+> index 91e53d0..33e9c4c 100644
+> --- a/kernel/audit.c
+> +++ b/kernel/audit.c
+> @@ -1097,6 +1097,7 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
+>   	unsigned int		uninitialized_var(serial);
+>   	int reserve;
+>   	unsigned long timeout_start = jiffies;
+> +	unsigned long sleep_time;
+>
+>   	if (audit_initialized != AUDIT_INITIALIZED)
+>   		return NULL;
+> @@ -1112,13 +1113,11 @@ struct audit_buffer *audit_log_start(struct audit_context *ctx, gfp_t gfp_mask,
+>
+>   	while (audit_backlog_limit
+>   	&&  skb_queue_len(&audit_skb_queue)>  audit_backlog_limit + reserve) {
+> -		if (gfp_mask&  __GFP_WAIT&&  audit_backlog_wait_time) {
+> -			unsigned long sleep_time;
+> -
+>   			sleep_time = timeout_start + audit_backlog_wait_time -
+>   					jiffies;
+> -			if ((long)sleep_time>  0)
+> -				wait_for_auditd(sleep_time);
+> +		if (gfp_mask&  __GFP_WAIT&&  audit_backlog_wait_time
+> +			&&  sleep_time>  0) {
+> +			wait_for_auditd(sleep_time);
+>   			continue;
+>   		}
+>   		if (audit_rate_check()&&  printk_ratelimit())
+
