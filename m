@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755404Ab3IITL1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 15:11:27 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:46012 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753996Ab3IITLZ (ORCPT
+	id S1754989Ab3IITRb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 15:17:31 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:41099 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750887Ab3IITR2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 15:11:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130909172232.GA10029@kroah.com>
-References: <1378688580-11935-1-git-send-email-linux@roeck-us.net>
-	<20130909015945.GA4029@kroah.com>
-	<20130909134012.GA24738@infradead.org>
-	<20130909163902.GA28685@kroah.com>
-	<20130909170819.GA22764@roeck-us.net>
-	<20130909172232.GA10029@kroah.com>
-Date: Mon, 9 Sep 2013 21:11:25 +0200
-X-Google-Sender-Auth: Omb9CP_7ZJ9AaAxFBjMrmHvpFVQ
-Message-ID: <CAMuHMdWwFwWeenfsiF+yBYS29rwJTJ1YP5waf=ePK+MRCru3qg@mail.gmail.com>
-Subject: Re: [PATCH] staging: Disable lustre file system for MIPS, SH, and XTENSA
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: Guenter Roeck <linux@roeck-us.net>, Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        driverdevel <devel@driverdev.osuosl.org>, Peng Tao <tao.peng@emc.com>,
-        Peng Tao <bergwolf@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 9 Sep 2013 15:17:28 -0400
+Subject: Re: [PATCHv3 1/2] ARM: msm: Add support for APQ8074 Dragonboard
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=US-ASCII
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <522E09E6.8040300@codeaurora.org>
+Date: Mon, 9 Sep 2013 14:17:27 -0500
+Cc: Olof Johansson <olof@lixom.net>, David Brown <davidb@codeaurora.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Content-Transfer-Encoding: 7BIT
+Message-Id: <FFE100A7-8AD6-4E0D-9F64-120DA3564F89@codeaurora.org>
+References: <1378495943-2572-1-git-send-email-rvaswani@codeaurora.org> <20130906215051.GA29253@quad.lixom.net> <522E09E6.8040300@codeaurora.org>
+To: Rohit Vaswani <rvaswani@codeaurora.org>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 9, 2013 at 7:22 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Mon, Sep 09, 2013 at 10:08:19AM -0700, Guenter Roeck wrote:
->> On Mon, Sep 09, 2013 at 09:39:02AM -0700, Greg Kroah-Hartman wrote:
->> > On Mon, Sep 09, 2013 at 06:40:12AM -0700, Christoph Hellwig wrote:
->> > > On Sun, Sep 08, 2013 at 06:59:45PM -0700, Greg Kroah-Hartman wrote:
->> > > > Can't we just export the functions for those arches?  Surely lutre
->> > > > isn't the first/only driver that needs this?
->> > >
->> > > Lustre is.  These are core mm helpers, and lustre uses them to
->> > > reimplement another core VM function.  It then uses it to access
->> > > userspace environment variable.
->> > >
->> > > In short all this code should be nuked, and no new symbols should be
->> > > exported.
->> >
->> > Ugh, you are right, the lustre code needs to be fixed here.
->> >
->> Given that, should I send another patch marking it as BROKEN again ?
->
-> Well, on those arches it's "broken", so I'll dig up your original patch
-> on this thread.  It's just "normal" for staging drivers to duplicate
-> core code, it needs to be fixed up before it can be merged into the
-> kernel tree, so no need to do anything special.
 
-It's not only broken on MIPS, SH, and XTENSA, but also on at least parisc
-and m68k[*].
+On Sep 9, 2013, at 12:48 PM, Rohit Vaswani wrote:
 
-It's no longer broken on sparc64, as the missing export already got
-into mainline.
-In light of the above, perhaps that should be reverted?
+> On 9/6/2013 2:50 PM, Olof Johansson wrote:
+>> Hi,
+>> 
+>> Some comments below.
+>> 
+>> On Fri, Sep 06, 2013 at 12:32:22PM -0700, Rohit Vaswani wrote:
+>>> This patch adds basic board support for APQ8074 Dragonboard
+>>> <snip>
+>>>  dtb-$(CONFIG_ARCH_MSM) += msm8660-surf.dtb \
+>>> -	msm8960-cdp.dtb
+>>> +	msm8960-cdp.dtb \
+>>> +	apq8074-dragonboard.dtb
+>> Please add boards alphabetically.
+> Will do.
+>> 
+>>>  dtb-$(CONFIG_ARCH_MVEBU) += armada-370-db.dtb \
+>>>  	armada-370-mirabox.dtb \
+>>>  	armada-370-rd.dtb \
+>>> diff --git a/arch/arm/boot/dts/apq8074-dragonboard.dts b/arch/arm/boot/dts/apq8074-dragonboard.dts
+>>> new file mode 100644
+>>> index 0000000..5b7b6a0
+>>> --- /dev/null
+>>> +++ b/arch/arm/boot/dts/apq8074-dragonboard.dts
+>> arch/arm/boot/dts/ is getting really crowded. It's been working best if the SoC
+>> family or vendor is used as a prefix to keep things a bit more organized. In
+>> that spirit, prefixing these with msm-<foo> makes sense. Can you please do so?
+> 
+> Sure. But the board is called an APQ8074 and we wanted to keep the naming consistent with that.
 
-[*] Why does m68k allmodconfig still succeed on kissb???
-    It does fail for me, as m68k's copy_from_user_page() calls
-    flush_icache_user_range(), which is not exported.
+If we do this we should use qcom, not msm as the prefix.  Match the device tree vendor prefix.
 
-Gr{oetje,eeting}s,
+- k
 
-                        Geert
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
