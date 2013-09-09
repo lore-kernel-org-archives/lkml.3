@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755393Ab3IIStO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 14:49:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:57110 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755265Ab3IISpX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755301Ab3IISpX (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 9 Sep 2013 14:45:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57056 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750879Ab3IISpV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 14:45:21 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 06/24] iwl4965: fix rfkill set state regression
-Date: Mon,  9 Sep 2013 11:44:56 -0700
-Message-Id: <1378752314-2416-7-git-send-email-kamal@canonical.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 10/24] lparcfg: don't bother saving pointer to proc_dir_entry
+Date: Mon,  9 Sep 2013 11:45:00 -0700
+Message-Id: <1378752314-2416-11-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378752314-2416-1-git-send-email-kamal@canonical.com>
 References: <1378752314-2416-1-git-send-email-kamal@canonical.com>
@@ -28,43 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit b2fcc0aee58a3435566dd6d8501a0b355552f28b upstream.
+commit b177a29251081576df35cfbcb0f7d7c80deceb8b upstream.
 
-My current 3.11 fix:
-
-commit 788f7a56fce1bcb2067b62b851a086fca48a0056
-Author: Stanislaw Gruszka <sgruszka@redhat.com>
-Date:   Thu Aug 1 12:07:55 2013 +0200
-
-    iwl4965: reset firmware after rfkill off
-
-broke rfkill notification to user-space . I missed that bug, because
-I compiled without CONFIG_RFKILL, sorry about that.
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+[ kamal: 3.8.y-stable prereq for:
+  "f5f6cbb powerpc: Don't Oops when accessing /proc/powerpc/lparcfg without" ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/iwlegacy/4965-mac.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/kernel/lparcfg.c | 11 ++---------
+ 1 file changed, 2 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/net/wireless/iwlegacy/4965-mac.c b/drivers/net/wireless/iwlegacy/4965-mac.c
-index fdab4fc..0c63fa8 100644
---- a/drivers/net/wireless/iwlegacy/4965-mac.c
-+++ b/drivers/net/wireless/iwlegacy/4965-mac.c
-@@ -4417,9 +4417,9 @@ il4965_irq_tasklet(struct il_priv *il)
- 			set_bit(S_RFKILL, &il->status);
- 		} else {
- 			clear_bit(S_RFKILL, &il->status);
--			wiphy_rfkill_set_hw_state(il->hw->wiphy, hw_rf_kill);
- 			il_force_reset(il, true);
- 		}
-+		wiphy_rfkill_set_hw_state(il->hw->wiphy, hw_rf_kill);
+diff --git a/arch/powerpc/kernel/lparcfg.c b/arch/powerpc/kernel/lparcfg.c
+index f5725bc..801a757 100644
+--- a/arch/powerpc/kernel/lparcfg.c
++++ b/arch/powerpc/kernel/lparcfg.c
+@@ -41,8 +41,6 @@
  
- 		handled |= CSR_INT_BIT_RF_KILL;
+ /* #define LPARCFG_DEBUG */
+ 
+-static struct proc_dir_entry *proc_ppc64_lparcfg;
+-
+ /*
+  * Track sum of all purrs across all processors. This is used to further
+  * calculate usage values by different applications
+@@ -688,27 +686,22 @@ static const struct file_operations lparcfg_fops = {
+ 
+ static int __init lparcfg_init(void)
+ {
+-	struct proc_dir_entry *ent;
+ 	umode_t mode = S_IRUSR | S_IRGRP | S_IROTH;
+ 
+ 	/* Allow writing if we have FW_FEATURE_SPLPAR */
+ 	if (firmware_has_feature(FW_FEATURE_SPLPAR))
+ 		mode |= S_IWUSR;
+ 
+-	ent = proc_create("powerpc/lparcfg", mode, NULL, &lparcfg_fops);
+-	if (!ent) {
++	if (!proc_create("powerpc/lparcfg", mode, NULL, &lparcfg_fops)) {
+ 		printk(KERN_ERR "Failed to create powerpc/lparcfg\n");
+ 		return -EIO;
  	}
+-
+-	proc_ppc64_lparcfg = ent;
+ 	return 0;
+ }
+ 
+ static void __exit lparcfg_cleanup(void)
+ {
+-	if (proc_ppc64_lparcfg)
+-		remove_proc_entry("lparcfg", proc_ppc64_lparcfg->parent);
++	remove_proc_subtree("powerpc/lparcfg", NULL);
+ }
+ 
+ module_init(lparcfg_init);
 -- 
 1.8.1.2
 
