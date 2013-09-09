@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752377Ab3IINMy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:12:54 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35520 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751178Ab3IINMx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 09:12:53 -0400
-Message-ID: <522DC944.80802@ti.com>
-Date: Mon, 9 Sep 2013 09:12:36 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1751726Ab3IINQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:16:57 -0400
+Received: from outbound-mail04.westnet.com.au ([203.10.1.245]:29615 "EHLO
+	outbound-mail04.westnet.com.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751012Ab3IINQx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 09:16:53 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvYCACnJLVKVhxBY/2dsb2JhbAANToM/g3uqMpQ4gTiDGQEBAQMBIxUWKgEQCxgCAgUWCwICCQMCAQIBHyYGCAUBBQIBARkEh1sSsid0kSKBKYtygmUHgmmBNAOZJJNp
+X-IronPort-AV: E=Sophos;i="4.90,866,1371052800"; 
+   d="scan'208";a="120910622"
+X-WN-REMOTEIP: 149.135.16.88
+X-WN-ENVELOPESENDER: gerg@uclinux.org
+X-WN-MID: 120910622
+X-WN-SMTPAUTHID: gregungerer@westnet.com.au
+Message-ID: <522DCA39.4090505@uclinux.org>
+Date: Mon, 09 Sep 2013 23:16:41 +1000
+From: Greg Ungerer <gerg@uclinux.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Regid Ichira <regid23@nt1.in>
-CC: Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] typo in drivers/thermal/Kconfig: lpatform instead of
- platform
-References: <20130908215853.GD8821@nt1.in>
-In-Reply-To: <20130908215853.GD8821@nt1.in>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="4uQTpUQIIEwSiOcpbiG4jweQDlUCenagu"
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Guenter Roeck <linux@roeck-us.net>, Ben Hutchings <ben@decadent.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>
+Subject: Re: [000/121] 3.2.51-rc1 review
+References: <lsq.1378608720.401499712@decadent.org.uk> <522C22DB.9080008@roeck-us.net> <CAMuHMdW6TGdfi+FH=hRWY_hhs5Cb5N9xV1OL0O9Dcs+PfXm2xA@mail.gmail.com>
+In-Reply-To: <CAMuHMdW6TGdfi+FH=hRWY_hhs5Cb5N9xV1OL0O9Dcs+PfXm2xA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---4uQTpUQIIEwSiOcpbiG4jweQDlUCenagu
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 08/09/13 18:18, Geert Uytterhoeven wrote:
+> On Sun, Sep 8, 2013 at 9:10 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> m68k-linux-ld: error: no memory region specified for loadable section
+>> `.note.gnu.build-id'
+>
+> I can't seem to find an explicit fix for that since v3.2.
+> Perhaps the fix is a side effect of f84f52a5c15db7d14a534815f27253b001735183
+> ("m68knommu: clean up linker script").
+>
+> Greg, any idea?
 
-On 08-09-2013 17:58, Regid Ichira wrote:
-> Applied to the HEAD of linux.git,
->                        VERSION =3D 3 PATCHLEVEL =3D 11 SUBLEVEL =3D 0
-> Signed-off-by: Regid Ichira <regid23@nt1.in>
+Looks like Guenter found follow up patches that fix it. I don't recall
+this specific change breaking like this at the time though.
 
-Acked-by: Eduardo Valentin <eduardo.valentin@ti.com>
-
-> ---
->  drivers/thermal/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-> index e988c81..3f99f79 100644
-> --- a/drivers/thermal/Kconfig
-> +++ b/drivers/thermal/Kconfig
-> @@ -47,7 +47,7 @@ config THERMAL_DEFAULT_GOV_USER_SPACE
->  	select THERMAL_GOV_USER_SPACE
->  	help
->  	  Select this if you want to let the user space manage the
-> -	  lpatform thermals.
-> +	  platform thermals.
-> =20
->  endchoice
-> =20
->=20
+Regards
+Greg
 
 
---=20
-You have got to be excited about what you are doing. (L. Lamport)
+>> Details are at http://server.roeck-us.net:8010/builders.
+>
+> Gr{oetje,eeting}s,
+>
+>                          Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                  -- Linus Torvalds
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-m68k" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-Eduardo Valentin
-
-
---4uQTpUQIIEwSiOcpbiG4jweQDlUCenagu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlItyU0ACgkQCXcVR3XQvP3tiwD+PR2QkwFSEajaklUzzwOnbhh8
-t4x7hc33ycSsMOecwTYA/jPj3BMooALrMS6xHBw2KT6jKXPyAD+kxfPmqDabuINO
-=tJcI
------END PGP SIGNATURE-----
-
---4uQTpUQIIEwSiOcpbiG4jweQDlUCenagu--
