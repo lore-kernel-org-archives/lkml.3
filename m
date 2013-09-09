@@ -1,97 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755410Ab3IIQFG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 12:05:06 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:42605 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753713Ab3IIQFC (ORCPT
+	id S1755400Ab3IIQFE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 12:05:04 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:65120 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755228Ab3IIQEA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 12:05:02 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v2] of/platform: add error reporting to of_amba_device_create()
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <2891140.lVrJfIiCi5@amdc1032>
-References: <2891140.lVrJfIiCi5@amdc1032>
-Date: Mon, 09 Sep 2013 17:05:03 +0100
-Message-Id: <20130909160503.6F9C13E0F23@localhost>
+	Mon, 9 Sep 2013 12:04:00 -0400
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+To: linux-kernel@vger.kernel.org
+Cc: Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+Subject: [PATCH/RFC 4/4] ARM: shmobile: lager: add CPUFreq support
+Date: Mon,  9 Sep 2013 18:03:56 +0200
+Message-Id: <1378742636-11215-5-git-send-email-g.liakhovetski@gmx.de>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1378742636-11215-1-git-send-email-g.liakhovetski@gmx.de>
+References: <1378742636-11215-1-git-send-email-g.liakhovetski@gmx.de>
+X-Provags-ID: V02:K0:cmfGUwTpAvR6x3LgZiAk6urQRpbGv3ihbAkbkOEKTj8
+ Xuscer9qNXky8RtP1Hew49cXYNtbUdL4Mj6iXZicXfAKPkNpdl
+ spVbnFhBlZyBFqJcieJ/erTIhn2X5jGeuyER2RtbB9djwkhtif
+ cbuioLM3IKjx2eVqgYfY4AwoyAvy6ZlSsXOqGJ0HoIolh9qBJQ
+ nejr9EFYOsW8aht0QnRALEjOngZz7pXBdTqpZY16cJJNBTw/aB
+ JBEaZcUnnPWOSRrHDrNkDRcoyZpxlaEi9X7Bi8wIPGDqqzXrWm
+ ibfm5jf1QujizzAw4qwNOFWlyzW7BwDUfRXnbsGBDKzcICsiSw
+ HJQnWNl2MCyEzX1bgpaYYOIdLZJlyqKGQOe+x/y5fXD1Y1znSY
+ ZIbirTwFIAV8A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Aug 2013 13:17:29 +0200, Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com> wrote:
-> Add error reporting to of_amba_device_create() so the user knows
-> when (and why) some device tree nodes fail to initialize.
-> 
-> [ The issue was spotted on Universal C210 board (using revision 0 of
->   ARM Exynos4210 SoC) on which initialization was silently failing
->   for PL330 MDMA1 device tree node (it was using the wrong addres
->   resulting in amba_device_add() returning -ENODEV). ]
-> 
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+The Lager board uses a DA9210 voltage regulator to supply DVFS power to the
+CA15 cores on the r8a7790 SoC. This patch adds CPUFreq support for that
+board using the cpufreq-cpu0 driver.
 
-Applied, thanks
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+---
 
-g.
+This patch is marked as RFC, because so far I don't have data about r8a7790
+valid OPPs. The Lager system boots with 1.3GHz, supplying 1.0V to SoC's
+DVFS. Apart from that I don't have information what voltage is required for
+other clock frequencies. Here I'm using a "safe guess" of 0.95V for 700MHz,
+but we might either wait with this patch until exact data is available, or
+actually commit these values - this can be decided.
 
-> ---
-> v2:
-> * don't change the return value
-> * don't change the user of of_amba_device_create()
-> 
->  drivers/of/platform.c |   19 ++++++++++++++++---
->  1 file changed, 16 insertions(+), 3 deletions(-)
-> 
-> Index: b/drivers/of/platform.c
-> ===================================================================
-> --- a/drivers/of/platform.c	2013-08-29 17:04:38.227921054 +0200
-> +++ b/drivers/of/platform.c	2013-08-30 13:13:31.202813954 +0200
-> @@ -268,8 +268,11 @@ static struct amba_device *of_amba_devic
->  		return NULL;
->  
->  	dev = amba_device_alloc(NULL, 0, 0);
-> -	if (!dev)
-> +	if (!dev) {
-> +		pr_err("%s(): amba_device_alloc() failed for %s\n",
-> +		       __func__, node->full_name);
->  		return NULL;
-> +	}
->  
->  	/* setup generic device info */
->  	dev->dev.coherent_dma_mask = ~0;
-> @@ -294,12 +297,18 @@ static struct amba_device *of_amba_devic
->  		dev->irq[i] = irq_of_parse_and_map(node, i);
->  
->  	ret = of_address_to_resource(node, 0, &dev->res);
-> -	if (ret)
-> +	if (ret) {
-> +		pr_err("%s(): of_address_to_resource() failed (%d) for %s\n",
-> +		       __func__, ret, node->full_name);
->  		goto err_free;
-> +	}
->  
->  	ret = amba_device_add(dev, &iomem_resource);
-> -	if (ret)
-> +	if (ret) {
-> +		pr_err("%s(): amba_device_add() failed (%d) for %s\n",
-> +		       __func__, ret, node->full_name);
->  		goto err_free;
-> +	}
->  
->  	return dev;
->  
-> @@ -378,6 +387,10 @@ static int of_platform_bus_create(struct
->  	}
->  
->  	if (of_device_is_compatible(bus, "arm,primecell")) {
-> +		/*
-> +		 * Don't return an error here to keep compatibility with older
-> +		 * device tree files.
-> +		 */
->  		of_amba_device_create(bus, bus_id, platform_data, parent);
->  		return 0;
->  	}
-> 
+ arch/arm/boot/dts/r8a7790-lager-reference.dts  |   32 ++++++++++++++++++++++++
+ arch/arm/mach-shmobile/board-lager-reference.c |    4 ++-
+ 2 files changed, 35 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/boot/dts/r8a7790-lager-reference.dts b/arch/arm/boot/dts/r8a7790-lager-reference.dts
+index c462ef1..7a41419 100644
+--- a/arch/arm/boot/dts/r8a7790-lager-reference.dts
++++ b/arch/arm/boot/dts/r8a7790-lager-reference.dts
+@@ -43,3 +43,35 @@
+ 		};
+ 	};
+ };
++
++&i2c3 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&i2c3_pins>;
++
++	vdd_dvfs: da9210@68 {
++		compatible = "diasemi,da9210";
++		reg = <0x68>;
++
++		regulator-min-microvolt = <900000>;
++		regulator-max-microvolt = <1000000>;
++		regulator-boot-on;
++		regulator-always-on;
++	};
++};
++
++&cpu0 {
++	cpu0-supply = <&vdd_dvfs>;
++	operating-points = <
++		/* kHz  uV - OPs unknown yet */
++		1300000 1000000
++		 700000  950000
++	>;
++	voltage-tolerance = <1>; /* 1% */
++};
++
++&pfc {
++	i2c3_pins: i2c3 {
++		renesas,groups = "i2c3";
++		renesas,function = "i2c3";
++	};
++};
+diff --git a/arch/arm/mach-shmobile/board-lager-reference.c b/arch/arm/mach-shmobile/board-lager-reference.c
+index 9c316a1..442d854 100644
+--- a/arch/arm/mach-shmobile/board-lager-reference.c
++++ b/arch/arm/mach-shmobile/board-lager-reference.c
+@@ -20,6 +20,7 @@
+ 
+ #include <linux/init.h>
+ #include <linux/of_platform.h>
++#include <linux/platform_device.h>
+ #include <mach/r8a7790.h>
+ #include <asm/mach/arch.h>
+ 
+@@ -29,7 +30,8 @@ static void __init lager_add_standard_devices(void)
+ 	r8a7790_clock_init();
+ 
+ 	r8a7790_add_dt_devices();
+-        of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
++	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
++	platform_device_register_simple("cpufreq-cpu0", -1, NULL, 0);
+ }
+ 
+ static const char *lager_boards_compat_dt[] __initdata = {
+-- 
+1.7.2.5
 
