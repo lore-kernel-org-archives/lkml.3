@@ -1,112 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753741Ab3IIOgJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 10:36:09 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10352 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752379Ab3IIOfg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 10:35:36 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=S4zrOkWr9coA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Zvybn3zlWHMA:10 a=VwQbUJbxAAAA:8 a=Dy9FSkG8L0gs_orUxm0A:9 a=U62fhAwekXMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130909143517.641735717@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 09 Sep 2013 10:35:17 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 00/16] 3.0.89-rt118-rc1 stable review
+	id S1753565Ab3IIOkE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 10:40:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51802 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752514Ab3IIOkB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 10:40:01 -0400
+Date: Mon, 9 Sep 2013 16:39:54 +0200
+From: Jan Kara <jack@suse.cz>
+To: Olof Johansson <olof@lixom.net>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux-Next <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>
+Subject: Re: linux-next: build warning after merge of the final tree (Linus'
+ tree related - vai vfs tree)
+Message-ID: <20130909143954.GE1612@quack.suse.cz>
+References: <20130906171916.41b5f48d1aaccca594d1e760@canb.auug.org.au>
+ <CAMuHMdXib30o3-70EuYj3to0==b7LfwPbivF9DaBrpHPejsDFg@mail.gmail.com>
+ <20130909032154.GA18168@quad.lixom.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130909032154.GA18168@quad.lixom.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun 08-09-13 20:21:54, Olof Johansson wrote:
+> On Fri, Sep 06, 2013 at 10:52:52AM +0200, Geert Uytterhoeven wrote:
+> > On Fri, Sep 6, 2013 at 9:19 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > > After merging the final tree, today's linux-next build (arm defconfig)
+> > > produced this warning:
+> > >
+> > > fs/direct-io.c: In function 'sb_init_dio_done_wq':
+> > > fs/direct-io.c:557:2: warning: value computed is not used [-Wunused-value]
+> > >
+> > > This is:
+> > >
+> > >         cmpxchg(&sb->s_dio_done_wq, NULL, wq);
+> > >
+> > > Introduced by commit 7b7a8665edd8 ("direct-io: Implement generic deferred
+> > > AIO completions").
+> > 
+> > This happens for include/asm-generic/cmpxchg.h and several other
+> > arch-specific implementations that cast the return value of cmpxchg()
+> > like
+> > 
+> > #define cmpxchg(ptr, o, n)   ((__typeof__(*(ptr)))__cmpxchg(....
+> > 
+> > If the caller of cmpxchg() doesn't use the return value, we get a
+> > compiler warning,
+> > at least with some versions of gcc.
+> > 
+> > Any idea how to fix this once and for good?
+> 
+> Should it be fixed? Chances are that the caller needs to do actions
+> depending on if the change happened, and checking the value afterwards
+> is inherently racy.
+> 
+> For this specific fs/direct-io.c case it seems to be safe since the
+> workqueue is only ever set and never cleared, but it might still be a
+> good idea to do:
+  I'm not against this change - feel free to add my:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-Dear RT Folks,
+  to it and merge it. However I maintain there are valid usecases where you
+do not care about the return value so warning about it doesn't seem right.
+OTOH thinking about it some more I agree we have other precedents where
+sometimes-correct-often-bugs constructs are warned about and I can see how
+people can consider cmpxchg() to be that case. But in that case we should:
+  a) be consistent among architectures about the warning
+  b) comment at cmpxchg definition that you are supposed to check its
+     return value. If you really know what you are doing, you can cast the
+     return value to (void) and comment why it's safe.
 
-This is the RT stable review cycle of patch 3.0.89-rt118-rc1.
-
-Please scream at me if I messed something up. Please test the patches too.
-
-The -rc release will be uploaded to kernel.org and will be deleted when
-the final release is out. This is just a review release (or release candidate).
-
-The pre-releases will not be pushed to the git repository, only the
-final release is.
-
-If all goes well, this patch will be converted to the next main release
-on 9/12/2013.
-
-Enjoy,
-
--- Steve
-
-
-To build 3.0.89-rt118-rc1 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.89.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.89-rt118-rc1.patch.xz
-
-You can also build from 3.0.89-rt117 by applying the incremental patch:
-
-http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/incr/patch-3.0.89-rt117-rt118-rc1.patch.xz
-
-
-Changes from 3.0.89-rt117:
-
----
-
-
-Ivo Sieben (1):
-      genirq: Set irq thread to RT priority on creation
-
-Mike Galbraith (1):
-      x86/mce: fix mce timer interval
-
-Paul Gortmaker (1):
-      list_bl.h: make list head locking RT safe
-
-Sebastian Andrzej Siewior (4):
-      kernel/cpu: fix cpu down problem if kthread's cpu is going down
-      kernel/hotplug: restore original cpu mask oncpu/down
-      drm/i915: drop trace_i915_gem_ring_dispatch on rt
-      genirq: do not invoke the affinity callback via a workqueue
-
-Steven Rostedt (5):
-      sched/workqueue: Only wake up idle workers if not blocked on sleeping spin lock
-      rt,ntp: Move call to schedule_delayed_work() to helper thread
-      hwlat-detector: Update hwlat_detector to add outer loop detection
-      hwlat-detector: Use trace_clock_local if available
-      hwlat-detector: Use thread instead of stop machine
-
-Steven Rostedt (Red Hat) (2):
-      hwlat-detect/trace: Export trace_clock_local for hwlat-detector
-      Linux 3.0.89-rt118-rc1
-
-Uwe Kleine-König (1):
-      list_bl.h: fix it for for !SMP && !DEBUG_SPINLOCK
-
-Zhao Hongjiang (1):
-      timers: prepare for full preemption improve
-
-----
- arch/x86/kernel/cpu/mcheck/mce.c           |    4 +-
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |    2 +
- drivers/misc/hwlat_detector.c              |  117 +++++++++++++++++-----------
- include/linux/interrupt.h                  |    1 +
- include/linux/list_bl.h                    |   28 ++++++-
- kernel/cpu.c                               |   29 ++++++-
- kernel/irq/manage.c                        |   89 +++++++++++++++++++--
- kernel/sched.c                             |    4 +-
- kernel/time/ntp.c                          |   42 ++++++++++
- kernel/timer.c                             |    8 +-
- kernel/trace/trace_clock.c                 |    1 +
- localversion-rt                            |    2 +-
- 12 files changed, 264 insertions(+), 63 deletions(-)
+								Honza
+> 
+> 
+> ---8<----------8<----------8<----------8<----------8<----------8<----------8<--
+> 
+> From 7fdfa2da727aa9153a7df919c240abfe4f564d7a Mon Sep 17 00:00:00 2001
+> From: Olof Johansson <olof@lixom.net>
+> Date: Sun, 8 Sep 2013 20:12:57 -0700
+> Subject: [PATCH] direct-io: Use return from cmpxchg to decide of assignment happened
+> 
+> Not using the return value can in the generic case be racy, so it's better to
+> use the expected way of using that instead of comparing later.
+> 
+> This also resolved the warning caused on ARM and other architectures:
+> 
+> fs/direct-io.c: In function 'sb_init_dio_done_wq':
+> fs/direct-io.c:557:2: warning: value computed is not used [-Wunused-value]
+> 
+> Signed-off-by: Olof Johansson <olof@lixom.net>
+> ---
+>  fs/direct-io.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/direct-io.c b/fs/direct-io.c
+> index 1782023..0e04142 100644
+> --- a/fs/direct-io.c
+> +++ b/fs/direct-io.c
+> @@ -544,6 +544,7 @@ static inline int dio_bio_reap(struct dio *dio, struct dio_submit *sdio)
+>   */
+>  static int sb_init_dio_done_wq(struct super_block *sb)
+>  {
+> +	struct workqueue_struct *old;
+>  	struct workqueue_struct *wq = alloc_workqueue("dio/%s",
+>  						      WQ_MEM_RECLAIM, 0,
+>  						      sb->s_id);
+> @@ -552,9 +553,9 @@ static int sb_init_dio_done_wq(struct super_block *sb)
+>  	/*
+>  	 * This has to be atomic as more DIOs can race to create the workqueue
+>  	 */
+> -	cmpxchg(&sb->s_dio_done_wq, NULL, wq);
+> +	old = cmpxchg(&sb->s_dio_done_wq, NULL, wq);
+>  	/* Someone created workqueue before us? Free ours... */
+> -	if (wq != sb->s_dio_done_wq)
+> +	if (old)
+>  		destroy_workqueue(wq);
+>  	return 0;
+>  }
+> -- 
+> 1.7.10.4
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
