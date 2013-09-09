@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784Ab3IIPMG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 11:12:06 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:57505 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753691Ab3IIPMB (ORCPT
+	id S1753848Ab3IIPMN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 11:12:13 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:37659 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753238Ab3IIPMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 11:12:01 -0400
-Date: Mon, 9 Sep 2013 17:11:10 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Viresh Kumar <viresh.kumar@linaro.org>
-cc: Greg KH <greg@kroah.com>, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pm@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-sh@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>
-Subject: "cpufreq: fix serialization issues with freq change notifiers" breaks
- cpufreq too
-Message-ID: <Pine.LNX.4.64.1309091656200.6602@axis700.grange>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:l2YDQioCOBUK+atBI7jlFpj9Tvev5V+qhQiKAWm7eHs
- ANe/4gwdolnXez4EOnTm5Mhea+TufSLkxYxCi+T+uNQp1VT78M
- g5JePchret2kecBMhXfHH8kxBhbrfyXqcu+lKoawOc7OYrwndh
- 3b1Xb/IXuWjmHmHmuNTb0bnK0T4feYlJOwmMXLVrhoPQokkTOg
- s3AAjhPFn8ZQjh0+rcKiFdGM+uHhmLrMX1X+GydkZ6IpgCg80E
- Xp2t2a2VqTpXUx0B/NHs1/sKRqTd1ERl2oH8CGiQYnnp3dlQW4
- iRg0UY1TXoMQOOzU61g3oaE0dmveSsIWLmNbyU9Fj081bQn+2z
- DmYHtjS92/qs8XBPjiz7JVo2JyPbHCiupis75tuX55vjOVCczt
- LCh/1T4LGA4HA==
+	Mon, 9 Sep 2013 11:12:09 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        stefan.bader@canonical.com, stefano.stabellini@eu.citrix.com,
+        jeremy@goop.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 5/5] Revert "xen/spinlock: Disable IRQ spinlock (PV) allocation on PVHVM"
+Date: Mon,  9 Sep 2013 11:11:36 -0400
+Message-Id: <1378739496-17468-6-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1378739496-17468-1-git-send-email-konrad.wilk@oracle.com>
+References: <1378739496-17468-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry guys, I'm trying my best to stop this patch from propagating to 
-stable and to get it fixed asap, so, the CC list might be a bit excessive. 
-Also trying to fix the originally spare cc list, which makes it impossible 
-for me to reply to the original thread, instead have to start a new one.
+This reverts commit 70dd4998cb85f0ecd6ac892cc7232abefa432efb.
 
-Commit
+Now that the bugs have been resolved we can re-enable the
+PV ticketlock implementation under PVHVM Xen guests.
 
-commit dceff5ce18801dddc220d6238628619c93bc3cb6
-Author: Viresh Kumar <viresh.kumar@linaro.org>
-Date:   Sun Sep 1 22:19:37 2013 +0530
-
-    cpufreq: fix serialization issues with freq change notifiers
-
-breaks .transition_ongoing counting. This leads to cpufreq-cpu0 not 
-working any more. In particular switching the governor from performance to 
-powersave directly after boot doesn't result in a frequency switch any 
-more. Reverting this patch fixes the problem again. Tested with today's 
--next.
-
-Please, refrain from including into "stable" until clarified!
-
-Thanks
-Guennadi
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 ---
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+ arch/x86/xen/spinlock.c | 20 --------------------
+ 1 file changed, 20 deletions(-)
+
+diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
+index e1bff87..b3c1ee8 100644
+--- a/arch/x86/xen/spinlock.c
++++ b/arch/x86/xen/spinlock.c
+@@ -230,13 +230,6 @@ void xen_init_lock_cpu(int cpu)
+ 	WARN(per_cpu(lock_kicker_irq, cpu) >= 0, "spinlock on CPU%d exists on IRQ%d!\n",
+ 	     cpu, per_cpu(lock_kicker_irq, cpu));
+ 
+-	/*
+-	 * See git commit f10cd522c5fbfec9ae3cc01967868c9c2401ed23
+-	 * (xen: disable PV spinlocks on HVM)
+-	 */
+-	if (xen_hvm_domain())
+-		return;
+-
+ 	name = kasprintf(GFP_KERNEL, "spinlock%d", cpu);
+ 	irq = bind_ipi_to_irqhandler(XEN_SPIN_UNLOCK_VECTOR,
+ 				     cpu,
+@@ -256,13 +249,6 @@ void xen_init_lock_cpu(int cpu)
+ 
+ void xen_uninit_lock_cpu(int cpu)
+ {
+-	/*
+-	 * See git commit f10cd522c5fbfec9ae3cc01967868c9c2401ed23
+-	 * (xen: disable PV spinlocks on HVM)
+-	 */
+-	if (xen_hvm_domain())
+-		return;
+-
+ 	if (!xen_pvspin)
+ 		return;
+ 
+@@ -275,12 +261,6 @@ void xen_uninit_lock_cpu(int cpu)
+ 
+ void __init xen_init_spinlocks(void)
+ {
+-	/*
+-	 * See git commit f10cd522c5fbfec9ae3cc01967868c9c2401ed23
+-	 * (xen: disable PV spinlocks on HVM)
+-	 */
+-	if (xen_hvm_domain())
+-		return;
+ 
+ 	if (!xen_pvspin) {
+ 		printk(KERN_DEBUG "xen: PV spinlocks disabled\n");
+-- 
+1.8.3.1
+
