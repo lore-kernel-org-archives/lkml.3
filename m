@@ -1,130 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751171Ab3IIADV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 20:03:21 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49060 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751007Ab3IIADT (ORCPT
+	id S1751210Ab3IIAMn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 20:12:43 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39838 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835Ab3IIAMl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 20:03:19 -0400
-Date: Mon, 9 Sep 2013 01:03:00 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Waiman Long <Waiman.Long@hp.com>, Jeff Layton <jlayton@redhat.com>,
-        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
- update of refcount
-Message-ID: <20130909000300.GH13318@ZenIV.linux.org.uk>
-References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com>
- <1375758759-29629-2-git-send-email-Waiman.Long@hp.com>
- <CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
- <1377751465.4028.20.camel@pasglop>
- <20130829070012.GC27322@gmail.com>
- <CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
- <CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
- <CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
- <CA+55aFxEjDYhY3i6B2okMWZXFiiq7hibTdeOD+OHAhNA7=XV1A@mail.gmail.com>
+	Sun, 8 Sep 2013 20:12:41 -0400
+Message-ID: <522D1253.1000807@infradead.org>
+Date: Sun, 08 Sep 2013 17:12:03 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxEjDYhY3i6B2okMWZXFiiq7hibTdeOD+OHAhNA7=XV1A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Marco Stornelli <marco.stornelli@gmail.com>
+CC: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Vladimir Davydov <vdavydov@parallels.com>
+Subject: Re: [PATCH 01/19] pramfs: documentation
+References: <522AE0AD.5020204@gmail.com>
+In-Reply-To: <522AE0AD.5020204@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 08, 2013 at 02:45:32PM -0700, Linus Torvalds wrote:
+On 09/07/13 01:15, Marco Stornelli wrote:
+> Added pramfs documentation.
+> 
+> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+> ---
+>  Documentation/filesystems/pramfs.txt |  177 ++++++++++++++++++++++++++++++++++
+>  Documentation/filesystems/xip.txt    |    2 +
+>  MAINTAINERS                          |    9 ++
+>  3 files changed, 188 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/filesystems/pramfs.txt
+> 
+> diff --git a/Documentation/filesystems/pramfs.txt b/Documentation/filesystems/pramfs.txt
+> new file mode 100644
+> index 0000000..a61d7a0
+> --- /dev/null
+> +++ b/Documentation/filesystems/pramfs.txt
+> @@ -0,0 +1,177 @@
+> +
+> +PRAMFS Overview
+> +===============
+> +
+> +Many embedded systems have a block of non-volatile RAM separate from
+> +normal system memory, i.e. of which the kernel maintains no memory page
+> +descriptors. For such systems it would be beneficial to mount a
+> +fast read/write filesystem over this "I/O memory", for storing frequently
+> +accessed data that must survive system reboots and power cycles or volatile
+> +data avoiding to write on a disk or flash. An example usage might be system
+> +logs under /var/log or debug information of a flight-recorder.
+> +
+> +Linux traditionally had no support for a persistent, non-volatile RAM-based
+> +filesystem, persistent meaning the filesystem survives a system reboot
 
-> But that test never triggered any of my thinking, and it's racy
-> anyway, and the condition we care about is another race, which means
-> that it not only didn't trigger my thinking, it doesn't trigger in any
-> normal testing either. The fact is, dput() can always sleep,
-> regardless of count, because of the race (ok, the exception being that
-> you actually have multiple references to the same dentry _yourself_,
-> but who does that? Nobody).
+               Persistent
 
-There's one exception - basically, we decide to put duplicates of
-reference(s) we hold into (a bunch of) structures being created.  If
-we decide that we'd failed and need to roll back, the structures
-need to be taken out of whatever lists, etc. they'd been already
-put on and references held in them - dropped.  That removal gets done
-under a spinlock.  Sure, we can string those structures on some kind
-of temp list, drop the spinlock and do dput() on everything in there,
-but it's much more convenient to just free them as we are evicting
-them, doing dput() as we go.  Which is safe, since we are still have
-the references used to create these buggers pinned down.
+> +or power cycle intact. The RAM-based filesystems such as tmpfs and ramfs
+> +have no actual backing store but exist entirely in the page and buffer
+> +caches, hence the filesystem disappears after a system reboot or
 
-> Anyway, the reason the new d_rcu_to_refcount() is buggy isn't because
-> it does bad things to dentries - the dentry reference counts and
-> lifetimes are perfectly fine. No, the reason it does bad things is
-> that it does an otherwise perfectly fine dput() in a context where it
-> definitely is _not_ fine to sleep. We are in RCU lookup, so we are in
-> a RCU-locked region, we hold the percpu vfsmount_lock spinlock, and in
-> fact in unlazy_walk() we also potentially hold the "fs->lock"
-> spinlock.
-> 
-> Ugh, ugh, ugh.
-> 
-> I really like the much simplified d_rcu_to_refcount() conceptually,
-> though. So my current plan is to keep it, but to just delay the
-> "dput()" it does until after we've done the "unlock_rcu_walk()".
+           Hence
 
-> "complete_walk()" is actually quite simple to fix, because it does the
-> unlock_rcu_walk() itself - so it's fairly trivial to just move the
-> dput() to be after it. In preparation for this, I already ended up
-> committing my "dead lockref" dentry code, because that simplifies
-> d_rcu_to_refcount() to the degree that splitting the code up into the
-> callers and then moving the dput() looks like the right thing to do.
-> 
-> The problem I see right now is unlazy_walk(). It does *not* do the
-> unlock_rcu_walk() itself for the error case (and it's the error case
-> that needs this), but instead just returns -ECHILD and expects the
-> caller to do it. Even then it happens fairly obscurely in
-> "terminate_walk()".
-> 
-> So Al, any ideas? I currently have two:
-> 
->  - always do that unlock_rcu_walk() in unlazy_walk(), and exit RCU
-> mode even for the error case (similar to how complete_walk() does it).
-> 
->    That makes solving this for unlazy_walk() as straightforward as it
-> is for complete_walk(), and this is, I think, the right thing to do.
-> 
->  - add a couple of "to be freed" dentry pointers to the 'nd' and let
-> terminate_walk() do the dput(). This leaves the unlazy_walk()
-> semantics alone.
-> 
-> The second one is hacky, but it doesn't change the semantics of
-> unlzay_walk(). I think the current semantics (drop out of RCU mode on
-> success, but not on failure) are nasty, but I wonder if there is some
-> really subtle reason for it. So the hacky second solution has got that
-> whole "no change to odd/subtle semantics" thing going for it..
+> +power cycle.
+> +
+> +A relatively straightforward solution is to write a simple block driver
+> +for the non-volatile RAM, and mount over it any disk-based filesystem such
+> +as ext2, ext3, ext4, etc.
+> +
+> +But the disk-based fs over non-volatile RAM block driver approach has
+> +some drawbacks:
+> +
+> +1. Complexity of disk-based fs: disk-based filesystems such as ext2/ext3/ext4
+> +   were designed for optimum performance on spinning disk media, so they
+> +   implement features such as block groups, which attempts to group inode data
+> +   into a contiguous set of data blocks to minimize disk seeking when accessing
+> +   files. For RAM there is no such concern; a file's data blocks can be
+> +   scattered throughout the media with no access speed penalty at all. So block
+> +   groups in a filesystem mounted over RAM just adds unnecessary
+> +   complexity. A better approach is to use a filesystem specifically
+> +   tailored to RAM media which does away with these disk-based features.
+> +   This increases the efficient use of space on the media, i.e. more
+> +   space is dedicated to actual file data storage and less to meta-data
+> +   needed to maintain that file data.
+> +
+> +2. Different problems between disks and RAM: Because PRAMFS attempts to avoid
+> +   filesystem corruption caused by kernel bugs, dirty pages in the page cache
+> +   are not allowed to be written back to the backing-store RAM. This way, an
+> +   errant write into the page cache will not get written back to the filesystem.
+> +   However, if the backing-store RAM is comparable in access speed to system
+> +   memory, the penalty of not using caching is minimal. With this consideration
+> +   it's better to move file data directly between the user buffers and the backing
+> +   store RAM, i.e. use direct I/O. This prevents the unnecessary populating of
+> +   the page cache with dirty pages. However direct I/O has to be enabled at
+> +   every file open. To enable direct I/O at all times for all regular files
+> +   requires either that applications be modified to include the O_DIRECT flag on
+> +   all file opens, or that the filesystem used performs direct I/O by default.
+> +
+> +The Persistent/Protected RAM Special Filesystem (PRAMFS) is a read/write
+> +filesystem that has been designed to address these issues. PRAMFS is targeted
+> +to fast I/O memory, and if the memory is non-volatile, the filesystem will be
+> +persistent.
+> +
+> +In PRAMFS, direct I/O is enabled across all files in the filesystem, in other
+> +words the O_DIRECT flag is forced on every open of a PRAMFS file. Also, file
+> +I/O in the PRAMFS is always synchronous. There is no need to block the current
+> +process while the transfer to/from the PRAMFS is in progress, since one of
+> +the requirements of the PRAMFS is that the filesystem exists in fast RAM. So
+> +file I/O in PRAMFS is always direct, synchronous, and never blocks.
+> +
+> +PRAMFS supports the execute-in-place. With Xip, instead of doing
+> +memory-to-memory copies to transfer data from/to user space from/to kernel
+> +space, read&write operations are performed directly from/to the memory. For
 
-Well...  unlazy_walk() is always followed by terminate_walk() very shortly,
-but there's a minor problem - terminate_walk() uses "are we in RCU
-mode?" for two things:
-	a) do we need to do path_put() here?
-	b) do we need to unlock?
-If you introduce the third case ("no need to do unlock and no need to
-do path_put()"), we'd better decide how to check for that case...
+          read & write
 
-I suspect that minimal variant would be along the lines of
-	* have unlazy_walk() slap NULL into ->path.mnt on error, clear
-LOOKUP_RCU and unlock
-	* have terminate_walk() check ->path.mnt before doing path_put()
-in !RCU case
-	* in do_last() replace bool got_write with struct vfsmount *got_write,
-storing the reference to vfsmount we'd fed to mnt_want_write().
-And use its value when we call mnt_put_write() in there...
+> +file mappings, the RAM itself is mapped directly into userspace. Xip,
+> +in addition, speed-up the applications start-up time because it removes the
 
-I'll put together a commit like that on top of what I was going to push
-into public queues tonight; give me about half an hour, OK?
+                speeds up
+
+> +needs of any copies.
+> +
+> +PRAMFS is write protected. The page table entries that map the backing-store
+> +RAM are normally marked read-only. Write operations into the filesystem
+> +temporarily mark the affected pages as writeable, the write operation is
+> +carried out with locks held, and then the page table entries is
+
+                                                                are
+
+> +marked read-only again.
+> +This feature provides protection against filesystem corruption caused by errant
+> +writes into the RAM due to kernel bugs for instance. In case there are systems
+> +where the write protection is not possible (for instance the RAM cannot be
+> +mapped with page tables), this feature can be disabled via the
+> +CONFIG_PRAMFS_WRITE_PROTECT config option and at mount time.
+> +
+> +PRAMFS supports extended attributes, ACLs, security labels, freezeing, the
+
+                                                               freezing,
+
+> +new lseek options SEEK_DATA/SEEK_HOLE and file pre-allocation (fallocate).
+> +
+> +In summary, PRAMFS is a light-weight special filesystem that is ideal for
+> +systems with a block of fast non-volatile RAM that need to access data on it
+> +using a standard filesytem interface.
+
+                    filesystem
+
+> +
+> +Supported mount options
+> +=======================
+> +
+> +The PRAMFS currently requires one mount option, and there are several
+> +optional mount options:
+> +
+> +physaddr=	Required. It tells PRAMFS the physical address of the
+> +		start of the RAM that makes up the filesystem. The
+> +		physical address must be located on a page boundary.
+> +
+> +init=		Optional. It is used to initialize the memory to an
+> +		empty filesystem. Any data in an existing filesystem
+> +		will be lost if this option is given. The parameter to
+> +		"init=" is the RAM in kilo/mega/giga bytes.
+> +
+> +bs=		Optional. It is used to specify a block size. It is
+> +		ignored if the "init=" option is not specified, since
+> +		otherwise the block size is read from the PRAMFS
+> +		super-block. The default blocksize is 2048 bytes,
+> +		and the allowed block sizes are 512, 1024, 2048, and
+> +		4096.
+> +
+> +bpi=		Optional. It is used to specify the bytes per inode
+> +		ratio, i.e. for every N bytes in the filesystem, an
+> +		inode will be created. This behaves the same as the "-i"
+> +		option to mke2fs. It is ignored if the "init=" option is
+> +		not specified.
+> +
+> +N=		Optional. It is used to specify the number of inodes to
+> +		allocate in the inode table. If the option is not
+> +		specified, the bytes-per-inode ratio is used to
+> +		calculate the number of inodes. If neither the "N=" or
+> +		"bpi=" options are specified, the default behavior is to
+> +		reserve 5% of the total space in the filesystem for the
+> +		inode table. This option behaves the same as the "-N"
+> +		option to mke2fs. It is ignored if the "init=" option is
+> +		not specified.
+> +
+> +errors=		Optional. It can be "cont", "remount-ro" and "panic". With the
+
+                                                                 or
+
+> +		first value no action is done in case of error. With the second
+> +		one the fs is mounted read-only. with the third one a kernel
+> +		panic happens. Default action is to continue on error.
+> +
+> +acl,noacl	Optional. Enable/disable the support for access control lists
+> +		(disabled by default).
+> +
+> +user_xattr,	Optional. Enable/disable the support for the user extended
+> +user_noxattr	attributes (disabled by default).
+> +
+> +noprotect	Optional. Disable the memory protection (enabled by default).
+> +
+> +xip		Optional. Enable the execute-in-place (disabled by default).
+> +
+> +Examples:
+> +
+> +mount -t pramfs -o physaddr=0x20000000,init=1M,bs=1k none /mnt/pram
+> +
+> +This example locates the filesystem at physical address 0x20000000, and
+> +also requests an empty filesystem be initialized, of total size of one
+> +megabyte and blocksize of one kilobyte. The mount point is /mnt/pram.
+> +
+> +mount -t pramfs -o physaddr=0x20000000 none /mnt/pram
+> +
+> +This example locates the filesystem at physical address 0x20000000 as in
+> +the first example, but uses the intact filesystem that already exists.
+> +
+> +Current Limitations
+> +===================
+> +
+> +- The RAM used for PRAMFS must be directly addressable.
+> +
+> +- PRAMFS does not support hard links.
+> +
+> +- PRAMFS supports only private memory mappings. This allows most
+> +  executables to run, but programs that attempt shared memory
+> +  mappings, such as X apps that use X shared memory, will fail.
+> +
+> +- PRAMFS does not support quota settings.
+> +
+> +Further Documentation
+> +=====================
+> +
+> +If you are interested in the internal design of PRAMFS, there is
+> +documentation available at the Sourceforge PRAMFS home page at
+> +http://pramfs.sourceforge.net/.
+> +
+> +Please send bug reports/comments/feedback to the pramfs development
+> +list at sourceforge: pramfs-devel@lists.sourceforge.net.
+
+
+-- 
+~Randy
