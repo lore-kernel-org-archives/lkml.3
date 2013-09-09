@@ -1,149 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051Ab3IIQ0l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 12:26:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18056 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751878Ab3IIQ0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 12:26:39 -0400
-Date: Mon, 09 Sep 2013 12:26:08 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andi Kleen <andi@firstfloor.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        kirill.shutemov@linux.intel.com, Alex Thorlton <athorlton@sgi.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <1378743968-y0p22iff-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <871u4zi7a4.fsf@linux.vnet.ibm.com>
-References: <1378416466-30913-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1378416466-30913-2-git-send-email-n-horiguchi@ah.jp.nec.com>
- <871u4zi7a4.fsf@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/2] hugetlbfs: support split page table lock
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
+	id S1754615Ab3IIQ0x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 12:26:53 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:58562 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754176Ab3IIQ0v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 12:26:51 -0400
+Date: Mon, 9 Sep 2013 09:26:32 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, sbw@mit.edu, cl@linux.com
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+Message-ID: <20130909162632.GZ3966@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130905195234.GA20555@linux.vnet.ibm.com>
+ <20130906105934.GF20519@somewhere>
+ <20130906151851.GQ3966@linux.vnet.ibm.com>
+ <1378488088.31445.39.camel@edumazet-glaptop>
+ <20130906174117.GU3966@linux.vnet.ibm.com>
+ <20130906185927.GE2706@somewhere>
+ <20130909105347.GK31370@twins.programming.kicks-ass.net>
+ <20130909132343.GN3966@linux.vnet.ibm.com>
+ <20130909142155.GC26785@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Mutt-References: <871u4zi7a4.fsf@linux.vnet.ibm.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+In-Reply-To: <20130909142155.GC26785@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090916-0928-0000-0000-00000166F106
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 08, 2013 at 10:23:55PM +0530, Aneesh Kumar K.V wrote:
-> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
+On Mon, Sep 09, 2013 at 04:21:55PM +0200, Peter Zijlstra wrote:
+> On Mon, Sep 09, 2013 at 06:23:43AM -0700, Paul E. McKenney wrote:
+> > Peter, in the general case, you are quite correct.  But this is a special
+> > case where it really does work.
+> > 
+> > The key point here is that preemption and migration cannot move a task
+> > from a CPU to which RCU is paying attention to a CPU that RCU is ignoring.
 > 
-> > Currently all of page table handling by hugetlbfs code are done under
-> > mm->page_table_lock. So when a process have many threads and they heavily
-> > access to the memory, lock contention happens and impacts the performance.
-> >
-> > This patch makes hugepage support split page table lock so that we use
-> > page->ptl of the leaf node of page table tree which is pte for normal pages
-> > but can be pmd and/or pud for hugepages of some architectures.
-> >
-> > ChangeLog v3:
-> >  - disable split ptl for ppc with USE_SPLIT_PTLOCKS_HUGETLB.
-> >  - remove replacement in some architecture dependent code. This is justified
-> >    because an allocation of pgd/pud/pmd/pte entry can race with other
-> >    allocation, not with read/write access, so we can use different locks.
-> >    http://thread.gmane.org/gmane.linux.kernel.mm/106292/focus=106458
-> >
-> > ChangeLog v2:
-> >  - add split ptl on other archs missed in v1
-> >  - drop changes on arch/{powerpc,tile}/mm/hugetlbpage.c
-> >
-> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > ---
-> >  include/linux/hugetlb.h  | 20 +++++++++++
-> >  include/linux/mm_types.h |  2 ++
-> >  mm/hugetlb.c             | 92 +++++++++++++++++++++++++++++-------------------
-> >  mm/mempolicy.c           |  5 +--
-> >  mm/migrate.c             |  4 +--
-> >  mm/rmap.c                |  2 +-
-> >  6 files changed, 84 insertions(+), 41 deletions(-)
-> >
-> > diff --git v3.11-rc3.orig/include/linux/hugetlb.h v3.11-rc3/include/linux/hugetlb.h
-> > index 0393270..5cb8a4e 100644
-> > --- v3.11-rc3.orig/include/linux/hugetlb.h
-> > +++ v3.11-rc3/include/linux/hugetlb.h
-> > @@ -80,6 +80,24 @@ extern const unsigned long hugetlb_zero, hugetlb_infinity;
-> >  extern int sysctl_hugetlb_shm_group;
-> >  extern struct list_head huge_boot_pages;
-> >
-> > +#if USE_SPLIT_PTLOCKS_HUGETLB
-> > +#define huge_pte_lockptr(mm, ptep) ({__pte_lockptr(virt_to_page(ptep)); })
-> > +#else	/* !USE_SPLIT_PTLOCKS_HUGETLB */
-> > +#define huge_pte_lockptr(mm, ptep) ({&(mm)->page_table_lock; })
-> > +#endif	/* USE_SPLIT_PTLOCKS_HUGETLB */
-> > +
-> > +#define huge_pte_offset_lock(mm, address, ptlp)		\
-> > +({							\
-> > +	pte_t *__pte = huge_pte_offset(mm, address);	\
-> > +	spinlock_t *__ptl = NULL;			\
-> > +	if (__pte) {					\
-> > +		__ptl = huge_pte_lockptr(mm, __pte);	\
-> > +		*(ptlp) = __ptl;			\
-> > +		spin_lock(__ptl);			\
-> > +	}						\
-> > +	__pte;						\
-> > +})
+> But there's no constraint placed on the migration mask (aka
+> task_struct::cpus_allowed) and therefore it can move it thusly.
 > 
+> What you're trying to say is that by the time the task is running on
+> another cpu, that cpu's state will match the state of the previous cpu,
+> no?
+
+Yep!  Might be a better way to put it as well.
+
+> > So yes, by the time the task sees the return value from rcu_is_cpu_idle(),
+> > that task might be running on some other CPU.  But that is OK, because
+> > if RCU was paying attention to the old CPU, then RCU must also be paying
+> > attention to the new CPU.
 > 
-> why not a static inline function ?
-
-I'm not sure how these two make change in runtime (maybe optimized to
-similar code?).
-I just used the same pattern with pte_offset_map_lock(). I think that
-this may show that this function is the variant of pte_offset_map_lock().
-But if we have a good reason to make it static inline, I'm glad to do this.
-Do you have any specific ideas?
-
+> OK, fair enough.
 > 
-> > +
-> >  /* arch callbacks */
-> >
-> >  pte_t *huge_pte_alloc(struct mm_struct *mm,> @@ -164,6 +182,8 @@ static inline void __unmap_hugepage_range(struct mmu_gather *tlb,
-> >  	BUG();
-> >  }
-> >
-> > +#define huge_pte_lockptr(mm, ptep) 0
-> > +
-> >  #endif /* !CONFIG_HUGETLB_PAGE */
-> >
-> >  #define HUGETLB_ANON_FILE "anon_hugepage"
-> > diff --git v3.11-rc3.orig/include/linux/mm_types.h v3.11-rc3/include/linux/mm_types.h
-> > index fb425aa..cfb8c6f 100644
-> > --- v3.11-rc3.orig/include/linux/mm_types.h
-> > +++ v3.11-rc3/include/linux/mm_types.h
-> > @@ -24,6 +24,8 @@
-> >  struct address_space;
-> >
-> >  #define USE_SPLIT_PTLOCKS	(NR_CPUS >= CONFIG_SPLIT_PTLOCK_CPUS)
-> > +#define USE_SPLIT_PTLOCKS_HUGETLB	\
-> > +	(USE_SPLIT_PTLOCKS && !defined(CONFIG_PPC))
-> >
+> > Here is an example of how this works:
+> > 
+> > 1.	Some task running on a CPU 0 (which RCU is paying attention to)
+> > 	calls rcu_is_cpu_idle(), which disables preemption, checks the
+> > 	per-CPU variable, sets ret to zero, then enables preemption.
+> > 
+> > 	At this point, the task is preempted by some high-priority task.
+> > 
+> > 2.	CPU 1 is currently idle, so RCU is -not- paying attention to it.
+> > 	However, it is decided that our low-priority task should migrate
+> > 	to CPU 1.
+> > 
+> > 3.	CPU 1 is sent an IPI, which forces this CPU out of idle.  This
+> > 	causes rcu_idle_exit() to be called, which causes RCU to start
+> > 	paying attention to CPU 1.
 > 
-> Is that a common pattern ? Don't we generally use
-> HAVE_ARCH_SPLIT_PTLOCKS in arch config file ?
+> Just a nit, we typically try to avoid using IPIs to wake idle CPUs,
+> doesn't change the story much though.
 
-Do you mean that HAVE_ARCH_SPLIT_PTLOCKS enables/disables whole split
-ptl mechanism (not only split ptl for hugepages) depending on archs? 
-If you do, we can do this with adding a line 'default "999999" if PPC'.
-(Note that if we do this, we can lose the performance benefit from
-existing split ptl for normal pages. So I'm not sure it's acceptible
-for users of the arch.)
+K, if I get to this level of detail in the comments, I will leave IPIs
+out, and just say that the CPU is forced out of idle.
 
-> Also are we sure this is
-> only an issue with PPC ?
+> > 4.	CPU 1 switches to the low-priority task, which now sees the
+> > 	return value of rcu_is_cpu_idle().  Now, this return value did
+> > 	in fact reflect the old state of CPU 0, and the state of CPU 0
+> > 	might have changed.  (For example, the high-priority task might
+> > 	have blocked, so that CPU 0 is now idle, which in turn would
+> > 	mean that RCU is no longer paying attention to it, so that
+> > 	if rcu_is_cpu_idle() was called right now, it would return
+> > 	true rather than the false return computed in step 1 above.)
+> > 
+> > 5.	But that is OK.  Because of the way RCU and idle interact,
+> > 	if a call from a given task to rcu_is_cpu_idle() returned false
+> > 	some time in the past, a call from that same task will also
+> > 	return false right now.
+> > 
+> > So yes, in general it is wrong to disable preemption, grab the value
+> > of a per-CPU variable, re-enable preemption, and then return the result.
+> > But there are a number of special cases where it is OK, and this is
+> > one of them.
+> 
+> Right, worthy of comments though :-)
 
-Not confirmed yet (so let me take some time to check this).
-I think that split ptl for hugepage should work on any archtectures
-where every entry pointing to hugepage is stored in 4kB page allocated
-for page table trees. So I'll check it.
+No argument there!
 
-Thanks,
-Naoya Horiguchi
+Now if we can agree on the naming and the exact per-CPU incantation...  ;-)
+
+							Thanx, Paul
+
