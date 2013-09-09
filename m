@@ -1,107 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751292Ab3IIANF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 20:13:05 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:57391 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221Ab3IIAND convert rfc822-to-8bit (ORCPT
+	id S1751147Ab3IIAZn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 20:25:43 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:49608 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835Ab3IIAZl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 20:13:03 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>
-References: <20130829211114.GA20726@sergelap> <87mwo0xb9p.fsf@xmission.com>
-	<20130830144232.GA18281@mail.hallyn.com>
-	<87hae6vh0w.fsf_-_@xmission.com>
-	<CALkWK0kSBrN-ZHG0CEWwvjYQ86ArJtDmbKqJR_6f3_ZTN6xJQQ@mail.gmail.com>
-Date: Sun, 08 Sep 2013 17:12:57 -0700
-In-Reply-To: <CALkWK0kSBrN-ZHG0CEWwvjYQ86ArJtDmbKqJR_6f3_ZTN6xJQQ@mail.gmail.com>
-	(Ramkumar Ramachandra's message of "Mon, 9 Sep 2013 01:02:21 +0530")
-Message-ID: <87bo42g8dy.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Sun, 8 Sep 2013 20:25:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-AID: U2FsdGVkX1+Q4hu7cYZmPV2NwNBAKDZku9OSUYtPuXU=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.5 XMGappySubj_01 Very gappy subject
-	*  3.0 XMDrug1234561 Drug references
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.7 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  1.2 LotsOfNums_01 BODY: Lots of long strings of numbers
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.1612]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.5 XM_Body_Dirty_Words Contains a dirty word
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ******;Ramkumar Ramachandra <artagnon@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Re: [REVIEW][PATCH] pidns: Fix hang in zap_pid_ns_processes by sending a potentially extra wakeup
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+In-Reply-To: <20130909000300.GH13318@ZenIV.linux.org.uk>
+References: <1375758759-29629-1-git-send-email-Waiman.Long@hp.com>
+	<1375758759-29629-2-git-send-email-Waiman.Long@hp.com>
+	<CA+55aFyMeK+bAvkqi_HpShqm7Des6uriVP_xp+BJqD0ASCVL0g@mail.gmail.com>
+	<1377751465.4028.20.camel@pasglop>
+	<20130829070012.GC27322@gmail.com>
+	<CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
+	<CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
+	<CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
+	<CA+55aFxEjDYhY3i6B2okMWZXFiiq7hibTdeOD+OHAhNA7=XV1A@mail.gmail.com>
+	<20130909000300.GH13318@ZenIV.linux.org.uk>
+Date: Sun, 8 Sep 2013 17:25:40 -0700
+X-Google-Sender-Auth: e1-As8ezBmmfs-urV2PdGQkB9uM
+Message-ID: <CA+55aFy6=CvNet+fjcYiFxbb_E1gDPzudaJ+hVotYuG5zuMb5Q@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Waiman Long <Waiman.Long@hp.com>, Jeff Layton <jlayton@redhat.com>,
+        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Content-Type: multipart/mixed; boundary=089e0111dcd29a5e8504e5e86dca
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ramkumar Ramachandra <artagnon@gmail.com> writes:
+--089e0111dcd29a5e8504e5e86dca
+Content-Type: text/plain; charset=UTF-8
 
-> Eric W. Biederman <ebiederm@xmission.com> wrote:
+On Sun, Sep 8, 2013 at 5:03 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
 >
->     Serge Hallyn <serge.hallyn@ubuntu.com> writes:
->     > Since commit af4b8a83add95ef40716401395b44a1b579965f4 it's been
->     > possible to get into a situation where a pidns reaper is
->     > <defunct>, reparented to host pid 1, but never reaped.  How to
->     > reproduce this is documented at
->     >
->     > https://bugs.launchpad.net/ubuntu/+source/lxc/+bug/1168526
->     > (and see
->     >
->     https://bugs.launchpad.net/ubuntu/+source/lxc/+bug/1168526/comments/13)
->     > In short, run repeated starts of a container whose init is
->     >
->     > Process.exit(0);
->     >
->     > sysrq-t when such a task is playing zombie shows:
->     >
->     > [  131.132978] init            x ffff88011fc14580     0  2084  
->     2039 0x00000000
->     > [  131.132978]  ffff880116e89ea8 0000000000000002
->     ffff880116e89fd8 0000000000014580
->     > [  131.132978]  ffff880116e89fd8 0000000000014580
->     ffff8801172a0000 ffff8801172a0000
->     > [  131.132978]  ffff8801172a0630 ffff88011729fff0
->     ffff880116e14650 ffff88011729fff0
->     > [  131.132978] Call Trace:
->     > [  131.132978]  [<ffffffff816f6159>] schedule+0x29/0x70
->     > [  131.132978]  [<ffffffff81064591>] do_exit+0x6e1/0xa40
->     > [  131.132978]  [<ffffffff81071eae>] ?
->     signal_wake_up_state+0x1e/0x30
->     > [  131.132978]  [<ffffffff8106496f>] do_group_exit+0x3f/0xa0
->     > [  131.132978]  [<ffffffff810649e4>] SyS_exit_group+0x14/0x20
->     > [  131.132978]  [<ffffffff8170102f>] tracesys+0xe1/0xe6
->     
->     
-> Interestingly, notice how the memory addresses begin with ffff88011,
-> and then ffffffff81 in the call trace.
+> Well...  unlazy_walk() is always followed by terminate_walk() very shortly,
+> but there's a minor problem - terminate_walk() uses "are we in RCU
+> mode?" for two things:
+>         a) do we need to do path_put() here?
+>         b) do we need to unlock?
+> If you introduce the third case ("no need to do unlock and no need to
+> do path_put()"), we'd better decide how to check for that case...
 
-The cause is known and this patch fixes the problem.  So I don't know
-why you would be looking at the addresses, there is no mystery to be solved.
+Actually, I decided to take advantage of those two cases instead, and
+I have a patch that I think does the right thing. Basically, I start
+off unlazy_walk() with just doing that lockref_get_not_dead() on the
+parent dentry, and if that fails I just return an error in RCU mode
+(so terminate_walk() does what it always used to do, and we haven't
+done anything else to any refcounts).
 
-That said roughly ffff880000000000 is where the kernel has it's identity
-mapping of all physical memory in the system.
+Now, if the lockref_get_not_dead() succeeded, that means that we have
+a reference on the nd->path.dentry, and we can now just do
+"mntget(nd->path.mnt);". Ta-Daa! We now have everything done for the
+non-RCU case for terminate_walk().
 
-Meanwhile roughly ffffffff80000000 is the high 2GB of memory where the
-kernel text pages reside.
+So after that point, we clear LOOKUP_RCU, and make the rule be that
+any return (error or success) has to do unlock_rcu_walk(). And then
+all the other refcounts are easy, we can just "dput(dentry);" after
+that.
 
-So what is seen is exactly what is expected that the data pointers point
-into the kernels identity mapping and the code address use the mapping
-for kernel code.
+I haven't tested it yet, I was going to reboot into it just now. But
+I'm attaching the patch here. Maybe I missed some detail, but it all
+seems simpler.
 
-Eric
+Note that this patch requires the "lockref_get_not_dead()" cleanup at
+the top of my current -git.
+
+        Linus
+
+--089e0111dcd29a5e8504e5e86dca
+Content-Type: application/octet-stream; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hlcy81q00
+
+IGZzL25hbWVpLmMgfCAxMDIgKysrKysrKysrKysrKysrKysrKysrKysrKysrKystLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLQogMSBmaWxlIGNoYW5nZWQsIDQ5IGluc2VydGlvbnMoKyks
+IDUzIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2ZzL25hbWVpLmMgYi9mcy9uYW1laS5jCmlu
+ZGV4IGNjNGJjZmFhODYyNC4uNTZlNGY0ZDUzN2QwIDEwMDY0NAotLS0gYS9mcy9uYW1laS5jCisr
+KyBiL2ZzL25hbWVpLmMKQEAgLTQ5NCwzNyArNDk0LDYgQEAgc3RhdGljIGlubGluZSB2b2lkIHVu
+bG9ja19yY3Vfd2Fsayh2b2lkKQogCWJyX3JlYWRfdW5sb2NrKCZ2ZnNtb3VudF9sb2NrKTsKIH0K
+IAotLyoKLSAqIFdoZW4gd2UgbW92ZSBvdmVyIGZyb20gdGhlIFJDVSBkb21haW4gdG8gcHJvcGVy
+bHkgcmVmY291bnRlZAotICogbG9uZy1saXZlZCBkZW50cmllcywgd2UgbmVlZCB0byBjaGVjayB0
+aGUgc2VxdWVuY2UgbnVtYmVycwotICogd2UgZ290IGJlZm9yZSBsb29rdXAgdmVyeSBjYXJlZnVs
+bHkuCi0gKgotICogV2UgY2Fubm90IGJsaW5kbHkgaW5jcmVtZW50IGEgZGVudHJ5IHJlZmNvdW50
+IC0gZXZlbiBpZiBpdAotICogaXMgbm90IGxvY2tlZCAtIGlmIGl0IGlzIHplcm8sIGJlY2F1c2Ug
+aXQgbWF5IGhhdmUgZ29uZQotICogdGhyb3VnaCB0aGUgZmluYWwgZF9raWxsKCkgbG9naWMgYWxy
+ZWFkeS4KLSAqCi0gKiBTbyBmb3IgYSB6ZXJvIHJlZmNvdW50LCB3ZSBuZWVkIHRvIGdldCB0aGUg
+c3BpbmxvY2sgKHdoaWNoIGlzCi0gKiBzYWZlIGV2ZW4gZm9yIGEgZGVhZCBkZW50cnkgYmVjYXVz
+ZSB0aGUgZGUtYWxsb2NhdGlvbiBpcwotICogUkNVLWRlbGF5ZWQpLCBhbmQgY2hlY2sgdGhlIHNl
+cXVlbmNlIGNvdW50IHVuZGVyIHRoZSBsb2NrLgotICoKLSAqIE9uY2Ugd2UgaGF2ZSBjaGVja2Vk
+IHRoZSBzZXF1ZW5jZSBjb3VudCwgd2Uga25vdyBpdCBpcyBsaXZlLAotICogYW5kIHNpbmNlIHdl
+IGhvbGQgdGhlIHNwaW5sb2NrIGl0IGNhbm5vdCBkaWUgZnJvbSB1bmRlciB1cy4KLSAqCi0gKiBJ
+biBjb250cmFzdCwgaWYgdGhlIHJlZmVyZW5jZSBjb3VudCB3YXNuJ3QgemVybywgd2UgY2FuIGp1
+c3QKLSAqIGluY3JlbWVudCB0aGUgbG9ja3JlZiB3aXRob3V0IGhhdmluZyB0byB0YWtlIHRoZSBz
+cGlubG9jay4KLSAqIEV2ZW4gaWYgdGhlIHNlcXVlbmNlIG51bWJlciBlbmRzIHVwIGJlaW5nIHN0
+YWxlLCB3ZSBoYXZlbid0Ci0gKiBnb25lIHRocm91Z2ggdGhlIGZpbmFsIGRwdXQoKSBhbmQga2ls
+bGVkIHRoZSBkZW50cnkgeWV0LgotICovCi1zdGF0aWMgaW5saW5lIGludCBkX3JjdV90b19yZWZj
+b3VudChzdHJ1Y3QgZGVudHJ5ICpkZW50cnksIHNlcWNvdW50X3QgKnZhbGlkYXRlLCB1bnNpZ25l
+ZCBzZXEpCi17Ci0JaWYgKGxpa2VseShsb2NrcmVmX2dldF9ub3RfZGVhZCgmZGVudHJ5LT5kX2xv
+Y2tyZWYpKSkgewotCQlpZiAoIXJlYWRfc2VxY291bnRfcmV0cnkodmFsaWRhdGUsIHNlcSkpCi0J
+CQkJcmV0dXJuIDA7Ci0JCWRwdXQoZGVudHJ5KTsKLQl9Ci0JcmV0dXJuIC1FQ0hJTEQ7Ci19Ci0K
+IC8qKgogICogdW5sYXp5X3dhbGsgLSB0cnkgdG8gc3dpdGNoIHRvIHJlZi13YWxrIG1vZGUuCiAg
+KiBAbmQ6IG5hbWVpZGF0YSBwYXRod2FsayBkYXRhCkBAIC01MzksMTYgKzUwOCwyOSBAQCBzdGF0
+aWMgaW50IHVubGF6eV93YWxrKHN0cnVjdCBuYW1laWRhdGEgKm5kLCBzdHJ1Y3QgZGVudHJ5ICpk
+ZW50cnkpCiB7CiAJc3RydWN0IGZzX3N0cnVjdCAqZnMgPSBjdXJyZW50LT5mczsKIAlzdHJ1Y3Qg
+ZGVudHJ5ICpwYXJlbnQgPSBuZC0+cGF0aC5kZW50cnk7Ci0JaW50IHdhbnRfcm9vdCA9IDA7CiAK
+IAlCVUdfT04oIShuZC0+ZmxhZ3MgJiBMT09LVVBfUkNVKSk7Ci0JaWYgKG5kLT5yb290Lm1udCAm
+JiAhKG5kLT5mbGFncyAmIExPT0tVUF9ST09UKSkgewotCQl3YW50X3Jvb3QgPSAxOwotCQlzcGlu
+X2xvY2soJmZzLT5sb2NrKTsKLQkJaWYgKG5kLT5yb290Lm1udCAhPSBmcy0+cm9vdC5tbnQgfHwK
+LQkJCQluZC0+cm9vdC5kZW50cnkgIT0gZnMtPnJvb3QuZGVudHJ5KQotCQkJZ290byBlcnJfcm9v
+dDsKLQl9CisKKwkvKgorCSAqIEdldCBhIHJlZmVyZW5jZSB0byB0aGUgcGFyZW50IGZpcnN0OiB3
+ZSdyZQorCSAqIGdvaW5nIHRvIG1ha2UgInBhdGhfcHV0KG5kLT5wYXRoKSIgdmFsaWQgaW4KKwkg
+KiBub24tUkNVIGNvbnRleHQgZm9yICJ0ZXJtaW5hdGVfd2FsaygpIi4KKwkgKgorCSAqIElmIHRo
+aXMgZG9lc24ndCB3b3JrLCByZXR1cm4gaW1tZWRpYXRlbHkgd2l0aAorCSAqIFJDVSB3YWxraW5n
+IHN0aWxsIGFjdGl2ZSAoYW5kIHRoZW4gd2Ugd2lsbCBkbworCSAqIHRoZSBSQ1Ugd2FsayBjbGVh
+bnVwIGluIHRlcm1pbmF0ZV93YWxrKCkpLgorCSAqLworCWlmICghbG9ja3JlZl9nZXRfbm90X2Rl
+YWQoJnBhcmVudC0+ZF9sb2NrcmVmKSkKKwkJcmV0dXJuIC1FQ0hJTEQ7CisKKwkvKgorCSAqIEFm
+dGVyIHRoZSBtbnRnZXQoKSwgd2UgdGVybWluYXRlX3dhbGsoKSB3aWxsIGRvCisJICogdGhlIHJp
+Z2h0IHRoaW5nIGZvciBub24tUkNVIG1vZGUsIGFuZCBhbGwgb3VyCisJICogc3Vic2VxdWVudCBl
+eGl0IGNhc2VzIHNob3VsZCB1bmxvY2tfcmN1X3dhbGsoKQorCSAqIGJlZm9yZSByZXR1cm5pbmcu
+CisJICovCisJbW50Z2V0KG5kLT5wYXRoLm1udCk7CisJbmQtPmZsYWdzICY9IH5MT09LVVBfUkNV
+OwogCiAJLyoKIAkgKiBGb3IgYSBuZWdhdGl2ZSBsb29rdXAsIHRoZSBsb29rdXAgc2VxdWVuY2Ug
+cG9pbnQgaXMgdGhlIHBhcmVudHMKQEAgLTU2MiwzMCArNTQ0LDM5IEBAIHN0YXRpYyBpbnQgdW5s
+YXp5X3dhbGsoc3RydWN0IG5hbWVpZGF0YSAqbmQsIHN0cnVjdCBkZW50cnkgKmRlbnRyeSkKIAkg
+KiBiZSB2YWxpZCBpZiB0aGUgY2hpbGQgc2VxdWVuY2UgbnVtYmVyIGlzIHN0aWxsIHZhbGlkLgog
+CSAqLwogCWlmICghZGVudHJ5KSB7Ci0JCWlmIChkX3JjdV90b19yZWZjb3VudChwYXJlbnQsICZw
+YXJlbnQtPmRfc2VxLCBuZC0+c2VxKSA8IDApCi0JCQlnb3RvIGVycl9yb290OworCQlpZiAocmVh
+ZF9zZXFjb3VudF9yZXRyeSgmcGFyZW50LT5kX3NlcSwgbmQtPnNlcSkpCisJCQlnb3RvIG91dDsK
+IAkJQlVHX09OKG5kLT5pbm9kZSAhPSBwYXJlbnQtPmRfaW5vZGUpOwogCX0gZWxzZSB7Ci0JCWlm
+IChkX3JjdV90b19yZWZjb3VudChkZW50cnksICZkZW50cnktPmRfc2VxLCBuZC0+c2VxKSA8IDAp
+Ci0JCQlnb3RvIGVycl9yb290OwotCQlpZiAoZF9yY3VfdG9fcmVmY291bnQocGFyZW50LCAmZGVu
+dHJ5LT5kX3NlcSwgbmQtPnNlcSkgPCAwKQotCQkJZ290byBlcnJfcGFyZW50OworCQlpZiAoIWxv
+Y2tyZWZfZ2V0X25vdF9kZWFkKCZkZW50cnktPmRfbG9ja3JlZikpCisJCQlnb3RvIG91dDsKKwkJ
+aWYgKHJlYWRfc2VxY291bnRfcmV0cnkoJmRlbnRyeS0+ZF9zZXEsIG5kLT5zZXEpKQorCQkJZ290
+byBkcm9wX2RlbnRyeTsKIAl9Ci0JaWYgKHdhbnRfcm9vdCkgeworCisJLyoKKwkgKiBTZXF1ZW5j
+ZSBjb3VudHMgbWF0Y2hlZC4gTm93IG1ha2Ugc3VyZSB0aGF0IHRoZSByb290IGlzCisJICogc3Rp
+bGwgdmFsaWQgYW5kIGdldCBpdCBpZiByZXF1aXJlZC4KKwkgKi8KKwlpZiAobmQtPnJvb3QubW50
+ICYmICEobmQtPmZsYWdzICYgTE9PS1VQX1JPT1QpKSB7CisJCXNwaW5fbG9jaygmZnMtPmxvY2sp
+OworCQlpZiAobmQtPnJvb3QubW50ICE9IGZzLT5yb290Lm1udCB8fCBuZC0+cm9vdC5kZW50cnkg
+IT0gZnMtPnJvb3QuZGVudHJ5KQorCQkJZ290byB1bmxvY2tfYW5kX2Ryb3BfZGVudHJ5OwogCQlw
+YXRoX2dldCgmbmQtPnJvb3QpOwogCQlzcGluX3VubG9jaygmZnMtPmxvY2spOwogCX0KLQltbnRn
+ZXQobmQtPnBhdGgubW50KTsKIAogCXVubG9ja19yY3Vfd2FsaygpOwotCW5kLT5mbGFncyAmPSB+
+TE9PS1VQX1JDVTsKIAlyZXR1cm4gMDsKIAotZXJyX3BhcmVudDoKK3VubG9ja19hbmRfZHJvcF9k
+ZW50cnk6CisJc3Bpbl91bmxvY2soJmZzLT5sb2NrKTsKK2Ryb3BfZGVudHJ5OgorCXVubG9ja19y
+Y3Vfd2FsaygpOwogCWRwdXQoZGVudHJ5KTsKLWVycl9yb290OgotCWlmICh3YW50X3Jvb3QpCi0J
+CXNwaW5fdW5sb2NrKCZmcy0+bG9jayk7CisJcmV0dXJuIC1FQ0hJTEQ7CitvdXQ6CisJdW5sb2Nr
+X3JjdV93YWxrKCk7CiAJcmV0dXJuIC1FQ0hJTEQ7CiB9CiAKQEAgLTYxNCwxMCArNjA1LDE1IEBA
+IHN0YXRpYyBpbnQgY29tcGxldGVfd2FsayhzdHJ1Y3QgbmFtZWlkYXRhICpuZCkKIAkJaWYgKCEo
+bmQtPmZsYWdzICYgTE9PS1VQX1JPT1QpKQogCQkJbmQtPnJvb3QubW50ID0gTlVMTDsKIAotCQlp
+ZiAoZF9yY3VfdG9fcmVmY291bnQoZGVudHJ5LCAmZGVudHJ5LT5kX3NlcSwgbmQtPnNlcSkgPCAw
+KSB7CisJCWlmICh1bmxpa2VseSghbG9ja3JlZl9nZXRfbm90X2RlYWQoJmRlbnRyeS0+ZF9sb2Nr
+cmVmKSkpIHsKIAkJCXVubG9ja19yY3Vfd2FsaygpOwogCQkJcmV0dXJuIC1FQ0hJTEQ7CiAJCX0K
+KwkJaWYgKHJlYWRfc2VxY291bnRfcmV0cnkoJmRlbnRyeS0+ZF9zZXEsIG5kLT5zZXEpKSB7CisJ
+CQl1bmxvY2tfcmN1X3dhbGsoKTsKKwkJCWRwdXQoZGVudHJ5KTsKKwkJCXJldHVybiAtRUNISUxE
+OworCQl9CiAJCW1udGdldChuZC0+cGF0aC5tbnQpOwogCQl1bmxvY2tfcmN1X3dhbGsoKTsKIAl9
+Cg==
+--089e0111dcd29a5e8504e5e86dca--
