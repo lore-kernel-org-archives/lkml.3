@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171Ab3IIDJx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 23:09:53 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:52551 "EHLO
+	id S1751929Ab3IIDP4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 23:15:56 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:52558 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751776Ab3IIDJw (ORCPT
+	with ESMTP id S1751643Ab3IIDPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 23:09:52 -0400
+	Sun, 8 Sep 2013 23:15:55 -0400
+Message-ID: <522D3D69.5000004@free-electrons.com>
+Date: Mon, 09 Sep 2013 05:15:53 +0200
 From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com
-Cc: david.vrabel@citrix.com, xen-devel@lists.xenproject.org,
-        linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] xen: remove deprecated IRQF_DISABLED
-Date: Mon,  9 Sep 2013 05:09:47 +0200
-Message-Id: <1378696187-4359-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+CC: mingo@redhat.com, konrad.wilk@oracle.com, x86@kernel.org,
+        tglx@linutronix.de, xen-devel@lists.xenproject.org,
+        david.vrabel@citrix.com, linux-kernel@vger.kernel.org, hpa@zytor.com
+Subject: Re: [PATCH] x86/xen: remove deprecated IRQF_DISABLED
+References: <3b488375-6998-4681-b105-e4c6d12ceca2@default>
+In-Reply-To: <3b488375-6998-4681-b105-e4c6d12ceca2@default>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch proposes to remove the IRQF_DISABLED flag from drivers/xen
-code. It's a NOOP since 2.6.35 and it will be removed one day.
+Hi Boris,
 
-Note that architecture dependent fixes for IRQF_DISABLED
-were already submitted through separate patches.
+Thanks for your review!
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- drivers/xen/evtchn.c       | 2 +-
- drivers/xen/platform-pci.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+On 09/08/2013 05:14 PM, Boris Ostrovsky wrote:
+> ----- michael.opdenacker@free-electrons.com wrote:
+>
+>> This patch proposes to remove the IRQF_DISABLED flag from x86/xen
+>> code. It's a NOOP since 2.6.35 and it will be removed one day.
+>>
+>> Signed-off-by: Michael Opdenacker
+>> <michael.opdenacker@free-electrons.com>
+>> ---
+>>  arch/x86/xen/smp.c      | 10 +++++-----
+>>  arch/x86/xen/spinlock.c |  2 +-
+>>  arch/x86/xen/time.c     |  3 +--
+>>  3 files changed, 7 insertions(+), 8 deletions(-)
+>
+> If you are cleaning up Xen's use of IRQF_DISABLED then you should
+> probably also update drivers/xen/evtchn.c and drivers/xen/platform-pci.c
+This definitely makes sense to do this at the same time. I've just
+submitted a separate patch for this.
 
-diff --git a/drivers/xen/evtchn.c b/drivers/xen/evtchn.c
-index 8b3a69a..5de2063 100644
---- a/drivers/xen/evtchn.c
-+++ b/drivers/xen/evtchn.c
-@@ -305,7 +305,7 @@ static int evtchn_bind_to_user(struct per_user_data *u, int port)
- 	if (rc < 0)
- 		goto err;
- 
--	rc = bind_evtchn_to_irqhandler(port, evtchn_interrupt, IRQF_DISABLED,
-+	rc = bind_evtchn_to_irqhandler(port, evtchn_interrupt, 0,
- 				       u->name, evtchn);
- 	if (rc < 0)
- 		goto err;
-diff --git a/drivers/xen/platform-pci.c b/drivers/xen/platform-pci.c
-index 99db9e1..2f3528e 100644
---- a/drivers/xen/platform-pci.c
-+++ b/drivers/xen/platform-pci.c
-@@ -84,7 +84,7 @@ static irqreturn_t do_hvm_evtchn_intr(int irq, void *dev_id)
- static int xen_allocate_irq(struct pci_dev *pdev)
- {
- 	return request_irq(pdev->irq, do_hvm_evtchn_intr,
--			IRQF_DISABLED | IRQF_NOBALANCING | IRQF_TRIGGER_RISING,
-+			IRQF_NOBALANCING | IRQF_TRIGGER_RISING,
- 			"xen-platform-pci", pdev);
- }
- 
+Thanks again,
+
+Michael.
+
 -- 
-1.8.1.2
+Michael Opdenacker, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
++33 484 258 098
 
