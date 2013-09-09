@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789Ab3IISwP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 14:52:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:57059 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752981Ab3IISpV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 14:45:21 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 04/24] ALSA: hda - Add inverted digital mic fixup for Acer Aspire One
-Date: Mon,  9 Sep 2013 11:44:54 -0700
-Message-Id: <1378752314-2416-5-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1378752314-2416-1-git-send-email-kamal@canonical.com>
-References: <1378752314-2416-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	id S1755913Ab3IISxr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 14:53:47 -0400
+Received: from mail.lang.hm ([64.81.33.126]:54084 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755136Ab3IISxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 14:53:45 -0400
+Date: Mon, 9 Sep 2013 11:53:39 -0700 (PDT)
+From: David Lang <david@lang.hm>
+X-X-Sender: dlang@asgard.lang.hm
+To: Matthew Garrett <matthew.garrett@nebula.com>
+cc: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH 00/12] One more attempt at useful kernel lockdown
+In-Reply-To: <1378752158.17982.15.camel@x230.lan>
+Message-ID: <alpine.DEB.2.02.1309091150570.2479@nftneq.ynat.uz>
+References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>  <19562.1378747124@turing-police.cc.vt.edu>  <alpine.DEB.2.02.1309091119330.2479@nftneq.ynat.uz>  <1378751318.17982.10.camel@x230.lan>  <alpine.DEB.2.02.1309091139490.2479@nftneq.ynat.uz>
+ <1378752158.17982.15.camel@x230.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.9 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, 9 Sep 2013, Matthew Garrett wrote:
 
-------------------
+> On Mon, 2013-09-09 at 11:40 -0700, David Lang wrote:
+>> On Mon, 9 Sep 2013, Matthew Garrett wrote:
+>>
+>>> On Mon, 2013-09-09 at 11:25 -0700, David Lang wrote:
+>>>
+>>>> Given that we know that people want signed binaries without blocking kexec, you
+>>>> should have '1' just enforce module signing and '2' (or higher) implement a full
+>>>> lockdown including kexec.
+>>>
+>>> There's already a kernel option for that.
+>>
+>> So, if there is an existing kernel option for this, why do we need a new one?
+>
+> There's an existing kernel option for "I want to enforce module
+> signatures but I don't care about anything else". There isn't for "I
+> want to prevent userspace from modifying my running kernel".
 
-From: Takashi Iwai <tiwai@suse.de>
+So is there a way to unify these different things rather than creating yet 
+another different knob?
 
-commit d3d3835ce919438c00c5d1270d6f9d6ffea59d03 upstream.
-
-Yet another entry, just use the existing fixup for this machine, too.
-
-Reported-by: "Nathanael D. Noblet" <nathanael@gnat.ca>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- sound/pci/hda/patch_realtek.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index a7f0d7f..7e2840d 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -6929,6 +6929,7 @@ static const struct alc_fixup alc662_fixups[] = {
- 
- static const struct snd_pci_quirk alc662_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x1019, 0x9087, "ECS", ALC662_FIXUP_ASUS_MODE2),
-+	SND_PCI_QUIRK(0x1025, 0x022f, "Acer Aspire One", ALC662_FIXUP_INV_DMIC),
- 	SND_PCI_QUIRK(0x1025, 0x0308, "Acer Aspire 8942G", ALC662_FIXUP_ASPIRE),
- 	SND_PCI_QUIRK(0x1025, 0x031c, "Gateway NV79", ALC662_FIXUP_SKU_IGNORE),
- 	SND_PCI_QUIRK(0x1025, 0x0349, "eMachines eM250", ALC662_FIXUP_INV_DMIC),
--- 
-1.8.1.2
-
+David Lang
