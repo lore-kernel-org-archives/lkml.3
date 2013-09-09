@@ -1,117 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753689Ab3IIOUP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 10:20:15 -0400
-Received: from mx-rz-3.rrze.uni-erlangen.de ([131.188.11.22]:55234 "EHLO
-	mx-rz-3.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751237Ab3IIOUL (ORCPT
+	id S1753994Ab3IIOWc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 10:22:32 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52193 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752167Ab3IIOW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 10:20:11 -0400
-X-Greylist: delayed 369 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Sep 2013 10:20:11 EDT
-X-RRZE-Submit-IP: 10.21.5.52
-From: Tobias Polzer <tobias.polzer@fau.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-kernel@i4.cs.fau.de, usbip-devel@lists.sourceforge.net,
-        Matt Mooney <mfm@muteddisk.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stefan Reif <ke42caxa@cip.cs.fau.de>,
-        Kurt Kanzenbach <ly80toro@cip.cs.fau.de>, linux-usb@vger.kernel.org,
-        devel@driverdev.osuosl.org, Tobias Polzer <tobias.polzer@fau.de>,
-        Dominik Paulus <dominik.paulus@fau.de>
-Subject: [PATCH] Fix man-pages for usbip userspace utilities
-Date: Mon,  9 Sep 2013 16:13:15 +0200
-Message-Id: <1378736003-19715-1-git-send-email-tobias.polzer@fau.de>
-X-Mailer: git-send-email 1.8.4.rc3
+	Mon, 9 Sep 2013 10:22:29 -0400
+Date: Mon, 9 Sep 2013 16:21:55 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, sbw@mit.edu, cl@linux.com
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+Message-ID: <20130909142155.GC26785@twins.programming.kicks-ass.net>
+References: <20130905195234.GA20555@linux.vnet.ibm.com>
+ <20130906105934.GF20519@somewhere>
+ <20130906151851.GQ3966@linux.vnet.ibm.com>
+ <1378488088.31445.39.camel@edumazet-glaptop>
+ <20130906174117.GU3966@linux.vnet.ibm.com>
+ <20130906185927.GE2706@somewhere>
+ <20130909105347.GK31370@twins.programming.kicks-ass.net>
+ <20130909132343.GN3966@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130909132343.GN3966@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The usbip userspace utilities contained some half-documented (only in
---help, not in man) options. They were added to the man-pages of usbip
-and usbipd.
-Also a typo in the usbip headline was fixed.
+On Mon, Sep 09, 2013 at 06:23:43AM -0700, Paul E. McKenney wrote:
+> Peter, in the general case, you are quite correct.  But this is a special
+> case where it really does work.
+> 
+> The key point here is that preemption and migration cannot move a task
+> from a CPU to which RCU is paying attention to a CPU that RCU is ignoring.
 
-Signed-off-by: Tobias Polzer <tobias.polzer@fau.de>
-Signed-off-by: Dominik Paulus <dominik.paulus@fau.de>
----
- drivers/staging/usbip/userspace/doc/usbip.8  |  8 +++++++-
- drivers/staging/usbip/userspace/doc/usbipd.8 | 27 ++++++++++++++++++++++++++-
- 2 files changed, 33 insertions(+), 2 deletions(-)
+But there's no constraint placed on the migration mask (aka
+task_struct::cpus_allowed) and therefore it can move it thusly.
 
-diff --git a/drivers/staging/usbip/userspace/doc/usbip.8 b/drivers/staging/usbip/userspace/doc/usbip.8
-index ccdadc8..a6097be 100644
---- a/drivers/staging/usbip/userspace/doc/usbip.8
-+++ b/drivers/staging/usbip/userspace/doc/usbip.8
-@@ -3,7 +3,7 @@
- usbip \- manage USB/IP devices
- .SH SYNOPSIS
- .B usbip
--[\foptions\R] <\fIcommand\fR> <\fIargs\fR>
-+[\fIoptions\fR] <\fIcommand\fR> <\fIargs\fR>
- 
- .SH DESCRIPTION
- On a USB/IP server, devices can be listed, bound, and unbound using
-@@ -23,6 +23,12 @@ Print debugging information.
- Log to syslog.
- .PP
- 
-+.HP
-+\fB\-\-tcp-port PORT\fR
-+.IP
-+Connect to PORT on remote host (used for attach and list --remote).
-+.PP
-+
- .SH COMMANDS
- .HP
- \fBversion\fR
-diff --git a/drivers/staging/usbip/userspace/doc/usbipd.8 b/drivers/staging/usbip/userspace/doc/usbipd.8
-index d896936..ac4635d 100644
---- a/drivers/staging/usbip/userspace/doc/usbipd.8
-+++ b/drivers/staging/usbip/userspace/doc/usbipd.8
-@@ -14,10 +14,22 @@ Devices have to explicitly be exported using
- before usbipd makes them available to other hosts.
- 
- The daemon accepts connections from USB/IP clients
--on TCP port 3240.
-+on TCP port 3240 by default.
- 
- .SH OPTIONS
- .HP
-+\fB\-4\fR, \fB\-\-ipv4\fR
-+.IP
-+Bind to IPv4. Default is both.
-+.PP
-+
-+.HP
-+\fB\-6\fR, \fB\-\-ipv6\fR
-+.IP
-+Bind to IPv6. Default is both.
-+.PP
-+
-+.HP
- \fB\-D\fR, \fB\-\-daemon\fR
- .IP
- Run as a daemon process.
-@@ -29,6 +41,19 @@ Run as a daemon process.
- Print debugging information.
- .PP
- 
-+.HP
-+\fB\-PFILE\fR, \fB\-\-pid FILE\fR
-+.IP
-+Write process id to FILE.
-+.br
-+If no FILE specified, use /var/run/usbipd.pid
-+.PP
-+
-+\fB\-tPORT\fR, \fB\-\-tcp\-port PORT\fR
-+.IP
-+Listen on TCP/IP port PORT.
-+.PP
-+
- \fB\-h\fR, \fB\-\-help\fR
- .IP
- Print the program help message and exit.
--- 
-1.8.4.rc3
+What you're trying to say is that by the time the task is running on
+another cpu, that cpu's state will match the state of the previous cpu,
+no?
 
+> So yes, by the time the task sees the return value from rcu_is_cpu_idle(),
+> that task might be running on some other CPU.  But that is OK, because
+> if RCU was paying attention to the old CPU, then RCU must also be paying
+> attention to the new CPU.
+
+OK, fair enough.
+
+> Here is an example of how this works:
+> 
+> 1.	Some task running on a CPU 0 (which RCU is paying attention to)
+> 	calls rcu_is_cpu_idle(), which disables preemption, checks the
+> 	per-CPU variable, sets ret to zero, then enables preemption.
+> 
+> 	At this point, the task is preempted by some high-priority task.
+> 
+> 2.	CPU 1 is currently idle, so RCU is -not- paying attention to it.
+> 	However, it is decided that our low-priority task should migrate
+> 	to CPU 1.
+> 
+> 3.	CPU 1 is sent an IPI, which forces this CPU out of idle.  This
+> 	causes rcu_idle_exit() to be called, which causes RCU to start
+> 	paying attention to CPU 1.
+> 
+
+Just a nit, we typically try to avoid using IPIs to wake idle CPUs,
+doesn't change the story much though.
+
+> 4.	CPU 1 switches to the low-priority task, which now sees the
+> 	return value of rcu_is_cpu_idle().  Now, this return value did
+> 	in fact reflect the old state of CPU 0, and the state of CPU 0
+> 	might have changed.  (For example, the high-priority task might
+> 	have blocked, so that CPU 0 is now idle, which in turn would
+> 	mean that RCU is no longer paying attention to it, so that
+> 	if rcu_is_cpu_idle() was called right now, it would return
+> 	true rather than the false return computed in step 1 above.)
+> 
+> 5.	But that is OK.  Because of the way RCU and idle interact,
+> 	if a call from a given task to rcu_is_cpu_idle() returned false
+> 	some time in the past, a call from that same task will also
+> 	return false right now.
+> 
+> So yes, in general it is wrong to disable preemption, grab the value
+> of a per-CPU variable, re-enable preemption, and then return the result.
+> But there are a number of special cases where it is OK, and this is
+> one of them.
+
+Right, worthy of comments though :-)
