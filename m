@@ -1,80 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919Ab3IIPM3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 11:12:29 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53381 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753859Ab3IIPM0 (ORCPT
+	id S1753604Ab3IIPL4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 11:11:56 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:28876 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359Ab3IIPLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 11:12:26 -0400
-Date: Mon, 9 Sep 2013 17:08:54 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, sbw@mit.edu
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
- section?
-Message-ID: <20130909150854.GD26785@twins.programming.kicks-ass.net>
-References: <20130905195234.GA20555@linux.vnet.ibm.com>
- <20130906105934.GF20519@somewhere>
- <20130906151851.GQ3966@linux.vnet.ibm.com>
- <1378488088.31445.39.camel@edumazet-glaptop>
- <20130906174117.GU3966@linux.vnet.ibm.com>
- <20130906185927.GE2706@somewhere>
- <20130909105347.GK31370@twins.programming.kicks-ass.net>
- <20130909132343.GN3966@linux.vnet.ibm.com>
- <20130909133604.GC31370@twins.programming.kicks-ass.net>
- <000001410333127c-486c74ec-3209-4c5e-a92f-0c11e00fa141-000000@email.amazonses.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000001410333127c-486c74ec-3209-4c5e-a92f-0c11e00fa141-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 9 Sep 2013 11:11:55 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
+        boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        stefan.bader@canonical.com, stefano.stabellini@eu.citrix.com,
+        jeremy@goop.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 4/5] xen/spinlock: Don't setup xen spinlock IPI kicker if disabled.
+Date: Mon,  9 Sep 2013 11:11:35 -0400
+Message-Id: <1378739496-17468-5-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1378739496-17468-1-git-send-email-konrad.wilk@oracle.com>
+References: <1378739496-17468-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 02:49:42PM +0000, Christoph Lameter wrote:
-> On Mon, 9 Sep 2013, Peter Zijlstra wrote:
-> 
-> > On Mon, Sep 09, 2013 at 06:23:43AM -0700, Paul E. McKenney wrote:
-> > > And guys, I have to say that the advice on which per-CPU primitive to use
-> > > varies wildly and randomly.  For all I know, each of you individually
-> > > might well be sticking to the same story, but taken together, your
-> > > collective advice is strongly resembling white noise.
-> >
-> > Its partly because cl and I disagree on things. He doesn't seem to care
-> > much about validation and believes that people will not make mistakes
-> > with this stuff.
-> 
-> Slander. Certainly validation is good. Its just that PREEMPT kernels are
-> not in use 
+There is no need to setup this kicker IPI if we are never going
+to use the paravirtualized ticketlock mechanism.
 
-Complete bullshit, its part of the mainline kernel, lots of people run
-them -- including me, and any patch is supposed to keep it working.
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+---
+ arch/x86/xen/spinlock.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-> and AFAICT the full preempt stuff requires significant developer
-> support and complicates the code without much benefit.
+diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
+index 71db82c..e1bff87 100644
+--- a/arch/x86/xen/spinlock.c
++++ b/arch/x86/xen/spinlock.c
+@@ -105,6 +105,7 @@ static DEFINE_PER_CPU(char *, irq_name);
+ static DEFINE_PER_CPU(struct xen_lock_waiting, lock_waiting);
+ static cpumask_t waiting_cpus;
+ 
++static bool xen_pvspin __initdata = true;
+ static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
+ {
+ 	int irq = __this_cpu_read(lock_kicker_irq);
+@@ -223,6 +224,9 @@ void xen_init_lock_cpu(int cpu)
+ 	int irq;
+ 	char *name;
+ 
++	if (!xen_pvspin)
++		return;
++
+ 	WARN(per_cpu(lock_kicker_irq, cpu) >= 0, "spinlock on CPU%d exists on IRQ%d!\n",
+ 	     cpu, per_cpu(lock_kicker_irq, cpu));
+ 
+@@ -259,13 +263,15 @@ void xen_uninit_lock_cpu(int cpu)
+ 	if (xen_hvm_domain())
+ 		return;
+ 
++	if (!xen_pvspin)
++		return;
++
+ 	unbind_from_irqhandler(per_cpu(lock_kicker_irq, cpu), NULL);
+ 	per_cpu(lock_kicker_irq, cpu) = -1;
+ 	kfree(per_cpu(irq_name, cpu));
+ 	per_cpu(irq_name, cpu) = NULL;
+ }
+ 
+-static bool xen_pvspin __initdata = true;
+ 
+ void __init xen_init_spinlocks(void)
+ {
+@@ -305,6 +311,9 @@ static int __init xen_spinlock_debugfs(void)
+ 	if (d_xen == NULL)
+ 		return -ENOMEM;
+ 
++	if (!xen_pvspin)
++		return 0;
++
+ 	d_spin_debug = debugfs_create_dir("spinlocks", d_xen);
+ 
+ 	debugfs_create_u8("zero_stats", 0644, d_spin_debug, &zero_stats);
+-- 
+1.8.3.1
 
-More bullshit, each and every patch submitted must fully support all
-preemption modes supported by the kernel. CONFIG_PREEMPT is in, no two
-ways about it. Breaking it is a regression and reason to revert stuff.
-
-Therefore every Linux developer supports it per definition. And clearly
-the complication is worth it for enough people, otherwise it wouldn't be
-there.
-
-The absolute worst part about you is your inability/unwillingness to
-look beyond your immediate concern. Please pull head from arse.
-
-> Having said that I am trying to support preeempt checks. The newest
-> __get_cpu_var patchset introduces the preempt checks that you want.
-
-Good, I did see some patches from you but haven't come around to looking
-at them.
