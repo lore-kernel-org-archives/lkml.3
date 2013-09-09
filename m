@@ -1,91 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753390Ab3IINgs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:36:48 -0400
+	id S1753904Ab3IINia (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:38:30 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10158 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753480Ab3IIN0r (ORCPT
+	with ESMTP id S1753424Ab3IIN0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 09:26:47 -0400
-X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=5h2nd_9qxKYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=_hvWx0eUMykA:10 a=VwQbUJbxAAAA:8 a=TachY9q7Z5hz0bXCceMA:9 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Mon, 9 Sep 2013 09:26:46 -0400
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=CFQ55G38UMUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5jOM9dmJ99oA:10 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=O3HAJVgSP7dV9RbNiDoA:9 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130909124800.434376784@goodmis.org>
+Message-Id: <20130909124801.240268819@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Sep 2013 08:47:54 -0400
+Date: Mon, 09 Sep 2013 08:47:58 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>,
-        Joakim Hernberg <jbh@alchemy.lu>
-Subject: [PATCH RT 09/16] drm/i915: drop trace_i915_gem_ring_dispatch on rt
+        Steven Rostedt <srostedt@redhat.com>
+Subject: [PATCH RT 13/16] hwlat-detector: Use trace_clock_local if available
 References: <20130909124745.590777496@goodmis.org>
-Content-Disposition: inline; filename=0009-drm-i915-drop-trace_i915_gem_ring_dispatch-on-rt.patch
+Content-Disposition: inline; filename=0013-hwlat-detector-Use-trace_clock_local-if-available.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-This tracepoint is responsible for:
-
-|[<814cc358>] __schedule_bug+0x4d/0x59
-|[<814d24cc>] __schedule+0x88c/0x930
-|[<814d3b90>] ? _raw_spin_unlock_irqrestore+0x40/0x50
-|[<814d3b95>] ? _raw_spin_unlock_irqrestore+0x45/0x50
-|[<810b57b5>] ? task_blocks_on_rt_mutex+0x1f5/0x250
-|[<814d27d9>] schedule+0x29/0x70
-|[<814d3423>] rt_spin_lock_slowlock+0x15b/0x278
-|[<814d3786>] rt_spin_lock+0x26/0x30
-|[<a00dced9>] gen6_gt_force_wake_get+0x29/0x60 [i915]
-|[<a00e183f>] gen6_ring_get_irq+0x5f/0x100 [i915]
-|[<a00b2a33>] ftrace_raw_event_i915_gem_ring_dispatch+0xe3/0x100 [i915]
-|[<a00ac1b3>] i915_gem_do_execbuffer.isra.13+0xbd3/0x1430 [i915]
-|[<810f8943>] ? trace_buffer_unlock_commit+0x43/0x60
-|[<8113e8d2>] ? ftrace_raw_event_kmem_alloc+0xd2/0x180
-|[<8101d063>] ? native_sched_clock+0x13/0x80
-|[<a00acf29>] i915_gem_execbuffer2+0x99/0x280 [i915]
-|[<a00114a3>] drm_ioctl+0x4c3/0x570 [drm]
-|[<8101d0d9>] ? sched_clock+0x9/0x10
-|[<a00ace90>] ? i915_gem_execbuffer+0x480/0x480 [i915]
-|[<810f1c18>] ? rb_commit+0x68/0xa0
-|[<810f1c6c>] ? ring_buffer_unlock_commit+0x1c/0xa0
-|[<81197467>] do_vfs_ioctl+0x97/0x540
-|[<81021318>] ? ftrace_raw_event_sys_enter+0xd8/0x130
-|[<811979a1>] sys_ioctl+0x91/0xb0
-|[<814db931>] tracesys+0xe1/0xe6
-
-Chris Wilson does not like to move i915_trace_irq_get() out of the macro
-
-|No. This enables the IRQ, as well as making a number of
-|very expensively serialised read, unconditionally.
-
-so it is gone now on RT.
+As ktime_get() calls into the timing code which does a read_seq(), it
+may be affected by other CPUS that touch that lock. To remove this
+dependency, use the trace_clock_local() which is already exported
+for module use. If CONFIG_TRACING is enabled, use that as the clock,
+otherwise use ktime_get().
 
 Cc: stable-rt@vger.kernel.org
-Reported-by: Joakim Hernberg <jbh@alchemy.lu>
+Signed-off-by: Steven Rostedt <srostedt@redhat.com>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/misc/hwlat_detector.c |   34 +++++++++++++++++++++++++---------
+ 1 file changed, 25 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_gem_execbuffer.c b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-index b1bb734..8bef4a5 100644
---- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-+++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-@@ -1216,7 +1216,9 @@ i915_gem_do_execbuffer(struct drm_device *dev, void *data,
- 		dev_priv->relative_constants_mode = mode;
- 	}
+diff --git a/drivers/misc/hwlat_detector.c b/drivers/misc/hwlat_detector.c
+index f93b8ef..13443e9 100644
+--- a/drivers/misc/hwlat_detector.c
++++ b/drivers/misc/hwlat_detector.c
+@@ -51,6 +51,7 @@
+ #include <linux/version.h>
+ #include <linux/delay.h>
+ #include <linux/slab.h>
++#include <linux/trace_clock.h>
  
-+#ifndef CONFIG_PREEMPT_RT_BASE
- 	trace_i915_gem_ring_dispatch(ring, seqno);
+ #define BUF_SIZE_DEFAULT	262144UL		/* 8K*(sizeof(entry)) */
+ #define BUF_FLAGS		(RB_FL_OVERWRITE)	/* no block on full */
+@@ -211,6 +212,21 @@ static struct sample *buffer_get_sample(struct sample *sample)
+ 	return sample;
+ }
+ 
++#ifndef CONFIG_TRACING
++#define time_type	ktime_t
++#define time_get()	ktime_get()
++#define time_to_us(x)	ktime_to_us(x)
++#define time_sub(a, b)	ktime_sub(a, b)
++#define init_time(a, b)	(a).tv64 = b
++#define time_u64(a)	(a).tv64
++#else
++#define time_type	u64
++#define time_get()	trace_clock_local()
++#define time_to_us(x)	div_u64(x, 1000)
++#define time_sub(a, b)	((a) - (b))
++#define init_time(a, b)	a = b
++#define time_u64(a)	a
 +#endif
+ /**
+  * get_sample - sample the CPU TSC and look for likely hardware latencies
+  * @unused: This is not used but is a part of the stop_machine API
+@@ -220,23 +236,23 @@ static struct sample *buffer_get_sample(struct sample *sample)
+  */
+ static int get_sample(void *unused)
+ {
+-	ktime_t start, t1, t2, last_t2;
++	time_type start, t1, t2, last_t2;
+ 	s64 diff, total = 0;
+ 	u64 sample = 0;
+ 	u64 outer_sample = 0;
+ 	int ret = 1;
  
- 	exec_start = batch_obj->gtt_offset + args->batch_start_offset;
- 	exec_len = args->batch_len;
+-	last_t2.tv64 = 0;
+-	start = ktime_get(); /* start timestamp */
++	init_time(last_t2, 0);
++	start = time_get(); /* start timestamp */
+ 
+ 	do {
+ 
+-		t1 = ktime_get();	/* we'll look for a discontinuity */
+-		t2 = ktime_get();
++		t1 = time_get();	/* we'll look for a discontinuity */
++		t2 = time_get();
+ 
+-		if (last_t2.tv64) {
++		if (time_u64(last_t2)) {
+ 			/* Check the delta from the outer loop (t2 to next t1) */
+-			diff = ktime_to_us(ktime_sub(t1, last_t2));
++			diff = time_to_us(time_sub(t1, last_t2));
+ 			/* This shouldn't happen */
+ 			if (diff < 0) {
+ 				printk(KERN_ERR BANNER "time running backwards\n");
+@@ -247,10 +263,10 @@ static int get_sample(void *unused)
+ 		}
+ 		last_t2 = t2;
+ 
+-		total = ktime_to_us(ktime_sub(t2, start)); /* sample width */
++		total = time_to_us(time_sub(t2, start)); /* sample width */
+ 
+ 		/* This checks the inner loop (t1 to t2) */
+-		diff = ktime_to_us(ktime_sub(t2, t1));     /* current diff */
++		diff = time_to_us(time_sub(t2, t1));     /* current diff */
+ 
+ 		/* This shouldn't happen */
+ 		if (diff < 0) {
 -- 
 1.7.10.4
 
