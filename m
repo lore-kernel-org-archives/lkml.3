@@ -1,247 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab3IIPwZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 11:52:25 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:44957 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754529Ab3IIPwK (ORCPT
+	id S1755101Ab3IIPxX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 11:53:23 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:37515 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750990Ab3IIPxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 11:52:10 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: linux-kernel@vger.kernel.org
-Cc: keescook@chromium.org, gregkh@linuxfoundation.org, hpa@zytor.com,
-        linux-efi@vger.kernel.org, jmorris@namei.org,
-        linux-security-module@vger.kernel.org,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Subject: [PATCH 01/12] Add BSD-style securelevel support
-Date: Mon,  9 Sep 2013 11:49:35 -0400
-Message-Id: <1378741786-18430-2-git-send-email-matthew.garrett@nebula.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
-References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 2001:470:1f07:1371:5d52:9ee3:3e84:6668
-X-SA-Exim-Mail-From: matthew.garrett@nebula.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Mon, 9 Sep 2013 11:53:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <E1VImxG-0002w1-UA@tartarus.angband.pl>
+References: <E1VImxG-0002w1-UA@tartarus.angband.pl>
+Date: Mon, 9 Sep 2013 17:53:19 +0200
+Message-ID: <CANq1E4Tv0Vb9KzWK0oa3P+-V66LqF312HZrwq_JLmHhH-v2k=Q@mail.gmail.com>
+Subject: Re: [PATCH] vt: properly ignore xterm-256 colour codes
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Adam Borowski <kilobyte@angband.pl>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide a coarse-grained runtime configuration option for restricting
-userspace's ability to modify the running kernel.
+Hi
 
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
----
- Documentation/security/securelevel.txt |  23 +++++++
- include/linux/security.h               |   8 +++
- security/Kconfig                       |   8 +++
- security/Makefile                      |   1 +
- security/securelevel.c                 | 116 +++++++++++++++++++++++++++++++++
- 5 files changed, 156 insertions(+)
- create mode 100644 Documentation/security/securelevel.txt
- create mode 100644 security/securelevel.c
+On Fri, Jul 12, 2013 at 10:23 PM, Adam Borowski <kilobyte@angband.pl> wrote:
+> This is not a bug on our side, but a misdesign in ITU T.416, yet with
+> all popular terminals supporting these codes, people consider this to
+> be a bug in Linux.  By breaking the design principles behind SGR codes
+> (gracefully ignoring unsupported ones should not require knowing about
+> them), 256 colour ones tend to turn blinking on before invoking an
+> arbitrary unrelated command.
+>
+> This commit doesn't add such support, merely skips such codes without
+> ill effects.
+>
+> Signed-off-by: Adam Borowski <kilobyte@angband.pl>
+> ---
+>  drivers/tty/vt/vt.c | 26 ++++++++++++++++++++------
+>  1 file changed, 20 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+> index c677829..f7aaa28 100644
+> --- a/drivers/tty/vt/vt.c
+> +++ b/drivers/tty/vt/vt.c
+> @@ -1300,13 +1300,27 @@ static void csi_m(struct vc_data *vc)
+>                         case 27:
+>                                 vc->vc_reverse = 0;
+>                                 break;
+> -                       case 38: /* ANSI X3.64-1979 (SCO-ish?)
+> -                                 * Enables underscore, white foreground
+> -                                 * with white underscore (Linux - use
+> -                                 * default foreground).
+> +                       case 38:
+> +                       case 48: /* ITU T.416
+> +                                 * Higher colour modes.
+> +                                 * They break the usual properties of SGR codes
+> +                                 * and thus need to be detected and ignored by
+> +                                 * hand.  Strictly speaking, that standard also
+> +                                 * wants : rather than ; as separators, contrary
+> +                                 * to ECMA-48, but no one produces such codes
+> +                                 * and almost no one accepts them.
+>                                   */
+> -                               vc->vc_color = (vc->vc_def_color & 0x0f) | (vc->vc_color & 0xf0);
+> -                               vc->vc_underline = 1;
 
-diff --git a/Documentation/security/securelevel.txt b/Documentation/security/securelevel.txt
-new file mode 100644
-index 0000000..a1355a0
---- /dev/null
-+++ b/Documentation/security/securelevel.txt
-@@ -0,0 +1,23 @@
-+Linux securelevel interface
-+---------------------------
-+
-+The Linux securelevel interface (inspired by the BSD securelevel interface)
-+is a runtime mechanism for configuring coarse-grained kernel-level security
-+restrictions. It provides a runtime configuration variable at
-+/sys/kernel/security/securelevel which can be written to by root. The
-+following values are supported:
-+
-+-1: Permanently insecure mode. This level is equivalent to level 0, but once
-+    set cannot be changed.
-+
-+0:  Insecure mode (default). This level imposes no additional kernel
-+    restrictions.
-+
-+1:  Secure mode. If set, userspace will be unable to perform direct access
-+    to PCI devices, port IO access, access system memory directly via
-+    /dev/mem and /dev/kmem, perform kexec_load(), use the userspace
-+    software suspend mechanism, insert new ACPI code at runtime via the
-+    custom_method interface or modify CPU MSRs (on x86). Certain drivers
-+    may also limit additional interfaces.
-+
-+Once the securelevel value is increased, it may not be decreased.
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 9d37e2b..e8b69e0 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -3081,6 +3081,14 @@ static inline void security_audit_rule_free(void *lsmrule)
- #endif /* CONFIG_SECURITY */
- #endif /* CONFIG_AUDIT */
- 
-+#ifdef CONFIG_SECURITY_SECURELEVEL
-+extern int get_securelevel(void);
-+extern int set_securelevel(int new_securelevel);
-+#else
-+static inline int get_securelevel(void) { return 0; }
-+static inline int set_securelevel(int new_securelevel) { return 0; }
-+#endif /* CONFIG_SECURELEVEL */
-+
- #ifdef CONFIG_SECURITYFS
- 
- extern struct dentry *securityfs_create_file(const char *name, umode_t mode,
-diff --git a/security/Kconfig b/security/Kconfig
-index e9c6ac7..3605d24 100644
---- a/security/Kconfig
-+++ b/security/Kconfig
-@@ -70,6 +70,14 @@ config SECURITY_PATH
- 	  implement pathname based access controls.
- 	  If you are unsure how to answer this question, answer N.
- 
-+config SECURITY_SECURELEVEL
-+        bool "Securelevel kernel restriction interface"
-+	depends on SECURITY
-+	help
-+	  This enables support for adding a set of additional kernel security
-+	  restrictions at runtime. See Documentation/security/securelevel.txt
-+	  for further information.
-+
- config INTEL_TXT
- 	bool "Enable Intel(R) Trusted Execution Technology (Intel(R) TXT)"
- 	depends on HAVE_INTEL_TXT
-diff --git a/security/Makefile b/security/Makefile
-index c26c81e..d6c98ab 100644
---- a/security/Makefile
-+++ b/security/Makefile
-@@ -16,6 +16,7 @@ obj-$(CONFIG_MMU)			+= min_addr.o
- # Object file lists
- obj-$(CONFIG_SECURITY)			+= security.o capability.o
- obj-$(CONFIG_SECURITYFS)		+= inode.o
-+obj-$(CONFIG_SECURITY_SECURELEVEL)	+= securelevel.o
- # Must precede capability.o in order to stack properly.
- obj-$(CONFIG_SECURITY_SELINUX)		+= selinux/built-in.o
- obj-$(CONFIG_SECURITY_SMACK)		+= smack/built-in.o
-diff --git a/security/securelevel.c b/security/securelevel.c
-new file mode 100644
-index 0000000..7128430
---- /dev/null
-+++ b/security/securelevel.c
-@@ -0,0 +1,116 @@
-+/*
-+ *  securelevel.c - support for generic kernel lockdown
-+ *
-+ *  Copyright Nebula, Inc <matthew.garrett@nebula.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ *
-+ */
-+
-+#include <linux/fs.h>
-+#include <linux/init.h>
-+#include <linux/security.h>
-+#include <linux/uaccess.h>
-+
-+static int securelevel;
-+
-+static DEFINE_SPINLOCK(securelevel_lock);
-+
-+#define MAX_SECURELEVEL 1
-+
-+int get_securelevel(void)
-+{
-+	return securelevel;
-+}
-+EXPORT_SYMBOL(get_securelevel);
-+
-+int set_securelevel(int new_securelevel)
-+{
-+	int ret = 0;
-+
-+	spin_lock(&securelevel_lock);
-+
-+	if ((securelevel == -1) || (new_securelevel < securelevel) ||
-+	    (new_securelevel > MAX_SECURELEVEL)) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	securelevel = new_securelevel;
-+out:
-+	spin_unlock(&securelevel_lock);
-+	return ret;
-+}
-+EXPORT_SYMBOL(set_securelevel);
-+
-+static ssize_t securelevel_read(struct file *filp, char __user *buf,
-+				size_t count, loff_t *ppos)
-+{
-+	char tmpbuf[12];
-+	ssize_t length;
-+
-+	length = scnprintf(tmpbuf, sizeof(tmpbuf), "%d", securelevel);
-+	return simple_read_from_buffer(buf, count, ppos, tmpbuf, length);
-+}
-+
-+static ssize_t securelevel_write(struct file *file, const char __user *buf,
-+				 size_t count, loff_t *ppos)
-+{
-+	char *page = NULL;
-+	ssize_t length;
-+	int new_securelevel;
-+
-+	length = -ENOMEM;
-+	if (count >= PAGE_SIZE)
-+		goto out;
-+
-+	length = -EINVAL;
-+	if (*ppos != 0)
-+		goto out;
-+
-+	length = -ENOMEM;
-+	page = (char *)get_zeroed_page(GFP_KERNEL);
-+	if (!page)
-+		goto out;
-+
-+	length = -EFAULT;
-+	if (copy_from_user(page, buf, count))
-+		goto out;
-+
-+	length = -EINVAL;
-+	if (sscanf(page, "%d", &new_securelevel) != 1)
-+		goto out;
-+
-+	length = set_securelevel(new_securelevel);
-+	if (length)
-+		goto out;
-+
-+	length = count;
-+out:
-+	free_page((unsigned long) page);
-+	return length;
-+}
-+
-+static const struct file_operations securelevel_fops = {
-+	.read 	= securelevel_read,
-+	.write 	= securelevel_write,
-+	.llseek	= generic_file_llseek,
-+};
-+
-+static __init int setup_securelevel(void)
-+{
-+	struct dentry *securelevel_file;
-+
-+	securelevel_file = securityfs_create_file("securelevel",
-+						  S_IWUSR | S_IRUGO,
-+						  NULL, NULL,
-+						  &securelevel_fops);
-+
-+	if (IS_ERR(securelevel_file))
-+		return PTR_ERR(securelevel_file);
-+
-+	return 0;
-+}
-+late_initcall(setup_securelevel);
--- 
-1.8.3.1
+You break the old behavior here. _Iff_ this is what you want, then
+please do that in another commit. Explicitly state that "38" is used
+for 256color and shouldn't turn on underline+default-col. The SCO-ish
+behavior is weird, indeed, but breaking it silently is not ok.
 
+> +                               i++;
+> +                               if (i > vc->vc_npar)
+
+This should be ">=", but the for()-loop does allow your ">". So unless
+someone fixes the for-loop to use "<" (do a ++vc->vc_npar before it,
+if it's correct. But blindly doing "<=" is really irritating) I think
+this is ok.
+
+> +                                       break;
+> +                               if (vc->vc_par[i] == 5)      /* 256 colours */
+> +                                       i++;                 /* ubiquitous */
+> +                               else if (vc->vc_par[i] == 2) /* 24 bit colours */
+> +                                       i += 3;              /* extremely rare */
+> +                               /* Subcommands 3 (CMY) and 4 (CMYK) are so insane
+> +                                * that detecting them is not worth the few extra
+> +                                * bytes of kernel's size.
+> +                                */
+
+I can confirm that 38/48 are "parsed" correctly here. Skipping '3' and
+'4' seems right, too. Haven't seen anyone implementing them. Even '2'
+seems to be almost unused.
+
+Btw., you should put Greg Kroah-Hartman and Andrew Morton on CC. Both
+are the most likely to pick this up.
+
+Regards
+David
+
+>                                 break;
+>                         case 39: /* ANSI X3.64-1979 (SCO-ish?)
+>                                   * Disable underline option.
+> --
+> 1.8.4.rc3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
