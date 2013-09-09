@@ -1,88 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751231Ab3IIAxJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Sep 2013 20:53:09 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47560 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750848Ab3IIAxH (ORCPT
+	id S1751285Ab3IIA5p (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Sep 2013 20:57:45 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49144 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750885Ab3IIA5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Sep 2013 20:53:07 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <522D1BC4.9080500@jp.fujitsu.com>
-Date: Mon, 9 Sep 2013 09:52:20 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Sun, 8 Sep 2013 20:57:43 -0400
+Date: Mon, 9 Sep 2013 01:57:33 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Waiman Long <Waiman.Long@hp.com>, Jeff Layton <jlayton@redhat.com>,
+        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH v7 1/4] spinlock: A new lockref structure for lockless
+ update of refcount
+Message-ID: <20130909005733.GL13318@ZenIV.linux.org.uk>
+References: <1377751465.4028.20.camel@pasglop>
+ <20130829070012.GC27322@gmail.com>
+ <CA+55aFwzY_1tD5vmaDgwAGLXNSGw4XS8vEp9vOpN6NPm5+Mxow@mail.gmail.com>
+ <CA+55aFx1oq7+jce8vLWRitASVMugCojYe3gmhXwhLx4K9Au3XQ@mail.gmail.com>
+ <CA+55aFyq7dJnm6tfn12hLOw5qKLW2RXRFERHgZO-sOOnUmjd3g@mail.gmail.com>
+ <CA+55aFxEjDYhY3i6B2okMWZXFiiq7hibTdeOD+OHAhNA7=XV1A@mail.gmail.com>
+ <20130909000300.GH13318@ZenIV.linux.org.uk>
+ <CA+55aFy6=CvNet+fjcYiFxbb_E1gDPzudaJ+hVotYuG5zuMb5Q@mail.gmail.com>
+ <20130909003517.GJ13318@ZenIV.linux.org.uk>
+ <CA+55aFwEs6epLkbp2L9+7jR9+AWB=fsB+dJMUeufxvPDF9hBgw@mail.gmail.com>
 MIME-Version: 1.0
-To: Xishi Qiu <qiuxishi@huawei.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>, Toshi Kani <toshi.kani@hp.com>,
-        <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm/hotplug: rename the function is_memblock_offlined_cb()
-References: <52299848.1000105@huawei.com>
-In-Reply-To: <52299848.1000105@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwEs6epLkbp2L9+7jR9+AWB=fsB+dJMUeufxvPDF9hBgw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/09/06 17:54), Xishi Qiu wrote:
-> Function is_memblock_offlined() return 1 means memory block is offlined,
-> but is_memblock_offlined_cb() return 1 means memory block is not offlined,
-> this will confuse somebody, so rename the function.
-> Another, use "pfn_to_nid(pfn)" instead of "page_to_nid(pfn_to_page(pfn))".
->
-> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-> ---
+On Sun, Sep 08, 2013 at 05:38:46PM -0700, Linus Torvalds wrote:
+> On Sun, Sep 8, 2013 at 5:35 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > That should also work, replacing the current tip of #for-next.  Do you
+> > prefer to merge those two diffs of yours into a single commit?
+> 
+> If you're ok with my patch (it's now also tested, I'm running with it
+> and it looks fine), I'll commit that one as-is.
 
-It looks good to me. But I have one comment.
-Please see below.
-
->   mm/memory_hotplug.c |    6 +++---
->   1 files changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> index ca1dd3a..a95dd28 100644
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -937,7 +937,7 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_typ
->   	arg.nr_pages = nr_pages;
->   	node_states_check_changes_online(nr_pages, zone, &arg);
->
-
-> -	nid = page_to_nid(pfn_to_page(pfn));
-> +	nid = pfn_to_nid(pfn);
-
-Please split the cleanup from this patch since the cleanup has
-nothing to do with the description of this patch.
-
-Thanks,
-Yasuaki Ishimatsu
-
->
->   	ret = memory_notify(MEM_GOING_ONLINE, &arg);
->   	ret = notifier_to_errno(ret);
-> @@ -1657,7 +1657,7 @@ int walk_memory_range(unsigned long start_pfn, unsigned long end_pfn,
->   }
->
->   #ifdef CONFIG_MEMORY_HOTREMOVE
-> -static int is_memblock_offlined_cb(struct memory_block *mem, void *arg)
-> +static int check_memblock_offlined_cb(struct memory_block *mem, void *arg)
->   {
->   	int ret = !is_memblock_offlined(mem);
->
-> @@ -1794,7 +1794,7 @@ void __ref remove_memory(int nid, u64 start, u64 size)
->   	 * if this is not the case.
->   	 */
->   	ret = walk_memory_range(PFN_DOWN(start), PFN_UP(start + size - 1), NULL,
-> -				is_memblock_offlined_cb);
-> +				check_memblock_offlined_cb);
->   	if (ret) {
->   		unlock_memory_hotplug();
->   		BUG();
->
-
-
+OK...  I'm dropping 38373e1ee72bf57b6f9b1ab0979a60887352c7e6, then...
