@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756184Ab3IIXtZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 19:49:25 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:57209 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755807Ab3IIXtY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 19:49:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <1378766555-9679-1-git-send-email-khilman@linaro.org>
-References: <1378766555-9679-1-git-send-email-khilman@linaro.org>
-Date: Mon, 9 Sep 2013 16:49:23 -0700
-X-Google-Sender-Auth: Pl4t2A9kZyB2qLPwNJq5EOc_mRE
-Message-ID: <CA+55aFxNbH+G6DVQNxE9di_btA5hxFH93af_vjN2v0eH8e5W-g@mail.gmail.com>
-Subject: Re: [GIT PULL 0/3] ARM: SoC: Second round of changes for v3.12
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: ARM SoC <arm@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1756200Ab3IIXwE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 19:52:04 -0400
+Received: from mga09.intel.com ([134.134.136.24]:39816 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755744Ab3IIXwC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 19:52:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,874,1371106800"; 
+   d="scan'208";a="400901141"
+From: Jon Mason <jon.mason@intel.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Dave Jiang <dave.jiang@intel.com>, Vinod Koul <vinod.koul@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] dmadevices: dma_sync_wait and dma_find_channel undefined
+Date: Mon,  9 Sep 2013 16:51:59 -0700
+Message-Id: <1378770719-24070-1-git-send-email-jon.mason@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 9, 2013 at 3:42 PM, Kevin Hilman <khilman@linaro.org> wrote:
->
-> The main thing of note (or of potential annoyance factor) here is the
-> handful of conflicts in PULL 2/3 coming from platform changes
-> conflicting with driver changes going in to the V4L tree.  I've listed
-> them in detail in that pull request, and we will work with the
-> platform maintainer on the workflow to avoid this in the future.
+dma_sync_wait and dma_find_channel are declared regardless of whether
+CONFIG_DMA_ENGINE is enabled, but calling the function without
+CONFIG_DMA_ENGINE enabled results "undefined reference" errors.
 
-Ok. I still really despise the absolute incredible sh*t that is
-non-discoverable buses, and I hope that ARM SoC hardware designers all
-die in some incredibly painful accident.  DT only does so much.
+To get around this, declare dma_sync_wait and dma_find_channel as inline
+functions if CONFIG_DMA_ENGINE is undefined.
 
-So if you see any, send them my love, and possibly puncture the
-brake-lines on their car and put a little surprise in their coffee,
-ok?
+Signed-off-by: Jon Mason <jon.mason@intel.com>
+---
+ include/linux/dmaengine.h |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-> For future reference, when it comes to these conflicts, do you want to
-> see a summary of the suggested resolutions, a published branch with
-> the resolutions, both or neither?  Just curious.
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index cb286b1..cd4d1ca 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -958,8 +958,9 @@ dma_set_tx_state(struct dma_tx_state *st, dma_cookie_t last, dma_cookie_t used,
+ 	}
+ }
+ 
+-enum dma_status dma_sync_wait(struct dma_chan *chan, dma_cookie_t cookie);
+ #ifdef CONFIG_DMA_ENGINE
++struct dma_chan *dma_find_channel(enum dma_transaction_type tx_type);
++enum dma_status dma_sync_wait(struct dma_chan *chan, dma_cookie_t cookie);
+ enum dma_status dma_wait_for_async_tx(struct dma_async_tx_descriptor *tx);
+ void dma_issue_pending_all(void);
+ struct dma_chan *__dma_request_channel(const dma_cap_mask_t *mask,
+@@ -967,6 +968,14 @@ struct dma_chan *__dma_request_channel(const dma_cap_mask_t *mask,
+ struct dma_chan *dma_request_slave_channel(struct device *dev, const char *name);
+ void dma_release_channel(struct dma_chan *chan);
+ #else
++static inline struct dma_chan *dma_find_channel(enum dma_transaction_type tx_type)
++{
++	return NULL;
++}
++static inline enum dma_status dma_sync_wait(struct dma_chan *chan, dma_cookie_t cookie)
++{
++	return DMA_SUCCESS;
++}
+ static inline enum dma_status dma_wait_for_async_tx(struct dma_async_tx_descriptor *tx)
+ {
+ 	return DMA_SUCCESS;
+@@ -994,7 +1003,6 @@ static inline void dma_release_channel(struct dma_chan *chan)
+ int dma_async_device_register(struct dma_device *device);
+ void dma_async_device_unregister(struct dma_device *device);
+ void dma_run_dependencies(struct dma_async_tx_descriptor *tx);
+-struct dma_chan *dma_find_channel(enum dma_transaction_type tx_type);
+ struct dma_chan *net_dma_find_channel(void);
+ #define dma_request_channel(mask, x, y) __dma_request_channel(&(mask), x, y)
+ #define dma_request_slave_channel_compat(mask, x, y, dev, name) \
+-- 
+1.7.9.5
 
-I'll basically always end up re-doing the conflict resolution by hand
-anyway unless it's just *incredibly* messy (and I think that has
-happened all of once or twice), so anything you send me ends up being
-just confirmation.
-
-In this case, for example, I didn't end up looking at your pre-merged
-stuff, because the summaries were enough for me to just say "ok, that
-confirms my resolution". In other cases, people don't write detailed
-summaries, and I end up confirming my resolution by just doing a
-separate test-merge against their pre-merged branch and comparing.
-
-And in most cases, the resolution is trivial enough that I don't
-bother with either.
-
-And in *all* cases I appreciate it when people do the preparation. It
-hopefully also makes submaintainers themselves more aware of
-development flow conflicts and more aware of possible problem issues
-(same reason I prefer doing all the resolutions by hand myself), so I
-suspect all of this is healthy even if I don't end up using it.
-
-Final note: putting the conflict resolution explanation in the tag
-message is unnecessary, since it's not really worth it after-the-fact
-- so I'll just edit it away. It's not a problem, but in general I'd
-suggest the tag message just contain the "here's the highlights", and
-you do the conflict resolution notes just in the email. But I suspect
-you may find the use of the tags a convenient way to jot down the
-resolution for then sending the email later, and it's not like it
-hurts me to edit it away afterwards, so not a big deal. Whatever works
-for you.
-
-            Linus
