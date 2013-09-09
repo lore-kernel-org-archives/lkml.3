@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751423Ab3IIIdm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 04:33:42 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:20826 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128Ab3IIIdk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 04:33:40 -0400
-Date: Mon, 9 Sep 2013 11:33:27 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Jerome Marchand <jmarchan@redhat.com>, devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH 1/2] staging: zram: minimize `slot_free_lock' usage
-Message-ID: <20130909083327.GX6329@mwanda>
-References: <20130906134706.GA2238@swordfish.minsk.epam.com>
- <5229E9BF.5020604@redhat.com>
- <20130906145545.GC2238@swordfish.minsk.epam.com>
+	id S1751252Ab3IIIgx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 04:36:53 -0400
+Received: from mga11.intel.com ([192.55.52.93]:51118 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750835Ab3IIIgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 04:36:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,866,1371106800"; 
+   d="scan'208";a="398652431"
+Message-ID: <522D88C3.7000808@intel.com>
+Date: Mon, 09 Sep 2013 16:37:23 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130906145545.GC2238@swordfish.minsk.epam.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>,
+        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
+        Yves-Alexis Perez <corsac@debian.org>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Lee Chun-Yi <jlee@novell.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Subject: [PATCH 0/2] Rework ACPI video driver
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 06, 2013 at 05:55:45PM +0300, Sergey Senozhatsky wrote:
-> On (09/06/13 16:42), Jerome Marchand wrote:
-> > On 09/06/2013 03:47 PM, Sergey Senozhatsky wrote:
-> > > Calling handle_pending_slot_free() for every RW operation may
-> > > cause unneccessary slot_free_lock locking, because most likely
-> > > process will see NULL slot_free_rq. handle_pending_slot_free()
-> > > only when current detects that slot_free_rq is not NULL.
-> > > 
-> > > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> > > 
-> > > ---
-> > > 
-> > >  drivers/staging/zram/zram_drv.c | 5 +++--
-> > >  1 file changed, 3 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> > > index 91d94b5..17386e2 100644
-> > > --- a/drivers/staging/zram/zram_drv.c
-> > > +++ b/drivers/staging/zram/zram_drv.c
-> > > @@ -532,14 +532,15 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
-> > >  {
-> > >  	int ret;
-> > >  
-> > > +	if (zram->slot_free_rq)
-> > > +		handle_pending_slot_free(zram);
-> > > +
-> > 
-> > Calling handle_pending_slot_free() without holding zram->lock?
-> > That's racy.
-> 
-> sorry, my bad. it should take down_write() lock.
-> 
+The ACPI video module provides two functionalities: backlight control
+and backlight hotkey event delivery. It is possible the backlight
+control interface is broken while the system still needs its event
+delivery, so it's worth to seperate the two interfaces clearly.
 
-Or down_read() on the read path.  We leave the original as-is?
+This patchset has two patches, the first is to sepeate the two
+interfaces in the ACPI video module and the second one solves some
+Win8 backlight control problems by removing ACPI video's backlight
+interface while still keeping its event delivery functionality. Due
+to some systems whose firmware claims win8 compatible have problems
+with i915's backlight control interface, a module param is introduced
+to give user a chance to select if they want to remove ACPI video's
+backlight control interface. The param is set to false by default.
 
-regards,
-dan carpenter
+Aaron Lu (2):
+  ACPI / video: seperate backlight control and event interface
+  ACPI / video / i915: Remove ACPI backlight if firmware expects Windows
+    8
+
+ drivers/acpi/internal.h         |   2 +
+ drivers/acpi/video.c            | 473 +++++++++++++++++++++++-----------------
+ drivers/acpi/video_detect.c     |  15 +-
+ drivers/gpu/drm/i915/i915_dma.c |   2 +-
+ drivers/gpu/drm/i915/i915_drv.c |   5 +
+ drivers/gpu/drm/i915/i915_drv.h |   1 +
+ include/acpi/video.h            |  11 +-
+ include/linux/acpi.h            |   1 +
+ 8 files changed, 310 insertions(+), 200 deletions(-)
+
+-- 
+1.8.4.12.g2ea3df6
 
