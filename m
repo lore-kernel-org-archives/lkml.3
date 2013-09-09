@@ -1,264 +1,482 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755817Ab3IIVyM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 17:54:12 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:36364 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755554Ab3IIVyK convert rfc822-to-8bit (ORCPT
+	id S1755946Ab3IIV43 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 17:56:29 -0400
+Received: from usindpps06.hds.com ([207.126.252.19]:51521 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755460Ab3IIV41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 17:54:10 -0400
-Content-Type: text/plain; charset="utf-8"
+	Mon, 9 Sep 2013 17:56:27 -0400
+Message-ID: <522E43D5.9010505@hds.com>
+Date: Mon, 09 Sep 2013 17:55:33 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org
-User-Agent: alot/0.3.4
-To: torvalds@linux-foundation.org
-Message-ID: <20130909215406.11074.28281@quantum>
-Subject: [GIT PULL] clk: changes for 3.12
-Date: Mon, 09 Sep 2013 14:54:06 -0700
+To: linux-kernel@vger.kernel.org, x86@kernel.org
+CC: hpa@zytor.com, rostedt@goodmis.org, mingo@elte.hu, bp@alien8.de,
+        tglx@linutronix.de, fdeslaur@gmail.com, raphael.beamonte@gmail.com,
+        dle-develop@lists.sourceforge.net, tomoki.sekiyama@hds.com
+Subject: [PATCH v3] Introduce page fault tracepoint
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-09-09_07:2013-09-09,2013-09-09,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=4
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1309090134
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 3b2f64d00c46e1e4e9bd0bb9bb12619adac27a4b:
+Change from v2
+ - Print entry->ip instead of entry->regs->ip to avoid kernel crash.
+ - Use %pf instead of 0x%lx to print address and ip.
 
-  Linux 3.11-rc2 (2013-07-21 12:05:29 -0700)
+This patch introduces page fault tracepoints to x86 architecture
+by switching IDT.
 
-are available in the git repository at:
+[Use case of page fault events]
 
-  git://git.linaro.org/people/mturquette/linux.git tags/clk-for-linus-3.12
+  Two events, for user and kernel spaces, are introduced at the beginning of
+  page fault handler.
 
-for you to fetch changes up to 12d298865ec5d0f14dd570c3506c270880769ed7:
+  - User space event
+    There is a request of page fault event for user space as below.
 
-  clk: only call get_parent if there is one (2013-09-09 14:10:10 -0700)
+    http://marc.info/?l=linux-mm&m=136807959830182&w=2
+    http://marc.info/?l=linux-mm&m=136807959130175&w=2
 
-----------------------------------------------------------------
-The common clk framework changes for 3.12 are dominated by clock driver
-patches, both new drivers and fixes to existing. A high percentage of
-these are for Samsung platforms like Exynos. Core framework fixes and
-some new features like automagical clock re-parenting round out the
-patches.
+  - Kernel space event:
+    Overhead in kernel space is measurable by enabling it.
 
-----------------------------------------------------------------
-Alex Elder (2):
-      clk: get matching entry under lock in of_clk_init()
-      clk: only call get_parent if there is one
+[Creating IDT]
 
-Axel Lin (1):
-      clk: sunxi: Fix checking return value of clk_register_[composite|factors]
+ A way to create IDT is as below.
 
-Emilio López (2):
-      clk: sunxi: fix initialization of basic clocks
-      clk: sunxi: fix initialization of basic clocks
+ - Introduce set_intr_gate_raw() to register just non-trace handler to IDT.
+   This is used at boot time which tracing is disabled.
+ - Make set_intr_gate() macro so that it can register trace handler to
+   trace IDT and non-trace handler to normal IDT.
 
-Fabio Estevam (2):
-      clk: mxs: clk-imx23: Include <linux/clk/mxs.h>
-      clk: clk-divider: Export clk_register_divider()
+Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+---
+ arch/x86/include/asm/desc.h             | 33 +++++++++++++++++----
+ arch/x86/include/asm/hw_irq.h           | 14 ++++++++-
+ arch/x86/include/asm/trace/exceptions.h | 52 +++++++++++++++++++++++++++++++++
+ arch/x86/include/asm/traps.h            | 22 ++++++++++++++
+ arch/x86/kernel/entry_32.S              | 10 +++++++
+ arch/x86/kernel/entry_64.S              | 13 ++++++++-
+ arch/x86/kernel/head64.c                |  2 +-
+ arch/x86/kernel/irqinit.c               |  2 +-
+ arch/x86/kernel/kvm.c                   |  2 +-
+ arch/x86/kernel/traps.c                 | 28 +++++++++---------
+ arch/x86/mm/Makefile                    |  2 ++
+ arch/x86/mm/fault.c                     | 22 ++++++++++++++
+ 12 files changed, 178 insertions(+), 24 deletions(-)
+ create mode 100644 arch/x86/include/asm/trace/exceptions.h
 
-Gerhard Sittig (1):
-      clk: wrap I/O access for improved portability
+diff --git a/arch/x86/include/asm/desc.h b/arch/x86/include/asm/desc.h
+index b90e5df..c04302b 100644
+--- a/arch/x86/include/asm/desc.h
++++ b/arch/x86/include/asm/desc.h
+@@ -327,10 +327,28 @@ static inline void write_trace_idt_entry(int entry, const gate_desc *gate)
+ {
+ 	write_idt_entry(trace_idt_table, entry, gate);
+ }
++
++static inline void _trace_set_gate(int gate, unsigned type, void *addr,
++				   unsigned dpl, unsigned ist, unsigned seg)
++{
++	gate_desc s;
++
++	pack_gate(&s, type, (unsigned long)addr, dpl, ist, seg);
++	/*
++	 * does not need to be atomic because it is only done once at
++	 * setup time
++	 */
++	write_trace_idt_entry(gate, &s);
++}
+ #else
+ static inline void write_trace_idt_entry(int entry, const gate_desc *gate)
+ {
+ }
++
++static inline void _trace_set_gate(int gate, unsigned type, void *addr,
++				   unsigned dpl, unsigned ist, unsigned seg)
++{
++}
+ #endif
+ 
+ static inline void _set_gate(int gate, unsigned type, void *addr,
+@@ -353,12 +371,20 @@ static inline void _set_gate(int gate, unsigned type, void *addr,
+  * Pentium F0 0F bugfix can have resulted in the mapped
+  * IDT being write-protected.
+  */
+-static inline void set_intr_gate(unsigned int n, void *addr)
++static inline void set_intr_gate_raw(unsigned int n, void *addr)
+ {
+ 	BUG_ON((unsigned)n > 0xFF);
+ 	_set_gate(n, GATE_INTERRUPT, addr, 0, 0, __KERNEL_CS);
+ }
+ 
++#define set_intr_gate(n, addr)						\
++	do {								\
++		BUG_ON((unsigned)n > 0xFF);				\
++		_set_gate(n, GATE_INTERRUPT, addr, 0, 0, __KERNEL_CS);	\
++		_trace_set_gate(n, GATE_INTERRUPT, trace_##addr, 0, 0,	\
++				__KERNEL_CS);				\
++	} while (0)
++
+ extern int first_system_vector;
+ /* used_vectors is BITMAP for irq is not managed by percpu vector_irq */
+ extern unsigned long used_vectors[];
+@@ -395,10 +421,7 @@ static inline void trace_set_intr_gate(unsigned int gate, void *addr)
+ #define __trace_alloc_intr_gate(n, addr)
+ #endif
+ 
+-static inline void __alloc_intr_gate(unsigned int n, void *addr)
+-{
+-	set_intr_gate(n, addr);
+-}
++#define __alloc_intr_gate(n, addr) set_intr_gate(n, addr)
+ 
+ #define alloc_intr_gate(n, addr)				\
+ 	do {							\
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index 92b3bae..c856e69 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -89,10 +89,22 @@ extern void trace_reschedule_interrupt(void);
+ extern void trace_threshold_interrupt(void);
+ extern void trace_call_function_interrupt(void);
+ extern void trace_call_function_single_interrupt(void);
++#else /* CONFIG_TRACING */
++#define trace_apic_timer_interrupt apic_timer_interrupt
++#define trace_x86_platform_ipi x86_platform_ipi
++#define trace_error_interrupt error_interrupt
++#define trace_irq_work_interrupt irq_work_interrupt
++#define trace_spurious_interrupt spurious_interrupt
++#define trace_thermal_interrupt thermal_interrupt
++#define trace_reschedule_interrupt reschedule_interrupt
++#define trace_threshold_interrupt threshold_interrupt
++#define trace_call_function_interrupt call_function_interrupt
++#define trace_call_function_single_interrupt call_function_single_interrupt
++#endif
++
+ #define trace_irq_move_cleanup_interrupt  irq_move_cleanup_interrupt
+ #define trace_reboot_interrupt  reboot_interrupt
+ #define trace_kvm_posted_intr_ipi kvm_posted_intr_ipi
+-#endif /* CONFIG_TRACING */
+ 
+ /* IOAPIC */
+ #define IO_APIC_IRQ(x) (((x) >= NR_IRQS_LEGACY) || ((1<<(x)) & io_apic_irqs))
+diff --git a/arch/x86/include/asm/trace/exceptions.h b/arch/x86/include/asm/trace/exceptions.h
+new file mode 100644
+index 0000000..86540c0
+--- /dev/null
++++ b/arch/x86/include/asm/trace/exceptions.h
+@@ -0,0 +1,52 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM exceptions
++
++#if !defined(_TRACE_PAGE_FAULT_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_PAGE_FAULT_H
++
++#include <linux/tracepoint.h>
++
++extern void trace_irq_vector_regfunc(void);
++extern void trace_irq_vector_unregfunc(void);
++
++DECLARE_EVENT_CLASS(x86_exceptions,
++
++	TP_PROTO(unsigned long address, struct pt_regs *regs,
++		 unsigned long error_code),
++
++	TP_ARGS(address, regs, error_code),
++
++	TP_STRUCT__entry(
++		__field(		unsigned long, address	)
++		__field(		unsigned long, ip	)
++		__field(		unsigned long, error_code )
++	),
++
++	TP_fast_assign(
++		__entry->address = address;
++		__entry->ip = regs->ip;
++		__entry->error_code = error_code;
++	),
++
++	TP_printk("address=%pf ip=%pf error_code=0x%lx",
++		  (void *)__entry->address, (void *)__entry->ip,
++		  __entry->error_code) );
++
++#define DEFINE_PAGE_FAULT_EVENT(name)				\
++DEFINE_EVENT_FN(x86_exceptions, name,				\
++	TP_PROTO(unsigned long address,	struct pt_regs *regs,	\
++		 unsigned long error_code),			\
++	TP_ARGS(address, regs, error_code),			\
++	trace_irq_vector_regfunc,				\
++	trace_irq_vector_unregfunc);
++
++DEFINE_PAGE_FAULT_EVENT(user_page_fault);
++DEFINE_PAGE_FAULT_EVENT(kernel_page_fault);
++
++#undef TRACE_INCLUDE_PATH
++#define TRACE_INCLUDE_PATH .
++#define TRACE_INCLUDE_FILE exceptions
++#endif /*  _TRACE_PAGE_FAULT_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+diff --git a/arch/x86/include/asm/traps.h b/arch/x86/include/asm/traps.h
+index 7036cb6..a400a22 100644
+--- a/arch/x86/include/asm/traps.h
++++ b/arch/x86/include/asm/traps.h
+@@ -37,6 +37,25 @@ asmlinkage void machine_check(void);
+ #endif /* CONFIG_X86_MCE */
+ asmlinkage void simd_coprocessor_error(void);
+ 
++#ifdef CONFIG_TRACING
++asmlinkage void trace_page_fault(void);
++#else
++#define trace_page_fault page_fault
++#endif
++#define trace_divide_error divide_error
++#define trace_bounds bounds
++#define trace_invalid_op invalid_op
++#define trace_device_not_available device_not_available
++#define trace_coprocessor_segment_overrun coprocessor_segment_overrun
++#define trace_invalid_TSS invalid_TSS
++#define trace_segment_not_present segment_not_present
++#define trace_general_protection general_protection
++#define trace_spurious_interrupt_bug spurious_interrupt_bug
++#define trace_coprocessor_error coprocessor_error
++#define trace_alignment_check alignment_check
++#define trace_simd_coprocessor_error simd_coprocessor_error
++#define trace_async_page_fault async_page_fault
++
+ dotraplinkage void do_divide_error(struct pt_regs *, long);
+ dotraplinkage void do_debug(struct pt_regs *, long);
+ dotraplinkage void do_nmi(struct pt_regs *, long);
+@@ -55,6 +74,9 @@ asmlinkage __kprobes struct pt_regs *sync_regs(struct pt_regs *);
+ #endif
+ dotraplinkage void do_general_protection(struct pt_regs *, long);
+ dotraplinkage void do_page_fault(struct pt_regs *, unsigned long);
++#ifdef CONFIG_TRACING
++dotraplinkage void trace_do_page_fault(struct pt_regs *, unsigned long);
++#endif
+ dotraplinkage void do_spurious_interrupt_bug(struct pt_regs *, long);
+ dotraplinkage void do_coprocessor_error(struct pt_regs *, long);
+ dotraplinkage void do_alignment_check(struct pt_regs *, long);
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 2cfbc3a..c9eb4e2 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -1244,6 +1244,16 @@ return_to_handler:
+  */
+ 	.pushsection .kprobes.text, "ax"
+ 
++#ifdef CONFIG_TRACING
++ENTRY(trace_page_fault)
++	RING0_EC_FRAME
++	ASM_CLAC
++	pushl_cfi $trace_do_page_fault
++	jmp error_code
++	CFI_ENDPROC
++END(trace_page_fault)
++#endif
++
+ ENTRY(page_fault)
+ 	RING0_EC_FRAME
+ 	ASM_CLAC
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 1b69951..5136404 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1295,6 +1295,17 @@ ENTRY(\sym)
+ END(\sym)
+ .endm
+ 
++#ifdef CONFIG_TRACING
++.macro trace_errorentry sym do_sym
++errorentry trace(\sym) trace(\do_sym)
++errorentry \sym \do_sym
++.endm
++#else
++.macro trace_errorentry sym do_sym
++errorentry \sym \do_sym
++.endm
++#endif
++
+ 	/* error code is on the stack already */
+ .macro paranoiderrorentry sym do_sym
+ ENTRY(\sym)
+@@ -1497,7 +1508,7 @@ zeroentry xen_int3 do_int3
+ errorentry xen_stack_segment do_stack_segment
+ #endif
+ errorentry general_protection do_general_protection
+-errorentry page_fault do_page_fault
++trace_errorentry page_fault do_page_fault
+ #ifdef CONFIG_KVM_GUEST
+ errorentry async_page_fault do_async_page_fault
+ #endif
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index 1be8e43..aebb2bf 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -162,7 +162,7 @@ asmlinkage void __init x86_64_start_kernel(char * real_mode_data)
+ 	clear_bss();
+ 
+ 	for (i = 0; i < NUM_EXCEPTION_VECTORS; i++)
+-		set_intr_gate(i, &early_idt_handlers[i]);
++		set_intr_gate_raw(i, &early_idt_handlers[i]);
+ 	load_idt((const struct desc_ptr *)&idt_descr);
+ 
+ 	copy_bootdata(__va(real_mode_data));
+diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
+index a2a1fbc..2ca2354 100644
+--- a/arch/x86/kernel/irqinit.c
++++ b/arch/x86/kernel/irqinit.c
+@@ -206,7 +206,7 @@ void __init native_init_IRQ(void)
+ 	i = FIRST_EXTERNAL_VECTOR;
+ 	for_each_clear_bit_from(i, used_vectors, NR_VECTORS) {
+ 		/* IA32_SYSCALL_VECTOR could be used in trap_init already. */
+-		set_intr_gate(i, interrupt[i - FIRST_EXTERNAL_VECTOR]);
++		set_intr_gate_raw(i, interrupt[i - FIRST_EXTERNAL_VECTOR]);
+ 	}
+ 
+ 	if (!acpi_ioapic && !of_ioapic)
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index 697b93a..ba202ee 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -464,7 +464,7 @@ static struct notifier_block kvm_cpu_notifier = {
+ 
+ static void __init kvm_apf_trap_init(void)
+ {
+-	set_intr_gate(14, &async_page_fault);
++	set_intr_gate(14, async_page_fault);
+ }
+ 
+ void __init kvm_guest_init(void)
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 8c8093b..1c9d0ad 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -713,7 +713,7 @@ void __init early_trap_init(void)
+ 	/* int3 can be called from all */
+ 	set_system_intr_gate_ist(X86_TRAP_BP, &int3, DEBUG_STACK);
+ #ifdef CONFIG_X86_32
+-	set_intr_gate(X86_TRAP_PF, &page_fault);
++	set_intr_gate(X86_TRAP_PF, page_fault);
+ #endif
+ 	load_idt(&idt_descr);
+ }
+@@ -721,7 +721,7 @@ void __init early_trap_init(void)
+ void __init early_trap_pf_init(void)
+ {
+ #ifdef CONFIG_X86_64
+-	set_intr_gate(X86_TRAP_PF, &page_fault);
++	set_intr_gate(X86_TRAP_PF, page_fault);
+ #endif
+ }
+ 
+@@ -737,30 +737,30 @@ void __init trap_init(void)
+ 	early_iounmap(p, 4);
+ #endif
+ 
+-	set_intr_gate(X86_TRAP_DE, &divide_error);
++	set_intr_gate(X86_TRAP_DE, divide_error);
+ 	set_intr_gate_ist(X86_TRAP_NMI, &nmi, NMI_STACK);
+ 	/* int4 can be called from all */
+ 	set_system_intr_gate(X86_TRAP_OF, &overflow);
+-	set_intr_gate(X86_TRAP_BR, &bounds);
+-	set_intr_gate(X86_TRAP_UD, &invalid_op);
+-	set_intr_gate(X86_TRAP_NM, &device_not_available);
++	set_intr_gate(X86_TRAP_BR, bounds);
++	set_intr_gate(X86_TRAP_UD, invalid_op);
++	set_intr_gate(X86_TRAP_NM, device_not_available);
+ #ifdef CONFIG_X86_32
+ 	set_task_gate(X86_TRAP_DF, GDT_ENTRY_DOUBLEFAULT_TSS);
+ #else
+ 	set_intr_gate_ist(X86_TRAP_DF, &double_fault, DOUBLEFAULT_STACK);
+ #endif
+-	set_intr_gate(X86_TRAP_OLD_MF, &coprocessor_segment_overrun);
+-	set_intr_gate(X86_TRAP_TS, &invalid_TSS);
+-	set_intr_gate(X86_TRAP_NP, &segment_not_present);
++	set_intr_gate(X86_TRAP_OLD_MF, coprocessor_segment_overrun);
++	set_intr_gate(X86_TRAP_TS, invalid_TSS);
++	set_intr_gate(X86_TRAP_NP, segment_not_present);
+ 	set_intr_gate_ist(X86_TRAP_SS, &stack_segment, STACKFAULT_STACK);
+-	set_intr_gate(X86_TRAP_GP, &general_protection);
+-	set_intr_gate(X86_TRAP_SPURIOUS, &spurious_interrupt_bug);
+-	set_intr_gate(X86_TRAP_MF, &coprocessor_error);
+-	set_intr_gate(X86_TRAP_AC, &alignment_check);
++	set_intr_gate(X86_TRAP_GP, general_protection);
++	set_intr_gate(X86_TRAP_SPURIOUS, spurious_interrupt_bug);
++	set_intr_gate(X86_TRAP_MF, coprocessor_error);
++	set_intr_gate(X86_TRAP_AC, alignment_check);
+ #ifdef CONFIG_X86_MCE
+ 	set_intr_gate_ist(X86_TRAP_MC, &machine_check, MCE_STACK);
+ #endif
+-	set_intr_gate(X86_TRAP_XF, &simd_coprocessor_error);
++	set_intr_gate(X86_TRAP_XF, simd_coprocessor_error);
+ 
+ 	/* Reserve all the builtin and the syscall vector: */
+ 	for (i = 0; i < FIRST_EXTERNAL_VECTOR; i++)
+diff --git a/arch/x86/mm/Makefile b/arch/x86/mm/Makefile
+index 23d8e5f..6a19ad9 100644
+--- a/arch/x86/mm/Makefile
++++ b/arch/x86/mm/Makefile
+@@ -6,6 +6,8 @@ nostackp := $(call cc-option, -fno-stack-protector)
+ CFLAGS_physaddr.o		:= $(nostackp)
+ CFLAGS_setup_nx.o		:= $(nostackp)
+ 
++CFLAGS_fault.o := -I$(src)/../include/asm/trace
++
+ obj-$(CONFIG_X86_PAT)		+= pat_rbtree.o
+ obj-$(CONFIG_SMP)		+= tlb.o
+ 
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 654be4a..f515154 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -20,6 +20,9 @@
+ #include <asm/kmemcheck.h>		/* kmemcheck_*(), ...		*/
+ #include <asm/fixmap.h>			/* VSYSCALL_START		*/
+ 
++#define CREATE_TRACE_POINTS
++#include <asm/trace/exceptions.h>
++
+ /*
+  * Page fault error code bits:
+  *
+@@ -1230,3 +1233,22 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
+ 	__do_page_fault(regs, error_code);
+ 	exception_exit(prev_state);
+ }
++
++static void trace_page_fault_entries(struct pt_regs *regs,
++				     unsigned long error_code)
++{
++	if (user_mode(regs))
++		trace_user_page_fault(read_cr2(), regs, error_code);
++	else
++		trace_kernel_page_fault(read_cr2(), regs, error_code);
++}
++
++dotraplinkage void __kprobes
++trace_do_page_fault(struct pt_regs *regs, unsigned long error_code)
++{
++	enum ctx_state prev_state;
++	prev_state = exception_enter();
++	trace_page_fault_entries(regs, error_code);
++	__do_page_fault(regs, error_code);
++	exception_exit(prev_state);
++}
+-- 
+1.8.2.1
 
-James Hogan (6):
-      clk: abstract parent cache
-      clk: move some parent related functions upwards
-      clk: add support for clock reparent on set_rate
-      clk: add CLK_SET_RATE_NO_REPARENT flag
-      clk: clk-mux: implement remuxing on set_rate
-      clk: fix new_parent dereference before null check
-
-Jisheng Zhang (1):
-      clk: mvebu: add missing iounmap
-
-Mark Brown (2):
-      clk: wm831x: Provide is_prepared() rather than is_enabled()
-      clk: wm831x: Initialise wm831x pointer on init
-
-Maxime Ripard (5):
-      clk: sunxi: Add A10s gates
-      clk: sunxi: Rename the structure to prepare the addition of sun6i
-      clk: sunxi: Allow to specify the divider width from the dividers data
-      clk: sunxi: Add A31 clocks support
-      clk: sunxi: Add Allwinner A20 gates
-
-Mike Turquette (6):
-      Merge branch 'clk-next-s3c64xx' into clk-next
-      clk: export fixed-factor, gate & mux registration
-      Merge tag 'zynq-clk-for-3.12' of git://git.xilinx.com/linux-xlnx into clk-next
-      clk: handle NULL struct clk gracefully
-      Merge branch 'clk-next-s3c64xx-delta' into clk-next
-      Merge tag 'sunxi-clk-for-3.12' of https://github.com/mripard/linux into clk-next-sunxi
-
-Peter Meerwald (1):
-      clk: fix typos
-
-Rahul Sharma (8):
-      clk/exynos5250: add mout_hdmi mux clock for hdmi
-      clk/exynos5250: add sclk_hdmiphy in the list of special clocks
-      clk/exynos5250: change parent to aclk200_disp1 for hdmi subsystem
-      clk/exynos5420: add sclk_hdmiphy to the list of special clocks
-      clk/exynos5420: add gate clock for mixer sysmmu
-      clk/exynos5420: fix the order of parents of hdmi mux
-      clk/exynos5420: add hdmi mux to change parents in hdmi driver
-      clk/exynos5420: assign dout_pixel id to pixel clock divider
-
-Sachin Kamat (31):
-      of/documentation: Fix a typo in exynos5250-clock.txt
-      clk: exynos4: Staticize local symbols
-      clk: exynos4: Remove unused function
-      clk: exynos5250: Staticize local symbols
-      clk: exynos5420: Staticize local symbols
-      clk: exynos5440: Staticize local symbols
-      clk: exynos-audss: Staticize exynos_audss_clk_init
-      clk: exynos5250: Add G2D gate clock
-      clk: exynos4: Add clock entries for TMU
-      of/documentation: Update G2D documentation
-      Documentation: clk: Fix a trivial typo in audss
-      clk: exynos4: Make exynos4_plls static
-      clk: exynos5250: Make exynos5250_plls static
-      clk: exynos5420: Make exynos5420_plls static
-      clk: exynos4: Fix incorrect placement of __initdata
-      clk: exynos5250: Fix incorrect placement of __initdata
-      clk: exynos5420: Fix incorrect placement of __initdata
-      clk: exynos5440: Fix incorrect placement of __initdata
-      clk: tegra114: Fix incorrect placement of __initdata
-      clk: tegra20: Fix incorrect placement of __initdata
-      clk: tegra30: Fix incorrect placement of __initdata
-      clk: prima2: Fix incorrect placement of __initdata
-      clk: bcm2835: Fix incorrect placement of __initconst
-      clk: nomadik: Fix incorrect placement of __initconst
-      clk: u300: Fix incorrect placement of __initconst
-      clk: armada-370: Fix incorrect placement of __initconst
-      clk: armada-xp: Fix incorrect placement of __initconst
-      clk: dove: Fix incorrect placement of __initconst
-      clk: kirkwood: Fix incorrect placement of __initconst
-      clk: sunxi: Fix incorrect placement of __initconst
-      clk: s3c64xx: Fix incorrect placement of __initdata
-
-Soren Brinkmann (2):
-      clk/zynq/pll: Fix documentation for PLL register function
-      clk/zynq/pll: Use #defines for fbdiv min/max values
-
-Stephen Boyd (1):
-      clk: fixed-rate: Export clk_fixed_rate_register()
-
-Thierry Reding (1):
-      clk: Move symbol export to proper location
-
-Tomasz Figa (20):
-      clk: mux: Add support for read-only muxes.
-      clk: samsung: pll: Add support for PLL6552 and PLL6553
-      clk: samsung: Add clock driver for S3C64xx SoCs
-      clk: samsung: pll: Use new registration method for PLL6552 and PLL6553
-      pwm: samsung: Update DT bindings documentation to cover clocks
-      ARM: dts: exynos4: Specify PWM clocks in PWM node
-      clocksource: samsung_pwm_timer: Get clock from device tree
-      clk: samsung: exynos4: Use separate aliases for cpufreq related clocks
-      clk: samsung: Modify _get_rate() helper to use __clk_lookup()
-      clk: samsung: exynos4: Remove unused static clkdev aliases
-      clk: samsung: exynos4: Remove checks for DT node
-      clk: samsung: exynos4: Rename exynos4_plls to exynos4x12_plls
-      clk: samsung: pll: Use new registration method for PLL45xx
-      clk: samsung: pll: Add support for rate configuration of PLL45xx
-      clk: samsung: pll: Use new registration method for PLL46xx
-      clk: samsung: pll: Add support for rate configuration of PLL46xx
-      clk: samsung: exynos4: Reorder registration of mout_vpllsrc
-      clk: samsung: exynos4: Register PLL rate tables for Exynos4210
-      clk: samsung: exynos4: Register PLL rate tables for Exynos4x12
-      clk: samsung: exynos5250: Simplify registration of PLL rate tables
-
-Tuomas Tynkkynen (1):
-      clk: tegra30: Don't wait for PLL_U lock bit
-
-Tushar Behera (1):
-      Documentation: exynos5250-clock: Add div_i2s1 and div_i2s2
-
-Vikas Sajjan (3):
-      clk: samsung: Add set_rate() clk_ops for PLL36xx
-      clk: samsung: Reorder MUX registration for mout_vpllsrc
-      clk: samsung: Add EPLL and VPLL freq table for exynos5250 SoC
-
-Yadwinder Singh Brar (9):
-      clk: samsung: Introduce a common samsung_clk_pll struct
-      clk: samsung: Define a common samsung_clk_register_pll()
-      clk: samsung: Migrate exynos5250 to use common samsung_clk_register_pll()
-      clk: samsung: Migrate exynos4 to use common samsung_clk_register_pll()
-      clk: samsung: Migrate exynos5420 to use common samsung_clk_register_pll()
-      clk: samsung: Remove unused pll registeration code for pll35xx and pll36xx
-      clk: samsung: Add support to register rate_table for samsung plls
-      clk: samsung: Add set_rate() clk_ops for PLL35xx
-      clk: s2mps11: Add support for s2mps11
-
- Documentation/clk.txt                              |  46 +-
- .../devicetree/bindings/clock/clk-exynos-audss.txt |   2 +-
- .../devicetree/bindings/clock/exynos4-clock.txt    |   1 +
- .../devicetree/bindings/clock/exynos5250-clock.txt |  14 +-
- .../devicetree/bindings/clock/exynos5420-clock.txt |  12 +
- .../bindings/clock/samsung,s3c64xx-clock.txt       |  77 +++
- Documentation/devicetree/bindings/clock/sunxi.txt  |  12 +
- .../bindings/clock/sunxi/sun5i-a10s-gates.txt      |  75 +++
- .../bindings/clock/sunxi/sun6i-a31-gates.txt       |  83 +++
- .../bindings/clock/sunxi/sun7i-a20-gates.txt       |  98 +++
- .../devicetree/bindings/gpu/samsung-g2d.txt        |   7 +-
- .../devicetree/bindings/pwm/pwm-samsung.txt        |  12 +
- arch/arm/boot/dts/exynos4.dtsi                     |   2 +
- arch/arm/mach-imx/clk.h                            |   5 +-
- drivers/clk/Kconfig                                |   8 +-
- drivers/clk/Makefile                               |   1 +
- drivers/clk/clk-bcm2835.c                          |   2 +-
- drivers/clk/clk-divider.c                          |   8 +-
- drivers/clk/clk-fixed-factor.c                     |   2 +
- drivers/clk/clk-fixed-rate.c                       |   1 +
- drivers/clk/clk-gate.c                             |   7 +-
- drivers/clk/clk-mux.c                              |  19 +-
- drivers/clk/clk-nomadik.c                          |   4 +-
- drivers/clk/clk-prima2.c                           |   2 +-
- drivers/clk/clk-s2mps11.c                          | 273 ++++++++
- drivers/clk/clk-u300.c                             |   4 +-
- drivers/clk/clk-wm831x.c                           |  16 +-
- drivers/clk/clk.c                                  | 450 ++++++++-----
- drivers/clk/mmp/clk-mmp2.c                         |  39 +-
- drivers/clk/mmp/clk-pxa168.c                       |  40 +-
- drivers/clk/mmp/clk-pxa910.c                       |  31 +-
- drivers/clk/mvebu/armada-370.c                     |  14 +-
- drivers/clk/mvebu/armada-xp.c                      |  12 +-
- drivers/clk/mvebu/clk-cpu.c                        |   4 +-
- drivers/clk/mvebu/common.c                         |  18 +-
- drivers/clk/mvebu/dove.c                           |  12 +-
- drivers/clk/mvebu/kirkwood.c                       |  14 +-
- drivers/clk/mxs/clk-imx23.c                        |   1 +
- drivers/clk/mxs/clk.h                              |   4 +-
- drivers/clk/samsung/Makefile                       |   3 +
- drivers/clk/samsung/clk-exynos-audss.c             |   8 +-
- drivers/clk/samsung/clk-exynos4.c                  | 605 ++++++++++--------
- drivers/clk/samsung/clk-exynos5250.c               | 129 +++-
- drivers/clk/samsung/clk-exynos5420.c               | 123 ++--
- drivers/clk/samsung/clk-exynos5440.c               |  18 +-
- drivers/clk/samsung/clk-pll.c                      | 701 ++++++++++++++++-----
- drivers/clk/samsung/clk-pll.h                      |  85 ++-
- drivers/clk/samsung/clk-s3c64xx.c                  | 473 ++++++++++++++
- drivers/clk/samsung/clk.c                          |  10 +-
- drivers/clk/samsung/clk.h                          |  55 +-
- drivers/clk/spear/spear1310_clock.c                | 179 +++---
- drivers/clk/spear/spear1340_clock.c                |  97 +--
- drivers/clk/spear/spear3xx_clock.c                 |  57 +-
- drivers/clk/spear/spear6xx_clock.c                 |  35 +-
- drivers/clk/sunxi/clk-sunxi.c                      | 270 ++++++--
- drivers/clk/tegra/clk-tegra114.c                   |  38 +-
- drivers/clk/tegra/clk-tegra20.c                    |   8 +-
- drivers/clk/tegra/clk-tegra30.c                    |  37 +-
- drivers/clk/versatile/clk-vexpress.c               |   4 +-
- drivers/clk/zynq/clkc.c                            |  86 +--
- drivers/clk/zynq/pll.c                             |  19 +-
- drivers/clocksource/samsung_pwm_timer.c            |  12 +-
- include/dt-bindings/clock/samsung,s3c64xx-clock.h  | 178 ++++++
- include/linux/clk-private.h                        |   3 +
- include/linux/clk-provider.h                       |  31 +
- 65 files changed, 3595 insertions(+), 1101 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/clock/samsung,s3c64xx-clock.txt
- create mode 100644 Documentation/devicetree/bindings/clock/sunxi/sun5i-a10s-gates.txt
- create mode 100644 Documentation/devicetree/bindings/clock/sunxi/sun6i-a31-gates.txt
- create mode 100644 Documentation/devicetree/bindings/clock/sunxi/sun7i-a20-gates.txt
- create mode 100644 drivers/clk/clk-s2mps11.c
- create mode 100644 drivers/clk/samsung/clk-s3c64xx.c
- create mode 100644 include/dt-bindings/clock/samsung,s3c64xx-clock.h
