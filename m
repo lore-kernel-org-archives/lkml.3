@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754534Ab3IIPwJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 11:52:09 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:60043 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753685Ab3IIPwF (ORCPT
+	id S1754956Ab3IIPw2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 11:52:28 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:44958 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754531Ab3IIPwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 11:52:05 -0400
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+	Mon, 9 Sep 2013 11:52:09 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
 To: linux-kernel@vger.kernel.org
-Cc: Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>, devicetree@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-Subject: [PATCH 0/2] regulator: da9210: support Device Tree initialisation
-Date: Mon,  9 Sep 2013 17:51:58 +0200
-Message-Id: <1378741920-11085-1-git-send-email-g.liakhovetski@gmx.de>
-X-Mailer: git-send-email 1.7.2.5
-X-Provags-ID: V02:K0:T3m0jIJW/rYJUoA65a9fev2/HQAvzA8FcMsO+/UFuy3
- 0RzanDnnaxVCFxcnwPWhRhAUwdzIX679FoXlr6cJUPgwRbMlJL
- 9iayeG+uC4sO2UABhRc2aXDN+M6mjMHJDdGg92Ylvsmblghg5H
- I3Z/JcXSR4OVQ7uiVCfT47jVtw3Yn24z9qfmj8aSi+1pX6DOxa
- CTfGAc8IRZ3OosruWl0ORoQncGqqvyiWsR7g0ordZcxV1pK0bh
- MJLSGG7InH5HT93aWhIZ3cdyDBdXzLtHXL/i6VLKKx5zGyDJyZ
- eHX5ktqG7wwweU0vXx6v9Or1EfaCTef0DJkH+EqjWgDa2cTbR9
- Kz98J11Q9VdqSx8pcGV7FV3nxCeveslIIKzJ+qb8Tl7NNwyaJ/
- 9UYEcVw96dZ5g==
+Cc: keescook@chromium.org, gregkh@linuxfoundation.org, hpa@zytor.com,
+        linux-efi@vger.kernel.org, jmorris@namei.org,
+        linux-security-module@vger.kernel.org,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Subject: [PATCH 05/12] Restrict /dev/mem and /dev/kmem when securelevel is set.
+Date: Mon,  9 Sep 2013 11:49:39 -0400
+Message-Id: <1378741786-18430-6-git-send-email-matthew.garrett@nebula.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
+References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 2001:470:1f07:1371:5d52:9ee3:3e84:6668
+X-SA-Exim-Mail-From: matthew.garrett@nebula.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The first patch just adds a vendor prefix for Dialog Semiconductor PLC, the
-second one actually implements DT support in da9210.
+Allowing users to write to address space provides mechanisms that may permit
+modification of the kernel at runtime. Prevent this if securelevel has been
+set.
 
-Cc: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-
-Guennadi Liakhovetski (2):
-  DT: add a vendor prefix for Dialog Semiconductor
-  regulator: da9210: add Device Tree support
-
- .../devicetree/bindings/vendor-prefixes.txt        |    1 +
- drivers/regulator/da9210-regulator.c               |    9 ++++++---
- 2 files changed, 7 insertions(+), 3 deletions(-)
-
--- 
-1.7.2.5
-
-Thanks
-Guennadi
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 ---
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+ drivers/char/mem.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index 741f536..91d1cff 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -159,6 +159,9 @@ static ssize_t write_mem(struct file *file, const char __user *buf,
+ 	unsigned long copied;
+ 	void *ptr;
+ 
++	if (get_securelevel() > 0)
++		return -EPERM;
++
+ 	if (!valid_phys_addr_range(p, count))
+ 		return -EFAULT;
+ 
+@@ -497,6 +500,9 @@ static ssize_t write_kmem(struct file *file, const char __user *buf,
+ 	char *kbuf; /* k-addr because vwrite() takes vmlist_lock rwlock */
+ 	int err = 0;
+ 
++	if (get_securelevel() > 0)
++		return -EPERM;
++
+ 	if (p < (unsigned long) high_memory) {
+ 		unsigned long to_write = min_t(unsigned long, count,
+ 					       (unsigned long)high_memory - p);
+-- 
+1.8.3.1
+
