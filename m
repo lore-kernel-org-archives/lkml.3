@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab3IIRNo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 13:13:44 -0400
-Received: from tartarus.angband.pl ([89.206.35.136]:39518 "EHLO
-	tartarus.angband.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971Ab3IIRNn (ORCPT
+	id S1754051Ab3IIRTx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 13:19:53 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:34385 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752510Ab3IIRTv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 13:13:43 -0400
-X-Greylist: delayed 1635 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Sep 2013 13:13:43 EDT
-Date: Mon, 9 Sep 2013 18:46:23 +0200
-From: Adam Borowski <kilobyte@angband.pl>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] vt: properly ignore xterm-256 colour codes
-Message-ID: <20130909164623.GA12525@angband.pl>
-References: <E1VImxG-0002w1-UA@tartarus.angband.pl>
- <CANq1E4Tv0Vb9KzWK0oa3P+-V66LqF312HZrwq_JLmHhH-v2k=Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CANq1E4Tv0Vb9KzWK0oa3P+-V66LqF312HZrwq_JLmHhH-v2k=Q@mail.gmail.com>
-X-Junkbait: adolf@angband.pl, zareba@angband.pl
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: kilobyte@tartarus.angband.pl
-X-SA-Exim-Scanned: No (on tartarus.angband.pl); SAEximRunCond expanded to false
+	Mon, 9 Sep 2013 13:19:51 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: linux-kernel@vger.kernel.org, keescook@chromium.org,
+        gregkh@linuxfoundation.org, hpa@zytor.com, linux-efi@vger.kernel.org,
+        jmorris@namei.org, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 00/12] One more attempt at useful kernel lockdown
+In-Reply-To: Your message of "Mon, 09 Sep 2013 11:49:34 -0400."
+             <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1378747124_1775P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Mon, 09 Sep 2013 13:18:44 -0400
+Message-ID: <19562.1378747124@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 05:53:19PM +0200, David Herrmann wrote:
-> On Fri, Jul 12, 2013 at 10:23 PM, Adam Borowski <kilobyte@angband.pl> wrote:
-> >  drivers/tty/vt/vt.c | 26 ++++++++++++++++++++------
-> >  1 file changed, 20 insertions(+), 6 deletions(-)
-> >
-> > diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-> > index c677829..f7aaa28 100644
-> > --- a/drivers/tty/vt/vt.c
-> > +++ b/drivers/tty/vt/vt.c
-> > @@ -1300,13 +1300,27 @@ static void csi_m(struct vc_data *vc)
-[...]
-> > -                       case 38: /* ANSI X3.64-1979 (SCO-ish?)
-> > -                                 * Enables underscore, white foreground
-> > -                                 * with white underscore (Linux - use
-> > -                                 * default foreground).
-> > -                               vc->vc_color = (vc->vc_def_color & 0x0f) | (vc->vc_color & 0xf0);
-> > -                               vc->vc_underline = 1;
-> 
-> You break the old behavior here. _Iff_ this is what you want, then
-> please do that in another commit. Explicitly state that "38" is used
-> for 256color and shouldn't turn on underline+default-col. The SCO-ish
-> behavior is weird, indeed, but breaking it silently is not ok.
+--==_Exmh_1378747124_1775P
+Content-Type: text/plain; charset=us-ascii
 
-This is implied by the description; none among modern terminal emulators
-support this.  Would an additional comment in the commit message be
-enough, or do I need to change the replacement into a pair of commits?
- 
-> > +                               i++;
-> > +                               if (i > vc->vc_npar)
-> 
-> This should be ">=", but the for()-loop does allow your ">". So unless
-> someone fixes the for-loop to use "<" (do a ++vc->vc_npar before it,
-> if it's correct. But blindly doing "<=" is really irritating) I think
-> this is ok.
+On Mon, 09 Sep 2013 11:49:34 -0400, Matthew Garrett said:
 
-The loop this switch is in does:
-	for (i = 0; i <= vc->vc_npar; i++)
-which is obviously contrary to what we're used to, but I did not want to
-rewrite nearby code to match my preferences.
+> So, this is my final attempt at providing the functionality I'm interested
+> in without inherently tying it to Secure Boot. There's strong parallels
+> between the functionality that I'm interested in and the BSD securelevel
+> interface, so here's a trivial implementation.
 
-The change you suggest would deoptimize the code by a single unnecessary
-dereference and increment, which is negligible, but since the whole cost
-of speedier version is having <= instead of < in the loop, I'm not so
-certain this is a good idea.
+Although all the individual patches look like sane and reasonable things
+to do, I'm not at all convinced that sticking them all under control of one
+flag is really the right way to do it.  In particular, there probably needs
+to be some re-thinking of the kexec, signed-module, and secure-boot stuff,
+as it's still a moving target.
 
-[...]
-> Btw., you should put Greg Kroah-Hartman and Andrew Morton on CC. Both
-> are the most likely to pick this up.
+> So, this is my final attempt at providing the functionality I'm interested
+> in without inherently tying it to Secure Boot.
 
-Thanks for the suggestion.  I've sent the patch two days ago to Jiri Slaby
-(listed as a maintainer besides Greg) together with a newbie question, but
-he's apparently busy.
+You may as well bite the bullet on this one, and tie it together.  Without
+Secure Boot, by the time your code runs it's already too late.  That's the
+whole point of Secure Boot, after all.
 
-I've got more changes for the vt, but there's no hurry, I wanted to test
-the waters with a single minor one in 3.12 first.
+--==_Exmh_1378747124_1775P
+Content-Type: application/pgp-signature
 
--- 
-ᛊᚨᚾᛁᛏᚣ᛫ᛁᛊ᛫ᚠᛟᚱ᛫ᚦᛖ᛫ᚹᛖᚨᚲ
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBUi4C8wdmEQWDXROgAQLVEBAAtkNSnNCYkHDRZJYPQGPLfT89WkYWZweL
+S36AojErYjA5uRhro8JxWthZ2tt2LoB+1EDwyhPmAVxsr40z48tehtpqfMpzIABN
+A+GDtdudo2kB5HS9LzTuO2N9f03Vert1/mbF7th9XfoSde2iQpPap3jYvLS5bkBA
+Wn29EsRQ/Er3rN5+TKRbUjNjlZJz8vuqBEh7vwnvV9VCox3L/bmAwYfM22pMrP7j
+rQfpyNq0bR7IxJPxapFuB6ispdwgBiHB+XMgJoSi17FGei9BilpSCVVXcEdD+YVJ
+dfCQItk9gK7IZ+/M+mHqWgVQI/ISakWD2AKMPtUVa+cXDne9kRYRGC4YifOVvTyA
+kpTXBd37RWvInK+l+LAxyOkko3nps0UfuShbA7W19IYqOGbh1aDQ3zAV5gKaP1Xy
+qK6Jvmhc4JLMp9v5Gj1zFXHV3+1DyGLciPgYvC3lXgmXsA0duZAx1bE3ovVm9uu8
+/nQ1wbFmMzrssMgK2A4vyqqPWMsyzA1IGH/eU6N5Mp7i1HYw4jhthdiD+SPCOG/D
+uQh/xMTRk+hqqOxfCqohhyHoKz3SfRni1Ka5xhf8+IU++wgBSDLlS0D8DZU1jfx3
+ZPrwJHLsRqkYdgxifRIS+aTgjQY2+7V2jUHGQPV6uShv69JtWw76DAPsWCGcTPT1
+zzuXcyuUuTY=
+=bWJx
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1378747124_1775P--
