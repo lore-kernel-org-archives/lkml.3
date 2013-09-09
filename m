@@ -1,73 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755528Ab3IIVH5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 17:07:57 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:24333 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755013Ab3IIVH4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 17:07:56 -0400
-Message-ID: <1378760873.10318.20.camel@j-VirtualBox>
-Subject: Re: [RFC][PATCH v4 3/3] sched: Periodically decay max cost of idle
- balance
-From: Jason Low <jason.low2@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        pjt@google.com, preeti@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        mgorman@suse.de, riel@redhat.com, aswin@hp.com, scott.norton@hp.com,
-        srikar@linux.vnet.ibm.com
-Date: Mon, 09 Sep 2013 14:07:53 -0700
-In-Reply-To: <20130909114919.GS31370@twins.programming.kicks-ass.net>
-References: <1377806736-3752-1-git-send-email-jason.low2@hp.com>
-	 <1377806736-3752-4-git-send-email-jason.low2@hp.com>
-	 <20130830101817.GE10002@twins.programming.kicks-ass.net>
-	 <1378278601.3004.60.camel@j-VirtualBox>
-	 <20130909114919.GS31370@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755655Ab3IIVIR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 17:08:17 -0400
+Received: from gmmr7.centrum.cz ([46.255.225.249]:46233 "EHLO gmmr7.centrum.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755013Ab3IIVIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 17:08:15 -0400
+To: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
+Subject: =?utf-8?q?Re=3A_=5Bpatch_0=2F7=5D_improve_memcg_oom_killer_robustness_v2?=
+Date: Mon, 09 Sep 2013 23:08:12 +0200
+From: "azurIt" <azurit@pobox.sk>
+Cc: =?utf-8?q?Andrew_Morton?= <akpm@linux-foundation.org>,
+        =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>,
+        =?utf-8?q?David_Rientjes?= <rientjes@google.com>,
+        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
+        =?utf-8?q?KOSAKI_Motohiro?= <kosaki.motohiro@jp.fujitsu.com>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <x86@kernel.org>,
+        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <1375549200-19110-1-git-send-email-hannes@cmpxchg.org>, <20130803170831.GB23319@cmpxchg.org>, <20130830215852.3E5D3D66@pobox.sk>, <20130902123802.5B8E8CB1@pobox.sk>, <20130903204850.GA1412@cmpxchg.org>, <20130904101852.58E70042@pobox.sk>, <20130905115430.GB856@cmpxchg.org>, <20130909151010.3A3CBC6A@pobox.sk>, <20130909172849.GG856@cmpxchg.org>, <20130909215917.96932098@pobox.sk> <20130909201238.GH856@cmpxchg.org>
+In-Reply-To: <20130909201238.GH856@cmpxchg.org>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+X-Original-From: azurit@pobox.sk
+MIME-Version: 1.0
+Message-Id: <20130909230812.757131A5@pobox.sk>
+X-Maser: Georgo
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-09-09 at 13:49 +0200, Peter Zijlstra wrote:
-> On Wed, Sep 04, 2013 at 12:10:01AM -0700, Jason Low wrote:
-> > On Fri, 2013-08-30 at 12:18 +0200, Peter Zijlstra wrote:
-> > > On Thu, Aug 29, 2013 at 01:05:36PM -0700, Jason Low wrote:
-> > > > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> > > > index 58b0514..bba5a07 100644
-> > > > --- a/kernel/sched/core.c
-> > > > +++ b/kernel/sched/core.c
-> > > > @@ -1345,7 +1345,7 @@ ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
-> > > >  
-> > > >  	if (rq->idle_stamp) {
-> > > >  		u64 delta = rq_clock(rq) - rq->idle_stamp;
-> > > > -		u64 max = 2*rq->max_idle_balance_cost;
-> > > > +		u64 max = 2*(sysctl_sched_migration_cost + rq->max_idle_balance_cost);
-> > > 
-> > > You re-introduce sched_migration_cost here because max_idle_balance_cost
-> > > can now drop down to 0 again?
-> > 
-> > Yes it was so that max_idle_balance_cost would be at least sched_migration_cost
-> > and that we would still skip idle_balance if avg_idle < sched_migration_cost.
-> > 
-> > I also initially thought that adding sched_migration_cost would also account for
-> > the extra "costs" of idle balancing that are not accounted for in the time spent
-> > on each newidle load balance. Come to think of it though, sched_migration_cost
-> > might be too large when used in that context considering we're already using the
-> > max cost.
-> 
-> Right, so shall we do as Srikar suggests and drop that initial check?
+>On Mon, Sep 09, 2013 at 09:59:17PM +0200, azurIt wrote:
+>> >On Mon, Sep 09, 2013 at 03:10:10PM +0200, azurIt wrote:
+>> >> >Hi azur,
+>> >> >
+>> >> >On Wed, Sep 04, 2013 at 10:18:52AM +0200, azurIt wrote:
+>> >> >> > CC: "Andrew Morton" <akpm@linux-foundation.org>, "Michal Hocko" <mhocko@suse.cz>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+>> >> >> >Hello azur,
+>> >> >> >
+>> >> >> >On Mon, Sep 02, 2013 at 12:38:02PM +0200, azurIt wrote:
+>> >> >> >> >>Hi azur,
+>> >> >> >> >>
+>> >> >> >> >>here is the x86-only rollup of the series for 3.2.
+>> >> >> >> >>
+>> >> >> >> >>Thanks!
+>> >> >> >> >>Johannes
+>> >> >> >> >>---
+>> >> >> >> >
+>> >> >> >> >
+>> >> >> >> >Johannes,
+>> >> >> >> >
+>> >> >> >> >unfortunately, one problem arises: I have (again) cgroup which cannot be deleted :( it's a user who had very high memory usage and was reaching his limit very often. Do you need any info which i can gather now?
+>> >> >> >
+>> >> >> >Did the OOM killer go off in this group?
+>> >> >> >
+>> >> >> >Was there a warning in the syslog ("Fixing unhandled memcg OOM
+>> >> >> >context")?
+>> >> >> 
+>> >> >> 
+>> >> >> 
+>> >> >> Ok, i see this message several times in my syslog logs, one of them is also for this unremovable cgroup (but maybe all of them cannot be removed, should i try?). Example of the log is here (don't know where exactly it starts and ends so here is the full kernel log):
+>> >> >> http://watchdog.sk/lkml/oom_syslog.gz
+>> >> >There is an unfinished OOM invocation here:
+>> >> >
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715112] Fixing unhandled memcg OOM context set up from:
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715191]  [<ffffffff811105c2>] T.1154+0x622/0x8f0
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715274]  [<ffffffff8111153e>] mem_cgroup_cache_charge+0xbe/0xe0
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715357]  [<ffffffff810cf31c>] add_to_page_cache_locked+0x4c/0x140
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715443]  [<ffffffff810cf432>] add_to_page_cache_lru+0x22/0x50
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715526]  [<ffffffff810cfdd3>] find_or_create_page+0x73/0xb0
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715608]  [<ffffffff811493ba>] __getblk+0xea/0x2c0
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715692]  [<ffffffff8114ca73>] __bread+0x13/0xc0
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715774]  [<ffffffff81196968>] ext3_get_branch+0x98/0x140
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715859]  [<ffffffff81197557>] ext3_get_blocks_handle+0xd7/0xdc0
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715942]  [<ffffffff81198304>] ext3_get_block+0xc4/0x120
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716023]  [<ffffffff81155c3a>] do_mpage_readpage+0x38a/0x690
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716107]  [<ffffffff81155f8f>] mpage_readpage+0x4f/0x70
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716188]  [<ffffffff811973a8>] ext3_readpage+0x28/0x60
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716268]  [<ffffffff810cfa48>] filemap_fault+0x308/0x560
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716350]  [<ffffffff810ef898>] __do_fault+0x78/0x5a0
+>> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716433]  [<ffffffff810f2ab4>] handle_pte_fault+0x84/0x940
+>> >> >
+>> >> >__getblk() has this weird loop where it tries to instantiate the page,
+>> >> >frees memory on failure, then retries.  If the memcg goes OOM, the OOM
+>> >> >path might be entered multiple times and each time leak the memcg
+>> >> >reference of the respective previous OOM invocation.
+>> >> >
+>> >> >There are a few more find_or_create() sites that do not propagate an
+>> >> >error and it's incredibly hard to find out whether they are even taken
+>> >> >during a page fault.  It's not practical to annotate them all with
+>> >> >memcg OOM toggles, so let's just catch all OOM contexts at the end of
+>> >> >handle_mm_fault() and clear them if !VM_FAULT_OOM instead of treating
+>> >> >this like an error.
+>> >> >
+>> >> >azur, here is a patch on top of your modified 3.2.  Note that Michal
+>> >> >might be onto something and we are looking at multiple issues here,
+>> >> >but the log excert above suggests this fix is required either way.
+>> >> 
+>> >> 
+>> >> 
+>> >> 
+>> >> Johannes, is this still up to date? Thank you.
+>> >
+>> >No, please use the following on top of 3.2 (i.e. full replacement, not
+>> >incremental to what you have):
+>> 
+>> 
+>> 
+>> Unfortunately it didn't compile:
+>> 
+>> 
+>> 
+>> 
+>>   LD      vmlinux.o
+>>   MODPOST vmlinux.o
+>> WARNING: modpost: Found 4924 section mismatch(es).
+>> To see full details build your kernel with:
+>> 'make CONFIG_DEBUG_SECTION_MISMATCH=y'
+>>   GEN     .version
+>>   CHK     include/generated/compile.h
+>>   UPD     include/generated/compile.h
+>>   CC      init/version.o
+>>   LD      init/built-in.o
+>>   LD      .tmp_vmlinux1
+>> arch/x86/built-in.o: In function `do_page_fault':
+>> (.text+0x26a77): undefined reference to `handle_mm_fault'
+>> mm/built-in.o: In function `fixup_user_fault':
+>> (.text+0x224d3): undefined reference to `handle_mm_fault'
+>> mm/built-in.o: In function `__get_user_pages':
+>> (.text+0x24a0f): undefined reference to `handle_mm_fault'
+>> make: *** [.tmp_vmlinux1] Error 1
+>
+>Oops, sorry about that.  Must be configuration dependent because it
+>works for me (and handle_mm_fault is obviously defined).
+>
+>Do you have warnings earlier in the compilation?  You can use make -s
+>to filter out everything but warnings.
+>
+>Or send me your configuration so I can try to reproduce it here.
+>
+>Thanks!
 
-I agree that we can delete the check between avg_idle and max_idle_balance_cost
-so that large costs in higher domains don't cause balancing to be skipped in
-lower domains as Srikar suggested. Should we keep the old
-"if (this_rq->avg_idle < sysctl_sched_migration_cost)" check?
 
-Also, are the other costs of idle balancing, specifically the cost of cache
-refreshes, not considered in the max_newidle_lb_cost? I was wondering if there
-is a non expensive way we can also take those into account. For example, can we
-multiply max_newidle_lb_cost by a factor of 1.2x to 2x, but also increase the
-decay factor (4% to 10% per second)?
 
+I'm soooooo sorry Johannes! It was my fault - I had to modify your patch a little because of grsecurity and I did it wrong (24 + 4 apparently isn't 27, haha ;) ).
+
+All compiled fine now, thank you very much. I will install new kernel this night.
+
+azur
