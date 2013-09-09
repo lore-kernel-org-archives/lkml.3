@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964Ab3IIOv0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 10:51:26 -0400
-Received: from mga14.intel.com ([143.182.124.37]:35738 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753834Ab3IIOvY convert rfc822-to-8bit (ORCPT
+	id S1753885Ab3IIOww (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 10:52:52 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:25126 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752699Ab3IIOwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 10:51:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,866,1371106800"; 
-   d="scan'208";a="292603881"
-From: "Marciniszyn, Mike" <mike.marciniszyn@intel.com>
-To: Yijing Wang <wangyijing@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Airlie <airlied@linux.ie>, infinipath <infinipath@intel.com>,
-        Roland Dreier <roland@kernel.org>,
-        Roland Dreier <roland@purestorage.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Einon <mark.einon@gmail.com>,
-        "Hefty, Sean" <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Hanjun Guo <guohanjun@huawei.com>
-Subject: RE: [PATCH 3/6] IB/qib: Use pci_is_root_bus() to check whether it
- is a root bus
-Thread-Topic: [PATCH 3/6] IB/qib: Use pci_is_root_bus() to check whether it
- is a root bus
-Thread-Index: AQHOrV56l16arHMcB0O4sUx/wMt3QZm9fSAw
-Date: Mon, 9 Sep 2013 14:51:17 +0000
-Message-ID: <32E1700B9017364D9B60AED9960492BC2119F067@FMSMSX107.amr.corp.intel.com>
-References: <1378732388-4508-1-git-send-email-wangyijing@huawei.com>
- <1378732388-4508-4-git-send-email-wangyijing@huawei.com>
-In-Reply-To: <1378732388-4508-4-git-send-email-wangyijing@huawei.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.200.108]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 9 Sep 2013 10:52:51 -0400
+Date: Mon, 9 Sep 2013 17:52:29 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, Minchan Kim <minchan@kernel.org>,
+        Jerome Marchand <jmarchan@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] staging: zram: minimize `slot_free_lock' usage (v2)
+Message-ID: <20130909145229.GB19256@mwanda>
+References: <20130906151255.GE2238@swordfish.minsk.epam.com>
+ <20130909123329.GZ19256@mwanda>
+ <20130909124942.GA2221@swordfish.minsk.epam.com>
+ <20130909132124.GY6329@mwanda>
+ <20130909144259.GB2221@swordfish.minsk.epam.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130909144259.GB2221@swordfish.minsk.epam.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Subject: [PATCH 3/6] IB/qib: Use pci_is_root_bus() to check whether it is a root
-> bus
+On Mon, Sep 09, 2013 at 05:42:59PM +0300, Sergey Senozhatsky wrote:
+> > 3) Explain why it is safe to test zram->slot_free_rq when we are not
+> >    holding the lock.  I think it is unsafe.  I don't want to even think
+> >    about it without the numbers.
+> 
+> atomic pointer test, which is either NULL or !NULL.
 > 
 
-Thanks for the patch!
+That's not how concurency works.  Atomic types are complicated than
+that.  Anyway, the zram maintainers don't need me to explain that to
+them so I'll let them take over from here.
 
-Acked-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+regards,
+dan carpenter
+
