@@ -1,256 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756446Ab3IIXC1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 19:02:27 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:56306 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756419Ab3IIXCY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 19:02:24 -0400
-From: Rohit Vaswani <rvaswani@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>
-Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] ARM: msm: Create a common board-dt and config ARCH_MSM_DT
-Date: Mon,  9 Sep 2013 16:01:59 -0700
-Message-Id: <1378767719-27688-2-git-send-email-rvaswani@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1378767719-27688-1-git-send-email-rvaswani@codeaurora.org>
-References: <1378767719-27688-1-git-send-email-rvaswani@codeaurora.org>
+	id S1756512Ab3IIXCz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 19:02:55 -0400
+Received: from mail-bn1lp0153.outbound.protection.outlook.com ([207.46.163.153]:40478
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756083Ab3IIXCK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 19:02:10 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: David Lang <david@lang.hm>
+CC: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH 00/12] One more attempt at useful kernel lockdown
+Thread-Topic: [PATCH 00/12] One more attempt at useful kernel lockdown
+Thread-Index: AQHOrYDL2QYLBLFVskGOdCrAsfX2cpm9uPUAgABNO4A=
+Date: Mon, 9 Sep 2013 23:02:05 +0000
+Message-ID: <1378767723.17982.27.camel@x230.lan>
+References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
+	 <19562.1378747124@turing-police.cc.vt.edu>
+	 <alpine.DEB.2.02.1309091119330.2479@nftneq.ynat.uz>
+In-Reply-To: <alpine.DEB.2.02.1309091119330.2479@nftneq.ynat.uz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:470:1f07:1371:5d52:9ee3:3e84:6668]
+x-forefront-prvs: 09645BAC66
+x-forefront-antispam-report: SFV:NSPM;SFS:(189002)(199002)(24454002)(15404003)(377424004)(65816001)(80976001)(80022001)(47446002)(74662001)(74366001)(74502001)(74706001)(53806001)(54316002)(56776001)(83072001)(76482001)(54356001)(77982001)(51856001)(59766001)(77096001)(56816003)(74876001)(19580395003)(83322001)(19580405001)(81686001)(81816001)(63696002)(46102001)(81342001)(47976001)(81542001)(50986001)(69226001)(76796001)(76786001)(4396001)(47736001)(49866001)(31966008)(79102001)(33646001)(36756003)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB222;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:5d52:9ee3:3e84:6668;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <4ADAF0E2F2A954468B9E59094147F8DF@namprd05.prod.outlook.com>
+MIME-Version: 1.0
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r89N30FQ023678
 
-Create a config ARCH_MSM_DT and common board-dt.c
-to encapsulate the MSM DT based targets.
+On Mon, 2013-09-09 at 11:25 -0700, David Lang wrote:
 
-Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
----
- arch/arm/mach-msm/Kconfig         | 13 +++++++----
- arch/arm/mach-msm/Makefile        |  3 +--
- arch/arm/mach-msm/board-dt-8660.c | 48 ---------------------------------------
- arch/arm/mach-msm/board-dt-8960.c | 35 ----------------------------
- arch/arm/mach-msm/board-dt.c      | 32 ++++++++++++++++++++++++++
- 5 files changed, 42 insertions(+), 89 deletions(-)
- delete mode 100644 arch/arm/mach-msm/board-dt-8660.c
- delete mode 100644 arch/arm/mach-msm/board-dt-8960.c
- create mode 100644 arch/arm/mach-msm/board-dt.c
+> 1 lock down modules
+> 2 lock down kexec
 
-diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-index 020240c..2586c28 100644
---- a/arch/arm/mach-msm/Kconfig
-+++ b/arch/arm/mach-msm/Kconfig
-@@ -1,12 +1,12 @@
- if ARCH_MSM
- 
- comment "Qualcomm MSM SoC Type"
--	depends on (ARCH_MSM8X60 || ARCH_MSM8960)
-+	depends on ARCH_MSM_DT
- 
- choice
- 	prompt "Qualcomm MSM SoC Type"
- 	default ARCH_MSM7X00A
--	depends on !(ARCH_MSM8X60 || ARCH_MSM8960)
-+	depends on !ARCH_MSM_DT
- 
- config ARCH_MSM7X00A
- 	bool "MSM7x00A / MSM7x01A"
-@@ -49,8 +49,6 @@ config ARCH_MSM8X60
- 	select GPIO_MSM_V2
- 	select HAVE_SMP
- 	select MSM_SCM if SMP
--	select SPARSE_IRQ
--	select USE_OF
- 
- config ARCH_MSM8960
- 	bool "MSM8960"
-@@ -59,6 +57,10 @@ config ARCH_MSM8960
- 	select HAVE_SMP
- 	select GPIO_MSM_V2
- 	select MSM_SCM if SMP
-+
-+config ARCH_MSM_DT
-+	def_bool y
-+	depends on (ARCH_MSM8X60 || ARCH_MSM8960)
- 	select SPARSE_IRQ
- 	select USE_OF
- 
-@@ -70,6 +72,7 @@ config MSM_SOC_REV_A
- 
- config  ARCH_MSM_ARM11
- 	bool
-+
- config  ARCH_MSM_SCORPION
- 	bool
- 
-@@ -77,6 +80,7 @@ config  MSM_VIC
- 	bool
- 
- menu "Qualcomm MSM Board Type"
-+	depends on !ARCH_MSM_DT
- 
- config MACH_HALIBUT
- 	depends on ARCH_MSM
-@@ -124,6 +128,7 @@ config MSM_SMD
- 
- config MSM_GPIOMUX
- 	bool
-+	depends on !ARCH_MSM_DT
- 	help
- 	  Support for MSM V1 TLMM GPIOMUX architecture.
- 
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index d872634..7ed4c1b 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -26,7 +26,6 @@ obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o b
- obj-$(CONFIG_MACH_HALIBUT) += board-halibut.o devices-msm7x00.o
- obj-$(CONFIG_ARCH_MSM7X30) += board-msm7x30.o devices-msm7x30.o
- obj-$(CONFIG_ARCH_QSD8X50) += board-qsd8x50.o devices-qsd8x50.o
--obj-$(CONFIG_ARCH_MSM8X60) += board-dt-8660.o
--obj-$(CONFIG_ARCH_MSM8960) += board-dt-8960.o
-+obj-$(CONFIG_ARCH_MSM_DT) += board-dt.o
- obj-$(CONFIG_MSM_GPIOMUX) += gpiomux.o
- obj-$(CONFIG_ARCH_QSD8X50) += gpiomux-8x50.o
-diff --git a/arch/arm/mach-msm/board-dt-8660.c b/arch/arm/mach-msm/board-dt-8660.c
-deleted file mode 100644
-index c294689..0000000
---- a/arch/arm/mach-msm/board-dt-8660.c
-+++ /dev/null
-@@ -1,48 +0,0 @@
--/* Copyright (c) 2010-2012, The Linux Foundation. All rights reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 and
-- * only version 2 as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- */
--
--#include <linux/init.h>
--#include <linux/of.h>
--#include <linux/of_platform.h>
--
--#include <asm/mach/arch.h>
--#include <asm/mach/map.h>
--
--#include "common.h"
--
--static void __init msm8x60_init_late(void)
--{
--	smd_debugfs_init();
--}
--
--static struct of_dev_auxdata msm_auxdata_lookup[] __initdata = {
--	{}
--};
--
--static void __init msm8x60_dt_init(void)
--{
--	of_platform_populate(NULL, of_default_bus_match_table,
--			msm_auxdata_lookup, NULL);
--}
--
--static const char *msm8x60_fluid_match[] __initdata = {
--	"qcom,msm8660-fluid",
--	"qcom,msm8660-surf",
--	NULL
--};
--
--DT_MACHINE_START(MSM_DT, "Qualcomm MSM (Flattened Device Tree)")
--	.smp = smp_ops(msm_smp_ops),
--	.init_machine = msm8x60_dt_init,
--	.init_late = msm8x60_init_late,
--	.dt_compat = msm8x60_fluid_match,
--MACHINE_END
-diff --git a/arch/arm/mach-msm/board-dt-8960.c b/arch/arm/mach-msm/board-dt-8960.c
-deleted file mode 100644
-index d4ca52c..0000000
---- a/arch/arm/mach-msm/board-dt-8960.c
-+++ /dev/null
-@@ -1,35 +0,0 @@
--/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 and
-- * only version 2 as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- */
--
--#include <linux/init.h>
--#include <linux/of_platform.h>
--
--#include <asm/mach/arch.h>
--#include <asm/mach/map.h>
--
--#include "common.h"
--
--static void __init msm_dt_init(void)
--{
--	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
--}
--
--static const char * const msm8960_dt_match[] __initconst = {
--	"qcom,msm8960-cdp",
--	NULL
--};
--
--DT_MACHINE_START(MSM8960_DT, "Qualcomm MSM (Flattened Device Tree)")
--	.smp = smp_ops(msm_smp_ops),
--	.init_machine = msm_dt_init,
--	.dt_compat = msm8960_dt_match,
--MACHINE_END
-diff --git a/arch/arm/mach-msm/board-dt.c b/arch/arm/mach-msm/board-dt.c
-new file mode 100644
-index 0000000..c140c53
---- /dev/null
-+++ b/arch/arm/mach-msm/board-dt.c
-@@ -0,0 +1,32 @@
-+/* Copyright (c) 2010-2012, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/of.h>
-+#include <linux/of_platform.h>
-+
-+#include <asm/mach/arch.h>
-+#include <asm/mach/map.h>
-+
-+#include "common.h"
-+
-+static const char *msm_dt_match[] __initdata = {
-+	"qcom,msm8660-fluid",
-+	"qcom,msm8660-surf",
-+	"qcom,msm8960-cdp",
-+	NULL
-+};
-+
-+DT_MACHINE_START(MSM_DT, "Qualcomm MSM (Flattened Device Tree)")
-+	.smp = smp_ops(msm_smp_ops),
-+	.dt_compat = msm_dt_match,
-+MACHINE_END
+Having thought about this, the answer is no. It presents exactly the
+same problem as capabilities do - the set can never be meaningfully
+extended. If an application sets only the bits it knows about, and if a
+new security-sensitive feature is added to the kernel, the feature will
+be left enabled and the system will be insecure. Alternatively, if an
+application sets all the bits regardless of whether it knows them or
+not, it may enable a lockdown feature that it otherwise required.
+
+The only way this is useful is if all the bits are semantically
+equivalent, and in that case there's no point in having anything other
+than a single bit. Users who want a more fine-grained interface should
+use one of the existing mechanisms for doing so - leave the kernel open
+and impose the security policy from userspace using either capabilities
+or selinux.
+
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+Matthew Garrett <matthew.garrett@nebula.com>
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
