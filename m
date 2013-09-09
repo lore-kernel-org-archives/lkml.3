@@ -1,77 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486Ab3IIQKY (ORCPT <rfc822;w@1wt.eu>);
+	id S1755514Ab3IIQK2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 12:10:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33572 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753137Ab3IIQKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Sep 2013 12:10:24 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:60238 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753137Ab3IIQKU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 12:10:20 -0400
-Message-ID: <522DF2EA.2090106@lwfinger.net>
-Date: Mon, 09 Sep 2013 11:10:18 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+Message-ID: <522DF2DF.5060407@redhat.com>
+Date: Mon, 09 Sep 2013 18:10:07 +0200
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: farisdehaan@gmail.com
-CC: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, Minchan Kim <minchan@kernel.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: rtl8188eu: checkpatch.pl warnings removed
-References: <522dea9f.47250e0a.0f3f.ffffc2dc@mx.google.com>
-In-Reply-To: <522dea9f.47250e0a.0f3f.ffffc2dc@mx.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Subject: Re: [PATCH 1/2] staging: zram: minimize `slot_free_lock' usage (v2)
+References: <20130906151255.GE2238@swordfish.minsk.epam.com> <20130909123329.GZ19256@mwanda> <20130909124942.GA2221@swordfish.minsk.epam.com> <20130909132124.GY6329@mwanda> <522DD125.1030607@redhat.com>
+In-Reply-To: <522DD125.1030607@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2013 10:34 AM, farisdehaan@gmail.com wrote:
-> From: Faris de Haan <farisdehaan@gmail.com>
->
-> Fixed some of the coding style issues reported by checkpatch.pl
->
-> Signed-off-by: Faris de Haan <farisdehaan@gmail.com>
-> ---
->   drivers/staging/rtl8188eu/core/rtw_sta_mgt.c |    7 +++----
->   1 file changed, 3 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c b/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
-> index c2977be..cd3c9a7 100644
-> --- a/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
-> +++ b/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
-> @@ -267,9 +267,8 @@ _func_enter_;
->
->   		rtw_mfree_sta_priv_lock(pstapriv);
->
-> -		if (pstapriv->pallocated_stainfo_buf) {
-> +		if (pstapriv->pallocated_stainfo_buf)
->   			rtw_vmfree(pstapriv->pallocated_stainfo_buf, sizeof(struct sta_info)*NUM_STA+4);
-> -		}
->   	}
->
->   _func_exit_;
-> @@ -315,7 +314,7 @@ _func_enter_;
->
->   		rtw_list_insert_tail(&psta->hash_list, phash_list);
->
-> -		pstapriv->asoc_sta_count++ ;
-> +		pstapriv->asoc_sta_count++;
->
->   		_exit_critical_bh(&(pstapriv->sta_hash_lock), &irql2);
->
-> @@ -419,7 +418,7 @@ _func_enter_;
->   	_cancel_timer_ex(&psta->addba_retry_timer);
->
->   	/* for A-MPDU Rx reordering buffer control, cancel reordering_ctrl_timer */
-> -	for (i = 0; i < 16 ; i++) {
-> +	for (i = 0; i < 16; i++) {
->   		unsigned long irql;
->   		struct list_head *phead, *plist;
->   		union recv_frame *prframe;
->
+On 09/09/2013 03:46 PM, Jerome Marchand wrote:
+> On 09/09/2013 03:21 PM, Dan Carpenter wrote:
+>> On Mon, Sep 09, 2013 at 03:49:42PM +0300, Sergey Senozhatsky wrote:
+>>>>> Calling handle_pending_slot_free() for every RW operation may
+>>>>> cause unneccessary slot_free_lock locking, because most likely
+>>>>> process will see NULL slot_free_rq. handle_pending_slot_free()
+>>>>> only when current detects that slot_free_rq is not NULL.
+>>>>>
+>>>>> v2: protect handle_pending_slot_free() with zram rw_lock.
+>>>>>
+>>>>
+>>>> zram->slot_free_lock protects zram->slot_free_rq but shouldn't the zram
+>>>> rw_lock be wrapped around the whole operation like the original code
+>>>> does?  I don't know the zram code, but the original looks like it makes
+>>>> sense but in this one it looks like the locks are duplicative.
+>>>>
+>>>> Is the down_read() in the original code be changed to down_write()?
+>>>>
+>>>
+>>> I'm not touching locking around existing READ/WRITE commands.
+>>>
+>>
+>> Your patch does change the locking because now instead of taking the
+>> zram lock once it takes it and then drops it and then retakes it.  This
+>> looks potentially racy to me but I don't know the code so I will defer
+>> to any zram maintainer.
+> 
+> You're right. Nothing prevents zram_slot_free_notify() to repopulate the
+> free slot queue while we drop the lock.
+> 
+> Actually, the original code is already racy. handle_pending_slot_free()
+> modifies zram->table while holding only a read lock. It needs to hold a
+> write lock to do that. Using down_write for all requests would obviously
+> fix that, but at the cost of read performance.
 
-Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
+Now I think we can drop the call to handle_pending_slot_free() in
+zram_bvec_rw() altogether. As long as the write lock is held when
+handle_pending_slot_free() is called, there is no race. It's no different
+from any write request and the current code handles R/W concurrency
+already.
 
-Thanks,
+Jerome
 
-Larry
+> 
+>>
+>> 1) You haven't given us any performance numbers so it's not clear if the
+>>    locking is even a problem.
+>>
+>> 2) The v2 patch introduces an obvious deadlock in zram_slot_free()
+>>    because now we take the rw_lock twice.  Fix your testing to catch
+>>    this kind of bug next time.
+>>
+>> 3) Explain why it is safe to test zram->slot_free_rq when we are not
+>>    holding the lock.  I think it is unsafe.  I don't want to even think
+>>    about it without the numbers.
+>>
+>> regards,
+>> dan carpenter
+>>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
