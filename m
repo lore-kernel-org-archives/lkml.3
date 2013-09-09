@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557Ab3IITwu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 15:52:50 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:59266 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754643Ab3IITwt (ORCPT
+	id S1755583Ab3IITxp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 15:53:45 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:34498 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754333Ab3IITxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 15:52:49 -0400
+	Mon, 9 Sep 2013 15:53:44 -0400
+Date: Mon, 9 Sep 2013 14:53:35 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bob Liu <bob.liu@oracle.com>, Mel Gorman <mgorman@suse.de>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Dave Hansen <dave.hansen@intel.com>, Minchan Kim <minchan@kernel.org>
+Subject: Re: [RFC PATCH 2/4] mm: use mapcount for identifying zbud pages
+Message-ID: <20130909195335.GF4701@variantweb.net>
+References: <1377852176-30970-1-git-send-email-k.kozlowski@samsung.com>
+ <1377852176-30970-3-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <522E2487.90109@zytor.com>
-References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
-	<19562.1378747124@turing-police.cc.vt.edu>
-	<alpine.DEB.2.02.1309091119330.2479@nftneq.ynat.uz>
-	<27562.1378753264@turing-police.cc.vt.edu>
-	<522E2487.90109@zytor.com>
-Date: Mon, 9 Sep 2013 15:52:48 -0400
-Message-ID: <CA+5PVA4mu=ykBMgWYaEagCsDexR-qFYH0tfjK+4B+xOCPonNXg@mail.gmail.com>
-Subject: Re: [PATCH 00/12] One more attempt at useful kernel lockdown
-From: Josh Boyer <jwboyer@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>, David Lang <david@lang.hm>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        James Morris <jmorris@namei.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377852176-30970-3-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090919-8236-0000-0000-0000019952D3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 9, 2013 at 3:41 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 09/09/2013 12:01 PM, Valdis.Kletnieks@vt.edu wrote:
->> On Mon, 09 Sep 2013 11:25:38 -0700, David Lang said:
->>
->>> Given that we know that people want signed binaries without
->>> blocking kexec, you should have '1' just enforce module signing
->>> and '2' (or higher) implement a full lockdown including kexec.
->>
->>> Or, eliminate the -1  permanently insecure option and make this a
->>> bitmask, if someone wants to enable every possible lockdown, have
->>> them set it to "all 1's", define the bits only as you need them.
->>
->> This strikes me as much more workable than one big sledgehammer.
->>
->
-> I.e. capabilities ;)
+On Fri, Aug 30, 2013 at 10:42:54AM +0200, Krzysztof Kozlowski wrote:
+> Currently zbud pages do not have any flags set so it is not possible to
+> identify them during migration or compaction.
+> 
+> Implement PageZbud() by comparing page->_mapcount to -127 to distinguish
+> pages allocated by zbud. Just like PageBuddy() is implemented.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-Circles.  All I see here are circles.
+Reviewed-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 
-Having lived an entire release with a capabilities based mechanism for
-this in Fedora, please no.
+> ---
+>  include/linux/mm.h |   23 +++++++++++++++++++++++
+>  mm/zbud.c          |    4 ++++
+>  2 files changed, 27 insertions(+)
 
-And if you are talking about non-POSIX capabilities as you mentioned
-earlier, that seems to be no different than having securelevel being a
-bitmask of, well, levels.  I don't have much opinion on securelevel
-being a big hammer or a bitmask of finer grained things, but I do
-think it's a more manageable way forward.  Calling the implementation
-"capabilities" seems to just be unnecessarily confusing.
-
-josh
