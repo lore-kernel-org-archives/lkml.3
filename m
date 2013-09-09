@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885Ab3IIOww (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 10:52:52 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:25126 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752699Ab3IIOwv (ORCPT
+	id S1754023Ab3IIOxS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 10:53:18 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:40295 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752473Ab3IIOxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 10:52:51 -0400
-Date: Mon, 9 Sep 2013 17:52:29 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, Minchan Kim <minchan@kernel.org>,
-        Jerome Marchand <jmarchan@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] staging: zram: minimize `slot_free_lock' usage (v2)
-Message-ID: <20130909145229.GB19256@mwanda>
-References: <20130906151255.GE2238@swordfish.minsk.epam.com>
- <20130909123329.GZ19256@mwanda>
- <20130909124942.GA2221@swordfish.minsk.epam.com>
- <20130909132124.GY6329@mwanda>
- <20130909144259.GB2221@swordfish.minsk.epam.com>
+	Mon, 9 Sep 2013 10:53:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130909144259.GB2221@swordfish.minsk.epam.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <13625.1378721932@warthog.procyon.org.uk>
+References: <cover.1378418255.git.milosz@adfin.com>
+	<alpine.DEB.2.00.1309051555250.1073@cobra.newdream.net>
+	<CANP1eJEk=eRmq1F+yYWB53spgifbU+zzKGdmKw6BGfx8SknkrA@mail.gmail.com>
+	<18764.1378483142@warthog.procyon.org.uk>
+	<CANP1eJFMdcsgSwVO9jhYQwn2C+19db1uy5=du7yYFbmiB6em0A@mail.gmail.com>
+	<alpine.DEB.2.00.1309061302300.12830@cobra.newdream.net>
+	<CANP1eJFtF7sRJkqg0xGqNjEzbz29GWywB8DAjfGFzDhCPSfjcg@mail.gmail.com>
+	<CANP1eJF9oyfTWL1up38cEFyQFZQU51v1Yo1wZqFYxN2qkvc7gQ@mail.gmail.com>
+	<13625.1378721932@warthog.procyon.org.uk>
+Date: Mon, 9 Sep 2013 10:53:14 -0400
+Message-ID: <CANP1eJG=Eq5w6XdFmrm+xxv7N3BVJgZ0+SxcCTpc45HSKH7DFA@mail.gmail.com>
+Subject: Re: [PATCH 0/8] ceph: fscache support & upstream changes
+From: Milosz Tanski <milosz@adfin.com>
+To: David Howells <dhowells@redhat.com>
+Cc: sprabhu@redhat.com, ceph-devel <ceph-devel@vger.kernel.org>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>, Hongyi Jia <jiayisuse@gmail.com>,
+        "linux-cachefs@redhat.com" <linux-cachefs@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Sage Weil <sage@inktank.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 05:42:59PM +0300, Sergey Senozhatsky wrote:
-> > 3) Explain why it is safe to test zram->slot_free_rq when we are not
-> >    holding the lock.  I think it is unsafe.  I don't want to even think
-> >    about it without the numbers.
-> 
-> atomic pointer test, which is either NULL or !NULL.
-> 
+David,
 
-That's not how concurency works.  Atomic types are complicated than
-that.  Anyway, the zram maintainers don't need me to explain that to
-them so I'll let them take over from here.
+I guess that's really a better question for Sage. He sent my branch
+(which includes your changes) plus a whole slew of things over to
+Linus. I'm going guess that a small follow on patch is simplest but
+I'll let him comment.
 
-regards,
-dan carpenter
+Here's the original pull request:
+http://marc.info/?l=linux-kernel&m=137849853203101&w=2
 
+Also, so far after making this change everything is peachy and theres
+no other regressions.
+
+P.S: This is a resend because I did no hit reply to ALL, sorry for the
+spam David.
+
+On Mon, Sep 9, 2013 at 6:18 AM, David Howells <dhowells@redhat.com> wrote:
+> Milosz Tanski <milosz@adfin.com> wrote:
+>
+>> I think that change does the trick. I had it running on the same
+>> machine for 5 hours and had the kernel forcefully drop some of the
+>> inodes in the cache (via drop caches) without a crash. I'll send a
+>> proper patch email after you take a look and make sure I did the right
+>> thing.
+>
+> Do you mind if I roll your change directly into my patch and reissue the set?
+> Or would you rather have an extra patch at this time?
+>
+> David
