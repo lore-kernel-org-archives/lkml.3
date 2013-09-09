@@ -1,81 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396Ab3IIPDb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 11:03:31 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:51522 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753117Ab3IIPD3 (ORCPT
+	id S1753522Ab3IIPEL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 11:04:11 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:39055 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753117Ab3IIPEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 11:03:29 -0400
-Message-ID: <522DE339.4030004@gmail.com>
-Date: Mon, 09 Sep 2013 08:03:21 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Mon, 9 Sep 2013 11:04:09 -0400
+Date: Mon, 9 Sep 2013 17:03:46 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Xiubo Li <Li.Xiubo@freescale.com>, r65073@freescale.com,
+        grant.likely@linaro.org, linux@arm.linux.org.uk, rob@landley.net,
+        ian.campbell@citrix.com, swarren@wwwdotorg.org, mark.rutland@arm.com,
+        pawel.moll@arm.com, rob.herring@calxeda.com,
+        linux-arm-kernel@lists.infradead.org, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, Jingchang Lu <b35083@freescale.com>
+Subject: Re: [PATCHv3 1/4] pwm: Add Freescale FTM PWM driver support
+Message-ID: <20130909150346.GV30088@pengutronix.de>
+Mail-Followup-To: Thierry Reding <thierry.reding@gmail.com>,
+	Xiubo Li <Li.Xiubo@freescale.com>, r65073@freescale.com,
+	grant.likely@linaro.org, linux@arm.linux.org.uk, rob@landley.net,
+	ian.campbell@citrix.com, swarren@wwwdotorg.org,
+	mark.rutland@arm.com, pawel.moll@arm.com, rob.herring@calxeda.com,
+	linux-arm-kernel@lists.infradead.org, linux-pwm@vger.kernel.org,
+	linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+	linux-doc@vger.kernel.org, Jingchang Lu <b35083@freescale.com>
+References: <1378454907-22728-1-git-send-email-Li.Xiubo@freescale.com>
+ <1378454907-22728-2-git-send-email-Li.Xiubo@freescale.com>
+ <20130909122008.GC22197@ulmo>
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCHv2 00/25] perf tool: Add support for multiple data file
- storage
-References: <1378031796-17892-1-git-send-email-jolsa@redhat.com> <20130909111749.GP31370@twins.programming.kicks-ass.net> <20130909113640.GA16401@krava.redhat.com> <20130909115518.GA26785@twins.programming.kicks-ass.net> <20130909140339.GB16401@krava.redhat.com> <522DD6FF.50107@gmail.com> <20130909143134.GA27974@krava.redhat.com>
-In-Reply-To: <20130909143134.GA27974@krava.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130909122008.GC22197@ulmo>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 17:03:05 up 16 days, 33 min, 48 users,  load average: 0.13, 0.28,
+ 0.39
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/9/13 7:31 AM, Jiri Olsa wrote:
-> On Mon, Sep 09, 2013 at 07:11:11AM -0700, David Ahern wrote:
->> On 9/9/13 7:03 AM, Jiri Olsa wrote:
->>> my usage currently is to having this running during the day:
->>> (well whenever I remember to run it.. ;-) )
->>>
->>>    [jolsa@krava perf]$ sudo ./perf record -g -M 1m -a
->>>
->>> and checking report when the system or app get stuck
->>>
->>> with multiple files I can just easily (or automaticaly)
->>> remove old ones without restarting session
->>
->> Aren't you losing potentially important events by doing that --
->> FORK, COMM, MMAP?
->
-> those are synthesized for each file via synthesize_record
-> function, see:
->
-> [PATCH 19/25] perf tools: Move synthesizing into single function
+On Mon, Sep 09, 2013 at 02:20:09PM +0200, Thierry Reding wrote:
+> On Fri, Sep 06, 2013 at 04:08:24PM +0800, Xiubo Li wrote:
+> > The FTM PWM device can be found on Vybrid VF610 Tower and Layerscape LS-1 SoCs.
+> > 
+> > Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> > Signed-off-by: Jingchang Lu <b35083@freescale.com>
+> > ---
+> >  drivers/pwm/Kconfig       |  10 +
+> >  drivers/pwm/Makefile      |   1 +
+> >  drivers/pwm/pwm-fsl-ftm.c | 505 ++++++++++++++++++++++++++++++++++++++++++++++
+> >  3 files changed, 516 insertions(+)
+> >  create mode 100644 drivers/pwm/pwm-fsl-ftm.c
+> 
+> This looks pretty good to me. I noticed that you didn't Cc Sascha who
+> commented on this a lot. Can you please resend with him Cc'ed to make
+> sure he sees this version of the series?
 
-Ok. haven't had time to look through your 2 large patch sets.
+I'm already aware of this, no need to resend. I'll have a look over it
+tomorrow.
 
-Seems like a lot of repetitive work on a loaded system. The overhead of 
-the task events will dominate compared to the samples.
+Sascha
 
->
->>
->> I have a flight recorder style command that address this problem
->> (long-running/daemons) by processing task events and then stashing
->> the sample events on a time-ordered list with chopping to maintain
->> the time window.
->
-> so far I noticed there could be race among EXIT and remaining
-> SAMPLE events on another CPU mmap than EXIT event.. ending up
-> with EXIT being stored in the old file, while SAMPLEs will get
-> to the new one
->
-> I was thinking about some 'perf daemon' so I dont need to run that
-> manually.. seems similar to what you did
-
-Right now I focus on scheduling events. This latest version of it can be 
-easily recycled for other use cases. Some work would be needed to dump 
-events to a file versus dumping processed information.
-
-I am in San Jose this week. Not sure if I will have time to finish it to 
-a point of pushing out patches, but maybe I can push to github in the 
-next couple of days.
-
-David
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
