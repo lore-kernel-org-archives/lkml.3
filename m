@@ -1,98 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755295Ab3IIR5M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 13:57:12 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:52499 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753161Ab3IIR5I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 13:57:08 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>, linux-kernel@vger.kernel.org
-References: <20130829211114.GA20726@sergelap> <87mwo0xb9p.fsf@xmission.com>
-	<20130830144232.GA18281@mail.hallyn.com>
-	<87hae6vh0w.fsf_-_@xmission.com> <20130908175602.GA3172@redhat.com>
-	<20130908180137.GA4915@redhat.com> <87bo43gg4h.fsf@xmission.com>
-	<20130909151530.GA6755@redhat.com>
-Date: Mon, 09 Sep 2013 10:54:58 -0700
-In-Reply-To: <20130909151530.GA6755@redhat.com> (Oleg Nesterov's message of
-	"Mon, 9 Sep 2013 17:15:30 +0200")
-Message-ID: <87bo41j2x9.fsf@tw-ebiederman.twitter.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1755450Ab3IIR50 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 13:57:26 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:59348 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755325Ab3IIR5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 13:57:24 -0400
+Date: Mon, 9 Sep 2013 10:56:56 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, sbw@mit.edu
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+Message-ID: <20130909175656.GF3966@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130909085504.2ddd7e69@gandalf.local.home>
+ <20130909130851.GC16280@somewhere>
+ <20130909092142.05780991@gandalf.local.home>
+ <20130909134505.GF16280@somewhere>
+ <20130909135656.GT3966@linux.vnet.ibm.com>
+ <20130909101629.32df27a2@gandalf.local.home>
+ <20130909161708.GX3966@linux.vnet.ibm.com>
+ <20130909123422.7936e868@gandalf.local.home>
+ <20130909165836.GB3966@linux.vnet.ibm.com>
+ <20130909172908.GA31239@Krystal>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/Tf2/dxneQxyYfmYWxCODwjrnn0Kfgf3k=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.2598]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.0 T_XMDrugObfuBody_04 obfuscated drug references
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Oleg Nesterov <oleg@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: free_pid() && PIDNS_HASH_ADDING
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130909172908.GA31239@Krystal>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13090917-5806-0000-0000-000022ACA208
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov <oleg@redhat.com> writes:
+On Mon, Sep 09, 2013 at 01:29:08PM -0400, Mathieu Desnoyers wrote:
+> * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > On Mon, Sep 09, 2013 at 12:34:22PM -0400, Steven Rostedt wrote:
+> [...]
+> > > "rcu_is_ignored()" or "rcu_is_not_active()", "rcu_is_watching_you()"
+> > 
+> > You know, I am strongly tempted by "rcu_is_watching_you()", but I have
+> > this feeling that it is too cute for its own good.  ;-)
+> 
+> Wow, I just got off the plane, and look at what happened to this thread
+> ;-)
 
-> On 09/08, Eric W. Biederman wrote:
->>
->> Oleg Nesterov <oleg@redhat.com> writes:
->>
->> > On 09/08, Oleg Nesterov wrote:
->> >>
->> >> Off topic. What if the first alloc_pid() succeeds and then later
->> >> copy_process() fails. In this case free_pid() is called but
->> >> PIDNS_HASH_ADDING was not cleared, we miss kern_unmount(), no?
->> >
->> > Perhaps something like below?
->>
->> I am thinking more:
->>
->> diff --git a/kernel/pid.c b/kernel/pid.c
->> index ab75add..ef59516 100644
->> --- a/kernel/pid.c
->> +++ b/kernel/pid.c
->> @@ -273,6 +273,10 @@ void free_pid(struct pid *pid)
->>                          */
->>                         wake_up_process(ns->child_reaper);
->>                         break;
->> +               case PIDNS_HASH_ADDING:
->> +                       /* Handle a fork failure of the first process */
->> +                       ns->nr_hashed = 0;
->
-> Agreed, it also makes sense to clear ->nr_hashed. But I still think
-> that WARN_ON(ns->child_reaper) makes sense too.
+I had the same reaction when getting up this morning.  ;-)
 
-I don't know that I like warnings for impossible conditions.  How could
-we even make a mistake that gets us there?
+> Referring to your earlier question Paul, what I meant by my earlier
+> email on naming has been addressed by Steven: when exposing a new RCU
+> API, even if it is just for in-kernel use, we should be really cautious
+> not to tie it to implementation, but rather to concepts. Basically, my
+> original thought is that we should be able to express the exact same
+> concept in the kernel RCU implementation and in Userspace RCU. Here,
+> binding the name on whether the CPU is watching RCU really makes no
+> sense for urcu, since all the RCU flavors we currently have are watching
+> threads, not CPUs.
 
->> At which point I ask myself what of the pathlogocical case where the
->> first fork fails but because we created the pid namespace with unshare
->> there is a concurrent fork from another process into the pid namespace
->> that succeeds.  Resulting in one pid in the pid namespace that is not
->> the reaper.
->
-> But how can setns() work before the first fork() succeeds and makes the
-> ->child_reaper visible in /proc ?
->
-> Probably I missed something obvious, I didn't sleep today...
+More that that, userspace RCU doesn't have any energy management tie-ins.
+It instead expects the application threads to invoke rcu_thread_offline()
+when that thread goes idle and rcu_thread_offline() when the thread wakes
+up again.  There is therefore less need for the application to query the
+state because it was the application that set the state.
 
-Actually that is a very good point.  That is an accidental feature but
-one I very much appreciate today.
+In contrast, within the Linux kernel, the RCU-watching state gets set
+asynchronously with respect to in-kernel users of RCU.
 
-Of course this leads me to the question of what the checkpoint/restart
-guys can do about checkpointing that properly. Sigh.
+Given the rest of the userspace RCU primitives, something like
+rcu_thread_is_online() might make sense for the userspace RCU if some
+application needs to know the state.  Or some other name that fits in
+with rcu_thread_offline() and rcu_thread_online().  But such a name would
+be problematic in the kernel due to CPU hotplug's use of those terms.
 
-Eric
+> Hence my proposal for "rcu_read_check()". It could be "rcu_is_active()"
+> too, I don't really mind. It really minds: Is RCU actively watching the
+> current execution context ? This can be translated to a runtime check
+> too: is it safe to call rcu_read_lock() form this context ?
+
+Although I do like rcu_is_active() better than rcu_read_check(), my
+concern with rcu_is_active() is that it can easily be mistaken for a
+global state rather than a per-CPU/thread/task/whatever state.
+
+							Thanx, Paul
+
