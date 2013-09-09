@@ -1,103 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754269Ab3IIQRb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 12:17:31 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:58848 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990Ab3IIQRa (ORCPT
+	id S1754616Ab3IIQRl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 12:17:41 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:60508 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754340Ab3IIQRi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 12:17:30 -0400
-Date: Mon, 9 Sep 2013 09:17:08 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        sbw@mit.edu
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
- section?
-Message-ID: <20130909161708.GX3966@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130909105347.GK31370@twins.programming.kicks-ass.net>
- <20130909121329.GA16280@somewhere>
- <20130909083926.3eceebef@gandalf.local.home>
- <20130909124547.GB16280@somewhere>
- <20130909085504.2ddd7e69@gandalf.local.home>
- <20130909130851.GC16280@somewhere>
- <20130909092142.05780991@gandalf.local.home>
- <20130909134505.GF16280@somewhere>
- <20130909135656.GT3966@linux.vnet.ibm.com>
- <20130909101629.32df27a2@gandalf.local.home>
+	Mon, 9 Sep 2013 12:17:38 -0400
+Date: Mon, 9 Sep 2013 09:17:35 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Mark Brown <broonie@kernel.org>
+Cc: Wei Ni <wni@nvidia.com>, khali@linux-fr.org, swarren@wwwdotorg.org,
+        lm-sensors@lm-sensors.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/2] hwmon: (lm90) Add power control
+Message-ID: <20130909161735.GC18975@roeck-us.net>
+References: <1378722552-10357-1-git-send-email-wni@nvidia.com>
+ <1378722552-10357-2-git-send-email-wni@nvidia.com>
+ <20130909111242.GW29403@sirena.org.uk>
+ <522DB253.6000707@roeck-us.net>
+ <20130909135022.GZ29403@sirena.org.uk>
+ <20130909155043.GA18975@roeck-us.net>
+ <20130909160237.GR29403@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130909101629.32df27a2@gandalf.local.home>
+In-Reply-To: <20130909160237.GR29403@sirena.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090916-0928-0000-0000-000001838F67
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 10:16:29AM -0400, Steven Rostedt wrote:
-> On Mon, 9 Sep 2013 06:56:56 -0700
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+On Mon, Sep 09, 2013 at 05:02:37PM +0100, Mark Brown wrote:
+> On Mon, Sep 09, 2013 at 08:50:43AM -0700, Guenter Roeck wrote:
+> > On Mon, Sep 09, 2013 at 02:50:22PM +0100, Mark Brown wrote:
 > 
+> > > And indeed it does this (well, it does whatever the driver says in terms
+> > > of delay).  However it is possible that the lm90 needs this time for
+> > > itself - if it's doing some sort of initialisation or callibration
+> > > sequence then that'll happen after the supplies come up.  25ms did seem
+> > > rather long, especially for such simple devices, but it's not beyond the
+> > > bounds of possibility.
 > 
-> > Indeed, there is on ongoing naming debate as well.  About the only point
-> > of agreement thus far is that the current names are inadequate. ;-)
-> > 
-> > My current feeling is that rcu_is_cpu_idle() should be called
-> > rcu_watching_this_cpu() and what is called rcu_watching_this_cpu()
-> > in my local tree should be called __rcu_watching_this_cpu().
+> > Even then it would be unreasonable to enforce such a delay for every instance
+> > of this driver, even if the regulator is a dummy one and/or has been enabled
+> > already. Many if not almost all users of the driver work just fine as-is,
+> > without additional enforced delay (and, for that matter, without regulator ;).
 > 
-> I disagree. Then it would not make sense if we take a return value of
-> "__rcu_watching_this_cpu()" and use it on another CPU to make other
-> decisions for that other CPU.
-
-Frederic and I both went through why this works.
-
-> I still think we are confusing concepts with implementation. Yes, the
-> RCU implementation tracks CPU state, but the concept is still based on
-> the task.
-
-You keep asserting this, but I am not seeing it.  Sure, you can argue
-that grace periods are based on tasks as well as or instead of CPUs.
-But I am not convinced that it helps at the dynticks interface.
-
-> But you are right, with dynamic ticks, things get a little more
-> complex, as dynamic ticks is a CPU state, not a task state, as it can
-> be something other than the running task that changes the state
-> (another task gets scheduled on that CPU).
+> > If there is a delay, it would have to be optional: Only wait if the regulator
+> > was really turned on by the call and not already active. I don't know if the
+> > regulator subsystem has this capability; if not, maybe it should.
 > 
-> But I think we are coupling RCU a bit too much with dynamic ticks here.
-> Maybe we need to take a step back to visualize concepts again.
-
-If we don't couple it pretty tightly, it won't work.  And whatever we
-want to call this thing that determines what RCU is paying attention to
-has to be at the implementation level.  For things like rcu_read_lock()
-and synchronize_rcu(), yes, the task view is important -- and in recent
-documentation is the POV I use.
-
-> The state of being in dynamic tick mode is determined by what a task or
-> tasks are doing on the CPU. One of those things is if the task needs to
-> be tracked by RCU. And here, is where I think we are getting our
-> confusion from. The dynamic tick state needs to check if the running
-> task is requiring RCU or not, and thus we ask for "is rcu needed on
-> this CPU?" when the real question is "is the task running on this CPU
-> requiring RCU?"
+> It does, though it gets complicated trying to use it for a case like
+> this since you can't really tell if the regulator was powered on
+> immediately before the device got probed by another device on the bus.
 > 
-> Again, if we keep things in a conceptual mode, and not look too much at
-> the implementation details, I think more people will understand what's
-> going on. Especially those that don't know why something was
-> implemented the way it was.
+Why not ? Just keep a timestamp.
 
-All this aside, do you have a name you are nominating?
+> > On a higher level, I wonder if such functionality should be added in the i2c
+> > subsystem and not in i2c client drivers. Has anyone thought about this ?
+> 
+> I'm not sure what the subsystem would do for such delays?  It's fairly
+> common for things that need this to also want to do things like
+> manipulate GPIOs as part of the power on sequence so the applicability
+> is relatively limited, plus it's not even I2C specific, the same applies
+> to other buses so it ought to be a driver core thing.
+> 
+Possibly. I just thought about i2c since it also takes care of basic
+devicetree bindings. Something along the line of
+	if devicetree bindings for this device declare one or more
+	regulators, enable those regulators before calling the driver
+	probe function.
 
-							Thanx, Paul
+That was not intended to solve the delay problem, though. The delay problem
+seems to be more of a generic regulator problem and, as I suggested, should
+be solved in the regulator subsystem.
+	if the regulator is enabled and the device specifies a poweron delay,
+	wait for the specified amount of time after (and only after) enabling
+	the regulator.
 
+> There was some work on a generic helper for power on sequences but it
+> stalled since it wasn't accepted for the original purpose (LCD panel
+> power ons IIRC).
+
+Too bad. I think it could be kept quite simple, though, by handling it
+through the regulator subsystem as suggested above. A generic binding
+for a per-regulator and per-device poweron delay should solve that
+and possibly even make it transparent to the actual driver code.
+
+Guenter
