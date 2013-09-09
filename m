@@ -1,65 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754543Ab3IIPXA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 11:23:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61120 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753614Ab3IIPW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 11:22:58 -0400
-Date: Mon, 9 Sep 2013 17:24:54 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Jan Beulich <JBeulich@suse.com>
-Subject: [PATCH 4/9] PCI/MSI/MIPS: Make return values only 0/-errno when MSIs
- allocated
-Message-ID: <20130909152454.GE24962@dhcp-26-207.brq.redhat.com>
-References: <20130905150259.GA30984@dhcp-26-207.brq.redhat.com>
- <20130905150442.GA24148@htj.dyndns.org>
- <20130905154041.GD30984@dhcp-26-207.brq.redhat.com>
- <20130905154436.GC24148@htj.dyndns.org>
- <20130905185440.GA13175@dhcp-26-207.brq.redhat.com>
- <20130905200608.GA3846@htj.dyndns.org>
- <CAErSpo4TU2geqzY3AYsL08KimBqtfwa4iUoFHgcFt0zMTBJkHw@mail.gmail.com>
- <20130906160621.GF22763@mtj.dyndns.org>
- <20130906233205.GF12956@google.com>
- <20130909152044.GA24962@dhcp-26-207.brq.redhat.com>
+	id S1751113Ab3IIPX1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 11:23:27 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:46636 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750936Ab3IIPXZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 11:23:25 -0400
+Message-ID: <522DE822.3030907@arm.com>
+Date: Mon, 09 Sep 2013 16:24:18 +0100
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130909152044.GA24962@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jonas Bonn <jonas@southpole.se>, Michal Simek <monstr@monstr.eu>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
+Subject: Re: [PATCH v4 12/19] cpufreq: cpufreq-cpu0: remove device tree parsing
+ for cpu nodes
+References: <1374492747-13879-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1376991021-12160-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1376991021-12160-13-git-send-email-Sudeep.KarkadaNagesha@arm.com> <Pine.LNX.4.64.1309061539310.11068@axis700.grange> <522D93D7.4010307@arm.com> <20130909143253.GD4624@S2101-09.ap.freescale.net>
+In-Reply-To: <20130909143253.GD4624@S2101-09.ap.freescale.net>
+X-OriginalArrivalTime: 09 Sep 2013 15:23:19.0683 (UTC) FILETIME=[83A40530:01CEAD70]
+X-MC-Unique: 113090916232206401
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- arch/mips/pci/msi-octeon.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On 09/09/13 15:32, Shawn Guo wrote:
+> Hi Sudeep,
+> 
+> On Mon, Sep 09, 2013 at 10:24:39AM +0100, Sudeep KarkadaNagesha wrote:
+>> Hi Shawn,
+>>
+>> Can you please clarify ? The fix would be as below but I would like to
+>> know if setting cpu_dev to get_cpu_device(0) instead of &pdev->dev has
+>> any impact on other parts of code using cpu_dev ?
+> 
+> I'm sorry.  I should have given it a test on hardware before ACKing the
+> changes.
+> 
+> The fix below should not have other impact except the prefix of dev_err
+> [info, dbg] message output ('cpufreq-cpu0:' to 'cpu cpu0:'), which
+> shouldn't be a problem.
+>
+Hi Shawn,
 
-diff --git a/arch/mips/pci/msi-octeon.c b/arch/mips/pci/msi-octeon.c
-index d37be36..0ee5f4d 100644
---- a/arch/mips/pci/msi-octeon.c
-+++ b/arch/mips/pci/msi-octeon.c
-@@ -193,7 +193,7 @@ int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
- 	 * override arch_setup_msi_irqs()
- 	 */
- 	if (type == PCI_CAP_ID_MSI && nvec > 1)
--		return 1;
-+		return -EINVAL;
- 
- 	list_for_each_entry(entry, &dev->msi_list, list) {
- 		ret = arch_setup_msi_irq(dev, entry);
--- 
-1.7.7.6
+Ok. But I am bit suspicious about devm_clk_get(cpu_dev, NULL).
+I don't understand completely as how the clock are registered(whether
+with dev_id or with connection_id).
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+A quick grep revealed that i.mx and shmobile is using conection id while
+registering. If the clock is registered with connection id and retrieved
+with cpu_dev(now dev_id is cpu0 and not cpufreq-cpu0), IIUC that would
+break. If we pass pdev->dev for clk_get, it should be fine but again
+IIUC it breaks highbank which gets all the information from DT.
+
+So only solution I can think of is to continue to have the code
+assigning (&pdev->dev)->of_node with cpu device node which is not clean
+and arguable as incorrect since there is no DT node for cpufreq-cpu0.
+I don't have a strong opinion though.
+
+Let me know how would you like to fix this.
+
+>>
+>> diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
+>> index cbfffa9..871c336 100644
+>> --- a/drivers/cpufreq/cpufreq-cpu0.c
+>> +++ b/drivers/cpufreq/cpufreq-cpu0.c
+>> @@ -177,7 +177,7 @@ static int cpu0_cpufreq_probe(struct platform_device
+>> *pdev)
+>>         struct device_node *np;
+>>         int ret;
+>>
+>> -       cpu_dev = &pdev->dev;
+>> +       cpu_dev = get_cpu_device(0);
+>>
+>>         np = of_node_get(cpu_dev->of_node);
+>>         if (!np) {
+>>
+> 
+> The imx6q-cpufreq driver needs a similar fixing.  Please include the
+> following changes into your fixing patches.  Thanks.
+> 
+Ok no problem I can post the fix based on response for the above question.
+
+Regard,
+Sudeep
+
+
