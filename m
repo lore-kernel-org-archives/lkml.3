@@ -1,61 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232Ab3IISgm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 14:36:42 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21913 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752485Ab3IISgl (ORCPT
+	id S1754451Ab3IIShV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 14:37:21 -0400
+Received: from threespeedlogic.com ([75.98.167.93]:54979 "EHLO
+	threespeedlogic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970Ab3IIShU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 14:36:41 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=JDfofD-L5ZgA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5p3hctMY2UsA:10 a=VnNF1IyMAAAA:8 a=gOrCO-VQRb9PR5kAWWsA:9 a=CjuIK1q_8ugA:10 a=iZ7TXPg_hGsA:10 a=KxqS7gh_mc4A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Mon, 9 Sep 2013 14:36:39 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, sbw@mit.edu
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
- section?
-Message-ID: <20130909143639.66ba6c7c@gandalf.local.home>
-In-Reply-To: <20130909175656.GF3966@linux.vnet.ibm.com>
-References: <20130909085504.2ddd7e69@gandalf.local.home>
-	<20130909130851.GC16280@somewhere>
-	<20130909092142.05780991@gandalf.local.home>
-	<20130909134505.GF16280@somewhere>
-	<20130909135656.GT3966@linux.vnet.ibm.com>
-	<20130909101629.32df27a2@gandalf.local.home>
-	<20130909161708.GX3966@linux.vnet.ibm.com>
-	<20130909123422.7936e868@gandalf.local.home>
-	<20130909165836.GB3966@linux.vnet.ibm.com>
-	<20130909172908.GA31239@Krystal>
-	<20130909175656.GF3966@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 9 Sep 2013 14:37:20 -0400
+X-Greylist: delayed 1272 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Sep 2013 14:37:19 EDT
+Message-ID: <522E1012.7060101@threespeedlogic.com>
+Date: Mon, 09 Sep 2013 11:14:42 -0700
+From: Graeme Smecher <gsmecher@threespeedlogic.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@linaro.org>
+CC: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] gpio: pca953x: Don't flip bits on PCA957x GPIO expanders
+ when probing them.
+References: <1375478656-3577-1-git-send-email-gsmecher@threespeedlogic.com> <CAN1soZy98mM6aAyASDY8Ra+j-2Jsr8RDvuqU8vHBnVBNgjWx9w@mail.gmail.com>
+In-Reply-To: <CAN1soZy98mM6aAyASDY8Ra+j-2Jsr8RDvuqU8vHBnVBNgjWx9w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - a2s63.a2hosting.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - threespeedlogic.com
+X-Get-Message-Sender-Via: a2s63.a2hosting.com: authenticated_id: gsmecher+threespeedlogic.com/only user confirmed/virtual account not confirmed
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Sep 2013 10:56:56 -0700
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+Hi Grant,
 
+On 04/08/13 05:35 AM, Haojian Zhuang wrote:
+> On Sat, Aug 3, 2013 at 5:24 AM, Graeme Smecher
+> <gsmecher@threespeedlogic.com>  wrote:
+>> The pca957x driver supports a handful of I2C GPIO expanders from NXP, Maxim,
+>> and TI. For the PCA9574 and PCA9575 devices only, the driver resets the GPIO
+>> level and direction in the pca957x_probe function. This seems like the wrong
+>> thing to do, since it can cause hardware bit twiddles during warm reboots when
+>> the chip state and reset values don't match.
+>>
+>> This kind of initialization is best left upstream (in a bootloader) or
+>> downstream (in userspace). It's also an inconsistency across devices supported
+>> by this driver.
+>>
+>> Signed-off-by: Graeme Smecher<gsmecher@threespeedlogic.com>
+>> Cc: Grant Likely<grant.likely@linaro.org>
+>> Cc: Haojian Zhuang<haojian.zhuang@marvell.com>
+>> ---
+>>   drivers/gpio/gpio-pca953x.c |   11 -----------
+>>   1 file changed, 11 deletions(-)
+>>
+>> diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
+>> index 426c51d..47c08d8 100644
+>> --- a/drivers/gpio/gpio-pca953x.c
+>> +++ b/drivers/gpio/gpio-pca953x.c
+>> @@ -683,17 +683,6 @@ static int device_pca957x_init(struct pca953x_chip *chip, u32 invert)
+>>          int ret;
+>>          u8 val[MAX_BANK];
+>>
+>> -       /* Let every port in proper state, that could save power */
+>> -       memset(val, 0, NBANK(chip));
+>> -       pca953x_write_regs(chip, PCA957X_PUPD, val);
+>> -       memset(val, 0xFF, NBANK(chip));
+>> -       pca953x_write_regs(chip, PCA957X_CFG, val);
+>> -       memset(val, 0, NBANK(chip));
+>> -       pca953x_write_regs(chip, PCA957X_OUT, val);
+>> -
+>> -       ret = pca953x_read_regs(chip, PCA957X_IN, val);
+>> -       if (ret)
+>> -               goto out;
+>>          ret = pca953x_read_regs(chip, PCA957X_OUT, chip->reg_output);
+>>          if (ret)
+>>                  goto out;
+>> --
+>> 1.7.10.4
+>>
+> Acked-by: Haojian Zhuang<haojian.zhuang@gmail.com>
 
-> Although I do like rcu_is_active() better than rcu_read_check(), my
-> concern with rcu_is_active() is that it can easily be mistaken for a
-> global state rather than a per-CPU/thread/task/whatever state.
+Just a quick ping: I think you're the responsible maintainer for this 
+patch, and I haven't seen it show up on git.secretlab.ca. Do you want me 
+to resubmit with Haojian's e-mail corrected?
 
-rcu_is_active_local();
+I should also note that this patch is NOT boot-tested. My hardware 
+containing this part is only supported by the vendor's aging 2.6.37 
+branch. (It's a custom ARM board using the TI AM3874.) The pca953x 
+driver has evolved enough that the patches for 2.6.37 and mainline 
+aren't identical, but they still rhyme.
 
-Although, even though it's cute. I think "rcu_is_watching_you()" has no
-ambiguity.
-
--- Steve
+thanks,
+Graeme
