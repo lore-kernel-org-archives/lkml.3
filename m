@@ -1,147 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab3IITv3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 15:51:29 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:39653 "EHLO hydra.sisk.pl"
+	id S1755549Ab3IITvg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 15:51:36 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:53256 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752978Ab3IITvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 15:51:25 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <liuj97@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: [PATCH] ACPI / hotplug / PCI: Avoid parent bus rescans on spurious device checks
-Date: Mon, 09 Sep 2013 22:02:24 +0200
-Message-ID: <2468067.2gxWP8bzg4@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1378744377.2631.82.camel@ul30vt.home>
-References: <26431283.HJCKsss0rt@vostro.rjw.lan> <2762291.l6lVgcWD3r@vostro.rjw.lan> <1378744377.2631.82.camel@ul30vt.home>
+	id S1754433Ab3IITve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 15:51:34 -0400
+Message-ID: <522E269B.7000802@ti.com>
+Date: Mon, 9 Sep 2013 14:50:51 -0500
+From: Joel Fernandes <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Koen Kooi <koen@dominion.thruhere.net>
+CC: Kevin Hilman <khilman@linaro.org>, <bcousson@baylibre.com>,
+        <linux-omap@vger.kernel.org>, <tony@atomide.com>,
+        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ijc+devicetree@hellion.org.uk>, <linux@arm.linux.org.uk>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <olof@lixom.net>
+Subject: Re: [PATCH] ARM: OMAP2+: am335x-bone*: add DT for BeagleBone Black
+References: <1378736961-21005-1-git-send-email-koen@dominion.thruhere.net> <87zjrm81dl.fsf@linaro.org> <BBAC0939-A4F9-4FEA-B137-0307D8787DC3@dominion.thruhere.net> <522E1325.8050906@ti.com> <41952E65-1037-4117-A1AE-8310FED59E3A@dominion.thruhere.net> <522E18C0.9010909@ti.com>
+In-Reply-To: <522E18C0.9010909@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, September 09, 2013 10:32:57 AM Alex Williamson wrote:
-> On Sun, 2013-09-08 at 00:16 +0200, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > In the current ACPIPHP notify handler we always go directly for a
-> > rescan of the parent bus if we get a device check notification for
-> > a device that is not a bridge.  However, this obviously is
-> > overzealous if nothing really changes, because this way we may rescan
-> > the whole PCI hierarchy pretty much in vain.
-> > 
-> > That happens on Alex Williamson's machine whose ACPI tables contain
-> > device objects that are supposed to coresspond to PCIe root ports,
-> > but those ports aren't physically present (or at least they aren't
-> > visible in the PCI config space to us).  The BIOS generates multiple
-> > device check notifies for those objects during boot and for each of
-> > them we go straight for the parent bus rescan, but the parent bus is
-> > the root bus in this particular case.  In consequence, we rescan the
-> > whole PCI bus from the top several times in a row, which is
-> > completely unnecessary, increases boot time by 50% (after previous
-> > fixes) and generates excess dmesg output from the PCI subsystem.
-> > 
-> > Fix the problem by checking if we can find anything new in the
-> > slot corresponding to the device we've got a device check notify
-> > for and doing nothig if that's not the case.
-> > 
-> > The spec (ACPI 5.0, Section 5.6.6) appears to mandate this behavior,
-> > as it says:
-> > 
-> >   Device Check. Used to notify OSPM that the device either appeared
-> >   or disappeared. If the device has appeared, OSPM will re-enumerate
-> >   from the parent. If the device has disappeared, OSPM will
-> >   invalidate the state of the device. OSPM may optimize out
-> >   re-enumeration.
-> > 
-> > Therefore, according to the spec, we are free to do nothing if
-> > nothing changes.
-> > 
-> > References: https://bugzilla.kernel.org/show_bug.cgi?id=60865
-> > Reported-by: Alex Williamson <alex.williamson@redhat.com>
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
+On 09/09/2013 01:51 PM, Joel Fernandes wrote:
+> On 09/09/2013 01:43 PM, Koen Kooi wrote:
+>>
+>> Op 9 sep. 2013, om 20:27 heeft Joel Fernandes <joelf@ti.com> het volgende geschreven:
+>>
+>>> On 09/09/2013 10:51 AM, Koen Kooi wrote:
+>>>>
+>>>> Op 9 sep. 2013, om 17:23 heeft Kevin Hilman <khilman@linaro.org> het volgende geschreven:
+>>>>
+>>>>> Koen Kooi <koen@dominion.thruhere.net> writes:
+>>>>>
+>>>>>> The BeagleBone Black is basically a regular BeagleBone with eMMC and HDMI added,
+>>>>>> so create a common dtsi both can use.
+>>>>>>
+>>>>>> IMPORTANT: booting the existing am335x-bone.dts will blow up the HDMI transceiver
+>>>>>> after a dozen boots with an uSD card inserted because LDO will be at 3.3V instead
+>>>>>> of 1.8.
+>>>>>>
+>>>>>> MMC support for AM335x still isn't in, so only the LDO change has been added.
+>>>>>>
+>>>>>> Cc: stable@vger.kernel.org
+>>>>>>
+>>>>>> Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
+>>>>>> Tested-by: Tom Rini <trini@ti.com>
+>>>>>> Tested-by: Matt Porter <matt.porter@linaro.org>
+>>>>>
+>>>>> I guess the subject should've included v5?
+>>>>
+>>>> Yes, I blame it on being monday :)
+>>>
+>>> The series you're posting will require rebasing on the current MMC DT series
+>>> that is being discussed last couple of weeks on the mailing list which were
+>>> waiting until now as DMA support was missing. Now that DMA support is pulled in,
+>>> it is safe to apply those patches so I will be reposting them shortly.
+>>>
+>>> Please hold off any changes until those patches are posted. This will avoid
+>>> unnecessary conflicts.
+>>
+>> Or you can rebase on top of this patch since it has no dependencies *and* fixes blowing up boards. FWIW, git-rebase, git-cherry-pick and git-am -3 track the rename in my patch just fine.
+>>
 > 
-> Works for me.  Thanks!
+> That's fair enough, since  Kevin Acked and Benoit is pulling it, I'm fine with
+> rebasing on top of it and we avoid any merge conflicts.
 > 
-> Tested-by: Alex Williamson <alex.williamson@redhat.com>
 
-Great, thanks for testing.
+I noticed - there were still some comments from Felipe on the v4 series of this
+patch regarding RF cape and HDMI may be breaking it. How are you addressing that?
+
+Regards,
+
+-Joel
 
 
-> > ---
-> >  drivers/pci/hotplug/acpiphp_glue.c |   32 +++++++++++++++++++++++++-------
-> >  1 file changed, 25 insertions(+), 7 deletions(-)
-> > 
-> > Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-> > ===================================================================
-> > --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
-> > +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-> > @@ -528,6 +528,16 @@ static void check_hotplug_bridge(struct
-> >  	}
-> >  }
-> >  
-> > +static int acpiphp_rescan_slot(struct acpiphp_slot *slot)
-> > +{
-> > +	struct acpiphp_func *func;
-> > +
-> > +	list_for_each_entry(func, &slot->funcs, sibling)
-> > +		acpiphp_bus_add(func_to_handle(func));
-> > +
-> > +	return pci_scan_slot(slot->bus, PCI_DEVFN(slot->device, 0));
-> > +}
-> > +
-> >  /**
-> >   * enable_slot - enable, configure a slot
-> >   * @slot: slot to be enabled
-> > @@ -544,10 +554,7 @@ static void __ref enable_slot(struct acp
-> >  	LIST_HEAD(add_list);
-> >  	int nr_found;
-> >  
-> > -	list_for_each_entry(func, &slot->funcs, sibling)
-> > -		acpiphp_bus_add(func_to_handle(func));
-> > -
-> > -	nr_found = pci_scan_slot(bus, PCI_DEVFN(slot->device, 0));
-> > +	nr_found = acpiphp_rescan_slot(slot);
-> >  	max = acpiphp_max_busnr(bus);
-> >  	for (pass = 0; pass < 2; pass++) {
-> >  		list_for_each_entry(dev, &bus->devices, bus_list) {
-> > @@ -840,11 +847,22 @@ static void hotplug_event(acpi_handle ha
-> >  	case ACPI_NOTIFY_DEVICE_CHECK:
-> >  		/* device check */
-> >  		dbg("%s: Device check notify on %s\n", __func__, objname);
-> > -		if (bridge)
-> > +		if (bridge) {
-> >  			acpiphp_check_bridge(bridge);
-> > -		else
-> > -			acpiphp_check_bridge(func->parent);
-> > +		} else {
-> > +			struct acpiphp_slot *slot = func->slot;
-> > +			int ret;
-> >  
-> > +			/*
-> > +			 * Check if anything has changed in the slot and rescan
-> > +			 * from the parent if that's the case.
-> > +			 */
-> > +			mutex_lock(&slot->crit_sect);
-> > +			ret = acpiphp_rescan_slot(slot);
-> > +			mutex_unlock(&slot->crit_sect);
-> > +			if (ret)
-> > +				acpiphp_check_bridge(func->parent);
-> > +		}
-> >  		break;
-> >  
-> >  	case ACPI_NOTIFY_EJECT_REQUEST:
-> 
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+
