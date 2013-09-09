@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753618Ab3IIPrF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 11:47:05 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28378 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880Ab3IIPrD (ORCPT
+	id S1753760Ab3IIPtZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 11:49:25 -0400
+Received: from smtprelay0021.hostedemail.com ([216.40.44.21]:44539 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750873Ab3IIPtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 11:47:03 -0400
-X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=JDfofD-L5ZgA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5p3hctMY2UsA:10 a=NufY4J3AAAAA:8 a=fxJcL_dCAAAA:8 a=cuYFA6U4GeWgkUuDIpsA:9 a=CjuIK1q_8ugA:10 a=jeBq3FmKZ4MA:10 a=re9sYKne76oA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Mon, 9 Sep 2013 11:47:00 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Christoph Lameter <cl@linux.com>, Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        sbw@mit.edu
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
- section?
-Message-ID: <20130909114700.76290b50@gandalf.local.home>
-In-Reply-To: <20130909114116.209aa16b@gandalf.local.home>
-References: <20130905195234.GA20555@linux.vnet.ibm.com>
-	<20130906105934.GF20519@somewhere>
-	<20130906151851.GQ3966@linux.vnet.ibm.com>
-	<1378488088.31445.39.camel@edumazet-glaptop>
-	<20130906174117.GU3966@linux.vnet.ibm.com>
-	<20130906185927.GE2706@somewhere>
-	<20130909105347.GK31370@twins.programming.kicks-ass.net>
-	<20130909132343.GN3966@linux.vnet.ibm.com>
-	<20130909133604.GC31370@twins.programming.kicks-ass.net>
-	<000001410333127c-486c74ec-3209-4c5e-a92f-0c11e00fa141-000000@email.amazonses.com>
-	<20130909150854.GD26785@twins.programming.kicks-ass.net>
-	<0000014103534c88-48ee11a3-a581-4e52-b2df-3a1168047d96-000000@email.amazonses.com>
-	<20130909114116.209aa16b@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+	Mon, 9 Sep 2013 11:49:24 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:960:967:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2525:2560:2563:2682:2685:2693:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:4605:5007:6691:7652:7875:7901:7903:8599:9025:9388:10004:10400:10848:11232:11658:11914:12043:12438:12517:12519:12533:12555:12700:12737:12740:12933:13069:13071:13095:13161:13181:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: wool61_6ec4002bbf444
+X-Filterd-Recvd-Size: 2406
+Message-ID: <1378741760.15812.2.camel@joe-AO722>
+Subject: Re: [checkpatch.pl] runtime error by version dependency.
+From: Joe Perches <joe@perches.com>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Dave Hansen <dave.hansen@linux.intel.com>
+Cc: bruce.w.allan@intel.com, linux-kernel@vger.kernel.org
+Date: Mon, 09 Sep 2013 08:49:20 -0700
+In-Reply-To: <201309092116.GAG52609.LQJOHFFtOSOMFV@I-love.SAKURA.ne.jp>
+References: <201309092116.GAG52609.LQJOHFFtOSOMFV@I-love.SAKURA.ne.jp>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Sep 2013 11:41:16 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> On Mon, 9 Sep 2013 15:24:55 +0000
-> Christoph Lameter <cl@linux.com> wrote:
+On Mon, 2013-09-09 at 21:16 +0900, Tetsuo Handa wrote:
+> Hello.
 > 
-> > On Mon, 9 Sep 2013, Peter Zijlstra wrote:
-> > 
-> > > > Slander. Certainly validation is good. Its just that PREEMPT kernels are
-> > > > not in use
-> > >
-> > > Complete bullshit, its part of the mainline kernel, lots of people run
-> > > them -- including me, and any patch is supposed to keep it working.
-> > 
-> > Nonsense. There is no main line distro that supports full preempt. Its an
-> > academic exercise.
+> Commit d1fe9c09 "checkpatch: add some --strict coding style checks"
+> introduced dependency on perl >= 5.10.0 .
 > 
-> Red Hat MRG supports PREEMPT_RT. And Debian has an option to use
-> PREEMPT_RT too. Two big main line distros.
+> While the comment says that "Any use must be runtime checked with $^V",
+> it is not runtime checked when running with perl == v5.8.4 , failing with
 > 
-> So please, cut out the "academic exercise" crap.
+>   Nested quantifiers in regex; marked by <-- HERE in m/(\((?:[^\(\)]++ <-- HERE |(?-1))*\))/ at ./scripts/checkpatch.pl line 340.
+> 
+> error.
 
-Ubuntu Lucid supplies a CONFIG_PREEMPT kernel too:
+Hello.
 
-http://kernel.ubuntu.com/~kernel-ppa/configs/lucid/amd64--preempt
+See Dave Hansen's commit fab4a18a0d2bb0b90e51a945886397f1de9cb6d4
+("enforce sane perl version")
 
--- Steve
+[PATCH] checkpatch: enforce sane perl version
+
+I got a bug report from a couple of users who said checkpatch.pl was
+broken for them.  It was erroring out on fairly random lines most commonly
+with messages like:
+
+        Nested quantifiers in regex; marked by <--HERE in m/(\((?:[^\(\)]++ <-- HERE |(?-1))*\))/ at ./checkpatch.pl line 340.
+
+The bug reporter was running a version of perl 5.8 which was end-of-lifed
+in 2008: http://www.cpan.org/src/.  Versions of perl this old are at
+_best_ quite untested.  At worst, they are crusty and known to be
+completely broken.
+
+If folks have a system _that_ old, then we should have mercy on them and
+give them a half-decent error message rather than fail with nutty error
+messages.
+
+This patch enforces that checkpatch.pl is run with perl 5.10, which was
+end-of-lifed in 2009.  The new --ignore-perl-version command-line switch
+will let folks override this if they want.
+
+
