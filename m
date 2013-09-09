@@ -1,133 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753565Ab3IIOkE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 10:40:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51802 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752514Ab3IIOkB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 10:40:01 -0400
-Date: Mon, 9 Sep 2013 16:39:54 +0200
-From: Jan Kara <jack@suse.cz>
-To: Olof Johansson <olof@lixom.net>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Next <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>
-Subject: Re: linux-next: build warning after merge of the final tree (Linus'
- tree related - vai vfs tree)
-Message-ID: <20130909143954.GE1612@quack.suse.cz>
-References: <20130906171916.41b5f48d1aaccca594d1e760@canb.auug.org.au>
- <CAMuHMdXib30o3-70EuYj3to0==b7LfwPbivF9DaBrpHPejsDFg@mail.gmail.com>
- <20130909032154.GA18168@quad.lixom.net>
+	id S1753547Ab3IIOko (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 10:40:44 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:50315 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751548Ab3IIOkn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 10:40:43 -0400
+Date: Mon, 9 Sep 2013 16:40:38 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        sbw@mit.edu
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+Message-ID: <20130909144037.GH16280@somewhere>
+References: <20130906174117.GU3966@linux.vnet.ibm.com>
+ <20130906185927.GE2706@somewhere>
+ <20130909105347.GK31370@twins.programming.kicks-ass.net>
+ <20130909121329.GA16280@somewhere>
+ <20130909083926.3eceebef@gandalf.local.home>
+ <20130909124547.GB16280@somewhere>
+ <20130909085504.2ddd7e69@gandalf.local.home>
+ <20130909130851.GC16280@somewhere>
+ <20130909092142.05780991@gandalf.local.home>
+ <20130909092917.0c99b71a@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130909032154.GA18168@quad.lixom.net>
+In-Reply-To: <20130909092917.0c99b71a@gandalf.local.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 08-09-13 20:21:54, Olof Johansson wrote:
-> On Fri, Sep 06, 2013 at 10:52:52AM +0200, Geert Uytterhoeven wrote:
-> > On Fri, Sep 6, 2013 at 9:19 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > > After merging the final tree, today's linux-next build (arm defconfig)
-> > > produced this warning:
-> > >
-> > > fs/direct-io.c: In function 'sb_init_dio_done_wq':
-> > > fs/direct-io.c:557:2: warning: value computed is not used [-Wunused-value]
-> > >
-> > > This is:
-> > >
-> > >         cmpxchg(&sb->s_dio_done_wq, NULL, wq);
-> > >
-> > > Introduced by commit 7b7a8665edd8 ("direct-io: Implement generic deferred
-> > > AIO completions").
-> > 
-> > This happens for include/asm-generic/cmpxchg.h and several other
-> > arch-specific implementations that cast the return value of cmpxchg()
-> > like
-> > 
-> > #define cmpxchg(ptr, o, n)   ((__typeof__(*(ptr)))__cmpxchg(....
-> > 
-> > If the caller of cmpxchg() doesn't use the return value, we get a
-> > compiler warning,
-> > at least with some versions of gcc.
-> > 
-> > Any idea how to fix this once and for good?
+On Mon, Sep 09, 2013 at 09:29:17AM -0400, Steven Rostedt wrote:
+> On Mon, 9 Sep 2013 09:21:42 -0400
+> Steven Rostedt <rostedt@goodmis.org> wrote:
 > 
-> Should it be fixed? Chances are that the caller needs to do actions
-> depending on if the change happened, and checking the value afterwards
-> is inherently racy.
+>  
+> > Especially since the function name itself is "rcu_is_cpu_idle()" which
+> > tells you it's a cpu state, and not a task state. Why would you care in
+> > RCU if CPU 1 is idle if you are on CPU 2? The name should be changed.
 > 
-> For this specific fs/direct-io.c case it seems to be safe since the
-> workqueue is only ever set and never cleared, but it might still be a
-> good idea to do:
-  I'm not against this change - feel free to add my:
-Reviewed-by: Jan Kara <jack@suse.cz>
+> > Actually, preempt_count is more a CPU state than a task state. When
+> > preempt_count is set, that CPU can not schedule out the current task.
+> > It really has nothing to do with the task itself. It's the CPU that
+> > can't do something. Preempt count should never traverse with a task
+> > from one CPU to another.
+> 
+> I'll take this a step further. Here's a simple rule to determine if
+> something is a task state or a CPU state.
+> 
+> If the state migrates with a task from one CPU to another, it's a task
+> state.
 
-  to it and merge it. However I maintain there are valid usecases where you
-do not care about the return value so warning about it doesn't seem right.
-OTOH thinking about it some more I agree we have other precedents where
-sometimes-correct-often-bugs constructs are warned about and I can see how
-people can consider cmpxchg() to be that case. But in that case we should:
-  a) be consistent among architectures about the warning
-  b) comment at cmpxchg definition that you are supposed to check its
-     return value. If you really know what you are doing, you can cast the
-     return value to (void) and comment why it's safe.
+This applies to preempt_count as well.
 
-								Honza
 > 
+> If the state never leaves a CPU with a task, then it's a CPU state.
+
+Per CPU and per task property aren't mutually exclusive.
+Per task obviously implies per cpu. And per cpu doesn't imply per task.
+
+Taking that into account, when you're dealing with a per task property,
+the rest depends on the POV: you can zoom to the lower level and look at
+things from the CPU POV. Or you can zoom out and look at thing from the
+task POV.
+
+RCU extended quiescent states can be viewed from both POV. RCU just
+only cares about the CPU POV.
+
+We don't even need a task to set/unset a CPU to/from extended quiescent state.
+It's only a matter of CPU running RCU code. The kernel just happens to use
+tasks to run code.
+
+It's a bit the same with spinlocks. spinlocks aren't a task synchronization
+but a CPU synchronization. It's low level. Of course a task can't sleep
+with a spinlock held (not talking about -rt) so it could be defined as a per
+task property. But it's just not relevant.
+
+Mutexes, OTOH, really are task synchronisation. They could be considered from
+the CPU view. That's just not relevant either.
+
+
 > 
-> ---8<----------8<----------8<----------8<----------8<----------8<----------8<--
+> According to the above rules, rcu_is_cpu_idle() is a task state, and
+> really should be in task_struct, and preempt_count is a CPU state, and
+> should be a per_cpu variable.
+
+No, according to you description, preempt count is a task state.
+Eventually it just happens to be both. But more relevant from the CPU POV.
+
+And really the fact that a state can be viewed per task doesn't mean it's
+always right to store it in the task struct. The semantics also
+play a big role here.
+
+
+
 > 
-> From 7fdfa2da727aa9153a7df919c240abfe4f564d7a Mon Sep 17 00:00:00 2001
-> From: Olof Johansson <olof@lixom.net>
-> Date: Sun, 8 Sep 2013 20:12:57 -0700
-> Subject: [PATCH] direct-io: Use return from cmpxchg to decide of assignment happened
+> I think the reason preempt_count never was a per cpu variable, is that
+> having it in the stack (thread info) made it easier to test in assembly
+> than having to grab the per cpu info. But I believe it's easier to grab
+> per cpu info in assembly today than it once was, which is why there is
+> a push to move preempt_count to per_cpu where it truly belongs.
 > 
-> Not using the return value can in the generic case be racy, so it's better to
-> use the expected way of using that instead of comparing later.
-> 
-> This also resolved the warning caused on ARM and other architectures:
-> 
-> fs/direct-io.c: In function 'sb_init_dio_done_wq':
-> fs/direct-io.c:557:2: warning: value computed is not used [-Wunused-value]
-> 
-> Signed-off-by: Olof Johansson <olof@lixom.net>
-> ---
->  fs/direct-io.c |    5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/direct-io.c b/fs/direct-io.c
-> index 1782023..0e04142 100644
-> --- a/fs/direct-io.c
-> +++ b/fs/direct-io.c
-> @@ -544,6 +544,7 @@ static inline int dio_bio_reap(struct dio *dio, struct dio_submit *sdio)
->   */
->  static int sb_init_dio_done_wq(struct super_block *sb)
->  {
-> +	struct workqueue_struct *old;
->  	struct workqueue_struct *wq = alloc_workqueue("dio/%s",
->  						      WQ_MEM_RECLAIM, 0,
->  						      sb->s_id);
-> @@ -552,9 +553,9 @@ static int sb_init_dio_done_wq(struct super_block *sb)
->  	/*
->  	 * This has to be atomic as more DIOs can race to create the workqueue
->  	 */
-> -	cmpxchg(&sb->s_dio_done_wq, NULL, wq);
-> +	old = cmpxchg(&sb->s_dio_done_wq, NULL, wq);
->  	/* Someone created workqueue before us? Free ours... */
-> -	if (wq != sb->s_dio_done_wq)
-> +	if (old)
->  		destroy_workqueue(wq);
->  	return 0;
->  }
-> -- 
-> 1.7.10.4
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> -- Steve
