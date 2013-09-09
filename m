@@ -1,91 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754460Ab3IINeh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:34:37 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10715 "EHLO
+	id S1753793Ab3IINgu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:36:50 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11424 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753487Ab3IIN0s (ORCPT
+	with ESMTP id S1753453Ab3IIN0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 09:26:48 -0400
-X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=LDl5kCb-hiwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Hnuq-vIbuuYA:10 a=VwQbUJbxAAAA:8 a=t7CeM3EgAAAA:8 a=6LBtxzwm5KIY_4GhPq8A:9 a=XNN-oNMjSfgA:10 a=2e6ZYRoF4I4A:10 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Mon, 9 Sep 2013 09:26:47 -0400
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=keZ67_62a1oA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=I5-oX6zSL1kA:10 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=0fVzeBSKrqlw0MCzi0QA:9 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130909124759.575383146@goodmis.org>
+Message-Id: <20130909124800.838829922@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 09 Sep 2013 08:47:50 -0400
+Date: Mon, 09 Sep 2013 08:47:56 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: [PATCH RT 05/16] list_bl.h: fix it for for !SMP && !DEBUG_SPINLOCK
+        Steven Rostedt <srostedt@redhat.com>
+Subject: [PATCH RT 11/16] hwlat-detector: Update hwlat_detector to add outer loop detection
 References: <20130909124745.590777496@goodmis.org>
-Content-Disposition: inline; filename=0005-list_bl.h-fix-it-for-for-SMP-DEBUG_SPINLOCK.patch
+Content-Disposition: inline; filename=0011-hwlat-detector-Update-hwlat_detector-to-add-outer-lo.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-The patch "list_bl.h: make list head locking RT safe" introduced
-an unconditional
+The hwlat_detector reads two timestamps in a row, then reports any
+gap between those calls. The problem is, it misses everything between
+the second reading of the time stamp to the first reading of the time stamp
+in the next loop. That's were most of the time is spent, which means,
+chances are likely that it will miss all hardware latencies. This
+defeats the purpose.
 
-	__set_bit(0, (unsigned long *)b);
+By also testing the first time stamp from the previous loop second
+time stamp (the outer loop), we are more likely to find a latency.
 
-in void hlist_bl_lock(struct hlist_bl_head *b). This clobbers the value
-of b->first. When the value of b->first is retrieved using
-hlist_bl_first the clobbering is undone using
+Setting the threshold to 1, here's what the report now looks like:
 
-	(unsigned long)h->first & ~LIST_BL_LOCKMASK
+1347415723.0232202770	0	2
+1347415725.0234202822	0	2
+1347415727.0236202875	0	2
+1347415729.0238202928	0	2
+1347415731.0240202980	0	2
+1347415734.0243203061	0	2
+1347415736.0245203113	0	2
+1347415738.0247203166	2	0
+1347415740.0249203219	0	3
+1347415742.0251203272	0	3
+1347415743.0252203299	0	3
+1347415745.0254203351	0	2
+1347415747.0256203404	0	2
+1347415749.0258203457	0	2
+1347415751.0260203510	0	2
+1347415754.0263203589	0	2
+1347415756.0265203642	0	2
+1347415758.0267203695	0	2
+1347415760.0269203748	0	2
+1347415762.0271203801	0	2
+1347415764.0273203853	2	0
 
-and so depending on LIST_BL_LOCKMASK being one. But LIST_BL_LOCKMASK is
-only one if at least on of CONFIG_SMP and CONFIG_DEBUG_SPINLOCK are
-defined. Without these the value returned by hlist_bl_first has the
-zeroth bit set which likely results in a crash.
-
-So only do the clobbering in the cases where LIST_BL_LOCKMASK is one.
-An alternative would be to always define LIST_BL_LOCKMASK to one with
-CONFIG_PREEMPT_RT_BASE.
+There's some hardware latency that takes 2 microseconds to run.
 
 Cc: stable-rt@vger.kernel.org
-Acked-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Tested-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Signed-off-by: Steven Rostedt <srostedt@redhat.com>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- include/linux/list_bl.h |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/misc/hwlat_detector.c |   32 ++++++++++++++++++++++++++------
+ 1 file changed, 26 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/list_bl.h b/include/linux/list_bl.h
-index ddfd46a..becd7a6 100644
---- a/include/linux/list_bl.h
-+++ b/include/linux/list_bl.h
-@@ -131,8 +131,10 @@ static inline void hlist_bl_lock(struct hlist_bl_head *b)
- 	bit_spin_lock(0, (unsigned long *)b);
- #else
- 	raw_spin_lock(&b->lock);
-+#if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_SPINLOCK)
- 	__set_bit(0, (unsigned long *)b);
- #endif
-+#endif
- }
+diff --git a/drivers/misc/hwlat_detector.c b/drivers/misc/hwlat_detector.c
+index b7b7c90..f93b8ef 100644
+--- a/drivers/misc/hwlat_detector.c
++++ b/drivers/misc/hwlat_detector.c
+@@ -143,6 +143,7 @@ static void detector_exit(void);
+ struct sample {
+ 	u64		seqnum;		/* unique sequence */
+ 	u64		duration;	/* ktime delta */
++	u64		outer_duration;	/* ktime delta (outer loop) */
+ 	struct timespec	timestamp;	/* wall time */
+ 	unsigned long   lost;
+ };
+@@ -219,11 +220,13 @@ static struct sample *buffer_get_sample(struct sample *sample)
+  */
+ static int get_sample(void *unused)
+ {
+-	ktime_t start, t1, t2;
++	ktime_t start, t1, t2, last_t2;
+ 	s64 diff, total = 0;
+ 	u64 sample = 0;
++	u64 outer_sample = 0;
+ 	int ret = 1;
  
- static inline void hlist_bl_unlock(struct hlist_bl_head *b)
-@@ -140,7 +142,9 @@ static inline void hlist_bl_unlock(struct hlist_bl_head *b)
- #ifndef CONFIG_PREEMPT_RT_BASE
- 	__bit_spin_unlock(0, (unsigned long *)b);
- #else
-+#if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_SPINLOCK)
- 	__clear_bit(0, (unsigned long *)b);
-+#endif
- 	raw_spin_unlock(&b->lock);
- #endif
- }
++	last_t2.tv64 = 0;
+ 	start = ktime_get(); /* start timestamp */
+ 
+ 	do {
+@@ -231,7 +234,22 @@ static int get_sample(void *unused)
+ 		t1 = ktime_get();	/* we'll look for a discontinuity */
+ 		t2 = ktime_get();
+ 
++		if (last_t2.tv64) {
++			/* Check the delta from the outer loop (t2 to next t1) */
++			diff = ktime_to_us(ktime_sub(t1, last_t2));
++			/* This shouldn't happen */
++			if (diff < 0) {
++				printk(KERN_ERR BANNER "time running backwards\n");
++				goto out;
++			}
++			if (diff > outer_sample)
++				outer_sample = diff;
++		}
++		last_t2 = t2;
++
+ 		total = ktime_to_us(ktime_sub(t2, start)); /* sample width */
++
++		/* This checks the inner loop (t1 to t2) */
+ 		diff = ktime_to_us(ktime_sub(t2, t1));     /* current diff */
+ 
+ 		/* This shouldn't happen */
+@@ -246,12 +264,13 @@ static int get_sample(void *unused)
+ 	} while (total <= data.sample_width);
+ 
+ 	/* If we exceed the threshold value, we have found a hardware latency */
+-	if (sample > data.threshold) {
++	if (sample > data.threshold || outer_sample > data.threshold) {
+ 		struct sample s;
+ 
+ 		data.count++;
+ 		s.seqnum = data.count;
+ 		s.duration = sample;
++		s.outer_duration = outer_sample;
+ 		s.timestamp = CURRENT_TIME;
+ 		__buffer_add_sample(&s);
+ 
+@@ -738,10 +757,11 @@ static ssize_t debug_sample_fread(struct file *filp, char __user *ubuf,
+ 		}
+ 	}
+ 
+-	len = snprintf(buf, sizeof(buf), "%010lu.%010lu\t%llu\n",
+-		      sample->timestamp.tv_sec,
+-		      sample->timestamp.tv_nsec,
+-		      sample->duration);
++	len = snprintf(buf, sizeof(buf), "%010lu.%010lu\t%llu\t%llu\n",
++		       sample->timestamp.tv_sec,
++		       sample->timestamp.tv_nsec,
++		       sample->duration,
++		       sample->outer_duration);
+ 
+ 
+ 	/* handling partial reads is more trouble than it's worth */
 -- 
 1.7.10.4
 
