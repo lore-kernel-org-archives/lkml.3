@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755739Ab3IISvb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 14:51:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:57083 "EHLO
+	id S1756171Ab3IISwS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 14:52:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57055 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753427Ab3IISpV (ORCPT
+	with ESMTP id S1752622Ab3IISpV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Sep 2013 14:45:21 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tejun Heo <tj@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 20/24] workqueue: cond_resched() after processing each work item
-Date: Mon,  9 Sep 2013 11:45:10 -0700
-Message-Id: <1378752314-2416-21-git-send-email-kamal@canonical.com>
+Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 09/24] ALSA: hda - Fix NULL dereference with CONFIG_SND_DYNAMIC_MINORS=n
+Date: Mon,  9 Sep 2013 11:44:59 -0700
+Message-Id: <1378752314-2416-10-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378752314-2416-1-git-send-email-kamal@canonical.com>
 References: <1378752314-2416-1-git-send-email-kamal@canonical.com>
@@ -26,56 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit b22ce2785d97423846206cceec4efee0c4afd980 upstream.
+commit 2ca320e294a738c9134a71b5029de05edbfc7aad upstream.
 
-If !PREEMPT, a kworker running work items back to back can hog CPU.
-This becomes dangerous when a self-requeueing work item which is
-waiting for something to happen races against stop_machine.  Such
-self-requeueing work item would requeue itself indefinitely hogging
-the kworker and CPU it's running on while stop_machine would wait for
-that CPU to enter stop_machine while preventing anything else from
-happening on all other CPUs.  The two would deadlock.
+Without the dynamic minor assignment, HDMI codec may have less PCM
+instances than the number of pins, which eventually leads to Oops.
 
-Jamie Liu reports that this deadlock scenario exists around
-scsi_requeue_run_queue() and libata port multiplier support, where one
-port may exclude command processing from other ports.  With the right
-timing, scsi_requeue_run_queue() can end up requeueing itself trying
-to execute an IO which is asked to be retried while another device has
-an exclusive access, which in turn can't make forward progress due to
-stop_machine.
-
-Fix it by invoking cond_resched() after executing each work item.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Jamie Liu <jamieliu@google.com>
-References: http://thread.gmane.org/gmane.linux.kernel/1552567
+Reported-by: Stratos Karafotis <stratosk@semaphore.gr>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/workqueue.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ sound/pci/hda/patch_hdmi.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 3a3a98f..338b3bd 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -2278,6 +2278,15 @@ __acquires(&gcwq->lock)
- 		dump_stack();
- 	}
- 
-+	/*
-+	 * The following prevents a kworker from hogging CPU on !PREEMPT
-+	 * kernels, where a requeueing work item waiting for something to
-+	 * happen could deadlock with stop_machine as such work item could
-+	 * indefinitely requeue itself while all other CPUs are trapped in
-+	 * stop_machine.
-+	 */
-+	cond_resched();
+diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
+index ad23390..5c19496 100644
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -1617,6 +1617,9 @@ static int generic_hdmi_build_controls(struct hda_codec *codec)
+ 		struct snd_pcm_chmap *chmap;
+ 		struct snd_kcontrol *kctl;
+ 		int i;
 +
- 	spin_lock_irq(&gcwq->lock);
- 
- 	/* clear cpu intensive status */
++		if (!codec->pcm_info[pin_idx].pcm)
++			break;
+ 		err = snd_pcm_add_chmap_ctls(codec->pcm_info[pin_idx].pcm,
+ 					     SNDRV_PCM_STREAM_PLAYBACK,
+ 					     NULL, 0, pin_idx, &chmap);
 -- 
 1.8.1.2
 
