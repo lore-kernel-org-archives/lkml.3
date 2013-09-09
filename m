@@ -1,63 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004Ab3IINut (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 09:50:49 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:39354 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752450Ab3IINur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 09:50:47 -0400
-Date: Mon, 9 Sep 2013 06:50:38 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        sbw@mit.edu
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
- section?
-Message-ID: <20130909135038.GR3966@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130906174117.GU3966@linux.vnet.ibm.com>
- <20130906185927.GE2706@somewhere>
- <20130909105347.GK31370@twins.programming.kicks-ass.net>
- <20130909121329.GA16280@somewhere>
- <20130909083926.3eceebef@gandalf.local.home>
- <20130909124547.GB16280@somewhere>
- <20130909085504.2ddd7e69@gandalf.local.home>
- <20130909131452.GA31370@twins.programming.kicks-ass.net>
- <20130909132900.GE16280@somewhere>
- <20130909094132.74f1dd57@gandalf.local.home>
+	id S1754042Ab3IINvb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 09:51:31 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:37667 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752862Ab3IINv3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 09:51:29 -0400
+Message-ID: <522DD251.2030607@arm.com>
+Date: Mon, 09 Sep 2013 14:51:13 +0100
+From: Jonathan Austin <jonathan.austin@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130909094132.74f1dd57@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13090913-0320-0000-0000-000000EF1127
+To: Matt Porter <matt.porter@linaro.org>
+CC: Koen Kooi <koen@dominion.thruhere.net>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "bcousson@baylibre.com" <bcousson@baylibre.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv3] ARM: OMAP2+: am335x-bone*: add DT for BeagleBone Black
+References: <1378638746-10627-1-git-send-email-koen@dominion.thruhere.net> <20130909133059.GD10973@ohporter.com>
+In-Reply-To: <20130909133059.GD10973@ohporter.com>
+X-OriginalArrivalTime: 09 Sep 2013 13:51:25.0613 (UTC) FILETIME=[ACFFB5D0:01CEAD63]
+X-MC-Unique: 113090914512705101
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 09:41:32AM -0400, Steven Rostedt wrote:
-> On Mon, 9 Sep 2013 15:29:02 +0200
-> Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 
-> 
-> > No, putting that on the task_struct won't help much in this regard I think.
-> > Regular schedule() calls don't change that per cpu state.
-> 
-> But is there a place that it would need to?
-> 
-> I mean, if RCU is not tracking a CPU, is it safe to call schedule().
-> And then how would the new task know that RCU is ignoring that CPU?
+Hi Matt,
 
-Guys, RCU really is tracking per-CPU state with the rcu_dynticks.dynticks
-field.
+On 09/09/13 14:31, Matt Porter wrote:
+> On Sun, Sep 08, 2013 at 01:12:26PM +0200, Koen Kooi wrote:
+>> The BeagleBone Black is basically a regular BeagleBone with eMMC and HDMI added,
+>> so create a common dtsi both can use.
+>>
+>> IMPORTANT: booting the existing am335x-bone.dts will blow up the HDMI transceiver
+>> after a dozen boots with an uSD card inserted because LDO will be at 3.3V instead
+>> of 1.8.
+>>
+>> MMC support for AM335x still isn't in, so only the LDO change has been added.
+>>
+>> Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
+>
+> Tested-by: Matt Porter <matt.porter@linaro.org>
+>
+> Works fine for me on tip and 3.11. I did notice a regression in musb (worked
+> on 3.11, now failing to probe but this is not related to your new dts as it
+> happens on am335x-bone.dts too, assuming merge window volatility). One nit,
+> git-am picked up a whitespace error on that extra line at EOF so you should
+> trim that out.
+>
+> Only thing is...for a clear bug like this that will destroy hardware, it
+> should be marked Cc: stable@vger.kernel.org to be picked up in stable.
+>
 
-							Thanx, Paul
+If I've understood Koen correctly then what he's saying is that if you 
+*were* to use the current (before this patch) am335x-bone.dts on a 
+Beagle Bone Black (which would be wrong, as that's not the board you 
+have...) then things would break.
+
+I don't see that this patch fixes that - as far as I can see, even after 
+the patch, using am335x-bone.dts with a Bone Black will risk the damage?
+
+If so, I don't think this is a 'stable fix' kind of thing, as it doesn't 
+actually fix the problem?
+
+Koen - is there a way for a booting kernel to detect which board it is 
+on and avoid any potential damage if someone gives it the wrong DT?
+
+Jonny
+
+> -Matt
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>
+
 
