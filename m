@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172Ab3IITIX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 15:08:23 -0400
-Received: from mail-bl2lp0210.outbound.protection.outlook.com ([207.46.163.210]:25205
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753706Ab3IITIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 15:08:21 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>
-CC: David Lang <david@lang.hm>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH 00/12] One more attempt at useful kernel lockdown
-Thread-Topic: [PATCH 00/12] One more attempt at useful kernel lockdown
-Thread-Index: AQHOrYDL2QYLBLFVskGOdCrAsfX2cpm9uPUAgAAKHLaAAAHMgA==
-Date: Mon, 9 Sep 2013 19:08:16 +0000
-Message-ID: <1378753695.17982.17.camel@x230.lan>
-References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
-	 <19562.1378747124@turing-police.cc.vt.edu>
-	 <alpine.DEB.2.02.1309091119330.2479@nftneq.ynat.uz>
-	 <27562.1378753264@turing-police.cc.vt.edu>
-In-Reply-To: <27562.1378753264@turing-police.cc.vt.edu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:470:1f07:1371:5d52:9ee3:3e84:6668]
-x-forefront-prvs: 09645BAC66
-x-forefront-antispam-report: SFV:NSPM;SFS:(377424004)(24454002)(51704005)(189002)(199002)(81816001)(81342001)(69226001)(65816001)(80022001)(46102001)(63696002)(51856001)(4396001)(76786001)(76796001)(81542001)(81686001)(47736001)(49866001)(50986001)(47976001)(36756003)(33646001)(74366001)(47446002)(74706001)(31966008)(74502001)(74662001)(74876001)(80976001)(83072001)(77982001)(59766001)(56776001)(54316002)(79102001)(77096001)(56816003)(53806001)(54356001)(76482001)(83322001)(19580405001)(19580395003)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB223;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:5d52:9ee3:3e84:6668;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <C1AEED5C55AFCE43A291A75B206CC97D@namprd05.prod.outlook.com>
+	id S1755332Ab3IITKg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 15:10:36 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54200 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752580Ab3IITKf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 15:10:35 -0400
+Date: Mon, 9 Sep 2013 20:10:29 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        George Spelvin <linux@horizon.com>, John Stoffel <john@stoffel.org>
+Subject: Re: [PATCH v4 1/1] dcache: Translating dentry into pathname without
+ taking rename_lock
+Message-ID: <20130909191028.GT13318@ZenIV.linux.org.uk>
+References: <1378743493-33546-1-git-send-email-Waiman.Long@hp.com>
+ <1378743493-33546-2-git-send-email-Waiman.Long@hp.com>
+ <20130909172905.GN13318@ZenIV.linux.org.uk>
+ <CA+55aFx_pUwHg35Ueb4Ewy8ZrBA_UtFbQqdRzL64_Q7iQ=V-rA@mail.gmail.com>
+ <20130909180604.GO13318@ZenIV.linux.org.uk>
+ <20130909182111.GQ13318@ZenIV.linux.org.uk>
+ <20130909183608.GR13318@ZenIV.linux.org.uk>
+ <522E17A1.1020205@hp.com>
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <522E17A1.1020205@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r89J8PXD022464
 
-On Mon, 2013-09-09 at 15:01 -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Mon, 09 Sep 2013 11:25:38 -0700, David Lang said:
-> 
-> > Given that we know that people want signed binaries without blocking kexec, you
-> > should have '1' just enforce module signing and '2' (or higher) implement a full
-> > lockdown including kexec.
-> 
-> > Or, eliminate the -1  permanently insecure option and make this a bitmask, if
-> > someone wants to enable every possible lockdown, have them set it to "all 1's",
-> > define the bits only as you need them.
-> 
-> This strikes me as much more workable than one big sledgehammer.
+On Mon, Sep 09, 2013 at 02:46:57PM -0400, Waiman Long wrote:
 
-Which combinations are you envisioning as being useful?
+> I am fine with your proposed change as long as it gets the job done.
 
--- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I suspect that the real problem is the unlock part of read_seqretry_or_unlock();
+for d_walk() we want to be able to check if we need retry and continue walking
+if we do not.  Let's do it that way: I've applied your patch as is, with the
+next step being
+	* split read_seqretry_or_unlock():
+need_seqretry() (return (!(seq & 1) && read_seqretry(lock, seq))
+done_seqretry() (if (seq & 1) write_sequnlock(lock, seq)),
+your if (read_seqretry_or_unlock(&rename_lock, &seq))
+		goto restart;
+becoming
+	if (need_seqretry(&rename_lock, seq)) {
+		seq = 1;
+		goto restart;
+	}
+	done_seqretry(&rename_lock, seq);
+
+Then d_walk() is trivially massaged to use of read_seqbegin_or_lock(),
+need_seqretry() and done_seqretry().  Give me a few, I'll post it...
