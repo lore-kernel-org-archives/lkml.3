@@ -1,100 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651Ab3IIUNH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 16:13:07 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:54207 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755443Ab3IIUND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 16:13:03 -0400
-Message-ID: <522E2B9E.8050404@ti.com>
-Date: Mon, 9 Sep 2013 15:12:14 -0500
-From: Joel Fernandes <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1755873Ab3IIUN7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 16:13:59 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:40962 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755461Ab3IIUN4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 16:13:56 -0400
 MIME-Version: 1.0
-To: Koen Kooi <koen@dominion.thruhere.net>
-CC: Kevin Hilman <khilman@linaro.org>, <bcousson@baylibre.com>,
-        <linux-omap@vger.kernel.org>, <tony@atomide.com>,
-        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ijc+devicetree@hellion.org.uk>, <linux@arm.linux.org.uk>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <olof@lixom.net>
-Subject: Re: [PATCH] ARM: OMAP2+: am335x-bone*: add DT for BeagleBone Black
-References: <1378736961-21005-1-git-send-email-koen@dominion.thruhere.net> <87zjrm81dl.fsf@linaro.org> <BBAC0939-A4F9-4FEA-B137-0307D8787DC3@dominion.thruhere.net> <522E1325.8050906@ti.com> <41952E65-1037-4117-A1AE-8310FED59E3A@dominion.thruhere.net> <522E18C0.9010909@ti.com> <522E269B.7000802@ti.com> <73968C64-F0B0-4ED6-82B8-BD1966ED9D84@dominion.thruhere.net>
-In-Reply-To: <73968C64-F0B0-4ED6-82B8-BD1966ED9D84@dominion.thruhere.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.DEB.2.02.1309091300420.2479@nftneq.ynat.uz>
+References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
+	<19562.1378747124@turing-police.cc.vt.edu>
+	<alpine.DEB.2.02.1309091119330.2479@nftneq.ynat.uz>
+	<27562.1378753264@turing-police.cc.vt.edu>
+	<522E2487.90109@zytor.com>
+	<CA+5PVA4mu=ykBMgWYaEagCsDexR-qFYH0tfjK+4B+xOCPonNXg@mail.gmail.com>
+	<alpine.DEB.2.02.1309091300420.2479@nftneq.ynat.uz>
+Date: Mon, 9 Sep 2013 16:13:56 -0400
+Message-ID: <CA+5PVA44KDyQxtmfiyjO323kOOoFo2cbD2pj-GnF1B3fhdms=Q@mail.gmail.com>
+Subject: Re: [PATCH 00/12] One more attempt at useful kernel lockdown
+From: Josh Boyer <jwboyer@gmail.com>
+To: David Lang <david@lang.hm>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        James Morris <jmorris@namei.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2013 03:00 PM, Koen Kooi wrote:
-> 
-> Op 9 sep. 2013, om 21:50 heeft Joel Fernandes <joelf@ti.com> het volgende geschreven:
-> 
->> On 09/09/2013 01:51 PM, Joel Fernandes wrote:
->>> On 09/09/2013 01:43 PM, Koen Kooi wrote:
+On Mon, Sep 9, 2013 at 4:10 PM, David Lang <david@lang.hm> wrote:
+> On Mon, 9 Sep 2013, Josh Boyer wrote:
+>
+>> On Mon, Sep 9, 2013 at 3:41 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>>
+>>> On 09/09/2013 12:01 PM, Valdis.Kletnieks@vt.edu wrote:
 >>>>
->>>> Op 9 sep. 2013, om 20:27 heeft Joel Fernandes <joelf@ti.com> het volgende geschreven:
+>>>> On Mon, 09 Sep 2013 11:25:38 -0700, David Lang said:
 >>>>
->>>>> On 09/09/2013 10:51 AM, Koen Kooi wrote:
->>>>>>
->>>>>> Op 9 sep. 2013, om 17:23 heeft Kevin Hilman <khilman@linaro.org> het volgende geschreven:
->>>>>>
->>>>>>> Koen Kooi <koen@dominion.thruhere.net> writes:
->>>>>>>
->>>>>>>> The BeagleBone Black is basically a regular BeagleBone with eMMC and HDMI added,
->>>>>>>> so create a common dtsi both can use.
->>>>>>>>
->>>>>>>> IMPORTANT: booting the existing am335x-bone.dts will blow up the HDMI transceiver
->>>>>>>> after a dozen boots with an uSD card inserted because LDO will be at 3.3V instead
->>>>>>>> of 1.8.
->>>>>>>>
->>>>>>>> MMC support for AM335x still isn't in, so only the LDO change has been added.
->>>>>>>>
->>>>>>>> Cc: stable@vger.kernel.org
->>>>>>>>
->>>>>>>> Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
->>>>>>>> Tested-by: Tom Rini <trini@ti.com>
->>>>>>>> Tested-by: Matt Porter <matt.porter@linaro.org>
->>>>>>>
->>>>>>> I guess the subject should've included v5?
->>>>>>
->>>>>> Yes, I blame it on being monday :)
->>>>>
->>>>> The series you're posting will require rebasing on the current MMC DT series
->>>>> that is being discussed last couple of weeks on the mailing list which were
->>>>> waiting until now as DMA support was missing. Now that DMA support is pulled in,
->>>>> it is safe to apply those patches so I will be reposting them shortly.
->>>>>
->>>>> Please hold off any changes until those patches are posted. This will avoid
->>>>> unnecessary conflicts.
+>>>>> Given that we know that people want signed binaries without
+>>>>> blocking kexec, you should have '1' just enforce module signing
+>>>>> and '2' (or higher) implement a full lockdown including kexec.
 >>>>
->>>> Or you can rebase on top of this patch since it has no dependencies *and* fixes blowing up boards. FWIW, git-rebase, git-cherry-pick and git-am -3 track the rename in my patch just fine.
+>>>>
+>>>>> Or, eliminate the -1  permanently insecure option and make this a
+>>>>> bitmask, if someone wants to enable every possible lockdown, have
+>>>>> them set it to "all 1's", define the bits only as you need them.
+>>>>
+>>>>
+>>>> This strikes me as much more workable than one big sledgehammer.
 >>>>
 >>>
->>> That's fair enough, since  Kevin Acked and Benoit is pulling it, I'm fine with
->>> rebasing on top of it and we avoid any merge conflicts.
->>>
+>>> I.e. capabilities ;)
 >>
->> I noticed - there were still some comments from Felipe on the v4 series of this
->> patch regarding RF cape and HDMI may be breaking it. How are you addressing that?
-> 
-> Capes will never go into the .dts and HDMI support needs some serious patching before it can get enabled in the DT. And the RF cape isn't being sold since it has no sw support. No need to worry about things in the 3.15/3.16 timeframe. Unless you want this LDO3 fix not to go in ASAP.
-> 
-> Joel, is there anything relevant *right now* blocking this patch going in? If not, please test it and add your Tested-by: line.
-> 
+>>
+>> Circles.  All I see here are circles.
+>
+>
+> the thing is that these are not circles. they are separate orthoginal things
+> that you may or may not want to allow.
+>
+> If this was a simple set of circles, then this could be defined as a vector
+> instead of bitmap, the further you go the more secure you are.
 
-We don't merge things in hurry and focus is to do things the right way.. I just
-want to make sure that all possible comments have been addressed.
+I didn't mean your recommendation of using a bitmask.  I understood
+your proposal and I don't even disagree with it really.  I was
+replying to something else.
 
-Otherwise patch looks OK and hope everyone else thinks so too. I am dealing with
-some merge conflicts right now with my series on top of this though, but they
-should be easy enough to fix up. That's delaying my testing, but otherwise as
-such I don't have any objection to this patch (provided the conclusion is that
-all comments have been addressed..). Thanks!
-
-Regards,
-
--Joel
-
+josh
