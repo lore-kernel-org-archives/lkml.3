@@ -1,84 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549Ab3IITvg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 15:51:36 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:53256 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754433Ab3IITve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 15:51:34 -0400
-Message-ID: <522E269B.7000802@ti.com>
-Date: Mon, 9 Sep 2013 14:50:51 -0500
-From: Joel Fernandes <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1755557Ab3IITwu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 15:52:50 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:59266 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754643Ab3IITwt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 15:52:49 -0400
 MIME-Version: 1.0
-To: Koen Kooi <koen@dominion.thruhere.net>
-CC: Kevin Hilman <khilman@linaro.org>, <bcousson@baylibre.com>,
-        <linux-omap@vger.kernel.org>, <tony@atomide.com>,
-        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ijc+devicetree@hellion.org.uk>, <linux@arm.linux.org.uk>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <olof@lixom.net>
-Subject: Re: [PATCH] ARM: OMAP2+: am335x-bone*: add DT for BeagleBone Black
-References: <1378736961-21005-1-git-send-email-koen@dominion.thruhere.net> <87zjrm81dl.fsf@linaro.org> <BBAC0939-A4F9-4FEA-B137-0307D8787DC3@dominion.thruhere.net> <522E1325.8050906@ti.com> <41952E65-1037-4117-A1AE-8310FED59E3A@dominion.thruhere.net> <522E18C0.9010909@ti.com>
-In-Reply-To: <522E18C0.9010909@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <522E2487.90109@zytor.com>
+References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
+	<19562.1378747124@turing-police.cc.vt.edu>
+	<alpine.DEB.2.02.1309091119330.2479@nftneq.ynat.uz>
+	<27562.1378753264@turing-police.cc.vt.edu>
+	<522E2487.90109@zytor.com>
+Date: Mon, 9 Sep 2013 15:52:48 -0400
+Message-ID: <CA+5PVA4mu=ykBMgWYaEagCsDexR-qFYH0tfjK+4B+xOCPonNXg@mail.gmail.com>
+Subject: Re: [PATCH 00/12] One more attempt at useful kernel lockdown
+From: Josh Boyer <jwboyer@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>, David Lang <david@lang.hm>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        James Morris <jmorris@namei.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2013 01:51 PM, Joel Fernandes wrote:
-> On 09/09/2013 01:43 PM, Koen Kooi wrote:
+On Mon, Sep 9, 2013 at 3:41 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 09/09/2013 12:01 PM, Valdis.Kletnieks@vt.edu wrote:
+>> On Mon, 09 Sep 2013 11:25:38 -0700, David Lang said:
 >>
->> Op 9 sep. 2013, om 20:27 heeft Joel Fernandes <joelf@ti.com> het volgende geschreven:
+>>> Given that we know that people want signed binaries without
+>>> blocking kexec, you should have '1' just enforce module signing
+>>> and '2' (or higher) implement a full lockdown including kexec.
 >>
->>> On 09/09/2013 10:51 AM, Koen Kooi wrote:
->>>>
->>>> Op 9 sep. 2013, om 17:23 heeft Kevin Hilman <khilman@linaro.org> het volgende geschreven:
->>>>
->>>>> Koen Kooi <koen@dominion.thruhere.net> writes:
->>>>>
->>>>>> The BeagleBone Black is basically a regular BeagleBone with eMMC and HDMI added,
->>>>>> so create a common dtsi both can use.
->>>>>>
->>>>>> IMPORTANT: booting the existing am335x-bone.dts will blow up the HDMI transceiver
->>>>>> after a dozen boots with an uSD card inserted because LDO will be at 3.3V instead
->>>>>> of 1.8.
->>>>>>
->>>>>> MMC support for AM335x still isn't in, so only the LDO change has been added.
->>>>>>
->>>>>> Cc: stable@vger.kernel.org
->>>>>>
->>>>>> Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
->>>>>> Tested-by: Tom Rini <trini@ti.com>
->>>>>> Tested-by: Matt Porter <matt.porter@linaro.org>
->>>>>
->>>>> I guess the subject should've included v5?
->>>>
->>>> Yes, I blame it on being monday :)
->>>
->>> The series you're posting will require rebasing on the current MMC DT series
->>> that is being discussed last couple of weeks on the mailing list which were
->>> waiting until now as DMA support was missing. Now that DMA support is pulled in,
->>> it is safe to apply those patches so I will be reposting them shortly.
->>>
->>> Please hold off any changes until those patches are posted. This will avoid
->>> unnecessary conflicts.
+>>> Or, eliminate the -1  permanently insecure option and make this a
+>>> bitmask, if someone wants to enable every possible lockdown, have
+>>> them set it to "all 1's", define the bits only as you need them.
 >>
->> Or you can rebase on top of this patch since it has no dependencies *and* fixes blowing up boards. FWIW, git-rebase, git-cherry-pick and git-am -3 track the rename in my patch just fine.
+>> This strikes me as much more workable than one big sledgehammer.
 >>
-> 
-> That's fair enough, since  Kevin Acked and Benoit is pulling it, I'm fine with
-> rebasing on top of it and we avoid any merge conflicts.
-> 
+>
+> I.e. capabilities ;)
 
-I noticed - there were still some comments from Felipe on the v4 series of this
-patch regarding RF cape and HDMI may be breaking it. How are you addressing that?
+Circles.  All I see here are circles.
 
-Regards,
+Having lived an entire release with a capabilities based mechanism for
+this in Fedora, please no.
 
--Joel
+And if you are talking about non-POSIX capabilities as you mentioned
+earlier, that seems to be no different than having securelevel being a
+bitmask of, well, levels.  I don't have much opinion on securelevel
+being a big hammer or a bitmask of finer grained things, but I do
+think it's a more manageable way forward.  Calling the implementation
+"capabilities" seems to just be unnecessarily confusing.
 
-
-
+josh
