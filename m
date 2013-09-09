@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755151Ab3IIPya (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 11:54:30 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:44986 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754615Ab3IIPwO (ORCPT
+	id S1755202Ab3IIPyr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 11:54:47 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:53757 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754594Ab3IIPwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 11:52:14 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
+	Mon, 9 Sep 2013 11:52:13 -0400
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 To: linux-kernel@vger.kernel.org
-Cc: keescook@chromium.org, gregkh@linuxfoundation.org, hpa@zytor.com,
-        linux-efi@vger.kernel.org, jmorris@namei.org,
-        linux-security-module@vger.kernel.org,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Subject: [PATCH 09/12] uswsusp: Disable when securelevel is set
-Date: Mon,  9 Sep 2013 11:49:43 -0400
-Message-Id: <1378741786-18430-10-git-send-email-matthew.garrett@nebula.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
-References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 2001:470:1f07:1371:5d52:9ee3:3e84:6668
-X-SA-Exim-Mail-From: matthew.garrett@nebula.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Cc: Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>, devicetree@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+Subject: [PATCH 2/2] regulator: da9210: add Device Tree support
+Date: Mon,  9 Sep 2013 17:52:00 +0200
+Message-Id: <1378741920-11085-3-git-send-email-g.liakhovetski@gmx.de>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1378741920-11085-1-git-send-email-g.liakhovetski@gmx.de>
+References: <1378741920-11085-1-git-send-email-g.liakhovetski@gmx.de>
+X-Provags-ID: V02:K0:RDA0xxyFWhxo15tKkXqQfqOLWDERG+dGFgwD0WdBtP8
+ drkFsjTlh+YqLNDKILh+LjCvUiuR0PeM5cLNwwJPKGqTLDAgOb
+ J6B9k+muDjgH8PwdB2CrUTsyfbINZLXRWiNfPdfi8SMOIlAYJL
+ oFXq7AsSsCFyTBH7y150yWHiJ4FrEN3t+QKKJql9N7oCznILHz
+ aLnZP1rB0tcz0ROmIJSZP006xQBJKv3Jj+Ab27zyMihxHtYWMf
+ MNcPHPmkaNt/VKGdq4wEkDQxvxdQJS+UO0R1HAGRe4+NGY8BZu
+ 7s9PtHscjuWGlpS4yYJca6s7VEdtloOx1imfYM7d1WpVRDiEDb
+ tzHi7EMc7tq1HKRKQjNlFbAn+P7cMH0GrtepiC+mIcq9ne5xZg
+ UhFm0/mLqYhyA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-uswsusp allows a user process to dump and then restore kernel state, which
-makes it possible to modify the running kernel. Disable this if securelevel
-has been set.
+This patch adds basic Device Tree support to the da9210 regulator driver -
+with no special properties, since also driver's platform data only contains
+standard regulator initialisation parameters.
 
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
 ---
- kernel/power/user.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/regulator/da9210-regulator.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/power/user.c b/kernel/power/user.c
-index 4ed81e7..520a9c4 100644
---- a/kernel/power/user.c
-+++ b/kernel/power/user.c
-@@ -24,6 +24,7 @@
- #include <linux/console.h>
- #include <linux/cpu.h>
- #include <linux/freezer.h>
-+#include <linux/security.h>
+diff --git a/drivers/regulator/da9210-regulator.c b/drivers/regulator/da9210-regulator.c
+index f0fe54b..f7ccff14 100644
+--- a/drivers/regulator/da9210-regulator.c
++++ b/drivers/regulator/da9210-regulator.c
+@@ -25,6 +25,7 @@
+ #include <linux/slab.h>
+ #include <linux/regulator/driver.h>
+ #include <linux/regulator/machine.h>
++#include <linux/regulator/of_regulator.h>
+ #include <linux/regmap.h>
  
- #include <asm/uaccess.h>
- 
-@@ -48,6 +49,9 @@ static int snapshot_open(struct inode *inode, struct file *filp)
- 	struct snapshot_data *data;
+ #include "da9210-regulator.h"
+@@ -126,7 +127,8 @@ static int da9210_i2c_probe(struct i2c_client *i2c,
+ 			    const struct i2c_device_id *id)
+ {
+ 	struct da9210 *chip;
+-	struct da9210_pdata *pdata = i2c->dev.platform_data;
++	struct device *dev = &i2c->dev;
++	struct da9210_pdata *pdata = dev_get_platdata(dev);
+ 	struct regulator_dev *rdev = NULL;
+ 	struct regulator_config config = { };
  	int error;
+@@ -147,10 +149,11 @@ static int da9210_i2c_probe(struct i2c_client *i2c,
+ 	}
  
-+	if (get_securelevel() > 0)
-+		return -EPERM;
-+
- 	lock_system_sleep();
+ 	config.dev = &i2c->dev;
+-	if (pdata)
+-		config.init_data = &pdata->da9210_constraints;
++	config.init_data = pdata ? &pdata->da9210_constraints :
++		of_get_regulator_init_data(dev, dev->of_node);
+ 	config.driver_data = chip;
+ 	config.regmap = chip->regmap;
++	config.of_node = dev->of_node;
  
- 	if (!atomic_add_unless(&snapshot_device_available, -1, 0)) {
+ 	rdev = regulator_register(&da9210_reg, &config);
+ 	if (IS_ERR(rdev)) {
 -- 
-1.8.3.1
+1.7.2.5
 
