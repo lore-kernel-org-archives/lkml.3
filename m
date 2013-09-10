@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552Ab3IJVEW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 17:04:22 -0400
-Received: from imap.thunk.org ([74.207.234.97]:57849 "EHLO imap.thunk.org"
+	id S1752588Ab3IJVEe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 17:04:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44970 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751988Ab3IJVEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 17:04:20 -0400
-Date: Tue, 10 Sep 2013 17:02:50 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>,
-        T Makphaibulchoke <tmac@hp.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-ext4@vger.kernel.org List" <linux-ext4@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org Devel" <linux-fsdevel@vger.kernel.org>,
-        aswin@hp.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        aswin_proj@lists.hp.com
-Subject: Re: [PATCH v3 0/2] ext4: increase mbcache scalability
-Message-ID: <20130910210250.GH29237@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Andreas Dilger <adilger@dilger.ca>,
-	Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>,
-	T Makphaibulchoke <tmac@hp.com>, Al Viro <viro@zeniv.linux.org.uk>,
-	"linux-ext4@vger.kernel.org List" <linux-ext4@vger.kernel.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	"linux-fsdevel@vger.kernel.org Devel" <linux-fsdevel@vger.kernel.org>,
-	aswin@hp.com, Linus Torvalds <torvalds@linux-foundation.org>,
-	aswin_proj@lists.hp.com
-References: <1374108934-50550-1-git-send-email-tmac@hp.com>
- <1378312756-68597-1-git-send-email-tmac@hp.com>
- <20130905023522.GA21268@thunk.org>
- <52285395.1070508@hp.com>
- <0787C579-7E2C-4864-B8F4-98816E1E50A2@dilger.ca>
- <5229C939.8030108@hp.com>
- <62D71A85-C7EE-4F5F-B481-5329F0282044@dilger.ca>
+	id S1751988Ab3IJVEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 17:04:32 -0400
+Date: Tue, 10 Sep 2013 17:04:25 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: lock held returning to user space (i_mutex_dir_key)
+Message-ID: <20130910210425.GB15371@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Al Viro <viro@zeniv.linux.org.uk>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20130910210237.GA15371@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <62D71A85-C7EE-4F5F-B481-5329F0282044@dilger.ca>
+In-Reply-To: <20130910210237.GA15371@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 02:47:33PM -0600, Andreas Dilger wrote:
-> I agree that SELinux is enabled on enterprise distributions by default,
-> but I'm also interested to know how much overhead this imposes.  I would
-> expect that writing large external xattrs for each file would have quite
-> a significant performance overhead that should not be ignored.  Reducing
-> the mbcache overhead is good, but eliminating it entirely is better.
+On Tue, Sep 10, 2013 at 05:02:37PM -0400, Dave Jones wrote:
+ > ================================================
+ > [ BUG: lock held when returning to user space! ]
+ > 3.11.0+ #64 Not tainted
+ > ------------------------------------------------
+ > trinity-child2/8333 is leaving the kernel with locks still held!
+ > 1 lock held by trinity-child2/8333:
+ >  #0:  (&type->i_mutex_dir_key#3){+.+.+.}, at: [<ffffffff811c7fce>] mountpoint_last+0x4e/0x1a0
 
-I was under the impression that using a 256 byte inode (which gives a
-bit over 100 bytes worth of xattr space) was plenty for SELinux.  If
-it turns out that SELinux's use of xattrs have gotten especially
-piggy, then we may need to revisit the recommended inode size for
-those systems who insist on using SELinux...  even if we eliminate the
-overhead associated with mbcache, the fact that files are requiring a
-separate xattr is going to seriously degrade performance.
+This perhaps ?
 
-	       	  	   	     - Ted
+
+-- 
+
+Add missing unlocks to error paths of mountpoint_last.
+
+Signed-off-by: Dave Jones <davej@fedoraproject.org>
+
+diff --git a/fs/namei.c b/fs/namei.c
+index 409a441..5a91474 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2271,12 +2271,15 @@ mountpoint_last(struct nameidata *nd, struct path *path)
+ 		dentry = d_alloc(dir, &nd->last);
+ 		if (!dentry) {
+ 			error = -ENOMEM;
++			mutex_unlock(&dir->d_inode->i_mutex);
+ 			goto out;
+ 		}
+ 		dentry = lookup_real(dir->d_inode, dentry, nd->flags);
+ 		error = PTR_ERR(dentry);
+-		if (IS_ERR(dentry))
++		if (IS_ERR(dentry)) {
++			mutex_unlock(&dir->d_inode->i_mutex);
+ 			goto out;
++		}
+ 	}
+ 	mutex_unlock(&dir->d_inode->i_mutex);
+ 
