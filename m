@@ -1,83 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752522Ab3IJWDH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 18:03:07 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:50732 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350Ab3IJWDE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 18:03:04 -0400
-Message-ID: <1378850569.4121.28.camel@pasglop>
-Subject: Re: powerpc allmodconfig build broken due to commit 15863ff3b
- (powerpc: Make chip-id information available to userspace)
-From: Benjamin Herrenschmidt <benh@au1.ibm.com>
-To: Asai Thambi S P <asamymuthupa@micron.com>
-Cc: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>,
-        Shivaprasad G Bhat <sbhat@linux.vnet.ibm.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linuxppc-dev@lists.ozlabs.org, Paul Mackerras <paulus@samba.org>
-Date: Wed, 11 Sep 2013 08:02:49 +1000
-In-Reply-To: <522E5FD5.40603@micron.com>
-References: <522D163E.80106@roeck-us.net> <522E5FD5.40603@micron.com>
-Organization: IBM Australia
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091021-1618-0000-0000-0000049A1640
+	id S1752665Ab3IJWDo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 18:03:44 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:54756 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751420Ab3IJWDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 18:03:40 -0400
+Date: Tue, 10 Sep 2013 18:03:29 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: azurIt <azurit@pobox.sk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/7] improve memcg oom killer robustness v2
+Message-ID: <20130910220329.GK856@cmpxchg.org>
+References: <20130909172849.GG856@cmpxchg.org>
+ <20130909215917.96932098@pobox.sk>
+ <20130909201238.GH856@cmpxchg.org>
+ <20130910201359.D0984EFF@pobox.sk>
+ <20130910183740.GI856@cmpxchg.org>
+ <20130910213253.A1E666C5@pobox.sk>
+ <20130910201222.GA25972@cmpxchg.org>
+ <20130910230853.FEEC19B5@pobox.sk>
+ <20130910211823.GJ856@cmpxchg.org>
+ <20130910233247.9EDF4DBA@pobox.sk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130910233247.9EDF4DBA@pobox.sk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-09-09 at 16:55 -0700, Asai Thambi S P wrote:
-> On 09/08/2013 5:28 PM, Guenter Roeck wrote:
-> > Hi all,
-> >
-> > powerpc allmodconfig build on the latest upstream kernel results in:
-> >
-> > ERROR: ".cpu_to_chip_id" [drivers/block/mtip32xx/mtip32xx.ko] undefined!
-> >
-> > This is due to commit 15863ff3b (powerpc: Make chip-id information 
-> > available to userspace).
-> > Not surprising, as cpu_to_chip_id() is not exported.
-> >
-> Apart from the above error, I have a concern on the patch, purely based on the commit message.
-> (to be honest, I am not familiar with the ppc architecture)
-> 
-> Commit message of 15863ff3b has the following text.
-> 
-> ******************
-> So far "/sys/devices/system/cpu/cpuX/topology/physical_package_id"
-> was always default (-1) on ppc64 architecture.
-> 
-> Now, some systems have an ibm,chip-id property in the cpu nodes in
-> the device tree. On these systems, we now use this information to
-> display physical_package_id
-> ******************
-> 
-> Shouldn't the new definition of "topology_physical_package_id" apply only to those systems supporting ibm,chip-id property?
+On Tue, Sep 10, 2013 at 11:32:47PM +0200, azurIt wrote:
+> >On Tue, Sep 10, 2013 at 11:08:53PM +0200, azurIt wrote:
+> >> >On Tue, Sep 10, 2013 at 09:32:53PM +0200, azurIt wrote:
+> >> >> Here is full kernel log between 6:00 and 7:59:
+> >> >> http://watchdog.sk/lkml/kern6.log
+> >> >
+> >> >Wow, your apaches are like the hydra.  Whenever one is OOM killed,
+> >> >more show up!
+> >> 
+> >> 
+> >> 
+> >> Yeah, it's supposed to do this ;)
 
-There should be no negative side effect (appart from the missing
-EXPORT_SYMBOL of course). If the property is not found in the
-device-tree, the new function returns -1, so it should work fine on all
-systems.
+How are you expecting the machine to recover from an OOM situation,
+though?  I guess I don't really understand what these machines are
+doing.  But if you are overloading them like crazy, isn't that the
+expected outcome?
 
-Cheers,
-Ben.
-
-> 
-> > Reverting this commit fixes the problem. Any good idea how to fix it 
-> > for real ?
+> >> >> >> What do you think? I'm now running kernel with your previous patch, not with the newest one.
+> >> >> >
+> >> >> >Which one exactly?  Can you attach the diff?
+> >> >> 
+> >> >> 
+> >> >> 
+> >> >> I meant, the problem above occured on kernel with your latest patch:
+> >> >> http://watchdog.sk/lkml/7-2-memcg-fix.patch
+> >> >
+> >> >The above log has the following callstack:
+> >> >
+> >> >Sep 10 07:59:43 server01 kernel: [ 3846.337628]  [<ffffffff810d19fe>] dump_header+0x7e/0x1e0
+> >> >Sep 10 07:59:43 server01 kernel: [ 3846.337707]  [<ffffffff810d18ff>] ? find_lock_task_mm+0x2f/0x70
+> >> >Sep 10 07:59:43 server01 kernel: [ 3846.337790]  [<ffffffff810d18ff>] ? find_lock_task_mm+0x2f/0x70
+> >> >Sep 10 07:59:43 server01 kernel: [ 3846.337874]  [<ffffffff81094bb0>] ? __css_put+0x50/0x90
+> >> >Sep 10 07:59:43 server01 kernel: [ 3846.337952]  [<ffffffff810d1ec5>] oom_kill_process+0x85/0x2a0
+> >> >Sep 10 07:59:43 server01 kernel: [ 3846.338037]  [<ffffffff810d2448>] mem_cgroup_out_of_memory+0xa8/0xf0
+> >> >Sep 10 07:59:43 server01 kernel: [ 3846.338120]  [<ffffffff81110858>] T.1154+0x8b8/0x8f0
+> >> >Sep 10 07:59:43 server01 kernel: [ 3846.338201]  [<ffffffff81110fa6>] mem_cgroup_charge_common+0x56/0xa0
+> >> >Sep 10 07:59:43 server01 kernel: [ 3846.338283]  [<ffffffff81111035>] mem_cgroup_newpage_charge+0x45/0x50
+> >> >Sep 10 07:59:43 server01 kernel: [ 3846.338364]  [<ffffffff810f3039>] handle_pte_fault+0x609/0x940
+> >> >Sep 10 07:59:43 server01 kernel: [ 3846.338451]  [<ffffffff8102ab1f>] ? pte_alloc_one+0x3f/0x50
+> >> >Sep 10 07:59:43 server01 kernel: [ 3846.338532]  [<ffffffff8107e455>] ? sched_clock_local+0x25/0x90
+> >> >Sep 10 07:59:43 server01 kernel: [ 3846.338617]  [<ffffffff810f34d7>] handle_mm_fault+0x167/0x340
+> >> >Sep 10 07:59:43 server01 kernel: [ 3846.338699]  [<ffffffff8102714b>] do_page_fault+0x13b/0x490
+> >> >Sep 10 07:59:43 server01 kernel: [ 3846.338781]  [<ffffffff810f8848>] ? do_brk+0x208/0x3a0
+> >> >Sep 10 07:59:43 server01 kernel: [ 3846.338865]  [<ffffffff812dba22>] ? gr_learn_resource+0x42/0x1e0
+> >> >Sep 10 07:59:43 server01 kernel: [ 3846.338951]  [<ffffffff815cb7bf>] page_fault+0x1f/0x30
+> >> >
+> >> >The charge code seems to be directly invoking the OOM killer, which is
+> >> >not possible with 7-2-memcg-fix.  Are you sure this is the right patch
+> >> >for this log?  This _looks_ more like what 7-1-memcg-fix was doing,
+> >> >with a direct kill in the charge context and a fixup later on.
+> >> 
+> >> I, luckyly, still have the kernel source from which that kernel was build. I tried to re-apply the 7-2-memcg-fix.patch:
+> >> 
+> >> # patch -p1 --dry-run < 7-2-memcg-fix.patch 
+> >> patching file arch/x86/mm/fault.c
+> >> Reversed (or previously applied) patch detected!  Assume -R? [n] 
+> >> Apply anyway? [n] 
+> >> Skipping patch.
+> >> 4 out of 4 hunks ignored -- saving rejects to file arch/x86/mm/fault.c.rej
+> >> patching file include/linux/memcontrol.h
+> >> Hunk #1 succeeded at 141 with fuzz 2 (offset 21 lines).
+> >> Hunk #2 succeeded at 391 with fuzz 1 (offset 39 lines).
 > >
-> > Guenter
-> > -- 
-> > To unsubscribe from this list: send the line "unsubscribe 
-> > linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+> >Uhm, some of it applied...  I have absolutely no idea what state that
+> >tree is in now...
+> 
+> I used '--dry-run' so it should be ok :)
 
+Ah, right.
 
+> >> patching file include/linux/mm.h
+> >> Reversed (or previously applied) patch detected!  Assume -R? [n] 
+> >> Apply anyway? [n] 
+> >> Skipping patch.
+> >> 1 out of 1 hunk ignored -- saving rejects to file include/linux/mm.h.rej
+> >> patching file include/linux/sched.h
+> >> Reversed (or previously applied) patch detected!  Assume -R? [n] 
+> >> Apply anyway? [n] 
+> >> Skipping patch.
+> >> 1 out of 1 hunk ignored -- saving rejects to file include/linux/sched.h.rej
+> >> patching file mm/memcontrol.c
+> >> Reversed (or previously applied) patch detected!  Assume -R? [n] 
+> >> Apply anyway? [n] 
+> >> Skipping patch.
+> >> 10 out of 10 hunks ignored -- saving rejects to file mm/memcontrol.c.rej
+> >> patching file mm/memory.c
+> >> Reversed (or previously applied) patch detected!  Assume -R? [n] 
+> >> Apply anyway? [n] 
+> >> Skipping patch.
+> >> 2 out of 2 hunks ignored -- saving rejects to file mm/memory.c.rej
+> >> patching file mm/oom_kill.c
+> >> Reversed (or previously applied) patch detected!  Assume -R? [n] 
+> >> Apply anyway? [n] 
+> >> Skipping patch.
+> >> 1 out of 1 hunk ignored -- saving rejects to file mm/oom_kill.c.rej
+> >> 
+> >> 
+> >> Can you tell from this if the source has the right patch?
+> >
+> >Not reliably, I don't think.  Can you send me
+> >
+> >  include/linux/memcontrol.h
+> >  mm/memcontrol.c
+> >  mm/memory.c
+> >  mm/oom_kill.c
+> >
+> >from those sources?
+> >
+> >It might be easier to start the application from scratch...  Keep in
+> >mind that 7-2 was not an incremental fix, you need to remove the
+> >previous memcg patches (as opposed to 7-1).
+> 
+> 
+> 
+> Yes, i used only 7-2 from your patches. Here are the files:
+> http://watchdog.sk/lkml/kernel
+> 
+> orig - kernel source which was used to build the kernel i was talking about earlier
+> new - newly unpacked and patched 3.2.50 with all of 'my' patches
+
+Ok, thanks!
+
+> Here is how your patch was applied:
+> 
+> # patch -p1 < 7-2-memcg-fix.patch 
+> patching file arch/x86/mm/fault.c
+> Hunk #1 succeeded at 944 (offset 102 lines).
+> Hunk #2 succeeded at 970 (offset 102 lines).
+> Hunk #3 succeeded at 1273 with fuzz 1 (offset 212 lines).
+> Hunk #4 succeeded at 1382 (offset 223 lines).
+
+Ah, I forgot about this one.  Could you provide that file (fault.c) as
+well please?
+
+> patching file include/linux/memcontrol.h
+> Hunk #1 succeeded at 122 with fuzz 2 (offset 2 lines).
+> Hunk #2 succeeded at 354 (offset 2 lines).
+
+Looks good, still.
+
+> patching file include/linux/mm.h
+> Hunk #1 succeeded at 163 (offset 7 lines).
+> patching file include/linux/sched.h
+> Hunk #1 succeeded at 1644 (offset 76 lines).
+> patching file mm/memcontrol.c
+> Hunk #1 succeeded at 1752 (offset 9 lines).
+> Hunk #2 succeeded at 1777 (offset 9 lines).
+> Hunk #3 succeeded at 1828 (offset 9 lines).
+> Hunk #4 succeeded at 1867 (offset 9 lines).
+> Hunk #5 succeeded at 2256 (offset 9 lines).
+> Hunk #6 succeeded at 2317 (offset 9 lines).
+> Hunk #7 succeeded at 2348 (offset 9 lines).
+> Hunk #8 succeeded at 2411 (offset 9 lines).
+> Hunk #9 succeeded at 2419 (offset 9 lines).
+> Hunk #10 succeeded at 2432 (offset 9 lines).
+> patching file mm/memory.c
+> Hunk #1 succeeded at 3712 (offset 273 lines).
+> Hunk #2 succeeded at 3812 (offset 317 lines).
+> patching file mm/oom_kill.c
+
+These look good as well.
+
+That leaves the weird impossible stack trace.  Did you double check
+that this crash came from a kernel with those exact files?
+
+I'm also confused about the freezer.  You used to freeze cgroups that
+were out of memory in the past, right?  Are you no longer doing this?
