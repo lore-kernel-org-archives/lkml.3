@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920Ab3IJSZr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 14:25:47 -0400
-Received: from mail-vb0-f49.google.com ([209.85.212.49]:37373 "EHLO
-	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159Ab3IJSZp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 14:25:45 -0400
+	id S1752502Ab3IJS0U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 14:26:20 -0400
+Received: from mail-bl2lp0208.outbound.protection.outlook.com ([207.46.163.208]:21806
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750977Ab3IJS0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 14:26:18 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+CC: David Lang <david@lang.hm>,
+        "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH 00/12] One more attempt at useful kernel lockdown
+Thread-Topic: [PATCH 00/12] One more attempt at useful kernel lockdown
+Thread-Index: AQHOrYDL2QYLBLFVskGOdCrAsfX2cpm9uPUAgABSI3WAADlnjYAABsNQgADupTuAABGKgA==
+Date: Tue, 10 Sep 2013 18:26:12 +0000
+Message-ID: <1378837571.17615.0.camel@x230.lan>
+References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
+	 <19562.1378747124@turing-police.cc.vt.edu>
+	 <alpine.DEB.2.02.1309091119330.2479@nftneq.ynat.uz>
+	 <1378767723.17982.27.camel@x230.lan>
+	 <alpine.DEB.2.02.1309091614010.2479@nftneq.ynat.uz>
+	 <1378774394.17982.36.camel@x230.lan>
+	 <alpine.DEB.2.02.1309091938420.1820@nftneq.ynat.uz>
+	 <1378781715.17982.42.camel@x230.lan>
+	 <alpine.DEB.2.02.1309092002060.1820@nftneq.ynat.uz>
+	 <1378785208.17982.54.camel@x230.lan>
+	 <20130910172318.GB21530@khazad-dum.debian.net>
+In-Reply-To: <20130910172318.GB21530@khazad-dum.debian.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:470:1f07:1371:6143:33b7:cfa:e8ea]
+x-forefront-prvs: 096507C068
+x-forefront-antispam-report: SFV:NSPM;SFS:(24454002)(51704005)(189002)(199002)(377424004)(80976001)(74876001)(56816003)(53806001)(77096001)(76482001)(19580395003)(83322001)(19580405001)(54356001)(83072001)(79102001)(77982001)(59766001)(54316002)(56776001)(80022001)(63696002)(46102001)(81342001)(81816001)(65816001)(69226001)(76796001)(36756003)(81686001)(51856001)(4396001)(76786001)(74502001)(31966008)(74706001)(74366001)(47446002)(74662001)(50986001)(49866001)(47976001)(33646001)(81542001)(47736001)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB223;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:6143:33b7:cfa:e8ea;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <7805D8FF968FF4488773BD9DF88CD5C0@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFympAk-hnekaew8po5wLJdiY+DC_b4h=pa-y5i9=s303Q@mail.gmail.com>
-References: <CA+5PVA4k9tTPs9vtTbMuG7pzw4kb3KFK-CLaqDDG4dm=0twyCQ@mail.gmail.com>
-	<CA+55aFzg_r2c09TkGwmsMV3HbNAkSFJLGAFWweLNzofqs4o4Ug@mail.gmail.com>
-	<CA+5PVA6EDV3zuDEyCvcGNvEAPtgY_Oy9xVbaM03ggRBPtq5Mmg@mail.gmail.com>
-	<CA+55aFympAk-hnekaew8po5wLJdiY+DC_b4h=pa-y5i9=s303Q@mail.gmail.com>
-Date: Tue, 10 Sep 2013 11:25:44 -0700
-X-Google-Sender-Auth: uBAyLu0c6m_gHKH7S9mgUVLU2jI
-Message-ID: <CA+55aFygRtwwknO4Jb+nna046VhdNCXh2S0ybRBPf=b1GH9FPg@mail.gmail.com>
-Subject: Re: kernel BUG at fs/dcache.c:648! with v3.11-7890-ge5c832d
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Waiman Long <Waiman.Long@hp.com>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        moneta.mace@gmail.com
-Content-Type: multipart/mixed; boundary=001a11c1e98011673e04e60ba2f3
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8AIQOsC029750
 
---001a11c1e98011673e04e60ba2f3
-Content-Type: text/plain; charset=UTF-8
+On Tue, 2013-09-10 at 14:23 -0300, Henrique de Moraes Holschuh wrote:
+> On Tue, 10 Sep 2013, Matthew Garrett wrote:
+> > That's why modern systems require signed firmware updates.
+> 
+> Linux doesn't.  Is someone working on adding signature support to the
+> runtime firmware loader?
 
-On Tue, Sep 10, 2013 at 10:47 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> But yes, e5c832d is obviously the "fixed" kernel. Let me think about this.
+It'd be simple to do so, but so far the model appears to be that devices
+that expect signed firmware enforce that themselves.
 
-Ok, I think I found it.
-
-I missed that "terminate_walk()" for the RCU case does this:
-
-                nd->flags &= ~LOOKUP_RCU;
-                if (!(nd->flags & LOOKUP_ROOT))
-                        nd->root.mnt = NULL;
-                unlock_rcu_walk();
-
-and my unlazy_walk() essentially terminated the walk _without_
-clearing that nd->root.mnt thing (it did clear the LOOKUP_RCU bit and
-unlock_rcy_walk(). So then later, we'd end up doing an extra
-path_put(). Explaining a zero d_lockref.count.
-
-The whole damn root.mnt behavior with !LOOKUP_ROOT is a mystery and
-needs more comments. But the attached trivial patch should do the
-missing portion of terminate_walk().
-
-Al, can you walk us through the rules for what "root.mnt == NULL"
-really means? It's basically used as a flag for whether we've gotten
-the root pointer or not. But it's pretty damn esoteric.
-
-Now I'm starting to wonder how come _I_ never saw any issues. Maybe it
-ends up underflowing so quickly that most people just see a big
-negative number..
-
-Patch is entirely untested. Not that my testing apparently has been much good.
-
-Moneta, are you comfortable compiling a test-kernel, or does this need
-to become a rawhide package?
-
-              Linus
-
---001a11c1e98011673e04e60ba2f3
-Content-Type: application/octet-stream; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hlfg5pd50
-
-IGZzL25hbWVpLmMgfCA1ICsrKystCiAxIGZpbGUgY2hhbmdlZCwgNCBpbnNlcnRpb25zKCspLCAx
-IGRlbGV0aW9uKC0pCgpkaWZmIC0tZ2l0IGEvZnMvbmFtZWkuYyBiL2ZzL25hbWVpLmMKaW5kZXgg
-NTZlNGY0ZDUzN2QwLi41ZTZhYWFkYzFkY2QgMTAwNjQ0Ci0tLSBhL2ZzL25hbWVpLmMKKysrIGIv
-ZnMvbmFtZWkuYwpAQCAtNTc0LDkgKzU3NCwxMiBAQCB1bmxvY2tfYW5kX2Ryb3BfZGVudHJ5Ogog
-ZHJvcF9kZW50cnk6CiAJdW5sb2NrX3JjdV93YWxrKCk7CiAJZHB1dChkZW50cnkpOwotCXJldHVy
-biAtRUNISUxEOworCWdvdG8gZHJvcF9yb290X21udDsKIG91dDoKIAl1bmxvY2tfcmN1X3dhbGso
-KTsKK2Ryb3Bfcm9vdF9tbnQ6CisJaWYgKCEobmQtPmZsYWdzICYgTE9PS1VQX1JPT1QpKQorCQlu
-ZC0+cm9vdC5tbnQgPSBOVUxMOwogCXJldHVybiAtRUNISUxEOwogfQogCg==
---001a11c1e98011673e04e60ba2f3--
+-- 
+Matthew Garrett <matthew.garrett@nebula.com>
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
