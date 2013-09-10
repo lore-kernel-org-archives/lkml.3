@@ -1,92 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546Ab3IJQcj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 12:32:39 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:46068 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751929Ab3IJQci (ORCPT
+	id S1752788Ab3IJQea (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 12:34:30 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50151 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593Ab3IJQe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 12:32:38 -0400
-Message-ID: <522F49A3.5000700@linaro.org>
-Date: Tue, 10 Sep 2013 09:32:35 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 10 Sep 2013 12:34:28 -0400
+Date: Tue, 10 Sep 2013 17:33:58 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>
+Message-ID: <20130910163358.GP29403@sirena.org.uk>
+References: <1378811888-2268-1-git-send-email-ldewangan@nvidia.com>
+ <1378811888-2268-2-git-send-email-ldewangan@nvidia.com>
+ <20130910120922.GH29403@sirena.org.uk>
+ <522F1B40.3040801@nvidia.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] [RFC] seqcount: Add lockdep functionality to seqcount/seqlock
- structures
-References: <1378788166-18474-1-git-send-email-john.stultz@linaro.org> <20130910085545.GM26785@twins.programming.kicks-ass.net>
-In-Reply-To: <20130910085545.GM26785@twins.programming.kicks-ass.net>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7316+HbuJYr43y0H"
+Content-Disposition: inline
+In-Reply-To: <522F1B40.3040801@nvidia.com>
+X-Cookie: Your present plans will be successful.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] regulator: core: add support for configuring turn-on
+ time through constraints
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2013 01:55 AM, Peter Zijlstra wrote:
-> On Mon, Sep 09, 2013 at 09:42:46PM -0700, John Stultz wrote:
->> @@ -38,10 +39,58 @@
->>   */
->>  typedef struct seqcount {
->>  	unsigned sequence;
->> +#ifdef CONFIG_DEBUG_LOCK_ALLOC
->> +	struct lockdep_map dep_map;
->> +#endif
->>  } seqcount_t;
->>  
->> -#define SEQCNT_ZERO { 0 }
->> -#define seqcount_init(x)	do { *(x) = (seqcount_t) SEQCNT_ZERO; } while (0)
->> +
->> +
->> +
->> +static inline void __seqcount_init(seqcount_t *s, const char *name,
->> +					  struct lock_class_key *key)
->> +{
->> +#ifdef CONFIG_DEBUG_LOCK_ALLOC
->> +	/*
->> +	 * Make sure we are not reinitializing a held lock:
->> +	 */
->> +	lockdep_init_map(&s->dep_map, name, key, 0);
->> +#endif
->> +	s->sequence = 0;
->> +}
->> +
->> +
->> +#ifdef CONFIG_DEBUG_LOCK_ALLOC
->> +# define SEQCOUNT_DEP_MAP_INIT(lockname) \
->> +		.dep_map = { .name = #lockname } \
->> +
->> +# define seqcount_init(s)				\
->> +	do {						\
->> +		static struct lock_class_key __key;	\
->> +		__seqcount_init((s), #s, &__key);	\
->> +	} while (0)
->> +
->> +static inline void seqcount_reader_access(const seqcount_t *s)
->> +{
->> +	seqcount_t *l = (seqcount_t *)s;
->> +	unsigned long flags;
->> +
->> +	preempt_disable();
->> +	local_irq_save(flags);
->> +	seqcount_acquire_read(&l->dep_map, 0, 0, _RET_IP_);
->> +	seqcount_release(&l->dep_map, 1, _RET_IP_);
->> +	local_irq_restore(flags);
->> +	preempt_enable();
->> +}
-> Why the preempt and local_irq thing? Also preempt_disable is quite
-> superfluous if you do local_irq_disable().
 
-So since reader->writer recurision is ok, as is reader->reader
-recurision, I wanted to avoid lockdep false positives if an irq lands in
-between the aquire/release calls. So by doing the acquire/release w/
-irqs off on the read side, we only trap the writer->reader recursion issues.
+--7316+HbuJYr43y0H
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-And agreed, the preempt_disable is overdoing it :)
+On Tue, Sep 10, 2013 at 06:44:40PM +0530, Laxman Dewangan wrote:
 
-Thanks for the review!
--john
+> Here my intention for turn-on time is the time from OFF state to ON
+> state and the ON voltage settled on this time.
+> This time is separate from underlying enable time of the device i.e.
+> will not get added.
+> We observe in some of platform that some of regulator is taking more
+> time than time given as per datasheet.
+> Yes, completely agree that this is not the data provided normally,
+> just we observe on scope that some of platform shows  more than the
+> datasheet value and hence this patch.
 
+So, put this in the binding document then! :P  This was more a request
+to improve the detail in the binding than anything else.
+
+--7316+HbuJYr43y0H
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSL0nzAAoJELSic+t+oim9Pn4QAJMFmNplzGJv7Q8YhCrxFVZy
+dUdM43gvzYZD+mJPclyWNFJaGg4aQWAFUCFxhaHC+A8i2J13XpyJtjh9DHpu5u7S
+EQvY1B49uP4J/79RgClQzpAcwKjJ8evpsFzn+r7e5p+5NFcG8t6sFBAT2JSB2v/7
+SxzAxWtODQWswY/NIeFL/KsPkNfJM8IUtcgq4pEa7e2LAIYR2vOby8Eg5KQgN+s7
+54ayDo2qyroeoZnrNQTrTUYlSgX/cGYcKugK8yZhjc3Lb14OUoIQwIuPRmGkJEj9
+SyfqG4zf3cJ/igXMIjn4VOJz0RZMXgT2LkrEJYrmqXk3pat3tuA2TL8Cx0wgfIV0
+Bu3ViNknIuDWO7GHWPG3rQzIcu9lsYq2ATmObEQvD5D8AgI4K4uGgbuhtlGH/1kL
+qOX2PapH7mslhHu4CogY6MTD9Al2j8X24jlMwNt+kj+Mho2dDJYMuLSBdao5nlNx
+/TlAfFggYj3qPZyKBNe9AOPfnLAVAe/AjBmodW58dY1TkRaK5bsO/u+6e18X0/Kj
+yS3s6yX9DZiCy2vvYxEsr3pjjipBrAytr1GLj4KCttrf+Bmr5qfm/AmZ7kZ4z2V6
+t/hkpW8NZRKAIfR/xvj/b8xC55thiaBYtvt45c7JLFtK0lN6TXllfaJNY/b4uOof
+5TRfPzsNB7m55TdEKwf9
+=tVsN
+-----END PGP SIGNATURE-----
+
+--7316+HbuJYr43y0H--
