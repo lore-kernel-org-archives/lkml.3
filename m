@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393Ab3IJPa0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 11:30:26 -0400
-Received: from fieldses.org ([174.143.236.118]:45537 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751982Ab3IJPaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 11:30:23 -0400
-Date: Tue, 10 Sep 2013 11:30:23 -0400
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: nfsd changes for 3.12
-Message-ID: <20130910153022.GF16011@fieldses.org>
+	id S1753453Ab3IJPap (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 11:30:45 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:34808 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753406Ab3IJPam (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 11:30:42 -0400
+Date: Tue, 10 Sep 2013 16:30:37 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        jic23@cam.ac.uk, linux-iio@vger.kernel.org,
+        LinusW <linus.walleij@linaro.org>, denis.ciocca@st.com,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 01/38] ARM: ux500: Remove PrimeCell IDs from Nomadik I2C
+ DT nodes
+Message-ID: <20130910153037.GA11227@lee--X1>
+References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
+ <1378817379-8238-2-git-send-email-lee.jones@linaro.org>
+ <CAOesGMgySNLKo_H0h4MCbAWvyW0h2bWa96drWBpnhAYYQwH9mw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOesGMgySNLKo_H0h4MCbAWvyW0h2bWa96drWBpnhAYYQwH9mw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nfsd changes for 3.12 are available from
+> On Tue, Sep 10, 2013 at 5:49 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> > Turns out that they're actually not required and the driver probes just
+> > fine without them. The ID is incorrect at the moment anyway. They actually
+> > currently specify the stn8815.
+> >
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> 
+> How did you test this patch? What hardware did you boot it on and with
+> what config?
 
-  git://linux-nfs.org/~bfields/linux.git nfsd-next
+Snowball, u8500_defconfig.
 
-This was a very quiet cycle!  Just a few bugfixes and some cleanup.
+Why? Don't you have the same result with yours?
 
---b.
-
-----------------------------------------------------------------
-Harshula Jayasuriya (2):
-      nfsd: nfs4_file_get_access: need to be more careful with O_RDWR
-      sunrpc: prepare NFS for 2038
-
-J. Bruce Fields (10):
-      nfsd4: fix setlease error return
-      Merge tag 'v3.11-rc5' into for-3.12 branch
-      Revert "nfsd: nfs4_file_get_access: need to be more careful with O_RDWR"
-      nfsd4: fix leak of inode reference on delegation failure
-      nfsd4: nfsd4_create_clid_dir prints uninitialized data
-      svcrpc: remove unused rq_resused
-      rpc: clean up decoding of gssproxy linux creds
-      rpc: comment on linux_cred encoding, treat all as unsigned
-      rpc: fix huge kmalloc's in gss-proxy
-      rpc: let xdr layer allocate gssproxy receieve pages
-
- fs/nfsd/nfs4recover.c                |    2 --
- fs/nfsd/nfs4state.c                  |   33 +++++++++++++++++----------
- include/linux/sunrpc/cache.h         |   22 ++++++++++++++++--
- include/linux/sunrpc/svc.h           |    1 -
- net/sunrpc/auth_gss/gss_rpc_upcall.c |   26 +++++++++++++++++++++
- net/sunrpc/auth_gss/gss_rpc_xdr.c    |   41 +++++++++++++++++-----------------
- net/sunrpc/auth_gss/gss_rpc_xdr.h    |    5 ++++-
- 7 files changed, 91 insertions(+), 39 deletions(-)
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
