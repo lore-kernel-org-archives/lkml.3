@@ -1,103 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751335Ab3IJLxM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 07:53:12 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:42181 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870Ab3IJLxK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 07:53:10 -0400
-Date: Tue, 10 Sep 2013 13:53:06 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: eranian@gmail.com
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>
-Subject: PEBS bug on HSW: "Unexpected number of pebs records 10" (was: Re:
- [GIT PULL] perf changes for v3.12)
-Message-ID: <20130910115306.GA6091@gmail.com>
-References: <20130903132933.GA24955@gmail.com>
- <CA+55aFxBTjfx304zstOVq3Hm3vmjgC5gOJaxXG5E_iWq_WXGTw@mail.gmail.com>
- <20130909100544.GI31370@twins.programming.kicks-ass.net>
- <CAMsRxfLEO15kKrbmtKKXuW-JTtCCgiuXS6wFs9kiLmG1wge24A@mail.gmail.com>
+	id S1751418Ab3IJL6I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 07:58:08 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:46198 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751090Ab3IJL6G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 07:58:06 -0400
+Message-ID: <522F0946.9040104@ti.com>
+Date: Tue, 10 Sep 2013 17:27:58 +0530
+From: George Cherian <george.cherian@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMsRxfLEO15kKrbmtKKXuW-JTtCCgiuXS6wFs9kiLmG1wge24A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        "cw00.choi@samsung.com" <cw00.choi@samsung.com>,
+        "kishon@ti.com" <kishon@ti.com>
+Subject: Re: [PATCH] extcon: palmas: Dont set USB state if ID pin is grounded
+References: <1378799369-15803-1-git-send-email-george.cherian@ti.com> <522EE3B9.4020807@nvidia.com>
+In-Reply-To: <522EE3B9.4020807@nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 9/10/2013 2:47 PM, Laxman Dewangan wrote:
+> On Tuesday 10 September 2013 01:19 PM, George Cherian wrote:
+>> In OMAP5 when USB-HOST is set true, the VBUS regulator  is turned ON.
+>> This causes a VBUS interrupt, ignore the same if we are already in
+>> USB-HOST.
+>>
+>> Signed-off-by: George Cherian <george.cherian@ti.com>
+>> ---
+>>   drivers/extcon/extcon-palmas.c | 3 +++
+>>   1 file changed, 3 insertions(+)
+>>
+>> diff --git a/drivers/extcon/extcon-palmas.c 
+>> b/drivers/extcon/extcon-palmas.c
+>> index 9672f31..91b31af 100644
+>> --- a/drivers/extcon/extcon-palmas.c
+>> +++ b/drivers/extcon/extcon-palmas.c
+>> @@ -50,6 +50,9 @@ static irqreturn_t palmas_vbus_irq_handler(int irq, 
+>> void *_palmas_usb)
+>>       struct palmas_usb *palmas_usb = _palmas_usb;
+>>       unsigned int vbus_line_state;
+>>   +    if (palmas_usb->linkstat == PALMAS_USB_STATE_ID)
+>> +        return IRQ_HANDLED;
+>> +
+>
+> Should we really handle this on this extcon driver? I think it should 
+> be handled in the USB driver. If port is OTG type and if usb driver 
+> enable the VBUS then it can expect the VBUS available notification but 
+> based on the USB driver state, it should ignore this notification.
+>
+Correct extcon should just notify and the consumer should take 
+appropriate decision.
+> Otherwise, Palmas pin find that there is VBUS state true but the SW 
+> status will show as the VBUS not there.
+>
 
-* Stephane Eranian <eranian@googlemail.com> wrote:
 
-> Hi,
-> 
-> 
-> And what was the perf record command line for this crash?
+-- 
+-George
 
-AFAICS it wasn't a crash but the WARN_ON() in intel_pmu_drain_pebs_hsw(), 
-at arch/x86/kernel/cpu/perf_event_intel_ds.c:1003.
-
-        at  = (struct pebs_record_hsw *)(unsigned long)ds->pebs_buffer_base;
-        top = (struct pebs_record_hsw *)(unsigned long)ds->pebs_index;
-
-        n = top - at;
-        if (n <= 0)
-                return;
-
-        /*
-         * Should not happen, we program the threshold at 1 and do not
-         * set a reset value.
-         */
-        WARN_ONCE(n > x86_pmu.max_pebs_events,
-                  "Unexpected number of pebs records %d\n", n);
-
-The command line Linus used was probably close to:
-
-   perf record -e cycles:pp -g make -j64 bzImage
-
-i.e. PEBS precise profiling, call chains, LBR is used to figure out the 
-real instruction, but no '-a' per CPU profiling option, i.e. high 
-frequency per task PMU context switching.
-
-Note that AFAIK neither the kernel nor user-space used any TSX extensions, 
-so this is the Haswell PMU in pure compatibility mode.
-
-My (wild) guess is that unless all of us missed some subtle race in the 
-PEBS code it's an (unknown?) erratum: the hardware got confused by the 
-high frequency PMU switches, in this particular case where we got a new 
-PMI right after a very short interval was programmed:
-
->>  Call Trace:
->>   <NMI>  [<ffffffff815fc637>] dump_stack+0x45/0x56
->>   [<ffffffff81051e78>] warn_slowpath_common+0x78/0xa0
->>   [<ffffffff81051ee7>] warn_slowpath_fmt+0x47/0x50
->>   [<ffffffff8101b051>] intel_pmu_drain_pebs_hsw+0x91/0xa0
->>   [<ffffffff8101c5d0>] intel_pmu_handle_irq+0x210/0x390
->>   [<ffffffff81604deb>] perf_event_nmi_handler+0x2b/0x50
->>   [<ffffffff81604670>] nmi_handle.isra.3+0x80/0x180
->>   [<ffffffff81604840>] do_nmi+0xd0/0x310
->>   [<ffffffff81603d37>] end_repeat_nmi+0x1e/0x2e
->>   <<EOE>>  [<ffffffff810167df>] perf_events_lapic_init+0x2f/0x40
->>   [<ffffffff81016a50>] x86_pmu_enable+0x260/0x310
->>   [<ffffffff81111d87>] perf_pmu_enable+0x27/0x30
->>   [<ffffffff81112140>] perf_event_context_sched_in+0x80/0xc0
->>   [<ffffffff811127eb>] __perf_event_task_sched_in+0x16b/0x180
->>   [<ffffffff8107c300>] finish_task_switch+0x70/0xa0
->>   [<ffffffff81600f48>] __schedule+0x368/0x7c0
->>   [<ffffffff816013c4>] schedule+0x24/0x70
-
-Note that due to per task profiling the default (long, about 1 KHz) 
-interval can get chopped up and can result in a very small period value 
-being reprogrammed at PMU-sched-in time.
-
-That kind of high-freq back-to-back activity could, in theory, confuse the 
-PEBS hardware. Or the kernel :-)
-
-Thanks,
-
-	Ingo
