@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751420Ab3IJKO1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 06:14:27 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:46571 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870Ab3IJKOZ (ORCPT
+	id S1751421Ab3IJKZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 06:25:59 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:33451 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751206Ab3IJKZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 06:14:25 -0400
-Date: Tue, 10 Sep 2013 11:13:59 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Wei Ni <wni@nvidia.com>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20130910101359.GX29403@sirena.org.uk>
-References: <20130909111242.GW29403@sirena.org.uk>
- <522DB253.6000707@roeck-us.net>
- <20130909135022.GZ29403@sirena.org.uk>
- <20130909155043.GA18975@roeck-us.net>
- <20130909160237.GR29403@sirena.org.uk>
- <20130909161735.GC18975@roeck-us.net>
- <20130909203910.GV29403@sirena.org.uk>
- <522E9A85.9050803@nvidia.com>
- <522EA51C.90706@roeck-us.net>
- <522EB0AF.9030708@nvidia.com>
+	Tue, 10 Sep 2013 06:25:57 -0400
+Date: Tue, 10 Sep 2013 12:25:54 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 1/3] perf callchain: Convert children list to rbtree
+Message-ID: <20130910102554.GA5087@gmail.com>
+References: <1378801458-2515-1-git-send-email-namhyung@kernel.org>
+ <1378801458-2515-2-git-send-email-namhyung@kernel.org>
+ <20130910095216.GB18115@krava.redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FXy67hQeDqxxjNHK"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <522EB0AF.9030708@nvidia.com>
-X-Cookie: Your present plans will be successful.
+In-Reply-To: <20130910095216.GB18115@krava.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 1/2] hwmon: (lm90) Add power control
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---FXy67hQeDqxxjNHK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+* Jiri Olsa <jolsa@redhat.com> wrote:
 
-On Tue, Sep 10, 2013 at 01:39:59PM +0800, Wei Ni wrote:
+> On Tue, Sep 10, 2013 at 05:24:16PM +0900, Namhyung Kim wrote:
+> > From: Namhyung Kim <namhyung.kim@lge.com>
+> > 
+> > Current collapse stage has a scalability problem which can be
+> > reproduced easily with parallel kernel build.  This is because it
+> > needs to traverse every children of callchain linearly during the
+> > collapse/merge stage.  Convert it to rbtree reduced the overhead
+> > significantly.
+> > 
+> > On my 400MB perf.data file which recorded with make -j32 kernel build:
+> 
+> 
+> nice!!!
 
-> I think the device need time to wait stable after power on, but it's
-> difficult to get an exact delay value, and this delay may also relate
-> with platform design, so how about to add a optional property in the DT
-> node, such as "power-on-delay-ms" ?
+Nice indeed!
 
-This is something you should *really* be able to get from the datasheet
-for the part - this sort of stuff has to be documented for hardware to
-be used robustly.  It seems entirely possible that you are working
-around an issue with the regulator driver you are using not correctly
-providing its ramp time here.
+> tried on 2.6 GB data file from kernel make -j64 and got report speed up 
+> from 'never' to 2m52.756s ;-)
 
---FXy67hQeDqxxjNHK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+It's still rather long though, unacceptable for everyday usage :-/
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
+Frederic thought that we could reduce minimize collapsing to begin with.
 
-iQIcBAEBAgAGBQJSLvDkAAoJELSic+t+oim9MSUP/2DkBcUsNRe50iXk7odxm3Cx
-Gy5Hmcjm7Krm1uoQhwuaYEUegbqb0KFNGbIHdy9xKtg5QYRn4kWLGwabrFU/JMe1
-lRYDcV69Tj4ys7HyHQG6ek4aypoAJ/IR8fAPeUGvtOiUIL0/6hcurswwO4YUfPWP
-VHhhiDAl7lt5eDjLaEJ+ZxjCpZhc5QgvyHqM/maDh8IaeZjPJT8ftnuJP1kCstIV
-Rxb5/hdfrdkKgkKRKEqxeWYNsVW+wU8PvJsnZgFdp27Dnh9pv17EqNEUTSFN3SsO
-LyjDyUw2YpcWjjL2kjlGNKaUz/5Zg8lQXDLmOeE1oxQpUTOTuLstnSpiZ5nMJUBg
-gTq05caZ2zRBRZRKZ9eQ7cZJ9/uvs4tsHV+SJqJeCSEuluzw9IXmlT4USBOaONFc
-A7OvGJi6UtefSoGSWpE/jW7zkdmEh3Ir+eGUHchmeJ8PKgURJbf00GokAd4Vol9J
-tTjOeqrMBd8VayCD5fagOWPWXWUAjArP4+jG0oOPqJ1OfBG143d5+VWfZ2DFjm2P
-DvgCXfih8FCwgRKCorbWdXf62V9CRv+TebThQp9HNOqF2iY2xM8a1vAHjJWO9xUv
-iabOQGodVDZYeve8/gOnL0tDgR7jCKmJdb2X3IC8wKU2KuIRPvVV4YqMgU10i8/0
-SGtaN6HNhDpTwHzRQNov
-=1txa
------END PGP SIGNATURE-----
+Frederic, could you outline that in more detail please?
 
---FXy67hQeDqxxjNHK--
+Thanks,
+
+	Ingo
