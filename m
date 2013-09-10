@@ -1,54 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855Ab3IJXX1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 19:23:27 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:62902 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544Ab3IJXX0 (ORCPT
+	id S1752045Ab3IJX2s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 19:28:48 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:60963 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751535Ab3IJX2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 19:23:26 -0400
+	Tue, 10 Sep 2013 19:28:47 -0400
+Date: Wed, 11 Sep 2013 02:27:25 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Jerome Marchand <jmarchan@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        driverdev-devel@linuxdriverproject.org,
+        Minchan Kim <minchan@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] staging: zram: minimize `slot_free_lock' usage (v2)
+Message-ID: <20130910232725.GC2450@swordfish>
+References: <20130906151255.GE2238@swordfish.minsk.epam.com>
+ <20130909123329.GZ19256@mwanda>
+ <20130909124942.GA2221@swordfish.minsk.epam.com>
+ <20130909132124.GY6329@mwanda>
+ <522DD125.1030607@redhat.com>
+ <522DF2DF.5060407@redhat.com>
+ <20130910143416.GC2270@swordfish>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFzRCNteHoSBRL9cVAHtZwA419G+fPBAaofYextsHpDLYw@mail.gmail.com>
-References: <alpine.DEB.2.00.1309051139240.25450@skynet.skynet.ie>
-	<CA+55aFwyKmVWkrV3=XiuruZzeTicpfW-JrwjWzpq9eP2yGPeJA@mail.gmail.com>
-	<CA+qSnqh1X6_xHD4GX1P=acEUg9+0=3dVSZHm-NYXvCvupFB8_g@mail.gmail.com>
-	<CA+55aFzRCNteHoSBRL9cVAHtZwA419G+fPBAaofYextsHpDLYw@mail.gmail.com>
-Date: Wed, 11 Sep 2013 09:23:24 +1000
-Message-ID: <CAPM=9txf8oxpZX36AsjJ1hdwQaf3SUjrLskiw29LuBaw=nN-hw@mail.gmail.com>
-Subject: Re: [git pull] drm tree for 3.12-rc1
-From: Dave Airlie <airlied@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Sean V Kelley <sean.v.kelley@intel.com>, Dave Airlie <airlied@redhat.com>,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130910143416.GC2270@swordfish>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 1:49 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> [ Dave - your linux.ie email generates bounces for me, trying redhat instead ]
+On (09/10/13 17:34), Sergey Senozhatsky wrote:
+[..]
+> > 
+> > Now I think we can drop the call to handle_pending_slot_free() in
+> > zram_bvec_rw() altogether. As long as the write lock is held when
+> > handle_pending_slot_free() is called, there is no race. It's no different
+> > from any write request and the current code handles R/W concurrency
+> > already.
+> 
+> Yes, I think that can work. 
+> 
+> To summarize, there should be 3 patches:
+> 1) handle_pending_slot_free() in zram_bvec_rw() (as suggested by Jerome Marchand)
+> 2) handle_pending_slot_free() race with reset (found by Dan Carpenter)
+> 3) drop init_done and use init_done()
+> 
+> I'll prepare a patches later today.
 
-Uggh no worries, I read my list mail from gmail mostly anyways, so if
-its on a list I'll probably see it.
+I've sent two patches:
+ staging: zram: fix handle_pending_slot_free() and zram_reset_device() race
+ staging: zram: remove init_done from zram struct (v3)
 
->> Can you give a little more detail about video not working?  Video
->> accel should work fine with the current versions of libva/intel-driver
->> available in Fedora 19 - assuming that's what you're using.
->
-> It is indeed F19.
->
-> Easy test: go to youtube, and watch things that are in 1080p HD. They
-> play fine in a window (using about 70% CPU), but full-screened to
-> 2560x1440 they play at about one or two frames per second.
+Cc'd driverdev-devel@linuxdriverproject.org as suggested by Dan.
 
-It doesn't sound like you are using hw accelerated video at all and its just
-sw renderered flash,
+please discard any previous patches and sorry for the noise.
 
-In which case it could be a CPU issue, is the cpu freq scaling working
-correctly?
+Thanks,
+	-ss
 
-Dave.
+> 
+> > Jerome
+> > 
+> > > 
+> > >>
+> > >> 1) You haven't given us any performance numbers so it's not clear if the
+> > >>    locking is even a problem.
+> > >>
+> > >> 2) The v2 patch introduces an obvious deadlock in zram_slot_free()
+> > >>    because now we take the rw_lock twice.  Fix your testing to catch
+> > >>    this kind of bug next time.
+> > >>
+> > >> 3) Explain why it is safe to test zram->slot_free_rq when we are not
+> > >>    holding the lock.  I think it is unsafe.  I don't want to even think
+> > >>    about it without the numbers.
+> > >>
+> > >> regards,
+> > >> dan carpenter
+> > >>
+> > > 
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > Please read the FAQ at  http://www.tux.org/lkml/
+> > > 
+> > 
