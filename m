@@ -1,169 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751053Ab3IJJN3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 05:13:29 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:53484 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750938Ab3IJJN2 (ORCPT
+	id S1751214Ab3IJJOk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 05:14:40 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:40279 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125Ab3IJJOh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 05:13:28 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r8A9DIDQ027812, This message is accepted by code: ctloc85258
-From: <wei_wang@realsil.com.cn>
-To: <sameo@linux.intel.com>
-CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
-        <micky_ching@realsil.com.cn>, Wei WANG <wei_wang@realsil.com.cn>
-Subject: [PATCH v3] mfd: rtsx: Modify rts5249_optimize_phy
-Date: Tue, 10 Sep 2013 17:13:17 +0800
-Message-ID: <1378804397-28640-1-git-send-email-wei_wang@realsil.com.cn>
+	Tue, 10 Sep 2013 05:14:37 -0400
+X-AuditID: cbfee61a-b7f7a6d00000235f-90-522ee2fb24d7
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: linux-kernel@vger.kernel.org, linaro-mm-sig@lists.linaro.org,
+        devicetree@vger.kernel.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Rob Herring <robherring2@gmail.com>, Olof Johansson <olof@lixom.net>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Kumar Gala <galak@codeaurora.org>,
+        Nishanth Peethambaran <nishanth.p@gmail.com>,
+        Marc <marc.ceeeee@gmail.com>, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] drivers: of: fix build break if asm/dma-contiguous.h is missing
+Date: Tue, 10 Sep 2013 11:13:20 +0200
+Message-id: <1378804400-31716-1-git-send-email-m.szyprowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.29.41.8]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCLMWRmVeSWpSXmKPExsVy+t9jQd3fj/SCDJ5NNbb4O+kYu8X8I+dY
+	LfrfLGS1eHVmI5vFm94OFouzTW/YLbZ3zmC3+HLlIZPF5V1z2CyeLDzDZLH2yF12iw0vDzJZ
+	LL1+kcliwfEWVos/0+UsTl3/zGYxYfpaFovv376xWfzdvonF4vCbdqCZB9tYLNbPeM1isWrX
+	H0YHcY8189Ywevz+NYnR4/XkCYwel/t6mTx2zrrL7nH732Nmjysnmlg91v15xeTR/9fAY+f3
+	BnaPvi2rGD1+vtTx+LxJzmPj3NAAvigum5TUnMyy1CJ9uwSujF+3VrMW3GCtWLTsBmMD4z2W
+	LkZODgkBE4m/D1eyQthiEhfurWfrYuTiEBKYzijRs3kFO4TTziTxvGcTWAebgKFE19suNhBb
+	RCBO4trBHmaQImaBSWwSX3csZAdJCAsESHx6+hkowcHBIqAqcW5qKkiYV8BDYv7144wgYQkB
+	BYk5k2wmMHIvYGRYxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iREcF8+kdjCubLA4xCjAwajE
+	w6vxTjdIiDWxrLgy9xCjBAezkgiv+HS9ICHelMTKqtSi/Pii0pzU4kOM0hwsSuK8B1qtA4UE
+	0hNLUrNTUwtSi2CyTBycUg2MC9eyzvj2+N6hy484AmSFpYS0i+99Ffku2XerTqpEpfmy5K+Q
+	+HcHuVas2aO/N6Qr5K1e/71O+dnptUn/+hv4czYuLcy6eDbpV+PP2QZTbm+7sLGeh38Ry5dl
+	kiLx0nHFj2wvuc++md3KvK5GvuqAkUbTsdjmUlfjR6fNORxf7nqp68E/3cdZiaU4I9FQi7mo
+	OBEAmrkY+IcCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei WANG <wei_wang@realsil.com.cn>
+It is not needed to include asm/dma-contiguous.h header to compile
+reserved memory initialization code, so remove it to avoid build break
+on architectures without CMA support.
 
-In some platforms, specially Thinkpad series, rts5249 won't be
-initialized properly. So we need adjust some phy parameters to
-improve the compatibility issue.
-
-Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 ---
- drivers/mfd/rts5249.c        |   48 ++++++++++++++++++++++++++++++++++++--
- include/linux/mfd/rtsx_pci.h |   53 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 99 insertions(+), 2 deletions(-)
+ drivers/of/of_reserved_mem.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
-index 3b835f5..573de7b 100644
---- a/drivers/mfd/rts5249.c
-+++ b/drivers/mfd/rts5249.c
-@@ -130,13 +130,57 @@ static int rts5249_optimize_phy(struct rtsx_pcr *pcr)
- {
- 	int err;
+diff --git a/drivers/of/of_reserved_mem.c b/drivers/of/of_reserved_mem.c
+index a754b84..0fe40c7 100644
+--- a/drivers/of/of_reserved_mem.c
++++ b/drivers/of/of_reserved_mem.c
+@@ -11,8 +11,6 @@
+  * License or (at your optional) any later version of the license.
+  */
  
--	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV, 0xFE46);
-+	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV,
-+			PHY_REG_REV_RESV | PHY_REG_REV_RXIDLE_LATCHED |
-+			PHY_REG_REV_P1_EN | PHY_REG_REV_RXIDLE_EN |
-+			PHY_REG_REV_RX_PWST | PHY_REG_REV_CLKREQ_DLY_TIMER_1_0 |
-+			PHY_REG_REV_STOP_CLKRD | PHY_REG_REV_STOP_CLKWR);
- 	if (err < 0)
- 		return err;
- 
- 	msleep(1);
- 
--	return rtsx_pci_write_phy_register(pcr, PHY_BPCR, 0x05C0);
-+	err = rtsx_pci_write_phy_register(pcr, PHY_BPCR,
-+			PHY_BPCR_IBRXSEL | PHY_BPCR_IBTXSEL |
-+			PHY_BPCR_IB_FILTER | PHY_BPCR_CMIRROR_EN);
-+	if (err < 0)
-+		return err;
-+	err = rtsx_pci_write_phy_register(pcr, PHY_PCR,
-+			PHY_PCR_FORCE_CODE | PHY_PCR_OOBS_CALI_50 |
-+			PHY_PCR_OOBS_VCM_08 | PHY_PCR_OOBS_SEN_90 |
-+			PHY_PCR_RSSI_EN);
-+	if (err < 0)
-+		return err;
-+	err = rtsx_pci_write_phy_register(pcr, PHY_RCR2,
-+			PHY_RCR2_EMPHASE_EN | PHY_RCR2_NADJR |
-+			PHY_RCR2_CDR_CP_10 | PHY_RCR2_CDR_SR_2 |
-+			PHY_RCR2_FREQSEL_12 | PHY_RCR2_CPADJEN |
-+			PHY_RCR2_CDR_SC_8 | PHY_RCR2_CALIB_LATE);
-+	if (err < 0)
-+		return err;
-+	err = rtsx_pci_write_phy_register(pcr, PHY_FLD4,
-+			PHY_FLD4_FLDEN_SEL | PHY_FLD4_REQ_REF |
-+			PHY_FLD4_RXAMP_OFF | PHY_FLD4_REQ_ADDA |
-+			PHY_FLD4_BER_COUNT | PHY_FLD4_BER_TIMER |
-+			PHY_FLD4_BER_CHK_EN);
-+	if (err < 0)
-+		return err;
-+	err = rtsx_pci_write_phy_register(pcr, PHY_RDR, PHY_RDR_RXDSEL_1_9);
-+	if (err < 0)
-+		return err;
-+	err = rtsx_pci_write_phy_register(pcr, PHY_RCR1,
-+			PHY_RCR1_ADP_TIME | PHY_RCR1_VCO_COARSE);
-+	if (err < 0)
-+		return err;
-+	err = rtsx_pci_write_phy_register(pcr, PHY_FLD3,
-+			PHY_FLD3_TIMER_4 | PHY_FLD3_TIMER_6 |
-+			PHY_FLD3_RXDELINK);
-+	if (err < 0)
-+		return err;
-+	return rtsx_pci_write_phy_register(pcr, PHY_TUNE,
-+			PHY_TUNE_TUNEREF_1_0 | PHY_TUNE_VBGSEL_1252 |
-+			PHY_TUNE_SDBUS_33 | PHY_TUNE_TUNED18 |
-+			PHY_TUNE_TUNED12);
- }
- 
- static int rts5249_turn_on_led(struct rtsx_pcr *pcr)
-diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
-index d1382df..0ce7721 100644
---- a/include/linux/mfd/rtsx_pci.h
-+++ b/include/linux/mfd/rtsx_pci.h
-@@ -756,6 +756,59 @@
- #define PCR_SETTING_REG2		0x814
- #define PCR_SETTING_REG3		0x747
- 
-+/* Phy bits */
-+#define PHY_PCR_FORCE_CODE			0xB000
-+#define PHY_PCR_OOBS_CALI_50			0x0800
-+#define PHY_PCR_OOBS_VCM_08			0x0200
-+#define PHY_PCR_OOBS_SEN_90			0x0040
-+#define PHY_PCR_RSSI_EN				0x0002
-+
-+#define PHY_RCR1_ADP_TIME			0x0100
-+#define PHY_RCR1_VCO_COARSE			0x001F
-+
-+#define PHY_RCR2_EMPHASE_EN			0x8000
-+#define PHY_RCR2_NADJR				0x4000
-+#define PHY_RCR2_CDR_CP_10			0x0400
-+#define PHY_RCR2_CDR_SR_2			0x0100
-+#define PHY_RCR2_FREQSEL_12			0x0040
-+#define PHY_RCR2_CPADJEN			0x0020
-+#define PHY_RCR2_CDR_SC_8			0x0008
-+#define PHY_RCR2_CALIB_LATE			0x0002
-+
-+#define PHY_RDR_RXDSEL_1_9			0x4000
-+
-+#define PHY_TUNE_TUNEREF_1_0			0x4000
-+#define PHY_TUNE_VBGSEL_1252			0x0C00
-+#define PHY_TUNE_SDBUS_33			0x0200
-+#define PHY_TUNE_TUNED18			0x01C0
-+#define PHY_TUNE_TUNED12			0X0020
-+
-+#define PHY_BPCR_IBRXSEL			0x0400
-+#define PHY_BPCR_IBTXSEL			0x0100
-+#define PHY_BPCR_IB_FILTER			0x0080
-+#define PHY_BPCR_CMIRROR_EN			0x0040
-+
-+#define PHY_REG_REV_RESV			0xE000
-+#define PHY_REG_REV_RXIDLE_LATCHED		0x1000
-+#define PHY_REG_REV_P1_EN			0x0800
-+#define PHY_REG_REV_RXIDLE_EN			0x0400
-+#define PHY_REG_REV_CLKREQ_DLY_TIMER_1_0	0x0040
-+#define PHY_REG_REV_STOP_CLKRD			0x0020
-+#define PHY_REG_REV_RX_PWST			0x0008
-+#define PHY_REG_REV_STOP_CLKWR			0x0004
-+
-+#define PHY_FLD3_TIMER_4			0x7800
-+#define PHY_FLD3_TIMER_6			0x00E0
-+#define PHY_FLD3_RXDELINK			0x0004
-+
-+#define PHY_FLD4_FLDEN_SEL			0x4000
-+#define PHY_FLD4_REQ_REF			0x2000
-+#define PHY_FLD4_RXAMP_OFF			0x1000
-+#define PHY_FLD4_REQ_ADDA			0x0800
-+#define PHY_FLD4_BER_COUNT			0x00E0
-+#define PHY_FLD4_BER_TIMER			0x000A
-+#define PHY_FLD4_BER_CHK_EN			0x0001
-+
- #define rtsx_pci_init_cmd(pcr)		((pcr)->ci = 0)
- 
- struct rtsx_pcr;
+-#include <asm/dma-contiguous.h>
+-
+ #include <linux/memblock.h>
+ #include <linux/err.h>
+ #include <linux/of.h>
 -- 
 1.7.9.5
 
