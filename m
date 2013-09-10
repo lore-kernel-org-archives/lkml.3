@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752967Ab3IJWHc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 18:07:32 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44988 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751869Ab3IJWHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 18:07:30 -0400
-Message-ID: <522F97DD.1060002@zytor.com>
-Date: Tue, 10 Sep 2013 15:06:21 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1752955Ab3IJWIQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 18:08:16 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:55526 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101Ab3IJWIP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 18:08:15 -0400
+Message-ID: <522F984C.2070909@linaro.org>
+Date: Tue, 10 Sep 2013 15:08:12 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>, Mike Galbraith <bitbucket@online.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
+To: "Theodore Ts'o" <tytso@mit.edu>, Stephan Mueller <smueller@chronox.de>,
+        LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH 0/7] preempt_count rework -v2
-References: <20130910130811.507933095@infradead.org> <20130910135152.GD7537@gmail.com> <20130910135636.GA8268@gmail.com> <CA+55aFwmEQeF+PtM7cuaQ8OkuTS=R4JJ61Wwfv8u-Svo-V3KwQ@mail.gmail.com> <20130910164519.GL31370@twins.programming.kicks-ass.net> <CA+55aFz7WtcdkwKEGoqCzmC9HsY0LPK-oVK_oATYhRnbGq=2GA@mail.gmail.com> <20130910212509.GA18147@laptop.programming.kicks-ass.net> <CA+55aFxsEYQPXnoxNXAeSPEkk3uT8iq-_KJVe2M2qZZbtL=cbA@mail.gmail.com> <522F9464.9070806@zytor.com> <CA+55aFwabYsi=FvrAX+hqbpw5XUXqsokHn_Cyypv-JXmca6Q6Q@mail.gmail.com>
-In-Reply-To: <CA+55aFwabYsi=FvrAX+hqbpw5XUXqsokHn_Cyypv-JXmca6Q6Q@mail.gmail.com>
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] /dev/random: Insufficient of entropy on many architectures
+References: <10005394.BRCyBMYWy3@tauon> <CANcMJZAHuXNQ4eUx+qpVnfJTg625HkJU_9pgBP24ykkmBww3yw@mail.gmail.com> <20130910203853.GG29237@thunk.org> <522F851D.1040101@linaro.org> <20130910211009.GI29237@thunk.org>
+In-Reply-To: <20130910211009.GI29237@thunk.org>
 X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2013 03:02 PM, Linus Torvalds wrote:
-> On Tue, Sep 10, 2013 at 2:51 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 09/10/2013 02:43 PM, Linus Torvalds wrote:
->>
->> Actually, the right thing here really is "er" (which I think you meant,
->> but just to make it clear.)
-> 
-> Yes, I was just answering the i-vs-e confusion.
-> 
->> "e" doesn't work on versions of gcc older than the first x86-64 release,
->> but we don't care about that anymore.
-> 
-> Indeed.
-> 
->> A final good question is if we should encapsulate the add/inc and
->> sub/dec into a single function; one could easily do somethin glike:
-> 
-> Yes. However, I would do that at a higher level than the one that
-> builds the actual functions.
-> 
-> That said, there's a few cases where you might want to specify
-> add-vs-sub explicitly, but they are rather odd, namely the fact that
-> "-128" fits in a byte, but "128" does not.
-> 
-> So it can be better to add 128 by doing a "subl $-128" than by doing
-> an "add $128".
-> 
-> But we probably don't have any situation where we care about that
-> special value of "128". I've seen the trick, though.
-> 
+On 09/10/2013 02:10 PM, Theodore Ts'o wrote:
+> On Tue, Sep 10, 2013 at 01:46:21PM -0700, John Stultz wrote:
+>> We do read the clocksource fairly frequently though, so rather then
+>> re-reading on each interrupt, could you instead re-use the points at
+>> interrupt time where we already read the clocksource, like in
+>> hrtimer_interrupt()?
+> How often is that time updated?  Is there some documentation whree I
+> can understand how this works?  I confess to be pretty ignorant about
+> the details of how our time keeping systems work inside Linux.
 
-Yes, and if __builtin_constant_p() we could even do it explicitly.
-Unfortunately I don't think gcc allows alternatives in asm() statements,
-unlike in its own pattern tables.
+So its not how often a time is updated, but re-using where we already
+read the time. And yea, there's no real documentation as things are
+always in transition: ie For hrtimer_interrupt, it depends on config and
+hardware, but its every HZ on every cpu, except except on HRT systems,
+where it can be more frequent depending on how far away the next hrtimer
+is set to expire, and with the idle NOHZ where it may be longer the HZ
+on idle cpus. NOHZ_FULL further complicates this to be even more rarely,
+but I've not followed that work as closely, so Fredric could probably be
+of more help here.
 
-	-hpa
+One other area you might look at is using the delta between when the
+next hrtimer was scheduled for and when we actually expired it? That's
+something we could cheaply calculate on every hrtimer expiration. Though
+I probably should be hesitant with my suggestions, as I'm not well
+versed in RNG theory.
 
+> Same question for sched_clock(); what are its guarantees, both in
+> terms of granularity and cost of overhead.  Is there any comprehensive
+> documentation that I should be reading?
+
+No. sched_clock has changed as well over the last few years. 
+sched_clock should be more performant then any of the timekeeping calls,
+since it has lower correctness requirements, but it may just be backed
+by jiffies in some cases.
+
+
+thanks
+-john
