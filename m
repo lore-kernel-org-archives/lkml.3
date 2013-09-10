@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965Ab3IJHbY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 03:31:24 -0400
-Received: from ip-196-116.sn1.eutelia.it ([62.94.196.116]:14031 "EHLO
-	goldrake.enneenne.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754316Ab3IJHbW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 03:31:22 -0400
-Date: Tue, 10 Sep 2013 09:31:05 +0200
-From: Rodolfo Giometti <giometti@enneenne.com>
-To: Paul Chavent <Paul.Chavent@onera.fr>
-Cc: linux-usb@vger.kernel.org, gregkh@linuxfoundation.org, jhovold@gmail.com,
-        fschaefer.oss@googlemail.com, jslaby@suse.cz, max@suse.de,
-        linux-kernel@vger.kernel.org
-Message-ID: <20130910073105.GB5030@enneenne.com>
-Mail-Followup-To: Paul Chavent <Paul.Chavent@onera.fr>,
-	linux-usb@vger.kernel.org, gregkh@linuxfoundation.org,
-	jhovold@gmail.com, fschaefer.oss@googlemail.com, jslaby@suse.cz,
-	max@suse.de, linux-kernel@vger.kernel.org
-References: <1378742480-2146-1-git-send-email-paul.chavent@onera.fr>
+	id S1754588Ab3IJHpg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 03:45:36 -0400
+Received: from mga09.intel.com ([134.134.136.24]:54977 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753719Ab3IJHpe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 03:45:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,876,1371106800"; 
+   d="scan'208";a="401057248"
+Date: Tue, 10 Sep 2013 10:51:00 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-i2c@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lv Zheng <lv.zheng@intel.com>, Aaron Lu <aaron.lu@intel.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH RESEND 1/2] i2c: prepare runtime PM support for I2C
+ client devices
+Message-ID: <20130910075100.GK7393@intel.com>
+References: <1378733679-19500-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1378733679-19500-2-git-send-email-mika.westerberg@linux.intel.com>
+ <20130909154028.GP29403@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1378742480-2146-1-git-send-email-paul.chavent@onera.fr>
-Organization: GNU/Linux Device Drivers, Embedded Systems and Courses
-X-PGP-Key: gpg --keyserver keyserver.linux.it --recv-keys D25A5633
+In-Reply-To: <20130909154028.GP29403@sirena.org.uk>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 192.168.32.10
-X-SA-Exim-Mail-From: giometti@enneenne.com
-Subject: Re: [PATCH 0/5] Enable PPS reporting for USB serial devices
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on goldrake.enneenne.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 06:01:15PM +0200, Paul Chavent wrote:
-> Hi.
+On Mon, Sep 09, 2013 at 04:40:28PM +0100, Mark Brown wrote:
+> On Mon, Sep 09, 2013 at 04:34:38PM +0300, Mika Westerberg wrote:
 > 
-> This series enable the PPS reporting for USB serial devices.
+> > +	/*
+> > +	 * Enable runtime PM for the client device. If the client wants to
+> > +	 * participate on runtime PM it should call pm_runtime_put() in its
+> > +	 * probe() callback.
+> > +	 *
+> > +	 * User still needs to allow the PM runtime before it can actually
+> > +	 * happen.
+> > +	 */
+> > +	pm_runtime_forbid(&client->dev);
+> > +	pm_runtime_get_noresume(&client->dev);
+> > +	pm_runtime_set_active(&client->dev);
+> > +	pm_runtime_enable(&client->dev);
+> 
+> How is this going to interact with client devices which are already
+> enabling runtime PM for themselves, and what are the advantages of doing
+> this over having the client device enable runtime PM for itself (given
+> that the client still needs an explicit put() adding)?
 
-I have nothing against with this solution but consider that reporting
-a PPS signal through USB bus may add unknown delays that may vanish
-clock stability... as far as I know you should not use USB serial port
-with PPS. Have you some statistics about clock stability in a real
-implementation?
+My understanding is that you can call pm_runtime_enable() several times
+(provided that pm_runtime_disable() is called as many times). So that
+should have no effect on the current drivers that already take advantage of
+runtime PM.
 
-Ciao,
+There is one difference though -- runtime PM is now blocked by default and
+it needs to be unblocked from the userspace per each device.
 
-Rodolfo
+For the advantages compared to each driver handling it completely
+themselves:
 
--- 
+	- Few lines less as you only need to call _put().
+	- It follows what is already been done for other buses, like PCI
+	  and AMBA .
+	- The I2C core makes sure that the device is available (from bus
+	  point of view) when the driver ->probe() is called.
 
-GNU/Linux Solutions                  e-mail: giometti@enneenne.com
-Linux Device Driver                          giometti@linux.it
-Embedded Systems                     phone:  +39 349 2432127
-UNIX programming                     skype:  rodolfo.giometti
-Freelance ICT Italia - Consulente ICT Italia - www.consulenti-ict.it
+> Given that it's relatively common for devices to have both I2C and SPI
+> control it seems like it'd be sensible to keep the policy common between
+> the two buses to simplify driver implementation.
+
+Yes and IMHO if I2C and SPI follows what has already been done for other
+buses it should make the driver writer's job easier as the usage is similar
+from one bus to another.
