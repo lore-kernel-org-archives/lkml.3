@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751389Ab3IJJcs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 05:32:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57048 "EHLO mx2.suse.de"
+	id S1753358Ab3IJJm4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 05:42:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57064 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751327Ab3IJJcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 05:32:45 -0400
+	id S1751369Ab3IJJcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 05:32:48 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 11/50] sched: numa: Continue PTE scanning even if migrate rate limited
-Date: Tue, 10 Sep 2013 10:31:51 +0100
-Message-Id: <1378805550-29949-12-git-send-email-mgorman@suse.de>
+Subject: [PATCH 13/50] sched: numa: Initialise numa_next_scan properly
+Date: Tue, 10 Sep 2013 10:31:53 +0100
+Message-Id: <1378805550-29949-14-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1378805550-29949-1-git-send-email-mgorman@suse.de>
 References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
@@ -22,40 +22,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
+Scan delay logic and resets are currently initialised to start scanning
+immediately instead of delaying properly. Initialise them properly at
+fork time and catch when a new mm has been allocated.
 
-Avoiding marking PTEs pte_numa because a particular NUMA node is migrate rate
-limited sees like a bad idea. Even if this node can't migrate anymore other
-nodes might and we want up-to-date information to do balance decisions.
-We already rate limit the actual migrations, this should leave enough
-bandwidth to allow the non-migrating scanning. I think its important we
-keep up-to-date information if we're going to do placement based on it.
-
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- kernel/sched/fair.c | 8 --------
- 1 file changed, 8 deletions(-)
+ kernel/sched/core.c | 4 ++--
+ kernel/sched/fair.c | 7 +++++++
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index f307c2c..9d7a33a 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1634,8 +1634,8 @@ static void __sched_fork(struct task_struct *p)
+ 
+ #ifdef CONFIG_NUMA_BALANCING
+ 	if (p->mm && atomic_read(&p->mm->mm_users) == 1) {
+-		p->mm->numa_next_scan = jiffies;
+-		p->mm->numa_next_reset = jiffies;
++		p->mm->numa_next_scan = jiffies + msecs_to_jiffies(sysctl_numa_balancing_scan_delay);
++		p->mm->numa_next_reset = jiffies + msecs_to_jiffies(sysctl_numa_balancing_scan_period_reset);
+ 		p->mm->numa_scan_seq = 0;
+ 	}
+ 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index c93a56e..b5aa546 100644
+index 2e4c8d0..2fb978b 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -951,14 +951,6 @@ void task_numa_work(struct callback_head *work)
- 	 */
- 	p->node_stamp += 2 * TICK_NSEC;
+@@ -900,6 +900,13 @@ void task_numa_work(struct callback_head *work)
+ 	if (p->flags & PF_EXITING)
+ 		return;
  
--	/*
--	 * Do not set pte_numa if the current running node is rate-limited.
--	 * This loses statistics on the fault but if we are unwilling to
--	 * migrate to this node, it is less likely we can do useful work
--	 */
--	if (migrate_ratelimited(numa_node_id()))
--		return;
--
- 	start = mm->numa_scan_offset;
- 	pages = sysctl_numa_balancing_scan_size;
- 	pages <<= 20 - PAGE_SHIFT; /* MB in pages */
++	if (!mm->numa_next_reset || !mm->numa_next_scan) {
++		mm->numa_next_scan = now +
++			msecs_to_jiffies(sysctl_numa_balancing_scan_delay);
++		mm->numa_next_reset = now +
++			msecs_to_jiffies(sysctl_numa_balancing_scan_period_reset);
++	}
++
+ 	/*
+ 	 * Reset the scan period if enough time has gone by. Objective is that
+ 	 * scanning will be reduced if pages are properly placed. As tasks
 -- 
 1.8.1.4
 
