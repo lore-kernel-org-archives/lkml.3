@@ -1,71 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173Ab3IJFnw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 01:43:52 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52097 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753454Ab3IJFnu (ORCPT
+	id S1754303Ab3IJFpd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 01:45:33 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:54494 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753216Ab3IJFpb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 01:43:50 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <522EB171.6000909@jp.fujitsu.com>
-Date: Tue, 10 Sep 2013 14:43:13 +0900
-From: Takao Indoh <indou.takao@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: dwmw2@infradead.org
-CC: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
-        joro@8bytes.org, kexec@lists.infradead.org, alex.williamson@redhat.com
-Subject: Re: [PATCH] intel-iommu: Quiesce devices before disabling IOMMU
-References: <1377069354-5056-1-git-send-email-indou.takao@jp.fujitsu.com> <1378717669.2627.239.camel@shinybook.infradead.org>
-In-Reply-To: <1378717669.2627.239.camel@shinybook.infradead.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Tue, 10 Sep 2013 01:45:31 -0400
+Content-Type: text/plain; charset=US-ASCII
+Mime-Version: 1.0 (Mac OS X Mail 6.5 \(1508\))
+Subject: Re: [PATCH] ARM: OMAP2+: am335x-bone*: add DT for BeagleBone Black
+From: Koen Kooi <koen@dominion.thruhere.net>
+In-Reply-To: <522E5CF2.3080108@ti.com>
+Date: Tue, 10 Sep 2013 07:45:27 +0200
+Cc: Kevin Hilman <khilman@linaro.org>, <bcousson@baylibre.com>,
+        <linux-omap@vger.kernel.org>, <tony@atomide.com>,
+        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ijc+devicetree@hellion.org.uk>, <linux@arm.linux.org.uk>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <olof@lixom.net>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <36F35544-5E8D-4595-8B0C-2020130AE804@dominion.thruhere.net>
+References: <1378736961-21005-1-git-send-email-koen@dominion.thruhere.net> <87zjrm81dl.fsf@linaro.org> <BBAC0939-A4F9-4FEA-B137-0307D8787DC3@dominion.thruhere.net> <522E1325.8050906@ti.com> <41952E65-1037-4117-A1AE-8310FED59E3A@dominion.thruhere.net> <522E18C0.9010909@ti.com> <522E269B.7000802@ti.com> <73968C64-F0B0-4ED6-82B8-BD1966ED9D84@dominion.thruhere.net> <522E2B9E.8050404@ti.com> <522E5CF2.3080108@ti.com>
+To: <joelf@ti.com>
+X-Mailer: Apple Mail (2.1508)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/09/09 18:07), David Woodhouse wrote:
-> On Wed, 2013-08-21 at 16:15 +0900, Takao Indoh wrote:
->>
->> This causes problem on kdump. Devices are working in first kernel, and
->> after switching to second kernel and initializing IOMMU, many DMAR faults
->> occur and it causes problems like driver error or PCI SERR, at last
->> kdump fails. This patch fixes this problem.
+
+Op 10 sep. 2013, om 01:42 heeft Joel Fernandes <joelf@ti.com> het volgende geschreven:
+
+> On 09/09/2013 03:12 PM, Joel Fernandes wrote:
+>> On 09/09/2013 03:00 PM, Koen Kooi wrote:
+>>> 
+>>> Op 9 sep. 2013, om 21:50 heeft Joel Fernandes <joelf@ti.com> het volgende geschreven:
+>>> 
+>>>> On 09/09/2013 01:51 PM, Joel Fernandes wrote:
+>>>>> On 09/09/2013 01:43 PM, Koen Kooi wrote:
+>>>>>> 
+>>>>>> Op 9 sep. 2013, om 20:27 heeft Joel Fernandes <joelf@ti.com> het volgende geschreven:
+>>>>>> 
+>>>>>>> On 09/09/2013 10:51 AM, Koen Kooi wrote:
+>>>>>>>> 
+>>>>>>>> Op 9 sep. 2013, om 17:23 heeft Kevin Hilman <khilman@linaro.org> het volgende geschreven:
+>>>>>>>> 
+>>>>>>>>> Koen Kooi <koen@dominion.thruhere.net> writes:
+>>>>>>>>> 
+>>>>>>>>>> The BeagleBone Black is basically a regular BeagleBone with eMMC and HDMI added,
+>>>>>>>>>> so create a common dtsi both can use.
+>>>>>>>>>> 
+>>>>>>>>>> IMPORTANT: booting the existing am335x-bone.dts will blow up the HDMI transceiver
+>>>>>>>>>> after a dozen boots with an uSD card inserted because LDO will be at 3.3V instead
+>>>>>>>>>> of 1.8.
+>>>>>>>>>> 
+>>>>>>>>>> MMC support for AM335x still isn't in, so only the LDO change has been added.
+>>>>>>>>>> 
+>>>>>>>>>> Cc: stable@vger.kernel.org
+>>>>>>>>>> 
+>>>>>>>>>> Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
+>>>>>>>>>> Tested-by: Tom Rini <trini@ti.com>
+>>>>>>>>>> Tested-by: Matt Porter <matt.porter@linaro.org>
+>>>>>>>>> 
+>>>>>>>>> I guess the subject should've included v5?
+>>>>>>>> 
+>>>>>>>> Yes, I blame it on being monday :)
+>>>>>>> 
+>>>>>>> The series you're posting will require rebasing on the current MMC DT series
+>>>>>>> that is being discussed last couple of weeks on the mailing list which were
+>>>>>>> waiting until now as DMA support was missing. Now that DMA support is pulled in,
+>>>>>>> it is safe to apply those patches so I will be reposting them shortly.
+>>>>>>> 
+>>>>>>> Please hold off any changes until those patches are posted. This will avoid
+>>>>>>> unnecessary conflicts.
+>>>>>> 
+>>>>>> Or you can rebase on top of this patch since it has no dependencies *and* fixes blowing up boards. FWIW, git-rebase, git-cherry-pick and git-am -3 track the rename in my patch just fine.
+>>>>>> 
+>>>>> 
+>>>>> That's fair enough, since  Kevin Acked and Benoit is pulling it, I'm fine with
+>>>>> rebasing on top of it and we avoid any merge conflicts.
+>>>>> 
+>>>> 
+>>>> I noticed - there were still some comments from Felipe on the v4 series of this
+>>>> patch regarding RF cape and HDMI may be breaking it. How are you addressing that?
+>>> 
+>>> Capes will never go into the .dts and HDMI support needs some serious patching before it can get enabled in the DT. And the RF cape isn't being sold since it has no sw support. No need to worry about things in the 3.15/3.16 timeframe. Unless you want this LDO3 fix not to go in ASAP.
+>>> 
+>>> Joel, is there anything relevant *right now* blocking this patch going in? If not, please test it and add your Tested-by: line.
+>>> 
+>> 
+>> We don't merge things in hurry and focus is to do things the right way.. I just
+>> want to make sure that all possible comments have been addressed.
+>> 
+>> Otherwise patch looks OK and hope everyone else thinks so too. I am dealing with
+>> some merge conflicts right now with my series on top of this though, but they
+>> should be easy enough to fix up. That's delaying my testing, but otherwise as
+>> such I don't have any objection to this patch (provided the conclusion is that
+>> all comments have been addressed..). Thanks!
 > 
-> I'm not sure I'd call this a fix.
+> Koen,
 > 
-> If the driver is so broken that it cannot get the device working again
-> after a fault, surely the driver needs to be fixed?
-
-Yes,this problem may be solved by fixing driver. Actually megaraid sas
-driver is recently fixed for this problem. (See commit 6431f5d7)
-
-But I think root cause of this problem is initializing IOMMU while DMA
-is still working, and I want to solve the root cause rather than
-handling it in each driver, otherwise we have to fix driver each time we
-find this kind of problem.
-
+> One note though, since I don't use HDMI (or BBB much for that matter), I was ok
+> with taking a risk of upping the ldo3 regulator voltage to 3.3v on my board
+> which I needed to do to get to the boot prompt.
+> I applied my AM335x DMA and MMC patches and tried to boot with rootfs as MMC1.
 > 
-> If the system is suffering an IRQ storm because device doesn't give up
-> after the first few faults, then we should switch off the fault
-> *reporting* for that device so that its faults get ignored (until it
-> next actually sets up a DMA mapping, or something).
-
-In such a case, yeah limiting messages is enough.
-
+> With 1.8v, I get the following during boot:
+> [    2.236043] mmc0: host doesn't support card's voltages
+> [    2.241659] mmc0: error -22 whilst initialising SD card
 > 
-> For the IOMMU code to reset individual devices, just because they still
-> have an active DMA mapping even if they're not *doing* DMA, seems wrong.
-> You'll even end up resetting devices just because they have an RMRR,
-> won't you? (Although I wouldn't lose any sleep over that, I suppose. In
-> fact it might be a *feature*... :)
- 
-Right, current code is resetting devices which *may* be doing DMA. The
-ideal way is finding devices which are actually doing DMA and reset only
-them but I don't know how we can do this, though I think current code
-is sufficient.
+> That's strange because I do have an SDHC card. With 3.3v it works fine.
+> 
+> I will add a note about this to my series. Since this more of an MMC issue than
+> anything, and your patch series doesn't enable MMC, you can add my tested-by:
+> 
+> Tested-by: Joel Fernandes <joelf@ti.com>
+> 
+> Later on, the regulator voltage may need to be tweaked for MMC support.
 
-Thanks,
-Takao Indoh
-
+See https://lkml.org/lkml/2013/9/6/95 and https://lkml.org/lkml/2013/9/6/183
