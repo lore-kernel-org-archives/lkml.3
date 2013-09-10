@@ -1,215 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756249Ab3IJAwU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 20:52:20 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:53501 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755756Ab3IJAwS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 20:52:18 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee68f-b7f656d0000058e3-2c-522e6d3e6042
-Content-transfer-encoding: 8BIT
-Message-id: <1378774324.2354.103.camel@kjgkr>
-Subject: Re: [f2fs-dev][PATCH] f2fs: optimize fs_lock for better performance
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
-To: chao2.yu@samsung.com
-Cc: shu.tan@samsung.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Date: Tue, 10 Sep 2013 09:52:04 +0900
-In-reply-to: <88.C4.11914.9D4A9225@epcpsbge6.samsung.com>
-References: <88.C4.11914.9D4A9225@epcpsbge6.samsung.com>
-Organization: Samsung
-X-Mailer: Evolution 3.2.3-0ubuntu6
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsVy+t8zQ137XL0gg6Yki/9NH9ksLi1yt9iz
-	9ySLxeVdc9gsWheeZ3Zg9di94DOTR9+WVYwenzfJBTBHcdmkpOZklqUW6dslcGUcOL6FseC7
-	ZMWmXrsGxmuCXYycHBICJhIPdh5ihrDFJC7cW8/WxcjFISSwjFHi4NulzDBFjTvPQSUWMUps
-	7TjHApLgFRCU+DH5HpDNwcEsIC9x5FI2SJhZQF1i0rxFzBD1rxklZn45zwxRryux+9lxJpB6
-	YQEfiW/7nUBMNgFtic37DUAqhAQUJd7uv8sKYosISEg8mzWdCWJ6ncSOA6ogYRYBVYmdf9az
-	g4Q5BSwl5jclQHRaSMza+4ANxOYXEJU4vHA71PFKErvbO9lBjpEQOMYu8XP/VEaIOQIS3yYf
-	AjteQkBWYtMBqHpJiYMrbrBMYJSYheTFWQgvzkLy4gJG5lWMoqkFyQXFSelFxnrFibnFpXnp
-	esn5uZsYIfHWv4Px7gHrQ4zJQBsnMkuJJucD4zWvJN7Q2MzIwtTE1NjI3NKMNGElcV61FutA
-	IYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYxHXjJXyhxVr+bIWfvQ7krHzEDF06Xckd4TtC+k
-	OX3bGemYa6rVfHfOF6P+C13zp6aJBs7+cy7uaPK+0C21r3/wVi2/mSzRsHgJW5n5AZ5UdqHe
-	tsKi0AmrJjN0Cq78NFX4yN/41Wqv9KdUTQ7xjqhTN5zmOrXBeUl29MVrZ99pmsbcLtys9UWJ
-	pTgj0VCLuag4EQAtTLHczQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBKsWRmVeSWpSXmKPExsVy+t9jAV27XL0ggzO7LSz+N31ks7i0yN1i
-	z96TLBaXd81hs2hdeJ7ZgdVj94LPTB59W1YxenzeJBfAHNXAaJORmpiSWqSQmpecn5KZl26r
-	5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtFJJoSwxpxQoFJBYXKykb4dpQmiIm64F
-	TGOErm9IEFyPkQEaSFjHmHHg+BbGgu+SFZt67RoYrwl2MXJySAiYSDTuPMcGYYtJXLi3Hsjm
-	4hASWMQosbXjHAtIgldAUOLH5HtANgcHs4C8xJFL2SBhZgF1iUnzFjFD1L9mlJj55TwzRL2u
-	xO5nx5lA6oUFfCS+7XcCMdkEtCU27zcAqRASUJR4u/8uK4gtIiAh8WzWdCaI6XUSOw6ogoRZ
-	BFQldv5Zzw4S5hSwlJjflADRaSExa+8DsIP5BUQlDi/czgxxvJLE7vZO9gmMQrOQnDwL4eRZ
-	SE5ewMi8ilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4np9J7WBc2WBxiFGAg1GJh1fjnW6Q
-	EGtiWXFl7iFGCQ5mJRHeDcx6QUK8KYmVValF+fFFpTmpxYcYk4HunsgsJZqcD0w1eSXxhsYm
-	ZkaWRmYWRibm5qQJK4nzHmi1DhQSSE8sSc1OTS1ILYLZwsTBKdXA6D3nIP/LeQrlFtbS/K0v
-	AxP+Z9qzep2fdu9yf2XqvQVdUdtimX7GPvpd874jQvDdlE26trJn9Bjq8pk55FZ/mMrzPJmn
-	blJopjbnr7/9ZWG+kntTLJbJPVw8+YQQdyOnbm7hm1kq4TolLsJpT9Z4rFCRSN2zqiLdP71x
-	ScArlq91e2/sWf9UiaU4I9FQi7moOBEAE4Ai8SsDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1756289Ab3IJAxW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 20:53:22 -0400
+Received: from mail-bn1lp0152.outbound.protection.outlook.com ([207.46.163.152]:36096
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756257Ab3IJAxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 20:53:21 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: David Lang <david@lang.hm>
+CC: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH 00/12] One more attempt at useful kernel lockdown
+Thread-Topic: [PATCH 00/12] One more attempt at useful kernel lockdown
+Thread-Index: AQHOrYDL2QYLBLFVskGOdCrAsfX2cpm9uPUAgABSI3WAABooAA==
+Date: Tue, 10 Sep 2013 00:53:14 +0000
+Message-ID: <1378774394.17982.36.camel@x230.lan>
+References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
+	 <19562.1378747124@turing-police.cc.vt.edu>
+	 <alpine.DEB.2.02.1309091119330.2479@nftneq.ynat.uz>
+	 <1378767723.17982.27.camel@x230.lan>
+	 <alpine.DEB.2.02.1309091614010.2479@nftneq.ynat.uz>
+In-Reply-To: <alpine.DEB.2.02.1309091614010.2479@nftneq.ynat.uz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:470:1f07:1371:5d52:9ee3:3e84:6668]
+x-forefront-prvs: 096507C068
+x-forefront-antispam-report: SFV:NSPM;SFS:(24454002)(51704005)(189002)(199002)(15404003)(377424004)(80976001)(74876001)(56816003)(53806001)(77096001)(19580405001)(19580395003)(83322001)(76482001)(54356001)(79102001)(77982001)(59766001)(83072001)(56776001)(54316002)(80022001)(63696002)(46102001)(81342001)(81816001)(65816001)(69226001)(74366001)(47446002)(74502001)(31966008)(74706001)(74662001)(47736001)(49866001)(47976001)(50986001)(76786001)(4396001)(76796001)(51856001)(81686001)(81542001)(36756003)(33646001)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB223;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:5d52:9ee3:3e84:6668;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <C6F5DB27F4467445BC5576EE74DD9198@namprd05.prod.outlook.com>
+MIME-Version: 1.0
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8A0rRdW024068
 
-Hi,
+On Mon, 2013-09-09 at 16:19 -0700, David Lang wrote:
+> On Mon, 9 Sep 2013, Matthew Garrett wrote:
+> > Having thought about this, the answer is no. It presents exactly the
+> > same problem as capabilities do - the set can never be meaningfully
+> > extended. If an application sets only the bits it knows about, and if a
+> > new security-sensitive feature is added to the kernel, the feature will
+> > be left enabled and the system will be insecure. Alternatively, if an
+> > application sets all the bits regardless of whether it knows them or
+> > not, it may enable a lockdown feature that it otherwise required.
+> 
+> In this case you are no less secure than you were before the feature was added, 
+> you just can't take advantage of the new feature without updating userspace.
 
-At first, thank you for the report and please follow the email writing
-rules. :)
+No. Say someone adds an additional lockdown bit to forbid raw access to
+mounted block devices. The "Turn everything off" approach now means that
+I won't be able to perform raw access to mounted block devices, even if
+that's something that my use case relies on.
 
-Anyway, I agree to the below issue.
-One thing that I can think of is that we don't need to use the
-spin_lock, since we don't care about the exact lock number, but just
-need to get any not-collided number.
+> > The only way this is useful is if all the bits are semantically
+> > equivalent, and in that case there's no point in having anything other
+> > than a single bit. Users who want a more fine-grained interface should
+> > use one of the existing mechanisms for doing so - leave the kernel open
+> > and impose the security policy from userspace using either capabilities
+> > or selinux.
+> 
+> so if you only have a single bit, how do you deal with the case where that bit 
+> locks down something that's required? (your reason for not just setting all bits 
+> in the first approach)
 
-So, how about removing the spin_lock?
-And how about using a random number?
-Thanks,
+Because that bit is well-defined, and if anything is added to it that
+doesn't match that definition then it's a bug.
 
-2013-09-06 (Í∏à), 09:48 +0000, Chao Yu:
-> Hi Kim:
-> 
->      I think there is a performance problem: when all sbi->fs_lock is
-> holded, 
-> 
-> then all other threads may get the same next_lock value from
-> sbi->next_lock_num in function mutex_lock_op, 
-> 
-> and wait to get the same lock at position fs_lock[next_lock], it
-> unbalance the fs_lock usage. 
-> 
-> It may lost performance when we do the multithread test.
-> 
->  
-> 
-> Here is the patch to fix this problem:
-> 
->  
-> 
-> Signed-off-by: Yu Chao <chao2.yu@samsung.com>
-> 
-> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-> 
-> old mode 100644
-> 
-> new mode 100755
-> 
-> index 467d42d..983bb45
-> 
-> --- a/fs/f2fs/f2fs.h
-> 
-> +++ b/fs/f2fs/f2fs.h
-> 
-> @@ -371,6 +371,7 @@ struct f2fs_sb_info {
-> 
->         struct mutex fs_lock[NR_GLOBAL_LOCKS];  /* blocking FS
-> operations */
-> 
->         struct mutex node_write;                /* locking node writes
-> */
-> 
->         struct mutex writepages;                /* mutex for
-> writepages() */
-> 
-> +       spinlock_t spin_lock;                   /* lock for
-> next_lock_num */
-> 
->         unsigned char next_lock_num;            /* round-robin global
-> locks */
-> 
->         int por_doing;                          /* recovery is doing
-> or not */
-> 
->         int on_build_free_nids;                 /* build_free_nids is
-> doing */
-> 
-> @@ -533,15 +534,19 @@ static inline void mutex_unlock_all(struct
-> f2fs_sb_info *sbi)
-> 
->  
-> 
->  static inline int mutex_lock_op(struct f2fs_sb_info *sbi)
-> 
->  {
-> 
-> -       unsigned char next_lock = sbi->next_lock_num %
-> NR_GLOBAL_LOCKS;
-> 
-> +       unsigned char next_lock;
-> 
->         int i = 0;
-> 
->  
-> 
->         for (; i < NR_GLOBAL_LOCKS; i++)
-> 
->                 if (mutex_trylock(&sbi->fs_lock[i]))
-> 
->                         return i;
-> 
->  
-> 
-> -       mutex_lock(&sbi->fs_lock[next_lock]);
-> 
-> +       spin_lock(&sbi->spin_lock);
-> 
-> +       next_lock = sbi->next_lock_num % NR_GLOBAL_LOCKS;
-> 
->         sbi->next_lock_num++;
-> 
-> +       spin_unlock(&sbi->spin_lock);
-> 
-> +
-> 
-> +       mutex_lock(&sbi->fs_lock[next_lock]);
-> 
->         return next_lock;
-> 
->  }
-> 
->  
-> 
-> diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-> 
-> old mode 100644
-> 
-> new mode 100755
-> 
-> index 75c7dc3..4f27596
-> 
-> --- a/fs/f2fs/super.c
-> 
-> +++ b/fs/f2fs/super.c
-> 
-> @@ -657,6 +657,7 @@ static int f2fs_fill_super(struct super_block *sb,
-> void *data, int silent)
-> 
->         mutex_init(&sbi->cp_mutex);
-> 
->         for (i = 0; i < NR_GLOBAL_LOCKS; i++)
-> 
->                 mutex_init(&sbi->fs_lock[i]);
-> 
-> +       spin_lock_init(&sbi->spin_lock);
-> 
->         mutex_init(&sbi->node_write);
-> 
->         sbi->por_doing = 0;
-> 
->         spin_lock_init(&sbi->stat_lock);
-> 
-> (END)
-> 
->  
-> 
-> 
-> 
-> 
+> your arguments don't seem self consistent.
+
+You don't seem to have been paying attention to the past 12 months of
+discussion.
+
+> If I'm building a kiosk PC (or voting machine), I want to disable a lot of 
+> things that I could not get away with disabling on a generic laptop. Are we 
+> going to have Securelevel, ReallySecurelevel, ReallyReallySecurelevel, etc? or 
+> can we accept that security is not binary and allow users to disable features 
+> in a more granualar way?
+
+Anything more granular means that you trust your userspace, and if you
+trust your userspace then you can already set up a granular policy using
+the existing tools for that job. So just use the existing tools.
+
+> And if SELinux can do the job, what is the reason for creating this new option?
+
+Because you can't embed an unmodifiable selinux policy in the kernel.
 
 -- 
-Jaegeuk Kim
-Samsung
-
+Matthew Garrett <matthew.garrett@nebula.com>
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
