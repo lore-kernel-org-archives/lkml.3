@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751556Ab3IJLer (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 07:34:47 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:57162 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069Ab3IJLeq (ORCPT
+	id S1751458Ab3IJLi1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 07:38:27 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:64185 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751325Ab3IJLiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 07:34:46 -0400
-Date: Tue, 10 Sep 2013 13:34:43 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 1/3] perf callchain: Convert children list to rbtree
-Message-ID: <20130910113441.GB28268@somewhere>
-References: <1378801458-2515-1-git-send-email-namhyung@kernel.org>
- <1378801458-2515-2-git-send-email-namhyung@kernel.org>
- <20130910095216.GB18115@krava.redhat.com>
- <20130910102554.GA5087@gmail.com>
+	Tue, 10 Sep 2013 07:38:25 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>, Greg KH <greg@kroah.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: "cpufreq: fix serialization issues with freq change notifiers" breaks cpufreq too
+Date: Tue, 10 Sep 2013 13:49:24 +0200
+Message-ID: <4292924.3iHJT5nzNS@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CAKohponZ+FnzqXYMbBzbun0-1iQMi2fS4syrEBC_MdF41vLCeA@mail.gmail.com>
+References: <Pine.LNX.4.64.1309091656200.6602@axis700.grange> <CAKohponZ+FnzqXYMbBzbun0-1iQMi2fS4syrEBC_MdF41vLCeA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130910102554.GA5087@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 12:25:54PM +0200, Ingo Molnar wrote:
+On Tuesday, September 10, 2013 04:59:29 PM Viresh Kumar wrote:
+> On 9 September 2013 20:41, Guennadi Liakhovetski <g.liakhovetski@gmx.de> wrote:
+> > Sorry guys, I'm trying my best to stop this patch from propagating to
+> > stable and to get it fixed asap, so, the CC list might be a bit excessive.
+> > Also trying to fix the originally spare cc list, which makes it impossible
+> > for me to reply to the original thread, instead have to start a new one.
+> >
+> > Commit
+> >
+> > commit dceff5ce18801dddc220d6238628619c93bc3cb6
+> > Author: Viresh Kumar <viresh.kumar@linaro.org>
+> > Date:   Sun Sep 1 22:19:37 2013 +0530
+> >
+> >     cpufreq: fix serialization issues with freq change notifiers
+> >
+> > breaks .transition_ongoing counting. This leads to cpufreq-cpu0 not
+> > working any more. In particular switching the governor from performance to
+> > powersave directly after boot doesn't result in a frequency switch any
+> > more. Reverting this patch fixes the problem again. Tested with today's
+> > -next.
 > 
-> * Jiri Olsa <jolsa@redhat.com> wrote:
+> I have tested it again on my exynos and intel machines and couldn't see
+> a single problem with this patch..
 > 
-> > On Tue, Sep 10, 2013 at 05:24:16PM +0900, Namhyung Kim wrote:
-> > > From: Namhyung Kim <namhyung.kim@lge.com>
-> > > 
-> > > Current collapse stage has a scalability problem which can be
-> > > reproduced easily with parallel kernel build.  This is because it
-> > > needs to traverse every children of callchain linearly during the
-> > > collapse/merge stage.  Convert it to rbtree reduced the overhead
-> > > significantly.
-> > > 
-> > > On my 400MB perf.data file which recorded with make -j32 kernel build:
-> > 
-> > 
-> > nice!!!
+> I am afraid you need to give us some more information on how it broke
+> your stuff.. :)
 > 
-> Nice indeed!
-> 
-> > tried on 2.6 GB data file from kernel make -j64 and got report speed up 
-> > from 'never' to 2m52.756s ;-)
-> 
-> It's still rather long though, unacceptable for everyday usage :-/
-> 
-> Frederic thought that we could reduce minimize collapsing to begin with.
-> 
-> Frederic, could you outline that in more detail please?
+> And I am also not sure cpufreq-cpu0 is different then any other driver..
 
-Yeah. Currently when we sort by comm, hists are first sorted by tid. Then
-in the end of the record, the hists are compared and those that have the
-same comm are collapsed in one.
+That said I'm actually unsure what problems *exactly* are fixed by commit
+7c30ed5.  The commit log only says that PRECHANGE or POSTCHAGE shouldn't be
+called twice in a row, but it doesn't say why.  As the fallout indicates,
+that actually happened before commit 7c30ed5 and nothing visibly broke, so
+the benefit from having that commit is questionable to me.  On the other hand,
+the commit itself is evidently broken, so what exactly is the reason for
+keeping it?
 
-So what I'm trying to do now is to gather those hists from the very beginning,
-which should remove the need for collapsing.
+Rafael
 
-> 
-> Thanks,
-> 
-> 	Ingo
