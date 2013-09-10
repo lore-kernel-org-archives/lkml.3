@@ -1,114 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753034Ab3IJOaG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 10:30:06 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:40611 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752722Ab3IJOaC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 10:30:02 -0400
-Message-ID: <522F2CE7.2070004@lwfinger.net>
-Date: Tue, 10 Sep 2013 09:29:59 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1752144Ab3IJOdd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 10:33:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45649 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751313Ab3IJOdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 10:33:31 -0400
+Date: Tue, 10 Sep 2013 15:33:26 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH 3/9] migrate: add hugepage migration code to
+ migrate_pages()
+Message-ID: <20130910143326.GQ22421@suse.de>
+References: <1376025702-14818-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1376025702-14818-4-git-send-email-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
-To: farisdehaan@gmail.com
-CC: gregkh@linuxfoundation.org, dan.carpenter@oracle.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: rtl8188eu: rtw_wlan_util.c: Fixed checkpatch.pl
- warnings.
-References: <522eda8b.056c0e0a.0357.656e@mx.google.com>
-In-Reply-To: <522eda8b.056c0e0a.0357.656e@mx.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1376025702-14818-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2013 03:38 AM, farisdehaan@gmail.com wrote:
-> From: Faris de Haan <farisdehaan@gmail.com>
->
-> Fixed a few of the coding style issues reported by checkpatch.pl
->
-> Signed-off-by: Faris de Haan <farisdehaan@gmail.com>
+On Fri, Aug 09, 2013 at 01:21:36AM -0400, Naoya Horiguchi wrote:
+> This patch extends check_range() to handle vma with VM_HUGETLB set.
+> We will be able to migrate hugepage with migrate_pages(2) after
+> applying the enablement patch which comes later in this series.
+> 
+> Note that for larger hugepages (covered by pud entries, 1GB for
+> x86_64 for example), we simply skip it now.
+> 
+> Note that using pmd_huge/pud_huge assumes that hugepages are pointed to
+> by pmd/pud. This is not true in some architectures implementing hugepage
+> with other mechanisms like ia64, but it's OK because pmd_huge/pud_huge
+> simply return 0 in such arch and page walker simply ignores such hugepages.
+> 
+> ChangeLog v4:
+>  - refactored check_hugetlb_pmd_range for better readability
+> 
+> ChangeLog v3:
+>  - revert introducing migrate_movable_pages
+>  - use isolate_huge_page
+> 
+> ChangeLog v2:
+>  - remove unnecessary extern
+>  - fix page table lock in check_hugetlb_pmd_range
+>  - updated description and renamed patch title
+> 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Acked-by: Andi Kleen <ak@linux.intel.com>
+> Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> Acked-by: Hillf Danton <dhillf@gmail.com>
 > ---
->   drivers/staging/rtl8188eu/core/rtw_wlan_util.c |   22 +++++++++++-----------
->   1 file changed, 11 insertions(+), 11 deletions(-)
->
-> diff --git a/drivers/staging/rtl8188eu/core/rtw_wlan_util.c b/drivers/staging/rtl8188eu/core/rtw_wlan_util.c
-> index 013ea48..e7fd751 100644
-> --- a/drivers/staging/rtl8188eu/core/rtw_wlan_util.c
-> +++ b/drivers/staging/rtl8188eu/core/rtw_wlan_util.c
-> @@ -80,7 +80,7 @@ int cckratesonly_included(unsigned char *rate, int ratelen)
->   	for (i = 0; i < ratelen; i++) {
->   		if  ((((rate[i]) & 0x7f) != 2) && (((rate[i]) & 0x7f) != 4) &&
->   			   (((rate[i]) & 0x7f) != 11)  && (((rate[i]) & 0x7f) != 22))
-> -		return false;
-> +			return false;
->   	}
->
->   	return true;
-> @@ -766,7 +766,7 @@ void HT_caps_handler(struct adapter *padapter, struct ndis_802_11_var_ie *pIE)
->
->   	for (i = 0; i < (pIE->Length); i++) {
->   		if (i != 2) {
-> -			/* 	Got the endian issue here. */
-> +			/*	Got the endian issue here. */
->   			pmlmeinfo->HT_caps.u.HT_cap[i] &= (pIE->data[i]);
->   		} else {
->   			/* modify from  fw by Thomas 2010/11/17 */
-> @@ -1186,7 +1186,7 @@ unsigned int should_forbid_n_rate(struct adapter *padapter)
->   			case _RSN_IE_2_:
->   				if  ((_rtw_memcmp((pIE->data + 8), RSN_CIPHER_SUITE_CCMP, 4))  ||
->   				       (_rtw_memcmp((pIE->data + 12), RSN_CIPHER_SUITE_CCMP, 4)))
-> -				return false;
-> +					return false;
->   			default:
->   				break;
->   			}
-> @@ -1368,21 +1368,21 @@ void update_tx_basic_rate(struct adapter *padapter, u8 wirelessmode)
->   #ifdef CONFIG_88EU_P2P
->   	struct wifidirect_info *pwdinfo = &padapter->wdinfo;
->
-> -	/* 	Added by Albert 2011/03/22 */
-> -	/* 	In the P2P mode, the driver should not support the b mode. */
-> -	/* 	So, the Tx packet shouldn't use the CCK rate */
-> +	/*	Added by Albert 2011/03/22 */
-> +	/*	In the P2P mode, the driver should not support the b mode. */
-> +	/*	So, the Tx packet shouldn't use the CCK rate */
->   	if (!rtw_p2p_chk_state(pwdinfo, P2P_STATE_NONE))
->   		return;
->   #endif /* CONFIG_88EU_P2P */
->   	_rtw_memset(supported_rates, 0, NDIS_802_11_LENGTH_RATES_EX);
->
-> -	if ((wirelessmode & WIRELESS_11B) && (wirelessmode == WIRELESS_11B)) {
-> +	if ((wirelessmode & WIRELESS_11B) && (wirelessmode == WIRELESS_11B))
->   		memcpy(supported_rates, rtw_basic_rate_cck, 4);
-> -	} else if (wirelessmode & WIRELESS_11B) {
-> +	else if (wirelessmode & WIRELESS_11B)
->   		memcpy(supported_rates, rtw_basic_rate_mix, 7);
-> -	} else {
-> +	else
->   		memcpy(supported_rates, rtw_basic_rate_ofdm, 3);
-> -	}
+>  mm/mempolicy.c | 42 +++++++++++++++++++++++++++++++++++++-----
+>  1 file changed, 37 insertions(+), 5 deletions(-)
+> 
+> diff --git v3.11-rc3.orig/mm/mempolicy.c v3.11-rc3/mm/mempolicy.c
+> index 7431001..d96afc1 100644
+> --- v3.11-rc3.orig/mm/mempolicy.c
+> +++ v3.11-rc3/mm/mempolicy.c
+> @@ -512,6 +512,30 @@ static int check_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+>  	return addr != end;
+>  }
+>  
+> +static void check_hugetlb_pmd_range(struct vm_area_struct *vma, pmd_t *pmd,
+> +		const nodemask_t *nodes, unsigned long flags,
+> +				    void *private)
+> +{
+> +#ifdef CONFIG_HUGETLB_PAGE
+> +	int nid;
+> +	struct page *page;
 > +
->
->   	if (wirelessmode & WIRELESS_11B)
->   		update_mgnt_tx_rate(padapter, IEEE80211_CCK_RATE_1MB);
-> @@ -1435,7 +1435,7 @@ unsigned char check_assoc_AP(u8 *pframe, uint len)
->   				DBG_88E("link to Airgo Cap\n");
->   				return HT_IOT_PEER_AIRGO;
->   			} else if (_rtw_memcmp(pIE->data, EPIGRAM_OUI, 3)) {
-> -				 epigram_vendor_flag = 1;
-> +				epigram_vendor_flag = 1;
->   				if (ralink_vendor_flag) {
->   					DBG_88E("link to Tenda W311R AP\n");
->   					 return HT_IOT_PEER_TENDA;
->
+> +	spin_lock(&vma->vm_mm->page_table_lock);
+> +	page = pte_page(huge_ptep_get((pte_t *)pmd));
+> +	nid = page_to_nid(page);
+> +	if (node_isset(nid, *nodes) == !!(flags & MPOL_MF_INVERT))
+> +		goto unlock;
+> +	/* With MPOL_MF_MOVE, we migrate only unshared hugepage. */
+> +	if (flags & (MPOL_MF_MOVE_ALL) ||
+> +	    (flags & MPOL_MF_MOVE && page_mapcount(page) == 1))
+> +		isolate_huge_page(page, private);
+> +unlock:
+> +	spin_unlock(&vma->vm_mm->page_table_lock);
+> +#else
+> +	BUG();
+> +#endif
+> +}
+> +
+>  static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
+>  		unsigned long addr, unsigned long end,
+>  		const nodemask_t *nodes, unsigned long flags,
+> @@ -523,6 +547,11 @@ static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
+>  	pmd = pmd_offset(pud, addr);
+>  	do {
+>  		next = pmd_addr_end(addr, end);
+> +		if (pmd_huge(*pmd) && is_vm_hugetlb_page(vma)) {
+> +			check_hugetlb_pmd_range(vma, pmd, nodes,
+> +						flags, private);
+> +			continue;
+> +		}
+>  		split_huge_page_pmd(vma, addr, pmd);
+>  		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
+>  			continue;
 
-Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
+If a hugepage is currently being migrated then a migration entry should
+be in its place which is a type of swap entry. Will the pmd_huge check
+still do the right thing if migration is already in progress?
 
-Thanks,
+>  		if (check_pmd_range(vma, pud, addr, next, nodes,
+> @@ -635,9 +666,6 @@ check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
+>  				return ERR_PTR(-EFAULT);
+>  		}
+>  
+> -		if (is_vm_hugetlb_page(vma))
+> -			goto next;
+> -
+>  		if (flags & MPOL_MF_LAZY) {
+>  			change_prot_numa(vma, start, endvma);
+>  			goto next;
+> @@ -986,7 +1014,11 @@ static void migrate_page_add(struct page *page, struct list_head *pagelist,
+>  
+>  static struct page *new_node_page(struct page *page, unsigned long node, int **x)
+>  {
+> -	return alloc_pages_exact_node(node, GFP_HIGHUSER_MOVABLE, 0);
+> +	if (PageHuge(page))
+> +		return alloc_huge_page_node(page_hstate(compound_head(page)),
+> +					node);
+> +	else
+> +		return alloc_pages_exact_node(node, GFP_HIGHUSER_MOVABLE, 0);
+>  }
+>  
+>  /*
+> @@ -1016,7 +1048,7 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
+>  		err = migrate_pages(&pagelist, new_node_page, dest,
+>  					MIGRATE_SYNC, MR_SYSCALL);
+>  		if (err)
+> -			putback_lru_pages(&pagelist);
+> +			putback_movable_pages(&pagelist);
+>  	}
+>  
+>  	return err;
+> -- 
+> 1.8.3.1
+> 
 
-Larry
-
+-- 
+Mel Gorman
+SUSE Labs
