@@ -1,103 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214Ab3IJN5X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 09:57:23 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:7129 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753119Ab3IJN5V (ORCPT
+	id S1752585Ab3IJN6S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 09:58:18 -0400
+Received: from mail-qe0-f53.google.com ([209.85.128.53]:36330 "EHLO
+	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751313Ab3IJN6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 09:57:21 -0400
-Message-ID: <1378821337.10300.990.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] cpu/mem hotplug: Add try_online_node() for cpu_up()
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, rjw@sisk.pl,
-        kosaki.motohiro@jp.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com
-Date: Tue, 10 Sep 2013 07:55:37 -0600
-In-Reply-To: <522E92A0.80502@jp.fujitsu.com>
-References: <1378772671-27280-1-git-send-email-toshi.kani@hp.com>
-	 <522E92A0.80502@jp.fujitsu.com>
+	Tue, 10 Sep 2013 09:58:16 -0400
+Message-ID: <1378821492.2493.3.camel@localhost>
+Subject: Re: Oddness in security/Makefile
+From: Eric Paris <eparis@parisplace.org>
+To: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Stephen Smalley <sds@tycho.nsa.gov>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Date: Tue, 10 Sep 2013 09:58:12 -0400
+In-Reply-To: <11543.1378741281@turing-police.cc.vt.edu>
+References: <11543.1378741281@turing-police.cc.vt.edu>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+X-Mailer: Evolution 3.9.91 (3.9.91-2.fc20) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-09-10 at 12:31 +0900, Yasuaki Ishimatsu wrote:
-> (2013/09/10 9:24), Toshi Kani wrote:
- :
-> > diff --git a/kernel/cpu.c b/kernel/cpu.c
-> > index d7f07a2..c10b285 100644
-> > --- a/kernel/cpu.c
-> > +++ b/kernel/cpu.c
-> > @@ -420,11 +420,6 @@ int cpu_up(unsigned int cpu)
-> >   {
-> >   	int err = 0;
-> >   
-> > -#ifdef	CONFIG_MEMORY_HOTPLUG
-> > -	int nid;
-> > -	pg_data_t	*pgdat;
-> > -#endif
-> > -
-> >   	if (!cpu_possible(cpu)) {
-> >   		printk(KERN_ERR "can't online cpu %d because it is not "
-> >   			"configured as may-hotadd at boot time\n", cpu);
-> > @@ -435,27 +430,9 @@ int cpu_up(unsigned int cpu)
-> >   		return -EINVAL;
-> >   	}
-> >   
-> > -#ifdef	CONFIG_MEMORY_HOTPLUG
-> > -	nid = cpu_to_node(cpu);
-> > -	if (!node_online(nid)) {
-> > -		err = mem_online_node(nid);
-> > -		if (err)
-> > -			return err;
-> > -	}
-> > -
-> > -	pgdat = NODE_DATA(nid);
-> > -	if (!pgdat) {
-> 
-> > -		printk(KERN_ERR
-> > -			"Can't online cpu %d due to NULL pgdat\n", cpu);
-> 
-> Please move this comments into try_online_node() too.
+>From 4675ca3470e3c2e325c5be6d9a11f47ac0917537 Mon Sep 17 00:00:00 2001
+From: Eric Paris <eparis@redhat.com>
+Date: Tue, 10 Sep 2013 09:51:50 -0400
+Subject: [PATCH] security: remove erroneous comment about capabilities.o link
+ ordering
 
-This code block is no longer necessary, but I will add a pr_err() when
-hotadd_new_pgdat() returns NULL in try_oline_node() below.
+Back when we had half ass LSM stacking we had to link capabilities.o
+after bigger LSMs so that on initialization the bigger LSM would
+register first and the capabilities module would be the one stacked as
+the 'seconday'.  Somewhere around 6f0f0fd496333777d53 (back in 2008) we
+finally removed the last of the kinda module stacking code but this
+comment in the makefile still lives today.
 
-> > diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> > index ed85fe3..c326bdf 100644
-> > --- a/mm/memory_hotplug.c
-> > +++ b/mm/memory_hotplug.c
-> > @@ -1044,14 +1044,19 @@ static void rollback_node_hotadd(int nid, pg_data_t *pgdat)
-> >   }
-> >   
-> >   
-> > -/*
-> > +/**
-> > + * try_online_node - online a node if offlined
-> > + *
-> >    * called by cpu_up() to online a node without onlined memory.
-> >    */
-> > -int mem_online_node(int nid)
-> > +int try_online_node(int nid)
-> >   {
-> >   	pg_data_t	*pgdat;
-> >   	int	ret;
-> >   
-> > +	if (node_online(nid))
-> > +		return 0;
-> > +
-> >   	lock_memory_hotplug();
-> >   	pgdat = hotadd_new_pgdat(nid, 0);
-> >   	if (!pgdat) {
+Reported-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+---
+ security/Makefile | 1 -
+ 1 file changed, 1 deletion(-)
 
-+               pr_err("Cannot online node %d due to NULL pgdat\n",
-nid);
-
-Thanks!
--Toshi
+diff --git a/security/Makefile b/security/Makefile
+index c26c81e..a5918e0 100644
+--- a/security/Makefile
++++ b/security/Makefile
+@@ -16,7 +16,6 @@ obj-$(CONFIG_MMU)			+= min_addr.o
+ # Object file lists
+ obj-$(CONFIG_SECURITY)			+= security.o capability.o
+ obj-$(CONFIG_SECURITYFS)		+= inode.o
+-# Must precede capability.o in order to stack properly.
+ obj-$(CONFIG_SECURITY_SELINUX)		+= selinux/built-in.o
+ obj-$(CONFIG_SECURITY_SMACK)		+= smack/built-in.o
+ obj-$(CONFIG_AUDIT)			+= lsm_audit.o
 
