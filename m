@@ -1,70 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751159Ab3IJTSc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 15:18:32 -0400
-Received: from mail.lang.hm ([64.81.33.126]:52685 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750923Ab3IJTSa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 15:18:30 -0400
-Date: Tue, 10 Sep 2013 12:17:57 -0700 (PDT)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: Kees Cook <keescook@chromium.org>
-cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH 00/12] One more attempt at useful kernel lockdown
-In-Reply-To: <CAGXu5j+3oKC-tQe8z43bG8wTpURD4FFCi+A1t9mSN_Bfzh8e8Q@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1309101217150.10412@nftneq.ynat.uz>
-References: <1378767723.17982.27.camel@x230.lan> <alpine.DEB.2.02.1309091614010.2479@nftneq.ynat.uz> <1378774394.17982.36.camel@x230.lan> <alpine.DEB.2.02.1309091938420.1820@nftneq.ynat.uz> <1378781715.17982.42.camel@x230.lan> <alpine.DEB.2.02.1309092002060.1820@nftneq.ynat.uz>
- <1378785208.17982.54.camel@x230.lan> <20130910172318.GB21530@khazad-dum.debian.net> <1378837571.17615.0.camel@x230.lan> <522F6519.4030004@zytor.com> <20130910185149.GC5559@kroah.com> <CAGXu5j+3oKC-tQe8z43bG8wTpURD4FFCi+A1t9mSN_Bfzh8e8Q@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751646Ab3IJTSl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 15:18:41 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:14883 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751569Ab3IJTSi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 15:18:38 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 10 Sep 2013 12:15:34 -0700
+Message-ID: <522F708D.3060903@nvidia.com>
+Date: Tue, 10 Sep 2013 12:18:37 -0700
+From: Arjun Gopalan <agopalan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: Brian Swetland <swetland@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Paul Walmsley <pwalmsley@nvidia.com>
+Subject: Re: permission to move definition of struct rpmsg_channel_info
+References: <5220F099.1020002@nvidia.com> <CAK=WgbZ2JgtAonvdyeDZazYBGdKpPAieJtjzi7MM6nwqhVfs7g@mail.gmail.com>
+In-Reply-To: <CAK=WgbZ2JgtAonvdyeDZazYBGdKpPAieJtjzi7MM6nwqhVfs7g@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Sep 2013, Kees Cook wrote:
-
-> Subject: Re: [PATCH 00/12] One more attempt at useful kernel lockdown
-> 
-> On Tue, Sep 10, 2013 at 11:51 AM, gregkh@linuxfoundation.org
-> <gregkh@linuxfoundation.org> wrote:
->> On Tue, Sep 10, 2013 at 11:29:45AM -0700, H. Peter Anvin wrote:
->>> On 09/10/2013 11:26 AM, Matthew Garrett wrote:
->>>> On Tue, 2013-09-10 at 14:23 -0300, Henrique de Moraes Holschuh wrote:
->>>>> On Tue, 10 Sep 2013, Matthew Garrett wrote:
->>>>>> That's why modern systems require signed firmware updates.
->>>>>
->>>>> Linux doesn't.  Is someone working on adding signature support to the
->>>>> runtime firmware loader?
->>>>
->>>> It'd be simple to do so, but so far the model appears to be that devices
->>>> that expect signed firmware enforce that themselves.
->>>>
->>>
->>> Most devices do absolutely no verification on the firmware, and simply
->>> trust the driver.
->>>
->>> So signing firmware is probably critical.
->>
->> How are you going to "validate" that the firmware is correct, given
->> that it's just a "blob" living in the linux-firmware tree.  If you sign
->> it, what is that saying?
+On 09/08/2013 05:27 AM, Ohad Ben-Cohen wrote:
+> Hi Arjun,
 >
-> In theory these blobs are traceable to a manufacturer. It's not really
-> an indication that it's "safe" more than it's an indication that it
-> hasn't been changed. But I haven't chased this very hard yet because
-> of below...
+> On Fri, Aug 30, 2013 at 9:20 PM, Arjun Gopalan <agopalan@nvidia.com> wrote:
+>> Hi Ohad/Brian,
+>>
+>> I have been working on rpmsg and I need to be able to create static rpmsg channels. Channel information needs to be specified by other drivers and for this, the drivers need access to struct rpmsg_channel_info.
+> I'm not convinced how useful it is for other Linux drivers to create
+> static rpmsg channels?
+>
+> Usually these channels reflect the existence of services running on
+> the remote processor, and their creation (or lack thereof) should be
+> specified in the remote image. This way an rpmsg channel is published
+> iff there is a matching remote service.
+>
+> The way we were planning to add static channels functionality (I
+> should still have preliminary patches doing this somewhere but the
+> entire work was put on hold since TI changed its focus) is by
+> statically publishing them in the resource table, which is coupled
+> with a specific remote image.
+>
+> Best,
+> Ohad.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+Hi Ohad,
 
-well, not if you are trying to defend against root breaking in to the machine.
+Thanks for your response. Implementing a name service facility in the 
+remote processor may be an option for us too. But, it would be nice to 
+be able to create static rpmsg channels.
 
-David Lang
+You mentioned that your patches publish rpmsg channels in the resource 
+table which is coupled to the firmware image. In our case, we may not 
+have a dynamic firmware that is loaded. In other words, we may not be 
+using the Linux firmware loading mechanism at all. In that case, how do 
+you think your patches have to be modified ?
+
+Would we probably need static resource tables ?
+
+On similar lines, the remoteproc core also mandates a valid firmware for 
+every remote processor, which again won't work for our case. I have a 
+patch to enable firmware-less remote processors but it is not in perfect 
+shape yet because I haven't integrated virtio and remoteproc as is done 
+in drivers/remoteproc/remoteproc_virtio. This would again possibly 
+require something like static resource tables.
+
+Instead, currently, I have a separate driver that overlaps with some of 
+the functionalities offered by drivers/remoteproc/remoteproc_virtio.c.
+
+Please let me know what your thoughts are on this.
+Thanks.
+
+
+Regards,
+Arjun
