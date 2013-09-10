@@ -1,134 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131Ab3IJRfu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 13:35:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47488 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752203Ab3IJRfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 13:35:48 -0400
-Subject: Re: [patch] block: fix race between request completion and timeout
- handling
-From: Ewan Milne <emilne@redhat.com>
-Reply-To: emilne@redhat.com
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        Hannes Reinecke <hare@suse.de>
-In-Reply-To: <x49k3j4s41j.fsf@segfault.boston.devel.redhat.com>
-References: <x49k3j4s41j.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat
-Date: Tue, 10 Sep 2013 13:35:39 -0400
-Message-ID: <1378834539.3872.6443.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753515Ab3IJRjA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 13:39:00 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:51021 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752411Ab3IJRi6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 13:38:58 -0400
+Date: Tue, 10 Sep 2013 18:38:30 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, rob.herring@calxeda.com,
+        mark.rutland@arm.com, rob@landley.net, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lgirdwood@gmail.com
+Message-ID: <20130910173830.GA4708@sirena.org.uk>
+References: <1378811888-2268-1-git-send-email-ldewangan@nvidia.com>
+ <1378811888-2268-2-git-send-email-ldewangan@nvidia.com>
+ <522F3691.3090805@wwwdotorg.org>
+ <20130910165153.GQ29403@sirena.org.uk>
+ <522F5815.4070109@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7AUc2qLy4jB3hD7Z"
+Content-Disposition: inline
+In-Reply-To: <522F5815.4070109@wwwdotorg.org>
+X-Cookie: You will be run over by a beer truck.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] regulator: core: add support for configuring turn-on
+ time through constraints
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-29 at 15:14 -0400, Jeff Moyer wrote:
-...
-> RIP: 0010:[<ffffffff8124e424>]  [<ffffffff8124e424>] blk_requeue_request+0x94/0xa0
-...
-> Call Trace:
->  [<ffffffff81362323>] __scsi_queue_insert+0xa3/0x150
->  [<ffffffff8135f393>] ? scsi_eh_ready_devs+0x5e3/0x850
->  [<ffffffff81362a23>] scsi_queue_insert+0x13/0x20
->  [<ffffffff8135e4d4>] scsi_eh_flush_done_q+0x104/0x160
->  [<ffffffff8135fb6b>] scsi_error_handler+0x35b/0x660
->  [<ffffffff8135f810>] ? scsi_error_handler+0x0/0x660
->  [<ffffffff810908c6>] kthread+0x96/0xa0
->  [<ffffffff8100c14a>] child_rip+0xa/0x20
->  [<ffffffff81090830>] ? kthread+0x0/0xa0
->  [<ffffffff8100c140>] ? child_rip+0x0/0x20
-...
-> The RIP is this line:
->         BUG_ON(blk_queued_rq(rq));
-> 
-> After digging through the code, I think there may be a race between the
-> request completion and the timer handler running.
-> 
 
-So, it does seem that if a request completes within a certain window in
-blk_rq_timed_out() (and part of its call to blk_add_timer()...)
+--7AUc2qLy4jB3hD7Z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
----- in blk_rq_timed_out():
+On Tue, Sep 10, 2013 at 11:34:13AM -0600, Stephen Warren wrote:
 
-        ret = q->rq_timed_out_fn(req);
-        switch (ret) {
-        case BLK_EH_HANDLED:
-                __blk_complete_request(req);
-                break;
-        case BLK_EH_RESET_TIMER:
-                blk_clear_rq_complete(req);          <<---- AFTER HERE
-                blk_add_timer(req);
-                break;
+> I notice there's a regulator-ramp-delay property, already documented
+> right above this new property. Is this a conflicting usage of the same
+> term, or should that existing property just be used in this case too?
 
----- in blk_add_timer():
-      
-	BUG_ON(!list_empty(&req->timeout_list));
-        BUG_ON(test_bit(REQ_ATOM_COMPLETE, &req->atomic_flags));
+That's for a ramp between two voltages rather than the on/off voltage,
+though I had forgotten about it.  Hrm.  enable-ramp-delay?
 
-        /*                                                                                                                                                                                                         
-         * Some LLDs, like scsi, peek at the timeout to prevent
-a                                                                                                                                                  
-         * command from being retried
-forever.                                                                                                                                                                     
-         */
-        if (!req->timeout)
-                req->timeout = q->rq_timeout;
+--7AUc2qLy4jB3hD7Z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-        req->deadline = jiffies + req->timeout;
-        list_add_tail(&req->timeout_list, &q->timeout_list);
-						    <<---- BEFORE HERE
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
 
-...then there are problems.  If the request completes before the
-BUG_ON(test_bit(REQ_ATOM_COMPLETE).. then there will be a crash.
-If the request completes before the list_add_tail(&req->timeout_list...
-then a completed request will eventually get a timeout, or we might
-crash in blk_add_timer when the timer is being restarted for the next
-usage of the request.
+iQIcBAEBAgAGBQJSL1kTAAoJELSic+t+oim9F20P/RQsFPc8QfWBF1GyDcunEZml
+aDG3mHjMXWMdif+8UcX5srzOJzn2U2QNz1kBGjJXpOYRYPVx4alcVsC85uTNc5pg
+FFOoMYhwsBgqH41kZnUREjn7dboXh36RXaK03tL8Wl0Xz5rkFcBEqzoRwH9r9dEl
+FUD6yIFd05CqdmMOjPzp8bIVS7efIZUo+SeLWP384ufghTDQ/80nqGgBfbxDRuzS
+aSfgK0Lvi82gK3wOniuKMf4ZZgiXQyL5Wda9RaPBC9xj7+Txt1WB1QKkWsUFBazJ
+tOr3lhwO/757C91vdKMcMjiYD5/pREkcNDXoUiSmSik2iESOhanjvVEqBQghZ2po
+CdUcHI24HkoWQmmpzS+BveCsW5nZzJrJuYEwrEcyhyu/gtdUeR3M8oPxmiq9AVcW
+V1a9ineickyHpnaWuWIWRq1HUs6Akv0FODK5muq9hf+e6XklK8WlG0m+dGmzpR3S
+3cCbono3CB55YhcR/kHiSM2CIyoxnpgIa1KfrReCmZYDmW3/cxIapBNC67CbxFPn
+Izq6vKWdofYha6NCGpdNFA9R+7XRj9OKVYqV8LgAoIc9BHV2Cewg70alfh5KV8a+
+OWUc1pxN20gt/nELy35nowDdscX8eTIr2/gQhrCLsZ3EOr/Roex1ucYUC03UIY7B
+1/wZammci0QqqOsweqhR
+=wKyn
+-----END PGP SIGNATURE-----
 
-Jeff's proposed patch, which swaps the order of clearing the
-REQ_ATOM_COMPLETE flag and the call to blk_add_timer in blk_rq_timed_out
-along with moving the BUG_ON to a different place in the req lifecycle,
-avoids these problems, but opens up another potential issue.  Consider:
-
----- in blk_rq_timed_out_timer():
-
-                        if (blk_mark_rq_complete(rq))
-                                continue;
-                        blk_rq_timed_out(rq);
-
----- in new blk_rq_timed_out():
-
-        ret = q->rq_timed_out_fn(req);
-        switch (ret) {
-        case BLK_EH_HANDLED:
-                __blk_complete_request(req);
-                break;
-        case BLK_EH_RESET_TIMER:
-                blk_add_timer(req);
-		blk_clear_req_complete(req);
-                break;
-
-If the request completes after blk_mark_rq_complete() is called but
-before blk_clear_req_complete() is called, the completion will not be
-processed, and we will have to wait for the request to timeout again.
-Maybe this is not so bad, as it should be extremely rare, but if the
-timeout were a large value for some reason, that could be a problem.
-
-It seems to me that the issue is really that there are 2 state variables
-(the REQ_ATOM_COMPLETE flag and the req->timeout_list) for the same
-state, and so manipulating both of these without a lock will always have
-a window.
-
-Clearly it would be better to avoid a panic, so Jeff's fix would help.
-
-I'm not sure I follow how the issue Jeff is fixing caused this
-particular crash, though.  How did the request get back on the queue?
-The crash occurred when the SCSI EH was flushing the done_q requests.
-
--Ewan
-
-
-
+--7AUc2qLy4jB3hD7Z--
