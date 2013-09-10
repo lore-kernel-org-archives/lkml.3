@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307Ab3IJVtW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 17:49:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56765 "EHLO mx1.redhat.com"
+	id S1753355Ab3IJVtj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 17:49:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36345 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752508Ab3IJVpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752468Ab3IJVpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Sep 2013 17:45:10 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
@@ -12,103 +12,81 @@ To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
 Cc: akpm@linux-foundation.org, zohar@linux.vnet.ibm.com,
         d.kasatkin@samsung.com, ebiederm@xmission.com, hpa@zytor.com,
         matthew.garrett@nebula.com, vgoyal@redhat.com
-Subject: [PATCH 04/16] integrity: Allow digital signature verification with a given keyring ptr
-Date: Tue, 10 Sep 2013 17:44:19 -0400
-Message-Id: <1378849471-10521-5-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 14/16] kexec: Export sysfs attributes for secureboot and secure modules to user space
+Date: Tue, 10 Sep 2013 17:44:29 -0400
+Message-Id: <1378849471-10521-15-git-send-email-vgoyal@redhat.com>
 In-Reply-To: <1378849471-10521-1-git-send-email-vgoyal@redhat.com>
 References: <1378849471-10521-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently digital signature verification code assumes that it can be
-used only with 3 keyrings. IMA, EVM and MODULE keyring. Provide another
-variant where one can pass in a pointer to keyring (struct key *), and
-integrity code can try to find key in that keyring and verify signature.
+User space kexec-tools need to know whether to verify signature of kernel
+image being loaded. This patch exports two knobs to user space. One is
+for knowing if  secureboot is enabled, this knob will be set to 1 if secure
+boot is enabled. Other knob is secure_module_enabled. This knob will be set
+to 1 if secure modules is one.
 
-This will be useful at two places.
-
-- elf binary loader can use system keyring and call into integrity
-  subsystem for signature verification.
-- In later patches I am extending keyctl() to allow signature of
-  a user buffer against specified keyring. That logic can make use
-  of this code too.
+kexec-tools will verify signature of kernel image if either secureboot is
+enabled or secure modules is enabled. The only difference between two is
+that kexec-tools will set secureboot on in bootparams being passed to
+second kernel if secureboot is on in first kernel.
 
 Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- security/integrity/digsig.c    | 26 ++++++++++++++++----------
- security/integrity/integrity.h |  9 +++++++++
- 2 files changed, 25 insertions(+), 10 deletions(-)
+ kernel/ksysfs.c | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
-diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
-index 160fec7..f1259bd 100644
---- a/security/integrity/digsig.c
-+++ b/security/integrity/digsig.c
-@@ -44,6 +44,20 @@ int integrity_get_digsig_size(char *sig)
- 	return -EBADMSG;
- }
+diff --git a/kernel/ksysfs.c b/kernel/ksysfs.c
+index 6ada93c..7262245 100644
+--- a/kernel/ksysfs.c
++++ b/kernel/ksysfs.c
+@@ -18,6 +18,8 @@
+ #include <linux/stat.h>
+ #include <linux/sched.h>
+ #include <linux/capability.h>
++#include <linux/efi.h>
++#include <linux/module.h>
  
-+int integrity_digsig_verify_keyring(struct key *keyring, const char *sig,
-+			int siglen, const char *digest, int digestlen)
+ #define KERNEL_ATTR_RO(_name) \
+ static struct kobj_attribute _name##_attr = __ATTR_RO(_name)
+@@ -101,6 +103,25 @@ static ssize_t kexec_crash_loaded_show(struct kobject *kobj,
+ }
+ KERNEL_ATTR_RO(kexec_crash_loaded);
+ 
++static ssize_t secureboot_enabled_show(struct kobject *kobj,
++				       struct kobj_attribute *attr, char *buf)
 +{
-+	switch (sig[0]) {
-+	case 1:
-+		return digsig_verify(keyring, sig, siglen,
-+				     digest, digestlen);
-+	case 2:
-+		return asymmetric_verify(keyring, sig, siglen,
-+					 digest, digestlen);
-+	}
-+	return -EOPNOTSUPP;
++	/* TODO: Change it once secureboot patches are in */
++	return sprintf(buf, "%d\n", 1);
 +}
++KERNEL_ATTR_RO(secureboot_enabled);
 +
- int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
- 					const char *digest, int digestlen)
++static ssize_t secure_modules_enabled_show(struct kobject *kobj,
++				       struct kobj_attribute *attr, char *buf)
++{
++	/*
++	 * TODO: Change it once secure_modules() or secure_level() patches
++	 * are in
++	 */
++	return sprintf(buf, "%d\n", 1);
++}
++KERNEL_ATTR_RO(secure_modules_enabled);
++
+ static ssize_t kexec_crash_size_show(struct kobject *kobj,
+ 				       struct kobj_attribute *attr, char *buf)
  {
-@@ -61,14 +75,6 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
- 		}
- 	}
- 
--	switch (sig[0]) {
--	case 1:
--		return digsig_verify(keyring[id], sig, siglen,
--				     digest, digestlen);
--	case 2:
--		return asymmetric_verify(keyring[id], sig, siglen,
--					 digest, digestlen);
--	}
--
--	return -EOPNOTSUPP;
-+	return integrity_digsig_verify_keyring(keyring[id], sig, siglen,
-+						digest, digestlen);
- }
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index 4246417..130eb3b 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -101,6 +101,8 @@ struct integrity_iint_cache *integrity_iint_find(struct inode *inode);
- 
- int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
- 					const char *digest, int digestlen);
-+int integrity_digsig_verify_keyring(struct key *keyring, const char *sig,
-+			int siglen, const char *digest, int digestlen);
- extern int integrity_get_digsig_size(char *sig);
- 
- #else
-@@ -112,6 +114,13 @@ static inline int integrity_digsig_verify(const unsigned int id,
- 	return -EOPNOTSUPP;
- }
- 
-+static inline int integrity_digsig_verify_keyring(struct key *keyring,
-+			const char *sig, int siglen, const char *digest,
-+			int digestlen)
-+{
-+	return -EOPNOTSUPP;
-+}
-+
- static inline int integrity_get_digsig_size(char *sig) { return -EOPNOTSUPP; }
- 
- #endif /* CONFIG_INTEGRITY_SIGNATURE */
+@@ -196,6 +217,10 @@ static struct attribute * kernel_attrs[] = {
+ 	&kexec_crash_size_attr.attr,
+ 	&vmcoreinfo_attr.attr,
+ #endif
++#ifdef CONFIG_EFI
++	&secureboot_enabled_attr.attr,
++#endif
++	&secure_modules_enabled_attr.attr,
+ 	&rcu_expedited_attr.attr,
+ 	NULL
+ };
 -- 
 1.8.3.1
 
