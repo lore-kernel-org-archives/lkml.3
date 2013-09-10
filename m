@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab3IJJmy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 05:42:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57073 "EHLO mx2.suse.de"
+	id S1751929Ab3IJJnf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 05:43:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57055 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751376Ab3IJJcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 05:32:48 -0400
+	id S1751345Ab3IJJcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 05:32:46 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 14/50] sched: Set the scan rate proportional to the memory usage of the task being scanned
-Date: Tue, 10 Sep 2013 10:31:54 +0100
-Message-Id: <1378805550-29949-15-git-send-email-mgorman@suse.de>
+Subject: [PATCH 12/50] Revert "mm: sched: numa: Delay PTE scanning until a task is scheduled on a new node"
+Date: Tue, 10 Sep 2013 10:31:52 +0100
+Message-Id: <1378805550-29949-13-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1378805550-29949-1-git-send-email-mgorman@suse.de>
 References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
@@ -22,222 +22,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The NUMA PTE scan rate is controlled with a combination of the
-numa_balancing_scan_period_min, numa_balancing_scan_period_max and
-numa_balancing_scan_size. This scan rate is independent of the size
-of the task and as an aside it is further complicated by the fact that
-numa_balancing_scan_size controls how many pages are marked pte_numa and
-not how much virtual memory is scanned.
-
-In combination, it is almost impossible to meaningfully tune the min and
-max scan periods and reasoning about performance is complex when the time
-to complete a full scan is is partially a function of the tasks memory
-size. This patch alters the semantic of the min and max tunables to be
-about tuning the length time it takes to complete a scan of a tasks occupied
-virtual address space. Conceptually this is a lot easier to understand. There
-is a "sanity" check to ensure the scan rate is never extremely fast based on
-the amount of virtual memory that should be scanned in a second. The default
-of 2.5G seems arbitrary but it is to have the maximum scan rate after the
-patch roughly match the maximum scan rate before the patch was applied.
+PTE scanning and NUMA hinting fault handling is expensive so commit
+5bca2303 ("mm: sched: numa: Delay PTE scanning until a task is scheduled
+on a new node") deferred the PTE scan until a task had been scheduled on
+another node. The problem is that in the purely shared memory case that
+this may never happen and no NUMA hinting fault information will be
+captured. We are not ruling out the possibility that something better
+can be done here but for now, this patch needs to be reverted and depend
+entirely on the scan_delay to avoid punishing short-lived processes.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- Documentation/sysctl/kernel.txt | 11 +++---
- include/linux/sched.h           |  1 +
- kernel/sched/fair.c             | 84 ++++++++++++++++++++++++++++++++++++-----
- 3 files changed, 81 insertions(+), 15 deletions(-)
+ include/linux/mm_types.h | 10 ----------
+ kernel/fork.c            |  3 ---
+ kernel/sched/fair.c      | 18 ------------------
+ kernel/sched/features.h  |  4 +---
+ 4 files changed, 1 insertion(+), 34 deletions(-)
 
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index ccadb52..ad8d4f5 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -402,15 +402,16 @@ workload pattern changes and minimises performance impact due to remote
- memory accesses. These sysctls control the thresholds for scan delays and
- the number of pages scanned.
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index faf4b7c..4f12073 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -427,20 +427,10 @@ struct mm_struct {
  
--numa_balancing_scan_period_min_ms is the minimum delay in milliseconds
--between scans. It effectively controls the maximum scanning rate for
--each task.
-+numa_balancing_scan_period_min_ms is the minimum time in milliseconds to
-+scan a tasks virtual memory. It effectively controls the maximum scanning
-+rate for each task.
- 
- numa_balancing_scan_delay_ms is the starting "scan delay" used for a task
- when it initially forks.
- 
--numa_balancing_scan_period_max_ms is the maximum delay between scans. It
--effectively controls the minimum scanning rate for each task.
-+numa_balancing_scan_period_max_ms is the maximum time in milliseconds to
-+scan a tasks virtual memory. It effectively controls the minimum scanning
-+rate for each task.
- 
- numa_balancing_scan_size_mb is how many megabytes worth of pages are
- scanned for a given scan.
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 078066d..49b426e 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1331,6 +1331,7 @@ struct task_struct {
+ 	/* numa_scan_seq prevents two threads setting pte_numa */
  	int numa_scan_seq;
- 	int numa_migrate_seq;
- 	unsigned int numa_scan_period;
-+	unsigned int numa_scan_period_max;
- 	u64 node_stamp;			/* migration stamp  */
- 	struct callback_head numa_work;
- #endif /* CONFIG_NUMA_BALANCING */
+-
+-	/*
+-	 * The first node a task was scheduled on. If a task runs on
+-	 * a different node than Make PTE Scan Go Now.
+-	 */
+-	int first_nid;
+ #endif
+ 	struct uprobes_state uprobes_state;
+ };
+ 
+-/* first nid will either be a valid NID or one of these values */
+-#define NUMA_PTE_SCAN_INIT	-1
+-#define NUMA_PTE_SCAN_ACTIVE	-2
+-
+ static inline void mm_init_cpumask(struct mm_struct *mm)
+ {
+ #ifdef CONFIG_CPUMASK_OFFSTACK
+diff --git a/kernel/fork.c b/kernel/fork.c
+index e23bb19..f693bdf 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -820,9 +820,6 @@ struct mm_struct *dup_mm(struct task_struct *tsk)
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 	mm->pmd_huge_pte = NULL;
+ #endif
+-#ifdef CONFIG_NUMA_BALANCING
+-	mm->first_nid = NUMA_PTE_SCAN_INIT;
+-#endif
+ 	if (!mm_init(mm, tsk))
+ 		goto fail_nomem;
+ 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 2fb978b..23fd1f3 100644
+index b5aa546..2e4c8d0 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -818,10 +818,12 @@ update_stats_curr_start(struct cfs_rq *cfs_rq, struct sched_entity *se)
+@@ -901,24 +901,6 @@ void task_numa_work(struct callback_head *work)
+ 		return;
  
- #ifdef CONFIG_NUMA_BALANCING
+ 	/*
+-	 * We do not care about task placement until a task runs on a node
+-	 * other than the first one used by the address space. This is
+-	 * largely because migrations are driven by what CPU the task
+-	 * is running on. If it's never scheduled on another node, it'll
+-	 * not migrate so why bother trapping the fault.
+-	 */
+-	if (mm->first_nid == NUMA_PTE_SCAN_INIT)
+-		mm->first_nid = numa_node_id();
+-	if (mm->first_nid != NUMA_PTE_SCAN_ACTIVE) {
+-		/* Are we running on a new node yet? */
+-		if (numa_node_id() == mm->first_nid &&
+-		    !sched_feat_numa(NUMA_FORCE))
+-			return;
+-
+-		mm->first_nid = NUMA_PTE_SCAN_ACTIVE;
+-	}
+-
+-	/*
+ 	 * Reset the scan period if enough time has gone by. Objective is that
+ 	 * scanning will be reduced if pages are properly placed. As tasks
+ 	 * can enter different phases this needs to be re-examined. Lacking
+diff --git a/kernel/sched/features.h b/kernel/sched/features.h
+index 99399f8..cba5c61 100644
+--- a/kernel/sched/features.h
++++ b/kernel/sched/features.h
+@@ -63,10 +63,8 @@ SCHED_FEAT(LB_MIN, false)
  /*
-- * numa task sample period in ms
-+ * Approximate time to scan a full NUMA task in ms. The task scan period is
-+ * calculated based on the tasks virtual memory size and
-+ * numa_balancing_scan_size.
+  * Apply the automatic NUMA scheduling policy. Enabled automatically
+  * at runtime if running on a NUMA machine. Can be controlled via
+- * numa_balancing=. Allow PTE scanning to be forced on UMA machines
+- * for debugging the core machinery.
++ * numa_balancing=
   */
--unsigned int sysctl_numa_balancing_scan_period_min = 100;
--unsigned int sysctl_numa_balancing_scan_period_max = 100*50;
-+unsigned int sysctl_numa_balancing_scan_period_min = 1000;
-+unsigned int sysctl_numa_balancing_scan_period_max = 600000;
- unsigned int sysctl_numa_balancing_scan_period_reset = 100*600;
- 
- /* Portion of address space to scan in MB */
-@@ -830,6 +832,51 @@ unsigned int sysctl_numa_balancing_scan_size = 256;
- /* Scan @scan_size MB every @scan_period after an initial @scan_delay in ms */
- unsigned int sysctl_numa_balancing_scan_delay = 1000;
- 
-+static unsigned int task_nr_scan_windows(struct task_struct *p)
-+{
-+	unsigned long rss = 0;
-+	unsigned long nr_scan_pages;
-+
-+	/*
-+	 * Calculations based on RSS as non-present and empty pages are skipped
-+	 * by the PTE scanner and NUMA hinting faults should be trapped based
-+	 * on resident pages
-+	 */
-+	nr_scan_pages = sysctl_numa_balancing_scan_size << (20 - PAGE_SHIFT);
-+	rss = get_mm_rss(p->mm);
-+	if (!rss)
-+		rss = nr_scan_pages;
-+
-+	rss = round_up(rss, nr_scan_pages);
-+	return rss / nr_scan_pages;
-+}
-+
-+/* For sanitys sake, never scan more PTEs than MAX_SCAN_WINDOW MB/sec. */
-+#define MAX_SCAN_WINDOW 2560
-+
-+static unsigned int task_scan_min(struct task_struct *p)
-+{
-+	unsigned int scan, floor;
-+	unsigned int windows = 1;
-+
-+	if (sysctl_numa_balancing_scan_size < MAX_SCAN_WINDOW)
-+		windows = MAX_SCAN_WINDOW / sysctl_numa_balancing_scan_size;
-+	floor = 1000 / windows;
-+
-+	scan = sysctl_numa_balancing_scan_period_min / task_nr_scan_windows(p);
-+	return max_t(unsigned int, floor, scan);
-+}
-+
-+static unsigned int task_scan_max(struct task_struct *p)
-+{
-+	unsigned int smin = task_scan_min(p);
-+	unsigned int smax;
-+
-+	/* Watch for min being lower than max due to floor calculations */
-+	smax = sysctl_numa_balancing_scan_period_max / task_nr_scan_windows(p);
-+	return max(smin, smax);
-+}
-+
- static void task_numa_placement(struct task_struct *p)
- {
- 	int seq;
-@@ -840,6 +887,7 @@ static void task_numa_placement(struct task_struct *p)
- 	if (p->numa_scan_seq == seq)
- 		return;
- 	p->numa_scan_seq = seq;
-+	p->numa_scan_period_max = task_scan_max(p);
- 
- 	/* FIXME: Scheduling placement policy hints go here */
- }
-@@ -860,9 +908,14 @@ void task_numa_fault(int node, int pages, bool migrated)
- 	 * If pages are properly placed (did not migrate) then scan slower.
- 	 * This is reset periodically in case of phase changes
- 	 */
--        if (!migrated)
--		p->numa_scan_period = min(sysctl_numa_balancing_scan_period_max,
-+        if (!migrated) {
-+		/* Initialise if necessary */
-+		if (!p->numa_scan_period_max)
-+			p->numa_scan_period_max = task_scan_max(p);
-+
-+		p->numa_scan_period = min(p->numa_scan_period_max,
- 			p->numa_scan_period + jiffies_to_msecs(10));
-+	}
- 
- 	task_numa_placement(p);
- }
-@@ -884,6 +937,7 @@ void task_numa_work(struct callback_head *work)
- 	struct mm_struct *mm = p->mm;
- 	struct vm_area_struct *vma;
- 	unsigned long start, end;
-+	unsigned long nr_pte_updates = 0;
- 	long pages;
- 
- 	WARN_ON_ONCE(p != container_of(work, struct task_struct, numa_work));
-@@ -915,7 +969,7 @@ void task_numa_work(struct callback_head *work)
- 	 */
- 	migrate = mm->numa_next_reset;
- 	if (time_after(now, migrate)) {
--		p->numa_scan_period = sysctl_numa_balancing_scan_period_min;
-+		p->numa_scan_period = task_scan_min(p);
- 		next_scan = now + msecs_to_jiffies(sysctl_numa_balancing_scan_period_reset);
- 		xchg(&mm->numa_next_reset, next_scan);
- 	}
-@@ -927,8 +981,10 @@ void task_numa_work(struct callback_head *work)
- 	if (time_before(now, migrate))
- 		return;
- 
--	if (p->numa_scan_period == 0)
--		p->numa_scan_period = sysctl_numa_balancing_scan_period_min;
-+	if (p->numa_scan_period == 0) {
-+		p->numa_scan_period_max = task_scan_max(p);
-+		p->numa_scan_period = task_scan_min(p);
-+	}
- 
- 	next_scan = now + msecs_to_jiffies(p->numa_scan_period);
- 	if (cmpxchg(&mm->numa_next_scan, migrate, next_scan) != migrate)
-@@ -965,7 +1021,15 @@ void task_numa_work(struct callback_head *work)
- 			start = max(start, vma->vm_start);
- 			end = ALIGN(start + (pages << PAGE_SHIFT), HPAGE_SIZE);
- 			end = min(end, vma->vm_end);
--			pages -= change_prot_numa(vma, start, end);
-+			nr_pte_updates += change_prot_numa(vma, start, end);
-+
-+			/*
-+			 * Scan sysctl_numa_balancing_scan_size but ensure that
-+			 * at least one PTE is updated so that unused virtual
-+			 * address space is quickly skipped.
-+			 */
-+			if (nr_pte_updates)
-+				pages -= (end - start) >> PAGE_SHIFT;
- 
- 			start = end;
- 			if (pages <= 0)
-@@ -1012,7 +1076,7 @@ void task_tick_numa(struct rq *rq, struct task_struct *curr)
- 
- 	if (now - curr->node_stamp > period) {
- 		if (!curr->node_stamp)
--			curr->numa_scan_period = sysctl_numa_balancing_scan_period_min;
-+			curr->numa_scan_period = task_scan_min(curr);
- 		curr->node_stamp += period;
- 
- 		if (!time_before(jiffies, curr->mm->numa_next_scan)) {
+ #ifdef CONFIG_NUMA_BALANCING
+ SCHED_FEAT(NUMA,	false)
+-SCHED_FEAT(NUMA_FORCE,	false)
+ #endif
 -- 
 1.8.1.4
 
