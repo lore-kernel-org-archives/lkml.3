@@ -1,98 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554Ab3IJH0X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 03:26:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37689 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754134Ab3IJH0W (ORCPT
+	id S1754760Ab3IJH0p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 03:26:45 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:56966 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754137Ab3IJH0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 03:26:22 -0400
-Date: Tue, 10 Sep 2013 00:25:06 -0700
-From: tip-bot for Joonsoo Kim <tipbot@zytor.com>
-Message-ID: <tip-b0cff9d88ce2f3030f73138078c5b1019f17e1cc@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, pjt@google.com, dchinner@redhat.com,
-        tglx@linutronix.de, iamjoonsoo.kim@lge.com, david@fromorbit.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        pjt@google.com, peterz@infradead.org, dchinner@redhat.com,
-        david@fromorbit.com, tglx@linutronix.de, iamjoonsoo.kim@lge.com
-In-Reply-To: <20130910065448.GA20368@lge.com>
-References: <20130910065448.GA20368@lge.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched:
-  Fix load balancing performance regression in should_we_balance()
-Git-Commit-ID: b0cff9d88ce2f3030f73138078c5b1019f17e1cc
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 10 Sep 2013 00:25:12 -0700 (PDT)
+	Tue, 10 Sep 2013 03:26:43 -0400
+Message-ID: <1378797995.6046.54.camel@marge.simpson.net>
+Subject: Re: [RFC] Restrict kernel spawning of threads to a specified set of
+ cpus.
+From: Mike Galbraith <bitbucket@online.de>
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Tue, 10 Sep 2013 09:26:35 +0200
+In-Reply-To: <CAOtvUMfhLQYK95uPm8idG_vYv-9yG2-KSkScjMBCSuvtffW1Dg@mail.gmail.com>
+References: <00000140efbcb701-c26320b3-f434-4538-bc80-8e92fed6f303-000000@email.amazonses.com>
+	 <CAOtvUMe=jcAHXNJU_rTAAokaE4KZNUTFsHVVTTxgFW_xj8ONxg@mail.gmail.com>
+	 <1378795659.6046.41.camel@marge.simpson.net>
+	 <CAOtvUMfhLQYK95uPm8idG_vYv-9yG2-KSkScjMBCSuvtffW1Dg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:2fA3alw38ZwH/cPuTta53TBfYPlEYb57psKtWjd/b3B
+ pKfDLqElpKHktXNLx3Dc1jwUTPDhHzXLTrdfNoeEjCyQJsc35j
+ m+hJ6DfQjt3Jm2RoqxknB7UHu4NGV3OHgrwai7gnR1OCj3bRfB
+ JohClkthRseNZGGraHrJWrrpLqejDSluCPuHHe5hqKBjq3KyEk
+ FxibSylSkXCezoWuilBJkHOAScXJuR3R/cIZ1WzBlVfpx/fuJG
+ RLwyKyvik92Yr1UwtFLTgvMFCyK5Idxigd213Dp1TtlvCYhDTI
+ n8/1YNXP+9PM/21Nytrw223i8QbMBeOtLsnsw9uMXp+9oW1aUF
+ 9+Q9CvrM0UzlXsKI9pH1ju2Z3viNMQ/sgGGdbNodQ6HdUa0mvP
+ p/nDcx/VaQqlw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b0cff9d88ce2f3030f73138078c5b1019f17e1cc
-Gitweb:     http://git.kernel.org/tip/b0cff9d88ce2f3030f73138078c5b1019f17e1cc
-Author:     Joonsoo Kim <iamjoonsoo.kim@lge.com>
-AuthorDate: Tue, 10 Sep 2013 15:54:49 +0900
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 10 Sep 2013 09:20:42 +0200
+On Tue, 2013-09-10 at 09:59 +0300, Gilad Ben-Yossef wrote: 
+> Hi,
+> 
+> 
+> On Tue, Sep 10, 2013 at 9:47 AM, Mike Galbraith <bitbucket@online.de> wrote:
+> >
+> > On Tue, 2013-09-10 at 09:05 +0300, Gilad Ben-Yossef wrote:
+> > > Hi,
+> > >
+> > > On Thu, Sep 5, 2013 at 11:07 PM, Christoph Lameter <cl@linux.com> wrote:
+> > > > I am not sure how to call this kernel option but we need something like
+> > > > that. I see drivers and the kernel spawning processes on the nohz cores.
+> > > > The name kthread is not really catching the purpose.
+> > > >
+> > > > os_cpus=? highlatency_cpus=?
+> > > >
+> > >
+> > > First off, thank you for doing this. It is very useful :-)
+> > >
+> > > Currently if one wishes to run a single task on an isolated CPU with
+> > > as little interference as possible, one needs to pass
+> > > rcu_nocbs, isolcpus, nohz_full parameters and now kthread parameter,
+> > > all pretty much with the same values
+> > >
+> > > I know some people won't like this, but can we perhaps fold all these
+> > > into a single parameter, perhaps even the existing isolcpus?
+> >
+> > isolcpus is supposed to go away, as cpusets can isolate CPUs, and can
+> > turn off load balancing.
+> >
+> 
+> And I'm all for that. I think cpusets is a much more elegant solution.
+> 
+> But... AFAIK currently cpusets cannot migrate timers that were registered on
+> a cpu prior to it being isolated via cpuset, designate RCU off loaded CPUs or
+> sets cpus as full nohz capable, or - it seems from this patch, keep off certain
+> kernel thread off a cpu.
+> 
+> This is no fault of cpusets, but it still means there are work loads
+> that it can't
+> support at this time.
+> 
+> So long as we must  have a kernel boot option, I prefer to have one
+> and not four of
+> them. Think of it this way - when we put all these capabilities into
+> cpusets, we'll have
+> just one kernel option to kill and not four.
+> 
+> Does that makes sense?
 
-sched: Fix load balancing performance regression in should_we_balance()
+Hammering on the wrong spot makes removing isolcpus take longer, and
+adds up to more hammering in the long run, no?  Hearing you mention
+isolcpus, I just thought I should mention that it wants to go away, so
+might not be the optimal spot for isolation related tinkering.
 
-Commit 23f0d20 ("sched: Factor out code to should_we_balance()")
-introduces the should_we_balance() function.  This function should
-return 1 if this cpu is appropriate for balancing. But the newly
-introduced code doesn't do so, it returns 0 instead of 1.
+-Mike
 
-This introduces performance regression, reported by Dave Chinner:
-
-                        v4 filesystem           v5 filesystem
-3.11+xfsdev:            220k files/s            225k files/s
-3.12-git                180k files/s            185k files/s
-3.12-git-revert         245k files/s            247k files/s
-
-You can find more detailed information at:
-
-  https://lkml.org/lkml/2013/9/10/1
-
-This patch corrects the return value of should_we_balance()
-function as orignally intended.
-
-With this patch, Dave Chinner reports that the regression is gone:
-
-                        v4 filesystem           v5 filesystem
-3.11+xfsdev:            220k files/s            225k files/s
-3.12-git                180k files/s            185k files/s
-3.12-git-revert         245k files/s            247k files/s
-3.12-git-fix            249k files/s            248k files/s
-
-Reported-by: Dave Chinner <dchinner@redhat.com>
-Tested-by: Dave Chinner <dchinner@redhat.com>
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Paul Turner <pjt@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Dave Chinner <david@fromorbit.com>
-Link: http://lkml.kernel.org/r/20130910065448.GA20368@lge.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/fair.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 7f0a5e6..9b3fe1c 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5151,7 +5151,7 @@ static int should_we_balance(struct lb_env *env)
- 	 * First idle cpu or the first cpu(busiest) in this sched group
- 	 * is eligible for doing load balancing at this and above domains.
- 	 */
--	return balance_cpu != env->dst_cpu;
-+	return balance_cpu == env->dst_cpu;
- }
- 
- /*
