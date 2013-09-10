@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739Ab3IJRAY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 13:00:24 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:48716 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751952Ab3IJRAW (ORCPT
+	id S1753175Ab3IJRBu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 13:01:50 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:63498 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751685Ab3IJRBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 13:00:22 -0400
-Date: Tue, 10 Sep 2013 12:56:06 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Andrea Merello <andrea.merello@gmail.com>
-Cc: wlanfae@realtek.com, shwei <shwei@realtek.com.tw>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <greg@kroah.com>, linux-wireless@vger.kernel.org,
-        Michael Wu <flamingice@sourmilk.net>
-Subject: Re: RTL8187SE staging Linux driver
-Message-ID: <20130910165606.GB1960@tuxdriver.com>
-References: <CAN8YU5NTKUtS8+YzmcOSM3=YUX-FSwLTD86F_hXsNdVkw5NEGA@mail.gmail.com>
+	Tue, 10 Sep 2013 13:01:48 -0400
+Date: Tue, 10 Sep 2013 19:00:51 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Arjun Gopalan <agopalan@nvidia.com>, Brian Swetland <swetland@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Paul Walmsley <pwalmsley@nvidia.com>
+Subject: Re: permission to move definition of struct rpmsg_channel_info
+Message-ID: <20130910170051.GB22111@ulmo>
+References: <5220F099.1020002@nvidia.com>
+ <CAK=WgbZ2JgtAonvdyeDZazYBGdKpPAieJtjzi7MM6nwqhVfs7g@mail.gmail.com>
+ <20130909125745.GD22197@ulmo>
+ <CAK=Wgbbxp5pfQm1mvCZ2phigXe_e2_J_Zkrof9tx2jggi8EMjQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bCsyhTFzCvuiizWE"
 Content-Disposition: inline
-In-Reply-To: <CAN8YU5NTKUtS8+YzmcOSM3=YUX-FSwLTD86F_hXsNdVkw5NEGA@mail.gmail.com>
+In-Reply-To: <CAK=Wgbbxp5pfQm1mvCZ2phigXe_e2_J_Zkrof9tx2jggi8EMjQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 05:59:54PM +0200, Andrea Merello wrote:
-> Hello,
-> 
-> As you probably know, in the current Linux kernel there is a staging
-> driver for the RTL8187SE device (based on my older RTL8180/RTL8185
-> Linux driver), while there also a regular (not staging) driver
-> supporting older RTL8185 and RTL8180 devices
-> (net/wireless/rtl818x/rtl8180) .
-> 
-> As far as I can see, the RTL8187SE device seems not so much different
-> from an RTL8185 device.
-> I would like to try (in my spare time) to add support for RTL8187SE
-> device in the current RTL818x driver, in order to avoid code
-> duplication, remove a driver from staging, and make RTL8187SE using
-> mac80211.
-> 
-> Do any one of you have any comment/objection/suggestions about this ?
 
-I would be extremely happy for you to tackle this.
+--bCsyhTFzCvuiizWE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Is it possible to get the RTL8187SE documentation to make things easier?
+On Mon, Sep 09, 2013 at 10:06:24PM +0200, Ohad Ben-Cohen wrote:
+> On Mon, Sep 9, 2013 at 2:57 PM, Thierry Reding <thierry.reding@gmail.com>=
+ wrote:
+[...]
+> > Looking at the remoteproc core, it seems that there's no direct way to
+> > change the firmware running on a remoteproc at runtime.
+>=20
+> One way is to unload and load the driver, but you can also use the
+> bind/unbind sysfs files of your driver (echo -n device-name >
+> /sys/..../{un}bind).
 
-This info used to be readily available.  If you can't find a source, I
-probably still have a (mildly useful) datasheet somewhere in my heap...
+I'm not quite sure how that solves the issue with replacing the firmware
+image. The driver will still request the same firmware on rebind, so the
+only way to have a different firmware loaded would be to replace the
+file. That sounds sub-optimal. But it's not very important at this stage
+so it can be deferred until (and if) it becomes a real issue.
 
-> For now I will probably keep different RF code for the two cards even
-> if the RTL8225 (zebra 2) radio is used by both RTL8187SE and some
-> RTL8185 devices, however if I could get enough documentation about it,
-> it would be great to try to merge also RF code..
-> 
-> Thank you,
-> Andrea
+> Does that help?
 
-Seems reasonable...
+Yes, thanks very much for confirming.
 
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Thierry
+
+--bCsyhTFzCvuiizWE
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSL1BCAAoJEN0jrNd/PrOh8DkP/A8n8aHDgsm+KWqsS355Zb2A
+6dtfx4EOgSgDteXTKMPycSOirwQ+uEDS6UPDavm0olnSLiik4kF7r9BuS8VtTqz9
+nWFBUMVupVDunpgjrG5Cj1AsHI191pPoW+lvvV+J+i2wvuHTXkBVpXxfJ6SPQffx
+zr/FAstuwSxmexra8IQx1zYsxi7AkaeZ+8UIxtgiX3Skht/WqgF2d6k7j6ZMgKEA
+UBq2QsNBb6yD6/z5GaM+x51507pWEPcDyLnGgudIQ1/I+FImdwuLzoBqimRaPlE3
+vCespgJIpKd2QcdRrBMOwQmolp9ZifuMGfUgrVXFY1oQBpBGon8usXOe/WU2SQ9s
+MD+/ljHyRhUam0PQ12oMAnE6lw9VtkjLhKfz5w4S/ZpcakX6+jr9J5v/BTJWDTq+
+UGuUCuXuRgolgAMwLXBWK+gaHE3g9kTy6lSHGyd3kcB1zYVTjHZ8VPaHeL+KXmLt
+u41G/OJaUBz12zAeYXh0CgOxRtSP90zjesH5vdv+eaBG2bo8crRVvnQk6Z6TsgCv
+Kbm+bV1o1WbgyhPzSjcn1/gtntAgyZVMpJ3qFq6GmFD2Sl2xHOU/3NK+QRReuc90
+zfC8vV3RwsMxJk8WjJQj4OWTs+EsW9fTD7qnScBHBGjp+2xPkdOD5Dvy/XL26tNg
+ezpeEMOnoqKNzmHAPDBp
+=hUaN
+-----END PGP SIGNATURE-----
+
+--bCsyhTFzCvuiizWE--
