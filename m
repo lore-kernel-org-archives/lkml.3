@@ -1,38 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842Ab3IJRrY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 13:47:24 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:59958 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752001Ab3IJRrX (ORCPT
+	id S1753183Ab3IJRy6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 13:54:58 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:32877 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752452Ab3IJRy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 13:47:23 -0400
+	Tue, 10 Sep 2013 13:54:56 -0400
+Date: Tue, 10 Sep 2013 10:54:53 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Jochen Striepe <jochen@tolot.escape.de>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: 3.10.5: rcu_sched detected stalls on CPUs/tasks
+Message-ID: <20130910175453.GQ3966@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130813103202.GB2338@pompeji.miese-zwerge.org>
+ <20130818180232.GL29406@linux.vnet.ibm.com>
+ <20130818184848.GA2398@pompeji.miese-zwerge.org>
+ <20130909215836.GD17483@pompeji.miese-zwerge.org>
+ <20130909222751.GL3966@linux.vnet.ibm.com>
+ <20130910074550.GE17483@pompeji.miese-zwerge.org>
 MIME-Version: 1.0
-In-Reply-To: <CA+5PVA6EDV3zuDEyCvcGNvEAPtgY_Oy9xVbaM03ggRBPtq5Mmg@mail.gmail.com>
-References: <CA+5PVA4k9tTPs9vtTbMuG7pzw4kb3KFK-CLaqDDG4dm=0twyCQ@mail.gmail.com>
-	<CA+55aFzg_r2c09TkGwmsMV3HbNAkSFJLGAFWweLNzofqs4o4Ug@mail.gmail.com>
-	<CA+5PVA6EDV3zuDEyCvcGNvEAPtgY_Oy9xVbaM03ggRBPtq5Mmg@mail.gmail.com>
-Date: Tue, 10 Sep 2013 10:47:21 -0700
-X-Google-Sender-Auth: zZ7BusX-PST0JLUTKFoQdIWtMIM
-Message-ID: <CA+55aFympAk-hnekaew8po5wLJdiY+DC_b4h=pa-y5i9=s303Q@mail.gmail.com>
-Subject: Re: kernel BUG at fs/dcache.c:648! with v3.11-7890-ge5c832d
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Waiman Long <Waiman.Long@hp.com>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        moneta.mace@gmail.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130910074550.GE17483@pompeji.miese-zwerge.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13091017-8236-0000-0000-000001A1DC01
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 10:39 AM, Josh Boyer <jwboyer@gmail.com> wrote:
->
-> The subject says v3.11-7890-ge5c832d, which is the git-describe output
-> of the mainline kernel for that Fedora build.
+On Tue, Sep 10, 2013 at 09:45:50AM +0200, Jochen Striepe wrote:
+> 	Hello,
+> 
+> On Mon, Sep 09, 2013 at 03:27:51PM -0700, Paul E. McKenney wrote:
+> > On Mon, Sep 09, 2013 at 11:58:36PM +0200, Jochen Striepe wrote:
+> > > I just got this on 3.10.11 on the same machine. Could that be
+> > > related?
+> > 
+> > Several people helped track down another source of spurious stall
+> > warnings on large systems, please see below for the patch.
+> [...]
+> > This is quite rare, but apparently occurs deterministically
+> > on systems with about 6TB of memory.
+> 
+> Hmm. My system is an ASUS Eee PC netbook with a total of 2G memory.
+> The latest stall was just when booting, while /dev was to be filled
+> by udev (and taking a really long time on that). So I think this
+> patch should not help at my machine, right?
+> 
+> I tried to reproduce the stall, but without success. Is there anything
+> that could help reproducing?
 
-Duh. I just read the bugzilla and the oops ;)
+Their stall was due to old-style creation of sysfs entries for memory.
+Yours might be having a similar issue with the creation of /dev entries,
+so it would be worth trying it.
 
-But yes, e5c832d is obviously the "fixed" kernel. Let me think about this.
+One thing to try would be to insert delays into the code involved in
+creating the /dev entries.  These delays will need to be busy-waits
+rather than sleeps.
 
-         Linus
+							Thanx, Paul
+
