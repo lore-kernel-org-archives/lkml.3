@@ -1,102 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289Ab3IJAxW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 20:53:22 -0400
-Received: from mail-bn1lp0152.outbound.protection.outlook.com ([207.46.163.152]:36096
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756257Ab3IJAxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 20:53:21 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: David Lang <david@lang.hm>
-CC: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH 00/12] One more attempt at useful kernel lockdown
-Thread-Topic: [PATCH 00/12] One more attempt at useful kernel lockdown
-Thread-Index: AQHOrYDL2QYLBLFVskGOdCrAsfX2cpm9uPUAgABSI3WAABooAA==
-Date: Tue, 10 Sep 2013 00:53:14 +0000
-Message-ID: <1378774394.17982.36.camel@x230.lan>
-References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
-	 <19562.1378747124@turing-police.cc.vt.edu>
-	 <alpine.DEB.2.02.1309091119330.2479@nftneq.ynat.uz>
-	 <1378767723.17982.27.camel@x230.lan>
-	 <alpine.DEB.2.02.1309091614010.2479@nftneq.ynat.uz>
-In-Reply-To: <alpine.DEB.2.02.1309091614010.2479@nftneq.ynat.uz>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:470:1f07:1371:5d52:9ee3:3e84:6668]
-x-forefront-prvs: 096507C068
-x-forefront-antispam-report: SFV:NSPM;SFS:(24454002)(51704005)(189002)(199002)(15404003)(377424004)(80976001)(74876001)(56816003)(53806001)(77096001)(19580405001)(19580395003)(83322001)(76482001)(54356001)(79102001)(77982001)(59766001)(83072001)(56776001)(54316002)(80022001)(63696002)(46102001)(81342001)(81816001)(65816001)(69226001)(74366001)(47446002)(74502001)(31966008)(74706001)(74662001)(47736001)(49866001)(47976001)(50986001)(76786001)(4396001)(76796001)(51856001)(81686001)(81542001)(36756003)(33646001)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB223;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:5d52:9ee3:3e84:6668;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <C6F5DB27F4467445BC5576EE74DD9198@namprd05.prod.outlook.com>
-MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+	id S1756321Ab3IJAzR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 20:55:17 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:50633 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755756Ab3IJAzP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 20:55:15 -0400
+X-AuditID: cbfee68f-b7f656d0000058e3-7b-522e6df12468
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+Message-id: <1378774503.2354.106.camel@kjgkr>
+Subject: Re: [f2fs-dev] [PATCH] f2fs: optimize fs_lock for better performance
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Russ Knize <Russ.Knize@motorola.com>
+Cc: chao2.yu@samsung.com, linux-fsdevel@vger.kernel.org, shu.tan@samsung.com,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Date: Tue, 10 Sep 2013 09:55:03 +0900
+In-reply-to: <CAGfvh62EGuQfGBRhasNEXAVEvS2BwKCijnAS67f+GL2fHS-fTA@mail.gmail.com>
+References: <02.95.21086.AD4A9225@epcpsbgx4.samsung.com>
+ <CAGfvh62EGuQfGBRhasNEXAVEvS2BwKCijnAS67f+GL2fHS-fTA@mail.gmail.com>
+Organization: Samsung
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsVy+t8zA92PuXpBBk9fm1v8b/rIZnFpkbvF
+	nr0nWSwu75rDZrFw8gcWi9aF55kd2Dx2L/jM5NFz6i2zR9+WVYwenzfJBbBEcdmkpOZklqUW
+	6dslcGV0XtrGWrDQoGJ1w0mmBsZWmS5GDg4JAROJ319Suhg5gUwxiQv31rN1MXJxCAksY5Ro
+	vLSVESJhIvG8YToriC0ksIhRYv2EKBCbV0BQ4sfkeywgNrOAusSkeYuYIWwRiWl/b7BC2NoS
+	yxa+ZoYY+ppRYv7pH8wQzboSlx9sYQKxhQV8JRqPvWcEOYgNqGHzfgOIXYoSb/ffBZsjIqAh
+	saWviRVkDrPAFEaJNRtvgM1hEVCV+HPzKJjNKRAssXjPGiaI5nqJq+t7wGx+AVGJwwu3M0M8
+	oySxu72THWSQhMAtdokz356yQQwSkPg2+RALJFRkJTYdgKqXlDi44gbLBEbJWUh+noXk51lI
+	fp6F5OcFjCyrGEVTC5ILipPSi4z1ihNzi0vz0vWS83M3MULit38H490D1ocYk4HWT2SWEk3O
+	B8Z/Xkm8obGZkYWpiamxkbmlGWnCSuK8ai3WgUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoY
+	JVabRkZvCHfYccds2cXyghMSMfWnTiqaftnxocY0bou17VmFbdoWe9iOmpxUvhL++8eiWdIM
+	ASsliuoDpJS+tX5hmpdYWfb7yOljieEtbWodMYxzX2pGq3u0Ckstevjv/Ov7P2coVmZ5C90U
+	XWLkwzPhru2+wC2aBhH5JaW2mekbFi+60nJRiaU4I9FQi7moOBEAnBsiTPUCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGKsWRmVeSWpSXmKPExsVy+t9jAd2PuXpBBt8bjS3+N31ks7i0yN1i
+	z96TLBaXd81hs1g4+QOLRevC88wObB67F3xm8ug59ZbZo2/LKkaPz5vkAliiGhhtMlITU1KL
+	FFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4CWKymUJeaUAoUCEouL
+	lfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgz/ky5xFTQblCxcdtCtgbG19JdjJwcEgImEs8b
+	prNC2GISF+6tZwOxhQQWMUqsnxAFYvMKCEr8mHyPpYuRg4NZQF7iyKVskDCzgLrEpHmLmLsY
+	uYDKXzNKzD/9gxmiXlfi8oMtTCC2sICvROOx94wgvWwC2hKb9xtAjFeUeLv/LthaEQENiS19
+	Tawgc5gFpjBKrNl4A2wOi4CqxJ+bR8FsToFgicV71jBBNNdLXF3fA2bzC4hKHF64nRnifiWJ
+	3e2d7BMYhWYhOXsWwtmzkJy9gJF5FaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZwrD+T2sG4
+	ssHiEKMAB6MSD6/GO90gIdbEsuLK3EOMEhzMSiK8G5j1goR4UxIrq1KL8uOLSnNSiw8xJgMd
+	PpFZSjQ5H5iG8kriDY1NzIwsjcwsjEzMzUkTVhLnPdBqHSgkkJ5YkpqdmlqQWgSzhYmDU6qB
+	Mf/2eouZonZBkzZN/p63hD+7UvDlVZWVOZKRDtb+zKoR9xgsrbSECyY+/6Hnk7n/0m/35JN6
+	ac+qsndMmPUkuv3hR6Zu0dVvuaQ3hwlUfTohq8bxwNZeqcaz3Pa54L7MZxe0zpso7eD9fZ/N
+	p8R5rlC8b0POokWHq5bKiE478MLoJY9LwcVJSizFGYmGWsxFxYkAyAYfBTkDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8A0rRdW024068
 
-On Mon, 2013-09-09 at 16:19 -0700, David Lang wrote:
-> On Mon, 9 Sep 2013, Matthew Garrett wrote:
-> > Having thought about this, the answer is no. It presents exactly the
-> > same problem as capabilities do - the set can never be meaningfully
-> > extended. If an application sets only the bits it knows about, and if a
-> > new security-sensitive feature is added to the kernel, the feature will
-> > be left enabled and the system will be insecure. Alternatively, if an
-> > application sets all the bits regardless of whether it knows them or
-> > not, it may enable a lockdown feature that it otherwise required.
+Hi,
+
+Nice catch.
+This is definitely a bug where one thread grabbed two fs_locks across
+the same flow.
+Any idea?
+Thanks,
+
+2013-09-06 (Í∏à), 14:25 -0500, Russ Knize:
+> I encountered this same issue recently and solved it in much the same
+> way.  Can we rename "spin_lock" to something more meaningful?
 > 
-> In this case you are no less secure than you were before the feature was added, 
-> you just can't take advantage of the new feature without updating userspace.
-
-No. Say someone adds an additional lockdown bit to forbid raw access to
-mounted block devices. The "Turn everything off" approach now means that
-I won't be able to perform raw access to mounted block devices, even if
-that's something that my use case relies on.
-
-> > The only way this is useful is if all the bits are semantically
-> > equivalent, and in that case there's no point in having anything other
-> > than a single bit. Users who want a more fine-grained interface should
-> > use one of the existing mechanisms for doing so - leave the kernel open
-> > and impose the security policy from userspace using either capabilities
-> > or selinux.
 > 
-> so if you only have a single bit, how do you deal with the case where that bit 
-> locks down something that's required? (your reason for not just setting all bits 
-> in the first approach)
-
-Because that bit is well-defined, and if anything is added to it that
-doesn't match that definition then it's a bug.
-
-> your arguments don't seem self consistent.
-
-You don't seem to have been paying attention to the past 12 months of
-discussion.
-
-> If I'm building a kiosk PC (or voting machine), I want to disable a lot of 
-> things that I could not get away with disabling on a generic laptop. Are we 
-> going to have Securelevel, ReallySecurelevel, ReallyReallySecurelevel, etc? or 
-> can we accept that security is not binary and allow users to disable features 
-> in a more granualar way?
-
-Anything more granular means that you trust your userspace, and if you
-trust your userspace then you can already set up a granular policy using
-the existing tools for that job. So just use the existing tools.
-
-> And if SELinux can do the job, what is the reason for creating this new option?
-
-Because you can't embed an unmodifiable selinux policy in the kernel.
+> This race actually exposed a potential deadlock between f2fs_create()
+> and f2fs_initxattrs():
+> 
+> 
+> - vfs_create()
+>  - f2fs_create() - takes an fs_lock
+>   - f2fs_add_link()
+>    - __f2fs_add_link()
+>     - init_inode_metadata()
+>      - f2fs_init_security()
+>       - security_inode_init_security()
+>        - f2fs_initxattrs()
+>         - f2fs_setxattr() - also takes an fs_lock
+> 
+> 
+> If another CPU happens to have the same lock that f2fs_setxattr() was
+> trying to take because of the race around next_lock_num, we can get
+> into a deadlock situation if the two threads are also contending over
+> another resource (like bdi).
+> 
+> 
+> Another scenario is if the above happens while another thread is in
+> the middle of grabbing all of the locks via mutex_lock_all().
+>  f2fs_create() is holding a lock that mutex_lock_all() is waiting for
+> and mutex_lock_all() is holding a lock that f2fs_setxattr() is waiting
+> for.
+> 
+> 
+> Russ
+> 
+> 
+> On Fri, Sep 6, 2013 at 4:48 AM, Chao Yu <chao2.yu@samsung.com> wrote:
+>         Hi Kim:
+>         
+>              I think there is a performance problem: when all
+>         sbi->fs_lock is holded, 
+>         
+>         then all other threads may get the same next_lock value from
+>         sbi->next_lock_num in function mutex_lock_op, 
+>         
+>         and wait to get the same lock at position fs_lock[next_lock],
+>         it unbalance the fs_lock usage. 
+>         
+>         It may lost performance when we do the multithread test.
+>         
+>          
+>         
+>         Here is the patch to fix this problem:
+>         
+>          
+>         
+>         Signed-off-by: Yu Chao <chao2.yu@samsung.com>
+>         
+>         diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+>         
+>         old mode 100644
+>         
+>         new mode 100755
+>         
+>         index 467d42d..983bb45
+>         
+>         --- a/fs/f2fs/f2fs.h
+>         
+>         +++ b/fs/f2fs/f2fs.h
+>         
+>         @@ -371,6 +371,7 @@ struct f2fs_sb_info {
+>         
+>                 struct mutex fs_lock[NR_GLOBAL_LOCKS];  /* blocking FS
+>         operations */
+>         
+>                 struct mutex node_write;                /* locking
+>         node writes */
+>         
+>                 struct mutex writepages;                /* mutex for
+>         writepages() */
+>         
+>         +       spinlock_t spin_lock;                   /* lock for
+>         next_lock_num */
+>         
+>                 unsigned char next_lock_num;            /* round-robin
+>         global locks */
+>         
+>                 int por_doing;                          /* recovery is
+>         doing or not */
+>         
+>                 int on_build_free_nids;                 /*
+>         build_free_nids is doing */
+>         
+>         @@ -533,15 +534,19 @@ static inline void
+>         mutex_unlock_all(struct f2fs_sb_info *sbi)
+>         
+>          
+>         
+>          static inline int mutex_lock_op(struct f2fs_sb_info *sbi)
+>         
+>          {
+>         
+>         -       unsigned char next_lock = sbi->next_lock_num %
+>         NR_GLOBAL_LOCKS;
+>         
+>         +       unsigned char next_lock;
+>         
+>                 int i = 0;
+>         
+>          
+>         
+>                 for (; i < NR_GLOBAL_LOCKS; i++)
+>         
+>                         if (mutex_trylock(&sbi->fs_lock[i]))
+>         
+>                                 return i;
+>         
+>          
+>         
+>         -       mutex_lock(&sbi->fs_lock[next_lock]);
+>         
+>         +       spin_lock(&sbi->spin_lock);
+>         
+>         +       next_lock = sbi->next_lock_num % NR_GLOBAL_LOCKS;
+>         
+>                 sbi->next_lock_num++;
+>         
+>         +       spin_unlock(&sbi->spin_lock);
+>         
+>         +
+>         
+>         +       mutex_lock(&sbi->fs_lock[next_lock]);
+>         
+>                 return next_lock;
+>         
+>          }
+>         
+>          
+>         
+>         diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+>         
+>         old mode 100644
+>         
+>         new mode 100755
+>         
+>         index 75c7dc3..4f27596
+>         
+>         --- a/fs/f2fs/super.c
+>         
+>         +++ b/fs/f2fs/super.c
+>         
+>         @@ -657,6 +657,7 @@ static int f2fs_fill_super(struct
+>         super_block *sb, void *data, int silent)
+>         
+>                 mutex_init(&sbi->cp_mutex);
+>         
+>                 for (i = 0; i < NR_GLOBAL_LOCKS; i++)
+>         
+>                         mutex_init(&sbi->fs_lock[i]);
+>         
+>         +       spin_lock_init(&sbi->spin_lock);
+>         
+>                 mutex_init(&sbi->node_write);
+>         
+>                 sbi->por_doing = 0;
+>         
+>                 spin_lock_init(&sbi->stat_lock);
+>         
+>         (END)
+>         
+>          
+>         
+>         
+>         
+>         
+>         
+>         ------------------------------------------------------------------------------
+>         Learn the latest--Visual Studio 2012, SharePoint 2013, SQL
+>         2012, more!
+>         Discover the easy way to master current and previous Microsoft
+>         technologies
+>         and advance your career. Get an incredible 1,500+ hours of
+>         step-by-step
+>         tutorial videos with LearnDevNow. Subscribe today and save!
+>         http://pubads.g.doubleclick.net/gampad/clk?id=58041391&iu=/4140/ostg.clktrk
+>         _______________________________________________
+>         Linux-f2fs-devel mailing list
+>         Linux-f2fs-devel@lists.sourceforge.net
+>         https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
+>         
+> 
+> 
 
 -- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Jaegeuk Kim
+Samsung
+
