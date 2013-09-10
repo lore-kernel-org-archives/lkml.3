@@ -1,263 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756321Ab3IJAzR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 20:55:17 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:50633 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755756Ab3IJAzP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 20:55:15 -0400
-X-AuditID: cbfee68f-b7f656d0000058e3-7b-522e6df12468
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-Message-id: <1378774503.2354.106.camel@kjgkr>
-Subject: Re: [f2fs-dev] [PATCH] f2fs: optimize fs_lock for better performance
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
-To: Russ Knize <Russ.Knize@motorola.com>
-Cc: chao2.yu@samsung.com, linux-fsdevel@vger.kernel.org, shu.tan@samsung.com,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Date: Tue, 10 Sep 2013 09:55:03 +0900
-In-reply-to: <CAGfvh62EGuQfGBRhasNEXAVEvS2BwKCijnAS67f+GL2fHS-fTA@mail.gmail.com>
-References: <02.95.21086.AD4A9225@epcpsbgx4.samsung.com>
- <CAGfvh62EGuQfGBRhasNEXAVEvS2BwKCijnAS67f+GL2fHS-fTA@mail.gmail.com>
-Organization: Samsung
-X-Mailer: Evolution 3.2.3-0ubuntu6
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsVy+t8zA92PuXpBBk9fm1v8b/rIZnFpkbvF
-	nr0nWSwu75rDZrFw8gcWi9aF55kd2Dx2L/jM5NFz6i2zR9+WVYwenzfJBbBEcdmkpOZklqUW
-	6dslcGV0XtrGWrDQoGJ1w0mmBsZWmS5GDg4JAROJ319Suhg5gUwxiQv31rN1MXJxCAksY5Ro
-	vLSVESJhIvG8YToriC0ksIhRYv2EKBCbV0BQ4sfkeywgNrOAusSkeYuYIWwRiWl/b7BC2NoS
-	yxa+ZoYY+ppRYv7pH8wQzboSlx9sYQKxhQV8JRqPvWcEOYgNqGHzfgOIXYoSb/ffBZsjIqAh
-	saWviRVkDrPAFEaJNRtvgM1hEVCV+HPzKJjNKRAssXjPGiaI5nqJq+t7wGx+AVGJwwu3M0M8
-	oySxu72THWSQhMAtdokz356yQQwSkPg2+RALJFRkJTYdgKqXlDi44gbLBEbJWUh+noXk51lI
-	fp6F5OcFjCyrGEVTC5ILipPSi4z1ihNzi0vz0vWS83M3MULit38H490D1ocYk4HWT2SWEk3O
-	B8Z/Xkm8obGZkYWpiamxkbmlGWnCSuK8ai3WgUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoY
-	JVabRkZvCHfYccds2cXyghMSMfWnTiqaftnxocY0bou17VmFbdoWe9iOmpxUvhL++8eiWdIM
-	ASsliuoDpJS+tX5hmpdYWfb7yOljieEtbWodMYxzX2pGq3u0Ckstevjv/Ov7P2coVmZ5C90U
-	XWLkwzPhru2+wC2aBhH5JaW2mekbFi+60nJRiaU4I9FQi7moOBEAnBsiTPUCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGKsWRmVeSWpSXmKPExsVy+t9jAd2PuXpBBt8bjS3+N31ks7i0yN1i
-	z96TLBaXd81hs1g4+QOLRevC88wObB67F3xm8ug59ZbZo2/LKkaPz5vkAliiGhhtMlITU1KL
-	FFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4CWKymUJeaUAoUCEouL
-	lfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgz/ky5xFTQblCxcdtCtgbG19JdjJwcEgImEs8b
-	prNC2GISF+6tZwOxhQQWMUqsnxAFYvMKCEr8mHyPpYuRg4NZQF7iyKVskDCzgLrEpHmLmLsY
-	uYDKXzNKzD/9gxmiXlfi8oMtTCC2sICvROOx94wgvWwC2hKb9xtAjFeUeLv/LthaEQENiS19
-	Tawgc5gFpjBKrNl4A2wOi4CqxJ+bR8FsToFgicV71jBBNNdLXF3fA2bzC4hKHF64nRnifiWJ
-	3e2d7BMYhWYhOXsWwtmzkJy9gJF5FaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZwrD+T2sG4
-	ssHiEKMAB6MSD6/GO90gIdbEsuLK3EOMEhzMSiK8G5j1goR4UxIrq1KL8uOLSnNSiw8xJgMd
-	PpFZSjQ5H5iG8kriDY1NzIwsjcwsjEzMzUkTVhLnPdBqHSgkkJ5YkpqdmlqQWgSzhYmDU6qB
-	Mf/2eouZonZBkzZN/p63hD+7UvDlVZWVOZKRDtb+zKoR9xgsrbSECyY+/6Hnk7n/0m/35JN6
-	ac+qsndMmPUkuv3hR6Zu0dVvuaQ3hwlUfTohq8bxwNZeqcaz3Pa54L7MZxe0zpso7eD9fZ/N
-	p8R5rlC8b0POokWHq5bKiE478MLoJY9LwcVJSizFGYmGWsxFxYkAyAYfBTkDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1756363Ab3IJAzb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 20:55:31 -0400
+Received: from mga14.intel.com ([143.182.124.37]:5604 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756335Ab3IJAz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 20:55:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,874,1371106800"; 
+   d="scan'208";a="358151039"
+From: "Williams, Dan J" <dan.j.williams@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: lkml <linux-kernel@vger.kernel.org>, "Koul, Vinod" <vinod.koul@intel.com>
+Subject: [GIT PULL] dmaengine update for 3.12
+Thread-Topic: [GIT PULL] dmaengine update for 3.12
+Thread-Index: AQHOrcBwFEyX681Bm06dty0/LRu/1w==
+Date: Tue, 10 Sep 2013 00:55:27 +0000
+Message-ID: <1378774528.4094.14.camel@dwillia2-mobl1.amr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.7.189.72]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <CFBF575AD47C8940910DF62AD199144F@intel.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8A0tZb8024076
 
-Hi,
+Hi Linus,
 
-Nice catch.
-This is definitely a bug where one thread grabbed two fs_locks across
-the same flow.
-Any idea?
-Thanks,
 
-2013-09-06 (Í∏à), 14:25 -0500, Russ Knize:
-> I encountered this same issue recently and solved it in much the same
-> way.  Can we rename "spin_lock" to something more meaningful?
-> 
-> 
-> This race actually exposed a potential deadlock between f2fs_create()
-> and f2fs_initxattrs():
-> 
-> 
-> - vfs_create()
->  - f2fs_create() - takes an fs_lock
->   - f2fs_add_link()
->    - __f2fs_add_link()
->     - init_inode_metadata()
->      - f2fs_init_security()
->       - security_inode_init_security()
->        - f2fs_initxattrs()
->         - f2fs_setxattr() - also takes an fs_lock
-> 
-> 
-> If another CPU happens to have the same lock that f2fs_setxattr() was
-> trying to take because of the race around next_lock_num, we can get
-> into a deadlock situation if the two threads are also contending over
-> another resource (like bdi).
-> 
-> 
-> Another scenario is if the above happens while another thread is in
-> the middle of grabbing all of the locks via mutex_lock_all().
->  f2fs_create() is holding a lock that mutex_lock_all() is waiting for
-> and mutex_lock_all() is holding a lock that f2fs_setxattr() is waiting
-> for.
-> 
-> 
-> Russ
-> 
-> 
-> On Fri, Sep 6, 2013 at 4:48 AM, Chao Yu <chao2.yu@samsung.com> wrote:
->         Hi Kim:
->         
->              I think there is a performance problem: when all
->         sbi->fs_lock is holded, 
->         
->         then all other threads may get the same next_lock value from
->         sbi->next_lock_num in function mutex_lock_op, 
->         
->         and wait to get the same lock at position fs_lock[next_lock],
->         it unbalance the fs_lock usage. 
->         
->         It may lost performance when we do the multithread test.
->         
->          
->         
->         Here is the patch to fix this problem:
->         
->          
->         
->         Signed-off-by: Yu Chao <chao2.yu@samsung.com>
->         
->         diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
->         
->         old mode 100644
->         
->         new mode 100755
->         
->         index 467d42d..983bb45
->         
->         --- a/fs/f2fs/f2fs.h
->         
->         +++ b/fs/f2fs/f2fs.h
->         
->         @@ -371,6 +371,7 @@ struct f2fs_sb_info {
->         
->                 struct mutex fs_lock[NR_GLOBAL_LOCKS];  /* blocking FS
->         operations */
->         
->                 struct mutex node_write;                /* locking
->         node writes */
->         
->                 struct mutex writepages;                /* mutex for
->         writepages() */
->         
->         +       spinlock_t spin_lock;                   /* lock for
->         next_lock_num */
->         
->                 unsigned char next_lock_num;            /* round-robin
->         global locks */
->         
->                 int por_doing;                          /* recovery is
->         doing or not */
->         
->                 int on_build_free_nids;                 /*
->         build_free_nids is doing */
->         
->         @@ -533,15 +534,19 @@ static inline void
->         mutex_unlock_all(struct f2fs_sb_info *sbi)
->         
->          
->         
->          static inline int mutex_lock_op(struct f2fs_sb_info *sbi)
->         
->          {
->         
->         -       unsigned char next_lock = sbi->next_lock_num %
->         NR_GLOBAL_LOCKS;
->         
->         +       unsigned char next_lock;
->         
->                 int i = 0;
->         
->          
->         
->                 for (; i < NR_GLOBAL_LOCKS; i++)
->         
->                         if (mutex_trylock(&sbi->fs_lock[i]))
->         
->                                 return i;
->         
->          
->         
->         -       mutex_lock(&sbi->fs_lock[next_lock]);
->         
->         +       spin_lock(&sbi->spin_lock);
->         
->         +       next_lock = sbi->next_lock_num % NR_GLOBAL_LOCKS;
->         
->                 sbi->next_lock_num++;
->         
->         +       spin_unlock(&sbi->spin_lock);
->         
->         +
->         
->         +       mutex_lock(&sbi->fs_lock[next_lock]);
->         
->                 return next_lock;
->         
->          }
->         
->          
->         
->         diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
->         
->         old mode 100644
->         
->         new mode 100755
->         
->         index 75c7dc3..4f27596
->         
->         --- a/fs/f2fs/super.c
->         
->         +++ b/fs/f2fs/super.c
->         
->         @@ -657,6 +657,7 @@ static int f2fs_fill_super(struct
->         super_block *sb, void *data, int silent)
->         
->                 mutex_init(&sbi->cp_mutex);
->         
->                 for (i = 0; i < NR_GLOBAL_LOCKS; i++)
->         
->                         mutex_init(&sbi->fs_lock[i]);
->         
->         +       spin_lock_init(&sbi->spin_lock);
->         
->                 mutex_init(&sbi->node_write);
->         
->                 sbi->por_doing = 0;
->         
->                 spin_lock_init(&sbi->stat_lock);
->         
->         (END)
->         
->          
->         
->         
->         
->         
->         
->         ------------------------------------------------------------------------------
->         Learn the latest--Visual Studio 2012, SharePoint 2013, SQL
->         2012, more!
->         Discover the easy way to master current and previous Microsoft
->         technologies
->         and advance your career. Get an incredible 1,500+ hours of
->         step-by-step
->         tutorial videos with LearnDevNow. Subscribe today and save!
->         http://pubads.g.doubleclick.net/gampad/clk?id=58041391&iu=/4140/ostg.clktrk
->         _______________________________________________
->         Linux-f2fs-devel mailing list
->         Linux-f2fs-devel@lists.sourceforge.net
->         https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
->         
-> 
-> 
+The following changes since commit c095ba7224d8edc71dcef0d655911399a8bd4a3f:
 
--- 
-Jaegeuk Kim
-Samsung
+  Linux 3.11-rc4 (2013-08-04 13:46:46 -0700)
 
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/djbw/dmaengine tags/dmaengine-3.12
+
+for you to fetch changes up to 4a43f394a08214eaf92cdd8ce3eae75e555323d8:
+
+  dmaengine: dma_sync_wait and dma_find_channel undefined (2013-09-09 17:02:38 -0700)
+
+----------------------------------------------------------------
+dmaengine update for 3.12
+
+Collection of random updates to the core and some end-driver fixups for
+ioatdma and mv_xor:
+* NUMA aware channel allocation
+* Cleanup dmatest debugfs interface
+* ioat: make raid-support Atom only
+* mv_xor: big endian
+
+----------------------------------------------------------------
+
+Aside from the top three commits:
+4a43f39 dmaengine: dma_sync_wait and dma_find_channel undefined
+ab5f8c6 MAINTAINERS: update email for Dan Williams
+a577659 dma: mv_xor: Fix incorrect error path
+
+...these have all had some soak time in -next.  The top commit fixes a recent build breakage.
+
+It has been a long while since my last pull request, hopefully it does
+not show.  Thanks to Vinod for keeping an eye on drivers/dma/ this past
+year.
+
+--
+Dan
+
+
+Andy Shevchenko (3):
+      dmatest: make module parameters writable
+      dmatest: remove IS_ERR_OR_NULL checks of debugfs calls
+      dmatest: print message on debug level in case of no error
+
+Brice Goglin (2):
+      ioatdma: disable RAID on non-Atom platforms and reenable unaligned copies
+      dmaengine: make dma_channel_rebalance() NUMA aware
+
+Dan Carpenter (1):
+      dmaengine: make dma_submit_error() return an error code
+
+Dan Williams (1):
+      MAINTAINERS: update email for Dan Williams
+
+Jon Mason (1):
+      dmaengine: dma_sync_wait and dma_find_channel undefined
+
+Paul Bolle (1):
+      ioatdma: silence GCC warnings
+
+Sachin Kamat (1):
+      dma: mv_xor: Fix incorrect error path
+
+Thomas Petazzoni (2):
+      mv_xor: use {readl, writel}_relaxed instead of __raw_{readl, writel}
+      mv_xor: support big endian systems using descriptor swap feature
+
+ Documentation/dmatest.txt |  15 ++--
+ MAINTAINERS               |  18 ++---
+ drivers/dma/dmaengine.c   |  55 +++++++-------
+ drivers/dma/dmatest.c     | 182 ++++++++--------------------------------------
+ drivers/dma/ioat/dma_v3.c |  26 +------
+ drivers/dma/mv_xor.c      |  53 ++++++++------
+ drivers/dma/mv_xor.h      |  28 ++++++-
+ include/linux/dmaengine.h |  17 ++++-
+ 8 files changed, 146 insertions(+), 248 deletions(-)
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
