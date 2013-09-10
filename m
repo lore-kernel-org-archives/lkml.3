@@ -1,103 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754510Ab3IJGP2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 02:15:28 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:12854 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753353Ab3IJGP0 (ORCPT
+	id S1754306Ab3IJGZg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 02:25:36 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:34215 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753438Ab3IJGZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 02:15:26 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Aj4IAMa3LlJ5Lapl/2dsb2JhbABbgweDSro4hTeBKRd0giUBAQU6HCMQCAMOBgQJJQ8FJQMhE4gBwlAWgwWMQAeDHYEAA5d1ijSHOIFjgU8q
-Date: Tue, 10 Sep 2013 16:15:20 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [performance regression, bisected] scheduler:
- should_we_balance() kills filesystem performance
-Message-ID: <20130910061520.GC12779@dastard>
-References: <20130910040254.GB12779@dastard>
- <20130910044759.GA24602@lge.com>
+	Tue, 10 Sep 2013 02:25:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130910044759.GA24602@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFwyKmVWkrV3=XiuruZzeTicpfW-JrwjWzpq9eP2yGPeJA@mail.gmail.com>
+References: <alpine.DEB.2.00.1309051139240.25450@skynet.skynet.ie> <CA+55aFwyKmVWkrV3=XiuruZzeTicpfW-JrwjWzpq9eP2yGPeJA@mail.gmail.com>
+From: Sean V Kelley <sean.v.kelley@intel.com>
+Date: Mon, 9 Sep 2013 23:25:13 -0700
+Message-ID: <CA+qSnqh1X6_xHD4GX1P=acEUg9+0=3dVSZHm-NYXvCvupFB8_g@mail.gmail.com>
+Subject: Re: [git pull] drm tree for 3.12-rc1
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Airlie <airlied@linux.ie>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 01:47:59PM +0900, Joonsoo Kim wrote:
-> On Tue, Sep 10, 2013 at 02:02:54PM +1000, Dave Chinner wrote:
-> > Hi folks,
-> > 
-> > I just updated my performance test VM to the current 3.12-git
-> > tree after the XFS dev branch was merged. The first test I ran
-> > which was a 16-way concurrent fsmark test to create lots of files
-> > gave me a number about 30% lower than I expected - ~180k files/s
-> > when I was expecting somewhere around 250k files/s.
-> > 
-> > I did a bisect, and the bisect landed on this commit:
-> > 
-> > commit 23f0d2093c789e612185180c468fa09063834e87
-> > Author: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> > Date:   Tue Aug 6 17:36:42 2013 +0900
-> > 
-> >     sched: Factor out code to should_we_balance()
-.....
-> > 
-> > 			v4 filesystem		v5 filesystem
-> > 3.11+xfsdev:		220k files/s		225k files/s
-> > 3.12-git		180k files/s		185k files/s
-> > 3.12-git-revert		245k files/s		247k files/s
-> > 
-> > The test vm is a 16p/16GB RAM VM, with a sparse 100TB filesystem
-> > image sitting on a 4-way RAID0 SSD array formatted with XFS and the
-> > image file is accessed by virtio+direct IO. The fsmark command line
-> > is:
-> > 
-> > time ./fs_mark  -D  10000  -S0  -n  100000  -s  0  -L  32 \
-> >         -d  /mnt/scratch/0  -d  /mnt/scratch/1 \
-> >         -d  /mnt/scratch/2  -d  /mnt/scratch/3 \
-> >         -d  /mnt/scratch/4  -d  /mnt/scratch/5 \
-> >         -d  /mnt/scratch/6  -d  /mnt/scratch/7 \
-> >         -d  /mnt/scratch/8  -d  /mnt/scratch/9 \
-> >         -d  /mnt/scratch/10  -d  /mnt/scratch/11 \
-> >         -d  /mnt/scratch/12  -d  /mnt/scratch/13 \
-> >         -d  /mnt/scratch/14  -d  /mnt/scratch/15 \
-> >         | tee >(stats --trim-outliers | tail -1 1>&2)
-> > 
-> > The workload on XFS runs to almost being CPU bound - the effect of
-> > the above patch was that there was a lot of idle time left in the
-> > system. The workload consumed the same amount of user and system
-> > CPU, just instantaneous CPU usage was reduced by 20-30% and the
-> > elaspsed time was increased by 20-30%.
-> 
-> Hello, Dave.
-> 
-> Now, I look again this patch and find one mistake.
-> If we find that we are appropriate cpu for balancing, should_we_balance()
-> should return 1. But current code doesn't do so. This correspond with
-> your observation that a lot of idle time left.
-> 
-> Could you re-test your benchmark with below?
+On Thu, Sep 5, 2013 at 12:18 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Thu, Sep 5, 2013 at 3:41 AM, Dave Airlie <airlied@linux.ie> wrote:
+>>
+>> i915: Haswell PC8+ support and eLLC support, HDMI 4K support, initial per-process VMA pieces,
+>>       watermark reworks, convert to generic hdmi infoframes, encoder reworking, fastboot support,
+>
+> Hmm.
+>
+> The first time I booted this, I just got a black screen on my Haswell
+> desktop when X11 started up.  I could ctrl-alt-BS and ctrl-alt-del to
+> reboot the machine, and neither the Xorg.0.log nor the dmesg contained
+> anything interesting.
+>
+> I was about to try to bisect it, but decided to see how repeatable it
+> was, and it didn't happen again. But it also hasn't ever happened
+> before, so I'm a bit worried.
+>
+> This is with the DP cable, which has made my other Haswell issues go away.
+>
+> I'm also a bit bummed that hw acceleration of video doesn't seem to
+> work on Haswell, meaning that full-screen is now a jerky mess. I fear
+> that that is user-space libraries/X.org, but I thought I'd mention it
+> in the hope of getting a "oh, it's working for us, you'll get a fix
+> for it soon".
 
-Sure. It looks like your patch fixes the problem:
+Linus,
 
-			v4 filesystem		v5 filesystem
-3.11+xfsdev:		220k files/s		225k files/s
-3.12-git		180k files/s		185k files/s
-3.12-git-revert		245k files/s		247k files/s
-3.12-git-fix		249k files/s		248k files/s
+Can you give a little more detail about video not working?  Video
+accel should work fine with the current versions of libva/intel-driver
+available in Fedora 19 - assuming that's what you're using.  I am
+running that on my MacBook Air 2013 and  HSW based Asus quad core i7
+desktop.   A quick way to exercise the decoders once you install
+libva/intel-driver is to use VLC enabling GPU acceleration in
+preferences.
 
-Thanks for the quick turnaround :)
+Sean
 
-Tested-by: Dave Chinner <dchinner@redhat.com>
+>
+> Because my shiny new 65W haswell is really nice and does a "make
+> allmodconfig" in half the time of my old machine, but the GPU side has
+> been something of a step backwards...
+>
+>                Linus
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
 
-Cheers,
 
-Dave.
+
 -- 
-Dave Chinner
-david@fromorbit.com
+Sean V. Kelley <sean.v.kelley@intel.com>
+Open Source Technology Center / SSG
+Intel Corp.
