@@ -1,79 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922Ab3IJJih (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 05:38:37 -0400
-Received: from mga02.intel.com ([134.134.136.20]:38018 "EHLO mga02.intel.com"
+	id S1751736Ab3IJJi6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 05:38:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57227 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752169Ab3IJJie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 05:38:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,877,1371106800"; 
-   d="scan'208";a="401098674"
-Date: Tue, 10 Sep 2013 12:38:24 +0300
-From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Intel-gfx] [PATCH] drm/i915/sdvo: Fully translate sync flags in
- the dtd->mode conversion
-Message-ID: <20130910093824.GJ11428@intel.com>
-References: <522A5008.6060005@t-online.de>
- <1378800168-32277-1-git-send-email-daniel.vetter@ffwll.ch>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1378800168-32277-1-git-send-email-daniel.vetter@ffwll.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751810Ab3IJJdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 05:33:08 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 33/50] sched: numa: increment numa_migrate_seq when task runs in correct location
+Date: Tue, 10 Sep 2013 10:32:13 +0100
+Message-Id: <1378805550-29949-34-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1378805550-29949-1-git-send-email-mgorman@suse.de>
+References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 10:02:48AM +0200, Daniel Vetter wrote:
-> Instead of just a flag bit for each of the positive/negative sync
-> modes drm actually uses a separate flag for each ... This upsets the
-> modeset checker since the adjusted mode filled out at modeset time
-> doesn't match the one reconstructed at check time (since the
-> ->get_config callback already gets this right).
-> 
-> Reported-by: Knut Petersen <Knut_Petersen@t-online.de>
-> Cc: Knut Petersen <Knut_Petersen@t-online.de>
-> References: http://www.gossamer-threads.com/lists/linux/kernel/1778688?do=post_view_threaded
-> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> ---
->  drivers/gpu/drm/i915/intel_sdvo.c | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/drivers/gpu/drm/i915/intel_sdvo.c b/drivers/gpu/drm/i915/intel_sdvo.c
-> index 85037b9..5033c74 100644
-> --- a/drivers/gpu/drm/i915/intel_sdvo.c
-> +++ b/drivers/gpu/drm/i915/intel_sdvo.c
-> @@ -866,8 +866,12 @@ static void intel_sdvo_get_mode_from_dtd(struct drm_display_mode * mode,
->  		mode->flags |= DRM_MODE_FLAG_INTERLACE;
->  	if (dtd->part2.dtd_flags & DTD_FLAG_HSYNC_POSITIVE)
->  		mode->flags |= DRM_MODE_FLAG_PHSYNC;
-> +	else
-> +		mode->flags |= DRM_MODE_FLAG_NHSYNC;
->  	if (dtd->part2.dtd_flags & DTD_FLAG_VSYNC_POSITIVE)
->  		mode->flags |= DRM_MODE_FLAG_PVSYNC;
-> +	else
-> +		mode->flags |= DRM_MODE_FLAG_NVSYNC;
+From: Rik van Riel <riel@redhat.com>
 
-Actually it seems we don't recreate the mode from scratch here, so we
-should also clear the negative sync flags (and the interlace flag too) 
-before we set them.
+When a task is already running on its preferred node, increment
+numa_migrate_seq to indicate that the task is settled if migration is
+temporarily disabled, and memory should migrate towards it.
 
->  }
->  
->  static bool intel_sdvo_check_supp_encode(struct intel_sdvo *intel_sdvo)
-> -- 
-> 1.8.4.rc3
-> 
-> _______________________________________________
-> Intel-gfx mailing list
-> Intel-gfx@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
+[mgorman@suse.de: Only increment migrate_seq if migration temporarily disabled]
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+ kernel/sched/fair.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 5b4d94e..fd724bc 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1016,8 +1016,16 @@ static void numa_migrate_preferred(struct task_struct *p)
+ {
+ 	/* Success if task is already running on preferred CPU */
+ 	p->numa_migrate_retry = 0;
+-	if (cpu_to_node(task_cpu(p)) == p->numa_preferred_nid)
++	if (cpu_to_node(task_cpu(p)) == p->numa_preferred_nid) {
++		/*
++		 * If migration is temporarily disabled due to a task migration
++		 * then re-enable it now as the task is running on its
++		 * preferred node and memory should migrate locally
++		 */
++		if (!p->numa_migrate_seq)
++			p->numa_migrate_seq++;
+ 		return;
++	}
+ 
+ 	/* Otherwise, try migrate to a CPU on the preferred node */
+ 	if (task_numa_migrate(p) != 0)
 -- 
-Ville Syrjälä
-Intel OTC
+1.8.1.4
+
