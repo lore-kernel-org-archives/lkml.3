@@ -1,47 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071Ab3IJReU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 13:34:20 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56263 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753146Ab3IJReR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 13:34:17 -0400
-Message-ID: <522F5815.4070109@wwwdotorg.org>
-Date: Tue, 10 Sep 2013 11:34:13 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Laxman Dewangan <ldewangan@nvidia.com>, rob.herring@calxeda.com,
-        mark.rutland@arm.com, rob@landley.net, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lgirdwood@gmail.com
-Subject: Re: [PATCH 2/2] regulator: core: add support for configuring turn-on
- time through constraints
-References: <1378811888-2268-1-git-send-email-ldewangan@nvidia.com> <1378811888-2268-2-git-send-email-ldewangan@nvidia.com> <522F3691.3090805@wwwdotorg.org> <20130910165153.GQ29403@sirena.org.uk>
-In-Reply-To: <20130910165153.GQ29403@sirena.org.uk>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754131Ab3IJRfu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 13:35:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47488 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752203Ab3IJRfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 13:35:48 -0400
+Subject: Re: [patch] block: fix race between request completion and timeout
+ handling
+From: Ewan Milne <emilne@redhat.com>
+Reply-To: emilne@redhat.com
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        Hannes Reinecke <hare@suse.de>
+In-Reply-To: <x49k3j4s41j.fsf@segfault.boston.devel.redhat.com>
+References: <x49k3j4s41j.fsf@segfault.boston.devel.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat
+Date: Tue, 10 Sep 2013 13:35:39 -0400
+Message-ID: <1378834539.3872.6443.camel@localhost.localdomain>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2013 10:51 AM, Mark Brown wrote:
-> On Tue, Sep 10, 2013 at 09:11:13AM -0600, Stephen Warren wrote:
+On Thu, 2013-08-29 at 15:14 -0400, Jeff Moyer wrote:
+...
+> RIP: 0010:[<ffffffff8124e424>]  [<ffffffff8124e424>] blk_requeue_request+0x94/0xa0
+...
+> Call Trace:
+>  [<ffffffff81362323>] __scsi_queue_insert+0xa3/0x150
+>  [<ffffffff8135f393>] ? scsi_eh_ready_devs+0x5e3/0x850
+>  [<ffffffff81362a23>] scsi_queue_insert+0x13/0x20
+>  [<ffffffff8135e4d4>] scsi_eh_flush_done_q+0x104/0x160
+>  [<ffffffff8135fb6b>] scsi_error_handler+0x35b/0x660
+>  [<ffffffff8135f810>] ? scsi_error_handler+0x0/0x660
+>  [<ffffffff810908c6>] kthread+0x96/0xa0
+>  [<ffffffff8100c14a>] child_rip+0xa/0x20
+>  [<ffffffff81090830>] ? kthread+0x0/0xa0
+>  [<ffffffff8100c140>] ? child_rip+0x0/0x20
+...
+> The RIP is this line:
+>         BUG_ON(blk_queued_rq(rq));
 > 
->>> +- regulator-enable-time: Turn ON time for regulator(in uS)
+> After digging through the code, I think there may be a race between the
+> request completion and the timer handler running.
 > 
->> Bike-shedding slightly: This isn't really the time it takes to
->> enable a regulator, but the time the voltage takes to become
->> stable, or settle. Perhaps name the property
->> regulator-settle-time/regulator-settle-delay?
-> 
-> The normal term would be ramp delay.  It's not usually the time
-> taken to completely settle, it's usually quoted as the time taken
-> to reach within some proportion of the target voltage.
 
-I notice there's a regulator-ramp-delay property, already documented
-right above this new property. Is this a conflicting usage of the same
-term, or should that existing property just be used in this case too?
+So, it does seem that if a request completes within a certain window in
+blk_rq_timed_out() (and part of its call to blk_add_timer()...)
+
+---- in blk_rq_timed_out():
+
+        ret = q->rq_timed_out_fn(req);
+        switch (ret) {
+        case BLK_EH_HANDLED:
+                __blk_complete_request(req);
+                break;
+        case BLK_EH_RESET_TIMER:
+                blk_clear_rq_complete(req);          <<---- AFTER HERE
+                blk_add_timer(req);
+                break;
+
+---- in blk_add_timer():
+      
+	BUG_ON(!list_empty(&req->timeout_list));
+        BUG_ON(test_bit(REQ_ATOM_COMPLETE, &req->atomic_flags));
+
+        /*                                                                                                                                                                                                         
+         * Some LLDs, like scsi, peek at the timeout to prevent
+a                                                                                                                                                  
+         * command from being retried
+forever.                                                                                                                                                                     
+         */
+        if (!req->timeout)
+                req->timeout = q->rq_timeout;
+
+        req->deadline = jiffies + req->timeout;
+        list_add_tail(&req->timeout_list, &q->timeout_list);
+						    <<---- BEFORE HERE
+
+...then there are problems.  If the request completes before the
+BUG_ON(test_bit(REQ_ATOM_COMPLETE).. then there will be a crash.
+If the request completes before the list_add_tail(&req->timeout_list...
+then a completed request will eventually get a timeout, or we might
+crash in blk_add_timer when the timer is being restarted for the next
+usage of the request.
+
+Jeff's proposed patch, which swaps the order of clearing the
+REQ_ATOM_COMPLETE flag and the call to blk_add_timer in blk_rq_timed_out
+along with moving the BUG_ON to a different place in the req lifecycle,
+avoids these problems, but opens up another potential issue.  Consider:
+
+---- in blk_rq_timed_out_timer():
+
+                        if (blk_mark_rq_complete(rq))
+                                continue;
+                        blk_rq_timed_out(rq);
+
+---- in new blk_rq_timed_out():
+
+        ret = q->rq_timed_out_fn(req);
+        switch (ret) {
+        case BLK_EH_HANDLED:
+                __blk_complete_request(req);
+                break;
+        case BLK_EH_RESET_TIMER:
+                blk_add_timer(req);
+		blk_clear_req_complete(req);
+                break;
+
+If the request completes after blk_mark_rq_complete() is called but
+before blk_clear_req_complete() is called, the completion will not be
+processed, and we will have to wait for the request to timeout again.
+Maybe this is not so bad, as it should be extremely rare, but if the
+timeout were a large value for some reason, that could be a problem.
+
+It seems to me that the issue is really that there are 2 state variables
+(the REQ_ATOM_COMPLETE flag and the req->timeout_list) for the same
+state, and so manipulating both of these without a lock will always have
+a window.
+
+Clearly it would be better to avoid a panic, so Jeff's fix would help.
+
+I'm not sure I follow how the issue Jeff is fixing caused this
+particular crash, though.  How did the request get back on the queue?
+The crash occurred when the SCSI EH was flushing the done_q requests.
+
+-Ewan
+
+
+
