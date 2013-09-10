@@ -1,110 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427Ab3IJJcu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 05:32:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57041 "EHLO mx2.suse.de"
+	id S1752197Ab3IJJmb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 05:42:31 -0400
+Received: from mga09.intel.com ([134.134.136.24]:13559 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751065Ab3IJJco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 05:32:44 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 10/50] sched: numa: Mitigate chance that same task always updates PTEs
-Date: Tue, 10 Sep 2013 10:31:50 +0100
-Message-Id: <1378805550-29949-11-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1378805550-29949-1-git-send-email-mgorman@suse.de>
-References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
+	id S1751011Ab3IJJm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 05:42:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,877,1371106800"; 
+   d="scan'208";a="375964526"
+Date: Tue, 10 Sep 2013 12:42:24 +0300
+From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915/sdvo: Fully translate sync flags in
+ the dtd->mode conversion
+Message-ID: <20130910094224.GK11428@intel.com>
+References: <522A5008.6060005@t-online.de>
+ <1378800168-32277-1-git-send-email-daniel.vetter@ffwll.ch>
+ <20130910093824.GJ11428@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130910093824.GJ11428@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
+On Tue, Sep 10, 2013 at 12:38:24PM +0300, Ville Syrjälä wrote:
+> On Tue, Sep 10, 2013 at 10:02:48AM +0200, Daniel Vetter wrote:
+> > Instead of just a flag bit for each of the positive/negative sync
+> > modes drm actually uses a separate flag for each ... This upsets the
+> > modeset checker since the adjusted mode filled out at modeset time
+> > doesn't match the one reconstructed at check time (since the
+> > ->get_config callback already gets this right).
+> > 
+> > Reported-by: Knut Petersen <Knut_Petersen@t-online.de>
+> > Cc: Knut Petersen <Knut_Petersen@t-online.de>
+> > References: http://www.gossamer-threads.com/lists/linux/kernel/1778688?do=post_view_threaded
+> > Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+> > ---
+> >  drivers/gpu/drm/i915/intel_sdvo.c | 4 ++++
+> >  1 file changed, 4 insertions(+)
+> > 
+> > diff --git a/drivers/gpu/drm/i915/intel_sdvo.c b/drivers/gpu/drm/i915/intel_sdvo.c
+> > index 85037b9..5033c74 100644
+> > --- a/drivers/gpu/drm/i915/intel_sdvo.c
+> > +++ b/drivers/gpu/drm/i915/intel_sdvo.c
+> > @@ -866,8 +866,12 @@ static void intel_sdvo_get_mode_from_dtd(struct drm_display_mode * mode,
+> >  		mode->flags |= DRM_MODE_FLAG_INTERLACE;
+> >  	if (dtd->part2.dtd_flags & DTD_FLAG_HSYNC_POSITIVE)
+> >  		mode->flags |= DRM_MODE_FLAG_PHSYNC;
+> > +	else
+> > +		mode->flags |= DRM_MODE_FLAG_NHSYNC;
+> >  	if (dtd->part2.dtd_flags & DTD_FLAG_VSYNC_POSITIVE)
+> >  		mode->flags |= DRM_MODE_FLAG_PVSYNC;
+> > +	else
+> > +		mode->flags |= DRM_MODE_FLAG_NVSYNC;
+> 
+> Actually it seems we don't recreate the mode from scratch here, so we
+> should also clear the negative sync flags (and the interlace flag too) 
+> before we set them.
 
-With a trace_printk("working\n"); right after the cmpxchg in
-task_numa_work() we can see that of a 4 thread process, its always the
-same task winning the race and doing the protection change.
+... and we seem to be missing a drm_mode_set_crtcinfo() call too.
 
-This is a problem since the task doing the protection change has a
-penalty for taking faults -- it is busy when marking the PTEs. If its
-always the same task the ->numa_faults[] get severely skewed.
+> 
+> >  }
+> >  
+> >  static bool intel_sdvo_check_supp_encode(struct intel_sdvo *intel_sdvo)
+> > -- 
+> > 1.8.4.rc3
+> > 
+> > _______________________________________________
+> > Intel-gfx mailing list
+> > Intel-gfx@lists.freedesktop.org
+> > http://lists.freedesktop.org/mailman/listinfo/intel-gfx
+> 
+> -- 
+> Ville Syrjälä
+> Intel OTC
 
-Avoid this by delaying the task doing the protection change such that
-it is unlikely to win the privilege again.
-
-Before:
-
-root@interlagos:~# grep "thread 0/.*working" /debug/tracing/trace | tail -15
-      thread 0/0-3232  [022] ....   212.787402: task_numa_work: working
-      thread 0/0-3232  [022] ....   212.888473: task_numa_work: working
-      thread 0/0-3232  [022] ....   212.989538: task_numa_work: working
-      thread 0/0-3232  [022] ....   213.090602: task_numa_work: working
-      thread 0/0-3232  [022] ....   213.191667: task_numa_work: working
-      thread 0/0-3232  [022] ....   213.292734: task_numa_work: working
-      thread 0/0-3232  [022] ....   213.393804: task_numa_work: working
-      thread 0/0-3232  [022] ....   213.494869: task_numa_work: working
-      thread 0/0-3232  [022] ....   213.596937: task_numa_work: working
-      thread 0/0-3232  [022] ....   213.699000: task_numa_work: working
-      thread 0/0-3232  [022] ....   213.801067: task_numa_work: working
-      thread 0/0-3232  [022] ....   213.903155: task_numa_work: working
-      thread 0/0-3232  [022] ....   214.005201: task_numa_work: working
-      thread 0/0-3232  [022] ....   214.107266: task_numa_work: working
-      thread 0/0-3232  [022] ....   214.209342: task_numa_work: working
-
-After:
-
-root@interlagos:~# grep "thread 0/.*working" /debug/tracing/trace | tail -15
-      thread 0/0-3253  [005] ....   136.865051: task_numa_work: working
-      thread 0/2-3255  [026] ....   136.965134: task_numa_work: working
-      thread 0/3-3256  [024] ....   137.065217: task_numa_work: working
-      thread 0/3-3256  [024] ....   137.165302: task_numa_work: working
-      thread 0/3-3256  [024] ....   137.265382: task_numa_work: working
-      thread 0/0-3253  [004] ....   137.366465: task_numa_work: working
-      thread 0/2-3255  [026] ....   137.466549: task_numa_work: working
-      thread 0/0-3253  [004] ....   137.566629: task_numa_work: working
-      thread 0/0-3253  [004] ....   137.666711: task_numa_work: working
-      thread 0/1-3254  [028] ....   137.766799: task_numa_work: working
-      thread 0/0-3253  [004] ....   137.866876: task_numa_work: working
-      thread 0/2-3255  [026] ....   137.966960: task_numa_work: working
-      thread 0/1-3254  [028] ....   138.067041: task_numa_work: working
-      thread 0/2-3255  [026] ....   138.167123: task_numa_work: working
-      thread 0/3-3256  [024] ....   138.267207: task_numa_work: working
-
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- kernel/sched/fair.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 227b070..c93a56e 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -946,6 +946,12 @@ void task_numa_work(struct callback_head *work)
- 		return;
- 
- 	/*
-+	 * Delay this task enough that another task of this mm will likely win
-+	 * the next time around.
-+	 */
-+	p->node_stamp += 2 * TICK_NSEC;
-+
-+	/*
- 	 * Do not set pte_numa if the current running node is rate-limited.
- 	 * This loses statistics on the fault but if we are unwilling to
- 	 * migrate to this node, it is less likely we can do useful work
-@@ -1026,7 +1032,7 @@ void task_tick_numa(struct rq *rq, struct task_struct *curr)
- 	if (now - curr->node_stamp > period) {
- 		if (!curr->node_stamp)
- 			curr->numa_scan_period = sysctl_numa_balancing_scan_period_min;
--		curr->node_stamp = now;
-+		curr->node_stamp += period;
- 
- 		if (!time_before(jiffies, curr->mm->numa_next_scan)) {
- 			init_task_work(work, task_numa_work); /* TODO: move this into sched_fork() */
 -- 
-1.8.1.4
-
+Ville Syrjälä
+Intel OTC
