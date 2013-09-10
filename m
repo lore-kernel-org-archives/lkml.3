@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755057Ab3IJDxv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 23:53:51 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:57341 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752850Ab3IJDxt (ORCPT
+	id S1755799Ab3IJDzX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 23:55:23 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:51708 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553Ab3IJDzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 23:53:49 -0400
-Message-ID: <522E9793.7060003@linux.vnet.ibm.com>
-Date: Tue, 10 Sep 2013 09:22:51 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 9 Sep 2013 23:55:22 -0400
 MIME-Version: 1.0
-To: Michael Ellerman <michael@ellerman.id.au>
-CC: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org, eranian@google.com,
-        acme@redhat.com, Michael Neuling <michael.neuling@au1.ibm.com>,
-        svaidy@linux.vnet.ibm.com, sukadev@linux.vnet.ibm.com
-Subject: Re: [PATCH V2 0/6] perf: New conditional branch filter
-References: <1377836690-32710-1-git-send-email-khandual@linux.vnet.ibm.com> <1378778772.25578.1.camel@concordia>
-In-Reply-To: <1378778772.25578.1.camel@concordia>
+In-Reply-To: <1378749661-8841-1-git-send-email-teg@jklm.no>
+References: <1378749661-8841-1-git-send-email-teg@jklm.no>
+From: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Date: Tue, 10 Sep 2013 00:55:01 -0300
+Message-ID: <CAKi4VAJuvrpBdCecG=xcZt3K5r2ffnRAXsh_Yj=85eE+ey-t0w@mail.gmail.com>
+Subject: Re: [PATCH] depmod: warn on invalid devname specification
+To: Tom Gundersen <teg@jklm.no>
+Cc: linux-modules <linux-modules@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, Kay Sievers <kay@vrfy.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091003-9264-0000-0000-0000047F3990
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2013 07:36 AM, Michael Ellerman wrote:
-> On Fri, 2013-08-30 at 09:54 +0530, Anshuman Khandual wrote:
->> 	This patchset is the re-spin of the original branch stack sampling
->> patchset which introduced new PERF_SAMPLE_BRANCH_COND filter. This patchset
->> also enables SW based branch filtering support for PPC64 platforms which have
->> branch stack sampling support. With this new enablement, the branch filter support
->> for PPC64 platforms have been extended to include all these combinations discussed
->> below with a sample test application program.
-> 
-> ...
-> 
->> Mixed filters
->> -------------
->> (6) perf record -e branch-misses:u -j any_call,any_ret ./cprog
->> Error:
->> The perf.data file has no samples!
->>
->> NOTE: As expected. The HW filters all the branches which are calls and SW tries to find return
->> branches in that given set. Both the filters are mutually exclussive, so obviously no samples
->> found in the end profile.
-> 
-> The semantics of multiple filters is not clear to me. It could be an OR,
-> or an AND. You have implemented AND, does that match existing behaviour
-> on x86 for example?
+Hi Tom,
 
-I believe it does match. X86 code drops the branch records (originally captured
-in the LBR) while applying the SW filters.
+On Mon, Sep 9, 2013 at 3:01 PM, Tom Gundersen <teg@jklm.no> wrote:
+> During the last merge window (3.12) a couple of modules gained devname
+> aliases, but without the necessary major and minor information. These were
+> then silently ignored when generating modules.devname.
+>
+> Complain loudly to avoid such errors sneaking in undetected in the future:
+>
+>     depmod: ERROR: Module 'zram' has devname (zram) but lacks major and minor information. Ignoring.
+>     depmod: ERROR: Module 'uhid' has devname (uhid) but lacks major and minor information. Ignoring.
+>
+> Cc: Kay Sievers <kay@vrfy.org>
+> Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+> ---
+>  tools/depmod.c | 13 ++++++++++---
+>  1 file changed, 10 insertions(+), 3 deletions(-)
+>
+> diff --git a/tools/depmod.c b/tools/depmod.c
+> index 985cf3a..5855b2a 100644
+> --- a/tools/depmod.c
+> +++ b/tools/depmod.c
+> @@ -2120,11 +2120,18 @@ static int output_devname(struct depmod *depmod, FILE *out)
+>                                 minor = min;
+>                         }
+>
+> -                       if (type != '\0' && devname != NULL) {
+> +                       if (type != '\0' && devname != NULL)
+> +                               break;
+> +               }
+> +
+> +               if (devname != NULL) {
+> +                       if (type != '\0')
+>                                 fprintf(out, "%s %s %c%u:%u\n", mod->modname,
+>                                         devname, type, major, minor);
+> -                               break;
+> -                       }
+> +                       else
+> +                               ERR("Module '%s' has devname (%s) but "
+> +                                   "lacks major and minor information. "
+> +                                   "Ignoring.\n", mod->modname, devname);
+>                 }
+>         }
+>
+> --
 
-Regards
-Anshuman
+Patch has been applied. Thanks.
 
+Lucas De Marchi
