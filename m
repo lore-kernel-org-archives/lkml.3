@@ -1,59 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751004Ab3IJShw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 14:37:52 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60642 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750847Ab3IJShv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 14:37:51 -0400
-Message-ID: <522F66FB.2000608@wwwdotorg.org>
-Date: Tue, 10 Sep 2013 12:37:47 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1751105Ab3IJSiA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 14:38:00 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:54719 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751022Ab3IJShy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 14:37:54 -0400
+Date: Tue, 10 Sep 2013 14:37:40 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: azurIt <azurit@pobox.sk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/7] improve memcg oom killer robustness v2
+Message-ID: <20130910183740.GI856@cmpxchg.org>
+References: <20130830215852.3E5D3D66@pobox.sk>
+ <20130902123802.5B8E8CB1@pobox.sk>
+ <20130903204850.GA1412@cmpxchg.org>
+ <20130904101852.58E70042@pobox.sk>
+ <20130905115430.GB856@cmpxchg.org>
+ <20130909151010.3A3CBC6A@pobox.sk>
+ <20130909172849.GG856@cmpxchg.org>
+ <20130909215917.96932098@pobox.sk>
+ <20130909201238.GH856@cmpxchg.org>
+ <20130910201359.D0984EFF@pobox.sk>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Guenter Roeck <linux@roeck-us.net>, Wei Ni <wni@nvidia.com>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/2] hwmon: (lm90) Add power control
-References: <20130909155043.GA18975@roeck-us.net> <522E9059.3070305@nvidia.com> <522E93D6.2010304@roeck-us.net> <522E94AE.7000804@wwwdotorg.org> <522E97CE.4070300@roeck-us.net> <522E9C84.9070405@wwwdotorg.org> <20130910100939.GW29403@sirena.org.uk> <522F35BF.6070909@wwwdotorg.org> <20130910170438.GS29403@sirena.org.uk> <522F5A65.8040907@wwwdotorg.org> <20130910181837.GD29403@sirena.org.uk>
-In-Reply-To: <20130910181837.GD29403@sirena.org.uk>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130910201359.D0984EFF@pobox.sk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2013 12:18 PM, Mark Brown wrote:
-> On Tue, Sep 10, 2013 at 11:44:05AM -0600, Stephen Warren wrote:
+On Tue, Sep 10, 2013 at 08:13:59PM +0200, azurIt wrote:
+> >On Mon, Sep 09, 2013 at 09:59:17PM +0200, azurIt wrote:
+> >> >On Mon, Sep 09, 2013 at 03:10:10PM +0200, azurIt wrote:
+> >> >> >Hi azur,
+> >> >> >
+> >> >> >On Wed, Sep 04, 2013 at 10:18:52AM +0200, azurIt wrote:
+> >> >> >> > CC: "Andrew Morton" <akpm@linux-foundation.org>, "Michal Hocko" <mhocko@suse.cz>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+> >> >> >> >Hello azur,
+> >> >> >> >
+> >> >> >> >On Mon, Sep 02, 2013 at 12:38:02PM +0200, azurIt wrote:
+> >> >> >> >> >>Hi azur,
+> >> >> >> >> >>
+> >> >> >> >> >>here is the x86-only rollup of the series for 3.2.
+> >> >> >> >> >>
+> >> >> >> >> >>Thanks!
+> >> >> >> >> >>Johannes
+> >> >> >> >> >>---
+> >> >> >> >> >
+> >> >> >> >> >
+> >> >> >> >> >Johannes,
+> >> >> >> >> >
+> >> >> >> >> >unfortunately, one problem arises: I have (again) cgroup which cannot be deleted :( it's a user who had very high memory usage and was reaching his limit very often. Do you need any info which i can gather now?
+> >> >> >> >
+> >> >> >> >Did the OOM killer go off in this group?
+> >> >> >> >
+> >> >> >> >Was there a warning in the syslog ("Fixing unhandled memcg OOM
+> >> >> >> >context")?
+> >> >> >> 
+> >> >> >> 
+> >> >> >> 
+> >> >> >> Ok, i see this message several times in my syslog logs, one of them is also for this unremovable cgroup (but maybe all of them cannot be removed, should i try?). Example of the log is here (don't know where exactly it starts and ends so here is the full kernel log):
+> >> >> >> http://watchdog.sk/lkml/oom_syslog.gz
+> >> >> >There is an unfinished OOM invocation here:
+> >> >> >
+> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715112] Fixing unhandled memcg OOM context set up from:
+> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715191]  [<ffffffff811105c2>] T.1154+0x622/0x8f0
+> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715274]  [<ffffffff8111153e>] mem_cgroup_cache_charge+0xbe/0xe0
+> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715357]  [<ffffffff810cf31c>] add_to_page_cache_locked+0x4c/0x140
+> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715443]  [<ffffffff810cf432>] add_to_page_cache_lru+0x22/0x50
+> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715526]  [<ffffffff810cfdd3>] find_or_create_page+0x73/0xb0
+> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715608]  [<ffffffff811493ba>] __getblk+0xea/0x2c0
+> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715692]  [<ffffffff8114ca73>] __bread+0x13/0xc0
+> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715774]  [<ffffffff81196968>] ext3_get_branch+0x98/0x140
+> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715859]  [<ffffffff81197557>] ext3_get_blocks_handle+0xd7/0xdc0
+> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715942]  [<ffffffff81198304>] ext3_get_block+0xc4/0x120
+> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716023]  [<ffffffff81155c3a>] do_mpage_readpage+0x38a/0x690
+> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716107]  [<ffffffff81155f8f>] mpage_readpage+0x4f/0x70
+> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716188]  [<ffffffff811973a8>] ext3_readpage+0x28/0x60
+> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716268]  [<ffffffff810cfa48>] filemap_fault+0x308/0x560
+> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716350]  [<ffffffff810ef898>] __do_fault+0x78/0x5a0
+> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716433]  [<ffffffff810f2ab4>] handle_pte_fault+0x84/0x940
+> >> >> >
+> >> >> >__getblk() has this weird loop where it tries to instantiate the page,
+> >> >> >frees memory on failure, then retries.  If the memcg goes OOM, the OOM
+> >> >> >path might be entered multiple times and each time leak the memcg
+> >> >> >reference of the respective previous OOM invocation.
+> >> >> >
+> >> >> >There are a few more find_or_create() sites that do not propagate an
+> >> >> >error and it's incredibly hard to find out whether they are even taken
+> >> >> >during a page fault.  It's not practical to annotate them all with
+> >> >> >memcg OOM toggles, so let's just catch all OOM contexts at the end of
+> >> >> >handle_mm_fault() and clear them if !VM_FAULT_OOM instead of treating
+> >> >> >this like an error.
+> >> >> >
+> >> >> >azur, here is a patch on top of your modified 3.2.  Note that Michal
+> >> >> >might be onto something and we are looking at multiple issues here,
+> >> >> >but the log excert above suggests this fix is required either way.
+> >> >> 
+> >> >> 
+> >> >> 
+> >> >> 
+> >> >> Johannes, is this still up to date? Thank you.
+> >> >
+> >> >No, please use the following on top of 3.2 (i.e. full replacement, not
+> >> >incremental to what you have):
+> >> 
+> >> 
+> >> 
+> >> Unfortunately it didn't compile:
+> >> 
+> >> 
+> >> 
+> >> 
+> >>   LD      vmlinux.o
+> >>   MODPOST vmlinux.o
+> >> WARNING: modpost: Found 4924 section mismatch(es).
+> >> To see full details build your kernel with:
+> >> 'make CONFIG_DEBUG_SECTION_MISMATCH=y'
+> >>   GEN     .version
+> >>   CHK     include/generated/compile.h
+> >>   UPD     include/generated/compile.h
+> >>   CC      init/version.o
+> >>   LD      init/built-in.o
+> >>   LD      .tmp_vmlinux1
+> >> arch/x86/built-in.o: In function `do_page_fault':
+> >> (.text+0x26a77): undefined reference to `handle_mm_fault'
+> >> mm/built-in.o: In function `fixup_user_fault':
+> >> (.text+0x224d3): undefined reference to `handle_mm_fault'
+> >> mm/built-in.o: In function `__get_user_pages':
+> >> (.text+0x24a0f): undefined reference to `handle_mm_fault'
+> >> make: *** [.tmp_vmlinux1] Error 1
+> >
+> >Oops, sorry about that.  Must be configuration dependent because it
+> >works for me (and handle_mm_fault is obviously defined).
+> >
+> >Do you have warnings earlier in the compilation?  You can use make -s
+> >to filter out everything but warnings.
+> >
+> >Or send me your configuration so I can try to reproduce it here.
+> >
+> >Thanks!
 > 
->> OK, so I believe you're saying that the case of a chip with just
->> a single power source, which absolutely must be present in HW for
->> the chip to be powered, isn't appropriate for
->> regulator_get_optional(). Something must always define a
->> regulator for that power source, even if there is no external SW
->> control over that power source.
 > 
-> Well, it really should be mandatory - personally I don't think
-> it's sensible to add off-SoC chips without defining their
-> regulators, it's more trouble than it's worth to have to add them
-> later for all the time it takes to define the bindings.  In IETF
-> terms it's a should.
+> Johannes,
 > 
->> We either allow the regulator to be optional (since SW control
->> over the regulator is optional), or go back to every board file
->> and DT and add a dummy regulator in (which then breaks DT ABI,
->> and even ignoring that is a pain).
-> 
-> The whole point of the way I'm changing the dummy support is to
-> allow us to gracefully cope with errors here so there's no
-> mandatory update even though strictly there should be one.
+> the server went down early in the morning, the symptoms were similar as before - huge I/O. Can't tell what exactly happened since I wasn't able to login even on the console. But I have some info:
+>  - applications were able to write to HDD so it wasn't deadlocked as before
+>  - here is how it looked on graphs: http://watchdog.sk/lkml/graphs.jpg
+>  - server wasn't responding from 6:36, it was down between 6:54 and 7:02 (i had to hard reboot it), I was awoken at 6:36 by really creepy sound from my phone ;)
+>  - my 'load check' script successfully killed apache at 6:41 but it didn't help as you can see
+>  - i have one screen with info from atop from time 6:44, looks like i/o was done by init (??!): http://watchdog.sk/lkml/atop.jpg (ignore swap warning, i have no swap)
+>  - also other type of logs are available
+>  - nothing like this happened before
 
-OK, so for the DT binding we should make vcc-supply a required
-property, yet the driver will still work OK if that property just
-happens to be missing (or e.g. when instantiated from a board file,
-and there's no regulator).
+That IO from init looks really screwy, I have no idea what's going on
+on that machine, but it looks like there is more than just a memcg
+problem...  Any chance your thirdparty security patches are concealing
+kernel daemon activity behind the init process and the IO is actually
+coming from a kernel thread like the flushers or kswapd?
+
+Are there OOM kill messages in the syslog?
+
+> What do you think? I'm now running kernel with your previous patch, not with the newest one.
+
+Which one exactly?  Can you attach the diff?
