@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754926Ab3IJH4y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 03:56:54 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40247 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754654Ab3IJH4u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 03:56:50 -0400
-Date: Tue, 10 Sep 2013 09:56:35 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Gerlando Falauto <gerlando.falauto@keymile.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        "Brunck, Holger" <Holger.Brunck@keymile.com>,
-        "Longchamp, Valentin" <Valentin.Longchamp@keymile.com>,
-        "Bigler, Stefan" <Stefan.Bigler@keymile.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: kernel deadlock
-Message-ID: <20130910075635.GH26785@twins.programming.kicks-ass.net>
-References: <521F6D06.1040107@keymile.com>
- <E92455D61233364C88CCD4A6DAB2E2850E09518110@SRVDEHAN1MX1.keymile.net>
- <521FDD12.7050000@linaro.org>
- <52212511.9050206@keymile.com>
- <5221264F.4070402@linaro.org>
- <5225F8EF.3040701@keymile.com>
- <52261BBB.60904@linaro.org>
- <5226EB35.6080604@keymile.com>
- <522E2FBB.4070406@linaro.org>
+	id S1754943Ab3IJIAP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 04:00:15 -0400
+Received: from oker.escape.de ([194.120.234.254]:48378 "EHLO oker.escape.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752868Ab3IJIAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 04:00:13 -0400
+Date: Tue, 10 Sep 2013 09:45:50 +0200
+From: Jochen Striepe <jochen@tolot.escape.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: 3.10.5: rcu_sched detected stalls on CPUs/tasks
+Message-ID: <20130910074550.GE17483@pompeji.miese-zwerge.org>
+References: <20130813103202.GB2338@pompeji.miese-zwerge.org>
+ <20130818180232.GL29406@linux.vnet.ibm.com>
+ <20130818184848.GA2398@pompeji.miese-zwerge.org>
+ <20130909215836.GD17483@pompeji.miese-zwerge.org>
+ <20130909222751.GL3966@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <522E2FBB.4070406@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20130909222751.GL3966@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 01:29:47PM -0700, John Stultz wrote:
-> Ingo: This makes me think we really should have some lockdep smarts
-> added to seqlock/seqcount structures. Is there something already
-> discovered thats preventing this, or has this just not yet been tried?
+	Hello,
 
-The only reason this hasn't been done in the past is because of the VDSO
-I believe. We use a seqcount_t from userspace.
+On Mon, Sep 09, 2013 at 03:27:51PM -0700, Paul E. McKenney wrote:
+> On Mon, Sep 09, 2013 at 11:58:36PM +0200, Jochen Striepe wrote:
+> > I just got this on 3.10.11 on the same machine. Could that be
+> > related?
+> 
+> Several people helped track down another source of spurious stall
+> warnings on large systems, please see below for the patch.
+[...]
+> This is quite rare, but apparently occurs deterministically
+> on systems with about 6TB of memory.
 
-We either have to open-code the VDSO version or create a variant for
-that specific single use case.
+Hmm. My system is an ASUS Eee PC netbook with a total of 2G memory.
+The latest stall was just when booting, while /dev was to be filled
+by udev (and taking a really long time on that). So I think this
+patch should not help at my machine, right?
+
+I tried to reproduce the stall, but without success. Is there anything
+that could help reproducing?
+
+Best greetings,
+Jochen.
