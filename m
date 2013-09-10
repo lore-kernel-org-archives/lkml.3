@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754943Ab3IJIAP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 04:00:15 -0400
-Received: from oker.escape.de ([194.120.234.254]:48378 "EHLO oker.escape.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752868Ab3IJIAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 04:00:13 -0400
-Date: Tue, 10 Sep 2013 09:45:50 +0200
-From: Jochen Striepe <jochen@tolot.escape.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: 3.10.5: rcu_sched detected stalls on CPUs/tasks
-Message-ID: <20130910074550.GE17483@pompeji.miese-zwerge.org>
-References: <20130813103202.GB2338@pompeji.miese-zwerge.org>
- <20130818180232.GL29406@linux.vnet.ibm.com>
- <20130818184848.GA2398@pompeji.miese-zwerge.org>
- <20130909215836.GD17483@pompeji.miese-zwerge.org>
- <20130909222751.GL3966@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130909222751.GL3966@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755064Ab3IJICs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 04:02:48 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:38132 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752352Ab3IJICl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 04:02:41 -0400
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Knut Petersen <Knut_Petersen@t-online.de>
+Subject: [PATCH] drm/i915/sdvo: Fully translate sync flags in the dtd->mode conversion
+Date: Tue, 10 Sep 2013 10:02:48 +0200
+Message-Id: <1378800168-32277-1-git-send-email-daniel.vetter@ffwll.ch>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <522A5008.6060005@t-online.de>
+References: <522A5008.6060005@t-online.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hello,
+Instead of just a flag bit for each of the positive/negative sync
+modes drm actually uses a separate flag for each ... This upsets the
+modeset checker since the adjusted mode filled out at modeset time
+doesn't match the one reconstructed at check time (since the
+->get_config callback already gets this right).
 
-On Mon, Sep 09, 2013 at 03:27:51PM -0700, Paul E. McKenney wrote:
-> On Mon, Sep 09, 2013 at 11:58:36PM +0200, Jochen Striepe wrote:
-> > I just got this on 3.10.11 on the same machine. Could that be
-> > related?
-> 
-> Several people helped track down another source of spurious stall
-> warnings on large systems, please see below for the patch.
-[...]
-> This is quite rare, but apparently occurs deterministically
-> on systems with about 6TB of memory.
+Reported-by: Knut Petersen <Knut_Petersen@t-online.de>
+Cc: Knut Petersen <Knut_Petersen@t-online.de>
+References: http://www.gossamer-threads.com/lists/linux/kernel/1778688?do=post_view_threaded
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+---
+ drivers/gpu/drm/i915/intel_sdvo.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-Hmm. My system is an ASUS Eee PC netbook with a total of 2G memory.
-The latest stall was just when booting, while /dev was to be filled
-by udev (and taking a really long time on that). So I think this
-patch should not help at my machine, right?
+diff --git a/drivers/gpu/drm/i915/intel_sdvo.c b/drivers/gpu/drm/i915/intel_sdvo.c
+index 85037b9..5033c74 100644
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -866,8 +866,12 @@ static void intel_sdvo_get_mode_from_dtd(struct drm_display_mode * mode,
+ 		mode->flags |= DRM_MODE_FLAG_INTERLACE;
+ 	if (dtd->part2.dtd_flags & DTD_FLAG_HSYNC_POSITIVE)
+ 		mode->flags |= DRM_MODE_FLAG_PHSYNC;
++	else
++		mode->flags |= DRM_MODE_FLAG_NHSYNC;
+ 	if (dtd->part2.dtd_flags & DTD_FLAG_VSYNC_POSITIVE)
+ 		mode->flags |= DRM_MODE_FLAG_PVSYNC;
++	else
++		mode->flags |= DRM_MODE_FLAG_NVSYNC;
+ }
+ 
+ static bool intel_sdvo_check_supp_encode(struct intel_sdvo *intel_sdvo)
+-- 
+1.8.4.rc3
 
-I tried to reproduce the stall, but without success. Is there anything
-that could help reproducing?
-
-Best greetings,
-Jochen.
