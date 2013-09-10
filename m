@@ -1,42 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756319Ab3IJA6B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 20:58:01 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55359 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756166Ab3IJA6A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 20:58:00 -0400
-Date: Tue, 10 Sep 2013 01:57:54 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: George Spelvin <linux@horizon.com>
-Cc: torvalds@linux-foundation.org, aswin@hp.com, john@stoffel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        scott.norton@hp.com, Waiman.Long@hp.com
-Subject: Re: [PATCH v4 1/1] dcache: Translating dentry into pathname without
- taking rename_lock
-Message-ID: <20130910005754.GV13318@ZenIV.linux.org.uk>
-References: <20130909182111.GQ13318@ZenIV.linux.org.uk>
- <20130910004020.29299.qmail@science.horizon.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130910004020.29299.qmail@science.horizon.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756402Ab3IJA62 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 20:58:28 -0400
+Received: from mga09.intel.com ([134.134.136.24]:23877 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755756Ab3IJA61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 20:58:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,874,1371106800"; 
+   d="scan'208";a="400921027"
+From: Andi Kleen <andi@firstfloor.org>
+To: mingo@kernel.org
+Cc: peterz@infradead.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] perf, x86: Avoid checkpointed counters causing excessive TSX aborts v5
+Date: Mon,  9 Sep 2013 17:58:12 -0700
+Message-Id: <1378774692-18965-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 08:40:20PM -0400, George Spelvin wrote:
-> I'm really wondering about only trying once before taking the write lock.
-> Yes, using the lsbit is a cute hack, but are we using it for its cuteness
-> rather than its effectiveness?
-> 
-> Renames happen occasionally.  If that causes all the current pathname
-> translations to fall back to the write lock, that is fairly heavy.
-> Worse, all of those translations will (unnecessarily) bump the write
-> seqcount, triggering *other* translations to fail back to the write-lock
-> path.
+From: Andi Kleen <ak@linux.intel.com>
 
-_What_ "pathname translations"?  Pathname resolution doesn't fall back to
-seq_writelock() at all.
+With checkpointed counters there can be a situation where the counter
+is overflowing, aborts the transaction, is set back to a non overflowing
+checkpoint, causes interupt. The interrupt doesn't see the overflow
+because it has been checkpointed.  This is then a spurious PMI, typically with
+a ugly NMI message.  It can also lead to excessive aborts.
+
+Avoid this problem by:
+- Using the full counter width for counting counters (earlier patch)
+- Forbid sampling for checkpointed counters. It's not too useful anyways,
+checkpointing is mainly for counting. The check is approximate
+(to still handle KVM), but should catch the majority of cases.
+- On a PMI always set back checkpointed counters to zero.
+
+v2: Add unlikely. Add comment
+v3: Allow large sampling periods with CP for KVM
+v4: Use event_is_checkpointed. Use EOPNOTSUPP. (Stephane Eranian)
+v5: Remove comment.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c | 37 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 37 insertions(+)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index a45d8d4..91e3f8c 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1134,6 +1134,11 @@ static void intel_pmu_enable_event(struct perf_event *event)
+ 	__x86_pmu_enable_event(hwc, ARCH_PERFMON_EVENTSEL_ENABLE);
+ }
+ 
++static inline bool event_is_checkpointed(struct perf_event *event)
++{
++	return (event->hw.config & HSW_IN_TX_CHECKPOINTED) != 0;
++}
++
+ /*
+  * Save and restart an expired event. Called by NMI contexts,
+  * so it has to be careful about preempting normal event ops:
+@@ -1141,6 +1146,17 @@ static void intel_pmu_enable_event(struct perf_event *event)
+ int intel_pmu_save_and_restart(struct perf_event *event)
+ {
+ 	x86_perf_event_update(event);
++	/*
++	 * For a checkpointed counter always reset back to 0.  This
++	 * avoids a situation where the counter overflows, aborts the
++	 * transaction and is then set back to shortly before the
++	 * overflow, and overflows and aborts again.
++	 */
++	if (unlikely(event_is_checkpointed(event))) {
++		/* No race with NMIs because the counter should not be armed */
++		wrmsrl(event->hw.event_base, 0);
++		local64_set(&event->hw.prev_count, 0);
++	}
+ 	return x86_perf_event_set_period(event);
+ }
+ 
+@@ -1224,6 +1240,13 @@ again:
+ 		x86_pmu.drain_pebs(regs);
+ 	}
+ 
++	/*
++	 * To avoid spurious interrupts with perf stat always reset checkpointed
++	 * counters.
++	 */
++	if (cpuc->events[2] && event_is_checkpointed(cpuc->events[2]))
++		status |= (1ULL << 2);
++
+ 	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
+ 		struct perf_event *event = cpuc->events[bit];
+ 
+@@ -1689,6 +1712,20 @@ static int hsw_hw_config(struct perf_event *event)
+ 	      event->attr.precise_ip > 0))
+ 		return -EOPNOTSUPP;
+ 
++	if (event_is_checkpointed(event)) {
++		/*
++		 * Sampling of checkpointed events can cause situations where
++		 * the CPU constantly aborts because of a overflow, which is
++		 * then checkpointed back and ignored. Forbid checkpointing
++		 * for sampling.
++		 *
++		 * But still allow a long sampling period, so that perf stat
++		 * from KVM works.
++		 */
++		if (event->attr.sample_period > 0 &&
++		    event->attr.sample_period < 0x7fffffff)
++			return -EOPNOTSUPP;
++	}
+ 	return 0;
+ }
+ 
+-- 
+1.8.3.1
+
