@@ -1,169 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab3IJG6q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 02:58:46 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53378 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754044Ab3IJG6p (ORCPT
+	id S1754735Ab3IJG76 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 02:59:58 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:34115 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754134Ab3IJG75 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 02:58:45 -0400
-Date: Tue, 10 Sep 2013 08:58:38 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: kernel@pengutronix.de, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [PATCH][RESEND] ARM: imx: remove IRQF_DISABLED
-Message-ID: <20130910065838.GC30088@pengutronix.de>
-Mail-Followup-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-	kernel@pengutronix.de, linux@arm.linux.org.uk,
-	linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-	Shawn Guo <shawn.guo@linaro.org>
-References: <1378271079-24945-1-git-send-email-michael.opdenacker@free-electrons.com>
+	Tue, 10 Sep 2013 02:59:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378271079-24945-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:57:59 up 16 days, 16:28, 33 users,  load average: 0.02, 0.10,
- 0.20
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-Originating-IP: [212.179.42.66]
+In-Reply-To: <1378795659.6046.41.camel@marge.simpson.net>
+References: <00000140efbcb701-c26320b3-f434-4538-bc80-8e92fed6f303-000000@email.amazonses.com>
+	<CAOtvUMe=jcAHXNJU_rTAAokaE4KZNUTFsHVVTTxgFW_xj8ONxg@mail.gmail.com>
+	<1378795659.6046.41.camel@marge.simpson.net>
+Date: Tue, 10 Sep 2013 09:59:55 +0300
+Message-ID: <CAOtvUMfhLQYK95uPm8idG_vYv-9yG2-KSkScjMBCSuvtffW1Dg@mail.gmail.com>
+Subject: Re: [RFC] Restrict kernel spawning of threads to a specified set of cpus.
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 04, 2013 at 07:04:39AM +0200, Michael Opdenacker wrote:
-> This flag is a NOOP since 2.6.35 and can be removed.
-> 
-> This is an update for 3.11 of a patch already sent for 3.10
-> 
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Hi,
 
-(added shawn to Cc)
 
-Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+On Tue, Sep 10, 2013 at 9:47 AM, Mike Galbraith <bitbucket@online.de> wrote:
+>
+> On Tue, 2013-09-10 at 09:05 +0300, Gilad Ben-Yossef wrote:
+> > Hi,
+> >
+> > On Thu, Sep 5, 2013 at 11:07 PM, Christoph Lameter <cl@linux.com> wrote:
+> > > I am not sure how to call this kernel option but we need something like
+> > > that. I see drivers and the kernel spawning processes on the nohz cores.
+> > > The name kthread is not really catching the purpose.
+> > >
+> > > os_cpus=? highlatency_cpus=?
+> > >
+> >
+> > First off, thank you for doing this. It is very useful :-)
+> >
+> > Currently if one wishes to run a single task on an isolated CPU with
+> > as little interference as possible, one needs to pass
+> > rcu_nocbs, isolcpus, nohz_full parameters and now kthread parameter,
+> > all pretty much with the same values
+> >
+> > I know some people won't like this, but can we perhaps fold all these
+> > into a single parameter, perhaps even the existing isolcpus?
+>
+> isolcpus is supposed to go away, as cpusets can isolate CPUs, and can
+> turn off load balancing.
+>
 
-Sascha
+And I'm all for that. I think cpusets is a much more elegant solution.
 
-> ---
->  arch/arm/mach-imx/Kconfig             | 2 +-
->  arch/arm/mach-imx/epit.c              | 2 +-
->  arch/arm/mach-imx/mach-armadillo5x0.c | 3 +--
->  arch/arm/mach-imx/mach-mx31_3ds.c     | 2 +-
->  arch/arm/mach-imx/mach-pcm037.c       | 3 +--
->  arch/arm/mach-imx/mx31lilly-db.c      | 3 +--
->  arch/arm/mach-imx/time.c              | 2 +-
->  7 files changed, 7 insertions(+), 10 deletions(-)
-> 
-> diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
-> index f546560..799a92f 100644
-> --- a/arch/arm/mach-imx/Kconfig
-> +++ b/arch/arm/mach-imx/Kconfig
-> @@ -22,7 +22,7 @@ config MXC_IRQ_PRIOR
->  	help
->  	  Select this if you want to use prioritized IRQ handling.
->  	  This feature prevents higher priority ISR to be interrupted
-> -	  by lower priority IRQ even IRQF_DISABLED flag is not set.
-> +	  by lower priority IRQ.
->  	  This may be useful in embedded applications, where are strong
->  	  requirements for timing.
->  	  Say N here, unless you have a specialized requirement.
-> diff --git a/arch/arm/mach-imx/epit.c b/arch/arm/mach-imx/epit.c
-> index e02de18..074b1a8 100644
-> --- a/arch/arm/mach-imx/epit.c
-> +++ b/arch/arm/mach-imx/epit.c
-> @@ -171,7 +171,7 @@ static irqreturn_t epit_timer_interrupt(int irq, void *dev_id)
->  
->  static struct irqaction epit_timer_irq = {
->  	.name		= "i.MX EPIT Timer Tick",
-> -	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
-> +	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
->  	.handler	= epit_timer_interrupt,
->  };
->  
-> diff --git a/arch/arm/mach-imx/mach-armadillo5x0.c b/arch/arm/mach-imx/mach-armadillo5x0.c
-> index 368a6e3..58b864a 100644
-> --- a/arch/arm/mach-imx/mach-armadillo5x0.c
-> +++ b/arch/arm/mach-imx/mach-armadillo5x0.c
-> @@ -404,8 +404,7 @@ static int armadillo5x0_sdhc1_init(struct device *dev,
->  
->  	/* When supported the trigger type have to be BOTH */
->  	ret = request_irq(gpio_to_irq(IOMUX_TO_GPIO(MX31_PIN_ATA_DMACK)),
-> -			  detect_irq,
-> -			  IRQF_DISABLED | IRQF_TRIGGER_FALLING,
-> +			  detect_irq, IRQF_TRIGGER_FALLING,
->  			  "sdhc-detect", data);
->  
->  	if (ret)
-> diff --git a/arch/arm/mach-imx/mach-mx31_3ds.c b/arch/arm/mach-imx/mach-mx31_3ds.c
-> index 1ed9161..50044a2 100644
-> --- a/arch/arm/mach-imx/mach-mx31_3ds.c
-> +++ b/arch/arm/mach-imx/mach-mx31_3ds.c
-> @@ -311,7 +311,7 @@ static int mx31_3ds_sdhc1_init(struct device *dev,
->  	}
->  
->  	ret = request_irq(gpio_to_irq(IOMUX_TO_GPIO(MX31_PIN_GPIO3_1)),
-> -			  detect_irq, IRQF_DISABLED |
-> +			  detect_irq,
->  			  IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
->  			  "sdhc1-detect", data);
->  	if (ret) {
-> diff --git a/arch/arm/mach-imx/mach-pcm037.c b/arch/arm/mach-imx/mach-pcm037.c
-> index bc0261e..45303bd6 100644
-> --- a/arch/arm/mach-imx/mach-pcm037.c
-> +++ b/arch/arm/mach-imx/mach-pcm037.c
-> @@ -371,8 +371,7 @@ static int pcm970_sdhc1_init(struct device *dev, irq_handler_t detect_irq,
->  #endif
->  
->  	ret = request_irq(gpio_to_irq(IOMUX_TO_GPIO(MX31_PIN_SCK6)), detect_irq,
-> -			IRQF_DISABLED | IRQF_TRIGGER_FALLING,
-> -				"sdhc-detect", data);
-> +			IRQF_TRIGGER_FALLING, "sdhc-detect", data);
->  	if (ret)
->  		goto err_gpio_free_2;
->  
-> diff --git a/arch/arm/mach-imx/mx31lilly-db.c b/arch/arm/mach-imx/mx31lilly-db.c
-> index d4361b8..649fe49 100644
-> --- a/arch/arm/mach-imx/mx31lilly-db.c
-> +++ b/arch/arm/mach-imx/mx31lilly-db.c
-> @@ -130,8 +130,7 @@ static int mxc_mmc1_init(struct device *dev,
->  	gpio_direction_input(gpio_wp);
->  
->  	ret = request_irq(gpio_to_irq(IOMUX_TO_GPIO(MX31_PIN_GPIO1_1)),
-> -			  detect_irq,
-> -			  IRQF_DISABLED | IRQF_TRIGGER_FALLING,
-> +			  detect_irq, IRQF_TRIGGER_FALLING,
->  			  "MMC detect", data);
->  	if (ret)
->  		goto exit_free_wp;
-> diff --git a/arch/arm/mach-imx/time.c b/arch/arm/mach-imx/time.c
-> index cd46529..9b6638a 100644
-> --- a/arch/arm/mach-imx/time.c
-> +++ b/arch/arm/mach-imx/time.c
-> @@ -250,7 +250,7 @@ static irqreturn_t mxc_timer_interrupt(int irq, void *dev_id)
->  
->  static struct irqaction mxc_timer_irq = {
->  	.name		= "i.MX Timer Tick",
-> -	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
-> +	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
->  	.handler	= mxc_timer_interrupt,
->  };
->  
-> -- 
-> 1.8.1.2
-> 
-> 
+But... AFAIK currently cpusets cannot migrate timers that were registered on
+a cpu prior to it being isolated via cpuset, designate RCU off loaded CPUs or
+sets cpus as full nohz capable, or - it seems from this patch, keep off certain
+kernel thread off a cpu.
+
+This is no fault of cpusets, but it still means there are work loads
+that it can't
+support at this time.
+
+So long as we must  have a kernel boot option, I prefer to have one
+and not four of
+them. Think of it this way - when we put all these capabilities into
+cpusets, we'll have
+just one kernel option to kill and not four.
+
+Does that makes sense?
+
+Gilad
+
+>
+> -Mike
+>
+
+
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"If you take a class in large-scale robotics, can you end up in a
+situation where the homework eats your dog?"
+ -- Jean-Baptiste Queru
