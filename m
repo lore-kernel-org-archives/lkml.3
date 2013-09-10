@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751470Ab3IJL6r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 07:58:47 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:54759 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166Ab3IJL6q (ORCPT
+	id S1751594Ab3IJL7h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 07:59:37 -0400
+Received: from mail-qe0-f50.google.com ([209.85.128.50]:43154 "EHLO
+	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166Ab3IJL7g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 07:58:46 -0400
-Date: Tue, 10 Sep 2013 13:58:43 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 0/3] perf tools: Fix scalability problem on callchain
- merging
-Message-ID: <20130910115841.GC28268@somewhere>
-References: <1378801458-2515-1-git-send-email-namhyung@kernel.org>
+	Tue, 10 Sep 2013 07:59:36 -0400
+Message-ID: <522F09AB.4000907@redhat.com>
+Date: Tue, 10 Sep 2013 13:59:39 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378801458-2515-1-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gleb Natapov <gleb@redhat.com>
+CC: Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, Jan Kiszka <jan.kiszka@siemens.com>
+Subject: Re: [PATCH v3 1/3] tile: support KVM host mode
+References: <20130826120445.GD8218@redhat.com> <4bbdcdd0e94f6a7db210ef47f4a30f06325137cd.1377736306.git.cmetcalf@tilera.com> <20130910105349.GY17294@redhat.com>
+In-Reply-To: <20130910105349.GY17294@redhat.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 05:24:15PM +0900, Namhyung Kim wrote:
-> Hello,
+Il 10/09/2013 12:53, Gleb Natapov ha scritto:
+>> > +#ifndef __KERNEL__
+>> > +/* For hv_*() */
+>> > +#define KVM_EMULATE(name) [HV_SYS_##name] = qemu_emulate_illegal,
+>> > +#define USER_EMULATE(name) [HV_SYS_##name] = qemu_emulate_hv_##name,
+>> > +#define NO_EMULATE(name) [HV_SYS_##name] = qemu_emulate_illegal,
+>> > +#define BOTH_EMULATE(name) [HV_SYS_##name] = qemu_emulate_hv_##name,
+>> > +/* For others */
+>> > +#define USER_HCALL(name) [KVM_HCALL_##name] = qemu_handle_##name,
+> This does not belong to a kernel header. QEMU is not the only user of KVM
+> kernel APIs. Please drop that and change all the references in comment
+> from "qemu" to "userspace". If you add code that workarounds QEMU bugs it
+> is appropriate to mention QEMU by name, otherwise interface to userspace
+> should not be QEMU specific.
 > 
-> Linus reported that perf report was stuck in after "processing time
-> ordered events".  It turned out that merging/collapsing the callchain
-> takes most of time to look up a matching callchain.  Since it did a
-> linear search for the lookup, it took more than 95% of time during the
-> processing huge file that contains callchains.
-> 
-> This patchset tries to fix the problem by
-> 
->  1. converting children list to a rbtree
->  2. add UI progress window to inform user
-> 
-> With this patch, processing time of 400MB perf.data file went down
-> from 380s to 20s.
 
-Even if we get rid of hists collapsing, this may still bring value on
-performance. One way to test is to sort by pid or by sym and compare
-before and after the patchset. pid/sym shouldn't make use of collapses.
+In general, I believe that HCALL_DEFS should not be part of the public
+interface.
 
-Thanks.
+Otherwise, adding a new hypercall would break compilation of userspace.
+ Hypercalls (after the first commit) should always be associated to a
+capability, so they shouldn't be generated unless userspace explicitly
+requests them.
 
-> 
-> Thanks,
-> Namhyung
-> 
-> 
-> Namhyung Kim (3):
->   perf callchain: Convert children list to rbtree
->   perf ui/progress: Add new helper functions for progress bar
->   perf tools: Show progress on histogram collapsing
-> 
->  tools/perf/builtin-annotate.c |   2 +-
->  tools/perf/builtin-diff.c     |   2 +-
->  tools/perf/builtin-report.c   |  10 ++-
->  tools/perf/builtin-top.c      |   4 +-
->  tools/perf/tests/hists_link.c |   2 +-
->  tools/perf/ui/progress.c      |  18 +++++
->  tools/perf/ui/progress.h      |  10 +++
->  tools/perf/util/callchain.c   | 151 ++++++++++++++++++++++++++++++++----------
->  tools/perf/util/callchain.h   |   5 +-
->  tools/perf/util/hist.c        |   5 +-
->  tools/perf/util/hist.h        |   3 +-
->  tools/perf/util/session.c     |  22 +++---
->  12 files changed, 173 insertions(+), 61 deletions(-)
-> 
-> -- 
-> 1.7.11.7
-> 
+Rather, document the hypercalls under Documentation/virtual/kvm, noting
+which are implemented in the kernel and which need to be handled in
+userspace.
+
+BTW, BOTH_EMULATE and USER_HCALL seem unused.
+
+Paolo
