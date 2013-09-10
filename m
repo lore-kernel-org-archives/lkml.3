@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab3IJCDd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 22:03:33 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:37564 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab3IJCDc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 22:03:32 -0400
-Date: Mon, 09 Sep 2013 21:03:28 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH] doc: fix some typos in documentation
-To: Xishi Qiu <qiuxishi@huawei.com>
-Cc: benh@kernel.crashing.org, linux-doc@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Xishi Qiu <qiuxishi@huawei.com>
-In-Reply-To: <5228786E.1030501@huawei.com> (from qiuxishi@huawei.com on Thu
-	Sep  5 07:26:22 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1378778608.8385.17@driftwood>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+	id S1754196Ab3IJCGN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 22:06:13 -0400
+Received: from ozlabs.org ([203.10.76.45]:51782 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751595Ab3IJCGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 22:06:12 -0400
+Message-ID: <1378778772.25578.1.camel@concordia>
+Subject: Re: [PATCH V2 0/6] perf: New conditional branch filter
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org, eranian@google.com,
+        acme@redhat.com, Michael Neuling <michael.neuling@au1.ibm.com>,
+        svaidy@linux.vnet.ibm.com, sukadev@linux.vnet.ibm.com
+Date: Tue, 10 Sep 2013 12:06:12 +1000
+In-Reply-To: <1377836690-32710-1-git-send-email-khandual@linux.vnet.ibm.com>
+References: <1377836690-32710-1-git-send-email-khandual@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2013 07:26:22 AM, Xishi Qiu wrote:
-> Fix some typos in  
-> Documentation/IRQ-domain.txt/email-clients.txt/io-mapping.txt
+On Fri, 2013-08-30 at 09:54 +0530, Anshuman Khandual wrote:
+> 	This patchset is the re-spin of the original branch stack sampling
+> patchset which introduced new PERF_SAMPLE_BRANCH_COND filter. This patchset
+> also enables SW based branch filtering support for PPC64 platforms which have
+> branch stack sampling support. With this new enablement, the branch filter support
+> for PPC64 platforms have been extended to include all these combinations discussed
+> below with a sample test application program.
+
+...
+
+> Mixed filters
+> -------------
+> (6) perf record -e branch-misses:u -j any_call,any_ret ./cprog
+> Error:
+> The perf.data file has no samples!
 > 
-> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-> ---
->  Documentation/IRQ-domain.txt    |    4 ++--
->  Documentation/email-clients.txt |    2 +-
->  Documentation/io-mapping.txt    |    2 +-
->  3 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/Documentation/IRQ-domain.txt  
-> b/Documentation/IRQ-domain.txt
-> index 9bc9594..5a8b8ed 100644
-> --- a/Documentation/IRQ-domain.txt
-> +++ b/Documentation/IRQ-domain.txt
-> @@ -97,7 +97,7 @@ hwirq number.  The disadvantage is that hwirq to  
-> IRQ number lookup is
->  dependent on how many entries are in the table.
-> 
->  Very few drivers should need this mapping.  At the moment, powerpc
-> -iseries is the only user.
-> +series is the only user.
+> NOTE: As expected. The HW filters all the branches which are calls and SW tries to find return
+> branches in that given set. Both the filters are mutually exclussive, so obviously no samples
+> found in the end profile.
 
-That one's not a typo, there actually was a powerpc iseries:
+The semantics of multiple filters is not clear to me. It could be an OR,
+or an AND. You have implemented AND, does that match existing behaviour
+on x86 for example?
 
-http://lxr.free-electrons.com/source/arch/powerpc/platforms/iseries/setup.c?v=2.6.35
+cheers
 
-It got removed in the past year or so (git bisect could find the  
-commit), which implies that this documentation needs to be fixed if  
-this removed architecture was the only user of whatever it's  
-documenting. (Ping the powerpc guys?)
 
-Rob
