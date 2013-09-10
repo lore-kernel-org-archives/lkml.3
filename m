@@ -1,34 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751892Ab3IJBsM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 21:48:12 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:57280 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210Ab3IJBsL (ORCPT
+	id S1752596Ab3IJBvR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 21:51:17 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:48648 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820Ab3IJBvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 21:48:11 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <522E7A54.6050903@roeck-us.net>
-Date: Mon, 09 Sep 2013 18:48:04 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 9 Sep 2013 21:51:15 -0400
+Message-ID: <522E7AF4.9060504@oracle.com>
+Date: Tue, 10 Sep 2013 09:50:44 +0800
+From: Joe Jin <joe.jin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Build failures in drivers/of/of_reserved_mem.c due to missing asm/dma-contiguous.h
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Christoph Hellwig <hch@infradead.org>
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] [scsi] enclosure: remove all possible sysfs entries before
+ add device
+References: <522D685D.5060201@oracle.com> <20130909134131.GB24738@infradead.org>
+In-Reply-To: <20130909134131.GB24738@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/of/of_reserved_mem.c:14:32: fatal error: asm/dma-contiguous.h: No such file or directory
-  #include <asm/dma-contiguous.h>
+On 09/09/13 21:41, Christoph Hellwig wrote:
+>> Modules linked in: oracleacfs(P)(U) oracleadvm(P)(U) oracleoks(P)(U)
+> 
+> Please reproduce without this weird crap loaded.
+> 
+These modules is filesystem and will not impact enclosure.
 
-Seen with
-	arm64:defconfig
-	mips:nlm_xlp_defconfig
-	mips:cavium_octeon_defconfig
+Thanks,
+Joe
 
-Guenter
+
+
+
