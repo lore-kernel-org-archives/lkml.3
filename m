@@ -1,53 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751353Ab3IJJRU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 05:17:20 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41439 "EHLO
+	id S1751380Ab3IJJSy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 05:18:54 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41467 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066Ab3IJJRS (ORCPT
+	with ESMTP id S1750938Ab3IJJSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 05:17:18 -0400
-Date: Tue, 10 Sep 2013 11:17:06 +0200
+	Tue, 10 Sep 2013 05:18:53 -0400
+Date: Tue, 10 Sep 2013 11:18:47 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
-        namhyung.kim@lge.com, dsahern@gmail.com
-Subject: Re: [PATCH v2 2/2] perf tools: add attr->mmap2 support
-Message-ID: <20130910091706.GP26785@twins.programming.kicks-ass.net>
-References: <1377079825-19057-3-git-send-email-eranian@google.com>
- <20130909192810.GA3825@infradead.org>
+To: Emmanuel Deloget <emmanuel.deloget@efixo.com>
+Cc: "[ML] linux-kernel" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: /proc/$PID/sched does not take PID namespace into account
+Message-ID: <20130910091847.GQ26785@twins.programming.kicks-ass.net>
+References: <5225F0A9.5040100@efixo.com>
+ <20130909110141.GM31370@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130909192810.GA3825@infradead.org>
+In-Reply-To: <20130909110141.GM31370@twins.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 04:47:45PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Aug 21, 2013 at 12:10:25PM +0200, Stephane Eranian escreveu:
-> > This patch adds support for the new PERF_RECORD_MMAP2
-> > record type exposed by the kernel. This is an extended
-> > PERF_RECORD_MMAP record. It adds for each file-backed
-> > mapping the device major, minor number and the inode
-> > number and generation. This triplet uniquely identifies
-> > the source of a file-backed mapping. It can be used to
-> > detect identical virtual mappings between processes, for
-> > instance.
+On Mon, Sep 09, 2013 at 01:01:41PM +0200, Peter Zijlstra wrote:
+> On Tue, Sep 03, 2013 at 04:22:33PM +0200, Emmanuel Deloget wrote:
+> > The issue (if this is really an issue) lies in kernel/sched/debug.c,
+> > function proc_sched_show_task(). The code says [1]:
 > > 
-> > The patch will prefer MMAP2 over MMAP.
+> >     SEQ_printf(m, "%s (%d, #threads: %d)\n", p->comm, p->pid,
+> >                         get_nr_threads(p));
+> > 
 > 
-> I noticed the kernel part is in, and I'm going to use MMAP2 on that new
-> tool, so tried merging it, but:
+> > I see a few options:
+> > 
+> > * either it's a bug and it should be corrected (I'm not sure how to
+> >   do it; the printed PID should reflect the current PID namespace
+> >   and I don't how how to get this information).
 > 
-> I fixed it up wrt another patch that makes machine__find_thread receive pid/tid
-> but then 'perf test' complains about it, see below, trying to fix...
+> I suppose something like the below ought to work? -- completely
+> untested, please confirm.
+> 
+> ---
+> Subject: sched, debug: Use PID namespaces
+> 
+> Emmanuel reported that /proc/sched_debug didn't report the right PIDs
+> when using namespaces, cure this.
+> 
+> Reported-by: Emmanuel Deloget <emmanuel.deloget@efixo.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> ---
+>  kernel/sched/debug.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+> index e076bdd..e30bf44 100644
+> --- a/kernel/sched/debug.c
+> +++ b/kernel/sched/debug.c
+> @@ -124,7 +124,7 @@ print_task(struct seq_file *m, struct rq *rq, struct task_struct *p)
+>  		SEQ_printf(m, " ");
+>  
+>  	SEQ_printf(m, "%15s %5d %9Ld.%06ld %9Ld %5d ",
+> -		p->comm, p->pid,
+> +		p->comm, task_pid(p),,
+>  		SPLIT_NS(p->se.vruntime),
+>  		(long long)(p->nvcsw + p->nivcsw),
+>  		p->prio);
+> @@ -289,7 +289,7 @@ do {									\
+>  	P(nr_load_updates);
+>  	P(nr_uninterruptible);
+>  	PN(next_balance);
+> -	P(curr->pid);
+> +	P(task_pid(curr));
+>  	PN(clock);
+>  	P(cpu_load[0]);
+>  	P(cpu_load[1]);
+> @@ -492,7 +492,7 @@ void proc_sched_show_task(struct task_struct *p, struct seq_file *m)
+>  {
+>  	unsigned long nr_switches;
+>  
+> -	SEQ_printf(m, "%s (%d, #threads: %d)\n", p->comm, p->pid,
+> +	SEQ_printf(m, "%s (%d, #threads: %d)\n", p->comm, task_pid(p),
+>  						get_nr_threads(p));
+>  	SEQ_printf(m,
+>  		"---------------------------------------------------------"
 
-Right, so I fed both patches to Ingo, but apparently (checked IRC
-backlog) the tools patch didn't apply due to collisions with patches
-from acme.
-
-Apparently Ingo forgot to prod both of you to resolve (as I was out on
-PTO).
+Please do s/task_pid/task_pid_nr/g on this before trying. 
