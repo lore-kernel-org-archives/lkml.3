@@ -1,81 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842Ab3IJHv5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 03:51:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37862 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752868Ab3IJHv4 (ORCPT
+	id S1754617Ab3IJH4p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 03:56:45 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:55694 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753444Ab3IJH4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 03:51:56 -0400
-Date: Tue, 10 Sep 2013 00:51:38 -0700
-From: tip-bot for Borislav Petkov <tipbot@zytor.com>
-Message-ID: <tip-c0da0fa1d7ebe3c86747b10c92e0ac2be1524a8a@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, viro@zeniv.linux.org.uk, bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, bp@suse.de, viro@zeniv.linux.org.uk
-In-Reply-To: <1378546750-19727-1-git-send-email-bp@suse.de>
-References: <1378546750-19727-1-git-send-email-bp@suse.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Remove now-unused save_rest()
-Git-Commit-ID: c0da0fa1d7ebe3c86747b10c92e0ac2be1524a8a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 10 Sep 2013 03:56:44 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 10 Sep 2013 00:51:45 -0700 (PDT)
+X-Originating-IP: [212.179.42.66]
+In-Reply-To: <1378797995.6046.54.camel@marge.simpson.net>
+References: <00000140efbcb701-c26320b3-f434-4538-bc80-8e92fed6f303-000000@email.amazonses.com>
+	<CAOtvUMe=jcAHXNJU_rTAAokaE4KZNUTFsHVVTTxgFW_xj8ONxg@mail.gmail.com>
+	<1378795659.6046.41.camel@marge.simpson.net>
+	<CAOtvUMfhLQYK95uPm8idG_vYv-9yG2-KSkScjMBCSuvtffW1Dg@mail.gmail.com>
+	<1378797995.6046.54.camel@marge.simpson.net>
+Date: Tue, 10 Sep 2013 10:56:43 +0300
+Message-ID: <CAOtvUMdRmDYP_e7eFX1akU8vZ=dcVOnFDrBjKufumOaBxxXF3A@mail.gmail.com>
+Subject: Re: [RFC] Restrict kernel spawning of threads to a specified set of cpus.
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c0da0fa1d7ebe3c86747b10c92e0ac2be1524a8a
-Gitweb:     http://git.kernel.org/tip/c0da0fa1d7ebe3c86747b10c92e0ac2be1524a8a
-Author:     Borislav Petkov <bp@suse.de>
-AuthorDate: Sat, 7 Sep 2013 11:39:10 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 10 Sep 2013 09:31:55 +0200
+On Tue, Sep 10, 2013 at 10:26 AM, Mike Galbraith <bitbucket@online.de> wrote:
 
-x86: Remove now-unused save_rest()
+>
+> Hammering on the wrong spot makes removing isolcpus take longer, and
+> adds up to more hammering in the long run, no?  Hearing you mention
+> isolcpus, I just thought I should mention that it wants to go away, so
+> might not be the optimal spot for isolation related tinkering.
 
-b3af11afe06a ("x86: get rid of pt_regs argument of iopl(2)")
-dropped PTREGSCALL which was also the last user of save_rest.
-Drop that now-unused function too.
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Link: http://lkml.kernel.org/r/1378546750-19727-1-git-send-email-bp@suse.de
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/entry_64.S | 15 ---------------
- 1 file changed, 15 deletions(-)
+OK, so I'll bite - isolcpu currently has special magic to do its thing but AFAIK
+part of the reason isolcpu works "better" (for some definition of
+better, for some
+work loads) is simply because it blocks migration earlier than you get with
+cpusets.
 
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 1b69951..b077f4c 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -487,21 +487,6 @@ ENDPROC(native_usergs_sysret64)
- 	TRACE_IRQS_OFF
- 	.endm
- 
--ENTRY(save_rest)
--	PARTIAL_FRAME 1 (REST_SKIP+8)
--	movq 5*8+16(%rsp), %r11	/* save return address */
--	movq_cfi rbx, RBX+16
--	movq_cfi rbp, RBP+16
--	movq_cfi r12, R12+16
--	movq_cfi r13, R13+16
--	movq_cfi r14, R14+16
--	movq_cfi r15, R15+16
--	movq %r11, 8(%rsp)	/* return address */
--	FIXUP_TOP_OF_STACK %r11, 16
--	ret
--	CFI_ENDPROC
--END(save_rest)
--
- /* save complete stack frame */
- 	.pushsection .kprobes.text, "ax"
- ENTRY(save_paranoid)
+What if we  re-did the implementation of isolcpu as creating an
+cpuset with migration off as early as possible in the boot process, prior to
+spawning init?
+
+So basically, isolcpus becomes just a way to configure a cpuset early?
+
+
+Gilad
+
+
+
+-- 
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"If you take a class in large-scale robotics, can you end up in a
+situation where the homework eats your dog?"
+ -- Jean-Baptiste Queru
