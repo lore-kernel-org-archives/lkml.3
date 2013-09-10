@@ -1,128 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581Ab3IJOVO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 10:21:14 -0400
-Received: from mga01.intel.com ([192.55.52.88]:16635 "EHLO mga01.intel.com"
+	id S1753690Ab3IJOVe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 10:21:34 -0400
+Received: from mail-bn1lp0153.outbound.protection.outlook.com ([207.46.163.153]:11242
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751608Ab3IJOVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 10:21:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,878,1371106800"; 
-   d="scan'208";a="399336916"
-Date: Tue, 10 Sep 2013 17:26:31 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-i2c@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lv Zheng <lv.zheng@intel.com>, Aaron Lu <aaron.lu@intel.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RESEND 1/2] i2c: prepare runtime PM support for I2C
- client devices
-Message-ID: <20130910142631.GL7393@intel.com>
-References: <1378733679-19500-1-git-send-email-mika.westerberg@linux.intel.com>
- <1378733679-19500-2-git-send-email-mika.westerberg@linux.intel.com>
- <20130909154028.GP29403@sirena.org.uk>
- <20130910075100.GK7393@intel.com>
- <20130910122754.GK29403@sirena.org.uk>
+	id S1751785Ab3IJOVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 10:21:31 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: Jani Nikula <jani.nikula@linux.intel.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Daniel Vetter <daniel@ffwll.ch>,
+        "Aaron Lu" <aaron.lu@intel.com>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        Yves-Alexis Perez <corsac@debian.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
+        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Lee Chun-Yi <jlee@novell.com>, Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH 2/2] ACPI / video / i915: Remove ACPI backlight if
+ firmware expects Windows 8
+Thread-Topic: [PATCH 2/2] ACPI / video / i915: Remove ACPI backlight if
+ firmware expects Windows 8
+Thread-Index: AQHOrTh4P2SImvKSpUu3tJlbFkAqyJm9JHkAgAAt1ACAADO4AIAAVGuAgAElbgCAAAddTIAAAGUA
+Date: Tue, 10 Sep 2013 14:21:26 +0000
+Message-ID: <1378822886.17982.58.camel@x230.lan>
+References: <522D88C3.7000808@intel.com> <1793135.3qk7NfcINN@vostro.rjw.lan>
+	 <20130909152118.GG27291@phenom.ffwll.local>
+	 <5155010.Y1gov7SKhP@vostro.rjw.lan> <87eh8wail7.fsf@intel.com>
+	 <1378821416.17982.56.camel@x230.lan> <87bo40ahai.fsf@intel.com>
+In-Reply-To: <87bo40ahai.fsf@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:470:1f07:1371:5d52:9ee3:3e84:6668]
+x-forefront-prvs: 096507C068
+x-forefront-antispam-report: SFV:NSPM;SFS:(377424004)(24454002)(51704005)(199002)(189002)(80022001)(81816001)(76786001)(47736001)(69226001)(65816001)(81342001)(46102001)(33646001)(81686001)(49866001)(47976001)(50986001)(79102001)(4396001)(81542001)(76796001)(36756003)(31966008)(74366001)(74706001)(74502001)(74662001)(47446002)(63696002)(80976001)(74876001)(59766001)(19580395003)(83072001)(83322001)(19580405001)(76482001)(54316002)(77982001)(56816003)(56776001)(53806001)(77096001)(54356001)(51856001)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB224;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:5d52:9ee3:3e84:6668;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <62D4E6A79A5F774797259796F61596A6@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130910122754.GK29403@sirena.org.uk>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8AELdEa028456
 
-On Tue, Sep 10, 2013 at 01:27:54PM +0100, Mark Brown wrote:
-> On Tue, Sep 10, 2013 at 10:51:00AM +0300, Mika Westerberg wrote:
-> > On Mon, Sep 09, 2013 at 04:40:28PM +0100, Mark Brown wrote:
+On Tue, 2013-09-10 at 17:21 +0300, Jani Nikula wrote:
+> On Tue, 10 Sep 2013, Matthew Garrett <matthew.garrett@nebula.com> wrote:
+> > On Tue, 2013-09-10 at 16:53 +0300, Jani Nikula wrote:
+> >
+> >> I think the parameter "Does the ACPI backlight interface work or not"
+> >> belongs to the ACPI video driver.
+> >
+> > That depends on how Windows 8 works. If Windows 8 policy is handled by
+> > the GPU drivers then it belongs in i915. If it's handled by the ACPI
+> > code then it belongs in the ACPI code.
 > 
-> > > How is this going to interact with client devices which are already
-> > > enabling runtime PM for themselves, and what are the advantages of doing
-> > > this over having the client device enable runtime PM for itself (given
-> > > that the client still needs an explicit put() adding)?
-> 
-> > My understanding is that you can call pm_runtime_enable() several times
-> > (provided that pm_runtime_disable() is called as many times). So that
-> > should have no effect on the current drivers that already take advantage of
-> > runtime PM.
-> 
-> Not quite...
-> 
-> > There is one difference though -- runtime PM is now blocked by default and
-> > it needs to be unblocked from the userspace per each device.
-> 
-> ...as you say.
-> 
-> This seems crazy, why on earth would we want to have userspace be forced
-> to manually go through every single device and manually enable power
-> saving?  I can't see anyone finding that helpful and it's going to be a
-> pain to deploy.
+> I fail to see the logic. Windows 8 policy dictates whether we can use
+> the AML code or not. IMHO, ACPI code is in the best position to figure
+> this out and quirk as necessary. It's the part that knows about Windows
+> 8, not i915.
 
-There are things like HID over I2C devices (e.g touch screen) where going
-to lower power states too aggressively makes the touch experience really
-sluggish. However, other HID over I2C devices like sensor hubs it doesn't
-matter that much. In order to get the best performance we have runtime PM
-blocked by default (and leave it up to the user to unblock to get power
-savings).
+So if nvidia hardware uses the ACPI interface and Intel doesn't, we
+should still quirk it in the ACPI driver?
 
-That's basically what PCI drivers currently do.
-
-> However I had thought it was just a case of the drivers doing a put()
-> instead of their current code to enable runtime PM (you mention that
-> later on)?
-
-User still needs to unblock runtime PM for the device. The driver can call
-the runtime PM functions but they don't have any effect until runtime PM is
-unblocked by the user.
-
-However, I don't have problems dropping the call to pm_runtime_forbid() in
-this patch and leave it up to the user to decide whether runtime PM should
-be blocked for the device.
-
-> That seems both sensible and doable, though it would need
-> doing as part of the conversion to avoid regressions and I'd expect it
-> does mean that SPI needs to be converted at the same time.
-
-OK.
-
-> > For the advantages compared to each driver handling it completely
-> > themselves:
-> 
-> > 	- Few lines less as you only need to call _put().
-> > 	- It follows what is already been done for other buses, like PCI
-> > 	  and AMBA .
-> > 	- The I2C core makes sure that the device is available (from bus
-> > 	  point of view) when the driver ->probe() is called.
-> 
-> I can't understand your last point here at all, sorry.  Can you expand
-> please?
-
-Sorry about that.
-
-At least with ACPI enumerated I2C client devices, they might be powered off
-by the BIOS (there are power resources attached to the devices). So when
-the driver ->probe() is called we can't access the device's registers etc.
-
-So we bind the device to the ACPI power domain (the second patch in this
-series) and then call pm_runtime_get() for the device. That makes sure that
-the device is accessible when ->probe() is called.
-
-> 
-> > > Given that it's relatively common for devices to have both I2C and SPI
-> > > control it seems like it'd be sensible to keep the policy common between
-> > > the two buses to simplify driver implementation.
-> 
-> > Yes and IMHO if I2C and SPI follows what has already been done for other
-> > buses it should make the driver writer's job easier as the usage is similar
-> > from one bus to another.
-> 
-> So then the obvious followup question is why this is even something that
-> needs to be implemented per bus?  Shouldn't we be enhancing the driver
-> core to do this, or is that the long term plan and this is a step on the
-> road to doing that?
-
-If we end up all buses implementing the same mechanism, I think it makes
-sense to move it to the driver core.
+-- 
+Matthew Garrett <matthew.garrett@nebula.com>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
