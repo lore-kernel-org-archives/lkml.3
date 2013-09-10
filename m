@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752991Ab3IJWrI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 18:47:08 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:47852 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751561Ab3IJWrH (ORCPT
+	id S1752494Ab3IJWs3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 18:48:29 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:59346 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230Ab3IJWs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 18:47:07 -0400
-Date: Wed, 11 Sep 2013 00:47:04 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: Re: [PATCH 5/9] mbind: add hugepage migration code to mbind()
-Message-ID: <20130910224704.GD18242@two.firstfloor.org>
-References: <1376025702-14818-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1376025702-14818-6-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20130910144109.GR22421@suse.de>
- <1378850009-y4wd5ph0-mutt-n-horiguchi@ah.jp.nec.com>
+	Tue, 10 Sep 2013 18:48:28 -0400
+Date: Tue, 10 Sep 2013 23:48:23 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Chinner <dchinner@redhat.com>, Glauber Costa <glommer@openvz.org>
+Subject: Re: linux-next: manual merge of the akpm tree with Linus' tree
+Message-ID: <20130910224823.GE13318@ZenIV.linux.org.uk>
+References: <20130910143807.4c32d548e08d2184061f52cb@canb.auug.org.au>
+ <20130910152753.662599171456233c5f91edb4@linux-foundation.org>
+ <20130910222924.GB13318@ZenIV.linux.org.uk>
+ <20130910153520.14e49cd32feb16d45eb8abac@linux-foundation.org>
+ <20130910223624.GC13318@ZenIV.linux.org.uk>
+ <20130910154116.cc4afe048213a779040ea3cc@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1378850009-y4wd5ph0-mutt-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130910154116.cc4afe048213a779040ea3cc@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > It makes me wonder how actually useful generic hugetlbfs page migration
-> > will be in practice. Are there really usecases where the system
-> > administrator is willing to create unused hugepage pools on each node
-> > just to enable migration?
-> 
-> Maybe most users don't want it.
+On Tue, Sep 10, 2013 at 03:41:16PM -0700, Andrew Morton wrote:
 
-I'm sure some power users will be willing to do that.
-Of course for a lot of others THP is enough.
+> Obtained from where?  There are a whole pile of fixes resulting from
+> review and linux-next testing.  Are they included?
 
--Andi
+-next and yes.  The trivial ones - folded into the commits they are fixing
+(I mean, ones directly following the commit being fixed).  The rest included
+as individual commits.
+
+I'm looking through the DCACHE_LRU_LIST mess right now...
+
