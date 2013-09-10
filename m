@@ -1,137 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197Ab3IJNR4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 09:17:56 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:37264 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751757Ab3IJNRy (ORCPT
+	id S1752291Ab3IJNS0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 09:18:26 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:62059 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751509Ab3IJNSX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 09:17:54 -0400
-Message-ID: <522F1BF0.8080608@collabora.co.uk>
-Date: Tue, 10 Sep 2013 15:17:36 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
+	Tue, 10 Sep 2013 09:18:23 -0400
 MIME-Version: 1.0
-To: joelf@ti.com
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
+In-Reply-To: <CAAVeFu+MGGBfmm1jwtKGP_d3EjkLdf5B_E_5RT___PVh1e=8jw@mail.gmail.com>
+References: <1378351680-14696-1-git-send-email-acourbot@nvidia.com>
+ <1378351680-14696-2-git-send-email-acourbot@nvidia.com> <5228CEDB.1090306@gmail.com>
+ <CAAVeFu+MGGBfmm1jwtKGP_d3EjkLdf5B_E_5RT___PVh1e=8jw@mail.gmail.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Tue, 10 Sep 2013 14:18:03 +0100
+X-Google-Sender-Auth: DtEkXL_sfqWd_Yzu5766a8ghpvk
+Message-ID: <CAHkRjk5pqKv0U+NdSf+PmXQkO7jGwKnz+9cL9XX5FOvJSjjswQ@mail.gmail.com>
+Subject: Re: [PATCH v5 1/5] ARM: add basic Trusted Foundations support
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>, Dave Martin <Dave.Martin@arm.com>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Kevin Hilman <khilman@linaro.org>, devicetree@vger.kernel.org,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Alexander Holler <holler@ahsoftware.de>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
-Subject: Re: [PATCH] RFC: interrupt consistency check for OF GPIO IRQs
-References: <1375101368-17645-1-git-send-email-linus.walleij@linaro.org> <CACxGe6uNJNMdZ1HYGgCtLM2t2TWGCR6btjOHVmP=vDXXvvFfRg@mail.gmail.com> <CACRpkdYjJL6FZwEbB7XLnb9QtjB=3LeE9Ny6KQ4PkM3zpdNqqg@mail.gmail.com> <51F8CC35.1070704@collabora.co.uk> <522EC392.8070002@ti.com>
-In-Reply-To: <522EC392.8070002@ti.com>
+        Mark Rutland <Mark.Rutland@arm.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2013 09:00 AM, Joel Fernandes wrote:
-> On 07/31/2013 03:35 AM, Javier Martinez Canillas wrote:
->> On 07/31/2013 01:44 AM, Linus Walleij wrote:
->>> On Tue, Jul 30, 2013 at 6:30 AM, Grant Likely <grant.likely@linaro.org> wrote:
->>>> On Mon, Jul 29, 2013 at 6:36 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
->>>>> To solve this dilemma, perform an interrupt consistency check
->>>>> when adding a GPIO chip: if the chip is both gpio-controller and
->>>>> interrupt-controller, walk all children of the device tree,
->>>>> check if these in turn reference the interrupt-controller, and
->>>>> if they do, loop over the interrupts used by that child and
->>>>> perform gpio_reques() and gpio_direction_input() on these,
->>>>> making them unreachable from the GPIO side.
->>>>
->>>> Ugh, that's pretty awful, and it doesn't actually solve the root
->>>> problem of the GPIO and IRQ subsystems not cooperating. It's also a
->>>> very DT-centric solution even though we're going to see the exact same
->>>> issue on ACPI machines.
+On 9 September 2013 07:15, Alexandre Courbot <gnurou@gmail.com> wrote:
+> On Fri, Sep 6, 2013 at 3:35 AM, Rob Herring <robherring2@gmail.com> wrote:
+>> On 09/04/2013 10:27 PM, Alexandre Courbot wrote:
+>>> Trusted Foundations is a TrustZone-based secure monitor for ARM that
+>>> can be invoked  using a consistent SMC-based API on all supported
+>>> platforms. This patch adds initial basic support for Trusted
+>>> Foundations using the ARM firmware API. Current features are limited
+>>> to the ability to boot secondary processors.
 >>>
->>> The problem is that the patches for OMAP that I applied
->>> and now have had to revert solves it in an even uglier way,
->>> leading to breaking boards, as was noticed.
+>>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>>> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+>>> Reviewed-by: Stephen Warren <swarren@nvidia.com>
+>>> ---
+>>>  .../arm/firmware/tl,trusted-foundations.txt        | 17 +++++
+>>>  .../devicetree/bindings/vendor-prefixes.txt        |  1 +
+>>>  arch/arm/Kconfig                                   |  2 +
+>>>  arch/arm/Makefile                                  |  1 +
+>>>  arch/arm/firmware/Kconfig                          | 25 +++++++
+>>>  arch/arm/firmware/Makefile                         |  1 +
+>>>  arch/arm/firmware/trusted_foundations.c            | 82 ++++++++++++++++++++++
+>>>  arch/arm/include/asm/trusted_foundations.h         | 53 ++++++++++++++
+>>>  8 files changed, 182 insertions(+)
+>>>  create mode 100644 Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt
+>>>  create mode 100644 arch/arm/firmware/Kconfig
+>>>  create mode 100644 arch/arm/firmware/Makefile
+>>>  create mode 100644 arch/arm/firmware/trusted_foundations.c
+>>>  create mode 100644 arch/arm/include/asm/trusted_foundations.h
 >>>
->>> The approach in this patch has the potential to actually
->>> work without regressing a bunch of boards...
->>>
->>> Whether this is a problem in ACPI or not remains to be seen,
->>> but I'm not sure about that. Device trees allows for a GPIO line
->>> to be used as an interrupt source and GPIO line orthogonally,
->>> and that is the root of this problem. Does ACPI have the same
->>> problem, or does it impose natural restrictions on such use
->>> cases?
->>>
->> 
->> I agree with Linus here. The problem is that GPIO controllers that can work as
->> IRQ sources are treated in the kernel as if there where two separate controlers
->> that are rather orthogonal: an irq_chip and a gpio_chip.
->> But DT allows to use a GPIO line as an IRQ just by using an omap-gpio phandle as
->> "interrupt-parent".
->> 
->> So, there should be a place where both irq_chip and gpio_chip has to be related
->> somehow to properly configure a GPIO (request it and setting it as input) when
->> used as an IRQ by DT.
->> 
->> My patch for OMAP used an irq_domain_ops .map function handler to configure the
->> GPIO when a IRQ was mapped since that seemed to me as the best place to do it.
->> This worked well in OMAP2+ platforms but unfortunately broke OMAP1 platforms
->> since they are still using legacy domain mapping thus not call .map.
-> 
-> Just wondering- why .map not called for omap1? irq_create_mapping does seem to
-> call  -> irq_domain_associate which calls map function. For omap case, GPIO
-> driver does call irq_create_mapping, just like omap2+ no?
+>>> diff --git a/Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt b/Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt
+>>> new file mode 100644
+>>> index 0000000..3954bbd
+>>> --- /dev/null
+>>> +++ b/Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt
+>>> @@ -0,0 +1,17 @@
+>>> +Trusted Foundations
+>>> +
+>>> +Boards that use the Trusted Foundations secure monitor can signal its
+>>> +presence by declaring a node compatible with "tl,trusted-foundations"
+>>> +under the root node.
+>>> +
+>>> +Required properties:
+>>> +- compatible : "tl,trusted-foundations"
+>>> +- version-major : major version number of Trusted Foundations firmware
+>>> +- version-minor: minor version number of Trusted Foundations firmware
+>>> +
+>>> +Example:
+>>> +     firmware {
+>>> +             compatible = "tl,trusted-foundations";
+>>> +             version-major = <2>;
+>>> +             version-minor = <8>;
+>>> +     };
+>>
+>> I'm wondering how we fit this in with PSCI bindings? Both are pieces of
+>> firmware functionality and may co-exist. There's nothing incompatible
+>> here, but there should be some commonality. Will future versions of
+>> Trusted Foundations follow the SMC calling conventions doc? What about
+>> armv8 support.
 >
+> I don't have any information about the future of TF unfortunately,
+> excepted that it should remain backward-compatible. What is this SMC
+> calling convention doc your are talking about btw? Is there a standard
+> calling convention defined by ARM?
 
-That is what I understood too when writing the patch but I remember someone
-mentioning legacy domain mapping not calling the .map function handler as a
-possible cause for the OMAP1 regression and since Linus decided to revert the
-patches in favor of a more general solution I didn't care to check if that was
-true or not. Now looking at irq_create_mapping() I see that my assumption was
-correct so I don't know what was the bug that caused the OMAP1 regression.
+The SMC calling convention is here (it requires free registration):
 
-> Further, if for any reason the .map is not called. Can you not call gpio_request
-> yourself direct in omap_gpio_chip_init function?
-> 
+http://infocenter.arm.com/help/topic/com.arm.doc.den0028a/index.html
 
-No, since you can't request a GPIO for all GPIO pins in the bank. Users have to
-do it explicitly (or implicitly in the case of GPIO mapped as IRQ in DT).
+>From the introduction:
 
-> Does it really matter if you call gpio_request from .map or from the chip_init
-> function?
-> 
+"This document defines a common calling mechanism for use with the
+Secure Monitor Call (SMC)
+instruction in both the ARMv7 and ARMv8 architectures.
 
-Yes it does, because in DT the core calls irq_create_of_mapping() ->
-irq_create_mapping() -> .map(). That way only are requested the GPIO pins that
-are mapped as IRQ and not all of them.
+The SMC instruction is used to generate a synchronous exception that
+is handled by Secure Monitor code running in EL3. The arguments are
+passed in registers and then used to select which Secure function to
+execute. These calls may then be passed on to a Trusted OS in S-EL1.
 
-> Also on a different note.. this would call gpio_request for *every* gpio line,
-> but isn't that what your original patch that got reverted was doing in
-> omap_gpio_chip_init:
-> 
-> +       if (!bank->chip.of_node)
-> +               for (j = 0; j < bank->width; j++)
-> +                       irq_create_mapping(bank->domain, j);
-> 
+This specification aims to ease integration and reduce fragmentation
+between software layers, such as Operating Systems, Hypervisors,
+Trusted OS, Secure Monitor and System Firmware."
 
-No it won't. This is only needed for the legacy (non-DT) boot since no one calls
-irq_create_mapping() so it has to be called explicitly.
 
-And in that case .map will be called but gpio_request() won't since the call is
-made only when bank->chip.of_node is not NULL.
+If you talk about booting secondary CPUs, there is also PSCI:
 
-> Just trying to understand your initial patch better.
-> 
-> Regards,
-> 
-> -Joel
-> 
+http://infocenter.arm.com/help/topic/com.arm.doc.den0022b/index.html
 
-Best regards,
-Javier
-
+-- 
+Catalin
