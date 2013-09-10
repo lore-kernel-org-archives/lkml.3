@@ -1,323 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188Ab3IJGdX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 02:33:23 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:63370 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753084Ab3IJGdV (ORCPT
+	id S1754489Ab3IJGgN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 02:36:13 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:30223 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753353Ab3IJGgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 02:33:21 -0400
-Date: Tue, 10 Sep 2013 14:30:35 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        Yves-Alexis Perez <corsac@debian.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Lee Chun-Yi <jlee@novell.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Subject: Re: [PATCH 2/2] ACPI / video / i915: Remove ACPI backlight if
- firmware expects Windows 8
-Message-ID: <20130910063034.GB656@mint-spring.sh.intel.com>
-References: <522D88C3.7000808@intel.com>
- <522D89EC.6050103@intel.com>
- <20130909093209.GF27291@phenom.ffwll.local>
+	Tue, 10 Sep 2013 02:36:12 -0400
+From: Libin <huawei.libin@huawei.com>
+To: <tj@kernel.org>, <tglx@linutronix.de>
+CC: <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
+        <mingo@redhat.com>, <wangyijing@huawei.com>, <guohanjun@huawei.com>,
+        <huawei.libin@huawei.com>
+Subject: [PATCH] workqueue: remove redundant timer_stats_timer_set_start_info() call
+Date: Tue, 10 Sep 2013 14:35:27 +0800
+Message-ID: <1378794927-4396-1-git-send-email-huawei.libin@huawei.com>
+X-Mailer: git-send-email 1.8.1.msysgit.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130909093209.GF27291@phenom.ffwll.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [10.135.74.57]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 11:32:10AM +0200, Daniel Vetter wrote:
-> Hi Aaaron,
-> 
-> Have we grown any clue meanwhile about which Intel boxes need this and for
-> which we still need to keep the acpi backlight around? I've grown _very_
+From: Li Bin <huawei.libin@huawei.com>
 
-Sorry, no general rule has been found. As Rafael has said, it appears
-to be random... And in addition to the "shipped with Win7 with a Win8
-upgrade option" case, I also find a Sony laptop that has Win8
-pre-installed and a broken ACPI video backlight interface. Its ACPI
-video backlight control method is simply a stub, so even the
-acpi_osi="!Windows 2012" will not provide a working backlight for this
-system.
+There is a redundant call for timer_stats_timer_set_start_info(),
+because it is the responsibility of the 'timer add' function:
 
--Aaron
+add_timer_on()
+|- timer_stats_timer_set_start_info()
 
-> reluctant to just adding tons of quirks to our driver for the backlight.
-> Almost all the quirks we have added recently (or that have been proposed
-> to be added) are for the backlight. Imo that indicates we get something
-> fundamentally wrong ...
-> 
-> Cheers, Daniel
-> 
-> On Mon, Sep 09, 2013 at 04:42:20PM +0800, Aaron Lu wrote:
-> > According to Matthew Garrett, "Windows 8 leaves backlight control up
-> > to individual graphics drivers rather than making ACPI calls itself.
-> > There's plenty of evidence to suggest that the Intel driver for
-> > Windows [8] doesn't use the ACPI interface, including the fact that
-> > it's broken on a bunch of machines when the OS claims to support
-> > Windows 8.  The simplest thing to do appears to be to disable the
-> > ACPI backlight interface on these systems".
-> > 
-> > There's a problem with that approach, however, because simply
-> > avoiding to register the ACPI backlight interface if the firmware
-> > calls _OSI for Windows 8 may not work in the following situations:
-> >  (1) The ACPI backlight interface actually works on the given system
-> >      and the i915 driver is not loaded (e.g. another graphics driver
-> >      is used).
-> >  (2) The ACPI backlight interface doesn't work on the given system,
-> >      but there is a vendor platform driver that will register its
-> >      own, equally broken, backlight interface if not prevented from
-> >      doing so by the ACPI subsystem.
-> > Therefore we need to allow the ACPI backlight interface to be
-> > registered until the i915 driver is loaded which then will unregister
-> > it if the firmware has called _OSI for Windows 8 (or will register
-> > the ACPI video driver without backlight support if not already
-> > present).
-> > 
-> > For this reason, introduce an alternative function for registering
-> > ACPI video, __acpi_video_register(bool), that if ture is passed,
-> > will check whether or not the ACPI video driver has already been
-> > registered and whether or not the backlight Windows 8 quirk has to
-> > be applied. If the quirk has to be applied, it will block the ACPI
-> > backlight support and either unregister the backlight interface if
-> > the ACPI video driver has already been registered, or register the
-> > ACPI video driver without the backlight interface otherwise.  Make
-> > the i915 driver use __acpi_video_register() instead of
-> > acpi_video_register() in i915_driver_load(), and the param passed
-> > there is controlled by the i915 module level parameter
-> > i915_take_over_backlight, which is set to false by default.
-> > 
-> > This change is evolved from earlier patches of Matthew Garrett,
-> > Chun-Yi Lee and Seth Forshee and is heavily based on two patches
-> > from Rafael:
-> > https://lkml.org/lkml/2013/7/17/720
-> > https://lkml.org/lkml/2013/7/24/806
-> > 
-> > Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-> > ---
-> >  drivers/acpi/internal.h         |  2 ++
-> >  drivers/acpi/video.c            | 24 ++++++++++++++++--------
-> >  drivers/acpi/video_detect.c     | 15 ++++++++++++++-
-> >  drivers/gpu/drm/i915/i915_dma.c |  2 +-
-> >  drivers/gpu/drm/i915/i915_drv.c |  5 +++++
-> >  drivers/gpu/drm/i915/i915_drv.h |  1 +
-> >  include/acpi/video.h            |  9 +++++++--
-> >  include/linux/acpi.h            |  1 +
-> >  8 files changed, 47 insertions(+), 12 deletions(-)
-> > 
-> > diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-> > index 20f4233..a53832e 100644
-> > --- a/drivers/acpi/internal.h
-> > +++ b/drivers/acpi/internal.h
-> > @@ -170,8 +170,10 @@ int acpi_create_platform_device(struct acpi_device *adev,
-> >    -------------------------------------------------------------------------- */
-> >  #if defined(CONFIG_ACPI_VIDEO) || defined(CONFIG_ACPI_VIDEO_MODULE)
-> >  bool acpi_video_backlight_quirks(void);
-> > +bool acpi_video_verify_backlight_support(void);
-> >  #else
-> >  static inline bool acpi_video_backlight_quirks(void) { return false; }
-> > +static inline bool acpi_video_verify_backlight_support(void) { return false; }
-> >  #endif
-> >  
-> >  #endif /* _ACPI_INTERNAL_H_ */
-> > diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-> > index 5ad5a71..cc709a7 100644
-> > --- a/drivers/acpi/video.c
-> > +++ b/drivers/acpi/video.c
-> > @@ -1256,8 +1256,8 @@ acpi_video_switch_brightness(struct acpi_video_device *device, int event)
-> >  	unsigned long long level_current, level_next;
-> >  	int result = -EINVAL;
-> >  
-> > -	/* no warning message if acpi_backlight=vendor is used */
-> > -	if (!acpi_video_backlight_support())
-> > +	/* no warning message if acpi_backlight=vendor or a quirk is used */
-> > +	if (!acpi_video_verify_backlight_support())
-> >  		return 0;
-> >  
-> >  	if (!device->brightness)
-> > @@ -1558,7 +1558,7 @@ acpi_video_bus_match(acpi_handle handle, u32 level, void *context,
-> >  
-> >  static void acpi_video_dev_register_backlight(struct acpi_video_device *device)
-> >  {
-> > -	if (acpi_video_backlight_support()) {
-> > +	if (acpi_video_verify_backlight_support()) {
-> >  		struct backlight_properties props;
-> >  		struct pci_dev *pdev;
-> >  		acpi_handle acpi_parent;
-> > @@ -1933,14 +1933,22 @@ static int __init intel_opregion_present(void)
-> >  	return opregion;
-> >  }
-> >  
-> > -int acpi_video_register(void)
-> > +int __acpi_video_register(bool backlight_quirks)
-> >  {
-> > -	int result = 0;
-> > +	bool no_backlight;
-> > +	int result;
-> > +
-> > +	no_backlight = backlight_quirks ? acpi_video_backlight_quirks() : false;
-> > +
-> >  	if (register_count) {
-> >  		/*
-> > -		 * if the function of acpi_video_register is already called,
-> > -		 * don't register the acpi_vide_bus again and return no error.
-> > +		 * If acpi_video_register() has been called already, don't try
-> > +		 * to register acpi_video_bus, but unregister backlight devices
-> > +		 * if no backlight support is requested.
-> >  		 */
-> > +		if (no_backlight)
-> > +			acpi_video_unregister_backlight();
-> > +
-> >  		return 0;
-> >  	}
-> >  
-> > @@ -1959,7 +1967,7 @@ int acpi_video_register(void)
-> >  
-> >  	return 0;
-> >  }
-> > -EXPORT_SYMBOL(acpi_video_register);
-> > +EXPORT_SYMBOL(__acpi_video_register);
-> >  
-> >  void acpi_video_unregister(void)
-> >  {
-> > diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
-> > index 940edbf..c7e43ec 100644
-> > --- a/drivers/acpi/video_detect.c
-> > +++ b/drivers/acpi/video_detect.c
-> > @@ -235,7 +235,12 @@ static void acpi_video_caps_check(void)
-> >  
-> >  bool acpi_video_backlight_quirks(void)
-> >  {
-> > -	return acpi_gbl_osi_data >= ACPI_OSI_WIN_8;
-> > +	if (acpi_gbl_osi_data >= ACPI_OSI_WIN_8) {
-> > +		acpi_video_caps_check();
-> > +		acpi_video_support |= ACPI_VIDEO_SKIP_BACKLIGHT;
-> > +		return true;
-> > +	}
-> > +	return false;
-> >  }
-> >  EXPORT_SYMBOL(acpi_video_backlight_quirks);
-> >  
-> > @@ -283,6 +288,14 @@ int acpi_video_backlight_support(void)
-> >  }
-> >  EXPORT_SYMBOL(acpi_video_backlight_support);
-> >  
-> > +/* For the ACPI video driver use only. */
-> > +bool acpi_video_verify_backlight_support(void)
-> > +{
-> > +	return (acpi_video_support & ACPI_VIDEO_SKIP_BACKLIGHT) ?
-> > +		false : acpi_video_backlight_support();
-> > +}
-> > +EXPORT_SYMBOL(acpi_video_verify_backlight_support);
-> > +
-> >  /*
-> >   * Use acpi_backlight=vendor/video to force that backlight switching
-> >   * is processed by vendor specific acpi drivers or video.ko driver.
-> > diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-> > index f466980..75fba17 100644
-> > --- a/drivers/gpu/drm/i915/i915_dma.c
-> > +++ b/drivers/gpu/drm/i915/i915_dma.c
-> > @@ -1650,7 +1650,7 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
-> >  	if (INTEL_INFO(dev)->num_pipes) {
-> >  		/* Must be done after probing outputs */
-> >  		intel_opregion_init(dev);
-> > -		acpi_video_register();
-> > +		__acpi_video_register(i915_take_over_backlight);
-> >  	}
-> >  
-> >  	if (IS_GEN5(dev))
-> > diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
-> > index 45b3c03..b014398 100644
-> > --- a/drivers/gpu/drm/i915/i915_drv.c
-> > +++ b/drivers/gpu/drm/i915/i915_drv.c
-> > @@ -132,6 +132,11 @@ int i915_enable_ips __read_mostly = 1;
-> >  module_param_named(enable_ips, i915_enable_ips, int, 0600);
-> >  MODULE_PARM_DESC(enable_ips, "Enable IPS (default: true)");
-> >  
-> > +bool i915_take_over_backlight = false;
-> > +module_param_named(take_over_backlight, i915_take_over_backlight, bool, 0644);
-> > +MODULE_PARM_DESC(take_over_backlight,
-> > +		"Prevent ACPI backlight from being used (default: false)");
-> > +
-> >  static struct drm_driver driver;
-> >  extern int intel_agp_enabled;
-> >  
-> > diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
-> > index 1929bff..b43c430 100644
-> > --- a/drivers/gpu/drm/i915/i915_drv.h
-> > +++ b/drivers/gpu/drm/i915/i915_drv.h
-> > @@ -1543,6 +1543,7 @@ extern int i915_enable_ppgtt __read_mostly;
-> >  extern unsigned int i915_preliminary_hw_support __read_mostly;
-> >  extern int i915_disable_power_well __read_mostly;
-> >  extern int i915_enable_ips __read_mostly;
-> > +extern bool i915_take_over_backlight __read_mostly;
-> >  
-> >  extern int i915_suspend(struct drm_device *dev, pm_message_t state);
-> >  extern int i915_resume(struct drm_device *dev);
-> > diff --git a/include/acpi/video.h b/include/acpi/video.h
-> > index 0c665b5..dc5b8ad 100644
-> > --- a/include/acpi/video.h
-> > +++ b/include/acpi/video.h
-> > @@ -17,13 +17,13 @@ struct acpi_device;
-> >  #define ACPI_VIDEO_DISPLAY_LEGACY_TV      0x0200
-> >  
-> >  #if (defined CONFIG_ACPI_VIDEO || defined CONFIG_ACPI_VIDEO_MODULE)
-> > -extern int acpi_video_register(void);
-> > +extern int __acpi_video_register(bool backlight_quirks);
-> >  extern void acpi_video_unregister(void);
-> >  extern int acpi_video_unregister_backlight(void);
-> >  extern int acpi_video_get_edid(struct acpi_device *device, int type,
-> >  			       int device_id, void **edid);
-> >  #else
-> > -static inline int acpi_video_register(void) { return 0; }
-> > +static inline int __acpi_video_register(bool backlight_quirks) { return 0; }
-> >  static inline void acpi_video_unregister(void) { return; }
-> >  static inline int acpi_video_unregister_backlight(void) { return; }
-> >  static inline int acpi_video_get_edid(struct acpi_device *device, int type,
-> > @@ -33,4 +33,9 @@ static inline int acpi_video_get_edid(struct acpi_device *device, int type,
-> >  }
-> >  #endif
-> >  
-> > +static inline int acpi_video_register(void)
-> > +{
-> > +	return __acpi_video_register(false);
-> > +}
-> > +
-> >  #endif
-> > diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-> > index a5db4ae..a0dcce5 100644
-> > --- a/include/linux/acpi.h
-> > +++ b/include/linux/acpi.h
-> > @@ -191,6 +191,7 @@ extern bool wmi_has_guid(const char *guid);
-> >  #define ACPI_VIDEO_BACKLIGHT_DMI_VIDEO			0x0200
-> >  #define ACPI_VIDEO_OUTPUT_SWITCHING_DMI_VENDOR		0x0400
-> >  #define ACPI_VIDEO_OUTPUT_SWITCHING_DMI_VIDEO		0x0800
-> > +#define ACPI_VIDEO_SKIP_BACKLIGHT			0x1000
-> >  
-> >  #if defined(CONFIG_ACPI_VIDEO) || defined(CONFIG_ACPI_VIDEO_MODULE)
-> >  
-> > -- 
-> > 1.8.4.12.g2ea3df6
-> > 
-> 
-> -- 
-> Daniel Vetter
-> Software Engineer, Intel Corporation
-> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+add_timer()
+|- mod_timer()
+	|- __mod_timer()
+		|- timer_stats_timer_set_start_info()
+
+So the calling here is redundant, remove it.
+
+Signed-off-by: Li Bin <huawei.libin@huawei.com>
+---
+ kernel/workqueue.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 987293d..51ca50e 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1462,8 +1462,6 @@ static void __queue_delayed_work(int cpu, struct workqueue_struct *wq,
+ 		return;
+ 	}
+ 
+-	timer_stats_timer_set_start_info(&dwork->timer);
+-
+ 	dwork->wq = wq;
+ 	dwork->cpu = cpu;
+ 	timer->expires = jiffies + delay;
+-- 
+1.8.2.1
+
+
