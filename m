@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309Ab3IJIQk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 04:16:40 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:56250 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755111Ab3IJIQh (ORCPT
+	id S1754679Ab3IJIYX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 04:24:23 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:45991 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754364Ab3IJIYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 04:16:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFyy_pKt07MgB9PzKg-LLKj1PH0q1t8y2Zu42srCyw-W4w@mail.gmail.com>
-References: <alpine.DEB.2.00.1309051139240.25450@skynet.skynet.ie>
-	<CA+55aFwyKmVWkrV3=XiuruZzeTicpfW-JrwjWzpq9eP2yGPeJA@mail.gmail.com>
-	<20130905153243.43d0346e@jbarnes-desktop>
-	<CA+55aFybVR6MqWpQfTu3jK8mgSg8Z53gz0Ah77ZK1+40Fx=FsQ@mail.gmail.com>
-	<CA+55aFwOme_LD6qqmzdEQ6AXiK8My7PWU1y5VV2tLgkO1HU7xg@mail.gmail.com>
-	<CA+55aFyy_pKt07MgB9PzKg-LLKj1PH0q1t8y2Zu42srCyw-W4w@mail.gmail.com>
-Date: Tue, 10 Sep 2013 10:16:33 +0200
-Message-ID: <CAN+gG=Fi2dQGGcYsmNA6-39fh2J7zoD0DkJnbq44wKHH9GURyQ@mail.gmail.com>
-Subject: Re: [git pull] drm tree for 3.12-rc1
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Dave Airlie <airlied@linux.ie>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        "Beauchesne, Gwenole" <gwenole.beauchesne@intel.com>,
-        Sean V Kelley <sean.v.kelley@intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 10 Sep 2013 04:24:20 -0400
+X-AuditID: 9c93017e-b7c76ae000003897-8d-522ed732815d
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 0/3] perf tools: Fix scalability problem on callchain merging
+Date: Tue, 10 Sep 2013 17:24:15 +0900
+Message-Id: <1378801458-2515-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 6, 2013 at 2:56 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Thu, Sep 5, 2013 at 4:19 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>
->> So I've decided I'm going to try to bisect this after all. I've done
->> enough pulls for today anyway, I guess. Let's see if I can bisect it
->> by just trying to boot many times each try.
->
-> Ok, it's not the recent drm pull at all. I can't find a good kernel in
-> the bunch - they all fail eventually.
->
-> It may have been going in for as long as I've had this Haswell
-> machine, and I was just lucky (and not rebooting a lot until in the
-> merge window - and 4/5 boots work fine).
->
-> It may also be user-space and have come in with the mesa update I got
-> through yum yesterday. So there might be multiple reasons why I saw it
-> today after the drm pull for the first time.
->
-> The black screen - when it happens - happens after the fedora logo has
-> flashed, and gdm is supposed to start up. I tried reproducing it by
-> logging out and back in again (to restart X), but that doesn't do it.
-> Maybe timing-related with boot or just demand-loading of binaries the
-> first time, whatever.. Or mayby it's something special that gdm does
-> at startup?
->
+Hello,
 
-Hi Linus,
+Linus reported that perf report was stuck in after "processing time
+ordered events".  It turned out that merging/collapsing the callchain
+takes most of time to look up a matching callchain.  Since it did a
+linear search for the lookup, it took more than 95% of time during the
+processing huge file that contains callchains.
 
-this _may_ be related to:
- https://bugzilla.redhat.com/show_bug.cgi?id=989763
+This patchset tries to fix the problem by
 
-I also have a 3rd gen Intel core GPU (so not HSW) which shut off the
-backlight while launching GDM (but for me, it happens at each boot).
-Using the brightness increase keyboard shortcut is enough for me to
-light up the backlight and see the session login.
+ 1. converting children list to a rbtree
+ 2. add UI progress window to inform user
 
-Not sure it will solve the problem, but it worth trying :)
+With this patch, processing time of 400MB perf.data file went down
+from 380s to 20s.
 
-Cheers,
-Benjamin
+Thanks,
+Namhyung
+
+
+Namhyung Kim (3):
+  perf callchain: Convert children list to rbtree
+  perf ui/progress: Add new helper functions for progress bar
+  perf tools: Show progress on histogram collapsing
+
+ tools/perf/builtin-annotate.c |   2 +-
+ tools/perf/builtin-diff.c     |   2 +-
+ tools/perf/builtin-report.c   |  10 ++-
+ tools/perf/builtin-top.c      |   4 +-
+ tools/perf/tests/hists_link.c |   2 +-
+ tools/perf/ui/progress.c      |  18 +++++
+ tools/perf/ui/progress.h      |  10 +++
+ tools/perf/util/callchain.c   | 151 ++++++++++++++++++++++++++++++++----------
+ tools/perf/util/callchain.h   |   5 +-
+ tools/perf/util/hist.c        |   5 +-
+ tools/perf/util/hist.h        |   3 +-
+ tools/perf/util/session.c     |  22 +++---
+ 12 files changed, 173 insertions(+), 61 deletions(-)
+
+-- 
+1.7.11.7
+
