@@ -1,159 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751383Ab3IJK4Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 06:56:25 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:56703 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317Ab3IJK4X convert rfc822-to-8bit (ORCPT
+	id S1751437Ab3IJK4q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 06:56:46 -0400
+Received: from TYO200.gate.nec.co.jp ([202.32.8.215]:64667 "EHLO
+	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317Ab3IJK4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 06:56:23 -0400
-Message-ID: <522EFAD1.4020709@arm.com>
-Date: Tue, 10 Sep 2013 11:56:17 +0100
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 10 Sep 2013 06:56:44 -0400
+X-Greylist: delayed 5458 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Sep 2013 06:56:43 EDT
+From: "Daisuke Nishimura" <nishimura@mxp.nes.nec.co.jp>
+To: "'Ingo Molnar'" <mingo@kernel.org>,
+        "'Peter Zijlstra'" <peterz@infradead.org>
+Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'cgroups'" <cgroups@vger.kernel.org>
+Subject: [PATCH][BUG] sched/fair: child->se.parent,cfs_rq might point to invalid ones
+Date: Tue, 10 Sep 2013 18:16:36 +0900
+Message-ID: <039601ceae06$733d3130$59b79390$@mxp.nes.nec.co.jp>
 MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jonas Bonn <jonas@southpole.se>, Michal Simek <monstr@monstr.eu>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
-Subject: Re: [PATCH v4 12/19] cpufreq: cpufreq-cpu0: remove device tree parsing
- for cpu nodes
-References: <1374492747-13879-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1376991021-12160-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1376991021-12160-13-git-send-email-Sudeep.KarkadaNagesha@arm.com> <Pine.LNX.4.64.1309061539310.11068@axis700.grange> <522D93D7.4010307@arm.com> <20130909143253.GD4624@S2101-09.ap.freescale.net> <522DE822.3030907@arm.com> <20130910024404.GC5815@S2101-09.ap.freescale.net>
-In-Reply-To: <20130910024404.GC5815@S2101-09.ap.freescale.net>
-X-OriginalArrivalTime: 10 Sep 2013 10:56:17.0715 (UTC) FILETIME=[60377830:01CEAE14]
-X-MC-Unique: 113091011562004601
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+thread-index: Ac6uAtwuvxuEjZ1GQKigK2g8mVwo4g==
+Content-Language: ja
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/13 03:44, Shawn Guo wrote:
-> On Mon, Sep 09, 2013 at 04:24:18PM +0100, Sudeep KarkadaNagesha wrote:
->> Hi Shawn,
->>
->> Ok. But I am bit suspicious about devm_clk_get(cpu_dev, NULL).
->> I don't understand completely as how the clock are registered(whether
->> with dev_id or with connection_id).
-> 
-> As the connection_id of devm_clk_get() call here is NULL, the clock
-> lookup should be registered with a proper dev_id in clk_register_clkdev()
-> call.  And that's what you have seen with imx and shmobile code.
-> 
->
->> A quick grep revealed that i.mx and shmobile is using conection id while
->> registering.
-> 
-> They are using dev_id.
-> 
-Yes correct. I misunderstood, was expecting caller to pass dev and clk
-layer extract dev_name so that even when device name is changed the clk
-registration need not be changed.
+There is a small race  between copy_process() and cgroup_attach_task()
+where child->se.parent,cfs_rq point to invalid(old) ones.
 
->> If the clock is registered with connection id and retrieved
->> with cpu_dev(now dev_id is cpu0 and not cpufreq-cpu0), IIUC that would
->> break. If we pass pdev->dev for clk_get, it should be fine but again
->> IIUC it breaks highbank which gets all the information from DT.
-> 
-> If the clock lookup is from DT, we should be just fine, since it will
-> work as long as the DT node with 'clocks' property (/cpus/cpu@0 in this
-> case) is attached to the struct device pointer of devm_clk_get() call.
-> 
-This can be ignored if we are registering with "cpu0" as below in your
-patch.
+        parent doing fork()      | someone moving the parent to another cgroup
+  -------------------------------+---------------------------------------------
+    copy_process()
+      + dup_task_struct()
+        -> parent->se is copied to child->se.
+           se.parent,cfs_rq of them point to old ones.
 
->> So only solution I can think of is to continue to have the code
->> assigning (&pdev->dev)->of_node with cpu device node which is not clean
->> and arguable as incorrect since there is no DT node for cpufreq-cpu0.
->> I don't have a strong opinion though.
->>
->> Let me know how would you like to fix this.
-> 
-> So we only need to change all clkdev registration to use "cpu0" as
-> dev_id intstead of "cpufreq-cpu0.0", something like below.
-> 
-> And for imx, it should work even without the changes, because we have
-> device tree lookup ready there, and those clk_register_clkdev() calls
-> can just be removed now.  But I prefer to include the change and leave
-> the cleanup to another patch for keeping the change log clear.
-> 
-Ok makes sense, do you want me to include this patch also as fix.
-I can send a series to fix this if you OK:
-1. Fix in cpufreq-cpu0
-2. Fix in i.MX driver and platform file
-3. Patch below
+                                     cgroup_attach_task()
+                                       + cgroup_task_migrate()
+                                         -> parent->cgroup is updated.
+                                       + cpu_cgroup_attach()
+                                         + sched_move_task()
+                                           + task_move_group_fair()
+                                             +- set_task_rq()
+                                                -> se.parent,cfs_rq of parent
+                                                   are updated.
 
-Regards,
-Sudeep
+      + cgroup_fork()
+        -> parent->cgroup is copied to child->cgroup. (*1)
+      + sched_fork()
+        + task_fork_fair()
+          -> se.parent,cfs_rq of child are accessed
+             while they point to old ones. (*2)
 
-> 
-> ---8<----------
-> 
-> diff --git a/arch/arm/mach-imx/clk-imx27.c b/arch/arm/mach-imx/clk-imx27.c
-> index c3cfa41..c6b40f3 100644
-> --- a/arch/arm/mach-imx/clk-imx27.c
-> +++ b/arch/arm/mach-imx/clk-imx27.c
-> @@ -285,7 +285,7 @@ int __init mx27_clocks_init(unsigned long fref)
->  	clk_register_clkdev(clk[ata_ahb_gate], "ata", NULL);
->  	clk_register_clkdev(clk[rtc_ipg_gate], NULL, "imx21-rtc");
->  	clk_register_clkdev(clk[scc_ipg_gate], "scc", NULL);
-> -	clk_register_clkdev(clk[cpu_div], NULL, "cpufreq-cpu0.0");
-> +	clk_register_clkdev(clk[cpu_div], NULL, "cpu0");
->  	clk_register_clkdev(clk[emi_ahb_gate], "emi_ahb" , NULL);
->  
->  	mxc_timer_init(MX27_IO_ADDRESS(MX27_GPT1_BASE_ADDR), MX27_INT_GPT1);
-> diff --git a/arch/arm/mach-imx/clk-imx51-imx53.c b/arch/arm/mach-imx/clk-imx51-imx53.c
-> index 1a56a33..de1964c 100644
-> --- a/arch/arm/mach-imx/clk-imx51-imx53.c
-> +++ b/arch/arm/mach-imx/clk-imx51-imx53.c
-> @@ -328,7 +328,7 @@ static void __init mx5_clocks_common_init(unsigned long rate_ckil,
->  	clk_register_clkdev(clk[ssi2_ipg_gate], NULL, "imx-ssi.1");
->  	clk_register_clkdev(clk[ssi3_ipg_gate], NULL, "imx-ssi.2");
->  	clk_register_clkdev(clk[sdma_gate], NULL, "imx35-sdma");
-> -	clk_register_clkdev(clk[cpu_podf], NULL, "cpufreq-cpu0.0");
-> +	clk_register_clkdev(clk[cpu_podf], NULL, "cpu0");
->  	clk_register_clkdev(clk[iim_gate], "iim", NULL);
->  	clk_register_clkdev(clk[dummy], NULL, "imx2-wdt.0");
->  	clk_register_clkdev(clk[dummy], NULL, "imx2-wdt.1");
-> diff --git a/arch/arm/mach-shmobile/clock-r8a73a4.c b/arch/arm/mach-shmobile/clock-r8a73a4.c
-> index 8ea5ef6..5bd2e85 100644
-> --- a/arch/arm/mach-shmobile/clock-r8a73a4.c
-> +++ b/arch/arm/mach-shmobile/clock-r8a73a4.c
-> @@ -555,7 +555,7 @@ static struct clk_lookup lookups[] = {
->  	CLKDEV_CON_ID("pll2h",			&pll2h_clk),
->  
->  	/* CPU clock */
-> -	CLKDEV_DEV_ID("cpufreq-cpu0",		&z_clk),
-> +	CLKDEV_DEV_ID("cpu0",			&z_clk),
->  
->  	/* DIV6 */
->  	CLKDEV_CON_ID("zb",			&div6_clks[DIV6_ZB]),
-> diff --git a/arch/arm/mach-shmobile/clock-sh73a0.c b/arch/arm/mach-shmobile/clock-sh73a0.c
-> index 1942eae..c92c023 100644
-> --- a/arch/arm/mach-shmobile/clock-sh73a0.c
-> +++ b/arch/arm/mach-shmobile/clock-sh73a0.c
-> @@ -616,7 +616,7 @@ static struct clk_lookup lookups[] = {
->  	CLKDEV_DEV_ID("smp_twd", &twd_clk), /* smp_twd */
->  
->  	/* DIV4 clocks */
-> -	CLKDEV_DEV_ID("cpufreq-cpu0", &div4_clks[DIV4_Z]),
-> +	CLKDEV_DEV_ID("cpu0", &div4_clks[DIV4_Z]),
->  
->  	/* DIV6 clocks */
->  	CLKDEV_CON_ID("vck1_clk", &div6_clks[DIV6_VCK1]),
-> 
-> 
+In the worst case, this bug can lead to "use-after-free" and cause panic,
+because it's new cgroup's refcount that is incremented at (*1),
+so the old cgroup(and related data) can be freed before (*2).
+In fact, a panic caused by this bug was originally caught in RHEL6.4.
+
+    BUG: unable to handle kernel NULL pointer dereference at (null)
+    IP: [<ffffffff81051e3e>] sched_slice+0x6e/0xa0
+    PGD 11c7a3067 PUD 11c35f067 PMD 0
+    Oops: 0000 [#1] SMP
+    last sysfs file: /sys/kernel/mm/ksm/run
+    CPU 0
+    Modules linked in: nfs lockd fscache auth_rpcgss nfs_acl autofs4 sunrpc ipv6 vhost_net macvtap macvlan tun uinput microcode virtio_balloon 8139too 8139cp mii snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_timer snd soundcore snd_page_alloc virtio_net i2c_piix4 i2c_core ext4 mbcache jbd2 virtio_blk virtio_pci virtio_ring virtio pata_acpi ata_generic ata_piix dm_mirror dm_region_hash dm_log dm_mod [last unloaded: speedstep_lib]
+
+    Pid: 5485, comm: fork_exit Not tainted 2.6.32-358.6.1.el6.x86_64 #1 Red Hat KVM
+    RIP: 0010:[<ffffffff81051e3e>]  [<ffffffff81051e3e>] sched_slice+0x6e/0xa0
+    RSP: 0018:ffff88011ab37d30  EFLAGS: 00010046
+    RAX: 0000000008562577 RBX: ffff880117abf800 RCX: 0000000000000000
+    RDX: 0000000000000000 RSI: 0000000000000400 RDI: 00000000002160ec
+    RBP: ffff88011ab37d50 R08: 0000000000000401 R09: 0000000000000000
+    R10: ffff880108346278 R11: 0000000000000000 R12: ffff88011ab37d30
+    R13: ffff880117e5aad8 R14: ffff880119d75a00 R15: ffff88011c1820b8
+    FS:  00007f5577a0b700(0000) GS:ffff880028200000(0000) knlGS:0000000000000000
+    CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+    CR2: 0000000000000000 CR3: 00000001185ef000 CR4: 00000000000006f0
+    DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+    DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+    Process fork_exit (pid: 5485, threadinfo ffff88011ab36000, task ffff88011c182080)
+    Stack:
+     0000000000000400 00000000003ff004 0000000004216342 ffff880117e5aad8
+    <d> ffff88011ab37d70 ffffffff81051f25 ffff880117e5aaa0 ffff880028216700
+    <d> ffff88011ab37dc0 ffffffff81056a3a 0000000000000286 000000008103b8ac
+    Call Trace:
+     [<ffffffff81051f25>] place_entity+0x75/0xa0
+     [<ffffffff81056a3a>] task_fork_fair+0xaa/0x160
+     [<ffffffff81063c0b>] sched_fork+0x6b/0x140
+     [<ffffffff8106c3c2>] copy_process+0x5b2/0x1450
+     [<ffffffff81063b49>] ? wake_up_new_task+0xd9/0x130
+     [<ffffffff8106d2f4>] do_fork+0x94/0x460
+     [<ffffffff81072a9e>] ? sys_wait4+0xae/0x100
+     [<ffffffff81009598>] sys_clone+0x28/0x30
+     [<ffffffff8100b393>] stub_clone+0x13/0x20
+     [<ffffffff8100b072>] ? system_call_fastpath+0x16/0x1b
+    Code: 85 c9 48 8b 93 78 01 00 00 74 20 48 8b 33 48 89 c7 e8 07 ff ff ff 48 8b 9b 70 01 00 00 48 85 db 75 db 48 83 c4 10 5b 41 5c c9 c3 <48> 8b 0a 48 89 4d e0 48 8b 52 08 48 89 55 e8 48 8b 13 48 c7 45
+    RIP  [<ffffffff81051e3e>] sched_slice+0x6e/0xa0
+     RSP <ffff88011ab37d30>
+    CR2: 0000000000000000
+
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+---
+ kernel/sched/fair.c |   14 +++++++++-----
+ 1 files changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 68f1609..31cbc15 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5818,11 +5818,15 @@ static void task_fork_fair(struct task_struct *p)
+ 	cfs_rq = task_cfs_rq(current);
+ 	curr = cfs_rq->curr;
+ 
+-	if (unlikely(task_cpu(p) != this_cpu)) {
+-		rcu_read_lock();
+-		__set_task_cpu(p, this_cpu);
+-		rcu_read_unlock();
+-	}
++	/*
++	 * Not only the cpu but also the task_group of the parent might have
++	 * been changed after parent->se.parent,cfs_rq were copied to
++	 * child->se.parent,cfs_rq. So call __set_task_cpu() to make those
++	 * of child point to valid ones.
++	 */
++	rcu_read_lock();
++	__set_task_cpu(p, this_cpu);
++	rcu_read_unlock();
+ 
+ 	update_curr(cfs_rq);
+ 
+-- 
+1.7.1
 
 
