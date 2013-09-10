@@ -1,53 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534Ab3IJNHz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 09:07:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58403 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751400Ab3IJNHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 09:07:53 -0400
-Date: Tue, 10 Sep 2013 15:09:43 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Jan Beulich <JBeulich@suse.com>
-Subject: Re: [PATCH 5/9] PCI/MSI/s390: Make return values only 0/-errno when
- MSIs allocated
-Message-ID: <20130910130943.GA6980@dhcp-26-207.brq.redhat.com>
-References: <20130905154041.GD30984@dhcp-26-207.brq.redhat.com>
- <20130905154436.GC24148@htj.dyndns.org>
- <20130905185440.GA13175@dhcp-26-207.brq.redhat.com>
- <20130905200608.GA3846@htj.dyndns.org>
- <CAErSpo4TU2geqzY3AYsL08KimBqtfwa4iUoFHgcFt0zMTBJkHw@mail.gmail.com>
- <20130906160621.GF22763@mtj.dyndns.org>
- <20130906233205.GF12956@google.com>
- <20130909152044.GA24962@dhcp-26-207.brq.redhat.com>
- <20130909152658.GG24962@dhcp-26-207.brq.redhat.com>
- <522F13A9.9020704@cogentembedded.com>
-MIME-Version: 1.0
+	id S1752060Ab3IJNPY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 09:15:24 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:38193 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751378Ab3IJNPX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 09:15:23 -0400
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <522F13A9.9020704@cogentembedded.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
+Subject: Re: [PATCH] Btrfs: cleanup redundant code in __btrfs_close_devices()
+From: Wang Shilong <wangshilong1991@gmail.com>
+In-Reply-To: <CAG5DWogv3meJ3-F5QPCGbxtavMrnjjf=-p1KrGNQYao+Nm+pHA@mail.gmail.com>
+Date: Tue, 10 Sep 2013 21:15:15 +0800
+Cc: Wang Shilong <wangsl.fnst@cn.fujitsu.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        Chris Mason <chris.mason@fusionio.com>,
+        "open list:BTRFS FILE SYSTEM" <linux-btrfs@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <FCA484B4-67E2-4437-A16F-E3FEF751E2C1@gmail.com>
+References: <1378570511-20990-1-git-send-email-a3at.mail@gmail.com> <522D4061.3060404@cn.fujitsu.com> <CAG5DWogv3meJ3-F5QPCGbxtavMrnjjf=-p1KrGNQYao+Nm+pHA@mail.gmail.com>
+To: Azat Khuzhin <a3at.mail@gmail.com>
+X-Mailer: Apple Mail (2.1499)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 04:42:17PM +0400, Sergei Shtylyov wrote:
->    This contradicts to the patch subject.
-
-Sorry, Sergei et al.
-I screwed this series is bit. The second 5/9 fixes that.
-
-> WBR, Sergei
+> On Mon, Sep 9, 2013 at 7:28 AM, Wang Shilong <wangsl.fnst@cn.fujitsu.com> wrote:
+>> On 09/08/2013 12:15 AM, Azat Khuzhin wrote:
+>>> 
+>>> Signed-off-by: Azat Khuzhin <a3at.mail@gmail.com>
+>>> ---
+>>>  fs/btrfs/volumes.c |    2 +-
+>>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>> 
+>>> diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+>>> index 1d1b595..124228e 100644
+>>> --- a/fs/btrfs/volumes.c
+>>> +++ b/fs/btrfs/volumes.c
+>>> @@ -644,7 +644,7 @@ static int __btrfs_close_devices(struct
+>>> btrfs_fs_devices *fs_devices)
+>>>                /* Safe because we are under uuid_mutex */
+>>>                if (device->name) {
+>>>                        name = rcu_string_strdup(device->name->str,
+>>> GFP_NOFS);
+>>> -                       BUG_ON(device->name && !name); /* -ENOMEM */
+>>> +                       BUG_ON(!name); /* -ENOMEM *
+>> 
+>> Nice catch! out of memory should not trigger BUG_ON()..
+>> Maybe we can handle it gracefully.
 > 
+> Maybe return -ENOMEM ?
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Yeah, BUG_On is really unfriendly. And here ENOMEM triggers
+BUG_ON() is a lazy approach.
+
+I think we can  return -ENOMEM rather than BUG_ON(), the caller can handle this.
+
+Thanks,
+Wang
+> 
+>> 
+>> Thanks,
+>> Wang
+>> 
+>>>                        rcu_assign_pointer(new_device->name, name);
+>>>                }
+>>>                new_device->bdev = NULL;
+>> 
+>> 
+> 
+> 
+> 
+> -- 
+> Respectfully
+> Azat Khuzhin
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
