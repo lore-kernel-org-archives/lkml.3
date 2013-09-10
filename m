@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751254Ab3IJJJQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 05:09:16 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:47512 "EHLO
+	id S1751053Ab3IJJN3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 05:13:29 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:53484 "EHLO
 	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886Ab3IJJJO (ORCPT
+	with ESMTP id S1750938Ab3IJJN2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 05:09:14 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r8A993C0027137, This message is accepted by code: ctloc85258
+	Tue, 10 Sep 2013 05:13:28 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r8A9DIDQ027812, This message is accepted by code: ctloc85258
 From: <wei_wang@realsil.com.cn>
 To: <sameo@linux.intel.com>
 CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
         <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
         <micky_ching@realsil.com.cn>, Wei WANG <wei_wang@realsil.com.cn>
-Subject: [PATCH] mfd: rtsx: Modify rts5249_optimize_phy
-Date: Tue, 10 Sep 2013 17:09:02 +0800
-Message-ID: <1378804142-28483-1-git-send-email-wei_wang@realsil.com.cn>
+Subject: [PATCH v3] mfd: rtsx: Modify rts5249_optimize_phy
+Date: Tue, 10 Sep 2013 17:13:17 +0800
+Message-ID: <1378804397-28640-1-git-send-email-wei_wang@realsil.com.cn>
 X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
 Content-Type: text/plain
