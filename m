@@ -1,68 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123Ab3IJTwd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 15:52:33 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:44827 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751966Ab3IJTwb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 15:52:31 -0400
-Message-ID: <522F7878.30800@wwwdotorg.org>
-Date: Tue, 10 Sep 2013 13:52:24 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1752136Ab3IJTxZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 15:53:25 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:42155 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751300Ab3IJTxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 15:53:22 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mark Brown <broonie@kernel.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-i2c@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lv Zheng <lv.zheng@intel.com>, Aaron Lu <aaron.lu@intel.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH RESEND 1/2] i2c: prepare runtime PM support for I2C client devices
+Date: Tue, 10 Sep 2013 22:04:21 +0200
+Message-ID: <3397524.g9aUWuArnm@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20130910161321.GM29403@sirena.org.uk>
+References: <1378733679-19500-1-git-send-email-mika.westerberg@linux.intel.com> <20130910142631.GL7393@intel.com> <20130910161321.GM29403@sirena.org.uk>
 MIME-Version: 1.0
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-CC: Lars Poeschel <poeschel@lemonage.de>, Mark Brown <broonie@kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
-Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
-References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de> <52279524.8090006@wwwdotorg.org> <20130909161924.GT29403@sirena.org.uk> <2052193.CMUEUJFRgS@lem-wkst-02> <522F2521.4090806@collabora.co.uk>
-In-Reply-To: <522F2521.4090806@collabora.co.uk>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2013 07:56 AM, Javier Martinez Canillas wrote:
-...
-> The only thing that this patch tries to solve is when a driver expect to request
-> a IRQ and it doesn't care if is a real IRQ line from an interrupt controller or
-> a GPIO pin mapped as an IRQ.
+On Tuesday, September 10, 2013 05:13:21 PM Mark Brown wrote:
+> On Tue, Sep 10, 2013 at 05:26:31PM +0300, Mika Westerberg wrote:
+> > On Tue, Sep 10, 2013 at 01:27:54PM +0100, Mark Brown wrote:
+> 
+> > > > There is one difference though -- runtime PM is now blocked by default and
+> > > > it needs to be unblocked from the userspace per each device.
+> 
+> > > ...as you say.
+> 
+> > > This seems crazy, why on earth would we want to have userspace be forced
+> > > to manually go through every single device and manually enable power
+> > > saving?  I can't see anyone finding that helpful and it's going to be a
+> > > pain to deploy.
+> 
+> > There are things like HID over I2C devices (e.g touch screen) where going
+> > to lower power states too aggressively makes the touch experience really
+> > sluggish. However, other HID over I2C devices like sensor hubs it doesn't
+> > matter that much. In order to get the best performance we have runtime PM
+> > blocked by default (and leave it up to the user to unblock to get power
+> > savings).
+> 
+> > That's basically what PCI drivers currently do.
+> 
+> So those specific devices need to implement runtime PM in an appropriate
+> fashion.  That's no need to implement a poor default for every single
+> device to work around poor implementations from some, especially when it
+> requires a userspace update to get acceptable performance again from the
+> unaffected devices.
+> 
+> > > However I had thought it was just a case of the drivers doing a put()
+> > > instead of their current code to enable runtime PM (you mention that
+> > > later on)?
+> 
+> > User still needs to unblock runtime PM for the device. The driver can call
+> > the runtime PM functions but they don't have any effect until runtime PM is
+> > unblocked by the user.
+> 
+> > However, I don't have problems dropping the call to pm_runtime_forbid() in
+> > this patch and leave it up to the user to decide whether runtime PM should
+> > be blocked for the device.
+> 
+> I think this is essential - we can't really go around forcing userspace
+> updates to restore runtime power management, nobody is going to thank us
+> for that and it sounds like the issue you're trying to solve is device
+> specific anyway.
 
-That can be solved in the interrupt chip driver. The fact the previous
-attempt didn't work doesn't mean that it's impossible.
+In fact, that's all about what the default should be, because user space
+can very easily change it either way (it takes one loop in shell code to do
+that for all devices on the given bus).
 
-> With board files we used to explicitly do the GPIO setup
-> (gpio_{request,direction_input}) but with DT these board files are gone and we
-> need a way to setup a GPIO implicitly when is mapped as an IRQ.
+And I'm fine with defaulting to "auto".
 
-Well, that's just an example of hacking around something in a board file
-that should have been fixed in the GPIO/IRQ controller.
+> > > > 	- The I2C core makes sure that the device is available (from bus
+> > > > 	  point of view) when the driver ->probe() is called.
+> 
+> > > I can't understand your last point here at all, sorry.  Can you expand
+> > > please?
+> 
+> > Sorry about that.
+> 
+> > At least with ACPI enumerated I2C client devices, they might be powered off
+> > by the BIOS (there are power resources attached to the devices). So when
+> > the driver ->probe() is called we can't access the device's registers etc.
+> 
+> > So we bind the device to the ACPI power domain (the second patch in this
+> > series) and then call pm_runtime_get() for the device. That makes sure that
+> > the device is accessible when ->probe() is called.
+> 
+> OK, that is very much not the model which embedded systems follow, in
+> embedded systems the driver for the device is fully in control of its
+> own power.  It gets resources like GPIOs and regulators which allow it
+> to make fine grained decisions.
 
-> That's the only use case that this patch covers.
-...
-> Also, it would be great if we can find a temporary solution so we can finally
-> have ethernet working with DT on most OMAP2+ boards. Since I expect that doing
-> the mentioned change on gpiolib would take at least a couple of kernel releases.
+There are platforms where those resources are simply not available for
+direct manipulation and we need to use ACPI methods for power management.
 
-Really? I thought this patch was error-checking to make sure that
-different drivers didn't request a GPIO and an IRQ that are actually the
-same signal. This patch shouldn't affect any functionality except in
-cases where there's a bug in the DT (incorrect GPIO/IRQ passed to some
-driver).
+Now, since those methods are used in pretty much the same way for all I2C
+devices, we add a PM domain for that to avoid duplicating the same code in
+all of the drivers in question (patch [2/2]).  Does that make sense to you?
+
+> > > So then the obvious followup question is why this is even something that
+> > > needs to be implemented per bus?  Shouldn't we be enhancing the driver
+> > > core to do this, or is that the long term plan and this is a step on the
+> > > road to doing that?
+> 
+> > If we end up all buses implementing the same mechanism, I think it makes
+> > sense to move it to the driver core.
+> 
+> If we're starting to get a reasonable number of buses following the same
+> pattern it seems like we're in a position to start 
+
+We need that for exactly 3 buses: platform (already done), I2C and SPI.
+
+No other bus types are going to use ACPI this way for PM, at least for the
+time being, simply because PCI, USB and SATA/IDE have their own ways of doing
+this (which are bus-specific) and the spec doesn't cover other bus types
+directly (it defines support for UART, but we don't have a UART bus type).
+
+Moreover, because PCI and USB use ACPI for PM in their own ways, moving that
+thing up to the driver core would be rather inconvenient.
+
+Thanks,
+Rafael
+
