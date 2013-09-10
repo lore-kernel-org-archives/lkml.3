@@ -1,248 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab3IJJoJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 05:44:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57025 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751274Ab3IJJcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 05:32:43 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 08/50] mm: numa: Sanitize task_numa_fault() callsites
-Date: Tue, 10 Sep 2013 10:31:48 +0100
-Message-Id: <1378805550-29949-9-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1378805550-29949-1-git-send-email-mgorman@suse.de>
-References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
+	id S1753405Ab3IJJoY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 05:44:24 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:39623 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751819Ab3IJJoV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 05:44:21 -0400
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Knut Petersen <Knut_Petersen@t-online.de>,
+        Imre Deak <imre.deak@intel.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: [PATCH] drm/i915/tv: clear adjusted_mode.flags
+Date: Tue, 10 Sep 2013 11:44:30 +0200
+Message-Id: <1378806270-18132-1-git-send-email-daniel.vetter@ffwll.ch>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <522EDB3D.7040504@t-online.de>
+References: <522EDB3D.7040504@t-online.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are three callers of task_numa_fault():
+The native TV encoder has it's own flags to adjust sync modes and
+enabled interlaced modes which are totally irrelevant for the adjusted
+mode. This worked out nicely since the input modes used by both the
+load detect code and reported in the ->get_modes callbacks all have no
+flags set, and we also don't fill out any of them in the ->get_config
+callback.
 
- - do_huge_pmd_numa_page():
-     Accounts against the current node, not the node where the
-     page resides, unless we migrated, in which case it accounts
-     against the node we migrated to.
+This changed with the additional sanitation done with
 
- - do_numa_page():
-     Accounts against the current node, not the node where the
-     page resides, unless we migrated, in which case it accounts
-     against the node we migrated to.
+commit 2960bc9cceecb5d556ce1c07656a6609e2f7e8b0
+Author: Imre Deak <imre.deak@intel.com>
+Date:   Tue Jul 30 13:36:32 2013 +0300
 
- - do_pmd_numa_page():
-     Accounts not at all when the page isn't migrated, otherwise
-     accounts against the node we migrated towards.
+    drm/i915: make user mode sync polarity setting explicit
 
-This seems wrong to me; all three sites should have the same
-sementaics, furthermore we should accounts against where the page
-really is, we already know where the task is.
+sinc now the "no flags at all" state wouldn't fit through core code
+any more. So fix this up again by explicitly clearing the flags in the
+->compute_config callback.
 
-So modify all three sites to always account; we did after all receive
-the fault; and always account to where the page is after migration,
-regardless of success.
+Aside: We have zero checking in place to make sure that the requested
+mode is indeed the right input mode we want for the selected TV mode.
+So we'll happily fall over if userspace tries to pull us.  But that's
+definitely work for a different patch series. So just add a FIXME
+comment for now.
 
-They all still differ on when they clear the PTE/PMD; ideally that
-would get sorted too.
-
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reported-by: Knut Petersen <Knut_Petersen@t-online.de>
+Cc: Knut Petersen <Knut_Petersen@t-online.de>
+Cc: Imre Deak <imre.deak@intel.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 ---
- mm/huge_memory.c | 26 ++++++++++++++------------
- mm/memory.c      | 53 +++++++++++++++++++++--------------------------------
- 2 files changed, 35 insertions(+), 44 deletions(-)
+ drivers/gpu/drm/i915/intel_tv.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 981d8a2..94d0739 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1293,18 +1293,19 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	struct anon_vma *anon_vma = NULL;
- 	struct page *page;
- 	unsigned long haddr = addr & HPAGE_PMD_MASK;
-+	int page_nid = -1, this_nid = numa_node_id();
- 	int target_nid;
--	int current_nid = -1;
--	bool migrated, page_locked;
-+	bool page_locked;
-+	bool migrated = false;
+diff --git a/drivers/gpu/drm/i915/intel_tv.c b/drivers/gpu/drm/i915/intel_tv.c
+index f2c6d79..dd6f84b 100644
+--- a/drivers/gpu/drm/i915/intel_tv.c
++++ b/drivers/gpu/drm/i915/intel_tv.c
+@@ -916,6 +916,14 @@ intel_tv_compute_config(struct intel_encoder *encoder,
+ 	DRM_DEBUG_KMS("forcing bpc to 8 for TV\n");
+ 	pipe_config->pipe_bpp = 8*3;
  
- 	spin_lock(&mm->page_table_lock);
- 	if (unlikely(!pmd_same(pmd, *pmdp)))
- 		goto out_unlock;
- 
- 	page = pmd_page(pmd);
--	current_nid = page_to_nid(page);
-+	page_nid = page_to_nid(page);
- 	count_vm_numa_event(NUMA_HINT_FAULTS);
--	if (current_nid == numa_node_id())
-+	if (page_nid == this_nid)
- 		count_vm_numa_event(NUMA_HINT_FAULTS_LOCAL);
- 
- 	/*
-@@ -1347,19 +1348,18 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	spin_unlock(&mm->page_table_lock);
- 	migrated = migrate_misplaced_transhuge_page(mm, vma,
- 				pmdp, pmd, addr, page, target_nid);
--	if (!migrated)
-+	if (migrated)
-+		page_nid = target_nid;
-+	else
- 		goto check_same;
- 
--	task_numa_fault(target_nid, HPAGE_PMD_NR, true);
--	if (anon_vma)
--		page_unlock_anon_vma_read(anon_vma);
--	return 0;
-+	goto out;
- 
- check_same:
- 	spin_lock(&mm->page_table_lock);
- 	if (unlikely(!pmd_same(pmd, *pmdp))) {
- 		/* Someone else took our fault */
--		current_nid = -1;
-+		page_nid = -1;
- 		goto out_unlock;
- 	}
- clear_pmdnuma:
-@@ -1370,11 +1370,13 @@ clear_pmdnuma:
- out_unlock:
- 	spin_unlock(&mm->page_table_lock);
- 
-+out:
- 	if (anon_vma)
- 		page_unlock_anon_vma_read(anon_vma);
- 
--	if (current_nid != -1)
--		task_numa_fault(current_nid, HPAGE_PMD_NR, false);
-+	if (page_nid != -1)
-+		task_numa_fault(page_nid, HPAGE_PMD_NR, migrated);
++	/* TV has it's own notion of sync and other mode flags, so clear them. */
++	pipe_config->adjusted_mode.flags = 0;
 +
- 	return 0;
- }
- 
-diff --git a/mm/memory.c b/mm/memory.c
-index af84bc0..c20f872 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3530,12 +3530,12 @@ static int do_nonlinear_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- }
- 
- int numa_migrate_prep(struct page *page, struct vm_area_struct *vma,
--				unsigned long addr, int current_nid)
-+				unsigned long addr, int page_nid)
- {
- 	get_page(page);
- 
- 	count_vm_numa_event(NUMA_HINT_FAULTS);
--	if (current_nid == numa_node_id())
-+	if (page_nid == numa_node_id())
- 		count_vm_numa_event(NUMA_HINT_FAULTS_LOCAL);
- 
- 	return mpol_misplaced(page, vma, addr);
-@@ -3546,7 +3546,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- {
- 	struct page *page = NULL;
- 	spinlock_t *ptl;
--	int current_nid = -1;
-+	int page_nid = -1;
- 	int target_nid;
- 	bool migrated = false;
- 
-@@ -3576,15 +3576,10 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		return 0;
- 	}
- 
--	current_nid = page_to_nid(page);
--	target_nid = numa_migrate_prep(page, vma, addr, current_nid);
-+	page_nid = page_to_nid(page);
-+	target_nid = numa_migrate_prep(page, vma, addr, page_nid);
- 	pte_unmap_unlock(ptep, ptl);
- 	if (target_nid == -1) {
--		/*
--		 * Account for the fault against the current node if it not
--		 * being replaced regardless of where the page is located.
--		 */
--		current_nid = numa_node_id();
- 		put_page(page);
- 		goto out;
- 	}
-@@ -3592,11 +3587,11 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	/* Migrate to the requested node */
- 	migrated = migrate_misplaced_page(page, target_nid);
- 	if (migrated)
--		current_nid = target_nid;
-+		page_nid = target_nid;
- 
- out:
--	if (current_nid != -1)
--		task_numa_fault(current_nid, 1, migrated);
-+	if (page_nid != -1)
-+		task_numa_fault(page_nid, 1, migrated);
- 	return 0;
- }
- 
-@@ -3611,7 +3606,6 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	unsigned long offset;
- 	spinlock_t *ptl;
- 	bool numa = false;
--	int local_nid = numa_node_id();
- 
- 	spin_lock(&mm->page_table_lock);
- 	pmd = *pmdp;
-@@ -3634,9 +3628,10 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	for (addr = _addr + offset; addr < _addr + PMD_SIZE; pte++, addr += PAGE_SIZE) {
- 		pte_t pteval = *pte;
- 		struct page *page;
--		int curr_nid = local_nid;
-+		int page_nid = -1;
- 		int target_nid;
--		bool migrated;
-+		bool migrated = false;
++	/*
++	 * FIXME: We don't check whether the input mode is actually what we want
++	 * or whether userspace is doing something stupid.
++	 */
 +
- 		if (!pte_present(pteval))
- 			continue;
- 		if (!pte_numa(pteval))
-@@ -3658,25 +3653,19 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		if (unlikely(page_mapcount(page) != 1))
- 			continue;
+ 	return true;
+ }
  
--		/*
--		 * Note that the NUMA fault is later accounted to either
--		 * the node that is currently running or where the page is
--		 * migrated to.
--		 */
--		curr_nid = local_nid;
--		target_nid = numa_migrate_prep(page, vma, addr,
--					       page_to_nid(page));
--		if (target_nid == -1) {
-+		page_nid = page_to_nid(page);
-+		target_nid = numa_migrate_prep(page, vma, addr, page_nid);
-+		pte_unmap_unlock(pte, ptl);
-+		if (target_nid != -1) {
-+			migrated = migrate_misplaced_page(page, target_nid);
-+			if (migrated)
-+				page_nid = target_nid;
-+		} else {
- 			put_page(page);
--			continue;
- 		}
- 
--		/* Migrate to the requested node */
--		pte_unmap_unlock(pte, ptl);
--		migrated = migrate_misplaced_page(page, target_nid);
--		if (migrated)
--			curr_nid = target_nid;
--		task_numa_fault(curr_nid, 1, migrated);
-+		if (page_nid != -1)
-+			task_numa_fault(page_nid, 1, migrated);
- 
- 		pte = pte_offset_map_lock(mm, pmdp, addr, &ptl);
- 	}
 -- 
-1.8.1.4
+1.8.4.rc3
 
