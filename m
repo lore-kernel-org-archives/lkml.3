@@ -1,82 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab3IJJoY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 05:44:24 -0400
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:39623 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751819Ab3IJJoV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 05:44:21 -0400
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Intel Graphics Development <intel-gfx@lists.freedesktop.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Knut Petersen <Knut_Petersen@t-online.de>,
-        Imre Deak <imre.deak@intel.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [PATCH] drm/i915/tv: clear adjusted_mode.flags
-Date: Tue, 10 Sep 2013 11:44:30 +0200
-Message-Id: <1378806270-18132-1-git-send-email-daniel.vetter@ffwll.ch>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <522EDB3D.7040504@t-online.de>
-References: <522EDB3D.7040504@t-online.de>
+	id S1753576Ab3IJJot (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 05:44:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57003 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750870Ab3IJJcj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 05:32:39 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 05/50] mm: Wait for THP migrations to complete during NUMA hinting faults
+Date: Tue, 10 Sep 2013 10:31:45 +0100
+Message-Id: <1378805550-29949-6-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1378805550-29949-1-git-send-email-mgorman@suse.de>
+References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The native TV encoder has it's own flags to adjust sync modes and
-enabled interlaced modes which are totally irrelevant for the adjusted
-mode. This worked out nicely since the input modes used by both the
-load detect code and reported in the ->get_modes callbacks all have no
-flags set, and we also don't fill out any of them in the ->get_config
-callback.
+The locking for migrating THP is unusual. While normal page migration
+prevents parallel accesses using a migration PTE, THP migration relies on
+a combination of the page_table_lock, the page lock and the existance of
+the NUMA hinting PTE to guarantee safety but there is a bug in the scheme.
 
-This changed with the additional sanitation done with
+If a THP page is currently being migrated and another thread traps a
+fault on the same page it checks if the page is misplaced. If it is not,
+then pmd_numa is cleared. The problem is that it checks if the page is
+misplaced without holding the page lock meaning that the racing thread
+can be migrating the THP when the second thread clears the NUMA bit
+and faults a stale page.
 
-commit 2960bc9cceecb5d556ce1c07656a6609e2f7e8b0
-Author: Imre Deak <imre.deak@intel.com>
-Date:   Tue Jul 30 13:36:32 2013 +0300
+This patch checks if the page is potentially being migrated and stalls
+using the lock_page if it is potentially being migrated before checking
+if the page is misplaced or not.
 
-    drm/i915: make user mode sync polarity setting explicit
-
-sinc now the "no flags at all" state wouldn't fit through core code
-any more. So fix this up again by explicitly clearing the flags in the
-->compute_config callback.
-
-Aside: We have zero checking in place to make sure that the requested
-mode is indeed the right input mode we want for the selected TV mode.
-So we'll happily fall over if userspace tries to pull us.  But that's
-definitely work for a different patch series. So just add a FIXME
-comment for now.
-
-Reported-by: Knut Petersen <Knut_Petersen@t-online.de>
-Cc: Knut Petersen <Knut_Petersen@t-online.de>
-Cc: Imre Deak <imre.deak@intel.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Not-signed-off-by: Peter Zijlstra
 ---
- drivers/gpu/drm/i915/intel_tv.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ mm/huge_memory.c | 23 ++++++++++++++++-------
+ 1 file changed, 16 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_tv.c b/drivers/gpu/drm/i915/intel_tv.c
-index f2c6d79..dd6f84b 100644
---- a/drivers/gpu/drm/i915/intel_tv.c
-+++ b/drivers/gpu/drm/i915/intel_tv.c
-@@ -916,6 +916,14 @@ intel_tv_compute_config(struct intel_encoder *encoder,
- 	DRM_DEBUG_KMS("forcing bpc to 8 for TV\n");
- 	pipe_config->pipe_bpp = 8*3;
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 5c37cd2..d0a3fce 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1307,13 +1307,14 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	if (current_nid == numa_node_id())
+ 		count_vm_numa_event(NUMA_HINT_FAULTS_LOCAL);
  
-+	/* TV has it's own notion of sync and other mode flags, so clear them. */
-+	pipe_config->adjusted_mode.flags = 0;
-+
+-	target_nid = mpol_misplaced(page, vma, haddr);
+-	if (target_nid == -1) {
+-		put_page(page);
+-		goto clear_pmdnuma;
+-	}
 +	/*
-+	 * FIXME: We don't check whether the input mode is actually what we want
-+	 * or whether userspace is doing something stupid.
++	 * Acquire the page lock to serialise THP migrations but avoid dropping
++	 * page_table_lock if at all possible
 +	 */
-+
- 	return true;
- }
++	if (trylock_page(page))
++		goto got_lock;
  
+-	/* Acquire the page lock to serialise THP migrations */
++	/* Serialise against migrationa and check placement check placement */
+ 	spin_unlock(&mm->page_table_lock);
+ 	lock_page(page);
+ 
+@@ -1324,9 +1325,17 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		put_page(page);
+ 		goto out_unlock;
+ 	}
+-	spin_unlock(&mm->page_table_lock);
++
++got_lock:
++	target_nid = mpol_misplaced(page, vma, haddr);
++	if (target_nid == -1) {
++		unlock_page(page);
++		put_page(page);
++		goto clear_pmdnuma;
++	}
+ 
+ 	/* Migrate the THP to the requested node */
++	spin_unlock(&mm->page_table_lock);
+ 	migrated = migrate_misplaced_transhuge_page(mm, vma,
+ 				pmdp, pmd, addr, page, target_nid);
+ 	if (!migrated)
 -- 
-1.8.4.rc3
+1.8.1.4
 
