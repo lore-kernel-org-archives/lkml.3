@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756314Ab3IJBfi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 21:35:38 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:39935 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750871Ab3IJBfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 21:35:37 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>, linux-pm@vger.kernel.org
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-sh@vger.kernel.org,
-        Magnus Damm <magnus.damm@gmail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: "cpufreq: fix serialization issues with freq change notifiers" breaks cpufreq too
-Date: Tue, 10 Sep 2013 03:46:35 +0200
-Message-ID: <2529974.gUYIkmlmP8@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <2339390.oQAxMuU2Y5@vostro.rjw.lan>
-References: <Pine.LNX.4.64.1309091656200.6602@axis700.grange> <Pine.LNX.4.64.1309092330560.12376@axis700.grange> <2339390.oQAxMuU2Y5@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1752671Ab3IJBiM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 21:38:12 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:45641 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751183Ab3IJBiL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 21:38:11 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: linuxppc-dev@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Guenter Roeck <linux@roeck-us.net>,
+        Vasant Hegde <hegdevasant@linux.vnet.ibm.com>,
+        Shivaprasad G Bhat <sbhat@linux.vnet.ibm.com>
+Subject: [PATCH] powerpc: Export cpu_to_chip_id() to fix build error
+Date: Mon,  9 Sep 2013 18:37:56 -0700
+Message-Id: <1378777076-4699-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, September 10, 2013 01:12:49 AM Rafael J. Wysocki wrote:
-> On Monday, September 09, 2013 11:42:41 PM Guennadi Liakhovetski wrote:
-> > Hi Rafael
-> > 
-> > On Mon, 9 Sep 2013, Rafael J. Wysocki wrote:
-> > 
-> > > Hi,
-> > > 
-> > > On Monday, September 09, 2013 05:11:10 PM Guennadi Liakhovetski wrote:
-> > > > Sorry guys, I'm trying my best to stop this patch from propagating to 
-> > > > stable and to get it fixed asap, so, the CC list might be a bit excessive. 
-> > > > Also trying to fix the originally spare cc list, which makes it impossible 
-> > > > for me to reply to the original thread, instead have to start a new one.
-> > > 
-> > > I'm not sure what you're talking about.  What exactly was wrong with the
-> > > original CC list in particular?
-> > 
-> > I think you advised once to cc cpufreq related mails to linux-pm too at 
-> > least.
-> 
-> Yes, I did.
-> 
-> > I haven't found this patch in my pm archive, have I missed it there?
-> 
-> Quite frankly, I don't remember if it was there.  ISTR having it it patchwork,
-> which would mean that it was there, but well.
-> 
-> > > > Commit
-> > > > 
-> > > > commit dceff5ce18801dddc220d6238628619c93bc3cb6
-> > > > Author: Viresh Kumar <viresh.kumar@linaro.org>
-> > > > Date:   Sun Sep 1 22:19:37 2013 +0530
-> > > > 
-> > > >     cpufreq: fix serialization issues with freq change notifiers
-> > > > 
-> > > > breaks .transition_ongoing counting.
-> > > 
-> > > Do you know how exactly it breaks that?  If so, care to share that knowledge?
-> > 
-> > No, I don't. I only know that in __cpufreq_driver_target() the check for
-> > 
-> > 	if (policy->transition_ongoing) {
-> > 		write_unlock_irqrestore(&cpufreq_driver_lock, flags);
-> > 		return -EBUSY;
-> > 	}
-> > 
-> > is failing with this patch and cpufreq-cpu0.
-> 
-> OK, we need to figure out that, then.
+powerpc allmodconfig build fails with:
 
-But given the timing I think I'll just start to revert things and we can add
-them back later after we've sorted out all problems.
+ERROR: ".cpu_to_chip_id" [drivers/block/mtip32xx/mtip32xx.ko] undefined!
 
-So I'm going to drop commit dceff5c from the linux-next branch and I'm going to
-revert commit 7c30ed5 along with commit 266c13d that tried to fix it and we'll
-revisit the transition serialization issue when we really know how to fix it.
+The problem was introduced with commit 15863ff3b (powerpc: Make chip-id
+information available to userspace).
 
-Thanks,
-Rafael
+Export the missing symbol.
+
+Cc: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+Cc: Shivaprasad G Bhat <sbhat@linux.vnet.ibm.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ arch/powerpc/kernel/smp.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
+index 442d8e2..8e59abc 100644
+--- a/arch/powerpc/kernel/smp.c
++++ b/arch/powerpc/kernel/smp.c
+@@ -611,6 +611,7 @@ int cpu_to_chip_id(int cpu)
+ 	of_node_put(np);
+ 	return of_get_ibm_chip_id(np);
+ }
++EXPORT_SYMBOL(cpu_to_chip_id);
+ 
+ /* Helper routines for cpu to core mapping */
+ int cpu_core_index_of_thread(int cpu)
+-- 
+1.7.9.7
 
