@@ -1,168 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228Ab3IJWtd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 18:49:33 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:34660 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162Ab3IJWtc (ORCPT
+	id S1753271Ab3IJWue (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 18:50:34 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:45987 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752559Ab3IJWud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 18:49:32 -0400
-From: Toshi Kani <toshi.kani@hp.com>
-To: akpm@linux-foundation.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rjw@sisk.pl,
-        kosaki.motohiro@jp.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH v2] cpu/mem hotplug: Add try_online_node() for cpu_up()
-Date: Tue, 10 Sep 2013 16:47:38 -0600
-Message-Id: <1378853258-28633-1-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.8.1.4
+	Tue, 10 Sep 2013 18:50:33 -0400
+Date: Tue, 10 Sep 2013 15:50:29 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Benjamin Herrenschmidt <benh@au1.ibm.com>
+Cc: Asai Thambi S P <asamymuthupa@micron.com>,
+        Vasant Hegde <hegdevasant@linux.vnet.ibm.com>,
+        Shivaprasad G Bhat <sbhat@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linuxppc-dev@lists.ozlabs.org, Paul Mackerras <paulus@samba.org>
+Subject: Re: powerpc allmodconfig build broken due to commit 15863ff3b
+ (powerpc: Make chip-id information available to userspace)
+Message-ID: <20130910225029.GA26981@roeck-us.net>
+References: <522D163E.80106@roeck-us.net>
+ <522E5FD5.40603@micron.com>
+ <1378850569.4121.28.camel@pasglop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378850569.4121.28.camel@pasglop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpu_up() has #ifdef CONFIG_MEMORY_HOTPLUG code blocks, which
-call mem_online_node() to put its node online if offlined and
-then call build_all_zonelists() to initialize the zone list.
-These steps are specific to memory hotplug, and should be
-managed in mm/memory_hotplug.c.  lock_memory_hotplug() should
-also be held for the whole steps.
+On Wed, Sep 11, 2013 at 08:02:49AM +1000, Benjamin Herrenschmidt wrote:
+> On Mon, 2013-09-09 at 16:55 -0700, Asai Thambi S P wrote:
+> > On 09/08/2013 5:28 PM, Guenter Roeck wrote:
+> > > Hi all,
+> > >
+> > > powerpc allmodconfig build on the latest upstream kernel results in:
+> > >
+> > > ERROR: ".cpu_to_chip_id" [drivers/block/mtip32xx/mtip32xx.ko] undefined!
+> > >
+> > > This is due to commit 15863ff3b (powerpc: Make chip-id information 
+> > > available to userspace).
+> > > Not surprising, as cpu_to_chip_id() is not exported.
+> > >
+> > Apart from the above error, I have a concern on the patch, purely based on the commit message.
+> > (to be honest, I am not familiar with the ppc architecture)
+> > 
+> > Commit message of 15863ff3b has the following text.
+> > 
+> > ******************
+> > So far "/sys/devices/system/cpu/cpuX/topology/physical_package_id"
+> > was always default (-1) on ppc64 architecture.
+> > 
+> > Now, some systems have an ibm,chip-id property in the cpu nodes in
+> > the device tree. On these systems, we now use this information to
+> > display physical_package_id
+> > ******************
+> > 
+> > Shouldn't the new definition of "topology_physical_package_id" apply only to those systems supporting ibm,chip-id property?
+> 
+> There should be no negative side effect (appart from the missing
+> EXPORT_SYMBOL of course). If the property is not found in the
+> device-tree, the new function returns -1, so it should work fine on all
+> systems.
+> 
+Good. I submitted a patch doing just that yesterday or so.
+Hope you'll accept it ;).
 
-For this reason, this patch replaces mem_online_node() with
-try_online_node(), which performs the whole steps with
-lock_memory_hotplug() held.  try_online_node() is named after
-try_offline_node() as they have similar purpose.
-
-There is no functional change in this patch.
-
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
----
-v2: Added pr_err() in case of NULL pgdat in try_online_node().
----
- include/linux/memory_hotplug.h |    8 +++++++-
- kernel/cpu.c                   |   29 +++--------------------------
- mm/memory_hotplug.c            |   16 ++++++++++++++--
- 3 files changed, 24 insertions(+), 29 deletions(-)
-
-diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-index dd38e62..22203c2 100644
---- a/include/linux/memory_hotplug.h
-+++ b/include/linux/memory_hotplug.h
-@@ -94,6 +94,8 @@ extern void __online_page_set_limits(struct page *page);
- extern void __online_page_increment_counters(struct page *page);
- extern void __online_page_free(struct page *page);
- 
-+extern int try_online_node(int nid);
-+
- #ifdef CONFIG_MEMORY_HOTREMOVE
- extern bool is_pageblock_removable_nolock(struct page *page);
- extern int arch_remove_memory(u64 start, u64 size);
-@@ -225,6 +227,11 @@ static inline void register_page_bootmem_info_node(struct pglist_data *pgdat)
- {
- }
- 
-+static inline int try_online_node(int nid)
-+{
-+	return 0;
-+}
-+
- static inline void lock_memory_hotplug(void) {}
- static inline void unlock_memory_hotplug(void) {}
- 
-@@ -256,7 +263,6 @@ static inline void remove_memory(int nid, u64 start, u64 size) {}
- 
- extern int walk_memory_range(unsigned long start_pfn, unsigned long end_pfn,
- 		void *arg, int (*func)(struct memory_block *, void *));
--extern int mem_online_node(int nid);
- extern int add_memory(int nid, u64 start, u64 size);
- extern int arch_add_memory(int nid, u64 start, u64 size);
- extern int offline_pages(unsigned long start_pfn, unsigned long nr_pages);
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index d7f07a2..c10b285 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -420,11 +420,6 @@ int cpu_up(unsigned int cpu)
- {
- 	int err = 0;
- 
--#ifdef	CONFIG_MEMORY_HOTPLUG
--	int nid;
--	pg_data_t	*pgdat;
--#endif
--
- 	if (!cpu_possible(cpu)) {
- 		printk(KERN_ERR "can't online cpu %d because it is not "
- 			"configured as may-hotadd at boot time\n", cpu);
-@@ -435,27 +430,9 @@ int cpu_up(unsigned int cpu)
- 		return -EINVAL;
- 	}
- 
--#ifdef	CONFIG_MEMORY_HOTPLUG
--	nid = cpu_to_node(cpu);
--	if (!node_online(nid)) {
--		err = mem_online_node(nid);
--		if (err)
--			return err;
--	}
--
--	pgdat = NODE_DATA(nid);
--	if (!pgdat) {
--		printk(KERN_ERR
--			"Can't online cpu %d due to NULL pgdat\n", cpu);
--		return -ENOMEM;
--	}
--
--	if (pgdat->node_zonelists->_zonerefs->zone == NULL) {
--		mutex_lock(&zonelists_mutex);
--		build_all_zonelists(NULL, NULL);
--		mutex_unlock(&zonelists_mutex);
--	}
--#endif
-+	err = try_online_node(cpu_to_node(cpu));
-+	if (err)
-+		return err;
- 
- 	cpu_maps_update_begin();
- 
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index ed85fe3..d6fc915 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -1044,17 +1044,23 @@ static void rollback_node_hotadd(int nid, pg_data_t *pgdat)
- }
- 
- 
--/*
-+/**
-+ * try_online_node - online a node if offlined
-+ *
-  * called by cpu_up() to online a node without onlined memory.
-  */
--int mem_online_node(int nid)
-+int try_online_node(int nid)
- {
- 	pg_data_t	*pgdat;
- 	int	ret;
- 
-+	if (node_online(nid))
-+		return 0;
-+
- 	lock_memory_hotplug();
- 	pgdat = hotadd_new_pgdat(nid, 0);
- 	if (!pgdat) {
-+		pr_err("Cannot online node %d due to NULL pgdat\n", nid);
- 		ret = -ENOMEM;
- 		goto out;
- 	}
-@@ -1062,6 +1068,12 @@ int mem_online_node(int nid)
- 	ret = register_one_node(nid);
- 	BUG_ON(ret);
- 
-+	if (pgdat->node_zonelists->_zonerefs->zone == NULL) {
-+		mutex_lock(&zonelists_mutex);
-+		build_all_zonelists(NULL, NULL);
-+		mutex_unlock(&zonelists_mutex);
-+	}
-+
- out:
- 	unlock_memory_hotplug();
- 	return ret;
+Thanks,
+Guenter
