@@ -1,73 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab3IJQit (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 12:38:49 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:60850 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252Ab3IJQir (ORCPT
+	id S1752943Ab3IJQmF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 12:42:05 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:35305 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752411Ab3IJQmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 12:38:47 -0400
-Message-ID: <522F4B14.1040606@linaro.org>
-Date: Tue, 10 Sep 2013 09:38:44 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Lin Ming <minggr@gmail.com>
-CC: Gerlando Falauto <gerlando.falauto@keymile.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        "Brunck, Holger" <Holger.Brunck@keymile.com>,
-        "Longchamp, Valentin" <Valentin.Longchamp@keymile.com>,
-        "Bigler, Stefan" <Stefan.Bigler@keymile.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: kernel deadlock
-References: <521F6D06.1040107@keymile.com> <E92455D61233364C88CCD4A6DAB2E2850E09518110@SRVDEHAN1MX1.keymile.net> <521FDD12.7050000@linaro.org> <52212511.9050206@keymile.com> <5221264F.4070402@linaro.org> <5225F8EF.3040701@keymile.com> <52261BBB.60904@linaro.org> <5226EB35.6080604@keymile.com> <522E2FBB.4070406@linaro.org> <CAF1ivSYVPtsyL-hO9o1i71ceG7fmvh+u+AdKGbJvrKH0k6mb_A@mail.gmail.com>
-In-Reply-To: <CAF1ivSYVPtsyL-hO9o1i71ceG7fmvh+u+AdKGbJvrKH0k6mb_A@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 10 Sep 2013 12:42:02 -0400
+From: Ben Gardiner <ben.l.gardiner@gmail.com>
+To: Chris Ball <cjb@laptop.org>, Ulf Hansson <ulf.hansson@linaro.org>,
+        linux-mmc@vger.kernel.org
+Cc: Johan Rudholm <johan.rudholm@stericsson.com>,
+        Konstantin Dorfman <kdorfman@codeaurora.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] mmc: core: make SPI CRC flag readable from /sys/module
+Date: Tue, 10 Sep 2013 12:41:53 -0400
+Message-Id: <1378831313-28089-1-git-send-email-ben.l.gardiner@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2013 01:59 AM, Lin Ming wrote:
->  On Tue, Sep 10, 2013 at 4:29 AM, John Stultz <john.stultz@linaro.org> wrote:
->
-> [snip]
->
->> So I think I've managed to finally reproduce this and hunt it down.
->>
->> With Peter's "sched: Fix HRTICK" patch and HRTICK enabled, I found I
->> could trigger a hard hang at boot on my x86_64 kvm system. sysrq didn't
->> function, so I checked out info cpus and that pointed to both cpus being
-> Hi,
->
-> Is "info cpus" a command of kvm/qemu? That's very helpful.
-Yes. If you switch into the qemu monitor, you can use "info cpus" to
-show the current instruction pointers
+Make the use_spi_crc module parameter read only in sysfs.
 
-> I can reproduce this bug, but there is no any output.
-> How did you find out that both cpus being in ktime_get() and
-> ktime_get_update_offsets().
+Signed-off-by: Ben Gardiner <ben.l.gardiner@gmail.com>
+---
+ drivers/mmc/core/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Once I had the instruction pointers, I ran gdb on the vmlinux and used
-"list *<address>" to show where it was stuck.
-
->> in ktime_get() and ktime_get_update_offsets(), which suggested a
->> seqcount deadlock (basically calling something that reads the seqlock
->> while we hold the write on it).
-> HRTICK enabled, then I can reproduce this simply with,
->
-> while [ 1 ] ;
->     adjtimex -t 9999
-> done
->
-> And your patch fixed it.
-
-Great! Can I add a Tested-by: from you on the patch?
-
-thanks
--john
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index 49a5bca..93f64b3 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -60,7 +60,7 @@ static const unsigned freqs[] = { 400000, 300000, 200000, 100000 };
+  * So we allow it it to be disabled.
+  */
+ bool use_spi_crc = 1;
+-module_param(use_spi_crc, bool, 0);
++module_param(use_spi_crc, bool, 0444);
+ 
+ /*
+  * We normally treat cards as removed during suspend if they are not
+-- 
+1.8.1.2
 
