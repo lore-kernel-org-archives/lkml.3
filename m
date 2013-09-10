@@ -1,127 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751542Ab3IJJ6v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 05:58:51 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46811 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750986Ab3IJJ6t (ORCPT
+	id S1751326Ab3IJKCk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 06:02:40 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:58441 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011Ab3IJKCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 05:58:49 -0400
-From: Will Deacon <will.deacon@arm.com>
-To: linux-alpha@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Michael Cree <mcree@orcon.net.nz>, Matt Turner <mattst88@gmail.com>
-Subject: [PATCH] alpha: perf: fix out-of-bounds array access triggered from raw event
-Date: Tue, 10 Sep 2013 10:58:12 +0100
-Message-Id: <1378807092-28674-1-git-send-email-will.deacon@arm.com>
-X-Mailer: git-send-email 1.8.2.2
+	Tue, 10 Sep 2013 06:02:39 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Christian Kujau <lists@nerdbynature.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Vasiliy Kulikov <segoon@openwall.com>
+References: <alpine.DEB.2.11.1309070133340.21301@trent.utfs.org>
+	<87r4cybio2.fsf@xmission.com>
+	<alpine.DEB.2.11.1309100124020.6509@trent.utfs.org>
+Date: Tue, 10 Sep 2013 03:00:31 -0700
+In-Reply-To: <alpine.DEB.2.11.1309100124020.6509@trent.utfs.org> (Christian
+	Kujau's message of "Tue, 10 Sep 2013 01:30:28 -0700 (PDT)")
+Message-ID: <87ioy90zeo.fsf@tw-ebiederman.twitter.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+Gsqfj7tihcmKkY2aq/Z8WMZWx0u4nS0g=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.1861]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  1.0 XMSubMetaSx_00 1+ Sexy Words
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Christian Kujau <lists@nerdbynature.de>
+X-Spam-Relay-Country: 
+Subject: Re: proc hidepid=2 and SGID programs
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vince's perf fuzzer uncovered the following issue on Alpha:
+Christian Kujau <lists@nerdbynature.de> writes:
 
-Unable to handle kernel paging request at virtual address fffffbfe4e46a0e8
-CPU 0 perf_fuzzer(1278): Oops 0
-pc = [<fffffc000031fbc0>]  ra = [<fffffc000031ff54>]  ps = 0007    Not tainted
-pc is at alpha_perf_event_set_period+0x60/0xf0
-ra is at alpha_pmu_enable+0x1a4/0x1c0
-v0 = 0000000000000000  t0 = 00000000000fffff  t1 = fffffc007b3f5800
-t2 = fffffbff275faa94  t3 = ffffffffc9b9bd89  t4 = fffffbfe4e46a098
-t5 = 0000000000000020  t6 = fffffbfe4e46a0b8  t7 = fffffc007f4c8000
-s0 = 0000000000000000  s1 = fffffc0001b0c018  s2 = fffffc0001b0c020
-s3 = fffffc007b3f5800  s4 = 0000000000000001  s5 = ffffffffc9b9bd85
-s6 = 0000000000000001
-a0 = 0000000000000006  a1 = fffffc007b3f5908  a2 = fffffbfe4e46a098
-a3 = 00000005000108c0  a4 = 0000000000000000  a5 = 0000000000000000
-t8 = 0000000000000001  t9 = 0000000000000001  t10= 0000000027829f6f
-t11= 0000000000000020  pv = fffffc000031fb60  at = fffffc0000950900
-gp = fffffc0000940900  sp = fffffc007f4cbca8
-Disabling lock debugging due to kernel taint
-Trace:
-[<fffffc000031ff54>] alpha_pmu_enable+0x1a4/0x1c0
-[<fffffc000039f4e8>] perf_pmu_enable+0x48/0x60
-[<fffffc00003a0d6c>] __perf_install_in_context+0x15c/0x230
-[<fffffc000039d1f0>] remote_function+0x80/0xa0
-[<fffffc00003a0c10>] __perf_install_in_context+0x0/0x230
-[<fffffc000037b7e4>] smp_call_function_single+0x1b4/0x1d0
-[<fffffc000039bb70>] task_function_call+0x60/0x80
-[<fffffc00003a0c10>] __perf_install_in_context+0x0/0x230
-[<fffffc000039bb44>] task_function_call+0x34/0x80
-[<fffffc000039d3fc>] perf_install_in_context+0x9c/0x150
-[<fffffc00003a0c10>] __perf_install_in_context+0x0/0x230
-[<fffffc00003a5100>] SYSC_perf_event_open+0x360/0xac0
-[<fffffc00003110c4>] entSys+0xa4/0xc0
+> On Sun, 8 Sep 2013 at 23:42, Eric W. Biederman wrote:
+>> The check with hidepid is can you ptrace the process.  I expect there
+>> is something with those sgid processes that keeps you from ptracing
+>> them.
+>
+> Indeed, I cannot strace the process. But still, I wonder if this is 
+> intended behaviour.
 
-This is due to the raw event encoding being used as an index directly
-into the ev67_mapping array, rather than being validated against the
-ev67_pmc_event_type enumeration instead. Unlike other architectures,
-which allow raw events to propagate into the hardware counters with
-little interference, the limited number of events on Alpha and the
-strict event <-> counter relationships mean that raw events actually
-correspond to the Linux-specific Alpha events, rather than anything
-defined by the architecture.
+Well it is acting as desgined so I assume it is intended.
 
-This patch adds a new callback to alpha_pmu_t for validating the raw
-event encoding with the Linux event types for the PMU, preventing the
-out-of-bounds array access.
+Beyond that shrug.
 
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Michael Cree <mcree@orcon.net.nz>
-Cc: Matt Turner <mattst88@gmail.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
----
- arch/alpha/kernel/perf_event.c | 15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+Eric
 
-diff --git a/arch/alpha/kernel/perf_event.c b/arch/alpha/kernel/perf_event.c
-index d821b17..c52e7f0 100644
---- a/arch/alpha/kernel/perf_event.c
-+++ b/arch/alpha/kernel/perf_event.c
-@@ -83,6 +83,8 @@ struct alpha_pmu_t {
- 	long pmc_left[3];
- 	 /* Subroutine for allocation of PMCs.  Enforces constraints. */
- 	int (*check_constraints)(struct perf_event **, unsigned long *, int);
-+	/* Subroutine for checking validity of a raw event for this PMU. */
-+	int (*raw_event_valid)(u64 config);
- };
- 
- /*
-@@ -203,6 +205,12 @@ success:
- }
- 
- 
-+static int ev67_raw_event_valid(u64 config)
-+{
-+	return config >= EV67_CYCLES && config < EV67_LAST_ET;
-+};
-+
-+
- static const struct alpha_pmu_t ev67_pmu = {
- 	.event_map = ev67_perfmon_event_map,
- 	.max_events = ARRAY_SIZE(ev67_perfmon_event_map),
-@@ -211,7 +219,8 @@ static const struct alpha_pmu_t ev67_pmu = {
- 	.pmc_count_mask = {EV67_PCTR_0_COUNT_MASK,  EV67_PCTR_1_COUNT_MASK,  0},
- 	.pmc_max_period = {(1UL<<20) - 1, (1UL<<20) - 1, 0},
- 	.pmc_left = {16, 4, 0},
--	.check_constraints = ev67_check_constraints
-+	.check_constraints = ev67_check_constraints,
-+	.raw_event_valid = ev67_raw_event_valid,
- };
- 
- 
-@@ -609,7 +618,9 @@ static int __hw_perf_event_init(struct perf_event *event)
- 	} else if (attr->type == PERF_TYPE_HW_CACHE) {
- 		return -EOPNOTSUPP;
- 	} else if (attr->type == PERF_TYPE_RAW) {
--		ev = attr->config & 0xff;
-+		if (!alpha_pmu->raw_event_valid(attr->config))
-+			return -EINVAL;
-+		ev = attr->config;
- 	} else {
- 		return -EOPNOTSUPP;
- 	}
--- 
-1.8.3.2
 
