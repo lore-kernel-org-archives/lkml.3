@@ -1,219 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752698Ab3IJVpR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 17:45:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1952 "EHLO mx1.redhat.com"
+	id S1752818Ab3IJVqR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 17:46:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45817 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752439Ab3IJVpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 17:45:08 -0400
+	id S1752671Ab3IJVpQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 17:45:16 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
         kexec@lists.infradead.org
 Cc: akpm@linux-foundation.org, zohar@linux.vnet.ibm.com,
         d.kasatkin@samsung.com, ebiederm@xmission.com, hpa@zytor.com,
         matthew.garrett@nebula.com, vgoyal@redhat.com
-Subject: [PATCH 09/16] ima: define functions to appraise memory buffer contents
-Date: Tue, 10 Sep 2013 17:44:24 -0400
-Message-Id: <1378849471-10521-10-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 08/16] binfmt_elf: Elf executable signature verification
+Date: Tue, 10 Sep 2013 17:44:23 -0400
+Message-Id: <1378849471-10521-9-git-send-email-vgoyal@redhat.com>
 In-Reply-To: <1378849471-10521-1-git-send-email-vgoyal@redhat.com>
 References: <1378849471-10521-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I need to provide user space with facility that it can call into kernel
-for signature verification of a file. Trying to rely on file based appraisal
-has the downside that somebody might write to file after appraisal and it
-is racy.
+Do elf executable signature verification (if one is present). If signature
+is present, it should be valid. Validly signed executables are locked in
+memory and a flag cred->proc_signed gets set to signify this process
+executable contents are signed.
 
-Alternative is that one can copy file contents in memory buffer and pass
-buffer and signature to kernel and ask whether signatures are valid.
-
-Hence introduce an IMA function to be able verify signature of meory
-buffer. This will in turn be called the keyctl() which will provide
-this facility to user space.
-
-This can be used by kexec to verify signature of bzImage being loaded.
+If file is unsigned, it can execute but it does not have the cred->proc_signed
+set.
 
 Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- include/linux/integrity.h   |  19 +++++++-
- security/integrity/digsig.c | 115 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 133 insertions(+), 1 deletion(-)
+ fs/Kconfig.binfmt    | 10 +++++++++
+ fs/binfmt_elf.c      | 63 +++++++++++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/cred.h |  2 ++
+ kernel/cred.c        |  2 ++
+ 4 files changed, 76 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/integrity.h b/include/linux/integrity.h
-index b26bd7d..36c9a6d 100644
---- a/include/linux/integrity.h
-+++ b/include/linux/integrity.h
-@@ -11,6 +11,7 @@
- #define _LINUX_INTEGRITY_H
+diff --git a/fs/Kconfig.binfmt b/fs/Kconfig.binfmt
+index 370b24c..25ae6d3 100644
+--- a/fs/Kconfig.binfmt
++++ b/fs/Kconfig.binfmt
+@@ -23,6 +23,16 @@ config BINFMT_ELF
+ 	  ld.so (check the file <file:Documentation/Changes> for location and
+ 	  latest version).
  
- #include <linux/fs.h>
-+#include <linux/key.h>
++config BINFMT_ELF_SIG
++	bool "ELF binary signature verification"
++	depends on BINFMT_ELF
++	depends on INTEGRITY_ASYMMETRIC_KEYS
++	depends on IMA_APPRAISE
++	depends on SYSTEM_TRUSTED_KEYRING
++	default n
++	---help---
++	  Check ELF binary signature verfication.
++
+ config COMPAT_BINFMT_ELF
+ 	bool
+ 	depends on COMPAT && BINFMT_ELF
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index 100edcc..22a8272 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -34,6 +34,8 @@
+ #include <linux/utsname.h>
+ #include <linux/coredump.h>
+ #include <linux/sched.h>
++#include <linux/ima.h>
++#include <keys/system_keyring.h>
+ #include <asm/uaccess.h>
+ #include <asm/param.h>
+ #include <asm/page.h>
+@@ -584,6 +586,11 @@ static int load_elf_binary(struct linux_binprm *bprm)
+ 	int executable_stack = EXSTACK_DEFAULT;
+ 	unsigned long def_flags = 0;
+ 	struct pt_regs *regs = current_pt_regs();
++	char *signature = NULL;
++#ifdef CONFIG_BINFMT_ELF_SIG
++	unsigned int siglen = 0;
++	bool mlock_mappings = false;
++#endif
+ 	struct {
+ 		struct elfhdr elf_ex;
+ 		struct elfhdr interp_elf_ex;
+@@ -725,6 +732,43 @@ static int load_elf_binary(struct linux_binprm *bprm)
+ 	/* OK, This is the point of no return */
+ 	current->mm->def_flags = def_flags;
  
- enum integrity_status {
- 	INTEGRITY_PASS = 0,
-@@ -30,7 +31,6 @@ enum evm_ima_xattr_type {
- #ifdef CONFIG_INTEGRITY
- extern struct integrity_iint_cache *integrity_inode_get(struct inode *inode);
- extern void integrity_inode_free(struct inode *inode);
--
- #else
- static inline struct integrity_iint_cache *
- 				integrity_inode_get(struct inode *inode)
-@@ -42,5 +42,22 @@ static inline void integrity_inode_free(struct inode *inode)
- {
- 	return;
- }
++#ifdef CONFIG_BINFMT_ELF_SIG
++	/*
++	 * If executable is digitally signed and ima memlock info present,
++	 * Lock down in memory
++	 */
++	retval = ima_file_signature_alloc(bprm->file, &signature);
 +
- #endif /* CONFIG_INTEGRITY */
++	/*
++	 * If there is an error getting signature, bail out. Having
++	 * no signature is fine though.
++	 */
++	if (retval < 0 && retval != -ENODATA && retval != -EOPNOTSUPP)
++		goto out_free_dentry;
 +
-+#ifdef CONFIG_INTEGRITY_SIGNATURE
-+extern int integrity_verify_user_buffer_digsig(struct key *keyring,
-+				const char __user *data,
-+				unsigned long data_len,
-+				char *sig, unsigned int siglen);
-+#else
-+static inline int integrity_verify_user_buffer_digsig(struct key *keyring,
-+				const char __user *data,
-+				unsigned long data_len,
-+				char *sig, unsigned int siglen)
-+{
-+	return -EOPNOTSUPP;
-+}
-+#endif /* CONFIG_INTEGRITY_SIGNATURE */
++	if (signature != NULL) {
++		siglen = retval;
++		retval = ima_signature_type(signature);
++		if (retval == EVM_IMA_XATTR_DIGSIG &&
++		    ima_memlock_file(signature, siglen)) {
++			/*
++			 * Verify signature before locking down file. We don't
++			 * want to memlock executables with fake signatures
++			 */
++			retval = ima_appraise_file_digsig(
++					system_trusted_keyring,
++					bprm->file, signature, siglen);
++			if (retval) {
++				send_sig(SIGKILL, current, 0);
++				goto out_free_dentry;
++			}
 +
- #endif /* _LINUX_INTEGRITY_H */
-diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
-index 153cff4..166a7dd 100644
---- a/security/integrity/digsig.c
-+++ b/security/integrity/digsig.c
-@@ -16,6 +16,7 @@
- #include <linux/rbtree.h>
- #include <linux/key-type.h>
- #include <linux/digsig.h>
-+#include <linux/sched.h>
- #include <crypto/hash.h>
- #include <crypto/public_key.h>
- 
-@@ -104,3 +105,117 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
- 	return integrity_digsig_verify_keyring(keyring[id], sig, siglen,
- 						digest, digestlen);
- }
-+
-+static int integrity_calc_user_buffer_hash(enum pkey_hash_algo hash_algo,
-+					const char __user *data,
-+					unsigned long data_len, char **_digest,
-+					unsigned int *digest_len)
-+{
-+	char *buffer, *digest;
-+	unsigned long len;
-+	struct crypto_shash *tfm;
-+	size_t desc_size, digest_size;
-+	struct shash_desc *desc;
-+	int ret;
-+
-+	buffer = kmalloc(PAGE_SIZE, GFP_KERNEL);
-+	if (!buffer)
-+		return -ENOMEM;
-+
-+	/* TODO: allow different kind of hash */
-+	tfm = crypto_alloc_shash(pkey_hash_algo_name[hash_algo], 0, 0);
-+	if (IS_ERR(tfm)) {
-+		ret = PTR_ERR(tfm);
-+		goto out;
-+	}
-+	desc_size = crypto_shash_descsize(tfm) + sizeof(*desc);
-+	desc = kzalloc(desc_size, GFP_KERNEL);
-+	if (!desc) {
-+		ret = -ENOMEM;
-+		goto out_free_tfm;
-+	}
-+
-+	desc->tfm   = tfm;
-+	desc->flags = 0;
-+
-+	ret = crypto_shash_init(desc);
-+	if (ret < 0)
-+		goto out_free_desc;
-+
-+	digest_size = crypto_shash_digestsize(tfm);
-+	digest = kzalloc(digest_size, GFP_KERNEL);
-+	if (!digest) {
-+		ret = -ENOMEM;
-+		goto out_free_desc;
-+	}
-+
-+	do {
-+		len = min(data_len, PAGE_SIZE - ((size_t)data & ~PAGE_MASK));
-+		ret = -EFAULT;
-+		if (copy_from_user(buffer, data, len) != 0)
-+			goto out_free_digest;
-+
-+		ret = crypto_shash_update(desc, buffer, len);
-+                if (ret)
-+                        break;
-+
-+		data_len -= len;
-+		data += len;
-+
-+		if (fatal_signal_pending(current)) {
-+			ret = -EINTR;
-+			break;
++			mlock_mappings = true;
++			current->mm->def_flags |= VM_LOCKED;
++			set_bit(MMF_VM_LOCKED, &current->mm->flags);
 +		}
-+	} while (data_len > 0);
-+
-+	if (!ret) {
-+		ret = crypto_shash_final(desc, digest);
-+		*_digest = digest;
-+		*digest_len = digest_size;
-+		digest = NULL;
 +	}
++#endif
+ 	/* Do this immediately, since STACK_TOP as used in setup_arg_pages
+ 	   may depend on the personality.  */
+ 	SET_PERSONALITY(loc->elf_ex);
+@@ -895,6 +939,23 @@ static int load_elf_binary(struct linux_binprm *bprm)
+ 		goto out_free_dentry;
+ 	}
+ 
++#ifdef CONFIG_BINFMT_ELF_SIG
++	if (mlock_mappings) {
++		/*
++		 * File locked down in memory. Now it is safe against any
++		 * modifications on disk by raw disk writes. Verify signature.
++		 */
++		retval = ima_appraise_file_digsig(system_trusted_keyring,
++					bprm->file, signature, siglen);
++		if (retval) {
++			send_sig(SIGKILL, current, 0);
++			goto out_free_dentry;
++		}
++		/* Signature verification successful */
++		bprm->cred->proc_signed = true;
++	}
++#endif
 +
-+out_free_digest:
-+	if (digest)
-+		kfree(digest);
-+out_free_desc:
-+	kfree(desc);
-+out_free_tfm:
-+	kfree(tfm);
-+out:
-+	kfree(buffer);
-+	return ret;
-+}
-+
-+/*
-+ * Appraise a user buffer with a given digital signature
-+ * keyring: keyring to use for appraisal
-+ * sig: signature
-+ * siglen: length of signature
-+ *
-+ * Returns 0 on successful appraisal, error otherwise.
-+ */
-+int integrity_verify_user_buffer_digsig(struct key *keyring,
-+				const char __user *data,
-+				unsigned long data_len,
-+				char *sig, unsigned int siglen)
-+{
-+	int ret = 0;
-+	enum pkey_hash_algo hash_algo;
-+	char *digest = NULL;
-+	unsigned int digest_len = 0;
-+
-+	hash_algo = integrity_digsig_get_hash_algo(sig);
-+	if (hash_algo < 0)
-+		return hash_algo;
-+
-+	ret = integrity_calc_user_buffer_hash(hash_algo, data, data_len,
-+						&digest, &digest_len);
-+	if (ret)
-+		return ret;
-+
-+	ret = integrity_digsig_verify_keyring(keyring, sig, siglen, digest,
-+					digest_len);
-+	kfree(digest);
-+	return ret;
-+}
+ 	if (elf_interpreter) {
+ 		unsigned long interp_map_addr = 0;
+ 
+@@ -988,11 +1049,11 @@ static int load_elf_binary(struct linux_binprm *bprm)
+ 	 */
+ 	ELF_PLAT_INIT(regs, reloc_func_desc);
+ #endif
+-
+ 	start_thread(regs, elf_entry, bprm->p);
+ 	retval = 0;
+ out:
+ 	kfree(loc);
++	kfree(signature);
+ out_ret:
+ 	return retval;
+ 
+diff --git a/include/linux/cred.h b/include/linux/cred.h
+index 04421e8..1f5f418 100644
+--- a/include/linux/cred.h
++++ b/include/linux/cred.h
+@@ -136,6 +136,8 @@ struct cred {
+ 	struct user_namespace *user_ns; /* user_ns the caps and keyrings are relative to. */
+ 	struct group_info *group_info;	/* supplementary groups for euid/fsgid */
+ 	struct rcu_head	rcu;		/* RCU deletion hook */
++	bool	proc_signed;		/* Executable signature have been
++					 * verified post load */
+ };
+ 
+ extern void __put_cred(struct cred *);
+diff --git a/kernel/cred.c b/kernel/cred.c
+index e0573a4..589f1fa 100644
+--- a/kernel/cred.c
++++ b/kernel/cred.c
+@@ -299,6 +299,8 @@ struct cred *prepare_exec_creds(void)
+ 	new->process_keyring = NULL;
+ #endif
+ 
++	/* proc_signed status will be evaluated again from executable file */
++	new->proc_signed = false;
+ 	return new;
+ }
+ 
 -- 
 1.8.3.1
 
