@@ -1,82 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756333Ab3IJBTG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 21:19:06 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:50632 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756205Ab3IJBTE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 21:19:04 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <522E7380.3090701@roeck-us.net>
-Date: Mon, 09 Sep 2013 18:18:56 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Asai Thambi S P <asamymuthupa@micron.com>
-CC: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>,
-        Shivaprasad G Bhat <sbhat@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, Paul Mackerras <paulus@samba.org>
-Subject: Re: powerpc allmodconfig build broken due to commit 15863ff3b (powerpc:
- Make chip-id information available to userspace)
-References: <522D163E.80106@roeck-us.net> <522E5FD5.40603@micron.com>
-In-Reply-To: <522E5FD5.40603@micron.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1756271Ab3IJBYF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 21:24:05 -0400
+Received: from mga14.intel.com ([143.182.124.37]:36287 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756117Ab3IJBYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 21:24:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,875,1371106800"; 
+   d="scan'208";a="358160190"
+Subject: [PATCH] PCI/PM: Removing the function pci_pm_complete()
+From: Chuansheng Liu <chuansheng.liu@intel.com>
+To: stern@rowland.harvard.edu, rjw@sisk.pl, bhelgaas@google.com
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        chuansheng.liu@intel.com, fei.li@intel.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 10 Sep 2013 18:46:06 +0800
+Message-ID: <1378809966.26153.23.camel@cliu38-desktop-build>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2013 04:55 PM, Asai Thambi S P wrote:
-> On 09/08/2013 5:28 PM, Guenter Roeck wrote:
->> Hi all,
->>
->> powerpc allmodconfig build on the latest upstream kernel results in:
->>
->> ERROR: ".cpu_to_chip_id" [drivers/block/mtip32xx/mtip32xx.ko] undefined!
->>
->> This is due to commit 15863ff3b (powerpc: Make chip-id information available to userspace).
->> Not surprising, as cpu_to_chip_id() is not exported.
->>
-> Apart from the above error, I have a concern on the patch, purely based on the commit message.
-> (to be honest, I am not familiar with the ppc architecture)
->
-> Commit message of 15863ff3b has the following text.
->
-> ******************
-> So far "/sys/devices/system/cpu/cpuX/topology/physical_package_id"
-> was always default (-1) on ppc64 architecture.
->
-> Now, some systems have an ibm,chip-id property in the cpu nodes in
-> the device tree. On these systems, we now use this information to
-> display physical_package_id
-> ******************
->
-> Shouldn't the new definition of "topology_physical_package_id" apply only to those systems supporting ibm,chip-id property?
->
-Looking into the code, I think that is what it does. For other platforms
-(ie if there is no ibm,chip-id property) it still returns -1.
 
-Question for the fix is what path to take to fix the problem.
-Exporting cpu_to_chip_id() might be the easiest solution. Other
-platforms export the respective data, so it should not be a problem.
+Commit(88d2613) removed the pm_runtime_put_sync() from pci_pm_complete()
+to PM core code device_complete().
 
-I might submit a patch and see where it goes.
+Here the pci_pm_complete() is doing the same work which can be done in
+device_complete(), so we can remove it directly.
 
-Guenter
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+---
+ drivers/pci/pci-driver.c |    9 ---------
+ 1 files changed, 0 insertions(+), 9 deletions(-)
 
->
->> Reverting this commit fixes the problem. Any good idea how to fix it for real ?
->>
->> Guenter
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
->
->
+diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+index 98f7b9b..736ef3f 100644
+--- a/drivers/pci/pci-driver.c
++++ b/drivers/pci/pci-driver.c
+@@ -599,18 +599,10 @@ static int pci_pm_prepare(struct device *dev)
+ 	return error;
+ }
+ 
+-static void pci_pm_complete(struct device *dev)
+-{
+-	struct device_driver *drv = dev->driver;
+-
+-	if (drv && drv->pm && drv->pm->complete)
+-		drv->pm->complete(dev);
+-}
+ 
+ #else /* !CONFIG_PM_SLEEP */
+ 
+ #define pci_pm_prepare	NULL
+-#define pci_pm_complete	NULL
+ 
+ #endif /* !CONFIG_PM_SLEEP */
+ 
+@@ -1123,7 +1115,6 @@ static int pci_pm_runtime_idle(struct device *dev)
+ 
+ const struct dev_pm_ops pci_dev_pm_ops = {
+ 	.prepare = pci_pm_prepare,
+-	.complete = pci_pm_complete,
+ 	.suspend = pci_pm_suspend,
+ 	.resume = pci_pm_resume,
+ 	.freeze = pci_pm_freeze,
+-- 
+1.7.0.4
+
+
 
