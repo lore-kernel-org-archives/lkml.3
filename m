@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262Ab3IJVhe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 17:37:34 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:52277 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752188Ab3IJVhb (ORCPT
+	id S1752344Ab3IJVkC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 17:40:02 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:33636 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994Ab3IJVkA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 17:37:31 -0400
-Date: Tue, 10 Sep 2013 22:37:18 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Lars Poeschel <poeschel@lemonage.de>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
-Message-ID: <20130910213718.GH29403@sirena.org.uk>
-References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de>
- <52279524.8090006@wwwdotorg.org>
- <20130909161924.GT29403@sirena.org.uk>
- <2052193.CMUEUJFRgS@lem-wkst-02>
- <522F78CB.2020507@wwwdotorg.org>
+	Tue, 10 Sep 2013 17:40:00 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DKFWEirOtDILsmKV"
-Content-Disposition: inline
-In-Reply-To: <522F78CB.2020507@wwwdotorg.org>
-X-Cookie: Your present plans will be successful.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <CA+55aFzBbKXJnaG_6X8Fff_APGJ3EkbG0thsbithDXtiEJjdHA@mail.gmail.com>
+References: <CACxGe6v8hO4sRX_KGcH=YBAMrF8mQHqWdxXEvVwoC2pVS5Yv9Q@mail.gmail.com>
+	<CA+bK7J5cAWFPLTBR2afNLm2JaKFH4_dJO_NpVL5gom0iX+L2dQ@mail.gmail.com>
+	<CA+55aFzBbKXJnaG_6X8Fff_APGJ3EkbG0thsbithDXtiEJjdHA@mail.gmail.com>
+Date: Tue, 10 Sep 2013 14:39:59 -0700
+Message-ID: <CA+bK7J4F=X97HUQP6Tt8RkVe5vttE_Sw4Pd7kT19k_KGDFfpKA@mail.gmail.com>
+Subject: Re: [GIT PULL] Device tree updates for v3.12
+From: Tim Bird <tbird20d@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        anton@samba.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Sep 10, 2013 at 1:50 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Sep 10, 2013 at 11:40 AM, Tim Bird <tbird20d@gmail.com> wrote:
+>> How much time does it add to boot to feed the device tree into the
+>> random number pool.
+>>
+>> Some of the device trees are expected to get pretty big.  If it's over
+>> a millisecond, IMHO, it should be configurable (but this is not).
+>
+> It's detinitely not a very fast operation.
+...
+> So it might even be a better idea to feed the device tree to a hashing
+> function (eg SHA1 or even just MD5), and then just mix in the hash. At
+> least most block hash functions do things a word at a time. It does
+> *not* need to be cryptographically secure, so MD5 would be plenty good
+> enough - the only point of the hash would be to give a meaningful
+> number of result bits from the source array.
 
---DKFWEirOtDILsmKV
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Well, I'm not sure how many bits of randomness this will add anyway.
+The way we're using device tree, we get the same values every boot, on
+all instances of the same phone model.  So this seems of little value.
 
-On Tue, Sep 10, 2013 at 01:53:47PM -0600, Stephen Warren wrote:
+Anton,
 
-> Doesn't this patch call gpio_request() on the GPIO first, and hence
-> prevent the driver's own gpio_request() from succeeding, since the GPIO
-> is already requested? If this is not a problem, it sounds like a bug in
-> gpio_request() not ensuring mutual exclusion for the GPIO.
+Are there presumably some random fields in device tree?  Is this being used
+to pass randomness from the bootloader?  Or are you trying to mix in some
+"randomness" about the hardware configuration?  I'm trying to understand the
+rationale for this.
 
-Or at the very least something that's likely to break in the future.
-
---DKFWEirOtDILsmKV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSL5ELAAoJELSic+t+oim9dtUP/0AWFWgw5UlR17/czrgfnULO
-Oc0TTfMHE326k97TeOhvFAcMgSQPf82ltO8hXsHonxeBEuycL+f9Vx775DFKGF/G
-+bIx1IX4TVn0fmWlmXie2Y9bHhRlZRWzoOaQQX0gxLwdlGJ+v8gT+xizPqCdJ5rV
-shkiLwgKMniP1vVJD8KuJI3KyP2hn18ouK7oxj7CXZ2HPtK3hnIyGpZUgdzJhjZ+
-EssOu5WC1qk0ZaJckXhKBmFBjgULXUBDkKob/btYFW25LlOs8x0ksxZeO1darvq0
-3mcD9MRjufPsHI8L3B3oGVfsw0q34te9cxweVJf+OYYCY46QcHtdC3pogESGDNUV
-rKkjawM0HczPPC60fjl5He5ytPbtI02QiD2X7ZEGIRYBiQRoRtElw9ZVWR4fzL1k
-kCLMfBeS6f8QUzAwRILwgjq+YT30uty5gL7ZxF3ypTGrrnnyEQdnuKV5oP+E6GwN
-3OjWuYa+M54l55DWDnEV66obCRfsAGDVp5Y11PaAxPayEl4gdS/JAtpq0iede783
-ikg1kGG7sbLDVDX/MWMFpomDoyjzOUJqI/IdDaYJ/Z9C9iggEAI0HYlo2o898c3W
-mYhjgjfhOEcXeWWnAwyNNHzA1hyNfx+MqsgfJtysDtpNAoQXn4AFpjifyUSJxNOU
-DPueTs/Eh0aX+ZJkabKh
-=CE4Z
------END PGP SIGNATURE-----
-
---DKFWEirOtDILsmKV--
+ -- Tim Bird
+Senior Software Engineer, Sony Mobile
+Architecture Group Chair, CE Workgroup, Linux Foundation
