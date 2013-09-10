@@ -1,122 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725Ab3IJOou (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 10:44:50 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:52335 "EHLO extserv.mm-sol.com"
+	id S1751593Ab3IJOsO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 10:48:14 -0400
+Received: from mga03.intel.com ([143.182.124.21]:63611 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751926Ab3IJOos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 10:44:48 -0400
-Message-ID: <1378824205.960.41.camel@iivanov-dev.int.mm-sol.com>
-Subject: Re: [PATCH 1/2] i2c: qup: Add device tree bindings information
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Kumar Gala <galak@codeaurora.org>, wsa@the-dreams.de,
-        rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
-        swarren@wwwdotorg.org, ian.campbell@citrix.com, rob@landley.net,
-        grant.likely@linaro.org, gavidov@codeaurora.org,
-        sdharia@codeaurora.org, alokc@codeaurora.org,
-        linux-i2c@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Date: Tue, 10 Sep 2013 17:43:25 +0300
-In-Reply-To: <20130910135907.GP808@joshc.qualcomm.com>
-References: <1377782873-31931-1-git-send-email-iivanov@mm-sol.com>
-	 <3A0F4153-1C55-4008-8EB1-D6FA60D87CEA@codeaurora.org>
-	 <1377797186.30358.14.camel@localhost>
-	 <767E9FBB-2975-4795-9C7E-69E302511FF2@codeaurora.org>
-	 <1378814937.960.37.camel@iivanov-dev.int.mm-sol.com>
-	 <20130910135907.GP808@joshc.qualcomm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751385Ab3IJOsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 10:48:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,878,1371106800"; 
+   d="scan'208";a="358441287"
+From: tianyu.lan@intel.com
+To: rjw@sisk.pl, viresh.kumar@linaro.org
+Cc: Lan Tianyu <tianyu.lan@intel.com>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] Cpufreq: Remove fossil comment of cpufreq_set_policy
+Date: Tue, 10 Sep 2013 10:44:47 -0400
+Message-Id: <1378824287-7696-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, 
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-On Tue, 2013-09-10 at 08:59 -0500, Josh Cartwright wrote: 
-> [Hmm.  Fixing b0rked LKML address; that might explain why I am not
-> seeing Kumar's replies.]
-> 
+The cpufreq_set_policy() has been removed by commit 632786c. So remove
+related comment.
+---
+ drivers/cpufreq/cpufreq.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
-Yes, sorry about this.
-
-> On Tue, Sep 10, 2013 at 03:08:57PM +0300, Ivan T. Ivanov wrote:
-> > Hi Kumar,
-> > 
-> > On Fri, 2013-08-30 at 10:21 -0500, Kumar Gala wrote: 
-> > > On Aug 29, 2013, at 12:26 PM, Ivan T. Ivanov wrote:
-> > > >>> +
-> > > >>> +Optional properties :
-> > > >>> + - Child nodes conforming to i2c bus binding
-> > > >>> + - clock-frequency : Desired I2C bus clock frequency in Hz. If
-> > > >>> +		not set thedefault frequency is 100kHz
-> > > >>> + - qcom,src-freq : Frequency of the source clocking this bus in Hz.
-> > > >>> +		Divider value is set based on soruce-frequency and
-> > > >>> +		desired I2C bus frequency. If this value is not
-> > > >>> +		provided, the source clock is assumed to be running
-> > > >>> +		at 19.2 MHz.
-> > > >> 
-> > > >> I'd spell out frequency instead of 'freq' to be consistent with 'clock-frequency'
-> > > > 
-> > > > ok.
-> > > > 
-> > > >> 
-> > > >> Is the frequency of the 'iface' clock?  Can we not use clk_get_rate?
-> > > > 
-> > > > It is for 'core' clock. I think that for higher I2C bus frequencies,
-> > > > 'core' clock have to be higher, but I am not sure what is relation.
-> > > 
-> > > Ok, can we use clk_get_rate on the 'core' clk to get its frequency instead of needing a DT prop for it?
-> > 
-> > Probably I didn't explain it well. The 'core' clock have to be
-> > accelerated before higher bus frequencies could be achieved.
-> 
-> I think what Kumar is suggesting is that the QUP driver not do an
-> explicit clk_set_rate() at all (which AFAICT is what's currently being
-> done to set the consuming clock to the rate specified in
-> 'qcom,src-freq'), but instead assume that the consuming clock has
-> already been setup properly.  Then the driver just uses clk_get_rate()
-> and clock-frequency to calculate how to setup any internal dividers.
-
-Yes, I think I got it, but the point is that clock is not already set 
-and it is driver responsibility to do that.
-
-> 
-> > > >>> +Aliases: An alias may optionally be used to bind the I2C controller
-> > > >>> +to bus number. Aliases are of the form i2c<n> where <n> is an integer
-> > > >>> +representing the bus number to use.
-> > > >>> +
-> > > >>> +Example:
-> > > >>> +
-> > > >>> + aliases {
-> > > >>> +		i2c0 = &i2c_A;
-> > > >>> +		i2c1 = &i2c_B;
-> > > >>> +		i2c2 = &i2c_C;
-> > > >>> + };
-> > > >> 
-> > > >> What is the purpose here?
-> > > > 
-> > > > Define on which I2C bus this controller operate. I2C client 
-> > > > drivers usually do i2c_get_adapter(bus_number) before its
-> > > > registration. This is for drivers before invention of
-> > > > of_i2c_register_devices(), I believe.
-> > > 
-> > > Since this is for upstream why dont we use of_i2c_register_devices() and remove this stuff related to aliases.
-> > 
-> > Adapter driver already is using of_i2c_register_devices(). Also OF
-> > helper function will/or is already part of i2c_register_adapter().
-> > Attempt here was to make it compatible with older i2c client drivers.
-> 
-> I agree with Kumar on removing this.  If we decide it is something worth
-> keeping, logic to support it doesn't belong in the QUP driver, but in
-> the i2c core.
-
-I don't have strong objection here, will remove aliases support.
-
-Regards,
-Ivan 
-> 
-
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 5c75e31..a504313 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -506,10 +506,6 @@ static ssize_t store_scaling_governor(struct cpufreq_policy *policy,
+ 						&new_policy.governor))
+ 		return -EINVAL;
+ 
+-	/*
+-	 * Do not use cpufreq_set_policy here or the user_policy.max
+-	 * will be wrongly overridden
+-	 */
+ 	ret = __cpufreq_set_policy(policy, &new_policy);
+ 
+ 	policy->user_policy.policy = policy->policy;
+-- 
+1.8.2.1
 
