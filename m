@@ -1,110 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752091Ab3IJVfe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 17:35:34 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:52239 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954Ab3IJVfc (ORCPT
+	id S1752164Ab3IJVhb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 17:37:31 -0400
+Received: from a9-92.smtp-out.amazonses.com ([54.240.9.92]:39198 "EHLO
+	a9-92.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751088Ab3IJVha (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 17:35:32 -0400
-Date: Tue, 10 Sep 2013 22:35:22 +0100
-From: Mark Brown <broonie@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-i2c@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lv Zheng <lv.zheng@intel.com>, Aaron Lu <aaron.lu@intel.com>,
-        linux-arm-kernel@lists.infradead.org
-Message-ID: <20130910213522.GG29403@sirena.org.uk>
-References: <1378733679-19500-1-git-send-email-mika.westerberg@linux.intel.com>
- <20130910142631.GL7393@intel.com>
- <20130910161321.GM29403@sirena.org.uk>
- <3397524.g9aUWuArnm@vostro.rjw.lan>
+	Tue, 10 Sep 2013 17:37:30 -0400
+Date: Tue, 10 Sep 2013 21:37:28 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Ingo Molnar <mingo@kernel.org>
+cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        sbw@mit.edu
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+In-Reply-To: <20130909161130.GA27188@gmail.com>
+Message-ID: <0000014109cebf30-d652cc46-6cf8-4bf1-8ca3-8f9a12c1d7e9-000000@email.amazonses.com>
+References: <20130906174117.GU3966@linux.vnet.ibm.com> <20130906185927.GE2706@somewhere> <20130909105347.GK31370@twins.programming.kicks-ass.net> <20130909132343.GN3966@linux.vnet.ibm.com> <20130909133604.GC31370@twins.programming.kicks-ass.net>
+ <000001410333127c-486c74ec-3209-4c5e-a92f-0c11e00fa141-000000@email.amazonses.com> <20130909150854.GD26785@twins.programming.kicks-ass.net> <0000014103534c88-48ee11a3-a581-4e52-b2df-3a1168047d96-000000@email.amazonses.com> <20130909160024.GA25555@gmail.com>
+ <20130909120328.583a586d@gandalf.local.home> <20130909161130.GA27188@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Q9n8numIABrgkMWU"
-Content-Disposition: inline
-In-Reply-To: <3397524.g9aUWuArnm@vostro.rjw.lan>
-X-Cookie: Your present plans will be successful.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH RESEND 1/2] i2c: prepare runtime PM support for I2C
- client devices
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.09.10-54.240.9.92
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 9 Sep 2013, Ingo Molnar wrote:
 
---Q9n8numIABrgkMWU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> I saw those, he posted 'needs testing' patches. He still behaved
+> passive-aggressively, pretending that it was some difficult task to
+> perform, as if we were pulling his teeth.
 
-On Tue, Sep 10, 2013 at 10:04:21PM +0200, Rafael J. Wysocki wrote:
-> On Tuesday, September 10, 2013 05:13:21 PM Mark Brown wrote:
+I need your review of those. I will rediff as soon as rc1 is out to
+send something that can be put into -next. Please tell me until then if
+the approach is ok. I dont think we can do anything in the merge window.
 
-> > OK, that is very much not the model which embedded systems follow, in
-> > embedded systems the driver for the device is fully in control of its
-> > own power.  It gets resources like GPIOs and regulators which allow it
-> > to make fine grained decisions.
+> The thing is, we should not be forced to shout at him at all: Christoph's
+> should be _proactive_ in addressing the shortcomings that were readily
+> pointed out literally years ago during review in a friendly fashion,
+> instead of wasting a lot of people's time trying to argue around it...
 
-> There are platforms where those resources are simply not available for
-> direct manipulation and we need to use ACPI methods for power management.
+I have fixed all the issues that Steven pointed out in the past about
+suspicious __this_cpu operations a long time ago. He seemed to want to
+implement the checks at that point. Not that difficult if one adds new
+variants of this_cpu operations. Which was an issue initially. The
+irqsafe_ this_cpu variants were nixed as the time because it was seen
+to be too complicated.
 
-> Now, since those methods are used in pretty much the same way for all I2C
-> devices, we add a PM domain for that to avoid duplicating the same code in
-> all of the drivers in question (patch [2/2]).  Does that make sense to yo=
-u?
 
-It doesn't seem like a particular problem, but the existing usage does
-need to be preserved for the systems that use it so things like having
-auto as the default and updating the drivers seem like they're needed.
-
-> > If we're starting to get a reasonable number of buses following the same
-> > pattern it seems like we're in a position to start=20
-
-> We need that for exactly 3 buses: platform (already done), I2C and SPI.
-
-> No other bus types are going to use ACPI this way for PM, at least for the
-> time being, simply because PCI, USB and SATA/IDE have their own ways of d=
-oing
-> this (which are bus-specific) and the spec doesn't cover other bus types
-> directly (it defines support for UART, but we don't have a UART bus type).
-
-> Moreover, because PCI and USB use ACPI for PM in their own ways, moving t=
-hat
-> thing up to the driver core would be rather inconvenient.
-
-That only applies to the power domains though, what Mika was saying was
-that the process for enabling runtime PM (just drop a reference) also
-becomes easier with this method regardless of anything else - that makes
-sense to me as something we might want to end up with so do we want to
-just move towards making that a default?
-
---Q9n8numIABrgkMWU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSL5CXAAoJELSic+t+oim90qsP/35q7PedCsE1rF1ZJ7nisDyj
-mafrqD2KpZ9+9/d7XNg+uiO8RNYtn2ULiqJdQy8/fzECwzCG9yRIKDKL0UT9MpFk
-RN60zJ+7Qm2A+5T+Gz1iAfI82sw8A7ugijxUTxlANXRXMu9bGFb0kvvaTnbvBZoj
-oBxsCdv+xivyVXHMjFlDtEWnl9NFACpBojDPxQaZ5/N6WU4YnIZqQXhl68Z9WJVl
-8gw6E7i26l+CIeux11o7t2pMu7r50omTsMMZcysN73US2WylmR1R+41639SC9cvg
-oF+VMbZHNQboQGdraKJK7vYfS0bj20ZHEjwYCeMcGK7jb2Me0KBBoJ3c2uTjtxHM
-PMhp1+X5uFyqxxpwEOqxP1nShyysvaWBjjgNZCvKHJQNxCEq4aIieg3Y7HEzw+RW
-nMqPu9hyRoi1ARUFcAsoUe6wfDSGN7yFRw1TnBDgN/fplvpPHWza7zVXV8gMSxO3
-sgPJccHvpXEiquHXQBxeBaOM2BWoMMsEcOzzKej1uSfoxw+9Y0wEFbp1Qibz0hoB
-VMr+AG3XH711PL92joOMf9G79T2HczzhwDqkMkMN8AxAvfkbAAQDNhDwHoPprmSp
-Pfz/9hhl7qgP2H5DTjP+ZhDaTgUZXMIoQwbc3et6HqIMEUiB6MdDWVTe6r9uCFT2
-WbZk7UOEBR8skoBNF6nq
-=x1Vr
------END PGP SIGNATURE-----
-
---Q9n8numIABrgkMWU--
