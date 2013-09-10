@@ -1,92 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab3IJVtj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 17:49:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36345 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752468Ab3IJVpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 17:45:10 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        kexec@lists.infradead.org
-Cc: akpm@linux-foundation.org, zohar@linux.vnet.ibm.com,
-        d.kasatkin@samsung.com, ebiederm@xmission.com, hpa@zytor.com,
-        matthew.garrett@nebula.com, vgoyal@redhat.com
-Subject: [PATCH 14/16] kexec: Export sysfs attributes for secureboot and secure modules to user space
-Date: Tue, 10 Sep 2013 17:44:29 -0400
-Message-Id: <1378849471-10521-15-git-send-email-vgoyal@redhat.com>
-In-Reply-To: <1378849471-10521-1-git-send-email-vgoyal@redhat.com>
-References: <1378849471-10521-1-git-send-email-vgoyal@redhat.com>
+	id S1752198Ab3IJVvi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 17:51:38 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:57779 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400Ab3IJVvh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 17:51:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFzFWbCGqaGe1BbuBY_j+0xK-UfYEJddjSWriufs0Q5PmQ@mail.gmail.com>
+References: <CA+5PVA4k9tTPs9vtTbMuG7pzw4kb3KFK-CLaqDDG4dm=0twyCQ@mail.gmail.com>
+	<CA+55aFzg_r2c09TkGwmsMV3HbNAkSFJLGAFWweLNzofqs4o4Ug@mail.gmail.com>
+	<CA+5PVA6EDV3zuDEyCvcGNvEAPtgY_Oy9xVbaM03ggRBPtq5Mmg@mail.gmail.com>
+	<CA+55aFympAk-hnekaew8po5wLJdiY+DC_b4h=pa-y5i9=s303Q@mail.gmail.com>
+	<CA+55aFygRtwwknO4Jb+nna046VhdNCXh2S0ybRBPf=b1GH9FPg@mail.gmail.com>
+	<CAMfhy93EoDohCrV+ykj6b+R9QSCTdiPtvSpJpe3SH=ot_1LWMg@mail.gmail.com>
+	<CA+55aFxvAn=jTbQXxery54uaaq=QsLzJgPdwnTd8B77abc92jQ@mail.gmail.com>
+	<CAMfhy92u1GFvTrO+8SNp8hoEBEHcd7Z-3mw+79rv8+2yYqa+ow@mail.gmail.com>
+	<CAMfhy90vEu2_hfoOnzB+ZOit4HNmKex2WObmztcY7R4+PBwd7w@mail.gmail.com>
+	<CA+55aFzFWbCGqaGe1BbuBY_j+0xK-UfYEJddjSWriufs0Q5PmQ@mail.gmail.com>
+Date: Tue, 10 Sep 2013 17:51:35 -0400
+X-Google-Sender-Auth: SSwzFayoZnsQeIt88XDZKcR7lvI
+Message-ID: <CA+5PVA4TVMr-=VnC+p9rhBk5nLDJmUvbxGESTfFTYpDDyTHsQA@mail.gmail.com>
+Subject: Re: kernel BUG at fs/dcache.c:648! with v3.11-7890-ge5c832d
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mace Moneta <moneta.mace@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Waiman Long <Waiman.Long@hp.com>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-User space kexec-tools need to know whether to verify signature of kernel
-image being loaded. This patch exports two knobs to user space. One is
-for knowing if  secureboot is enabled, this knob will be set to 1 if secure
-boot is enabled. Other knob is secure_module_enabled. This knob will be set
-to 1 if secure modules is one.
+On Tue, Sep 10, 2013 at 4:25 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Sep 10, 2013 at 12:57 PM, Mace Moneta <moneta.mace@gmail.com> wrote:
+>> The (first) patch looks good; no recurrence. It has only taken 3-5 minutes
+>> before, and I've been up for about half an hour now.
+>
+> Ok, good. It's pushed out.
 
-kexec-tools will verify signature of kernel image if either secureboot is
-enabled or secure modules is enabled. The only difference between two is
-that kexec-tools will set secureboot on in bootparams being passed to
-second kernel if secureboot is on in first kernel.
+Thanks to the both of you for the quick resolution.
 
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
----
- kernel/ksysfs.c | 25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
-
-diff --git a/kernel/ksysfs.c b/kernel/ksysfs.c
-index 6ada93c..7262245 100644
---- a/kernel/ksysfs.c
-+++ b/kernel/ksysfs.c
-@@ -18,6 +18,8 @@
- #include <linux/stat.h>
- #include <linux/sched.h>
- #include <linux/capability.h>
-+#include <linux/efi.h>
-+#include <linux/module.h>
- 
- #define KERNEL_ATTR_RO(_name) \
- static struct kobj_attribute _name##_attr = __ATTR_RO(_name)
-@@ -101,6 +103,25 @@ static ssize_t kexec_crash_loaded_show(struct kobject *kobj,
- }
- KERNEL_ATTR_RO(kexec_crash_loaded);
- 
-+static ssize_t secureboot_enabled_show(struct kobject *kobj,
-+				       struct kobj_attribute *attr, char *buf)
-+{
-+	/* TODO: Change it once secureboot patches are in */
-+	return sprintf(buf, "%d\n", 1);
-+}
-+KERNEL_ATTR_RO(secureboot_enabled);
-+
-+static ssize_t secure_modules_enabled_show(struct kobject *kobj,
-+				       struct kobj_attribute *attr, char *buf)
-+{
-+	/*
-+	 * TODO: Change it once secure_modules() or secure_level() patches
-+	 * are in
-+	 */
-+	return sprintf(buf, "%d\n", 1);
-+}
-+KERNEL_ATTR_RO(secure_modules_enabled);
-+
- static ssize_t kexec_crash_size_show(struct kobject *kobj,
- 				       struct kobj_attribute *attr, char *buf)
- {
-@@ -196,6 +217,10 @@ static struct attribute * kernel_attrs[] = {
- 	&kexec_crash_size_attr.attr,
- 	&vmcoreinfo_attr.attr,
- #endif
-+#ifdef CONFIG_EFI
-+	&secureboot_enabled_attr.attr,
-+#endif
-+	&secure_modules_enabled_attr.attr,
- 	&rcu_expedited_attr.attr,
- 	NULL
- };
--- 
-1.8.3.1
-
+josh
