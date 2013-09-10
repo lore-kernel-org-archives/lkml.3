@@ -1,396 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752210Ab3IJVZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 17:25:26 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57183 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844Ab3IJVZX (ORCPT
+	id S1752279Ab3IJV0J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 17:26:09 -0400
+Received: from a9-70.smtp-out.amazonses.com ([54.240.9.70]:38997 "EHLO
+	a9-70.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751104Ab3IJV0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 17:25:23 -0400
-Date: Tue, 10 Sep 2013 23:25:09 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Peter Anvin <hpa@zytor.com>, Mike Galbraith <bitbucket@online.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
+	Tue, 10 Sep 2013 17:26:08 -0400
+X-Greylist: delayed 753 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Sep 2013 17:26:08 EDT
+Date: Tue, 10 Sep 2013 21:13:34 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH 0/7] preempt_count rework -v2
-Message-ID: <20130910212509.GA18147@laptop.programming.kicks-ass.net>
-References: <20130910130811.507933095@infradead.org>
- <20130910135152.GD7537@gmail.com>
- <20130910135636.GA8268@gmail.com>
- <CA+55aFwmEQeF+PtM7cuaQ8OkuTS=R4JJ61Wwfv8u-Svo-V3KwQ@mail.gmail.com>
- <20130910164519.GL31370@twins.programming.kicks-ass.net>
- <CA+55aFz7WtcdkwKEGoqCzmC9HsY0LPK-oVK_oATYhRnbGq=2GA@mail.gmail.com>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux-MM <linux-mm@kvack.org>
+Subject: Re: RFC vmstat: On demand vmstat threads
+In-Reply-To: <CAOtvUMdfqyg80_9J8AnOaAdahuRYGC-bpemdo_oucDBPguXbVA@mail.gmail.com>
+Message-ID: <0000014109b8e5db-4b0f577e-c3b4-47fe-b7f2-0e5febbcc948-000000@email.amazonses.com>
+References: <00000140e9dfd6bd-40db3d4f-c1be-434f-8132-7820f81bb586-000000@email.amazonses.com> <CAOtvUMdfqyg80_9J8AnOaAdahuRYGC-bpemdo_oucDBPguXbVA@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFz7WtcdkwKEGoqCzmC9HsY0LPK-oVK_oATYhRnbGq=2GA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.09.10-54.240.9.70
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 10:06:44AM -0700, Linus Torvalds wrote:
-> > Which is indeed perfect. So should I go 'fix' the other _and_test()
-> > functions we have to do this same thing?
-> 
-> It would be a good thing to test. There might be downsides with "asm
-> goto" (maybe it limits gcc some way), but it does in general save us
-> not only two instructions but also a register.
+On Tue, 10 Sep 2013, Gilad Ben-Yossef wrote:
 
-Here's one that builds and boots on kvm until wanting to mount root.
+> I wasn't happy with the results of my own attempt to accomplish the same and I
+> like this much better. So, for what it's worth -
 
-I'm not entirely sure on the "ir" vs "er" thing and atomic64_t and
-local_t are inconsistent wrt that so I'm too.
+Thanks. In the meantime I found some issues with my patchset and revised
+it further. Could you have another look?
 
-I'll try running on actual hardware tomorrow sometime.
 
----
- arch/x86/include/asm/atomic.h      |   52 +++++++++++++++++++++++++++++++++++
- arch/x86/include/asm/atomic64_64.h |   54 ++++++++++++++++++++++++++++++++++++-
- arch/x86/include/asm/local.h       |   52 +++++++++++++++++++++++++++++++++++
- 3 files changed, 157 insertions(+), 1 deletion(-)
+Subject: vmstat: On demand vmstat workers V2
 
---- a/arch/x86/include/asm/atomic.h
-+++ b/arch/x86/include/asm/atomic.h
-@@ -74,6 +74,18 @@ static inline void atomic_sub(int i, ato
-  * true if the result is zero, or false for all
-  * other cases.
-  */
-+#ifdef CC_HAVE_ASM_GOTO
-+static inline int atomic_sub_and_test(int i, atomic_t *v)
-+{
-+	asm volatile goto(LOCK_PREFIX "subl %1,%0;"
-+			  "je %l[became_zero]"
-+			  : : "m" (v->counter), "ir" (i)
-+			  : "memory" : became_zero);
-+	return 0;
-+became_zero:
-+	return 1;
-+}
-+#else
- static inline int atomic_sub_and_test(int i, atomic_t *v)
+vmstat threads are used for folding counter differentials into the
+zone, per node and global counters at certain time intervals.
+
+They currently run at defined intervals on all processors which will
+cause some holdoff for processors that need minimal intrusion by the
+OS.
+
+This patch creates a vmstat shepherd task that monitors the
+per cpu differentials on all processors. If there are differentials
+on a processor then a vmstat worker thread local to the processors
+with the differentials is created. That worker will then start
+folding the diffs in regular intervals. Should the worker
+find that there is no work to be done then it will
+terminate itself and make the shepherd task monitor the differentials
+again.
+
+With this patch it is possible then to have periods longer than
+2 seconds without any OS event on a "cpu" (hardware thread).
+
+The tick_do_timer_cpu is chosen to run the shepherd workers.
+So there must be at least one cpu that will keep running vmstat
+updates.
+
+Note: This patch is based on the vmstat patches in Andrew's tree
+to be merged for the 3.12 kernel.
+
+V1->V2:
+- Optimize the need_update check by using memchr_inv.
+- Clean up.
+- Fixup the wrong need_update check.
+- Drop the check for pcp.count. Too many false positives.
+
+Reviewed-by: Gilad Ben-Yossef <gilad@benyossef.com>
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+
+Index: linux/mm/vmstat.c
+===================================================================
+--- linux.orig/mm/vmstat.c	2013-09-09 13:58:25.526562233 -0500
++++ linux/mm/vmstat.c	2013-09-09 16:09:14.266402841 -0500
+@@ -14,6 +14,7 @@
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/cpu.h>
++#include <linux/cpumask.h>
+ #include <linux/vmstat.h>
+ #include <linux/sched.h>
+ #include <linux/math64.h>
+@@ -414,13 +415,18 @@ void dec_zone_page_state(struct page *pa
+ EXPORT_SYMBOL(dec_zone_page_state);
+ #endif
+
+-static inline void fold_diff(int *diff)
++
++static inline int fold_diff(int *diff)
  {
- 	unsigned char c;
-@@ -83,6 +95,7 @@ static inline int atomic_sub_and_test(in
- 		     : "ir" (i) : "memory");
- 	return c;
+ 	int i;
++	int changes = 0;
+
+ 	for (i = 0; i < NR_VM_ZONE_STAT_ITEMS; i++)
+-		if (diff[i])
++		if (diff[i]) {
+ 			atomic_long_add(diff[i], &vm_stat[i]);
++			changes++;
++	}
++	return changes;
  }
-+#endif
- 
- /**
-  * atomic_inc - increment atomic variable
-@@ -116,6 +129,18 @@ static inline void atomic_dec(atomic_t *
-  * returns true if the result is 0, or false for all other
-  * cases.
-  */
-+#ifdef CC_HAVE_ASM_GOTO
-+static inline int atomic_dec_and_test(atomic_t *v)
-+{
-+	asm volatile goto(LOCK_PREFIX "decl %0;"
-+			  "je %l[became_zero]"
-+			  : : "m" (v->counter)
-+			  : "memory" : became_zero);
-+	return 0;
-+became_zero:
-+	return 1;
-+}
-+#else
- static inline int atomic_dec_and_test(atomic_t *v)
- {
- 	unsigned char c;
-@@ -125,6 +150,7 @@ static inline int atomic_dec_and_test(at
- 		     : : "memory");
- 	return c != 0;
- }
-+#endif
- 
- /**
-  * atomic_inc_and_test - increment and test
-@@ -134,6 +160,18 @@ static inline int atomic_dec_and_test(at
-  * and returns true if the result is zero, or false for all
-  * other cases.
-  */
-+#ifdef CC_HAVE_ASM_GOTO
-+static inline int atomic_inc_and_test(atomic_t *v)
-+{
-+	asm volatile goto(LOCK_PREFIX "incl %0;"
-+			  "je %l[became_zero]"
-+			  : : "m" (v->counter)
-+			  : "memory" : became_zero);
-+	return 0;
-+became_zero:
-+	return 1;
-+}
-+#else
- static inline int atomic_inc_and_test(atomic_t *v)
- {
- 	unsigned char c;
-@@ -143,6 +181,7 @@ static inline int atomic_inc_and_test(at
- 		     : : "memory");
- 	return c != 0;
- }
-+#endif
- 
- /**
-  * atomic_add_negative - add and test if negative
-@@ -153,6 +192,18 @@ static inline int atomic_inc_and_test(at
-  * if the result is negative, or false when
-  * result is greater than or equal to zero.
-  */
-+#ifdef CC_HAVE_ASM_GOTO
-+static inline int atomic_add_negative(int i, atomic_t *v)
-+{
-+	asm volatile goto(LOCK_PREFIX "addl %1,%0;"
-+			  "js %l[became_neg]"
-+			  : : "m" (v->counter), "ir" (i)
-+			  : "memory" : became_neg);
-+	return 0;
-+became_neg:
-+	return 1;
-+}
-+#else
- static inline int atomic_add_negative(int i, atomic_t *v)
- {
- 	unsigned char c;
-@@ -162,6 +213,7 @@ static inline int atomic_add_negative(in
- 		     : "ir" (i) : "memory");
- 	return c;
- }
-+#endif
- 
- /**
-  * atomic_add_return - add integer and return
---- a/arch/x86/include/asm/atomic64_64.h
-+++ b/arch/x86/include/asm/atomic64_64.h
-@@ -70,6 +70,18 @@ static inline void atomic64_sub(long i,
-  * true if the result is zero, or false for all
-  * other cases.
-  */
-+#ifdef CC_HAVE_ASM_GOTO
-+static inline int atomic64_sub_and_test(long i, atomic64_t *v)
-+{
-+	asm volatile goto(LOCK_PREFIX "subq %1,%0;"
-+			  "je %l[became_zero]"
-+			  : : "m" (v->counter), "er" (i)
-+			  : "memory" : became_zero);
-+	return 0;
-+became_zero:
-+	return 1;
-+}
-+#else
- static inline int atomic64_sub_and_test(long i, atomic64_t *v)
- {
- 	unsigned char c;
-@@ -79,6 +91,7 @@ static inline int atomic64_sub_and_test(
- 		     : "er" (i), "m" (v->counter) : "memory");
- 	return c;
- }
-+#endif
- 
- /**
-  * atomic64_inc - increment atomic64 variable
-@@ -114,6 +127,18 @@ static inline void atomic64_dec(atomic64
-  * returns true if the result is 0, or false for all other
-  * cases.
-  */
-+#ifdef CC_HAVE_ASM_GOTO
-+static inline int atomic64_dec_and_test(atomic64_t *v)
-+{
-+	asm volatile goto(LOCK_PREFIX "decq %0;"
-+			  "je %l[became_zero]"
-+			  : : "m" (v->counter)
-+			  : "memory" : became_zero);
-+	return 0;
-+became_zero:
-+	return 1;
-+}
-+#else
- static inline int atomic64_dec_and_test(atomic64_t *v)
- {
- 	unsigned char c;
-@@ -123,6 +148,7 @@ static inline int atomic64_dec_and_test(
- 		     : "m" (v->counter) : "memory");
- 	return c != 0;
- }
-+#endif
- 
- /**
-  * atomic64_inc_and_test - increment and test
-@@ -132,6 +158,18 @@ static inline int atomic64_dec_and_test(
-  * and returns true if the result is zero, or false for all
-  * other cases.
-  */
-+#ifdef CC_HAVE_ASM_GOTO
-+static inline int atomic64_inc_and_test(atomic64_t *v)
-+{
-+	asm volatile goto(LOCK_PREFIX "incq %0;"
-+			  "je %l[became_zero]"
-+			  : : "m" (v->counter)
-+			  : "memory" : became_zero);
-+	return 0;
-+became_zero:
-+	return 1;
-+}
-+#else
- static inline int atomic64_inc_and_test(atomic64_t *v)
- {
- 	unsigned char c;
-@@ -141,6 +179,7 @@ static inline int atomic64_inc_and_test(
- 		     : "m" (v->counter) : "memory");
- 	return c != 0;
- }
-+#endif
- 
- /**
-  * atomic64_add_negative - add and test if negative
-@@ -151,6 +190,18 @@ static inline int atomic64_inc_and_test(
-  * if the result is negative, or false when
-  * result is greater than or equal to zero.
-  */
-+#ifdef CC_HAVE_ASM_GOTO
-+static inline int atomic64_add_negative(long i, atomic64_t *v)
-+{
-+	asm volatile goto(LOCK_PREFIX "addq %1,%0;"
-+			  "js %l[became_neg]"
-+			  : : "m" (v->counter), "er" (i)
-+			  : "memory" : became_neg);
-+	return 0;
-+became_neg:
-+	return 1;
-+}
-+#else
- static inline int atomic64_add_negative(long i, atomic64_t *v)
- {
- 	unsigned char c;
-@@ -160,6 +211,7 @@ static inline int atomic64_add_negative(
- 		     : "er" (i), "m" (v->counter) : "memory");
- 	return c;
- }
-+#endif
- 
- /**
-  * atomic64_add_return - add and return
-@@ -219,7 +271,7 @@ static inline int atomic64_add_unless(at
- 
+
  /*
-  * atomic64_dec_if_positive - decrement by 1 if old value positive
-- * @v: pointer of type atomic_t
-+ * @v: pointer of type atomic64_t
-  *
-  * The function returns the old value of *v minus 1, even if
-  * the atomic variable, v, was not decremented.
---- a/arch/x86/include/asm/local.h
-+++ b/arch/x86/include/asm/local.h
-@@ -50,6 +50,18 @@ static inline void local_sub(long i, loc
-  * true if the result is zero, or false for all
-  * other cases.
+@@ -437,11 +443,12 @@ static inline void fold_diff(int *diff)
+  * with the global counters. These could cause remote node cache line
+  * bouncing and will have to be only done when necessary.
   */
-+#ifdef CC_HAVE_ASM_GOTO
-+static inline int local_sub_and_test(long i, local_t *l)
-+{
-+	asm volatile goto(_ASM_SUB " %1,%0;"
-+			  "je %l[became_zero]"
-+			  : : "m" (l->a.counter), "ir" (i)
-+			  : "memory" : became_zero);
-+	return 0;
-+became_zero:
-+	return 1;
-+}
-+#else
- static inline int local_sub_and_test(long i, local_t *l)
+-static void refresh_cpu_vm_stats(void)
++static int refresh_cpu_vm_stats(void)
  {
- 	unsigned char c;
-@@ -59,6 +71,7 @@ static inline int local_sub_and_test(lon
- 		     : "ir" (i) : "memory");
- 	return c;
+ 	struct zone *zone;
+ 	int i;
+ 	int global_diff[NR_VM_ZONE_STAT_ITEMS] = { 0, };
++	int changes = 0;
+
+ 	for_each_populated_zone(zone) {
+ 		struct per_cpu_pageset __percpu *p = zone->pageset;
+@@ -485,11 +492,14 @@ static void refresh_cpu_vm_stats(void)
+ 		if (__this_cpu_dec_return(p->expire))
+ 			continue;
+
+-		if (__this_cpu_read(p->pcp.count))
++		if (__this_cpu_read(p->pcp.count)) {
+ 			drain_zone_pages(zone, __this_cpu_ptr(&p->pcp));
++			changes++;
++		}
+ #endif
+ 	}
+-	fold_diff(global_diff);
++	changes += fold_diff(global_diff);
++	return changes;
  }
-+#endif
- 
- /**
-  * local_dec_and_test - decrement and test
-@@ -68,6 +81,18 @@ static inline int local_sub_and_test(lon
-  * returns true if the result is 0, or false for all other
-  * cases.
-  */
-+#ifdef CC_HAVE_ASM_GOTO
-+static inline int local_dec_and_test(local_t *l)
-+{
-+	asm volatile goto(_ASM_DEC " %0;"
-+			  "je %l[became_zero]"
-+			  : : "m" (l->a.counter)
-+			  : "memory" : became_zero);
-+	return 0;
-+became_zero:
-+	return 1;
-+}
-+#else
- static inline int local_dec_and_test(local_t *l)
+
+ /*
+@@ -1203,12 +1213,15 @@ static const struct file_operations proc
+ #ifdef CONFIG_SMP
+ static DEFINE_PER_CPU(struct delayed_work, vmstat_work);
+ int sysctl_stat_interval __read_mostly = HZ;
++static struct cpumask *monitored_cpus;
+
+ static void vmstat_update(struct work_struct *w)
  {
- 	unsigned char c;
-@@ -77,6 +102,7 @@ static inline int local_dec_and_test(loc
- 		     : : "memory");
- 	return c != 0;
+-	refresh_cpu_vm_stats();
+-	schedule_delayed_work(this_cpu_ptr(&vmstat_work),
+-		round_jiffies_relative(sysctl_stat_interval));
++	if (refresh_cpu_vm_stats())
++		schedule_delayed_work(this_cpu_ptr(&vmstat_work),
++			round_jiffies_relative(sysctl_stat_interval));
++	else
++		cpumask_set_cpu(smp_processor_id(), monitored_cpus);
  }
-+#endif
- 
- /**
-  * local_inc_and_test - increment and test
-@@ -86,6 +112,18 @@ static inline int local_dec_and_test(loc
-  * and returns true if the result is zero, or false for all
-  * other cases.
-  */
-+#ifdef CC_HAVE_ASM_GOTO
-+static inline int local_inc_and_test(local_t *l)
-+{
-+	asm volatile goto(_ASM_INC " %0;"
-+			  "je %l[became_zero]"
-+			  : : "m" (l->a.counter)
-+			  : "memory" : became_zero);
-+	return 0;
-+became_zero:
-+	return 1;
+
+ static void start_cpu_timer(int cpu)
+@@ -1216,7 +1229,63 @@ static void start_cpu_timer(int cpu)
+ 	struct delayed_work *work = &per_cpu(vmstat_work, cpu);
+
+ 	INIT_DEFERRABLE_WORK(work, vmstat_update);
+-	schedule_delayed_work_on(cpu, work, __round_jiffies_relative(HZ, cpu));
++	schedule_delayed_work_on(cpu, work,
++		__round_jiffies_relative(sysctl_stat_interval, cpu));
 +}
-+#else
- static inline int local_inc_and_test(local_t *l)
- {
- 	unsigned char c;
-@@ -95,6 +133,7 @@ static inline int local_inc_and_test(loc
- 		     : : "memory");
- 	return c != 0;
- }
-+#endif
- 
- /**
-  * local_add_negative - add and test if negative
-@@ -105,6 +144,18 @@ static inline int local_inc_and_test(loc
-  * if the result is negative, or false when
-  * result is greater than or equal to zero.
-  */
-+#ifdef CC_HAVE_ASM_GOTO
-+static inline int local_add_negative(long i, local_t *l)
++
++/*
++ * Check if the diffs for a certain cpu indicate that
++ * an update is needed.
++ */
++static int need_update(int cpu)
 +{
-+	asm volatile goto(_ASM_ADD " %1,%0;"
-+			  "js %l[became_neg]"
-+			  : : "m" (l->a.counter), "ir" (i)
-+			  : "memory" : became_neg);
++	struct zone *zone;
++
++	for_each_populated_zone(zone) {
++		struct per_cpu_pageset *p = per_cpu_ptr(zone->pageset, cpu);
++
++		/*
++		 * The fast way of checking if there are any vmstat diffs.
++		 * This works because the diffs are byte sized items.
++		 */
++		if (memchr_inv(p->vm_stat_diff, 0, NR_VM_ZONE_STAT_ITEMS))
++			return 1;
++	}
 +	return 0;
-+became_neg:
-+	return 1;
 +}
-+#else
- static inline int local_add_negative(long i, local_t *l)
- {
- 	unsigned char c;
-@@ -114,6 +165,7 @@ static inline int local_add_negative(lon
- 		     : "ir" (i) : "memory");
- 	return c;
++
++static struct delayed_work shepherd_work;
++extern int tick_do_timer_cpu;
++
++static void vmstat_shepherd(struct work_struct *w)
++{
++	int cpu;
++
++	refresh_cpu_vm_stats();
++	for_each_cpu(cpu, monitored_cpus)
++		if (need_update(cpu)) {
++			cpumask_clear_cpu(cpu, monitored_cpus);
++			start_cpu_timer(cpu);
++		}
++
++	schedule_delayed_work_on(tick_do_timer_cpu,
++		&shepherd_work,
++		__round_jiffies_relative(sysctl_stat_interval,
++			tick_do_timer_cpu));
++}
++
++static void start_shepherd_timer(void)
++{
++	INIT_DEFERRABLE_WORK(&shepherd_work, vmstat_shepherd);
++	monitored_cpus = kmalloc(BITS_TO_LONGS(nr_cpu_ids) * sizeof(long),
++			__GFP_NOFAIL);
++	cpumask_copy(monitored_cpus, cpu_online_mask);
++	cpumask_clear_cpu(tick_do_timer_cpu, monitored_cpus);
++	schedule_delayed_work_on(tick_do_timer_cpu,
++		&shepherd_work,
++		__round_jiffies_relative(sysctl_stat_interval,
++			tick_do_timer_cpu));
++
  }
-+#endif
- 
- /**
-  * local_add_return - add and return
+
+ /*
+@@ -1233,17 +1302,19 @@ static int vmstat_cpuup_callback(struct
+ 	case CPU_ONLINE:
+ 	case CPU_ONLINE_FROZEN:
+ 		refresh_zone_stat_thresholds();
+-		start_cpu_timer(cpu);
+ 		node_set_state(cpu_to_node(cpu), N_CPU);
++		cpumask_set_cpu(cpu, monitored_cpus);
+ 		break;
+ 	case CPU_DOWN_PREPARE:
+ 	case CPU_DOWN_PREPARE_FROZEN:
+-		cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
++		if (!cpumask_test_cpu(cpu, monitored_cpus))
++			cancel_delayed_work_sync(&per_cpu(vmstat_work, cpu));
++		cpumask_clear_cpu(cpu, monitored_cpus);
+ 		per_cpu(vmstat_work, cpu).work.func = NULL;
+ 		break;
+ 	case CPU_DOWN_FAILED:
+ 	case CPU_DOWN_FAILED_FROZEN:
+-		start_cpu_timer(cpu);
++		cpumask_set_cpu(cpu, monitored_cpus);
+ 		break;
+ 	case CPU_DEAD:
+ 	case CPU_DEAD_FROZEN:
+@@ -1262,12 +1333,8 @@ static struct notifier_block vmstat_noti
+ static int __init setup_vmstat(void)
+ {
+ #ifdef CONFIG_SMP
+-	int cpu;
+-
+ 	register_cpu_notifier(&vmstat_notifier);
+-
+-	for_each_online_cpu(cpu)
+-		start_cpu_timer(cpu);
++	start_shepherd_timer();
+ #endif
+ #ifdef CONFIG_PROC_FS
+ 	proc_create("buddyinfo", S_IRUGO, NULL, &fragmentation_file_operations);
