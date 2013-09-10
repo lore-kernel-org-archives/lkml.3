@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751284Ab3IJSnb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 14:43:31 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:58189 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954Ab3IJSna (ORCPT
+	id S1751183Ab3IJSsK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 14:48:10 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:38063 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750938Ab3IJSsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 14:43:30 -0400
-Date: Tue, 10 Sep 2013 19:43:24 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Josh Boyer <jwboyer@gmail.com>, Waiman Long <Waiman.Long@hp.com>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        moneta.mace@gmail.com
-Subject: Re: kernel BUG at fs/dcache.c:648! with v3.11-7890-ge5c832d
-Message-ID: <20130910184324.GY13318@ZenIV.linux.org.uk>
-References: <CA+5PVA4k9tTPs9vtTbMuG7pzw4kb3KFK-CLaqDDG4dm=0twyCQ@mail.gmail.com>
- <CA+55aFzg_r2c09TkGwmsMV3HbNAkSFJLGAFWweLNzofqs4o4Ug@mail.gmail.com>
- <CA+5PVA6EDV3zuDEyCvcGNvEAPtgY_Oy9xVbaM03ggRBPtq5Mmg@mail.gmail.com>
- <CA+55aFympAk-hnekaew8po5wLJdiY+DC_b4h=pa-y5i9=s303Q@mail.gmail.com>
- <CA+55aFygRtwwknO4Jb+nna046VhdNCXh2S0ybRBPf=b1GH9FPg@mail.gmail.com>
+	Tue, 10 Sep 2013 14:48:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFygRtwwknO4Jb+nna046VhdNCXh2S0ybRBPf=b1GH9FPg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1378837571.17615.0.camel@x230.lan>
+References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
+	<19562.1378747124@turing-police.cc.vt.edu>
+	<alpine.DEB.2.02.1309091119330.2479@nftneq.ynat.uz>
+	<1378767723.17982.27.camel@x230.lan>
+	<alpine.DEB.2.02.1309091614010.2479@nftneq.ynat.uz>
+	<1378774394.17982.36.camel@x230.lan>
+	<alpine.DEB.2.02.1309091938420.1820@nftneq.ynat.uz>
+	<1378781715.17982.42.camel@x230.lan>
+	<alpine.DEB.2.02.1309092002060.1820@nftneq.ynat.uz>
+	<1378785208.17982.54.camel@x230.lan>
+	<20130910172318.GB21530@khazad-dum.debian.net>
+	<1378837571.17615.0.camel@x230.lan>
+Date: Tue, 10 Sep 2013 11:48:06 -0700
+X-Google-Sender-Auth: HQybcWlDl1K9yi_EYFk_X-5y1S0
+Message-ID: <CAGXu5jKKG3tpNWJkLkQbGThku6Lpg8ZPuCaXCZ4F76gk14W-Ow@mail.gmail.com>
+Subject: Re: [PATCH 00/12] One more attempt at useful kernel lockdown
+From: Kees Cook <keescook@chromium.org>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>, David Lang <david@lang.hm>,
+        "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 11:25:44AM -0700, Linus Torvalds wrote:
->                 nd->flags &= ~LOOKUP_RCU;
->                 if (!(nd->flags & LOOKUP_ROOT))
->                         nd->root.mnt = NULL;
->                 unlock_rcu_walk();
-> 
-> and my unlazy_walk() essentially terminated the walk _without_
-> clearing that nd->root.mnt thing (it did clear the LOOKUP_RCU bit and
-> unlock_rcy_walk(). So then later, we'd end up doing an extra
-> path_put(). Explaining a zero d_lockref.count.
-> 
-> The whole damn root.mnt behavior with !LOOKUP_ROOT is a mystery and
-> needs more comments. But the attached trivial patch should do the
-> missing portion of terminate_walk().
->
-> Al, can you walk us through the rules for what "root.mnt == NULL"
-> really means? It's basically used as a flag for whether we've gotten
-> the root pointer or not. But it's pretty damn esoteric.
+On Tue, Sep 10, 2013 at 11:26 AM, Matthew Garrett
+<matthew.garrett@nebula.com> wrote:
+> On Tue, 2013-09-10 at 14:23 -0300, Henrique de Moraes Holschuh wrote:
+>> On Tue, 10 Sep 2013, Matthew Garrett wrote:
+>> > That's why modern systems require signed firmware updates.
+>>
+>> Linux doesn't.  Is someone working on adding signature support to the
+>> runtime firmware loader?
 
-LOOKUP_ROOT: the caller has set nd->root and we shouldn't touch that
-at all.
+I feel like there was maybe confusion here between "boot loader"
+firmware (PC-BIOS, UEFI, etc), and device (maybe "component" is a
+better term to distinguish this?) firmware (network cards, hard
+drives, etc). Boot loader firmware has been moving rapidly toward
+verified updates. This is true in many many shipping systems. It is
+much less true for component firmware.
 
-!LOOKUP_ROOT: we set nd->root the first time we need / (in the very
-beginning if it's an absolute pathname, on the first absolute symlink
-otherwise).  In non-RCU mode we hold a reference to it; in RCU mode
-we do not.  As the result, leaving RCU mode should either grab
-a reference to the damn thing (if we intend to go on) or zero it out.
+> It'd be simple to do so, but so far the model appears to be that devices
+> that expect signed firmware enforce that themselves.
+
+Yeah, the unfortunately reality is that for full sanity, it is
+components themselves that need to be doing this signature validation.
+That said, adding signature (or similar "origin" verification) to the
+kernel is a good first step to move the trust from uid-0 up to ring-0.
+I've had this on my TODO list for a while now. It remains a potential
+hole, but since a solution doesn't exist today, it's outside of what
+Matthew's patch series does. I would, however, expect that in the
+future when component firmware loading includes origin verification,
+it would become required when running with the "lock down the world"
+setting.
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
