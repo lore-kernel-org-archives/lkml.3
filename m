@@ -1,84 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751398Ab3IJJzV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 05:55:21 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:10369 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011Ab3IJJzT (ORCPT
+	id S1751374Ab3IJJ6j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 05:58:39 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:60306 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750938Ab3IJJ6h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 05:55:19 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 10 Sep 2013 02:52:17 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <broonie@kernel.org>
-CC: <lgirdwood@gmail.com>, <linux-kernel@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 1/2] regulator: core: provide fixed voltage in desc for single voltage rail
-Date: Tue, 10 Sep 2013 15:45:05 +0530
-Message-ID: <1378808106-29865-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Tue, 10 Sep 2013 05:58:37 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r8A9wIi5013052, This message is accepted by code: ctloc85258
+Message-ID: <522EED3A.9080806@realsil.com.cn>
+Date: Tue, 10 Sep 2013 17:58:18 +0800
+From: wwang <wei_wang@realsil.com.cn>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Lee Jones <lee.jones@linaro.org>
+CC: <sameo@linux.intel.com>, <devel@linuxdriverproject.org>,
+        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <rogerable@realtek.com>, <micky_ching@realsil.com.cn>
+Subject: Re: [PATCH v3] mfd: rtsx: Modify rts5249_optimize_phy
+References: <1378804397-28640-1-git-send-email-wei_wang@realsil.com.cn> <20130910092857.GB1456@lee--X1>
+In-Reply-To: <20130910092857.GB1456@lee--X1>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [172.29.41.8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If given rail has the single voltage (n_voltages = 1) then provide the
-rail voltage through regulator descriptor so that core can use this
-value for finding voltage.
+于 2013年09月10日 17:28, Lee Jones 写道:
+> I would like some more information in the commit log though. You're
+> making a lot of configuration changes here and due to the
+> incomprehensible 'magic numbers' used previously, it's impossible to
+> know what you're changing by just reading the code.
+>
+> Why won't the rts**** be initialise properly and what exactly are you
+> changing to rectify the situation?
 
-This will avoid the implementation of the callback for get_voltage() or
-list_voltage() callback on regulator driver.
+Hi Lee:
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/regulator/core.c         |    5 ++++-
- include/linux/regulator/driver.h |    2 ++
- 2 files changed, 6 insertions(+), 1 deletions(-)
+It's a little difficult to describe it very clearly. To put it simply, 
+the default setting of rts5249 is not good, and it will cause the signal 
+quality very bad. So we have to change those values to achieve a better 
+signal quality.
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index a01b8b3..abc899e 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -2489,6 +2489,8 @@ static int _regulator_get_voltage(struct regulator_dev *rdev)
- 		ret = rdev->desc->ops->get_voltage(rdev);
- 	} else if (rdev->desc->ops->list_voltage) {
- 		ret = rdev->desc->ops->list_voltage(rdev, 0);
-+	} else if (rdev->desc->fixed_uV && (rdev->desc->n_voltages == 1)) {
-+		ret = rdev->desc->fixed_uV;
- 	} else {
- 		return -EINVAL;
- 	}
-@@ -3170,7 +3172,8 @@ static int add_regulator_attributes(struct regulator_dev *rdev)
- 	/* some attributes need specific methods to be displayed */
- 	if ((ops->get_voltage && ops->get_voltage(rdev) >= 0) ||
- 	    (ops->get_voltage_sel && ops->get_voltage_sel(rdev) >= 0) ||
--	    (ops->list_voltage && ops->list_voltage(rdev, 0) >= 0)) {
-+	    (ops->list_voltage && ops->list_voltage(rdev, 0) >= 0) ||
-+		(rdev->desc->fixed_uV && (rdev->desc->n_voltages == 1))) {
- 		status = device_create_file(dev, &dev_attr_microvolts);
- 		if (status < 0)
- 			return status;
-diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
-index 67e13aa..9e8241a 100644
---- a/include/linux/regulator/driver.h
-+++ b/include/linux/regulator/driver.h
-@@ -207,6 +207,7 @@ enum regulator_type {
-  * @min_uV: Voltage given by the lowest selector (if linear mapping)
-  * @uV_step: Voltage increase with each selector (if linear mapping)
-  * @linear_min_sel: Minimal selector for starting linear mapping
-+ * @fixed_uV: Fixed voltage of rails.
-  * @ramp_delay: Time to settle down after voltage change (unit: uV/us)
-  * @volt_table: Voltage mapping table (if table based mapping)
-  *
-@@ -239,6 +240,7 @@ struct regulator_desc {
- 	unsigned int min_uV;
- 	unsigned int uV_step;
- 	unsigned int linear_min_sel;
-+	int fixed_uV;
- 	unsigned int ramp_delay;
- 
- 	const struct regulator_linear_range *linear_ranges;
--- 
-1.7.1.1
+Do I need amend the commit and add the above description and resend it ?
 
+BR,
+Wei
