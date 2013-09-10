@@ -1,150 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753630Ab3IJFyA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 01:54:00 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:59228 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752943Ab3IJFx6 convert rfc822-to-8bit (ORCPT
+	id S1754118Ab3IJFyn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 01:54:43 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:51400 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753036Ab3IJFyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 01:53:58 -0400
-From: "Fernandes, Joel" <joelf@ti.com>
-To: Koen Kooi <koen@dominion.thruhere.net>
-CC: Kevin Hilman <khilman@linaro.org>,
-        "bcousson@baylibre.com" <bcousson@baylibre.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "olof@lixom.net" <olof@lixom.net>
-Subject: Re: [PATCH] ARM: OMAP2+: am335x-bone*: add DT for BeagleBone Black
-Thread-Topic: [PATCH] ARM: OMAP2+: am335x-bone*: add DT for BeagleBone Black
-Thread-Index: Ac6ti4qTLzLY4ihdSteZi+kmqPpWkAAKtk2A//+uegCAABCEgIAAVmiA//+vkQCAADrOAIAAuSyA//+uXjY=
-Date: Tue, 10 Sep 2013 05:53:16 +0000
-Message-ID: <3D397F11-B184-4DC0-BEE2-90C91DBABB0B@ti.com>
-References: <1378736961-21005-1-git-send-email-koen@dominion.thruhere.net>
- <87zjrm81dl.fsf@linaro.org>
- <BBAC0939-A4F9-4FEA-B137-0307D8787DC3@dominion.thruhere.net>
- <522E1325.8050906@ti.com>
- <41952E65-1037-4117-A1AE-8310FED59E3A@dominion.thruhere.net>
- <522E18C0.9010909@ti.com> <522E269B.7000802@ti.com>
- <73968C64-F0B0-4ED6-82B8-BD1966ED9D84@dominion.thruhere.net>
- <522E2B9E.8050404@ti.com>
- <522E5CF2.3080108@ti.com>,<36F35544-5E8D-4595-8B0C-2020130AE804@dominion.thruhere.net>
-In-Reply-To: <36F35544-5E8D-4595-8B0C-2020130AE804@dominion.thruhere.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 10 Sep 2013 01:54:41 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <522EB41E.9030005@roeck-us.net>
+Date: Mon, 09 Sep 2013 22:54:38 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
+To: Wei Ni <wni@nvidia.com>
+CC: Mark Brown <broonie@kernel.org>, "khali@linux-fr.org" <khali@linux-fr.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/2] hwmon: (lm90) Add power control
+References: <1378722552-10357-1-git-send-email-wni@nvidia.com> <1378722552-10357-2-git-send-email-wni@nvidia.com> <20130909111242.GW29403@sirena.org.uk> <522DB253.6000707@roeck-us.net> <20130909135022.GZ29403@sirena.org.uk> <20130909155043.GA18975@roeck-us.net> <20130909160237.GR29403@sirena.org.uk> <20130909161735.GC18975@roeck-us.net> <20130909203910.GV29403@sirena.org.uk> <522E9A85.9050803@nvidia.com> <522EA51C.90706@roeck-us.net> <522EB0AF.9030708@nvidia.com>
+In-Reply-To: <522EB0AF.9030708@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/09/2013 10:39 PM, Wei Ni wrote:
+> On 09/10/2013 12:50 PM, Guenter Roeck wrote:
+>> On 09/09/2013 09:05 PM, Wei Ni wrote:
+>>> On 09/10/2013 04:39 AM, Mark Brown wrote:
+>>>> * PGP Signed by an unknown key
+>>>>
+>>>> On Mon, Sep 09, 2013 at 09:17:35AM -0700, Guenter Roeck wrote:
+>>>>> On Mon, Sep 09, 2013 at 05:02:37PM +0100, Mark Brown wrote:
+>>>>
+>>>>>> It does, though it gets complicated trying to use it for a case like
+>>>>>> this since you can't really tell if the regulator was powered on
+>>>>>> immediately before the device got probed by another device on the bus.
+>>>>
+>>>>> Why not ? Just keep a timestamp.
+>>>>
+>>>> The support is a callback on state changes; we could keep a timestamp
+>>>> but there's still going to be race conditions around bootloaders.  It's
+>>>> doable though.
+>>>>
+>>>>>>> On a higher level, I wonder if such functionality should be added in the i2c
+>>>>>>> subsystem and not in i2c client drivers. Has anyone thought about this ?
+>>>>
+>>>>>> I'm not sure what the subsystem would do for such delays?  It's fairly
+>>>>>> common for things that need this to also want to do things like
+>>>>>> manipulate GPIOs as part of the power on sequence so the applicability
+>>>>>> is relatively limited, plus it's not even I2C specific, the same applies
+>>>>>> to other buses so it ought to be a driver core thing.
+>>>>
+>>>>> Possibly. I just thought about i2c since it also takes care of basic
+>>>>> devicetree bindings. Something along the line of
+>>>>> 	if devicetree bindings for this device declare one or more
+>>>>> 	regulators, enable those regulators before calling the driver
+>>>>> 	probe function.
+>>>>
+>>>> That's definitely a driver core thing, not I2C - there's nothing
+>>>> specific to I2C in there at all, needing power is pretty generic.  I
+>>>> have considered this before, something along the lines of what we have
+>>>> for pinctrl, but unfortunately the generic case isn't quite generic
+>>>> enough to make it easy.  It'd need to be an explicit list of regulators
+>>>> (partly just to make it opt in and avoid breaking things) and you'd want
+>>>> to have a way of handling the different suspend/resume behaviour that
+>>>> devices want.  There's a few patterns there.
+>>>>
+>>>> It's definitely something I think about from time to time and it would
+>>>> be useful to factor things out, the issue is getting a good enough model
+>>>> of what's going on.
+>>>>
+>>>>>> There was some work on a generic helper for power on sequences but it
+>>>>>> stalled since it wasn't accepted for the original purpose (LCD panel
+>>>>>> power ons IIRC).
+>>>>
+>>>>> Too bad. I think it could be kept quite simple, though, by handling it
+>>>>> through the regulator subsystem as suggested above. A generic binding
+>>>>> for a per-regulator and per-device poweron delay should solve that
+>>>>> and possibly even make it transparent to the actual driver code.
+>>>>
+>>>> Lots of things have a GPIO for reset too, and some want clocks too.  For
+>>>> maximum usefulness this should be cross subsystem.  I suspect the reset
+>>>> controller API may be able to handle some of it.
+>>>>
+>>>> The regulator power on delays are already handled transparently, by the
+>>>> time regulator_enable() returns the ramp should be finished.
+>>>
+>>> I think the regulator should encoded its own startup delay. Each
+>>> individual device should handle its own requirements for delay after
+>>> power is stable.
+>>> The regulator_enable() will handle the delays for the regulator device.
+>>> And adding the msleep(25) is for lm90 device. If without delay,
+>>> sometimes the device can't work properly. If read lm90 register
+>>> immediately after enabling regulator, the reading may be failed.
+>>> I'm not sure if 25ms is the right value, I read the LM90 SPEC, the max
+>>> of "SMBus Clock Low Time" is 25ms, so I supposed that it may need about
+>>> 25ms to stable after power on.
+>>>
+>>
+>> Problem is that you are always waiting, even if the same regulator was
+>> turned on already, and even if it is a dummy regulator.
+>>
+>> Imagine every driver doing that. Booting would take forever, just because of
+>> unnecessary delays all over the place. There has to be a better solution
+>> which does not include a mandatory and potentially unnecessary wait time
+>> in the driver. At a previous company we had a design with literally dozens
+>> of those chip. You really want to force such a boot delay on every user ?
+>>
+>> But essentially you don't even know if it is needed; you are just guessing.
+>> That is not an acceptable reason to add such a delay, mandatory or not.
+> I think the device need time to wait stable after power on, but it's
+> difficult to get an exact delay value, and this delay may also relate
+> with platform design, so how about to add a optional property in the DT
+> node, such as "power-on-delay-ms" ?
+>
 
+Possibly, but that still doesn't solve the problem that you are going
+to wait even if the regulator was already turned on. Simple example:
+A system with two sensors, both of which share the same regulator.
+Each of them will require a delay after turning on power,
+but only if it was just turned on and not if it was already active.
 
-On Sep 10, 2013, at 12:45 AM, "Koen Kooi" <koen@dominion.thruhere.net> wrote:
+Guenter
 
-> 
-> Op 10 sep. 2013, om 01:42 heeft Joel Fernandes <joelf@ti.com> het volgende geschreven:
-> 
->> On 09/09/2013 03:12 PM, Joel Fernandes wrote:
->>> On 09/09/2013 03:00 PM, Koen Kooi wrote:
->>>> 
->>>> Op 9 sep. 2013, om 21:50 heeft Joel Fernandes <joelf@ti.com> het volgende geschreven:
->>>> 
->>>>> On 09/09/2013 01:51 PM, Joel Fernandes wrote:
->>>>>> On 09/09/2013 01:43 PM, Koen Kooi wrote:
->>>>>>> 
->>>>>>> Op 9 sep. 2013, om 20:27 heeft Joel Fernandes <joelf@ti.com> het volgende geschreven:
->>>>>>> 
->>>>>>>> On 09/09/2013 10:51 AM, Koen Kooi wrote:
->>>>>>>>> 
->>>>>>>>> Op 9 sep. 2013, om 17:23 heeft Kevin Hilman <khilman@linaro.org> het volgende geschreven:
->>>>>>>>> 
->>>>>>>>>> Koen Kooi <koen@dominion.thruhere.net> writes:
->>>>>>>>>> 
->>>>>>>>>>> The BeagleBone Black is basically a regular BeagleBone with eMMC and HDMI added,
->>>>>>>>>>> so create a common dtsi both can use.
->>>>>>>>>>> 
->>>>>>>>>>> IMPORTANT: booting the existing am335x-bone.dts will blow up the HDMI transceiver
->>>>>>>>>>> after a dozen boots with an uSD card inserted because LDO will be at 3.3V instead
->>>>>>>>>>> of 1.8.
->>>>>>>>>>> 
->>>>>>>>>>> MMC support for AM335x still isn't in, so only the LDO change has been added.
->>>>>>>>>>> 
->>>>>>>>>>> Cc: stable@vger.kernel.org
->>>>>>>>>>> 
->>>>>>>>>>> Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
->>>>>>>>>>> Tested-by: Tom Rini <trini@ti.com>
->>>>>>>>>>> Tested-by: Matt Porter <matt.porter@linaro.org>
->>>>>>>>>> 
->>>>>>>>>> I guess the subject should've included v5?
->>>>>>>>> 
->>>>>>>>> Yes, I blame it on being monday :)
->>>>>>>> 
->>>>>>>> The series you're posting will require rebasing on the current MMC DT series
->>>>>>>> that is being discussed last couple of weeks on the mailing list which were
->>>>>>>> waiting until now as DMA support was missing. Now that DMA support is pulled in,
->>>>>>>> it is safe to apply those patches so I will be reposting them shortly.
->>>>>>>> 
->>>>>>>> Please hold off any changes until those patches are posted. This will avoid
->>>>>>>> unnecessary conflicts.
->>>>>>> 
->>>>>>> Or you can rebase on top of this patch since it has no dependencies *and* fixes blowing up boards. FWIW, git-rebase, git-cherry-pick and git-am -3 track the rename in my patch just fine.
->>>>>> 
->>>>>> That's fair enough, since  Kevin Acked and Benoit is pulling it, I'm fine with
->>>>>> rebasing on top of it and we avoid any merge conflicts.
->>>>> 
->>>>> I noticed - there were still some comments from Felipe on the v4 series of this
->>>>> patch regarding RF cape and HDMI may be breaking it. How are you addressing that?
->>>> 
->>>> Capes will never go into the .dts and HDMI support needs some serious patching before it can get enabled in the DT. And the RF cape isn't being sold since it has no sw support. No need to worry about things in the 3.15/3.16 timeframe. Unless you want this LDO3 fix not to go in ASAP.
->>>> 
->>>> Joel, is there anything relevant *right now* blocking this patch going in? If not, please test it and add your Tested-by: line.
->>> 
->>> We don't merge things in hurry and focus is to do things the right way.. I just
->>> want to make sure that all possible comments have been addressed.
->>> 
->>> Otherwise patch looks OK and hope everyone else thinks so too. I am dealing with
->>> some merge conflicts right now with my series on top of this though, but they
->>> should be easy enough to fix up. That's delaying my testing, but otherwise as
->>> such I don't have any objection to this patch (provided the conclusion is that
->>> all comments have been addressed..). Thanks!
->> 
->> Koen,
->> 
->> One note though, since I don't use HDMI (or BBB much for that matter), I was ok
->> with taking a risk of upping the ldo3 regulator voltage to 3.3v on my board
->> which I needed to do to get to the boot prompt.
->> I applied my AM335x DMA and MMC patches and tried to boot with rootfs as MMC1.
->> 
->> With 1.8v, I get the following during boot:
->> [    2.236043] mmc0: host doesn't support card's voltages
->> [    2.241659] mmc0: error -22 whilst initialising SD card
->> 
->> That's strange because I do have an SDHC card. With 3.3v it works fine.
->> 
->> I will add a note about this to my series. Since this more of an MMC issue than
->> anything, and your patch series doesn't enable MMC, you can add my tested-by:
->> 
->> Tested-by: Joel Fernandes <joelf@ti.com>
->> 
->> Later on, the regulator voltage may need to be tweaked for MMC support.
-> 
-> See https://lkml.org/lkml/2013/9/6/95 and https://lkml.org/lkml/2013/9/6/183
-
-Ok since you said in above thread you'll rebase the card detect and the regulator fixes , I'll let you do that and drop my drop my hacked mmc1 patch for BBB from my series.
-
-Regards,
-
--Joel
