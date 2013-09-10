@@ -1,66 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397Ab3IJN64 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 09:58:56 -0400
-Received: from [207.46.163.242] ([207.46.163.242]:2949 "EHLO
-	na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750974Ab3IJN6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 09:58:54 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: Jani Nikula <jani.nikula@linux.intel.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Daniel Vetter <daniel@ffwll.ch>,
-        "Aaron Lu" <aaron.lu@intel.com>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        Yves-Alexis Perez <corsac@debian.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Lee Chun-Yi <jlee@novell.com>, Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH 2/2] ACPI / video / i915: Remove ACPI backlight if
- firmware expects Windows 8
-Thread-Topic: [PATCH 2/2] ACPI / video / i915: Remove ACPI backlight if
- firmware expects Windows 8
-Thread-Index: AQHOrTh4P2SImvKSpUu3tJlbFkAqyJm9JHkAgAAt1ACAADO4AIAAVGuAgAElbgCAAADpAA==
-Date: Tue, 10 Sep 2013 13:56:59 +0000
-Message-ID: <1378821416.17982.56.camel@x230.lan>
-References: <522D88C3.7000808@intel.com> <1793135.3qk7NfcINN@vostro.rjw.lan>
-	 <20130909152118.GG27291@phenom.ffwll.local>
-	 <5155010.Y1gov7SKhP@vostro.rjw.lan> <87eh8wail7.fsf@intel.com>
-In-Reply-To: <87eh8wail7.fsf@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:470:1f07:1371:5d52:9ee3:3e84:6668]
-x-forefront-prvs: 096507C068
-x-forefront-antispam-report: SFV:NSPM;SFS:(199002)(189002)(24454002)(377424004)(77096001)(74876001)(83072001)(47446002)(76482001)(74706001)(74502001)(80976001)(63696002)(53806001)(74662001)(31966008)(54356001)(56816003)(83322001)(19580405001)(56776001)(54316002)(65816001)(51856001)(81342001)(59766001)(76796001)(36756003)(81686001)(33646001)(74366001)(77982001)(69226001)(19580395003)(80022001)(81816001)(4396001)(49866001)(47736001)(79102001)(46102001)(76786001)(47976001)(81542001)(50986001)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB221;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:5d52:9ee3:3e84:6668;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <2B5F574CAF8E414F94F0B151F7A40CD3@namprd05.prod.outlook.com>
+	id S1752939Ab3IJN7n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 09:59:43 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:47312 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751643Ab3IJN7l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 09:59:41 -0400
+Date: Tue, 10 Sep 2013 08:59:07 -0500
+From: Josh Cartwright <joshc@codeaurora.org>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: Kumar Gala <galak@codeaurora.org>, wsa@the-dreams.de,
+        rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        swarren@wwwdotorg.org, ian.campbell@citrix.com, rob@landley.net,
+        grant.likely@linaro.org, gavidov@codeaurora.org,
+        sdharia@codeaurora.org, alokc@codeaurora.org,
+        linux-i2c@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH 1/2] i2c: qup: Add device tree bindings information
+Message-ID: <20130910135907.GP808@joshc.qualcomm.com>
+References: <1377782873-31931-1-git-send-email-iivanov@mm-sol.com>
+ <3A0F4153-1C55-4008-8EB1-D6FA60D87CEA@codeaurora.org>
+ <1377797186.30358.14.camel@localhost>
+ <767E9FBB-2975-4795-9C7E-69E302511FF2@codeaurora.org>
+ <1378814937.960.37.camel@iivanov-dev.int.mm-sol.com>
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378814937.960.37.camel@iivanov-dev.int.mm-sol.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8ADx2QB028271
 
-On Tue, 2013-09-10 at 16:53 +0300, Jani Nikula wrote:
+[Hmm.  Fixing b0rked LKML address; that might explain why I am not
+seeing Kumar's replies.]
 
-> I think the parameter "Does the ACPI backlight interface work or not"
-> belongs to the ACPI video driver.
+On Tue, Sep 10, 2013 at 03:08:57PM +0300, Ivan T. Ivanov wrote:
+> Hi Kumar,
+> 
+> On Fri, 2013-08-30 at 10:21 -0500, Kumar Gala wrote: 
+> > On Aug 29, 2013, at 12:26 PM, Ivan T. Ivanov wrote:
+> > >>> +
+> > >>> +Optional properties :
+> > >>> + - Child nodes conforming to i2c bus binding
+> > >>> + - clock-frequency : Desired I2C bus clock frequency in Hz. If
+> > >>> +		not set thedefault frequency is 100kHz
+> > >>> + - qcom,src-freq : Frequency of the source clocking this bus in Hz.
+> > >>> +		Divider value is set based on soruce-frequency and
+> > >>> +		desired I2C bus frequency. If this value is not
+> > >>> +		provided, the source clock is assumed to be running
+> > >>> +		at 19.2 MHz.
+> > >> 
+> > >> I'd spell out frequency instead of 'freq' to be consistent with 'clock-frequency'
+> > > 
+> > > ok.
+> > > 
+> > >> 
+> > >> Is the frequency of the 'iface' clock?  Can we not use clk_get_rate?
+> > > 
+> > > It is for 'core' clock. I think that for higher I2C bus frequencies,
+> > > 'core' clock have to be higher, but I am not sure what is relation.
+> > 
+> > Ok, can we use clk_get_rate on the 'core' clk to get its frequency instead of needing a DT prop for it?
+> 
+> Probably I didn't explain it well. The 'core' clock have to be
+> accelerated before higher bus frequencies could be achieved.
 
-That depends on how Windows 8 works. If Windows 8 policy is handled by
-the GPU drivers then it belongs in i915. If it's handled by the ACPI
-code then it belongs in the ACPI code. But I have no way of determining
-that, whereas you work for a company that produces a Windows 8 video
-driverâ€¦
+I think what Kumar is suggesting is that the QUP driver not do an
+explicit clk_set_rate() at all (which AFAICT is what's currently being
+done to set the consuming clock to the rate specified in
+'qcom,src-freq'), but instead assume that the consuming clock has
+already been setup properly.  Then the driver just uses clk_get_rate()
+and clock-frequency to calculate how to setup any internal dividers.
+
+> > >>> +Aliases: An alias may optionally be used to bind the I2C controller
+> > >>> +to bus number. Aliases are of the form i2c<n> where <n> is an integer
+> > >>> +representing the bus number to use.
+> > >>> +
+> > >>> +Example:
+> > >>> +
+> > >>> + aliases {
+> > >>> +		i2c0 = &i2c_A;
+> > >>> +		i2c1 = &i2c_B;
+> > >>> +		i2c2 = &i2c_C;
+> > >>> + };
+> > >> 
+> > >> What is the purpose here?
+> > > 
+> > > Define on which I2C bus this controller operate. I2C client 
+> > > drivers usually do i2c_get_adapter(bus_number) before its
+> > > registration. This is for drivers before invention of
+> > > of_i2c_register_devices(), I believe.
+> > 
+> > Since this is for upstream why dont we use of_i2c_register_devices() and remove this stuff related to aliases.
+> 
+> Adapter driver already is using of_i2c_register_devices(). Also OF
+> helper function will/or is already part of i2c_register_adapter().
+> Attempt here was to make it compatible with older i2c client drivers.
+
+I agree with Kumar on removing this.  If we decide it is something worth
+keeping, logic to support it doesn't belong in the QUP driver, but in
+the i2c core.
 
 -- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
