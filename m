@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233Ab3IJQX5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 12:23:57 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:65331 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753119Ab3IJQXy (ORCPT
+	id S1753395Ab3IJQYZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 12:24:25 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:37464 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752463Ab3IJQYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 12:23:54 -0400
-Message-ID: <522F4797.1050509@linaro.org>
-Date: Tue, 10 Sep 2013 09:23:51 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 10 Sep 2013 12:24:23 -0400
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Gerlando Falauto <gerlando.falauto@keymile.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+In-Reply-To: <522F3ACC.9000701@linux.intel.com>
+References: <20130910130811.507933095@infradead.org>
+	<20130910135152.GD7537@gmail.com>
+	<20130910135636.GA8268@gmail.com>
+	<522F3ACC.9000701@linux.intel.com>
+Date: Tue, 10 Sep 2013 09:24:21 -0700
+X-Google-Sender-Auth: koa1p7l-7y13DsfLoycT_eP1RrQ
+Message-ID: <CA+55aFz3S6_g4TQ11VKGM3GW=a=r3qYWQ_a0qJ_5241qQz8D=w@mail.gmail.com>
+Subject: Re: [PATCH 0/7] preempt_count rework -v2
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
+        Mike Galbraith <bitbucket@online.de>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        "Brunck, Holger" <Holger.Brunck@keymile.com>,
-        "Longchamp, Valentin" <Valentin.Longchamp@keymile.com>,
-        "Bigler, Stefan" <Stefan.Bigler@keymile.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: kernel deadlock
-References: <521F6D06.1040107@keymile.com> <E92455D61233364C88CCD4A6DAB2E2850E09518110@SRVDEHAN1MX1.keymile.net> <521FDD12.7050000@linaro.org> <52212511.9050206@keymile.com> <5221264F.4070402@linaro.org> <5225F8EF.3040701@keymile.com> <52261BBB.60904@linaro.org> <5226EB35.6080604@keymile.com> <522E2FBB.4070406@linaro.org> <20130910072908.GA32257@gmail.com>
-In-Reply-To: <20130910072908.GA32257@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2013 12:29 AM, Ingo Molnar wrote:
-> * John Stultz <john.stultz@linaro.org> wrote:
->
->> Now, I'm still in the dark as to why HRTICK exposes this, but seems like 
->> the following patch should resolve the issue (and quiets the lockdep 
->> warnings in my testing). Let me know how it works for you!
+On Tue, Sep 10, 2013 at 8:29 AM, Arjan van de Ven <arjan@linux.intel.com> wrote:
 >>
->> Ingo: This makes me think we really should have some lockdep smarts 
->> added to seqlock/seqcount structures. Is there something already 
->> discovered thats preventing this, or has this just not yet been tried?
-> There's no fundamental reason to not do it, it's a very good idea!
->
->> From 09885df9734aa678ccb61dbef356fea4faeff16c Mon Sep 17 00:00:00 2001
->> From: John Stultz <john.stultz@linaro.org>
->> Date: Mon, 9 Sep 2013 13:07:18 -0700
->> Subject: [PATCH] timekeepeing: Fix HRTICK related deadlock from ntp lock changes
-> Cool fix! I think I've seen this deadlock in various incarnations but was 
-> never able to track it down. Do you have a guesstimate about roughly when 
-> it was introduced? Is it an ancient bug?
+> also.. yuck on using "dec"
+> "dec" sucks, please use "sub foo  ,1" instead
 
-3.10, I believe. So no not ancient, but we've seen and resolved similar
-issues in the past (the old printk while holding xtime_lock deadlock).
+That's a bigger instruction, largely due to the constant.
 
-Hopefully the lockdep enablement helps sort these out for good.
+> (dec sucks because of its broken flags behavior; it creates basically a
+> bubble in the pipeline)
 
-thanks
--john
+Intel could (and should) just fix that. It's "easy" enough - you just
+need to rename the carry flag as a separate register (and make sure
+that the conditional instructions that don't use it don't think they
+need it).
 
+In fact I thought Intel already did that on their large cores. Are you
+sure they still have trouble with inc/dec?
+
+           Linus
