@@ -1,149 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751470Ab3IJLsA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 07:48:00 -0400
-Received: from ozlabs.org ([203.10.76.45]:38765 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751292Ab3IJLr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 07:47:57 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Frantisek Hrbata <fhrbata@redhat.com>
-Cc: Kyle McMartin <kyle@infradead.org>, linux-kernel@vger.kernel.org,
-        jstancek@redhat.com, keescook@chromium.org,
-        peter.oberparleiter@de.ibm.com, linux-arch@vger.kernel.org,
-        arnd@arndb.de, mgahagan@redhat.com, agospoda@redhat.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH v2 4/4] kernel: add support for init_array constructors
-In-Reply-To: <20130909162814.GA2288@localhost.localdomain>
-References: <1378305776-3644-1-git-send-email-fhrbata@redhat.com> <1378305776-3644-5-git-send-email-fhrbata@redhat.com> <87vc2e66kr.fsf@rustcorp.com.au> <20130906175118.GB2332@localhost.localdomain> <20130906180751.GD25882@merlin.infradead.org> <87d2oi6bl0.fsf@rustcorp.com.au> <20130909162814.GA2288@localhost.localdomain>
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Tue, 10 Sep 2013 15:05:57 +0930
-Message-ID: <878uz544si.fsf@rustcorp.com.au>
+	id S1751335Ab3IJLxM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 07:53:12 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:42181 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870Ab3IJLxK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 07:53:10 -0400
+Date: Tue, 10 Sep 2013 13:53:06 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: eranian@gmail.com
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>
+Subject: PEBS bug on HSW: "Unexpected number of pebs records 10" (was: Re:
+ [GIT PULL] perf changes for v3.12)
+Message-ID: <20130910115306.GA6091@gmail.com>
+References: <20130903132933.GA24955@gmail.com>
+ <CA+55aFxBTjfx304zstOVq3Hm3vmjgC5gOJaxXG5E_iWq_WXGTw@mail.gmail.com>
+ <20130909100544.GI31370@twins.programming.kicks-ass.net>
+ <CAMsRxfLEO15kKrbmtKKXuW-JTtCCgiuXS6wFs9kiLmG1wge24A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMsRxfLEO15kKrbmtKKXuW-JTtCCgiuXS6wFs9kiLmG1wge24A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frantisek Hrbata <fhrbata@redhat.com> writes:
-> On Mon, Sep 09, 2013 at 10:44:03AM +0930, Rusty Russell wrote:
->> Kyle McMartin <kyle@infradead.org> writes:
->> > On Fri, Sep 06, 2013 at 07:51:18PM +0200, Frantisek Hrbata wrote:
->> >> > > v2: - reuse mod->ctors for .init_array section for modules, because gcc uses
->> >> > >       .ctors or .init_array, but not both at the same time
->> >> > >
->> >> > > Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
->> >> > 
->> >> > Might be nice to document which gcc version changed this, so people can
->> >> > choose whether to cherry-pick this change?
->> >> 
->> >> Thank you for pointing this out. As per gcc git this was introduced by commit
->> >> ef1da80 and released in 4.7 version.
->> >> 
->> >> $ git describe --contains ef1da80
->> >> gcc-4_7_0-release~4358
->> >> 
->> >> Do you want me to post v3 with this info included in the descrition?
->> >> 
->> >
->> > It actually depends on the combination of binutils/ld and gcc you use, not
->> > simply which gcc version you use. :/
->> 
->> Indeed, and seems it was binutils 20110507 which actually handled it
->> properly.
->> 
->> AFAICT it's theoretically possible to have .ctors and .init_array in a
->> module.  Unlikely, but the patch should check for both and refuse to
->> load the module in that case.  Otherwise weird things would happen.
->
-> I'm not sure if coexistence of .ctors and .init_array sections should result in
-> denial of module, but I for sure know nothing about this :). Could you maybe
-> privide one example of the "weird thing"?
 
-Well, if we have both ctors and init_array, and we only call the ctors,
-part of the module will be uninitialized.
+* Stephane Eranian <eranian@googlemail.com> wrote:
 
-I was thinking about something like the following (based on your
-previous patch).
+> Hi,
+> 
+> 
+> And what was the perf record command line for this crash?
 
-Thoughts?
-Rusty.
+AFAICS it wasn't a crash but the WARN_ON() in intel_pmu_drain_pebs_hsw(), 
+at arch/x86/kernel/cpu/perf_event_intel_ds.c:1003.
 
-From: Frantisek Hrbata <fhrbata@redhat.com>
-Subject: kernel: add support for init_array constructors
+        at  = (struct pebs_record_hsw *)(unsigned long)ds->pebs_buffer_base;
+        top = (struct pebs_record_hsw *)(unsigned long)ds->pebs_index;
 
-This adds the .init_array section as yet another section with constructors. This
-is needed because gcc could add __gcov_init calls to .init_array or .ctors
-section, depending on gcc (and binutils) version .
+        n = top - at;
+        if (n <= 0)
+                return;
 
-v2: - reuse mod->ctors for .init_array section for modules, because gcc uses
-      .ctors or .init_array, but not both at the same time
-v3: - fail to load if that does happen somehow.
+        /*
+         * Should not happen, we program the threshold at 1 and do not
+         * set a reset value.
+         */
+        WARN_ONCE(n > x86_pmu.max_pebs_events,
+                  "Unexpected number of pebs records %d\n", n);
 
-Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+The command line Linus used was probably close to:
 
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index 83e2c31..bc2121f 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -473,6 +473,7 @@
- #define KERNEL_CTORS()	. = ALIGN(8);			   \
- 			VMLINUX_SYMBOL(__ctors_start) = .; \
- 			*(.ctors)			   \
-+			*(.init_array)			   \
- 			VMLINUX_SYMBOL(__ctors_end) = .;
- #else
- #define KERNEL_CTORS()
-diff --git a/kernel/module.c b/kernel/module.c
-index dc58274..d3f5a58 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2738,7 +2738,7 @@ static int check_modinfo(struct module *mod, struct load_info *info, int flags)
- 	return 0;
- }
- 
--static void find_module_sections(struct module *mod, struct load_info *info)
-+static int find_module_sections(struct module *mod, struct load_info *info)
- {
- 	mod->kp = section_objs(info, "__param",
- 			       sizeof(*mod->kp), &mod->num_kp);
-@@ -2768,6 +2768,18 @@ static void find_module_sections(struct module *mod, struct load_info *info)
- #ifdef CONFIG_CONSTRUCTORS
- 	mod->ctors = section_objs(info, ".ctors",
- 				  sizeof(*mod->ctors), &mod->num_ctors);
-+	if (!mod->ctors)
-+		mod->ctors = section_objs(info, ".init_array",
-+				sizeof(*mod->ctors), &mod->num_ctors);
-+	else if (find_sec(info, ".init_array")) {
-+		/*
-+		 * This shouldn't happen with same compiler and binutils
-+		 * building all parts of the module.
-+		 */
-+		printk(KERN_WARNING "%s: has both .ctors and .init_array.\n",
-+		       mod->name);
-+		return -EINVAL;
-+	}
- #endif
- 
- #ifdef CONFIG_TRACEPOINTS
-@@ -2806,6 +2818,8 @@ static void find_module_sections(struct module *mod, struct load_info *info)
- 
- 	info->debug = section_objs(info, "__verbose",
- 				   sizeof(*info->debug), &info->num_debug);
-+
-+	return 0;
- }
- 
- static int move_module(struct module *mod, struct load_info *info)
-@@ -3263,7 +3277,9 @@ static int load_module(struct load_info *info, const char __user *uargs,
- 
- 	/* Now we've got everything in the final locations, we can
- 	 * find optional sections. */
--	find_module_sections(mod, info);
-+	err = find_module_sections(mod, info);
-+	if (err)
-+		goto free_unload;
- 
- 	err = check_module_license_and_versions(mod);
- 	if (err)
+   perf record -e cycles:pp -g make -j64 bzImage
+
+i.e. PEBS precise profiling, call chains, LBR is used to figure out the 
+real instruction, but no '-a' per CPU profiling option, i.e. high 
+frequency per task PMU context switching.
+
+Note that AFAIK neither the kernel nor user-space used any TSX extensions, 
+so this is the Haswell PMU in pure compatibility mode.
+
+My (wild) guess is that unless all of us missed some subtle race in the 
+PEBS code it's an (unknown?) erratum: the hardware got confused by the 
+high frequency PMU switches, in this particular case where we got a new 
+PMI right after a very short interval was programmed:
+
+>>  Call Trace:
+>>   <NMI>  [<ffffffff815fc637>] dump_stack+0x45/0x56
+>>   [<ffffffff81051e78>] warn_slowpath_common+0x78/0xa0
+>>   [<ffffffff81051ee7>] warn_slowpath_fmt+0x47/0x50
+>>   [<ffffffff8101b051>] intel_pmu_drain_pebs_hsw+0x91/0xa0
+>>   [<ffffffff8101c5d0>] intel_pmu_handle_irq+0x210/0x390
+>>   [<ffffffff81604deb>] perf_event_nmi_handler+0x2b/0x50
+>>   [<ffffffff81604670>] nmi_handle.isra.3+0x80/0x180
+>>   [<ffffffff81604840>] do_nmi+0xd0/0x310
+>>   [<ffffffff81603d37>] end_repeat_nmi+0x1e/0x2e
+>>   <<EOE>>  [<ffffffff810167df>] perf_events_lapic_init+0x2f/0x40
+>>   [<ffffffff81016a50>] x86_pmu_enable+0x260/0x310
+>>   [<ffffffff81111d87>] perf_pmu_enable+0x27/0x30
+>>   [<ffffffff81112140>] perf_event_context_sched_in+0x80/0xc0
+>>   [<ffffffff811127eb>] __perf_event_task_sched_in+0x16b/0x180
+>>   [<ffffffff8107c300>] finish_task_switch+0x70/0xa0
+>>   [<ffffffff81600f48>] __schedule+0x368/0x7c0
+>>   [<ffffffff816013c4>] schedule+0x24/0x70
+
+Note that due to per task profiling the default (long, about 1 KHz) 
+interval can get chopped up and can result in a very small period value 
+being reprogrammed at PMU-sched-in time.
+
+That kind of high-freq back-to-back activity could, in theory, confuse the 
+PEBS hardware. Or the kernel :-)
+
+Thanks,
+
+	Ingo
