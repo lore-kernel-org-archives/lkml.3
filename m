@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462Ab3IJVKP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 17:10:15 -0400
-Received: from imap.thunk.org ([74.207.234.97]:57861 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752018Ab3IJVKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 17:10:13 -0400
-Date: Tue, 10 Sep 2013 17:10:09 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Stephan Mueller <smueller@chronox.de>, LKML <linux-kernel@vger.kernel.org>,
-        dave.taht@bufferbloat.net
-Subject: Re: [PATCH] /dev/random: Insufficient of entropy on many
- architectures
-Message-ID: <20130910211009.GI29237@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	John Stultz <john.stultz@linaro.org>,
-	Stephan Mueller <smueller@chronox.de>,
-	LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net
-References: <10005394.BRCyBMYWy3@tauon>
- <CANcMJZAHuXNQ4eUx+qpVnfJTg625HkJU_9pgBP24ykkmBww3yw@mail.gmail.com>
- <20130910203853.GG29237@thunk.org>
- <522F851D.1040101@linaro.org>
+	id S1752617Ab3IJVK0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 17:10:26 -0400
+Received: from b232-35.smtp-out.amazonses.com ([199.127.232.35]:63049 "EHLO
+	b232-35.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752018Ab3IJVKV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 17:10:21 -0400
+Date: Tue, 10 Sep 2013 21:10:20 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+cc: Mike Galbraith <bitbucket@online.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [RFC] Restrict kernel spawning of threads to a specified set of
+ cpus.
+In-Reply-To: <CAOtvUMdRmDYP_e7eFX1akU8vZ=dcVOnFDrBjKufumOaBxxXF3A@mail.gmail.com>
+Message-ID: <0000014109b5ec0e-ca64a736-ce4a-4be2-abf6-bbf2c1c15f80-000000@email.amazonses.com>
+References: <00000140efbcb701-c26320b3-f434-4538-bc80-8e92fed6f303-000000@email.amazonses.com> <CAOtvUMe=jcAHXNJU_rTAAokaE4KZNUTFsHVVTTxgFW_xj8ONxg@mail.gmail.com> <1378795659.6046.41.camel@marge.simpson.net> <CAOtvUMfhLQYK95uPm8idG_vYv-9yG2-KSkScjMBCSuvtffW1Dg@mail.gmail.com>
+ <1378797995.6046.54.camel@marge.simpson.net> <CAOtvUMdRmDYP_e7eFX1akU8vZ=dcVOnFDrBjKufumOaBxxXF3A@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <522F851D.1040101@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.127.232.35
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 01:46:21PM -0700, John Stultz wrote:
-> 
-> We do read the clocksource fairly frequently though, so rather then
-> re-reading on each interrupt, could you instead re-use the points at
-> interrupt time where we already read the clocksource, like in
-> hrtimer_interrupt()?
+On Tue, 10 Sep 2013, Gilad Ben-Yossef wrote:
 
-How often is that time updated?  Is there some documentation whree I
-can understand how this works?  I confess to be pretty ignorant about
-the details of how our time keeping systems work inside Linux.
+> On Tue, Sep 10, 2013 at 10:26 AM, Mike Galbraith <bitbucket@online.de> wrote:
+>
+> >
+> > Hammering on the wrong spot makes removing isolcpus take longer, and
+> > adds up to more hammering in the long run, no?  Hearing you mention
+> > isolcpus, I just thought I should mention that it wants to go away, so
+> > might not be the optimal spot for isolation related tinkering.
+>
+>
+> OK, so I'll bite - isolcpu currently has special magic to do its thing but AFAIK
+> part of the reason isolcpu works "better" (for some definition of
+> better, for some
+> work loads) is simply because it blocks migration earlier than you get with
+> cpusets.
+>
+> What if we  re-did the implementation of isolcpu as creating an
+> cpuset with migration off as early as possible in the boot process, prior to
+> spawning init?
+>
+> So basically, isolcpus becomes just a way to configure a cpuset early?
 
-Same question for sched_clock(); what are its guarantees, both in
-terms of granularity and cost of overhead.  Is there any comprehensive
-documentation that I should be reading?
+I surely wish we had the ability to use tickless without the need for
+things like cpusets etc.
 
-Thanks,
+isolcpus is broken as far as I can tell. Lets lay it to rest and come up
+with a sane way to configure these things. Autoconfig if possible.
 
-						- Ted
+
+
