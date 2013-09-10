@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803Ab3IJOCz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 10:02:55 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:47633 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab3IJOCx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 10:02:53 -0400
-Message-ID: <1378821771.26319.82.camel@edumazet-glaptop>
-Subject: Re: [PATCH 6/7] sched, x86: Provide a per-cpu preempt_count
- implementation
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Peter Anvin <hpa@zytor.com>, Mike Galbraith <bitbucket@online.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Date: Tue, 10 Sep 2013 07:02:51 -0700
-In-Reply-To: <20130910132011.396291123@infradead.org>
-References: <20130910130811.507933095@infradead.org>
-	 <20130910132011.396291123@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752146Ab3IJOHg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 10:07:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15371 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751348Ab3IJOHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 10:07:35 -0400
+Date: Tue, 10 Sep 2013 16:01:23 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/1] pidns: fix free_pid() to handle the first fork failure
+Message-ID: <20130910140123.GA30152@redhat.com>
+References: <20130829211114.GA20726@sergelap> <87mwo0xb9p.fsf@xmission.com> <20130830144232.GA18281@mail.hallyn.com> <87hae6vh0w.fsf_-_@xmission.com> <20130908175602.GA3172@redhat.com> <20130908180137.GA4915@redhat.com> <87bo43gg4h.fsf@xmission.com> <20130909151530.GA6755@redhat.com> <87bo41j2x9.fsf@tw-ebiederman.twitter.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87bo41j2x9.fsf@tw-ebiederman.twitter.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-09-10 at 15:08 +0200, Peter Zijlstra wrote:
+On 09/09, Eric W. Biederman wrote:
+>
+> Oleg Nesterov <oleg@redhat.com> writes:
+> >
+> > Agreed, it also makes sense to clear ->nr_hashed. But I still think
+> > that WARN_ON(ns->child_reaper) makes sense too.
+>
+> I don't know that I like warnings for impossible conditions.
 
-> +static __always_inline int preempt_count(void)
-> +{
-> +	return __this_cpu_read_4(__preempt_count) & ~PREEMPT_NEED_RESCHED;
-> +}
+But WARN_ON() should only check for "impossible" conditions ;)
 
-Not sure why you used the _4 prefix on all accessors ?
+> How could
+> we even make a mistake that gets us there?
 
->  
-> +#ifdef CONFIG_PREEMPT_COUNT
-> +	/*
-> +	 * If it were not for PREEMPT_ACTIVE we could guarantee that the
-> +	 * preempt_count of all tasks was equal here and this would not be
-> +	 * needed.
-> +	 */
-> +	task_thread_info(prev_p)->saved_preempt_count = __raw_get_cpu_var(__preempt_count);
+I do not know! I mean, this should not happen, that is why it adds
+a warning.
 
-	this_cpu_read(__preempt_count) ?
+And note that "ns->nr_hashed = 0" is not really needed, still I agree
+it makes sense.
 
-> +	__raw_get_cpu_var(__preempt_count) = task_thread_info(next_p)->saved_preempt_count;
+However I won't mind to remove this warning if you really dislike it.
 
-	this_cpu_write(__preempt_count,
-                       task_thread_info(next_p)->saved_preempt_count;
+> >> At which point I ask myself what of the pathlogocical case where the
+> >> first fork fails but because we created the pid namespace with unshare
+> >> there is a concurrent fork from another process into the pid namespace
+> >> that succeeds.  Resulting in one pid in the pid namespace that is not
+> >> the reaper.
+> >
+> > But how can setns() work before the first fork() succeeds and makes the
+> > ->child_reaper visible in /proc ?
+> >
+> > Probably I missed something obvious, I didn't sleep today...
+>
+> Actually that is a very good point.  That is an accidental feature but
+> one I very much appreciate today.
 
-> +#endif
-> +
->  	this_cpu_write(kernel_stack,
->  		  (unsigned long)task_stack_page(next_p) +
->  		  THREAD_SIZE - KERNEL_STACK_OFFSET);
-> 
-> 
+OK. Please review v2 then. I also shamelessly stole your comment.
 
+Oleg.
 
