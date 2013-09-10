@@ -1,125 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497Ab3IJFjR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 01:39:17 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:1837 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751633Ab3IJFjP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 01:39:15 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 09 Sep 2013 22:36:13 -0700
-Message-ID: <522EB0AF.9030708@nvidia.com>
-Date: Tue, 10 Sep 2013 13:39:59 +0800
-From: Wei Ni <wni@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	id S1753782Ab3IJFlt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 01:41:49 -0400
+Received: from mga09.intel.com ([134.134.136.24]:61388 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752437Ab3IJFls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 01:41:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,876,1371106800"; 
+   d="scan'208";a="375876455"
+Message-ID: <522EB135.2060309@intel.com>
+Date: Tue, 10 Sep 2013 13:42:13 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Mark Brown <broonie@kernel.org>, "khali@linux-fr.org" <khali@linux-fr.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/2] hwmon: (lm90) Add power control
-References: <1378722552-10357-1-git-send-email-wni@nvidia.com> <1378722552-10357-2-git-send-email-wni@nvidia.com> <20130909111242.GW29403@sirena.org.uk> <522DB253.6000707@roeck-us.net> <20130909135022.GZ29403@sirena.org.uk> <20130909155043.GA18975@roeck-us.net> <20130909160237.GR29403@sirena.org.uk> <20130909161735.GC18975@roeck-us.net> <20130909203910.GV29403@sirena.org.uk> <522E9A85.9050803@nvidia.com> <522EA51C.90706@roeck-us.net>
-In-Reply-To: <522EA51C.90706@roeck-us.net>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+CC: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, Yves-Alexis Perez <corsac@debian.org>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Lee Chun-Yi <jlee@novell.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Subject: Re: [PATCH 2/2] ACPI / video / i915: Remove ACPI backlight if firmware
+ expects Windows 8
+References: <522D88C3.7000808@intel.com> <522D89EC.6050103@intel.com>   <1378727093.13401.3.camel@ThinkPad-X230.localdomain>   <522E91A6.6040600@intel.com>  <1378790011.2204.3.camel@ThinkPad-X230.localdomain>  <522EAB25.6000901@intel.com> <1378790561.2160.1.camel@ThinkPad-X230.localdomain>
+In-Reply-To: <1378790561.2160.1.camel@ThinkPad-X230.localdomain>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2013 12:50 PM, Guenter Roeck wrote:
-> On 09/09/2013 09:05 PM, Wei Ni wrote:
->> On 09/10/2013 04:39 AM, Mark Brown wrote:
->>> * PGP Signed by an unknown key
+On 09/10/2013 01:22 PM, Igor Gnatenko wrote:
+> On Tue, 2013-09-10 at 13:16 +0800, Aaron Lu wrote:
+>> On 09/10/2013 01:13 PM, Igor Gnatenko wrote:
+>>> On Tue, 2013-09-10 at 11:27 +0800, Aaron Lu wrote:
+>>>> On 09/09/2013 07:44 PM, Igor Gnatenko wrote:
+>>>>> On Mon, 2013-09-09 at 16:42 +0800, Aaron Lu wrote:
+>>>>>> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+>>>>>> index f466980..75fba17 100644
+>>>>>> --- a/drivers/gpu/drm/i915/i915_dma.c
+>>>>>> +++ b/drivers/gpu/drm/i915/i915_dma.c
+>>>>>> @@ -1650,7 +1650,7 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
+>>>>>>  	if (INTEL_INFO(dev)->num_pipes) {
+>>>>>>  		/* Must be done after probing outputs */
+>>>>>>  		intel_opregion_init(dev);
+>>>>>> -		acpi_video_register();
+>>>>>> +		__acpi_video_register(i915_take_over_backlight);
+>>>>>>  	}
+>>>>>>  
+>>>>>>  	if (IS_GEN5(dev))
+>>>>>
+>>>>> I can't compile:
+>>>>>
+>>>>>
+>>>>> DEBUG: drivers/gpu/drm/i915/i915_dma.c: In function 'i915_driver_load':
+>>>>> DEBUG: drivers/gpu/drm/i915/i915_dma.c:1661:3: error: implicit
+>>>>> declaration of function
+>>>>> '__acpi_video_register' [-Werror=implicit-function-declaration]
+>>>>> DEBUG:    __acpi_video_register(i915_take_over_backlight);
+>>>>> DEBUG:    ^
+>>>>> DEBUG: cc1: some warnings being treated as errors
+>>>>> DEBUG: make[4]: *** [drivers/gpu/drm/i915/i915_dma.o] Error 1
+>>>>> DEBUG: make[3]: *** [drivers/gpu/drm/i915] Error 2
+>>>>> DEBUG: make[2]: *** [drivers/gpu/drm] Error 2
+>>>>> DEBUG: make[1]: *** [drivers/gpu] Error 2
+>>>>> DEBUG: make: *** [drivers] Error 2
+>>>>>
+>>>>
+>>>> The two patches are based on top of Rafael's linux-next tree. I just
+>>>> tried it again, no compile problem for me. I also tried on today Linus'
+>>>> master tree, as there are some updates from i915, two conflicts exist.
+>>>> I've just resolved them and will update it in next revision.
+>>>> If you want to try it now, please use:
+>>>> https://github.com/aaronlu/linux acpi_video_rework
+>>>>
+>>>> Thanks,
+>>>> Aaron
 >>>
->>> On Mon, Sep 09, 2013 at 09:17:35AM -0700, Guenter Roeck wrote:
->>>> On Mon, Sep 09, 2013 at 05:02:37PM +0100, Mark Brown wrote:
+>>> Thanks. this patch fixes my problems w/ compilation. I've tested this
+>>> two patches and after apply I have:
+>>> $ tree /sys/class/backlight/
+>>> /sys/class/backlight/
+>>> |-- acpi_video0
+>>> -> ../../devices/pci0000:00/0000:00:02.0/backlight/acpi_video0
+>>> `-- intel_backlight
+>>> -> ../../devices/pci0000:00/0000:00:02.0/drm/card0/card0-LVDS-1/intel_backlight
 >>>
->>>>> It does, though it gets complicated trying to use it for a case like
->>>>> this since you can't really tell if the regulator was powered on
->>>>> immediately before the device got probed by another device on the bus.
+>>> 2 directories, 0 files
 >>>
->>>> Why not ? Just keep a timestamp.
->>>
->>> The support is a callback on state changes; we could keep a timestamp
->>> but there's still going to be race conditions around bootloaders.  It's
->>> doable though.
->>>
->>>>>> On a higher level, I wonder if such functionality should be added in the i2c
->>>>>> subsystem and not in i2c client drivers. Has anyone thought about this ?
->>>
->>>>> I'm not sure what the subsystem would do for such delays?  It's fairly
->>>>> common for things that need this to also want to do things like
->>>>> manipulate GPIOs as part of the power on sequence so the applicability
->>>>> is relatively limited, plus it's not even I2C specific, the same applies
->>>>> to other buses so it ought to be a driver core thing.
->>>
->>>> Possibly. I just thought about i2c since it also takes care of basic
->>>> devicetree bindings. Something along the line of
->>>> 	if devicetree bindings for this device declare one or more
->>>> 	regulators, enable those regulators before calling the driver
->>>> 	probe function.
->>>
->>> That's definitely a driver core thing, not I2C - there's nothing
->>> specific to I2C in there at all, needing power is pretty generic.  I
->>> have considered this before, something along the lines of what we have
->>> for pinctrl, but unfortunately the generic case isn't quite generic
->>> enough to make it easy.  It'd need to be an explicit list of regulators
->>> (partly just to make it opt in and avoid breaking things) and you'd want
->>> to have a way of handling the different suspend/resume behaviour that
->>> devices want.  There's a few patterns there.
->>>
->>> It's definitely something I think about from time to time and it would
->>> be useful to factor things out, the issue is getting a good enough model
->>> of what's going on.
->>>
->>>>> There was some work on a generic helper for power on sequences but it
->>>>> stalled since it wasn't accepted for the original purpose (LCD panel
->>>>> power ons IIRC).
->>>
->>>> Too bad. I think it could be kept quite simple, though, by handling it
->>>> through the regulator subsystem as suggested above. A generic binding
->>>> for a per-regulator and per-device poweron delay should solve that
->>>> and possibly even make it transparent to the actual driver code.
->>>
->>> Lots of things have a GPIO for reset too, and some want clocks too.  For
->>> maximum usefulness this should be cross subsystem.  I suspect the reset
->>> controller API may be able to handle some of it.
->>>
->>> The regulator power on delays are already handled transparently, by the
->>> time regulator_enable() returns the ramp should be finished.
+>>> I think it's didn't unregistered.. I may forget. I need to apply one of
+>>> patch from Matthew ?
 >>
->> I think the regulator should encoded its own startup delay. Each
->> individual device should handle its own requirements for delay after
->> power is stable.
->> The regulator_enable() will handle the delays for the regulator device.
->> And adding the msleep(25) is for lm90 device. If without delay,
->> sometimes the device can't work properly. If read lm90 register
->> immediately after enabling regulator, the reading may be failed.
->> I'm not sure if 25ms is the right value, I read the LM90 SPEC, the max
->> of "SMBus Clock Low Time" is 25ms, so I supposed that it may need about
->> 25ms to stable after power on.
+>> You need to specify i915.take_over_backlight=1 in kernel cmdline, that
+>> module option is set to false by default for now.
+>>
+>> Thanks for the test.
+>>
+>> -Aaron
+>>
+>>>
+>>> Some strings from logs:
+>>> DMI: LENOVO 23205NG/23205NG, BIOS G2ET92WW (2.52 ) 02/22/2013
+>>> thinkpad_acpi: Standard ACPI backlight interface available, not loading
+>>> native one
+>>>
 >>
 > 
-> Problem is that you are always waiting, even if the same regulator was
-> turned on already, and even if it is a dummy regulator.
-> 
-> Imagine every driver doing that. Booting would take forever, just because of
-> unnecessary delays all over the place. There has to be a better solution
-> which does not include a mandatory and potentially unnecessary wait time
-> in the driver. At a previous company we had a design with literally dozens
-> of those chip. You really want to force such a boot delay on every user ?
-> 
-> But essentially you don't even know if it is needed; you are just guessing.
-> That is not an acceptable reason to add such a delay, mandatory or not.
-I think the device need time to wait stable after power on, but it's
-difficult to get an exact delay value, and this delay may also relate
-with platform design, so how about to add a optional property in the DT
-node, such as "power-on-delay-ms" ?
+> Thanks for quick answer. Yes. This option do unregister. Thanks. but for
+> this patch-set I also need "[PATCH 2/3] ACPI / video: Always call
+> acpi_video_init_brightness() on init" from Matthew (for notifications in
+> DE).
 
-> 
-> Guenter
-> 
+That patch is reverted as it cause problem for other system:
+https://bugs.freedesktop.org/show_bug.cgi?id=68355
 
+OTOH, the thinkpad-acpi module already has a call to _BCL except that
+the tpacpi_acpi_handle_locate failed to locate video controller's handle:
+https://bugzilla.kernel.org/show_bug.cgi?id=51231#c121
+I'll see if I can figure out why.
+
+Thanks,
+Aaron
