@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751623Ab3IJJc6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 05:32:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57110 "EHLO mx2.suse.de"
+	id S1751795Ab3IJJdF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 05:33:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57167 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751502Ab3IJJcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 05:32:54 -0400
+	id S1751665Ab3IJJdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 05:33:01 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 19/50] sched: Track NUMA hinting faults on per-node basis
-Date: Tue, 10 Sep 2013 10:31:59 +0100
-Message-Id: <1378805550-29949-20-git-send-email-mgorman@suse.de>
+Subject: [PATCH 26/50] sched: Check current->mm before allocating NUMA faults
+Date: Tue, 10 Sep 2013 10:32:06 +0100
+Message-Id: <1378805550-29949-27-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1378805550-29949-1-git-send-email-mgorman@suse.de>
 References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
@@ -22,111 +22,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch tracks what nodes numa hinting faults were incurred on.
-This information is later used to schedule a task on the node storing
-the pages most frequently faulted by the task.
+task_numa_placement checks current->mm but after buffers for faults
+have already been uselessly allocated. Move the check earlier.
 
+[peterz@infradead.org: Identified the problem]
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/sched.h |  2 ++
- kernel/sched/core.c   |  3 +++
- kernel/sched/fair.c   | 11 ++++++++++-
- kernel/sched/sched.h  | 12 ++++++++++++
- 4 files changed, 27 insertions(+), 1 deletion(-)
+ kernel/sched/fair.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 49b426e..dfba435 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1334,6 +1334,8 @@ struct task_struct {
- 	unsigned int numa_scan_period_max;
- 	u64 node_stamp;			/* migration stamp  */
- 	struct callback_head numa_work;
-+
-+	unsigned long *numa_faults;
- #endif /* CONFIG_NUMA_BALANCING */
- 
- 	struct rcu_head rcu;
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 9d7a33a..dbc2de6 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1644,6 +1644,7 @@ static void __sched_fork(struct task_struct *p)
- 	p->numa_migrate_seq = p->mm ? p->mm->numa_scan_seq - 1 : 0;
- 	p->numa_scan_period = sysctl_numa_balancing_scan_delay;
- 	p->numa_work.next = &p->numa_work;
-+	p->numa_faults = NULL;
- #endif /* CONFIG_NUMA_BALANCING */
- }
- 
-@@ -1905,6 +1906,8 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
- 	if (mm)
- 		mmdrop(mm);
- 	if (unlikely(prev_state == TASK_DEAD)) {
-+		task_numa_free(prev);
-+
- 		/*
- 		 * Remove function-return probe instances associated with this
- 		 * task and put them back on the free list.
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 779ebd7..ebd24c0 100644
+index 108f357..e259241 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -902,7 +902,14 @@ void task_numa_fault(int node, int pages, bool migrated)
+@@ -930,8 +930,6 @@ static void task_numa_placement(struct task_struct *p)
+ 	int seq, nid, max_nid = -1;
+ 	unsigned long max_faults = 0;
+ 
+-	if (!p->mm)	/* for example, ksmd faulting in a user's mm */
+-		return;
+ 	seq = ACCESS_ONCE(p->mm->numa_scan_seq);
+ 	if (p->numa_scan_seq == seq)
+ 		return;
+@@ -998,6 +996,10 @@ void task_numa_fault(int last_nid, int node, int pages, bool migrated)
  	if (!numabalancing_enabled)
  		return;
  
--	/* FIXME: Allocate task-specific structure for placement policy here */
-+	/* Allocate buffer to track faults on a per-node basis */
-+	if (unlikely(!p->numa_faults)) {
-+		int size = sizeof(*p->numa_faults) * nr_node_ids;
++	/* for example, ksmd faulting in a user's mm */
++	if (!p->mm)
++		return;
 +
-+		p->numa_faults = kzalloc(size, GFP_KERNEL|__GFP_NOWARN);
-+		if (!p->numa_faults)
-+			return;
-+	}
+ 	/* For now, do not attempt to detect private/shared accesses */
+ 	priv = 1;
  
- 	/*
- 	 * If pages are properly placed (did not migrate) then scan slower.
-@@ -918,6 +925,8 @@ void task_numa_fault(int node, int pages, bool migrated)
- 	}
- 
- 	task_numa_placement(p);
-+
-+	p->numa_faults[node] += pages;
- }
- 
- static void reset_ptenuma_scan(struct task_struct *p)
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 7c17661..46c2068 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -6,6 +6,7 @@
- #include <linux/spinlock.h>
- #include <linux/stop_machine.h>
- #include <linux/tick.h>
-+#include <linux/slab.h>
- 
- #include "cpupri.h"
- #include "cpuacct.h"
-@@ -553,6 +554,17 @@ static inline u64 rq_clock_task(struct rq *rq)
- 	return rq->clock_task;
- }
- 
-+#ifdef CONFIG_NUMA_BALANCING
-+static inline void task_numa_free(struct task_struct *p)
-+{
-+	kfree(p->numa_faults);
-+}
-+#else /* CONFIG_NUMA_BALANCING */
-+static inline void task_numa_free(struct task_struct *p)
-+{
-+}
-+#endif /* CONFIG_NUMA_BALANCING */
-+
- #ifdef CONFIG_SMP
- 
- #define rcu_dereference_check_sched_domain(p) \
 -- 
 1.8.1.4
 
