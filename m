@@ -1,120 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592Ab3IJSAZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 14:00:25 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:38713 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752646Ab3IJSAX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 14:00:23 -0400
+	id S1753983Ab3IJSB4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 14:01:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51656 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753830Ab3IJSBy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 14:01:54 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: emilne@redhat.com
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        Hannes Reinecke <hare@suse.de>
+Subject: Re: [patch] block: fix race between request completion and timeout handling
+References: <x49k3j4s41j.fsf@segfault.boston.devel.redhat.com>
+	<1378834539.3872.6443.camel@localhost.localdomain>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 10 Sep 2013 14:01:49 -0400
+In-Reply-To: <1378834539.3872.6443.camel@localhost.localdomain> (Ewan Milne's
+	message of "Tue, 10 Sep 2013 13:35:39 -0400")
+Message-ID: <x4961u8eesy.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 10 Sep 2013 19:00:02 +0100
-X-Google-Sender-Auth: fP7bOC32DblNhM2gJGx46ORKKiU
-Message-ID: <CACxGe6v8hO4sRX_KGcH=YBAMrF8mQHqWdxXEvVwoC2pVS5Yv9Q@mail.gmail.com>
-Subject: [GIT PULL] Device tree updates for v3.12
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Ewan Milne <emilne@redhat.com> writes:
 
-Pretty minor stuff here. Please pull.
+> If the request completes after blk_mark_rq_complete() is called but
+> before blk_clear_req_complete() is called, the completion will not be
+> processed, and we will have to wait for the request to timeout again.
+> Maybe this is not so bad, as it should be extremely rare, but if the
+> timeout were a large value for some reason, that could be a problem.
+>
+> It seems to me that the issue is really that there are 2 state variables
+> (the REQ_ATOM_COMPLETE flag and the req->timeout_list) for the same
+> state, and so manipulating both of these without a lock will always have
+> a window.
 
-g.
+Agreed.  Do you see a clean way of fixing that?
 
-The following changes since commit d8dfad3876e4386666b759da3c833d62fb8b2267:
+> Clearly it would be better to avoid a panic, so Jeff's fix would help.
+>
+> I'm not sure I follow how the issue Jeff is fixing caused this
+> particular crash, though.  How did the request get back on the queue?
+> The crash occurred when the SCSI EH was flushing the done_q requests.
 
-  Linux 3.11-rc7 (2013-08-25 17:43:22 -0700)
+Right, sorry.  I wrote that after having been away from the problem for
+too long.  I left out an important part:
 
-are available in the git repository at:
+This would only actually explain the coredumps *IF* the request
+structure was freed, reallocated *and* queued before the error handler
+thread had a chance to process it.  That is possible, but it may make
+sense to keep digging for another race.  I think that if this is what
+was happening, we would see other instances of this problem showing up
+as null pointer or garbage pointer dereferences, for example when the
+request structure was not re-used.  It looks like we actually do run
+into that situation in other reports.
 
-  git://git.secretlab.ca/git/linux tags/devicetree-for-linus
+I don't think this is a smoking gun, but I think the patch should go in
+so we can further narrow down the search.
 
-for you to fetch changes up to 2bc552df76d83cf1455ac8cf4c87615bfd15df74:
+Thanks for looking at it, Ewan.
 
-  of/platform: add error reporting to of_amba_device_create()
-(2013-09-09 17:04:52 +0100)
-
-----------------------------------------------------------------
-Device tree core updates for v3.12
-
-Generally minor changes. A bunch of bug fixes, particularly for
-initialization and some refactoring. Most notable change if feeding the
-entire flattened tree into the random pool at boot. May not be
-significant, but shouldn't hurt either.
-
-----------------------------------------------------------------
-Alexander Shiyan (1):
-      dt: Typo fix
-
-Anton Blanchard (1):
-      of: Feed entire flattened device tree into the random pool
-
-Bartlomiej Zolnierkiewicz (1):
-      of/platform: add error reporting to of_amba_device_create()
-
-Geert Uytterhoeven (1):
-      of: Make of_get_phy_mode() return int i.s.o. const int
-
-Grant Likely (5):
-      Merge tag 'v3.11-rc7' into devicetree/next
-      of: consolidate definition of early_init_dt_alloc_memory_arch()
-      of: Fix missing memory initialization on FDT unflattening
-      of/fdt: Remove duplicate memory clearing on FDT unflattening
-      of/fdt: Clean up casting in unflattening path
-
-Laxman Dewangan (1):
-      include: dt-binding: input: create a DT header defining key codes.
-
-Mark Brown (1):
-      of/platform: Staticize of_platform_device_create_pdata()
-
-Santosh Shilimkar (1):
-      of: Specify initrd location using 64-bit
-
-Sebastian Andrzej Siewior (1):
-      OF: make of_property_for_each_{u32|string}() use parameters if
-OF is not enabled
-
-Stephen Warren (5):
-      of: move documentation of of_parse_phandle_with_args
-      of: move of_parse_phandle()
-      of: introduce of_parse_phandle_with_fixed_args
-      of: call __of_parse_phandle_with_args from of_parse_phandle
-      gpio: implement gpio-ranges binding document fix
-
-Yijing Wang (1):
-      irq/of: Fix comment typo for irq_of_parse_and_map
-
- .../devicetree/bindings/net/can/sja1000.txt        |   2 +-
- arch/arc/kernel/devtree.c                          |   6 -
- arch/arc/mm/init.c                                 |   5 +-
- arch/arm/mm/init.c                                 |   2 +-
- arch/arm64/kernel/setup.c                          |   5 -
- arch/arm64/mm/init.c                               |   3 +-
- arch/c6x/kernel/devicetree.c                       |   8 +-
- arch/metag/mm/init.c                               |   5 +-
- arch/microblaze/kernel/prom.c                      |   8 +-
- arch/mips/kernel/prom.c                            |   3 +-
- arch/openrisc/kernel/prom.c                        |   8 +-
- arch/powerpc/kernel/prom.c                         |   8 +-
- arch/x86/kernel/devicetree.c                       |   3 +-
- arch/xtensa/kernel/setup.c                         |   3 +-
- drivers/gpio/gpiolib-of.c                          |   4 +-
- drivers/of/base.c                                  | 200 +++++---
- drivers/of/fdt.c                                   |  98 ++--
- drivers/of/irq.c                                   |   2 +-
- drivers/of/of_net.c                                |   2 +-
- drivers/of/platform.c                              |  21 +-
- include/dt-bindings/input/input.h                  | 525 +++++++++++++++++++++
- include/linux/of.h                                 |  49 +-
- include/linux/of_fdt.h                             |   3 +-
- include/linux/of_net.h                             |   4 +-
- 24 files changed, 787 insertions(+), 190 deletions(-)
- create mode 100644 include/dt-bindings/input/input.h
+Cheers,
+Jeff
