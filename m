@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179Ab3IJJdc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 05:33:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57347 "EHLO mx2.suse.de"
+	id S1752001Ab3IJJdP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 05:33:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57202 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752117Ab3IJJdY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 05:33:24 -0400
+	id S1751789Ab3IJJdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 05:33:05 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 48/50] sched: numa: Decide whether to favour task or group weights based on swap candidate relationships
-Date: Tue, 10 Sep 2013 10:32:28 +0100
-Message-Id: <1378805550-29949-49-git-send-email-mgorman@suse.de>
+Subject: [PATCH 30/50] sched: Do not migrate memory immediately after switching node
+Date: Tue, 10 Sep 2013 10:32:10 +0100
+Message-Id: <1378805550-29949-31-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1378805550-29949-1-git-send-email-mgorman@suse.de>
 References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
@@ -24,161 +24,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rik van Riel <riel@redhat.com>
 
-This patch separately considers task and group affinities when searching
-for swap candidates during task NUMA placement. If tasks are not part of
-a group or the same group then the task weights are considered.
-Otherwise the group weights are compared.
+The load balancer can move tasks between nodes and does not take NUMA
+locality into account. With automatic NUMA balancing this may result in the
+tasks working set being migrated to the new node. However, as the fault
+buffer will still store faults from the old node the schduler may decide to
+reset the preferred node and migrate the task back resulting in more
+migrations.
 
-Not-signed-off-by: Rik van Riel
+The ideal would be that the scheduler did not migrate tasks with a heavy
+memory footprint but this may result nodes being overloaded. We could
+also discard the fault information on task migration but this would still
+cause all the tasks working set to be migrated. This patch simply avoids
+migrating the memory for a short time after a task is migrated.
+
+Not-signed-off: Rik van Riel
 ---
- kernel/sched/fair.c | 59 ++++++++++++++++++++++++++++++++---------------------
- 1 file changed, 36 insertions(+), 23 deletions(-)
+ kernel/sched/core.c |  2 +-
+ kernel/sched/fair.c | 18 ++++++++++++++++--
+ mm/mempolicy.c      | 12 ++++++++++++
+ 3 files changed, 29 insertions(+), 3 deletions(-)
 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index e94509d..374da2b 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1641,7 +1641,7 @@ static void __sched_fork(struct task_struct *p)
+ 
+ 	p->node_stamp = 0ULL;
+ 	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
+-	p->numa_migrate_seq = 0;
++	p->numa_migrate_seq = 1;
+ 	p->numa_scan_period = sysctl_numa_balancing_scan_delay;
+ 	p->numa_preferred_nid = -1;
+ 	p->numa_work.next = &p->numa_work;
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 80906fa..fdb7923 100644
+index 223e1f8..c2f1cf5 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -1039,13 +1039,15 @@ static void task_numa_assign(struct task_numa_env *env,
-  * into account that it might be best if task running on the dst_cpu should
-  * be exchanged with the source task
+@@ -884,7 +884,7 @@ static unsigned int task_scan_max(struct task_struct *p)
+  * the preferred node but still allow the scheduler to move the task again if
+  * the nodes CPUs are overloaded.
   */
--static void task_numa_compare(struct task_numa_env *env, long imp)
-+static void task_numa_compare(struct task_numa_env *env,
-+			      long taskimp, long groupimp)
+-unsigned int sysctl_numa_balancing_settle_count __read_mostly = 3;
++unsigned int sysctl_numa_balancing_settle_count __read_mostly = 4;
+ 
+ static inline int task_faults_idx(int nid, int priv)
  {
- 	struct rq *src_rq = cpu_rq(env->src_cpu);
- 	struct rq *dst_rq = cpu_rq(env->dst_cpu);
- 	struct task_struct *cur;
- 	long dst_load, src_load;
- 	long load;
-+	long imp = (groupimp > 0) ? groupimp : taskimp;
+@@ -980,7 +980,7 @@ static void task_numa_placement(struct task_struct *p)
  
- 	rcu_read_lock();
- 	cur = ACCESS_ONCE(dst_rq->curr);
-@@ -1064,10 +1066,19 @@ static void task_numa_compare(struct task_numa_env *env, long imp)
- 		if (!cpumask_test_cpu(env->src_cpu, tsk_cpus_allowed(cur)))
- 			goto unlock;
- 
--		imp += task_weight(cur, env->src_nid) +
--		       group_weight(cur, env->src_nid) -
--		       task_weight(cur, env->dst_nid) -
--		       group_weight(cur, env->dst_nid);
+ 		/* Update the preferred nid and migrate task if possible */
+ 		p->numa_preferred_nid = max_nid;
+-		p->numa_migrate_seq = 0;
++		p->numa_migrate_seq = 1;
+ 		migrate_task_to(p, preferred_cpu);
+ 	}
+ }
+@@ -4074,6 +4074,20 @@ static void move_task(struct task_struct *p, struct lb_env *env)
+ 	set_task_cpu(p, env->dst_cpu);
+ 	activate_task(env->dst_rq, p, 0);
+ 	check_preempt_curr(env->dst_rq, p, 0);
++#ifdef CONFIG_NUMA_BALANCING
++	if (p->numa_preferred_nid != -1) {
++		int src_nid = cpu_to_node(env->src_cpu);
++		int dst_nid = cpu_to_node(env->dst_cpu);
++
 +		/*
-+		 * If dst and source tasks are in the same NUMA group, or not
-+		 * in any group then look only at task weights otherwise give
-+		 * priority to the group weights.
++		 * If the load balancer has moved the task then limit
++		 * migrations from taking place in the short term in
++		 * case this is a short-lived migration.
 +		 */
-+		if (!cur->numa_group || ! env->p->numa_group ||
-+		    cur->numa_group == env->p->numa_group) {
-+			imp = taskimp + task_weight(cur, env->src_nid) -
-+			      task_weight(cur, env->dst_nid);
-+		} else {
-+			imp = groupimp + group_weight(cur, env->src_nid) -
-+			       group_weight(cur, env->dst_nid);
-+		}
- 	}
- 
- 	if (imp < env->best_imp)
-@@ -1117,7 +1128,8 @@ unlock:
- 	rcu_read_unlock();
++		if (src_nid != dst_nid && dst_nid != p->numa_preferred_nid)
++			p->numa_migrate_seq = 0;
++	}
++#endif
  }
  
--static void task_numa_find_cpu(struct task_numa_env *env, long imp)
-+static void task_numa_find_cpu(struct task_numa_env *env,
-+				long taskimp, long groupimp)
- {
- 	int cpu;
- 
-@@ -1127,7 +1139,7 @@ static void task_numa_find_cpu(struct task_numa_env *env, long imp)
- 			continue;
- 
- 		env->dst_cpu = cpu;
--		task_numa_compare(env, imp);
-+		task_numa_compare(env, taskimp, groupimp);
- 	}
- }
- 
-@@ -1147,9 +1159,9 @@ static int task_numa_migrate(struct task_struct *p)
- 		.best_cpu = -1
- 	};
-  	struct sched_domain *sd;
--	unsigned long weight;
-+	unsigned long taskweight, groupweight;
- 	int nid, ret;
--	long imp;
-+	long taskimp, groupimp;
- 
- 	/*
- 	 * Find the lowest common scheduling domain covering the nodes of both
-@@ -1164,10 +1176,12 @@ static int task_numa_migrate(struct task_struct *p)
- 	}
- 	rcu_read_unlock();
- 
--	weight = task_weight(p, env.src_nid) + group_weight(p, env.src_nid);
-+	taskweight = task_weight(p, env.src_nid);
-+	groupweight = group_weight(p, env.src_nid);
- 	update_numa_stats(&env.src_stats, env.src_nid);
- 	env.dst_nid = p->numa_preferred_nid;
--	imp = task_weight(p, env.dst_nid) + group_weight(p, env.dst_nid) - weight;
-+	taskimp = task_weight(p, env.dst_nid) - taskweight;
-+	groupimp = group_weight(p, env.dst_nid) - groupweight;
- 	update_numa_stats(&env.dst_stats, env.dst_nid);
- 
- 	/*
-@@ -1175,20 +1189,21 @@ static int task_numa_migrate(struct task_struct *p)
- 	 * alternative node with relatively better statistics.
- 	 */
- 	if (env.dst_stats.has_capacity) {
--		task_numa_find_cpu(&env, imp);
-+		task_numa_find_cpu(&env, taskimp, groupimp);
- 	} else {
- 		for_each_online_node(nid) {
- 			if (nid == env.src_nid || nid == p->numa_preferred_nid)
- 				continue;
- 
- 			/* Only consider nodes where both task and groups benefit */
--			imp = task_weight(p, nid) + group_weight(p, nid) - weight;
--			if (imp < 0)
-+			taskimp = task_weight(p, nid) - taskweight;
-+			groupimp = group_weight(p, nid) - groupweight;
-+			if (taskimp < 0 && groupimp < 0)
- 				continue;
- 
- 			env.dst_nid = nid;
- 			update_numa_stats(&env.dst_stats, env.dst_nid);
--			task_numa_find_cpu(&env, imp);
-+			task_numa_find_cpu(&env, taskimp, groupimp);
- 		}
+ /*
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 8e2a364..adc93b2 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2322,6 +2322,18 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
+ 		last_nidpid = page_nidpid_xchg_last(page, this_nidpid);
+ 		if (!nidpid_pid_unset(last_nidpid) && nidpid_to_nid(last_nidpid) != polnid)
+ 			goto out;
++
++#ifdef CONFIG_NUMA_BALANCING
++		/*
++		 * If the scheduler has just moved us away from our
++		 * preferred node, do not bother migrating pages yet.
++		 * This way a short and temporary process migration will
++		 * not cause excessive memory migration.
++		 */
++		if (polnid != current->numa_preferred_nid &&
++				!current->numa_migrate_seq)
++			goto out;
++#endif
  	}
  
-@@ -4627,10 +4642,9 @@ static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
- 	if (dst_nid == p->numa_preferred_nid)
- 		return true;
- 
--	/* After the task has settled, check if the new node is better. */
--	if (p->numa_migrate_seq >= sysctl_numa_balancing_settle_count &&
--			task_weight(p, dst_nid) + group_weight(p, dst_nid) >
--			task_weight(p, src_nid) + group_weight(p, src_nid))
-+	/* If both task and group weight improve, this move is a winner. */
-+	if (task_weight(p, dst_nid) > task_weight(p, src_nid) &&
-+	    group_weight(p, dst_nid) > group_weight(p, src_nid))
- 		return true;
- 
- 	return false;
-@@ -4657,10 +4671,9 @@ static bool migrate_degrades_locality(struct task_struct *p, struct lb_env *env)
- 	if (src_nid == p->numa_preferred_nid)
- 		return true;
- 
--	/* After the task has settled, check if the new node is worse. */
--	if (p->numa_migrate_seq >= sysctl_numa_balancing_settle_count &&
--			task_weight(p, dst_nid) + group_weight(p, dst_nid) <
--			task_weight(p, src_nid) + group_weight(p, src_nid))
-+	/* If either task or group weight get worse, don't do it. */
-+	if (task_weight(p, dst_nid) < task_weight(p, src_nid) ||
-+	    group_weight(p, dst_nid) < group_weight(p, src_nid))
- 		return true;
- 
- 	return false;
+ 	if (curnid != polnid)
 -- 
 1.8.1.4
 
