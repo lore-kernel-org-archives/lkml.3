@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239Ab3IJWxr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 18:53:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45388 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751230Ab3IJWxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 18:53:44 -0400
-Message-ID: <522FA2A8.8080703@zytor.com>
-Date: Tue, 10 Sep 2013 15:52:24 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1752880Ab3IJW4P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 18:56:15 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:64188 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752120Ab3IJW4O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 18:56:14 -0400
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        kexec@lists.infradead.org, akpm@linux-foundation.org,
-        zohar@linux.vnet.ibm.com, d.kasatkin@samsung.com,
-        ebiederm@xmission.com, matthew.garrett@nebula.com,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 15/16] bootparam: Pass acpi_rsdp pointer in bootparam
-References: <1378849471-10521-1-git-send-email-vgoyal@redhat.com> <1378849471-10521-16-git-send-email-vgoyal@redhat.com>
-In-Reply-To: <1378849471-10521-16-git-send-email-vgoyal@redhat.com>
-X-Enigmail-Version: 1.5.2
+Date: Wed, 11 Sep 2013 06:56:12 +0800
+Message-ID: <CAPgLHd-Qzopm8EmcFOAnHk_UAks9FTFKnaS_4Xd3jnzPOtLChQ@mail.gmail.com>
+Subject: [PATCH] drm/msm: fix return value check in ERR_PTR()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: airlied@linux.ie, robdclark@gmail.com
+Cc: yongjun_wei@trendmicro.com.cn, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2013 02:44 PM, Vivek Goyal wrote:
-> Currently kexec does not enables EFI and its tables in second kernel. Hence
-> acpi rsdp root pointer is passed on command line. But secureboot does not trust
-> acpi_rsdp on command line as kernel can execute some of the code as retrieved
-> by following acpi_rsdp and root can modify command line. So in secureboot
-> mode we ignore acpi_rsdp on command line.
-> 
-> Start passing it in bootparams for the time being. kexec-tools will prepare
-> the bootparams and put acpi_rsdp pointer there.
-> 
-> Peter Jones suggested that scan all ACPI memory for acpi_rsdp if EFI is
-> not enabled. This probably is a better fix and most likely this patch will
-> change and adopt that approach down the line.
-> 
-> In fact if we figure out how to make UEFI run time calls in second kernel,
-> we will not need acpi_rsdp at all.
-> 
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Borislav Petkov has been working on a fixed mapping of UEFI memory,
-which should allow UEFI runtime calls across kexec.
+In case of error, the function drm_prime_pages_to_sg() returns ERR_PTR()
+and never returns NULL. The NULL test in the return value check should
+be replaced with IS_ERR().
 
-	-hpa
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/gpu/drm/msm/msm_gem.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/gpu/drm/msm/msm_gem.c b/drivers/gpu/drm/msm/msm_gem.c
+index 6b5a6c8..3462def 100644
+--- a/drivers/gpu/drm/msm/msm_gem.c
++++ b/drivers/gpu/drm/msm/msm_gem.c
+@@ -40,9 +40,9 @@ static struct page **get_pages(struct drm_gem_object *obj)
+ 		}
+ 
+ 		msm_obj->sgt = drm_prime_pages_to_sg(p, npages);
+-		if (!msm_obj->sgt) {
++		if (IS_ERR(msm_obj->sgt)) {
+ 			dev_err(dev->dev, "failed to allocate sgt\n");
+-			return ERR_PTR(-ENOMEM);
++			return ERR_CAST(msm_obj->sgt);
+ 		}
+ 
+ 		msm_obj->pages = p;
 
