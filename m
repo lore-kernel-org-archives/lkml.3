@@ -1,96 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751979Ab3IJPos (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 11:44:48 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:39253 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404Ab3IJPor (ORCPT
+	id S1752374Ab3IJPph (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 11:45:37 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:39381 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752125Ab3IJPpf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 11:44:47 -0400
-From: Aldo Iljazi <neonsync1@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Aldo Iljazi <neonsync1@gmail.com>
-Subject: [PATCH] Staging: bcm: nvm: fixed space prohibition
-Date: Tue, 10 Sep 2013 18:44:39 +0300
-Message-Id: <1378827879-4597-1-git-send-email-neonsync1@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 10 Sep 2013 11:45:35 -0400
+Date: Tue, 10 Sep 2013 16:45:32 +0100
+From: Gustavo Padovan <gustavo@padovan.org>
+To: Dan Aloni <alonid@postram.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Johan Hedberg <johan.hedberg@gmail.com>
+Subject: Re: [PATCH bluetooth-next] Bluetooth: Add support for BCM20702A0
+ [0a5c, 21e6]
+Message-ID: <20130910154532.GB1916@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	Dan Aloni <alonid@postram.com>,
+	Marcel Holtmann <marcel@holtmann.org>,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Johan Hedberg <johan.hedberg@gmail.com>
+References: <1378208542-30729-1-git-send-email-alonid@postram.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378208542-30729-1-git-send-email-alonid@postram.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed space prohibition before semicolon, particularly:
+Hi Dan,
 
-nvm.c:106: WARNING: space prohibited before semicolon
-nvm.c:1098: WARNING: space prohibited before semicolon
-nvm.c:1279: WARNING: space prohibited before semicolon
-nvm.c:2834: WARNING: space prohibited before semicolon
-nvm.c:3361: WARNING: space prohibited before semicolon
-nvm.c:4453: WARNING: space prohibited before semicolon
+2013-09-03 Dan Aloni <alonid@postram.com>:
 
-Signed-off-by: Aldo Iljazi <neonsync1@gmail.com>
----
- drivers/staging/bcm/nvm.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+> Tested with this patch and a Bluetooth mouse on 3.10.10, on ThinkPad W530.
+> 
+> Bus 001 Device 004: ID 0a5c:21e6 Broadcom Corp. BCM20702 Bluetooth 4.0 [ThinkPad]
+> 
+> T:  Bus=01 Lev=02 Prnt=02 Port=03 Cnt=02 Dev#=  4 Spd=12  MxCh= 0
+> D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+> P:  Vendor=0a5c ProdID=21e6 Rev=01.12
+> S:  Manufacturer=Broadcom Corp
+> S:  Product=BCM20702A0
+> S:  SerialNumber=F4B7E2F6E438
+> C:  #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
+> I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+> I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
+> I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+> I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
+> 
+> Signed-off-by: Dan Aloni <alonid@postram.com>
+> ---
+>  drivers/bluetooth/btusb.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+> index de4cf4d..e6313f8 100644
+> --- a/drivers/bluetooth/btusb.c
+> +++ b/drivers/bluetooth/btusb.c
+> @@ -104,6 +104,7 @@ static struct usb_device_id btusb_table[] = {
+>  	{ USB_DEVICE(0x0b05, 0x17b5) },
+>  	{ USB_DEVICE(0x04ca, 0x2003) },
+>  	{ USB_DEVICE(0x0489, 0xe042) },
+> +	{ USB_DEVICE(0x0a5c, 0x21e6) },
 
-diff --git a/drivers/staging/bcm/nvm.c b/drivers/staging/bcm/nvm.c
-index 91a5715..1f5b62b 100644
---- a/drivers/staging/bcm/nvm.c
-+++ b/drivers/staging/bcm/nvm.c
-@@ -103,7 +103,7 @@ static UCHAR ReadEEPROMStatusRegister(struct bcm_mini_adapter *Adapter)
- 		}
- 		if (!(dwRetries%RETRIES_PER_DELAY))
- 			udelay(1000);
--		uiStatus = 0 ;
-+		uiStatus = 0;
- 	}
- 	return uiData;
- } /* ReadEEPROMStatusRegister */
-@@ -1095,7 +1095,7 @@ static int BeceemFlashBulkWrite(struct bcm_mini_adapter *Adapter,
- 				goto BeceemFlashBulkWrite_EXIT;
- 			}
- 			uiTemp = uiTemp - 1;
--			index = index + 1 ;
-+			index = index + 1;
- 		}
- 	}
- 	Adapter->SelectedChip = RESET_CHIP_SELECT;
-@@ -1276,7 +1276,7 @@ static int BeceemFlashBulkWriteStatus(struct bcm_mini_adapter *Adapter,
- 				goto BeceemFlashBulkWriteStatus_EXIT;
- 			}
- 			uiTemp = uiTemp - 1;
--			index = index + 1 ;
-+			index = index + 1;
- 		}
- 	}
- 
-@@ -2831,7 +2831,7 @@ int BcmGetSectionValEndOffset(struct bcm_mini_adapter *Adapter, enum bcm_flash2x
- 		SectEndOffset = INVALID_OFFSET;
- 	}
- 
--	return SectEndOffset ;
-+	return SectEndOffset;
- }
- 
- /*
-@@ -3358,7 +3358,7 @@ int BcmSetActiveSection(struct bcm_mini_adapter *Adapter, enum bcm_flash2x_secti
- 	/* struct bcm_dsd_header sDSD = {0};
- 	 * struct bcm_iso_header sISO = {0};
- 	 */
--	int HighestPriDSD = 0 ;
-+	int HighestPriDSD = 0;
- 	int HighestPriISO = 0;
- 
- 	Status = IsSectionWritable(Adapter, eFlash2xSectVal);
-@@ -4450,7 +4450,7 @@ int WriteToFlashWithoutSectorErase(struct bcm_mini_adapter *Adapter,
- 		BcmDoChipSelect(Adapter, uiOffset);
- 		uiPartOffset = (uiOffset & (FLASH_PART_SIZE - 1)) + GetFlashBaseAddr(Adapter);
- 
--		for (i = 0 ; i < uiNumBytes; i += Adapter->ulFlashWriteSize) {
-+		for (i = 0; i < uiNumBytes; i += Adapter->ulFlashWriteSize) {
- 			if (Adapter->ulFlashWriteSize == BYTE_WRITE_SUPPORT)
- 				Status = flashByteWrite(Adapter, uiPartOffset, pcBuff);
- 			else
--- 
-1.7.10.4
+In which kernel have you seen this issue? We have a generic rule to catch all
+0x0a5c Broadcom devices. And before we added this the device ID for your
+device was there, so in theory your device always worked.
 
+	Gustavo
