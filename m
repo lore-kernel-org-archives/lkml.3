@@ -1,51 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753730Ab3IJJqJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 05:46:09 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:51574 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104Ab3IJJqE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 05:46:04 -0400
-Date: Tue, 10 Sep 2013 10:45:57 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: wwang <wei_wang@realsil.com.cn>
-Cc: sameo@linux.intel.com, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        rogerable@realtek.com, micky_ching@realsil.com.cn
-Subject: Re: [PATCH] mfd: rtsx: Modify rts5249_optimize_phy
-Message-ID: <20130910094557.GC1456@lee--X1>
-References: <1378804142-28483-1-git-send-email-wei_wang@realsil.com.cn>
- <522EE258.20403@realsil.com.cn>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <522EE258.20403@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753788Ab3IJJqO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 05:46:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58201 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753745Ab3IJJqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 05:46:10 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <alpine.LRH.2.02.1309071426400.29124@tundra.namei.org>
+References: <alpine.LRH.2.02.1309071426400.29124@tundra.namei.org> <alpine.LRH.2.02.1309070309360.24160@tundra.namei.org> <12075.1378340063@warthog.procyon.org.uk> <17000.1378488989@warthog.procyon.org.uk>
+To: James Morris <jmorris@namei.org>
+Cc: dhowells@redhat.com, simo@redhat.com, zohar@linux.vnet.ibm.com,
+        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Keyrings patches
+Date: Tue, 10 Sep 2013 10:45:59 +0100
+Message-ID: <10114.1378806359@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Sep 2013, wwang wrote:
+James Morris <jmorris@namei.org> wrote:
 
-> 于 2013年09月10日 17:09, wei_wang@realsil.com.cn 写道:
-> > From: Wei WANG <wei_wang@realsil.com.cn>
-> >
-> > In some platforms, specially Thinkpad series, rts5249 won't be
-> > initialized properly. So we need adjust some phy parameters to
-> > improve the compatibility issue.
+> > > This missed the merge for 3.12.  Do you want me to queue the changes up, 
+> > > or do you want to send a pull request again after -rc1 ?
+> > 
+> > Can you queue them up now in your 'next' branch?
 > 
-> Hi all:
-> 
-> Sorry, forget to modify the subject prefix. Please ignore this patch. I
-> will resend another one.
+> Nope, new patches can't go into -next until -rc1.
 
-Although it's important to put the version in the subject line of
-resubmissions, it's probably not important enough to send twice. :)
+I think I misunderstood your offer.  When you said "to queue the changes up"
+did you mean for immediate passage to Linus?  If so, is it too late for that?
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+David
