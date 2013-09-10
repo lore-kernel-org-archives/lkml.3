@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617Ab3IJH4p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 03:56:45 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:55694 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753444Ab3IJH4o (ORCPT
+	id S1754926Ab3IJH4y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 03:56:54 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40247 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754654Ab3IJH4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 03:56:44 -0400
-MIME-Version: 1.0
-X-Originating-IP: [212.179.42.66]
-In-Reply-To: <1378797995.6046.54.camel@marge.simpson.net>
-References: <00000140efbcb701-c26320b3-f434-4538-bc80-8e92fed6f303-000000@email.amazonses.com>
-	<CAOtvUMe=jcAHXNJU_rTAAokaE4KZNUTFsHVVTTxgFW_xj8ONxg@mail.gmail.com>
-	<1378795659.6046.41.camel@marge.simpson.net>
-	<CAOtvUMfhLQYK95uPm8idG_vYv-9yG2-KSkScjMBCSuvtffW1Dg@mail.gmail.com>
-	<1378797995.6046.54.camel@marge.simpson.net>
-Date: Tue, 10 Sep 2013 10:56:43 +0300
-Message-ID: <CAOtvUMdRmDYP_e7eFX1akU8vZ=dcVOnFDrBjKufumOaBxxXF3A@mail.gmail.com>
-Subject: Re: [RFC] Restrict kernel spawning of threads to a specified set of cpus.
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>,
+	Tue, 10 Sep 2013 03:56:50 -0400
+Date: Tue, 10 Sep 2013 09:56:35 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Gerlando Falauto <gerlando.falauto@keymile.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        "Brunck, Holger" <Holger.Brunck@keymile.com>,
+        "Longchamp, Valentin" <Valentin.Longchamp@keymile.com>,
+        "Bigler, Stefan" <Stefan.Bigler@keymile.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: kernel deadlock
+Message-ID: <20130910075635.GH26785@twins.programming.kicks-ass.net>
+References: <521F6D06.1040107@keymile.com>
+ <E92455D61233364C88CCD4A6DAB2E2850E09518110@SRVDEHAN1MX1.keymile.net>
+ <521FDD12.7050000@linaro.org>
+ <52212511.9050206@keymile.com>
+ <5221264F.4070402@linaro.org>
+ <5225F8EF.3040701@keymile.com>
+ <52261BBB.60904@linaro.org>
+ <5226EB35.6080604@keymile.com>
+ <522E2FBB.4070406@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <522E2FBB.4070406@linaro.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 10:26 AM, Mike Galbraith <bitbucket@online.de> wrote:
+On Mon, Sep 09, 2013 at 01:29:47PM -0700, John Stultz wrote:
+> Ingo: This makes me think we really should have some lockdep smarts
+> added to seqlock/seqcount structures. Is there something already
+> discovered thats preventing this, or has this just not yet been tried?
 
->
-> Hammering on the wrong spot makes removing isolcpus take longer, and
-> adds up to more hammering in the long run, no?  Hearing you mention
-> isolcpus, I just thought I should mention that it wants to go away, so
-> might not be the optimal spot for isolation related tinkering.
+The only reason this hasn't been done in the past is because of the VDSO
+I believe. We use a seqcount_t from userspace.
 
-
-OK, so I'll bite - isolcpu currently has special magic to do its thing but AFAIK
-part of the reason isolcpu works "better" (for some definition of
-better, for some
-work loads) is simply because it blocks migration earlier than you get with
-cpusets.
-
-What if we  re-did the implementation of isolcpu as creating an
-cpuset with migration off as early as possible in the boot process, prior to
-spawning init?
-
-So basically, isolcpus becomes just a way to configure a cpuset early?
-
-
-Gilad
-
-
-
--- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-
-"If you take a class in large-scale robotics, can you end up in a
-situation where the homework eats your dog?"
- -- Jean-Baptiste Queru
+We either have to open-code the VDSO version or create a variant for
+that specific single use case.
