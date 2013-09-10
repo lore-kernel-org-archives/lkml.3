@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843Ab3IJP0e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 11:26:34 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:59423 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752801Ab3IJP0c (ORCPT
+	id S1752402Ab3IJP3C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 11:29:02 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49936 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751387Ab3IJP3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 11:26:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1309101656150.16010@axis700.grange>
-References: <Pine.LNX.4.64.1309091656200.6602@axis700.grange>
-	<CAKohponZ+FnzqXYMbBzbun0-1iQMi2fS4syrEBC_MdF41vLCeA@mail.gmail.com>
-	<Pine.LNX.4.64.1309101656150.16010@axis700.grange>
-Date: Tue, 10 Sep 2013 20:56:31 +0530
-Message-ID: <CAKohpomBBKLhNemVUpUHAftGhPJJe+ZB7T_9UYLD7LwpR1nK0g@mail.gmail.com>
-Subject: Re: "cpufreq: fix serialization issues with freq change notifiers"
- breaks cpufreq too
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Greg KH <greg@kroah.com>, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+	Tue, 10 Sep 2013 11:29:01 -0400
+Date: Tue, 10 Sep 2013 17:28:45 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: eranian@gmail.com
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: PEBS bug on HSW: "Unexpected number of pebs records 10" (was:
+ Re: [GIT PULL] perf changes for v3.12)
+Message-ID: <20130910152845.GI31370@twins.programming.kicks-ass.net>
+References: <20130903132933.GA24955@gmail.com>
+ <CA+55aFxBTjfx304zstOVq3Hm3vmjgC5gOJaxXG5E_iWq_WXGTw@mail.gmail.com>
+ <20130909100544.GI31370@twins.programming.kicks-ass.net>
+ <CAMsRxfLEO15kKrbmtKKXuW-JTtCCgiuXS6wFs9kiLmG1wge24A@mail.gmail.com>
+ <20130910115306.GA6091@gmail.com>
+ <CAMsRxfLvbExOzjz8tQu7AchQgKBh5S4b7VMQmFtr1RxK4ksAvA@mail.gmail.com>
+ <20130910133845.GB7537@gmail.com>
+ <CAMsRxfJ5HG+0AiooOUFh8TzvCoK3YcBFpeAF0eTzdkDm=wB84g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMsRxfJ5HG+0AiooOUFh8TzvCoK3YcBFpeAF0eTzdkDm=wB84g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 September 2013 20:42, Guennadi Liakhovetski <g.liakhovetski@gmx.de> wrote:
-> 4. reverted that commit, resolving a trivial conflict. Added a debug
-> output in __cpufreq_driver_target() of
->
->
->         if (cpufreq_disabled())
->                 return -ENODEV;
-> +       pr_info("%s() %d\n", __func__, policy->transition_ongoing);
->         if (policy->transition_ongoing)
->                 return -EBUSY;
+On Tue, Sep 10, 2013 at 07:15:19AM -0700, Stephane Eranian wrote:
+> The threshold is where to generate the interrupt. It does not mean
+> where to stop PEBS recording.
 
-Are you sure this diff is on linux-next and not after the revert that
-you mentioned later in the mail? There is some locking introduced
-by my patch which I can't see in you diff..
+It does, since we don't set a reset value. So once a PEBS assist
+happens, that counter stops until we reprogram it in the PMI.
 
-> Built and booted, got
->
-> cpufreq: __cpufreq_driver_target(): 1
->
-> printed out 4 times from the beginning.
->
-> 5. tried
->
-> echo powersave > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
->
-> the above output appeared 2 more times - no frequency change resulted.
->
-> 6. reverted commit dceff5ce18801dddc220d6238628619c93bc3cb6, built booted
-> - cpufreq works again.
->
->> I am afraid you need to give us some more information on how it broke
->> your stuff.. :)
->
-> Hope the above is enough.
+> So it is possible that in HSW, we may
+> get into a situation where it takes time to get to the handler to stop
+> the PMU. I don't know how given we use NMI. Well, unless we were
+> already servicing an NMI at the time. But given that we stop the PMU
+> almost immediately in the handler, I don't see how that would
+> possible.  The other oddity in HSW is that we clear the NMI on entry
+> to the handler and not at the end. I never gotten an good explanation
+> as to why that was necessary. So maybe it is related...
 
-A bit more would be helpful.. Can you add these debug prints to all the places
-where transition_ongoing is getting modified? with %s, __func__ to distinguish
-them better? That will make it a bit easy for me...
-
-Also, what's the configuration of your system? How many CPUs? And are all
-of them sharing clock? (I believe yes, as you are using cpufreq-cpu0)..
+Even if the PMI was delayed that counter would never do another entry.
+So I really don't see how we can have more than nr_counters PEBS entries
+in the buffer.
