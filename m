@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752387Ab3IJMuE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 08:50:04 -0400
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:52205 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752232Ab3IJMt7 (ORCPT
+	id S1752890Ab3IJMuY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 08:50:24 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:57822 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752588Ab3IJMuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 08:49:59 -0400
+	Tue, 10 Sep 2013 08:50:13 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         jic23@cam.ac.uk
 Cc: arnd@arndb.de, linus.walleij@linaro.org, denis.ciocca@st.com,
         linux-iio@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 11/38] Documentation: dt: iio: Add binding for LSM303DLH
-Date: Tue, 10 Sep 2013 13:49:12 +0100
-Message-Id: <1378817379-8238-12-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 25/38] iio: pressure-core: st: Allow for number of channels to vary
+Date: Tue, 10 Sep 2013 13:49:26 +0100
+Message-Id: <1378817379-8238-26-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
 References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
@@ -22,41 +22,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LSM303DLH is a Accelerometer Sensor
+At the moment the number of channels specified is dictated by the first
+sensor supported by the driver. As we add support for more sensors this
+is likely to vary. Instead of using the ARRAY_SIZE() of the LPS331AP's
+channel specifier we'll use a new adaptable 'struct st_sensors' element
+instead.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- .../devicetree/bindings/iio/accel/lsm303dlh.txt     | 21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/iio/accel/lsm303dlh.txt
+ drivers/iio/pressure/st_pressure_core.c | 3 ++-
+ include/linux/iio/common/st_sensors.h   | 1 +
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/iio/accel/lsm303dlh.txt b/Documentation/devicetree/bindings/iio/accel/lsm303dlh.txt
-new file mode 100644
-index 0000000..bb59363
---- /dev/null
-+++ b/Documentation/devicetree/bindings/iio/accel/lsm303dlh.txt
-@@ -0,0 +1,21 @@
-+* STMicroelectronics Accelerometer Sensor
-+
-+Required properties:
-+  - compatible: Should be "st,lsm303dlh_accel"
-+  - reg: The I2C address of the sensor
-+
-+Optional properties:
-+  - vdd-supply: Phandle to the Vdd supply regulator
-+  - vddio-supply: Phandle to the Vdd-IO supply regulator
-+
-+Example:
-+
-+i2c@80128000 {
-+	lsm303dlh_accel@19 {
-+		compatible = "st,lsm303dlh_accel";
-+		reg = <0x19>;
-+
-+		vdd-supply = <&ab8500_ldo_aux1_reg>;
-+		vddio-supply = <&db8500_vsmps2_reg>;
-+	};
-+};
+diff --git a/drivers/iio/pressure/st_pressure_core.c b/drivers/iio/pressure/st_pressure_core.c
+index 60c2ee4..3abada2 100644
+--- a/drivers/iio/pressure/st_pressure_core.c
++++ b/drivers/iio/pressure/st_pressure_core.c
+@@ -107,6 +107,7 @@ static const struct st_sensors st_press_sensors[] = {
+ 			[0] = LPS331AP_PRESS_DEV_NAME,
+ 		},
+ 		.ch = (struct iio_chan_spec *)st_press_lps331ap_channels,
++		.num_ch = ARRAY_SIZE(st_press_lps331ap_channels),
+ 		.odr = {
+ 			.addr = ST_PRESS_LPS331AP_ODR_ADDR,
+ 			.mask = ST_PRESS_LPS331AP_ODR_MASK,
+@@ -245,7 +246,7 @@ int st_press_common_probe(struct iio_dev *indio_dev,
+ 	pdata->num_data_channels = ST_PRESS_NUMBER_DATA_CHANNELS;
+ 	pdata->multiread_bit = pdata->sensor->multi_read_bit;
+ 	indio_dev->channels = pdata->sensor->ch;
+-	indio_dev->num_channels = ARRAY_SIZE(st_press_lps331ap_channels);
++	indio_dev->num_channels = pdata->sensor->num_ch;
+ 
+ 	if (pdata->sensor->fs.addr != 0)
+ 		pdata->current_fullscale = (struct st_sensor_fullscale_avl *)
+diff --git a/include/linux/iio/common/st_sensors.h b/include/linux/iio/common/st_sensors.h
+index e51f654..e732fda 100644
+--- a/include/linux/iio/common/st_sensors.h
++++ b/include/linux/iio/common/st_sensors.h
+@@ -184,6 +184,7 @@ struct st_sensors {
+ 	u8 wai;
+ 	char sensors_supported[ST_SENSORS_MAX_4WAI][ST_SENSORS_MAX_NAME];
+ 	struct iio_chan_spec *ch;
++	int num_ch;
+ 	struct st_sensor_odr odr;
+ 	struct st_sensor_power pw;
+ 	struct st_sensor_axis enable_axis;
 -- 
 1.8.1.2
 
