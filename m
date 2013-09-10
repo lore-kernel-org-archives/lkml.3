@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753117Ab3IJQoK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 12:44:10 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:41929 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797Ab3IJQoI (ORCPT
+	id S1753529Ab3IJQpP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 12:45:15 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:38572 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753406Ab3IJQpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 12:44:08 -0400
-Date: Tue, 10 Sep 2013 09:44:04 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        driverdevel <devel@driverdev.osuosl.org>, Peng Tao <tao.peng@emc.com>,
-        Peng Tao <bergwolf@gmail.com>
-Subject: Re: [PATCH] staging: Disable lustre file system for MIPS, SH, and
- XTENSA
-Message-ID: <20130910164404.GA1690@roeck-us.net>
-References: <1378688580-11935-1-git-send-email-linux@roeck-us.net>
- <20130909015945.GA4029@kroah.com>
- <20130909134012.GA24738@infradead.org>
- <20130909163902.GA28685@kroah.com>
- <20130909170819.GA22764@roeck-us.net>
- <20130909172232.GA10029@kroah.com>
- <CAMuHMdWwFwWeenfsiF+yBYS29rwJTJ1YP5waf=ePK+MRCru3qg@mail.gmail.com>
- <20130909200610.GA28416@roeck-us.net>
- <CAMuHMdXWaVivv3RL9dyLdeA7p4=XiBLAyhXNEiay3ARoWjM5gw@mail.gmail.com>
+	Tue, 10 Sep 2013 12:45:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdXWaVivv3RL9dyLdeA7p4=XiBLAyhXNEiay3ARoWjM5gw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <16357.1378816473@warthog.procyon.org.uk>
+References: <alpine.DEB.2.00.1309091042520.18214@cobra.newdream.net>
+	<fd69f2052bc16d5a5de0104ca00ccc59478e3569.1378750714.git.milosz@adfin.com>
+	<16357.1378816473@warthog.procyon.org.uk>
+Date: Tue, 10 Sep 2013 12:45:11 -0400
+Message-ID: <CANP1eJFy+dtwEVYbyTtYbH+CeXGfUDbUkaf-_YsJAn_VLvK4pg@mail.gmail.com>
+Subject: Re: [PATCH] fscache: check consistency does not decrement refcount
+From: Milosz Tanski <milosz@adfin.com>
+To: Sage Weil <sage@inktank.com>
+Cc: ceph-devel <ceph-devel@vger.kernel.org>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>,
+        "linux-cachefs@redhat.com" <linux-cachefs@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 10:49:05AM +0200, Geert Uytterhoeven wrote:
-> On Mon, Sep 9, 2013 at 10:06 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> >> [*] Why does m68k allmodconfig still succeed on kissb???
-> >>     It does fail for me, as m68k's copy_from_user_page() calls
-> >>     flush_icache_user_range(), which is not exported.
-> >>
-> > I don't see a build failure in m68k:allmodconfig either.
-> >
-> > flush_icache_user_range() is called from copy_to_user_page(), not from
-> > copy_from_user_page(). copy_from_user_page() calls flush_cache_page()
-> > which calls __flush_cache_030(). The first is inline, the second is
-> > assembler, so I would expect it to work. Which doesn't answer
-> > the question why it fails for you.
-> 
-> Sorry, I meant copy_to_user_page().
-> 
-> I tried with 2.6.3 from crosstool, and it succeeded, too.
-> 
-Do such old versions of gcc still exist ? Just kidding :)
+Sage,
 
-> Turns out cfs_access_process_vm() is called with write=0 only.
-> Gcc 2.6.3 optimizes away the write != 0 branch (which calls copy_to_user_page()
-> and thus flush_icache_user_range()), while gcc 4.1.2 doesn't do that.
-> Mystery solved.
-> 
-Still bad. Guess it would still fail with 4.6.3 if optimization is turned off.
+Can you submit to the upstream next in your next round of fixes (with
+David's ack).
 
-Guenter
+Thanks,
+- Milosz
 
-> Gr{oetje,eeting}s,
-> 
->                         Geert
-> 
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-> 
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                 -- Linus Torvalds
-> 
+P.S: Thanks David.
+
+On Tue, Sep 10, 2013 at 8:34 AM, David Howells <dhowells@redhat.com> wrote:
+> Milosz Tanski <milosz@adfin.com> wrote:
+>
+>> __fscache_check_consistency() does not decrement the count of operations
+>> active after it finishes in the success case. This leads to a hung tasks on
+>> cookie de-registration (commonly in inode eviction).
+>>
+>> INFO: task kworker/1:2:4214 blocked for more than 120 seconds.
+>> kworker/1:2     D ffff880443513fc0     0  4214      2 0x00000000
+>> Workqueue: ceph-msgr con_work [libceph]
+>>   ...
+>> Call Trace:
+>>  [<ffffffff81569fc6>] ? _raw_spin_unlock_irqrestore+0x16/0x20
+>>  [<ffffffffa0016570>] ? fscache_wait_bit_interruptible+0x30/0x30 [fscache]
+>>  [<ffffffff81568d09>] schedule+0x29/0x70
+>>  [<ffffffffa001657e>] fscache_wait_atomic_t+0xe/0x20 [fscache]
+>>  [<ffffffff815665cf>] out_of_line_wait_on_atomic_t+0x9f/0xe0
+>>  [<ffffffff81083560>] ? autoremove_wake_function+0x40/0x40
+>>  [<ffffffffa0015a9c>] __fscache_relinquish_cookie+0x15c/0x310 [fscache]
+>>  [<ffffffffa00a4fae>] ceph_fscache_unregister_inode_cookie+0x3e/0x50 [ceph]
+>>  [<ffffffffa007e373>] ceph_destroy_inode+0x33/0x200 [ceph]
+>>  [<ffffffff811c13ae>] ? __fsnotify_inode_delete+0xe/0x10
+>>  [<ffffffff8119ba1c>] destroy_inode+0x3c/0x70
+>>  [<ffffffff8119bb69>] evict+0x119/0x1b0
+>>
+>> Signed-off-by: Milosz Tanski <milosz@adfin.com>
+>
+> Acked-by: David Howells <dhowells@redhat.com>
