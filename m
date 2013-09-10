@@ -1,82 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752395Ab3IJNEj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 09:04:39 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50981 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751335Ab3IJNEh (ORCPT
+	id S1752730Ab3IJNFG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 09:05:06 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:35551 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500Ab3IJNFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 09:04:37 -0400
-Date: Tue, 10 Sep 2013 14:04:31 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Rob Herring <robherring2@gmail.com>, Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Olof Johansson <olof@lixom.net>, Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 1/5] ARM: add basic Trusted Foundations support
-Message-ID: <20130910130431.GE27966@mudshark.cambridge.arm.com>
-References: <1378351680-14696-1-git-send-email-acourbot@nvidia.com>
- <1378351680-14696-2-git-send-email-acourbot@nvidia.com>
- <5228CEDB.1090306@gmail.com>
- <CAAVeFu+MGGBfmm1jwtKGP_d3EjkLdf5B_E_5RT___PVh1e=8jw@mail.gmail.com>
+	Tue, 10 Sep 2013 09:05:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAVeFu+MGGBfmm1jwtKGP_d3EjkLdf5B_E_5RT___PVh1e=8jw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130910130002.GD28428@ghostprotocols.net>
+References: <1377079825-19057-3-git-send-email-eranian@google.com>
+	<20130909192810.GA3825@infradead.org>
+	<20130909194844.GB28428@ghostprotocols.net>
+	<20130910130002.GD28428@ghostprotocols.net>
+Date: Tue, 10 Sep 2013 15:05:03 +0200
+Message-ID: <CABPqkBRgj71D8FkWtR-4K8g5ErWMt8YsV7FcmxQ3Uouj640Z0A@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] perf tools: add attr->mmap2 support
+From: Stephane Eranian <eranian@google.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        David Ahern <dsahern@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
-
-On Mon, Sep 09, 2013 at 07:15:31AM +0100, Alexandre Courbot wrote:
-> On Fri, Sep 6, 2013 at 3:35 AM, Rob Herring <robherring2@gmail.com> wrote:
-> > On 09/04/2013 10:27 PM, Alexandre Courbot wrote:
-> >> Trusted Foundations is a TrustZone-based secure monitor for ARM that
-> >> can be invoked  using a consistent SMC-based API on all supported
-> >> platforms. This patch adds initial basic support for Trusted
-> >> Foundations using the ARM firmware API. Current features are limited
-> >> to the ability to boot secondary processors.
-
-[...]
-
-> >> +Example:
-> >> +     firmware {
-> >> +             compatible = "tl,trusted-foundations";
-> >> +             version-major = <2>;
-> >> +             version-minor = <8>;
-> >> +     };
+On Tue, Sep 10, 2013 at 3:00 PM, Arnaldo Carvalho de Melo
+<acme@ghostprotocols.net> wrote:
+>
+>
+> Em Mon, Sep 09, 2013 at 04:48:44PM -0300, Arnaldo Carvalho de Melo escreveu:
+> > Em Mon, Sep 09, 2013 at 04:47:45PM -0300, Arnaldo Carvalho de Melo escreveu:
+> > > I noticed the kernel part is in, and I'm going to use MMAP2 on that new
+> > > tool, so tried merging it, but:
+> > >
+> > > I fixed it up wrt another patch that makes machine__find_thread receive pid/tid
+> > > but then 'perf test' complains about it, see below, trying to fix...
 > >
-> > I'm wondering how we fit this in with PSCI bindings? Both are pieces of
-> > firmware functionality and may co-exist. There's nothing incompatible
-> > here, but there should be some commonality. Will future versions of
-> > Trusted Foundations follow the SMC calling conventions doc? What about
-> > armv8 support.
-> 
-> I don't have any information about the future of TF unfortunately,
-> excepted that it should remain backward-compatible. What is this SMC
-> calling convention doc your are talking about btw? Is there a standard
-> calling convention defined by ARM?
+> > Following patch makes it progress a bit, still checking why it is not
+> > enough...
+>
+> Without your patch:
+>
+> [root@sandy ~]# perf test -v 7
+>  7: Validate PERF_RECORD_* events & perf_sample fields     :
+> --- start ---
+> 61118374953766 0 PERF_RECORD_SAMPLE
+> 61118374958840 0 PERF_RECORD_SAMPLE
+> 61118374961420 0 PERF_RECORD_SAMPLE
+> 61118374964293 0 PERF_RECORD_SAMPLE
+> 61118376117716 0 PERF_RECORD_COMM: sleep:5096
+> 61118376153724 0 PERF_RECORD_MMAP 5096/5096: [0x400000(0x7000) @ 0]: /usr/bin/sleep
+> 61118376190304 0 PERF_RECORD_MMAP 5096/5096: [0x3b7e000000(0x223000) @ 0]: /usr/lib64/ld-2.16.so
+> 61118376229562 0 PERF_RECORD_MMAP 5096/5096: [0x7fff2f9ff000(0x1000) @ 0x7fff2f9ff000]: [vdso]
+> 61118376526654 0 PERF_RECORD_MMAP 5096/5096: [0x3b7e400000(0x3b8000) @ 0]: /usr/lib64/libc-2.16.so
+> 61119377689687 0 PERF_RECORD_EXIT(5096:5096):(5096:5096)
+> ---- end ----
+> Validate PERF_RECORD_* events & perf_sample fields: Ok
+> [root@sandy ~]#
+>
+> So the tstamp grows monotonically, then, after your patch + the patch at the
+> end of this message:
+>
+> [root@sandy ~]# perf test -v 7
+>  7: Validate PERF_RECORD_* events & perf_sample fields     :
+> --- start ---
+> 61315294449606 0 PERF_RECORD_SAMPLE
+> 61315294453161 0 PERF_RECORD_SAMPLE
+> 61315294454441 0 PERF_RECORD_SAMPLE
+> 61315294455709 0 PERF_RECORD_SAMPLE
+> 61315295600899 0 PERF_RECORD_COMM: sleep:6500
+> 27917287430500 342521613 PERF_RECORD_MMAP2 6500/6500: [0x400000(0x7000) @ 0 00:1d 311442 9016]: /usr/bin/sleep
+> MMAP2 going backwards in time, prev=61315295600899, curr=27917287430500
+> MMAP2 with unexpected cpu, expected 0, got 342521613
+> MMAP2 with unexpected pid, expected 6500, got 1701606191
+> MMAP2 with unexpected tid, expected 6500, got 28773
+> 27917287430500 342561333 PERF_RECORD_MMAP2 6500/6500: [0x3b7e000000(0x223000) @ 0 00:1d 309186 9016]: /usr/lib64/ld-2.16.so
+> MMAP2 with unexpected cpu, expected 0, got 342561333
+> MMAP2 with unexpected pid, expected 6500, got 1932408369
+> MMAP2 with unexpected tid, expected 6500, got 111
+> 27917287430500 342600095 PERF_RECORD_MMAP2 6500/6500: [0x7fffbd7dc000(0x1000) @ 0x7fffbd7dc000 00:00 0 0]: [vdso]
+> MMAP2 with unexpected cpu, expected 0, got 342600095
+> MMAP2 with unexpected pid, expected 6500, got 1935963739
+> MMAP2 with unexpected tid, expected 6500, got 23919
+> 27917287430500 342882834 PERF_RECORD_MMAP2 6500/6500: [0x3b7e400000(0x3b8000) @ 0 00:1d 309187 9016]: /usr/lib64/libc-2.16.so
+> MMAP2 with unexpected cpu, expected 0, got 342882834
+> MMAP2 with unexpected pid, expected 6500, got 909192754
+> MMAP2 with unexpected tid, expected 6500, got 7303982
+> 61316297195411 0 PERF_RECORD_EXIT(6500:6500):(6500:6500)
+> ---- end ----
+> Validate PERF_RECORD_* events & perf_sample fields: FAILED!
+> [root@sandy ~]#
+>
+> So everything that is in perf_sample, i.e. in the variable area, selected via
+> sample_type, is invalid for PERF_RECORD_MMAP2.
+>
+> This is on:
+>
+> [root@sandy ~]# uname -a
+> Linux sandy.ghostprotocols.net.home 3.11.0+ #1 SMP Wed Sep 4 16:47:14 BRT 2013 x86_64 x86_64 x86_64 GNU/Linux
+> [root@sandy ~]#
+>
+> Humm, looking at perf_event_mmap_output it seems this was missed, will rebuild
+> a kernel and retest...
+>
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index 2207efc..dd236b6 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -5039,6 +5039,7 @@ static void perf_event_mmap_output(struct perf_event *event,
+>                 mmap_event->event_id.header.size += sizeof(mmap_event->maj);
+>                 mmap_event->event_id.header.size += sizeof(mmap_event->min);
+>                 mmap_event->event_id.header.size += sizeof(mmap_event->ino);
+> +               mmap_event->event_id.header.size += sizeof(mmap_event->ino_generation);
+>         }
+>
+>         perf_event_header__init_id(&mmap_event->event_id.header, &sample, event);
+>
+Arg, yes, this is missing.
+Do you want to submit the patch?
+Thanks for tracking it down.
 
-SMC calling convention:
-
-https://silver.arm.com/download/download.tm?pv=1435186
-
-PSCI:
-
-https://silver.arm.com/download/download.tm?pv=1421585
-
-Although access to these documents requires you to go through a
-click-through license.
-
-Will
+>
+> > - Arnaldo
+> >
+> > diff --git a/tools/perf/tests/perf-record.c b/tools/perf/tests/perf-record.c
+> > index 72d8881..b8a7056 100644
+> > --- a/tools/perf/tests/perf-record.c
+> > +++ b/tools/perf/tests/perf-record.c
+> > @@ -50,7 +50,7 @@ int test__PERF_RECORD(void)
+> >       struct perf_sample sample;
+> >       const char *cmd = "sleep";
+> >       const char *argv[] = { cmd, "1", NULL, };
+> > -     char *bname;
+> > +     char *bname, *mmap_filename;
+> >       u64 prev_time = 0;
+> >       bool found_cmd_mmap = false,
+> >            found_libc_mmap = false,
+> > @@ -212,6 +212,7 @@ int test__PERF_RECORD(void)
+> >
+> >                               if ((type == PERF_RECORD_COMM ||
+> >                                    type == PERF_RECORD_MMAP ||
+> > +                                  type == PERF_RECORD_MMAP2 ||
+> >                                    type == PERF_RECORD_FORK ||
+> >                                    type == PERF_RECORD_EXIT) &&
+> >                                    (pid_t)event->comm.pid != evlist->workload.pid) {
+> > @@ -220,7 +221,8 @@ int test__PERF_RECORD(void)
+> >                               }
+> >
+> >                               if ((type == PERF_RECORD_COMM ||
+> > -                                  type == PERF_RECORD_MMAP) &&
+> > +                                  type == PERF_RECORD_MMAP ||
+> > +                                  type == PERF_RECORD_MMAP2) &&
+> >                                    event->comm.pid != event->comm.tid) {
+> >                                       pr_debug("%s with different pid/tid!\n", name);
+> >                                       ++errs;
+> > @@ -236,7 +238,12 @@ int test__PERF_RECORD(void)
+> >                               case PERF_RECORD_EXIT:
+> >                                       goto found_exit;
+> >                               case PERF_RECORD_MMAP:
+> > -                                     bname = strrchr(event->mmap.filename, '/');
+> > +                                     mmap_filename = event->mmap.filename;
+> > +                                     goto check_bname;
+> > +                             case PERF_RECORD_MMAP2:
+> > +                                     mmap_filename = event->mmap2.filename;
+> > +                             check_bname:
+> > +                                     bname = strrchr(mmap_filename, '/');
+> >                                       if (bname != NULL) {
+> >                                               if (!found_cmd_mmap)
+> >                                                       found_cmd_mmap = !strcmp(bname + 1, cmd);
+> > @@ -245,7 +252,7 @@ int test__PERF_RECORD(void)
+> >                                               if (!found_ld_mmap)
+> >                                                       found_ld_mmap = !strncmp(bname + 1, "ld", 2);
+> >                                       } else if (!found_vdso_mmap)
+> > -                                             found_vdso_mmap = !strcmp(event->mmap.filename, "[vdso]");
+> > +                                             found_vdso_mmap = !strcmp(mmap_filename, "[vdso]");
+> >                                       break;
+> >
+> >                               case PERF_RECORD_SAMPLE:
