@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751765Ab3IJMCS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 08:02:18 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:56614 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751313Ab3IJMCR (ORCPT
+	id S1751455Ab3IJMFS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 08:05:18 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:11564 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751207Ab3IJMFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 08:02:17 -0400
-Date: Tue, 10 Sep 2013 14:02:07 +0200
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "nico@linaro.org" <nico@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH v2 2/2] arm: add early_ioremap support
-Message-ID: <20130910120205.GW18151@rocoto.smurfnet.nu>
-References: <1378459158-2145-1-git-send-email-leif.lindholm@linaro.org>
- <1378459158-2145-3-git-send-email-leif.lindholm@linaro.org>
- <20130906161448.GI1946@arm.com>
+	Tue, 10 Sep 2013 08:05:17 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 10 Sep 2013 05:02:14 -0700
+Message-ID: <522F0FA3.4020206@nvidia.com>
+Date: Tue, 10 Sep 2013 17:55:07 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130906161448.GI1946@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: George Cherian <george.cherian@ti.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        "cw00.choi@samsung.com" <cw00.choi@samsung.com>,
+        "kishon@ti.com" <kishon@ti.com>
+Subject: Re: [PATCH] extcon: palmas: Dont set USB state if ID pin is grounded
+References: <1378799369-15803-1-git-send-email-george.cherian@ti.com> <522EE3B9.4020807@nvidia.com> <522F0946.9040104@ti.com>
+In-Reply-To: <522F0946.9040104@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 06, 2013 at 05:14:49PM +0100, Catalin Marinas wrote:
-> On Fri, Sep 06, 2013 at 10:19:18AM +0100, Leif Lindholm wrote:
-> > --- a/arch/arm/kernel/setup.c
-> > +++ b/arch/arm/kernel/setup.c
-> > @@ -877,6 +878,10 @@ void __init setup_arch(char **cmdline_p)
-> > 
-> >         parse_early_param();
-> > 
-> > +#ifdef CONFIG_EARLY_IOREMAP
-> > +       early_ioremap_init();
-> > +#endif
-> 
-> Better with a dummy early_ioremap_init() in the header when
-> !CONFIG_EARLY_IOREMAP to avoid the #ifdef here.
- 
-Ok, makes sense.
+On Tuesday 10 September 2013 05:27 PM, George Cherian wrote:
+> On 9/10/2013 2:47 PM, Laxman Dewangan wrote:
+>> On Tuesday 10 September 2013 01:19 PM, George Cherian wrote:
+>>> In OMAP5 when USB-HOST is set true, the VBUS regulator  is turned ON.
+>>> This causes a VBUS interrupt, ignore the same if we are already in
+>>> USB-HOST.
+>>>
+>>> Signed-off-by: George Cherian <george.cherian@ti.com>
+>>> ---
+>>>    drivers/extcon/extcon-palmas.c | 3 +++
+>>>    1 file changed, 3 insertions(+)
+>>>
+>>> diff --git a/drivers/extcon/extcon-palmas.c
+>>> b/drivers/extcon/extcon-palmas.c
+>>> index 9672f31..91b31af 100644
+>>> --- a/drivers/extcon/extcon-palmas.c
+>>> +++ b/drivers/extcon/extcon-palmas.c
+>>> @@ -50,6 +50,9 @@ static irqreturn_t palmas_vbus_irq_handler(int irq,
+>>> void *_palmas_usb)
+>>>        struct palmas_usb *palmas_usb = _palmas_usb;
+>>>        unsigned int vbus_line_state;
+>>>    +    if (palmas_usb->linkstat == PALMAS_USB_STATE_ID)
+>>> +        return IRQ_HANDLED;
+>>> +
+>> Should we really handle this on this extcon driver? I think it should
+>> be handled in the USB driver. If port is OTG type and if usb driver
+>> enable the VBUS then it can expect the VBUS available notification but
+>> based on the USB driver state, it should ignore this notification.
+>>
+> Correct extcon should just notify and the consumer should take
+> appropriate decision.
 
-> > --- /dev/null
-> > +++ b/arch/arm/mm/early_ioremap.c
-> > @@ -0,0 +1,271 @@
-> > +/*
-> > + * early_ioremap() support for ARM
-> > + *
-> > + * Based on existing support in arch/x86/mm/ioremap.c
-> 
-> At a very quick look, this looks really close to the x86 implementation.
-> Any reason why this cannot be made generic and avoid duplication?
+Thanks, so our code design is same as yours and so we will not need this 
+patch.
 
-Mainly that the bits that can be easily shared aren't really the
-interesting ones. Making it properly shared would require a rewrite
-of ARM kmap().
 
-/
-    Leif
+>> Otherwise, Palmas pin find that there is VBUS state true but the SW
+>> status will show as the VBUS not there.
+>>
+>
+
