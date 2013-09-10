@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756271Ab3IJBYF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 21:24:05 -0400
-Received: from mga14.intel.com ([143.182.124.37]:36287 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756117Ab3IJBYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 21:24:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,875,1371106800"; 
-   d="scan'208";a="358160190"
-Subject: [PATCH] PCI/PM: Removing the function pci_pm_complete()
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: stern@rowland.harvard.edu, rjw@sisk.pl, bhelgaas@google.com
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        chuansheng.liu@intel.com, fei.li@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 10 Sep 2013 18:46:06 +0800
-Message-ID: <1378809966.26153.23.camel@cliu38-desktop-build>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1756263Ab3IJBeU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 21:34:20 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:56732 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756117Ab3IJBeR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 21:34:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALkWK0mMvaFcO7dXNbFxcP-42HxXs=s-v9HAR6zg369-ysJNMA@mail.gmail.com>
+References: <20130909182111.GQ13318@ZenIV.linux.org.uk>
+	<20130910004020.29299.qmail@science.horizon.com>
+	<20130910005754.GV13318@ZenIV.linux.org.uk>
+	<CALkWK0mMvaFcO7dXNbFxcP-42HxXs=s-v9HAR6zg369-ysJNMA@mail.gmail.com>
+Date: Mon, 9 Sep 2013 18:34:16 -0700
+X-Google-Sender-Auth: wS5iekkgybwVcA33hD_WE92xFMw
+Message-ID: <CA+55aFw8aHnDgj1WBhPGMpi9ZHaNpa2roDW5wuxF1Xab49QTew@mail.gmail.com>
+Subject: Re: [PATCH v4 1/1] dcache: Translating dentry into pathname without
+ taking rename_lock
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, George Spelvin <linux@horizon.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        John Stoffel <john@stoffel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Waiman Long <Waiman.Long@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 9, 2013 at 6:15 PM, Ramkumar Ramachandra <artagnon@gmail.com> wrote:
+>
+> Maybe it should then?
 
-Commit(88d2613) removed the pm_runtime_put_sync() from pci_pm_complete()
-to PM core code device_complete().
+It doesn't need to. The RCU lookup looks at individual dentry sequence
+numbers and doesn't care about the bigger rename sequence number at
+all.
 
-Here the pci_pm_complete() is doing the same work which can be done in
-device_complete(), so we can remove it directly.
+The fallback (if you hit one of the very very rare races, or if you
+hit a symlink) ends up doing per-path-component lookups under the
+rename sequence lock, but for it, read-locking it until it succeeds is
+the right thing to do.
 
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
----
- drivers/pci/pci-driver.c |    9 ---------
- 1 files changed, 0 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
-index 98f7b9b..736ef3f 100644
---- a/drivers/pci/pci-driver.c
-+++ b/drivers/pci/pci-driver.c
-@@ -599,18 +599,10 @@ static int pci_pm_prepare(struct device *dev)
- 	return error;
- }
- 
--static void pci_pm_complete(struct device *dev)
--{
--	struct device_driver *drv = dev->driver;
--
--	if (drv && drv->pm && drv->pm->complete)
--		drv->pm->complete(dev);
--}
- 
- #else /* !CONFIG_PM_SLEEP */
- 
- #define pci_pm_prepare	NULL
--#define pci_pm_complete	NULL
- 
- #endif /* !CONFIG_PM_SLEEP */
- 
-@@ -1123,7 +1115,6 @@ static int pci_pm_runtime_idle(struct device *dev)
- 
- const struct dev_pm_ops pci_dev_pm_ops = {
- 	.prepare = pci_pm_prepare,
--	.complete = pci_pm_complete,
- 	.suspend = pci_pm_suspend,
- 	.resume = pci_pm_resume,
- 	.freeze = pci_pm_freeze,
--- 
-1.7.0.4
-
-
-
+              Linus
