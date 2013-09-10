@@ -1,69 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab3IJAPg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 20:15:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:35239 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756028Ab3IJAPe (ORCPT
+	id S1756146Ab3IJAXZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 20:23:25 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:20375 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755756Ab3IJAXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 20:15:34 -0400
-Date: Mon, 9 Sep 2013 20:15:29 -0400
-From: Kyle McMartin <kyle@infradead.org>
-To: Frantisek Hrbata <fhrbata@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Kyle McMartin <kyle@infradead.org>,
-        linux-kernel@vger.kernel.org, jstancek@redhat.com,
-        keescook@chromium.org, peter.oberparleiter@de.ibm.com,
-        linux-arch@vger.kernel.org, arnd@arndb.de, mgahagan@redhat.com,
-        agospoda@redhat.com, akpm@linux-foundation.org
-Subject: Re: [PATCH v2 4/4] kernel: add support for init_array constructors
-Message-ID: <20130910001529.GE25882@merlin.infradead.org>
-References: <1378305776-3644-1-git-send-email-fhrbata@redhat.com>
- <1378305776-3644-5-git-send-email-fhrbata@redhat.com>
- <87vc2e66kr.fsf@rustcorp.com.au>
- <20130906175118.GB2332@localhost.localdomain>
- <20130906180751.GD25882@merlin.infradead.org>
- <87d2oi6bl0.fsf@rustcorp.com.au>
- <20130909162814.GA2288@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130909162814.GA2288@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 9 Sep 2013 20:23:24 -0400
+From: Toshi Kani <toshi.kani@hp.com>
+To: akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rjw@sisk.pl,
+        kosaki.motohiro@jp.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH] mm/hotplug: Remove stop_machine() from try_offline_node()
+Date: Mon,  9 Sep 2013 18:21:29 -0600
+Message-Id: <1378772489-27171-1-git-send-email-toshi.kani@hp.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 06:28:14PM +0200, Frantisek Hrbata wrote:
-> I'm not sure if coexistence of .ctors and .init_array sections should result in
-> denial of module, but I for sure know nothing about this :). Could you maybe
-> privide one example of the "weird thing"?
-> 
+lock_device_hotplug() serializes hotplug & online/offline operations.
+The lock is held in common sysfs online/offline interfaces and ACPI
+hotplug code paths.
 
-They shouldn't exist unless placed there intentionally... I suspect a
-call_if_changed Makefile target to regenerated a header would solve this
-problem sufficiently for a given toolchain version.
+try_offline_node() off-lines a node if all memory sections and cpus
+are removed on the node.  It is called from acpi_processor_remove()
+and acpi_memory_remove_memory()->remove_memory() paths, both of which
+are in the ACPI hotplug code.
 
-A little exposition:
-.init_array and .ctors are laid out on top of each other, with an
-ordering that's a bit complicated... the sort of the ctor functions ends
-up being .ctor.x upwards towards 65535, and .init_array.x downwards
-from 65535 towards 0, with priority 65535-x, so that
+try_offline_node() calls stop_machine() to stop all cpus while checking
+all cpu status with the assumption that the caller is not protected from
+CPU hotplug or CPU online/offline operations.  However, the caller is
+always serialized with lock_device_hotplug().  Also, the code needs to
+be properly serialized with a lock, not by stopping all cpus at a random
+place with stop_machine().
 
-.init_array.32768 would be called before .ctor.32768.
+This patch removes the use of stop_machine() in try_offline_node() and
+adds comments to try_offline_node() and remove_memory() that
+lock_device_hotplug() is required.
 
-It's all a complete mess.
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+---
+ mm/memory_hotplug.c |   31 ++++++++++++++++++++++---------
+ 1 file changed, 22 insertions(+), 9 deletions(-)
 
-Perhaps if CONFIG_GCOV is on, we should enforce MODVERSIONS and make
-sure the GCC version doesn't change for the running kernel?
-
-Maybe it would be sufficient to just detect what the toolchain supports
-and do that? I have a patch based on the configure.ac in gcc that
-does something like that, which would be trivial to use to generate a
-header based on gcc version.
-
-> Anyway many thanks for taking time to look at this. Below is my attepmt to
-> implement the check you proposed. 
-> 
-> untested/uncompiled
-
-regards, Kyle
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index ca1dd3a..0b4b0f7 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -1674,9 +1674,8 @@ static int is_memblock_offlined_cb(struct memory_block *mem, void *arg)
+ 	return ret;
+ }
+ 
+-static int check_cpu_on_node(void *data)
++static int check_cpu_on_node(pg_data_t *pgdat)
+ {
+-	struct pglist_data *pgdat = data;
+ 	int cpu;
+ 
+ 	for_each_present_cpu(cpu) {
+@@ -1691,10 +1690,9 @@ static int check_cpu_on_node(void *data)
+ 	return 0;
+ }
+ 
+-static void unmap_cpu_on_node(void *data)
++static void unmap_cpu_on_node(pg_data_t *pgdat)
+ {
+ #ifdef CONFIG_ACPI_NUMA
+-	struct pglist_data *pgdat = data;
+ 	int cpu;
+ 
+ 	for_each_possible_cpu(cpu)
+@@ -1703,10 +1701,11 @@ static void unmap_cpu_on_node(void *data)
+ #endif
+ }
+ 
+-static int check_and_unmap_cpu_on_node(void *data)
++static int check_and_unmap_cpu_on_node(pg_data_t *pgdat)
+ {
+-	int ret = check_cpu_on_node(data);
++	int ret;
+ 
++	ret = check_cpu_on_node(pgdat);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -1715,11 +1714,18 @@ static int check_and_unmap_cpu_on_node(void *data)
+ 	 * the cpu_to_node() now.
+ 	 */
+ 
+-	unmap_cpu_on_node(data);
++	unmap_cpu_on_node(pgdat);
+ 	return 0;
+ }
+ 
+-/* offline the node if all memory sections of this node are removed */
++/**
++ * try_offline_node
++ *
++ * Offline a node if all memory sections and cpus of the node are removed.
++ *
++ * NOTE: The caller must call lock_device_hotplug() to serialize hotplug
++ * and online/offline operations before this call.
++ */
+ void try_offline_node(int nid)
+ {
+ 	pg_data_t *pgdat = NODE_DATA(nid);
+@@ -1745,7 +1751,7 @@ void try_offline_node(int nid)
+ 		return;
+ 	}
+ 
+-	if (stop_machine(check_and_unmap_cpu_on_node, pgdat, NULL))
++	if (check_and_unmap_cpu_on_node(pgdat))
+ 		return;
+ 
+ 	/*
+@@ -1782,6 +1788,13 @@ void try_offline_node(int nid)
+ }
+ EXPORT_SYMBOL(try_offline_node);
+ 
++/**
++ * remove_memory
++ *
++ * NOTE: The caller must call lock_device_hotplug() to serialize hotplug
++ * and online/offline operations before this call, as required by
++ * try_offline_node().
++ */
+ void __ref remove_memory(int nid, u64 start, u64 size)
+ {
+ 	int ret;
