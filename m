@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753482Ab3IJJor (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 05:44:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57020 "EHLO mx2.suse.de"
+	id S1753605Ab3IJJpt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 05:45:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56932 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751047Ab3IJJcl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 05:32:41 -0400
+	id S1750899Ab3IJJcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 05:32:36 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 07/50] mm: Account for a THP NUMA hinting update as one PTE update
-Date: Tue, 10 Sep 2013 10:31:47 +0100
-Message-Id: <1378805550-29949-8-git-send-email-mgorman@suse.de>
+Subject: [PATCH 02/50] mm: numa: Document automatic NUMA balancing sysctls
+Date: Tue, 10 Sep 2013 10:31:42 +0100
+Message-Id: <1378805550-29949-3-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1378805550-29949-1-git-send-email-mgorman@suse.de>
 References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
@@ -22,29 +22,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A THP PMD update is accounted for as 512 pages updated in vmstat.  This is
-large difference when estimating the cost of automatic NUMA balancing and
-can be misleading when comparing results that had collapsed versus split
-THP. This patch addresses the accounting issue.
-
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/mprotect.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ Documentation/sysctl/kernel.txt | 66 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 66 insertions(+)
 
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index 94722a4..2bbb648 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -145,7 +145,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 				split_huge_page_pmd(vma, addr, pmd);
- 			else if (change_huge_pmd(vma, pmd, addr, newprot,
- 						 prot_numa)) {
--				pages += HPAGE_PMD_NR;
-+				pages++;
- 				continue;
- 			}
- 			/* fall through */
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index ab7d16e..ccadb52 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -354,6 +354,72 @@ utilize.
+ 
+ ==============================================================
+ 
++numa_balancing
++
++Enables/disables automatic page fault based NUMA memory
++balancing. Memory is moved automatically to nodes
++that access it often.
++
++Enables/disables automatic NUMA memory balancing. On NUMA machines, there
++is a performance penalty if remote memory is accessed by a CPU. When this
++feature is enabled the kernel samples what task thread is accessing memory
++by periodically unmapping pages and later trapping a page fault. At the
++time of the page fault, it is determined if the data being accessed should
++be migrated to a local memory node.
++
++The unmapping of pages and trapping faults incur additional overhead that
++ideally is offset by improved memory locality but there is no universal
++guarantee. If the target workload is already bound to NUMA nodes then this
++feature should be disabled. Otherwise, if the system overhead from the
++feature is too high then the rate the kernel samples for NUMA hinting
++faults may be controlled by the numa_balancing_scan_period_min_ms,
++numa_balancing_scan_delay_ms, numa_balancing_scan_period_reset,
++numa_balancing_scan_period_max_ms and numa_balancing_scan_size_mb sysctls.
++
++==============================================================
++
++numa_balancing_scan_period_min_ms, numa_balancing_scan_delay_ms,
++numa_balancing_scan_period_max_ms, numa_balancing_scan_period_reset,
++numa_balancing_scan_size_mb
++
++Automatic NUMA balancing scans tasks address space and unmaps pages to
++detect if pages are properly placed or if the data should be migrated to a
++memory node local to where the task is running.  Every "scan delay" the task
++scans the next "scan size" number of pages in its address space. When the
++end of the address space is reached the scanner restarts from the beginning.
++
++In combination, the "scan delay" and "scan size" determine the scan rate.
++When "scan delay" decreases, the scan rate increases.  The scan delay and
++hence the scan rate of every task is adaptive and depends on historical
++behaviour. If pages are properly placed then the scan delay increases,
++otherwise the scan delay decreases.  The "scan size" is not adaptive but
++the higher the "scan size", the higher the scan rate.
++
++Higher scan rates incur higher system overhead as page faults must be
++trapped and potentially data must be migrated. However, the higher the scan
++rate, the more quickly a tasks memory is migrated to a local node if the
++workload pattern changes and minimises performance impact due to remote
++memory accesses. These sysctls control the thresholds for scan delays and
++the number of pages scanned.
++
++numa_balancing_scan_period_min_ms is the minimum delay in milliseconds
++between scans. It effectively controls the maximum scanning rate for
++each task.
++
++numa_balancing_scan_delay_ms is the starting "scan delay" used for a task
++when it initially forks.
++
++numa_balancing_scan_period_max_ms is the maximum delay between scans. It
++effectively controls the minimum scanning rate for each task.
++
++numa_balancing_scan_size_mb is how many megabytes worth of pages are
++scanned for a given scan.
++
++numa_balancing_scan_period_reset is a blunt instrument that controls how
++often a tasks scan delay is reset to detect sudden changes in task behaviour.
++
++==============================================================
++
+ osrelease, ostype & version:
+ 
+ # cat osrelease
 -- 
 1.8.1.4
 
