@@ -1,90 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226Ab3IJSHw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 14:07:52 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:55082 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753065Ab3IJSHv (ORCPT
+	id S1752180Ab3IJSMW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 14:12:22 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53802 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751215Ab3IJSMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 14:07:51 -0400
-Date: Tue, 10 Sep 2013 11:07:47 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Mark Brown <broonie@kernel.org>, Wei Ni <wni@nvidia.com>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/2] hwmon: (lm90) Add power control
-Message-ID: <20130910180747.GA8164@roeck-us.net>
-References: <20130909155043.GA18975@roeck-us.net>
- <522E9059.3070305@nvidia.com>
- <522E93D6.2010304@roeck-us.net>
- <522E94AE.7000804@wwwdotorg.org>
- <522E97CE.4070300@roeck-us.net>
- <522E9C84.9070405@wwwdotorg.org>
- <20130910100939.GW29403@sirena.org.uk>
- <522F35BF.6070909@wwwdotorg.org>
- <20130910170438.GS29403@sirena.org.uk>
- <522F5A65.8040907@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <522F5A65.8040907@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 10 Sep 2013 14:12:19 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 3/5] perf kvm: Fix sample_type manipulation
+Date: Tue, 10 Sep 2013 15:12:00 -0300
+Message-Id: <1378836722-31326-4-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1378836722-31326-1-git-send-email-acme@infradead.org>
+References: <1378836722-31326-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 11:44:05AM -0600, Stephen Warren wrote:
-> On 09/10/2013 11:04 AM, Mark Brown wrote:
-> > On Tue, Sep 10, 2013 at 09:07:43AM -0600, Stephen Warren wrote:
-> >> On 09/10/2013 04:09 AM, Mark Brown wrote:
-> > 
-> >>> No.  There are a couple of issues here.  One is that we don't want
-> >>> to litter all drivers with conditional code to check if they
-> >>> actually got the regulator and so on, that's just pointless make
-> >>> work on the part of consumers.
-> > 
-> >> So that's exactly the difference between (a) and (b) above.
-> > 
-> > Right, but the idea is that we just only ignore a failure to get a
-> > supply if we can usefully run without that supply being present and
-> > there's more code there than simply ignoring the error - if the driver
-> > can genuinely just ignore all errors and otherwise not do anything
-> > different then requesting the regulator in the first place is clearly a
-> > waste of time and enabling it would be a waste of power.
-> > 
-> > A driver should only be carrying code for a missing regulator if it can
-> > usefully work without it, like the cases where devices can use an
-> > internal reference if one is not available.
-> 
-> OK, so I believe you're saying that the case of a chip with just a
-> single power source, which absolutely must be present in HW for the chip
-> to be powered, isn't appropriate for regulator_get_optional(). Something
-> must always define a regulator for that power source, even if there is
-> no external SW control over that power source.
-> 
-I think you are supposed to use a dummy regulator in that case.
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-Guenter
+Manipulating the sample_type of an evsel requires the use of:
 
-> If so, how does a driver (or binding) that's been written without any
-> support for a regulator (since so far all boards have had no SW control
-> over that power source; it's always on) get enhanced to support boards
-> where there is SW control over the power source?
-> 
-> We either allow the regulator to be optional (since SW control over the
-> regulator is optional), or go back to every board file and DT and add a
-> dummy regulator in (which then breaks DT ABI, and even ignoring that is
-> a pain).
-> 
-> And note that when I say "optional" at the start of the previous
-> paragraph, I'm talking about probe-time regulator_get() operations and
-> DT content. Clearly as far as the rest of the driver is concerned,
-> something can always provide a dummy regulator so that e.g.
-> regulator_enable/disable() elsewhere  always have something to operate
-> on. However, probe() either needs to call an API that automatically
-> provides such a dummy regulator, or open-code that itself. I'm still not
-> clear which option you think should be used.
-> 
+	perf_evsel__set_sample_bit()
+and	perf_evsel__reset_sample_bit()
+
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Tested-by: David Ahern <dsahern@gmail.com>
+Acked-by: David Ahern <dsahern@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1378496412-2424-3-git-send-email-adrian.hunter@intel.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-kvm.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 47b3540..935d522 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -1165,16 +1165,16 @@ static int kvm_live_open_events(struct perf_kvm_stat *kvm)
+ 		struct perf_event_attr *attr = &pos->attr;
+ 
+ 		/* make sure these *are* set */
+-		attr->sample_type |= PERF_SAMPLE_TID;
+-		attr->sample_type |= PERF_SAMPLE_TIME;
+-		attr->sample_type |= PERF_SAMPLE_CPU;
+-		attr->sample_type |= PERF_SAMPLE_RAW;
++		perf_evsel__set_sample_bit(pos, TID);
++		perf_evsel__set_sample_bit(pos, TIME);
++		perf_evsel__set_sample_bit(pos, CPU);
++		perf_evsel__set_sample_bit(pos, RAW);
+ 		/* make sure these are *not*; want as small a sample as possible */
+-		attr->sample_type &= ~PERF_SAMPLE_PERIOD;
+-		attr->sample_type &= ~PERF_SAMPLE_IP;
+-		attr->sample_type &= ~PERF_SAMPLE_CALLCHAIN;
+-		attr->sample_type &= ~PERF_SAMPLE_ADDR;
+-		attr->sample_type &= ~PERF_SAMPLE_READ;
++		perf_evsel__reset_sample_bit(pos, PERIOD);
++		perf_evsel__reset_sample_bit(pos, IP);
++		perf_evsel__reset_sample_bit(pos, CALLCHAIN);
++		perf_evsel__reset_sample_bit(pos, ADDR);
++		perf_evsel__reset_sample_bit(pos, READ);
+ 		attr->mmap = 0;
+ 		attr->comm = 0;
+ 		attr->task = 0;
+-- 
+1.8.1.4
+
