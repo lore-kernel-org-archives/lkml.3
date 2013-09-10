@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934Ab3IJPuA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 11:50:00 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:57899 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404Ab3IJPt7 (ORCPT
+	id S1753103Ab3IJPuU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 11:50:20 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:51733 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752992Ab3IJPuS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 11:49:59 -0400
+	Tue, 10 Sep 2013 11:50:18 -0400
+Message-ID: <522F3E1D.30309@wwwdotorg.org>
+Date: Tue, 10 Sep 2013 09:43:25 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <CA+qSnqh1X6_xHD4GX1P=acEUg9+0=3dVSZHm-NYXvCvupFB8_g@mail.gmail.com>
-References: <alpine.DEB.2.00.1309051139240.25450@skynet.skynet.ie>
-	<CA+55aFwyKmVWkrV3=XiuruZzeTicpfW-JrwjWzpq9eP2yGPeJA@mail.gmail.com>
-	<CA+qSnqh1X6_xHD4GX1P=acEUg9+0=3dVSZHm-NYXvCvupFB8_g@mail.gmail.com>
-Date: Tue, 10 Sep 2013 08:49:58 -0700
-X-Google-Sender-Auth: Z7oCce19BND_lEllAg-vsE0WjWU
-Message-ID: <CA+55aFzRCNteHoSBRL9cVAHtZwA419G+fPBAaofYextsHpDLYw@mail.gmail.com>
-Subject: Re: [git pull] drm tree for 3.12-rc1
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Sean V Kelley <sean.v.kelley@intel.com>, Dave Airlie <airlied@redhat.com>
-Cc: Dave Airlie <airlied@linux.ie>, Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: David Woodhouse <dwmw2@infradead.org>, Kevin Hilman <khilman@linaro.org>,
+        ARM SoC <arm@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL 0/3] ARM: SoC: Second round of changes for v3.12
+References: <1378766555-9679-1-git-send-email-khilman@linaro.org> <CA+55aFxNbH+G6DVQNxE9di_btA5hxFH93af_vjN2v0eH8e5W-g@mail.gmail.com> <1378825549.2627.316.camel@shinybook.infradead.org> <CA+55aFyRUZMJiotV0kAUoeEFpFdvK2r-3rXuS7NO4jHoQ+OkPA@mail.gmail.com>
+In-Reply-To: <CA+55aFyRUZMJiotV0kAUoeEFpFdvK2r-3rXuS7NO4jHoQ+OkPA@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Dave - your linux.ie email generates bounces for me, trying redhat instead ]
-
-On Mon, Sep 9, 2013 at 11:25 PM, Sean V Kelley <sean.v.kelley@intel.com> wrote:
+On 09/10/2013 09:31 AM, Linus Torvalds wrote:
+> On Tue, Sep 10, 2013 at 8:05 AM, David Woodhouse <dwmw2@infradead.org> wrote:
 >>
->> I'm also a bit bummed that hw acceleration of video doesn't seem to
->> work on Haswell, meaning that full-screen is now a jerky mess. I fear
->> that that is user-space libraries/X.org, but I thought I'd mention it
->> in the hope of getting a "oh, it's working for us, you'll get a fix
->> for it soon".
->
-> Can you give a little more detail about video not working?  Video
-> accel should work fine with the current versions of libva/intel-driver
-> available in Fedora 19 - assuming that's what you're using.
+>> In cost-sensitive products (and what *isn't* cost-sensitive these days),
+>> you really don't want to have to put an extra EEPROM on the board
+>> somewhere
+> 
+> Don't be silly. Nobody wants an extra chip. Especially not one that is
+> programmable separately from the hardware. That way lies madness and
+> the usual firmware crazies.
+> 
+> It's not even what I asked for. I talked about discoverable buses. How
+> hard is that to understand? No extra chips, no eeprom, just a bus with
+> a notion of configuration cycles. It doesn't even have to be as
+> complicated as PCI, it could easily be a read-only model.
+> 
+> But no, every SoC designer out there seems to want to make their
+> hardware crap. Don't be surprised when I then call them out on the
+> fact. And don't bring up totally irrelevant issues that have nothing
+> to do with anything.
 
-It is indeed F19.
+(Many of) the buses aren't something that ARM SoC designers invented
+though; they're industry standard things like I2C, SPI, I2S, all of
+which are supported by SoC manufacturers solely because there are huge
+numbers of useful chips that attach to these buses, from many many
+manufacturers. This is an industry issue, not some evil conspiracy by
+ARM SoC vendors.
 
-Easy test: go to youtube, and watch things that are in 1080p HD. They
-play fine in a window (using about 70% CPU), but full-screened to
-2560x1440 they play at about one or two frames per second.
+True, it'd be lovely if those standard buses were discoverable; if the
+industry had ended up with more advanced buses (although again: cost, to
+implement those features, even if embedded into the chip itself rather
+than as an external component).
 
-Non-HD content seems to be fine even full-screen. Either just because
-it's so much easier to do, or because some level of scaling is
-hw-accelerated.
+Now, there are certainly cases where everybody just does their own silly
+thing in HW, such as using GPIOs from a separate GPIO controller for SD
+card detect and write-protect signals, rather than having the SDHCI
+controller handle those functions, and hence be standalone. So from that
+perspective your point is justified. However, solving this aspect would
+only solve part of the problem.
 
-It may well be that I'm using chrome (and chrome seems to tend to use
-its own library versions), and firefox indeed seems to be a bit
-better. But by "a bit better" I mean closer to full frame rate in
-full-screen, but lots of tearing - and it was stil using 70% CPU when
-displaying in a window. So I think firefox is also still doing
-everything in software but may be better about using threads for it.
-
-My previous i5-670 which was inferior in almost every other way didn't
-have these problems.. It had the same 2560x1440 display.
-
-              Linus
+x86 PCs likely have at least some of this exact same HW, e.g. I2C-based
+LM90 thermal sensors. However, I /think/ this all gets hidden from the
+OS by ACPI or other firmware mechanisms. Do you prefer firmware
+abstraction over DT?
