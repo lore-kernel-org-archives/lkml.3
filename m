@@ -1,77 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085Ab3IJAEe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 20:04:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42393 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755700Ab3IJAEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 20:04:33 -0400
-Date: Tue, 10 Sep 2013 10:04:21 +1000
-From: NeilBrown <neilb@suse.de>
+	id S1756184Ab3IJAG4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 20:06:56 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:43852 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755850Ab3IJAGz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 20:06:55 -0400
+From: Kevin Hilman <khilman@linaro.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Kevin Hilman <khilman@linaro.org>, ARM SoC <arm@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
+Cc: ARM SoC <arm@kernel.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Subject: Re: [GIT PULL 0/3] ARM: SoC: Second round of changes for v3.12
-Message-ID: <20130910100421.5c481df0@notabene.brown>
-In-Reply-To: <CA+55aFxNbH+G6DVQNxE9di_btA5hxFH93af_vjN2v0eH8e5W-g@mail.gmail.com>
 References: <1378766555-9679-1-git-send-email-khilman@linaro.org>
 	<CA+55aFxNbH+G6DVQNxE9di_btA5hxFH93af_vjN2v0eH8e5W-g@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/Pe=dWOO=+62hr3+YD0yM_2Q"; protocol="application/pgp-signature"
+Date: Mon, 09 Sep 2013 17:06:51 -0700
+In-Reply-To: <CA+55aFxNbH+G6DVQNxE9di_btA5hxFH93af_vjN2v0eH8e5W-g@mail.gmail.com>
+	(Linus Torvalds's message of "Mon, 9 Sep 2013 16:49:23 -0700")
+Message-ID: <87ioy97d5w.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Pe=dWOO=+62hr3+YD0yM_2Q
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
-
-On Mon, 9 Sep 2013 16:49:23 -0700 Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+Linus Torvalds <torvalds@linux-foundation.org> writes:
 
 > On Mon, Sep 9, 2013 at 3:42 PM, Kevin Hilman <khilman@linaro.org> wrote:
-> >
-> > The main thing of note (or of potential annoyance factor) here is the
-> > handful of conflicts in PULL 2/3 coming from platform changes
-> > conflicting with driver changes going in to the V4L tree.  I've listed
-> > them in detail in that pull request, and we will work with the
-> > platform maintainer on the workflow to avoid this in the future.
->=20
+>>
+>> The main thing of note (or of potential annoyance factor) here is the
+>> handful of conflicts in PULL 2/3 coming from platform changes
+>> conflicting with driver changes going in to the V4L tree.  I've listed
+>> them in detail in that pull request, and we will work with the
+>> platform maintainer on the workflow to avoid this in the future.
+>
 > Ok. I still really despise the absolute incredible sh*t that is
 > non-discoverable buses, and I hope that ARM SoC hardware designers all
 > die in some incredibly painful accident.  DT only does so much.
->=20
+
+In case it helps you feel slightly better... in what some might call a
+painful accident (though probably not the kind you'd like to see), most
+of the designers I used to work with (at TI) were laid off in the last
+year.
+
 > So if you see any, send them my love, and possibly puncture the
 > brake-lines on their car and put a little surprise in their coffee,
 > ok?
 
-As you wish.
+Got it.  I'll be sure to send your love.
 
+>> For future reference, when it comes to these conflicts, do you want to
+>> see a summary of the suggested resolutions, a published branch with
+>> the resolutions, both or neither?  Just curious.
+>
+> I'll basically always end up re-doing the conflict resolution by hand
+> anyway unless it's just *incredibly* messy (and I think that has
+> happened all of once or twice), so anything you send me ends up being
+> just confirmation.
+>
+> In this case, for example, I didn't end up looking at your pre-merged
+> stuff, because the summaries were enough for me to just say "ok, that
+> confirms my resolution". In other cases, people don't write detailed
+> summaries, and I end up confirming my resolution by just doing a
+> separate test-merge against their pre-merged branch and comparing.
+>
+> And in most cases, the resolution is trivial enough that I don't
+> bother with either.
+>
+> And in *all* cases I appreciate it when people do the preparation. It
+> hopefully also makes submaintainers themselves more aware of
+> development flow conflicts and more aware of possible problem issues
+> (same reason I prefer doing all the resolutions by hand myself), so I
+> suspect all of this is healthy even if I don't end up using it.
 
---Sig_/Pe=dWOO=+62hr3+YD0yM_2Q
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+OK, thanks for the feedback.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+> Final note: putting the conflict resolution explanation in the tag
+> message is unnecessary, since it's not really worth it after-the-fact
+> - so I'll just edit it away. It's not a problem, but in general I'd
+> suggest the tag message just contain the "here's the highlights", and
+> you do the conflict resolution notes just in the email. But I suspect
+> you may find the use of the tags a convenient way to jot down the
+> resolution for then sending the email later, and it's not like it
+> hurts me to edit it away afterwards, so not a big deal. Whatever works
+> for you.
 
-iQIVAwUBUi5iBTnsnt1WYoG5AQJlOA/9G2a1qgT65vzTZy8Py+2zuibq6kgC1R3b
-m8gA8nRD447dASXCqmQxA3jIGgmqnxLGfb2G4YFLMg6uuJFerzFXo9ivnySLF2JG
-lzWEp1AQtGs32SmHRCsxyfZnvRwZymHoZBgm4lVCSzNlH8m2iDoEWpDCOtLXlQae
-e1zNHHFSQu/Pxhz5H8yx5FHSe4nPuideRuQsTii3h0UsW7uRsfOAGAV5VXu/lGly
-MitHnOrO9HK+9UZyDh8AV2tu+8HRZVGbsBAVL36F5Uzv91vUgrDiJW2fwqTV6St3
-4DtgLWS+E4nyGW+UTGj1V/3773clOZFGa7Ww6RF6bqTDxgls5w2Dx3fkyDjzZUCc
-YNWz0vdjEoNU2PMxm0afej3t13phukxI7mH5FZVmQe4aqlptBL1QlHBEelZkqIoH
-9Qbz+QYKTRRUgDp2Jsv9KXM6mSOvoozbml5eO2xMHJ7dyXCASLIopLJOtZAy/qLn
-0+9JO2gW7S27jtkwqPsQwOrJchFzqUj85ktncVdNvoYL525f2kok9j7f/B9Om0bs
-nUNqrI+c+xnxk+KORdlfs6gnonh0Tj10xtGBVNgugADKSeS0LQbpjGhbogRvyN6N
-HrfzLYXtwoxWyLU4VtdESobKvJ5CF7AfCR3W5HEXB//7C0+n75VLaN0UVTD4IPJ4
-vsBjuBCp/Zw=
-=rVBC
------END PGP SIGNATURE-----
+Noted, thanks.
 
---Sig_/Pe=dWOO=+62hr3+YD0yM_2Q--
+Kevin
