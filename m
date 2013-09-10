@@ -1,256 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754694Ab3IJHQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 03:16:57 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:47543 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754195Ab3IJHQz (ORCPT
+	id S1754740Ab3IJHT4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 03:19:56 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:57294 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754464Ab3IJHTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 03:16:55 -0400
-X-AuditID: cbfec7f4-b7f0a6d000007b1b-5d-522ec76421c4
-Message-id: <1378797411.15425.17.camel@AMDC1943>
-Subject: Re: [RFC PATCH 1/4] zbud: use page ref counter for zbud pages
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bob Liu <bob.liu@oracle.com>, Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dave Hansen <dave.hansen@intel.com>, Minchan Kim <minchan@kernel.org>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>
-Date: Tue, 10 Sep 2013 09:16:51 +0200
-In-reply-to: <20130909194733.GE4701@variantweb.net>
-References: <1377852176-30970-1-git-send-email-k.kozlowski@samsung.com>
- <1377852176-30970-2-git-send-email-k.kozlowski@samsung.com>
- <20130909194733.GE4701@variantweb.net>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsVy+t/xq7opx/WCDGb9N7KYs34Nm8XGGetZ
-	LbpOTWWx+PTyAaPF2aY37BaXd81hs7i35j+rxdojd9ktJr97xmix7Ot7dotD+1axW8xrf8nq
-	wOOxeM9LJo9NqzrZPDZ9msTucWLGbxaPB4c2s3h8fHqLxaNvyypGj82nqz0+b5IL4IzisklJ
-	zcksSy3St0vgyri08Q17wUvzirPzDrE1MDZrdzFyckgImEgsXbOOBcIWk7hwbz1bFyMXh5DA
-	UkaJzmkbWSCcz4wS399uBaviFTCQuLF3ARuILSzgJvHqzGx2EJtNwFhi8/IlYHERAX2J7tkr
-	mEGamQXWMUvM3nIWrIhFQFVi6f/DTCA2J1DDxIk9TBAb1jFKbOjpBOtmFlCXmDRvETPETUoS
-	u9s72SHi8hKb17xlhrhCUOLH5HssExgFZiFpmYWkbBaSsgWMzKsYRVNLkwuKk9JzDfWKE3OL
-	S/PS9ZLzczcxQmLoyw7GxcesDjEKcDAq8fAGHNMNEmJNLCuuzD3EKMHBrCTCKz5dL0iINyWx
-	siq1KD++qDQntfgQIxMHp1QDY8mWWxdjfUu3b552pqr8H//6yqX5PzfOS3+Sqs9g6iTAJhOf
-	w/3wUMcbTZVYxv86G7Kr4irk1K2MT78Vd2nNLGC48CAv6vqm99uaXF/3MkSv/8OzTmBmo+v6
-	+c1zJ4W/OMwzSeLCZMcz22Pv6yot2vqgaNqCGZ5pCs9jVROtzM9POHH5bITlSiWW4oxEQy3m
-	ouJEAPF7M7N/AgAA
+	Tue, 10 Sep 2013 03:19:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130910153347.5fafb58b@notabene.brown>
+References: <CAPoh-nY8wwu-2yYRbKycPX2gEUofQu6y29TOYhOm83C2au6ZQQ@mail.gmail.com>
+	<20130910153347.5fafb58b@notabene.brown>
+Date: Tue, 10 Sep 2013 15:19:51 +0800
+Message-ID: <CAPoh-nYLbSL81V4zmLQ579+XMa2rsNFG-Drf6mVQQuCh6SYOKg@mail.gmail.com>
+Subject: Re: Subject: [PATCH] md: avoid deadlock when raid5 array has unack
+ badblocks during md_stop_writes.
+From: y b <ycbzzjlby@gmail.com>
+To: NeilBrown <neilb@suse.de>
+Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+I use linux-next 2013-9-6 vesion and I can reproduce it when raid5
+array rescovering, so sync_blockdev may not work.
+Some disk-controller driver handle disk error in a slowerpath, may
+more than 5 seconds. if shutdown or set readonly array, we can met
+this situation.
 
-On pon, 2013-09-09 at 14:47 -0500, Seth Jennings wrote:
-> On Fri, Aug 30, 2013 at 10:42:53AM +0200, Krzysztof Kozlowski wrote:
-> > Use page reference counter for zbud pages. The ref counter replaces
-> > zbud_header.under_reclaim flag and ensures that zbud page won't be freed
-> > when zbud_free() is called during reclaim. It allows implementation of
-> > additional reclaim paths.
-> 
-> I like this idea.
-> 
-> > 
-> > The page count is incremented when:
-> >  - a handle is created and passed to zswap (in zbud_alloc()),
-> >  - user-supplied eviction callback is called (in zbud_reclaim_page()).
-> > 
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
-> > Reviewed-by: Bob Liu <bob.liu@oracle.com>
-> > ---
-> >  mm/zbud.c |   97 +++++++++++++++++++++++++++++++++----------------------------
-> >  1 file changed, 52 insertions(+), 45 deletions(-)
-> > 
-> > diff --git a/mm/zbud.c b/mm/zbud.c
-> > index ad1e781..aa9a15c 100644
-> > --- a/mm/zbud.c
-> > +++ b/mm/zbud.c
-> > @@ -109,7 +109,6 @@ struct zbud_header {
-> >  	struct list_head lru;
-> >  	unsigned int first_chunks;
-> >  	unsigned int last_chunks;
-> > -	bool under_reclaim;
-> >  };
-> > 
-> >  /*****************
-> > @@ -138,16 +137,9 @@ static struct zbud_header *init_zbud_page(struct page *page)
-> >  	zhdr->last_chunks = 0;
-> >  	INIT_LIST_HEAD(&zhdr->buddy);
-> >  	INIT_LIST_HEAD(&zhdr->lru);
-> > -	zhdr->under_reclaim = 0;
-> >  	return zhdr;
-> >  }
-> > 
-> > -/* Resets the struct page fields and frees the page */
-> > -static void free_zbud_page(struct zbud_header *zhdr)
-> > -{
-> > -	__free_page(virt_to_page(zhdr));
-> > -}
-> > -
-> >  /*
-> >   * Encodes the handle of a particular buddy within a zbud page
-> >   * Pool lock should be held as this function accesses first|last_chunks
-> > @@ -188,6 +180,31 @@ static int num_free_chunks(struct zbud_header *zhdr)
-> >  	return NCHUNKS - zhdr->first_chunks - zhdr->last_chunks - 1;
-> >  }
-> > 
-> > +/*
-> > + * Increases ref count for zbud page.
-> > + */
-> > +static void get_zbud_page(struct zbud_header *zhdr)
-> > +{
-> > +	get_page(virt_to_page(zhdr));
-> > +}
-> > +
-> > +/*
-> > + * Decreases ref count for zbud page and frees the page if it reaches 0
-> > + * (no external references, e.g. handles).
-> > + *
-> > + * Returns 1 if page was freed and 0 otherwise.
-> > + */
-> > +static int put_zbud_page(struct zbud_header *zhdr)
-> > +{
-> > +	struct page *page = virt_to_page(zhdr);
-> > +	if (put_page_testzero(page)) {
-> > +		free_hot_cold_page(page, 0);
-> > +		return 1;
-> > +	}
-> > +	return 0;
-> > +}
-> > +
-> > +
-> >  /*****************
-> >   * API Functions
-> >  *****************/
-> > @@ -250,7 +267,7 @@ void zbud_destroy_pool(struct zbud_pool *pool)
-> >  int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
-> >  			unsigned long *handle)
-> >  {
-> > -	int chunks, i, freechunks;
-> > +	int chunks, i;
-> 
-> This change (make freechunks a block local variable) is unrelated to the
-> patch description and should be its own patch.
+the detail message when I met this situation:
+[root@localhost ~]# cat /proc/version
+Linux version 3.11.0-next-20130906+ (root@localhost.localdomain) (gcc
+version 4.4.6 20110731 (Red Hat 4.4.6-3) (GCC) ) #4 SMP Tue Sep 10
+05:41:05 CST 2013
 
-Sure, I will split this into 2 patches.
+Sep 10 15:12:53 localhost kernel: [  266.455439] sd 2:0:0:0: [sdb] CDB:
+Sep 10 15:12:53 localhost kernel: [  266.455442] Read(10): 28 00 00 04
+90 00 00 04 00 00
+Sep 10 15:12:53 localhost kernel: [  266.455487] end_request: I/O
+error, dev sdb, sector 300000
+Sep 10 15:12:53 localhost kernel: [  266.455493] md/raid:md0: read
+error not correctable (sector 300000 on sdb).
+Sep 10 15:12:53 localhost kernel: [  266.455500] md/raid:md0: read
+error not correctable (sector 300008 on sdb).
+Sep 10 15:12:53 localhost kernel: [  266.455503] md/raid:md0: read
+error not correctable (sector 300016 on sdb).
+Sep 10 15:12:53 localhost kernel: [  266.455507] md/raid:md0: read
+error not correctable (sector 300024 on sdb).
+Sep 10 15:12:53 localhost kernel: [  266.455507] md/raid:md0: read
+error not correctable (sector 300024 on sdb).
+Sep 10 15:12:53 localhost kernel: [  266.455534] ata3: EH complete
+Sep 10 15:12:54 localhost kernel: [  267.556251] ata3.00: exception
+Emask 0x0 SAct 0x1 SErr 0x0 action 0x0
+Sep 10 15:12:54 localhost kernel: [  267.556253] ata3.00: irq_stat 0x40000008
+Sep 10 15:12:54 localhost kernel: [  267.556257] ata3.00: failed
+command: READ FPDMA QUEUED
+Sep 10 15:12:54 localhost kernel: [  267.556266] ata3.00: cmd
+60/00:00:00:94:04/04:00:00:00:00/40 tag 0 ncq 524288 in
+Sep 10 15:12:54 localhost kernel: [  267.556266]          res
+41/40:00:08:94:04/00:04:00:00:00/00 Emask 0x409 (media error) <F>
+Sep 10 15:12:54 localhost kernel: [  267.556280] ata3.00: status: { DRDY ERR }
+Sep 10 15:12:54 localhost kernel: [  267.556292] ata3.00: error: { UNC }
+Sep 10 15:13:42 localhost kernel: [  315.360006] EXT4-fs (sda3): error count: 9
+Sep 10 15:13:42 localhost kernel: [  315.360021] EXT4-fs (sda3):
+initial error at 1378787888: ext4_writepages:2544
+Sep 10 15:13:42 localhost kernel: [  315.360035] EXT4-fs (sda3): last
+error at 1378789801: ext4_journal_check_start:57
+Sep 10 15:13:42 localhost kernel: [  315.360035] EXT4-fs (sda3): last
+error at 1378789801: ext4_journal_check_start:57
+Sep 10 15:15:46 localhost udevd[1892]: worker [3161] unexpectedly
+returned with status 0x0100
+Sep 10 15:15:46 localhost udevd[1892]: worker [3161] failed while
+handling '/devices/virtual/block/md0'
+Sep 10 15:16:28 localhost kernel: [  480.850203]       Not tainted
+3.11.0-next-20130906+ #4
+Sep 10 15:16:28 localhost kernel: [  480.852344] "echo 0 >
+/proc/sys/kernel/hung_task_timeout_secs" disables this message.
+Sep 10 15:16:28 localhost kernel: [  480.854380]  [<ffffffff8153b324>]
+md_do_sync+0x7e4/0xe60
+Sep 10 15:16:28 localhost kernel: [  480.854386]  [<ffffffff81747fcb>]
+? _raw_spin_unlock_irq+0x2b/0x40
+Sep 10 15:16:28 localhost kernel: [  480.854395]  [<ffffffff81536fa0>]
+? md_unregister_thread+0x90/0x90
+Sep 10 15:16:28 localhost kernel: [  480.854400]  [<ffffffff810a716d>]
+? trace_hardirqs_on+0xd/0x10
+Sep 10 15:16:28 localhost kernel: [  480.854405]  [<ffffffff815370bf>]
+md_thread+0x11f/0x170
+Sep 10 15:16:28 localhost kernel: [  480.854410]  [<ffffffff81536fa0>]
+? md_unregister_thread+0x90/0x90
+Sep 10 15:16:28 localhost kernel: [  480.854415]  [<ffffffff8106d956>]
+kthread+0xd6/0xe0
+Sep 10 15:16:28 localhost kernel: [  480.854423]  [<ffffffff8106d880>]
+? __init_kthread_worker+0x70/0x70
+Sep 10 15:16:28 localhost kernel: [  480.854428]  [<ffffffff8174ff2c>]
+ret_from_fork+0x7c/0xb0
+Sep 10 15:16:28 localhost kernel: [  480.854432]  [<ffffffff8106d880>]
+? __init_kthread_worker+0x70/0x70
+Sep 10 15:16:28 localhost kernel: [  480.854435] no locks held by
+md0_resync/3246.
+Sep 10 15:16:28 localhost kernel: [  480.854437] INFO: task mdadm:3257
+blocked for more than 120 seconds.
+Sep 10 15:16:28 localhost kernel: [  480.854438]       Not tainted
+3.11.0-next-20130906+ #4
+Sep 10 15:16:28 localhost kernel: [  480.854439] "echo 0 >
+/proc/sys/kernel/hung_task_timeout_secs" disables this message.
+Sep 10 15:16:28 localhost kernel: [  480.854442] mdadm           D
+0000000000000000  5024  3257   3209 0x00000080
+Sep 10 15:16:28 localhost kernel: [  480.854445]  ffff880138c37b18
+0000000000000046 00000000ffffffff ffff880037d3b120
+Sep 10 15:16:28 localhost kernel: [  480.854447]  ffff88013a038720
+ffff88013a038000 0000000000013500 ffff880138c37fd8
+Sep 10 15:16:28 localhost kernel: [  480.854449]  ffff880138c36010
+0000000000013500 0000000000013500 ffff880138c37fd8
+Sep 10 15:16:28 localhost kernel: [  480.854449] Call Trace:
+Sep 10 15:16:28 localhost kernel: [  480.854452]  [<ffffffff81745fa4>]
+schedule+0x24/0x70
+Sep 10 15:16:28 localhost kernel: [  480.854453]  [<ffffffff81742725>]
+schedule_timeout+0x175/0x200
+Sep 10 15:16:28 localhost kernel: [  480.854455]  [<ffffffff810a6d30>]
+? mark_held_locks+0x80/0x130
+Sep 10 15:16:28 localhost kernel: [  480.854457]  [<ffffffff81747fcb>]
+? _raw_spin_unlock_irq+0x2b/0x40
+Sep 10 15:16:28 localhost kernel: [  480.854459]  [<ffffffff810a709d>]
+? trace_hardirqs_on_caller+0xfd/0x1c0
+Sep 10 15:16:28 localhost kernel: [  480.854461]  [<ffffffff810a716d>]
+? trace_hardirqs_on+0xd/0x10
+Sep 10 15:16:28 localhost kernel: [  480.854463]  [<ffffffff81746600>]
+wait_for_completion+0xa0/0x110
+Sep 10 15:16:28 localhost kernel: [  480.854465]  [<ffffffff8107d160>]
+? try_to_wake_up+0x300/0x300
+Sep 10 15:16:28 localhost kernel: [  480.854467]  [<ffffffff8106ddbc>]
+kthread_stop+0x4c/0xe0
+Sep 10 15:16:28 localhost kernel: [  480.854468]  [<ffffffff81536f5e>]
+md_unregister_thread+0x4e/0x90
+Sep 10 15:16:28 localhost kernel: [  480.854470]  [<ffffffff8153965d>]
+md_reap_sync_thread+0x1d/0x140
+Sep 10 15:16:28 localhost kernel: [  480.854472]  [<ffffffff815397ab>]
+__md_stop_writes+0x2b/0x80
+Sep 10 15:16:28 localhost kernel: [  480.854473]  [<ffffffff8153c911>]
+do_md_stop+0x91/0x4d0
+Sep 10 15:16:28 localhost kernel: [  480.854475]  [<ffffffff8153e8a7>]
+? md_ioctl+0xf7/0x15c0
+Sep 10 15:16:28 localhost kernel: [  480.854477]  [<ffffffff810a716d>]
+? trace_hardirqs_on+0xd/0x10
+Sep 10 15:16:28 localhost kernel: [  480.854479]  [<ffffffff8153f6a9>]
+md_ioctl+0xef9/0x15c0
+Sep 10 15:16:28 localhost kernel: [  480.854481]  [<ffffffff8113145d>]
+? handle_mm_fault+0x17d/0x920
 
-
-[...]
-> >  		list_add(&zhdr->buddy, &pool->unbuddied[freechunks]);
-> >  	}
-> > 
-> > +	put_zbud_page(zhdr);
-> >  	spin_unlock(&pool->lock);
-> >  }
-> > 
-> > @@ -400,7 +414,7 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle)
-> >   */
-> >  int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
-> >  {
-> > -	int i, ret, freechunks;
-> > +	int i, ret;
-> >  	struct zbud_header *zhdr;
-> >  	unsigned long first_handle = 0, last_handle = 0;
-> > 
-> > @@ -411,11 +425,24 @@ int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
-> >  		return -EINVAL;
-> >  	}
-> >  	for (i = 0; i < retries; i++) {
-> > +		if (list_empty(&pool->lru)) {
-> > +			/*
-> > +			 * LRU was emptied during evict calls in previous
-> > +			 * iteration but put_zbud_page() returned 0 meaning
-> > +			 * that someone still holds the page. This may
-> > +			 * happen when some other mm mechanism increased
-> > +			 * the page count.
-> > +			 * In such case we succedded with reclaim.
-> > +			 */
-> > +			spin_unlock(&pool->lock);
-> > +			return 0;
-> > +		}
-> >  		zhdr = list_tail_entry(&pool->lru, struct zbud_header, lru);
-> > +		/* Move this last element to beginning of LRU */
-> >  		list_del(&zhdr->lru);
-> > -		list_del(&zhdr->buddy);
-> > +		list_add(&zhdr->lru, &pool->lru);
-> 
-> This adds the entry back to the lru list, but the entry is never removed
-> from the list.  I'm not sure how this could work.
-
-The entry will be removed from LRU and un/buddied list in zbud_free()
-called from eviction handler.
-
-So this actually works well however I wonder if this may be a source of
-race conditions because during the call to eviction handler, the zbud
-header is still present on buddied list (till call to zbud_free()).
-
-Another issue is that I haven't update the documentation for
-zbud_reclaim_page(). I fix this in next version.
-
-
-> >  		/* Protect zbud page against free */
-> > -		zhdr->under_reclaim = true;
-> > +		get_zbud_page(zhdr);
-> >  		/*
-> >  		 * We need encode the handles before unlocking, since we can
-> >  		 * race with free that will set (first|last)_chunks to 0
-> > @@ -440,29 +467,9 @@ int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
-> >  				goto next;
-> >  		}
-> >  next:
-> > -		spin_lock(&pool->lock);
-> > -		zhdr->under_reclaim = false;
-> > -		if (zhdr->first_chunks == 0 && zhdr->last_chunks == 0) {
-> > -			/*
-> > -			 * Both buddies are now free, free the zbud page and
-> > -			 * return success.
-> > -			 */
-> > -			free_zbud_page(zhdr);
-> > -			pool->pages_nr--;
-> > -			spin_unlock(&pool->lock);
-> > +		if (put_zbud_page(zhdr))
-> 
-> There is a single put_zbud_page() regardless of result of the eviction
-> attempts.  What if both buddies of a buddied zbud page are evicted?
-> Then you leak the zbud page.  What if the eviction in an unbuddied zbud
-> page failed?  Then you prematurely free the page and crash later.
-
-This single put_zbud_page() puts the reference obtained few lines
-earlier.
-
-If one or two buddies are evicted then the eviction handler should call
-zbud_free(). zbud_free() will put the initial ref count (obtained from
-zbud_alloc()).
-
-If the eviction handler failed then zbud_free() won't be called so the
-initial ref count still be valid and this put_zbud_page() won't free the
-page.
-
-Let me show the flow of ref counts:
-1. zbud_alloc() for first buddy, ref count = 1
-2. zbud_alloc() for last buddy, ref count = 2
-3. zbud_reclaim_page() start, ref count = 3
-4. calling user eviction handler
-5. zbud_free() for first buddy (called from handler), ref count = 2
-6. zbud_free() for last buddy (called from handler), ref count = 1
-7. zbud_reclaim_page() end, ref count = 0 (free the page)
-
-If eviction handler fails at step 5 or 6, then the ref count won't drop
-to 0 as zswap still holds the initial reference to handle.
-
-
-Thanks for comments. I appreciate them very much.
-
-
-Best regards,
-Krzysztof
-
-
-
+2013/9/10, NeilBrown <neilb@suse.de>:
+> On Tue, 10 Sep 2013 13:00:52 +0800 y b <ycbzzjlby@gmail.com> wrote:
+>
+>> When raid5 hit a fresh badblock, this badblock will flagged as unack
+>> badblock until md_update_sb is called.
+>> But md_stop/reboot/md_set_readonly will avoid raid5d call md_update_sb
+>> in md_check_recovery, the badblock will always be unack, so raid5d
+>> thread enter a infinite loop and never can unregister sync_thread
+>> that cause deadlock.
+>>
+>> To solve this, before md_stop_writes call md_unregister_thread, set
+>> MD_STOPPING_WRITES on mddev->flags. In raid5.c analyse_stripe judge
+>> MD_STOPPING_WRITES bit on mddev->flags, if setted don't block rdev
+>> to wait md_update_sb. so raid5d thread can be finished.
+>> Signed-off-by: Bian Yu <bianyu@kedacom.com>
+>
+> Have you actually seen this deadlock happen?  Because I don't think it can
+> happen.
+>
+> By the time we get to md_stop or md_set_readonly all dirty buffers should
+> have been flushed and there should be no pending writes so nothing to wait
+> for an unacked bad block.
+>
+> If you have seen this happen, any details you can give about the exact
+> state
+> of the RAID5 when it deadlocked, the stack trace of any relevant processes
+> etc would be very helpful.
+>
+> Thanks,
+> NeilBrown
+>
+>
+>> ---
+>>  drivers/md/md.c    |    2 ++
+>>  drivers/md/md.h    |    3 +++
+>>  drivers/md/raid5.c |    3 ++-
+>>  3 files changed, 7 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/md/md.c b/drivers/md/md.c
+>> index adf4d7e..54ef71f 100644
+>> --- a/drivers/md/md.c
+>> +++ b/drivers/md/md.c
+>> @@ -5278,6 +5278,7 @@ static void md_clean(struct mddev *mddev)
+>>  static void __md_stop_writes(struct mddev *mddev)
+>>  {
+>>      set_bit(MD_RECOVERY_FROZEN, &mddev->recovery);
+>> +    set_bit(MD_STOPPING_WRITES, &mddev->flags);
+>>      if (mddev->sync_thread) {
+>>          set_bit(MD_RECOVERY_INTR, &mddev->recovery);
+>>          md_reap_sync_thread(mddev);
+>> @@ -5294,6 +5295,7 @@ static void __md_stop_writes(struct mddev *mddev)
+>>          mddev->in_sync = 1;
+>>          md_update_sb(mddev, 1);
+>>      }
+>> +    clear_bit(MD_STOPPING_WRITES, &mddev->flags);
+>>  }
+>>
+>>  void md_stop_writes(struct mddev *mddev)
+>> diff --git a/drivers/md/md.h b/drivers/md/md.h
+>> index 608050c..c998b82 100644
+>> --- a/drivers/md/md.h
+>> +++ b/drivers/md/md.h
+>> @@ -214,6 +214,9 @@ struct mddev {
+>>  #define MD_STILL_CLOSED    4    /* If set, then array has not been opened
+>> since
+>>                   * md_ioctl checked on it.
+>>                   */
+>> +#define MD_STOPPING_WRITES 5     /* If set, raid5 shouldn't set
+>> unacknowledged
+>> +                  * badblock blocked in analyse_stripe to avoid infinite
+>> loop
+>> +                  */
+>>
+>>      int                suspended;
+>>      atomic_t            active_io;
+>> diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+>> index f9972e2..ff1aecf 100644
+>> --- a/drivers/md/raid5.c
+>> +++ b/drivers/md/raid5.c
+>> @@ -3446,7 +3446,8 @@ static void analyse_stripe(struct stripe_head
+>> *sh, struct stripe_head_state *s)
+>>          if (rdev) {
+>>              is_bad = is_badblock(rdev, sh->sector, STRIPE_SECTORS,
+>>                           &first_bad, &bad_sectors);
+>> -            if (s->blocked_rdev == NULL
+>> +            if (!test_bit(MD_STOPPING_WRITES, &conf->mddev->flags)
+>> +                && s->blocked_rdev == NULL
+>>                  && (test_bit(Blocked, &rdev->flags)
+>>                  || is_bad < 0)) {
+>>                  if (is_bad < 0)
+>
+>
