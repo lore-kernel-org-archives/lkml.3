@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752693Ab3IJPOV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 11:14:21 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:48681 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480Ab3IJPOS (ORCPT
+	id S1752747Ab3IJPOc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 11:14:32 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49616 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751994Ab3IJPOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 11:14:18 -0400
+	Tue, 10 Sep 2013 11:14:30 -0400
+Date: Tue, 10 Sep 2013 17:14:20 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH 0/7] preempt_count rework -v2
+Message-ID: <20130910151420.GG31370@twins.programming.kicks-ass.net>
+References: <20130910130811.507933095@infradead.org>
+ <20130910135152.GD7537@gmail.com>
+ <20130910135636.GA8268@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4292924.3iHJT5nzNS@vostro.rjw.lan>
-References: <Pine.LNX.4.64.1309091656200.6602@axis700.grange>
-	<CAKohponZ+FnzqXYMbBzbun0-1iQMi2fS4syrEBC_MdF41vLCeA@mail.gmail.com>
-	<4292924.3iHJT5nzNS@vostro.rjw.lan>
-Date: Tue, 10 Sep 2013 20:44:18 +0530
-Message-ID: <CAKohponUdE0LCciPb+nf3t_vfNqAy3MeWQO8gTOdEDvQJeWcgg@mail.gmail.com>
-Subject: Re: "cpufreq: fix serialization issues with freq change notifiers"
- breaks cpufreq too
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>, Greg KH <greg@kroah.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130910135636.GA8268@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 September 2013 17:19, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> That said I'm actually unsure what problems *exactly* are fixed by commit
-> 7c30ed5.  The commit log only says that PRECHANGE or POSTCHAGE shouldn't be
-> called twice in a row, but it doesn't say why.  As the fallout indicates,
-> that actually happened before commit 7c30ed5 and nothing visibly broke, so
-> the benefit from having that commit is questionable to me.  On the other hand,
-> the commit itself is evidently broken, so what exactly is the reason for
-> keeping it?
+On Tue, Sep 10, 2013 at 03:56:36PM +0200, Ingo Molnar wrote:
+> * Ingo Molnar <mingo@kernel.org> wrote:
 
-Okay, so the first question is can we have multiple PRECHANGE notfication
-done without any POSTCHANGE inbetween?
-- Scenario: One reading value of cpuinfo_cur_freq, which will call
-__cpufreq_cpu_get()->cpufreq_out_of_sync()->cpufreq_notify_transition()..
+> > > * ffffffff8106f42a:       65 ff 0c 25 e0 b7 00    decl   %gs:0xb7e0
+> > >   ffffffff8106f431:       00 
+> > > * ffffffff8106f432:       0f 94 c0                sete   %al
+> > > * ffffffff8106f435:       84 c0                   test   %al,%al
+> > > * ffffffff8106f437:       75 02                   jne    ffffffff8106f43b <kick_process+0x4b>
+> 
+> Correction, so this comes from the new x86-specific optimization:
+> 
+> +static __always_inline bool __preempt_count_dec_and_test(void)
+> +{
+> +       unsigned char c;
+> +
+> +       asm ("decl " __percpu_arg(0) "; sete %1"
+> +                       : "+m" (__preempt_count), "=qm" (c));
+> +
+> +       return c != 0;
+> +}
+> 
+> And that's where the sete and test originates from.
 
-And ondemand governor trying to change freq of cpu and so doing notification..
+Correct, used in:
 
-There can be more similar scenarios possible..
+#define preempt_enable() \
+do { \
+        barrier(); \
+        if (unlikely(preempt_count_dec_and_test())) \
+                __preempt_schedule(); \
+} while (0)
 
+> Couldn't it be improved by merging the preempt_schedule() call into a new 
+> primitive, keeping the call in the regular flow, or using section tricks 
+> to move it out of line? The scheduling case is a slowpath in most cases.
 
-Now Second question, is this fine to have multiple PRECHANGE notfications
-before any POSTCHANGE notification?
+Not if we want to keep using the GCC unlikely thing afaik. That said,
+all this inline asm stuff is isn't my strong point, so maybe someone
+else has a good idea.
 
-Logically it looks obvious to me that these must be serialized..
-Otherwise this is what we are broadcasting:
-- We are changing for freq X, please prepare and let us know if you are
-okay with it..
-- Oh.. So sorry, we are changing to freq Y instead, please adjust accordingly.
+But I really think fixing GCC would be good, as we have the same pattern
+with all *_and_test() functions.
 
-- Yes we have changed to freq Y...
-- Yes we have changed to freq X...
-
-This looks stupid, isn't it? I don't know how the drivers would behave when
-they see such notifications and so got to this patch initially..
