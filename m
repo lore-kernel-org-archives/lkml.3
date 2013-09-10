@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706Ab3IJJmM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 05:42:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57089 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751065Ab3IJJcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751427Ab3IJJcu (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 10 Sep 2013 05:32:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57041 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751065Ab3IJJco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 05:32:44 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 16/50] mm: Only flush TLBs if a transhuge PMD is modified for NUMA pte scanning
-Date: Tue, 10 Sep 2013 10:31:56 +0100
-Message-Id: <1378805550-29949-17-git-send-email-mgorman@suse.de>
+Subject: [PATCH 10/50] sched: numa: Mitigate chance that same task always updates PTEs
+Date: Tue, 10 Sep 2013 10:31:50 +0100
+Message-Id: <1378805550-29949-11-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1378805550-29949-1-git-send-email-mgorman@suse.de>
 References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
@@ -22,93 +22,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NUMA PTE scanning is expensive both in terms of the scanning itself and
-the TLB flush if there are any updates. The TLB flush is avoided if no
-PTEs are updated but there is a bug where transhuge PMDs are considered
-to be updated even if they were already pmd_numa. This patch addresses
-the problem and TLB flushes should be reduced.
+From: Peter Zijlstra <peterz@infradead.org>
 
+With a trace_printk("working\n"); right after the cmpxchg in
+task_numa_work() we can see that of a 4 thread process, its always the
+same task winning the race and doing the protection change.
+
+This is a problem since the task doing the protection change has a
+penalty for taking faults -- it is busy when marking the PTEs. If its
+always the same task the ->numa_faults[] get severely skewed.
+
+Avoid this by delaying the task doing the protection change such that
+it is unlikely to win the privilege again.
+
+Before:
+
+root@interlagos:~# grep "thread 0/.*working" /debug/tracing/trace | tail -15
+      thread 0/0-3232  [022] ....   212.787402: task_numa_work: working
+      thread 0/0-3232  [022] ....   212.888473: task_numa_work: working
+      thread 0/0-3232  [022] ....   212.989538: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.090602: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.191667: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.292734: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.393804: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.494869: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.596937: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.699000: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.801067: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.903155: task_numa_work: working
+      thread 0/0-3232  [022] ....   214.005201: task_numa_work: working
+      thread 0/0-3232  [022] ....   214.107266: task_numa_work: working
+      thread 0/0-3232  [022] ....   214.209342: task_numa_work: working
+
+After:
+
+root@interlagos:~# grep "thread 0/.*working" /debug/tracing/trace | tail -15
+      thread 0/0-3253  [005] ....   136.865051: task_numa_work: working
+      thread 0/2-3255  [026] ....   136.965134: task_numa_work: working
+      thread 0/3-3256  [024] ....   137.065217: task_numa_work: working
+      thread 0/3-3256  [024] ....   137.165302: task_numa_work: working
+      thread 0/3-3256  [024] ....   137.265382: task_numa_work: working
+      thread 0/0-3253  [004] ....   137.366465: task_numa_work: working
+      thread 0/2-3255  [026] ....   137.466549: task_numa_work: working
+      thread 0/0-3253  [004] ....   137.566629: task_numa_work: working
+      thread 0/0-3253  [004] ....   137.666711: task_numa_work: working
+      thread 0/1-3254  [028] ....   137.766799: task_numa_work: working
+      thread 0/0-3253  [004] ....   137.866876: task_numa_work: working
+      thread 0/2-3255  [026] ....   137.966960: task_numa_work: working
+      thread 0/1-3254  [028] ....   138.067041: task_numa_work: working
+      thread 0/2-3255  [026] ....   138.167123: task_numa_work: working
+      thread 0/3-3256  [024] ....   138.267207: task_numa_work: working
+
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/huge_memory.c | 19 ++++++++++++++++---
- mm/mprotect.c    | 14 ++++++++++----
- 2 files changed, 26 insertions(+), 7 deletions(-)
+ kernel/sched/fair.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 40f75a6..065a31d 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1474,6 +1474,12 @@ out:
- 	return ret;
- }
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 227b070..c93a56e 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -946,6 +946,12 @@ void task_numa_work(struct callback_head *work)
+ 		return;
  
-+/*
-+ * Returns
-+ *  - 0 if PMD could not be locked
-+ *  - 1 if PMD was locked but protections unchange and TLB flush unnecessary
-+ *  - HPAGE_PMD_NR is protections changed and TLB flush necessary
-+ */
- int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
- 		unsigned long addr, pgprot_t newprot, int prot_numa)
- {
-@@ -1482,9 +1488,11 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+ 	/*
++	 * Delay this task enough that another task of this mm will likely win
++	 * the next time around.
++	 */
++	p->node_stamp += 2 * TICK_NSEC;
++
++	/*
+ 	 * Do not set pte_numa if the current running node is rate-limited.
+ 	 * This loses statistics on the fault but if we are unwilling to
+ 	 * migrate to this node, it is less likely we can do useful work
+@@ -1026,7 +1032,7 @@ void task_tick_numa(struct rq *rq, struct task_struct *curr)
+ 	if (now - curr->node_stamp > period) {
+ 		if (!curr->node_stamp)
+ 			curr->numa_scan_period = sysctl_numa_balancing_scan_period_min;
+-		curr->node_stamp = now;
++		curr->node_stamp += period;
  
- 	if (__pmd_trans_huge_lock(pmd, vma) == 1) {
- 		pmd_t entry;
--		entry = pmdp_get_and_clear(mm, addr, pmd);
-+		ret = 1;
- 		if (!prot_numa) {
-+			entry = pmdp_get_and_clear(mm, addr, pmd);
- 			entry = pmd_modify(entry, newprot);
-+			ret = HPAGE_PMD_NR;
- 			BUG_ON(pmd_write(entry));
- 		} else {
- 			struct page *page = pmd_page(*pmd);
-@@ -1496,12 +1504,17 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
- 			if (page_mapcount(page) == 1 &&
- 			    !is_huge_zero_page(page) &&
- 			    !pmd_numa(*pmd)) {
-+				entry = pmdp_get_and_clear(mm, addr, pmd);
- 				entry = pmd_mknuma(entry);
-+				ret = HPAGE_PMD_NR;
- 			}
- 		}
--		set_pmd_at(mm, addr, pmd, entry);
-+
-+		/* Set PMD if cleared earlier */
-+		if (ret == HPAGE_PMD_NR)
-+			set_pmd_at(mm, addr, pmd, entry);
-+
- 		spin_unlock(&vma->vm_mm->page_table_lock);
--		ret = 1;
- 	}
- 
- 	return ret;
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index faa499e..1f9b54b 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -151,10 +151,16 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
- 		if (pmd_trans_huge(*pmd)) {
- 			if (next - addr != HPAGE_PMD_SIZE)
- 				split_huge_page_pmd(vma, addr, pmd);
--			else if (change_huge_pmd(vma, pmd, addr, newprot,
--						 prot_numa)) {
--				pages++;
--				continue;
-+			else {
-+				int nr_ptes = change_huge_pmd(vma, pmd, addr,
-+						newprot, prot_numa);
-+
-+				if (nr_ptes) {
-+					if (nr_ptes == HPAGE_PMD_NR)
-+						pages++;
-+
-+					continue;
-+				}
- 			}
- 			/* fall through */
- 		}
+ 		if (!time_before(jiffies, curr->mm->numa_next_scan)) {
+ 			init_task_work(work, task_numa_work); /* TODO: move this into sched_fork() */
 -- 
 1.8.1.4
 
