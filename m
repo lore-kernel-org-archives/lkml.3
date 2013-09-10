@@ -1,149 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753450Ab3IJCoX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 22:44:23 -0400
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:20901
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751921Ab3IJCoV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 22:44:21 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI154dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098hz2dh87h2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Tue, 10 Sep 2013 10:44:06 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-CC: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	id S1754359Ab3IJCpF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 22:45:05 -0400
+Received: from mail.lang.hm ([64.81.33.126]:33331 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753624Ab3IJCpC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 22:45:02 -0400
+Date: Mon, 9 Sep 2013 19:44:38 -0700 (PDT)
+From: David Lang <david@lang.hm>
+X-X-Sender: dlang@asgard.lang.hm
+To: Matthew Garrett <matthew.garrett@nebula.com>
+cc: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jonas Bonn <jonas@southpole.se>, Michal Simek <monstr@monstr.eu>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
-Subject: Re: [PATCH v4 12/19] cpufreq: cpufreq-cpu0: remove device tree
- parsing for cpu nodes
-Message-ID: <20130910024404.GC5815@S2101-09.ap.freescale.net>
-References: <1374492747-13879-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
- <1376991021-12160-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
- <1376991021-12160-13-git-send-email-Sudeep.KarkadaNagesha@arm.com>
- <Pine.LNX.4.64.1309061539310.11068@axis700.grange>
- <522D93D7.4010307@arm.com>
- <20130909143253.GD4624@S2101-09.ap.freescale.net>
- <522DE822.3030907@arm.com>
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH 00/12] One more attempt at useful kernel lockdown
+In-Reply-To: <1378774394.17982.36.camel@x230.lan>
+Message-ID: <alpine.DEB.2.02.1309091938420.1820@nftneq.ynat.uz>
+References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>  <19562.1378747124@turing-police.cc.vt.edu>  <alpine.DEB.2.02.1309091119330.2479@nftneq.ynat.uz>  <1378767723.17982.27.camel@x230.lan>  <alpine.DEB.2.02.1309091614010.2479@nftneq.ynat.uz>
+ <1378774394.17982.36.camel@x230.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <522DE822.3030907@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 04:24:18PM +0100, Sudeep KarkadaNagesha wrote:
-> Hi Shawn,
-> 
-> Ok. But I am bit suspicious about devm_clk_get(cpu_dev, NULL).
-> I don't understand completely as how the clock are registered(whether
-> with dev_id or with connection_id).
+On Tue, 10 Sep 2013, Matthew Garrett wrote:
 
-As the connection_id of devm_clk_get() call here is NULL, the clock
-lookup should be registered with a proper dev_id in clk_register_clkdev()
-call.  And that's what you have seen with imx and shmobile code.
+> On Mon, 2013-09-09 at 16:19 -0700, David Lang wrote:
+>> On Mon, 9 Sep 2013, Matthew Garrett wrote:
+>>> Having thought about this, the answer is no. It presents exactly the
+>>> same problem as capabilities do - the set can never be meaningfully
+>>> extended. If an application sets only the bits it knows about, and if a
+>>> new security-sensitive feature is added to the kernel, the feature will
+>>> be left enabled and the system will be insecure. Alternatively, if an
+>>> application sets all the bits regardless of whether it knows them or
+>>> not, it may enable a lockdown feature that it otherwise required.
+>>
+>> In this case you are no less secure than you were before the feature was added,
+>> you just can't take advantage of the new feature without updating userspace.
+>
+> No. Say someone adds an additional lockdown bit to forbid raw access to
+> mounted block devices. The "Turn everything off" approach now means that
+> I won't be able to perform raw access to mounted block devices, even if
+> that's something that my use case relies on.
 
+I was meaning that if you only turn off features that you know about, the 
+addition of a new thing that can be disabled doesn't make you any worse off than 
+you were.
 
-> A quick grep revealed that i.mx and shmobile is using conection id while
-> registering.
+>>> The only way this is useful is if all the bits are semantically
+>>> equivalent, and in that case there's no point in having anything other
+>>> than a single bit. Users who want a more fine-grained interface should
+>>> use one of the existing mechanisms for doing so - leave the kernel open
+>>> and impose the security policy from userspace using either capabilities
+>>> or selinux.
+>>
+>> so if you only have a single bit, how do you deal with the case where that bit
+>> locks down something that's required? (your reason for not just setting all bits
+>> in the first approach)
+>
+> Because that bit is well-defined, and if anything is added to it that
+> doesn't match that definition then it's a bug.
 
-They are using dev_id.
+it may be well defined, but that doesn't mean that it actually matches what the 
+system owner wants to do.
 
-> If the clock is registered with connection id and retrieved
-> with cpu_dev(now dev_id is cpu0 and not cpufreq-cpu0), IIUC that would
-> break. If we pass pdev->dev for clk_get, it should be fine but again
-> IIUC it breaks highbank which gets all the information from DT.
+The idea that the programmer can possibly anticipate all possible needs and 
+provide a switch for exactly that need is just wrong. Users will have needs that 
+you never thought of. The best systems are the ones where the creators look at 
+what users are doing and react with "I never imagined doing that"
 
-If the clock lookup is from DT, we should be just fine, since it will
-work as long as the DT node with 'clocks' property (/cpus/cpu@0 in this
-case) is attached to the struct device pointer of devm_clk_get() call.
+defining the "one true way" of operating is just wrong.
 
-> So only solution I can think of is to continue to have the code
-> assigning (&pdev->dev)->of_node with cpu device node which is not clean
-> and arguable as incorrect since there is no DT node for cpufreq-cpu0.
-> I don't have a strong opinion though.
-> 
-> Let me know how would you like to fix this.
+>> your arguments don't seem self consistent.
+>
+> You don't seem to have been paying attention to the past 12 months of
+> discussion.
+>
+>> If I'm building a kiosk PC (or voting machine), I want to disable a lot of
+>> things that I could not get away with disabling on a generic laptop. Are we
+>> going to have Securelevel, ReallySecurelevel, ReallyReallySecurelevel, etc? or
+>> can we accept that security is not binary and allow users to disable features
+>> in a more granualar way?
+>
+> Anything more granular means that you trust your userspace, and if you
+> trust your userspace then you can already set up a granular policy using
+> the existing tools for that job. So just use the existing tools.
 
-So we only need to change all clkdev registration to use "cpu0" as
-dev_id intstead of "cpufreq-cpu0.0", something like below.
+If you can't trust your userspace, how do you know that the userspace has set 
+the big hammer flag in the first place? if you can trust it to throw that 
+switch, you can trust it to throw multiple smaller switches.
 
-And for imx, it should work even without the changes, because we have
-device tree lookup ready there, and those clk_register_clkdev() calls
-can just be removed now.  But I prefer to include the change and leave
-the cleanup to another patch for keeping the change log clear.
+>> And if SELinux can do the job, what is the reason for creating this new option?
+>
+> Because you can't embed an unmodifiable selinux policy in the kernel.
 
-Shawn
+Why not, have the policy set in an initramfs that's part of the kernel and have 
+part of that policy be to block all access to the selinux controls.
 
----8<----------
-
-diff --git a/arch/arm/mach-imx/clk-imx27.c b/arch/arm/mach-imx/clk-imx27.c
-index c3cfa41..c6b40f3 100644
---- a/arch/arm/mach-imx/clk-imx27.c
-+++ b/arch/arm/mach-imx/clk-imx27.c
-@@ -285,7 +285,7 @@ int __init mx27_clocks_init(unsigned long fref)
- 	clk_register_clkdev(clk[ata_ahb_gate], "ata", NULL);
- 	clk_register_clkdev(clk[rtc_ipg_gate], NULL, "imx21-rtc");
- 	clk_register_clkdev(clk[scc_ipg_gate], "scc", NULL);
--	clk_register_clkdev(clk[cpu_div], NULL, "cpufreq-cpu0.0");
-+	clk_register_clkdev(clk[cpu_div], NULL, "cpu0");
- 	clk_register_clkdev(clk[emi_ahb_gate], "emi_ahb" , NULL);
- 
- 	mxc_timer_init(MX27_IO_ADDRESS(MX27_GPT1_BASE_ADDR), MX27_INT_GPT1);
-diff --git a/arch/arm/mach-imx/clk-imx51-imx53.c b/arch/arm/mach-imx/clk-imx51-imx53.c
-index 1a56a33..de1964c 100644
---- a/arch/arm/mach-imx/clk-imx51-imx53.c
-+++ b/arch/arm/mach-imx/clk-imx51-imx53.c
-@@ -328,7 +328,7 @@ static void __init mx5_clocks_common_init(unsigned long rate_ckil,
- 	clk_register_clkdev(clk[ssi2_ipg_gate], NULL, "imx-ssi.1");
- 	clk_register_clkdev(clk[ssi3_ipg_gate], NULL, "imx-ssi.2");
- 	clk_register_clkdev(clk[sdma_gate], NULL, "imx35-sdma");
--	clk_register_clkdev(clk[cpu_podf], NULL, "cpufreq-cpu0.0");
-+	clk_register_clkdev(clk[cpu_podf], NULL, "cpu0");
- 	clk_register_clkdev(clk[iim_gate], "iim", NULL);
- 	clk_register_clkdev(clk[dummy], NULL, "imx2-wdt.0");
- 	clk_register_clkdev(clk[dummy], NULL, "imx2-wdt.1");
-diff --git a/arch/arm/mach-shmobile/clock-r8a73a4.c b/arch/arm/mach-shmobile/clock-r8a73a4.c
-index 8ea5ef6..5bd2e85 100644
---- a/arch/arm/mach-shmobile/clock-r8a73a4.c
-+++ b/arch/arm/mach-shmobile/clock-r8a73a4.c
-@@ -555,7 +555,7 @@ static struct clk_lookup lookups[] = {
- 	CLKDEV_CON_ID("pll2h",			&pll2h_clk),
- 
- 	/* CPU clock */
--	CLKDEV_DEV_ID("cpufreq-cpu0",		&z_clk),
-+	CLKDEV_DEV_ID("cpu0",			&z_clk),
- 
- 	/* DIV6 */
- 	CLKDEV_CON_ID("zb",			&div6_clks[DIV6_ZB]),
-diff --git a/arch/arm/mach-shmobile/clock-sh73a0.c b/arch/arm/mach-shmobile/clock-sh73a0.c
-index 1942eae..c92c023 100644
---- a/arch/arm/mach-shmobile/clock-sh73a0.c
-+++ b/arch/arm/mach-shmobile/clock-sh73a0.c
-@@ -616,7 +616,7 @@ static struct clk_lookup lookups[] = {
- 	CLKDEV_DEV_ID("smp_twd", &twd_clk), /* smp_twd */
- 
- 	/* DIV4 clocks */
--	CLKDEV_DEV_ID("cpufreq-cpu0", &div4_clks[DIV4_Z]),
-+	CLKDEV_DEV_ID("cpu0", &div4_clks[DIV4_Z]),
- 
- 	/* DIV6 clocks */
- 	CLKDEV_CON_ID("vck1_clk", &div6_clks[DIV6_VCK1]),
-
+David Lang
