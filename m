@@ -1,91 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277Ab3IJXSn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 19:18:43 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:40964 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751417Ab3IJXSm (ORCPT
+	id S1752795Ab3IJXV3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 19:21:29 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:38694 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751613Ab3IJXV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 19:18:42 -0400
+	Tue, 10 Sep 2013 19:21:28 -0400
+Date: Wed, 11 Sep 2013 02:19:28 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Jerome Marchand <jmarchan@redhat.com>,
+        driverdev-devel@linuxdriverproject.org,
+        Minchan Kim <minchan@kernel.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] staging: zram: remove init_done from zram struct (v3)
+Message-ID: <20130910231928.GB2450@swordfish>
+References: <20130906151255.GE2238@swordfish.minsk.epam.com>
+ <20130909123329.GZ19256@mwanda>
+ <20130909124942.GA2221@swordfish.minsk.epam.com>
+ <20130909132124.GY6329@mwanda>
+ <522DD125.1030607@redhat.com>
+ <522DF2DF.5060407@redhat.com>
+ <20130910143416.GC2270@swordfish>
+ <20130910145802.GD19256@mwanda>
 MIME-Version: 1.0
-In-Reply-To: <20130910205027.GI23294@tallgrass.jf.intel.com>
-References: <alpine.DEB.2.00.1309051139240.25450@skynet.skynet.ie>
- <CA+55aFwyKmVWkrV3=XiuruZzeTicpfW-JrwjWzpq9eP2yGPeJA@mail.gmail.com>
- <CA+qSnqh1X6_xHD4GX1P=acEUg9+0=3dVSZHm-NYXvCvupFB8_g@mail.gmail.com>
- <CA+55aFzRCNteHoSBRL9cVAHtZwA419G+fPBAaofYextsHpDLYw@mail.gmail.com> <20130910205027.GI23294@tallgrass.jf.intel.com>
-From: Sean V Kelley <sean.v.kelley@intel.com>
-Date: Tue, 10 Sep 2013 16:18:21 -0700
-Message-ID: <CA+qSnqiBHTPSe2k=oKyfiYORB3t=JektQ4JbFbOpLkA9BTi3_Q@mail.gmail.com>
-Subject: Re: [git pull] drm tree for 3.12-rc1
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Airlie <airlied@redhat.com>, Dave Airlie <airlied@linux.ie>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130910145802.GD19256@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 1:50 PM, Sean V Kelley <sean.v.kelley@intel.com> wrote:
-> On Tue, Sep 10, 2013 at 08:49:58AM -0700, Linus Torvalds writes :
->> [ Dave - your linux.ie email generates bounces for me, trying redhat instead ]
->>
->> On Mon, Sep 9, 2013 at 11:25 PM, Sean V Kelley <sean.v.kelley@intel.com> wrote:
->> >>
->> >> I'm also a bit bummed that hw acceleration of video doesn't seem to
->> >> work on Haswell, meaning that full-screen is now a jerky mess. I fear
->> >> that that is user-space libraries/X.org, but I thought I'd mention it
->> >> in the hope of getting a "oh, it's working for us, you'll get a fix
->> >> for it soon".
->> >
->> > Can you give a little more detail about video not working?  Video
->> > accel should work fine with the current versions of libva/intel-driver
->> > available in Fedora 19 - assuming that's what you're using.
->>
->> It is indeed F19.
->>
->> Easy test: go to youtube, and watch things that are in 1080p HD. They
->> play fine in a window (using about 70% CPU), but full-screened to
->> 2560x1440 they play at about one or two frames per second.
->
-> Yep.  I see the same.  Chrome is brain dead and appears to simply
-> rely on Flash + FFmpeg software codecs.  At least with Firefox you
-> know it will suck and not be hw accelerated. Unless that has changed...
->
-....
->
-> Ironically, it is relatively trivial for me to do a chromium browser
-> build form source myself and enable libva/intel-driver HW accel, h.264.  And say
-> screw you to flash et al, and leave that out.  And that will
-> work fine for html5 video on youtube with fallback to SW accel for VP8
-> based content.  Why it is a chore for Google is not clear to me...
+`zram->init_done' in fact mimics `zram->meta != NULL' value.
+Introduce init_done() function that checks zram->meta (iow,
+checks if initialisation was performed), so `zram->init_done'
+can be removed.
 
+v3: init_done() in handle_pending_slot_free()
+v2: introduce init_done()
 
-Google actually blacklists hardware video acceleration for Linux x86
-in Chromium.  My
-builds are based on ChromeOS' browser.  That's how I get around it.
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-For more details...
-https://codereview.chromium.org/16430003/
+---
 
-Sean
+ drivers/staging/zram/zram_drv.c | 23 ++++++++++++-----------
+ drivers/staging/zram/zram_drv.h |  1 -
+ 2 files changed, 12 insertions(+), 12 deletions(-)
 
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 7a2d4de..dcfe07c 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -42,6 +42,11 @@ static struct zram *zram_devices;
+ /* Module params (documentation at end) */
+ static unsigned int num_devices = 1;
+ 
++static inline int init_done(struct zram *zram)
++{
++	return zram->meta != NULL;
++}
++
+ static inline struct zram *dev_to_zram(struct device *dev)
+ {
+ 	return (struct zram *)dev_to_disk(dev)->private_data;
+@@ -60,7 +65,7 @@ static ssize_t initstate_show(struct device *dev,
+ {
+ 	struct zram *zram = dev_to_zram(dev);
+ 
+-	return sprintf(buf, "%u\n", zram->init_done);
++	return sprintf(buf, "%u\n", init_done(zram));
+ }
+ 
+ static ssize_t num_reads_show(struct device *dev,
+@@ -133,7 +138,7 @@ static ssize_t mem_used_total_show(struct device *dev,
+ 	struct zram_meta *meta = zram->meta;
+ 
+ 	down_read(&zram->init_lock);
+-	if (zram->init_done)
++	if (init_done(zram))
+ 		val = zs_get_total_size_bytes(meta->mem_pool);
+ 	up_read(&zram->init_lock);
+ 
+@@ -521,7 +526,7 @@ static void handle_pending_slot_free(struct zram *zram)
+ 	while (zram->slot_free_rq) {
+ 		free_rq = zram->slot_free_rq;
+ 		zram->slot_free_rq = free_rq->next;
+-		if (zram->init_done)
++		if (init_done(zram))
+ 			zram_free_page(zram, free_rq->index);
+ 		kfree(free_rq);
+ 	}
+@@ -553,14 +558,12 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+ 	flush_work(&zram->free_work);
+ 
+ 	down_write(&zram->init_lock);
+-	if (!zram->init_done) {
++	if (!init_done(zram)) {
+ 		up_write(&zram->init_lock);
+ 		return;
+ 	}
+ 
+ 	meta = zram->meta;
+-	zram->init_done = 0;
+-
+ 	/* Free all pages that are still in this zram device */
+ 	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
+ 		unsigned long handle = meta->table[index].handle;
+@@ -599,9 +602,7 @@ static void zram_init_device(struct zram *zram, struct zram_meta *meta)
+ 
+ 	/* zram devices sort of resembles non-rotational disks */
+ 	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
+-
+ 	zram->meta = meta;
+-	zram->init_done = 1;
+ 
+ 	pr_debug("Initialization done!\n");
+ }
+@@ -620,7 +621,7 @@ static ssize_t disksize_store(struct device *dev,
+ 	disksize = PAGE_ALIGN(disksize);
+ 	meta = zram_meta_alloc(disksize);
+ 	down_write(&zram->init_lock);
+-	if (zram->init_done) {
++	if (init_done(zram)) {
+ 		up_write(&zram->init_lock);
+ 		zram_meta_free(meta);
+ 		pr_info("Cannot change disksize for initialized device\n");
+@@ -728,7 +729,7 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
+ 	struct zram *zram = queue->queuedata;
+ 
+ 	down_read(&zram->init_lock);
+-	if (unlikely(!zram->init_done))
++	if (unlikely(!init_done(zram)))
+ 		goto error;
+ 
+ 	if (!valid_io_request(zram, bio)) {
+@@ -876,7 +877,7 @@ static int create_device(struct zram *zram, int device_id)
+ 		goto out_free_disk;
+ 	}
+ 
+-	zram->init_done = 0;
++	zram->meta = NULL;
+ 	return 0;
+ 
+ out_free_disk:
+diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
+index 97a3acf..b1100cf 100644
+--- a/drivers/staging/zram/zram_drv.h
++++ b/drivers/staging/zram/zram_drv.h
+@@ -110,7 +110,6 @@ struct zram {
+ 
+ 	struct request_queue *queue;
+ 	struct gendisk *disk;
+-	int init_done;
+ 	/* Prevent concurrent execution of device init, reset and R/W request */
+ 	struct rw_semaphore init_lock;
+ 	/*
 
->
-> Sean
->
->>
->> My previous i5-670 which was inferior in almost every other way didn't
->> have these problems.. It had the same 2560x1440 display.
->>
->>               Linus
-
-
-
--- 
-Sean V. Kelley <sean.v.kelley@intel.com>
-Open Source Technology Center / SSG
-Intel Corp.
