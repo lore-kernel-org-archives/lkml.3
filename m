@@ -1,79 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab3IJDxH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 23:53:07 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:42146 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751648Ab3IJDxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 23:53:04 -0400
-Message-ID: <522E978C.6040506@gentoo.org>
-Date: Mon, 09 Sep 2013 23:52:44 -0400
-From: Jonathan Callen <jcallen@gentoo.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130811 Thunderbird/17.0.8
+	id S1754750Ab3IJDxk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 23:53:40 -0400
+Received: from mail-bl2lp0208.outbound.protection.outlook.com ([207.46.163.208]:35219
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751377Ab3IJDxh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 23:53:37 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: David Lang <david@lang.hm>
+CC: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH 00/12] One more attempt at useful kernel lockdown
+Thread-Topic: [PATCH 00/12] One more attempt at useful kernel lockdown
+Thread-Index: AQHOrYDL2QYLBLFVskGOdCrAsfX2cpm9uPUAgABSI3WAADlnjYAABsNQgAAMWQA=
+Date: Tue, 10 Sep 2013 03:53:32 +0000
+Message-ID: <1378785208.17982.54.camel@x230.lan>
+References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
+	 <19562.1378747124@turing-police.cc.vt.edu>
+	 <alpine.DEB.2.02.1309091119330.2479@nftneq.ynat.uz>
+	 <1378767723.17982.27.camel@x230.lan>
+	 <alpine.DEB.2.02.1309091614010.2479@nftneq.ynat.uz>
+	 <1378774394.17982.36.camel@x230.lan>
+	 <alpine.DEB.2.02.1309091938420.1820@nftneq.ynat.uz>
+	 <1378781715.17982.42.camel@x230.lan>
+	 <alpine.DEB.2.02.1309092002060.1820@nftneq.ynat.uz>
+In-Reply-To: <alpine.DEB.2.02.1309092002060.1820@nftneq.ynat.uz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:470:1f07:1371:5d52:9ee3:3e84:6668]
+x-forefront-prvs: 096507C068
+x-forefront-antispam-report: SFV:NSPM;SFS:(24454002)(51704005)(189002)(199002)(15404003)(377424004)(74876001)(80976001)(56816003)(53806001)(77096001)(19580405001)(19580395003)(83322001)(76482001)(54356001)(79102001)(77982001)(59766001)(83072001)(56776001)(54316002)(80022001)(63696002)(46102001)(81342001)(81816001)(65816001)(69226001)(51856001)(47446002)(74706001)(74366001)(74502001)(74662001)(31966008)(47736001)(50986001)(47976001)(49866001)(76796001)(81686001)(81542001)(36756003)(76786001)(4396001)(33646001)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB223;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:5d52:9ee3:3e84:6668;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <142CB707003E2D4F94939C0D3F9BE56B@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ACPI: Move acpi_bus_get_device() from bus.c to scan.c
-References: <3314440.iryh4ZRtRb@vostro.rjw.lan>
-In-Reply-To: <3314440.iryh4ZRtRb@vostro.rjw.lan>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8A3rnpB024821
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA512
+On Mon, 2013-09-09 at 20:09 -0700, David Lang wrote:
+> On Tue, 10 Sep 2013, Matthew Garrett wrote:
 
-On 07/27/2013 09:24 AM, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com> Subject: ACPI: Move acpi_bus_get_device()
-> from bus.c to scan.c
+> > Someone adds a new "install_evil()" syscall and adds a disable bit. If I
+> > don't disable it, I'm now vulnerable. Please pay attention to earlier
+> > discussion.
 > 
-> Move acpi_bus_get_device() from bus.c to scan.c which allows acpi_bus_data_handler() to become
-> static and clean up the latter.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com> --- drivers/acpi/bus.c      |
-> 21 --------------------- drivers/acpi/scan.c     |   30 ++++++++++++++++++++++-------- 
-> include/acpi/acpi_bus.h |    1 - 3 files changed, 22 insertions(+), 30 deletions(-)
-> 
-> Index: linux-pm/drivers/acpi/bus.c 
-> =================================================================== ---
-> linux-pm.orig/drivers/acpi/bus.c +++ linux-pm/drivers/acpi/bus.c @@ -89,27 +89,6 @@ static
-> struct dmi_system_id dsdt_dmi_tab Device Management
-[cut]
-> - -EXPORT_SYMBOL(acpi_bus_get_device); - acpi_status acpi_bus_get_status_handle(acpi_handle
-> handle, unsigned long long *sta) { Index: linux-pm/drivers/acpi/scan.c 
-> =================================================================== ---
-> linux-pm.orig/drivers/acpi/scan.c +++ linux-pm/drivers/acpi/scan.c @@ -970,6 +970,28 @@ struct
-> bus_type acpi_bus_type = { .uevent		= acpi_device_uevent, };
-> 
-[cut]
-> +} +EXPORT_SYMBOL_GPL(acpi_bus_get_device); +
+> so instead they add install_evil() and don't have it be disabled by your big 
+> switch.
 
-Was it intentional to change the EXPORT_SYMBOL to EXPORT_SYMBOL_GPL here?  While I understand that
-it is completely unsupported anyway, this change does break at least the latest version of the
-proprietary nvidia graphics driver.
+And that's a bug, so we fix it.
 
-- -- 
-Jonathan Callen
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+> > Describe the security case for disabling PCI BAR access but permitting
+> > i/o port access.
+> 
+> Simple, I have some device that lives on those I/O ports that I want to be able 
+> to use.
 
-iQIcBAEBCgAGBQJSLpeMAAoJELHSF2kinlg4EGEP/2lav3ETWSAs7BqeDGCuacZ4
-CqkWJlMJDvYawW443KdBEb8aM27tx+gqNp+ktHkWXuXG97X79yAVTRMggOCuaqkb
-AgYJkDXRY+64UWtn2GeCM4vSsBOB86UoSspdZXHzF6JBDXrdd2ZXkpb1q7u1xBdi
-SZIz3PxZmBLMVcxu+Bh67e1hRXbxKxfKlF1Zl7MC/9NDnxkZmrOklqY2VamG864a
-OkFU12bvgdGCwOnq1gHzDjt2PIjL7RNxY4wPWvnyJ1DDOi2tb5tC7hw8VoUTqUPx
-h81QmAY2T/XFWTpfNnmJgrQYw+AE8B1TNz+ciKWRi0VCAAjYdomPCYfjxnfYBvN2
-a1RRAUMG7DFOZxzBNE9Yv371zEAKLAt2Kbt5PynSqTiivRu7XJOpz5326Q1P9Csy
-HZ369Gu7oC2ErAEv3mO82do5pM6/10DpwFPhY5eGq8l7rdStk8cRdUW1Ivc/d0sx
-CDt0ZDVV+bvtduwnMTRiXWIgR2w/iUuNcwU5RfU/2NsJLyXeUoMdR0OHLa1sDSVk
-bK3Jc6AAPQG8aV83Je50eFeYUQgYN9DZ2eRR+KtzBFaI4TXXzq3H+1E5QBBqbfc8
-6PZuVC+CwMYmmhsozvkyyKIdYVJL0KiWOgaZueNq6Z2Fqiupr4BrMpKvS1rkix4y
-Pn0TU7V4arGbXGzJN1VZ
-=SHrw
------END PGP SIGNATURE-----
+That's a great argument for permitting i/o port access. But in that
+case, why are you disabling BAR access? You can use the i/o port access
+to reprogram the device in question into a range you can modify, which
+allows you to avoid the BAR restriction.
+
+> > Because then someone disables selinux on the kernel command line.
+> 
+> If they can modify the command line, they can remove your command line switch to 
+> turn this on.
+
+Not in the secure boot case.
+
+> If you really care about this, why are you using a bootloader that lets you 
+> modify the kernel command line in the first place?
+
+And then the user just modifies the configuration file instead.
+
+> In any case, even if you make it impossible to change from the command line, you 
+> won't prevent people from changing your system (unless you take control 
+> completely away from them with TPM or similar)
+
+That's fine. People are free to modify their own systems.
+
+> remember that the system integrity checking of the original Tivo was defeated by 
+> someone dong a binary patch to bypass a routine that they didn't understand that 
+> took a lot of time, so they did a binary patch to the bios to speed up boot and 
+> discovered that what they did was disable the system integrity checking.
+
+That's why modern systems require signed firmware updates.
+
+> users who own the systems are going to modify them and bypass any restrictions 
+> you want to impose.
+
+The idea isn't to produce something that's impossible for the owner of a
+system to disable. The idea is to produce something that can't be used
+to circumvent the security policy that the system owner has chosen.
+Could you please give me the benefit of the doubt and assume that I'm
+not completely unaware of how computers work?
+
+-- 
+Matthew Garrett <matthew.garrett@nebula.com>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
