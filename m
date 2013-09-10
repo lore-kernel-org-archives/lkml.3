@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922Ab3IJWGr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 18:06:47 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:55344 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751261Ab3IJWGm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 18:06:42 -0400
-Message-ID: <522F97EF.5050303@gmail.com>
-Date: Tue, 10 Sep 2013 17:06:39 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1752967Ab3IJWHc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 18:07:32 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44988 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751869Ab3IJWHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 18:07:30 -0400
+Message-ID: <522F97DD.1060002@zytor.com>
+Date: Tue, 10 Sep 2013 15:06:21 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
 To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Tim Bird <tbird20d@gmail.com>, Grant Likely <grant.likely@secretlab.ca>,
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>, Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Anton Blanchard <anton@samba.org>
-Subject: Re: [GIT PULL] Device tree updates for v3.12
-References: <CACxGe6v8hO4sRX_KGcH=YBAMrF8mQHqWdxXEvVwoC2pVS5Yv9Q@mail.gmail.com> <CA+bK7J5cAWFPLTBR2afNLm2JaKFH4_dJO_NpVL5gom0iX+L2dQ@mail.gmail.com> <CA+55aFzBbKXJnaG_6X8Fff_APGJ3EkbG0thsbithDXtiEJjdHA@mail.gmail.com> <CA+bK7J4F=X97HUQP6Tt8RkVe5vttE_Sw4Pd7kT19k_KGDFfpKA@mail.gmail.com> <CA+55aFwkAQGRo9mLa2GVeVgzToRZr=Ny8LTogzgOpO6_4BJY1Q@mail.gmail.com>
-In-Reply-To: <CA+55aFwkAQGRo9mLa2GVeVgzToRZr=Ny8LTogzgOpO6_4BJY1Q@mail.gmail.com>
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH 0/7] preempt_count rework -v2
+References: <20130910130811.507933095@infradead.org> <20130910135152.GD7537@gmail.com> <20130910135636.GA8268@gmail.com> <CA+55aFwmEQeF+PtM7cuaQ8OkuTS=R4JJ61Wwfv8u-Svo-V3KwQ@mail.gmail.com> <20130910164519.GL31370@twins.programming.kicks-ass.net> <CA+55aFz7WtcdkwKEGoqCzmC9HsY0LPK-oVK_oATYhRnbGq=2GA@mail.gmail.com> <20130910212509.GA18147@laptop.programming.kicks-ass.net> <CA+55aFxsEYQPXnoxNXAeSPEkk3uT8iq-_KJVe2M2qZZbtL=cbA@mail.gmail.com> <522F9464.9070806@zytor.com> <CA+55aFwabYsi=FvrAX+hqbpw5XUXqsokHn_Cyypv-JXmca6Q6Q@mail.gmail.com>
+In-Reply-To: <CA+55aFwabYsi=FvrAX+hqbpw5XUXqsokHn_Cyypv-JXmca6Q6Q@mail.gmail.com>
 X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
@@ -27,20 +29,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2013 04:44 PM, Linus Torvalds wrote:
-> On Tue, Sep 10, 2013 at 2:39 PM, Tim Bird <tbird20d@gmail.com> wrote:
+On 09/10/2013 03:02 PM, Linus Torvalds wrote:
+> On Tue, Sep 10, 2013 at 2:51 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 09/10/2013 02:43 PM, Linus Torvalds wrote:
 >>
->> Well, I'm not sure how many bits of randomness this will add anyway.
->> The way we're using device tree, we get the same values every boot, on
->> all instances of the same phone model.  So this seems of little value.
+>> Actually, the right thing here really is "er" (which I think you meant,
+>> but just to make it clear.)
 > 
-> If I recall correctly, somebody said that things like ethernet MAC
-> addresses etc sometimes come from DT. Is my memory going, or is that
-> true but very rare?
+> Yes, I was just answering the i-vs-e confusion.
+> 
+>> "e" doesn't work on versions of gcc older than the first x86-64 release,
+>> but we don't care about that anymore.
+> 
+> Indeed.
+> 
+>> A final good question is if we should encapsulate the add/inc and
+>> sub/dec into a single function; one could easily do somethin glike:
+> 
+> Yes. However, I would do that at a higher level than the one that
+> builds the actual functions.
+> 
+> That said, there's a few cases where you might want to specify
+> add-vs-sub explicitly, but they are rather odd, namely the fact that
+> "-128" fits in a byte, but "128" does not.
+> 
+> So it can be better to add 128 by doing a "subl $-128" than by doing
+> an "add $128".
+> 
+> But we probably don't have any situation where we care about that
+> special value of "128". I've seen the trick, though.
+> 
 
-It is true and fairly common. You can also have serial numbers in the
-DT, but that is more rare. The bootloader will also add the kernel
-command line, initrd start and end addresses.
+Yes, and if __builtin_constant_p() we could even do it explicitly.
+Unfortunately I don't think gcc allows alternatives in asm() statements,
+unlike in its own pattern tables.
 
-Rob
+	-hpa
 
