@@ -1,231 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751468Ab3IJUMl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 16:12:41 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:54736 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750903Ab3IJUMh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 16:12:37 -0400
-Date: Tue, 10 Sep 2013 16:12:22 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: azurIt <azurit@pobox.sk>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
+	id S1751946Ab3IJUOw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 16:14:52 -0400
+Received: from catbert.rellim.com ([204.17.205.1]:49977 "EHLO
+	catbert.rellim.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751485Ab3IJUOv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 16:14:51 -0400
+X-Greylist: delayed 690 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Sep 2013 16:14:51 EDT
+X-DKIM: OpenDKIM Filter v2.6.7 catbert.rellim.com r8AK2ZG9028308
+Date: Tue, 10 Sep 2013 13:02:34 -0700
+From: "Gary E. Miller" <gem@rellim.com>
+To: Rodolfo Giometti <giometti@enneenne.com>
+Cc: Paul Chavent <Paul.Chavent@onera.fr>, linux-usb@vger.kernel.org,
+        gregkh@linuxfoundation.org, jhovold@gmail.com,
+        fschaefer.oss@googlemail.com, jslaby@suse.cz, max@suse.de,
         linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/7] improve memcg oom killer robustness v2
-Message-ID: <20130910201222.GA25972@cmpxchg.org>
-References: <20130903204850.GA1412@cmpxchg.org>
- <20130904101852.58E70042@pobox.sk>
- <20130905115430.GB856@cmpxchg.org>
- <20130909151010.3A3CBC6A@pobox.sk>
- <20130909172849.GG856@cmpxchg.org>
- <20130909215917.96932098@pobox.sk>
- <20130909201238.GH856@cmpxchg.org>
- <20130910201359.D0984EFF@pobox.sk>
- <20130910183740.GI856@cmpxchg.org>
- <20130910213253.A1E666C5@pobox.sk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130910213253.A1E666C5@pobox.sk>
+Subject: Re: [PATCH 0/5] Enable PPS reporting for USB serial devices
+Message-ID: <20130910130234.5106a5bc.gem@rellim.com>
+In-Reply-To: <20130910073105.GB5030@enneenne.com>
+References: <1378742480-2146-1-git-send-email-paul.chavent@onera.fr>
+	<20130910073105.GB5030@enneenne.com>
+Organization: Rellim
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/J/GK1Vgcy9PykKEOOXx7.VW"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 09:32:53PM +0200, azurIt wrote:
-> >On Tue, Sep 10, 2013 at 08:13:59PM +0200, azurIt wrote:
-> >> >On Mon, Sep 09, 2013 at 09:59:17PM +0200, azurIt wrote:
-> >> >> >On Mon, Sep 09, 2013 at 03:10:10PM +0200, azurIt wrote:
-> >> >> >> >Hi azur,
-> >> >> >> >
-> >> >> >> >On Wed, Sep 04, 2013 at 10:18:52AM +0200, azurIt wrote:
-> >> >> >> >> > CC: "Andrew Morton" <akpm@linux-foundation.org>, "Michal Hocko" <mhocko@suse.cz>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-> >> >> >> >> >Hello azur,
-> >> >> >> >> >
-> >> >> >> >> >On Mon, Sep 02, 2013 at 12:38:02PM +0200, azurIt wrote:
-> >> >> >> >> >> >>Hi azur,
-> >> >> >> >> >> >>
-> >> >> >> >> >> >>here is the x86-only rollup of the series for 3.2.
-> >> >> >> >> >> >>
-> >> >> >> >> >> >>Thanks!
-> >> >> >> >> >> >>Johannes
-> >> >> >> >> >> >>---
-> >> >> >> >> >> >
-> >> >> >> >> >> >
-> >> >> >> >> >> >Johannes,
-> >> >> >> >> >> >
-> >> >> >> >> >> >unfortunately, one problem arises: I have (again) cgroup which cannot be deleted :( it's a user who had very high memory usage and was reaching his limit very often. Do you need any info which i can gather now?
-> >> >> >> >> >
-> >> >> >> >> >Did the OOM killer go off in this group?
-> >> >> >> >> >
-> >> >> >> >> >Was there a warning in the syslog ("Fixing unhandled memcg OOM
-> >> >> >> >> >context")?
-> >> >> >> >> 
-> >> >> >> >> 
-> >> >> >> >> 
-> >> >> >> >> Ok, i see this message several times in my syslog logs, one of them is also for this unremovable cgroup (but maybe all of them cannot be removed, should i try?). Example of the log is here (don't know where exactly it starts and ends so here is the full kernel log):
-> >> >> >> >> http://watchdog.sk/lkml/oom_syslog.gz
-> >> >> >> >There is an unfinished OOM invocation here:
-> >> >> >> >
-> >> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715112] Fixing unhandled memcg OOM context set up from:
-> >> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715191]  [<ffffffff811105c2>] T.1154+0x622/0x8f0
-> >> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715274]  [<ffffffff8111153e>] mem_cgroup_cache_charge+0xbe/0xe0
-> >> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715357]  [<ffffffff810cf31c>] add_to_page_cache_locked+0x4c/0x140
-> >> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715443]  [<ffffffff810cf432>] add_to_page_cache_lru+0x22/0x50
-> >> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715526]  [<ffffffff810cfdd3>] find_or_create_page+0x73/0xb0
-> >> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715608]  [<ffffffff811493ba>] __getblk+0xea/0x2c0
-> >> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715692]  [<ffffffff8114ca73>] __bread+0x13/0xc0
-> >> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715774]  [<ffffffff81196968>] ext3_get_branch+0x98/0x140
-> >> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715859]  [<ffffffff81197557>] ext3_get_blocks_handle+0xd7/0xdc0
-> >> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.715942]  [<ffffffff81198304>] ext3_get_block+0xc4/0x120
-> >> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716023]  [<ffffffff81155c3a>] do_mpage_readpage+0x38a/0x690
-> >> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716107]  [<ffffffff81155f8f>] mpage_readpage+0x4f/0x70
-> >> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716188]  [<ffffffff811973a8>] ext3_readpage+0x28/0x60
-> >> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716268]  [<ffffffff810cfa48>] filemap_fault+0x308/0x560
-> >> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716350]  [<ffffffff810ef898>] __do_fault+0x78/0x5a0
-> >> >> >> >  Aug 22 13:15:21 server01 kernel: [1251422.716433]  [<ffffffff810f2ab4>] handle_pte_fault+0x84/0x940
-> >> >> >> >
-> >> >> >> >__getblk() has this weird loop where it tries to instantiate the page,
-> >> >> >> >frees memory on failure, then retries.  If the memcg goes OOM, the OOM
-> >> >> >> >path might be entered multiple times and each time leak the memcg
-> >> >> >> >reference of the respective previous OOM invocation.
-> >> >> >> >
-> >> >> >> >There are a few more find_or_create() sites that do not propagate an
-> >> >> >> >error and it's incredibly hard to find out whether they are even taken
-> >> >> >> >during a page fault.  It's not practical to annotate them all with
-> >> >> >> >memcg OOM toggles, so let's just catch all OOM contexts at the end of
-> >> >> >> >handle_mm_fault() and clear them if !VM_FAULT_OOM instead of treating
-> >> >> >> >this like an error.
-> >> >> >> >
-> >> >> >> >azur, here is a patch on top of your modified 3.2.  Note that Michal
-> >> >> >> >might be onto something and we are looking at multiple issues here,
-> >> >> >> >but the log excert above suggests this fix is required either way.
-> >> >> >> 
-> >> >> >> 
-> >> >> >> 
-> >> >> >> 
-> >> >> >> Johannes, is this still up to date? Thank you.
-> >> >> >
-> >> >> >No, please use the following on top of 3.2 (i.e. full replacement, not
-> >> >> >incremental to what you have):
-> >> >> 
-> >> >> 
-> >> >> 
-> >> >> Unfortunately it didn't compile:
-> >> >> 
-> >> >> 
-> >> >> 
-> >> >> 
-> >> >>   LD      vmlinux.o
-> >> >>   MODPOST vmlinux.o
-> >> >> WARNING: modpost: Found 4924 section mismatch(es).
-> >> >> To see full details build your kernel with:
-> >> >> 'make CONFIG_DEBUG_SECTION_MISMATCH=y'
-> >> >>   GEN     .version
-> >> >>   CHK     include/generated/compile.h
-> >> >>   UPD     include/generated/compile.h
-> >> >>   CC      init/version.o
-> >> >>   LD      init/built-in.o
-> >> >>   LD      .tmp_vmlinux1
-> >> >> arch/x86/built-in.o: In function `do_page_fault':
-> >> >> (.text+0x26a77): undefined reference to `handle_mm_fault'
-> >> >> mm/built-in.o: In function `fixup_user_fault':
-> >> >> (.text+0x224d3): undefined reference to `handle_mm_fault'
-> >> >> mm/built-in.o: In function `__get_user_pages':
-> >> >> (.text+0x24a0f): undefined reference to `handle_mm_fault'
-> >> >> make: *** [.tmp_vmlinux1] Error 1
-> >> >
-> >> >Oops, sorry about that.  Must be configuration dependent because it
-> >> >works for me (and handle_mm_fault is obviously defined).
-> >> >
-> >> >Do you have warnings earlier in the compilation?  You can use make -s
-> >> >to filter out everything but warnings.
-> >> >
-> >> >Or send me your configuration so I can try to reproduce it here.
-> >> >
-> >> >Thanks!
-> >> 
-> >> 
-> >> Johannes,
-> >> 
-> >> the server went down early in the morning, the symptoms were similar as before - huge I/O. Can't tell what exactly happened since I wasn't able to login even on the console. But I have some info:
-> >>  - applications were able to write to HDD so it wasn't deadlocked as before
-> >>  - here is how it looked on graphs: http://watchdog.sk/lkml/graphs.jpg
-> >>  - server wasn't responding from 6:36, it was down between 6:54 and 7:02 (i had to hard reboot it), I was awoken at 6:36 by really creepy sound from my phone ;)
-> >>  - my 'load check' script successfully killed apache at 6:41 but it didn't help as you can see
-> >>  - i have one screen with info from atop from time 6:44, looks like i/o was done by init (??!): http://watchdog.sk/lkml/atop.jpg (ignore swap warning, i have no swap)
-> >>  - also other type of logs are available
-> >>  - nothing like this happened before
-> >
-> >That IO from init looks really screwy, I have no idea what's going on
-> >on that machine, but it looks like there is more than just a memcg
-> >problem...  Any chance your thirdparty security patches are concealing
-> >kernel daemon activity behind the init process and the IO is actually
-> >coming from a kernel thread like the flushers or kswapd?
-> 
-> 
-> 
-> 
-> I really cannot tell but I never ever saw this before and i'm using all of my patches for several years. Here are all patches which i'm using right now (+ your patch):
-> http://watchdog.sk/lkml/patches3
-> 
-> 
-> 
-> 
-> >Are there OOM kill messages in the syslog?
-> 
-> 
-> 
-> Here is full kernel log between 6:00 and 7:59:
-> http://watchdog.sk/lkml/kern6.log
+--Sig_/J/GK1Vgcy9PykKEOOXx7.VW
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Wow, your apaches are like the hydra.  Whenever one is OOM killed,
-more show up!
+Yo Rodolfo!
 
-> >> What do you think? I'm now running kernel with your previous patch, not with the newest one.
-> >
-> >Which one exactly?  Can you attach the diff?
-> 
-> 
-> 
-> I meant, the problem above occured on kernel with your latest patch:
-> http://watchdog.sk/lkml/7-2-memcg-fix.patch
+On Tue, 10 Sep 2013 09:31:05 +0200
+Rodolfo Giometti <giometti@enneenne.com> wrote:
 
-The above log has the following callstack:
+> I have nothing against with this solution but consider that reporting
+> a PPS signal through USB bus may add unknown delays that may vanish
+> clock stability... as far as I know you should not use USB serial port
+> with PPS. Have you some statistics about clock stability in a real
+> implementation?
 
-Sep 10 07:59:43 server01 kernel: [ 3846.337628]  [<ffffffff810d19fe>] dump_header+0x7e/0x1e0
-Sep 10 07:59:43 server01 kernel: [ 3846.337707]  [<ffffffff810d18ff>] ? find_lock_task_mm+0x2f/0x70
-Sep 10 07:59:43 server01 kernel: [ 3846.337790]  [<ffffffff810d18ff>] ? find_lock_task_mm+0x2f/0x70
-Sep 10 07:59:43 server01 kernel: [ 3846.337874]  [<ffffffff81094bb0>] ? __css_put+0x50/0x90
-Sep 10 07:59:43 server01 kernel: [ 3846.337952]  [<ffffffff810d1ec5>] oom_kill_process+0x85/0x2a0
-Sep 10 07:59:43 server01 kernel: [ 3846.338037]  [<ffffffff810d2448>] mem_cgroup_out_of_memory+0xa8/0xf0
-Sep 10 07:59:43 server01 kernel: [ 3846.338120]  [<ffffffff81110858>] T.1154+0x8b8/0x8f0
-Sep 10 07:59:43 server01 kernel: [ 3846.338201]  [<ffffffff81110fa6>] mem_cgroup_charge_common+0x56/0xa0
-Sep 10 07:59:43 server01 kernel: [ 3846.338283]  [<ffffffff81111035>] mem_cgroup_newpage_charge+0x45/0x50
-Sep 10 07:59:43 server01 kernel: [ 3846.338364]  [<ffffffff810f3039>] handle_pte_fault+0x609/0x940
-Sep 10 07:59:43 server01 kernel: [ 3846.338451]  [<ffffffff8102ab1f>] ? pte_alloc_one+0x3f/0x50
-Sep 10 07:59:43 server01 kernel: [ 3846.338532]  [<ffffffff8107e455>] ? sched_clock_local+0x25/0x90
-Sep 10 07:59:43 server01 kernel: [ 3846.338617]  [<ffffffff810f34d7>] handle_mm_fault+0x167/0x340
-Sep 10 07:59:43 server01 kernel: [ 3846.338699]  [<ffffffff8102714b>] do_page_fault+0x13b/0x490
-Sep 10 07:59:43 server01 kernel: [ 3846.338781]  [<ffffffff810f8848>] ? do_brk+0x208/0x3a0
-Sep 10 07:59:43 server01 kernel: [ 3846.338865]  [<ffffffff812dba22>] ? gr_learn_resource+0x42/0x1e0
-Sep 10 07:59:43 server01 kernel: [ 3846.338951]  [<ffffffff815cb7bf>] page_fault+0x1f/0x30
+gpsd project has been using PPS over USB 1.1 for over a year.  Typical
+accuracy and repeatability in the range of +/- 1 milliSec.  This is much
+better than you can get using simple ntp over gigabit ethernet to an
+adjacent stratum 1 server.
 
-The charge code seems to be directly invoking the OOM killer, which is
-not possible with 7-2-memcg-fix.  Are you sure this is the right patch
-for this log?  This _looks_ more like what 7-1-memcg-fix was doing,
-with a direct kill in the charge context and a fixup later on.
+Sure PPS over a local UART is 10 to 100 times better, but often PPS
+over USB is your best second choice.  As serial ports become extinct
+it may become your best choice.
 
-It's somewhat eerie that you have to manually apply these patches
-because of grsec because I have no idea of knowing what the end result
-is, especially since you had compile errors in this area before.  Is
-grsec making changes to memcg code or why are these patches not
-applying cleanly?
+RGDS
+GARY
+---------------------------------------------------------------------------
+Gary E. Miller Rellim 109 NW Wilmington Ave., Suite E, Bend, OR 97701
+	gem@rellim.com  Tel:+1(541)382-8588
 
-> but after i had to reboot the server i booted the kernel with your previous patch:
-> http://watchdog.sk/lkml/7-1-memcg-fix.patch
+--Sig_/J/GK1Vgcy9PykKEOOXx7.VW
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-This one still has the known memcg leak.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQEcBAEBAgAGBQJSL3raAAoJEA0O2UlB0XnYih8IAISSauU3exhI0UtPLX/0IHPF
+uX+c7ZboqXxbZ5Fid7zS+7mf3BVzkpmIeQOYQ23VP0mAiZ19BjvZAvqR199uq1mR
+YoCuiypWSfZyYv3UbgMdhSC6SQOuFNartZzswnVA0YvYImsOI1Qlw1/3/Sd5SrCt
+6D/+4MaJEDe8yX/3aJ06a0ro9Som7DLJEXV3WRlKrSni6rwtEbIva0uhvIjgbllw
+123MCtpYDuT2HQpLiBWONeO7ma5uvf+5DsYjE2mnr9ozMd/8LXtZF0Nuzcp9B3ZP
+HMvU3NOebnN/WS6ackpsmBFsdMgZiTfcJccN1ThdNRq6myk6vGl6sCC9qcXSGq4=
+=CJgr
+-----END PGP SIGNATURE-----
+
+--Sig_/J/GK1Vgcy9PykKEOOXx7.VW--
