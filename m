@@ -1,131 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782Ab3IJFlt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 01:41:49 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61388 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752437Ab3IJFls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 01:41:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,876,1371106800"; 
-   d="scan'208";a="375876455"
-Message-ID: <522EB135.2060309@intel.com>
-Date: Tue, 10 Sep 2013 13:42:13 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1754057Ab3IJFn1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 01:43:27 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:45695 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752533Ab3IJFn0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 01:43:26 -0400
+X-AuditID: 9c93017d-b7cdfae0000026c0-ef-522eb17b2123
+Date: Tue, 10 Sep 2013 14:43:42 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [REPOST PATCH 3/4] slab: introduce byte sized index for the
+ freelist of a slab
+Message-ID: <20130910054342.GB24602@lge.com>
+References: <1378447067-19832-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1378447067-19832-4-git-send-email-iamjoonsoo.kim@lge.com>
+ <00000140f3fed229-f49b95d4-7087-476f-b2c9-37846749aad6-000000@email.amazonses.com>
+ <20130909043217.GB22390@lge.com>
+ <00000141032dea11-c5aa9c77-b2f2-4cab-b7a0-d37665a6cec8-000000@email.amazonses.com>
 MIME-Version: 1.0
-To: Igor Gnatenko <i.gnatenko.brain@gmail.com>
-CC: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, Yves-Alexis Perez <corsac@debian.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Lee Chun-Yi <jlee@novell.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Subject: Re: [PATCH 2/2] ACPI / video / i915: Remove ACPI backlight if firmware
- expects Windows 8
-References: <522D88C3.7000808@intel.com> <522D89EC.6050103@intel.com>   <1378727093.13401.3.camel@ThinkPad-X230.localdomain>   <522E91A6.6040600@intel.com>  <1378790011.2204.3.camel@ThinkPad-X230.localdomain>  <522EAB25.6000901@intel.com> <1378790561.2160.1.camel@ThinkPad-X230.localdomain>
-In-Reply-To: <1378790561.2160.1.camel@ThinkPad-X230.localdomain>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <00000141032dea11-c5aa9c77-b2f2-4cab-b7a0-d37665a6cec8-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2013 01:22 PM, Igor Gnatenko wrote:
-> On Tue, 2013-09-10 at 13:16 +0800, Aaron Lu wrote:
->> On 09/10/2013 01:13 PM, Igor Gnatenko wrote:
->>> On Tue, 2013-09-10 at 11:27 +0800, Aaron Lu wrote:
->>>> On 09/09/2013 07:44 PM, Igor Gnatenko wrote:
->>>>> On Mon, 2013-09-09 at 16:42 +0800, Aaron Lu wrote:
->>>>>> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
->>>>>> index f466980..75fba17 100644
->>>>>> --- a/drivers/gpu/drm/i915/i915_dma.c
->>>>>> +++ b/drivers/gpu/drm/i915/i915_dma.c
->>>>>> @@ -1650,7 +1650,7 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
->>>>>>  	if (INTEL_INFO(dev)->num_pipes) {
->>>>>>  		/* Must be done after probing outputs */
->>>>>>  		intel_opregion_init(dev);
->>>>>> -		acpi_video_register();
->>>>>> +		__acpi_video_register(i915_take_over_backlight);
->>>>>>  	}
->>>>>>  
->>>>>>  	if (IS_GEN5(dev))
->>>>>
->>>>> I can't compile:
->>>>>
->>>>>
->>>>> DEBUG: drivers/gpu/drm/i915/i915_dma.c: In function 'i915_driver_load':
->>>>> DEBUG: drivers/gpu/drm/i915/i915_dma.c:1661:3: error: implicit
->>>>> declaration of function
->>>>> '__acpi_video_register' [-Werror=implicit-function-declaration]
->>>>> DEBUG:    __acpi_video_register(i915_take_over_backlight);
->>>>> DEBUG:    ^
->>>>> DEBUG: cc1: some warnings being treated as errors
->>>>> DEBUG: make[4]: *** [drivers/gpu/drm/i915/i915_dma.o] Error 1
->>>>> DEBUG: make[3]: *** [drivers/gpu/drm/i915] Error 2
->>>>> DEBUG: make[2]: *** [drivers/gpu/drm] Error 2
->>>>> DEBUG: make[1]: *** [drivers/gpu] Error 2
->>>>> DEBUG: make: *** [drivers] Error 2
->>>>>
->>>>
->>>> The two patches are based on top of Rafael's linux-next tree. I just
->>>> tried it again, no compile problem for me. I also tried on today Linus'
->>>> master tree, as there are some updates from i915, two conflicts exist.
->>>> I've just resolved them and will update it in next revision.
->>>> If you want to try it now, please use:
->>>> https://github.com/aaronlu/linux acpi_video_rework
->>>>
->>>> Thanks,
->>>> Aaron
->>>
->>> Thanks. this patch fixes my problems w/ compilation. I've tested this
->>> two patches and after apply I have:
->>> $ tree /sys/class/backlight/
->>> /sys/class/backlight/
->>> |-- acpi_video0
->>> -> ../../devices/pci0000:00/0000:00:02.0/backlight/acpi_video0
->>> `-- intel_backlight
->>> -> ../../devices/pci0000:00/0000:00:02.0/drm/card0/card0-LVDS-1/intel_backlight
->>>
->>> 2 directories, 0 files
->>>
->>> I think it's didn't unregistered.. I may forget. I need to apply one of
->>> patch from Matthew ?
->>
->> You need to specify i915.take_over_backlight=1 in kernel cmdline, that
->> module option is set to false by default for now.
->>
->> Thanks for the test.
->>
->> -Aaron
->>
->>>
->>> Some strings from logs:
->>> DMI: LENOVO 23205NG/23205NG, BIOS G2ET92WW (2.52 ) 02/22/2013
->>> thinkpad_acpi: Standard ACPI backlight interface available, not loading
->>> native one
->>>
->>
+On Mon, Sep 09, 2013 at 02:44:03PM +0000, Christoph Lameter wrote:
+> On Mon, 9 Sep 2013, Joonsoo Kim wrote:
 > 
-> Thanks for quick answer. Yes. This option do unregister. Thanks. but for
-> this patch-set I also need "[PATCH 2/3] ACPI / video: Always call
-> acpi_video_init_brightness() on init" from Matthew (for notifications in
-> DE).
+> > 32 byte is not minimum object size, minimum *kmalloc* object size
+> > in default configuration. There are some slabs that their object size is
+> > less than 32 byte. If we have a 8 byte sized kmem_cache, it has 512 objects
+> > in 4K page.
+> 
+> As far as I can recall only SLUB supports 8 byte objects. SLABs mininum
+> has always been 32 bytes.
 
-That patch is reverted as it cause problem for other system:
-https://bugs.freedesktop.org/show_bug.cgi?id=68355
+No.
+There are many slabs that their object size are less than 32 byte.
+And I can also create a 8 byte sized slab in my kernel with SLAB.
 
-OTOH, the thinkpad-acpi module already has a call to _BCL except that
-the tpacpi_acpi_handle_locate failed to locate video controller's handle:
-https://bugzilla.kernel.org/show_bug.cgi?id=51231#c121
-I'll see if I can figure out why.
+js1304@js1304-P5Q-DELUXE:~/Projects/remote_git/linux$ sudo cat /proc/slabinfo | awk '{if($4 < 32) print $0}'
+slabinfo - version: 2.1
+ecryptfs_file_cache      0      0     16  240    1 : tunables  120   60    8 : slabdata      0      0      0
+jbd2_revoke_table_s      2    240     16  240    1 : tunables  120   60    8 : slabdata      1      1      0
+journal_handle         0      0     24  163    1 : tunables  120   60    8 : slabdata      0      0      0
+revoke_table           0      0     16  240    1 : tunables  120   60    8 : slabdata      0      0      0
+scsi_data_buffer       0      0     24  163    1 : tunables  120   60    8 : slabdata      0      0      0
+fsnotify_event_holder      0      0     24  163    1 : tunables  120   60    8 : slabdata      0      0      0
+numa_policy            3    163     24  163    1 : tunables  120   60    8 : slabdata      1      1      0
 
-Thanks,
-Aaron
+> 
+> > Moreover, we can configure slab_max_order in boot time so that we can't know
+> > how many object are in a certain slab in compile time. Therefore we can't
+> > decide the size of the index in compile time.
+> 
+> You can ignore the slab_max_order if necessary.
+> 
+> > I think that byte and short int sized index support would be enough, but
+> > it should be determined at runtime.
+> 
+> On x86 f.e. it would add useless branching. The branches are never taken.
+> You only need these if you do bad things to the system like requiring
+> large contiguous allocs.
+
+As I said before, since there is a possibility that some runtime loaded modules
+use a 8 byte sized slab, we can't determine index size in compile time. Otherwise
+we should always use short int sized index and I think that it is worse than
+adding a branch.
+
+Thanks.
