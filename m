@@ -1,42 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752359Ab3IJPPn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 11:15:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36838 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302Ab3IJPPm (ORCPT
+	id S1752017Ab3IJPU1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 11:20:27 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:33915 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751387Ab3IJPU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 11:15:42 -0400
-Date: Tue, 10 Sep 2013 08:15:41 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Jerome Marchand <jmarchan@redhat.com>, devel@driverdev.osuosl.org,
-        Minchan Kim <minchan@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] staging: zram: minimize `slot_free_lock' usage (v2)
-Message-ID: <20130910151541.GA7600@kroah.com>
-References: <20130906151255.GE2238@swordfish.minsk.epam.com>
- <20130909123329.GZ19256@mwanda>
- <20130909124942.GA2221@swordfish.minsk.epam.com>
- <20130909132124.GY6329@mwanda>
- <522DD125.1030607@redhat.com>
- <522DF2DF.5060407@redhat.com>
- <20130910143416.GC2270@swordfish>
- <20130910145802.GD19256@mwanda>
+	Tue, 10 Sep 2013 11:20:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130910145802.GD19256@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <1378817379-8238-8-git-send-email-lee.jones@linaro.org>
+References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
+	<1378817379-8238-8-git-send-email-lee.jones@linaro.org>
+Date: Tue, 10 Sep 2013 08:20:24 -0700
+Message-ID: <CAOesGMj+YzkE5bAxUqFYWoJ-RURDdCK5MUWYTc+gWFQMB3KWkg@mail.gmail.com>
+Subject: Re: [PATCH 07/38] ARM: ux500: CONFIG: Enable ST's IIO Accelerometer
+ Sensors by default
+From: Olof Johansson <olof@lixom.net>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        jic23@cam.ac.uk, Arnd Bergmann <arnd@arndb.de>,
+        LinusW <linus.walleij@linaro.org>, denis.ciocca@st.com,
+        linux-iio@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 05:58:02PM +0300, Dan Carpenter wrote:
-> Btw, the devel@driverdev.osuosl.org list seems to be down again.  I
-> still have not recieved the v3 patch.  Use the
-> driverdev-devel@linuxdriverproject.org email list instead.
+On Tue, Sep 10, 2013 at 5:49 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  arch/arm/configs/u8500_defconfig | 1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/arch/arm/configs/u8500_defconfig b/arch/arm/configs/u8500_defconfig
+> index 6b29109..24f88d6 100644
+> --- a/arch/arm/configs/u8500_defconfig
+> +++ b/arch/arm/configs/u8500_defconfig
+> @@ -39,6 +39,7 @@ CONFIG_BLK_DEV_RAM_SIZE=65536
+>  CONFIG_SENSORS_BH1780=y
+>  CONFIG_IIO=y
+>  CONFIG_IIO_ST_PRESS=y
+> +CONFIG_IIO_ST_ACCEL_3AXIS=y
+>  CONFIG_NETDEVICES=y
+>  CONFIG_SMSC911X=y
+>  CONFIG_SMSC_PHY=y
 
-They are the same "list", just different DNS entries.  I'll go poke the
-sysadmin to find out what's going on...
+This is ridiculous.
 
+I know lwn.net's patch author statistics are fun to be on, but
+splitting this and the other config update into two patches? Really?
+
+
+-Olof
