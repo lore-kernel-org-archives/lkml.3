@@ -1,105 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233Ab3IJR0o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 13:26:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15500 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751872Ab3IJR0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 13:26:43 -0400
-Date: Tue, 10 Sep 2013 19:20:33 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steve Grubb <sgrubb@redhat.com>
-Cc: linux-audit@redhat.com, Richard Guy Briggs <rgb@redhat.com>,
-        linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
-        Eric Paris <eparis@redhat.com>
-Subject: Re: audit looks unmaintained? [was: Re: [PATCH 11/12] pid: rewrite
-	task helper functions avoiding task->pid and task->tgid]
-Message-ID: <20130910172033.GA6585@redhat.com>
-References: <cover.1377032086.git.rgb@redhat.com> <20130827171134.GB29147@redhat.com> <20130830190646.GA30331@madcap2.tricolour.ca> <3996102.evTQ9SbNnV@x2> <20130908155435.GC4663@redhat.com>
+	id S1753615Ab3IJR3Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 13:29:24 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:51102 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752502Ab3IJR3X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 13:29:23 -0400
+Message-ID: <522F56F0.4040206@gmail.com>
+Date: Tue, 10 Sep 2013 10:29:20 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130908155435.GC4663@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Ingo Molnar <mingo@kernel.org>
+CC: Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCHv2 00/25] perf tool: Add support for multiple data file
+ storage
+References: <1378031796-17892-1-git-send-email-jolsa@redhat.com> <20130909111749.GP31370@twins.programming.kicks-ass.net> <20130909113640.GA16401@krava.redhat.com> <20130909115518.GA26785@twins.programming.kicks-ass.net> <20130909140339.GB16401@krava.redhat.com> <522DD6FF.50107@gmail.com> <20130909160608.GB25555@gmail.com>
+In-Reply-To: <20130909160608.GB25555@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08, Oleg Nesterov wrote:
+On 9/9/13 9:06 AM, Ingo Molnar wrote:
+>> Aren't you losing potentially important events by doing that -- FORK,
+>> COMM, MMAP?
 >
-> First of all, I do not pretend I understand this code. This was mostly
-> the question, and in fact I mostly asked about audit_bprm() in 0/1.
+> I suspect these could/should be tracked and emitted fully (in bulk) when a
+> new data file is opened, so that each partial data file is fully
+> consistent?
+
+In my case I am not saving task events, but processing them. In Jiri's 
+case where events are written to a file it should be possible to stash 
+the unprocessed events on a list, when the exit happens move them to a 
+dead threads list which can be cleaned up from time to time and then on 
+file dump requests dump the task events followed by the sample events.
+
 >
-> However,
+>> I have a flight recorder style command that address this problem
+>> (long-running/daemons) by processing task events and then stashing the
+>> sample events on a time-ordered list with chopping to maintain the time
+>> window.
 >
-> On 08/30, Steve Grubb wrote:
-> > On Friday, August 30, 2013 03:06:46 PM Richard Guy Briggs wrote:
-> > > On Tue, Aug 27, 2013 at 07:11:34PM +0200, Oleg Nesterov wrote:
-> > > > Btw. audit looks unmaintained... if you are going to take care of
-> > > > this code, perhaps you can look at
-> > > >
-> > > > 	http://marc.info/?l=linux-kernel&m=137589907108485
-> > > > 	http://marc.info/?l=linux-kernel&m=137590271809664
-> >
-> > You don't want to clear the TIF audit flag when context == NULL. What that will
-> > do is make a bunch of inauditable processes. There are times when audit is
-> > disabled and then re-enabled later. If the flag gets cleared, then a task's
-> > syscall will never enter the auditing framework from kernel/entry_64.S.
-> >
-> > That flag is 0 when auditing has never ever been enabled. If auditing is
-> > enabled, it should always be a 1 unless the task filter has determined that
-> > this process should not be audited ever. In practice, this is almost never
-> > used. But ensuring the TIF_SYSCALL_AUDIT set to 1 on all processes is why we
-> > have the boot argument. Not setting audit=1 on the boot arguments means that
-> > any process running before the audit daemon enables auditing can never ever be
-> > audited because the only place its set is when processes are cloned.
+> Could this be used to emit currently relevant task context?
+
+sure.
+
 >
-> Then why audit_alloc() doesn't set TIF_SYSCALL_AUDIT unconditionally?
+> Btw., I also think it would be useful to have kernel support for that -
+> the 'collections' stuff I talked about a good while ago: the kernel would
+> work with user-space to iterate over all MMAPs and all running COMMs at
+> the opening of a tracing session.
 >
-> And I do not understand "when context == NULL" above. Say, audit_syscall_entry()
-> does nothing if !audit_context, and nobody except copy_process() does
-> audit_alloc(). So why do we need to trigger the audit's paths if it is NULL?
->
-> > Hope this clears up the use. NAK to the patch, it'll break auditing.
->
-> Not really, but thanks for your reply anyway.
+> That way we could avoid racy access to /proc, we could make sure that all
+> information that is emitted by FORK/COMM/MMAP is also emitted for the
+> 'bulk' data, etc.
 
-So, Steve, do you still think that patch was wrong? Attached below
-just in case.
+Walking the task list and emitting events would be better but wouldn't 
+that be a performance hit holding the task lock (tasklist_lock?)? (I 
+thought that one is needed when walking the task list.)
 
-Oleg.
-
-[PATCH 1/1] audit_alloc: clear TIF_SYSCALL_AUDIT if !audit_context
-
-If audit_filter_task() nacks the new thread it makes sense
-to clear TIF_SYSCALL_AUDIT which can be copied from parent
-by dup_task_struct().
-
-A wrong TIF_SYSCALL_AUDIT is not really bad, but it triggers
-the "slow" audit paths in entry.S.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/auditsc.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 9845cb3..95293ab 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -943,8 +943,10 @@ int audit_alloc(struct task_struct *tsk)
- 		return 0; /* Return if not auditing. */
- 
- 	state = audit_filter_task(tsk, &key);
--	if (state == AUDIT_DISABLED)
-+	if (state == AUDIT_DISABLED) {
-+		clear_tsk_thread_flag(tsk, TIF_SYSCALL_AUDIT);
- 		return 0;
-+	}
- 
- 	if (!(context = audit_alloc_context(state))) {
- 		kfree(key);
--- 
-1.5.5.1
-
+David
 
