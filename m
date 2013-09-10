@@ -1,111 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761Ab3IJSM0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 14:12:26 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53812 "EHLO
+	id S1751663Ab3IJSMV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 14:12:21 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53799 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752302Ab3IJSMW (ORCPT
+	with ESMTP id S1751181Ab3IJSMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 14:12:22 -0400
+	Tue, 10 Sep 2013 14:12:19 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [GIT PULL 0/5] perf/urgent fixes
-Date: Tue, 10 Sep 2013 15:11:57 -0300
-Message-Id: <1378836722-31326-1-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 5/5] perf: Fix up MMAP2 buffer space reservation
+Date: Tue, 10 Sep 2013 15:12:02 -0300
+Message-Id: <1378836722-31326-6-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1378836722-31326-1-git-send-email-acme@infradead.org>
+References: <1378836722-31326-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Hi Ingo,
+The ino_generation field was added in the PERF_RECORD_MMAP2 record in
+the 13d7a24 cset but no space for it was allocated, corrupting the
+PERF_FORMAT_{TIME,CPU,TID,etc} area (sample_type/sample_id_all), fix it.
 
-	Please consider pulling,
+Detected with one of the regression tests done by 'perf test':
 
-- Arnaldo
+  [root@sandy ~]# perf test -v 7
+   7: Validate PERF_RECORD_* events & perf_sample fields     :
+  --- start ---
+  61315294449606 0 PERF_RECORD_SAMPLE
+  61315294453161 0 PERF_RECORD_SAMPLE
+  61315294454441 0 PERF_RECORD_SAMPLE
+  61315294455709 0 PERF_RECORD_SAMPLE
+  61315295600899 0 PERF_RECORD_COMM: sleep:6500
+  27917287430500 342521613 PERF_RECORD_MMAP2 6500/6500: [0x400000(0x7000) @ 0 00:1d 311442 9016]: /usr/bin/sleep
+  MMAP2 going backwards in time, prev=61315295600899, curr=27917287430500
+  MMAP2 with unexpected cpu, expected 0, got 342521613
+  MMAP2 with unexpected pid, expected 6500, got 1701606191
+  MMAP2 with unexpected tid, expected 6500, got 28773
+  27917287430500 342561333 PERF_RECORD_MMAP2 6500/6500: [0x3b7e000000(0x223000) @ 0 00:1d 309186 9016]: /usr/lib64/ld-2.16.so
+  MMAP2 with unexpected cpu, expected 0, got 342561333
+  MMAP2 with unexpected pid, expected 6500, got 1932408369
+  MMAP2 with unexpected tid, expected 6500, got 111
+  27917287430500 342600095 PERF_RECORD_MMAP2 6500/6500: [0x7fffbd7dc000(0x1000) @ 0x7fffbd7dc000 00:00 0 0]: [vdso]
+  MMAP2 with unexpected cpu, expected 0, got 342600095
+  MMAP2 with unexpected pid, expected 6500, got 1935963739
+  MMAP2 with unexpected tid, expected 6500, got 23919
+  27917287430500 342882834 PERF_RECORD_MMAP2 6500/6500: [0x3b7e400000(0x3b8000) @ 0 00:1d 309187 9016]: /usr/lib64/libc-2.16.so
+  MMAP2 with unexpected cpu, expected 0, got 342882834
+  MMAP2 with unexpected pid, expected 6500, got 909192754
+  MMAP2 with unexpected tid, expected 6500, got 7303982
+  61316297195411 0 PERF_RECORD_EXIT(6500:6500):(6500:6500)
+  ---- end ----
+  Validate PERF_RECORD_* events & perf_sample fields: FAILED!
+  [root@sandy ~]#
 
-The following changes since commit 72f4a11d2fb16792f5e5107922652366194cfd66:
+After this patch:
 
-  Merge tag 'perf-urgent-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/urgent (2013-09-06 14:08:08 +0200)
+  [root@sandy ~]# perf test 7
+   7: Validate PERF_RECORD_* events & perf_sample fields     : Ok
+  [root@sandy ~]#
 
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
-
-for you to fetch changes up to e08eedca944bd6419c9441012e98e7af14ebd175:
-
-  perf: Fix up MMAP2 buffer space reservation (2013-09-10 10:42:20 -0300)
-
-----------------------------------------------------------------
-perf/urgent fixes:
-
-. Handle perf.data files with no tracepoints in 'perf trace', fixing a
-  segfault.
-
-. Fix up MMAP2 buffer space reservation, a problem that was caught via
-  'perf test' consistency tests.
-
-. Add attr->mmap2 support in the tools, a patch that should've been merged
-  together with the kernel counterpart:
-
-    13d7a24 "perf: Add attr->mmap2 attribute to an event".
-
-  Merging it allowed us to catch the MMAP buffer space reservation problem via
-  'perf test'. From Stephane Eranian.
-
-. Make sure we can find PERF_SAMPLE_ID in the variable part of PERF_RECORD_
-  ring buffer records in 'perf kvm', where direct manipulation of sample_type
-  was being done.
-
-  Fixed by making use of the perf_evlist__set_sample_bit() helper and by
-  setting the evlist->id_pos in perf_evlist__open(), from Adrian Hunter.
-
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Acked-by: Stephane Eranian <eranian@google.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-heeuv986b8ha7whqg4o3he7c@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ kernel/events/core.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-----------------------------------------------------------------
-Adrian Hunter (2):
-      perf evlist: Fix id pos in perf_evlist__open()
-      perf kvm: Fix sample_type manipulation
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 2207efc..dd236b6 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -5039,6 +5039,7 @@ static void perf_event_mmap_output(struct perf_event *event,
+ 		mmap_event->event_id.header.size += sizeof(mmap_event->maj);
+ 		mmap_event->event_id.header.size += sizeof(mmap_event->min);
+ 		mmap_event->event_id.header.size += sizeof(mmap_event->ino);
++		mmap_event->event_id.header.size += sizeof(mmap_event->ino_generation);
+ 	}
+ 
+ 	perf_event_header__init_id(&mmap_event->event_id.header, &sample, event);
+-- 
+1.8.1.4
 
-Arnaldo Carvalho de Melo (2):
-      perf trace: Handle perf.data files with no tracepoints
-      perf: Fix up MMAP2 buffer space reservation
-
-Stephane Eranian (1):
-      perf tools: Add attr->mmap2 support
-
- kernel/events/core.c           |  1 +
- tools/perf/builtin-annotate.c  |  1 +
- tools/perf/builtin-inject.c    | 15 ++++++++++
- tools/perf/builtin-kvm.c       | 18 ++++++------
- tools/perf/builtin-mem.c       |  1 +
- tools/perf/builtin-report.c    |  1 +
- tools/perf/builtin-script.c    |  1 +
- tools/perf/tests/perf-record.c | 15 +++++++---
- tools/perf/util/build-id.c     |  1 +
- tools/perf/util/event.c        | 56 ++++++++++++++++++++++++++++--------
- tools/perf/util/event.h        | 19 ++++++++++++
- tools/perf/util/evlist.c       | 12 ++++++++
- tools/perf/util/evsel.c        |  5 ++--
- tools/perf/util/header.c       |  3 ++
- tools/perf/util/machine.c      | 53 +++++++++++++++++++++++++++++++++-
- tools/perf/util/machine.h      |  1 +
- tools/perf/util/map.c          |  8 +++++-
- tools/perf/util/map.h          |  8 ++++--
- tools/perf/util/session.c      | 65 ++++++++++++++++++++----------------------
- tools/perf/util/tool.h         |  1 +
- 20 files changed, 220 insertions(+), 65 deletions(-)
