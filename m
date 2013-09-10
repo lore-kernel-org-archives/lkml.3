@@ -1,53 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751967Ab3IJMnM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 08:43:12 -0400
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:64358 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470Ab3IJMnL (ORCPT
+	id S1751458Ab3IJMpT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 08:45:19 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:50649 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292Ab3IJMpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 08:43:11 -0400
+	Tue, 10 Sep 2013 08:45:17 -0400
+Date: Tue, 10 Sep 2013 08:44:48 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Subject: [GIT PULL] (xen) stable/for-linus-3.12-rc0-tag-two for v3.12-rc0
+Message-ID: <20130910124448.GA5038@phenom.dumpdata.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMsRxfLvbExOzjz8tQu7AchQgKBh5S4b7VMQmFtr1RxK4ksAvA@mail.gmail.com>
-References: <20130903132933.GA24955@gmail.com> <CA+55aFxBTjfx304zstOVq3Hm3vmjgC5gOJaxXG5E_iWq_WXGTw@mail.gmail.com>
- <20130909100544.GI31370@twins.programming.kicks-ass.net> <CAMsRxfLEO15kKrbmtKKXuW-JTtCCgiuXS6wFs9kiLmG1wge24A@mail.gmail.com>
- <20130910115306.GA6091@gmail.com> <CAMsRxfLvbExOzjz8tQu7AchQgKBh5S4b7VMQmFtr1RxK4ksAvA@mail.gmail.com>
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-Date: Tue, 10 Sep 2013 18:12:29 +0530
-Message-ID: <CALkWK0my-gVYWEOJkX2UX4VMJ7jABogs1Dap3b7S3jmQMATNQA@mail.gmail.com>
-Subject: Re: PEBS bug on HSW: "Unexpected number of pebs records 10" (was: Re:
- [GIT PULL] perf changes for v3.12)
-To: eranian@gmail.com
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7AUc2qLy4jB3hD7Z"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephane Eranian wrote:
-> [ 2229.021966] Call Trace:
-> [ 2229.021967]  <NMI>  [<ffffffff8159dcd6>] dump_stack+0x46/0x58
-> [ 2229.021976]  [<ffffffff8108dfdc>] warn_slowpath_common+0x8c/0xc0
-> [ 2229.021979]  [<ffffffff8108e0c6>] warn_slowpath_fmt+0x46/0x50
-> [ 2229.021982]  [<ffffffff810646c8>] intel_pmu_drain_pebs_hsw+0xa8/0xc0
-> [ 2229.021986]  [<ffffffff810668f0>] intel_pmu_handle_irq+0x220/0x380
-> [ 2229.021991]  [<ffffffff810c1d35>] ? sched_clock_cpu+0xc5/0x120
-> [ 2229.021995]  [<ffffffff815a5a84>] perf_event_nmi_handler+0x34/0x60
-> [ 2229.021998]  [<ffffffff815a52b8>] nmi_handle.isra.3+0x88/0x180
-> [ 2229.022001]  [<ffffffff815a5490>] do_nmi+0xe0/0x330
-> [ 2229.022004]  [<ffffffff815a48f7>] end_repeat_nmi+0x1e/0x2e
-> [ 2229.022008]  [<ffffffff810652b3>] ? intel_pmu_pebs_enable_all+0x33/0x40
-> [ 2229.022011]  [<ffffffff810652b3>] ? intel_pmu_pebs_enable_all+0x33/0x40
-> [ 2229.022015]  [<ffffffff810652b3>] ? intel_pmu_pebs_enable_all+0x33/0x40
-> [ 2229.022016]  <<EOE>>  [<ffffffff810659f3>] intel_pmu_enable_all+0x23/0xa0
-> [ 2229.022021]  [<ffffffff8105ff84>] x86_pmu_enable+0x274/0x310
-> [ 2229.022025]  [<ffffffff81141927>] perf_pmu_enable+0x27/0x30
-> [ 2229.022029]  [<ffffffff81143219>] perf_event_context_sched_in+0x79/0xc0
 
-Unnecessary repetition of the same task on multiple cores seems to be
-the issue, although I'm not sure. Haven't gone through mingo's trace
-yet.
+--7AUc2qLy4jB3hD7Z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+Hey Linus,
+
+Please git pull the following tag:
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git stable/for-linus-3.12-rc0-tag-two
+
+This pull I usually do after rc1 is out but because we have a nice amount
+of fixes, some bootup related fixes for ARM, and it is early in the cycle we
+figured to do it now to help with tracking of potential regressions.
+
+The simple ones are the ARM ones - one of the patches fell through the cracks,
+other fixes a bootup issue (unconditionally using Xen functions). Then a
+fix for a regression causing preempt count being off (patch causing
+this went in v3.12). Lastly are the fixes to make Xen PVHVM guests use PV
+ticketlocks (Xen PV already does).
+
+The enablement of that was suppose to be part of commit
+816434ec4a674fcdb3c2221a6dffdc8f34020550
+(Merge branch 'x86-spinlocks-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip)
+
+	Pull x86 spinlock changes from Ingo Molnar:
+	"The biggest change here are paravirtualized ticket spinlocks (PV
+	spinlocks), which bring a nice speedup on various benchmarks. ..."
+
+but unfortunatly it would cause hang when booting Xen PVHVM guests.
+Yours truly got all of the bugs fixed last week and they (six of them)
+are included in this pull.
+
+Please pull!
+
+ arch/arm/xen/enlighten.c | 14 +++++++++++++-
+ arch/x86/xen/enlighten.c |  1 -
+ arch/x86/xen/p2m.c       | 10 ++++++----
+ arch/x86/xen/smp.c       | 28 +++++++++++++++++++++++-----
+ arch/x86/xen/spinlock.c  | 45 ++++++++-------------------------------------
+ 5 files changed, 50 insertions(+), 48 deletions(-)
+
+Boris Ostrovsky (1):
+      xen/p2m: Don't call get_balloon_scratch_page() twice, keep interrupts disabled for multicalls
+
+Julien Grall (1):
+      xen/arm: disable cpuidle and cpufreq when linux is running as dom0
+
+Konrad Rzeszutek Wilk (6):
+      xen/spinlock: Fix locking path engaging too soon under PVHVM.
+      xen/spinlock: We don't need the old structure anymore
+      xen/smp: Update pv_lock_ops functions before alternative code starts under PVHVM
+      xen/spinlock: Don't setup xen spinlock IPI kicker if disabled.
+      Revert "xen/spinlock: Disable IRQ spinlock (PV) allocation on PVHVM"
+      xen/spinlock: Don't use __initdate for xen_pv_spin
+
+Rob Herring (1):
+      ARM: xen: only set pm function ptrs for Xen guests
+
+
+--7AUc2qLy4jB3hD7Z
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQEcBAEBAgAGBQJSLxQ8AAoJEFjIrFwIi8fJ/NEIAMBclaI36cW/cA8oQ/ZrDLc/
+cvRSAmRO7G6cDhtHoU3W75UEK0R2rvFK18coLj8WG3MaxfbHx8XDsLZzI685IAoC
+wzanBdSGldBjQ1Z5EYWUUSicPs+jrO6pG1TcqW2P0gN/ybtjwL+zTdmiR7HUso4/
+0lz7EdJSBtCeolFY8VPIfLAW7temya0x+jPNCk+9wr35FnPJSOFwscIYmsgC401k
+S3WbnwJ/BSIU7HHUkgogY5rX1C+0KuyXVj6mFmeQJn3KqYav5Wgy2ojWMOCG/UIb
+LbYFkz4PU+IS/Abl3ppa1hvbIkK4xcoSo6yAj0m5/Xm+L9LQL8U1JOQiYwn+vSk=
+=GmsM
+-----END PGP SIGNATURE-----
+
+--7AUc2qLy4jB3hD7Z--
