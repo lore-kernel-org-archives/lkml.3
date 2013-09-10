@@ -1,462 +1,304 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779Ab3IJPc2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 11:32:28 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:23571 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468Ab3IJPaM (ORCPT
+	id S1753077Ab3IJPaL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 11:30:11 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:17396 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468Ab3IJPaJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 11:30:12 -0400
+	Tue, 10 Sep 2013 11:30:09 -0400
 From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 To: xen-devel@lists.xen.org
 Cc: konrad.wilk@oracle.com, david.vrabel@citrix.com, JBeulich@suse.com,
         linux-kernel@vger.kernel.org,
         Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: [PATCH v1 4/5] xen/PMU: Add support for PMU registes on PV guests
-Date: Tue, 10 Sep 2013 11:31:49 -0400
-Message-Id: <1378827110-4192-5-git-send-email-boris.ostrovsky@oracle.com>
+Subject: [PATCH v1 1/5] xen: xensyms support
+Date: Tue, 10 Sep 2013 11:31:46 -0400
+Message-Id: <1378827110-4192-2-git-send-email-boris.ostrovsky@oracle.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1378827110-4192-1-git-send-email-boris.ostrovsky@oracle.com>
 References: <1378827110-4192-1-git-send-email-boris.ostrovsky@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PMU emulation code: MSR caching in PMU context and LVTPC APIC
-handling. (Portions of this code are taken from Xen's VPMU
-implementation)
+Export Xen symbols to dom0 via /proc/xen/xensyms (similar to /proc/kallsyms).
 
 Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 ---
- arch/x86/xen/enlighten.c       |  27 +++-
- arch/x86/xen/pmu.c             | 289 ++++++++++++++++++++++++++++++++++++++++-
- arch/x86/xen/pmu.h             |   3 +
- include/xen/interface/xenpmu.h |   5 +
- 4 files changed, 317 insertions(+), 7 deletions(-)
+ drivers/xen/Kconfig              |   5 ++
+ drivers/xen/xenfs/Makefile       |   1 +
+ drivers/xen/xenfs/super.c        |   3 +
+ drivers/xen/xenfs/xenfs.h        |   1 +
+ drivers/xen/xenfs/xensyms.c      | 170 +++++++++++++++++++++++++++++++++++++++
+ include/xen/interface/platform.h |  21 +++++
+ 6 files changed, 201 insertions(+)
+ create mode 100644 drivers/xen/xenfs/xensyms.c
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 193097e..2512bd3 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -82,6 +82,7 @@
- #include "mmu.h"
- #include "smp.h"
- #include "multicalls.h"
-+#include "pmu.h"
+diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
+index 9e02d60..a21fce9 100644
+--- a/drivers/xen/Kconfig
++++ b/drivers/xen/Kconfig
+@@ -242,4 +242,9 @@ config XEN_MCE_LOG
+ config XEN_HAVE_PVMMU
+        bool
  
- EXPORT_SYMBOL_GPL(hypercall_page);
++config XEN_SYMS
++       bool "Xen symbols"
++       depends on XEN_DOM0 && XENFS && KALLSYMS
++       default y
++
+ endmenu
+diff --git a/drivers/xen/xenfs/Makefile b/drivers/xen/xenfs/Makefile
+index b019865..1a83010 100644
+--- a/drivers/xen/xenfs/Makefile
++++ b/drivers/xen/xenfs/Makefile
+@@ -2,3 +2,4 @@ obj-$(CONFIG_XENFS) += xenfs.o
  
-@@ -960,6 +961,11 @@ static u32 xen_apic_read(u32 reg)
+ xenfs-y			  = super.o
+ xenfs-$(CONFIG_XEN_DOM0) += xenstored.o
++xenfs-$(CONFIG_XEN_SYMS) += xensyms.o
+diff --git a/drivers/xen/xenfs/super.c b/drivers/xen/xenfs/super.c
+index 06092e0..8559a71 100644
+--- a/drivers/xen/xenfs/super.c
++++ b/drivers/xen/xenfs/super.c
+@@ -57,6 +57,9 @@ static int xenfs_fill_super(struct super_block *sb, void *data, int silent)
+ 		{ "privcmd", &xen_privcmd_fops, S_IRUSR|S_IWUSR },
+ 		{ "xsd_kva", &xsd_kva_file_ops, S_IRUSR|S_IWUSR},
+ 		{ "xsd_port", &xsd_port_file_ops, S_IRUSR|S_IWUSR},
++#ifdef CONFIG_XEN_SYMS
++		{ "xensyms", &xensyms_ops, S_IRUSR},
++#endif
+ 		{""},
+ 	};
  
- static void xen_apic_write(u32 reg, u32 val)
- {
-+	if (reg == APIC_LVTPC) {
-+		(void)pmu_apic_update(reg);
-+		return;
-+	}
-+
- 	/* Warn to see if there's any stray references */
- 	WARN_ON(1);
- }
-@@ -1064,11 +1070,20 @@ static inline void xen_write_cr8(unsigned long val)
- 	BUG_ON(val);
- }
- #endif
--static int xen_write_msr_safe(unsigned int msr, unsigned low, unsigned high)
-+
-+static u64 xen_read_msr_safe(unsigned int msr, int *err)
- {
--	int ret;
-+	u64 val;
+diff --git a/drivers/xen/xenfs/xenfs.h b/drivers/xen/xenfs/xenfs.h
+index 6b80c77..2c5934e 100644
+--- a/drivers/xen/xenfs/xenfs.h
++++ b/drivers/xen/xenfs/xenfs.h
+@@ -3,5 +3,6 @@
  
--	ret = 0;
-+	if (pmu_msr_read(msr, &val, err))
-+		return val;
-+
-+	return native_read_msr_safe(msr, err);
-+}
-+
-+static int xen_write_msr_safe(unsigned int msr, unsigned low, unsigned high)
-+{
-+	int ret = 0;
+ extern const struct file_operations xsd_kva_file_ops;
+ extern const struct file_operations xsd_port_file_ops;
++extern const struct file_operations xensyms_ops;
  
- 	switch (msr) {
- #ifdef CONFIG_X86_64
-@@ -1102,10 +1117,10 @@ static int xen_write_msr_safe(unsigned int msr, unsigned low, unsigned high)
- 		if (smp_processor_id() == 0)
- 			xen_set_pat(((u64)high << 32) | low);
- 		break;
-+	}
- 
--	default:
-+	if (!pmu_msr_write(msr, low, high, &ret))
- 		ret = native_write_msr_safe(msr, low, high);
--	}
- 
- 	return ret;
- }
-@@ -1239,7 +1254,7 @@ static const struct pv_cpu_ops xen_cpu_ops __initconst = {
- 
- 	.wbinvd = native_wbinvd,
- 
--	.read_msr = native_read_msr_safe,
-+	.read_msr = xen_read_msr_safe,
- 	.write_msr = xen_write_msr_safe,
- 
- 	.read_tsc = native_read_tsc,
-diff --git a/arch/x86/xen/pmu.c b/arch/x86/xen/pmu.c
-index da061d4..d8b059b 100644
---- a/arch/x86/xen/pmu.c
-+++ b/arch/x86/xen/pmu.c
-@@ -17,6 +17,291 @@
- /* Shared page between hypervisor and domain */
- DEFINE_PER_CPU(struct xenpmu_data *, xenpmu_shared);
- 
-+/* PMU register caching */
-+
-+/* AMD PMU */
-+static __read_mostly uint32_t amd_counters_base;
-+static __read_mostly uint32_t amd_ctrls_base;
-+static __read_mostly int amd_msr_step;
-+static __read_mostly int k7_counters_mirrored;
-+static __read_mostly int amd_num_counters;
-+
-+/* Intel PMU */
-+#define MSR_TYPE_COUNTER            0
-+#define MSR_TYPE_CTRL               1
-+#define MSR_TYPE_GLOBAL             2
-+#define MSR_TYPE_ARCH_COUNTER       3
-+#define MSR_TYPE_ARCH_CTRL          4
-+
-+#define PMU_GENERAL_NR_SHIFT        8  /* Number of general pmu registers */
-+#define PMU_GENERAL_NR_BITS         8  /* 8 bits 8..15 */
-+#define PMU_GENERAL_NR_MASK         (((1 << PMU_GENERAL_NR_BITS) - 1) \
-+				     << PMU_GENERAL_NR_SHIFT)
-+
-+static __read_mostly int intel_num_counters;
+ #endif	/* _XENFS_XENBUS_H */
+diff --git a/drivers/xen/xenfs/xensyms.c b/drivers/xen/xenfs/xensyms.c
+new file mode 100644
+index 0000000..e3301f0
+--- /dev/null
++++ b/drivers/xen/xenfs/xensyms.c
+@@ -0,0 +1,170 @@
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/seq_file.h>
++#include <linux/fs.h>
++#include <linux/mm.h>
++#include <linux/proc_fs.h>
++#include <linux/slab.h>
++#include <xen/interface/platform.h>
++#include <asm/xen/hypercall.h>
++#include <xen/xen-ops.h>
++#include "xenfs.h"
 +
 +
-+static void xen_pmu_arch_init(void)
-+{
-+	if (boot_cpu_data.x86_vendor == X86_VENDOR_AMD) {
++struct xensyms_state {
++	struct xenpf_symdata symdata;
++	ssize_t off;
++};
 +
-+		switch (boot_cpu_data.x86) {
-+		case 0x15:
-+			amd_num_counters = F15H_NUM_COUNTERS;
-+			amd_counters_base = MSR_F15H_PERF_CTR;
-+			amd_ctrls_base = MSR_F15H_PERF_CTL;
-+			amd_msr_step = 2;
-+			k7_counters_mirrored = 1;
-+			break;
-+		case 0x10:
-+		case 0x12:
-+		case 0x14:
-+		case 0x16:
-+		default:
-+			amd_num_counters = F10H_NUM_COUNTERS;
-+			amd_counters_base = MSR_K7_PERFCTR0;
-+			amd_ctrls_base = MSR_K7_EVNTSEL0;
-+			amd_msr_step = 1;
-+			k7_counters_mirrored = 0;
-+			break;
-+		}
-+	} else {
-+		uint32_t eax = cpuid_eax(0xa);
-+
-+		intel_num_counters = (eax & PMU_GENERAL_NR_MASK) >>
-+			PMU_GENERAL_NR_SHIFT;
-+	}
-+}
-+
-+static inline uint32_t get_fam15h_addr(u32 addr)
-+{
-+	switch (addr) {
-+	case MSR_K7_PERFCTR0:
-+	case MSR_K7_PERFCTR1:
-+	case MSR_K7_PERFCTR2:
-+	case MSR_K7_PERFCTR3:
-+		return MSR_F15H_PERF_CTR + (addr - MSR_K7_PERFCTR0);
-+	case MSR_K7_EVNTSEL0:
-+	case MSR_K7_EVNTSEL1:
-+	case MSR_K7_EVNTSEL2:
-+	case MSR_K7_EVNTSEL3:
-+		return MSR_F15H_PERF_CTL + (addr - MSR_K7_EVNTSEL0);
-+	default:
-+		break;
-+	}
-+
-+	return addr;
-+}
-+
-+static inline bool is_amd_pmu_msr(unsigned int msr)
-+{
-+	if ((msr < MSR_F15H_PERF_CTL ||
-+	     msr > MSR_F15H_PERF_CTR + amd_num_counters) &&
-+	    (msr < MSR_K7_EVNTSEL0 ||
-+	     msr > MSR_K7_PERFCTR0 + amd_num_counters))
-+		return true;
-+
-+	return false;
-+}
-+
-+static bool is_core2_pmu_msr(u32 msr_index, int *type, int *index)
-+{
-+	int i;
-+
-+	for (i = 0; i < VPMU_CORE2_NUM_FIXED; i++) {
-+		if (core2_fix_counters_msr[i] == msr_index) {
-+			*type = MSR_TYPE_COUNTER;
-+			*index = i;
-+			return true;
-+		}
-+	}
-+
-+	for (i = 0; i < VPMU_CORE2_NUM_CTRLS; i++) {
-+		if (core2_ctrls_msr[i] == msr_index) {
-+			*type = MSR_TYPE_CTRL;
-+			*index = i;
-+			return true;
-+		}
-+	}
-+
-+	if ((msr_index == MSR_CORE_PERF_GLOBAL_CTRL) ||
-+	    (msr_index == MSR_CORE_PERF_GLOBAL_STATUS) ||
-+	    (msr_index == MSR_CORE_PERF_GLOBAL_OVF_CTRL)) {
-+		*type = MSR_TYPE_GLOBAL;
-+		return true;
-+	}
-+
-+	if ((msr_index >= MSR_IA32_PERFCTR0) &&
-+	     (msr_index < (MSR_IA32_PERFCTR0 + intel_num_counters))) {
-+		*type = MSR_TYPE_ARCH_COUNTER;
-+		*index = msr_index - MSR_IA32_PERFCTR0;
-+		return true;
-+	}
-+
-+	if ((msr_index >= MSR_P6_EVNTSEL0) &&
-+	     (msr_index < (MSR_P6_EVNTSEL0 + intel_num_counters))) {
-+		*type = MSR_TYPE_ARCH_CTRL;
-+		*index = msr_index - MSR_P6_EVNTSEL0;
-+		return true;
-+	}
-+
-+	return false;
-+}
-+
-+int xen_intel_pmu_rw(unsigned int msr, u64 *val, int type,
-+		     int index, bool is_read)
-+{
-+	uint64_t *reg = NULL;
-+	struct core2_vpmu_context *ctxt;
-+	struct xenpmu_data *xenpmu_data = per_cpu(xenpmu_shared,
-+						  smp_processor_id());
-+
-+	if (!xenpmu_data)
-+		return 1;
-+
-+	if (!(xenpmu_data->pmu_flags & PMU_CACHED)) /* No caching needed */
-+		return 1;
-+
-+	ctxt = &xenpmu_data->pmu.intel;
-+
-+	switch (msr) {
-+	case MSR_CORE_PERF_GLOBAL_OVF_CTRL:
-+		reg = &ctxt->global_ovf_ctrl;
-+		break;
-+	case MSR_CORE_PERF_GLOBAL_STATUS:
-+		reg = &ctxt->global_status;
-+		break;
-+	case MSR_CORE_PERF_GLOBAL_CTRL:
-+		reg = &ctxt->global_ctrl;
-+		break;
-+	case MSR_CORE_PERF_FIXED_CTR_CTRL:
-+		reg = &ctxt->ctrls[0];
-+		break;
-+	default:
-+		switch (type) {
-+		case MSR_TYPE_COUNTER:
-+			reg = &ctxt->fix_counters[index];
-+			break;
-+		case MSR_TYPE_ARCH_COUNTER:
-+			reg = &ctxt->arch_msr_pair[index].counter;
-+			break;
-+		case MSR_TYPE_ARCH_CTRL:
-+			reg = &ctxt->arch_msr_pair[index].control;
-+			break;
-+		default:
-+			return 1;
-+		}
-+	}
-+
-+	if (reg) {
-+		if (is_read)
-+			*val = *reg;
-+		else {
-+			*reg = *val;
-+
-+			if (msr == MSR_CORE_PERF_GLOBAL_OVF_CTRL)
-+				ctxt->global_status &= (~(*val));
-+		}
-+		return 0;
-+	}
-+
-+	return 1;
-+}
-+
-+int xen_amd_pmu_rw(unsigned int msr, u64 *val, bool is_read)
-+{
-+	uint64_t *reg = NULL;
-+	int i, off = 0;
-+	struct xenpmu_data *xenpmu_data = per_cpu(xenpmu_shared,
-+						  smp_processor_id());
-+
-+	if (!xenpmu_data)
-+		return 1;
-+
-+	if (!(xenpmu_data->pmu_flags & PMU_CACHED)) /* No caching needed */
-+		return 1;
-+
-+	if (k7_counters_mirrored &&
-+	    ((msr >= MSR_K7_EVNTSEL0) && (msr <= MSR_K7_PERFCTR3)))
-+		msr = get_fam15h_addr(msr);
-+
-+	for (i = 0; i < amd_num_counters; i++) {
-+		if (msr == amd_ctrls_base + off) {
-+			reg = &xenpmu_data->pmu.amd.ctrls[i];
-+			break;
-+		} else if (msr == amd_counters_base + off) {
-+			reg = &xenpmu_data->pmu.amd.counters[i];
-+			break;
-+		}
-+		off += amd_msr_step;
-+	}
-+
-+	if (reg) {
-+		if (is_read)
-+			*val = *reg;
-+		else
-+			*reg = *val;
-+		return 0;
-+	}
-+	return 1;
-+}
-+
-+int pmu_msr_read(unsigned int msr, uint64_t *val, int *err)
-+{
-+	if (boot_cpu_data.x86_vendor == X86_VENDOR_AMD) {
-+		if (is_amd_pmu_msr(msr)) {
-+			if (xen_amd_pmu_rw(msr, val, true))
-+				*val = native_read_msr_safe(msr, err);
-+			return 1;
-+		}
-+	} else {
-+		int type, index;
-+		if (is_core2_pmu_msr(msr, &type, &index)) {
-+			if (xen_intel_pmu_rw(msr, val, type, index, true))
-+				*val = native_read_msr_safe(msr, err);
-+			return 1;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+int pmu_msr_write(unsigned int msr, uint32_t low, uint32_t high, int *err)
-+{
-+	uint64_t val = ((uint64_t)high << 32) | low;
-+
-+	if (boot_cpu_data.x86_vendor == X86_VENDOR_AMD) {
-+		if (is_amd_pmu_msr(msr)) {
-+			if (xen_amd_pmu_rw(msr, &val, false))
-+				*err = native_write_msr_safe(msr, low, high);
-+			return 1;
-+		}
-+	} else {
-+		int type, index;
-+
-+		if (is_core2_pmu_msr(msr, &type, &index)) {
-+			if (xen_intel_pmu_rw(msr, &val, type, index, false))
-+				*err = native_write_msr_safe(msr, low, high);
-+			return 1;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+int pmu_apic_update(uint64_t reg)
++/* Grab next output page from the hypervisor */
++static int xensyms_next_page(struct xensyms_state *state)
 +{
 +	int ret;
-+	struct xenpmu_params xp;
++	struct xen_platform_op op;
 +
-+	xp.lvtpc = reg;
-+	xp.version.maj = XENPMU_VER_MAJ;
-+	xp.version.min = XENPMU_VER_MIN;
-+	ret = HYPERVISOR_xenpmu_op(XENPMU_lvtpc_set, &xp);
++	op.cmd = XENPF_get_symbols;
++	op.u.symdata = state->symdata;
++
++	ret = HYPERVISOR_dom0_op(&op);
++	if (ret < 0)
++		return ret;
++	if (ret == 0)
++		/* End of symbols */
++		return 1;
++
++	state->symdata = op.u.symdata;
++	state->off = 0;
++
++	return 0;
++}
++
++static void *xensyms_start(struct seq_file *m, loff_t *pos)
++{
++	struct xensyms_state *state = (struct xensyms_state *)m->private;
++
++	if (state->off == UINT_MAX) {
++		if (xensyms_next_page(state))
++			return NULL;
++	}
++
++	return m->private;
++}
++
++static void *xensyms_next(struct seq_file *m, void *p, loff_t *pos)
++{
++	struct xensyms_state *state = (struct xensyms_state *)m->private;
++	unsigned int str_len, next_off;
++
++	str_len = strlen(&state->symdata.buf[state->off]) + 1;
++	next_off = state->off + str_len;
++
++	/* If there is no more data on this page then ask Xen for more */
++	if (next_off >= XENSYMS_SZ || state->symdata.buf[next_off] == 0) {
++		if (xensyms_next_page(state))
++			return NULL;
++	} else
++		state->off = next_off;
++
++	return p;
++}
++
++static int xensyms_show(struct seq_file *m, void *p)
++{
++	struct xensyms_state *state = (struct xensyms_state *)m->private;
++
++	seq_printf(m, "%s", &state->symdata.buf[state->off]);
++
++	return 0;
++}
++
++static void xensyms_stop(struct seq_file *m, void *p)
++{
++}
++
++static const struct seq_operations xensyms_seq_ops = {
++	.start = xensyms_start,
++	.next = xensyms_next,
++	.show = xensyms_show,
++	.stop = xensyms_stop,
++};
++
++static int xensyms_open(struct inode *inode, struct file *file)
++{
++	int ret;
++	struct xensyms_state *state;
++	struct seq_file *m;
++
++	ret = seq_open_private(file, &xensyms_seq_ops,
++		sizeof(struct xensyms_state));
++	if (ret)
++		return ret;
++
++	m = file->private_data;
++	state = (struct xensyms_state *)m->private;
++	state->symdata.buf = kmalloc(XENSYMS_SZ, GFP_KERNEL);
++	if (!state->symdata.buf) {
++		(void)seq_release_private(inode, file);
++		return -ENOMEM;
++	}
++
++	/* Force first page fetch in xensyms_start() */
++	state->off = UINT_MAX;
++
++	state->symdata.xen_offset = 0;
++	state->symdata.xen_symnum = 0;
++
++	return 0;
++}
++
++static int xensyms_release(struct inode *inode, struct file *file)
++{
++	struct seq_file *m = file->private_data;
++	struct xensyms_state *state = (struct xensyms_state *)m->private;
++
++	kfree(state->symdata.buf);
++	return seq_release_private(inode, file);
++}
++
++static loff_t xensyms_lseek(struct file *file, loff_t offset, int whence)
++{
++	loff_t ret;
++	struct seq_file *m = file->private_data;
++	struct xensyms_state *state = (struct xensyms_state *)m->private;
++
++	/*
++	 * lseek is rather limited in what it can do here since the file
++	 * is stored in compressed form. Typically it is only used to
++	 * seek to the beginning of the file by 'more' and the like
++	 * Getting it to work correctly maybe a TODO (broken for Linux
++	 * kallsyms too)
++	 */
++	if (whence != SEEK_SET)
++		return -EINVAL;
++
++	state->symdata.xen_offset = 0;
++	state->symdata.xen_symnum = 0;
++	state->off = UINT_MAX;
++
++	ret = seq_lseek(file, offset, whence);
++	if (ret < 0)
++		return ret;
++
++	/*
++	 * Advance pointers to next string (seq_read() will flush
++	 * remainder of current string to user on next read).
++	 * Note that we are guaranteed not to cross page boundary here
++	 * since only whole strings are placed onto the page by Xen.
++	 */
++	if (state->off != UINT_MAX && state->symdata.buf[state->off] != 0)
++		state->off += strlen(&state->symdata.buf[state->off]) + 1;
 +
 +	return ret;
 +}
 +
- /* perf callbacks*/
- int xen_is_in_guest(void)
- {
-@@ -97,8 +382,10 @@ int xen_pmu_init(int cpu)
- 
- 	per_cpu(xenpmu_shared, cpu) = xenpmu_data;
- 
--	if (cpu == 0)
-+	if (cpu == 0) {
- 		perf_register_guest_info_callbacks(&xen_guest_cbs);
-+		xen_pmu_arch_init();
-+	}
- 
- 	return ret;
- 
-diff --git a/arch/x86/xen/pmu.h b/arch/x86/xen/pmu.h
-index 51de7d2..adc2b5e 100644
---- a/arch/x86/xen/pmu.h
-+++ b/arch/x86/xen/pmu.h
-@@ -6,6 +6,9 @@
- irqreturn_t xen_pmu_irq_handler(int irq, void *dev_id);
- int xen_pmu_init(int cpu);
- void xen_pmu_finish(int cpu);
-+int pmu_msr_read(unsigned int msr, uint64_t *val, int *err);
-+int pmu_msr_write(unsigned int msr, uint32_t low, uint32_t high, int *err);
-+int pmu_apic_update(uint64_t reg);
- 
- DECLARE_PER_CPU(struct xenpmu_data *, xenpmu_shared);
- 
-diff --git a/include/xen/interface/xenpmu.h b/include/xen/interface/xenpmu.h
-index 7af682d..16fe1ab 100644
---- a/include/xen/interface/xenpmu.h
-+++ b/include/xen/interface/xenpmu.h
-@@ -15,6 +15,7 @@
- #define XENPMU_flags_set       3
- #define XENPMU_init            4
- #define XENPMU_finish          5
-+#define XENPMU_lvtpc_set       6
- 
- /* Parameter structure for HYPERVISOR_xenpmu_op call */
- struct xenpmu_params {
-@@ -28,6 +29,7 @@ struct xenpmu_params {
- 	uint64_t control;
- 	uint64_t mfn;
- 	uint64_t vcpu;
-+	uint64_t lvtpc;
- };
- 
- /* VPMU modes */
-@@ -96,6 +98,9 @@ struct core2_vpmu_context {
- 	struct core2_pmu_enable *pmu_enable;
- };
- 
-+/* PMU flags */
-+#define PMU_CACHED        1
 +
- /* Shared between hypervisor and PV domain */
- struct xenpmu_data {
- 	union {
++const struct file_operations xensyms_ops = {
++	.open = xensyms_open,
++	.read = seq_read,
++	.llseek = xensyms_lseek,
++	.release = xensyms_release
++};
+diff --git a/include/xen/interface/platform.h b/include/xen/interface/platform.h
+index c57d5f6..ecaaa08a04 100644
+--- a/include/xen/interface/platform.h
++++ b/include/xen/interface/platform.h
+@@ -351,6 +351,26 @@ struct xenpf_core_parking {
+ };
+ DEFINE_GUEST_HANDLE_STRUCT(xenpf_core_parking);
+ 
++#define XENPF_get_symbols  61
++
++#define XENSYMS_SZ         4096
++struct xenpf_symdata {
++	/*
++	 * offset into Xen's symbol data and symbol number from
++	 * last call. Used only by Xen.
++	 */
++	uint64_t xen_offset;
++	uint64_t xen_symnum;
++
++	/*
++	 * Symbols data, formatted similar to /proc/kallsyms:
++	 *   <address> <type> <name>
++	 */
++	GUEST_HANDLE(char) buf;
++};
++DEFINE_GUEST_HANDLE_STRUCT(xenpf_symdata);
++
++
+ struct xen_platform_op {
+ 	uint32_t cmd;
+ 	uint32_t interface_version; /* XENPF_INTERFACE_VERSION */
+@@ -371,6 +391,7 @@ struct xen_platform_op {
+ 		struct xenpf_cpu_hotadd        cpu_add;
+ 		struct xenpf_mem_hotadd        mem_add;
+ 		struct xenpf_core_parking      core_parking;
++		struct xenpf_symdata           symdata;
+ 		uint8_t                        pad[128];
+ 	} u;
+ };
 -- 
 1.8.1.4
 
