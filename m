@@ -1,91 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667Ab3IJOZZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 10:25:25 -0400
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:65369 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751098Ab3IJOZX (ORCPT
+	id S1752585Ab3IJO3v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 10:29:51 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:46154 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751608Ab3IJO3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 10:25:23 -0400
-Date: Tue, 10 Sep 2013 16:25:17 +0200
+	Tue, 10 Sep 2013 10:29:49 -0400
+Date: Tue, 10 Sep 2013 16:29:43 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
+To: eranian@gmail.com
+Cc: Peter Zijlstra <peterz@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Mike Galbraith <bitbucket@online.de>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Anvin <hpa@zytor.com>
-Subject: Re: [PATCH 7/7] sched, x86: Optimize the preempt_schedule() call
-Message-ID: <20130910142517.GA8388@gmail.com>
-References: <20130910130811.507933095@infradead.org>
- <20130910132011.474646746@infradead.org>
- <20130910134247.GC7537@gmail.com>
- <522F410702000078000F1EE0@nat28.tlf.novell.com>
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: PEBS bug on HSW: "Unexpected number of pebs records 10" (was:
+ Re: [GIT PULL] perf changes for v3.12)
+Message-ID: <20130910142942.GB8388@gmail.com>
+References: <20130903132933.GA24955@gmail.com>
+ <CA+55aFxBTjfx304zstOVq3Hm3vmjgC5gOJaxXG5E_iWq_WXGTw@mail.gmail.com>
+ <20130909100544.GI31370@twins.programming.kicks-ass.net>
+ <CAMsRxfLEO15kKrbmtKKXuW-JTtCCgiuXS6wFs9kiLmG1wge24A@mail.gmail.com>
+ <20130910115306.GA6091@gmail.com>
+ <CAMsRxfLvbExOzjz8tQu7AchQgKBh5S4b7VMQmFtr1RxK4ksAvA@mail.gmail.com>
+ <20130910133845.GB7537@gmail.com>
+ <CAMsRxfJ5HG+0AiooOUFh8TzvCoK3YcBFpeAF0eTzdkDm=wB84g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <522F410702000078000F1EE0@nat28.tlf.novell.com>
+In-Reply-To: <CAMsRxfJ5HG+0AiooOUFh8TzvCoK3YcBFpeAF0eTzdkDm=wB84g@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Jan Beulich <JBeulich@suse.com> wrote:
+* Stephane Eranian <eranian@googlemail.com> wrote:
 
-> >>> On 10.09.13 at 15:42, Ingo Molnar <mingo@kernel.org> wrote:
+> On Tue, Sep 10, 2013 at 6:38 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > * Stephane Eranian <eranian@googlemail.com> wrote:
+> >
+> >> Hi,
+> >>
+> >> Ok, so I am able to reproduce the problem using a simpler
+> >> test case with a simple multithreaded program where
+> >> #threads >> #CPUs.
+> >
+> > Does it go away if you use 'perf record --all-cpus'?
+> >
+> Haven't tried that yet.
 > 
-> > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > 
-> >> +	.macro SAVE_ALL
-> >> +	pushl_cfi %eax
-> >> +	CFI_REL_OFFSET eax, 0
-> >> +	pushl_cfi %ebp
-> >> +	CFI_REL_OFFSET ebp, 0
-> >> +	pushl_cfi %edi
-> >> +	CFI_REL_OFFSET edi, 0
-> >> +	pushl_cfi %esi
-> >> +	CFI_REL_OFFSET esi, 0
-> >> +	pushl_cfi %edx
-> >> +	CFI_REL_OFFSET edx, 0
-> >> +	pushl_cfi %ecx
-> >> +	CFI_REL_OFFSET ecx, 0
-> >> +	pushl_cfi %ebx
-> >> +	CFI_REL_OFFSET ebx, 0
-> >> +	.endm
-> >> +
-> >> +	.macro RESTORE_ALL
-> >> +	popl_cfi %ebx
-> >> +	CFI_RESTORE ebx
-> >> +	popl_cfi %ecx
-> >> +	CFI_RESTORE ecx
-> >> +	popl_cfi %edx
-> >> +	CFI_RESTORE edx
-> >> +	popl_cfi %esi
-> >> +	CFI_RESTORE esi
-> >> +	popl_cfi %edi
-> >> +	CFI_RESTORE edi
-> >> +	popl_cfi %ebp
-> >> +	CFI_RESTORE ebp
-> >> +	popl_cfi %eax
-> >> +	CFI_RESTORE eax
-> >> +	.endm
-> > 
-> > Side note: shouldn't the pushl_cfi and popl_cfi macros be adjusted, 
-> > instead of open coding it?
+> But I verified the DS pointers:
+> init:
+> CPU6 pebs base=ffff8808262de000 index=ffff8808262de000
+> intr=ffff8808262de0c0 max=ffff8808262defc0
+> crash:
+> CPU6 pebs base=ffff8808262de000 index=ffff8808262de9c0
+> intr=ffff8808262de0c0 max=ffff8808262defc0
 > 
-> If you mean the open coding of CFI_REL_OFFSET and CFI_RESTORE, then no - 
-> there may be pushes/pops that don't save the caller's register values 
-> (i.e. where solely the frame pointer adjustment matters).
+> Neither the base nor the max are modified.
+> The index simply goes beyond the threshold but that's not a bug.
+> It is 12 after the threshold of 1, so total 13 is my new crash report.
+> 
+> Two things to try:
+> - measure only one thread/core
+> - move the threshold a bit farther away (to get 2 or 3 entries)
+> 
+> The threshold is where to generate the interrupt. It does not mean where 
+> to stop PEBS recording. So it is possible that in HSW, we may get into a 
+> situation where it takes time to get to the handler to stop the PMU. I 
+> don't know how given we use NMI. Well, unless we were already servicing 
+> an NMI at the time. But given that we stop the PMU almost immediately in 
+> the handler, I don't see how that would possible. The other oddity in 
+> HSW is that we clear the NMI on entry to the handler and not at the end. 
+> I never gotten an good explanation as to why that was necessary. So 
+> maybe it is related...
 
-Ok.
+Do you mean:
 
-> If you meant something else, please clarify what.
+        if (!x86_pmu.late_ack)
+                apic_write(APIC_LVTPC, APIC_DM_NMI);
 
-No, that's what I meant.
+AFAICS that means the opposite: that we clear the NMI late, i.e. shortly 
+before return, after we've processed the PMU.
+
+Do the symptoms change if you remove the x86_pmu.late_ack setting line 
+from:
+
+        case 60: /* Haswell Client */
+        case 70:
+        case 71:
+        case 63:
+        case 69:
+                x86_pmu.late_ack = true;
+
+?
 
 Thanks,
 
