@@ -1,86 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751409Ab3IJTfV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 15:35:21 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:56737 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751052Ab3IJTfT (ORCPT
+	id S1751418Ab3IJTiw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 15:38:52 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:51838 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899Ab3IJTiu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 15:35:19 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>, Greg KH <greg@kroah.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Tue, 10 Sep 2013 15:38:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <522F6F96.8030803@gmail.com>
+References: <1378720815-23964-1-git-send-email-jean.pihet@linaro.org>
+	<1378720815-23964-4-git-send-email-jean.pihet@linaro.org>
+	<522F6F96.8030803@gmail.com>
+Date: Tue, 10 Sep 2013 21:38:49 +0200
+Message-ID: <CAFrcx1=mOw5=kASC9O=xewWV8QeOy-ga0F9ZGbtcauDJQ2iGFQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] perf: parse the .debug_frame section in case
+ .eh_frame is not present
+From: Jean Pihet <jean.pihet@linaro.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Will Deacon <will.deacon@arm.com>, Jiri Olsa <jolsa@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: "cpufreq: fix serialization issues with freq change notifiers" breaks cpufreq too
-Date: Tue, 10 Sep 2013 21:46:19 +0200
-Message-ID: <2703632.ul5ekQh5oq@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAKohponUdE0LCciPb+nf3t_vfNqAy3MeWQO8gTOdEDvQJeWcgg@mail.gmail.com>
-References: <Pine.LNX.4.64.1309091656200.6602@axis700.grange> <4292924.3iHJT5nzNS@vostro.rjw.lan> <CAKohponUdE0LCciPb+nf3t_vfNqAy3MeWQO8gTOdEDvQJeWcgg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+        Patch Tracking <patches@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, September 10, 2013 08:44:18 PM Viresh Kumar wrote:
-> On 10 September 2013 17:19, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > That said I'm actually unsure what problems *exactly* are fixed by commit
-> > 7c30ed5.  The commit log only says that PRECHANGE or POSTCHAGE shouldn't be
-> > called twice in a row, but it doesn't say why.  As the fallout indicates,
-> > that actually happened before commit 7c30ed5 and nothing visibly broke, so
-> > the benefit from having that commit is questionable to me.  On the other hand,
-> > the commit itself is evidently broken, so what exactly is the reason for
-> > keeping it?
-> 
-> Okay, so the first question is can we have multiple PRECHANGE notfication
-> done without any POSTCHANGE inbetween?
-> - Scenario: One reading value of cpuinfo_cur_freq, which will call
-> __cpufreq_cpu_get()->cpufreq_out_of_sync()->cpufreq_notify_transition()..
-> 
-> And ondemand governor trying to change freq of cpu and so doing notification..
-> 
-> There can be more similar scenarios possible..
+On 10 September 2013 21:14, David Ahern <dsahern@gmail.com> wrote:
+> On 9/9/13 3:00 AM, Jean Pihet wrote:
+>>
+>> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+>> index 7014373..54532b8 100644
+>> --- a/tools/perf/config/Makefile
+>> +++ b/tools/perf/config/Makefile
+>> @@ -222,7 +222,7 @@ endif
+>>
+>>   FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(CFLAGS) $(LIBUNWIND_LDFLAGS)
+>> $(LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
+>>   ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND),libunwind),y)
+>> -  msg := $(warning No libunwind found, disabling post unwind support.
+>> Please install libunwind-dev[el] >= 0.99);
+>> +  msg := $(warning No libunwind found, disabling post unwind support.
+>> Please install libunwind-dev[el] >= 1.1);
+>>     NO_LIBUNWIND := 1
+>>   endif # Libunwind support
+>>   endif # NO_LIBUNWIND
+>
+>
+> Is the 1.1 version required for x86 too?
+Yes if the dwarf unwinding feature is used. I know it is not in use on
+x86 as of now but could be in the future since the dwarf info brings
+more details in the trace, cf. http://lwn.net/Articles/499116/.
 
-OK, and what exactly does break here?  What's the exact race you're concerned
-about?
+>
+> David
 
-What field is corrupted in which object, for example, or what incorrect
-behavior of the hardware results from this?
-
-> Now Second question, is this fine to have multiple PRECHANGE notfications
-> before any POSTCHANGE notification?
-> 
-> Logically it looks obvious to me that these must be serialized..
-> Otherwise this is what we are broadcasting:
-> - We are changing for freq X, please prepare and let us know if you are
-> okay with it..
-> - Oh.. So sorry, we are changing to freq Y instead, please adjust accordingly.
-> 
-> - Yes we have changed to freq Y...
-> - Yes we have changed to freq X...
-> 
-> This looks stupid, isn't it? I don't know how the drivers would behave when
-> they see such notifications and so got to this patch initially..
-
-Well, precisely, you don't know.
-
-Can you please look for specific problems and address those instead of trying
-to address potential issues that may or may not happen and may or may not really
-be issues even if they actually happen?
-
-And broken patches that try to fix such things definitely don't help.
-
-For now I'm reverting the commit in question and everything on top of it.
-
-Thanks,
-Rafael
-
+Jean
