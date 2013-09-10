@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448Ab3IJOCC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 10:02:02 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:46090 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751313Ab3IJOB7 (ORCPT
+	id S1752803Ab3IJOCz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 10:02:55 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:47633 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348Ab3IJOCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 10:01:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130725020329.GA14625@gondor.apana.org.au>
-References: <20130724071757.GA30970@gondor.apana.org.au> <87siz38q2t.fsf@rustcorp.com.au>
- <20130725020329.GA14625@gondor.apana.org.au>
-From: Lucas De Marchi <lucas.de.marchi@gmail.com>
-Date: Tue, 10 Sep 2013 11:01:38 -0300
-Message-ID: <CAKi4VA+=1vOOt0BqdQHQaeF1hP3DrRtCL_ObXY0cPeO7S_MtYw@mail.gmail.com>
-Subject: Re: [PATCH] modules: add support for soft module dependencies
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Andreas Robinson <andr345@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Zhao Hongjiang <zhaohongjiang@huawei.com>,
-        David Miller <davem@davemloft.net>, tim.c.chen@linux.intel.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        linux-crypto@vger.kernel.org,
-        linux-modules <linux-modules@vger.kernel.org>,
-        Tom Gundersen <teg@jklm.no>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 10 Sep 2013 10:02:53 -0400
+Message-ID: <1378821771.26319.82.camel@edumazet-glaptop>
+Subject: Re: [PATCH 6/7] sched, x86: Provide a per-cpu preempt_count
+ implementation
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Peter Anvin <hpa@zytor.com>, Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Date: Tue, 10 Sep 2013 07:02:51 -0700
+In-Reply-To: <20130910132011.396291123@infradead.org>
+References: <20130910130811.507933095@infradead.org>
+	 <20130910132011.396291123@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 11:03 PM, Herbert Xu
-<herbert@gondor.apana.org.au> wrote:
-> On Thu, Jul 25, 2013 at 09:32:02AM +0930, Rusty Russell wrote:
->> Herbert Xu <herbert@gondor.apana.org.au> writes:
->> > Hi Rusty:
->> >
->> > I don't know why this patch never went into the kernel, even
->> > though the corresponding features have been added to modprobe
->> > in most if not all distros.
->>
->> Because Andreas never sent me the patch?  This is the first I've *heard*
->> of this feature.  Looks like it didn't hit lkml either.  And what was
->> 2/2?
->
-> 2/2 was the patch to actually use this in crc32c.
->
->> It's not how I would have done this: post-deps are more flexibly done at
->> runtime, because the module may have to do work to figure out what to
->> pull in.  But since it already exists, I'll apply this patch: it doesn't
->> cost the kernel anything.
+On Tue, 2013-09-10 at 15:08 +0200, Peter Zijlstra wrote:
 
-But it did cause boot failures. The file modules.softdep file was
-supposed to be informational until now. That's why depmod put a
-comment saying to "copy on user's discretion to /etc/modules.d"
-instead of parsing it directly.
+> +static __always_inline int preempt_count(void)
+> +{
+> +	return __this_cpu_read_4(__preempt_count) & ~PREEMPT_NEED_RESCHED;
+> +}
 
-If dependencies expressed with softdeps can be required dependencies
-now, depmod needs to be updated to work it out otherwise we will get
-missing dependencies as happened with the crypto stuff after this
-patch. I'm CC'ing Tom who had the boot failure; it looks like the same
-boot failure that caused this feature to get reverted the first time
-(the deps being required by sd_mod).
+Not sure why you used the _4 prefix on all accessors ?
 
-Even if it is an optional module, it would be great to have depmod
-updated so it parses the file directly now that we are exporting this
-info. I can do that once we agree what we want to do with softdeps
-coming directly from kernel itself.
+>  
+> +#ifdef CONFIG_PREEMPT_COUNT
+> +	/*
+> +	 * If it were not for PREEMPT_ACTIVE we could guarantee that the
+> +	 * preempt_count of all tasks was equal here and this would not be
+> +	 * needed.
+> +	 */
+> +	task_thread_info(prev_p)->saved_preempt_count = __raw_get_cpu_var(__preempt_count);
 
-However looking at the only user right now, crct10dif: couldn't we
-detect at runtime if this module can be used instead of just trying to
-load it as a pre softdep and possibly failing?
+	this_cpu_read(__preempt_count) ?
+
+> +	__raw_get_cpu_var(__preempt_count) = task_thread_info(next_p)->saved_preempt_count;
+
+	this_cpu_write(__preempt_count,
+                       task_thread_info(next_p)->saved_preempt_count;
+
+> +#endif
+> +
+>  	this_cpu_write(kernel_stack,
+>  		  (unsigned long)task_stack_page(next_p) +
+>  		  THREAD_SIZE - KERNEL_STACK_OFFSET);
+> 
+> 
 
 
-Lucas De Marchi
