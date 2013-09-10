@@ -1,218 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab3IJVpr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 17:45:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58641 "EHLO mx1.redhat.com"
+	id S1752698Ab3IJVpR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 17:45:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1952 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752715Ab3IJVpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 17:45:18 -0400
+	id S1752439Ab3IJVpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 17:45:08 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
         kexec@lists.infradead.org
 Cc: akpm@linux-foundation.org, zohar@linux.vnet.ibm.com,
         d.kasatkin@samsung.com, ebiederm@xmission.com, hpa@zytor.com,
         matthew.garrett@nebula.com, vgoyal@redhat.com
-Subject: [PATCH 06/16] ima: export new IMA functions for signature verification
-Date: Tue, 10 Sep 2013 17:44:21 -0400
-Message-Id: <1378849471-10521-7-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 09/16] ima: define functions to appraise memory buffer contents
+Date: Tue, 10 Sep 2013 17:44:24 -0400
+Message-Id: <1378849471-10521-10-git-send-email-vgoyal@redhat.com>
 In-Reply-To: <1378849471-10521-1-git-send-email-vgoyal@redhat.com>
 References: <1378849471-10521-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Export IMA functions so that other subsystems can use IMA for file
-signature verification.
+I need to provide user space with facility that it can call into kernel
+for signature verification of a file. Trying to rely on file based appraisal
+has the downside that somebody might write to file after appraisal and it
+is racy.
 
-Why introduce these functions and not use security hooks? Now callers
-have new requirements which are not satisfied by the hooks.
+Alternative is that one can copy file contents in memory buffer and pass
+buffer and signature to kernel and ask whether signatures are valid.
 
-a. Caller need to know whether signature verification actually took
-   place or not. Based on that caller will set some flags in task.
-   security hooks don't give this info. If IMA is disabled or right
-   policy is not configured, security hook will still return success.
+Hence introduce an IMA function to be able verify signature of meory
+buffer. This will in turn be called the keyctl() which will provide
+this facility to user space.
 
-b. Caller needs to know the signature type. They might just consider
-   digital signatures and not rely on hash or hmac type of signatures.
-   security hooks don't have any provision where they can enforce what
-   kind of signatures need to be present on the file in question.
-
-c. IMA does the caching of appraisal results and does not detect direct
-   writes to disk. So it can happen that after initial bprm check one
-   can directly write to file on disk and call IMA hook for signature
-   verification again after loading executable in memory and verification
-   passes as bprm check had passed. But file contents are different as
-   a direct write to disk was done and IMA did not detect this file change.
-
-In some previous discussions it was suggested that define a new hook
-and always force appraise the file on that hook to avoid caching
-related issues (c). Export the type of signature used for appraisal and
-allow caller to query it to take care of issue a and b.
-
-I have not taken that approach yet for following reasons.
-
-- Forcing re-appraisal on a particular hook is very odd. What's special
-  about that hook that we hard code it.
-
-- Querying type of signature used for appraisal after hook execution
-  if racy as same file might have been re-appraised by the time we
-  queried the type of signature used for appraisal. I guess this should
-  be fixable if done carefully.
-
-- I anyway need to export more functions later to appraise a memory
-  buffer (and not file) so for the time being I continued with the approach
-  of exporting functions for file appraisal.
-
-I this approach is not acceptable, I can try implementing the other
-one. Personally I find this one a cleaner approach.
+This can be used by kexec to verify signature of bzImage being loaded.
 
 Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- include/linux/ima.h                   |  21 ++++++
- include/linux/integrity.h             |   6 ++
- security/integrity/ima/ima_api.c      |  15 ++++
- security/integrity/ima/ima_appraise.c | 126 ++++++++++++++++++++++++++++++++++
- security/integrity/integrity.h        |   6 --
- 5 files changed, 168 insertions(+), 6 deletions(-)
+ include/linux/integrity.h   |  19 +++++++-
+ security/integrity/digsig.c | 115 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 133 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/ima.h b/include/linux/ima.h
-index 3c40b5e..60c75bf 100644
---- a/include/linux/ima.h
-+++ b/include/linux/ima.h
-@@ -11,6 +11,8 @@
- #define _LINUX_IMA_H
- 
- #include <linux/fs.h>
-+#include <linux/integrity.h>
-+#include <linux/key.h>
- struct linux_binprm;
- 
- #ifdef CONFIG_IMA
-@@ -20,6 +22,8 @@ extern void ima_file_free(struct file *file);
- extern int ima_file_mmap(struct file *file, unsigned long prot);
- extern int ima_module_check(struct file *file);
- extern bool ima_memlock_file(char *sig, unsigned int siglen);
-+extern int ima_file_signature_alloc(struct file *file, char **sig);
-+extern int ima_signature_type(char *sig);
- 
- #else
- static inline int ima_bprm_check(struct linux_binprm *bprm)
-@@ -52,6 +56,16 @@ static inline bool ima_memlock_file(char *sig, unsigned int siglen)
- 	return false;
- }
- 
-+static inline int ima_file_signature_alloc(struct file *file, char **sig)
-+{
-+	return -EOPNOTSUPP;
-+}
-+
-+static inline int ima_signature_type(char *sig)
-+{
-+	return -EOPNOTSUPP;
-+}
-+
- #endif /* CONFIG_IMA */
- 
- #ifdef CONFIG_IMA_APPRAISE
-@@ -59,6 +73,7 @@ extern void ima_inode_post_setattr(struct dentry *dentry);
- extern int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
- 		       const void *xattr_value, size_t xattr_value_len);
- extern int ima_inode_removexattr(struct dentry *dentry, const char *xattr_name);
-+extern int ima_appraise_file_digsig(struct key *keyring, struct file *file, char *sig, unsigned int siglen);
- #else
- static inline void ima_inode_post_setattr(struct dentry *dentry)
- {
-@@ -78,5 +93,11 @@ static inline int ima_inode_removexattr(struct dentry *dentry,
- {
- 	return 0;
- }
-+
-+static inline int ima_appraise_file_digsig(struct key *keyring, struct file *file, char *sig, unsigned int siglen)
-+{
-+	return -EOPNOTSUPP;
-+}
-+
- #endif /* CONFIG_IMA_APPRAISE */
- #endif /* _LINUX_IMA_H */
 diff --git a/include/linux/integrity.h b/include/linux/integrity.h
-index 83222ce..b26bd7d 100644
+index b26bd7d..36c9a6d 100644
 --- a/include/linux/integrity.h
 +++ b/include/linux/integrity.h
-@@ -20,6 +20,12 @@ enum integrity_status {
- 	INTEGRITY_UNKNOWN,
- };
+@@ -11,6 +11,7 @@
+ #define _LINUX_INTEGRITY_H
  
-+enum evm_ima_xattr_type {
-+	IMA_XATTR_DIGEST = 0x01,
-+	EVM_XATTR_HMAC,
-+	EVM_IMA_XATTR_DIGSIG,
-+};
-+
- /* List of EVM protected security xattrs */
+ #include <linux/fs.h>
++#include <linux/key.h>
+ 
+ enum integrity_status {
+ 	INTEGRITY_PASS = 0,
+@@ -30,7 +31,6 @@ enum evm_ima_xattr_type {
  #ifdef CONFIG_INTEGRITY
  extern struct integrity_iint_cache *integrity_inode_get(struct inode *inode);
-diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
-index 0f30cf1..95c9412 100644
---- a/security/integrity/ima/ima_api.c
-+++ b/security/integrity/ima/ima_api.c
-@@ -290,3 +290,18 @@ bool ima_memlock_file(char *sig, unsigned int siglen)
- 
- 	return true;
+ extern void integrity_inode_free(struct inode *inode);
+-
+ #else
+ static inline struct integrity_iint_cache *
+ 				integrity_inode_get(struct inode *inode)
+@@ -42,5 +42,22 @@ static inline void integrity_inode_free(struct inode *inode)
+ {
+ 	return;
  }
 +
-+/*
-+ * Get ima signature.
-+ */
-+int ima_file_signature_alloc(struct file *file, char **sig)
-+{
-+	struct dentry *dentry = file->f_dentry;
+ #endif /* CONFIG_INTEGRITY */
 +
-+	return vfs_getxattr_alloc(dentry, XATTR_NAME_IMA, sig, 0, GFP_NOFS);
-+}
-+
-+int ima_signature_type(char *sig)
++#ifdef CONFIG_INTEGRITY_SIGNATURE
++extern int integrity_verify_user_buffer_digsig(struct key *keyring,
++				const char __user *data,
++				unsigned long data_len,
++				char *sig, unsigned int siglen);
++#else
++static inline int integrity_verify_user_buffer_digsig(struct key *keyring,
++				const char __user *data,
++				unsigned long data_len,
++				char *sig, unsigned int siglen)
 +{
-+	return ((struct evm_ima_xattr_data *)sig)->type;
++	return -EOPNOTSUPP;
 +}
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index a9206d1..f8d147a 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -15,6 +15,8 @@
- #include <linux/magic.h>
- #include <linux/ima.h>
- #include <linux/evm.h>
-+#include <crypto/public_key.h>
-+#include <crypto/hash.h>
++#endif /* CONFIG_INTEGRITY_SIGNATURE */
++
+ #endif /* _LINUX_INTEGRITY_H */
+diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+index 153cff4..166a7dd 100644
+--- a/security/integrity/digsig.c
++++ b/security/integrity/digsig.c
+@@ -16,6 +16,7 @@
+ #include <linux/rbtree.h>
+ #include <linux/key-type.h>
+ #include <linux/digsig.h>
++#include <linux/sched.h>
+ #include <crypto/hash.h>
+ #include <crypto/public_key.h>
  
- #include "ima.h"
- 
-@@ -107,6 +109,130 @@ static void ima_cache_flags(struct integrity_iint_cache *iint, int func)
- 	}
+@@ -104,3 +105,117 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 	return integrity_digsig_verify_keyring(keyring[id], sig, siglen,
+ 						digest, digestlen);
  }
- 
-+static int ima_get_file_hash(struct file *file, char **_digest,
-+				unsigned int *digest_len,
-+				enum pkey_hash_algo hash_algo)
++
++static int integrity_calc_user_buffer_hash(enum pkey_hash_algo hash_algo,
++					const char __user *data,
++					unsigned long data_len, char **_digest,
++					unsigned int *digest_len)
 +{
-+	loff_t i_size, offset = 0;
-+	char *rbuf;
-+	int ret, read = 0;
++	char *buffer, *digest;
++	unsigned long len;
 +	struct crypto_shash *tfm;
 +	size_t desc_size, digest_size;
 +	struct shash_desc *desc;
-+	char *digest = NULL;
++	int ret;
 +
-+	rbuf = kzalloc(PAGE_SIZE, GFP_KERNEL);
-+	if (!rbuf)
++	buffer = kmalloc(PAGE_SIZE, GFP_KERNEL);
++	if (!buffer)
 +		return -ENOMEM;
 +
++	/* TODO: allow different kind of hash */
 +	tfm = crypto_alloc_shash(pkey_hash_algo_name[hash_algo], 0, 0);
 +	if (IS_ERR(tfm)) {
 +		ret = PTR_ERR(tfm);
 +		goto out;
 +	}
-+
 +	desc_size = crypto_shash_descsize(tfm) + sizeof(*desc);
 +	desc = kzalloc(desc_size, GFP_KERNEL);
 +	if (!desc) {
@@ -234,27 +144,24 @@ index a9206d1..f8d147a 100644
 +		goto out_free_desc;
 +	}
 +
-+	if (!(file->f_mode & FMODE_READ)) {
-+		file->f_mode |= FMODE_READ;
-+		read = 1;
-+	}
-+	i_size = i_size_read(file_inode(file));
-+	while (offset < i_size) {
-+		int rbuf_len;
++	do {
++		len = min(data_len, PAGE_SIZE - ((size_t)data & ~PAGE_MASK));
++		ret = -EFAULT;
++		if (copy_from_user(buffer, data, len) != 0)
++			goto out_free_digest;
 +
-+		rbuf_len = kernel_read(file, offset, rbuf, PAGE_SIZE);
-+		if (rbuf_len < 0) {
-+			ret = rbuf_len;
++		ret = crypto_shash_update(desc, buffer, len);
++                if (ret)
++                        break;
++
++		data_len -= len;
++		data += len;
++
++		if (fatal_signal_pending(current)) {
++			ret = -EINTR;
 +			break;
 +		}
-+		if (rbuf_len == 0)
-+			break;
-+		offset += rbuf_len;
-+
-+		ret = crypto_shash_update(desc, rbuf, rbuf_len);
-+		if (ret)
-+			break;
-+	}
++	} while (data_len > 0);
 +
 +	if (!ret) {
 +		ret = crypto_shash_final(desc, digest);
@@ -263,78 +170,50 @@ index a9206d1..f8d147a 100644
 +		digest = NULL;
 +	}
 +
-+	if (read)
-+		file->f_mode &= ~FMODE_READ;
-+
++out_free_digest:
++	if (digest)
++		kfree(digest);
 +out_free_desc:
 +	kfree(desc);
 +out_free_tfm:
 +	kfree(tfm);
 +out:
-+	if (digest)
-+		kfree(digest);
-+	kfree(rbuf);
++	kfree(buffer);
 +	return ret;
 +}
 +
 +/*
-+ * Appraise a file with a given digital signature
++ * Appraise a user buffer with a given digital signature
 + * keyring: keyring to use for appraisal
 + * sig: signature
 + * siglen: length of signature
 + *
 + * Returns 0 on successful appraisal, error otherwise.
 + */
-+int ima_appraise_file_digsig(struct key *keyring, struct file *file, char *sig,
-+				unsigned int siglen)
++int integrity_verify_user_buffer_digsig(struct key *keyring,
++				const char __user *data,
++				unsigned long data_len,
++				char *sig, unsigned int siglen)
 +{
-+	struct evm_ima_xattr_data *xattr_value;
 +	int ret = 0;
-+	char *digest = NULL;
 +	enum pkey_hash_algo hash_algo;
++	char *digest = NULL;
 +	unsigned int digest_len = 0;
 +
-+	xattr_value = (struct evm_ima_xattr_data*) sig;
++	hash_algo = integrity_digsig_get_hash_algo(sig);
++	if (hash_algo < 0)
++		return hash_algo;
 +
-+	if (xattr_value->type != EVM_IMA_XATTR_DIGSIG)
-+		return -EBADMSG;
-+
-+	ret = integrity_digsig_get_hash_algo(xattr_value->digest);
-+	if (ret < 0)
-+		return ret;
-+
-+	hash_algo = (enum pkey_hash_algo)ret;
-+	ret = ima_get_file_hash(file, &digest, &digest_len, hash_algo);
++	ret = integrity_calc_user_buffer_hash(hash_algo, data, data_len,
++						&digest, &digest_len);
 +	if (ret)
 +		return ret;
 +
-+	ret = integrity_digsig_verify_keyring(keyring, xattr_value->digest,
-+				integrity_get_digsig_size(xattr_value->digest),
-+				digest, digest_len);
++	ret = integrity_digsig_verify_keyring(keyring, sig, siglen, digest,
++					digest_len);
 +	kfree(digest);
 +	return ret;
 +}
-+
- /*
-  * ima_appraise_measurement - appraise file measurement
-  *
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index 284bb8d..f7db589 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -51,12 +51,6 @@
- #define IMA_APPRAISED_SUBMASK	(IMA_FILE_APPRAISED | IMA_MMAP_APPRAISED | \
- 				 IMA_BPRM_APPRAISED | IMA_MODULE_APPRAISED)
- 
--enum evm_ima_xattr_type {
--	IMA_XATTR_DIGEST = 0x01,
--	EVM_XATTR_HMAC,
--	EVM_IMA_XATTR_DIGSIG,
--};
--
- struct evm_ima_xattr_data {
- 	u8 type;
- 	u8 digest[SHA1_DIGEST_SIZE];
 -- 
 1.8.3.1
 
