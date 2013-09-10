@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751611Ab3IJJBt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 05:01:49 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:55091 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090Ab3IJJBq (ORCPT
+	id S1751778Ab3IJJCF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 05:02:05 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44047 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696Ab3IJJCD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 05:01:46 -0400
-Message-ID: <522EDF0B.60308@linux.vnet.ibm.com>
-Date: Tue, 10 Sep 2013 14:27:47 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Tue, 10 Sep 2013 05:02:03 -0400
+X-AuditID: 9c930197-b7bc2ae0000060ef-cc-522ee0099b05
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 1/3] perf callchain: Convert children list to rbtree
+References: <1378801458-2515-1-git-send-email-namhyung@kernel.org>
+	<1378801458-2515-2-git-send-email-namhyung@kernel.org>
+Date: Tue, 10 Sep 2013 18:02:01 +0900
+In-Reply-To: <1378801458-2515-2-git-send-email-namhyung@kernel.org> (Namhyung
+	Kim's message of "Tue, 10 Sep 2013 17:24:16 +0900")
+Message-ID: <8738pdrqwm.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Boyd <sboyd@codeaurora.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/5] cpufreq: Remove temporary fix for race between CPU
- hotplug and sysfs-writes
-References: <20130906195206.26919.20884.stgit@srivatsabhat.in.ibm.com> <20130906195353.26919.76123.stgit@srivatsabhat.in.ibm.com> <CAKohpon96ecA3L9ux0tnFngPbWDmrVfW3xUWf_3aZ5qYZGXLVw@mail.gmail.com>
-In-Reply-To: <CAKohpon96ecA3L9ux0tnFngPbWDmrVfW3xUWf_3aZ5qYZGXLVw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091008-3864-0000-0000-000009FEA64C
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2013 12:39 PM, Viresh Kumar wrote:
-> On 7 September 2013 01:23, Srivatsa S. Bhat
-> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->> Commit "cpufreq: serialize calls to __cpufreq_governor()" had been a temporary
->> and partial solution to the race condition between writing to a cpufreq sysfs
->> file and taking a CPU offline. Now that we have a proper and complete solution
->> to that problem, remove the temporary fix.
->>
->> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->> ---
-> 
-> I would still vote for keeping this code or reverting this patch of yours..
-> As there might be other scenarios, than hotplug races, where this serialization
-> would be useful..
-> 
+On Tue, 10 Sep 2013 17:24:16 +0900, Namhyung Kim wrote:
+>  
+> -	/* matches not, relay on the parent */
+> +	/* matches not, relay no the parent */
 
-I would say it would be better to first explain those scenarios in detail, and
-then justify why this solution is the best one. Without that, it starts appearing
-more like premature optimization... and we all know the mess that it can lead to ;-)
+Argh.. please ignore this hunk.
 
-Regards,
-Srivatsa S. Bhat
+Thanks,
+Namhyung
 
