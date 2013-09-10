@@ -1,52 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751426Ab3IJSaQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 14:30:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42928 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750873Ab3IJSaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 14:30:14 -0400
-Message-ID: <522F6519.4030004@zytor.com>
-Date: Tue, 10 Sep 2013 11:29:45 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1751553Ab3IJSci (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 14:32:38 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:56619 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750936Ab3IJSch (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 14:32:37 -0400
 MIME-Version: 1.0
-To: Matthew Garrett <matthew.garrett@nebula.com>
-CC: Henrique de Moraes Holschuh <hmh@hmh.eng.br>, David Lang <david@lang.hm>,
-        "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH 00/12] One more attempt at useful kernel lockdown
-References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>  <19562.1378747124@turing-police.cc.vt.edu>  <alpine.DEB.2.02.1309091119330.2479@nftneq.ynat.uz>  <1378767723.17982.27.camel@x230.lan>  <alpine.DEB.2.02.1309091614010.2479@nftneq.ynat.uz>  <1378774394.17982.36.camel@x230.lan>  <alpine.DEB.2.02.1309091938420.1820@nftneq.ynat.uz>  <1378781715.17982.42.camel@x230.lan>  <alpine.DEB.2.02.1309092002060.1820@nftneq.ynat.uz>  <1378785208.17982.54.camel@x230.lan>  <20130910172318.GB21530@khazad-dum.debian.net> <1378837571.17615.0.camel@x230.lan>
-In-Reply-To: <1378837571.17615.0.camel@x230.lan>
-X-Enigmail-Version: 1.5.2
+In-Reply-To: <CAMfhy93EoDohCrV+ykj6b+R9QSCTdiPtvSpJpe3SH=ot_1LWMg@mail.gmail.com>
+References: <CA+5PVA4k9tTPs9vtTbMuG7pzw4kb3KFK-CLaqDDG4dm=0twyCQ@mail.gmail.com>
+	<CA+55aFzg_r2c09TkGwmsMV3HbNAkSFJLGAFWweLNzofqs4o4Ug@mail.gmail.com>
+	<CA+5PVA6EDV3zuDEyCvcGNvEAPtgY_Oy9xVbaM03ggRBPtq5Mmg@mail.gmail.com>
+	<CA+55aFympAk-hnekaew8po5wLJdiY+DC_b4h=pa-y5i9=s303Q@mail.gmail.com>
+	<CA+55aFygRtwwknO4Jb+nna046VhdNCXh2S0ybRBPf=b1GH9FPg@mail.gmail.com>
+	<CAMfhy93EoDohCrV+ykj6b+R9QSCTdiPtvSpJpe3SH=ot_1LWMg@mail.gmail.com>
+Date: Tue, 10 Sep 2013 11:32:36 -0700
+X-Google-Sender-Auth: xXEST4Kw3jg5k-2nSlVGBo4yqiI
+Message-ID: <CA+55aFxvAn=jTbQXxery54uaaq=QsLzJgPdwnTd8B77abc92jQ@mail.gmail.com>
+Subject: Re: kernel BUG at fs/dcache.c:648! with v3.11-7890-ge5c832d
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Mace Moneta <moneta.mace@gmail.com>
+Cc: Josh Boyer <jwboyer@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Waiman Long <Waiman.Long@hp.com>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2013 11:26 AM, Matthew Garrett wrote:
-> On Tue, 2013-09-10 at 14:23 -0300, Henrique de Moraes Holschuh wrote:
->> On Tue, 10 Sep 2013, Matthew Garrett wrote:
->>> That's why modern systems require signed firmware updates.
->>
->> Linux doesn't.  Is someone working on adding signature support to the
->> runtime firmware loader?
-> 
-> It'd be simple to do so, but so far the model appears to be that devices
-> that expect signed firmware enforce that themselves.
-> 
+On Tue, Sep 10, 2013 at 11:29 AM, Mace Moneta <moneta.mace@gmail.com> wrote:
+> I can patch and compile a kernel if you post the patch you want tested.
 
-Most devices do absolutely no verification on the firmware, and simply
-trust the driver.
+It was attached in that previous email..
 
-So signing firmware is probably critical.
+Apparently I'm not the only one who misses things like versions in
+subject lines or other small "details" in emails ;)
 
-	-hpa
-
+           Linus
