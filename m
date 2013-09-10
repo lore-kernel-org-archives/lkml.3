@@ -1,87 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751344Ab3IJJEH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 05:04:07 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41263 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844Ab3IJJEF (ORCPT
+	id S1751254Ab3IJJJQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 05:09:16 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:47512 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750886Ab3IJJJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 05:04:05 -0400
-Date: Tue, 10 Sep 2013 11:03:49 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Travis <travis@sgi.com>
-Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 9/9] x86/UV: Add ability to disable UV NMI handler
-Message-ID: <20130910090349.GN26785@twins.programming.kicks-ass.net>
-References: <20130905225032.879120272@asylum.americas.sgi.com>
- <20130905225034.343366161@asylum.americas.sgi.com>
- <20130909124349.GY31370@twins.programming.kicks-ass.net>
- <522E0037.3090107@sgi.com>
+	Tue, 10 Sep 2013 05:09:14 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r8A993C0027137, This message is accepted by code: ctloc85258
+From: <wei_wang@realsil.com.cn>
+To: <sameo@linux.intel.com>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
+        <micky_ching@realsil.com.cn>, Wei WANG <wei_wang@realsil.com.cn>
+Subject: [PATCH] mfd: rtsx: Modify rts5249_optimize_phy
+Date: Tue, 10 Sep 2013 17:09:02 +0800
+Message-ID: <1378804142-28483-1-git-send-email-wei_wang@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <522E0037.3090107@sgi.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
+X-Originating-IP: [172.29.41.8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 10:07:03AM -0700, Mike Travis wrote:
-> 
-> 
-> On 9/9/2013 5:43 AM, Peter Zijlstra wrote:
-> > On Thu, Sep 05, 2013 at 05:50:41PM -0500, Mike Travis wrote:
-> >> For performance reasons, the NMI handler may be disabled to lessen the
-> >> performance impact caused by the multiple perf tools running concurently.
-> >> If the system nmi command is issued when the UV NMI handler is disabled,
-> >> the "Dazed and Confused" messages occur for all cpus.  The NMI handler is
-> >> disabled by setting the nmi disabled variable to '1'.  Setting it back to
-> >> '0' will re-enable the NMI handler.
-> > 
-> > I'm not entirely sure why this is still needed now that you've moved all
-> > really expensive bits into the UNKNOWN handler.
-> > 
-> 
-> Yes, it could be considered optional.  My primary use was to isolate
-> new bugs I found to see if my NMI changes were causing them.  But it
-> appears that they are not since the problems occur with or without
-> using the NMI entry into KDB.  So it can be safely removed.
+From: Wei WANG <wei_wang@realsil.com.cn>
 
-OK, as a debug option it might make sense, but removing it is (of course)
-fine with me ;-)
+In some platforms, specially Thinkpad series, rts5249 won't be
+initialized properly. So we need adjust some phy parameters to
+improve the compatibility issue.
 
-> (The basic problem is that if you hang out in KDB too long the machine
-> locks up.  
+Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
+---
+ drivers/mfd/rts5249.c        |   48 ++++++++++++++++++++++++++++++++++++--
+ include/linux/mfd/rtsx_pci.h |   53 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 99 insertions(+), 2 deletions(-)
 
-Yeah, known issue. Not much you can do about it either I suspect. The
-system generally isn't build for things like that.
+diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
+index 3b835f5..573de7b 100644
+--- a/drivers/mfd/rts5249.c
++++ b/drivers/mfd/rts5249.c
+@@ -130,13 +130,57 @@ static int rts5249_optimize_phy(struct rtsx_pcr *pcr)
+ {
+ 	int err;
+ 
+-	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV, 0xFE46);
++	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV,
++			PHY_REG_REV_RESV | PHY_REG_REV_RXIDLE_LATCHED |
++			PHY_REG_REV_P1_EN | PHY_REG_REV_RXIDLE_EN |
++			PHY_REG_REV_RX_PWST | PHY_REG_REV_CLKREQ_DLY_TIMER_1_0 |
++			PHY_REG_REV_STOP_CLKRD | PHY_REG_REV_STOP_CLKWR);
+ 	if (err < 0)
+ 		return err;
+ 
+ 	msleep(1);
+ 
+-	return rtsx_pci_write_phy_register(pcr, PHY_BPCR, 0x05C0);
++	err = rtsx_pci_write_phy_register(pcr, PHY_BPCR,
++			PHY_BPCR_IBRXSEL | PHY_BPCR_IBTXSEL |
++			PHY_BPCR_IB_FILTER | PHY_BPCR_CMIRROR_EN);
++	if (err < 0)
++		return err;
++	err = rtsx_pci_write_phy_register(pcr, PHY_PCR,
++			PHY_PCR_FORCE_CODE | PHY_PCR_OOBS_CALI_50 |
++			PHY_PCR_OOBS_VCM_08 | PHY_PCR_OOBS_SEN_90 |
++			PHY_PCR_RSSI_EN);
++	if (err < 0)
++		return err;
++	err = rtsx_pci_write_phy_register(pcr, PHY_RCR2,
++			PHY_RCR2_EMPHASE_EN | PHY_RCR2_NADJR |
++			PHY_RCR2_CDR_CP_10 | PHY_RCR2_CDR_SR_2 |
++			PHY_RCR2_FREQSEL_12 | PHY_RCR2_CPADJEN |
++			PHY_RCR2_CDR_SC_8 | PHY_RCR2_CALIB_LATE);
++	if (err < 0)
++		return err;
++	err = rtsx_pci_write_phy_register(pcr, PHY_FLD4,
++			PHY_FLD4_FLDEN_SEL | PHY_FLD4_REQ_REF |
++			PHY_FLD4_RXAMP_OFF | PHY_FLD4_REQ_ADDA |
++			PHY_FLD4_BER_COUNT | PHY_FLD4_BER_TIMER |
++			PHY_FLD4_BER_CHK_EN);
++	if (err < 0)
++		return err;
++	err = rtsx_pci_write_phy_register(pcr, PHY_RDR, PHY_RDR_RXDSEL_1_9);
++	if (err < 0)
++		return err;
++	err = rtsx_pci_write_phy_register(pcr, PHY_RCR1,
++			PHY_RCR1_ADP_TIME | PHY_RCR1_VCO_COARSE);
++	if (err < 0)
++		return err;
++	err = rtsx_pci_write_phy_register(pcr, PHY_FLD3,
++			PHY_FLD3_TIMER_4 | PHY_FLD3_TIMER_6 |
++			PHY_FLD3_RXDELINK);
++	if (err < 0)
++		return err;
++	return rtsx_pci_write_phy_register(pcr, PHY_TUNE,
++			PHY_TUNE_TUNEREF_1_0 | PHY_TUNE_VBGSEL_1252 |
++			PHY_TUNE_SDBUS_33 | PHY_TUNE_TUNED18 |
++			PHY_TUNE_TUNED12);
+ }
+ 
+ static int rts5249_turn_on_led(struct rtsx_pcr *pcr)
+diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+index d1382df..0ce7721 100644
+--- a/include/linux/mfd/rtsx_pci.h
++++ b/include/linux/mfd/rtsx_pci.h
+@@ -756,6 +756,59 @@
+ #define PCR_SETTING_REG2		0x814
+ #define PCR_SETTING_REG3		0x747
+ 
++/* Phy bits */
++#define PHY_PCR_FORCE_CODE			0xB000
++#define PHY_PCR_OOBS_CALI_50			0x0800
++#define PHY_PCR_OOBS_VCM_08			0x0200
++#define PHY_PCR_OOBS_SEN_90			0x0040
++#define PHY_PCR_RSSI_EN				0x0002
++
++#define PHY_RCR1_ADP_TIME			0x0100
++#define PHY_RCR1_VCO_COARSE			0x001F
++
++#define PHY_RCR2_EMPHASE_EN			0x8000
++#define PHY_RCR2_NADJR				0x4000
++#define PHY_RCR2_CDR_CP_10			0x0400
++#define PHY_RCR2_CDR_SR_2			0x0100
++#define PHY_RCR2_FREQSEL_12			0x0040
++#define PHY_RCR2_CPADJEN			0x0020
++#define PHY_RCR2_CDR_SC_8			0x0008
++#define PHY_RCR2_CALIB_LATE			0x0002
++
++#define PHY_RDR_RXDSEL_1_9			0x4000
++
++#define PHY_TUNE_TUNEREF_1_0			0x4000
++#define PHY_TUNE_VBGSEL_1252			0x0C00
++#define PHY_TUNE_SDBUS_33			0x0200
++#define PHY_TUNE_TUNED18			0x01C0
++#define PHY_TUNE_TUNED12			0X0020
++
++#define PHY_BPCR_IBRXSEL			0x0400
++#define PHY_BPCR_IBTXSEL			0x0100
++#define PHY_BPCR_IB_FILTER			0x0080
++#define PHY_BPCR_CMIRROR_EN			0x0040
++
++#define PHY_REG_REV_RESV			0xE000
++#define PHY_REG_REV_RXIDLE_LATCHED		0x1000
++#define PHY_REG_REV_P1_EN			0x0800
++#define PHY_REG_REV_RXIDLE_EN			0x0400
++#define PHY_REG_REV_CLKREQ_DLY_TIMER_1_0	0x0040
++#define PHY_REG_REV_STOP_CLKRD			0x0020
++#define PHY_REG_REV_RX_PWST			0x0008
++#define PHY_REG_REV_STOP_CLKWR			0x0004
++
++#define PHY_FLD3_TIMER_4			0x7800
++#define PHY_FLD3_TIMER_6			0x00E0
++#define PHY_FLD3_RXDELINK			0x0004
++
++#define PHY_FLD4_FLDEN_SEL			0x4000
++#define PHY_FLD4_REQ_REF			0x2000
++#define PHY_FLD4_RXAMP_OFF			0x1000
++#define PHY_FLD4_REQ_ADDA			0x0800
++#define PHY_FLD4_BER_COUNT			0x00E0
++#define PHY_FLD4_BER_TIMER			0x000A
++#define PHY_FLD4_BER_CHK_EN			0x0001
++
+ #define rtsx_pci_init_cmd(pcr)		((pcr)->ci = 0)
+ 
+ struct rtsx_pcr;
+-- 
+1.7.9.5
 
-> Other problems like the rcu stall detector does not have a
-> means to be "touched" like the nmi_watchdog_timer so it fires off a
-> few to many, many messages.  
-
-That however might be easily cured if you ask Paul nicely ;-)
-
-> Another, any network connections will time
-> out if you are in KDB more than say 20 or 30 seconds.)
-> 
-> One other problem is with the perf tool.  It seems running more than
-> about 2 or 3 perf top instances on a medium (1k cpu threads) sized
-> system, they start behaving badly with a bunch of NMI stackdumps
-> appearing on the console.  Eventually the system become unusable.
-
-Yuck.. I haven't seen anything like that on the 'tiny' systems I have :/
-
-> On a large system (4k), the perf tools get an error message (sorry
-> don't have it handy at the moment) the basically implies that the
-> perf config option is not set.  Again, I wanted to remove the new
-> NMI handler to insure that it wasn't doing something weird, and
-> it wasn't.
-
-Cute.. 
