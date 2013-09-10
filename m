@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753163Ab3IJSM6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 14:12:58 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53805 "EHLO
+	id S1752958Ab3IJSM5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 14:12:57 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53806 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238Ab3IJSMT (ORCPT
+	with ESMTP id S1751275Ab3IJSMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Sep 2013 14:12:19 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 1/5] perf trace: Handle perf.data files with no tracepoints
-Date: Tue, 10 Sep 2013 15:11:58 -0300
-Message-Id: <1378836722-31326-2-git-send-email-acme@infradead.org>
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 2/5] perf evlist: Fix id pos in perf_evlist__open()
+Date: Tue, 10 Sep 2013 15:11:59 -0300
+Message-Id: <1378836722-31326-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1378836722-31326-1-git-send-email-acme@infradead.org>
 References: <1378836722-31326-1-git-send-email-acme@infradead.org>
@@ -28,107 +29,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-Before:
+Ensure the id_pos is correct when perf_evlist__open() is used.
 
-  perf trace -i perf.data
-  Segmentation fault (core dumped)
-  #
+This fixes a problem introduced in 7556257 that broke 'perf kvm stat
+live' in that this tool wasn't updated to use the sample_type bits
+setting helpers.
 
-After:
-
- # perf trace -i perf.data
- Data file does not have raw_syscalls:sys_enter events
- #
-
-When there are no tracepoints in a perf.data file the struct pevent
-that contains the list of tracepoints that will be used to lookup the
-tracepoint id by name will not be populated, causing a NULL deref.
-
-And we don't need to do all that dance to look at pevents for an entry
-with a slighly different name to then lookup the tracepoint by its id on
-the evlist, just use the perf_evlist__find_tracepoint_by_name() routine,
-that will find the tracepoint, if present.
-
-Cc: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Tested-by: David Ahern <dsahern@gmail.com>
+Acked-by: David Ahern <dsahern@gmail.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-egcm21k1e6gcyxpcgjxtmsq3@git.kernel.org
+Link: http://lkml.kernel.org/r/1378496412-2424-2-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/session.c | 40 +++++++---------------------------------
- 1 file changed, 7 insertions(+), 33 deletions(-)
+ tools/perf/util/evlist.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 476caa1..0308d9e 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1620,52 +1620,26 @@ int __perf_session__set_tracepoints_handlers(struct perf_session *session,
- 					     const struct perf_evsel_str_handler *assocs,
- 					     size_t nr_assocs)
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 7101283..f9f77be 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -64,6 +64,16 @@ void perf_evlist__set_id_pos(struct perf_evlist *evlist)
+ 	evlist->is_pos = first->is_pos;
+ }
+ 
++static void perf_evlist__update_id_pos(struct perf_evlist *evlist)
++{
++	struct perf_evsel *evsel;
++
++	list_for_each_entry(evsel, &evlist->entries, node)
++		perf_evsel__calc_id_pos(evsel);
++
++	perf_evlist__set_id_pos(evlist);
++}
++
+ static void perf_evlist__purge(struct perf_evlist *evlist)
  {
--	struct perf_evlist *evlist = session->evlist;
--	struct event_format *format;
+ 	struct perf_evsel *pos, *n;
+@@ -920,6 +930,8 @@ int perf_evlist__open(struct perf_evlist *evlist)
  	struct perf_evsel *evsel;
--	char *tracepoint, *name;
- 	size_t i;
  	int err;
  
- 	for (i = 0; i < nr_assocs; i++) {
--		err = -ENOMEM;
--		tracepoint = strdup(assocs[i].name);
--		if (tracepoint == NULL)
--			goto out;
--
--		err = -ENOENT;
--		name = strchr(tracepoint, ':');
--		if (name == NULL)
--			goto out_free;
--
--		*name++ = '\0';
--		format = pevent_find_event_by_name(session->pevent,
--						   tracepoint, name);
--		if (format == NULL) {
--			/*
--			 * Adding a handler for an event not in the session,
--			 * just ignore it.
--			 */
--			goto next;
--		}
--
--		evsel = perf_evlist__find_tracepoint_by_id(evlist, format->id);
-+		/*
-+		 * Adding a handler for an event not in the session,
-+		 * just ignore it.
-+		 */
-+		evsel = perf_evlist__find_tracepoint_by_name(session->evlist, assocs[i].name);
- 		if (evsel == NULL)
--			goto next;
-+			continue;
- 
- 		err = -EEXIST;
- 		if (evsel->handler.func != NULL)
--			goto out_free;
-+			goto out;
- 		evsel->handler.func = assocs[i].handler;
--next:
--		free(tracepoint);
- 	}
- 
- 	err = 0;
- out:
- 	return err;
--
--out_free:
--	free(tracepoint);
--	goto out;
- }
++	perf_evlist__update_id_pos(evlist);
++
+ 	list_for_each_entry(evsel, &evlist->entries, node) {
+ 		err = perf_evsel__open(evsel, evlist->cpus, evlist->threads);
+ 		if (err < 0)
 -- 
 1.8.1.4
 
