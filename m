@@ -1,82 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751351Ab3IJSxp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 14:53:45 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:34044 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204Ab3IJSxn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 14:53:43 -0400
-Date: Tue, 10 Sep 2013 19:52:35 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Guenter Roeck <linux@roeck-us.net>, Wei Ni <wni@nvidia.com>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20130910185235.GF29403@sirena.org.uk>
-References: <522E93D6.2010304@roeck-us.net>
- <522E94AE.7000804@wwwdotorg.org>
- <522E97CE.4070300@roeck-us.net>
- <522E9C84.9070405@wwwdotorg.org>
- <20130910100939.GW29403@sirena.org.uk>
- <522F35BF.6070909@wwwdotorg.org>
- <20130910170438.GS29403@sirena.org.uk>
- <522F5A65.8040907@wwwdotorg.org>
- <20130910181837.GD29403@sirena.org.uk>
- <522F66FB.2000608@wwwdotorg.org>
+	id S1751388Ab3IJSyD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 14:54:03 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:57571 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750982Ab3IJSxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 14:53:42 -0400
+From: Joel Fernandes <joelf@ti.com>
+To: Sekhar Nori <nsekhar@ti.com>, Matt Porter <matt@ohporter.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Russell King <linux@arm.linux.org.uk>, Jyri Sarah <jsarha@ti.com>,
+        "Jason Kridner" <jkridner@beagleboard.org>,
+        Koen Kooi <koen@beagleboard.org>
+CC: Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Pantel Antoniou <panto@antoniou-consulting.com>,
+        Joel Fernandes <joelf@ti.com>
+Subject: [PATCH v3] ARM: EDMA: Fix clearing of unused list for DT DMA resources
+Date: Tue, 10 Sep 2013 13:52:51 -0500
+Message-ID: <1378839171-14455-1-git-send-email-joelf@ti.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hJ64AiXiG3hy1bNf"
-Content-Disposition: inline
-In-Reply-To: <522F66FB.2000608@wwwdotorg.org>
-X-Cookie: Your present plans will be successful.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 1/2] hwmon: (lm90) Add power control
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+HWMOD removal for MMC is breaking edma_start as the events are being manually
+triggered due to unused channel list not being clear.
 
---hJ64AiXiG3hy1bNf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This patch fixes the issue, by reading the "dmas" property from the DT node if
+it exists and clearing the bits in the unused channel list. For this purpose
+we use the of_* helpers to parse the arguments in the dmas phandle list.
 
-On Tue, Sep 10, 2013 at 12:37:47PM -0600, Stephen Warren wrote:
+Reviewed-by: Sekhar Nori <nsekhar@ti.com>
+Reported-by: Balaji T K <balajitk@ti.com>
+Cc: Pantel Antoniou <panto@antoniou-consulting.com>
+Signed-off-by: Joel Fernandes <joelf@ti.com>
+---
+This patch is a repost of v2 with minor change of return value.
 
-> OK, so for the DT binding we should make vcc-supply a required
-> property, yet the driver will still work OK if that property just
-> happens to be missing (or e.g. when instantiated from a board file,
-> and there's no regulator).
+As such this patch fixes DMA breakages on all dependent peripherals (DMA, AES,
+MMC, McASP..) so should go in for -rc cycle.
 
-Yup.  That way we've got both the binding and code trying to make things
-work, hopefully that'll maximise robustness.
+ arch/arm/common/edma.c | 22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
 
---hJ64AiXiG3hy1bNf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+index 117f955..88ea067 100644
+--- a/arch/arm/common/edma.c
++++ b/arch/arm/common/edma.c
+@@ -560,14 +560,30 @@ static int reserve_contiguous_slots(int ctlr, unsigned int id,
+ static int prepare_unused_channel_list(struct device *dev, void *data)
+ {
+ 	struct platform_device *pdev = to_platform_device(dev);
+-	int i, ctlr;
++	int i = 0, ctlr;
++	u32 dma_chan;
++	const __be32 *dma_chan_p;
++	struct property *prop;
++
++	if (dev->of_node) {
++		of_property_for_each_u32(dev->of_node, "dmas", prop,
++					 dma_chan_p, dma_chan) {
++			if (i++ & 1) {
++				ctlr = EDMA_CTLR(dma_chan);
++				clear_bit(EDMA_CHAN_SLOT(dma_chan),
++					  edma_cc[ctlr]->edma_unused);
++			}
++		}
++		return 0;
++	}
+ 
+-	for (i = 0; i < pdev->num_resources; i++) {
++	/* For non-OF case */
++	for (; i < pdev->num_resources; i++) {
+ 		if ((pdev->resource[i].flags & IORESOURCE_DMA) &&
+ 				(int)pdev->resource[i].start >= 0) {
+ 			ctlr = EDMA_CTLR(pdev->resource[i].start);
+ 			clear_bit(EDMA_CHAN_SLOT(pdev->resource[i].start),
+-					edma_cc[ctlr]->edma_unused);
++				  edma_cc[ctlr]->edma_unused);
+ 		}
+ 	}
+ 
+-- 
+1.8.1.2
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSL2pwAAoJELSic+t+oim9q5kP/RXrSlKvyL4QavWVPwUgeaOq
-oMGisH4i71kRMbqpKFHAiy/4N3B/qFxx+o/EDyYQqc41EUxsaN9eI9VIfZwHFjou
-XlLiY9nEDJ+NkpIVSZbWu+yhnV+LPxbC4xGsZNYgxsgeqoB56f3M5DsfPlnHnl1j
-LSdVDQZtdruv+/ysZP9oJizpfJcG1Y7zBemRgyo0x0RL6UMK798KoJ3H/bBc8Qba
-bUXMe97taby31o8UbY/P+6MJ4MPTXdAUVF8UpTKlf2eFxLfI/tCtXStTHqBgKOr2
-3ndMzWMk6RbXA4MYT2AOxsXWkv6eJ5sPy2Gfjs09rizkTaAYMOX2aVVhGhV3FBgN
-5iToKP1gKCl8/ME5ReHvf7mEeGS9B7DYzXQcswqmtyeMmlvoXRw7ISkR962lkySb
-EaldbQAqtc6DzBbDcWDL2UKwOUEi28IGNSsxsITisp/CQp7duC1MwWVnGyqHR/C8
-TzreyE6BFgEoPbKyvBGnB+mmh5ujRe9fTiq8RVoiLbssBlXEqJgcJpyqnKP0TLVL
-YHMKxEEdlB7LMFg5KCSSyejqFRrwOEBZvyFAGiifYGAJO44h5dbu9NggS1kSG0Ar
-Rl0koYRf2ngxun9YpGYr8ee8BDfWrSb8+VwTOsEpPSfxcqWnxmnHrkTt88DghWZC
-xbQ1VHWz5qwOLT+t7CEb
-=2McI
------END PGP SIGNATURE-----
-
---hJ64AiXiG3hy1bNf--
