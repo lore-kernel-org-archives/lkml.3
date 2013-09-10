@@ -1,112 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752463Ab3IJOfn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 10:35:43 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:47690 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751654Ab3IJOfl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 10:35:41 -0400
-Date: Tue, 10 Sep 2013 17:34:16 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Jerome Marchand <jmarchan@redhat.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, Minchan Kim <minchan@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] staging: zram: minimize `slot_free_lock' usage (v2)
-Message-ID: <20130910143416.GC2270@swordfish>
-References: <20130906151255.GE2238@swordfish.minsk.epam.com>
- <20130909123329.GZ19256@mwanda>
- <20130909124942.GA2221@swordfish.minsk.epam.com>
- <20130909132124.GY6329@mwanda>
- <522DD125.1030607@redhat.com>
- <522DF2DF.5060407@redhat.com>
+	id S1752169Ab3IJOlQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 10:41:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46490 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751757Ab3IJOlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 10:41:15 -0400
+Date: Tue, 10 Sep 2013 15:41:09 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH 5/9] mbind: add hugepage migration code to mbind()
+Message-ID: <20130910144109.GR22421@suse.de>
+References: <1376025702-14818-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1376025702-14818-6-git-send-email-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <522DF2DF.5060407@redhat.com>
+In-Reply-To: <1376025702-14818-6-git-send-email-n-horiguchi@ah.jp.nec.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (09/09/13 18:10), Jerome Marchand wrote:
-> On 09/09/2013 03:46 PM, Jerome Marchand wrote:
-> > On 09/09/2013 03:21 PM, Dan Carpenter wrote:
-> >> On Mon, Sep 09, 2013 at 03:49:42PM +0300, Sergey Senozhatsky wrote:
-> >>>>> Calling handle_pending_slot_free() for every RW operation may
-> >>>>> cause unneccessary slot_free_lock locking, because most likely
-> >>>>> process will see NULL slot_free_rq. handle_pending_slot_free()
-> >>>>> only when current detects that slot_free_rq is not NULL.
-> >>>>>
-> >>>>> v2: protect handle_pending_slot_free() with zram rw_lock.
-> >>>>>
-> >>>>
-> >>>> zram->slot_free_lock protects zram->slot_free_rq but shouldn't the zram
-> >>>> rw_lock be wrapped around the whole operation like the original code
-> >>>> does?  I don't know the zram code, but the original looks like it makes
-> >>>> sense but in this one it looks like the locks are duplicative.
-> >>>>
-> >>>> Is the down_read() in the original code be changed to down_write()?
-> >>>>
-> >>>
-> >>> I'm not touching locking around existing READ/WRITE commands.
-> >>>
-> >>
-> >> Your patch does change the locking because now instead of taking the
-> >> zram lock once it takes it and then drops it and then retakes it.  This
-> >> looks potentially racy to me but I don't know the code so I will defer
-> >> to any zram maintainer.
-> > 
-> > You're right. Nothing prevents zram_slot_free_notify() to repopulate the
-> > free slot queue while we drop the lock.
-> > 
-> > Actually, the original code is already racy. handle_pending_slot_free()
-> > modifies zram->table while holding only a read lock. It needs to hold a
-> > write lock to do that. Using down_write for all requests would obviously
-> > fix that, but at the cost of read performance.
+On Fri, Aug 09, 2013 at 01:21:38AM -0400, Naoya Horiguchi wrote:
+> This patch extends do_mbind() to handle vma with VM_HUGETLB set.
+> We will be able to migrate hugepage with mbind(2) after
+> applying the enablement patch which comes later in this series.
 > 
-> Now I think we can drop the call to handle_pending_slot_free() in
-> zram_bvec_rw() altogether. As long as the write lock is held when
-> handle_pending_slot_free() is called, there is no race. It's no different
-> from any write request and the current code handles R/W concurrency
-> already.
-
-Yes, I think that can work. 
-
-To summarize, there should be 3 patches:
-1) handle_pending_slot_free() in zram_bvec_rw() (as suggested by Jerome Marchand)
-2) handle_pending_slot_free() race with reset (found by Dan Carpenter)
-3) drop init_done and use init_done()
-
-I'll prepare a patches later today.
-
-	-ss
-
-> Jerome
+> ChangeLog v3:
+>  - revert introducing migrate_movable_pages
+>  - added alloc_huge_page_noerr free from ERR_VALUE
 > 
-> > 
-> >>
-> >> 1) You haven't given us any performance numbers so it's not clear if the
-> >>    locking is even a problem.
-> >>
-> >> 2) The v2 patch introduces an obvious deadlock in zram_slot_free()
-> >>    because now we take the rw_lock twice.  Fix your testing to catch
-> >>    this kind of bug next time.
-> >>
-> >> 3) Explain why it is safe to test zram->slot_free_rq when we are not
-> >>    holding the lock.  I think it is unsafe.  I don't want to even think
-> >>    about it without the numbers.
-> >>
-> >> regards,
-> >> dan carpenter
-> >>
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
+> ChangeLog v2:
+>  - updated description and renamed patch title
 > 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Acked-by: Andi Kleen <ak@linux.intel.com>
+> Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> Acked-by: Hillf Danton <dhillf@gmail.com>
+> ---
+>  include/linux/hugetlb.h |  3 +++
+>  mm/hugetlb.c            | 14 ++++++++++++++
+>  mm/mempolicy.c          |  4 +++-
+>  3 files changed, 20 insertions(+), 1 deletion(-)
+> 
+> diff --git v3.11-rc3.orig/include/linux/hugetlb.h v3.11-rc3/include/linux/hugetlb.h
+> index bc8d837..d1db007 100644
+> --- v3.11-rc3.orig/include/linux/hugetlb.h
+> +++ v3.11-rc3/include/linux/hugetlb.h
+> @@ -265,6 +265,8 @@ struct huge_bootmem_page {
+>  };
+>  
+>  struct page *alloc_huge_page_node(struct hstate *h, int nid);
+> +struct page *alloc_huge_page_noerr(struct vm_area_struct *vma,
+> +				unsigned long addr, int avoid_reserve);
+>  
+>  /* arch callback */
+>  int __init alloc_bootmem_huge_page(struct hstate *h);
+> @@ -378,6 +380,7 @@ static inline pgoff_t basepage_index(struct page *page)
+>  #else	/* CONFIG_HUGETLB_PAGE */
+>  struct hstate {};
+>  #define alloc_huge_page_node(h, nid) NULL
+> +#define alloc_huge_page_noerr(v, a, r) NULL
+>  #define alloc_bootmem_huge_page(h) NULL
+>  #define hstate_file(f) NULL
+>  #define hstate_sizelog(s) NULL
+> diff --git v3.11-rc3.orig/mm/hugetlb.c v3.11-rc3/mm/hugetlb.c
+> index 649771c..ee764b0 100644
+> --- v3.11-rc3.orig/mm/hugetlb.c
+> +++ v3.11-rc3/mm/hugetlb.c
+> @@ -1195,6 +1195,20 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+>  	return page;
+>  }
+>  
+> +/*
+> + * alloc_huge_page()'s wrapper which simply returns the page if allocation
+> + * succeeds, otherwise NULL. This function is called from new_vma_page(),
+> + * where no ERR_VALUE is expected to be returned.
+> + */
+> +struct page *alloc_huge_page_noerr(struct vm_area_struct *vma,
+> +				unsigned long addr, int avoid_reserve)
+> +{
+> +	struct page *page = alloc_huge_page(vma, addr, avoid_reserve);
+> +	if (IS_ERR(page))
+> +		page = NULL;
+> +	return page;
+> +}
+> +
+>  int __weak alloc_bootmem_huge_page(struct hstate *h)
+>  {
+>  	struct huge_bootmem_page *m;
+> diff --git v3.11-rc3.orig/mm/mempolicy.c v3.11-rc3/mm/mempolicy.c
+> index d96afc1..4a03c14 100644
+> --- v3.11-rc3.orig/mm/mempolicy.c
+> +++ v3.11-rc3/mm/mempolicy.c
+> @@ -1183,6 +1183,8 @@ static struct page *new_vma_page(struct page *page, unsigned long private, int *
+>  		vma = vma->vm_next;
+>  	}
+>  
+> +	if (PageHuge(page))
+> +		return alloc_huge_page_noerr(vma, address, 1);
+>  	/*
+>  	 * if !vma, alloc_page_vma() will use task or system default policy
+>  	 */
+
+It's interesting to note that it will be tricky to configure a system to
+allow this sort of migration to succeed.
+
+This call correctly uses avoid_reserve but that does mean that for it
+to work that there there must be free pages statically allocated in the
+hugepage pool of the destination node or hugepage dynamic pool resizing
+must be enabled. The former option is going to waste memory because pages
+allocated to the static pool cannot be used for any other purpose and
+using dynamic hugepage pool resizing may fail.
+
+It makes me wonder how actually useful generic hugetlbfs page migration
+will be in practice. Are there really usecases where the system
+administrator is willing to create unused hugepage pools on each node
+just to enable migration?
+
+> @@ -1293,7 +1295,7 @@ static long do_mbind(unsigned long start, unsigned long len,
+>  					(unsigned long)vma,
+>  					MIGRATE_SYNC, MR_MEMPOLICY_MBIND);
+>  			if (nr_failed)
+> -				putback_lru_pages(&pagelist);
+> +				putback_movable_pages(&pagelist);
+>  		}
+>  
+>  		if (nr_failed && (flags & MPOL_MF_STRICT))
+> -- 
+> 1.8.3.1
+> 
+
+-- 
+Mel Gorman
+SUSE Labs
