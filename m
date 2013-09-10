@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751946Ab3IJUOw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 16:14:52 -0400
-Received: from catbert.rellim.com ([204.17.205.1]:49977 "EHLO
-	catbert.rellim.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751485Ab3IJUOv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 16:14:51 -0400
-X-Greylist: delayed 690 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Sep 2013 16:14:51 EDT
-X-DKIM: OpenDKIM Filter v2.6.7 catbert.rellim.com r8AK2ZG9028308
-Date: Tue, 10 Sep 2013 13:02:34 -0700
-From: "Gary E. Miller" <gem@rellim.com>
-To: Rodolfo Giometti <giometti@enneenne.com>
-Cc: Paul Chavent <Paul.Chavent@onera.fr>, linux-usb@vger.kernel.org,
-        gregkh@linuxfoundation.org, jhovold@gmail.com,
-        fschaefer.oss@googlemail.com, jslaby@suse.cz, max@suse.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] Enable PPS reporting for USB serial devices
-Message-ID: <20130910130234.5106a5bc.gem@rellim.com>
-In-Reply-To: <20130910073105.GB5030@enneenne.com>
-References: <1378742480-2146-1-git-send-email-paul.chavent@onera.fr>
-	<20130910073105.GB5030@enneenne.com>
-Organization: Rellim
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/J/GK1Vgcy9PykKEOOXx7.VW"; protocol="application/pgp-signature"
+	id S1752053Ab3IJUPh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 16:15:37 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59188 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751495Ab3IJUPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 16:15:35 -0400
+Message-ID: <522F7DC0.7030603@ti.com>
+Date: Tue, 10 Sep 2013 15:14:56 -0500
+From: Joel Fernandes <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Koen Kooi <koen@dominion.thruhere.net>
+CC: Benoit Cousson <bcousson@baylibre.com>, Nishanth Menon <nm@ti.com>,
+        Devicetree Discuss <devicetree@vger.kernel.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>
+Subject: Re: [PATCH 0/3] ARM: dts: Enable EDMA, MMC and SPI on AM33XX for
+ v3.13
+References: <1378841079-15796-1-git-send-email-joelf@ti.com> <5EB8AE91-A996-4CF1-86B7-C8FDEC177E89@dominion.thruhere.net>
+In-Reply-To: <5EB8AE91-A996-4CF1-86B7-C8FDEC177E89@dominion.thruhere.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/J/GK1Vgcy9PykKEOOXx7.VW
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 09/10/2013 02:39 PM, Koen Kooi wrote:
+> 
+> Op 10 sep. 2013, om 21:24 heeft Joel Fernandes <joelf@ti.com> het volgende geschreven:
+> 
+>> Here are last few patches required to add EDMA and MMC/SPI support for AM33xx.
+>>
+>> Now that all dependent DMA patches and fixes are in linux next or mainline, except
+>> for [1] which should go in for 3.12 -rc cycle, it is safe to enable MMC and SPI support
+>> and this patch series enables it. These are originally Matt Porter's patches with
+>> changes to make it work with recent kernels, addition of irq, memory resources and
+>> enable other extra properties.
+>>
+>> These patches should cleanly apply on master branch after Koen's patch [2] for basic
+>> BBB DT support is applied.
+>>
+>> MMC support is enabled for: Beaglebone, AM335x EVM and EVM-SK boards. MMC support
+>> for BBB is intentionally not added due to custom fixes and other patches that are
+>> in Koen's tree and which will be separately submitted by him.
+> 
+> Correct, but your patches for MMC support on BBW are missing the card detect entries to make it hotplug work.
 
-Yo Rodolfo!
+I thought it was determined that this would be submitted by you separately after
+rebasing as we discussed [1] and [2].
 
-On Tue, 10 Sep 2013 09:31:05 +0200
-Rodolfo Giometti <giometti@enneenne.com> wrote:
+[1] https://lkml.org/lkml/2013/9/6/183
+[2] http://marc.info/?l=linux-omap&m=137879246709612&w=2
 
-> I have nothing against with this solution but consider that reporting
-> a PPS signal through USB bus may add unknown delays that may vanish
-> clock stability... as far as I know you should not use USB serial port
-> with PPS. Have you some statistics about clock stability in a real
-> implementation?
 
-gpsd project has been using PPS over USB 1.1 for over a year.  Typical
-accuracy and repeatability in the range of +/- 1 milliSec.  This is much
-better than you can get using simple ntp over gigabit ethernet to an
-adjacent stratum 1 server.
+Regards,
 
-Sure PPS over a local UART is 10 to 100 times better, but often PPS
-over USB is your best second choice.  As serial ports become extinct
-it may become your best choice.
-
-RGDS
-GARY
----------------------------------------------------------------------------
-Gary E. Miller Rellim 109 NW Wilmington Ave., Suite E, Bend, OR 97701
-	gem@rellim.com  Tel:+1(541)382-8588
-
---Sig_/J/GK1Vgcy9PykKEOOXx7.VW
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQEcBAEBAgAGBQJSL3raAAoJEA0O2UlB0XnYih8IAISSauU3exhI0UtPLX/0IHPF
-uX+c7ZboqXxbZ5Fid7zS+7mf3BVzkpmIeQOYQ23VP0mAiZ19BjvZAvqR199uq1mR
-YoCuiypWSfZyYv3UbgMdhSC6SQOuFNartZzswnVA0YvYImsOI1Qlw1/3/Sd5SrCt
-6D/+4MaJEDe8yX/3aJ06a0ro9Som7DLJEXV3WRlKrSni6rwtEbIva0uhvIjgbllw
-123MCtpYDuT2HQpLiBWONeO7ma5uvf+5DsYjE2mnr9ozMd/8LXtZF0Nuzcp9B3ZP
-HMvU3NOebnN/WS6ackpsmBFsdMgZiTfcJccN1ThdNRq6myk6vGl6sCC9qcXSGq4=
-=CJgr
------END PGP SIGNATURE-----
-
---Sig_/J/GK1Vgcy9PykKEOOXx7.VW--
+-Joel
