@@ -1,58 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751204Ab3IJIyA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 04:54:00 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:49686 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983Ab3IJIx6 (ORCPT
+	id S1751290Ab3IJIz5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 04:55:57 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41095 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047Ab3IJIzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 04:53:58 -0400
-Message-ID: <1378803212.6046.86.camel@marge.simpson.net>
-Subject: Re: [RFC] Restrict kernel spawning of threads to a specified set of
- cpus.
-From: Mike Galbraith <bitbucket@online.de>
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Tue, 10 Sep 2013 10:53:32 +0200
-In-Reply-To: <CAOtvUMdRmDYP_e7eFX1akU8vZ=dcVOnFDrBjKufumOaBxxXF3A@mail.gmail.com>
-References: <00000140efbcb701-c26320b3-f434-4538-bc80-8e92fed6f303-000000@email.amazonses.com>
-	 <CAOtvUMe=jcAHXNJU_rTAAokaE4KZNUTFsHVVTTxgFW_xj8ONxg@mail.gmail.com>
-	 <1378795659.6046.41.camel@marge.simpson.net>
-	 <CAOtvUMfhLQYK95uPm8idG_vYv-9yG2-KSkScjMBCSuvtffW1Dg@mail.gmail.com>
-	 <1378797995.6046.54.camel@marge.simpson.net>
-	 <CAOtvUMdRmDYP_e7eFX1akU8vZ=dcVOnFDrBjKufumOaBxxXF3A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:KH7RniiwB0p2JZoFJ7fcq9yxfGRh3Ns6YCwluG5kC1U
- ltoSZooMkGBcGLOx8zu5URoT08MJyijzMWQ3fbsX8d3ep31yYX
- k+nFRNs1ITsD735GyAxX+IXTAGQcnkGNpetA5RY97REJ2dHXj6
- 50L+WfMVTqVMt5theXgMo4fRDPFYcZ/x5iuIJAVASD2xf4GLkh
- 9jqj7GgYNpe5pvXUc6PcxoHx+EhXqwRRWHc2qC6MiOYCKFjq5S
- /tWhVodPFtVJ/OZhNNnRivDMlF1UVw60rl/H5BS7QlOKJm9qkX
- 3vTme8SZI4vJdV0V52MMRrxjRzpALYWPhXSFf+zZLskxXBY4U/
- jUWZyGhZIfNdsy5EjNCkET0rK5kF/LZ5MwVnZH8H4L+xBhtIVq
- cJVxsCpwwBvLA==
+	Tue, 10 Sep 2013 04:55:55 -0400
+Date: Tue, 10 Sep 2013 10:55:45 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] [RFC] seqcount: Add lockdep functionality to
+ seqcount/seqlock structures
+Message-ID: <20130910085545.GM26785@twins.programming.kicks-ass.net>
+References: <1378788166-18474-1-git-send-email-john.stultz@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378788166-18474-1-git-send-email-john.stultz@linaro.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-09-10 at 10:56 +0300, Gilad Ben-Yossef wrote:
+On Mon, Sep 09, 2013 at 09:42:46PM -0700, John Stultz wrote:
+> @@ -38,10 +39,58 @@
+>   */
+>  typedef struct seqcount {
+>  	unsigned sequence;
+> +#ifdef CONFIG_DEBUG_LOCK_ALLOC
+> +	struct lockdep_map dep_map;
+> +#endif
+>  } seqcount_t;
+>  
+> -#define SEQCNT_ZERO { 0 }
+> -#define seqcount_init(x)	do { *(x) = (seqcount_t) SEQCNT_ZERO; } while (0)
+> +
+> +
+> +
+> +static inline void __seqcount_init(seqcount_t *s, const char *name,
+> +					  struct lock_class_key *key)
+> +{
+> +#ifdef CONFIG_DEBUG_LOCK_ALLOC
+> +	/*
+> +	 * Make sure we are not reinitializing a held lock:
+> +	 */
+> +	lockdep_init_map(&s->dep_map, name, key, 0);
+> +#endif
+> +	s->sequence = 0;
+> +}
+> +
+> +
+> +#ifdef CONFIG_DEBUG_LOCK_ALLOC
+> +# define SEQCOUNT_DEP_MAP_INIT(lockname) \
+> +		.dep_map = { .name = #lockname } \
+> +
+> +# define seqcount_init(s)				\
+> +	do {						\
+> +		static struct lock_class_key __key;	\
+> +		__seqcount_init((s), #s, &__key);	\
+> +	} while (0)
+> +
+> +static inline void seqcount_reader_access(const seqcount_t *s)
+> +{
+> +	seqcount_t *l = (seqcount_t *)s;
+> +	unsigned long flags;
+> +
+> +	preempt_disable();
+> +	local_irq_save(flags);
+> +	seqcount_acquire_read(&l->dep_map, 0, 0, _RET_IP_);
+> +	seqcount_release(&l->dep_map, 1, _RET_IP_);
+> +	local_irq_restore(flags);
+> +	preempt_enable();
+> +}
 
-> What if we  re-did the implementation of isolcpu as creating an
-> cpuset with migration off as early as possible in the boot process, prior to
-> spawning init?
-> 
-> So basically, isolcpus becomes just a way to configure a cpuset early?
+Why the preempt and local_irq thing? Also preempt_disable is quite
+superfluous if you do local_irq_disable().
 
-Makes perfect sense to me.
-
--Mike
-
+> +
+> +#else
+> +# define SEQCOUNT_DEP_MAP_INIT(lockname)
+> +# define seqcount_init(s) __seqcount_init(s, NULL, NULL)
+> +# define seqcount_reader_access(x)
+> +#endif
+> +
+> +#define SEQCNT_ZERO(lockname) { .sequence = 0, SEQCOUNT_DEP_MAP_INIT(lockname)}
+> +
