@@ -1,68 +1,396 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752038Ab3IJVZJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 17:25:09 -0400
-Received: from a9-99.smtp-out.amazonses.com ([54.240.9.99]:56033 "EHLO
-	a9-99.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750994Ab3IJVZH (ORCPT
+	id S1752210Ab3IJVZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 17:25:26 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57183 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750844Ab3IJVZX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 17:25:07 -0400
-Date: Tue, 10 Sep 2013 21:25:05 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [REPOST PATCH 3/4] slab: introduce byte sized index for the
- freelist of a slab
-In-Reply-To: <20130910054342.GB24602@lge.com>
-Message-ID: <0000014109c372c6-5f3c49d4-ce8b-4760-b80d-a32e042ec09b-000000@email.amazonses.com>
-References: <1378447067-19832-1-git-send-email-iamjoonsoo.kim@lge.com> <1378447067-19832-4-git-send-email-iamjoonsoo.kim@lge.com> <00000140f3fed229-f49b95d4-7087-476f-b2c9-37846749aad6-000000@email.amazonses.com> <20130909043217.GB22390@lge.com>
- <00000141032dea11-c5aa9c77-b2f2-4cab-b7a0-d37665a6cec8-000000@email.amazonses.com> <20130910054342.GB24602@lge.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 10 Sep 2013 17:25:23 -0400
+Date: Tue, 10 Sep 2013 23:25:09 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Peter Anvin <hpa@zytor.com>, Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH 0/7] preempt_count rework -v2
+Message-ID: <20130910212509.GA18147@laptop.programming.kicks-ass.net>
+References: <20130910130811.507933095@infradead.org>
+ <20130910135152.GD7537@gmail.com>
+ <20130910135636.GA8268@gmail.com>
+ <CA+55aFwmEQeF+PtM7cuaQ8OkuTS=R4JJ61Wwfv8u-Svo-V3KwQ@mail.gmail.com>
+ <20130910164519.GL31370@twins.programming.kicks-ass.net>
+ <CA+55aFz7WtcdkwKEGoqCzmC9HsY0LPK-oVK_oATYhRnbGq=2GA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.09.10-54.240.9.99
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFz7WtcdkwKEGoqCzmC9HsY0LPK-oVK_oATYhRnbGq=2GA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Sep 2013, Joonsoo Kim wrote:
+On Tue, Sep 10, 2013 at 10:06:44AM -0700, Linus Torvalds wrote:
+> > Which is indeed perfect. So should I go 'fix' the other _and_test()
+> > functions we have to do this same thing?
+> 
+> It would be a good thing to test. There might be downsides with "asm
+> goto" (maybe it limits gcc some way), but it does in general save us
+> not only two instructions but also a register.
 
-> On Mon, Sep 09, 2013 at 02:44:03PM +0000, Christoph Lameter wrote:
-> > On Mon, 9 Sep 2013, Joonsoo Kim wrote:
-> >
-> > > 32 byte is not minimum object size, minimum *kmalloc* object size
-> > > in default configuration. There are some slabs that their object size is
-> > > less than 32 byte. If we have a 8 byte sized kmem_cache, it has 512 objects
-> > > in 4K page.
-> >
-> > As far as I can recall only SLUB supports 8 byte objects. SLABs mininum
-> > has always been 32 bytes.
->
-> No.
-> There are many slabs that their object size are less than 32 byte.
-> And I can also create a 8 byte sized slab in my kernel with SLAB.
+Here's one that builds and boots on kvm until wanting to mount root.
 
-Well the minimum size for the kmalloc array is 32 bytes. These are custom
-slabs. KMALLOC_SHIFT_LOW is set to 5 in include/linux/slab.h.
+I'm not entirely sure on the "ir" vs "er" thing and atomic64_t and
+local_t are inconsistent wrt that so I'm too.
 
-Ok so there are some slabs like that. Hmmm.. We have sizes 16 and 24 in
-your list. 16*256 is still 4096. So this would still work fine if we would
-forbid a size of 8 or increase that by default to 16.
+I'll try running on actual hardware tomorrow sometime.
 
-> > On x86 f.e. it would add useless branching. The branches are never taken.
-> > You only need these if you do bad things to the system like requiring
-> > large contiguous allocs.
->
-> As I said before, since there is a possibility that some runtime loaded modules
-> use a 8 byte sized slab, we can't determine index size in compile time. Otherwise
-> we should always use short int sized index and I think that it is worse than
-> adding a branch.
+---
+ arch/x86/include/asm/atomic.h      |   52 +++++++++++++++++++++++++++++++++++
+ arch/x86/include/asm/atomic64_64.h |   54 ++++++++++++++++++++++++++++++++++++-
+ arch/x86/include/asm/local.h       |   52 +++++++++++++++++++++++++++++++++++
+ 3 files changed, 157 insertions(+), 1 deletion(-)
 
-We can enforce a mininum slab size and an order limit so that it fits. And
-then there would be no additional branching.
-
-
+--- a/arch/x86/include/asm/atomic.h
++++ b/arch/x86/include/asm/atomic.h
+@@ -74,6 +74,18 @@ static inline void atomic_sub(int i, ato
+  * true if the result is zero, or false for all
+  * other cases.
+  */
++#ifdef CC_HAVE_ASM_GOTO
++static inline int atomic_sub_and_test(int i, atomic_t *v)
++{
++	asm volatile goto(LOCK_PREFIX "subl %1,%0;"
++			  "je %l[became_zero]"
++			  : : "m" (v->counter), "ir" (i)
++			  : "memory" : became_zero);
++	return 0;
++became_zero:
++	return 1;
++}
++#else
+ static inline int atomic_sub_and_test(int i, atomic_t *v)
+ {
+ 	unsigned char c;
+@@ -83,6 +95,7 @@ static inline int atomic_sub_and_test(in
+ 		     : "ir" (i) : "memory");
+ 	return c;
+ }
++#endif
+ 
+ /**
+  * atomic_inc - increment atomic variable
+@@ -116,6 +129,18 @@ static inline void atomic_dec(atomic_t *
+  * returns true if the result is 0, or false for all other
+  * cases.
+  */
++#ifdef CC_HAVE_ASM_GOTO
++static inline int atomic_dec_and_test(atomic_t *v)
++{
++	asm volatile goto(LOCK_PREFIX "decl %0;"
++			  "je %l[became_zero]"
++			  : : "m" (v->counter)
++			  : "memory" : became_zero);
++	return 0;
++became_zero:
++	return 1;
++}
++#else
+ static inline int atomic_dec_and_test(atomic_t *v)
+ {
+ 	unsigned char c;
+@@ -125,6 +150,7 @@ static inline int atomic_dec_and_test(at
+ 		     : : "memory");
+ 	return c != 0;
+ }
++#endif
+ 
+ /**
+  * atomic_inc_and_test - increment and test
+@@ -134,6 +160,18 @@ static inline int atomic_dec_and_test(at
+  * and returns true if the result is zero, or false for all
+  * other cases.
+  */
++#ifdef CC_HAVE_ASM_GOTO
++static inline int atomic_inc_and_test(atomic_t *v)
++{
++	asm volatile goto(LOCK_PREFIX "incl %0;"
++			  "je %l[became_zero]"
++			  : : "m" (v->counter)
++			  : "memory" : became_zero);
++	return 0;
++became_zero:
++	return 1;
++}
++#else
+ static inline int atomic_inc_and_test(atomic_t *v)
+ {
+ 	unsigned char c;
+@@ -143,6 +181,7 @@ static inline int atomic_inc_and_test(at
+ 		     : : "memory");
+ 	return c != 0;
+ }
++#endif
+ 
+ /**
+  * atomic_add_negative - add and test if negative
+@@ -153,6 +192,18 @@ static inline int atomic_inc_and_test(at
+  * if the result is negative, or false when
+  * result is greater than or equal to zero.
+  */
++#ifdef CC_HAVE_ASM_GOTO
++static inline int atomic_add_negative(int i, atomic_t *v)
++{
++	asm volatile goto(LOCK_PREFIX "addl %1,%0;"
++			  "js %l[became_neg]"
++			  : : "m" (v->counter), "ir" (i)
++			  : "memory" : became_neg);
++	return 0;
++became_neg:
++	return 1;
++}
++#else
+ static inline int atomic_add_negative(int i, atomic_t *v)
+ {
+ 	unsigned char c;
+@@ -162,6 +213,7 @@ static inline int atomic_add_negative(in
+ 		     : "ir" (i) : "memory");
+ 	return c;
+ }
++#endif
+ 
+ /**
+  * atomic_add_return - add integer and return
+--- a/arch/x86/include/asm/atomic64_64.h
++++ b/arch/x86/include/asm/atomic64_64.h
+@@ -70,6 +70,18 @@ static inline void atomic64_sub(long i,
+  * true if the result is zero, or false for all
+  * other cases.
+  */
++#ifdef CC_HAVE_ASM_GOTO
++static inline int atomic64_sub_and_test(long i, atomic64_t *v)
++{
++	asm volatile goto(LOCK_PREFIX "subq %1,%0;"
++			  "je %l[became_zero]"
++			  : : "m" (v->counter), "er" (i)
++			  : "memory" : became_zero);
++	return 0;
++became_zero:
++	return 1;
++}
++#else
+ static inline int atomic64_sub_and_test(long i, atomic64_t *v)
+ {
+ 	unsigned char c;
+@@ -79,6 +91,7 @@ static inline int atomic64_sub_and_test(
+ 		     : "er" (i), "m" (v->counter) : "memory");
+ 	return c;
+ }
++#endif
+ 
+ /**
+  * atomic64_inc - increment atomic64 variable
+@@ -114,6 +127,18 @@ static inline void atomic64_dec(atomic64
+  * returns true if the result is 0, or false for all other
+  * cases.
+  */
++#ifdef CC_HAVE_ASM_GOTO
++static inline int atomic64_dec_and_test(atomic64_t *v)
++{
++	asm volatile goto(LOCK_PREFIX "decq %0;"
++			  "je %l[became_zero]"
++			  : : "m" (v->counter)
++			  : "memory" : became_zero);
++	return 0;
++became_zero:
++	return 1;
++}
++#else
+ static inline int atomic64_dec_and_test(atomic64_t *v)
+ {
+ 	unsigned char c;
+@@ -123,6 +148,7 @@ static inline int atomic64_dec_and_test(
+ 		     : "m" (v->counter) : "memory");
+ 	return c != 0;
+ }
++#endif
+ 
+ /**
+  * atomic64_inc_and_test - increment and test
+@@ -132,6 +158,18 @@ static inline int atomic64_dec_and_test(
+  * and returns true if the result is zero, or false for all
+  * other cases.
+  */
++#ifdef CC_HAVE_ASM_GOTO
++static inline int atomic64_inc_and_test(atomic64_t *v)
++{
++	asm volatile goto(LOCK_PREFIX "incq %0;"
++			  "je %l[became_zero]"
++			  : : "m" (v->counter)
++			  : "memory" : became_zero);
++	return 0;
++became_zero:
++	return 1;
++}
++#else
+ static inline int atomic64_inc_and_test(atomic64_t *v)
+ {
+ 	unsigned char c;
+@@ -141,6 +179,7 @@ static inline int atomic64_inc_and_test(
+ 		     : "m" (v->counter) : "memory");
+ 	return c != 0;
+ }
++#endif
+ 
+ /**
+  * atomic64_add_negative - add and test if negative
+@@ -151,6 +190,18 @@ static inline int atomic64_inc_and_test(
+  * if the result is negative, or false when
+  * result is greater than or equal to zero.
+  */
++#ifdef CC_HAVE_ASM_GOTO
++static inline int atomic64_add_negative(long i, atomic64_t *v)
++{
++	asm volatile goto(LOCK_PREFIX "addq %1,%0;"
++			  "js %l[became_neg]"
++			  : : "m" (v->counter), "er" (i)
++			  : "memory" : became_neg);
++	return 0;
++became_neg:
++	return 1;
++}
++#else
+ static inline int atomic64_add_negative(long i, atomic64_t *v)
+ {
+ 	unsigned char c;
+@@ -160,6 +211,7 @@ static inline int atomic64_add_negative(
+ 		     : "er" (i), "m" (v->counter) : "memory");
+ 	return c;
+ }
++#endif
+ 
+ /**
+  * atomic64_add_return - add and return
+@@ -219,7 +271,7 @@ static inline int atomic64_add_unless(at
+ 
+ /*
+  * atomic64_dec_if_positive - decrement by 1 if old value positive
+- * @v: pointer of type atomic_t
++ * @v: pointer of type atomic64_t
+  *
+  * The function returns the old value of *v minus 1, even if
+  * the atomic variable, v, was not decremented.
+--- a/arch/x86/include/asm/local.h
++++ b/arch/x86/include/asm/local.h
+@@ -50,6 +50,18 @@ static inline void local_sub(long i, loc
+  * true if the result is zero, or false for all
+  * other cases.
+  */
++#ifdef CC_HAVE_ASM_GOTO
++static inline int local_sub_and_test(long i, local_t *l)
++{
++	asm volatile goto(_ASM_SUB " %1,%0;"
++			  "je %l[became_zero]"
++			  : : "m" (l->a.counter), "ir" (i)
++			  : "memory" : became_zero);
++	return 0;
++became_zero:
++	return 1;
++}
++#else
+ static inline int local_sub_and_test(long i, local_t *l)
+ {
+ 	unsigned char c;
+@@ -59,6 +71,7 @@ static inline int local_sub_and_test(lon
+ 		     : "ir" (i) : "memory");
+ 	return c;
+ }
++#endif
+ 
+ /**
+  * local_dec_and_test - decrement and test
+@@ -68,6 +81,18 @@ static inline int local_sub_and_test(lon
+  * returns true if the result is 0, or false for all other
+  * cases.
+  */
++#ifdef CC_HAVE_ASM_GOTO
++static inline int local_dec_and_test(local_t *l)
++{
++	asm volatile goto(_ASM_DEC " %0;"
++			  "je %l[became_zero]"
++			  : : "m" (l->a.counter)
++			  : "memory" : became_zero);
++	return 0;
++became_zero:
++	return 1;
++}
++#else
+ static inline int local_dec_and_test(local_t *l)
+ {
+ 	unsigned char c;
+@@ -77,6 +102,7 @@ static inline int local_dec_and_test(loc
+ 		     : : "memory");
+ 	return c != 0;
+ }
++#endif
+ 
+ /**
+  * local_inc_and_test - increment and test
+@@ -86,6 +112,18 @@ static inline int local_dec_and_test(loc
+  * and returns true if the result is zero, or false for all
+  * other cases.
+  */
++#ifdef CC_HAVE_ASM_GOTO
++static inline int local_inc_and_test(local_t *l)
++{
++	asm volatile goto(_ASM_INC " %0;"
++			  "je %l[became_zero]"
++			  : : "m" (l->a.counter)
++			  : "memory" : became_zero);
++	return 0;
++became_zero:
++	return 1;
++}
++#else
+ static inline int local_inc_and_test(local_t *l)
+ {
+ 	unsigned char c;
+@@ -95,6 +133,7 @@ static inline int local_inc_and_test(loc
+ 		     : : "memory");
+ 	return c != 0;
+ }
++#endif
+ 
+ /**
+  * local_add_negative - add and test if negative
+@@ -105,6 +144,18 @@ static inline int local_inc_and_test(loc
+  * if the result is negative, or false when
+  * result is greater than or equal to zero.
+  */
++#ifdef CC_HAVE_ASM_GOTO
++static inline int local_add_negative(long i, local_t *l)
++{
++	asm volatile goto(_ASM_ADD " %1,%0;"
++			  "js %l[became_neg]"
++			  : : "m" (l->a.counter), "ir" (i)
++			  : "memory" : became_neg);
++	return 0;
++became_neg:
++	return 1;
++}
++#else
+ static inline int local_add_negative(long i, local_t *l)
+ {
+ 	unsigned char c;
+@@ -114,6 +165,7 @@ static inline int local_add_negative(lon
+ 		     : "ir" (i) : "memory");
+ 	return c;
+ }
++#endif
+ 
+ /**
+  * local_add_return - add and return
