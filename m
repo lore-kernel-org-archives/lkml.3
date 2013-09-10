@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256Ab3IJIny (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 04:43:54 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40989 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754559Ab3IJInw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 04:43:52 -0400
-Date: Tue, 10 Sep 2013 10:43:40 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] [RFC] seqcount: Add lockdep functionality to
- seqcount/seqlock structures
-Message-ID: <20130910084340.GL26785@twins.programming.kicks-ass.net>
-References: <1378788166-18474-1-git-send-email-john.stultz@linaro.org>
+	id S1755303Ab3IJIsI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 04:48:08 -0400
+Received: from smtp1.goneo.de ([212.90.139.80]:44753 "EHLO smtp1.goneo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754364Ab3IJIsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 04:48:03 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -2.718
+From: Lars Poeschel <poeschel@lemonage.de>
+To: Mark Brown <broonie@kernel.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
+Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
+Date: Tue, 10 Sep 2013 10:47:55 +0200
+Message-ID: <2052193.CMUEUJFRgS@lem-wkst-02>
+User-Agent: KMail/4.10.5 (Linux/3.10-2-amd64; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20130909161924.GT29403@sirena.org.uk>
+References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de> <52279524.8090006@wwwdotorg.org> <20130909161924.GT29403@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378788166-18474-1-git-send-email-john.stultz@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 09:42:46PM -0700, John Stultz wrote:
-> Currently seqlocks and seqcounts don't support lockdep.
+On Tuesday 10 September 2013 17:19:24, Mark Brown wrote:
+> On Wed, Sep 04, 2013 at 02:16:36PM -0600, Stephen Warren wrote:
+> > On 09/04/2013 03:05 AM, Lars Poeschel wrote:
+> > > The driver that tries to use the GPIO requested by this patch before HAS
+> > > to
+> > > fail. This is exactly the intention of this patch. We don't want the
+> > > GPIO to be requested any more, if it is used as an interrupt pin.
+> > 
+> > That will break existing drivers. There are drivers that request the
+> > same GPIO and IRQ. IIRC, the SDHCI CD (Card Detect) GPIO is requested
+> > that way.
 > 
-> After running across a seqcount related deadlock in the timekeeping
-> code, I used a less-refined and more focused varient of this patch
-> to narrow down the cause of the issue.
-> 
-> This is a first-pass attempt to properly enable lockdep functionality
-> on seqlocks and seqcounts.
-> 
-> Due to seqlocks/seqcounts having slightly different possible semantics
-> then standard locks (ie: reader->reader and reader->writer recursion is
-> fine, but writer->reader is not), this implementation is probably not
-> as exact as I'd like (currently using a hack by only spot checking
-> readers), and may be overly strict in some cases.
-> 
-> I've handled one cases where there were nested seqlock writers, and
-> there may be more edge cases, as while I've gotten it to run cleanly,
-> depending on config its reporting issues that I'm not sure if they are
-> flaws in the implementation or actual bugs. But I wanted to send this
-> out for some initial thoughts as until today I hadn't looked at much
-> of the lockdep infrastructure. So I'm sure there are improvements
-> that could be made.
-> 
-> Comments and feedback would be appreciated!
+> Yes, plus input devices and audio jack detection among others.  This
+> pattern is very common if the GPIO is actually being used as a GPIO, an
+> edge triggered interrupt is used to flag when something happens and the
+> state is determined by reading the GPIO state (often with some
+> debounce).
 
-> --- a/arch/x86/vdso/vclock_gettime.c
-> +++ b/arch/x86/vdso/vclock_gettime.c
-> @@ -178,13 +178,15 @@ notrace static int __always_inline do_realtime(struct timespec *ts)
->  
->  	ts->tv_nsec = 0;
->  	do {
-> -		seq = read_seqcount_begin(&gtod->seq);
-> +		seq = __read_seqcount_begin(&gtod->seq);
-> +		smp_rmb();
->  		mode = gtod->clock.vclock_mode;
->  		ts->tv_sec = gtod->wall_time_sec;
->  		ns = gtod->wall_time_snsec;
->  		ns += vgetsns(&mode);
->  		ns >>= gtod->clock.shift;
-> -	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
-> +		smp_rmb();
-> +	} while (unlikely(__read_seqcount_retry(&gtod->seq, seq)));
->  
->  	timespec_add_ns(ts, ns);
->  	return mode;
-
-
-You didn't mention the VDSO 'fun' in you Changelog!
+And I say it again for those coming into the discussion late, like it has been 
+said many many times before: This patch does not break any of this drivers. 
+They simply request their GPIO from DT and turn it into an irq using 
+gpio_to_irq, request that irq on their behalf and use it as GPIO and IRQ in 
+parallel. At least this is not a problem.
