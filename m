@@ -1,54 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647Ab3IJXNL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 19:13:11 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:40367 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136Ab3IJXNH (ORCPT
+	id S1752997Ab3IJXOT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 19:14:19 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:49622 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751615Ab3IJXOS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 19:13:07 -0400
-Message-ID: <522F5275.7050001@hp.com>
-Date: Tue, 10 Sep 2013 17:10:13 +0000
-From: Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 10 Sep 2013 19:14:18 -0400
+Date: Wed, 11 Sep 2013 02:12:50 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Jerome Marchand <jmarchan@redhat.com>,
+        driverdev-devel@linuxdriverproject.org,
+        Minchan Kim <minchan@kernel.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] staging: zram: fix handle_pending_slot_free() and
+ zram_reset_device() race
+Message-ID: <20130910231250.GA2450@swordfish>
+References: <20130906151255.GE2238@swordfish.minsk.epam.com>
+ <20130909123329.GZ19256@mwanda>
+ <20130909124942.GA2221@swordfish.minsk.epam.com>
+ <20130909132124.GY6329@mwanda>
+ <522DD125.1030607@redhat.com>
+ <522DF2DF.5060407@redhat.com>
+ <20130910143416.GC2270@swordfish>
+ <20130910145802.GD19256@mwanda>
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger@dilger.ca>
-CC: T Makphaibulchoke <tmac@hp.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-ext4@vger.kernel.org List" <linux-ext4@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org Devel" <linux-fsdevel@vger.kernel.org>,
-        aswin@hp.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        aswin_proj@lists.hp.com
-Subject: Re: [PATCH v3 0/2] ext4: increase mbcache scalability
-References: <1374108934-50550-1-git-send-email-tmac@hp.com> <1378312756-68597-1-git-send-email-tmac@hp.com> <20130905023522.GA21268@thunk.org> <52285395.1070508@hp.com> <0787C579-7E2C-4864-B8F4-98816E1E50A2@dilger.ca> <5229C939.8030108@hp.com> <62D71A85-C7EE-4F5F-B481-5329F0282044@dilger.ca> <20130910210250.GH29237@thunk.org>
-In-Reply-To: <20130910210250.GH29237@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130910145802.GD19256@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2013 09:02 PM, Theodore Ts'o wrote:
-> On Tue, Sep 10, 2013 at 02:47:33PM -0600, Andreas Dilger wrote:
->> I agree that SELinux is enabled on enterprise distributions by default,
->> but I'm also interested to know how much overhead this imposes.  I would
->> expect that writing large external xattrs for each file would have quite
->> a significant performance overhead that should not be ignored.  Reducing
->> the mbcache overhead is good, but eliminating it entirely is better.
-> 
-> I was under the impression that using a 256 byte inode (which gives a
-> bit over 100 bytes worth of xattr space) was plenty for SELinux.  If
-> it turns out that SELinux's use of xattrs have gotten especially
-> piggy, then we may need to revisit the recommended inode size for
-> those systems who insist on using SELinux...  even if we eliminate the
-> overhead associated with mbcache, the fact that files are requiring a
-> separate xattr is going to seriously degrade performance.
-> 
-> 	       	  	   	     - Ted
-> 
+Dan Carpenter noted that handle_pending_slot_free() is racy with
+zram_reset_device(). Take write init_lock in zram_slot_free(), thus
+preventing any concurrent zram_slot_free(), zram_bvec_rw() or
+zram_reset_device(). This also allows to safely check zram->init_done
+in handle_pending_slot_free().
 
-Thank you Andreas and Ted for the explanations and comments.  Yes, I see both of your points now.  Though we may reduce the mbcache overhead, due to the overhead of additional xattr I/O it would be better to provide some data to help users or distros to determine whether they will be better off completely disabling SELinux or increasing the inode size.  I will go ahead and run the suggested experiments and get back with the results.
+Initial intention was to minimze number of handle_pending_slot_free()
+call from zram_bvec_rw(), which were slowing down READ requests due to
+slot_free_lock spin lock. Jerome Marchand suggested to remove
+handle_pending_slot_free() from zram_bvec_rw().
 
-Thanks,
-Mak.
+Link: https://lkml.org/lkml/2013/9/9/172
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+
+---
+
+ drivers/staging/zram/zram_drv.c | 13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 91d94b5..7a2d4de 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -521,7 +521,8 @@ static void handle_pending_slot_free(struct zram *zram)
+ 	while (zram->slot_free_rq) {
+ 		free_rq = zram->slot_free_rq;
+ 		zram->slot_free_rq = free_rq->next;
+-		zram_free_page(zram, free_rq->index);
++		if (zram->init_done)
++			zram_free_page(zram, free_rq->index);
+ 		kfree(free_rq);
+ 	}
+ 	spin_unlock(&zram->slot_free_lock);
+@@ -534,16 +535,13 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 
+ 	if (rw == READ) {
+ 		down_read(&zram->lock);
+-		handle_pending_slot_free(zram);
+ 		ret = zram_bvec_read(zram, bvec, index, offset, bio);
+ 		up_read(&zram->lock);
+ 	} else {
+ 		down_write(&zram->lock);
+-		handle_pending_slot_free(zram);
+ 		ret = zram_bvec_write(zram, bvec, index, offset);
+ 		up_write(&zram->lock);
+ 	}
+-
+ 	return ret;
+ }
+ 
+@@ -750,12 +748,11 @@ error:
+ 
+ static void zram_slot_free(struct work_struct *work)
+ {
+-	struct zram *zram;
++	struct zram *zram = container_of(work, struct zram, free_work);
+ 
+-	zram = container_of(work, struct zram, free_work);
+-	down_write(&zram->lock);
++	down_write(&zram->init_lock);
+ 	handle_pending_slot_free(zram);
+-	up_write(&zram->lock);
++	up_write(&zram->init_lock);
+ }
+ 
+ static void add_slot_free(struct zram *zram, struct zram_slot_free *free_rq)
 
