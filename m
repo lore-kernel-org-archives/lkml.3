@@ -1,158 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144Ab3IJOdd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 10:33:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45649 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751313Ab3IJOdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 10:33:31 -0400
-Date: Tue, 10 Sep 2013 15:33:26 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: Re: [PATCH 3/9] migrate: add hugepage migration code to
- migrate_pages()
-Message-ID: <20130910143326.GQ22421@suse.de>
-References: <1376025702-14818-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1376025702-14818-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1752255Ab3IJOen (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 10:34:43 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:41737 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751414Ab3IJOem (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 10:34:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1376025702-14818-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: eranian@gmail.com
+In-Reply-To: <20130910142942.GB8388@gmail.com>
+References: <20130903132933.GA24955@gmail.com>
+	<CA+55aFxBTjfx304zstOVq3Hm3vmjgC5gOJaxXG5E_iWq_WXGTw@mail.gmail.com>
+	<20130909100544.GI31370@twins.programming.kicks-ass.net>
+	<CAMsRxfLEO15kKrbmtKKXuW-JTtCCgiuXS6wFs9kiLmG1wge24A@mail.gmail.com>
+	<20130910115306.GA6091@gmail.com>
+	<CAMsRxfLvbExOzjz8tQu7AchQgKBh5S4b7VMQmFtr1RxK4ksAvA@mail.gmail.com>
+	<20130910133845.GB7537@gmail.com>
+	<CAMsRxfJ5HG+0AiooOUFh8TzvCoK3YcBFpeAF0eTzdkDm=wB84g@mail.gmail.com>
+	<20130910142942.GB8388@gmail.com>
+Date: Tue, 10 Sep 2013 07:34:41 -0700
+Message-ID: <CAMsRxf+18qz_vOkEZ1a8D9Z7BywWZPNB=qEn0bHXMFg96sALTQ@mail.gmail.com>
+Subject: Re: PEBS bug on HSW: "Unexpected number of pebs records 10" (was: Re:
+ [GIT PULL] perf changes for v3.12)
+From: Stephane Eranian <eranian@googlemail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 09, 2013 at 01:21:36AM -0400, Naoya Horiguchi wrote:
-> This patch extends check_range() to handle vma with VM_HUGETLB set.
-> We will be able to migrate hugepage with migrate_pages(2) after
-> applying the enablement patch which comes later in this series.
-> 
-> Note that for larger hugepages (covered by pud entries, 1GB for
-> x86_64 for example), we simply skip it now.
-> 
-> Note that using pmd_huge/pud_huge assumes that hugepages are pointed to
-> by pmd/pud. This is not true in some architectures implementing hugepage
-> with other mechanisms like ia64, but it's OK because pmd_huge/pud_huge
-> simply return 0 in such arch and page walker simply ignores such hugepages.
-> 
-> ChangeLog v4:
->  - refactored check_hugetlb_pmd_range for better readability
-> 
-> ChangeLog v3:
->  - revert introducing migrate_movable_pages
->  - use isolate_huge_page
-> 
-> ChangeLog v2:
->  - remove unnecessary extern
->  - fix page table lock in check_hugetlb_pmd_range
->  - updated description and renamed patch title
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Acked-by: Andi Kleen <ak@linux.intel.com>
-> Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> Acked-by: Hillf Danton <dhillf@gmail.com>
-> ---
->  mm/mempolicy.c | 42 +++++++++++++++++++++++++++++++++++++-----
->  1 file changed, 37 insertions(+), 5 deletions(-)
-> 
-> diff --git v3.11-rc3.orig/mm/mempolicy.c v3.11-rc3/mm/mempolicy.c
-> index 7431001..d96afc1 100644
-> --- v3.11-rc3.orig/mm/mempolicy.c
-> +++ v3.11-rc3/mm/mempolicy.c
-> @@ -512,6 +512,30 @@ static int check_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
->  	return addr != end;
->  }
->  
-> +static void check_hugetlb_pmd_range(struct vm_area_struct *vma, pmd_t *pmd,
-> +		const nodemask_t *nodes, unsigned long flags,
-> +				    void *private)
-> +{
-> +#ifdef CONFIG_HUGETLB_PAGE
-> +	int nid;
-> +	struct page *page;
-> +
-> +	spin_lock(&vma->vm_mm->page_table_lock);
-> +	page = pte_page(huge_ptep_get((pte_t *)pmd));
-> +	nid = page_to_nid(page);
-> +	if (node_isset(nid, *nodes) == !!(flags & MPOL_MF_INVERT))
-> +		goto unlock;
-> +	/* With MPOL_MF_MOVE, we migrate only unshared hugepage. */
-> +	if (flags & (MPOL_MF_MOVE_ALL) ||
-> +	    (flags & MPOL_MF_MOVE && page_mapcount(page) == 1))
-> +		isolate_huge_page(page, private);
-> +unlock:
-> +	spin_unlock(&vma->vm_mm->page_table_lock);
-> +#else
-> +	BUG();
-> +#endif
-> +}
-> +
->  static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
->  		unsigned long addr, unsigned long end,
->  		const nodemask_t *nodes, unsigned long flags,
-> @@ -523,6 +547,11 @@ static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
->  	pmd = pmd_offset(pud, addr);
->  	do {
->  		next = pmd_addr_end(addr, end);
-> +		if (pmd_huge(*pmd) && is_vm_hugetlb_page(vma)) {
-> +			check_hugetlb_pmd_range(vma, pmd, nodes,
-> +						flags, private);
-> +			continue;
-> +		}
->  		split_huge_page_pmd(vma, addr, pmd);
->  		if (pmd_none_or_trans_huge_or_clear_bad(pmd))
->  			continue;
+On Tue, Sep 10, 2013 at 7:29 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Stephane Eranian <eranian@googlemail.com> wrote:
+>
+>> On Tue, Sep 10, 2013 at 6:38 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>> >
+>> > * Stephane Eranian <eranian@googlemail.com> wrote:
+>> >
+>> >> Hi,
+>> >>
+>> >> Ok, so I am able to reproduce the problem using a simpler
+>> >> test case with a simple multithreaded program where
+>> >> #threads >> #CPUs.
+>> >
+>> > Does it go away if you use 'perf record --all-cpus'?
+>> >
+>> Haven't tried that yet.
+>>
+>> But I verified the DS pointers:
+>> init:
+>> CPU6 pebs base=ffff8808262de000 index=ffff8808262de000
+>> intr=ffff8808262de0c0 max=ffff8808262defc0
+>> crash:
+>> CPU6 pebs base=ffff8808262de000 index=ffff8808262de9c0
+>> intr=ffff8808262de0c0 max=ffff8808262defc0
+>>
+>> Neither the base nor the max are modified.
+>> The index simply goes beyond the threshold but that's not a bug.
+>> It is 12 after the threshold of 1, so total 13 is my new crash report.
+>>
+>> Two things to try:
+>> - measure only one thread/core
+>> - move the threshold a bit farther away (to get 2 or 3 entries)
+>>
+>> The threshold is where to generate the interrupt. It does not mean where
+>> to stop PEBS recording. So it is possible that in HSW, we may get into a
+>> situation where it takes time to get to the handler to stop the PMU. I
+>> don't know how given we use NMI. Well, unless we were already servicing
+>> an NMI at the time. But given that we stop the PMU almost immediately in
+>> the handler, I don't see how that would possible. The other oddity in
+>> HSW is that we clear the NMI on entry to the handler and not at the end.
+>> I never gotten an good explanation as to why that was necessary. So
+>> maybe it is related...
+>
+> Do you mean:
+>
+>         if (!x86_pmu.late_ack)
+>                 apic_write(APIC_LVTPC, APIC_DM_NMI);
+>
+> AFAICS that means the opposite: that we clear the NMI late, i.e. shortly
+> before return, after we've processed the PMU.
+>
+Yeah, the opposity, I got confused.
 
-If a hugepage is currently being migrated then a migration entry should
-be in its place which is a type of swap entry. Will the pmd_huge check
-still do the right thing if migration is already in progress?
+Let me try reverting that.
+Also curious about the influence of the LBR here.
 
->  		if (check_pmd_range(vma, pud, addr, next, nodes,
-> @@ -635,9 +666,6 @@ check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
->  				return ERR_PTR(-EFAULT);
->  		}
->  
-> -		if (is_vm_hugetlb_page(vma))
-> -			goto next;
-> -
->  		if (flags & MPOL_MF_LAZY) {
->  			change_prot_numa(vma, start, endvma);
->  			goto next;
-> @@ -986,7 +1014,11 @@ static void migrate_page_add(struct page *page, struct list_head *pagelist,
->  
->  static struct page *new_node_page(struct page *page, unsigned long node, int **x)
->  {
-> -	return alloc_pages_exact_node(node, GFP_HIGHUSER_MOVABLE, 0);
-> +	if (PageHuge(page))
-> +		return alloc_huge_page_node(page_hstate(compound_head(page)),
-> +					node);
-> +	else
-> +		return alloc_pages_exact_node(node, GFP_HIGHUSER_MOVABLE, 0);
->  }
->  
->  /*
-> @@ -1016,7 +1048,7 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
->  		err = migrate_pages(&pagelist, new_node_page, dest,
->  					MIGRATE_SYNC, MR_SYSCALL);
->  		if (err)
-> -			putback_lru_pages(&pagelist);
-> +			putback_movable_pages(&pagelist);
->  	}
->  
->  	return err;
-> -- 
-> 1.8.3.1
-> 
-
--- 
-Mel Gorman
-SUSE Labs
+> Do the symptoms change if you remove the x86_pmu.late_ack setting line
+> from:
+>
+>         case 60: /* Haswell Client */
+>         case 70:
+>         case 71:
+>         case 63:
+>         case 69:
+>                 x86_pmu.late_ack = true;
+>
+> ?
+>
+> Thanks,
+>
+>         Ingo
