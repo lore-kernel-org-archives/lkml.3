@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722Ab3IJNmx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 09:42:53 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:59007 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256Ab3IJNmv (ORCPT
+	id S1752162Ab3IJNpi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 09:45:38 -0400
+Received: from mail-vb0-f53.google.com ([209.85.212.53]:55141 "EHLO
+	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751757Ab3IJNph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 09:42:51 -0400
-Date: Tue, 10 Sep 2013 15:42:47 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>, Jan Beulich <jbeulich@suse.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 7/7] sched, x86: Optimize the preempt_schedule() call
-Message-ID: <20130910134247.GC7537@gmail.com>
-References: <20130910130811.507933095@infradead.org>
- <20130910132011.474646746@infradead.org>
+	Tue, 10 Sep 2013 09:45:37 -0400
+Date: Tue, 10 Sep 2013 09:45:33 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Libin <huawei.libin@huawei.com>
+Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mingo@redhat.com, wangyijing@huawei.com,
+        guohanjun@huawei.com
+Subject: Re: [PATCH] workqueue: remove redundant
+ timer_stats_timer_set_start_info() call
+Message-ID: <20130910134533.GB7275@htj.dyndns.org>
+References: <1378794927-4396-1-git-send-email-huawei.libin@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130910132011.474646746@infradead.org>
+In-Reply-To: <1378794927-4396-1-git-send-email-huawei.libin@huawei.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Sep 10, 2013 at 02:35:27PM +0800, Libin wrote:
+> From: Li Bin <huawei.libin@huawei.com>
+> 
+> There is a redundant call for timer_stats_timer_set_start_info(),
+> because it is the responsibility of the 'timer add' function:
+> 
+> add_timer_on()
+> |- timer_stats_timer_set_start_info()
+> 
+> add_timer()
+> |- mod_timer()
+> 	|- __mod_timer()
+> 		|- timer_stats_timer_set_start_info()
+> 
+> So the calling here is redundant, remove it.
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+I think it's intentional to record the caller's address so that timers
+from delayed_work items can be distinguished.
 
-> +	.macro SAVE_ALL
-> +	pushl_cfi %eax
-> +	CFI_REL_OFFSET eax, 0
-> +	pushl_cfi %ebp
-> +	CFI_REL_OFFSET ebp, 0
-> +	pushl_cfi %edi
-> +	CFI_REL_OFFSET edi, 0
-> +	pushl_cfi %esi
-> +	CFI_REL_OFFSET esi, 0
-> +	pushl_cfi %edx
-> +	CFI_REL_OFFSET edx, 0
-> +	pushl_cfi %ecx
-> +	CFI_REL_OFFSET ecx, 0
-> +	pushl_cfi %ebx
-> +	CFI_REL_OFFSET ebx, 0
-> +	.endm
-> +
-> +	.macro RESTORE_ALL
-> +	popl_cfi %ebx
-> +	CFI_RESTORE ebx
-> +	popl_cfi %ecx
-> +	CFI_RESTORE ecx
-> +	popl_cfi %edx
-> +	CFI_RESTORE edx
-> +	popl_cfi %esi
-> +	CFI_RESTORE esi
-> +	popl_cfi %edi
-> +	CFI_RESTORE edi
-> +	popl_cfi %ebp
-> +	CFI_RESTORE ebp
-> +	popl_cfi %eax
-> +	CFI_RESTORE eax
-> +	.endm
+Thanks.
 
-Side note: shouldn't the pushl_cfi and popl_cfi macros be adjusted, 
-instead of open coding it?
-
-Thanks,
-
-	Ingo
+-- 
+tejun
