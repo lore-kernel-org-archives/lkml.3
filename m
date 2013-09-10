@@ -1,67 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753529Ab3IJQpP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 12:45:15 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:38572 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406Ab3IJQpM (ORCPT
+	id S1753576Ab3IJQpg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 12:45:36 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51835 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753327Ab3IJQpe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 12:45:12 -0400
+	Tue, 10 Sep 2013 12:45:34 -0400
+Date: Tue, 10 Sep 2013 18:45:19 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Peter Anvin <hpa@zytor.com>, Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH 0/7] preempt_count rework -v2
+Message-ID: <20130910164519.GL31370@twins.programming.kicks-ass.net>
+References: <20130910130811.507933095@infradead.org>
+ <20130910135152.GD7537@gmail.com>
+ <20130910135636.GA8268@gmail.com>
+ <CA+55aFwmEQeF+PtM7cuaQ8OkuTS=R4JJ61Wwfv8u-Svo-V3KwQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <16357.1378816473@warthog.procyon.org.uk>
-References: <alpine.DEB.2.00.1309091042520.18214@cobra.newdream.net>
-	<fd69f2052bc16d5a5de0104ca00ccc59478e3569.1378750714.git.milosz@adfin.com>
-	<16357.1378816473@warthog.procyon.org.uk>
-Date: Tue, 10 Sep 2013 12:45:11 -0400
-Message-ID: <CANP1eJFy+dtwEVYbyTtYbH+CeXGfUDbUkaf-_YsJAn_VLvK4pg@mail.gmail.com>
-Subject: Re: [PATCH] fscache: check consistency does not decrement refcount
-From: Milosz Tanski <milosz@adfin.com>
-To: Sage Weil <sage@inktank.com>
-Cc: ceph-devel <ceph-devel@vger.kernel.org>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>,
-        "linux-cachefs@redhat.com" <linux-cachefs@redhat.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwmEQeF+PtM7cuaQ8OkuTS=R4JJ61Wwfv8u-Svo-V3KwQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sage,
+On Tue, Sep 10, 2013 at 09:34:52AM -0700, Linus Torvalds wrote:
+> On Tue, Sep 10, 2013 at 6:56 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > +static __always_inline bool __preempt_count_dec_and_test(void)
+> > +{
+> > +       unsigned char c;
+> > +
+> > +       asm ("decl " __percpu_arg(0) "; sete %1"
+> > +                       : "+m" (__preempt_count), "=qm" (c));
+> > +
+> > +       return c != 0;
+> > +}
+> >
+> > And that's where the sete and test originates from.
+> 
+> We could make this use "asm goto" instead.
+> 
+> An "asm goto" cannot have outputs, but this particular one doesn't
+> _need_ outputs. You could mark the preempt_count memory as an input,
+> and then have a memory clobber. I think you need the memory clobber
+> anyway for that preempt-count thing.
+> 
+> So I _think_ something like
+> 
+> static __always_inline bool __preempt_count_dec_and_test(void)
+> {
+>        asm goto("decl " __percpu_arg(0) "\n\t"
+>                 "je %l[became_zero]"
+>                        : :"m" (__preempt_count):"memory":became_zero);
+>        return 0;
+> became_zero:
+>        return 1;
+> }
 
-Can you submit to the upstream next in your next round of fixes (with
-David's ack).
+The usage site:
 
-Thanks,
-- Milosz
+#define preempt_enable() \
+do { \
+	barrier(); \
+	if (unlikely(preempt_count_dec_and_test())) \
+		__preempt_schedule(); \
+} while (0)
 
-P.S: Thanks David.
+Already includes the barrier explicitly, so do we still need the memory
+clobber in that asm goto thing?
 
-On Tue, Sep 10, 2013 at 8:34 AM, David Howells <dhowells@redhat.com> wrote:
-> Milosz Tanski <milosz@adfin.com> wrote:
->
->> __fscache_check_consistency() does not decrement the count of operations
->> active after it finishes in the success case. This leads to a hung tasks on
->> cookie de-registration (commonly in inode eviction).
->>
->> INFO: task kworker/1:2:4214 blocked for more than 120 seconds.
->> kworker/1:2     D ffff880443513fc0     0  4214      2 0x00000000
->> Workqueue: ceph-msgr con_work [libceph]
->>   ...
->> Call Trace:
->>  [<ffffffff81569fc6>] ? _raw_spin_unlock_irqrestore+0x16/0x20
->>  [<ffffffffa0016570>] ? fscache_wait_bit_interruptible+0x30/0x30 [fscache]
->>  [<ffffffff81568d09>] schedule+0x29/0x70
->>  [<ffffffffa001657e>] fscache_wait_atomic_t+0xe/0x20 [fscache]
->>  [<ffffffff815665cf>] out_of_line_wait_on_atomic_t+0x9f/0xe0
->>  [<ffffffff81083560>] ? autoremove_wake_function+0x40/0x40
->>  [<ffffffffa0015a9c>] __fscache_relinquish_cookie+0x15c/0x310 [fscache]
->>  [<ffffffffa00a4fae>] ceph_fscache_unregister_inode_cookie+0x3e/0x50 [ceph]
->>  [<ffffffffa007e373>] ceph_destroy_inode+0x33/0x200 [ceph]
->>  [<ffffffff811c13ae>] ? __fsnotify_inode_delete+0xe/0x10
->>  [<ffffffff8119ba1c>] destroy_inode+0x3c/0x70
->>  [<ffffffff8119bb69>] evict+0x119/0x1b0
->>
->> Signed-off-by: Milosz Tanski <milosz@adfin.com>
->
-> Acked-by: David Howells <dhowells@redhat.com>
+That said, your change results in:
+
+  ffffffff8106f420 <kick_process>:
+  ffffffff8106f420:       55                      push   %rbp
+  ffffffff8106f421:       65 ff 04 25 e0 b7 00    incl   %gs:0xb7e0
+  ffffffff8106f428:       00 
+  ffffffff8106f429:       48 89 e5                mov    %rsp,%rbp
+  ffffffff8106f42c:       48 8b 47 08             mov    0x8(%rdi),%rax
+  ffffffff8106f430:       8b 50 18                mov    0x18(%rax),%edx
+  ffffffff8106f433:       65 8b 04 25 1c b0 00    mov    %gs:0xb01c,%eax
+  ffffffff8106f43a:       00 
+  ffffffff8106f43b:       39 c2                   cmp    %eax,%edx
+  ffffffff8106f43d:       74 1b                   je     ffffffff8106f45a <kick_process+0x3a>
+  ffffffff8106f43f:       89 d1                   mov    %edx,%ecx
+  ffffffff8106f441:       48 c7 c0 00 2c 01 00    mov    $0x12c00,%rax
+  ffffffff8106f448:       48 8b 0c cd a0 bc cb    mov    -0x7e344360(,%rcx,8),%rcx
+  ffffffff8106f44f:       81 
+  ffffffff8106f450:       48 3b bc 08 00 08 00    cmp    0x800(%rax,%rcx,1),%rdi
+  ffffffff8106f457:       00 
+  ffffffff8106f458:       74 26                   je     ffffffff8106f480 <kick_process+0x60>
+* ffffffff8106f45a:       65 ff 0c 25 e0 b7 00    decl   %gs:0xb7e0
+  ffffffff8106f461:       00 
+* ffffffff8106f462:       74 0c                   je     ffffffff8106f470 <kick_process+0x50>
+  ffffffff8106f464:       5d                      pop    %rbp
+  ffffffff8106f465:       c3                      retq   
+  ffffffff8106f466:       66 2e 0f 1f 84 00 00    nopw   %cs:0x0(%rax,%rax,1)
+  ffffffff8106f46d:       00 00 00 
+* ffffffff8106f470:       e8 9b b6 f9 ff          callq  ffffffff8100ab10 <___preempt_schedule>
+  ffffffff8106f475:       5d                      pop    %rbp
+  ffffffff8106f476:       c3                      retq   
+  ffffffff8106f477:       66 0f 1f 84 00 00 00    nopw   0x0(%rax,%rax,1)
+  ffffffff8106f47e:       00 00 
+  ffffffff8106f480:       89 d7                   mov    %edx,%edi
+  ffffffff8106f482:       ff 15 b8 e0 ba 00       callq  *0xbae0b8(%rip)        # ffffffff81c1d540 <smp_ops+0x20>
+  ffffffff8106f488:       eb d0                   jmp    ffffffff8106f45a <kick_process+0x3a>
+  ffffffff8106f48a:       66 0f 1f 44 00 00       nopw   0x0(%rax,%rax,1)
+
+
+Which is indeed perfect. So should I go 'fix' the other _and_test()
+functions we have to do this same thing?
