@@ -1,64 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708Ab3IJDVd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 23:21:33 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:16739 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210Ab3IJDVb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 23:21:31 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 09 Sep 2013 20:21:30 -0700
-Message-ID: <522E9059.3070305@nvidia.com>
-Date: Tue, 10 Sep 2013 11:22:01 +0800
-From: Wei Ni <wni@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	id S1752015Ab3IJD1F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 23:27:05 -0400
+Received: from mga11.intel.com ([192.55.52.93]:5537 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750925Ab3IJD1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Sep 2013 23:27:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,875,1371106800"; 
+   d="scan'208";a="399090507"
+Message-ID: <522E91A6.6040600@intel.com>
+Date: Tue, 10 Sep 2013 11:27:34 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, Mark Brown <broonie@kernel.org>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/2] hwmon: (lm90) Add power control
-References: <1378722552-10357-1-git-send-email-wni@nvidia.com> <1378722552-10357-2-git-send-email-wni@nvidia.com> <20130909111242.GW29403@sirena.org.uk> <522DB253.6000707@roeck-us.net> <20130909135022.GZ29403@sirena.org.uk> <20130909155043.GA18975@roeck-us.net>
-In-Reply-To: <20130909155043.GA18975@roeck-us.net>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+CC: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, Yves-Alexis Perez <corsac@debian.org>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Lee Chun-Yi <jlee@novell.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Subject: Re: [PATCH 2/2] ACPI / video / i915: Remove ACPI backlight if firmware
+ expects Windows 8
+References: <522D88C3.7000808@intel.com> <522D89EC.6050103@intel.com> <1378727093.13401.3.camel@ThinkPad-X230.localdomain>
+In-Reply-To: <1378727093.13401.3.camel@ThinkPad-X230.localdomain>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2013 11:50 PM, Guenter Roeck wrote:
-> On Mon, Sep 09, 2013 at 02:50:22PM +0100, Mark Brown wrote:
->> On Mon, Sep 09, 2013 at 04:34:43AM -0700, Guenter Roeck wrote:
->>> On 09/09/2013 04:12 AM, Mark Brown wrote:
->>>> On Mon, Sep 09, 2013 at 06:29:11PM +0800, Wei Ni wrote:
->>
->>>> This doesn't look good, it is going to ignore actual errors - I *really*
->>>> doubt that vcc is optional, it looks like it's the main power supply for
->>>> the device.  You should use normal regulator_get(), _optional() is for
->>>> supplies which could physically not be provided in a system (eg, if the
->>>> device can generate them internally if required).
->>
->>> Then he'll have to make sure that all devicetree files in the system
->>> contain references to this regulator.
->>
->> Or get the patches applied on top of the code that'll be going in this
->> cycle implementing get_optional() properly - when that's done the
->> default will be to provide a dummy supply for regulator_get().  If you
->> ack the patch I'd be happy to carry it.
->>
-> Jean will have to ack it.
+On 09/09/2013 07:44 PM, Igor Gnatenko wrote:
+> On Mon, 2013-09-09 at 16:42 +0800, Aaron Lu wrote:
+>> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+>> index f466980..75fba17 100644
+>> --- a/drivers/gpu/drm/i915/i915_dma.c
+>> +++ b/drivers/gpu/drm/i915/i915_dma.c
+>> @@ -1650,7 +1650,7 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
+>>  	if (INTEL_INFO(dev)->num_pipes) {
+>>  		/* Must be done after probing outputs */
+>>  		intel_opregion_init(dev);
+>> -		acpi_video_register();
+>> +		__acpi_video_register(i915_take_over_backlight);
+>>  	}
+>>  
+>>  	if (IS_GEN5(dev))
 > 
-I think it's better to use get_optional(), and ignore the errors except
--EPROBE_DEFER. Because many platform may always power on this device,
-and will not provide regulator for it, so if we get errors from
-regulator subsystem and return it directly, then the probe() can't be
-implemented, this driver can't work properly, even though it can work
-without regulator support.
-Mark, do you mean you have patches for regulator_get_optional() and
-regulator_get()?
+> I can't compile:
+> 
+> 
+> DEBUG: drivers/gpu/drm/i915/i915_dma.c: In function 'i915_driver_load':
+> DEBUG: drivers/gpu/drm/i915/i915_dma.c:1661:3: error: implicit
+> declaration of function
+> '__acpi_video_register' [-Werror=implicit-function-declaration]
+> DEBUG:    __acpi_video_register(i915_take_over_backlight);
+> DEBUG:    ^
+> DEBUG: cc1: some warnings being treated as errors
+> DEBUG: make[4]: *** [drivers/gpu/drm/i915/i915_dma.o] Error 1
+> DEBUG: make[3]: *** [drivers/gpu/drm/i915] Error 2
+> DEBUG: make[2]: *** [drivers/gpu/drm] Error 2
+> DEBUG: make[1]: *** [drivers/gpu] Error 2
+> DEBUG: make: *** [drivers] Error 2
+> 
 
-Wei.
+The two patches are based on top of Rafael's linux-next tree. I just
+tried it again, no compile problem for me. I also tried on today Linus'
+master tree, as there are some updates from i915, two conflicts exist.
+I've just resolved them and will update it in next revision.
+If you want to try it now, please use:
+https://github.com/aaronlu/linux acpi_video_rework
 
+Thanks,
+Aaron
