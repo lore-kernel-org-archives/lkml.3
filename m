@@ -1,51 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753196Ab3IJWl1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 18:41:27 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:37804 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753147Ab3IJWlZ (ORCPT
+	id S1752620Ab3IJWoE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 18:44:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40199 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751420Ab3IJWoB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 18:41:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+8MBb+i+kmnAMi4dTEX9nGwMLRz0EUz0tY0N7YA2btFEtgmQw@mail.gmail.com>
-References: <20130718230312.GA22348@www.outflux.net>
-	<CA+8MBb+i+kmnAMi4dTEX9nGwMLRz0EUz0tY0N7YA2btFEtgmQw@mail.gmail.com>
-Date: Tue, 10 Sep 2013 15:41:24 -0700
-X-Google-Sender-Auth: wf3HV2g-CoHGoprdx93_xhgkirw
-Message-ID: <CAGXu5j+-Hpe1hFH4z8dk1E8ASR4NxNYBH5j_PdgmwGAkWgcFEA@mail.gmail.com>
-Subject: Re: [PATCH] panic: call panic handlers before kmsg_dump
-From: Kees Cook <keescook@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>, Tony Luck <tony.luck@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Vikram Mulukutla <markivx@codeaurora.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 10 Sep 2013 18:44:01 -0400
+Date: Tue, 10 Sep 2013 15:44:00 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Chinner <dchinner@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: linux-next: manual merge of the akpm tree with Linus' tree
+Message-Id: <20130910154400.75bb3328fbb9eaa937715652@linux-foundation.org>
+In-Reply-To: <CA+55aFwiK+=7N3EDoX+s8dVCoraba9bCPrgqHgsMKppogEFBnw@mail.gmail.com>
+References: <20130910143807.4c32d548e08d2184061f52cb@canb.auug.org.au>
+	<20130910152753.662599171456233c5f91edb4@linux-foundation.org>
+	<CA+55aFwiK+=7N3EDoX+s8dVCoraba9bCPrgqHgsMKppogEFBnw@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 4:17 PM, Tony Luck <tony.luck@gmail.com> wrote:
-> On Thu, Jul 18, 2013 at 4:03 PM, Kees Cook <keescook@chromium.org> wrote:
->> Since the panic handlers may produce additional information (via printk)
->> for the kernel log, it should be reported as part of the panic output
->> saved by kmsg_dump(). Without this re-ordering, nothing that adds
->> information to a panic will show up in pstore's view when kmsg_dump
->> runs, and is therefore not visible to crash reporting tools that examine
->> pstore output.
->
-> Good point.
->
-> Acked-by: Tony Luck <tony.luck@intel.com>
+On Tue, 10 Sep 2013 15:35:04 -0700 Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Can someone pick this patch up? If akpm doesn't want it, it could live
-in the pstore tree maybe?
+> So I'd (once again) suggest you base your pile of patches on the
+> previous stable kernel, and that linux-next take it *first* rather
+> than take it last.
 
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+That's what we're now doing.  But this particular patchset was
+different because it's changing multiple subsystems, several of which
+are concurrently being changed in an uncoordinated fashion.
