@@ -1,39 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756188Ab3IJAMx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Sep 2013 20:12:53 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:48398 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755850Ab3IJAMw (ORCPT
+	id S1756221Ab3IJAOe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Sep 2013 20:14:34 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:60997 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755850Ab3IJAOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Sep 2013 20:12:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <1378770719-24070-1-git-send-email-jon.mason@intel.com>
-References: <1378770719-24070-1-git-send-email-jon.mason@intel.com>
-Date: Mon, 9 Sep 2013 17:12:51 -0700
-X-Google-Sender-Auth: 07qQQDdtIAqIPFdwLjtaNOJ92LE
-Message-ID: <CAA9_cmdkkUNqXgB8rWpPOY3szMuGe-x9y2v4+EKaPpZYmmPSZA@mail.gmail.com>
-Subject: Re: [PATCH] dmadevices: dma_sync_wait and dma_find_channel undefined
-From: Dan Williams <dan.j.williams@intel.com>
-To: Jon Mason <jon.mason@intel.com>
-Cc: Dave Jiang <dave.jiang@intel.com>, Vinod Koul <vinod.koul@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 9 Sep 2013 20:14:31 -0400
+Message-Id: <22aafb8a75c10dfc082093f7ff346de66927904f.1378771874.git.joshc@codeaurora.org>
+In-Reply-To: <5350fa5571d24b68d6bb27959d3ef761ccb95b00.1378771874.git.joshc@codeaurora.org>
+References: <5350fa5571d24b68d6bb27959d3ef761ccb95b00.1378771874.git.joshc@codeaurora.org>
+From: Josh Cartwright <joshc@codeaurora.org>
+Date: Mon, 9 Sep 2013 19:02:07 -0500
+Subject: [PATCH 2/2] ARM: msm: trout: fix uninit var warning
+To: David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, arm@kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 9, 2013 at 4:51 PM, Jon Mason <jon.mason@intel.com> wrote:
-> dma_sync_wait and dma_find_channel are declared regardless of whether
-> CONFIG_DMA_ENGINE is enabled, but calling the function without
-> CONFIG_DMA_ENGINE enabled results "undefined reference" errors.
->
-> To get around this, declare dma_sync_wait and dma_find_channel as inline
-> functions if CONFIG_DMA_ENGINE is undefined.
->
-> Signed-off-by: Jon Mason <jon.mason@intel.com>
+Fix the following warning when !CONFIG_MMC:
 
-Applied with a s/dmadevices/dmaengine/ on the subject.
+arch/arm/mach-msm/board-trout.c: In function 'trout_init':
+arch/arm/mach-msm/board-trout.c:67:6: warning: unused variable 'rc' [-Wunused-variable]
+  int rc;
+      ^
 
---
-Dan
+Also, while we're here, rework explicit printk(KERN_CRIT..) to use
+pr_crit.
+
+Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+---
+ arch/arm/mach-msm/board-trout.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm/mach-msm/board-trout.c b/arch/arm/mach-msm/board-trout.c
+index ccf6621..015d544 100644
+--- a/arch/arm/mach-msm/board-trout.c
++++ b/arch/arm/mach-msm/board-trout.c
+@@ -13,6 +13,7 @@
+  * GNU General Public License for more details.
+  *
+  */
++#define pr_fmt(fmt) "%s: " fmt, __func__
+ 
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+@@ -68,12 +69,11 @@ static void __init trout_init(void)
+ 
+ 	platform_add_devices(devices, ARRAY_SIZE(devices));
+ 
+-#ifdef CONFIG_MMC
+-        rc = trout_init_mmc(system_rev);
+-        if (rc)
+-                printk(KERN_CRIT "%s: MMC init failure (%d)\n", __func__, rc);
+-#endif
+-
++	if (IS_ENABLED(CONFIG_MMC)) {
++		rc = trout_init_mmc(system_rev);
++		if (rc)
++			pr_crit("MMC init failure (%d)\n", rc);
++	}
+ }
+ 
+ static struct map_desc trout_io_desc[] __initdata = {
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
