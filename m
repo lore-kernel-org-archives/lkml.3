@@ -1,55 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751062Ab3IJJ20 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 05:28:26 -0400
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:48734 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893Ab3IJJ2Y (ORCPT
+	id S1751261Ab3IJJ3F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 05:29:05 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:38139 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875Ab3IJJ3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 05:28:24 -0400
-Date: Tue, 10 Sep 2013 11:28:37 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Knut Petersen <Knut_Petersen@t-online.de>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>, ville.syrjala@linux.intel.com
-Subject: Re: [PATCH] drm/i915/sdvo: Fully translate sync flags in the
- dtd->mode conversion
-Message-ID: <20130910092837.GJ27291@phenom.ffwll.local>
-Mail-Followup-To: Knut Petersen <Knut_Petersen@t-online.de>,
-	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-	LKML <linux-kernel@vger.kernel.org>, ville.syrjala@linux.intel.com
-References: <522A5008.6060005@t-online.de>
- <1378800168-32277-1-git-send-email-daniel.vetter@ffwll.ch>
- <522EDB3D.7040504@t-online.de>
+	Tue, 10 Sep 2013 05:29:03 -0400
+Date: Tue, 10 Sep 2013 10:28:57 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: wei_wang@realsil.com.cn
+Cc: sameo@linux.intel.com, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        rogerable@realtek.com, micky_ching@realsil.com.cn
+Subject: Re: [PATCH v3] mfd: rtsx: Modify rts5249_optimize_phy
+Message-ID: <20130910092857.GB1456@lee--X1>
+References: <1378804397-28640-1-git-send-email-wei_wang@realsil.com.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <522EDB3D.7040504@t-online.de>
-X-Operating-System: Linux phenom 3.10-2-amd64
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1378804397-28640-1-git-send-email-wei_wang@realsil.com.cn>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 10:41:33AM +0200, Knut Petersen wrote:
-> On 10.09.2013 10:02, Daniel Vetter wrote:
-> >Instead of just a flag bit for each of the positive/negative sync
-> >modes drm actually uses a separate flag for each ... This upsets the
-> >modeset checker since the adjusted mode filled out at modeset time
-> >doesn't match the one reconstructed at check time (since the
-> >->get_config callback already gets this right).
-> >
-> >Reported-by: Knut Petersen <Knut_Petersen@t-online.de>
-> >Cc: Knut Petersen <Knut_Petersen@t-online.de>
-> >References: http://www.gossamer-threads.com/lists/linux/kernel/1778688?do=post_view_threaded
+> From: Wei WANG <wei_wang@realsil.com.cn>
 > 
-> Thanks for the patch, but it does _not_ cure the problem, see attached boot dmesg.
+> In some platforms, specially Thinkpad series, rts5249 won't be
+> initialized properly. So we need adjust some phy parameters to
+> improve the compatibility issue.
 
-Oh, it fixed the first mismatch afaict, but I've missed that the tv load
-detect also causes fun ;-) Working on a 2nd patch ...
--Daniel
+The code looks so much more readable now, thanks for that.
+
+I would like some more information in the commit log though. You're
+making a lot of configuration changes here and due to the
+incomprehensible 'magic numbers' used previously, it's impossible to
+know what you're changing by just reading the code.
+
+Why won't the rts**** be initialise properly and what exactly are you
+changing to rectify the situation?
+
+> Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
+> ---
+>  drivers/mfd/rts5249.c        |   48 ++++++++++++++++++++++++++++++++++++--
+>  include/linux/mfd/rtsx_pci.h |   53 ++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 99 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
+> index 3b835f5..573de7b 100644
+> --- a/drivers/mfd/rts5249.c
+> +++ b/drivers/mfd/rts5249.c
+> @@ -130,13 +130,57 @@ static int rts5249_optimize_phy(struct rtsx_pcr *pcr)
+>  {
+>  	int err;
+>  
+> -	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV, 0xFE46);
+> +	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV,
+> +			PHY_REG_REV_RESV | PHY_REG_REV_RXIDLE_LATCHED |
+> +			PHY_REG_REV_P1_EN | PHY_REG_REV_RXIDLE_EN |
+> +			PHY_REG_REV_RX_PWST | PHY_REG_REV_CLKREQ_DLY_TIMER_1_0 |
+> +			PHY_REG_REV_STOP_CLKRD | PHY_REG_REV_STOP_CLKWR);
+>  	if (err < 0)
+>  		return err;
+>  
+>  	msleep(1);
+>  
+> -	return rtsx_pci_write_phy_register(pcr, PHY_BPCR, 0x05C0);
+> +	err = rtsx_pci_write_phy_register(pcr, PHY_BPCR,
+> +			PHY_BPCR_IBRXSEL | PHY_BPCR_IBTXSEL |
+> +			PHY_BPCR_IB_FILTER | PHY_BPCR_CMIRROR_EN);
+> +	if (err < 0)
+> +		return err;
+> +	err = rtsx_pci_write_phy_register(pcr, PHY_PCR,
+> +			PHY_PCR_FORCE_CODE | PHY_PCR_OOBS_CALI_50 |
+> +			PHY_PCR_OOBS_VCM_08 | PHY_PCR_OOBS_SEN_90 |
+> +			PHY_PCR_RSSI_EN);
+> +	if (err < 0)
+> +		return err;
+> +	err = rtsx_pci_write_phy_register(pcr, PHY_RCR2,
+> +			PHY_RCR2_EMPHASE_EN | PHY_RCR2_NADJR |
+> +			PHY_RCR2_CDR_CP_10 | PHY_RCR2_CDR_SR_2 |
+> +			PHY_RCR2_FREQSEL_12 | PHY_RCR2_CPADJEN |
+> +			PHY_RCR2_CDR_SC_8 | PHY_RCR2_CALIB_LATE);
+> +	if (err < 0)
+> +		return err;
+> +	err = rtsx_pci_write_phy_register(pcr, PHY_FLD4,
+> +			PHY_FLD4_FLDEN_SEL | PHY_FLD4_REQ_REF |
+> +			PHY_FLD4_RXAMP_OFF | PHY_FLD4_REQ_ADDA |
+> +			PHY_FLD4_BER_COUNT | PHY_FLD4_BER_TIMER |
+> +			PHY_FLD4_BER_CHK_EN);
+> +	if (err < 0)
+> +		return err;
+> +	err = rtsx_pci_write_phy_register(pcr, PHY_RDR, PHY_RDR_RXDSEL_1_9);
+> +	if (err < 0)
+> +		return err;
+> +	err = rtsx_pci_write_phy_register(pcr, PHY_RCR1,
+> +			PHY_RCR1_ADP_TIME | PHY_RCR1_VCO_COARSE);
+> +	if (err < 0)
+> +		return err;
+> +	err = rtsx_pci_write_phy_register(pcr, PHY_FLD3,
+> +			PHY_FLD3_TIMER_4 | PHY_FLD3_TIMER_6 |
+> +			PHY_FLD3_RXDELINK);
+> +	if (err < 0)
+> +		return err;
+> +	return rtsx_pci_write_phy_register(pcr, PHY_TUNE,
+> +			PHY_TUNE_TUNEREF_1_0 | PHY_TUNE_VBGSEL_1252 |
+> +			PHY_TUNE_SDBUS_33 | PHY_TUNE_TUNED18 |
+> +			PHY_TUNE_TUNED12);
+>  }
+>  
+>  static int rts5249_turn_on_led(struct rtsx_pcr *pcr)
+> diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+> index d1382df..0ce7721 100644
+> --- a/include/linux/mfd/rtsx_pci.h
+> +++ b/include/linux/mfd/rtsx_pci.h
+> @@ -756,6 +756,59 @@
+>  #define PCR_SETTING_REG2		0x814
+>  #define PCR_SETTING_REG3		0x747
+>  
+> +/* Phy bits */
+> +#define PHY_PCR_FORCE_CODE			0xB000
+> +#define PHY_PCR_OOBS_CALI_50			0x0800
+> +#define PHY_PCR_OOBS_VCM_08			0x0200
+> +#define PHY_PCR_OOBS_SEN_90			0x0040
+> +#define PHY_PCR_RSSI_EN				0x0002
+> +
+> +#define PHY_RCR1_ADP_TIME			0x0100
+> +#define PHY_RCR1_VCO_COARSE			0x001F
+> +
+> +#define PHY_RCR2_EMPHASE_EN			0x8000
+> +#define PHY_RCR2_NADJR				0x4000
+> +#define PHY_RCR2_CDR_CP_10			0x0400
+> +#define PHY_RCR2_CDR_SR_2			0x0100
+> +#define PHY_RCR2_FREQSEL_12			0x0040
+> +#define PHY_RCR2_CPADJEN			0x0020
+> +#define PHY_RCR2_CDR_SC_8			0x0008
+> +#define PHY_RCR2_CALIB_LATE			0x0002
+> +
+> +#define PHY_RDR_RXDSEL_1_9			0x4000
+> +
+> +#define PHY_TUNE_TUNEREF_1_0			0x4000
+> +#define PHY_TUNE_VBGSEL_1252			0x0C00
+> +#define PHY_TUNE_SDBUS_33			0x0200
+> +#define PHY_TUNE_TUNED18			0x01C0
+> +#define PHY_TUNE_TUNED12			0X0020
+> +
+> +#define PHY_BPCR_IBRXSEL			0x0400
+> +#define PHY_BPCR_IBTXSEL			0x0100
+> +#define PHY_BPCR_IB_FILTER			0x0080
+> +#define PHY_BPCR_CMIRROR_EN			0x0040
+> +
+> +#define PHY_REG_REV_RESV			0xE000
+> +#define PHY_REG_REV_RXIDLE_LATCHED		0x1000
+> +#define PHY_REG_REV_P1_EN			0x0800
+> +#define PHY_REG_REV_RXIDLE_EN			0x0400
+> +#define PHY_REG_REV_CLKREQ_DLY_TIMER_1_0	0x0040
+> +#define PHY_REG_REV_STOP_CLKRD			0x0020
+> +#define PHY_REG_REV_RX_PWST			0x0008
+> +#define PHY_REG_REV_STOP_CLKWR			0x0004
+> +
+> +#define PHY_FLD3_TIMER_4			0x7800
+> +#define PHY_FLD3_TIMER_6			0x00E0
+> +#define PHY_FLD3_RXDELINK			0x0004
+> +
+> +#define PHY_FLD4_FLDEN_SEL			0x4000
+> +#define PHY_FLD4_REQ_REF			0x2000
+> +#define PHY_FLD4_RXAMP_OFF			0x1000
+> +#define PHY_FLD4_REQ_ADDA			0x0800
+> +#define PHY_FLD4_BER_COUNT			0x00E0
+> +#define PHY_FLD4_BER_TIMER			0x000A
+> +#define PHY_FLD4_BER_CHK_EN			0x0001
+> +
+>  #define rtsx_pci_init_cmd(pcr)		((pcr)->ci = 0)
+>  
+>  struct rtsx_pcr;
+
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
