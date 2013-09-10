@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751290Ab3IJIz5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 04:55:57 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41095 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751047Ab3IJIzz (ORCPT
+	id S1751355Ab3IJI5Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 04:57:24 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:56336 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751081Ab3IJI5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 04:55:55 -0400
-Date: Tue, 10 Sep 2013 10:55:45 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] [RFC] seqcount: Add lockdep functionality to
- seqcount/seqlock structures
-Message-ID: <20130910085545.GM26785@twins.programming.kicks-ass.net>
-References: <1378788166-18474-1-git-send-email-john.stultz@linaro.org>
+	Tue, 10 Sep 2013 04:57:22 -0400
+X-AuditID: 9c93016f-b7cf0ae00000518f-f1-522edef18347
+From: Namhyung Kim <namhyung@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCHv2 00/25] perf tool: Add support for multiple data file storage
+References: <1378031796-17892-1-git-send-email-jolsa@redhat.com>
+	<20130909111749.GP31370@twins.programming.kicks-ass.net>
+Date: Tue, 10 Sep 2013 17:57:20 +0900
+In-Reply-To: <20130909111749.GP31370@twins.programming.kicks-ass.net> (Peter
+	Zijlstra's message of "Mon, 9 Sep 2013 13:17:49 +0200")
+Message-ID: <877geprr4f.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378788166-18474-1-git-send-email-john.stultz@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 09:42:46PM -0700, John Stultz wrote:
-> @@ -38,10 +39,58 @@
->   */
->  typedef struct seqcount {
->  	unsigned sequence;
-> +#ifdef CONFIG_DEBUG_LOCK_ALLOC
-> +	struct lockdep_map dep_map;
-> +#endif
->  } seqcount_t;
->  
-> -#define SEQCNT_ZERO { 0 }
-> -#define seqcount_init(x)	do { *(x) = (seqcount_t) SEQCNT_ZERO; } while (0)
-> +
-> +
-> +
-> +static inline void __seqcount_init(seqcount_t *s, const char *name,
-> +					  struct lock_class_key *key)
-> +{
-> +#ifdef CONFIG_DEBUG_LOCK_ALLOC
-> +	/*
-> +	 * Make sure we are not reinitializing a held lock:
-> +	 */
-> +	lockdep_init_map(&s->dep_map, name, key, 0);
-> +#endif
-> +	s->sequence = 0;
-> +}
-> +
-> +
-> +#ifdef CONFIG_DEBUG_LOCK_ALLOC
-> +# define SEQCOUNT_DEP_MAP_INIT(lockname) \
-> +		.dep_map = { .name = #lockname } \
-> +
-> +# define seqcount_init(s)				\
-> +	do {						\
-> +		static struct lock_class_key __key;	\
-> +		__seqcount_init((s), #s, &__key);	\
-> +	} while (0)
-> +
-> +static inline void seqcount_reader_access(const seqcount_t *s)
-> +{
-> +	seqcount_t *l = (seqcount_t *)s;
-> +	unsigned long flags;
-> +
-> +	preempt_disable();
-> +	local_irq_save(flags);
-> +	seqcount_acquire_read(&l->dep_map, 0, 0, _RET_IP_);
-> +	seqcount_release(&l->dep_map, 1, _RET_IP_);
-> +	local_irq_restore(flags);
-> +	preempt_enable();
-> +}
+Hi Peter and Jiri,
 
-Why the preempt and local_irq thing? Also preempt_disable is quite
-superfluous if you do local_irq_disable().
+On Mon, 9 Sep 2013 13:17:49 +0200, Peter Zijlstra wrote:
+> On Sun, Sep 01, 2013 at 12:36:11PM +0200, Jiri Olsa wrote:
+>> hi,
+>> sending the support for multiple file storage. Initial
+>> RFC is here:
+>> http://marc.info/?l=linux-kernel&m=137408381902423&w=2
+>> 
+>> v2 changes:
+>>   - reworked perf mmap size setup to be able to get
+>>     the mmap size value easily later
+>>   - added perf.data read/write test for v2 and v3
+>>     for both endianity
+>>   - added record '-M time' support
+>
+> So this 0/n post seems to have forgotten to list the rationale for doing
+> all this.. 
+>
+> The only reason I wanted this is so that each thread can write its own
+> data. The current one file thing is an immense bottle-neck for big
+> machines.
 
-> +
-> +#else
-> +# define SEQCOUNT_DEP_MAP_INIT(lockname)
-> +# define seqcount_init(s) __seqcount_init(s, NULL, NULL)
-> +# define seqcount_reader_access(x)
-> +#endif
-> +
-> +#define SEQCNT_ZERO(lockname) { .sequence = 0, SEQCOUNT_DEP_MAP_INIT(lockname)}
-> +
+Per-thread or per-cpu?  In my perf ftrace patchset, I used to per-cpu
+data file for this reason.  Do you think per-thread approach is better
+than per-cpu one?
+
+Jiri, one of my colleagues asked me about the multiple file support
+separated by time while ago.  At that time I just added --time-filter
+option to perf report, but it'd better if perf record can support it.
+(Unfortunately the patch seems to buried in the list).
+
+Anyway, as Peter said, please consider per-thread or per-cpu multiple
+file support with your series.  It will help further developments.
+
+Thanks,
+Namhyung
