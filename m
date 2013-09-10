@@ -1,100 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754735Ab3IJG76 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 02:59:58 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:34115 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754134Ab3IJG75 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 02:59:57 -0400
+	id S1754744Ab3IJHCD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 03:02:03 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:50880 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753497Ab3IJHCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 03:02:00 -0400
+Message-ID: <522EC392.8070002@ti.com>
+Date: Tue, 10 Sep 2013 02:00:34 -0500
+From: Joel Fernandes <joelf@ti.com>
+Reply-To: <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-X-Originating-IP: [212.179.42.66]
-In-Reply-To: <1378795659.6046.41.camel@marge.simpson.net>
-References: <00000140efbcb701-c26320b3-f434-4538-bc80-8e92fed6f303-000000@email.amazonses.com>
-	<CAOtvUMe=jcAHXNJU_rTAAokaE4KZNUTFsHVVTTxgFW_xj8ONxg@mail.gmail.com>
-	<1378795659.6046.41.camel@marge.simpson.net>
-Date: Tue, 10 Sep 2013 09:59:55 +0300
-Message-ID: <CAOtvUMfhLQYK95uPm8idG_vYv-9yG2-KSkScjMBCSuvtffW1Dg@mail.gmail.com>
-Subject: Re: [RFC] Restrict kernel spawning of threads to a specified set of cpus.
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alexander Holler <holler@ahsoftware.de>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
+Subject: Re: [PATCH] RFC: interrupt consistency check for OF GPIO IRQs
+References: <1375101368-17645-1-git-send-email-linus.walleij@linaro.org> <CACxGe6uNJNMdZ1HYGgCtLM2t2TWGCR6btjOHVmP=vDXXvvFfRg@mail.gmail.com> <CACRpkdYjJL6FZwEbB7XLnb9QtjB=3LeE9Ny6KQ4PkM3zpdNqqg@mail.gmail.com> <51F8CC35.1070704@collabora.co.uk>
+In-Reply-To: <51F8CC35.1070704@collabora.co.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 07/31/2013 03:35 AM, Javier Martinez Canillas wrote:
+> On 07/31/2013 01:44 AM, Linus Walleij wrote:
+>> On Tue, Jul 30, 2013 at 6:30 AM, Grant Likely <grant.likely@linaro.org> wrote:
+>>> On Mon, Jul 29, 2013 at 6:36 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>>>> To solve this dilemma, perform an interrupt consistency check
+>>>> when adding a GPIO chip: if the chip is both gpio-controller and
+>>>> interrupt-controller, walk all children of the device tree,
+>>>> check if these in turn reference the interrupt-controller, and
+>>>> if they do, loop over the interrupts used by that child and
+>>>> perform gpio_reques() and gpio_direction_input() on these,
+>>>> making them unreachable from the GPIO side.
+>>>
+>>> Ugh, that's pretty awful, and it doesn't actually solve the root
+>>> problem of the GPIO and IRQ subsystems not cooperating. It's also a
+>>> very DT-centric solution even though we're going to see the exact same
+>>> issue on ACPI machines.
+>>
+>> The problem is that the patches for OMAP that I applied
+>> and now have had to revert solves it in an even uglier way,
+>> leading to breaking boards, as was noticed.
+>>
+>> The approach in this patch has the potential to actually
+>> work without regressing a bunch of boards...
+>>
+>> Whether this is a problem in ACPI or not remains to be seen,
+>> but I'm not sure about that. Device trees allows for a GPIO line
+>> to be used as an interrupt source and GPIO line orthogonally,
+>> and that is the root of this problem. Does ACPI have the same
+>> problem, or does it impose natural restrictions on such use
+>> cases?
+>>
+> 
+> I agree with Linus here. The problem is that GPIO controllers that can work as
+> IRQ sources are treated in the kernel as if there where two separate controlers
+> that are rather orthogonal: an irq_chip and a gpio_chip.
+> But DT allows to use a GPIO line as an IRQ just by using an omap-gpio phandle as
+> "interrupt-parent".
+> 
+> So, there should be a place where both irq_chip and gpio_chip has to be related
+> somehow to properly configure a GPIO (request it and setting it as input) when
+> used as an IRQ by DT.
+> 
+> My patch for OMAP used an irq_domain_ops .map function handler to configure the
+> GPIO when a IRQ was mapped since that seemed to me as the best place to do it.
+> This worked well in OMAP2+ platforms but unfortunately broke OMAP1 platforms
+> since they are still using legacy domain mapping thus not call .map.
+
+Just wondering- why .map not called for omap1? irq_create_mapping does seem to
+call  -> irq_domain_associate which calls map function. For omap case, GPIO
+driver does call irq_create_mapping, just like omap2+ no?
+
+Further, if for any reason the .map is not called. Can you not call gpio_request
+yourself direct in omap_gpio_chip_init function?
+
+Does it really matter if you call gpio_request from .map or from the chip_init
+function?
+
+Also on a different note.. this would call gpio_request for *every* gpio line,
+but isn't that what your original patch that got reverted was doing in
+omap_gpio_chip_init:
+
++       if (!bank->chip.of_node)
++               for (j = 0; j < bank->width; j++)
++                       irq_create_mapping(bank->domain, j);
+
+Just trying to understand your initial patch better.
+
+Regards,
+
+-Joel
 
 
-On Tue, Sep 10, 2013 at 9:47 AM, Mike Galbraith <bitbucket@online.de> wrote:
->
-> On Tue, 2013-09-10 at 09:05 +0300, Gilad Ben-Yossef wrote:
-> > Hi,
-> >
-> > On Thu, Sep 5, 2013 at 11:07 PM, Christoph Lameter <cl@linux.com> wrote:
-> > > I am not sure how to call this kernel option but we need something like
-> > > that. I see drivers and the kernel spawning processes on the nohz cores.
-> > > The name kthread is not really catching the purpose.
-> > >
-> > > os_cpus=? highlatency_cpus=?
-> > >
-> >
-> > First off, thank you for doing this. It is very useful :-)
-> >
-> > Currently if one wishes to run a single task on an isolated CPU with
-> > as little interference as possible, one needs to pass
-> > rcu_nocbs, isolcpus, nohz_full parameters and now kthread parameter,
-> > all pretty much with the same values
-> >
-> > I know some people won't like this, but can we perhaps fold all these
-> > into a single parameter, perhaps even the existing isolcpus?
->
-> isolcpus is supposed to go away, as cpusets can isolate CPUs, and can
-> turn off load balancing.
->
-
-And I'm all for that. I think cpusets is a much more elegant solution.
-
-But... AFAIK currently cpusets cannot migrate timers that were registered on
-a cpu prior to it being isolated via cpuset, designate RCU off loaded CPUs or
-sets cpus as full nohz capable, or - it seems from this patch, keep off certain
-kernel thread off a cpu.
-
-This is no fault of cpusets, but it still means there are work loads
-that it can't
-support at this time.
-
-So long as we must  have a kernel boot option, I prefer to have one
-and not four of
-them. Think of it this way - when we put all these capabilities into
-cpusets, we'll have
-just one kernel option to kill and not four.
-
-Does that makes sense?
-
-Gilad
-
->
-> -Mike
->
 
 
 
--- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-
-"If you take a class in large-scale robotics, can you end up in a
-situation where the homework eats your dog?"
- -- Jean-Baptiste Queru
