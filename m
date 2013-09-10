@@ -1,68 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411Ab3IJItJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 04:49:09 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:60919 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754335Ab3IJItH (ORCPT
+	id S1751608Ab3IJIvd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 04:51:33 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:58134 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300Ab3IJIv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 04:49:07 -0400
+	Tue, 10 Sep 2013 04:51:29 -0400
+Message-ID: <522EDC93.2060500@linux.vnet.ibm.com>
+Date: Tue, 10 Sep 2013 14:17:15 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <20130909200610.GA28416@roeck-us.net>
-References: <1378688580-11935-1-git-send-email-linux@roeck-us.net>
-	<20130909015945.GA4029@kroah.com>
-	<20130909134012.GA24738@infradead.org>
-	<20130909163902.GA28685@kroah.com>
-	<20130909170819.GA22764@roeck-us.net>
-	<20130909172232.GA10029@kroah.com>
-	<CAMuHMdWwFwWeenfsiF+yBYS29rwJTJ1YP5waf=ePK+MRCru3qg@mail.gmail.com>
-	<20130909200610.GA28416@roeck-us.net>
-Date: Tue, 10 Sep 2013 10:49:05 +0200
-X-Google-Sender-Auth: h9EDrO9sWvCCz_DdnIDP2vlOo1w
-Message-ID: <CAMuHMdXWaVivv3RL9dyLdeA7p4=XiBLAyhXNEiay3ARoWjM5gw@mail.gmail.com>
-Subject: Re: [PATCH] staging: Disable lustre file system for MIPS, SH, and XTENSA
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        driverdevel <devel@driverdev.osuosl.org>, Peng Tao <tao.peng@emc.com>,
-        Peng Tao <bergwolf@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Boyd <sboyd@codeaurora.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] cpufreq: serialize calls to __cpufreq_governor()
+References: <085013f4e584e3fef97187bcb349c3fa76942e19.1378012620.git.viresh.kumar@linaro.org> <80c4bd8c577e5da0aa63342671773be5cdc26a9a.1378012620.git.viresh.kumar@linaro.org> <5225E205.7080008@linux.vnet.ibm.com> <CAKohpom-UFkvORuuzAEUj1jVofHTEkDMhSmMUo4_0Xxfj605-g@mail.gmail.com>
+In-Reply-To: <CAKohpom-UFkvORuuzAEUj1jVofHTEkDMhSmMUo4_0Xxfj605-g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13091008-9264-0000-0000-0000047FB4CE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 9, 2013 at 10:06 PM, Guenter Roeck <linux@roeck-us.net> wrote:
->> [*] Why does m68k allmodconfig still succeed on kissb???
->>     It does fail for me, as m68k's copy_from_user_page() calls
->>     flush_icache_user_range(), which is not exported.
->>
-> I don't see a build failure in m68k:allmodconfig either.
+On 09/10/2013 12:22 PM, Viresh Kumar wrote:
+> Back finally and I see lots of mails over cpufreq stuff.. :)
+> 
+> On 3 September 2013 18:50, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> This doesn't solve the problem completely: it prevents the store_*() task
+>> from continuing *only* when it concurrently executes the __cpufreq_governor()
+>> function along with the CPU offline task. But if the two calls don't overlap,
+>> we will still have the possibility where the store_*() task tries to acquire
+>> the timer mutex after the CPU offline task has just finished destroying it.
+> 
+> How exactly? My brain is still on vacations :)
 >
-> flush_icache_user_range() is called from copy_to_user_page(), not from
-> copy_from_user_page(). copy_from_user_page() calls flush_cache_page()
-> which calls __flush_cache_030(). The first is inline, the second is
-> assembler, so I would expect it to work. Which doesn't answer
-> the question why it fails for you.
 
-Sorry, I meant copy_to_user_page().
+The race window is not limited to __cpufreq_governor() alone. It just starts there,
+but doesn't end there; it extends beyond that point. That's the main problem. And
+that's why serializing __cpufreq_governor() won't completely solve the issue.
 
-I tried with 2.6.3 from crosstool, and it succeeded, too.
+CPU_DOWN:
 
-Turns out cfs_access_process_vm() is called with write=0 only.
-Gcc 2.6.3 optimizes away the write != 0 branch (which calls copy_to_user_page()
-and thus flush_icache_user_range()), while gcc 4.1.2 doesn't do that.
-Mystery solved.
+__cpufreq_governor(STOP)  ----+
+  ...                         |
+  ...                         | RACE
+  ...                         | WINDOW
+  ...                         |
+sysfs teardown            ----+
+ 
+In the STOP call, we destroy the timer mutex and set cur_policy = NULL. So the
+incorrect access to timer mutex can occur from that point until we finally unlink
+or teardown the sysfs files and prevent userspace from writing to those files.
+Thus, this window involves stuff other than the call to __cpufreq_governor() as
+well. So serializing __cpufreq_governor() alone is not enough.
 
-Gr{oetje,eeting}s,
+> Anyway, this was one of the problem that I tried to solve with my patch.
+> But there can be other race conditions where things can go wrong and so
+> that patch may still be useful.
+>
 
-                        Geert
+I agree, but see below (its the "may be useful" part that I'm not convinced
+about).
+ 
+> Call to __cpufreq_governor() must be serialized I believe.
+> 
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Sure, its a good idea to serialize __cpufreq_governor(). However, we need
+specific justification for that. Just a hunch that something will go wrong is
+not enough, IMHO. We have to *prove* that something is indeed wrong, and only
+then add appropriate synchronization to fix it.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Besides, even the commit message appeared a bit odd. It mentions something about
+problems with recursive calls. What cases are those? When do we end up recursively
+calling __cpufreq_governor()?  And hence, why can't we use plain locks and must
+instead use yet another quick-and-dirty variable to protect that function?
+[Using variables like that is bad from a lockdep perspective as well (apart from
+other things) : lockdep can't catch any resulting locking issues.]
+
+Other related questions that are worth answering would be: why should we add the
+synchronization *inside* __cpufreq_governor()? Why not add it at its call-sites?
+
+IOW, I'm all in for fixing problems, just that I'd be comfortable with the
+changes only when we completely understand what problem we are fixing and why
+that patch is the right fix for that problem.
+
+Regards,
+Srivatsa S. Bhat
+
