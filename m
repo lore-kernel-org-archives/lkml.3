@@ -1,162 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733Ab3IJGye (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 02:54:34 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:54544 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753782Ab3IJGyc (ORCPT
+	id S1754574Ab3IJG6q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 02:58:46 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53378 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754044Ab3IJG6p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 02:54:32 -0400
-X-AuditID: 9c93017d-b7cdfae0000026c0-6a-522ec2261ee7
-Date: Tue, 10 Sep 2013 15:54:49 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [performance regression, bisected] scheduler:
- should_we_balance() kills filesystem performance
-Message-ID: <20130910065448.GA20368@lge.com>
-References: <20130910040254.GB12779@dastard>
- <20130910044759.GA24602@lge.com>
- <20130910061520.GC12779@dastard>
+	Tue, 10 Sep 2013 02:58:45 -0400
+Date: Tue, 10 Sep 2013 08:58:38 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: kernel@pengutronix.de, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH][RESEND] ARM: imx: remove IRQF_DISABLED
+Message-ID: <20130910065838.GC30088@pengutronix.de>
+Mail-Followup-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+	kernel@pengutronix.de, linux@arm.linux.org.uk,
+	linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+	Shawn Guo <shawn.guo@linaro.org>
+References: <1378271079-24945-1-git-send-email-michael.opdenacker@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130910061520.GC12779@dastard>
+In-Reply-To: <1378271079-24945-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 08:57:59 up 16 days, 16:28, 33 users,  load average: 0.02, 0.10,
+ 0.20
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 04:15:20PM +1000, Dave Chinner wrote:
-> On Tue, Sep 10, 2013 at 01:47:59PM +0900, Joonsoo Kim wrote:
-> > On Tue, Sep 10, 2013 at 02:02:54PM +1000, Dave Chinner wrote:
-> > > Hi folks,
-> > > 
-> > > I just updated my performance test VM to the current 3.12-git
-> > > tree after the XFS dev branch was merged. The first test I ran
-> > > which was a 16-way concurrent fsmark test to create lots of files
-> > > gave me a number about 30% lower than I expected - ~180k files/s
-> > > when I was expecting somewhere around 250k files/s.
-> > > 
-> > > I did a bisect, and the bisect landed on this commit:
-> > > 
-> > > commit 23f0d2093c789e612185180c468fa09063834e87
-> > > Author: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> > > Date:   Tue Aug 6 17:36:42 2013 +0900
-> > > 
-> > >     sched: Factor out code to should_we_balance()
-> .....
-> > > 
-> > > 			v4 filesystem		v5 filesystem
-> > > 3.11+xfsdev:		220k files/s		225k files/s
-> > > 3.12-git		180k files/s		185k files/s
-> > > 3.12-git-revert		245k files/s		247k files/s
-> > > 
-> > > The test vm is a 16p/16GB RAM VM, with a sparse 100TB filesystem
-> > > image sitting on a 4-way RAID0 SSD array formatted with XFS and the
-> > > image file is accessed by virtio+direct IO. The fsmark command line
-> > > is:
-> > > 
-> > > time ./fs_mark  -D  10000  -S0  -n  100000  -s  0  -L  32 \
-> > >         -d  /mnt/scratch/0  -d  /mnt/scratch/1 \
-> > >         -d  /mnt/scratch/2  -d  /mnt/scratch/3 \
-> > >         -d  /mnt/scratch/4  -d  /mnt/scratch/5 \
-> > >         -d  /mnt/scratch/6  -d  /mnt/scratch/7 \
-> > >         -d  /mnt/scratch/8  -d  /mnt/scratch/9 \
-> > >         -d  /mnt/scratch/10  -d  /mnt/scratch/11 \
-> > >         -d  /mnt/scratch/12  -d  /mnt/scratch/13 \
-> > >         -d  /mnt/scratch/14  -d  /mnt/scratch/15 \
-> > >         | tee >(stats --trim-outliers | tail -1 1>&2)
-> > > 
-> > > The workload on XFS runs to almost being CPU bound - the effect of
-> > > the above patch was that there was a lot of idle time left in the
-> > > system. The workload consumed the same amount of user and system
-> > > CPU, just instantaneous CPU usage was reduced by 20-30% and the
-> > > elaspsed time was increased by 20-30%.
-> > 
-> > Hello, Dave.
-> > 
-> > Now, I look again this patch and find one mistake.
-> > If we find that we are appropriate cpu for balancing, should_we_balance()
-> > should return 1. But current code doesn't do so. This correspond with
-> > your observation that a lot of idle time left.
-> > 
-> > Could you re-test your benchmark with below?
+On Wed, Sep 04, 2013 at 07:04:39AM +0200, Michael Opdenacker wrote:
+> This flag is a NOOP since 2.6.35 and can be removed.
 > 
-> Sure. It looks like your patch fixes the problem:
+> This is an update for 3.11 of a patch already sent for 3.10
 > 
-> 			v4 filesystem		v5 filesystem
-> 3.11+xfsdev:		220k files/s		225k files/s
-> 3.12-git		180k files/s		185k files/s
-> 3.12-git-revert		245k files/s		247k files/s
-> 3.12-git-fix		249k files/s		248k files/s
+> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+
+(added shawn to Cc)
+
+Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+
+Sascha
+
+> ---
+>  arch/arm/mach-imx/Kconfig             | 2 +-
+>  arch/arm/mach-imx/epit.c              | 2 +-
+>  arch/arm/mach-imx/mach-armadillo5x0.c | 3 +--
+>  arch/arm/mach-imx/mach-mx31_3ds.c     | 2 +-
+>  arch/arm/mach-imx/mach-pcm037.c       | 3 +--
+>  arch/arm/mach-imx/mx31lilly-db.c      | 3 +--
+>  arch/arm/mach-imx/time.c              | 2 +-
+>  7 files changed, 7 insertions(+), 10 deletions(-)
 > 
-> Thanks for the quick turnaround :)
+> diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+> index f546560..799a92f 100644
+> --- a/arch/arm/mach-imx/Kconfig
+> +++ b/arch/arm/mach-imx/Kconfig
+> @@ -22,7 +22,7 @@ config MXC_IRQ_PRIOR
+>  	help
+>  	  Select this if you want to use prioritized IRQ handling.
+>  	  This feature prevents higher priority ISR to be interrupted
+> -	  by lower priority IRQ even IRQF_DISABLED flag is not set.
+> +	  by lower priority IRQ.
+>  	  This may be useful in embedded applications, where are strong
+>  	  requirements for timing.
+>  	  Say N here, unless you have a specialized requirement.
+> diff --git a/arch/arm/mach-imx/epit.c b/arch/arm/mach-imx/epit.c
+> index e02de18..074b1a8 100644
+> --- a/arch/arm/mach-imx/epit.c
+> +++ b/arch/arm/mach-imx/epit.c
+> @@ -171,7 +171,7 @@ static irqreturn_t epit_timer_interrupt(int irq, void *dev_id)
+>  
+>  static struct irqaction epit_timer_irq = {
+>  	.name		= "i.MX EPIT Timer Tick",
+> -	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
+> +	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
+>  	.handler	= epit_timer_interrupt,
+>  };
+>  
+> diff --git a/arch/arm/mach-imx/mach-armadillo5x0.c b/arch/arm/mach-imx/mach-armadillo5x0.c
+> index 368a6e3..58b864a 100644
+> --- a/arch/arm/mach-imx/mach-armadillo5x0.c
+> +++ b/arch/arm/mach-imx/mach-armadillo5x0.c
+> @@ -404,8 +404,7 @@ static int armadillo5x0_sdhc1_init(struct device *dev,
+>  
+>  	/* When supported the trigger type have to be BOTH */
+>  	ret = request_irq(gpio_to_irq(IOMUX_TO_GPIO(MX31_PIN_ATA_DMACK)),
+> -			  detect_irq,
+> -			  IRQF_DISABLED | IRQF_TRIGGER_FALLING,
+> +			  detect_irq, IRQF_TRIGGER_FALLING,
+>  			  "sdhc-detect", data);
+>  
+>  	if (ret)
+> diff --git a/arch/arm/mach-imx/mach-mx31_3ds.c b/arch/arm/mach-imx/mach-mx31_3ds.c
+> index 1ed9161..50044a2 100644
+> --- a/arch/arm/mach-imx/mach-mx31_3ds.c
+> +++ b/arch/arm/mach-imx/mach-mx31_3ds.c
+> @@ -311,7 +311,7 @@ static int mx31_3ds_sdhc1_init(struct device *dev,
+>  	}
+>  
+>  	ret = request_irq(gpio_to_irq(IOMUX_TO_GPIO(MX31_PIN_GPIO3_1)),
+> -			  detect_irq, IRQF_DISABLED |
+> +			  detect_irq,
+>  			  IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
+>  			  "sdhc1-detect", data);
+>  	if (ret) {
+> diff --git a/arch/arm/mach-imx/mach-pcm037.c b/arch/arm/mach-imx/mach-pcm037.c
+> index bc0261e..45303bd6 100644
+> --- a/arch/arm/mach-imx/mach-pcm037.c
+> +++ b/arch/arm/mach-imx/mach-pcm037.c
+> @@ -371,8 +371,7 @@ static int pcm970_sdhc1_init(struct device *dev, irq_handler_t detect_irq,
+>  #endif
+>  
+>  	ret = request_irq(gpio_to_irq(IOMUX_TO_GPIO(MX31_PIN_SCK6)), detect_irq,
+> -			IRQF_DISABLED | IRQF_TRIGGER_FALLING,
+> -				"sdhc-detect", data);
+> +			IRQF_TRIGGER_FALLING, "sdhc-detect", data);
+>  	if (ret)
+>  		goto err_gpio_free_2;
+>  
+> diff --git a/arch/arm/mach-imx/mx31lilly-db.c b/arch/arm/mach-imx/mx31lilly-db.c
+> index d4361b8..649fe49 100644
+> --- a/arch/arm/mach-imx/mx31lilly-db.c
+> +++ b/arch/arm/mach-imx/mx31lilly-db.c
+> @@ -130,8 +130,7 @@ static int mxc_mmc1_init(struct device *dev,
+>  	gpio_direction_input(gpio_wp);
+>  
+>  	ret = request_irq(gpio_to_irq(IOMUX_TO_GPIO(MX31_PIN_GPIO1_1)),
+> -			  detect_irq,
+> -			  IRQF_DISABLED | IRQF_TRIGGER_FALLING,
+> +			  detect_irq, IRQF_TRIGGER_FALLING,
+>  			  "MMC detect", data);
+>  	if (ret)
+>  		goto exit_free_wp;
+> diff --git a/arch/arm/mach-imx/time.c b/arch/arm/mach-imx/time.c
+> index cd46529..9b6638a 100644
+> --- a/arch/arm/mach-imx/time.c
+> +++ b/arch/arm/mach-imx/time.c
+> @@ -250,7 +250,7 @@ static irqreturn_t mxc_timer_interrupt(int irq, void *dev_id)
+>  
+>  static struct irqaction mxc_timer_irq = {
+>  	.name		= "i.MX Timer Tick",
+> -	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
+> +	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
+>  	.handler	= mxc_timer_interrupt,
+>  };
+>  
+> -- 
+> 1.8.1.2
 > 
-> Tested-by: Dave Chinner <dchinner@redhat.com>
 > 
 
-Thanks for the quick turnaround, too. :)
-
-Hello, Ingo.
-
-I attach the formatted patch with proper SOBs and commit message.
-Please merge this to fix above problem.
-
-Thanks.
-
---------------------->8-------------------------
->From cf8ca492c2206e72d91ca0a1f6c59c5436132c61 Mon Sep 17 00:00:00 2001
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Date: Tue, 10 Sep 2013 15:28:10 +0900
-Subject: [PATCH] sched: return 1 if this cpu is proper for balancing in
- should_we_balance()
-
-Commit 23f0d20('sched: Factor out code to should_we_balance()') introduces
-should_we_balance() function. This function should return 1 if this cpu is
-appropriate for balancing. But current code doesn't do so. When this
-happens, it returns 0, instead of 1.
-
-This introduces performance regression which Dave Chinner reports.
-
-                        v4 filesystem           v5 filesystem
-3.11+xfsdev:            220k files/s            225k files/s
-3.12-git                180k files/s            185k files/s
-3.12-git-revert         245k files/s            247k files/s
-
-You can find more detailed information in below link.
-https://lkml.org/lkml/2013/9/10/1
-
-This patch corrects the return value of should_we_balance() function
-as orignally intended.
-
-With this patch, Dave Chinner said that regression are gone.
-
-                        v4 filesystem           v5 filesystem
-3.11+xfsdev:            220k files/s            225k files/s
-3.12-git                180k files/s            185k files/s
-3.12-git-revert         245k files/s            247k files/s
-3.12-git-fix            249k files/s            248k files/s
-
-Reported-by: Dave Chinner <dchinner@redhat.com>
-Tested-by: Dave Chinner <dchinner@redhat.com>
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 7f0a5e6..9b3fe1c 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5151,7 +5151,7 @@ static int should_we_balance(struct lb_env *env)
- 	 * First idle cpu or the first cpu(busiest) in this sched group
- 	 * is eligible for doing load balancing at this and above domains.
- 	 */
--	return balance_cpu != env->dst_cpu;
-+	return balance_cpu == env->dst_cpu;
- }
- 
- /*
 -- 
-1.7.9.5
-
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
