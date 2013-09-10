@@ -1,144 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751326Ab3IJTML (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 15:12:11 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:42011 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750899Ab3IJTMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 15:12:09 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jani Nikula <jani.nikula@linux.intel.com>
-Cc: Daniel Vetter <daniel@ffwll.ch>, Aaron Lu <aaron.lu@intel.com>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        Yves-Alexis Perez <corsac@debian.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Lee Chun-Yi <jlee@novell.com>, Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH 2/2] ACPI / video / i915: Remove ACPI backlight if firmware expects Windows 8
-Date: Tue, 10 Sep 2013 21:23:04 +0200
-Message-ID: <1889567.vxI8heiC3B@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <87eh8wail7.fsf@intel.com>
-References: <522D88C3.7000808@intel.com> <5155010.Y1gov7SKhP@vostro.rjw.lan> <87eh8wail7.fsf@intel.com>
+	id S1751371Ab3IJTNZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 15:13:25 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:58320 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028Ab3IJTNX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 15:13:23 -0400
+Date: Tue, 10 Sep 2013 20:13:19 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Josh Boyer <jwboyer@gmail.com>, Waiman Long <Waiman.Long@hp.com>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Mace Moneta <moneta.mace@gmail.com>
+Subject: Re: kernel BUG at fs/dcache.c:648! with v3.11-7890-ge5c832d
+Message-ID: <20130910191319.GZ13318@ZenIV.linux.org.uk>
+References: <CA+5PVA4k9tTPs9vtTbMuG7pzw4kb3KFK-CLaqDDG4dm=0twyCQ@mail.gmail.com>
+ <CA+55aFzg_r2c09TkGwmsMV3HbNAkSFJLGAFWweLNzofqs4o4Ug@mail.gmail.com>
+ <CA+5PVA6EDV3zuDEyCvcGNvEAPtgY_Oy9xVbaM03ggRBPtq5Mmg@mail.gmail.com>
+ <CA+55aFympAk-hnekaew8po5wLJdiY+DC_b4h=pa-y5i9=s303Q@mail.gmail.com>
+ <CA+55aFygRtwwknO4Jb+nna046VhdNCXh2S0ybRBPf=b1GH9FPg@mail.gmail.com>
+ <20130910184324.GY13318@ZenIV.linux.org.uk>
+ <CA+55aFwFQei-j47xZU06MZZ+S2ki2-dyi=7b7+U+QX_3FAYevQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwFQei-j47xZU06MZZ+S2ki2-dyi=7b7+U+QX_3FAYevQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, September 10, 2013 04:53:40 PM Jani Nikula wrote:
-> On Mon, 09 Sep 2013, "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> > On Monday, September 09, 2013 05:21:18 PM Daniel Vetter wrote:
-> >> On Mon, Sep 09, 2013 at 02:16:12PM +0200, Rafael J. Wysocki wrote:
-> >> > Hi,
-> >> > 
-> >> > On Monday, September 09, 2013 11:32:10 AM Daniel Vetter wrote:
-> >> > > Hi Aaaron,
-> >> > > 
-> >> > > Have we grown any clue meanwhile about which Intel boxes need this and for
-> >> > > which we still need to keep the acpi backlight around?
-> >> > 
-> >> > First of all, there is a bunch of boxes where ACPI backlight works incorrectly
-> >> > because of the Win8 compatibility issue.  [In short, if we say we are compatible
-> >> > with Win8, the backlight AML goes into a special code path that is broken on
-> >> > those machines. Presumably Win8 uses native backlight control on them and that
-> >> > AML code path is never executed there.]  The collection of machines with this
-> >> > problem appears to be kind of random (various models from various vendors), but
-> >> > I *think* they are machines that originally shipped with Win7 with a Win8
-> >> > "upgrade" option (which in practice requires the BIOS to be updated anyway).
-> >> > 
-> >> > Because of that, last time we tried to switch all of the systems using i915
-> >> > and telling the BIOS that they are compatible with Win8 over to native backlight
-> >> > control, but that didn't work for two reasons.  The first reason is that some
-> >> > user space doesn't know how to use intel_backlight and needs to be taught about
-> >> > that (so some systems are just not ready for that switch).  The second and more
-> >> > fundamental reason is that the native backlight control simply doesn't work on
-> >> > some machines and we don't seem to have any idea why and how to debug this
-> >> > particular problem (mostly because we don't have enough information and we
-> >> > don't know what to ask for).
-> >> > 
-> >> > > I've grown _very_ reluctant to just adding tons of quirks to our driver for
-> >> > > the backlight.
-> >> > >
-> >> > > Almost all the quirks we have added recently (or that have been proposed
-> >> > > to be added) are for the backlight. Imo that indicates we get something
-> >> > > fundamentally wrong ...
-> >> > 
-> >> > This thing isn't really a quirk.  It rather is an option for the users of
-> >> > the systems where ACPI backlight doesn't work to switch over to the native
-> >> > backlight control using a command line switch.  This way they can at least
-> >> > *see* if the native backlight control works for them and (hopefully) report
-> >> > problems if that's not the case.  This gives us a chance to get more
-> >> > information about what the problem is and possibly to make some progress
-> >> > without making changes for everyone, reverting those changes when they don't
-> >> > work etc.
-> >> > 
-> >> > An alternative for them is to pass acpi_osi="!Windows 2012" which will probably
-> >> > make the ACPI backlight work for them again, but this rather is a step back,
-> >> > because we can't possibly learn anything new from that.
-> >> 
-> >> If Win8 is as broken as we are I'm ok with the module option. It just
-> >> sounded to me like right now we don't know of a way to make all machines
-> >> somewhat happy, combined with the other pile of random backlight issues
-> >> the assumption that we do something (maybe something a bit racy) that
-> >> windows doesn't do isn't too far-fetched. So I'm not wary of the machines
-> >> where the aml is busted for acpi_os=win8, but for the others where this
-> >> broke stuff.
-> >> 
-> >> Or do I miss something here?
+On Tue, Sep 10, 2013 at 12:01:22PM -0700, Linus Torvalds wrote:
+> On Tue, Sep 10, 2013 at 11:43 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
 > >
-> > The ACPI video driver doesn't do anything new now.  It only does things that
-> > did work before we started to tell BIOSes we're compatible with Win8.  The
-> > reason why they don't work on some machines now is not related to whether or
-> > not Win8 is broken, but to what is there in the ACPI tables on those machines.
-> > That *is* pure garbage, but Win8 users don't see that (presumably, because
-> > Win8 does't execute the AML in question).  We don't see that either with
-> > acpi_osi="!Windows 2012" (because then we don't execute that AML either).
-> >
-> > Whether or not Win8 is broken doesn't matter here.  What matters is that we
-> > have to deal with broken AML somehow.
-> >
-> > One way may be to tell everyone affected by this to pass
-> > acpi_osi="!Windows 2012" in the kernel command line or possibly create a
-> > blacklist of those machines in the kernel (which Felipe has been pushing for
-> > recently) and wash our hands clean of this, but that leaves some exceptionally
-> > bad taste in my mouth.
-> >
-> > The alternative is to try to use native backlight in i915, which we did, but
-> > that didn't work on some machines.  I don't think we will know why it didn't
-> > work there before we collect some more information and that's not possible
-> > without user testing.  So, the idea is to make that testing possible without
-> > hacking the kernel and that's why we're introducing the new command line
-> > switch.  And we're going to ask users to try it and report back.
+> > !LOOKUP_ROOT: we set nd->root the first time we need / (in the very
+> > beginning if it's an absolute pathname, on the first absolute symlink
+> > otherwise).  In non-RCU mode we hold a reference to it; in RCU mode
+> > we do not.  As the result, leaving RCU mode should either grab
+> > a reference to the damn thing (if we intend to go on) or zero it out.
 > 
-> The thing that slightly bugs me with the proposed patches is that
-> they're adding a module parameter to i915 to tell ACPI video driver
-> whether to quirk the backlight or not. Before you know, we *will* have
-> requests to add quirks to i915 to tell ACPI video driver this.
+> Yeah, that was what I was thinking. But in particular, I was wondering
+> if we could simplify unlazy_walk() to _not_ take that root reference
+> at all, and just always zero it out even if we succeed.
 > 
-> I think the parameter "Does the ACPI backlight interface work or not"
-> belongs to the ACPI video driver.
->
-> Feel free to file this in your bikeshedding folder, but I think i915
-> should only tell ACPI "I have a native backlight interface".
+> IOW, doing the attached patch (_instead_ of the one I sent out).
+> 
+> Or is there something in path lookup retrying that might get uphappy
+> if we go back to a NULL root.mnt, and doesn't check it?
 
-It kind of does that already through the intel_opregion_init() thing,
-so it would be trivial to test intel_opregion_present() in
-acpi_video_register().
+Ugh...  I really don't like that - your patch introduces the situations
+when race with chroot can lead to two absolute symlinks in the same path
+being interpreted wrt different roots.  And yes, sure, anybody who gets
+in that kind of races isn't going to get particulary sane results, but
+still, I'd rather have simpler semantics here...
 
-So yes, we can add a command line option, say 'use_native_backlight' to the
-ACPI video driver that will work like this: "if the Intel opregion is present
-and video.use_native_backlight is set, skip registering ACPI backlight".
+Anyway, I think I see how to tidy the things up in a different way; let's
+go with your original fix for now and deal with the cleanups a bit later.
 
-Is that what you want?
-
-Rafael
-
+Another thing: could you merge vfs.git#for-linus?  It's getting really
+messy to keep track of changes both in mainline and in vfs.git, especially
+since there's a pile of pending stuff (lru_list work) that needs to be
+resolved wrt both...
