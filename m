@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752489Ab3IJWTl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 18:19:41 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:15602 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751261Ab3IJWTk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 18:19:40 -0400
-From: "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LKML-scsi <linux-scsi@vger.kernel.org>
-Subject: RE: [PATCH 1/4] hpsa: add HP Smart Array Gen9 PCI ID's
-Thread-Topic: [PATCH 1/4] hpsa: add HP Smart Array Gen9 PCI ID's
-Thread-Index: AQHOrnFl8irb+a7FpUCvtfnv3JrMIJm/iH+Q
-Date: Tue, 10 Sep 2013 22:17:33 +0000
-Message-ID: <48275AD710FCA34184C2B6186B4016B32D0FCEED@G6W2491.americas.hpqcorp.net>
-References: <20130904200555.GA28147@beardog.cce.hp.com>
- <1378850521.23501.47.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1378850521.23501.47.camel@dabdike.int.hansenpartnership.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [15.193.49.23]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752698Ab3IJWTs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 18:19:48 -0400
+Received: from imap.thunk.org ([74.207.234.97]:57904 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751261Ab3IJWTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 18:19:43 -0400
+Date: Tue, 10 Sep 2013 18:19:39 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Tim Bird <tbird20d@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Anton Blanchard <anton@samba.org>
+Subject: Re: [GIT PULL] Device tree updates for v3.12
+Message-ID: <20130910221939.GC11063@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Rob Herring <robherring2@gmail.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Tim Bird <tbird20d@gmail.com>,
+	Grant Likely <grant.likely@secretlab.ca>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	Anton Blanchard <anton@samba.org>
+References: <CACxGe6v8hO4sRX_KGcH=YBAMrF8mQHqWdxXEvVwoC2pVS5Yv9Q@mail.gmail.com>
+ <CA+bK7J5cAWFPLTBR2afNLm2JaKFH4_dJO_NpVL5gom0iX+L2dQ@mail.gmail.com>
+ <CA+55aFzBbKXJnaG_6X8Fff_APGJ3EkbG0thsbithDXtiEJjdHA@mail.gmail.com>
+ <CA+bK7J4F=X97HUQP6Tt8RkVe5vttE_Sw4Pd7kT19k_KGDFfpKA@mail.gmail.com>
+ <CA+55aFwkAQGRo9mLa2GVeVgzToRZr=Ny8LTogzgOpO6_4BJY1Q@mail.gmail.com>
+ <522F97EF.5050303@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <522F97EF.5050303@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
------Original Message-----
-From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com] 
-Sent: Tuesday, September 10, 2013 5:02 PM
-To: Miller, Mike (OS Dev)
-Cc: Andrew Morton; LKML; LKML-scsi
-Subject: Re: [PATCH 1/4] hpsa: add HP Smart Array Gen9 PCI ID's
-
-On Wed, 2013-09-04 at 15:05 -0500, Mike Miller wrote:
-> Patch 1 of 4
+On Tue, Sep 10, 2013 at 05:06:39PM -0500, Rob Herring wrote:
+> > If I recall correctly, somebody said that things like ethernet MAC
+> > addresses etc sometimes come from DT. Is my memory going, or is that
+> > true but very rare?
 > 
-> From: Mike Miller <mike.miller@hp.com>
+> It is true and fairly common. You can also have serial numbers in the
+> DT, but that is more rare. The bootloader will also add the kernel
+> command line, initrd start and end addresses.
 
-Just for future reference, doing it this way means I have to edit the patch.  The way git am works when applying patches is that if the first body line is a keyword it recognises (like From: or Subject: or Date:) it will fold that into the commit metadata, otherwise everything becomes the commit message.  So by putting the redundant "patch 1 of 4" first, git thinks the entire body is the commit message.
+Stuff which is common across a large number of devices is rather less
+useful to merge in.  Is there some fixed way that things like serial
+numbers and MAC addresses are tagged as such in the device tree?
 
-James
+Those are really the interesting bits to pass to
+add_device_randomness().  What we want is stuff which is unique to the
+device --- SP 800-90 (the NIST SPEC on Secure Random Number
+Generators) refers to this as "personalization strings".
 
-Sorry about that. I didn't realize git worked that way. So let me ask a dumb question, just having [PATCH x/y] in the subject line is enough? Would you like me to resubmit the patchset?
-
--- mikem
-
-> This patch adds the PCI ID's for HP Smart Array Gen9 controllers. 
-> Please consider this patch for inclusion.
-> 
-> Signed-off-by: Mike Miller <mike.miller@hp.com>
-> ---
-
-
+	    	      	      - Ted
