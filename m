@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754195Ab3IJGrv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 02:47:51 -0400
-Received: from mga09.intel.com ([134.134.136.24]:16963 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754054Ab3IJGrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 02:47:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,876,1371106800"; 
-   d="scan'208";a="401032624"
-Message-ID: <522EC22E.8080805@intel.com>
-Date: Tue, 10 Sep 2013 09:54:38 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCHv2 00/25] perf tool: Add support for multiple data file
- storage
-References: <1378031796-17892-1-git-send-email-jolsa@redhat.com> <20130909111749.GP31370@twins.programming.kicks-ass.net>
-In-Reply-To: <20130909111749.GP31370@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754423Ab3IJGr6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 02:47:58 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:52621 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754054Ab3IJGr4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 02:47:56 -0400
+Message-ID: <1378795659.6046.41.camel@marge.simpson.net>
+Subject: Re: [RFC] Restrict kernel spawning of threads to a specified set of
+ cpus.
+From: Mike Galbraith <bitbucket@online.de>
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Tue, 10 Sep 2013 08:47:39 +0200
+In-Reply-To: <CAOtvUMe=jcAHXNJU_rTAAokaE4KZNUTFsHVVTTxgFW_xj8ONxg@mail.gmail.com>
+References: <00000140efbcb701-c26320b3-f434-4538-bc80-8e92fed6f303-000000@email.amazonses.com>
+	 <CAOtvUMe=jcAHXNJU_rTAAokaE4KZNUTFsHVVTTxgFW_xj8ONxg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:mFO8fjnaFKErGl6nqjcek2QtxV+IT8zzgdm/zbiKwCl
+ OiaFy0iy7cuc5eH/go1fr23iYpCNMC/zijn6wNKgcCoIUlsJ2q
+ Zq50XzqSfAmj5UiU38wBlGKTb89Z8IAD+947vN3YG1Qoh9aoDi
+ 6mOq1/LheFvFBaiHWZ74UnVQLb6qWNUS92JjXk4BQx4FNJaGaM
+ hmluV/he1fav7tILI4O1GYD+ylqy/Vle09/jJSGrOnDvG+AM3V
+ rn6O0FQ+Yq1r7ms09wrGq30LSROps3TboBCI3ybfsE0h5NZEWN
+ RfaAl0ehlWbvJ880ZXSWAzya0yunUPkoZSyzJkwDOvGsJxNZOR
+ vAqt25rakTsjk+S8SNeYvoZ/8I6x3bj/KawOlFBT1Mmu16cnzm
+ J1QUfKa8aRJ7A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/13 14:17, Peter Zijlstra wrote:
-> On Sun, Sep 01, 2013 at 12:36:11PM +0200, Jiri Olsa wrote:
->> hi,
->> sending the support for multiple file storage. Initial
->> RFC is here:
->> http://marc.info/?l=linux-kernel&m=137408381902423&w=2
->>
->> v2 changes:
->>   - reworked perf mmap size setup to be able to get
->>     the mmap size value easily later
->>   - added perf.data read/write test for v2 and v3
->>     for both endianity
->>   - added record '-M time' support
+On Tue, 2013-09-10 at 09:05 +0300, Gilad Ben-Yossef wrote: 
+> Hi,
 > 
-> So this 0/n post seems to have forgotten to list the rationale for doing
-> all this.. 
+> On Thu, Sep 5, 2013 at 11:07 PM, Christoph Lameter <cl@linux.com> wrote:
+> > I am not sure how to call this kernel option but we need something like
+> > that. I see drivers and the kernel spawning processes on the nohz cores.
+> > The name kthread is not really catching the purpose.
+> >
+> > os_cpus=? highlatency_cpus=?
+> >
 > 
-> The only reason I wanted this is so that each thread can write its own
-> data. The current one file thing is an immense bottle-neck for big
-> machines.
+> First off, thank you for doing this. It is very useful :-)
+> 
+> Currently if one wishes to run a single task on an isolated CPU with
+> as little interference as possible, one needs to pass
+> rcu_nocbs, isolcpus, nohz_full parameters and now kthread parameter,
+> all pretty much with the same values
+> 
+> I know some people won't like this, but can we perhaps fold all these
+> into a single parameter, perhaps even the existing isolcpus?
 
-Do you need multiple files for that?  Why not just feed writes to a pool of
-threads?
+isolcpus is supposed to go away, as cpusets can isolate CPUs, and can
+turn off load balancing.
+
+-Mike
 
