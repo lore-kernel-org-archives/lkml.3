@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753677Ab3IJQ50 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 12:57:26 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:55433 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752546Ab3IJQ5Z (ORCPT
+	id S1752739Ab3IJRAY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 13:00:24 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:48716 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751952Ab3IJRAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 12:57:25 -0400
+	Tue, 10 Sep 2013 13:00:22 -0400
+Date: Tue, 10 Sep 2013 12:56:06 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Andrea Merello <andrea.merello@gmail.com>
+Cc: wlanfae@realtek.com, shwei <shwei@realtek.com.tw>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <greg@kroah.com>, linux-wireless@vger.kernel.org,
+        Michael Wu <flamingice@sourmilk.net>
+Subject: Re: RTL8187SE staging Linux driver
+Message-ID: <20130910165606.GB1960@tuxdriver.com>
+References: <CAN8YU5NTKUtS8+YzmcOSM3=YUX-FSwLTD86F_hXsNdVkw5NEGA@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <20130910153037.GA11227@lee--X1>
-References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
-	<1378817379-8238-2-git-send-email-lee.jones@linaro.org>
-	<CAOesGMgySNLKo_H0h4MCbAWvyW0h2bWa96drWBpnhAYYQwH9mw@mail.gmail.com>
-	<20130910153037.GA11227@lee--X1>
-Date: Tue, 10 Sep 2013 09:57:24 -0700
-Message-ID: <CAOesGMiBN5SaEY26SxGaw9E4ViR3cC0PcwNMEd4cLJZMfomprQ@mail.gmail.com>
-Subject: Re: [PATCH 01/38] ARM: ux500: Remove PrimeCell IDs from Nomadik I2C
- DT nodes
-From: Olof Johansson <olof@lixom.net>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LinusW <linus.walleij@linaro.org>, Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN8YU5NTKUtS8+YzmcOSM3=YUX-FSwLTD86F_hXsNdVkw5NEGA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[pruning out the iio list/people]
+On Tue, Sep 10, 2013 at 05:59:54PM +0200, Andrea Merello wrote:
+> Hello,
+> 
+> As you probably know, in the current Linux kernel there is a staging
+> driver for the RTL8187SE device (based on my older RTL8180/RTL8185
+> Linux driver), while there also a regular (not staging) driver
+> supporting older RTL8185 and RTL8180 devices
+> (net/wireless/rtl818x/rtl8180) .
+> 
+> As far as I can see, the RTL8187SE device seems not so much different
+> from an RTL8185 device.
+> I would like to try (in my spare time) to add support for RTL8187SE
+> device in the current RTL818x driver, in order to avoid code
+> duplication, remove a driver from staging, and make RTL8187SE using
+> mac80211.
+> 
+> Do any one of you have any comment/objection/suggestions about this ?
 
-On Tue, Sep 10, 2013 at 8:30 AM, Lee Jones <lee.jones@linaro.org> wrote:
->> On Tue, Sep 10, 2013 at 5:49 AM, Lee Jones <lee.jones@linaro.org> wrote:
->> > Turns out that they're actually not required and the driver probes just
->> > fine without them. The ID is incorrect at the moment anyway. They actually
->> > currently specify the stn8815.
->> >
->> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
->>
->> How did you test this patch? What hardware did you boot it on and with
->> what config?
->
-> Snowball, u8500_defconfig.
->
-> Why? Don't you have the same result with yours?
+I would be extremely happy for you to tackle this.
 
-I have a very weird experience with snowball right now. I noticed this
-yesterday when I decided to look at why multi_v7_defconfig doesn't
-boot on it:
+> Is it possible to get the RTL8187SE documentation to make things easier?
 
-* u8500_defconfig doesn't boot as a DT kernel, since the machine ID is
-still enabled. If I disable the machine ID, it doesn't boot.
-* Same for multi_v7_defconfig, since that is only DT: It doesn't boot.
+This info used to be readily available.  If you can't find a source, I
+probably still have a (mildly useful) datasheet somewhere in my heap...
 
-Unfortunately I can't get to my home network right now to double-check
-boot logs to see if this has changed behavior recently, I'll have to
-do that later today. It'd be interesting to hear if you have the same
-experience w.r.t. DT on u8500_defconfig though.
+> For now I will probably keep different RF code for the two cards even
+> if the RTL8225 (zebra 2) radio is used by both RTL8187SE and some
+> RTL8185 devices, however if I could get enough documentation about it,
+> it would be great to try to merge also RF code..
+> 
+> Thank you,
+> Andrea
 
+Seems reasonable...
 
-
--Olof
+John
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
