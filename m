@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752301Ab3IJJeT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 05:34:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57340 "EHLO mx2.suse.de"
+	id S1752397Ab3IJJeh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 05:34:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57329 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752063Ab3IJJdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752058Ab3IJJdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Sep 2013 05:33:22 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
@@ -12,9 +12,9 @@ Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 47/50] sched: numa: add debugging
-Date: Tue, 10 Sep 2013 10:32:27 +0100
-Message-Id: <1378805550-29949-48-git-send-email-mgorman@suse.de>
+Subject: [PATCH 46/50] sched: numa: Prevent parallel updates to group stats during placement
+Date: Tue, 10 Sep 2013 10:32:26 +0100
+Message-Id: <1378805550-29949-47-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1378805550-29949-1-git-send-email-mgorman@suse.de>
 References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
@@ -22,170 +22,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ingo Molnar <mingo@kernel.org>
+Having multiple tasks in a group go through task_numa_placement
+simultaneously can lead to a task picking a wrong node to run on, because
+the group stats may be in the middle of an update. This patch avoids
+parallel updates by holding the numa_group lock during placement
+decisions.
 
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/n/tip-5giqjcqnc93a89q01ymtjxpr@git.kernel.org
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/sched.h |  6 ++++++
- kernel/sched/debug.c  | 60 +++++++++++++++++++++++++++++++++++++++++++++++++--
- kernel/sched/fair.c   |  5 ++++-
- 3 files changed, 68 insertions(+), 3 deletions(-)
+ kernel/sched/fair.c | 35 +++++++++++++++++++++++------------
+ 1 file changed, 23 insertions(+), 12 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 46fb36a..ac08eb6 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1357,6 +1357,7 @@ struct task_struct {
- 	unsigned long *numa_faults_buffer;
- 
- 	int numa_preferred_nid;
-+	unsigned long numa_pages_migrated;
- #endif /* CONFIG_NUMA_BALANCING */
- 
- 	struct rcu_head rcu;
-@@ -2577,6 +2578,11 @@ static inline unsigned int task_cpu(const struct task_struct *p)
- 	return task_thread_info(p)->cpu;
- }
- 
-+static inline int task_node(const struct task_struct *p)
-+{
-+	return cpu_to_node(task_cpu(p));
-+}
-+
- extern void set_task_cpu(struct task_struct *p, unsigned int cpu);
- 
- #else
-diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-index e076bdd..49ab782 100644
---- a/kernel/sched/debug.c
-+++ b/kernel/sched/debug.c
-@@ -15,6 +15,7 @@
- #include <linux/seq_file.h>
- #include <linux/kallsyms.h>
- #include <linux/utsname.h>
-+#include <linux/mempolicy.h>
- 
- #include "sched.h"
- 
-@@ -137,6 +138,9 @@ print_task(struct seq_file *m, struct rq *rq, struct task_struct *p)
- 	SEQ_printf(m, "%15Ld %15Ld %15Ld.%06ld %15Ld.%06ld %15Ld.%06ld",
- 		0LL, 0LL, 0LL, 0L, 0LL, 0L, 0LL, 0L);
- #endif
-+#ifdef CONFIG_NUMA_BALANCING
-+	SEQ_printf(m, " %d", cpu_to_node(task_cpu(p)));
-+#endif
- #ifdef CONFIG_CGROUP_SCHED
- 	SEQ_printf(m, " %s", task_group_path(task_group(p)));
- #endif
-@@ -159,7 +163,7 @@ static void print_rq(struct seq_file *m, struct rq *rq, int rq_cpu)
- 	read_lock_irqsave(&tasklist_lock, flags);
- 
- 	do_each_thread(g, p) {
--		if (!p->on_rq || task_cpu(p) != rq_cpu)
-+		if (task_cpu(p) != rq_cpu)
- 			continue;
- 
- 		print_task(m, rq, p);
-@@ -345,7 +349,7 @@ static void sched_debug_header(struct seq_file *m)
- 	cpu_clk = local_clock();
- 	local_irq_restore(flags);
- 
--	SEQ_printf(m, "Sched Debug Version: v0.10, %s %.*s\n",
-+	SEQ_printf(m, "Sched Debug Version: v0.11, %s %.*s\n",
- 		init_utsname()->release,
- 		(int)strcspn(init_utsname()->version, " "),
- 		init_utsname()->version);
-@@ -488,6 +492,56 @@ static int __init init_sched_debug_procfs(void)
- 
- __initcall(init_sched_debug_procfs);
- 
-+#define __P(F) \
-+	SEQ_printf(m, "%-45s:%21Ld\n", #F, (long long)F)
-+#define P(F) \
-+	SEQ_printf(m, "%-45s:%21Ld\n", #F, (long long)p->F)
-+#define __PN(F) \
-+	SEQ_printf(m, "%-45s:%14Ld.%06ld\n", #F, SPLIT_NS((long long)F))
-+#define PN(F) \
-+	SEQ_printf(m, "%-45s:%14Ld.%06ld\n", #F, SPLIT_NS((long long)p->F))
-+
-+
-+static void sched_show_numa(struct task_struct *p, struct seq_file *m)
-+{
-+#ifdef CONFIG_NUMA_BALANCING
-+	struct mempolicy *pol;
-+	int node, i;
-+
-+	if (p->mm)
-+		P(mm->numa_scan_seq);
-+
-+	task_lock(p);
-+	pol = p->mempolicy;
-+	if (pol && !(pol->flags & MPOL_F_MORON))
-+		pol = NULL;
-+	mpol_get(pol);
-+	task_unlock(p);
-+
-+	SEQ_printf(m, "numa_migrations, %ld\n", xchg(&p->numa_pages_migrated, 0));
-+
-+	for_each_online_node(node) {
-+		for (i = 0; i < 2; i++) {
-+			unsigned long nr_faults = -1;
-+			int cpu_current, home_node;
-+
-+			if (p->numa_faults)
-+				nr_faults = p->numa_faults[2*node + i];
-+
-+			cpu_current = !i ? (task_node(p) == node) :
-+				(pol && node_isset(node, pol->v.nodes));
-+
-+			home_node = (p->numa_preferred_nid == node);
-+
-+			SEQ_printf(m, "numa_faults, %d, %d, %d, %d, %ld\n",
-+				i, node, cpu_current, home_node, nr_faults);
-+		}
-+	}
-+
-+	mpol_put(pol);
-+#endif
-+}
-+
- void proc_sched_show_task(struct task_struct *p, struct seq_file *m)
- {
- 	unsigned long nr_switches;
-@@ -591,6 +645,8 @@ void proc_sched_show_task(struct task_struct *p, struct seq_file *m)
- 		SEQ_printf(m, "%-45s:%21Ld\n",
- 			   "clock-delta", (long long)(t1-t0));
- 	}
-+
-+	sched_show_numa(p, m);
- }
- 
- void proc_sched_set_task(struct task_struct *p)
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 4653f71..80906fa 100644
+index 3a92c58..4653f71 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -1138,7 +1138,7 @@ static int task_numa_migrate(struct task_struct *p)
- 		.p = p,
+@@ -1231,6 +1231,7 @@ static void task_numa_placement(struct task_struct *p)
+ {
+ 	int seq, nid, max_nid = -1, max_group_nid = -1;
+ 	unsigned long max_faults = 0, max_group_faults = 0;
++	spinlock_t *group_lock = NULL;
  
- 		.src_cpu = task_cpu(p),
--		.src_nid = cpu_to_node(task_cpu(p)),
-+		.src_nid = task_node(p),
+ 	seq = ACCESS_ONCE(p->mm->numa_scan_seq);
+ 	if (p->numa_scan_seq == seq)
+@@ -1239,6 +1240,12 @@ static void task_numa_placement(struct task_struct *p)
+ 	p->numa_migrate_seq++;
+ 	p->numa_scan_period_max = task_scan_max(p);
  
- 		.imbalance_pct = 112,
- 
-@@ -1510,6 +1510,9 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
- 	if (p->numa_migrate_retry && time_after(jiffies, p->numa_migrate_retry))
- 		numa_migrate_preferred(p);
- 
-+	if (migrated)
-+		p->numa_pages_migrated += pages;
++	/* If the task is part of a group prevent parallel updates to group stats */
++	if (p->numa_group) {
++		group_lock = &p->numa_group->lock;
++		spin_lock(group_lock);
++	}
 +
- 	p->numa_faults_buffer[task_faults_idx(node, priv)] += pages;
- }
+ 	/* Find the node with the highest number of faults */
+ 	for_each_online_node(nid) {
+ 		unsigned long faults = 0, group_faults = 0;
+@@ -1277,20 +1284,24 @@ static void task_numa_placement(struct task_struct *p)
+ 		}
+ 	}
  
+-	/*
+-	 * If the preferred task and group nids are different, 
+-	 * iterate over the nodes again to find the best place.
+-	 */
+-	if (p->numa_group && max_nid != max_group_nid) {
+-		unsigned long weight, max_weight = 0;
+-
+-		for_each_online_node(nid) {
+-			weight = task_weight(p, nid) + group_weight(p, nid);
+-			if (weight > max_weight) {
+-				max_weight = weight;
+-				max_nid = nid;
++	if (p->numa_group) {
++		/*
++		 * If the preferred task and group nids are different, 
++		 * iterate over the nodes again to find the best place.
++		 */
++		if (max_nid != max_group_nid) {
++			unsigned long weight, max_weight = 0;
++
++			for_each_online_node(nid) {
++				weight = task_weight(p, nid) + group_weight(p, nid);
++				if (weight > max_weight) {
++					max_weight = weight;
++					max_nid = nid;
++				}
+ 			}
+ 		}
++
++		spin_unlock(group_lock);
+ 	}
+ 
+ 	/* Preferred node as the node with the most faults */
 -- 
 1.8.1.4
 
