@@ -1,73 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751225Ab3IKG0p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 02:26:45 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14695 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870Ab3IKG0o (ORCPT
+	id S1751136Ab3IKGcH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 02:32:07 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:36246 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893Ab3IKGcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 02:26:44 -0400
-X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=pwRAa-UwXOgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=jP7OCq9BwNYA:10 a=WPyIoOwQAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=1DbiqZag68YA:10 a=jeBq3FmKZ4MA:10 a=BPSfKMXmiYsA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042902.486093911@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:28:07 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Subject: [060/251] MIPS: Oceton: Fix build error.
-References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0060-MIPS-Oceton-Fix-build-error.patch
+	Wed, 11 Sep 2013 02:32:05 -0400
+X-AuditID: cbfec7f4-b7f0a6d000007b1b-87-52300e601917
+Message-id: <52300E5A.7010202@samsung.com>
+Date: Wed, 11 Sep 2013 08:31:54 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130801
+ Thunderbird/17.0.8
+MIME-version: 1.0
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linaro-mm-sig@lists.linaro.org,
+        devicetree@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Laura Abbott <lauraa@codeaurora.org>, Olof Johansson <olof@lixom.net>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Kumar Gala <galak@codeaurora.org>,
+        Nishanth Peethambaran <nishanth.p@gmail.com>,
+        Marc <marc.ceeeee@gmail.com>, Guenter Roeck <linux@roeck-us.net>
+Subject: Re: [PATCH] drivers: of: fix build break if asm/dma-contiguous.h is
+ missing
+References: <1378804400-31716-1-git-send-email-m.szyprowski@samsung.com>
+ <522F76CF.6080907@gmail.com>
+In-reply-to: <522F76CF.6080907@gmail.com>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t/xq7oJfAZBBjOf6lj8nXSM3WL+kXOs
+	Fv1vFrJavDqzkc3iTW8Hi8XZpjfsFts7Z7BbfLnykMni8q45bBZPFp5hstjw8iCTxdLrF5ks
+	FhxvYbX4M13O4tT1z2wWE6avZbH4/u0bm8Xf7ZtYLA6/aQcad7CNxWL9jNcsFqt2/WF0EPNY
+	M28No8fvX5MYPV5PnsDocbmvl8lj56y77B63/z1m9rhyoonVY92fV0we/X8NPHZ+b2D36Nuy
+	itHj50sdj8+b5Dw2zg0N4IvisklJzcksSy3St0vgyjhzWq7gBkfFh6OTmRoY37N1MXJySAiY
+	SHxcOR3KFpO4cG89kM3FISSwlFGi//FMdginmUniz6mb7CBVvAJaEtu/fmcCsVkEVCWOTfzK
+	CGKzCRhKdL3tApskKhAq0XNpOxtEvaDEj8n3WEBsEQF1iW/Lj4NtYBaYwSbReG8aM0hCWCBM
+	4uiT/2BFQgLpEl1fZ4IN5RTQlNj0czPYIGYBM4lHLeuYIWx5ic1r3jJPYBSYhWTHLCRls5CU
+	LWBkXsUomlqaXFCclJ5rqFecmFtcmpeul5yfu4kREs9fdjAuPmZ1iFGAg1GJh/eGnH6QEGti
+	WXFl7iFGCQ5mJRFeMXaDICHelMTKqtSi/Pii0pzU4kOMTBycUg2ModyqHK2p7cZH5r5Z/J75
+	TaNyWIET73TnfUpW14zVV4vNzuiK5MvRupcRJqf9MK24bLHv35oP6+0fZ8aYBnwK2Zf36plK
+	u+SL3qeP306u7DVMOPuu+q7SISkPjuOex/4HZbD5tdnlBr+OnhPDsfh188sfss55E9bv/BuV
+	9ultfkdtrYvnmzdKLMUZiYZazEXFiQBWfRmIxQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.9-rc1 stable review patch.
-If anyone has any objections, please let me know.
+Hello,
 
-------------------
+On 9/10/2013 9:45 PM, Rob Herring wrote:
+> On 09/10/2013 04:13 AM, Marek Szyprowski wrote:
+> > It is not needed to include asm/dma-contiguous.h header to compile
+> > reserved memory initialization code, so remove it to avoid build break
+> > on architectures without CMA support.
+> >
+> > Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+>
+> Acked-by: Rob Herring <rob.herring@calxeda.com>
+>
+> I can apply this or it can go with other CMA stuff.
 
-From: Ralf Baechle <ralf@linux-mips.org>
+I think it will be best if I push it to Linus asap to fix the build break
+on arm64 and mips, introduced by my pull request. It is really strange that
+I got no report from linux-next about that issue, although this patch was
+there for about 2 weeks.
 
-[ Upstream commit 39205750efa6d335fac4f9bcd32b49c7e71c12b7 ]
+> Aren't there also some comments from Grant to address as well?
 
-If CONFIG_CAVIUM_OCTEON_LOCK_L2_TLB, CONFIG_CAVIUM_OCTEON_LOCK_L2_EXCEPTION,
-CONFIG_CAVIUM_OCTEON_LOCK_L2_LOW_LEVEL_INTERRUPT and
-CONFIG_CAVIUM_OCTEON_LOCK_L2_INTERRUPT are all undefined:
+Right, I'm working on providing an update which will address the issues
+pointed by Grant, but I got sick and had to take some days off. I still
+didn't recover completely, but I hope I will manage to finish them by
+the end of the week.
 
-arch/mips/cavium-octeon/setup.c: In function ‘prom_init’:
-arch/mips/cavium-octeon/setup.c:715:12: error: unused variable ‘ebase’ [-Werror=unused-variable]
-
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- arch/mips/cavium-octeon/setup.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/arch/mips/cavium-octeon/setup.c b/arch/mips/cavium-octeon/setup.c
-index 919b0fb..19ce979 100644
---- a/arch/mips/cavium-octeon/setup.c
-+++ b/arch/mips/cavium-octeon/setup.c
-@@ -6,6 +6,7 @@
-  * Copyright (C) 2004-2007 Cavium Networks
-  * Copyright (C) 2008 Wind River Systems
-  */
-+#include <linux/compiler.h>
- #include <linux/init.h>
- #include <linux/console.h>
- #include <linux/delay.h>
-@@ -504,7 +505,7 @@ void __init prom_init(void)
- 	if (cvmx_read_csr(CVMX_L2D_FUS3) & (3ull << 34)) {
- 		pr_info("Skipping L2 locking due to reduced L2 cache size\n");
- 	} else {
--		uint32_t ebase = read_c0_ebase() & 0x3ffff000;
-+		uint32_t __maybe_unused ebase = read_c0_ebase() & 0x3ffff000;
- #ifdef CONFIG_CAVIUM_OCTEON_LOCK_L2_TLB
- 		/* TLB refill */
- 		cvmx_l2c_lock_mem_region(ebase, 0x100);
+Best regards
 -- 
-1.7.10.4
+Marek Szyprowski
+Samsung R&D Institute Poland
 
 
