@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756177Ab3IKF1v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 01:27:51 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32814 "EHLO
+	id S1756894Ab3IKF2a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 01:28:30 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11316 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754708Ab3IKE5Z (ORCPT
+	with ESMTP id S1754685Ab3IKE5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 00:57:25 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=jD3GpYgDkRwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=on9A85mscvoA:10 a=drOt6m5kAAAA:8 a=VwQbUJbxAAAA:8 a=KKAkSRfTAAAA:8 a=DD9uoUFLPhUvRMlZd7oA:9 a=WwgC8nHKvroA:10 a=jeBq3FmKZ4MA:10 a=gzQFJSC74NTI_W8x:21 a=ZeZaF3KfvYI8Xqha:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Wed, 11 Sep 2013 00:57:24 -0400
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=gr9EIj6Y8gcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=j7bzT6rKYqYA:10 a=drOt6m5kAAAA:8 a=VwQbUJbxAAAA:8 a=KKAkSRfTAAAA:8 a=oej2A1Sdv-erdW-XwhwA:9 a=WwgC8nHKvroA:10 a=jeBq3FmKZ4MA:10 a=sNZVxfKoEDRqcDjf:21 a=J1Mli8haGmSgdxkd:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042912.392962994@goodmis.org>
+Message-Id: <20130911042912.703921740@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:29:08 -0400
+Date: Wed, 11 Sep 2013 00:29:10 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Nicolas Pitre <nico@linaro.org>,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [121/251] ARM: move vector stubs
+Subject: [123/251] ARM: update FIQ support for relocation of vectors
 References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0121-ARM-move-vector-stubs.patch
+Content-Disposition: inline; filename=0123-ARM-update-FIQ-support-for-relocation-of-vectors.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,183 +32,81 @@ If anyone has any objections, please let me know.
 
 From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-[ Upstream commit 19accfd373847ac3d10623c5d20f948846299741 ]
+[ Upstream commit e39e3f3ebfef03450cf7bfa7a974a8c61f7980c8 ]
 
-Move the machine vector stubs into the page above the vector page,
-which we can prevent from being visible to userspace.  Also move
-the reset stub, and place the swi vector at a location that the
-'ldr' can get to it.
-
-This hides pointers into the kernel which could give valuable
-information to attackers, and reduces the number of exploitable
-instructions at a fixed address.
+FIQ should no longer copy the FIQ code into the user visible vector
+page.  Instead, it should use the hidden page.  This change makes
+that happen.
 
 Cc: <stable@vger.kernel.org>
 Acked-by: Nicolas Pitre <nico@linaro.org>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/arm/Kconfig             |    3 ++-
- arch/arm/kernel/entry-armv.S |   50 ++++++++++++++++++++----------------------
- arch/arm/kernel/traps.c      |    4 ++--
- arch/arm/mm/mmu.c            |   10 ++++++++-
- 4 files changed, 37 insertions(+), 30 deletions(-)
+ arch/arm/kernel/entry-armv.S |    3 +++
+ arch/arm/kernel/fiq.c        |   19 ++++++++++++++-----
+ 2 files changed, 17 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 589bdba..ca5e665 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -183,7 +183,8 @@ config VECTORS_BASE
- 	default DRAM_BASE if REMAP_VECTORS_TO_RAM
- 	default 0x00000000
- 	help
--	  The base address of exception vectors.
-+	  The base address of exception vectors.  This must be two pages
-+	  in size.
- 
- config ARM_PATCH_PHYS_VIRT
- 	bool "Patch physical to virtual translations at runtime" if EMBEDDED
 diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
-index 9c80c1d..a4af8e8 100644
+index c19779f..4c28aff 100644
 --- a/arch/arm/kernel/entry-armv.S
 +++ b/arch/arm/kernel/entry-armv.S
-@@ -986,9 +986,9 @@ __kuser_helper_end:
- /*
-  * Vector stubs.
-  *
-- * This code is copied to 0xffff0200 so we can use branches in the
-- * vectors, rather than ldr's.  Note that this code must not
-- * exceed 0x300 bytes.
-+ * This code is copied to 0xffff1000 so we can use branches in the
-+ * vectors, rather than ldr's.  Note that this code must not exceed
-+ * a page size.
-  *
-  * Common stub entry macro:
-  *   Enter in IRQ mode, spsr = SVC/USR CPSR, lr = SVC/USR PC
-@@ -1037,6 +1037,15 @@ ENDPROC(vector_\name)
- 
- 	.globl	__stubs_start
- __stubs_start:
-+	@ This must be the first word
-+	.word	vector_swi
-+
-+vector_rst:
-+ ARM(	swi	SYS_ERROR0	)
-+ THUMB(	svc	#0		)
-+ THUMB(	nop			)
-+	b	vector_und
-+
- /*
-  * Interrupt dispatcher
-  */
-@@ -1131,6 +1140,16 @@ __stubs_start:
- 	.align	5
- 
- /*=============================================================================
-+ * Address exception handler
-+ *-----------------------------------------------------------------------------
-+ * These aren't too critical.
-+ * (they're not supposed to happen, and won't happen in 32-bit data mode).
-+ */
-+
-+vector_addrexcptn:
-+	b	vector_addrexcptn
-+
-+/*=============================================================================
-  * Undefined FIQs
-  *-----------------------------------------------------------------------------
-  * Enter in FIQ mode, spsr = ANY CPSR, lr = ANY PC
-@@ -1143,35 +1162,14 @@ __stubs_start:
+@@ -1162,6 +1162,9 @@ vector_addrexcptn:
  vector_fiq:
  	subs	pc, lr, #4
  
--/*=============================================================================
-- * Address exception handler
-- *-----------------------------------------------------------------------------
-- * These aren't too critical.
-- * (they're not supposed to happen, and won't happen in 32-bit data mode).
-- */
--
--vector_addrexcptn:
--	b	vector_addrexcptn
--
--/*
-- * We group all the following data together to optimise
-- * for CPUs with separate I & D caches.
-- */
--	.align	5
--
--.LCvswi:
--	.word	vector_swi
--
- 	.globl	__stubs_end
- __stubs_end:
- 
--	.equ	stubs_offset, __vectors_start + 0x200 - __stubs_start
-+	.equ	stubs_offset, __vectors_start + 0x1000 - __stubs_start
- 
- 	.globl	__vectors_start
- __vectors_start:
-- ARM(	swi	SYS_ERROR0	)
-- THUMB(	svc	#0		)
-- THUMB(	nop			)
-+	W(b)	vector_rst + stubs_offset
- 	W(b)	vector_und + stubs_offset
- 	W(ldr)	pc, .LCvswi + stubs_offset
- 	W(b)	vector_pabt + stubs_offset
-diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
-index a4f84b0..366aa93 100644
---- a/arch/arm/kernel/traps.c
-+++ b/arch/arm/kernel/traps.c
-@@ -843,7 +843,7 @@ void __init early_trap_init(void *vectors_base)
- 	 * are visible to the instruction stream.
- 	 */
- 	memcpy((void *)vectors, __vectors_start, __vectors_end - __vectors_start);
--	memcpy((void *)vectors + 0x200, __stubs_start, __stubs_end - __stubs_start);
-+	memcpy((void *)vectors + 0x1000, __stubs_start, __stubs_end - __stubs_start);
- 	memcpy((void *)vectors + 0x1000 - kuser_sz, __kuser_helper_start, kuser_sz);
- 
- 	/*
-@@ -858,6 +858,6 @@ void __init early_trap_init(void *vectors_base)
- 	memcpy((void *)(vectors + KERN_SIGRETURN_CODE - CONFIG_VECTORS_BASE),
- 	       sigreturn_codes, sizeof(sigreturn_codes));
- 
--	flush_icache_range(vectors, vectors + PAGE_SIZE);
-+	flush_icache_range(vectors, vectors + PAGE_SIZE * 2);
- 	modify_domain(DOMAIN_USER, DOMAIN_CLIENT);
- }
-diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index c2fa21d..889f3de 100644
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -1080,7 +1080,7 @@ static void __init devicemaps_init(struct machine_desc *mdesc)
- 	/*
- 	 * Allocate the vector page early.
- 	 */
--	vectors = early_alloc(PAGE_SIZE);
-+	vectors = early_alloc(PAGE_SIZE * 2);
- 
- 	early_trap_init(vectors);
- 
-@@ -1130,10 +1130,18 @@ static void __init devicemaps_init(struct machine_desc *mdesc)
- 
- 	if (!vectors_high()) {
- 		map.virtual = 0;
-+		map.length = PAGE_SIZE * 2;
- 		map.type = MT_LOW_VECTORS;
- 		create_mapping(&map);
- 	}
- 
-+	/* Now create a kernel read-only mapping */
-+	map.pfn += 1;
-+	map.virtual = 0xffff0000 + PAGE_SIZE;
-+	map.length = PAGE_SIZE;
-+	map.type = MT_LOW_VECTORS;
-+	create_mapping(&map);
++	.globl	vector_fiq_offset
++	.equ	vector_fiq_offset, vector_fiq
 +
- 	/*
- 	 * Ask the machine support to map in the statically mapped devices.
- 	 */
+ 	.section .vectors, "ax", %progbits
+ __vectors_start:
+ 	W(b)	vector_rst
+diff --git a/arch/arm/kernel/fiq.c b/arch/arm/kernel/fiq.c
+index 2adda11..25442f4 100644
+--- a/arch/arm/kernel/fiq.c
++++ b/arch/arm/kernel/fiq.c
+@@ -47,6 +47,11 @@
+ #include <asm/irq.h>
+ #include <asm/traps.h>
+ 
++#define FIQ_OFFSET ({					\
++		extern void *vector_fiq_offset;		\
++		(unsigned)&vector_fiq_offset;		\
++	})
++
+ static unsigned long no_fiq_insn;
+ 
+ /* Default reacquire function
+@@ -80,13 +85,16 @@ int show_fiq_list(struct seq_file *p, int prec)
+ void set_fiq_handler(void *start, unsigned int length)
+ {
+ #if defined(CONFIG_CPU_USE_DOMAINS)
+-	memcpy((void *)0xffff001c, start, length);
++	void *base = (void *)0xffff0000;
+ #else
+-	memcpy(vectors_page + 0x1c, start, length);
++	void *base = vectors_page;
+ #endif
+-	flush_icache_range(0xffff001c, 0xffff001c + length);
++	unsigned offset = FIQ_OFFSET;
++
++	memcpy(base + offset, start, length);
++	flush_icache_range(0xffff0000 + offset, 0xffff0000 + offset + length);
+ 	if (!vectors_high())
+-		flush_icache_range(0x1c, 0x1c + length);
++		flush_icache_range(offset, offset + length);
+ }
+ 
+ int claim_fiq(struct fiq_handler *f)
+@@ -144,6 +152,7 @@ EXPORT_SYMBOL(disable_fiq);
+ 
+ void __init init_FIQ(int start)
+ {
+-	no_fiq_insn = *(unsigned long *)0xffff001c;
++	unsigned offset = FIQ_OFFSET;
++	no_fiq_insn = *(unsigned long *)(0xffff0000 + offset);
+ 	fiq_start = start;
+ }
 -- 
 1.7.10.4
 
