@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab3IKLSi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 07:18:38 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:47160 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752484Ab3IKLSf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 07:18:35 -0400
-Message-ID: <5230509D.6040205@linux.vnet.ibm.com>
-Date: Wed, 11 Sep 2013 16:44:37 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1755249Ab3IKLSq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 07:18:46 -0400
+Received: from mga14.intel.com ([143.182.124.37]:9938 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754058Ab3IKLSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 07:18:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,883,1371106800"; 
+   d="scan'208";a="358908394"
+Date: Wed, 11 Sep 2013 14:24:06 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Aaron Lu <aaron.lu@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-i2c@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lv Zheng <lv.zheng@intel.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH RESEND 1/2] i2c: prepare runtime PM support for I2C
+ client devices
+Message-ID: <20130911112406.GB7393@intel.com>
+References: <1378733679-19500-1-git-send-email-mika.westerberg@linux.intel.com>
+ <3397524.g9aUWuArnm@vostro.rjw.lan>
+ <20130910213522.GG29403@sirena.org.uk>
+ <2029393.u6DaKBPszu@vostro.rjw.lan>
+ <522FC0DC.9030708@intel.com>
+ <20130911095552.GI29403@sirena.org.uk>
+ <20130911110543.GA7393@intel.com>
+ <20130911111409.GO29403@sirena.org.uk>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cpufreq <cpufreq@vger.kernel.org>
-Subject: Re: cpufreq_stats NULL deref on second system suspend
-References: <522E1FEF.6080803@wwwdotorg.org> <1775778.MeiRhuYy7o@vostro.rjw.lan>	<522F86AD.6010603@wwwdotorg.org> <2521560.SfeNbV74nj@vostro.rjw.lan>	<52304439.3030301@linux.vnet.ibm.com> <CAKohpokTVzikxunqSdUYmLjTOkfhWFJ=N4TTa4rdbj2euCFY-g@mail.gmail.com> <CAKohpomzQ8Yzk+OU0btQM6DGm4xsY1RR9uYFrZD3ZHO-bhrwKQ@mail.gmail.com>
-In-Reply-To: <CAKohpomzQ8Yzk+OU0btQM6DGm4xsY1RR9uYFrZD3ZHO-bhrwKQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091111-2000-0000-0000-00000DADA8DD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130911111409.GO29403@sirena.org.uk>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2013 04:15 PM, Viresh Kumar wrote:
-> On 11 September 2013 16:14, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->> But I would have solved it differently :)
->>
->> We don't really need to call update_policy_cpu() again and again
->> as we don't really need to update policy->cpu...
->>
->> Rather it would be better to just move following inside
->> cpufreq_policy_alloc():
+On Wed, Sep 11, 2013 at 12:14:09PM +0100, Mark Brown wrote:
+> On Wed, Sep 11, 2013 at 02:05:43PM +0300, Mika Westerberg wrote:
 > 
-> Half written mail sent :(
+> > I'll also look into converting the existing I2C client drivers to use this
+> > method. One question, though, is it better to have the conversion in the
+> > same patch that introduces the I2C core runtime PM change or as a separate
+> > patch?
 > 
-> What about moving following to cpufreq_policy_alloc():
-> 
-> policy->cpu = cpu;
-> 
-> ??
-> 
+> In theory it ought to be part of the same patch but in practice a brief
+> bit of bisection breakage on a single branch is probably worth the ease
+> of review from my point of view, others may disagree though.
 
-Hmm? The problem is not about merely updating the policy->cpu field; the
-main issue is that the existing code was not letting the cpufreq-stats
-code know that we updated the policy->cpu under the hood. It is important
-for cpufreq-stats to know this because it maintains the reference to its
-stats structure by associating it with the policy->cpu. So if policy->cpu
-changes under the hood, it loses track of its reference. So we need to
-keep that code informed about changes to policy->cpu. Thus, we need to call
-update_policy_cpu() in the CPU online path (during resume). I don't see
-how we can skip that.
+OK, I'll keep them separate, unless there are objections.
 
-Regards,
-Srivatsa S. Bhat
+> Like I say I think you'll need to convert SPI at the same time due to the
+> devices with both buses sharing code.
 
+Yes, I'm looking into that :)
