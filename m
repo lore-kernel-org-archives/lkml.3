@@ -1,81 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510Ab3IKKME (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 06:12:04 -0400
-Received: from lmv.inov.pt ([146.193.64.2]:55273 "EHLO lmv.inov.pt"
+	id S1753560Ab3IKKMK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 06:12:10 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:52950 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752631Ab3IKKMB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 06:12:01 -0400
-From: =?UTF-8?q?Jos=C3=A9=20Miguel=20Gon=C3=A7alves?= 
-	<jose.goncalves@inov.pt>
-To: linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        =?UTF-8?q?Jos=C3=A9=20Miguel=20Gon=C3=A7alves?= 
-	<jose.goncalves@inov.pt>
-Subject: [PATCH] serial: samsung: add support for manual RTS setting
-Date: Wed, 11 Sep 2013 11:08:27 +0100
-Message-Id: <1378894107-7904-1-git-send-email-jose.goncalves@inov.pt>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752631Ab3IKKMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 06:12:06 -0400
+Message-ID: <523040B5.60407@ti.com>
+Date: Wed, 11 Sep 2013 15:36:45 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-INOV-EmailServer-Information: Please contact the Email service provider for more information
-X-INOV-EmailServer: Found to be clean
-X-INOV-EmailServer-From: jose.goncalves@inov.pt
+To: Koen Kooi <koen@dominion.thruhere.net>
+CC: <linux-omap@vger.kernel.org>, <bcousson@baylibre.com>, <tony@atomide.com>,
+        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ijc+devicetree@hellion.org.uk>, <linux@arm.linux.org.uk>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] am335x-boneblack: add eMMC DT entry
+References: <1378879946-13037-1-git-send-email-koen@dominion.thruhere.net> <1378879946-13037-3-git-send-email-koen@dominion.thruhere.net>
+In-Reply-To: <1378879946-13037-3-git-send-email-koen@dominion.thruhere.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Samsung serial driver currently does not support setting the
-RTS pin with an ioctl(TIOCMSET) call. This patch adds this support.
+On Wednesday 11 September 2013 11:42 AM, Koen Kooi wrote:
+> Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
+> ---
+>  arch/arm/boot/dts/am335x-bone-common.dtsi |  7 +++++++
+>  arch/arm/boot/dts/am335x-boneblack.dts    | 15 +++++++++++++++
+>  2 files changed, 22 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
+> index ced256c..9c61fef 100644
+> --- a/arch/arm/boot/dts/am335x-bone-common.dtsi
+> +++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
+> @@ -241,6 +241,13 @@
+>  			regulator-always-on;
+>  		};
+>  	};
+> +
+> +	vmmcsd_fixed: fixedregulator@0 {
+> +		compatible = "regulator-fixed";
+> +		regulator-name = "vmmcsd_fixed";
+> +		regulator-min-microvolt = <3300000>;
+> +		regulator-max-microvolt = <3300000>;
+> +	};
+>  };
+>  
+>  &cpsw_emac0 {
+> diff --git a/arch/arm/boot/dts/am335x-boneblack.dts b/arch/arm/boot/dts/am335x-boneblack.dts
+> index 197cadf..c09947a 100644
+> --- a/arch/arm/boot/dts/am335x-boneblack.dts
+> +++ b/arch/arm/boot/dts/am335x-boneblack.dts
+> @@ -15,3 +15,18 @@
+>  	regulator-max-microvolt = <1800000>;
+>  	regulator-always-on;
+>  };
+> +
+> +&mmc1 { 
+> +	vmmc-supply = <&vmmcsd_fixed>;
+> +};
+> +
+> +&mmc2 { 
+> +	vmmc-supply = <&vmmcsd_fixed>;
+> +	pinctrl-names = "default";
+> +	pinctrl-0 = <&emmc_pins>;
+> +	bus-width = <8>;
+> +	ti,non-removable;
 
-Signed-off-by: José Miguel Gonçalves <jose.goncalves@inov.pt>
----
- drivers/tty/serial/samsung.c |   17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+There is a standard binding available for this: "non-removable"
+There should not be a need to introduce a TI specific binding for this
+(I know this is not your fault).
 
-diff --git a/drivers/tty/serial/samsung.c b/drivers/tty/serial/samsung.c
-index f3dfa19..e5dd808 100644
---- a/drivers/tty/serial/samsung.c
-+++ b/drivers/tty/serial/samsung.c
-@@ -407,7 +407,14 @@ static unsigned int s3c24xx_serial_get_mctrl(struct uart_port *port)
- 
- static void s3c24xx_serial_set_mctrl(struct uart_port *port, unsigned int mctrl)
- {
--	/* todo - possibly remove AFC and do manual CTS */
-+	unsigned int umcon = rd_regl(port, S3C2410_UMCON);
-+
-+	if (mctrl & TIOCM_RTS)
-+		umcon |= S3C2410_UMCOM_RTS_LOW;
-+	else
-+		umcon &= ~S3C2410_UMCOM_RTS_LOW;
-+
-+	wr_regl(port, S3C2410_UMCON, umcon);
- }
- 
- static void s3c24xx_serial_break_ctl(struct uart_port *port, int break_state)
-@@ -774,8 +781,6 @@ static void s3c24xx_serial_set_termios(struct uart_port *port,
- 	if (termios->c_cflag & CSTOPB)
- 		ulcon |= S3C2410_LCON_STOPB;
- 
--	umcon = (termios->c_cflag & CRTSCTS) ? S3C2410_UMCOM_AFC : 0;
--
- 	if (termios->c_cflag & PARENB) {
- 		if (termios->c_cflag & PARODD)
- 			ulcon |= S3C2410_LCON_PODD;
-@@ -792,6 +797,12 @@ static void s3c24xx_serial_set_termios(struct uart_port *port,
- 
- 	wr_regl(port, S3C2410_ULCON, ulcon);
- 	wr_regl(port, S3C2410_UBRDIV, quot);
-+
-+	if (termios->c_cflag & CRTSCTS)
-+		umcon = S3C2410_UMCOM_AFC;
-+	else
-+		umcon = rd_regb(port, S3C2410_UMCON) & ~S3C2410_UMCOM_AFC;
-+
- 	wr_regl(port, S3C2410_UMCON, umcon);
- 
- 	if (ourport->info->has_divslot)
--- 
-1.7.10.4
+I will send a patch to change the existing .dts files and update the
+driver - can you drop this line for now so we don't introduce more
+incompatibilities? I can send a patch adding "non-removable" to this
+node as part of my clean-up series.
+
+Thanks,
+Sekhar
 
