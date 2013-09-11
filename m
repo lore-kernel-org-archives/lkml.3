@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752322Ab3IKHjJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 03:39:09 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:23419 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751265Ab3IKHjI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 03:39:08 -0400
-Date: Wed, 11 Sep 2013 10:38:32 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Mike Miller <mike.miller@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: iss_storagedev@hp.com, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Moritz Muehlenhoff <jmm@debian.org>
-Subject: [patch -resend] cciss: info leak in cciss_ioctl32_passthru()
-Message-ID: <20130911073832.GB25349@mwanda>
+	id S1752474Ab3IKHmz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 03:42:55 -0400
+Received: from ares07.inai.de ([5.9.24.206]:53603 "EHLO ares07.inai.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751052Ab3IKHmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 03:42:53 -0400
+Date: Wed, 11 Sep 2013 09:42:52 +0200 (CEST)
+From: Jan Engelhardt <jengelh@inai.de>
+To: Matt Porter <matt.porter@linaro.org>
+cc: Linux USB List <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Introducing libgadget 0.0.1
+In-Reply-To: <20130904172532.GA10973@ohporter.com>
+Message-ID: <alpine.LSU.2.11.1309110940430.29134@nerf07.vanv.qr>
+References: <20130904172532.GA10973@ohporter.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130603092645.GD16171@debian>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The arg64 struct has a hole after ->buf_size which isn't cleared.
-Or if any of the calls to copy_from_user() fail then that would
-cause an information leak as well.
+On Wednesday 2013-09-04 19:25, Matt Porter wrote:
 
-This was assigned CVE-2013-2147.
+>With the move to configfs for creation of arbitrary USB composite gadgets,
+>I found myself wanting a simple C library to configure and parse gadgets
+>in a system. It has no other dependencies other than libc itself.
+>
+>It can be found at:
+>
+>	git://git.linaro.org/people/mporter/libgadget.git
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Hm but there is already a libgadget (and not just one) if you query a 
+particular search engine entitled Google :}
 
-diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index 6374dc1..34971aa 100644
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -1189,6 +1189,7 @@ static int cciss_ioctl32_passthru(struct block_device *bdev, fmode_t mode,
- 	int err;
- 	u32 cp;
- 
-+	memset(&arg64, 0, sizeof(arg64));
- 	err = 0;
- 	err |=
- 	    copy_from_user(&arg64.LUN_info, &arg32->LUN_info,
+>$ mkdir /config
+>$ mount -t configfs none /config
+
+Do your tools support input of a different location?
+(systemd mounts configfs at /sys/kernel/config.)
+
+>$ gadget-acm-ecm
+>$ show-gadgets
+>ID 1d6b:0104 'g1'
+>[...]
+
