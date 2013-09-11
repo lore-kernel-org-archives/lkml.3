@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755410Ab3IKPeH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 11:34:07 -0400
-Received: from mga11.intel.com ([192.55.52.93]:9323 "EHLO mga11.intel.com"
+	id S1755199Ab3IKPdA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 11:33:00 -0400
+Received: from mga03.intel.com ([143.182.124.21]:16861 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754493Ab3IKPdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 11:33:17 -0400
+	id S1755092Ab3IKPcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 11:32:53 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,885,1371106800"; 
-   d="scan'208";a="399998727"
+   d="scan'208";a="394206319"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: linux-i2c@vger.kernel.org
 Cc: Wolfram Sang <wsa@the-dreams.de>,
@@ -24,9 +24,9 @@ Cc: Wolfram Sang <wsa@the-dreams.de>,
         Liam Girdwood <lgirdwood@gmail.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH v2 8/9] spi: prepare runtime PM support for SPI devices
-Date: Wed, 11 Sep 2013 18:32:39 +0300
-Message-Id: <1378913560-2752-9-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [PATCH v2 1/9] i2c: prepare runtime PM support for I2C client devices
+Date: Wed, 11 Sep 2013 18:32:32 +0300
+Message-Id: <1378913560-2752-2-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1378913560-2752-1-git-send-email-mika.westerberg@linux.intel.com>
 References: <1378913560-2752-1-git-send-email-mika.westerberg@linux.intel.com>
@@ -34,116 +34,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds runtime PM support for the SPI bus analogous to what has
-been done for the I2C bus. This means that the SPI core prepares runtime PM
-for a client device just before a driver is about to be bound to it.
-Devices that are not bound to any driver are not prepared for runtime PM.
+From: Aaron Lu <aaron.lu@intel.com>
 
-In order to participate the runtime PM of the SPI bus a device driver needs
-to drop the device runtime PM reference count by calling pm_runtime_put()
-in its ->probe() callback and possibly implement rest of the runtime PM
-callbacks.
+This patch adds runtime PM support for the I2C bus in a similar way that
+has been done for PCI bus already. This means that the I2C bus core
+prepares runtime PM for a client device just before a driver is about to be
+bound to it. Devices that are not bound to any driver are not prepared for
+runtime PM.
 
-If the driver doesn't support runtime PM, the device in question is
-regarded as being runtime PM active and powered on.
+In order to take advantage of this runtime PM support, the client device
+driver needs drop the device runtime PM reference count by calling
+pm_runtime_put() in its ->probe() callback and possibly implement rest of
+the runtime PM callbacks.
 
-This patch adds also runtime PM support for the SPI master device because
-it is needed to be able to runtime power manage the SPI controller device.
-The SPI master device is handled along with the SPI controller device.
+If the driver doesn't support runtime PM (like most of the existing I2C
+client drivers), the device in question is regarded as being runtime PM
+active and powered on.
 
+The patch adds also runtime PM support for the adapter device because it is
+needed to be able to runtime power manage the I2C controller device. The
+adapter device is handled along with the I2C controller device (it uses
+pm_runtime_no_callbacks()).
+
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- drivers/spi/spi.c | 49 +++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 47 insertions(+), 2 deletions(-)
+ drivers/i2c/i2c-core.c | 44 +++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 43 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 978dda2..94ebab9 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -240,22 +240,61 @@ EXPORT_SYMBOL_GPL(spi_bus_type);
- static int spi_drv_probe(struct device *dev)
- {
- 	const struct spi_driver		*sdrv = to_spi_driver(dev->driver);
-+	struct spi_device		*spi = to_spi_device(dev);
-+	int				ret;
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index f32ca29..44374b4 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -248,11 +248,30 @@ static int i2c_device_probe(struct device *dev)
+ 					client->flags & I2C_CLIENT_WAKE);
+ 	dev_dbg(dev, "probe\n");
  
--	return sdrv->probe(to_spi_device(dev));
-+	/* Make sure that the master is powered on */
-+	pm_runtime_get_sync(&spi->master->dev);
++	/* Make sure the adapter is active */
++	pm_runtime_get_sync(&client->adapter->dev);
 +
 +	/*
-+	 * Enable runtime PM for the SPI device. The SPI device driver can
-+	 * participate in runtime PM by calling pm_runtime_put() in its
++	 * Enable runtime PM for the client device. If the client wants to
++	 * participate on runtime PM it should call pm_runtime_put() in its
 +	 * probe() callback.
 +	 */
-+	pm_runtime_get_noresume(&spi->dev);
-+	pm_runtime_set_active(&spi->dev);
-+	pm_runtime_enable(&spi->dev);
++	pm_runtime_get_noresume(&client->dev);
++	pm_runtime_set_active(&client->dev);
++	pm_runtime_enable(&client->dev);
 +
-+	ret = sdrv->probe(spi);
-+	if (ret) {
-+		pm_runtime_disable(&spi->dev);
-+		pm_runtime_set_suspended(&spi->dev);
-+		pm_runtime_put_noidle(&spi->dev);
+ 	status = driver->probe(client, i2c_match_id(driver->id_table, client));
+ 	if (status) {
+ 		client->driver = NULL;
+ 		i2c_set_clientdata(client, NULL);
++
++		pm_runtime_disable(&client->dev);
++		pm_runtime_set_suspended(&client->dev);
++		pm_runtime_put_noidle(&client->dev);
+ 	}
++
++	pm_runtime_put(&client->adapter->dev);
++
+ 	return status;
+ }
+ 
+@@ -265,6 +284,8 @@ static int i2c_device_remove(struct device *dev)
+ 	if (!client || !dev->driver)
+ 		return 0;
+ 
++	pm_runtime_get_sync(&client->adapter->dev);
++
+ 	driver = to_i2c_driver(dev->driver);
+ 	if (driver->remove) {
+ 		dev_dbg(dev, "remove\n");
+@@ -277,6 +298,13 @@ static int i2c_device_remove(struct device *dev)
+ 		client->driver = NULL;
+ 		i2c_set_clientdata(client, NULL);
+ 	}
++
++	/* Undo the runtime PM done in i2c_probe() */
++	pm_runtime_disable(&client->dev);
++	pm_runtime_set_suspended(&client->dev);
++	pm_runtime_put_noidle(&client->dev);
++
++	pm_runtime_put(&client->adapter->dev);
+ 	return status;
+ }
+ 
+@@ -288,8 +316,11 @@ static void i2c_device_shutdown(struct device *dev)
+ 	if (!client || !dev->driver)
+ 		return;
+ 	driver = to_i2c_driver(dev->driver);
+-	if (driver->shutdown)
++	if (driver->shutdown) {
++		pm_runtime_get_sync(&client->adapter->dev);
+ 		driver->shutdown(client);
++		pm_runtime_put(&client->adapter->dev);
 +	}
-+
-+	pm_runtime_put(&spi->master->dev);
-+
-+	return ret;
  }
  
- static int spi_drv_remove(struct device *dev)
- {
- 	const struct spi_driver		*sdrv = to_spi_driver(dev->driver);
-+	struct spi_device		*spi = to_spi_device(dev);
-+	int				ret;
-+
-+	pm_runtime_get_sync(&spi->master->dev);
-+
-+	ret = sdrv->remove(spi);
-+
-+	/* Undo the runtime PM done in spi_drv_probe() */
-+	pm_runtime_disable(&spi->dev);
-+	pm_runtime_set_suspended(&spi->dev);
-+	pm_runtime_put_noidle(&spi->dev);
+ #ifdef CONFIG_PM_SLEEP
+@@ -1066,6 +1097,15 @@ exit_recovery:
+ 	bus_for_each_drv(&i2c_bus_type, NULL, adap, __process_new_adapter);
+ 	mutex_unlock(&core_lock);
  
--	return sdrv->remove(to_spi_device(dev));
-+	pm_runtime_put(&spi->master->dev);
++	/*
++	 * Make sure the adapter runtime PM follows the parent device (the
++	 * host controller) so that we can suspend it once there aren't any
++	 * active clients anymore.
++	 */
++	pm_runtime_set_active(&adap->dev);
++	pm_runtime_no_callbacks(&adap->dev);
++	pm_runtime_enable(&adap->dev);
 +
-+	return ret;
- }
+ 	return 0;
  
- static void spi_drv_shutdown(struct device *dev)
- {
- 	const struct spi_driver		*sdrv = to_spi_driver(dev->driver);
-+	struct spi_device		*spi = to_spi_device(dev);
- 
-+	pm_runtime_get_sync(&spi->master->dev);
- 	sdrv->shutdown(to_spi_device(dev));
-+	pm_runtime_put(&spi->master->dev);
- }
- 
- /**
-@@ -1174,6 +1213,10 @@ int spi_register_master(struct spi_master *master)
- 		}
+ out_list:
+@@ -1230,6 +1270,8 @@ void i2c_del_adapter(struct i2c_adapter *adap)
+ 		return;
  	}
  
-+	pm_runtime_set_active(&master->dev);
-+	pm_runtime_no_callbacks(&master->dev);
-+	pm_runtime_enable(&master->dev);
++	pm_runtime_disable(&adap->dev);
 +
- 	mutex_lock(&board_lock);
- 	list_add_tail(&master->list, &spi_master_list);
- 	list_for_each_entry(bi, &board_list, list)
-@@ -1217,6 +1260,8 @@ void spi_unregister_master(struct spi_master *master)
- 	list_del(&master->list);
- 	mutex_unlock(&board_lock);
- 
-+	pm_runtime_disable(&master->dev);
-+
- 	dummy = device_for_each_child(&master->dev, NULL, __unregister);
- 	device_unregister(&master->dev);
- }
+ 	/* Tell drivers about this removal */
+ 	mutex_lock(&core_lock);
+ 	bus_for_each_drv(&i2c_bus_type, NULL, adap,
 -- 
 1.8.4.rc3
 
