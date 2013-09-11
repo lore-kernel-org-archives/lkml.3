@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958Ab3IKFWe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 01:22:34 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3257 "EHLO
+	id S1756529Ab3IKFXB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 01:23:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22176 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754835Ab3IKE52 (ORCPT
+	with ESMTP id S1753314Ab3IKE52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 11 Sep 2013 00:57:28 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=Yso__KIHSwUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=SpT72YaHU-UA:10 a=yPCof4ZbAAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=qRdIvxYzc-zviBVrG4QA:9 a=7DSvI1NPTFQA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=ztIMjK6J7wcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Ff1dCouQ9zIA:10 a=hGzw-44bAAAA:8 a=VwQbUJbxAAAA:8 a=Tty9oNO6AAAA:8 a=wMNdZWldAAAA:8 a=35crcUObn1LEwPT5wXcA:9 a=dowx1zmaLagA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042909.440304666@goodmis.org>
+Message-Id: <20130911042909.596921872@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:28:50 -0400
+Date: Wed, 11 Sep 2013 00:28:51 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [103/251] svcrdma: underflow issue in decode_write_list()
+Cc: Anton Blanchard <anton@samba.org>, <stable@kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [104/251] powerpc/modules: Module CRC relocation fix causes perf issues
 References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0103-svcrdma-underflow-issue-in-decode_write_list.patch
+Content-Disposition: inline; filename=0104-powerpc-modules-Module-CRC-relocation-fix-causes-per.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,77 +31,80 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Anton Blanchard <anton@samba.org>
 
-[ Upstream commit b2781e1021525649c0b33fffd005ef219da33926 ]
+[ Upstream commit 0e0ed6406e61434d3f38fb58aa8464ec4722b77e ]
 
-My static checker marks everything from ntohl() as untrusted and it
-complains we could have an underflow problem doing:
+Module CRCs are implemented as absolute symbols that get resolved by
+a linker script. We build an intermediate .o that contains an
+unresolved symbol for each CRC. genksysms parses this .o, calculates
+the CRCs and writes a linker script that "resolves" the symbols to
+the calculated CRC.
 
-	return (u32 *)&ary->wc_array[nchunks];
+Unfortunately the ppc64 relocatable kernel sees these CRCs as symbols
+that need relocating and relocates them at boot. Commit d4703aef
+(module: handle ppc64 relocating kcrctabs when CONFIG_RELOCATABLE=y)
+added a hook to reverse the bogus relocations. Part of this patch
+created a symbol at 0x0:
 
-Also on 32 bit systems the upper bound check could overflow.
+# head -2 /proc/kallsyms
+0000000000000000 T reloc_start
+c000000000000000 T .__start
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+This reloc_start symbol is causing lots of confusion to perf. It
+thinks reloc_start is a massive function that stretches from 0x0 to
+0xc000000000000000 and we get various cryptic errors out of perf,
+including:
+
+problem incrementing symbol count, skipping event
+
+This patch removes the  reloc_start linker script label and instead
+defines it as PHYSICAL_START. We also need to wrap it with
+CONFIG_PPC64 because the ppc32 kernel can set a non zero
+PHYSICAL_START at compile time and we wouldn't want to subtract
+it from the CRCs in that case.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Cc: <stable@kernel.org>
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- net/sunrpc/xprtrdma/svc_rdma_marshal.c |   20 ++++++++++++++------
- 1 file changed, 14 insertions(+), 6 deletions(-)
+ arch/powerpc/include/asm/module.h |    5 ++---
+ arch/powerpc/kernel/vmlinux.lds.S |    3 ---
+ 2 files changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/net/sunrpc/xprtrdma/svc_rdma_marshal.c b/net/sunrpc/xprtrdma/svc_rdma_marshal.c
-index 8d2eddd..65b1462 100644
---- a/net/sunrpc/xprtrdma/svc_rdma_marshal.c
-+++ b/net/sunrpc/xprtrdma/svc_rdma_marshal.c
-@@ -98,6 +98,7 @@ void svc_rdma_rcl_chunk_counts(struct rpcrdma_read_chunk *ch,
-  */
- static u32 *decode_write_list(u32 *va, u32 *vaend)
- {
-+	unsigned long start, end;
- 	int nchunks;
+diff --git a/arch/powerpc/include/asm/module.h b/arch/powerpc/include/asm/module.h
+index 0192a4e..80de64b 100644
+--- a/arch/powerpc/include/asm/module.h
++++ b/arch/powerpc/include/asm/module.h
+@@ -87,10 +87,9 @@ struct exception_table_entry;
+ void sort_ex_table(struct exception_table_entry *start,
+ 		   struct exception_table_entry *finish);
  
- 	struct rpcrdma_write_array *ary =
-@@ -113,9 +114,12 @@ static u32 *decode_write_list(u32 *va, u32 *vaend)
- 		return NULL;
- 	}
- 	nchunks = ntohl(ary->wc_nchunks);
--	if (((unsigned long)&ary->wc_array[0] +
--	     (sizeof(struct rpcrdma_write_chunk) * nchunks)) >
--	    (unsigned long)vaend) {
-+
-+	start = (unsigned long)&ary->wc_array[0];
-+	end = (unsigned long)vaend;
-+	if (nchunks < 0 ||
-+	    nchunks > (SIZE_MAX - start) / sizeof(struct rpcrdma_write_chunk) ||
-+	    (start + (sizeof(struct rpcrdma_write_chunk) * nchunks)) > end) {
- 		dprintk("svcrdma: ary=%p, wc_nchunks=%d, vaend=%p\n",
- 			ary, nchunks, vaend);
- 		return NULL;
-@@ -129,6 +133,7 @@ static u32 *decode_write_list(u32 *va, u32 *vaend)
- 
- static u32 *decode_reply_array(u32 *va, u32 *vaend)
+-#ifdef CONFIG_MODVERSIONS
++#if defined(CONFIG_MODVERSIONS) && defined(CONFIG_PPC64)
+ #define ARCH_RELOCATES_KCRCTAB
+-
+-extern const unsigned long reloc_start[];
++#define reloc_start PHYSICAL_START
+ #endif
+ #endif /* __KERNEL__ */
+ #endif	/* _ASM_POWERPC_MODULE_H */
+diff --git a/arch/powerpc/kernel/vmlinux.lds.S b/arch/powerpc/kernel/vmlinux.lds.S
+index 65d1c08..7703569 100644
+--- a/arch/powerpc/kernel/vmlinux.lds.S
++++ b/arch/powerpc/kernel/vmlinux.lds.S
+@@ -38,9 +38,6 @@ jiffies = jiffies_64 + 4;
+ #endif
+ SECTIONS
  {
-+	unsigned long start, end;
- 	int nchunks;
- 	struct rpcrdma_write_array *ary =
- 		(struct rpcrdma_write_array *)va;
-@@ -143,9 +148,12 @@ static u32 *decode_reply_array(u32 *va, u32 *vaend)
- 		return NULL;
- 	}
- 	nchunks = ntohl(ary->wc_nchunks);
--	if (((unsigned long)&ary->wc_array[0] +
--	     (sizeof(struct rpcrdma_write_chunk) * nchunks)) >
--	    (unsigned long)vaend) {
-+
-+	start = (unsigned long)&ary->wc_array[0];
-+	end = (unsigned long)vaend;
-+	if (nchunks < 0 ||
-+	    nchunks > (SIZE_MAX - start) / sizeof(struct rpcrdma_write_chunk) ||
-+	    (start + (sizeof(struct rpcrdma_write_chunk) * nchunks)) > end) {
- 		dprintk("svcrdma: ary=%p, wc_nchunks=%d, vaend=%p\n",
- 			ary, nchunks, vaend);
- 		return NULL;
+-	. = 0;
+-	reloc_start = .;
+-
+ 	. = KERNELBASE;
+ 
+ /*
 -- 
 1.7.10.4
 
