@@ -1,82 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757404Ab3IKX6S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 19:58:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43216 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751100Ab3IKX6R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 19:58:17 -0400
-Date: Wed, 11 Sep 2013 16:58:12 -0700
-From: Tyler Hicks <tyhicks@canonical.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        ecryptfs@vger.kernel.org
-Subject: [GIT PULL] eCryptfs fixes for 3.12-rc1
-Message-ID: <20130911235811.GE18678@boyd>
+	id S1757478Ab3IKX7K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 19:59:10 -0400
+Received: from www.sr71.net ([198.145.64.142]:58292 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751105Ab3IKX7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 19:59:08 -0400
+Message-ID: <523103BA.7010202@sr71.net>
+Date: Wed, 11 Sep 2013 16:58:50 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="ffoCPvUAPMgSXi6H"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cl@linux.com
+Subject: Re: [RFC][PATCH] mm: percpu pages: up batch size to fix arithmetic??
+ errror
+References: <20130911220859.EB8204BB@viggo.jf.intel.com> <5230F7DD.90905@linux.vnet.ibm.com>
+In-Reply-To: <5230F7DD.90905@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/11/2013 04:08 PM, Cody P Schafer wrote:
+> So we have this variable called "batch", and the code is trying to store
+> the _average_ number of pcp pages we want into it (not the batchsize),
+> and then we divide our "average" goal by 4 to get a batchsize. All the
+> comments refer to the size of the pcp pagesets, not to the pcp pageset
+> batchsize.
 
---ffoCPvUAPMgSXi6H
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+That's a good point, I guess.  I was wondering the same thing.
 
-Hi Linus,
+> Looking further, in current code we don't refill the pcp pagesets unless
+> they are completely empty (->low was removed a while ago), and then we
+> only add ->batch pages.
+> 
+> Has anyone looked at what type of average pcp sizing the current code
+> results in?
 
-The following changes since commit 4de9ad9bc08b4953fc03336ad38908496e2f8826:
+It tends to be within a batch of either ->high (when we are freeing lots
+of pages) or ->low (when alloc'ing lots).  I don't see a whole lot of
+bouncing around in the middle.  For instance, there aren't a lot of gcc
+or make instances during a kernel compile that fit in to the ~0.75MB
+->high limit.
 
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile (2013-09-06 11:14:33 -0700)
+Just a dumb little thing like this during a kernel compile on my 4-cpu
+laptop:
 
-are available in the git repository at:
+ while true; do cat /proc/zoneinfo  | egrep 'count:' | tail -4; done >
+pcp-counts.1.txt
+cat pcp-counts.1.txt | awk '{print $2}' | sort -n | uniq -c | sort -n
 
+says that at least ~1/2 of the time we have <=10 pages.  That makes
+sense since the compile spends all of its runtime (relatively slowly)
+doing allocations.  It frees all its memory really quickly when it
+exits, so the window to see the times when the pools are full is smaller
+than when they are empty.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tyhicks/ecryptfs.git tags/ecryptfs-3.12-rc1-crypt-ctx
-
-for you to fetch changes up to cb69f36ba1f8d5e73c46538e84a88178fb17f23d:
-
-  ecryptfs: avoid ctx initialization race (2013-09-06 16:58:18 -0700)
-
-----------------------------------------------------------------
-Two small fixes to the code that initializes the per-file crypto
-contexts.
-
-----------------------------------------------------------------
-Dan Carpenter (1):
-      ecryptfs: remove check for if an array is NULL
-
-Kees Cook (1):
-      ecryptfs: avoid ctx initialization race
-
- fs/ecryptfs/crypto.c | 16 ++++++----------
- 1 file changed, 6 insertions(+), 10 deletions(-)
-
---ffoCPvUAPMgSXi6H
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBCgAGBQJSMQOTAAoJENaSAD2qAscKOXMP/jRQpOKVDY11YJluoFqVuQWj
-Fx7vYlMLtTFifzMBUDL+qG/SVWxj2L7iPEBL2MmWVZPSLS4w1uke3zEOZTtUG3tP
-nAd521f6ZUVpGlFTkLQ3Wp5KmeibbaHZ60VPHpe3lOiELXlft8mcy9sjsP5IQwUw
-24GJ6wNn+hAXqB+KGZl95wWxZhun/ao3QBvAr6ZPGgAzWHrt2/P91rUmw1mA2nA7
-yG3j+RE6fhjfvtUdpj0/EzQ46rFDPXWI8P5PoEF3BTQVPji3gHT7zaojFkuzmb/a
-U1TR0nIDfUrCzOeuoBGUtiH3BQ7UBnYcGpBVty5PbTRiZWuXgqNR9T5uFXLSOB/g
-FLc1t0N/EtLgUthKn5ZQYLmEupDTMuNqRRoxKHpVvAW12sVHOpeK7xP32kqAoZXF
-Ly1STUuhTeyhrLQ/1kQhM1fM0z0xZl69ky89X1+VUx6Qxct21aFNlTLHjqkH0hEh
-6YGuR2KH1yHOTux9gqf08vhBZMTAJaD6YQqW0ZRkQLBrK69qt5C7f58ocCv4ajSd
-co9GyDU1saAd+SQelqahwlpXpyskXYbSA/5rXheV+hwgw71+pHQDIRL6oap46IKs
-C59+y5NjyHWZ5+ieDkUe3USAV90zVAPEHAEgq8c3rEu804E2rlWB4r0y3Bun/3Ws
-nv1+bmFIqZl3CX+zoISd
-=PiCE
------END PGP SIGNATURE-----
-
---ffoCPvUAPMgSXi6H--
+I'm struggling to think of a case where the small batch sizes make sense
+these days.  Maybe if you're running a lot of little programs like ls or
+awk?
