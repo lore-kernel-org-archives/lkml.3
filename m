@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757527Ab3IKUP7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 16:15:59 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:34121 "EHLO e8.ny.us.ibm.com"
+	id S932128Ab3IKURI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 16:17:08 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:60968 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757215Ab3IKUPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 16:15:55 -0400
+	id S932076Ab3IKURF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 16:17:05 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] cpufreq: Fix crash in cpufreq-stats during suspend/resume
+Subject: [PATCH 1/3] cpufreq: Fix crash in cpufreq-stats during suspend/resume
 To: rjw@sisk.pl, swarren@wwwdotorg.org, viresh.kumar@linaro.org
 Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Thu, 12 Sep 2013 01:41:53 +0530
-Message-ID: <20130911201128.7749.61727.stgit@srivatsabhat.in.ibm.com>
+Date: Thu, 12 Sep 2013 01:42:59 +0530
+Message-ID: <20130911201239.7832.72612.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091120-0320-0000-0000-000000F7C5DF
+x-cbid: 13091120-7182-0000-0000-0000085FC028
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
