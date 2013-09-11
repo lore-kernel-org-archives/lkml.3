@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757282Ab3IKT5Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 15:57:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57999 "EHLO mx1.redhat.com"
+	id S1757360Ab3IKT56 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 15:57:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25059 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756944Ab3IKT5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 15:57:22 -0400
+	id S1757308Ab3IKT53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 15:57:29 -0400
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
         Kees Cook <keescook@chromium.org>,
         Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 06/10] HID: lenovo-tpkbd: validate output report details
-Date: Wed, 11 Sep 2013 21:56:55 +0200
-Message-Id: <1378929419-6269-7-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH v3 10/10] HID: lenovo-tpkbd: fix leak if tpkbd_probe_tp fails
+Date: Wed, 11 Sep 2013 21:56:59 +0200
+Message-Id: <1378929419-6269-11-git-send-email-benjamin.tissoires@redhat.com>
 In-Reply-To: <1378929419-6269-1-git-send-email-benjamin.tissoires@redhat.com>
 References: <1378929419-6269-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kees Cook <keescook@chromium.org>
+If tpkbd_probe_tp() bails out, the probe() function return an error,
+but hid_hw_stop() is never called.
 
-From: Kees Cook <keescook@chromium.org>
+fixes:
+https://bugzilla.redhat.com/show_bug.cgi?id=1003998
 
-A HID device could send a malicious output report that would cause the
-lenovo-tpkbd HID driver to write just beyond the output report allocation
-during initialization, causing a heap overflow:
-
-[   76.109807] usb 1-1: New USB device found, idVendor=17ef, idProduct=6009
-...
-[   80.462540] BUG kmalloc-192 (Tainted: G        W   ): Redzone overwritten
-
-CVE-2013-2894
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
 Cc: stable@vger.kernel.org
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 ---
 v3:
- - fix feature report check for report ID 4
+ - new patch
 
- drivers/hid/hid-lenovo-tpkbd.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/hid/hid-lenovo-tpkbd.c | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/hid/hid-lenovo-tpkbd.c b/drivers/hid/hid-lenovo-tpkbd.c
-index 07837f5..762d988 100644
+index 762d988..31cf29a 100644
 --- a/drivers/hid/hid-lenovo-tpkbd.c
 +++ b/drivers/hid/hid-lenovo-tpkbd.c
-@@ -339,7 +339,15 @@ static int tpkbd_probe_tp(struct hid_device *hdev)
- 	struct tpkbd_data_pointer *data_pointer;
- 	size_t name_sz = strlen(dev_name(dev)) + 16;
- 	char *name_mute, *name_micmute;
--	int ret;
-+	int i, ret;
-+
-+	/* Validate required reports. */
-+	for (i = 0; i < 4; i++) {
-+		if (!hid_validate_values(hdev, HID_FEATURE_REPORT, 4, i, 1))
-+			return -ENODEV;
-+	}
-+	if (!hid_validate_values(hdev, HID_OUTPUT_REPORT, 3, 0, 2))
-+		return -ENODEV;
+@@ -414,22 +414,27 @@ static int tpkbd_probe(struct hid_device *hdev,
+ 	ret = hid_parse(hdev);
+ 	if (ret) {
+ 		hid_err(hdev, "hid_parse failed\n");
+-		goto err_free;
++		goto err;
+ 	}
  
- 	if (sysfs_create_group(&hdev->dev.kobj,
- 				&tpkbd_attr_group_pointer)) {
+ 	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
+ 	if (ret) {
+ 		hid_err(hdev, "hid_hw_start failed\n");
+-		goto err_free;
++		goto err;
+ 	}
+ 
+ 	uhdev = (struct usbhid_device *) hdev->driver_data;
+ 
+-	if (uhdev->ifnum == 1)
+-		return tpkbd_probe_tp(hdev);
++	if (uhdev->ifnum == 1) {
++		ret = tpkbd_probe_tp(hdev);
++		if (ret)
++			goto err_hid;
++	}
+ 
+ 	return 0;
+-err_free:
++err_hid:
++	hid_hw_stop(hdev);
++err:
+ 	return ret;
+ }
+ 
 -- 
 1.8.3.1
 
