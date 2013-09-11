@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753390Ab3IKJcV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 05:32:21 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:53762 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753105Ab3IKJcT (ORCPT
+	id S1753419Ab3IKJdx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 05:33:53 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:27668 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751817Ab3IKJdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 05:32:19 -0400
-Subject: Re: [PATCH 00/12] One more attempt at useful kernel lockdown
-From: joeyli <jlee@suse.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>, David Lang <david@lang.hm>,
-        "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>
-In-Reply-To: <1378837571.17615.0.camel@x230.lan>
-References: <1378741786-18430-1-git-send-email-matthew.garrett@nebula.com>
-	 <19562.1378747124@turing-police.cc.vt.edu>
-	 <alpine.DEB.2.02.1309091119330.2479@nftneq.ynat.uz>
-	 <1378767723.17982.27.camel@x230.lan>
-	 <alpine.DEB.2.02.1309091614010.2479@nftneq.ynat.uz>
-	 <1378774394.17982.36.camel@x230.lan>
-	 <alpine.DEB.2.02.1309091938420.1820@nftneq.ynat.uz>
-	 <1378781715.17982.42.camel@x230.lan>
-	 <alpine.DEB.2.02.1309092002060.1820@nftneq.ynat.uz>
-	 <1378785208.17982.54.camel@x230.lan>
-	 <20130910172318.GB21530@khazad-dum.debian.net>
-	 <1378837571.17615.0.camel@x230.lan>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 11 Sep 2013 17:32:52 +0800
-Message-ID: <1378891972.6193.137.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Wed, 11 Sep 2013 05:33:52 -0400
+X-IronPort-AV: E=Sophos;i="4.90,883,1371081600"; 
+   d="scan'208";a="50377707"
+Message-ID: <523038FD.4070100@citrix.com>
+Date: Wed, 11 Sep 2013 10:33:49 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+MIME-Version: 1.0
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+CC: <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>,
+        <david.vrabel@citrix.com>, <JBeulich@suse.com>
+Subject: Re: [Xen-devel] [PATCH v1 0/5] xen/PMU: PMU support for Xen PV guests
+References: <1378827110-4192-1-git-send-email-boris.ostrovsky@oracle.com>
+In-Reply-To: <1378827110-4192-1-git-send-email-boris.ostrovsky@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 二，2013-09-10 於 18:26 +0000，Matthew Garrett 提到：
-> On Tue, 2013-09-10 at 14:23 -0300, Henrique de Moraes Holschuh wrote:
-> > On Tue, 10 Sep 2013, Matthew Garrett wrote:
-> > > That's why modern systems require signed firmware updates.
-> > 
-> > Linux doesn't.  Is someone working on adding signature support to the
-> > runtime firmware loader?
+On 10/09/13 16:31, Boris Ostrovsky wrote:
+> This is the Linux side of Xen PMU support for PV guests, including dom0. Only
+> kernel changes are here, toolstack patch will be provided separately.
 > 
-> It'd be simple to do so, but so far the model appears to be that devices
-> that expect signed firmware enforce that themselves.
+> Here is description from the hypervisor patch submission that applies to this
+> series as well:
 > 
-> -- 
-> Matthew Garrett <matthew.garrett@nebula.com>
-> NrybXǧv^)޺{.n+{y^nrzh&Gh(階ݢj"mzޖfh~m
+> This version has following limitations:
+> * For accurate profiling of dom0/Xen dom0 VCPUs should be pinned.
+> * Hypervisor code is only profiled on processors that have running dom0 VCPUs
+> on them.
+> * No backtrace support.
 
-Takashi has a implementation of firmware check:
+These are some pretty significant limitations.   Is there a plan for how
+to remove them?
 
-[PATCH RFC v2 0/4] Add firmware signature file check
-https://lkml.org/lkml/2012/11/8/343
-
-
-Thanks
-Joey Lee
-
-
+David
