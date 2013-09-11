@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754393Ab3IKLAp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 07:00:45 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:48807 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753146Ab3IKLAm (ORCPT
+	id S1754633Ab3IKLCn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 07:02:43 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:36926 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752125Ab3IKLCl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 07:00:42 -0400
-Date: Wed, 11 Sep 2013 19:00:31 +0800
-From: majianpeng <majianpeng@gmail.com>
-To: axboe <axboe@kernel.dk>, viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Reply-To: majianpeng <majianpeng@gmail.com>
-Subject: [PATCH 1/2] block: Set inode of block_device size to zero when delete gendisk.
-X-Priority: 3
-X-GUID: E072949A-D9E5-4B84-A396-DE2E19640EF8
-X-Has-Attach: no
-X-Mailer: Foxmail 7.0.1.93[cn]
-Mime-Version: 1.0
-Message-ID: <201309111900280892484@gmail.com>
-Content-Type: text/plain;
-	charset="us-ascii"
+	Wed, 11 Sep 2013 07:02:41 -0400
+From: Koen Kooi <koen@dominion.thruhere.net>
+To: linux-omap@vger.kernel.org
+Cc: bcousson@baylibre.com, tony@atomide.com, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
+        ijc+devicetree@hellion.org.uk, linux@arm.linux.org.uk,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Koen Kooi <koen@dominion.thruhere.net>
+Subject: [PATCHv2 0/2] ARM: dts: Beaglebone MMC fixes
+Date: Wed, 11 Sep 2013 13:02:25 +0200
+Message-Id: <1378897347-11840-1-git-send-email-koen@dominion.thruhere.net>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8BB175t004179
 
-When remove gendisk, set the size of inode of block_device to zero.
-This is mainly let the vfs know disk removed.
+Here are two patches to fix MMC on beaglebone, one fixes card detect on BBW,
+the other adds the eMMC entry for BBB and its fixed regulator.
 
-Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+This series depends on:
+
+http://comments.gmane.org/gmane.linux.kernel.stable/63648
+https://lkml.org/lkml/2013/9/10/454
+http://comments.gmane.org/gmane.linux.kernel.mmc/22381
+
+Or as git-cherry would put it:
+
+[koen@rrMBP patches]$ git cherry -v
++ c8436cd15251ea42c7f2decd1cc972de536a7573 ARM: OMAP2+: am335x-bone*: add DT for BeagleBone Black
++ 34596cb58346612101b168b34b7ee75b8b0e9500 ARM: EDMA: Fix clearing of unused list for DT DMA resources
++ af7f273dfbeeec7669c01a81b8c02f4af2fcf1b9 ARM: dts: add AM33XX EDMA support
++ a85f9acc8f48a7cb1a07fb93fcba7bd43aa9c853 ARM: dts: add AM33XX SPI DMA support
++ 72a42fa0b42051251c554d9f75f42b3e9bc6ec8a ARM: dts: add AM33XX MMC support and documentation
++ 93205a3735613d674b209c3c75ad3e0a7d6be136 arm: bone: dts: add CD for mmc1
++ b1bd98705a2da3d02f197d29ca040008ad8c662c am335x-boneblack: add eMMC DT entry
+
+Also available as a git branch at https://github.com/koenkooi/linux/commits/mainline
+
+Changes since v1:
+	Removed ti,non-removable entry from eMMC node, see http://marc.info/?l=linux-arm-kernel&m=137889435710552&w=2
 ---
- block/genhd.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
 
-diff --git a/block/genhd.c b/block/genhd.c
-index dadf42b..c3a54b4 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -634,6 +634,7 @@ void del_gendisk(struct gendisk *disk)
- {
- 	struct disk_part_iter piter;
- 	struct hd_struct *part;
-+	struct block_device *bdev;
- 
- 	disk_del_events(disk);
- 
-@@ -655,6 +656,19 @@ void del_gendisk(struct gendisk *disk)
- 	blk_unregister_queue(disk);
- 	blk_unregister_region(disk_devt(disk), disk->minors);
- 
-+	/*
-+	 * When used buffer-mode on raw blockdevice,the disk removed.
-+	 * But the vfs don't know.So tell the vfs size of disk became zero,
-+	 * the buffer write  can return
-+	 */
-+	bdev = bdget_disk(disk, 0);
-+	if (bdev) {
-+		mutex_lock(&bdev->bd_inode->i_mutex);
-+		i_size_write(bdev->bd_inode, 0);
-+		mutex_unlock(&bdev->bd_inode->i_mutex);
-+		bdput(bdev);
-+	}
-+
- 	part_stat_set_all(&disk->part0, 0);
- 	disk->part0.stamp = 0;
- 
+Alexander Holler (1):
+  arm: bone: dts: add CD for mmc1
+
+Koen Kooi (1):
+  am335x-boneblack: add eMMC DT entry
+
+ arch/arm/boot/dts/am335x-bone-common.dtsi | 21 +++++++++++++++++++++
+ arch/arm/boot/dts/am335x-bone.dts         |  4 ----
+ arch/arm/boot/dts/am335x-boneblack.dts    | 15 +++++++++++++++
+ 3 files changed, 36 insertions(+), 4 deletions(-)
+
 -- 
-1.8.4-rc0
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+1.8.2.1
+
