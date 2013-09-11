@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348Ab3IKAev (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 20:34:51 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:62250 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751966Ab3IKAet (ORCPT
+	id S1753383Ab3IKAh5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 20:37:57 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:45625 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751815Ab3IKAh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 20:34:49 -0400
-X-AuditID: cbfee68d-b7fe86d0000077a5-c6-522fbaa8e2f8
-Message-id: <522FBAA8.2060506@samsung.com>
-Date: Wed, 11 Sep 2013 09:34:48 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'MyungJoo Ham'" <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] extcon: Remove casting the return value which is a void
- pointer
-References: <005201cead1e$1f2007a0$5d6016e0$%han@samsung.com>
-In-reply-to: <005201cead1e$1f2007a0$5d6016e0$%han@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNIsWRmVeSWpSXmKPExsWyRsSkQHfFLv0gg8/nhSwuL7zEanF51xw2
-	i9uNK9gcmD36tqxi9Pi8SS6AKYrLJiU1J7MstUjfLoEr4/3kN0wFl5grtsxqYW5gfM/UxcjJ
-	ISFgInGk5TELhC0mceHeerYuRi4OIYGljBK3j91ngym6d2wuE0RiOqPElFVPoKpeMUq8WfeF
-	uYuRg4NXQEvi91sjkAYWAVWJBc+62EFsNqDw/hc3wAaJCoRJrJx+BWwbr4CgxI/J98BsEQEV
-	ic/rj4PVMAt4S+yYOIEVxBYGqr9w7B1YjZCArcSRVTPBbE4BO4nZl68zQtTrSOxvnQbVKy+x
-	ec1bZpDbJASms0v0nd7GBnGQgMS3yYdYQO6UEJCV2HSAGeIxSYmDK26wTGAUm4XkpFlIxs5C
-	MnYBI/MqRtHUguSC4qT0IkO94sTc4tK8dL3k/NxNjMCIOf3vWe8OxtsHrA8xJgOtnMgsJZqc
-	D4y4vJJ4Q2MzIwtTE1NjI3NLM9KElcR51VqsA4UE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUw
-	3nvQH212U6Pk1sT6fyscrjvVT2o4P+Wr9qrdUsmNF2p/2Z0qVtiy6MGcs7OnFyX5si0NP5D4
-	dOH77xvFEh3LmfJixWSMgtl2hAZ+KW0xn9b52lC9SXLX71SxF0tqajsqw9YEXLm7nHUB8955
-	ti+4chhCutSnl2/zWaDn+detwefIMaZjG/JXKLEUZyQaajEXFScCANZcS4WuAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBIsWRmVeSWpSXmKPExsVy+t9jQd0Vu/SDDH6081hcXniJ1eLyrjls
-	FrcbV7A5MHv0bVnF6PF5k1wAU1QDo01GamJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5
-	kkJeYm6qrZKLT4CuW2YO0BIlhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEN
-	Y8b7yW+YCi4xV2yZ1cLcwPieqYuRk0NCwETi3rG5ULaYxIV769m6GLk4hASmM0pMWfUEynnF
-	KPFm3RfmLkYODl4BLYnfb41AGlgEVCUWPOtiB7HZgML7X9xgA7FFBcIkVk6/wgJi8woISvyY
-	fA/MFhFQkfi8/jhYDbOAt8SOiRNYQWxhoPoLx96B1QgJ2EocWTUTzOYUsJOYffk6I0S9jsT+
-	1mlQvfISm9e8ZZ7AKDALyYpZSMpmISlbwMi8ilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4
-	Hp9J72Bc1WBxiFGAg1GJh/eGnH6QEGtiWXFl7iFGCQ5mJRHeqU5AId6UxMqq1KL8+KLSnNTi
-	Q4zJwBCYyCwlmpwPTBV5JfGGxiZmRpZG5oYWRsbmpAkrifMebLUOFBJITyxJzU5NLUgtgtnC
-	xMEp1cCYsu7od5aDYrt2JWmmsjcKBe/aco9XchHTOoFdypt+vmvbuf/qIt4l+mEFj/f8XSIv
-	EFeS/aOAn/d/x/l7Ow5acO/+vmmtzuGas/Vsz3u4dYw13qVFXd2dmMdyQKiN5U3L3MSnn/8m
-	Pt4S3Ss2Lcf4WVXax+YP1WzKEuZ7Oz8cu1LrucHI2GidEktxRqKhFnNRcSIAK9IsdAsDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 10 Sep 2013 20:37:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <522F4B14.1040606@linaro.org>
+References: <521F6D06.1040107@keymile.com>
+	<E92455D61233364C88CCD4A6DAB2E2850E09518110@SRVDEHAN1MX1.keymile.net>
+	<521FDD12.7050000@linaro.org>
+	<52212511.9050206@keymile.com>
+	<5221264F.4070402@linaro.org>
+	<5225F8EF.3040701@keymile.com>
+	<52261BBB.60904@linaro.org>
+	<5226EB35.6080604@keymile.com>
+	<522E2FBB.4070406@linaro.org>
+	<CAF1ivSYVPtsyL-hO9o1i71ceG7fmvh+u+AdKGbJvrKH0k6mb_A@mail.gmail.com>
+	<522F4B14.1040606@linaro.org>
+Date: Wed, 11 Sep 2013 08:37:54 +0800
+Message-ID: <CAF1ivSaZKsXsPjMP30j9YYZDZPUe6Hs9zXyfqrG7GuGm4rLjew@mail.gmail.com>
+Subject: Re: kernel deadlock
+From: Lin Ming <minggr@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Gerlando Falauto <gerlando.falauto@keymile.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        "Brunck, Holger" <Holger.Brunck@keymile.com>,
+        "Longchamp, Valentin" <Valentin.Longchamp@keymile.com>,
+        "Bigler, Stefan" <Stefan.Bigler@keymile.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jingoo,
+On Wed, Sep 11, 2013 at 12:38 AM, John Stultz <john.stultz@linaro.org> wrote:
+> On 09/10/2013 01:59 AM, Lin Ming wrote:
+>>  On Tue, Sep 10, 2013 at 4:29 AM, John Stultz <john.stultz@linaro.org> wrote:
+>>
+>> [snip]
+>>
+>>> So I think I've managed to finally reproduce this and hunt it down.
+>>>
+>>> With Peter's "sched: Fix HRTICK" patch and HRTICK enabled, I found I
+>>> could trigger a hard hang at boot on my x86_64 kvm system. sysrq didn't
+>>> function, so I checked out info cpus and that pointed to both cpus being
+>> Hi,
+>>
+>> Is "info cpus" a command of kvm/qemu? That's very helpful.
+> Yes. If you switch into the qemu monitor, you can use "info cpus" to
+> show the current instruction pointers
+>
+>> I can reproduce this bug, but there is no any output.
+>> How did you find out that both cpus being in ktime_get() and
+>> ktime_get_update_offsets().
+>
+> Once I had the instruction pointers, I ran gdb on the vmlinux and used
+> "list *<address>" to show where it was stuck.
+>
+>>> in ktime_get() and ktime_get_update_offsets(), which suggested a
+>>> seqcount deadlock (basically calling something that reads the seqlock
+>>> while we hold the write on it).
+>> HRTICK enabled, then I can reproduce this simply with,
+>>
+>> while [ 1 ] ;
+>>     adjtimex -t 9999
+>> done
+>>
+>> And your patch fixed it.
+>
+> Great! Can I add a Tested-by: from you on the patch?
 
-On 09/09/2013 02:33 PM, Jingoo Han wrote:
-> Casting the return value which is a void pointer is redundant.
-> The conversion from void pointer to any other pointer type is
-> guaranteed by the C programming language.
-> 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/extcon/extcon-class.c |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
+Sure.
+Tested-by: Lin Ming <minggr@gmail.com>
 
-Applied it on extcon-linus branch.
-
-Thanks,
-Chanwoo Choi
-
+Thanks.
