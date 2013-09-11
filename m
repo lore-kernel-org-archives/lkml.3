@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755758Ab3IKE6X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 00:58:23 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22176 "EHLO
+	id S1755795Ab3IKE6Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 00:58:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3257 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754237Ab3IKE46 (ORCPT
+	with ESMTP id S1754224Ab3IKE44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 00:56:58 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=-QJv-X64qMoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=wYe-Gp7TkDUA:10 a=w1kHd-t2AAAA:8 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=FAIMgEkjMsOo7ODWMWYA:9 a=ddkTOqJZVZQA:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Wed, 11 Sep 2013 00:56:56 -0400
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=AYcbVwpvMgsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=XJLWFqsDE5gA:10 a=pGLkceISAAAA:8 a=QyXUC8HyAAAA:8 a=TYw0uB23wB3PbwDU80MA:9 a=MSl-tDqOz04A:10 a=dGJ0OcVc7YAA:10 a=jeBq3FmKZ4MA:10 a=chhSAiW_p1zha75H:21 a=xtbTbsFlzXbHwUXA:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042927.264251908@goodmis.org>
+Message-Id: <20130911042928.205019984@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:30:38 -0400
+Date: Wed, 11 Sep 2013 00:30:43 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Matt Burtch <matt@grid-net.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [211/251] USB-Serial: Fix error handling of usb_wwan
+Cc: Jeff Wu <zlinuxkernel@gmail.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [216/251] ACPI: add _STA evaluation at do_acpi_find_child()
 References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0211-USB-Serial-Fix-error-handling-of-usb_wwan.patch
+Content-Disposition: inline; filename=0216-ACPI-add-_STA-evaluation-at-do_acpi_find_child.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,57 +30,61 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Matt Burtch <matt@grid-net.com>
+From: Jeff Wu <zlinuxkernel@gmail.com>
 
-[ Upstream commit 6c1ee66a0b2bdbd64c078fba684d640cf2fd38a9 ]
+[ Upstream commit c7d9ca90aa9497f0b6e301ec67c52dd4b57a7852 ]
 
-This fixes an issue where the bulk-in urb used for incoming data transfer
-is not resubmitted if the packet recieved contains an error status.  This
-results in the driver locking until the port is closed and re-opened.
+Once do_acpi_find_child() has found the first matching handle, it
+makes the acpi_get_child() loop stop and return that handle.  On some
+platforms, though, there are multiple devices with the same value of
+"_ADR" in the same namespace scope, and if one of them is enabled,
+the others will be disabled.  For example:
 
-Tested on a custom board with a Cinterion GSM module.
+ Address : 0x1FFFF ; path : SB_PCI0.SATA.DEV0
+ Address : 0x1FFFF ; path : SB_PCI0.SATA.DEV1
+ Address : 0x1FFFF ; path : SB_PCI0.SATA.DEV2
 
-Signed-off-by: Matt Burtch <matt@grid-net.com>
-Cc: stable <stable@vger.kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+If DEV0 and DEV1 are disabled and DEV2 is enabled, the handle of DEV2
+should be returned, but actually the function always returns the
+handle of DEV0.
+
+To address that issue, make do_acpi_find_child() evaluate _STA to
+check the device status.  If a matching device object exists, but is
+disabled, acpi_get_child() will continue to walk the namespace in the
+hope of finding an enabled one.  If one is found, its handle will be
+returned, but otherwise the function will return the handle of the
+disabled object found before (in case it is enabled going forward).
+
+[rjw: Changelog]
+Signed-off-by: Jeff Wu <zlinuxkernel@gmail.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/usb/serial/usb_wwan.c |   20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+ drivers/acpi/glue.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
-index 188b5b3..5e9e1df 100644
---- a/drivers/usb/serial/usb_wwan.c
-+++ b/drivers/usb/serial/usb_wwan.c
-@@ -299,18 +299,18 @@ static void usb_wwan_indat_callback(struct urb *urb)
- 			tty_kref_put(tty);
- 		}
+diff --git a/drivers/acpi/glue.c b/drivers/acpi/glue.c
+index 6eff12f..a166b9d 100644
+--- a/drivers/acpi/glue.c
++++ b/drivers/acpi/glue.c
+@@ -91,13 +91,15 @@ static int acpi_find_bridge_device(struct device *dev, acpi_handle * handle)
+ static acpi_status do_acpi_find_child(acpi_handle handle, u32 lvl_not_used,
+ 				      void *addr_p, void **ret_p)
+ {
+-	unsigned long long addr;
++	unsigned long long addr, sta;
+ 	acpi_status status;
  
--		/* Resubmit urb so we continue receiving */
--		err = usb_submit_urb(urb, GFP_ATOMIC);
--		if (err) {
--			if (err != -EPERM) {
--				printk(KERN_ERR "%s: resubmit read urb failed. "
--					"(%d)", __func__, err);
--				/* busy also in error unless we are killed */
--				usb_mark_last_busy(port->serial->dev);
--			}
--		} else {
-+	}
-+	/* Resubmit urb so we continue receiving */
-+	err = usb_submit_urb(urb, GFP_ATOMIC);
-+	if (err) {
-+		if (err != -EPERM) {
-+			printk(KERN_ERR "%s: resubmit read urb failed. (%d)\n",
-+				__func__, err);
-+			/* busy also in error unless we are killed */
- 			usb_mark_last_busy(port->serial->dev);
- 		}
-+	} else {
-+		usb_mark_last_busy(port->serial->dev);
+ 	status = acpi_evaluate_integer(handle, METHOD_NAME__ADR, NULL, &addr);
+ 	if (ACPI_SUCCESS(status) && addr == *((u64 *)addr_p)) {
+ 		*ret_p = handle;
+-		return AE_CTRL_TERMINATE;
++		status = acpi_bus_get_status_handle(handle, &sta);
++		if (ACPI_SUCCESS(status) && (sta & ACPI_STA_DEVICE_ENABLED))
++			return AE_CTRL_TERMINATE;
  	}
+ 	return AE_OK;
  }
- 
 -- 
 1.7.10.4
 
