@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753851Ab3IKGLE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 02:11:04 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:42854 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751819Ab3IKGLB (ORCPT
+	id S1754282Ab3IKGMm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 02:12:42 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:37424 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751372Ab3IKGMk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 02:11:01 -0400
-MIME-Version: 1.0
-Reply-To: andrea.merello@gmail.com
-In-Reply-To: <522F584E.6000806@lwfinger.net>
-References: <CAN8YU5NTKUtS8+YzmcOSM3=YUX-FSwLTD86F_hXsNdVkw5NEGA@mail.gmail.com>
-	<522F584E.6000806@lwfinger.net>
-Date: Wed, 11 Sep 2013 08:11:00 +0200
-Message-ID: <CAN8YU5PCFj-gtQwuuR3fM52YAVTi_5NYPbDVj-KMSzMpXjvFWQ@mail.gmail.com>
-Subject: Re: RTL8187SE staging Linux driver
-From: Andrea Merello <andrea.merello@gmail.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: wlanfae@realtek.com, shwei <shwei@realtek.com.tw>,
-        John Linville <linville@tuxdriver.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <greg@kroah.com>, linux-wireless@vger.kernel.org,
-        Michael Wu <flamingice@sourmilk.net>,
-        Bernhard Schiffner <bernhard@schiffner-limbach.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 11 Sep 2013 02:12:40 -0400
+From: Koen Kooi <koen@dominion.thruhere.net>
+To: linux-omap@vger.kernel.org
+Cc: bcousson@baylibre.com, tony@atomide.com, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
+        ijc+devicetree@hellion.org.uk, linux@arm.linux.org.uk,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Koen Kooi <koen@dominion.thruhere.net>
+Subject: [PATCH 0/2] ARM: dts: Beaglebone MMC fixes
+Date: Wed, 11 Sep 2013 08:12:24 +0200
+Message-Id: <1378879946-13037-1-git-send-email-koen@dominion.thruhere.net>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for your code and for documentation!
+Here are two patches to fix MMC on beaglebone, one fixes card detect on BBW,
+the other adds the eMMC entry for BBB and its fixed regulator.
 
-I see you did your work in a new net/wireless/rtl818x/rtl8187se
-directory and you produced a new driver.
-Now I have to evaluate whether to keep doing it in this way, trying to
-continue your work, or to merge support in
-net/wireless/rtl818x/rtl8180 code, that was my original idea..
-Now that I have documentation I can better evaluate how much the two
-boards are similar..
+This series depends on:
 
-Andrea
+http://comments.gmane.org/gmane.linux.kernel.stable/63648
+https://lkml.org/lkml/2013/9/10/454
+http://comments.gmane.org/gmane.linux.kernel.mmc/22381
 
-On Tue, Sep 10, 2013 at 7:35 PM, Larry Finger <Larry.Finger@lwfinger.net> wrote:
-> On 09/10/2013 10:59 AM, Andrea Merello wrote:
->>
->> Hello,
->>
->> As you probably know, in the current Linux kernel there is a staging
->> driver for the RTL8187SE device (based on my older RTL8180/RTL8185
->> Linux driver), while there also a regular (not staging) driver
->> supporting older RTL8185 and RTL8180 devices
->> (net/wireless/rtl818x/rtl8180) .
->>
->> As far as I can see, the RTL8187SE device seems not so much different
->> from an RTL8185 device.
->> I would like to try (in my spare time) to add support for RTL8187SE
->> device in the current RTL818x driver, in order to avoid code
->> duplication, remove a driver from staging, and make RTL8187SE using
->> mac80211.
->>
->> Do any one of you have any comment/objection/suggestions about this ?
->>
->> Is it possible to get the RTL8187SE documentation to make things easier?
->>
->> For now I will probably keep different RF code for the two cards even
->> if the RTL8225 (zebra 2) radio is used by both RTL8187SE and some
->> RTL8185 devices, however if I could get enough documentation about it,
->> it would be great to try to merge also RF code..
->
->
-> I too would be very happy for you to do this. At one point, I was trying to
-> do this and I had a version that very nearly worked. The driver was
-> receiving data and transmitting short packets but failing on longer ones.
-> Length 42 was OK, but 68 failed. At that point, the chip locked up and
-> needed to be power cycled. It seems that I got the DMA wrong, but I could
-> never find it, and eventually, I had to move on.
->
-> At the moment, I am working at getting it to build on the current kernel.
-> When I finish that, I will send the code to you. Even if you decide to scrap
-> it, it may help you a little.
->
-> Attached is the datasheet, which is the only documentation I have.
->
-> Larry
->
->
+Or as git-cherry would put it:
+
+[koen@rrMBP patches]$ git cherry -v
++ c8436cd15251ea42c7f2decd1cc972de536a7573 ARM: OMAP2+: am335x-bone*: add DT for BeagleBone Black
++ 34596cb58346612101b168b34b7ee75b8b0e9500 ARM: EDMA: Fix clearing of unused list for DT DMA resources
++ af7f273dfbeeec7669c01a81b8c02f4af2fcf1b9 ARM: dts: add AM33XX EDMA support
++ a85f9acc8f48a7cb1a07fb93fcba7bd43aa9c853 ARM: dts: add AM33XX SPI DMA support
++ 72a42fa0b42051251c554d9f75f42b3e9bc6ec8a ARM: dts: add AM33XX MMC support and documentation
++ 93205a3735613d674b209c3c75ad3e0a7d6be136 arm: bone: dts: add CD for mmc1
++ b1bd98705a2da3d02f197d29ca040008ad8c662c am335x-boneblack: add eMMC DT entry
+
+Also available as a git branch at https://github.com/koenkooi/linux/commits/mainline
+
+---
+
+Alexander Holler (1):
+  arm: bone: dts: add CD for mmc1
+
+Koen Kooi (1):
+  am335x-boneblack: add eMMC DT entry
+
+ arch/arm/boot/dts/am335x-bone-common.dtsi | 21 +++++++++++++++++++++
+ arch/arm/boot/dts/am335x-bone.dts         |  4 ----
+ arch/arm/boot/dts/am335x-boneblack.dts    | 15 +++++++++++++++
+ 3 files changed, 36 insertions(+), 4 deletions(-)
+
+-- 
+1.8.2.1
+
