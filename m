@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797Ab3IKF0Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 01:26:24 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22176 "EHLO
+	id S1756401Ab3IKF0W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 01:26:22 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3257 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754737Ab3IKE5Z (ORCPT
+	with ESMTP id S1754743Ab3IKE5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 11 Sep 2013 00:57:25 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=OsewsQGiCFYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=-ZcwYOwyC2cA:10 a=tHz9FfFoAAAA:8 a=yPCof4ZbAAAA:8 a=g7qgrIXzKTmI0eey5JUA:9 a=6O0IECtVFhoA:10 a=7DSvI1NPTFQA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=9vDy3PGok7oA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=VnZ5lZ6KOC8A:10 a=7mOBRU54AAAA:8 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=8B-QWBJU1BGdP1FKeCAA:9 a=WeOa-AV5lc8A:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042911.588592632@goodmis.org>
+Message-Id: <20130911042911.265821313@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:29:03 -0400
+Date: Wed, 11 Sep 2013 00:29:01 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [116/251] xen/evtchn: avoid a deadlock when unbinding an event channel
+Cc: "Rick Farina (Zero_Chaos)" <zerochaos@gentoo.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [114/251] USB: serial: ftdi_sio: add more RT Systems ftdi devices
 References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0116-xen-evtchn-avoid-a-deadlock-when-unbinding-an-event-.patch
+Content-Disposition: inline; filename=0114-USB-serial-ftdi_sio-add-more-RT-Systems-ftdi-devices.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,104 +30,111 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: "Rick Farina (Zero_Chaos)" <zerochaos@gentoo.org>
 
-[ Upstream commit 179fbd5a45f0d4034cc6fd37b8d367a3b79663c4 ]
+[ Upstream commit fed1f1ed90bce42ea010e2904cbc04e7b8304940 ]
 
-Unbinding an event channel (either with the ioctl or when the evtchn
-device is closed) may deadlock because disable_irq() is called with
-port_user_lock held which is also locked by the interrupt handler.
+RT Systems makes many usb serial cables based on the ftdi_sio driver for
+programming various amateur radios.  This patch is a full listing of
+their current product offerings and should allow these cables to all
+be recognized.
 
-Think of the IOCTL_EVTCHN_UNBIND is being serviced, the routine has
-just taken the lock, and an interrupt happens. The evtchn_interrupt
-is invoked, tries to take the lock and spins forever.
-
-A quick glance at the code shows that the spinlock is a local IRQ
-variant. Unfortunately that does not help as "disable_irq() waits for
-the interrupt handler on all CPUs to stop running.  If the irq occurs
-on another VCPU, it tries to take port_user_lock and can't because
-the unbind ioctl is holding it." (from David). Hence we cannot
-depend on the said spinlock to protect us. We could make it a system
-wide IRQ disable spinlock but there is a better way.
-
-We can piggyback on the fact that the existence of the spinlock is
-to make get_port_user() checks be up-to-date. And we can alter those
-checks to not depend on the spin lock (as it's protected by u->bind_mutex
-in the ioctl) and can remove the unnecessary locking (this is
-IOCTL_EVTCHN_UNBIND) path.
-
-In the interrupt handler we cannot use the mutex, but we do not
-need it.
-
-"The unbind disables the irq before making the port user stale, so when
-you clear it you are guaranteed that the interrupt handler that might
-use that port cannot be running." (from David).
-
-Hence this patch removes the spinlock usage on the teardown path
-and piggybacks on disable_irq happening before we muck with the
-get_port_user() data. This ensures that the interrupt handler will
-never run on stale data.
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Rick Farina (Zero_Chaos) <zerochaos@gentoo.org>
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[v1: Expanded the commit description a bit]
 ---
- drivers/xen/evtchn.c |   21 ++-------------------
- 1 file changed, 2 insertions(+), 19 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |   31 ++++++++++++++++++++++++++++---
+ drivers/usb/serial/ftdi_sio_ids.h |   34 +++++++++++++++++++++++++++++-----
+ 2 files changed, 57 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/xen/evtchn.c b/drivers/xen/evtchn.c
-index b1f60a0..8eb68c9 100644
---- a/drivers/xen/evtchn.c
-+++ b/drivers/xen/evtchn.c
-@@ -367,18 +367,12 @@ static long evtchn_ioctl(struct file *file,
- 		if (unbind.port >= NR_EVENT_CHANNELS)
- 			break;
- 
--		spin_lock_irq(&port_user_lock);
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 5c3e249..710302ea 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -741,9 +741,34 @@ static struct usb_device_id id_table_combined [] = {
+ 	{ USB_DEVICE(FTDI_VID, FTDI_NDI_AURORA_SCU_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_NDI_device_quirk },
+ 	{ USB_DEVICE(TELLDUS_VID, TELLDUS_TELLSTICK_PID) },
+-	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_SERIAL_VX7_PID) },
+-	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_CT29B_PID) },
+-	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_RTS01_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S03_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_59_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_57A_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_57B_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29A_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29B_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29F_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_62B_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S01_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_63_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29C_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_81B_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_82B_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_K5D_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_K4Y_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_K5G_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S05_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_60_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_61_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_62_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_63B_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_64_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_65_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_92_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_92D_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_W5R_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_A5R_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_PW1_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_MAXSTREAM_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_PHI_FISCO_PID) },
+ 	{ USB_DEVICE(TML_VID, TML_USB_SERIAL_PID) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 1e4bff5..b98e44a 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -808,11 +808,35 @@
+ /*
+  * RT Systems programming cables for various ham radios
+  */
+-#define RTSYSTEMS_VID			0x2100	/* Vendor ID */
+-#define RTSYSTEMS_SERIAL_VX7_PID	0x9e52	/* Serial converter for VX-7 Radios using FT232RL */
+-#define RTSYSTEMS_CT29B_PID		0x9e54	/* CT29B Radio Cable */
+-#define RTSYSTEMS_RTS01_PID		0x9e57	/* USB-RTS01 Radio Cable */
 -
- 		rc = -ENOTCONN;
--		if (get_port_user(unbind.port) != u) {
--			spin_unlock_irq(&port_user_lock);
-+		if (get_port_user(unbind.port) != u)
- 			break;
--		}
++#define RTSYSTEMS_VID		0x2100	/* Vendor ID */
++#define RTSYSTEMS_USB_S03_PID	0x9001	/* RTS-03 USB to Serial Adapter */
++#define RTSYSTEMS_USB_59_PID	0x9e50	/* USB-59 USB to 8 pin plug */
++#define RTSYSTEMS_USB_57A_PID	0x9e51	/* USB-57A USB to 4pin 3.5mm plug */
++#define RTSYSTEMS_USB_57B_PID	0x9e52	/* USB-57B USB to extended 4pin 3.5mm plug */
++#define RTSYSTEMS_USB_29A_PID	0x9e53	/* USB-29A USB to 3.5mm stereo plug */
++#define RTSYSTEMS_USB_29B_PID	0x9e54	/* USB-29B USB to 6 pin mini din */
++#define RTSYSTEMS_USB_29F_PID	0x9e55	/* USB-29F USB to 6 pin modular plug */
++#define RTSYSTEMS_USB_62B_PID	0x9e56	/* USB-62B USB to 8 pin mini din plug*/
++#define RTSYSTEMS_USB_S01_PID	0x9e57	/* USB-RTS01 USB to 3.5 mm stereo plug*/
++#define RTSYSTEMS_USB_63_PID	0x9e58	/* USB-63 USB to 9 pin female*/
++#define RTSYSTEMS_USB_29C_PID	0x9e59	/* USB-29C USB to 4 pin modular plug*/
++#define RTSYSTEMS_USB_81B_PID	0x9e5A	/* USB-81 USB to 8 pin mini din plug*/
++#define RTSYSTEMS_USB_82B_PID	0x9e5B	/* USB-82 USB to 2.5 mm stereo plug*/
++#define RTSYSTEMS_USB_K5D_PID	0x9e5C	/* USB-K5D USB to 8 pin modular plug*/
++#define RTSYSTEMS_USB_K4Y_PID	0x9e5D	/* USB-K4Y USB to 2.5/3.5 mm plugs*/
++#define RTSYSTEMS_USB_K5G_PID	0x9e5E	/* USB-K5G USB to 8 pin modular plug*/
++#define RTSYSTEMS_USB_S05_PID	0x9e5F	/* USB-RTS05 USB to 2.5 mm stereo plug*/
++#define RTSYSTEMS_USB_60_PID	0x9e60	/* USB-60 USB to 6 pin din*/
++#define RTSYSTEMS_USB_61_PID	0x9e61	/* USB-61 USB to 6 pin mini din*/
++#define RTSYSTEMS_USB_62_PID	0x9e62	/* USB-62 USB to 8 pin mini din*/
++#define RTSYSTEMS_USB_63B_PID	0x9e63	/* USB-63 USB to 9 pin female*/
++#define RTSYSTEMS_USB_64_PID	0x9e64	/* USB-64 USB to 9 pin male*/
++#define RTSYSTEMS_USB_65_PID	0x9e65	/* USB-65 USB to 9 pin female null modem*/
++#define RTSYSTEMS_USB_92_PID	0x9e66	/* USB-92 USB to 12 pin plug*/
++#define RTSYSTEMS_USB_92D_PID	0x9e67	/* USB-92D USB to 12 pin plug data*/
++#define RTSYSTEMS_USB_W5R_PID	0x9e68	/* USB-W5R USB to 8 pin modular plug*/
++#define RTSYSTEMS_USB_A5R_PID	0x9e69	/* USB-A5R USB to 8 pin modular plug*/
++#define RTSYSTEMS_USB_PW1_PID	0x9e6A	/* USB-PW1 USB to 8 pin modular plug*/
  
- 		disable_irq(irq_from_evtchn(unbind.port));
- 
--		spin_unlock_irq(&port_user_lock);
--
- 		evtchn_unbind_from_user(u, unbind.port);
- 
- 		rc = 0;
-@@ -478,26 +472,15 @@ static int evtchn_release(struct inode *inode, struct file *filp)
- 	int i;
- 	struct per_user_data *u = filp->private_data;
- 
--	spin_lock_irq(&port_user_lock);
--
--	free_page((unsigned long)u->ring);
--
- 	for (i = 0; i < NR_EVENT_CHANNELS; i++) {
- 		if (get_port_user(i) != u)
- 			continue;
- 
- 		disable_irq(irq_from_evtchn(i));
--	}
--
--	spin_unlock_irq(&port_user_lock);
--
--	for (i = 0; i < NR_EVENT_CHANNELS; i++) {
--		if (get_port_user(i) != u)
--			continue;
--
- 		evtchn_unbind_from_user(get_port_user(i), i);
- 	}
- 
-+	free_page((unsigned long)u->ring);
- 	kfree(u->name);
- 	kfree(u);
- 
+ /*
+  * Physik Instrumente
 -- 
 1.7.10.4
 
