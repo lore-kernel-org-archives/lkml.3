@@ -1,35 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737Ab3IKO4h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 10:56:37 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31099 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752981Ab3IKO4f (ORCPT
+	id S1754591Ab3IKPGL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 11:06:11 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:39607 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754470Ab3IKPGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 10:56:35 -0400
-X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=cpn0iEa-oVMA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=uXgjhyO7DfoA:10 a=yPCof4ZbAAAA:8 a=Dh0nObzK1mlbsjNNYMIA:9 a=CjuIK1q_8ugA:10 a=7DSvI1NPTFQA:10 a=ZeFjmt9GdsoA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Wed, 11 Sep 2013 10:56:33 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Jason Baron <jbaron@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com
-Subject: Re: Regression :-) Re: [GIT PULL RESEND] x86/jumpmplabel changes
- for v3.12-rc1
-Message-ID: <20130911105633.1c029147@gandalf.local.home>
-In-Reply-To: <20130911142545.GA11364@phenom.dumpdata.com>
-References: <201309110248.r8B2miI2032449@terminus.zytor.com>
-	<20130911134717.GA10925@phenom.dumpdata.com>
-	<20130911135745.GB11043@phenom.dumpdata.com>
-	<20130911142545.GA11364@phenom.dumpdata.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+	Wed, 11 Sep 2013 11:06:09 -0400
+Date: Wed, 11 Sep 2013 19:06:05 +0400
+From: Sergey Dyasly <dserrg@gmail.com>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Rusty Russell <rusty@rustcorp.com.au>,
+        Sha Zhengju <handai.szj@taobao.com>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH] OOM killer: wait for tasks with pending SIGKILL to exit
+Message-Id: <20130911190605.5528ee4563272dbea1ed56a6@gmail.com>
+In-Reply-To: <alpine.DEB.2.02.1309091303010.12523@chino.kir.corp.google.com>
+References: <1378740624-2456-1-git-send-email-dserrg@gmail.com>
+	<alpine.DEB.2.02.1309091303010.12523@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -37,80 +27,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Sep 2013 10:25:45 -0400
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+On Mon, 9 Sep 2013 13:07:08 -0700 (PDT)
+David Rientjes <rientjes@google.com> wrote:
 
-> > It seems to imply line 53 is the originating bug, so that would be:
-> > 
-> >  47         if (type == JUMP_LABEL_ENABLE) {
-> >  48                 /*
-> >  49                  * We are enabling this jump label. If it is not a nop
-> >  50                  * then something must have gone wrong.
-> >  51                  */
-> >  52                 if (unlikely(memcmp((void *)entry->code, ideal_nop, 5) != 0))
-> >  53                         bug_at((void *)entry->code, __LINE__);
-> > 
-> > But it is a NOP isn't it? The code is
-> > 
-> > Unexpected op at trace_clock_global+0x6b/0x120 [ffffffff8113a21b] (0f 1f 44 00 00) 53
-> > 
-> > Perhaps the ideal_nop has not been set yet?
-> > 
+> >  		/*
+> >  		 * If this task is not being ptraced on exit, then wait for it
+> >  		 * to finish before killing some other task unnecessarily.
+> >  		 */
+> > -		if (!(task->group_leader->ptrace & PT_TRACE_EXIT))
+> > +		if (!(task->group_leader->ptrace & PT_TRACE_EXIT)) {
+> > +			set_tsk_thread_flag(task, TIF_MEMDIE);
 > 
-> And this looks to fix it for me.
+> This does not, we do not give access to memory reserves unless the process 
+> needs it to allocate memory.  The task here, which is not current, can 
+> call into the oom killer and be granted memory reserves if necessary.
 
-I'm trying to understand how this will fix it for you. Are you sure you
-removed 'xen_nopvspin'?
+True. However, why TIF_MEMDIE is set for PF_EXITING task in oom_kill_process()
+then?
+Also, setting TIF_MEMDIE will avoid direct reclaim and memory allocation should
+be fast if exiting task needs it.
 
-If you are calling static_key_slow_inc() before jump_label_init(), then
-it should still fail. The static_key_slow_inc() eventually calls
-arch_jump_label_transform(), which calls __jump_label_transform() with
-init == 0.
-
-The below code looks to me that it would still compare the contents
-with the ideal_nop, which hasn't been set yet.
-
--- Steve
-
+> > @@ -412,16 +415,6 @@ void oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+> >  	static DEFINE_RATELIMIT_STATE(oom_rs, DEFAULT_RATELIMIT_INTERVAL,
+> >  					      DEFAULT_RATELIMIT_BURST);
+> >  
+> > -	/*
+> > -	 * If the task is already exiting, don't alarm the sysadmin or kill
+> > -	 * its children or threads, just set TIF_MEMDIE so it can die quickly
+> > -	 */
+> > -	if (p->flags & PF_EXITING) {
+> > -		set_tsk_thread_flag(p, TIF_MEMDIE);
+> > -		put_task_struct(p);
+> > -		return;
+> > -	}
 > 
-> diff --git a/arch/x86/kernel/jump_label.c b/arch/x86/kernel/jump_label.c
-> index ee11b7d..d688348 100644
-> --- a/arch/x86/kernel/jump_label.c
-> +++ b/arch/x86/kernel/jump_label.c
-> @@ -44,13 +44,20 @@ static void __jump_label_transform(struct jump_entry *entry,
->  	union jump_code_union code;
->  	const unsigned char *ideal_nop = ideal_nops[NOP_ATOMIC5];
->  
-> +	if (init) {
-> +		const unsigned char default_nop[] = { STATIC_KEY_INIT_NOP };
-> +		if (unlikely(memcmp((void *)entry->code, default_nop, 5) != 0))
-> +			bug_at((void *)entry->code, __LINE__);
-> +	}
->  	if (type == JUMP_LABEL_ENABLE) {
->  		/*
->  		 * We are enabling this jump label. If it is not a nop
->  		 * then something must have gone wrong.
->  		 */
-> -		if (unlikely(memcmp((void *)entry->code, ideal_nop, 5) != 0))
-> -			bug_at((void *)entry->code, __LINE__);
-> +		if (!init) {
-> +			if (unlikely(memcmp((void *)entry->code, ideal_nop, 5) != 0))
-> +				bug_at((void *)entry->code, __LINE__);
-> +		}
->  
->  		code.jump = 0xe9;
->  		code.offset = entry->target -
-> @@ -62,11 +69,7 @@ static void __jump_label_transform(struct jump_entry *entry,
->  		 * If this is the first initialization call, then we
->  		 * are converting the default nop to the ideal nop.
->  		 */
-> -		if (init) {
-> -			const unsigned char default_nop[] = { STATIC_KEY_INIT_NOP };
-> -			if (unlikely(memcmp((void *)entry->code, default_nop, 5) != 0))
-> -				bug_at((void *)entry->code, __LINE__);
-> -		} else {
-> +		if (!init) {
->  			code.jump = 0xe9;
->  			code.offset = entry->target -
->  				(entry->code + JUMP_LABEL_NOP_SIZE);
+> I think you misunderstood the point of this; if a selected process is 
+> already in the exit path then this is simply avoiding dumping oom kill 
+> lines to the kernel log.  We want to keep doing that.
 
+This happens in oom_kill_process() after victim has been selected by
+select_bad_process(). But there is already PF_EXITING check in
+oom_scan_process_thread() and in this case OOM code won't call oom_kill_process.
+There is only a slight chance that victim will become PF_EXITING between
+scan and kill.
+
+The only difference is in force_kill flag, and the only case where it's set
+is SysRq. And I think in this case OOM killer messages are a good thing to have
+even when victim is already exiting, instead of just silence.
+
+-- 
+Sergey Dyasly <dserrg@gmail.com>
