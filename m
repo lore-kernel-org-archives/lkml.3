@@ -1,79 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751437Ab3IKHGZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 03:06:25 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:39909 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751230Ab3IKHGX (ORCPT
+	id S1751414Ab3IKHK7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 03:10:59 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:52033 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751196Ab3IKHK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 03:06:23 -0400
-Message-ID: <52301655.6080801@ahsoftware.de>
-Date: Wed, 11 Sep 2013 09:05:57 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Wed, 11 Sep 2013 03:10:56 -0400
+Date: Wed, 11 Sep 2013 08:10:53 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        jic23@cam.ac.uk, arnd@arndb.de, linus.walleij@linaro.org,
+        denis.ciocca@st.com, linux-iio@vger.kernel.org
+Subject: Re: [PATCH 27/38] iio: pressure-core: st: Give some indication if
+ device probing was successful
+Message-ID: <20130911071053.GD11227@lee--X1>
+References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
+ <1378817379-8238-28-git-send-email-lee.jones@linaro.org>
+ <43055af7-991f-4122-b308-a3dcddbbb72a@email.android.com>
 MIME-Version: 1.0
-To: joelf@ti.com
-CC: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
-Subject: Re: [PATCH] RFC: interrupt consistency check for OF GPIO IRQs
-References: <1375101368-17645-1-git-send-email-linus.walleij@linaro.org> <CACxGe6uNJNMdZ1HYGgCtLM2t2TWGCR6btjOHVmP=vDXXvvFfRg@mail.gmail.com> <CACRpkdYjJL6FZwEbB7XLnb9QtjB=3LeE9Ny6KQ4PkM3zpdNqqg@mail.gmail.com> <51F8CC35.1070704@collabora.co.uk> <522EC392.8070002@ti.com> <522F1BF0.8080608@collabora.co.uk> <522F3408.6050608@ti.com>
-In-Reply-To: <522F3408.6050608@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <43055af7-991f-4122-b308-a3dcddbbb72a@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 10.09.2013 17:00, schrieb Joel Fernandes:
+On Tue, 10 Sep 2013, Jonathan Cameron wrote:
+> Lee Jones <lee.jones@linaro.org> wrote:
+> >At the moment the driver is silent in some error cases and if
+> >successful.
+> >Prior to this patch there was no clear way to know if the driver
+> >succeeded
+> >or not without looking deep into sysfs.
+> >
+> >Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> >---
+> > drivers/iio/pressure/st_pressure_core.c | 3 +++
+> > 1 file changed, 3 insertions(+)
+> >
+> >diff --git a/drivers/iio/pressure/st_pressure_core.c
+> >b/drivers/iio/pressure/st_pressure_core.c
+> >index 6ffd949..34b3fb1 100644
+> >--- a/drivers/iio/pressure/st_pressure_core.c
+> >+++ b/drivers/iio/pressure/st_pressure_core.c
+> >@@ -280,6 +280,9 @@ int st_press_common_probe(struct iio_dev
+> >*indio_dev,
+> > 	if (err && irq > 0)
+> > 		goto st_press_device_register_error;
+> > 
+> >+	if (!err)
+> >+		dev_info(&indio_dev->dev, "Successfully registered\n");
+> >+
+> Not keen. That to my mind is pointless noise.
 
-> I think your initial patch is much better than fixing up DT but then I may be
-> missing other problems with your patch that Linus's patch addresses.
+I think it needs to be somewhere. IIO provides no indication whether
+these chips are probed/registered/whathaveyou, or even if the
+subsystem is in use. 
 
-The initial patch had the problem that it not only did introduce 
-irq-mappings for only those gpios which are marked as IRQs, but it 
-requested those gpios too and preconfigured them
+One line per hardware component is not noise, IMO it's indicative of
+key functionality which is now available:
 
-And that breaks every driver which uses gpios for IRQs.
+Bootlog:
+<snip>
+iio iio: lsm303dlh_accel: Successfully registered
+iio iio: l3g4200d_gyro: Successfully registered
+iio iio: lps001wp_press: Successfully registered
+iio iio: lsm303dlhc_magn: Successfully registered
+<snip>
 
-To summarize what happens if a driver uses a gpio as irq:
+> If this made sense then it would be in the driver core not here.
 
-gpio_request() // This works only if the gpio was not requested before
-gpio_direction_input()
-gpio_to_irq() // This needs an irq-mapping
-request_threaded_irq()
+Also fine. Just anything but silence/NULL reporting.
 
-So I would suggest multiple steps to change that:
-
-1. Create a mapping for every gpio found in DT (or all gpios if no DT is 
-used). I think that is what Linus patch does (sorry, I haven't really 
-followed this thread and didn't look in deep at the patch).
-
-2. Implement gpio_request_for_irq()
-This would just be a small macro for gpio_request(); gpio_direction_input()
-
-3. Change all drivers which do use gpio_to_irq() to use 
-gpio_request_for_irq() instead of gpio_request() and 
-gpio_direction_input(). This will end up with a big series of more or 
-less trivial patches (I count 677 occurences of gpio_to_irq) and might 
-be splitted.
-
-4. request gpios and set them to input when a gpio is marked as an IRQ 
-in the DT and DT is used. Change gpio_rquest_for_irq() to a NOP if DT is 
-used or leave it as it is for the none-dt case.
-
-
-Regards,
-
-Alexander Holler
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
