@@ -1,83 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751414Ab3IKHK7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 03:10:59 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:52033 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751196Ab3IKHK4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 03:10:56 -0400
-Date: Wed, 11 Sep 2013 08:10:53 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        jic23@cam.ac.uk, arnd@arndb.de, linus.walleij@linaro.org,
-        denis.ciocca@st.com, linux-iio@vger.kernel.org
-Subject: Re: [PATCH 27/38] iio: pressure-core: st: Give some indication if
- device probing was successful
-Message-ID: <20130911071053.GD11227@lee--X1>
-References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
- <1378817379-8238-28-git-send-email-lee.jones@linaro.org>
- <43055af7-991f-4122-b308-a3dcddbbb72a@email.android.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <43055af7-991f-4122-b308-a3dcddbbb72a@email.android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751485Ab3IKHOj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 03:14:39 -0400
+Received: from mga11.intel.com ([192.55.52.93]:58136 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751300Ab3IKHOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 03:14:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,882,1371106800"; 
+   d="scan'208";a="393985020"
+From: tianyu.lan@intel.com
+To: rjw@sisk.pl, viresh.kumar@linaro.org, srivatsa.bhat@linux.vnet.ibm.com
+Cc: Lan Tianyu <tianyu.lan@intel.com>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Cpufreq: Acquire read lock in the cpufreq_policy_restore() rather than write lock
+Date: Wed, 11 Sep 2013 15:05:05 +0800
+Message-Id: <1378883105-1411-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Sep 2013, Jonathan Cameron wrote:
-> Lee Jones <lee.jones@linaro.org> wrote:
-> >At the moment the driver is silent in some error cases and if
-> >successful.
-> >Prior to this patch there was no clear way to know if the driver
-> >succeeded
-> >or not without looking deep into sysfs.
-> >
-> >Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> >---
-> > drivers/iio/pressure/st_pressure_core.c | 3 +++
-> > 1 file changed, 3 insertions(+)
-> >
-> >diff --git a/drivers/iio/pressure/st_pressure_core.c
-> >b/drivers/iio/pressure/st_pressure_core.c
-> >index 6ffd949..34b3fb1 100644
-> >--- a/drivers/iio/pressure/st_pressure_core.c
-> >+++ b/drivers/iio/pressure/st_pressure_core.c
-> >@@ -280,6 +280,9 @@ int st_press_common_probe(struct iio_dev
-> >*indio_dev,
-> > 	if (err && irq > 0)
-> > 		goto st_press_device_register_error;
-> > 
-> >+	if (!err)
-> >+		dev_info(&indio_dev->dev, "Successfully registered\n");
-> >+
-> Not keen. That to my mind is pointless noise.
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-I think it needs to be somewhere. IIO provides no indication whether
-these chips are probed/registered/whathaveyou, or even if the
-subsystem is in use. 
+In the cpufreq_policy_restore(), policy before system suspend is read from
+from percpu's cpufreq_cpu_data_fallback. It's read operation rather than
+write operation. So convert write lock to read lock
 
-One line per hardware component is not noise, IMO it's indicative of
-key functionality which is now available:
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+---
+ drivers/cpufreq/cpufreq.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Bootlog:
-<snip>
-iio iio: lsm303dlh_accel: Successfully registered
-iio iio: l3g4200d_gyro: Successfully registered
-iio iio: lps001wp_press: Successfully registered
-iio iio: lsm303dlhc_magn: Successfully registered
-<snip>
-
-> If this made sense then it would be in the driver core not here.
-
-Also fine. Just anything but silence/NULL reporting.
-
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 81ceea6..b762f9b 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -912,11 +912,11 @@ static struct cpufreq_policy *cpufreq_policy_restore(unsigned int cpu)
+ 	struct cpufreq_policy *policy;
+ 	unsigned long flags;
+ 
+-	write_lock_irqsave(&cpufreq_driver_lock, flags);
++	read_lock_irqsave(&cpufreq_driver_lock, flags);
+ 
+ 	policy = per_cpu(cpufreq_cpu_data_fallback, cpu);
+ 
+-	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
++	read_unlock_irqrestore(&cpufreq_driver_lock, flags);
+ 
+ 	return policy;
+ }
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.4.rc0.1.g8f6a3e5.dirty
+
