@@ -1,138 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506Ab3IKPgN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 11:36:13 -0400
-Received: from mga14.intel.com ([143.182.124.37]:13815 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755036Ab3IKPcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 11:32:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,885,1371106800"; 
-   d="scan'208";a="293584883"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-i2c@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lv Zheng <lv.zheng@intel.com>, Aaron Lu <aaron.lu@intel.com>,
-        linux-arm-kernel@lists.infradead.org, Mark Brown <broonie@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH v2 3/9] Input: misc - convert existing I2C client drivers to use I2C core runtime PM
-Date: Wed, 11 Sep 2013 18:32:34 +0300
-Message-Id: <1378913560-2752-4-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1378913560-2752-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1378913560-2752-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S1755531Ab3IKPg1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 11:36:27 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:57731 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754923Ab3IKPgX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 11:36:23 -0400
+Date: Wed, 11 Sep 2013 16:35:47 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Jonathan Cameron <jic23@kernel.org>,
+        arnd@arndb.de, linux-iio@vger.kernel.org, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org, jic23@cam.ac.uk, denis.ciocca@st.com,
+        linux-arm-kernel@lists.infradead.org
+Message-ID: <20130911153547.GU29403@sirena.org.uk>
+References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
+ <1378817379-8238-28-git-send-email-lee.jones@linaro.org>
+ <43055af7-991f-4122-b308-a3dcddbbb72a@email.android.com>
+ <20130911071053.GD11227@lee--X1>
+ <52301963.5030006@metafoo.de>
+ <20130911072955.GG11227@lee--X1>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="e5zRiGm/7Jpxr3Pr"
+Content-Disposition: inline
+In-Reply-To: <20130911072955.GG11227@lee--X1>
+X-Cookie: Your present plans will be successful.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 27/38] iio: pressure-core: st: Give some indication if
+ device probing was successful
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The I2C core now prepares runtime PM on behalf of the I2C client device, so
-only thing the driver needs to do is to call pm_runtime_put() at the end of
-->probe().
 
-This patch converts bma150 and mpu3050 input drivers to use this model.
+--e5zRiGm/7Jpxr3Pr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-While we are there remove call to pm_runtime_set_autosuspend_delay() in
-mpu3050 driver because the driver doesn't seem to use autosuspend anyway.
+On Wed, Sep 11, 2013 at 08:29:55AM +0100, Lee Jones wrote:
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/input/misc/bma150.c  |  4 ++--
- drivers/input/misc/mpu3050.c | 16 ++++------------
- 2 files changed, 6 insertions(+), 14 deletions(-)
+> Only if you print out every regulator, clock, GPIO pin and things of
+> this nature. Key hardware blocks such as; SD, Flash, USB, Eth, HDMI,
+> Audio, UART, GPIO and I2C controllers and Sensors I think deserve a
+> one line "I'm here and working" message.
 
-diff --git a/drivers/input/misc/bma150.c b/drivers/input/misc/bma150.c
-index 865c2f9..f1bf5e9 100644
---- a/drivers/input/misc/bma150.c
-+++ b/drivers/input/misc/bma150.c
-@@ -592,7 +592,7 @@ static int bma150_probe(struct i2c_client *client,
- 
- 	i2c_set_clientdata(client, bma150);
- 
--	pm_runtime_enable(&client->dev);
-+	pm_runtime_put(&client->dev);
- 
- 	return 0;
- 
-@@ -605,7 +605,7 @@ static int bma150_remove(struct i2c_client *client)
- {
- 	struct bma150_data *bma150 = i2c_get_clientdata(client);
- 
--	pm_runtime_disable(&client->dev);
-+	pm_runtime_get(&client->dev);
- 
- 	if (client->irq > 0) {
- 		free_irq(client->irq, bma150);
-diff --git a/drivers/input/misc/mpu3050.c b/drivers/input/misc/mpu3050.c
-index dce0d95..9f2ead5 100644
---- a/drivers/input/misc/mpu3050.c
-+++ b/drivers/input/misc/mpu3050.c
-@@ -43,8 +43,6 @@
- 
- #define MPU3050_CHIP_ID		0x69
- 
--#define MPU3050_AUTO_DELAY	1000
--
- #define MPU3050_MIN_VALUE	-32768
- #define MPU3050_MAX_VALUE	32767
- 
-@@ -359,11 +357,9 @@ static int mpu3050_probe(struct i2c_client *client,
- 
- 	input_set_drvdata(idev, sensor);
- 
--	pm_runtime_set_active(&client->dev);
--
- 	error = mpu3050_hw_init(sensor);
- 	if (error)
--		goto err_pm_set_suspended;
-+		goto err_free_mem;
- 
- 	error = request_threaded_irq(client->irq,
- 				     NULL, mpu3050_interrupt_thread,
-@@ -372,7 +368,7 @@ static int mpu3050_probe(struct i2c_client *client,
- 	if (error) {
- 		dev_err(&client->dev,
- 			"can't get IRQ %d, error %d\n", client->irq, error);
--		goto err_pm_set_suspended;
-+		goto err_free_mem;
- 	}
- 
- 	error = input_register_device(idev);
-@@ -381,15 +377,12 @@ static int mpu3050_probe(struct i2c_client *client,
- 		goto err_free_irq;
- 	}
- 
--	pm_runtime_enable(&client->dev);
--	pm_runtime_set_autosuspend_delay(&client->dev, MPU3050_AUTO_DELAY);
-+	pm_runtime_put(&client->dev);
- 
- 	return 0;
- 
- err_free_irq:
- 	free_irq(client->irq, sensor);
--err_pm_set_suspended:
--	pm_runtime_set_suspended(&client->dev);
- err_free_mem:
- 	input_free_device(idev);
- 	kfree(sensor);
-@@ -406,8 +399,7 @@ static int mpu3050_remove(struct i2c_client *client)
- {
- 	struct mpu3050_sensor *sensor = i2c_get_clientdata(client);
- 
--	pm_runtime_disable(&client->dev);
--	pm_runtime_set_suspended(&client->dev);
-+	pm_runtime_get(&client->dev);
- 
- 	free_irq(client->irq, sensor);
- 	input_unregister_device(sensor->idev);
--- 
-1.8.4.rc3
+The usual rule people apply with this stuff is if the driver has read
+back information it can display from the hardware (eg, a revision) then
+that's OK.  Things that are likely to crash the system if they fail tend
+to also be OK (this is why the regualtor API is quite chatty for
+example, a lot of the things it does can cause an immediate crash).
 
+--e5zRiGm/7Jpxr3Pr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSMI3KAAoJELSic+t+oim9X14P/2E+OPY2jRzMrKGXW10ENG/2
+wFGvzxoMlWzWDCthzoO/oUr6ymY+GuTXaCgbZxSC5WpSKdM+LW0SfWJ/O97T57w/
+yPaWLrPc29mQW+cs/8/sJtMFyeMEVkA83bn3b7QheXvNKj96haf+1vEGpZKMO2+Z
+1+FzK8O1Z+7bX8GeHQWmEIxUsFdgZmqF60jAg5lNPuNZLg+x2dAk2cQDgjAb02M2
+euJbqN95+jt5PkWiVF4uasnletSSeJZg0j4KkZ+A9Zhk3rRidfna0aqNG8vsdMju
+OvnHQhU4XmqdTYDgWKqQYbyu1y+mVwiHpJfgSOfiqqRQnQwHkjGoScqBjT8fKzJh
+FqJPbEvvNH1RP74Xa4tJ5yJdgMw9hBugdASfOOPfquep09bpHYyupG7SI0OsRoMW
+n5uCAdk0zzBUErIktM26C69ps/icFQ0zdeQMVM58ngsEi1xWC+Bsw25dcqlQCVbC
+6VERGBJec9ZWhUwUVsBcGkuWZZCEDs1WNFKZX4Yp8TN7a0QnfUjzzSESM2w2lgw6
+9bQYTWGt7vgK+Mex/uIYfBRbSExkCOQm7gPwqQfF9PJ+1KCB0v38cAQBkm9r6ENw
+18lf16Ksx4MdiAKNBuS5LFYVXeeCLQtX/sMje4sAmty1H2RuMjb6QX1vk/mv+kgU
+aDVn71lJNRb40HG2BBKK
+=tOhT
+-----END PGP SIGNATURE-----
+
+--e5zRiGm/7Jpxr3Pr--
