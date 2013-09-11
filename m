@@ -1,110 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810Ab3IKIit (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 04:38:49 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:43741 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751942Ab3IKIip (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 04:38:45 -0400
+	id S1752930Ab3IKIjA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 04:39:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53374 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751942Ab3IKIi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 04:38:56 -0400
+Date: Wed, 11 Sep 2013 10:38:52 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: chauplac@gmail.com, keescook@chromium.org, mmarek@suse.cz,
+        mpagano@gentoo.org, yann.morin.1998@free.fr,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] kconfig updates for v3.12-rc1
+Message-ID: <20130911083852.GA28217@sepie.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <2703632.ul5ekQh5oq@vostro.rjw.lan>
-References: <Pine.LNX.4.64.1309091656200.6602@axis700.grange>
-	<4292924.3iHJT5nzNS@vostro.rjw.lan>
-	<CAKohponUdE0LCciPb+nf3t_vfNqAy3MeWQO8gTOdEDvQJeWcgg@mail.gmail.com>
-	<2703632.ul5ekQh5oq@vostro.rjw.lan>
-Date: Wed, 11 Sep 2013 14:08:44 +0530
-Message-ID: <CAKohpo=RKB-_EO=cjaOorAfN=y_cMgJg-j6=xtX71a-TwujgsA@mail.gmail.com>
-Subject: Re: "cpufreq: fix serialization issues with freq change notifiers"
- breaks cpufreq too
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>, Greg KH <greg@kroah.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 September 2013 01:16, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Tuesday, September 10, 2013 08:44:18 PM Viresh Kumar wrote:
+Hi Linus,
 
->> Now Second question, is this fine to have multiple PRECHANGE notfications
->> before any POSTCHANGE notification?
->>
->> Logically it looks obvious to me that these must be serialized..
->> Otherwise this is what we are broadcasting:
->> - We are changing for freq X, please prepare and let us know if you are
->> okay with it..
->> - Oh.. So sorry, we are changing to freq Y instead, please adjust accordingly.
->>
->> - Yes we have changed to freq Y...
->> - Yes we have changed to freq X...
->>
->> This looks stupid, isn't it? I don't know how the drivers would behave when
->> they see such notifications and so got to this patch initially..
->
-> Well, precisely, you don't know.
->
-> Can you please look for specific problems and address those instead of trying
-> to address potential issues that may or may not happen and may or may not really
-> be issues even if they actually happen?
+this is the kconfig part of kbuild for v3.12-rc1:
+- post-3.11 search code fixes and micro-optimizations
+- CONFIG_MODULES is no longer a special case; this is needed to
+  eventually fix the bug that using KCONFIG_ALLCONFIG breaks
+  allmodconfig
+- long long is used to store hex and int values
+- make silentoldconfig no longer warns when a symbol changes from
+  tristate to bool (it's a job for make oldconfig)
+- scripts/diffconfig updated to work with newer Pythons
+- scripts/config does not rely on GNU sed extensions
 
-That looked like a straight forward issue/bug to me and so I haven't
-gotten deep into it..
+Michal
 
-Scenario 1:
---------------
-Notifiers are not serialized and suppose this is what happened
-- PRECHANGE Notification for freq A (from cpuinfo_cur_freq)
-- PRECHANGE Notification for freq B (from target())
-- Freq changed by target() to B
-- POSTCHANGE Notification for freq B
-- POSTCHANGE Notification for freq A
 
-Now the last POSTCHANGE Notification happened for freq A and
-hardware is currently running at freq B :)
+The following changes since commit ad81f0545ef01ea651886dddac4bef6cec930092:
 
-Where would we break then?: adjust_jiffies() in cpufreq.c,
-cpufreq_callback() in arch/arm/kernel/smp.c (which is also adjusting
-jiffies)..
+  Linux 3.11-rc1 (2013-07-14 15:18:27 -0700)
 
-Now, all loops_per_jiffy based stuff is broken.. Have I missed
-something?
+are available in the git repository at:
 
-Similarly there are numerous places where we may break.. As we
-have broken expectations of receivers of these notifications..
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git kconfig
 
-Scenario 2:
---------------
-Governor is changing freq and has called __cpufreq_driver_target().
-At the same time we are changing scaling_{min|max}_freq from
-sysfs, which would eventually end up calling governors:
-CPUFREQ_GOV_LIMITS notification, that will also call:
-__cpufreq_driver_target()..
+for you to fetch changes up to e062781397e5bebc6c1b8dd4bf466136e13ae4c5:
 
-So, we eventually have two concurrent calls to ->target() and we
-don't really know how hardware will behave in this case.. Most of
-the implementations of ->target() routines just go and change
-freq/voltage without checking if we are already in progress of doing
-that (i.e. based on expectation that this call is not re entrant)..
+  kconfig: do not allow more than one symbol to have 'option modules' (2013-09-05 11:10:08 +0200)
 
-Now anything can happen at hardware level, which I don't have
-all insight of :(
+----------------------------------------------------------------
+Clement Chauplannaz (1):
+      scripts/config: use sed's POSIX interface
 
-> And broken patches that try to fix such things definitely don't help.
+Kees Cook (1):
+      kconfig: switch to "long long" for sanity
 
-Yeah, that's my fault but I honestly try to produce bug-less patches..
-But being a normal human being, there are always some chances
-that my patches are eventually broken :)
+Michal Marek (1):
+      Merge branch 'yem-kconfig-rc-fixes' of git://gitorious.org/linux-kconfig/linux-kconfig into kbuild/kconfig
 
-> For now I'm reverting the commit in question and everything on top of it.
+Mike Pagano (2):
+      diffconfig: Gracefully exit if the default config files are not present
+      diffconfig: Update script to support python versions 2.5 through 3.3
 
-Its okay..
+Yann E. MORIN (11):
+      Documentation/kconfig: more concise and straightforward search explanation
+      kconfig: avoid multiple calls to strlen
+      kconfig/[mn]conf: shorten title in search-box
+      kconfig: minor style fixes in symbol-search code
+      kconfig: don't allocate n+1 elements in temporary array
+      kconfig: simplify symbol-search code
+      kconfig: silence warning when parsing auto.conf when a symbol has changed type
+      modules: do not depend on kconfig to set 'modules' option to symbol MODULES
+      kconfig: do not special-case 'MODULES' symbol
+      kconfig: regenerate bison parser
+      kconfig: do not allow more than one symbol to have 'option modules'
+
+ Documentation/kbuild/kconfig-language.txt |   1 +
+ Documentation/kbuild/kconfig.txt          |   8 +-
+ init/Kconfig                              |   1 +
+ scripts/config                            |  44 ++-
+ scripts/diffconfig                        |  33 +-
+ scripts/kconfig/confdata.c                |  11 +-
+ scripts/kconfig/mconf.c                   |   4 +-
+ scripts/kconfig/menu.c                    |  11 +-
+ scripts/kconfig/nconf.c                   |   4 +-
+ scripts/kconfig/symbol.c                  |  68 ++--
+ scripts/kconfig/zconf.tab.c_shipped       | 562 ++++++++++++++++--------------
+ scripts/kconfig/zconf.y                   |  11 +-
+ 12 files changed, 413 insertions(+), 345 deletions(-)
