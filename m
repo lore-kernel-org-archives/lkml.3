@@ -1,104 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757458Ab3IKUMe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 16:12:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27505 "EHLO mx1.redhat.com"
+	id S1757483Ab3IKUMg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 16:12:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26674 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757331Ab3IKUMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 16:12:33 -0400
+	id S1757459Ab3IKUMe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 16:12:34 -0400
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
         Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] HID: lenovo-tpkbd: devm conversion
-Date: Wed, 11 Sep 2013 22:12:23 +0200
-Message-Id: <1378930345-6670-2-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH 2/3] HID: lenovo-tpkbd: remove usb dependency
+Date: Wed, 11 Sep 2013 22:12:24 +0200
+Message-Id: <1378930345-6670-3-git-send-email-benjamin.tissoires@redhat.com>
 In-Reply-To: <1378930345-6670-1-git-send-email-benjamin.tissoires@redhat.com>
 References: <1378930345-6670-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can use the devres API in hid modules, so use it to avoid some kfree
-and potential leaks.
+lenovo tpkbd currently relies on the usb interface number to detect
+if it is dealing with the touchpad interface or not.
+As the report descriptors of the interface 0 does not contain the
+button 3, we can use this to remove the need to check for usb.
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 ---
- drivers/hid/hid-lenovo-tpkbd.c | 30 ++++++++----------------------
- 1 file changed, 8 insertions(+), 22 deletions(-)
 
+I am not 100% happy with the trick required to differenciate the 2 interfaces.
+It is working, but I don't really like setting "hid_set_drvdata(hdev, (void *)1);"
+to avoid a kzalloc (and some more indirections later in the led part).
+
+Any comments welcome :)
+
+Cheers,
+Benjamin
+
+ drivers/hid/Kconfig            |  2 +-
+ drivers/hid/hid-lenovo-tpkbd.c | 20 ++++++--------------
+ 2 files changed, 7 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index 3d7c9f6..4b70800 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -322,7 +322,7 @@ config HID_LCPOWER
+ 
+ config HID_LENOVO_TPKBD
+ 	tristate "Lenovo ThinkPad USB Keyboard with TrackPoint"
+-	depends on USB_HID
++	depends on HID
+ 	select NEW_LEDS
+ 	select LEDS_CLASS
+ 	---help---
 diff --git a/drivers/hid/hid-lenovo-tpkbd.c b/drivers/hid/hid-lenovo-tpkbd.c
-index 31cf29a..0d9a276 100644
+index 0d9a276..2d25b6c 100644
 --- a/drivers/hid/hid-lenovo-tpkbd.c
 +++ b/drivers/hid/hid-lenovo-tpkbd.c
-@@ -339,7 +339,7 @@ static int tpkbd_probe_tp(struct hid_device *hdev)
- 	struct tpkbd_data_pointer *data_pointer;
- 	size_t name_sz = strlen(dev_name(dev)) + 16;
- 	char *name_mute, *name_micmute;
--	int i, ret;
-+	int i;
+@@ -14,11 +14,9 @@
+ #include <linux/module.h>
+ #include <linux/sysfs.h>
+ #include <linux/device.h>
+-#include <linux/usb.h>
+ #include <linux/hid.h>
+ #include <linux/input.h>
+ #include <linux/leds.h>
+-#include "usbhid/usbhid.h"
  
- 	/* Validate required reports. */
- 	for (i = 0; i < 4; i++) {
-@@ -354,7 +354,9 @@ static int tpkbd_probe_tp(struct hid_device *hdev)
- 		hid_warn(hdev, "Could not create sysfs group\n");
+ #include "hid-ids.h"
+ 
+@@ -41,10 +39,9 @@ static int tpkbd_input_mapping(struct hid_device *hdev,
+ 		struct hid_input *hi, struct hid_field *field,
+ 		struct hid_usage *usage, unsigned long **bit, int *max)
+ {
+-	struct usbhid_device *uhdev;
+-
+-	uhdev = (struct usbhid_device *) hdev->driver_data;
+-	if (uhdev->ifnum == 1 && usage->hid == (HID_UP_BUTTON | 0x0010)) {
++	if (usage->hid == (HID_UP_BUTTON | 0x0010)) {
++		/* mark the device as pointer */
++		hid_set_drvdata(hdev, (void *)1);
+ 		map_key_clear(KEY_MICMUTE);
+ 		return 1;
+ 	}
+@@ -398,7 +395,6 @@ static int tpkbd_probe(struct hid_device *hdev,
+ 		const struct hid_device_id *id)
+ {
+ 	int ret;
+-	struct usbhid_device *uhdev;
+ 
+ 	ret = hid_parse(hdev);
+ 	if (ret) {
+@@ -412,9 +408,8 @@ static int tpkbd_probe(struct hid_device *hdev,
+ 		goto err;
  	}
  
--	data_pointer = kzalloc(sizeof(struct tpkbd_data_pointer), GFP_KERNEL);
-+	data_pointer = devm_kzalloc(&hdev->dev,
-+				    sizeof(struct tpkbd_data_pointer),
-+				    GFP_KERNEL);
- 	if (data_pointer == NULL) {
- 		hid_err(hdev, "Could not allocate memory for driver data\n");
- 		return -ENOMEM;
-@@ -364,20 +366,13 @@ static int tpkbd_probe_tp(struct hid_device *hdev)
- 	data_pointer->sensitivity = 0xa0;
- 	data_pointer->press_speed = 0x38;
- 
--	name_mute = kzalloc(name_sz, GFP_KERNEL);
--	if (name_mute == NULL) {
-+	name_mute = devm_kzalloc(&hdev->dev, name_sz, GFP_KERNEL);
-+	name_micmute = devm_kzalloc(&hdev->dev, name_sz, GFP_KERNEL);
-+	if (name_mute == NULL || name_micmute == NULL) {
- 		hid_err(hdev, "Could not allocate memory for led data\n");
--		ret = -ENOMEM;
--		goto err;
-+		return -ENOMEM;
- 	}
- 	snprintf(name_mute, name_sz, "%s:amber:mute", dev_name(dev));
+-	uhdev = (struct usbhid_device *) hdev->driver_data;
 -
--	name_micmute = kzalloc(name_sz, GFP_KERNEL);
--	if (name_micmute == NULL) {
--		hid_err(hdev, "Could not allocate memory for led data\n");
--		ret = -ENOMEM;
--		goto err2;
--	}
- 	snprintf(name_micmute, name_sz, "%s:amber:micmute", dev_name(dev));
- 
- 	hid_set_drvdata(hdev, data_pointer);
-@@ -397,12 +392,6 @@ static int tpkbd_probe_tp(struct hid_device *hdev)
- 	tpkbd_features_set(hdev);
- 
- 	return 0;
--
--err2:
--	kfree(name_mute);
--err:
--	kfree(data_pointer);
--	return ret;
- }
- 
- static int tpkbd_probe(struct hid_device *hdev,
-@@ -449,9 +438,6 @@ static void tpkbd_remove_tp(struct hid_device *hdev)
- 	led_classdev_unregister(&data_pointer->led_mute);
- 
- 	hid_set_drvdata(hdev, NULL);
--	kfree(data_pointer->led_micmute.name);
--	kfree(data_pointer->led_mute.name);
--	kfree(data_pointer);
- }
+-	if (uhdev->ifnum == 1) {
++	if (hid_get_drvdata(hdev)) {
++		hid_set_drvdata(hdev, NULL);
+ 		ret = tpkbd_probe_tp(hdev);
+ 		if (ret)
+ 			goto err_hid;
+@@ -442,10 +437,7 @@ static void tpkbd_remove_tp(struct hid_device *hdev)
  
  static void tpkbd_remove(struct hid_device *hdev)
+ {
+-	struct usbhid_device *uhdev;
+-
+-	uhdev = (struct usbhid_device *) hdev->driver_data;
+-	if (uhdev->ifnum == 1)
++	if (hid_get_drvdata(hdev))
+ 		tpkbd_remove_tp(hdev);
+ 
+ 	hid_hw_stop(hdev);
 -- 
 1.8.3.1
 
