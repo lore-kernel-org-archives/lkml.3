@@ -1,95 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380Ab3IKO0L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 10:26:11 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25962 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753803Ab3IKO0J (ORCPT
+	id S1754427Ab3IKO0R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 10:26:17 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:16433 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754389Ab3IKO0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 10:26:09 -0400
-X-Authority-Analysis: v=2.0 cv=R/aB6KtX c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=JDfofD-L5ZgA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5p3hctMY2UsA:10 a=VnNF1IyMAAAA:8 a=7d_E57ReAAAA:8 a=zcXDKOO1AXvWESF5raAA:9 a=CjuIK1q_8ugA:10 a=D6-X0JM3zdQA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Wed, 11 Sep 2013 10:26:07 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, sbw@mit.edu
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
- section?
-Message-ID: <20130911102607.16a3da91@gandalf.local.home>
-In-Reply-To: <20130911141302.GA11342@linux.vnet.ibm.com>
-References: <20130909135656.GT3966@linux.vnet.ibm.com>
-	<20130909101629.32df27a2@gandalf.local.home>
-	<20130909161708.GX3966@linux.vnet.ibm.com>
-	<20130909123422.7936e868@gandalf.local.home>
-	<20130909165836.GB3966@linux.vnet.ibm.com>
-	<20130909172908.GA31239@Krystal>
-	<20130909175656.GF3966@linux.vnet.ibm.com>
-	<20130909214026.GA8830@Krystal>
-	<20130909175917.794b19bd@gandalf.local.home>
-	<20130909223426.GM3966@linux.vnet.ibm.com>
-	<20130911141302.GA11342@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Sep 2013 10:26:14 -0400
+Date: Wed, 11 Sep 2013 10:25:45 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Jason Baron <jbaron@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com
+Subject: Re: Regression :-) Re: [GIT PULL RESEND] x86/jumpmplabel changes for
+ v3.12-rc1
+Message-ID: <20130911142545.GA11364@phenom.dumpdata.com>
+References: <201309110248.r8B2miI2032449@terminus.zytor.com>
+ <20130911134717.GA10925@phenom.dumpdata.com>
+ <20130911135745.GB11043@phenom.dumpdata.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130911135745.GB11043@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Sep 2013 07:13:02 -0700
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-
-> On Mon, Sep 09, 2013 at 03:34:26PM -0700, Paul E. McKenney wrote:
-> > On Mon, Sep 09, 2013 at 05:59:17PM -0400, Steven Rostedt wrote:
-> > > On Mon, 9 Sep 2013 17:40:26 -0400
-> > > Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-> > > 
-> > > > Agreed. So how about rcu_is_online() ?
-> > > 
-> > > Nope, what about all_your_base_are_belong_to_rcu()?
-> > 
-> > Let's see if I can remember the candidates...
-> > 
-> > 	rcu_is_cpu_idle() # reversed sense from the others
-> > 	rcu_is_ignored() # reversed sense from the others
-> > 	rcu_is_not_active() # reversed sense from the others
-> > 	rcu_is_watching_cpu()
-> > 	rcu_read_check()
-> > 	rcu_is_active()
-> > 	rcu_is_active_local()
-> > 	rcu_is_online()
-> > 	rcu_is_watching_task()
-> > 	rcu_is_watching_thread()
-> > 	rcu_is_watching_you()
-> > 	all_your_base_are_belong_to_rcu()
-> > 	rcu_is_active_loco()
-> > 	rcu_kilroy_was_here()
-> > 
-> > Maybe I should just lock them all in a room overnight and see which
-> > are still alive in the morning.
+> It seems to imply line 53 is the originating bug, so that would be:
 > 
-> And after treating injuries, the survivor is rcu_is_watching().
+>  47         if (type == JUMP_LABEL_ENABLE) {
+>  48                 /*
+>  49                  * We are enabling this jump label. If it is not a nop
+>  50                  * then something must have gone wrong.
+>  51                  */
+>  52                 if (unlikely(memcmp((void *)entry->code, ideal_nop, 5) != 0))
+>  53                         bug_at((void *)entry->code, __LINE__);
+> 
+> But it is a NOP isn't it? The code is
+> 
+> Unexpected op at trace_clock_global+0x6b/0x120 [ffffffff8113a21b] (0f 1f 44 00 00) 53
+> 
+> Perhaps the ideal_nop has not been set yet?
 > 
 
-But, but, but...
+And this looks to fix it for me.
 
-That wasn't one of the contenders!
-
-What happened? Did rcu_is_watching_cpu(), rcu_is_watching_task(),
-rcu_is_watching_thread() and rcu_is_watching_you() all get together to
-gang up on the others, and then combined to be one?
-
-It's another Iraq! Several segments joined together by an outside
-force and they don't play well together. And like Iraq (and the US),
-hidden inside of this "community" is "rcu_is_watching_you"!
-
--- Steve
+diff --git a/arch/x86/kernel/jump_label.c b/arch/x86/kernel/jump_label.c
+index ee11b7d..d688348 100644
+--- a/arch/x86/kernel/jump_label.c
++++ b/arch/x86/kernel/jump_label.c
+@@ -44,13 +44,20 @@ static void __jump_label_transform(struct jump_entry *entry,
+ 	union jump_code_union code;
+ 	const unsigned char *ideal_nop = ideal_nops[NOP_ATOMIC5];
+ 
++	if (init) {
++		const unsigned char default_nop[] = { STATIC_KEY_INIT_NOP };
++		if (unlikely(memcmp((void *)entry->code, default_nop, 5) != 0))
++			bug_at((void *)entry->code, __LINE__);
++	}
+ 	if (type == JUMP_LABEL_ENABLE) {
+ 		/*
+ 		 * We are enabling this jump label. If it is not a nop
+ 		 * then something must have gone wrong.
+ 		 */
+-		if (unlikely(memcmp((void *)entry->code, ideal_nop, 5) != 0))
+-			bug_at((void *)entry->code, __LINE__);
++		if (!init) {
++			if (unlikely(memcmp((void *)entry->code, ideal_nop, 5) != 0))
++				bug_at((void *)entry->code, __LINE__);
++		}
+ 
+ 		code.jump = 0xe9;
+ 		code.offset = entry->target -
+@@ -62,11 +69,7 @@ static void __jump_label_transform(struct jump_entry *entry,
+ 		 * If this is the first initialization call, then we
+ 		 * are converting the default nop to the ideal nop.
+ 		 */
+-		if (init) {
+-			const unsigned char default_nop[] = { STATIC_KEY_INIT_NOP };
+-			if (unlikely(memcmp((void *)entry->code, default_nop, 5) != 0))
+-				bug_at((void *)entry->code, __LINE__);
+-		} else {
++		if (!init) {
+ 			code.jump = 0xe9;
+ 			code.offset = entry->target -
+ 				(entry->code + JUMP_LABEL_NOP_SIZE);
