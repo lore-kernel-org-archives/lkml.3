@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab3IKKHc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 06:07:32 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:42177 "EHLO song.cn.fujitsu.com"
+	id S1753918Ab3IKKHa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 06:07:30 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:14383 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752785Ab3IKKFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752870Ab3IKKFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 11 Sep 2013 06:05:22 -0400
 X-IronPort-AV: E=Sophos;i="4.90,883,1371052800"; 
-   d="scan'208";a="8489690"
+   d="scan'208";a="8489691"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: tj@kernel.org, rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de,
         mingo@elte.hu, hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
@@ -20,9 +20,9 @@ To: tj@kernel.org, rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de,
         zhangyanfei@cn.fujitsu.com, toshi.kani@hp.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH v2 4/9] x86: Support allocate memory from bottom upwards in setup_log_buf().
-Date: Wed, 11 Sep 2013 18:07:32 +0800
-Message-Id: <1378894057-30946-5-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v2 5/9] x86: Support allocate memory from bottom upwards in relocate_initrd().
+Date: Wed, 11 Sep 2013 18:07:33 +0800
+Message-Id: <1378894057-30946-6-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1378894057-30946-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1378894057-30946-1-git-send-email-tangchen@cn.fujitsu.com>
@@ -39,39 +39,42 @@ During early boot, if the bottom up mode is set, just
 try allocating bottom up from the end of kernel image,
 and if that fails, do normal top down allocation.
 
-So in function setup_log_buf(), we add the above logic.
+So in function relocate_initrd(), we add the above logic.
 
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 ---
- kernel/printk/printk.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+ arch/x86/kernel/setup.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index b4e8500..2958118 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -759,9 +759,20 @@ void __init setup_log_buf(int early)
- 	if (early) {
- 		unsigned long mem;
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index f0de629..7372be7 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -326,6 +326,15 @@ static void __init relocate_initrd(void)
+ 	char *p, *q;
  
-+		if (memblock_direction_bottom_up()) {
-+			mem = memblock_alloc_bottom_up(
+ 	/* We need to move the initrd down into directly mapped mem */
++	if (memblock_direction_bottom_up()) {
++		ramdisk_here = memblock_alloc_bottom_up(
 +						MEMBLOCK_ALLOC_ACCESSIBLE,
-+						MEMBLOCK_ALLOC_ACCESSIBLE,
-+						new_log_buf_len, PAGE_SIZE);
-+			if (mem)
-+				goto success;
-+		}
++						PFN_PHYS(max_pfn_mapped),
++						area_size, PAGE_SIZE);
++		if (ramdisk_here)
++			goto success;
++	}
 +
- 		mem = memblock_alloc(new_log_buf_len, PAGE_SIZE);
- 		if (!mem)
- 			return;
-+
+ 	ramdisk_here = memblock_find_in_range(0, PFN_PHYS(max_pfn_mapped),
+ 						 area_size, PAGE_SIZE);
+ 
+@@ -333,6 +342,7 @@ static void __init relocate_initrd(void)
+ 		panic("Cannot find place for new RAMDISK of size %lld\n",
+ 			 ramdisk_size);
+ 
 +success:
- 		new_log_buf = __va(mem);
- 	} else {
- 		new_log_buf = alloc_bootmem_nopanic(new_log_buf_len);
+ 	/* Note: this includes all the mem currently occupied by
+ 	   the initrd, we rely on that fact to keep the data intact. */
+ 	memblock_reserve(ramdisk_here, area_size);
 -- 
 1.7.1
 
