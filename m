@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755676Ab3IKQJZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 12:09:25 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:45790 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755047Ab3IKQJW (ORCPT
+	id S1756404Ab3IKQJd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 12:09:33 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:48193 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755242Ab3IKQJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 12:09:22 -0400
+	Wed, 11 Sep 2013 12:09:29 -0400
 From: Jiang Liu <liuj97@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Shaohua Li <shli@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Hirokazu Takata <takata@linux-m32r.org>, Shaohua Li <shli@kernel.org>
 Cc: liuj97@gmail.com, Jiang Liu <jiang.liu@huawei.com>,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <trivial@kernel.org>,
-        Wang YanQing <udknight@gmail.com>, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: [RFC PATCH v2 08/25] smp, IA64: kill SMP single function call interrupt
-Date: Thu, 12 Sep 2013 00:07:12 +0800
-Message-Id: <1378915649-16395-9-git-send-email-liuj97@gmail.com>
+        Wang YanQing <udknight@gmail.com>, linux-m32r@ml.linux-m32r.org,
+        linux-m32r-ja@ml.linux-m32r.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: [RFC PATCH v2 09/25] smp, m32r: kill SMP single function call interrupt
+Date: Thu, 12 Sep 2013 00:07:13 +0800
+Message-Id: <1378915649-16395-10-git-send-email-liuj97@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378915649-16395-1-git-send-email-liuj97@gmail.com>
 References: <1378915649-16395-1-git-send-email-liuj97@gmail.com>
@@ -36,42 +37,71 @@ call interfaces, so kill the redundant single function call interrupt.
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 Cc: Jiang Liu <liuj97@gmail.com>
 ---
- arch/ia64/kernel/smp.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ arch/m32r/include/asm/smp.h | 1 -
+ arch/m32r/kernel/smp.c      | 9 +--------
+ arch/m32r/kernel/traps.c    | 3 +--
+ 3 files changed, 2 insertions(+), 11 deletions(-)
 
-diff --git a/arch/ia64/kernel/smp.c b/arch/ia64/kernel/smp.c
-index 9fcd4e6..0532909 100644
---- a/arch/ia64/kernel/smp.c
-+++ b/arch/ia64/kernel/smp.c
-@@ -62,8 +62,7 @@ static DEFINE_PER_CPU_SHARED_ALIGNED(unsigned short [NR_CPUS],
+diff --git a/arch/m32r/include/asm/smp.h b/arch/m32r/include/asm/smp.h
+index c689b82..3a502d4 100644
+--- a/arch/m32r/include/asm/smp.h
++++ b/arch/m32r/include/asm/smp.h
+@@ -98,7 +98,6 @@ extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
+ #define LOCAL_TIMER_IPI		(M32R_IRQ_IPI3-M32R_IRQ_IPI0)
+ #define INVALIDATE_CACHE_IPI	(M32R_IRQ_IPI4-M32R_IRQ_IPI0)
+ #define CPU_BOOT_IPI		(M32R_IRQ_IPI5-M32R_IRQ_IPI0)
+-#define CALL_FUNC_SINGLE_IPI	(M32R_IRQ_IPI6-M32R_IRQ_IPI0)
  
- #define IPI_CALL_FUNC		0
- #define IPI_CPU_STOP		1
--#define IPI_CALL_FUNC_SINGLE	2
--#define IPI_KDUMP_CPU_STOP	3
-+#define IPI_KDUMP_CPU_STOP	2
- 
- /* This needs to be cacheline aligned because it is written to by *other* CPUs.  */
- static DEFINE_PER_CPU_SHARED_ALIGNED(unsigned long, ipi_operation);
-@@ -116,9 +115,6 @@ handle_IPI (int irq, void *dev_id)
- 			case IPI_CALL_FUNC:
- 				generic_smp_call_function_interrupt();
- 				break;
--			case IPI_CALL_FUNC_SINGLE:
--				generic_smp_call_function_single_interrupt();
--				break;
- #ifdef CONFIG_KEXEC
- 			case IPI_KDUMP_CPU_STOP:
- 				unw_init_running(kdump_cpu_freeze, NULL);
-@@ -318,7 +314,7 @@ smp_flush_tlb_mm (struct mm_struct *mm)
+ #define IPI_SHIFT	(0)
+ #define NR_IPIS		(8)
+diff --git a/arch/m32r/kernel/smp.c b/arch/m32r/kernel/smp.c
+index ce7aea3..c6d0bb9 100644
+--- a/arch/m32r/kernel/smp.c
++++ b/arch/m32r/kernel/smp.c
+@@ -542,7 +542,7 @@ void arch_send_call_function_ipi_mask(const struct cpumask *mask)
  
  void arch_send_call_function_single_ipi(int cpu)
  {
--	send_IPI_single(cpu, IPI_CALL_FUNC_SINGLE);
-+	send_IPI_single(cpu, IPI_CALL_FUNC);
+-	send_IPI_mask(cpumask_of(cpu), CALL_FUNC_SINGLE_IPI, 0);
++	send_IPI_mask(cpumask_of(cpu), CALL_FUNCTION_IPI, 0);
  }
  
- void arch_send_call_function_ipi_mask(const struct cpumask *mask)
+ /*==========================================================================*
+@@ -569,13 +569,6 @@ void smp_call_function_interrupt(void)
+ 	irq_exit();
+ }
+ 
+-void smp_call_function_single_interrupt(void)
+-{
+-	irq_enter();
+-	generic_smp_call_function_single_interrupt();
+-	irq_exit();
+-}
+-
+ /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
+ /* Timer Routines                                                            */
+ /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
+diff --git a/arch/m32r/kernel/traps.c b/arch/m32r/kernel/traps.c
+index a7a424f..f5d911d 100644
+--- a/arch/m32r/kernel/traps.c
++++ b/arch/m32r/kernel/traps.c
+@@ -39,7 +39,6 @@ extern void smp_invalidate_interrupt(void);
+ extern void smp_call_function_interrupt(void);
+ extern void smp_ipi_timer_interrupt(void);
+ extern void smp_flush_cache_all_interrupt(void);
+-extern void smp_call_function_single_interrupt(void);
+ 
+ /*
+  * for Boot AP function
+@@ -104,7 +103,7 @@ static void set_eit_vector_entries(void)
+ 	eit_vector[187] = (unsigned long)smp_ipi_timer_interrupt;
+ 	eit_vector[188] = (unsigned long)smp_flush_cache_all_interrupt;
+ 	eit_vector[189] = 0;	/* CPU_BOOT_IPI */
+-	eit_vector[190] = (unsigned long)smp_call_function_single_interrupt;
++	eit_vector[190] = 0;
+ 	eit_vector[191] = 0;
+ #endif
+ 	_flush_cache_copyback_all();
 -- 
 1.8.1.2
 
