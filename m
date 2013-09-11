@@ -1,97 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753775Ab3IKD3H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 23:29:07 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:8271 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752420Ab3IKD3G (ORCPT
+	id S1753882Ab3IKD3W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 23:29:22 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:50871 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753793Ab3IKD3S convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 23:29:06 -0400
-Message-ID: <522FE367.3090904@huawei.com>
-Date: Wed, 11 Sep 2013 11:28:39 +0800
-From: "Jiang Liu (Gerry)" <jiang.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 10 Sep 2013 23:29:18 -0400
+X-IronPort-AV: E=Sophos;i="4.90,881,1371052800"; 
+   d="scan'208";a="8483952"
+Message-ID: <522FDFC3.3010200@cn.fujitsu.com>
+Date: Wed, 11 Sep 2013 11:13:07 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: =?UTF-8?B?TWFydGluIE1PS1JFSsWg?= <mmokrejs@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Jiang Liu <liuj97@gmail.com>, Wang YanQing <udknight@gmail.com>,
-        Shaohua Li <shli@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        liguang <lig.fnst@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 3.10.10: WARNING: at kernel/smp.c:181 generic_smp_call_function_single_interrupt+0x11c/0x130()
-References: <522F99E8.1040802@gmail.com>
-In-Reply-To: <522F99E8.1040802@gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.111.77.35]
-X-CFilter-Loop: Reflected
+To: jaegeuk.kim@samsung.com
+CC: chao2.yu@samsung.com, shu.tan@samsung.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Subject: Re: [f2fs-dev][PATCH] f2fs: optimize fs_lock for better performance
+References: <88.C4.11914.9D4A9225@epcpsbge6.samsung.com> <1378774324.2354.103.camel@kjgkr>
+In-Reply-To: <1378774324.2354.103.camel@kjgkr>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/09/11 11:15:34,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/09/11 11:15:41
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Martin,
-	I don't think the mentioned patch could solve your problem.
-The warning messages implies some issues in CPU hotplug, need more
-investigation.
-Regards!
-Gerry
+Hi Jaegeuk,
 
-On 2013/9/11 6:15, Martin MOKREJŠ wrote:
+On 09/10/2013 08:52 AM, Jaegeuk Kim wrote:
+
 > Hi,
->    I got this stacktrace shortly after bootup. I am disabling the two
-> hyper-threaded cores in my startup scripts so possibly that was the
-> trigger, at least per earlier report from Fernando Soto on Jul 08 2013:
->    https://lkml.org/lkml/2013/7/8/301
->
->    I don't see his name in this patch series which Google bring to me:
->
-> Re: [PATCH v1 2/3] SMP: simpilify function generic_smp_call_function_single_interrupt()
->
-> does the patch fix the issue? Are you aware of the issue? That is why
-> I CCed all of you. ;-) Please, somebody add to Cc: also Fernando, I cannot
-> find his email address in SPAM-protected email archives. surely you have
-> his original email in your Inbox or Trash. Thanks.
->
->
-> My stacktrace from 3.10.10 is:
->
-> [   22.908990] ------------[ cut here ]------------
-> [   22.909011] WARNING: at kernel/smp.c:181 generic_smp_call_function_single_interrupt+0x11c/0x130()
-> [   22.909021] Modules linked in: iwldvm iwlwifi
-> [   22.909029] CPU: 2 PID: 17 Comm: migration/2 Not tainted 3.10.10-default-pciehp #2
-> [   22.909032] Hardware name: Dell Inc. Vostro 3550/, BIOS A11 08/03/2012
-> [   22.909044]  0000000000000009 ffff88019fb03f08 ffffffff817f9734 ffff88019fb03f48
-> [   22.909054]  ffffffff8109698b ffff8801979adfd8 ffff88019fb13d80 0000000000000004
-> [   22.909064]  ffff88019fb03f68 ffff88019893bf01 0000000000000000 ffff88019fb03f58
-> [   22.909066] Call Trace:
-> [   22.909083]  <IRQ>  [<ffffffff817f9734>] dump_stack+0x19/0x1b
-> [   22.909093]  [<ffffffff8109698b>] warn_slowpath_common+0x6b/0xa0
-> [   22.909102]  [<ffffffff810969d5>] warn_slowpath_null+0x15/0x20
-> [   22.909111]  [<ffffffff810f2e6c>] generic_smp_call_function_single_interrupt+0x11c/0x130
-> [   22.909120]  [<ffffffff81025772>] smp_call_function_single_interrupt+0x22/0x40
-> [   22.909131]  [<ffffffff818029ef>] call_function_single_interrupt+0x6f/0x80
-> [   22.909146]  <EOI>  [<ffffffff810ff5e1>] ? stop_machine_cpu_stop+0xb1/0xf0
-> [   22.909155]  [<ffffffff810ff530>] ? cpu_stop_queue_work+0xa0/0xa0
-> [   22.909164]  [<ffffffff810ff6a4>] cpu_stopper_thread+0x84/0x140
-> [   22.909172]  [<ffffffff810ff8bc>] ? cpu_stop_should_run+0x2c/0x50
-> [   22.909181]  [<ffffffff81800d2a>] ? _raw_spin_unlock_irqrestore+0x3a/0x70
-> [   22.909188]  [<ffffffff810ec1b5>] ? trace_hardirqs_on_caller+0x105/0x1d0
-> [   22.909193]  [<ffffffff810ec28d>] ? trace_hardirqs_on+0xd/0x10
-> [   22.909199]  [<ffffffff810c452f>] smpboot_thread_fn+0xff/0x190
-> [   22.909203]  [<ffffffff810c4430>] ? lg_global_unlock+0x70/0x70
-> [   22.909207]  [<ffffffff810bcac5>] kthread+0xe5/0xf0
-> [   22.909212]  [<ffffffff810bc9e0>] ? flush_kthread_worker+0x150/0x150
-> [   22.909218]  [<ffffffff818018ec>] ret_from_fork+0x7c/0xb0
-> [   22.909222]  [<ffffffff810bc9e0>] ? flush_kthread_worker+0x150/0x150
-> [   22.909226] ---[ end trace a42128a3e17e6268 ]---
-> [   22.909261] smpboot: CPU 2 is now offline
-> [   23.044977] smpboot: CPU 3 is now offline
->
->
-> Martin
->
-> .
->
+> 
+> At first, thank you for the report and please follow the email writing
+> rules. :)
+> 
+> Anyway, I agree to the below issue.
+> One thing that I can think of is that we don't need to use the
+> spin_lock, since we don't care about the exact lock number, but just
+> need to get any not-collided number.
+
+Agree, but if all the locks are held, IMO, we need to balance the following
+threads to wait for each not-collided number lock, though complete balance is unreachable.
+
+> 
+> So, how about removing the spin_lock?
+
+Yeah, in this case, spin_lock is a bit heavy cost. 
+
+> And how about using a random number?
+
+Now NR_GLOBAL_LOCKS is 8, it seems that random can not offer an balance number as we expected.
+
+Regards,
+Gu 
+
+> Thanks,
+> 
+> 2013-09-06 (금), 09:48 +0000, Chao Yu:
+>> Hi Kim:
+>>
+>>      I think there is a performance problem: when all sbi->fs_lock is
+>> holded, 
+>>
+>> then all other threads may get the same next_lock value from
+>> sbi->next_lock_num in function mutex_lock_op, 
+>>
+>> and wait to get the same lock at position fs_lock[next_lock], it
+>> unbalance the fs_lock usage. 
+>>
+>> It may lost performance when we do the multithread test.
+>>
+>>  
+>>
+>> Here is the patch to fix this problem:
+>>
+>>  
+>>
+>> Signed-off-by: Yu Chao <chao2.yu@samsung.com>
+>>
+>> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+>>
+>> old mode 100644
+>>
+>> new mode 100755
+>>
+>> index 467d42d..983bb45
+>>
+>> --- a/fs/f2fs/f2fs.h
+>>
+>> +++ b/fs/f2fs/f2fs.h
+>>
+>> @@ -371,6 +371,7 @@ struct f2fs_sb_info {
+>>
+>>         struct mutex fs_lock[NR_GLOBAL_LOCKS];  /* blocking FS
+>> operations */
+>>
+>>         struct mutex node_write;                /* locking node writes
+>> */
+>>
+>>         struct mutex writepages;                /* mutex for
+>> writepages() */
+>>
+>> +       spinlock_t spin_lock;                   /* lock for
+>> next_lock_num */
+>>
+>>         unsigned char next_lock_num;            /* round-robin global
+>> locks */
+>>
+>>         int por_doing;                          /* recovery is doing
+>> or not */
+>>
+>>         int on_build_free_nids;                 /* build_free_nids is
+>> doing */
+>>
+>> @@ -533,15 +534,19 @@ static inline void mutex_unlock_all(struct
+>> f2fs_sb_info *sbi)
+>>
+>>  
+>>
+>>  static inline int mutex_lock_op(struct f2fs_sb_info *sbi)
+>>
+>>  {
+>>
+>> -       unsigned char next_lock = sbi->next_lock_num %
+>> NR_GLOBAL_LOCKS;
+>>
+>> +       unsigned char next_lock;
+>>
+>>         int i = 0;
+>>
+>>  
+>>
+>>         for (; i < NR_GLOBAL_LOCKS; i++)
+>>
+>>                 if (mutex_trylock(&sbi->fs_lock[i]))
+>>
+>>                         return i;
+>>
+>>  
+>>
+>> -       mutex_lock(&sbi->fs_lock[next_lock]);
+>>
+>> +       spin_lock(&sbi->spin_lock);
+>>
+>> +       next_lock = sbi->next_lock_num % NR_GLOBAL_LOCKS;
+>>
+>>         sbi->next_lock_num++;
+>>
+>> +       spin_unlock(&sbi->spin_lock);
+>>
+>> +
+>>
+>> +       mutex_lock(&sbi->fs_lock[next_lock]);
+>>
+>>         return next_lock;
+>>
+>>  }
+>>
+>>  
+>>
+>> diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+>>
+>> old mode 100644
+>>
+>> new mode 100755
+>>
+>> index 75c7dc3..4f27596
+>>
+>> --- a/fs/f2fs/super.c
+>>
+>> +++ b/fs/f2fs/super.c
+>>
+>> @@ -657,6 +657,7 @@ static int f2fs_fill_super(struct super_block *sb,
+>> void *data, int silent)
+>>
+>>         mutex_init(&sbi->cp_mutex);
+>>
+>>         for (i = 0; i < NR_GLOBAL_LOCKS; i++)
+>>
+>>                 mutex_init(&sbi->fs_lock[i]);
+>>
+>> +       spin_lock_init(&sbi->spin_lock);
+>>
+>>         mutex_init(&sbi->node_write);
+>>
+>>         sbi->por_doing = 0;
+>>
+>>         spin_lock_init(&sbi->stat_lock);
+>>
+>> (END)
+>>
+>>  
+>>
+>>
+>>
+>>
+> 
 
 
