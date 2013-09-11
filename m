@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755344Ab3IKPd0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 11:33:26 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:59954 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754367Ab3IKPdW (ORCPT
+	id S1755386Ab3IKPdd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 11:33:33 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:37335 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754367Ab3IKPda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 11:33:22 -0400
+	Wed, 11 Sep 2013 11:33:30 -0400
+Message-ID: <52308D47.409@hurleysoftware.com>
+Date: Wed, 11 Sep 2013 11:33:27 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <20130911131323.GQ31370@twins.programming.kicks-ass.net>
-References: <20130910130811.507933095@infradead.org>
-	<20130910135152.GD7537@gmail.com>
-	<20130910135636.GA8268@gmail.com>
-	<CA+55aFwmEQeF+PtM7cuaQ8OkuTS=R4JJ61Wwfv8u-Svo-V3KwQ@mail.gmail.com>
-	<20130910164519.GL31370@twins.programming.kicks-ass.net>
-	<CA+55aFz7WtcdkwKEGoqCzmC9HsY0LPK-oVK_oATYhRnbGq=2GA@mail.gmail.com>
-	<20130910212509.GA18147@laptop.programming.kicks-ass.net>
-	<CA+55aFxsEYQPXnoxNXAeSPEkk3uT8iq-_KJVe2M2qZZbtL=cbA@mail.gmail.com>
-	<20130911131323.GQ31370@twins.programming.kicks-ass.net>
-Date: Wed, 11 Sep 2013 08:33:21 -0700
-X-Google-Sender-Auth: WkOr5S_XUdLyoeKdUu2s8p326Cw
-Message-ID: <CA+55aFyxcHvQUe_h8cyQrNbGJ6-G_NQnK9pVenABLjCF-7WMXg@mail.gmail.com>
-Subject: Re: [PATCH 0/7] preempt_count rework -v2
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Peter Anvin <hpa@zytor.com>, Mike Galbraith <bitbucket@online.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: John Tapsell <johnflux@gmail.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Deadlock in fb and tty
+References: <CAHQ6N+pQpfmG-b_9iv0Ajg5EYPjfEK0=KYcQa0DLVmyN8VKZrQ@mail.gmail.com>
+In-Reply-To: <CAHQ6N+pQpfmG-b_9iv0Ajg5EYPjfEK0=KYcQa0DLVmyN8VKZrQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 6:13 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, Sep 10, 2013 at 02:43:06PM -0700, Linus Torvalds wrote:
->> That said, looking at your patch, I get the *very* strong feeling that
->> we could make a macro that does all the repetitions for us, and then
->> have a
->>
->>   GENERATE_RMW(atomic_sub_and_test, LOCK_PREFIX "subl", "e", "")
+On 09/11/2013 05:25 AM, John Tapsell wrote:
+> Hi,
+>    I'm consistently and constantly hitting a deadlock.
 >
-> The below seems to compile..
+> console_callback in drivers/tty/vt/vt.c does:  console_lock()  and then calls:
+>    do_blank_screen, which calls:
+>      vc->vc_sw->con_blank(..)  which can be a pointer to the function:
+>        fbcon_blank in video/console/fbcon.c.  This is missing a
+> WARN_CONSOLE_UNLOCKED.  This calls:
+>          fbcon_generic_blank which does lock_fb_info(info)
+>
+> So we have a console_lock() followed by a lock_fb_info(info).
+>
+> Now if while that is running, we have an ioctl call:
+>
+> do_fb_ioctl in drivers/video/fbmem.c which does:
+>                 if (!lock_fb_info(info))
+>                          return -ENODEV;
+>                  console_lock();
+>
+>
+> So it tries to acquire the same locks in the reverse order.  This
+> deadlocks consistently for me.
+>
+> (I'm also curious why I'm hitting this continually, when everyone else
+> seems to be okay.)
+>
+> I understand that this is really difficult to fix, but if anyone has
+> even a suggestion on how to hack it to make it work for me, I'd be
+> very grateful.
 
-You have that horrible duplication in the macro itself now, though.
+As a temporary workaround, you can disable timed console blanking on the
+kernel command line with 'consoleblank=0'.
 
-The only difference between the 4-byte and the 8-byte one is the "l"
-vs "q". And the counter increment/decrement argument (by the caller)
-defines whether it's add/dec/inc. Why not just add those as parameters
-to the macro, and suddenly the macro becomes 10x smaller.
+Regards,
+Peter Hurley
 
-An excessively complex macro that makes the arguments trivially
-simpler is not worth it.
-
-Especially since that excessive macro complexity now means that your
-macro is useless for things that the *simpler* macro could have done,
-like the bit-test-and-modify cases.
-
-So your complexity actually makes things worse.
-
-So just pass in the operation name and size. Then somebody will use it
-for test_and_set_bit() and friends too.
-
-              Linus
