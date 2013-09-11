@@ -1,82 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab3IKBEQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 21:04:16 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:65174 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500Ab3IKBEP (ORCPT
+	id S1753447Ab3IKBFx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 21:05:53 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:10836 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752158Ab3IKBFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 21:04:15 -0400
-X-AuditID: 9c93017e-b7c76ae000003897-33-522fc18d1a07
-Date: Wed, 11 Sep 2013 10:04:34 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [REPOST PATCH 3/4] slab: introduce byte sized index for the
- freelist of a slab
-Message-ID: <20130911010434.GB24671@lge.com>
-References: <1378447067-19832-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1378447067-19832-4-git-send-email-iamjoonsoo.kim@lge.com>
- <00000140f3fed229-f49b95d4-7087-476f-b2c9-37846749aad6-000000@email.amazonses.com>
- <20130909043217.GB22390@lge.com>
- <00000141032dea11-c5aa9c77-b2f2-4cab-b7a0-d37665a6cec8-000000@email.amazonses.com>
- <20130910054342.GB24602@lge.com>
- <0000014109c372c6-5f3c49d4-ce8b-4760-b80d-a32e042ec09b-000000@email.amazonses.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0000014109c372c6-5f3c49d4-ce8b-4760-b80d-a32e042ec09b-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 10 Sep 2013 21:05:52 -0400
+X-AuditID: cbfee68e-b7f756d000004512-26-522fc1eeb937
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Michael Opdenacker'" <michael.opdenacker@free-electrons.com>
+Cc: davem@davemloft.net, jogo@openwrt.org, joe@perches.com, mbizon@freebox.fr,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1378537010-7128-1-git-send-email-michael.opdenacker@free-electrons.com>
+In-reply-to: <1378537010-7128-1-git-send-email-michael.opdenacker@free-electrons.com>
+Subject: Re: [PATCH] bcm63xx_enet: remove deprecated IRQF_DISABLED
+Date: Wed, 11 Sep 2013 10:05:50 +0900
+Message-id: <003101ceae8b$0e6dff20$2b49fd60$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac6rl3C6Qd+8H+p1QVaB6nqAHTrOWwC83w6w
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKIsWRmVeSWpSXmKPExsVy+t8zQ913B/WDDE6/N7eYc76FxWL2/ccs
+	FrfXnWKzuLxrDpvFjb0vmC0eTFjFZnFsgZgDu8eWlTeZPJ5susjosb7/PovHlsUZHl9WXWP2
+	+LxJLoAtissmJTUnsyy1SN8ugSujYdNStoKJLBVHf01jbWDcwtzFyMkhIWAisXT1NBYIW0zi
+	wr31bF2MXBxCAssYJT6+mMQCU/R/yTtmiMQiRomZ32ZDOb8YJebtXcIOUsUmoCbx5cthIJuD
+	Q0TAQeL/BxOQGmaBVkaJSV37mUBqhATCJK7s/wBWzykQLnF88zGwM4QFnCQuHLvJBmKzCKhK
+	/NnXAraZV8BW4viqe0wQtqDEj8n3wOLMAloS63ceZ4Kw5SU2r3nLDLJXQkBd4tFfXZCwiICR
+	xLtH55khSkQk9r14xwhyj4TAV3aJ89dmQe0SkPg2+RALRK+sxKYD0FCRlDi44gbLBEaJWUg2
+	z0KyeRaSzbOQrFjAyLKKUTS1ILmgOCm9yEivODG3uDQvXS85P3cTIySK+3Yw3jxgfYgxGWj9
+	RGYp0eR8YBLIK4k3NDYzsjA1MTU2Mrc0I01YSZxXrcU6UEggPbEkNTs1tSC1KL6oNCe1+BAj
+	EwenVANjzF+76hMVrR3SR/1To+59O3x5lfbhbdv8rkrOzj0T+iM9tTlnI0fnIo7Xe662r568
+	J21tTXTOlN2H556eLFyXH9M987v5RP6AHcbGBo9DJYS5Pq9Zyfg28Zm+s+QeUwWxGzWNe2Oc
+	Vjw7vjzYTyFcZe7iA6xBnxdwhc+SXx19ImHq/MUqB7pTlViKMxINtZiLihMBMdYfL/gCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrEKsWRmVeSWpSXmKPExsVy+t9jAd13B/WDDI59MraYc76FxWL2/ccs
+	FrfXnWKzuLxrDpvFjb0vmC0eTFjFZnFsgZgDu8eWlTeZPJ5susjosb7/PovHlsUZHl9WXWP2
+	+LxJLoAtqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNct
+	MwfoFCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jRsOmpWwFE1kqjv6a
+	xtrAuIW5i5GTQ0LAROL/kndQtpjEhXvr2boYuTiEBBYxSsz8NpsZwvnFKDFv7xJ2kCo2ATWJ
+	L18OA9kcHCICDhL/P5iA1DALtDJKTOrazwRSIyQQJnFl/wewek6BcInjm4+BbRAWcJK4cOwm
+	G4jNIqAq8WdfCwuIzStgK3F81T0mCFtQ4sfke2BxZgEtifU7jzNB2PISm9e8ZQbZKyGgLvHo
+	ry5IWETASOLdo/PMECUiEvtevGOcwCg0C8mkWUgmzUIyaRaSlgWMLKsYRVMLkguKk9JzjfSK
+	E3OLS/PS9ZLzczcxglPEM+kdjKsaLA4xCnAwKvHw3pDTDxJiTSwrrsw9xCjBwawkwjvVCSjE
+	m5JYWZValB9fVJqTWnyIMRno0YnMUqLJ+cD0lVcSb2hsYmZkaWRmYWRibk6asJI478FW60Ah
+	gfTEktTs1NSC1CKYLUwcnFINjEW3PZf3f1B8Lr7GYfbk0sqDxwN4J+ld0CySWLZsqi//9eaH
+	G+yKub+mZnAv+nzrj1flBF1HU3sDh8stiVGWyatEJQ7/nOymuPZQToh8iW/peqG2W1fLdHRT
+	AvgaDvzZlbjynjSDelL+Vf+8Vas2rtkScrt6gQr7OWbDD8lHZGNqpnW9+XktU4mlOCPRUIu5
+	qDgRANMhaPhVAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 09:25:05PM +0000, Christoph Lameter wrote:
-> On Tue, 10 Sep 2013, Joonsoo Kim wrote:
+On Saturday, September 07, 2013 3:57 PM, Michael Opdenacker wrote:
 > 
-> > On Mon, Sep 09, 2013 at 02:44:03PM +0000, Christoph Lameter wrote:
-> > > On Mon, 9 Sep 2013, Joonsoo Kim wrote:
-> > >
-> > > > 32 byte is not minimum object size, minimum *kmalloc* object size
-> > > > in default configuration. There are some slabs that their object size is
-> > > > less than 32 byte. If we have a 8 byte sized kmem_cache, it has 512 objects
-> > > > in 4K page.
-> > >
-> > > As far as I can recall only SLUB supports 8 byte objects. SLABs mininum
-> > > has always been 32 bytes.
-> >
-> > No.
-> > There are many slabs that their object size are less than 32 byte.
-> > And I can also create a 8 byte sized slab in my kernel with SLAB.
+> This patch proposes to remove the IRQF_DISABLED flag from
+> drivers/net/ethernet/broadcom/bcm63xx_enet.c
 > 
-> Well the minimum size for the kmalloc array is 32 bytes. These are custom
-> slabs. KMALLOC_SHIFT_LOW is set to 5 in include/linux/slab.h.
+> It's a NOOP since 2.6.35 and it will be removed one day.
 > 
-> Ok so there are some slabs like that. Hmmm.. We have sizes 16 and 24 in
-> your list. 16*256 is still 4096. So this would still work fine if we would
-> forbid a size of 8 or increase that by default to 16.
-> 
-> > > On x86 f.e. it would add useless branching. The branches are never taken.
-> > > You only need these if you do bad things to the system like requiring
-> > > large contiguous allocs.
-> >
-> > As I said before, since there is a possibility that some runtime loaded modules
-> > use a 8 byte sized slab, we can't determine index size in compile time. Otherwise
-> > we should always use short int sized index and I think that it is worse than
-> > adding a branch.
-> 
-> We can enforce a mininum slab size and an order limit so that it fits. And
-> then there would be no additional branching.
-> 
+> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 
-Okay. I will respin this patchset with your suggestion.
+Reviewed-by: Jingoo Han <jg1.han@samsung.com>
 
-Anyway, could you review my previous patchset, that is, 'overload struct slab
-over struct page to reduce memory usage'? I'm not sure whether your answer is
-ack or not.
+Best regards,
+Jingoo Han
 
-Thanks.
+> ---
+>  drivers/net/ethernet/broadcom/bcm63xx_enet.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+
