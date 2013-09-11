@@ -1,86 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560Ab3IKKMK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 06:12:10 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:52950 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752631Ab3IKKMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 06:12:06 -0400
-Message-ID: <523040B5.60407@ti.com>
-Date: Wed, 11 Sep 2013 15:36:45 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1753640Ab3IKKMh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 06:12:37 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:62326 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753371Ab3IKKMd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 06:12:33 -0400
 MIME-Version: 1.0
-To: Koen Kooi <koen@dominion.thruhere.net>
-CC: <linux-omap@vger.kernel.org>, <bcousson@baylibre.com>, <tony@atomide.com>,
-        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ijc+devicetree@hellion.org.uk>, <linux@arm.linux.org.uk>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] am335x-boneblack: add eMMC DT entry
-References: <1378879946-13037-1-git-send-email-koen@dominion.thruhere.net> <1378879946-13037-3-git-send-email-koen@dominion.thruhere.net>
-In-Reply-To: <1378879946-13037-3-git-send-email-koen@dominion.thruhere.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [86.59.245.170]
+In-Reply-To: <52208313.6000700@parallels.com>
+References: <20130812163935.10366.88320.stgit@maximpc.sw.ru>
+	<20130816112854.5630.1907.stgit@maximpc.sw.ru>
+	<20130829154110.GB19636@tucsk.piliscsaba.szeredi.hu>
+	<521F7672.7050407@parallels.com>
+	<20130829163744.GC19636@tucsk.piliscsaba.szeredi.hu>
+	<CAJfpegszfc9_ZkGGHg84VvOdmWz1=zWCnHRDbVOWf6_c-oJAXA@mail.gmail.com>
+	<CAJfpegueaj7dF1SL68=pKSTO-q6RnbD-D=C65B8RGEPC4_DMfQ@mail.gmail.com>
+	<52208313.6000700@parallels.com>
+Date: Wed, 11 Sep 2013 12:12:31 +0200
+Message-ID: <CAJfpeguOTuZQFVpKQ5aDVxEPDrmzt_bKwXpiNrXv5yVegoA0QA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] fuse: wait for writeback in fuse_file_fallocate() -v2
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Maxim Patlasov <mpatlasov@parallels.com>
+Cc: fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Brian Foster <bfoster@redhat.com>,
+        Pavel Emelianov <xemul@parallels.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>, devel@openvz.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 11 September 2013 11:42 AM, Koen Kooi wrote:
-> Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
-> ---
->  arch/arm/boot/dts/am335x-bone-common.dtsi |  7 +++++++
->  arch/arm/boot/dts/am335x-boneblack.dts    | 15 +++++++++++++++
->  2 files changed, 22 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
-> index ced256c..9c61fef 100644
-> --- a/arch/arm/boot/dts/am335x-bone-common.dtsi
-> +++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
-> @@ -241,6 +241,13 @@
->  			regulator-always-on;
->  		};
->  	};
-> +
-> +	vmmcsd_fixed: fixedregulator@0 {
-> +		compatible = "regulator-fixed";
-> +		regulator-name = "vmmcsd_fixed";
-> +		regulator-min-microvolt = <3300000>;
-> +		regulator-max-microvolt = <3300000>;
-> +	};
->  };
->  
->  &cpsw_emac0 {
-> diff --git a/arch/arm/boot/dts/am335x-boneblack.dts b/arch/arm/boot/dts/am335x-boneblack.dts
-> index 197cadf..c09947a 100644
-> --- a/arch/arm/boot/dts/am335x-boneblack.dts
-> +++ b/arch/arm/boot/dts/am335x-boneblack.dts
-> @@ -15,3 +15,18 @@
->  	regulator-max-microvolt = <1800000>;
->  	regulator-always-on;
->  };
-> +
-> +&mmc1 { 
-> +	vmmc-supply = <&vmmcsd_fixed>;
-> +};
-> +
-> +&mmc2 { 
-> +	vmmc-supply = <&vmmcsd_fixed>;
-> +	pinctrl-names = "default";
-> +	pinctrl-0 = <&emmc_pins>;
-> +	bus-width = <8>;
-> +	ti,non-removable;
+On Fri, Aug 30, 2013 at 1:33 PM, Maxim Patlasov <mpatlasov@parallels.com> wrote:
+> 08/30/2013 01:13 PM, Miklos Szeredi пишет:
+>
+>> On Thu, Aug 29, 2013 at 6:41 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+>>>
+>>> BTW, isn't it enough to do the filemap_write_and_wait() *plus* the
+>>> fuse_set_nowrite()?
+>>
+>> Thought about it a bit and I think this should do fine.
+>>
+>> Any writes before the fallocate will go trough before the fallocate.
+>> i_mutex guarantees that only one instance of fuse_set_nowrite() is
+>> running.  Any mmaped writes during the fallocate() will go after the
+>> fallocate request and the page cache truncation and that's fine too.
+>> Page cache is consistent since it doens't contain pages for those
+>> writes to the hole.  Subsequent reads to that area will fill them in.
+>>
+>> Any other concerns?
+>
+>
+> No. What you suggest looks as a neat and correct solution. I'll resend the
+> updated patch after some testing (since now till Monday).
+>
+> As for proof-of-correctness, all you wrote above is correct, but the first
+> point had been boiling my mind for a while. I came to the following
+> reasoning (hopefully it is what you meant):
+>
+> The fact that filemap_write_and_wait() returned infers that
+> end_page_writeback() was called for all relevant pages. And fuse doesn't
+> call it before adding request to fi->queued_writes and calling
+> fuse_flush_writepages(). And the latter, in turn, guarantees proper
+> accounting of request in fi->writectr. Here, of course, it's crucial that we
+> can't have concurrent fuse_set_nowrite(), as you explained. Hence, so far as
+> fi->writectr was bumped, fuse_set_nowrite() we call after
+> filemap_write_and_wait() would wait until all changes have gone to the
+> server.
 
-There is a standard binding available for this: "non-removable"
-There should not be a need to introduce a TI specific binding for this
-(I know this is not your fault).
-
-I will send a patch to change the existing .dts files and update the
-driver - can you drop this line for now so we don't introduce more
-incompatibilities? I can send a patch adding "non-removable" to this
-node as part of my clean-up series.
+Any news about this?
 
 Thanks,
-Sekhar
-
+Miklos
