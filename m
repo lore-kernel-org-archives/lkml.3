@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249Ab3IKLSq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 07:18:46 -0400
-Received: from mga14.intel.com ([143.182.124.37]:9938 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754058Ab3IKLSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 07:18:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,883,1371106800"; 
-   d="scan'208";a="358908394"
-Date: Wed, 11 Sep 2013 14:24:06 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Aaron Lu <aaron.lu@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-i2c@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lv Zheng <lv.zheng@intel.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RESEND 1/2] i2c: prepare runtime PM support for I2C
- client devices
-Message-ID: <20130911112406.GB7393@intel.com>
-References: <1378733679-19500-1-git-send-email-mika.westerberg@linux.intel.com>
- <3397524.g9aUWuArnm@vostro.rjw.lan>
- <20130910213522.GG29403@sirena.org.uk>
- <2029393.u6DaKBPszu@vostro.rjw.lan>
- <522FC0DC.9030708@intel.com>
- <20130911095552.GI29403@sirena.org.uk>
- <20130911110543.GA7393@intel.com>
- <20130911111409.GO29403@sirena.org.uk>
+	id S1755286Ab3IKLTp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 07:19:45 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:11824 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752478Ab3IKLTm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 07:19:42 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 11 Sep 2013 04:19:41 -0700
+From: Bill Huang <bilhuang@nvidia.com>
+To: <rjw@sisk.pl>, <viresh.kumar@linaro.org>, <swarren@wwwdotorg.org>
+CC: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        Bill Huang <bilhuang@nvidia.com>
+Subject: [PATCH 0/2] Remodel Tegra cpufreq driver to support Tegra series SoCs 
+Date: Wed, 11 Sep 2013 04:19:12 -0700
+Message-ID: <1378898355-31290-1-git-send-email-bilhuang@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130911111409.GO29403@sirena.org.uk>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 12:14:09PM +0100, Mark Brown wrote:
-> On Wed, Sep 11, 2013 at 02:05:43PM +0300, Mika Westerberg wrote:
-> 
-> > I'll also look into converting the existing I2C client drivers to use this
-> > method. One question, though, is it better to have the conversion in the
-> > same patch that introduces the I2C core runtime PM change or as a separate
-> > patch?
-> 
-> In theory it ought to be part of the same patch but in practice a brief
-> bit of bisection breakage on a single branch is probably worth the ease
-> of review from my point of view, others may disagree though.
+This patch series remodel Tegra cpufreq driver to make it more easy to
+add new SoC support, in addition to that, adding probe function in the
+driver to let probe defer can be used to control init sequence when we
+going to support DVFS.
 
-OK, I'll keep them separate, unless there are objections.
+Bill Huang (2):
+  cpufreq: tegra: Remove not used header and clean up codes
+  cpufreq: tegra: Re-model Tegra cpufreq driver
 
-> Like I say I think you'll need to convert SPI at the same time due to the
-> devices with both buses sharing code.
+ arch/arm/mach-tegra/common.c      |    2 +
+ drivers/cpufreq/Kconfig.arm       |   16 +++-
+ drivers/cpufreq/Makefile          |    1 +
+ drivers/cpufreq/tegra-cpufreq.c   |  192 +++++++++++++++++--------------------
+ drivers/cpufreq/tegra-cpufreq.h   |   37 +++++++
+ drivers/cpufreq/tegra20-cpufreq.c |  133 +++++++++++++++++++++++++
+ include/linux/tegra-soc.h         |   11 ++-
+ 7 files changed, 283 insertions(+), 109 deletions(-)
+ create mode 100644 drivers/cpufreq/tegra-cpufreq.h
+ create mode 100644 drivers/cpufreq/tegra20-cpufreq.c
 
-Yes, I'm looking into that :)
+-- 
+1.7.9.5
+
