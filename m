@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757383Ab3IKT6q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 15:58:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65295 "EHLO mx1.redhat.com"
+	id S1757211Ab3IKT5Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 15:57:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61286 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757242Ab3IKT5T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 15:57:19 -0400
+	id S1755250Ab3IKT5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 15:57:12 -0400
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
         Kees Cook <keescook@chromium.org>,
         Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 05/10] HID: LG: validate HID output report details
-Date: Wed, 11 Sep 2013 21:56:54 +0200
-Message-Id: <1378929419-6269-6-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH v3 01/10] HID: provide a helper for validating hid reports
+Date: Wed, 11 Sep 2013 21:56:50 +0200
+Message-Id: <1378929419-6269-2-git-send-email-benjamin.tissoires@redhat.com>
 In-Reply-To: <1378929419-6269-1-git-send-email-benjamin.tissoires@redhat.com>
 References: <1378929419-6269-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -22,18 +22,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kees Cook <keescook@chromium.org>
 
-A HID device could send a malicious output report that would cause the
-lg, lg3, and lg4 HID drivers to write beyond the output report allocation
-during an event, causing a heap overflow:
-
-[  325.245240] usb 1-1: New USB device found, idVendor=046d, idProduct=c287
-...
-[  414.518960] BUG kmalloc-4096 (Not tainted): Redzone overwritten
-
-Additionally, while lg2 did correctly validate the report details, it was
-cleaned up and shortened.
-
-CVE-2013-2893
+Many drivers need to validate the characteristics of their HID report
+during initialization to avoid misusing the reports. This adds a common
+helper to perform validation of the report exisitng, the field existing,
+and the expected number of values within the field.
 
 Signed-off-by: Kees Cook <keescook@chromium.org>
 Cc: stable@vger.kernel.org
@@ -42,174 +34,99 @@ Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 v3:
  - no changes
 
- drivers/hid/hid-lg2ff.c | 19 +++----------------
- drivers/hid/hid-lg3ff.c | 29 ++++++-----------------------
- drivers/hid/hid-lg4ff.c | 20 +-------------------
- drivers/hid/hid-lgff.c  | 17 ++---------------
- 4 files changed, 12 insertions(+), 73 deletions(-)
+v2:
+ - suggestions from Benjamin Tissoires:
+  - check id too, just to be double-safe.
+  - updated to check a specific field, moving the for loop to callers.
 
-diff --git a/drivers/hid/hid-lg2ff.c b/drivers/hid/hid-lg2ff.c
-index b3cd150..1a42eaa 100644
---- a/drivers/hid/hid-lg2ff.c
-+++ b/drivers/hid/hid-lg2ff.c
-@@ -64,26 +64,13 @@ int lg2ff_init(struct hid_device *hid)
- 	struct hid_report *report;
- 	struct hid_input *hidinput = list_entry(hid->inputs.next,
- 						struct hid_input, list);
--	struct list_head *report_list =
--			&hid->report_enum[HID_OUTPUT_REPORT].report_list;
- 	struct input_dev *dev = hidinput->input;
- 	int error;
+ drivers/hid/hid-core.c | 58 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/hid.h    |  4 ++++
+ 2 files changed, 62 insertions(+)
+
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 2c77854..44b6c68 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -801,6 +801,64 @@ int hid_parse_report(struct hid_device *hid, __u8 *start, unsigned size)
+ }
+ EXPORT_SYMBOL_GPL(hid_parse_report);
  
--	if (list_empty(report_list)) {
--		hid_err(hid, "no output report found\n");
-+	/* Check that the report looks ok */
-+	report = hid_validate_values(hid, HID_OUTPUT_REPORT, 0, 0, 7);
-+	if (!report)
- 		return -ENODEV;
--	}
--
--	report = list_entry(report_list->next, struct hid_report, list);
--
--	if (report->maxfield < 1) {
--		hid_err(hid, "output report is empty\n");
--		return -ENODEV;
--	}
--	if (report->field[0]->report_count < 7) {
--		hid_err(hid, "not enough values in the field\n");
--		return -ENODEV;
--	}
- 
- 	lg2ff = kmalloc(sizeof(struct lg2ff_device), GFP_KERNEL);
- 	if (!lg2ff)
-diff --git a/drivers/hid/hid-lg3ff.c b/drivers/hid/hid-lg3ff.c
-index e52f181..8c2da18 100644
---- a/drivers/hid/hid-lg3ff.c
-+++ b/drivers/hid/hid-lg3ff.c
-@@ -66,10 +66,11 @@ static int hid_lg3ff_play(struct input_dev *dev, void *data,
- 	int x, y;
- 
- /*
-- * Maxusage should always be 63 (maximum fields)
-- * likely a better way to ensure this data is clean
-+ * Available values in the field should always be 63, but we only use up to
-+ * 35. Instead, clear the entire area, however big it is.
-  */
--	memset(report->field[0]->value, 0, sizeof(__s32)*report->field[0]->maxusage);
-+	memset(report->field[0]->value, 0,
-+	       sizeof(__s32) * report->field[0]->report_count);
- 
- 	switch (effect->type) {
- 	case FF_CONSTANT:
-@@ -129,32 +130,14 @@ static const signed short ff3_joystick_ac[] = {
- int lg3ff_init(struct hid_device *hid)
- {
- 	struct hid_input *hidinput = list_entry(hid->inputs.next, struct hid_input, list);
--	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
- 	struct input_dev *dev = hidinput->input;
--	struct hid_report *report;
--	struct hid_field *field;
- 	const signed short *ff_bits = ff3_joystick_ac;
- 	int error;
- 	int i;
- 
--	/* Find the report to use */
--	if (list_empty(report_list)) {
--		hid_err(hid, "No output report found\n");
--		return -1;
--	}
--
- 	/* Check that the report looks ok */
--	report = list_entry(report_list->next, struct hid_report, list);
--	if (!report) {
--		hid_err(hid, "NULL output report\n");
--		return -1;
--	}
--
--	field = report->field[0];
--	if (!field) {
--		hid_err(hid, "NULL field\n");
--		return -1;
--	}
-+	if (!hid_validate_values(hid, HID_OUTPUT_REPORT, 0, 0, 35))
-+		return -ENODEV;
- 
- 	/* Assume single fixed device G940 */
- 	for (i = 0; ff_bits[i] >= 0; i++)
-diff --git a/drivers/hid/hid-lg4ff.c b/drivers/hid/hid-lg4ff.c
-index 0ddae2a..8782fe1 100644
---- a/drivers/hid/hid-lg4ff.c
-+++ b/drivers/hid/hid-lg4ff.c
-@@ -484,34 +484,16 @@ static enum led_brightness lg4ff_led_get_brightness(struct led_classdev *led_cde
- int lg4ff_init(struct hid_device *hid)
- {
- 	struct hid_input *hidinput = list_entry(hid->inputs.next, struct hid_input, list);
--	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
- 	struct input_dev *dev = hidinput->input;
--	struct hid_report *report;
--	struct hid_field *field;
- 	struct lg4ff_device_entry *entry;
- 	struct lg_drv_data *drv_data;
- 	struct usb_device_descriptor *udesc;
- 	int error, i, j;
- 	__u16 bcdDevice, rev_maj, rev_min;
- 
--	/* Find the report to use */
--	if (list_empty(report_list)) {
--		hid_err(hid, "No output report found\n");
--		return -1;
--	}
--
- 	/* Check that the report looks ok */
--	report = list_entry(report_list->next, struct hid_report, list);
--	if (!report) {
--		hid_err(hid, "NULL output report\n");
-+	if (!hid_validate_values(hid, HID_OUTPUT_REPORT, 0, 0, 7))
- 		return -1;
--	}
--
--	field = report->field[0];
--	if (!field) {
--		hid_err(hid, "NULL field\n");
--		return -1;
--	}
- 
- 	/* Check what wheel has been connected */
- 	for (i = 0; i < ARRAY_SIZE(lg4ff_devices); i++) {
-diff --git a/drivers/hid/hid-lgff.c b/drivers/hid/hid-lgff.c
-index d7ea8c8..e1394af 100644
---- a/drivers/hid/hid-lgff.c
-+++ b/drivers/hid/hid-lgff.c
-@@ -128,27 +128,14 @@ static void hid_lgff_set_autocenter(struct input_dev *dev, u16 magnitude)
- int lgff_init(struct hid_device* hid)
- {
- 	struct hid_input *hidinput = list_entry(hid->inputs.next, struct hid_input, list);
--	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
- 	struct input_dev *dev = hidinput->input;
--	struct hid_report *report;
--	struct hid_field *field;
- 	const signed short *ff_bits = ff_joystick;
- 	int error;
- 	int i;
- 
--	/* Find the report to use */
--	if (list_empty(report_list)) {
--		hid_err(hid, "No output report found\n");
--		return -1;
--	}
--
- 	/* Check that the report looks ok */
--	report = list_entry(report_list->next, struct hid_report, list);
--	field = report->field[0];
--	if (!field) {
--		hid_err(hid, "NULL field\n");
--		return -1;
--	}
-+	if (!hid_validate_values(hid, HID_OUTPUT_REPORT, 0, 0, 7))
-+		return -ENODEV;
- 
- 	for (i = 0; i < ARRAY_SIZE(devices); i++) {
- 		if (dev->id.vendor == devices[i].idVendor &&
++static const char * const hid_report_names[] = {
++	"HID_INPUT_REPORT",
++	"HID_OUTPUT_REPORT",
++	"HID_FEATURE_REPORT",
++};
++/**
++ * hid_validate_values - validate existing device report's value indexes
++ *
++ * @device: hid device
++ * @type: which report type to examine
++ * @id: which report ID to examine (0 for first)
++ * @field_index: which report field to examine
++ * @report_counts: expected number of values
++ *
++ * Validate the number of values in a given field of a given report, after
++ * parsing.
++ */
++struct hid_report *hid_validate_values(struct hid_device *hid,
++				       unsigned int type, unsigned int id,
++				       unsigned int field_index,
++				       unsigned int report_counts)
++{
++	struct hid_report *report;
++
++	if (type > HID_FEATURE_REPORT) {
++		hid_err(hid, "invalid HID report type %u\n", type);
++		return NULL;
++	}
++
++	if (id >= HID_MAX_IDS) {
++		hid_err(hid, "invalid HID report id %u\n", id);
++		return NULL;
++	}
++
++	/*
++	 * Explicitly not using hid_get_report() here since it depends on
++	 * ->numbered being checked, which may not always be the case when
++	 * drivers go to access report values.
++	 */
++	report = hid->report_enum[type].report_id_hash[id];
++	if (!report) {
++		hid_err(hid, "missing %s %u\n", hid_report_names[type], id);
++		return NULL;
++	}
++	if (report->maxfield <= field_index) {
++		hid_err(hid, "not enough fields in %s %u\n",
++			hid_report_names[type], id);
++		return NULL;
++	}
++	if (report->field[field_index]->report_count < report_counts) {
++		hid_err(hid, "not enough values in %s %u field %u\n",
++			hid_report_names[type], id, field_index);
++		return NULL;
++	}
++	return report;
++}
++EXPORT_SYMBOL_GPL(hid_validate_values);
++
+ /**
+  * hid_open_report - open a driver-specific device report
+  *
+diff --git a/include/linux/hid.h b/include/linux/hid.h
+index ee1ffc5..31b9d29 100644
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -756,6 +756,10 @@ u8 *hid_alloc_report_buf(struct hid_report *report, gfp_t flags);
+ struct hid_device *hid_allocate_device(void);
+ struct hid_report *hid_register_report(struct hid_device *device, unsigned type, unsigned id);
+ int hid_parse_report(struct hid_device *hid, __u8 *start, unsigned size);
++struct hid_report *hid_validate_values(struct hid_device *hid,
++				       unsigned int type, unsigned int id,
++				       unsigned int field_index,
++				       unsigned int report_counts);
+ int hid_open_report(struct hid_device *device);
+ int hid_check_keys_pressed(struct hid_device *hid);
+ int hid_connect(struct hid_device *hid, unsigned int connect_mask);
 -- 
 1.8.3.1
 
