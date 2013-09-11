@@ -1,116 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754581Ab3IKO3H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 10:29:07 -0400
-Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:26387 "EHLO
-	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752595Ab3IKO3E (ORCPT
+	id S1754639Ab3IKO3O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 10:29:14 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:58545 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754594Ab3IKO3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 10:29:04 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-Cc: Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: [PATCH 2/2] dcache: use read_seqlock/unlock() in read_seqbegin_or_lock() & friend
-Date: Wed, 11 Sep 2013 10:28:27 -0400
-Message-Id: <1378909707-3347-2-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1378909707-3347-1-git-send-email-Waiman.Long@hp.com>
-References: <1378909707-3347-1-git-send-email-Waiman.Long@hp.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
+	Wed, 11 Sep 2013 10:29:10 -0400
+Date: Wed, 11 Sep 2013 10:29:09 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Lucas De Marchi <lucas.de.marchi@gmail.com>
+cc: Tom Gundersen <teg@jklm.no>, <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-modules@vger.kernel.org" <linux-modules@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] usb: ohci/uhci - add soft dependencies on ehci_hcd
+In-Reply-To: <CAKi4VAJeXoBu=kr8nhMJFneNwGFP8TFiDNNzdwQC4imyefe_jQ@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1309111015000.1352-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch modifies read_seqbegin_or_lock() and need_seqretry() to
-use newly introduced read_seqlock() and read_sequnlock() primitives
-so that they won't change the sequence number even if they fall back
-to take the lock.  This is OK as no change to the protected data
-structure is being made. It will prevent one fallback to lock taking
-from cascading into a series of lock taking reducing performance
-because of the sequence number change. It will also allow other
-sequence reader to go ahead while a reader lock is taken.
+On Tue, 10 Sep 2013, Lucas De Marchi wrote:
 
-This patch also updates some of the inaccurate comments in the code.
+> >>> > The ordering is more of a recommendation than a necessity.  Systems
+> >>> > should work oksy if the modules are loaded in the wrong order.
+> >>> >
+> >>> > The only issue if the drivers are loaded in the wrong order is that
+> >>> > full- and low-speed devices will end up being detected and enumerated
+> >>> > twice, with a disconnection in between.  This can result in
+> >>> > disconcerting messages appearing in the system log.
+> >>> >
+> >>> > In theory, it is possible for a problem to arise.  For example, suppose
+> >>> > a full-speed flash drive is plugged in when the system starts up.
+> >>> > When uhci-hcd or ohci-hcd gets loaded, the drive will be detected and
+> >>> > it may even be mounted.  Then when ehci-hcd loads, the drive will get
+> >>> > disconnected and reconnected.  Any open file references to the original
+> >>> > mount will be orphaned.
+> 
+> Then IMO it should not only be advised to have this dependency, but
+> also require it.
 
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
----
- fs/dcache.c |   31 ++++++++++++++++---------------
- 1 files changed, 16 insertions(+), 15 deletions(-)
+Requiring the ordering won't fix all the possible problems.  For
+example, ehci-pci might be compiled into the kernel while ohci-pci is
+built as a module (although this probably could be prevented by
+tweaking the Kconfig file).
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 4d9df3c..8191ca5 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -90,8 +90,8 @@ static struct kmem_cache *dentry_cache __read_mostly;
- 
- /**
-  * read_seqbegin_or_lock - begin a sequence number check or locking block
-- * lock: sequence lock
-- * seq : sequence number to be checked
-+ * @lock: sequence lock
-+ * @seq : sequence number to be checked
-  *
-  * First try it once optimistically without taking the lock. If that fails,
-  * take the lock. The sequence number is also used as a marker for deciding
-@@ -103,7 +103,7 @@ static inline void read_seqbegin_or_lock(seqlock_t *lock, int *seq)
- 	if (!(*seq & 1))	/* Even */
- 		*seq = read_seqbegin(lock);
- 	else			/* Odd */
--		write_seqlock(lock);
-+		read_seqlock(lock);
- }
- 
- static inline int need_seqretry(seqlock_t *lock, int seq)
-@@ -114,7 +114,7 @@ static inline int need_seqretry(seqlock_t *lock, int seq)
- static inline void done_seqretry(seqlock_t *lock, int seq)
- {
- 	if (seq & 1)
--		write_sequnlock(lock);
-+		read_sequnlock(lock);
- }
- 
- /*
-@@ -2673,9 +2673,9 @@ static int prepend(char **buffer, int *buflen, const char *str, int namelen)
- 
- /**
-  * prepend_name - prepend a pathname in front of current buffer pointer
-- * buffer: buffer pointer
-- * buflen: allocated length of the buffer
-- * name:   name string and length qstr structure
-+ * @buffer: buffer pointer
-+ * @buflen: allocated length of the buffer
-+ * @name:   name string and length qstr structure
-  *
-  * With RCU path tracing, it may race with d_move(). Use ACCESS_ONCE() to
-  * make sure that either the old or the new name pointer and length are
-@@ -2713,14 +2713,15 @@ static int prepend_name(char **buffer, int *buflen, struct qstr *name)
-  * @buffer: pointer to the end of the buffer
-  * @buflen: pointer to buffer length
-  *
-- * The function tries to write out the pathname without taking any lock other
-- * than the RCU read lock to make sure that dentries won't go away. It only
-- * checks the sequence number of the global rename_lock as any change in the
-- * dentry's d_seq will be preceded by changes in the rename_lock sequence
-- * number. If the sequence number had been change, it will restart the whole
-- * pathname back-tracing sequence again. It performs a total of 3 trials of
-- * lockless back-tracing sequences before falling back to take the
-- * rename_lock.
-+ * The function will first try to write out the pathname without taking any
-+ * lock other than the RCU read lock to make sure that dentries won't go away.
-+ * It only checks the sequence number of the global rename_lock as any change
-+ * in the dentry's d_seq will be preceded by changes in the rename_lock
-+ * sequence number. If the sequence number had been changed, it will restart
-+ * the whole pathname back-tracing sequence again by taking the rename_lock.
-+ * In this case, there is no need to take the RCU read lock as the recursive
-+ * parent pointer references will keep the dentry chain alive as long as no
-+ * rename operation is performed.
-  */
- static int prepend_path(const struct path *path,
- 			const struct path *root,
--- 
-1.7.1
+> >> So this means that before installing ohci-hcd, modprobe would attempt
+> >> to install ehci-hcd?  And if the attempt failed, it would go ahead and
+> >> load ohci-hcd anyway?
+> >
+> > Exactly.
+> 
+> Not really. If we try to load the module, but then fail we fail the
+> operation altogether. Whereas if the module simply doesn't exist, then
+> we carry on. In reality what we do is to assume the indexes and
+> softdeps in configuration are correct)
+
+What if somebody really does want to load ohci-pci without loading 
+ehci-pci?  That is a perfectly valid thing to do (and I often want to 
+do it for testing).
+
+It sounds like the only way to accomplish this would be to load both 
+and then unload ehci-pci.  Yes?  Or would that unload ohci-pci as well?
+
+> >> What about during unloading?  Would this mean that rmmod ohci-hcd would
+> >> automatically cause ehci-hcd to be unloaded also?  Or would unloading
+> >> ehci-hcd cause ohci-hcd to be unloaded?
+> >
+> > No, unloading does not care about dependencies.
+> 
+> modprobe -r will remove then as well, in the opposite order, i.e. post
+> softdep, module, pre softdep.  However this applies only to modprobe,
+> not to the related function in libkmod since it would be weird to
+> other programs using this library function.
+
+Aside from testing, people hardly ever unload drivers.  So this is a 
+relatively minor concern.
+
+> Try playing with this in /etc/modprobe.d/bla.conf (and replace echo
+> with whatever unknown command to test a failure scenario):
+> install bla echo install bla
+> remove bla echo remove bla
+> softdep sr_mod pre: bla
+
+Good recommendation.
+
+Alan Stern
 
