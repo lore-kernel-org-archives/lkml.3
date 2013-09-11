@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756690Ab3IKFY1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 01:24:27 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22176 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754790Ab3IKE51 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754812Ab3IKE51 (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 11 Sep 2013 00:57:27 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=G8ghNgu__QwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=eIyRbJyRGiYA:10 a=3tcz3bTJAAAA:8 a=z9YpisxgAAAA:8 a=zd2uoN0lAAAA:8 a=VwQbUJbxAAAA:8 a=nkKllsvlNcJwJ5QE2NoA:9 a=fNDRuLxBvqwA:10 a=QZJjZt9HrgQA:10 a=wu_e27o_rKQA:10 a=jeBq3FmKZ4MA:10 a=2iN9eo8mxDlYbCnr:21 a=91xnS95OC1IulIBk:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3257 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754149Ab3IKE4u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 00:56:50 -0400
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=m30UeRl76NEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=cCY6eM4F4EIA:10 a=yPCof4ZbAAAA:8 a=ae4rsh5pGrf30fI6c7EA:9 a=7DSvI1NPTFQA:10 a=dvHDv6DFvjYA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042910.608927274@goodmis.org>
+Message-Id: <20130911042931.794771408@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:28:57 -0400
+Date: Wed, 11 Sep 2013 00:31:04 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Mark Kettenis <kettenis@openbsd.org>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [110/251] drm/radeon: fix combios tables on older cards
+Cc: Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Christian Kujau <lists@nerdbynature.de>
+Subject: [237/251] jfs: fix readdir cookie incompatibility with NFSv4
 References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0110-drm-radeon-fix-combios-tables-on-older-cards.patch
+Content-Disposition: inline; filename=0237-jfs-fix-readdir-cookie-incompatibility-with-NFSv4.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,294 +30,114 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mark Kettenis <kettenis@openbsd.org>
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
 
-[ Upstream commit cef1d00cd56f600121ad121875655ad410a001b8 ]
+[ Upstream commit 44512449c0ab368889dd13ae0031fba74ee7e1d2 ]
 
-Noticed that my old Radeon 7500 hung after printing
+NFSv4 reserves readdir cookie values 0-2 for special entries (. and ..),
+but jfs allows a value of 2 for a non-special entry. This incompatibility
+can result in the nfs client reporting a readdir loop.
 
-   drm: GPU not posted. posting now...
+This patch doesn't change the value stored internally, but adds one to
+the value exposed to the iterate method.
 
-when it wasn't selected as the primary card the BIOS.  Some digging
-revealed that it was hanging in combios_parse_mmio_table() while
-parsing the ASIC INIT 3 table.  Looking at the BIOS ROM for the card,
-it becomes obvious that there is no ASIC INIT 3 table in the BIOS.
-The code is just processing random garbage.  No surprise it hangs!
-
-Why do I say that there is no ASIC INIT 3 table is the BIOS?  This
-table is found through the MISC INFO table.  The MISC INFO table can
-be found at offset 0x5e in the COMBIOS header.  But the header is
-smaller than that.  The COMBIOS header starts at offset 0x126.  The
-standard PCI Data Structure (the bit that starts with 'PCIR') lives at
-offset 0x180.  That means that the COMBIOS header can not be larger
-than 0x5a bytes and therefore cannot contain a MISC INFO table.
-
-I looked at a dozen or so BIOS images, some my own, some downloaded from:
-
-    <http://www.techpowerup.com/vgabios/index.php?manufacturer=ATI&page=1>
-
-It is fairly obvious that the size of the COMBIOS header can be found
-at offset 0x6 of the header.  Not sure if it is a 16-bit number or
-just an 8-bit number, but that doesn't really matter since the tables
-seems to be always smaller than 256 bytes.
-
-So I think combios_get_table_offset() should check if the requested
-table is present.  This can be done by checking the offset against the
-size of the header.  See the diff below.  The diff is against the WIP
-OpenBSD codebase that roughly corresponds to Linux 3.8.13 at this
-point.  But I don't think this bit of the code changed much since
-then.
-
-For what it is worth:
-
-Signed-off-by: Mark Kettenis <kettenis@openbsd.org>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Cc: stable@vger.kernel.org
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Tested-by: Christian Kujau <lists@nerdbynature.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/gpu/drm/radeon/radeon_combios.c |  145 +++++++++----------------------
- 1 file changed, 41 insertions(+), 104 deletions(-)
+ fs/jfs/jfs_dtree.c |   31 +++++++++++++++++++++++--------
+ 1 file changed, 23 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_combios.c b/drivers/gpu/drm/radeon/radeon_combios.c
-index f75247d..16bd2a2 100644
---- a/drivers/gpu/drm/radeon/radeon_combios.c
-+++ b/drivers/gpu/drm/radeon/radeon_combios.c
-@@ -147,7 +147,7 @@ static uint16_t combios_get_table_offset(struct drm_device *dev,
- 					 enum radeon_combios_table_offset table)
- {
- 	struct radeon_device *rdev = dev->dev_private;
--	int rev;
-+	int rev, size;
- 	uint16_t offset = 0, check_offset;
+diff --git a/fs/jfs/jfs_dtree.c b/fs/jfs/jfs_dtree.c
+index 9197a1b..9f7c758 100644
+--- a/fs/jfs/jfs_dtree.c
++++ b/fs/jfs/jfs_dtree.c
+@@ -3047,6 +3047,14 @@ int jfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
  
- 	if (!rdev->bios)
-@@ -156,174 +156,106 @@ static uint16_t combios_get_table_offset(struct drm_device *dev,
- 	switch (table) {
- 		/* absolute offset tables */
- 	case COMBIOS_ASIC_INIT_1_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0xc);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0xc;
- 		break;
- 	case COMBIOS_BIOS_SUPPORT_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x14);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x14;
- 		break;
- 	case COMBIOS_DAC_PROGRAMMING_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x2a);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x2a;
- 		break;
- 	case COMBIOS_MAX_COLOR_DEPTH_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x2c);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x2c;
- 		break;
- 	case COMBIOS_CRTC_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x2e);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x2e;
- 		break;
- 	case COMBIOS_PLL_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x30);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x30;
- 		break;
- 	case COMBIOS_TV_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x32);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x32;
- 		break;
- 	case COMBIOS_DFP_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x34);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x34;
- 		break;
- 	case COMBIOS_HW_CONFIG_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x36);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x36;
- 		break;
- 	case COMBIOS_MULTIMEDIA_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x38);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x38;
- 		break;
- 	case COMBIOS_TV_STD_PATCH_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x3e);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x3e;
- 		break;
- 	case COMBIOS_LCD_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x40);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x40;
- 		break;
- 	case COMBIOS_MOBILE_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x42);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x42;
- 		break;
- 	case COMBIOS_PLL_INIT_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x46);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x46;
- 		break;
- 	case COMBIOS_MEM_CONFIG_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x48);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x48;
- 		break;
- 	case COMBIOS_SAVE_MASK_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x4a);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x4a;
- 		break;
- 	case COMBIOS_HARDCODED_EDID_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x4c);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x4c;
- 		break;
- 	case COMBIOS_ASIC_INIT_2_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x4e);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x4e;
- 		break;
- 	case COMBIOS_CONNECTOR_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x50);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x50;
- 		break;
- 	case COMBIOS_DYN_CLK_1_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x52);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x52;
- 		break;
- 	case COMBIOS_RESERVED_MEM_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x54);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x54;
- 		break;
- 	case COMBIOS_EXT_TMDS_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x58);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x58;
- 		break;
- 	case COMBIOS_MEM_CLK_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x5a);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x5a;
- 		break;
- 	case COMBIOS_EXT_DAC_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x5c);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x5c;
- 		break;
- 	case COMBIOS_MISC_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x5e);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x5e;
- 		break;
- 	case COMBIOS_CRT_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x60);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x60;
- 		break;
- 	case COMBIOS_INTEGRATED_SYSTEM_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x62);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x62;
- 		break;
- 	case COMBIOS_COMPONENT_VIDEO_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x64);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x64;
- 		break;
- 	case COMBIOS_FAN_SPEED_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x66);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x66;
- 		break;
- 	case COMBIOS_OVERDRIVE_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x68);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x68;
- 		break;
- 	case COMBIOS_OEM_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x6a);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x6a;
- 		break;
- 	case COMBIOS_DYN_CLK_2_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x6c);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x6c;
- 		break;
- 	case COMBIOS_POWER_CONNECTOR_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x6e);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x6e;
- 		break;
- 	case COMBIOS_I2C_INFO_TABLE:
--		check_offset = RBIOS16(rdev->bios_header_start + 0x70);
--		if (check_offset)
--			offset = check_offset;
-+		check_offset = 0x70;
- 		break;
- 		/* relative offset tables */
- 	case COMBIOS_ASIC_INIT_3_TABLE:	/* offset from misc info */
-@@ -439,11 +371,16 @@ static uint16_t combios_get_table_offset(struct drm_device *dev,
+ 		dir_index = (u32) filp->f_pos;
+ 
++		/*
++		 * NFSv4 reserves cookies 1 and 2 for . and .. so the value
++		 * we return to the vfs is one greater than the one we use
++		 * internally.
++		 */
++		if (dir_index)
++			dir_index--;
++
+ 		if (dir_index > 1) {
+ 			struct dir_table_slot dirtab_slot;
+ 
+@@ -3086,7 +3094,7 @@ int jfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
+ 			if (p->header.flag & BT_INTERNAL) {
+ 				jfs_err("jfs_readdir: bad index table");
+ 				DT_PUTPAGE(mp);
+-				filp->f_pos = -1;
++				filp->f_pos = DIREND;
+ 				return 0;
+ 			}
+ 		} else {
+@@ -3094,7 +3102,7 @@ int jfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
+ 				/*
+ 				 * self "."
+ 				 */
+-				filp->f_pos = 0;
++				filp->f_pos = 1;
+ 				if (filldir(dirent, ".", 1, 0, ip->i_ino,
+ 					    DT_DIR))
+ 					return 0;
+@@ -3102,7 +3110,7 @@ int jfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
+ 			/*
+ 			 * parent ".."
+ 			 */
+-			filp->f_pos = 1;
++			filp->f_pos = 2;
+ 			if (filldir(dirent, "..", 2, 1, PARENT(ip), DT_DIR))
+ 				return 0;
+ 
+@@ -3123,24 +3131,25 @@ int jfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
+ 		/*
+ 		 * Legacy filesystem - OS/2 & Linux JFS < 0.3.6
+ 		 *
+-		 * pn = index = 0:	First entry "."
+-		 * pn = 0; index = 1:	Second entry ".."
++		 * pn = 0; index = 1:	First entry "."
++		 * pn = 0; index = 2:	Second entry ".."
+ 		 * pn > 0:		Real entries, pn=1 -> leftmost page
+ 		 * pn = index = -1:	No more entries
+ 		 */
+ 		dtpos = filp->f_pos;
+-		if (dtpos == 0) {
++		if (dtpos < 2) {
+ 			/* build "." entry */
+ 
++			filp->f_pos = 1;
+ 			if (filldir(dirent, ".", 1, filp->f_pos, ip->i_ino,
+ 				    DT_DIR))
+ 				return 0;
+-			dtoffset->index = 1;
++			dtoffset->index = 2;
+ 			filp->f_pos = dtpos;
  		}
- 		break;
- 	default:
-+		check_offset = 0;
- 		break;
- 	}
  
--	return offset;
-+	size = RBIOS8(rdev->bios_header_start + 0x6);
-+	/* check absolute offset tables */
-+	if (table < COMBIOS_ASIC_INIT_3_TABLE && check_offset && check_offset < size)
-+		offset = RBIOS16(rdev->bios_header_start + check_offset);
+ 		if (dtoffset->pn == 0) {
+-			if (dtoffset->index == 1) {
++			if (dtoffset->index == 2) {
+ 				/* build ".." entry */
  
-+	return offset;
- }
- 
- bool radeon_combios_check_hardcoded_edid(struct radeon_device *rdev)
+ 				if (filldir(dirent, "..", 2, filp->f_pos,
+@@ -3233,6 +3242,12 @@ int jfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
+ 					}
+ 					jfs_dirent->position = unique_pos++;
+ 				}
++				/*
++				 * We add 1 to the index because we may
++				 * use a value of 2 internally, and NFSv4
++				 * doesn't like that.
++				 */
++				jfs_dirent->position++;
+ 			} else {
+ 				jfs_dirent->position = dtpos;
+ 				len = min(d_namleft, DTLHDRDATALEN_LEGACY);
 -- 
 1.7.10.4
 
