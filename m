@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173Ab3IKE5t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 00:57:49 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13847 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754171Ab3IKE4w (ORCPT
+	id S1753512Ab3IKFSk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 01:18:40 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:59623 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752281Ab3IKFSf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 00:56:52 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=X8zQNdknPfIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=azzlKQcQwaMA:10 a=yPCof4ZbAAAA:8 a=VwQbUJbxAAAA:8 a=vmLDa1wCAAAA:8 a=Fz6IrIf8AAAA:8 a=LRUlAfkmAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=iIk_mkYrZZwA:10 a=7DSvI1NPTFQA:10 a=gv_BBZfBKR8A:10 a=jeBq3FmKZ4MA:10 a=_FrHfP3VeMWOJM8q:21 a=_PvbjAdCCLacS7JE:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042930.375159854@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:30:56 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [229/251] Hostap: copying wrong data prism2_ioctl_giwaplist()
-References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0229-Hostap-copying-wrong-data-prism2_ioctl_giwaplist.patch
+	Wed, 11 Sep 2013 01:18:35 -0400
+Content-Type: text/plain; charset=US-ASCII
+Mime-Version: 1.0 (Mac OS X Mail 6.5 \(1508\))
+Subject: Re: [PATCH 0/3] ARM: dts: Enable EDMA, MMC and SPI on AM33XX for v3.13
+From: Koen Kooi <koen@dominion.thruhere.net>
+In-Reply-To: <522F7DC0.7030603@ti.com>
+Date: Wed, 11 Sep 2013 07:18:32 +0200
+Cc: Benoit Cousson <bcousson@baylibre.com>, Nishanth Menon <nm@ti.com>,
+        Devicetree Discuss <devicetree@vger.kernel.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <88E4C15C-B1AA-4A39-A5E1-CF9E8420C2BE@dominion.thruhere.net>
+References: <1378841079-15796-1-git-send-email-joelf@ti.com> <5EB8AE91-A996-4CF1-86B7-C8FDEC177E89@dominion.thruhere.net> <522F7DC0.7030603@ti.com>
+To: Joel Fernandes <joelf@ti.com>
+X-Mailer: Apple Mail (2.1508)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.9-rc1 stable review patch.
-If anyone has any objections, please let me know.
 
-------------------
+Op 10 sep. 2013, om 22:14 heeft Joel Fernandes <joelf@ti.com> het volgende geschreven:
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+> On 09/10/2013 02:39 PM, Koen Kooi wrote:
+>> 
+>> Op 10 sep. 2013, om 21:24 heeft Joel Fernandes <joelf@ti.com> het volgende geschreven:
+>> 
+>>> Here are last few patches required to add EDMA and MMC/SPI support for AM33xx.
+>>> 
+>>> Now that all dependent DMA patches and fixes are in linux next or mainline, except
+>>> for [1] which should go in for 3.12 -rc cycle, it is safe to enable MMC and SPI support
+>>> and this patch series enables it. These are originally Matt Porter's patches with
+>>> changes to make it work with recent kernels, addition of irq, memory resources and
+>>> enable other extra properties.
+>>> 
+>>> These patches should cleanly apply on master branch after Koen's patch [2] for basic
+>>> BBB DT support is applied.
+>>> 
+>>> MMC support is enabled for: Beaglebone, AM335x EVM and EVM-SK boards. MMC support
+>>> for BBB is intentionally not added due to custom fixes and other patches that are
+>>> in Koen's tree and which will be separately submitted by him.
+>> 
+>> Correct, but your patches for MMC support on BBW are missing the card detect entries to make it hotplug work.
+> 
+> I thought it was determined that this would be submitted by you separately after
+> rebasing as we discussed [1] and [2].
 
-[ Upstream commit 909bd5926d474e275599094acad986af79671ac9 ]
+I have no problem submitting that, I just think it's weird that the patch you submitted contains a known broken version for BBW.
 
-We want the data stored in "addr" and "qual", but the extra ampersands
-mean we are copying stack data instead.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- drivers/net/wireless/hostap/hostap_ioctl.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/wireless/hostap/hostap_ioctl.c b/drivers/net/wireless/hostap/hostap_ioctl.c
-index 18054d9..dbec2ff 100644
---- a/drivers/net/wireless/hostap/hostap_ioctl.c
-+++ b/drivers/net/wireless/hostap/hostap_ioctl.c
-@@ -522,9 +522,9 @@ static int prism2_ioctl_giwaplist(struct net_device *dev,
- 
- 	data->length = prism2_ap_get_sta_qual(local, addr, qual, IW_MAX_AP, 1);
- 
--	memcpy(extra, &addr, sizeof(struct sockaddr) * data->length);
-+	memcpy(extra, addr, sizeof(struct sockaddr) * data->length);
- 	data->flags = 1; /* has quality information */
--	memcpy(extra + sizeof(struct sockaddr) * data->length, &qual,
-+	memcpy(extra + sizeof(struct sockaddr) * data->length, qual,
- 	       sizeof(struct iw_quality) * data->length);
- 
- 	kfree(addr);
--- 
-1.7.10.4
-
+> 
+> [1] https://lkml.org/lkml/2013/9/6/183
+> [2] http://marc.info/?l=linux-omap&m=137879246709612&w=2
+> 
+> 
+> Regards,
+> 
+> -Joel
 
