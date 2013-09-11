@@ -1,230 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab3IKKRu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 06:17:50 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:39888 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752742Ab3IKKRs (ORCPT
+	id S1754167Ab3IKKS4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 06:18:56 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:46891 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753530Ab3IKKSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 06:17:48 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 5/5] cpufreq: add new routine cpufreq_verify_within_cpu_limits()
-Date: Wed, 11 Sep 2013 15:43:11 +0530
-Message-Id: <1cd624cd3fa9daef74b1075ae31b587ac2c7b466.1378893296.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1378893296.git.viresh.kumar@linaro.org>
-References: <cover.1378893296.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1378893296.git.viresh.kumar@linaro.org>
-References: <cover.1378893296.git.viresh.kumar@linaro.org>
+	Wed, 11 Sep 2013 06:18:55 -0400
+Date: Wed, 11 Sep 2013 06:18:30 -0400 (EDT)
+From: Jason Wang <jasowang@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org,
+        wannes rombouts <wannes.rombouts@epitech.eu>,
+        linux-kernel@vger.kernel.org
+Message-ID: <2041729417.12296527.1378894710024.JavaMail.root@redhat.com>
+In-Reply-To: <20130911100804.GA21091@redhat.com>
+References: <1378887845-6821-1-git-send-email-jasowang@redhat.com> <20130911093843.GA20836@redhat.com> <540640927.12279419.1378893304081.JavaMail.root@redhat.com> <20130911100804.GA21091@redhat.com>
+Subject: Re: [PATCH net] tuntap: correctly handle error in tun_set_iff()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.12]
+X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF17 (Linux)/8.0.3_GA_5664)
+Thread-Topic: tuntap: correctly handle error in tun_set_iff()
+Thread-Index: rdt7D4jqYBKb6ZXhLxYfkTos+cwtbw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most of the users of cpufreq_verify_within_limits() calls it for limiting with
-min/max from policy->cpuinfo. We can make that code simple by introducing
-another routine which will do this for them automatically.
 
-This patch adds another routine cpufreq_verify_within_cpu_limits() and updates
-others to use it.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/cpufreq-nforce2.c    | 4 +---
- drivers/cpufreq/davinci-cpufreq.c    | 4 +---
- drivers/cpufreq/freq_table.c         | 6 ++----
- drivers/cpufreq/integrator-cpufreq.c | 9 ++-------
- drivers/cpufreq/intel_pstate.c       | 4 +---
- drivers/cpufreq/longrun.c            | 4 +---
- drivers/cpufreq/pcc-cpufreq.c        | 3 +--
- drivers/cpufreq/sh-cpufreq.c         | 7 ++-----
- drivers/cpufreq/unicore2-cpufreq.c   | 4 +---
- include/linux/cpufreq.h              | 7 +++++++
- 10 files changed, 19 insertions(+), 33 deletions(-)
+----- Original Message -----
+> On Wed, Sep 11, 2013 at 05:55:04AM -0400, Jason Wang wrote:
+> > 
+> > 
+> > ----- Original Message -----
+> > > On Wed, Sep 11, 2013 at 04:24:05PM +0800, Jason Wang wrote:
+> > > > Commit c8d68e6be1c3b242f1c598595830890b65cea64a (tuntap: multiqueue
+> > > > support)
+> > > > only call free_netdev() on err in tun_set_iff(). This causes several
+> > > > issues:
+> > > > 
+> > > > - memory of tun security were leaked
+> > > 
+> > > Not just tun security -  sock reference too (didn't detach)
+> > > 
+> > 
+> > Yes, I mention it in the next item.
+> 
+> That line's a bit too long btw.
+> Keep it under 70 chars for commit logs.
+> 
 
-diff --git a/drivers/cpufreq/cpufreq-nforce2.c b/drivers/cpufreq/cpufreq-nforce2.c
-index b83d45f6..56c964c 100644
---- a/drivers/cpufreq/cpufreq-nforce2.c
-+++ b/drivers/cpufreq/cpufreq-nforce2.c
-@@ -303,9 +303,7 @@ static int nforce2_verify(struct cpufreq_policy *policy)
- 	if (policy->min < (fsb_pol_max * fid * 100))
- 		policy->max = (fsb_pol_max + 1) * fid * 100;
- 
--	cpufreq_verify_within_limits(policy,
--				     policy->cpuinfo.min_freq,
--				     policy->cpuinfo.max_freq);
-+	cpufreq_verify_within_cpu_limits(policy);
- 	return 0;
- }
- 
-diff --git a/drivers/cpufreq/davinci-cpufreq.c b/drivers/cpufreq/davinci-cpufreq.c
-index 551dd65..d049937 100644
---- a/drivers/cpufreq/davinci-cpufreq.c
-+++ b/drivers/cpufreq/davinci-cpufreq.c
-@@ -50,9 +50,7 @@ static int davinci_verify_speed(struct cpufreq_policy *policy)
- 	if (policy->cpu)
- 		return -EINVAL;
- 
--	cpufreq_verify_within_limits(policy, policy->cpuinfo.min_freq,
--				     policy->cpuinfo.max_freq);
--
-+	cpufreq_verify_within_cpu_limits(policy);
- 	policy->min = clk_round_rate(armclk, policy->min * 1000) / 1000;
- 	policy->max = clk_round_rate(armclk, policy->max * 1000) / 1000;
- 	cpufreq_verify_within_limits(policy, policy->cpuinfo.min_freq,
-diff --git a/drivers/cpufreq/freq_table.c b/drivers/cpufreq/freq_table.c
-index 53a2f1a..29ff77f 100644
---- a/drivers/cpufreq/freq_table.c
-+++ b/drivers/cpufreq/freq_table.c
-@@ -60,8 +60,7 @@ int cpufreq_frequency_table_verify(struct cpufreq_policy *policy,
- 	pr_debug("request for verification of policy (%u - %u kHz) for cpu %u\n",
- 					policy->min, policy->max, policy->cpu);
- 
--	cpufreq_verify_within_limits(policy, policy->cpuinfo.min_freq,
--				     policy->cpuinfo.max_freq);
-+	cpufreq_verify_within_cpu_limits(policy);
- 
- 	for (; freq = table[i].frequency, freq != CPUFREQ_TABLE_END; i++) {
- 		if (freq == CPUFREQ_ENTRY_INVALID)
-@@ -77,8 +76,7 @@ int cpufreq_frequency_table_verify(struct cpufreq_policy *policy,
- 
- 	if (!found) {
- 		policy->max = next_larger;
--		cpufreq_verify_within_limits(policy, policy->cpuinfo.min_freq,
--				policy->cpuinfo.max_freq);
-+		cpufreq_verify_within_cpu_limits(policy);
- 	}
- 
- 	pr_debug("verification lead to (%u - %u kHz) for cpu %u\n",
-diff --git a/drivers/cpufreq/integrator-cpufreq.c b/drivers/cpufreq/integrator-cpufreq.c
-index f7c99df..8152a9b 100644
---- a/drivers/cpufreq/integrator-cpufreq.c
-+++ b/drivers/cpufreq/integrator-cpufreq.c
-@@ -59,9 +59,7 @@ static int integrator_verify_policy(struct cpufreq_policy *policy)
- {
- 	struct icst_vco vco;
- 
--	cpufreq_verify_within_limits(policy, 
--				     policy->cpuinfo.min_freq, 
--				     policy->cpuinfo.max_freq);
-+	cpufreq_verify_within_cpu_limits(policy);
- 
- 	vco = icst_hz_to_vco(&cclk_params, policy->max * 1000);
- 	policy->max = icst_hz(&cclk_params, vco) / 1000;
-@@ -69,10 +67,7 @@ static int integrator_verify_policy(struct cpufreq_policy *policy)
- 	vco = icst_hz_to_vco(&cclk_params, policy->min * 1000);
- 	policy->min = icst_hz(&cclk_params, vco) / 1000;
- 
--	cpufreq_verify_within_limits(policy, 
--				     policy->cpuinfo.min_freq, 
--				     policy->cpuinfo.max_freq);
--
-+	cpufreq_verify_within_cpu_limits(policy);
- 	return 0;
- }
- 
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index 9733f29..a02bd77 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -611,9 +611,7 @@ static int intel_pstate_set_policy(struct cpufreq_policy *policy)
- 
- static int intel_pstate_verify_policy(struct cpufreq_policy *policy)
- {
--	cpufreq_verify_within_limits(policy,
--				policy->cpuinfo.min_freq,
--				policy->cpuinfo.max_freq);
-+	cpufreq_verify_within_cpu_limits(policy);
- 
- 	if ((policy->policy != CPUFREQ_POLICY_POWERSAVE) &&
- 		(policy->policy != CPUFREQ_POLICY_PERFORMANCE))
-diff --git a/drivers/cpufreq/longrun.c b/drivers/cpufreq/longrun.c
-index 5aa0316..074971b 100644
---- a/drivers/cpufreq/longrun.c
-+++ b/drivers/cpufreq/longrun.c
-@@ -129,9 +129,7 @@ static int longrun_verify_policy(struct cpufreq_policy *policy)
- 		return -EINVAL;
- 
- 	policy->cpu = 0;
--	cpufreq_verify_within_limits(policy,
--		policy->cpuinfo.min_freq,
--		policy->cpuinfo.max_freq);
-+	cpufreq_verify_within_cpu_limits(policy);
- 
- 	if ((policy->policy != CPUFREQ_POLICY_POWERSAVE) &&
- 	    (policy->policy != CPUFREQ_POLICY_PERFORMANCE))
-diff --git a/drivers/cpufreq/pcc-cpufreq.c b/drivers/cpufreq/pcc-cpufreq.c
-index d81c4e5..78787e9 100644
---- a/drivers/cpufreq/pcc-cpufreq.c
-+++ b/drivers/cpufreq/pcc-cpufreq.c
-@@ -111,8 +111,7 @@ static struct pcc_cpu __percpu *pcc_cpu_info;
- 
- static int pcc_cpufreq_verify(struct cpufreq_policy *policy)
- {
--	cpufreq_verify_within_limits(policy, policy->cpuinfo.min_freq,
--				     policy->cpuinfo.max_freq);
-+	cpufreq_verify_within_cpu_limits(policy);
- 	return 0;
- }
- 
-diff --git a/drivers/cpufreq/sh-cpufreq.c b/drivers/cpufreq/sh-cpufreq.c
-index ffc6d24..f671aa1 100644
---- a/drivers/cpufreq/sh-cpufreq.c
-+++ b/drivers/cpufreq/sh-cpufreq.c
-@@ -87,15 +87,12 @@ static int sh_cpufreq_verify(struct cpufreq_policy *policy)
- 	if (freq_table)
- 		return cpufreq_frequency_table_verify(policy, freq_table);
- 
--	cpufreq_verify_within_limits(policy, policy->cpuinfo.min_freq,
--				     policy->cpuinfo.max_freq);
-+	cpufreq_verify_within_cpu_limits(policy);
- 
- 	policy->min = (clk_round_rate(cpuclk, 1) + 500) / 1000;
- 	policy->max = (clk_round_rate(cpuclk, ~0UL) + 500) / 1000;
- 
--	cpufreq_verify_within_limits(policy, policy->cpuinfo.min_freq,
--				     policy->cpuinfo.max_freq);
--
-+	cpufreq_verify_within_cpu_limits(policy);
- 	return 0;
- }
- 
-diff --git a/drivers/cpufreq/unicore2-cpufreq.c b/drivers/cpufreq/unicore2-cpufreq.c
-index b225f04..14e6d31 100644
---- a/drivers/cpufreq/unicore2-cpufreq.c
-+++ b/drivers/cpufreq/unicore2-cpufreq.c
-@@ -29,9 +29,7 @@ static int ucv2_verify_speed(struct cpufreq_policy *policy)
- 	if (policy->cpu)
- 		return -EINVAL;
- 
--	cpufreq_verify_within_limits(policy,
--			policy->cpuinfo.min_freq, policy->cpuinfo.max_freq);
--
-+	cpufreq_verify_within_cpu_limits(policy);
- 	return 0;
- }
- 
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index e0a9f15..7f1dd61 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -242,6 +242,13 @@ static inline void cpufreq_verify_within_limits(struct cpufreq_policy *policy,
- 	return;
- }
- 
-+static inline void
-+cpufreq_verify_within_cpu_limits(struct cpufreq_policy *policy)
-+{
-+	cpufreq_verify_within_limits(policy, policy->cpuinfo.min_freq,
-+			policy->cpuinfo.max_freq);
-+}
-+
- /*********************************************************************
-  *                     CPUFREQ NOTIFIER INTERFACE                    *
-  *********************************************************************/
--- 
-1.7.12.rc2.18.g61b472e
+Ok.
+> > > > - use after free since the flow gc timer was not deleted and the tfile
+> > > > were
+> > > > not
+> > > >   detached
+> > > > 
+> > > > This patch solves the above issues.
+> > > > 
+> > > > Reported-by: Wannes Rombouts <wannes.rombouts@epitech.eu>
+> > > > Cc: Michael S. Tsirkin <mst@redhat.com>
+> > > > Signed-off-by: Jason Wang <jasowang@redhat.com>
+> > > > ---
+> > > > The patch were also needed for stable 3.8+.
+> > > > ---
+> > > >  drivers/net/tun.c |    9 +++++++--
+> > > >  1 files changed, 7 insertions(+), 2 deletions(-)
+> > > > 
+> > > > diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> > > > index a639de8..e5fb5d3 100644
+> > > > --- a/drivers/net/tun.c
+> > > > +++ b/drivers/net/tun.c
+> > > > @@ -1641,11 +1641,11 @@ static int tun_set_iff(struct net *net, struct
+> > > > file
+> > > > *file, struct ifreq *ifr)
+> > > >  		INIT_LIST_HEAD(&tun->disabled);
+> > > >  		err = tun_attach(tun, file, false);
+> > > >  		if (err < 0)
+> > > > -			goto err_free_dev;
+> > > > +			goto err_free_flow;
+> > > >  
+> > > >  		err = register_netdevice(tun->dev);
+> > > >  		if (err < 0)
+> > > > -			goto err_free_dev;
+> > > > +			goto err_detach;
+> > > >  
+> > > >  		if (device_create_file(&tun->dev->dev, &dev_attr_tun_flags) ||
+> > > >  		    device_create_file(&tun->dev->dev, &dev_attr_owner) ||
+> > > > @@ -1689,6 +1689,11 @@ static int tun_set_iff(struct net *net, struct
+> > > > file
+> > > > *file, struct ifreq *ifr)
+> > > >  	strcpy(ifr->ifr_name, tun->dev->name);
+> > > >  	return 0;
+> > > >  
+> > > > +err_detach:
+> > > > +	tun_detach_all(dev);
+> > > > +err_free_flow:
+> > > > +	tun_flow_uninit(tun);
+> > > > +	security_tun_dev_free_security(tun->security);
+> > > 
+> > > This bit looks wrong: if flow_init fails, we
+> > > need security_tun_dev_free_security, don't we?
+> > > I think we need:
+> > > 	+err_free_sec:	security_tun_dev_free_security(tun->security);
+> > > and goto here on flow_init failures.
+> > 
+> > tun_flow_init() always succeed. So we're ok here.
+> 
+> True. So please make it return void then.
+> 
 
+It has already returned void.
+> > > 
+> > > >   err_free_dev:
+> > > 
+> > > Pls shift this one 1 space left for consistency.
+> > > 
+> > 
+> > Ok.
+> > > >  	free_netdev(dev);
+> > > >  	return err;
+> > > > --
+> > > > 1.7.1
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+> > > in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > Please read the FAQ at  http://www.tux.org/lkml/
+> > > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
