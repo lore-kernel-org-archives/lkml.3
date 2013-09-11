@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932090Ab3IKT7f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 15:59:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61377 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757186Ab3IKT5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 15:57:14 -0400
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Kees Cook <keescook@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 03/10] HID: sony: validate HID output report details
-Date: Wed, 11 Sep 2013 21:56:52 +0200
-Message-Id: <1378929419-6269-4-git-send-email-benjamin.tissoires@redhat.com>
-In-Reply-To: <1378929419-6269-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1378929419-6269-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1756674Ab3IKUDM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 16:03:12 -0400
+Received: from mail-by2lp0237.outbound.protection.outlook.com ([207.46.163.237]:16863
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753710Ab3IKUDL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 16:03:11 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Wei Yongjun <weiyj.lk@gmail.com>, Haiyang Zhang <haiyangz@microsoft.com>
+CC: "yongjun_wei@trendmicro.com.cn" <yongjun_wei@trendmicro.com.cn>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] Drivers: hv: vmbus: fix error return code in
+ vmbus_connect()
+Thread-Topic: [PATCH] Drivers: hv: vmbus: fix error return code in
+ vmbus_connect()
+Thread-Index: AQHOruDXfDzmhxyj6EW2aZqcUVuzqJnA9YdQ
+Date: Wed, 11 Sep 2013 20:03:07 +0000
+Message-ID: <7463564f181640d2ad9658ce0ef7a7b5@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <CAPgLHd-5dt70Tn+3SXXu9QudpwpHaO1FNf-LZWQmDq413KLbQg@mail.gmail.com>
+In-Reply-To: <CAPgLHd-5dt70Tn+3SXXu9QudpwpHaO1FNf-LZWQmDq413KLbQg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:4898:80e0:ed43::5]
+x-forefront-prvs: 09669DB681
+x-forefront-antispam-report: SFV:NSPM;SFS:(51704005)(199002)(189002)(377454003)(13464003)(51856001)(31966008)(74662001)(80022001)(46102001)(19580405001)(19580395003)(83322001)(47446002)(33646001)(83072001)(74502001)(53806001)(74706001)(74876001)(81342001)(81542001)(69226001)(4396001)(56776001)(76482001)(54316002)(47736001)(47976001)(49866001)(63696002)(76576001)(77982001)(50986001)(56816003)(81816001)(77096001)(80976001)(76796001)(76786001)(59766001)(81686001)(65816001)(74366001)(74316001)(1511001)(54356001)(79102001)(24736002)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB061;H:SN2PR03MB061.namprd03.prod.outlook.com;CLIP:2001:4898:80e0:ed43::5;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: DuplicateDomain-a84fc36a-4ed7-4e57-ab1c-3e967bcbad48.microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kees Cook <keescook@chromium.org>
 
-This driver must validate the availability of the HID output report and
-its size before it can write LED states via buzz_set_leds(). This stops
-a heap overflow that is possible if a device provides a malicious HID
-output report:
 
-[  108.171280] usb 1-1: New USB device found, idVendor=054c, idProduct=0002
-...
-[  117.507877] BUG kmalloc-192 (Not tainted): Redzone overwritten
+> -----Original Message-----
+> From: Wei Yongjun [mailto:weiyj.lk@gmail.com]
+> Sent: Wednesday, September 11, 2013 4:20 AM
+> To: KY Srinivasan; Haiyang Zhang
+> Cc: yongjun_wei@trendmicro.com.cn; devel@linuxdriverproject.org; linux-
+> kernel@vger.kernel.org
+> Subject: [PATCH] Drivers: hv: vmbus: fix error return code in vmbus_connect()
+> 
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> 
+> Fix to return -EINVAL in the version check error handling
+> case instead of 0, as done elsewhere in this function.
 
-CVE-2013-2890
+The return will not be zero in this case. If you look at the function 
+vmbus_negotiate_version(), in case the host refuses the version, the
+return value will be set to -ECONNREFUSED
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: stable@vger.kernel.org
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
----
-v3:
- - no changes
+Regards,
 
- drivers/hid/hid-sony.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/drivers/hid/hid-sony.c b/drivers/hid/hid-sony.c
-index 30dbb6b..b18320d 100644
---- a/drivers/hid/hid-sony.c
-+++ b/drivers/hid/hid-sony.c
-@@ -537,6 +537,10 @@ static int buzz_init(struct hid_device *hdev)
- 	drv_data = hid_get_drvdata(hdev);
- 	BUG_ON(!(drv_data->quirks & BUZZ_CONTROLLER));
- 
-+	/* Validate expected report characteristics. */
-+	if (!hid_validate_values(hdev, HID_OUTPUT_REPORT, 0, 0, 7))
-+		return -ENODEV;
-+
- 	buzz = kzalloc(sizeof(*buzz), GFP_KERNEL);
- 	if (!buzz) {
- 		hid_err(hdev, "Insufficient memory, cannot allocate driver data\n");
--- 
-1.8.3.1
-
+K. Y
