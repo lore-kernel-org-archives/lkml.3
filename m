@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753780Ab3IKCxj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 22:53:39 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:45058 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753101Ab3IKCxh (ORCPT
+	id S1753841Ab3IKCx6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 22:53:58 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:38071 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753654Ab3IKCx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 22:53:37 -0400
-Subject: [PATCH V3 0/6] cpuidle/ppc: Enable broadcast support for deep idle
- states
+	Tue, 10 Sep 2013 22:53:57 -0400
+Subject: [PATCH V3 1/6] powerpc: Free up the IPI message slot of ipi call
+ function (PPC_MSG_CALL_FUNC)
 To: benh@kernel.crashing.org, paul.gortmaker@windriver.com, paulus@samba.org,
         shangw@linux.vnet.ibm.com, rjw@sisk.pl, galak@kernel.crashing.org,
         fweisbec@gmail.com, paulmck@linux.vnet.ibm.com, arnd@arndb.de,
@@ -19,102 +19,130 @@ To: benh@kernel.crashing.org, paul.gortmaker@windriver.com, paulus@samba.org,
         schwidefsky@de.ibm.com, svaidy@linux.vnet.ibm.com,
         linuxppc-dev@lists.ozlabs.org
 From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Date: Wed, 11 Sep 2013 08:20:49 +0530
-Message-ID: <20130911024906.27726.4735.stgit@preeti.in.ibm.com>
+Date: Wed, 11 Sep 2013 08:21:00 +0530
+Message-ID: <20130911025100.27726.95866.stgit@preeti.in.ibm.com>
+In-Reply-To: <20130911024906.27726.4735.stgit@preeti.in.ibm.com>
+References: <20130911024906.27726.4735.stgit@preeti.in.ibm.com>
 User-Agent: StGit/0.16-38-g167d
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091102-9332-0000-0000-0000016033FC
+x-cbid: 13091102-0928-0000-0000-0000017922F0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On PowerPC, when CPUs enter deep idle states, their local timers get
-switched off. An external clock device needs to programmed to wake them
-up at their next timer event.
-	On PowerPC, we do not have an external device equivalent to HPET,
-which is currently used on architectures like x86 under the same scenario.
-Instead we assign the local timer of one of the CPUs to do this job.
+From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-This patchset is an attempt to hook onto the existing timer broadcast
-framework in the kernel by using the local timer of one of the CPUs to do the
-job of the external clock device.
+The IPI handlers for both PPC_MSG_CALL_FUNC and PPC_MSG_CALL_FUNC_SINGLE map to
+a common implementation - generic_smp_call_function_single_interrupt(). So, we
+can consolidate them and save one of the IPI message slots, (which are precious,
+since only 4 of those slots are available).
 
-On expiry of this device, the broadcast framework today has the infrastructure
-to send ipis to all such CPUs whose local timers have expired. Hence the term
-"broadcast" and the ipi sent is called the broadcast ipi.
+So, implement the functionality of PPC_MSG_CALL_FUNC using
+PPC_MSG_CALL_FUNC_SINGLE itself and release its IPI message slot, so that it
+can be used for something else in the future, if desired.
 
-This patch series is ported ontop of 3.11-rc7 + the cpuidle driver backend
-for power posted by Deepthi Dharwar recently.
-http://comments.gmane.org/gmane.linux.ports.ppc.embedded/63556
-
-Changes in V3:
-
-1. Fix the way in which a broadcast ipi is handled on the idling cpus. Timer
-handling on a broadcast ipi is being done now without missing out any timer
-stats generation.
-
-2. Fix a bug in the programming of the hrtimer meant to do broadcast. Program
-it to trigger at the earlier of a "broadcast period", and the next wakeup
-event. By introducing the "broadcast period" as the maximum period after
-which the broadcast hrtimer can fire, we ensure that we do not miss
-wakeups in corner cases.
-
-3. On hotplug of a broadcast cpu, trigger the hrtimer meant to do broadcast
-to fire immediately on the new broadcast cpu. This will ensure we do not miss
-doing a broadcast pending in the nearest future.
-
-4. Change the type of allocation from GFP_KERNEL to GFP_NOWAIT while
-initializing bc_hrtimer since we are in an atomic context and cannot sleep.
-
-5. Use the broadcast ipi to wakeup the newly nominated broadcast cpu on
-hotplug of the old instead of smp_call_function_single(). This is because we
-are interrupt disabled at this point and should not be using
-smp_call_function_single or its children in this context to send an ipi.
-
-6. Move GENERIC_CLOCKEVENTS_BROADCAST to arch/powerpc/Kconfig.
-
-7. Fix coding style issues.
-
-Changes in V2: https://lkml.org/lkml/2013/8/14/239
-
-1. Dynamically pick a broadcast CPU, instead of having a dedicated one.
-2. Remove the constraint of having to disable tickless idle on the broadcast
-CPU by queueing a hrtimer dedicated to do broadcast.
-
-V1 posting: https://lkml.org/lkml/2013/7/25/740.
-
-The patchset has been tested for stability in idle and during multi threaded
-ebizzy runs.
-
-Many thanks to Ben H, Frederic Weisbecker, Li Yang, Srivatsa S. Bhat and
-Vaidyanathan Srinivasan for all their comments and suggestions so far.
-
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 ---
 
-Preeti U Murthy (4):
-      cpuidle/ppc: Split timer_interrupt() into timer handling and interrupt handling routines
-      cpuidle/ppc: Add basic infrastructure to support the broadcast framework on ppc
-      cpuidle/ppc: Introduce the deep idle state in which the local timers stop
-      cpuidle/ppc: Nominate new broadcast cpu on hotplug of the old
+ arch/powerpc/include/asm/smp.h          |    2 +-
+ arch/powerpc/kernel/smp.c               |   12 +++++-------
+ arch/powerpc/platforms/cell/interrupt.c |    2 +-
+ arch/powerpc/platforms/ps3/smp.c        |    2 +-
+ 4 files changed, 8 insertions(+), 10 deletions(-)
 
-Srivatsa S. Bhat (2):
-      powerpc: Free up the IPI message slot of ipi call function (PPC_MSG_CALL_FUNC)
-      powerpc: Implement broadcast timer interrupt as an IPI message
-
-
- arch/powerpc/Kconfig                    |    1 
- arch/powerpc/include/asm/smp.h          |    3 -
- arch/powerpc/include/asm/time.h         |    4 +
- arch/powerpc/kernel/smp.c               |   23 +++-
- arch/powerpc/kernel/time.c              |  143 ++++++++++++++++++++------
- arch/powerpc/platforms/cell/interrupt.c |    2 
- arch/powerpc/platforms/ps3/smp.c        |    2 
- drivers/cpuidle/cpuidle-ibm-power.c     |  172 +++++++++++++++++++++++++++++++
- scripts/kconfig/streamline_config.pl    |    0 
- 9 files changed, 307 insertions(+), 43 deletions(-)
- mode change 100644 => 100755 scripts/kconfig/streamline_config.pl
+diff --git a/arch/powerpc/include/asm/smp.h b/arch/powerpc/include/asm/smp.h
+index 48cfc85..a632b6e 100644
+--- a/arch/powerpc/include/asm/smp.h
++++ b/arch/powerpc/include/asm/smp.h
+@@ -117,7 +117,7 @@ extern int cpu_to_core_id(int cpu);
+  *
+  * Make sure this matches openpic_request_IPIs in open_pic.c, or what shows up
+  * in /proc/interrupts will be wrong!!! --Troy */
+-#define PPC_MSG_CALL_FUNCTION   0
++#define PPC_MSG_UNUSED		0
+ #define PPC_MSG_RESCHEDULE      1
+ #define PPC_MSG_CALL_FUNC_SINGLE	2
+ #define PPC_MSG_DEBUGGER_BREAK  3
+diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
+index 38b0ba6..bc41e9f 100644
+--- a/arch/powerpc/kernel/smp.c
++++ b/arch/powerpc/kernel/smp.c
+@@ -111,9 +111,9 @@ int smp_generic_kick_cpu(int nr)
+ }
+ #endif /* CONFIG_PPC64 */
+ 
+-static irqreturn_t call_function_action(int irq, void *data)
++static irqreturn_t unused_action(int irq, void *data)
+ {
+-	generic_smp_call_function_interrupt();
++	/* This slot is unused and hence available for use, if needed */
+ 	return IRQ_HANDLED;
+ }
+ 
+@@ -144,14 +144,14 @@ static irqreturn_t debug_ipi_action(int irq, void *data)
+ }
+ 
+ static irq_handler_t smp_ipi_action[] = {
+-	[PPC_MSG_CALL_FUNCTION] =  call_function_action,
++	[PPC_MSG_UNUSED] =  unused_action, /* Slot available for future use */
+ 	[PPC_MSG_RESCHEDULE] = reschedule_action,
+ 	[PPC_MSG_CALL_FUNC_SINGLE] = call_function_single_action,
+ 	[PPC_MSG_DEBUGGER_BREAK] = debug_ipi_action,
+ };
+ 
+ const char *smp_ipi_name[] = {
+-	[PPC_MSG_CALL_FUNCTION] =  "ipi call function",
++	[PPC_MSG_UNUSED] =  "ipi unused",
+ 	[PPC_MSG_RESCHEDULE] = "ipi reschedule",
+ 	[PPC_MSG_CALL_FUNC_SINGLE] = "ipi call function single",
+ 	[PPC_MSG_DEBUGGER_BREAK] = "ipi debugger",
+@@ -221,8 +221,6 @@ irqreturn_t smp_ipi_demux(void)
+ 		all = xchg(&info->messages, 0);
+ 
+ #ifdef __BIG_ENDIAN
+-		if (all & (1 << (24 - 8 * PPC_MSG_CALL_FUNCTION)))
+-			generic_smp_call_function_interrupt();
+ 		if (all & (1 << (24 - 8 * PPC_MSG_RESCHEDULE)))
+ 			scheduler_ipi();
+ 		if (all & (1 << (24 - 8 * PPC_MSG_CALL_FUNC_SINGLE)))
+@@ -265,7 +263,7 @@ void arch_send_call_function_ipi_mask(const struct cpumask *mask)
+ 	unsigned int cpu;
+ 
+ 	for_each_cpu(cpu, mask)
+-		do_message_pass(cpu, PPC_MSG_CALL_FUNCTION);
++		do_message_pass(cpu, PPC_MSG_CALL_FUNC_SINGLE);
+ }
+ 
+ #if defined(CONFIG_DEBUGGER) || defined(CONFIG_KEXEC)
+diff --git a/arch/powerpc/platforms/cell/interrupt.c b/arch/powerpc/platforms/cell/interrupt.c
+index 2d42f3b..28166e4 100644
+--- a/arch/powerpc/platforms/cell/interrupt.c
++++ b/arch/powerpc/platforms/cell/interrupt.c
+@@ -213,7 +213,7 @@ static void iic_request_ipi(int msg)
+ 
+ void iic_request_IPIs(void)
+ {
+-	iic_request_ipi(PPC_MSG_CALL_FUNCTION);
++	iic_request_ipi(PPC_MSG_UNUSED);
+ 	iic_request_ipi(PPC_MSG_RESCHEDULE);
+ 	iic_request_ipi(PPC_MSG_CALL_FUNC_SINGLE);
+ 	iic_request_ipi(PPC_MSG_DEBUGGER_BREAK);
+diff --git a/arch/powerpc/platforms/ps3/smp.c b/arch/powerpc/platforms/ps3/smp.c
+index 4b35166..488f069 100644
+--- a/arch/powerpc/platforms/ps3/smp.c
++++ b/arch/powerpc/platforms/ps3/smp.c
+@@ -74,7 +74,7 @@ static int __init ps3_smp_probe(void)
+ 		* to index needs to be setup.
+ 		*/
+ 
+-		BUILD_BUG_ON(PPC_MSG_CALL_FUNCTION    != 0);
++		BUILD_BUG_ON(PPC_MSG_UNUSED	      != 0);
+ 		BUILD_BUG_ON(PPC_MSG_RESCHEDULE       != 1);
+ 		BUILD_BUG_ON(PPC_MSG_CALL_FUNC_SINGLE != 2);
+ 		BUILD_BUG_ON(PPC_MSG_DEBUGGER_BREAK   != 3);
 
