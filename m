@@ -1,194 +1,365 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753587Ab3IKN01 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 09:26:27 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5901 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752170Ab3IKN0Z (ORCPT
+	id S1753863Ab3IKN03 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 09:26:29 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45237 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753525Ab3IKN01 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 09:26:25 -0400
-X-Authority-Analysis: v=2.0 cv=R/aB6KtX c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=wRe-vSF1Ob0A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=kSsn7R9otuIA:10 a=oExj5NFNAAAA:8 a=97CWKrAFWwtIgTIf3yEA:9 a=CjuIK1q_8ugA:10 a=r0HesoeFUbUA:10 a=i1XarcQiEwcA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Wed, 11 Sep 2013 09:26:23 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
+	Wed, 11 Sep 2013 09:26:27 -0400
+Date: Wed, 11 Sep 2013 15:26:17 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Peter Anvin <hpa@zytor.com>, Mike Galbraith <bitbucket@online.de>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Clark Williams <williams@redhat.com>,
-        Mario Kleiner <mario.kleiner@tuebingen.mpg.de>,
-        Dave Airlie <airlied@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: BUG: sleeping function called from invalid context on
- 3.10.10-rt7
-Message-ID: <20130911092623.42efd930@gandalf.local.home>
-In-Reply-To: <20130911102809.GA31663@uudg.org>
-References: <20130911102809.GA31663@uudg.org>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH 0/7] preempt_count rework -v2
+Message-ID: <20130911132616.GU26785@twins.programming.kicks-ass.net>
+References: <20130910130811.507933095@infradead.org>
+ <20130910135152.GD7537@gmail.com>
+ <20130910135636.GA8268@gmail.com>
+ <CA+55aFwmEQeF+PtM7cuaQ8OkuTS=R4JJ61Wwfv8u-Svo-V3KwQ@mail.gmail.com>
+ <20130910164519.GL31370@twins.programming.kicks-ass.net>
+ <CA+55aFz7WtcdkwKEGoqCzmC9HsY0LPK-oVK_oATYhRnbGq=2GA@mail.gmail.com>
+ <20130910212509.GA18147@laptop.programming.kicks-ass.net>
+ <CA+55aFxsEYQPXnoxNXAeSPEkk3uT8iq-_KJVe2M2qZZbtL=cbA@mail.gmail.com>
+ <20130911131323.GQ31370@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130911131323.GQ31370@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Sep 2013 07:28:09 -0300
-"Luis Claudio R. Goncalves" <lclaudio@uudg.org> wrote:
+On Wed, Sep 11, 2013 at 03:13:23PM +0200, Peter Zijlstra wrote:
+> On Tue, Sep 10, 2013 at 02:43:06PM -0700, Linus Torvalds wrote:
+> > That said, looking at your patch, I get the *very* strong feeling that
+> > we could make a macro that does all the repetitions for us, and then
+> > have a
+> > 
+> >   GENERATE_RMW(atomic_sub_and_test, LOCK_PREFIX "subl", "e", "")
+> 
+> The below seems to compile..
+> 
+> +#define GENERATE_ADDcc(var, val, lock, cc)				\
 
-> Hello,
-> 
-> I saw two different occurrences of "BUG: sleeping function called from
-> invalid context" happening on 3.10.10-rt7. The first one happened on
-> drm_vblank_get() -> i915_get_vblank_timestamp() and was flooding dmesg
-> after Xorg started. I silenced that with a hackish patch, just for fun, and
-> found a second problem, this time on tty_ldisc_reinit().
-> 
-> The logs:
-> 
-> [   23.973991] BUG: sleeping function called from invalid context at /home/lclaudio/SANDBOX/mrg-rt-v2-devel/kernel/rtmutex.c:659
-> [   23.973992] in_atomic(): 1, irqs_disabled(): 0, pid: 517, name: Xorg
-> [   23.973993] 2 locks held by Xorg/517:
-> [   23.973993]  #0: 
-> [   23.973994]  (
-> [   23.973994] &dev->vbl_lock
-> [   23.973995] ){......}
-> [   23.973995] , at: 
-> [   23.974007] [<ffffffffa0024c60>] drm_vblank_get+0x30/0x2b0 [drm]
-> [   23.974008]  #1: 
-> [   23.974008]  (
-> [   23.974008] &dev->vblank_time_lock
-> [   23.974008] ){......}
-> [   23.974009] , at: 
-> [   23.974013] [<ffffffffa0024ce1>] drm_vblank_get+0xb1/0x2b0 [drm]
-> [   23.974013] Preemption disabled at:
-> [   23.974021] [<ffffffffa008bc95>] i915_get_vblank_timestamp+0x45/0xa0 [i915]
-> [   23.974023] CPU: 3 PID: 517 Comm: Xorg Not tainted 3.10.10-rt7+ #5
-> [   23.974024] Hardware name: Hewlett-Packard p7-1512/2ADA, BIOS 8.15 02/05/2013
-> [   23.974024]  0000000000070008
-> [   23.974025]  ffff88017a08bae0
-> [   23.974025]  ffffffff8164b790
-> [   23.974025]  ffff88017a08baf8
-> [   23.974026]  ffffffff8107e62f
-> [   23.974026]  ffff880179840040
-> [   23.974026]  ffff88017a08bb18
-> [   23.974027]  ffffffff81651ac4
-> [   23.974027]  0000000000000002
-> [   23.974027]  ffff880179840000
-> [   23.974028]  ffff88017a08bb48
-> [   23.974028]  ffffffffa0084e67
-> [   23.974028] Call Trace:
-> [   23.974033]  [<ffffffff8164b790>] dump_stack+0x19/0x1b
-> [   23.974035]  [<ffffffff8107e62f>] __might_sleep+0xff/0x170
-> [   23.974037]  [<ffffffff81651ac4>] rt_spin_lock+0x24/0x60
-> [   23.974043]  [<ffffffffa0084e67>] i915_read32+0x27/0x170 [i915]
-> [   23.974048]  [<ffffffffa008a591>] i915_pipe_enabled+0x31/0x40 [i915]
-> [   23.974054]  [<ffffffffa008a6be>] i915_get_crtc_scanoutpos+0x3e/0x1b0 [i915]
-> [   23.974056]  [<ffffffff81087025>] ? sched_clock_cpu+0xb5/0x100
-> [   23.974062]  [<ffffffffa00245d4>] drm_calc_vbltimestamp_from_scanoutpos+0xf4/0x430 [drm]
-> [   23.974068]  [<ffffffffa008bc95>] i915_get_vblank_timestamp+0x45/0xa0 [i915]
-> [   23.974073]  [<ffffffffa0024998>] drm_get_last_vbltimestamp+0x48/0x70 [drm]
-> [   23.974078]  [<ffffffffa0024db5>] drm_vblank_get+0x185/0x2b0 [drm]
-> [   23.974079]  [<ffffffff81087025>] ? sched_clock_cpu+0xb5/0x100
-> [   23.974085]  [<ffffffffa0025d03>] drm_wait_vblank+0x83/0x5d0 [drm]
-> [   23.974086]  [<ffffffff81087025>] ? sched_clock_cpu+0xb5/0x100
-> [   23.974088]  [<ffffffff810af143>] ? __lock_acquire.isra.31+0x273/0xa70
-> [   23.974093]  [<ffffffffa00212a2>] drm_ioctl+0x552/0x6a0 [drm]
-> [   23.974096]  [<ffffffff8128d886>] ? avc_has_perm_flags+0x126/0x1c0
-> [   23.974098]  [<ffffffff8128d788>] ? avc_has_perm_flags+0x28/0x1c0
-> [   23.974099]  [<ffffffff810ad49e>] ? put_lock_stats.isra.23+0xe/0x40
-> [   23.974101]  [<ffffffff811a0095>] do_vfs_ioctl+0x325/0x5b0
-> [   23.974103]  [<ffffffff8128fc3e>] ? file_has_perm+0x8e/0xa0
-> [   23.974105]  [<ffffffff811a03a1>] SyS_ioctl+0x81/0xa0
-> [   23.974107]  [<ffffffff8165a342>] tracesys+0xdd/0xe2
-> 
-> 
-> and
-> 
-> 
-> [   25.423675] BUG: sleeping function called from invalid context at /home/lclaudio/SANDBOX/mrg-rt-v2-devel/kernel/rtmutex.c:659
-> [   25.423676] in_atomic(): 1, irqs_disabled(): 1, pid: 188, name: plymouthd
-> [   25.423676] 3 locks held by plymouthd/188:
-> [   25.423682]  #0:  (&tty->legacy_mutex){......}, at: [<ffffffff816528d0>] tty_lock_nested+0x40/0x90
-> [   25.423686]  #1:  (&tty->ldisc_mutex){......}, at: [<ffffffff8139b482>] tty_ldisc_hangup+0x152/0x300
-> [   25.423688]  #2:  (tty_ldisc_lock){......}, at: [<ffffffff8139a9c2>] tty_ldisc_reinit+0x72/0x130
-> [   25.423689] Preemption disabled at:[<ffffffff8139a9c2>] tty_ldisc_reinit+0x72/0x130
-> [   25.423691] CPU: 2 PID: 188 Comm: plymouthd Not tainted 3.10.10-rt7+ #6
-> [   25.423692] Hardware name: Hewlett-Packard p7-1512/2ADA, BIOS 8.15 02/05/2013
-> [   25.423694]  005ff00000000000 ffff8801788ada68 ffffffff8164b790 ffff8801788ada80
-> [   25.423695]  ffffffff8107e62f ffff8801991ce1a0 ffff8801788adaa0 ffffffff81651ac4
-> [   25.423696]  0000000000000000 ffffea0005e26680 ffff8801788adaf8 ffffffff81130984
-> [   25.423696] Call Trace:
-> [   25.423700]  [<ffffffff8164b790>] dump_stack+0x19/0x1b
-> [   25.423702]  [<ffffffff8107e62f>] __might_sleep+0xff/0x170
-> [   25.423704]  [<ffffffff81651ac4>] rt_spin_lock+0x24/0x60
-> [   25.423707]  [<ffffffff81130984>] free_hot_cold_page+0xb4/0x3c0
-> [   25.423710]  [<ffffffff81178209>] ?unfreeze_partials.isra.42+0x229/0x2b0
-> [   25.423711]  [<ffffffff81130dc7>] __free_pages+0x47/0x70
-> [   25.423713]  [<ffffffff81130fb2>] __free_memcg_kmem_pages+0x22/0x50
-> [   25.423714]  [<ffffffff81177528>] __free_slab+0xe8/0x1e0
-> [   25.423716]  [<ffffffff81177654>] free_delayed+0x34/0x50
-> [   25.423717]  [<ffffffff81649633>] __slab_free+0x273/0x36b
-> [   25.423719]  [<ffffffff810acde9>] ? get_lock_stats+0x19/0x60
-> [   25.423721]  [<ffffffff810ad49e>] ? put_lock_stats.isra.23+0xe/0x40
-> [   25.423722]  [<ffffffff81178794>] kfree+0x1c4/0x210
-> [   25.423724]  [<ffffffff8139a9f5>] ? tty_ldisc_reinit+0xa5/0x130
-> [   25.423725]  [<ffffffff8139a9f5>] tty_ldisc_reinit+0xa5/0x130
-> [   25.423726]  [<ffffffff8139b49f>] tty_ldisc_hangup+0x16f/0x300
-> [   25.423728]  [<ffffffff81082e1d>] ? get_parent_ip+0xd/0x50
-> [   25.423731]  [<ffffffff8104d736>] ? unpin_current_cpu+0x16/0x70
-> [   25.423732]  [<ffffffff81392136>] __tty_hangup+0x346/0x460
-> [   25.423733]  [<ffffffff81392260>] tty_vhangup+0x10/0x20
-> [   25.423735]  [<ffffffff8139d6e1>] pty_close+0x131/0x180
-> [   25.423736]  [<ffffffff813936ad>] tty_release+0x11d/0x5f0
-> [   25.423737]  [<ffffffff810acde9>] ? get_lock_stats+0x19/0x60
-> [   25.423747]  [<ffffffff81009d84>] ? native_sched_clock+0x24/0x80
-> [   25.423749]  [<ffffffff81087025>] ? sched_clock_cpu+0xb5/0x100
-> [   25.423750]  [<ffffffff810acde9>] ? get_lock_stats+0x19/0x60
-> [   25.423752]  [<ffffffff8118eb45>] __fput+0xf5/0x250
-> [   25.423762]  [<ffffffff8118ed6e>] ____fput+0xe/0x10
-> [   25.423764]  [<ffffffff8106f1cc>] task_work_run+0xac/0xe0
-> [   25.423765]  [<ffffffff81002a11>] do_notify_resume+0x91/0xf0
-> [   25.423767]  [<ffffffff8165a41c>] int_signal+0x12/0x17
-> 
-> 
-> About the hackish patch I used to silence the constant i915 complaints,
-> even though the comments on drm_calc_vbltimestamp_from_scanoutpos() state
-> the preempt_disable is there for a reason, I removed it for the RT case. I
-> really wanted to confirm if there was anything else after that complaint.
+And here's one that builds and is usable for per-cpu things too:
 
-The funny part is, there's a comment there that shows that this was
-done even for "PREEMPT_RT". Unfortunately, the call to
-"get_scanout_position()" can call functions that use the rt-mutex
-"sleeping spin locks" and it breaks there.
+static __always_inline bool __preempt_count_dec_and_test(void)
+{
+	GENERATE_ADDcc(__preempt_count, -1, "", __percpu_arg(0), "e");
+}
 
-I guess we need to ask the authors of the mainline patch exactly why
-that preempt_disable() is needed?
+---
+ arch/x86/include/asm/addcc.h       |  115 +++++++++++++++++++++++++++++++++++++
+ arch/x86/include/asm/atomic.h      |   29 +--------
+ arch/x86/include/asm/atomic64_64.h |   28 +--------
+ arch/x86/include/asm/local.h       |   28 +--------
+ 4 files changed, 128 insertions(+), 72 deletions(-)
 
--- Steve
-
-> 
-> diff --git a/drivers/gpu/drm/drm_irq.c b/drivers/gpu/drm/drm_irq.c
-> index f92da0a..bd2e8e2 100644
-> --- a/drivers/gpu/drm/drm_irq.c
-> +++ b/drivers/gpu/drm/drm_irq.c
-> @@ -631,7 +631,7 @@ int drm_calc_vbltimestamp_from_scanoutpos(struct drm_device *dev, int crtc,
->  		/* Disable preemption to make it very likely to
->  		 * succeed in the first iteration even on PREEMPT_RT kernel.
->  		 */
-> -		preempt_disable();
-> +		preempt_disable_nort();
->  
->  		/* Get system timestamp before query. */
->  		stime = ktime_get();
-> @@ -644,7 +644,7 @@ int drm_calc_vbltimestamp_from_scanoutpos(struct drm_device *dev, int crtc,
->  		if (!drm_timestamp_monotonic)
->  			mono_time_offset = ktime_get_monotonic_offset();
->  
-> -		preempt_enable();
-> +		preempt_enable_nort();
->  
->  		/* Return as no-op if scanout query unsupported or failed. */
->  		if (!(vbl_status & DRM_SCANOUTPOS_VALID)) {
-> 
-
+--- /dev/null
++++ b/arch/x86/include/asm/addcc.h
+@@ -0,0 +1,115 @@
++#ifndef _ASM_X86_ADDcc
++#define _ASM_X86_ADDcc
++
++extern void __bad_addcc_size(void);
++
++#ifdef CC_HAVE_ASM_GOTO
++
++#define GENERATE_ADDcc(var, val, lock, arg0, cc)			\
++do {									\
++	const int add_ID__ = (__builtin_constant_p(val) &&		\
++			((val) == 1 || (val) == -1)) ? (val) : 0;	\
++									\
++	switch (sizeof(var)) {						\
++	case 4:								\
++		if (add_ID__ == 1) {					\
++			asm volatile goto(lock "incl " arg0 ";"		\
++					  "j" cc " %l[cc_label]"	\
++					  : : "m" (var)			\
++					  : "memory" : cc_label);	\
++		} else if (add_ID__ == -1) {				\
++			asm volatile goto(lock "decl " arg0 ";"		\
++					  "j" cc " %l[cc_label]"	\
++					  : : "m" (var)			\
++					  : "memory" : cc_label);	\
++		} else {						\
++			asm volatile goto(lock "addl %1, " arg0 ";"	\
++					  "j" cc " %l[cc_label]"	\
++					  : : "m" (var), "er" (val)	\
++					  : "memory" : cc_label);	\
++		}							\
++		break;							\
++									\
++	case 8:								\
++		if (add_ID__ == 1) {					\
++			asm volatile goto(lock "incq " arg0 ";"		\
++					  "j" cc " %l[cc_label]"	\
++					  : : "m" (var)			\
++					  : "memory" : cc_label);	\
++		} else if (add_ID__ == -1) {				\
++			asm volatile goto(lock "decq " arg0 ";"		\
++					  "j" cc " %l[cc_label]"	\
++					  : : "m" (var)			\
++					  : "memory" : cc_label);	\
++		} else {						\
++			asm volatile goto(lock "addq %1, " arg0 ";"	\
++					  "j" cc " %l[cc_label]"	\
++					  : : "m" (var), "er" (val)	\
++					  : "memory" : cc_label);	\
++		}							\
++		break;							\
++									\
++	default: __bad_addcc_size();					\
++	}								\
++									\
++	return 0;							\
++cc_label:								\
++	return 1;							\
++} while (0)
++
++#else /* !CC_HAVE_ASM_GOTO */
++
++#define GENERATE_ADDcc(var, val, lock, arg0, cc)			\
++do {									\
++	const int add_ID__ = (__builtin_constant_p(val) &&		\
++			((val) == 1 || (val) == -1)) ? (val) : 0;	\
++	char c;								\
++									\
++	switch (sizeof(var)) {						\
++	case 4:								\
++		if (add_ID__ == 1) {					\
++			asm volatile (lock "incl " arg0 ";"		\
++					  "set" cc " %1"		\
++					  : "+m" (var), "=qm" (c)	\
++					  : : "memory");		\
++		} else if (add_ID__ == -1) {				\
++			asm volatile (lock "decl " arg0 ";"		\
++					  "set" cc " %1"		\
++					  : "+m" (var), "=qm" (c)	\
++					  : : "memory");		\
++		} else {						\
++			asm volatile (lock "addl %2, " arg0 ";"		\
++					  "set" cc " %1"		\
++					  : "+m" (var), "=qm" (c)	\
++					  : "er" (val) : "memory");	\
++		}							\
++		break;							\
++									\
++	case 8:								\
++		if (add_ID__ == 1) {					\
++			asm volatile (lock "incq " arg0 ";"		\
++					  "set" cc " %1"		\
++					  : "+m" (var), "=qm" (c)	\
++					  : : "memory");		\
++		} else if (add_ID__ == -1) {				\
++			asm volatile (lock "decq " arg0 ";"		\
++					  "set" cc " %1"		\
++					  : "+m" (var), "=qm" (c)	\
++					  : : "memory");		\
++		} else {						\
++			asm volatile (lock "addq %2, " arg0 ";"		\
++					  "set" cc " %1"		\
++					  : "+m" (var), "=qm" (c)	\
++					  : "er" (val) : "memory");	\
++		}							\
++		break;							\
++									\
++	default: __bad_addcc_size();					\
++	}								\
++									\
++	return c != 0;							\
++} while (0)
++
++#endif /* CC_HAVE_ASM_GOTO */
++
++#endif /* _ASM_X86_ADDcc */
+--- a/arch/x86/include/asm/atomic.h
++++ b/arch/x86/include/asm/atomic.h
+@@ -6,6 +6,7 @@
+ #include <asm/processor.h>
+ #include <asm/alternative.h>
+ #include <asm/cmpxchg.h>
++#include <asm/addcc.h>
+ 
+ /*
+  * Atomic operations that C can't guarantee us.  Useful for
+@@ -76,12 +77,7 @@ static inline void atomic_sub(int i, ato
+  */
+ static inline int atomic_sub_and_test(int i, atomic_t *v)
+ {
+-	unsigned char c;
+-
+-	asm volatile(LOCK_PREFIX "subl %2,%0; sete %1"
+-		     : "+m" (v->counter), "=qm" (c)
+-		     : "ir" (i) : "memory");
+-	return c;
++	GENERATE_ADDcc(v->counter, -i, LOCK_PREFIX, "%0", "e");
+ }
+ 
+ /**
+@@ -118,12 +114,7 @@ static inline void atomic_dec(atomic_t *
+  */
+ static inline int atomic_dec_and_test(atomic_t *v)
+ {
+-	unsigned char c;
+-
+-	asm volatile(LOCK_PREFIX "decl %0; sete %1"
+-		     : "+m" (v->counter), "=qm" (c)
+-		     : : "memory");
+-	return c != 0;
++	GENERATE_ADDcc(v->counter, -1, LOCK_PREFIX, "%0", "e");
+ }
+ 
+ /**
+@@ -136,12 +127,7 @@ static inline int atomic_dec_and_test(at
+  */
+ static inline int atomic_inc_and_test(atomic_t *v)
+ {
+-	unsigned char c;
+-
+-	asm volatile(LOCK_PREFIX "incl %0; sete %1"
+-		     : "+m" (v->counter), "=qm" (c)
+-		     : : "memory");
+-	return c != 0;
++	GENERATE_ADDcc(v->counter, 1, LOCK_PREFIX, "%0", "e");
+ }
+ 
+ /**
+@@ -155,12 +141,7 @@ static inline int atomic_inc_and_test(at
+  */
+ static inline int atomic_add_negative(int i, atomic_t *v)
+ {
+-	unsigned char c;
+-
+-	asm volatile(LOCK_PREFIX "addl %2,%0; sets %1"
+-		     : "+m" (v->counter), "=qm" (c)
+-		     : "ir" (i) : "memory");
+-	return c;
++	GENERATE_ADDcc(v->counter, i, LOCK_PREFIX, "%0", "s");
+ }
+ 
+ /**
+--- a/arch/x86/include/asm/atomic64_64.h
++++ b/arch/x86/include/asm/atomic64_64.h
+@@ -72,12 +72,7 @@ static inline void atomic64_sub(long i,
+  */
+ static inline int atomic64_sub_and_test(long i, atomic64_t *v)
+ {
+-	unsigned char c;
+-
+-	asm volatile(LOCK_PREFIX "subq %2,%0; sete %1"
+-		     : "=m" (v->counter), "=qm" (c)
+-		     : "er" (i), "m" (v->counter) : "memory");
+-	return c;
++	GENERATE_ADDcc(v->counter, -i, LOCK_PREFIX, "%0", "e");
+ }
+ 
+ /**
+@@ -116,12 +111,7 @@ static inline void atomic64_dec(atomic64
+  */
+ static inline int atomic64_dec_and_test(atomic64_t *v)
+ {
+-	unsigned char c;
+-
+-	asm volatile(LOCK_PREFIX "decq %0; sete %1"
+-		     : "=m" (v->counter), "=qm" (c)
+-		     : "m" (v->counter) : "memory");
+-	return c != 0;
++	GENERATE_ADDcc(v->counter, -1, LOCK_PREFIX, "%0", "e");
+ }
+ 
+ /**
+@@ -134,12 +124,7 @@ static inline int atomic64_dec_and_test(
+  */
+ static inline int atomic64_inc_and_test(atomic64_t *v)
+ {
+-	unsigned char c;
+-
+-	asm volatile(LOCK_PREFIX "incq %0; sete %1"
+-		     : "=m" (v->counter), "=qm" (c)
+-		     : "m" (v->counter) : "memory");
+-	return c != 0;
++	GENERATE_ADDcc(v->counter, 1, LOCK_PREFIX, "%0", "e");
+ }
+ 
+ /**
+@@ -153,12 +138,7 @@ static inline int atomic64_inc_and_test(
+  */
+ static inline int atomic64_add_negative(long i, atomic64_t *v)
+ {
+-	unsigned char c;
+-
+-	asm volatile(LOCK_PREFIX "addq %2,%0; sets %1"
+-		     : "=m" (v->counter), "=qm" (c)
+-		     : "er" (i), "m" (v->counter) : "memory");
+-	return c;
++	GENERATE_ADDcc(v->counter, i, LOCK_PREFIX, "%0", "s");
+ }
+ 
+ /**
+--- a/arch/x86/include/asm/local.h
++++ b/arch/x86/include/asm/local.h
+@@ -52,12 +52,7 @@ static inline void local_sub(long i, loc
+  */
+ static inline int local_sub_and_test(long i, local_t *l)
+ {
+-	unsigned char c;
+-
+-	asm volatile(_ASM_SUB "%2,%0; sete %1"
+-		     : "+m" (l->a.counter), "=qm" (c)
+-		     : "ir" (i) : "memory");
+-	return c;
++	GENERATE_ADDcc(l->a.counter, -i, "", "%0", "e");
+ }
+ 
+ /**
+@@ -70,12 +65,7 @@ static inline int local_sub_and_test(lon
+  */
+ static inline int local_dec_and_test(local_t *l)
+ {
+-	unsigned char c;
+-
+-	asm volatile(_ASM_DEC "%0; sete %1"
+-		     : "+m" (l->a.counter), "=qm" (c)
+-		     : : "memory");
+-	return c != 0;
++	GENERATE_ADDcc(l->a.counter, -1, "", "%0", "e");
+ }
+ 
+ /**
+@@ -88,12 +78,7 @@ static inline int local_dec_and_test(loc
+  */
+ static inline int local_inc_and_test(local_t *l)
+ {
+-	unsigned char c;
+-
+-	asm volatile(_ASM_INC "%0; sete %1"
+-		     : "+m" (l->a.counter), "=qm" (c)
+-		     : : "memory");
+-	return c != 0;
++	GENERATE_ADDcc(l->a.counter, 1, "", "%0", "e");
+ }
+ 
+ /**
+@@ -107,12 +92,7 @@ static inline int local_inc_and_test(loc
+  */
+ static inline int local_add_negative(long i, local_t *l)
+ {
+-	unsigned char c;
+-
+-	asm volatile(_ASM_ADD "%2,%0; sets %1"
+-		     : "+m" (l->a.counter), "=qm" (c)
+-		     : "ir" (i) : "memory");
+-	return c;
++	GENERATE_ADDcc(l->a.counter, i, "", "%0", "s");
+ }
+ 
+ /**
