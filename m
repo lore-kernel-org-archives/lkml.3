@@ -1,54 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493Ab3IKB3o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 21:29:44 -0400
-Received: from hurricane.the-brannons.com ([64.62.188.119]:40164 "EHLO
-	hurricane.the-brannons.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752100Ab3IKB3n (ORCPT
+	id S1753394Ab3IKBcs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 21:32:48 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:58540 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752787Ab3IKBcr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 21:29:43 -0400
-From: Chris Brannon <chris@the-brannons.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Raphael S Carvalho <raphael.scarv@gmail.com>, devel@driverdev.osuosl.org,
-        Kirk Reiser <kirk@reisers.ca>, speakup@braille.uwo.ca,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: Re: [PATCH 1/1] staging/speakup/kobjects.c: Code improvement.
-References: <1378160418-13898-1-git-send-email-raphael.scarv@gmail.com>
-	<87fvtefy10.fsf@mushroom.PK5001Z>
-	<CACz=WeeE+jxdaxpR_amF60deDcEy8nChYYfY3UA3CNfhmOB8Gw@mail.gmail.com>
-	<87y576edm6.fsf@mushroom.PK5001Z> <20130910231228.GF6329@mwanda>
-Date: Tue, 10 Sep 2013 18:29:39 -0700
-In-Reply-To: <20130910231228.GF6329@mwanda> (Dan Carpenter's message of "Wed,
-	11 Sep 2013 02:12:29 +0300")
-Message-ID: <878uz4du2k.fsf@mushroom.PK5001Z>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Tue, 10 Sep 2013 21:32:47 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r8B1WSrk009596, This message is accepted by code: ctloc85258
+Message-ID: <522FC82C.4020000@realsil.com.cn>
+Date: Wed, 11 Sep 2013 09:32:28 +0800
+From: wwang <wei_wang@realsil.com.cn>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Lee Jones <lee.jones@linaro.org>
+CC: <sameo@linux.intel.com>, <devel@linuxdriverproject.org>,
+        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <rogerable@realtek.com>, <micky_ching@realsil.com.cn>
+Subject: Re: [PATCH v3] mfd: rtsx: Modify rts5249_optimize_phy
+References: <1378804397-28640-1-git-send-email-wei_wang@realsil.com.cn> <20130910092857.GB1456@lee--X1> <522EED3A.9080806@realsil.com.cn> <20130910110821.GD1456@lee--X1>
+In-Reply-To: <20130910110821.GD1456@lee--X1>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [172.29.41.8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan Carpenter <dan.carpenter@oracle.com> writes:
-
-> Good eye for spotting the memory corruption bug!
+于 2013年09月10日 19:08, Lee Jones 写道:
+> I'm not asking for in-depth analysis, just an overview.
 >
-> This is a bug fix, so the fix should go in a separate patch and not
-> merged with a code cleanup patch.  Ordinary users can trigger this so
-> it's a security bug and separating it out is extra important.
+> What's wrong with the default config?
+> Why is the signal quality bad and what makes it bad?
+> What did the old magic numbers do?
+> How will the configuration differ if I applied your patch?
 
-Ok.  I just sent up a patch to the driverdev list.  I missed a few
-of the Cc's that were on this thread, though.
-Also, it will conflict with Raphael's cleanup.
+It is a little different between simulation and real chip. We have no idea about which configuration is better before tape-out. We set default settings according to simulation, but need to tune these parameters after getting the real chip.
+Those old magic numbers are proper in simulation environment, but not good in real ASIC chip.
+If the new patch won't be applied, we may failed to access SD card in those platforms equipped with rts5249 module.
 
-> The checking in spk_set_num_var() is not sufficient as well.  If we use
-> E_INC then we can hit an integer overflow bug:
 
-Good catch.  In fact, we shouldn't be using input at all!  Instead, we
-need to use the value of the voice parameter after it was changed.  That
-will be a valid index into the two tables.  My patch does so.
-
--- Chris
