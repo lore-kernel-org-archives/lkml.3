@@ -1,52 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932113Ab3IKUw5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 16:52:57 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:40911 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755628Ab3IKUw4 (ORCPT
+	id S1757024Ab3IKU6R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 16:58:17 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:47439 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752939Ab3IKU6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 16:52:56 -0400
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <CA+bK7J4s1y5-CfwmNB3gN5Ed800AnuH6vHe8+jRmq+pyPu9o0A@mail.gmail.com>
-References: <CACxGe6v8hO4sRX_KGcH=YBAMrF8mQHqWdxXEvVwoC2pVS5Yv9Q@mail.gmail.com>
-	<CA+bK7J5cAWFPLTBR2afNLm2JaKFH4_dJO_NpVL5gom0iX+L2dQ@mail.gmail.com>
-	<CA+55aFzBbKXJnaG_6X8Fff_APGJ3EkbG0thsbithDXtiEJjdHA@mail.gmail.com>
-	<CA+8MBbLVC2==zpNV1zV3OoiSQoKfptAGqF1EQNtrhFUCn=0h7A@mail.gmail.com>
-	<CA+bK7J4s1y5-CfwmNB3gN5Ed800AnuH6vHe8+jRmq+pyPu9o0A@mail.gmail.com>
-Date: Wed, 11 Sep 2013 13:52:55 -0700
-Message-ID: <CAOesGMhUAqKWsJEnK1-5TwRpE62WqVug9kYEziaJ3dtkEiGs4g@mail.gmail.com>
-Subject: Re: [GIT PULL] Device tree updates for v3.12
-From: Olof Johansson <olof@lixom.net>
-To: Tim Bird <tbird20d@gmail.com>
-Cc: Tony Luck <tony.luck@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 11 Sep 2013 16:58:16 -0400
+Date: Wed, 11 Sep 2013 16:58:14 -0400 (EDT)
+Message-Id: <20130911.165814.2091435893983550695.davem@davemloft.net>
+To: cmetcalf@tilera.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: tilegx driver: avoid compiler warning
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <201309091822.r89IMXmA032018@farm-0002.internal.tilera.com>
+References: <201309091822.r89IMXmA032018@farm-0002.internal.tilera.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 11 Sep 2013 13:58:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 1:21 PM, Tim Bird <tbird20d@gmail.com> wrote:
-> Thanks.  This gives me an order-of-magnitude measurement for this sort of thing.
-> I'll measure it directly myself on our hardware as soon as I can.
->
-> I've heard an ugly rumor that the device tree from our silicon vendor
-> may grow to be
-> as big as 130K in the near future. I'm still following up to see if
-> there's any truth
-> to this (so don't quote me on it), but if it does get that big it
-> might be an issue.  As
-> stated previously, the vast majority of our device tree files consists
-> of values that
-> are not device-specific.
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Mon, 9 Sep 2013 14:11:54 -0400
 
-The biggest ones in mainline today compile to a ~30K binary. Not sure
-a vendor expects to add in there to gain another 100KB.
+> The "id" variable was being incremented in common code, but only
+> initialized and used in IPv4 code.  We move the increment to the IPv4
+> code too, and then legitimately use the uninitialized_var() macro to
+> avoid the gcc 4.6 warning that 'id' may be used uninitialized.
+> Note that gcc 4.7 does not warn.
+> 
+> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 
-
--Olof
+Ugly situation, but whatever, applied :-)
