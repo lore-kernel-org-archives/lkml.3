@@ -1,184 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546Ab3IKKZz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 06:25:55 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:58063 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752739Ab3IKKZw (ORCPT
+	id S1753644Ab3IKK0F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 06:26:05 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:51925 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753444Ab3IKK0B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 06:25:52 -0400
-Message-ID: <52304439.3030301@linux.vnet.ibm.com>
-Date: Wed, 11 Sep 2013 15:51:45 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cpufreq <cpufreq@vger.kernel.org>
-Subject: Re: cpufreq_stats NULL deref on second system suspend
-References: <522E1FEF.6080803@wwwdotorg.org> <1775778.MeiRhuYy7o@vostro.rjw.lan> <522F86AD.6010603@wwwdotorg.org> <2521560.SfeNbV74nj@vostro.rjw.lan>
-In-Reply-To: <2521560.SfeNbV74nj@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 11 Sep 2013 06:26:01 -0400
+Message-ID: <1378895123.5476.83.camel@marge.simpson.net>
+Subject: Re: [PATCH V3]hrtimer: Fix a performance regression by disable
+ reprogramming in remove_hrtimer
+From: Mike Galbraith <bitbucket@online.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, ethan.kernel@gmail.com,
+        rjw@sisk.pl, daniel.lezcano@linaro.org, linux-pm@vger.kernel.org,
+        lenb@kernel.org
+Date: Wed, 11 Sep 2013 12:25:23 +0200
+In-Reply-To: <20130911085643.GS26785@twins.programming.kicks-ass.net>
+References: <24EECBCC-F655-404F-8946-73CC36095A5F@gmail.com>
+	 <1378362989.18435.2.camel@marge.simpson.net>
+	 <20130905111428.GB23362@gmail.com>
+	 <1378386697.6567.9.camel@marge.simpson.net>
+	 <20130905133750.GA26637@gmail.com>
+	 <1378445942.5434.31.camel@marge.simpson.net>
+	 <20130909122325.GX31370@twins.programming.kicks-ass.net>
+	 <1378730538.5586.30.camel@marge.simpson.net>
+	 <20130909133044.GB31370@twins.programming.kicks-ass.net>
+	 <20130909134635.GB26785@twins.programming.kicks-ass.net>
+	 <20130911085643.GS26785@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091110-9264-0000-0000-000004824D5A
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:DkocL5eBc3Q9SHRfw5PyPGID+M262PvHj58yuMgFK3c
+ Mr5bJ9jVVBqq5F8zTXr83/tPLn4duSXpAM8hW6d8TTkALDlszQ
+ wc53fiYr5V+G7azpS9jO/MMrONawqhtDw1rcOVMlavRGFn1V3d
+ 1Pdaf36g37mvLskAB0ekwxhw1h/wWNLGa1nidWwpydWLHBvnCo
+ KzOujC5RkPubz/yDETTEJ1hll46A1gSbwrXO4qSY6yLhdCuxkC
+ 2MFqxyaRxmQv2ynflcXQB93kf74jC48ykbKLAY8hLyFRiNqfei
+ RglMfvGyH00dzWP6RyhRdazp6Dpl1c6PWEYCiuv2Tn1KR2uYDi
+ VRZZiP7FQaXxOq5axtPZy9qQ1KUfCv1Ks/Ge/uCmcVLagD9PiW
+ KSuvpJveiYyLQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2013 04:04 AM, Rafael J. Wysocki wrote:
-> On Tuesday, September 10, 2013 02:53:01 PM Stephen Warren wrote:
->> On 09/09/2013 05:14 PM, Rafael J. Wysocki wrote:
->>> On Monday, September 09, 2013 03:29:06 PM Stephen Warren wrote:
->>>> On 09/09/2013 02:24 PM, Rafael J. Wysocki wrote:
->>>>> On Monday, September 09, 2013 02:01:32 PM Stephen Warren wrote:
->>>>>> On 09/09/2013 02:01 PM, Rafael J. Wysocki wrote:
->>>>>>> On Monday, September 09, 2013 01:22:23 PM Stephen Warren wrote:
->>>>>>>> Viresh,
->>>>>>>>
->>>>>>>> I'm seeing the crash below when suspending my system for the second time.
->>>>>>>>
->>>>>>>> I can avoid this with the following patch, which adds a check which
->>>>>>>> already exists in all-but-one other places that the same lookup is made:
->>>>>>>
->>>>>>> Which kernel did you test?
->>>>>>
->>>>>> next-20130909.
->>>>>
->>>>> Is it reproducible with the current mainline?
->>>>
->>>> This does not affect v3.11, but does affect current HEAD; 300893b "Merge
->>>> tag 'xfs-for-linus-v3.12-rc1' of git://oss.sgi.com/xfs/xfs".
->>>
->>> What system does it break on?
->>
->> A dual-core ARM system (NVIDIA Tegra20 SoC, Harmony board).
->>
->>> Any chance to bisect cpufreq changes between 3.11 and the current HEAD?
->>
->> Sure, it's due to 5302c3f "cpufreq: Perform light-weight init/teardown
->> during suspend/resume".
+On Wed, 2013-09-11 at 10:56 +0200, Peter Zijlstra wrote: 
+> On Mon, Sep 09, 2013 at 03:46:35PM +0200, Peter Zijlstra wrote:
+> > On Mon, Sep 09, 2013 at 03:30:44PM +0200, Peter Zijlstra wrote:
+> > > diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+> > > index fa6964d..486c0ba 100644
+> > > --- a/drivers/idle/intel_idle.c
+> > > +++ b/drivers/idle/intel_idle.c
+> > > @@ -359,6 +359,14 @@ static int intel_idle(struct cpuidle_device *dev,
+> > >  	if (!(lapic_timer_reliable_states & (1 << (cstate))))
+> > >  		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
+> > >  
+> > > +	current_thread_into()->status |= TS_POLLING;
+> > > +
+> > > +	/*
+> > > +	 * Order against setting of TS_POLLING against the reading of
+> > > +	 * NEED_RESCHED, matched by resched_task().
+> > > +	 */
+> > > +	smp_mb();
+> > > +
+> > >  	if (!need_resched()) {
+> > >  
+> > >  		__monitor((void *)&current_thread_info()->flags, 0, 0);
+> > > @@ -367,6 +375,8 @@ static int intel_idle(struct cpuidle_device *dev,
+> > >  			__mwait(eax, ecx);
+> > >  	}
+> > >  
+> > > +	current_thread_into()->status &= ~TS_POLLING;
+> > > +
+> > >  	if (!(lapic_timer_reliable_states & (1 << (cstate))))
+> > >  		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
+> > 
+> > Hmm, arguably it would be better to set this from
+> > intel_idle_cpuidle_driver_init() and clear it whenever this goes away.
+> > Not sure how all that works, the cpuidle driver framework seems 'weird'.
 > 
-> Thanks!
+> OK, so I went over the idle stuff again, and we do set TS_POLLING like
+> stuff, it got hidden in current_{clr,set}_polling().
 > 
-> Srivatsa, any chance to look into this?
->
+> Still if that patch causes extra IPIs its bound to be broken in some
+> creative way.. I'll prod.
 
-Sure, Rafael. Thanks for CC'ing me.
-
-Stephen, I went through the code and I think I found out what is going wrong.
-Can you please try the following patch?
-
-Regards,
-Srivatsa S. Bhat
-
-----------------------------------------------------------------------------
-
-
-From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] cpufreq: Fix crash in cpufreq-stats during suspend/resume
-
-Stephen Warren reported that the cpufreq-stats code hits a NULL pointer
-dereference during the second attempt to suspend a system. He also
-pin-pointed the problem to commit 5302c3f "cpufreq: Perform light-weight
-init/teardown during suspend/resume".
-
-That commit actually ensured that the cpufreq-stats table and the
-cpufreq-stats sysfs entries are *not* torn down (ie., not freed) during
-suspend/resume, which makes it all the more surprising. However, it turns
-out that the root-cause is not that we access an already freed memory, but
-that the reference to the allocated memory gets moved around and we lose
-track of that during resume, leading to the reported crash in a subsequent
-suspend attempt.
-
-In the suspend path, during CPU offline, the value of policy->cpu is updated
-by choosing one of the surviving CPUs in that policy, as long as there is
-atleast one CPU in that policy. And cpufreq_stats_update_policy_cpu() is
-invoked to update the reference to the stats structure by assigning it to
-the new CPU. However, in the resume path, during CPU online, we end up
-assigning a fresh CPU as the policy->cpu, without letting cpufreq-stats
-know about this. Thus the reference to the stats structure remains
-(incorrectly) associated with the old CPU. So, in a subsequent suspend attempt,
-during CPU offline, we end up accessing an incorrect location to get the
-stats structure, which eventually leads to the NULL pointer dereference.
-
-Fix this by letting cpufreq-stats know about the update of the policy->cpu
-during CPU online in the resume path. (Also, move the update_policy_cpu()
-function higher up in the file, so that __cpufreq_add_dev() can invoke
-it).
-
-Reported-by: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-
- drivers/cpufreq/cpufreq.c |   37 ++++++++++++++++++++++++-------------
- 1 file changed, 24 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 5a64f66..62bdb95 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -947,6 +947,18 @@ static void cpufreq_policy_free(struct cpufreq_policy *policy)
- 	kfree(policy);
- }
- 
-+static void update_policy_cpu(struct cpufreq_policy *policy, unsigned int cpu)
-+{
-+	policy->last_cpu = policy->cpu;
-+	policy->cpu = cpu;
-+
-+#ifdef CONFIG_CPU_FREQ_TABLE
-+	cpufreq_frequency_table_update_policy_cpu(policy);
-+#endif
-+	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
-+			CPUFREQ_UPDATE_POLICY_CPU, policy);
-+}
-+
- static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
- 			     bool frozen)
- {
-@@ -1000,7 +1012,18 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
- 	if (!policy)
- 		goto nomem_out;
- 
--	policy->cpu = cpu;
-+
-+	/*
-+	 * In the resume path, since we restore a saved policy, the assignment
-+	 * to policy->cpu is like an update of the existing policy, rather than
-+	 * the creation of a brand new one. So we need to perform this update
-+	 * by invoking update_policy_cpu().
-+	 */
-+	if (frozen && cpu != policy->cpu)
-+		update_policy_cpu(policy, cpu);
-+	else
-+		policy->cpu = cpu;
-+
- 	policy->governor = CPUFREQ_DEFAULT_GOVERNOR;
- 	cpumask_copy(policy->cpus, cpumask_of(cpu));
- 
-@@ -1092,18 +1115,6 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- 	return __cpufreq_add_dev(dev, sif, false);
- }
- 
--static void update_policy_cpu(struct cpufreq_policy *policy, unsigned int cpu)
--{
--	policy->last_cpu = policy->cpu;
--	policy->cpu = cpu;
--
--#ifdef CONFIG_CPU_FREQ_TABLE
--	cpufreq_frequency_table_update_policy_cpu(policy);
--#endif
--	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
--			CPUFREQ_UPDATE_POLICY_CPU, policy);
--}
--
- static int cpufreq_nominate_new_policy_cpu(struct cpufreq_policy *policy,
- 					   unsigned int old_cpu, bool frozen)
- {
-
+(thanks, when I get a break from testing/poking this'n'that, I'll take a
+peek too...  well, good_intentions++ anyway;)
 
