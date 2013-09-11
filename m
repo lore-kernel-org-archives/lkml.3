@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181Ab3IKKFW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 06:05:22 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:42177 "EHLO song.cn.fujitsu.com"
+	id S1754057Ab3IKKIH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 06:08:07 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:28826 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751126Ab3IKKFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 06:05:19 -0400
+	id S1752136Ab3IKKFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 06:05:22 -0400
 X-IronPort-AV: E=Sophos;i="4.90,883,1371052800"; 
-   d="scan'208";a="8489686"
+   d="scan'208";a="8489689"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: tj@kernel.org, rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de,
         mingo@elte.hu, hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
@@ -20,152 +20,70 @@ To: tj@kernel.org, rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de,
         zhangyanfei@cn.fujitsu.com, toshi.kani@hp.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH v2 0/9] x86, memblock: Allocate memory near kernel image before SRAT parsed.
-Date: Wed, 11 Sep 2013 18:07:28 +0800
-Message-Id: <1378894057-30946-1-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v2 3/9] x86, dma: Support allocate memory from bottom upwards in dma_contiguous_reserve().
+Date: Wed, 11 Sep 2013 18:07:31 +0800
+Message-Id: <1378894057-30946-4-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1378894057-30946-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1378894057-30946-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/09/11 18:02:50,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/11 18:02:55,
-	Serialize complete at 2013/09/11 18:02:55
+ 2013/09/11 18:02:57,
+	Serialize complete at 2013/09/11 18:02:57
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch-set is based on tj's suggestion, and not fully tested. 
-Just for review and discussion. And according to tj's suggestion, 
-implemented a new function memblock_alloc_bottom_up() to allocate 
-memory from bottom upwards, whihc can simplify the code.
+During early boot, if the bottom up mode is set, just
+try allocating bottom up from the end of kernel image,
+and if that fails, do normal top down allocation.
 
+So in function dma_contiguous_reserve(), we add the
+above logic.
 
-[Problem]
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ drivers/base/dma-contiguous.c |   17 ++++++++++++++---
+ 1 files changed, 14 insertions(+), 3 deletions(-)
 
-The current Linux cannot migrate pages used by the kerenl because
-of the kernel direct mapping. In Linux kernel space, va = pa + PAGE_OFFSET.
-When the pa is changed, we cannot simply update the pagetable and
-keep the va unmodified. So the kernel pages are not migratable.
-
-There are also some other issues will cause the kernel pages not migratable.
-For example, the physical address may be cached somewhere and will be used.
-It is not to update all the caches.
-
-When doing memory hotplug in Linux, we first migrate all the pages in one
-memory device somewhere else, and then remove the device. But if pages are
-used by the kernel, they are not migratable. As a result, memory used by
-the kernel cannot be hot-removed.
-
-Modifying the kernel direct mapping mechanism is too difficult to do. And
-it may cause the kernel performance down and unstable. So we use the following
-way to do memory hotplug.
-
-
-[What we are doing]
-
-In Linux, memory in one numa node is divided into several zones. One of the
-zones is ZONE_MOVABLE, which the kernel won't use.
-
-In order to implement memory hotplug in Linux, we are going to arrange all
-hotpluggable memory in ZONE_MOVABLE so that the kernel won't use these memory.
-To do this, we need ACPI's help.
-
-In ACPI, SRAT(System Resource Affinity Table) contains NUMA info. The memory
-affinities in SRAT record every memory range in the system, and also, flags
-specifying if the memory range is hotpluggable.
-(Please refer to ACPI spec 5.0 5.2.16)
-
-With the help of SRAT, we have to do the following two things to achieve our
-goal:
-
-1. When doing memory hot-add, allow the users arranging hotpluggable as
-   ZONE_MOVABLE.
-   (This has been done by the MOVABLE_NODE functionality in Linux.)
-
-2. when the system is booting, prevent bootmem allocator from allocating
-   hotpluggable memory for the kernel before the memory initialization
-   finishes.
-
-The problem 2 is the key problem we are going to solve. But before solving it,
-we need some preparation. Please see below.
-
-
-[Preparation]
-
-Bootloader has to load the kernel image into memory. And this memory must be 
-unhotpluggable. We cannot prevent this anyway. So in a memory hotplug system, 
-we can assume any node the kernel resides in is not hotpluggable.
-
-Before SRAT is parsed, we don't know which memory ranges are hotpluggable. But
-memblock has already started to work. In the current kernel, memblock allocates 
-the following memory before SRAT is parsed:
-
-setup_arch()
- |->memblock_x86_fill()            /* memblock is ready */
- |......
- |->early_reserve_e820_mpc_new()   /* allocate memory under 1MB */
- |->reserve_real_mode()            /* allocate memory under 1MB */
- |->init_mem_mapping()             /* allocate page tables, about 2MB to map 1GB memory */
- |->dma_contiguous_reserve()       /* specified by user, should be low */
- |->setup_log_buf()                /* specified by user, several mega bytes */
- |->relocate_initrd()              /* could be large, but will be freed after boot, should reorder */
- |->acpi_initrd_override()         /* several mega bytes */
- |->reserve_crashkernel()          /* could be large, should reorder */
- |......
- |->initmem_init()                 /* Parse SRAT */
-
-According to Tejun's advice, before SRAT is parsed, we should try our best to
-allocate memory near the kernel image. Since the whole node the kernel resides 
-in won't be hotpluggable, and for a modern server, a node may have at least 16GB
-memory, allocating several mega bytes memory around the kernel image won't cross
-to hotpluggable memory.
-
-
-[About this patch-set]
-
-So this patch-set does the following:
-
-1. Make memblock be able to allocate memory from low address to high address.
-
-2. Improve all functions who need to allocate memory before SRAT to support 
-   allocating memory from low address to high address.
-
-3. Introduce "movablenode" boot option to enable and disable this functionality.
-
-PS: Reordering of relocate_initrd() has not been done yet. acpi_initrd_override() 
-    needs to access initrd with virtual address. So relocate_initrd() must be done 
-    before acpi_initrd_override().
-
-
-Change log v1 -> v2:
-1. According to tj's suggestion, implemented a new function memblock_alloc_bottom_up() 
-   to allocate memory from bottom upwards, whihc can simplify the code.
-
-
-Tang Chen (9):
-  memblock: Introduce allocation direction to memblock.
-  x86, memblock: Introduce memblock_alloc_bottom_up() to memblock.
-  x86, dma: Support allocate memory from bottom upwards in
-    dma_contiguous_reserve().
-  x86: Support allocate memory from bottom upwards in setup_log_buf().
-  x86: Support allocate memory from bottom upwards in
-    relocate_initrd().
-  x86, acpi: Support allocate memory from bottom upwards in
-    acpi_initrd_override().
-  x86, acpi, crash, kdump: Do reserve_crashkernel() after SRAT is
-    parsed.
-  x86, mem-hotplug: Support initialize page tables from low to high.
-  mem-hotplug: Introduce movablenode boot option to control memblock
-    allocation direction.
-
- Documentation/kernel-parameters.txt |   15 ++++
- arch/x86/kernel/setup.c             |   54 ++++++++++++++-
- arch/x86/mm/init.c                  |  133 +++++++++++++++++++++++++++--------
- drivers/acpi/osl.c                  |   11 +++
- drivers/base/dma-contiguous.c       |   17 ++++-
- include/linux/memblock.h            |   24 ++++++
- include/linux/memory_hotplug.h      |    5 ++
- kernel/printk/printk.c              |   11 +++
- mm/memblock.c                       |   51 +++++++++++++
- mm/memory_hotplug.c                 |    9 +++
- 10 files changed, 296 insertions(+), 34 deletions(-)
+diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
+index 6c9cdaa..3b4e031 100644
+--- a/drivers/base/dma-contiguous.c
++++ b/drivers/base/dma-contiguous.c
+@@ -260,17 +260,28 @@ int __init dma_declare_contiguous(struct device *dev, phys_addr_t size,
+ 			goto err;
+ 		}
+ 	} else {
++		phys_addr_t addr;
++
++		if (memblock_direction_bottom_up()) {
++			addr = memblock_alloc_bottom_up(
++						MEMBLOCK_ALLOC_ACCESSIBLE,
++						limit, size, alignment);
++			if (addr)
++				goto success;
++		}
++
+ 		/*
+ 		 * Use __memblock_alloc_base() since
+ 		 * memblock_alloc_base() panic()s.
+ 		 */
+-		phys_addr_t addr = __memblock_alloc_base(size, alignment, limit);
++		addr = __memblock_alloc_base(size, alignment, limit);
+ 		if (!addr) {
+ 			base = -ENOMEM;
+ 			goto err;
+-		} else {
+-			base = addr;
+ 		}
++
++success:
++		base = addr;
+ 	}
+ 
+ 	/*
+-- 
+1.7.1
 
