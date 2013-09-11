@@ -1,228 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756859Ab3IKUgb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 16:36:31 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:60934 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753306Ab3IKUga (ORCPT
+	id S1757323Ab3IKUgq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 16:36:46 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:56857 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757153Ab3IKUgp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 16:36:30 -0400
-Date: Wed, 11 Sep 2013 13:36:18 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org
-Subject: Re: [RFC PATCH] timekeeping: introduce timekeeping_is_busy()
-Message-ID: <20130911203618.GH3966@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130911150853.GA19800@Krystal>
- <52309D13.3020305@linaro.org>
- <20130911185441.GC23532@Krystal>
+	Wed, 11 Sep 2013 16:36:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130911185441.GC23532@Krystal>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091120-0928-0000-0000-0000019D1733
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <CACRpkdYfeao6bvwjq7YJhBNCoC_JVxPTwYzPPiWM0tgUQreJKg@mail.gmail.com>
+References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
+	<1378817379-8238-2-git-send-email-lee.jones@linaro.org>
+	<CAOesGMgySNLKo_H0h4MCbAWvyW0h2bWa96drWBpnhAYYQwH9mw@mail.gmail.com>
+	<20130910153037.GA11227@lee--X1>
+	<CAOesGMiBN5SaEY26SxGaw9E4ViR3cC0PcwNMEd4cLJZMfomprQ@mail.gmail.com>
+	<CACRpkdY24uU=tXirJqrxLH-45ORFGybJOg-2tDOkpSmFUQUiiw@mail.gmail.com>
+	<20130911081911.GI11227@lee--X1>
+	<CACRpkdY6v+LMggLBdfKc3VUPmRZXTf1zBi4a93EPhQeo21wMeQ@mail.gmail.com>
+	<CAF2Aj3iPdqM-+FQ7R9MZ-6jV1Q1me9TG1P4cEGA7fSBBYH92zA@mail.gmail.com>
+	<CACRpkdYfeao6bvwjq7YJhBNCoC_JVxPTwYzPPiWM0tgUQreJKg@mail.gmail.com>
+Date: Wed, 11 Sep 2013 13:36:44 -0700
+Message-ID: <CAOesGMi7zbGuBBaUToe7=PUJvUUT8FkdMAWzfCE0igpYiYTZSg@mail.gmail.com>
+Subject: Re: [PATCH 01/38] ARM: ux500: Remove PrimeCell IDs from Nomadik I2C
+ DT nodes
+From: Olof Johansson <olof@lixom.net>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 02:54:41PM -0400, Mathieu Desnoyers wrote:
-> * John Stultz (john.stultz@linaro.org) wrote:
-> > On 09/11/2013 08:08 AM, Mathieu Desnoyers wrote:
-> [...]
-> 
-> Now focusing on features (the fix discussion is in a separate
-> sub-thread):
-> 
-> > 
-> > > LTTng uses ktime to have the same time-base across kernel and
-> > > user-space, so traces gathered from LTTng-modules and LTTng-UST can be
-> > > correlated. We plan on using ktime until a fast, scalable, and
-> > > fine-grained time-source for tracing that can be used across kernel and
-> > > user-space, and which does not rely on read seqlock for kernel-level
-> > > synchronization, makes its way into the kernel.
-> > 
-> > So my fix for the issue aside, I could see cases where using timekeeping
-> > for tracing could run into similar issues, so something like your
-> > timekeeping_is_busy() check sounds reasonable.
-> 
-> Yep, it would certainly make those use of ktime_get() more robust
-> against internal changes.
-> 
-> > I might suggest we wrap
-> > the timekeeper locking in a helper function so we don't have the
-> > spinlock(); set_owner(); write_seqcount(); pattern all over the place
-> > (and it avoids me forgetting to set the owner in some future change,
-> > further mucking things up :).
-> 
-> Good idea.
-> 
-> > As for your waiting for "fast, scalable, and fine-grained time-source
-> > for tracing that can be used across kernel and user-space, and which
-> > does not rely on read seqlock for kernel-level synchronization" wish,
-> > I'd be interested in hearing ideas if anyone has them.
-> 
-> So far, the best I could come up with is this: using a RCU (or RCU-like)
-> scheme to protect in-kernel timestamp reads (possibly with RCU sched,
-> which is based on preemption disabling), and use a sequence lock to
-> protect reads from user-space.
-> 
-> Time updates within the kernel would have to deal with both RCU pointer
-> update and track quiescent state, and would need to hold a write seqlock
-> to synchronize against concurrent user-space reads.
-> 
-> > After getting the recent lock-hold reduction work merged in 3.10, I had
-> > some thoughts that maybe we could do some sort of rcu style timekeeper
-> > switch. The down side is that there really is a time bound in which the
-> > timekeeper state is valid for, so there would have to be some sort of
-> > seqcount style "retry if we didn't finish the calculation within the
-> > valid bound" (which can run into similar deadlock problems if the
-> > updater is delayed by a reader spinning waiting for an update).
-> 
-> What could make a reader fail to finish the calculation within the valid
-> time bound ? Besides preemption ? If it's caused by a too long
-> interrupt, this will have an effect on the entire timekeeping, because
-> the timer interrupt will likely be delayed, and therefore the periodical
-> update changing the write seqlock value will be delayed too. So for the
-> interrupt case, it looks like a "too long" interrupt (or interrupt
-> disable section) will already disrupt timekeeping with the current
-> design.
-> 
-> > 
-> > Also there is the memory issue of having N timekeeper structures hanging
-> > around, since there could be many readers delayed mid-calculation, but
-> > that could probably be bound by falling back to a seqcount (and again,
-> > that opens up deadlock possibilities). Anyway, it all gets pretty
-> > complicated pretty quickly, which makes ensuring correctness even harder. :(
-> > 
-> > But yea, I'd be interested in other ideas and approaches.
-> 
-> If we can afford a synchronize_rcu_sched() wherever the write seqlock is
-> needed, we could go with the following. Please note that I use
-> synchronize_rcu_sched() rather than call_rcu_sched() here because I try
-> to avoid having too many timekeeper structures hanging around, and I
-> think it can be generally a good think to ensure timekeeping core does
-> not depend on the memory allocator (but I could very well be wrong).
+On Wed, Sep 11, 2013 at 4:13 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Wed, Sep 11, 2013 at 11:39 AM, Lee Jones <lee.jones@linaro.org> wrote:
+>> On 11 Sep 2013 10:33, "Linus Walleij" <linus.walleij@linaro.org> wrote:
+>
+>>> No it was something transient, after a clean rebuild it boots
+>>> just fine. :-/
+>>>
+>>> I'll see if I can boot the same uImage on the Snowball too.
+>
+> Yeah Snowball boots the same DT image with just some random
+> dmesg noise from Torvalds HEAD:
+>
+> U8500 $ mmc rescan 1 ; fat load mmc 1 0x0 /uImage ; bootm 0x0
+> Partition info retrieved
+> Reading /uImage
+>
+> 8997342 bytes read
+> ## Booting kernel from Legacy Image at 00000000 ...
+>    Image Name:   Ux500 Device Tree kernel
+>    Image Type:   ARM Linux Kernel Image (uncompressed)
+>    Data Size:    8997278 Bytes =  8.6 MB
+>    Load Address: 00008000
+>    Entry Point:  00008000
+>    Loading Kernel Image ... OK
+> OK
+>
+> Starting kernel ...
+>
+> Uncompressing Linux... done, booting the kernel.
+> Booting Linux on physical CPU 0x300
+> Linux version 3.11.0-09031-ga22a0fd (linus@localhost.localdomain) (gcc
+> version 4.8.2 20130805 (prerelease) (crosstool-NG
+> linaro-1.13.1-4.8-2013.08 - Linaro GCC 2013.08) ) #48 SMP PREEMPT Wed
+> Sep 11 11:14:36 CEST 2013
+> CPU: ARMv7 Processor [412fc091] revision 1 (ARMv7), cr=10c5387d
+> CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
+> Machine: ST-Ericsson Ux5x0 platform (Device Tree Support), model:
+> ST-Ericsson HREF (v60+) platform with Device Tree
+> Only cachepolicy=writeback supported on ARMv6 and later
+> Memory policy: ECC disabled, Data cache writealloc
+> DB8500 v2.1 [0x008500b1]
+> (...)
+>
+> I don't know what is the problem with Olof's machine :-/
 
-The issue called out with this the last time I remember it being put
-forward was that grace periods can be delayed for longer than is an
-acceptable gap between timekeeping updates.  But maybe something has
-changed since then -- that was a few years ago.
+Oh! Well, to start with apparantly u8500_defconfig doesn't have
+APPENDED_DTB enabled, which explains some of the confusion here.
 
-							Thanx, Paul
+With that fixed (and the appropriate options to get the bootargs from
+the atags), I get as far as console probing where output stops, if I
+have DEBUG_LL on. With it disabled I get all the way up.
 
-> In kernel/time/timekeeper.c:
-> 
-> static DEFINE_MUTEX(timekeeper_mutex);
-> static seqcount_t timekeeper_user_seq;
-> 
-> struct timekeeper_rcu {
->         struct a[2];
->         struct timekeeper *p;   /* current */
-> };
-> 
-> /* Timekeeper structure for kernel readers */
-> static struct timekeeper_rcu timekeeper_rcu;
-> 
-> /* Timekeeper structure for userspace readers */
-> static struct timekeeper timekeeper_user;
-> 
-> /* for updates */
-> update_time()
-> {
->         struct timekeeper *next_p;
-> 
->         mutex_lock(&timekeeper_mutex);
-> 
->         /* RCU update, for kernel readers */
->         if (timekeeper_rcu.p == &timekeeper_rcu.a[0])
->                 next_p = &timekeeper_rcu.a[1];
->         else
->                 next_p = &timekeeper_rcu.a[0];
-> 
->         timekeeper_copy(next_p, timekeeper_rcu.p);
->         timekeeper_do_update(next_p, ...);
-> 
->         rcu_assign_pointer(timekeeper_rcu.p, next_p);
-> 
->         /*
->          * Ensure there are no more readers in flight accessing the old
->          * element.
->          */
->         synchronize_rcu_sched();
-> 
->         /* seqlock update, for user-space readers */
->         write_seqcount_begin(&timekeeper_user_seq);
->         timekeeper_do_update_user(&timekeeper_user);
->         write_seqcount_end(&timekeeper_user_seq);
-> 
->         mutex_unlock(&timekeeper_mutex);
-> }
-> 
-> 
-> /*
->  * Accessing time from kernel. Should be called with preemption
->  * disabled.
->  */
-> u64 __read_time_kernel()
-> {
->         struct timekeeper *p;
-> 
->         p = rcu_dereference(timekeeper_rcu.p);
->         return get_value_from(p);
-> }
-> 
-> /* Accessing time from user-space (vDSO) */
-> 
-> u64 read_time_user()
-> {
->         /*
->          * Read timekeeper_user within a read_seqcount loop.
->          */
-> }
-> 
-> 
-> As far as I see, the write seqcount is currently taken by:
-> 
-> - do_settimeofday()
-> - timekeeping_inject_offset()
-> - timekeeping_set_tai_offset()
-> - change_clocksource()
-> - timekeeping_init()
-> - timekeeping_inject_sleeptime()
-> - timekeeping_resume()
-> - timekeeping_suspend()
-> - update_wall_time()
-> - do_adjtimex()
-> - hardpps()
-> 
-> It might be good to breakdown which of these functions could afford a
-> synchronize_rcu_sched(), and which can't. Maybe part of the solution
-> could be to use different data structures, and separate synchronization,
-> for the ajdtime part (executed in thread context) vs for
-> update_wall_time, AFAIK executed in interrupt context. We might also
-> want to consider that the adjtime part needs to be global, vs
-> update_wall_time which could possibly be done on per-cpu data
-> structures, which could simplify synchronization.
-> 
-> Thoughts ?
-> 
-> Thanks,
-> 
-> Mathieu
-> 
-> -- 
-> Mathieu Desnoyers
-> EfficiOS Inc.
-> http://www.efficios.com
-> 
+Not sure what was going on earlier here. Maybe just as in your case it
+was a matter of cleaning out and starting fresh.
 
+multi_v7_defconfig still doesn't boot though, but the failure seems to
+be lower level than any of the others, no output with DEBUG_LL on.
+
+
+-Olof
