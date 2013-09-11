@@ -1,54 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757197Ab3IKULb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 16:11:31 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:42710 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754242Ab3IKUL3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 16:11:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <1378929419-6269-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1378929419-6269-1-git-send-email-benjamin.tissoires@redhat.com>
-Date: Wed, 11 Sep 2013 13:11:28 -0700
-X-Google-Sender-Auth: VKfk3bMYr3zEOf6pcdCJUaQYqog
-Message-ID: <CAGXu5jJt=uBFLL=VUy5L8=eO2eX_6-dm=c3Ck0JZ-YHovdSv_g@mail.gmail.com>
-Subject: Re: [PATCH v3 00/10] HID: validate report details
-From: Kees Cook <keescook@chromium.org>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        linux-input <linux-input@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757458Ab3IKUMe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 16:12:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27505 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757331Ab3IKUMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 16:12:33 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] HID: lenovo-tpkbd: devm conversion
+Date: Wed, 11 Sep 2013 22:12:23 +0200
+Message-Id: <1378930345-6670-2-git-send-email-benjamin.tissoires@redhat.com>
+In-Reply-To: <1378930345-6670-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1378930345-6670-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 12:56 PM, Benjamin Tissoires
-<benjamin.tissoires@redhat.com> wrote:
-> Hi guys,
->
-> here is the v3 of the CVE fixes.
->
-> I have tested the multitouch and logitech-dj part, and the lenovo-tpkbd has been
-> tested in the bug referenced in patch 10.
->
-> Cheers,
-> Benjamin
->
-> Changes since v2:
-> - fix lenovo-tpkbd report validation
-> - fix lenovo-tpkbd not releasing the device when the report was not valid
-> - use generic tests found in previous hid-multitouch patches, so that this will
->   not happen again
-> - fix input_report index retrieving in hid-multitouch
+We can use the devres API in hid modules, so use it to avoid some kfree
+and potential leaks.
 
-Awesome! Thanks very much for fixing these up. I replied with Acks
-where appropriate. :)
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+---
+ drivers/hid/hid-lenovo-tpkbd.c | 30 ++++++++----------------------
+ 1 file changed, 8 insertions(+), 22 deletions(-)
 
--Kees
-
+diff --git a/drivers/hid/hid-lenovo-tpkbd.c b/drivers/hid/hid-lenovo-tpkbd.c
+index 31cf29a..0d9a276 100644
+--- a/drivers/hid/hid-lenovo-tpkbd.c
++++ b/drivers/hid/hid-lenovo-tpkbd.c
+@@ -339,7 +339,7 @@ static int tpkbd_probe_tp(struct hid_device *hdev)
+ 	struct tpkbd_data_pointer *data_pointer;
+ 	size_t name_sz = strlen(dev_name(dev)) + 16;
+ 	char *name_mute, *name_micmute;
+-	int i, ret;
++	int i;
+ 
+ 	/* Validate required reports. */
+ 	for (i = 0; i < 4; i++) {
+@@ -354,7 +354,9 @@ static int tpkbd_probe_tp(struct hid_device *hdev)
+ 		hid_warn(hdev, "Could not create sysfs group\n");
+ 	}
+ 
+-	data_pointer = kzalloc(sizeof(struct tpkbd_data_pointer), GFP_KERNEL);
++	data_pointer = devm_kzalloc(&hdev->dev,
++				    sizeof(struct tpkbd_data_pointer),
++				    GFP_KERNEL);
+ 	if (data_pointer == NULL) {
+ 		hid_err(hdev, "Could not allocate memory for driver data\n");
+ 		return -ENOMEM;
+@@ -364,20 +366,13 @@ static int tpkbd_probe_tp(struct hid_device *hdev)
+ 	data_pointer->sensitivity = 0xa0;
+ 	data_pointer->press_speed = 0x38;
+ 
+-	name_mute = kzalloc(name_sz, GFP_KERNEL);
+-	if (name_mute == NULL) {
++	name_mute = devm_kzalloc(&hdev->dev, name_sz, GFP_KERNEL);
++	name_micmute = devm_kzalloc(&hdev->dev, name_sz, GFP_KERNEL);
++	if (name_mute == NULL || name_micmute == NULL) {
+ 		hid_err(hdev, "Could not allocate memory for led data\n");
+-		ret = -ENOMEM;
+-		goto err;
++		return -ENOMEM;
+ 	}
+ 	snprintf(name_mute, name_sz, "%s:amber:mute", dev_name(dev));
+-
+-	name_micmute = kzalloc(name_sz, GFP_KERNEL);
+-	if (name_micmute == NULL) {
+-		hid_err(hdev, "Could not allocate memory for led data\n");
+-		ret = -ENOMEM;
+-		goto err2;
+-	}
+ 	snprintf(name_micmute, name_sz, "%s:amber:micmute", dev_name(dev));
+ 
+ 	hid_set_drvdata(hdev, data_pointer);
+@@ -397,12 +392,6 @@ static int tpkbd_probe_tp(struct hid_device *hdev)
+ 	tpkbd_features_set(hdev);
+ 
+ 	return 0;
+-
+-err2:
+-	kfree(name_mute);
+-err:
+-	kfree(data_pointer);
+-	return ret;
+ }
+ 
+ static int tpkbd_probe(struct hid_device *hdev,
+@@ -449,9 +438,6 @@ static void tpkbd_remove_tp(struct hid_device *hdev)
+ 	led_classdev_unregister(&data_pointer->led_mute);
+ 
+ 	hid_set_drvdata(hdev, NULL);
+-	kfree(data_pointer->led_micmute.name);
+-	kfree(data_pointer->led_mute.name);
+-	kfree(data_pointer);
+ }
+ 
+ static void tpkbd_remove(struct hid_device *hdev)
 -- 
-Kees Cook
-Chrome OS Security
+1.8.3.1
+
