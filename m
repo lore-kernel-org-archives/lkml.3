@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933Ab3IKE5b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 00:57:31 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13847 "EHLO
+	id S1756258Ab3IKFVm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 01:21:42 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5606 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754143Ab3IKE4u (ORCPT
+	with ESMTP id S1754853Ab3IKE53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 00:56:50 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=jaaXmWPtUZkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=VYAIF170pFYA:10 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=wAwfuhEyL-vLSwEzO4gA:9 a=0kPLrQdw3YYA:10 a=dGJ0OcVc7YAA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Wed, 11 Sep 2013 00:57:29 -0400
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=IIUAaDwQCXoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=PCIL1gHviSEA:10 a=VwQbUJbxAAAA:8 a=8T59DR07AAAA:8 a=CjxXgO3LAAAA:8 a=TSbVqHtbAAAA:8 a=rWmf4dj25AeNqq45Ql4A:9 a=LI9Vle30uBYA:10 a=rC2wZJ5BpNYA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042932.114401809@goodmis.org>
+Message-Id: <20130911042909.276919167@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:31:06 -0400
+Date: Wed, 11 Sep 2013 00:28:49 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Takashi Iwai <tiwai@suse.de>
-Subject: [239/251] ALSA: opti9xx: Fix conflicting driver object name
+Cc: Tejun Heo <tj@kernel.org>, Martin Braure de Calignon <braurede@free.fr>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [102/251] libata: make it clear that sata_inic162x is experimental
 References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0239-ALSA-opti9xx-Fix-conflicting-driver-object-name.patch
+Content-Disposition: inline; filename=0102-libata-make-it-clear-that-sata_inic162x-is-experimen.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,58 +30,74 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Tejun Heo <tj@kernel.org>
 
-[ Upstream commit fb615499f0ad28ed74201c1cdfddf9e64e205424 ]
+[ Upstream commit bb9696192826a7d9279caf872e95b41bc26c7eff ]
 
-The recent commit to delay the release of kobject triggered NULL
-dereferences of opti9xx drivers.  The cause is that all
-snd-opti92x-ad1848, snd-opti92x-cs4231 and snd-opti93x drivers
-register the PnP card driver with the very same name, and also
-snd-opti92x-ad1848 and -cs4231 drivers register the ISA driver with
-the same name, too.  When these drivers are built in, quick
-"register-release-and-re-register" actions occur, and this results in
-Oops because of the same name is assigned to the kobject.
+sata_inic162x never reached a state where it's reliable enough for
+production use and data corruption is a relatively common occurrence.
+Make the driver generate warning about the issues and mark the Kconfig
+option as experimental.
 
-The fix is simply to assign individual names.  As a bonus, by using
-KBUILD_MODNAME, the patch reduces more lines than it adds.
+If the situation doesn't improve, we'd be better off making it depend
+on CONFIG_BROKEN.  Let's wait for several cycles and see if the kernel
+message draws any attention.
 
-The fix is based on the suggestion by Russell King.
-
-Reported-and-tested-by: Fengguang Wu <fengguang.wu@intel.com>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Martin Braure de Calignon <braurede@free.fr>
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
+Reported-by: risc4all@yahoo.com
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- sound/isa/opti9xx/opti92x-ad1848.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ drivers/ata/Kconfig         |    2 +-
+ drivers/ata/sata_inic162x.c |   14 ++++++++++++++
+ 2 files changed, 15 insertions(+), 1 deletion(-)
 
-diff --git a/sound/isa/opti9xx/opti92x-ad1848.c b/sound/isa/opti9xx/opti92x-ad1848.c
-index f8fbe22..e7ec347 100644
---- a/sound/isa/opti9xx/opti92x-ad1848.c
-+++ b/sound/isa/opti9xx/opti92x-ad1848.c
-@@ -172,11 +172,7 @@ MODULE_DEVICE_TABLE(pnp_card, snd_opti9xx_pnpids);
+diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
+index 27cecd3..79ba92e 100644
+--- a/drivers/ata/Kconfig
++++ b/drivers/ata/Kconfig
+@@ -93,7 +93,7 @@ config SATA_FSL
+ 	  If unsure, say N.
  
- #endif	/* CONFIG_PNP */
+ config SATA_INIC162X
+-	tristate "Initio 162x SATA support"
++	tristate "Initio 162x SATA support (Very Experimental)"
+ 	depends on PCI
+ 	help
+ 	  This option enables support for Initio 162x Serial ATA.
+diff --git a/drivers/ata/sata_inic162x.c b/drivers/ata/sata_inic162x.c
+index dc35f4d..4d238c8 100644
+--- a/drivers/ata/sata_inic162x.c
++++ b/drivers/ata/sata_inic162x.c
+@@ -6,6 +6,18 @@
+  *
+  * This file is released under GPL v2.
+  *
++ * **** WARNING ****
++ *
++ * This driver never worked properly and unfortunately data corruption is
++ * relatively common.  There isn't anyone working on the driver and there's
++ * no support from the vendor.  Do not use this driver in any production
++ * environment.
++ *
++ * http://thread.gmane.org/gmane.linux.debian.devel.bugs.rc/378525/focus=54491
++ * https://bugzilla.kernel.org/show_bug.cgi?id=60565
++ *
++ * *****************
++ *
+  * This controller is eccentric and easily locks up if something isn't
+  * right.  Documentation is available at initio's website but it only
+  * documents registers (not programming model).
+@@ -809,6 +821,8 @@ static int inic_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
  
--#ifdef OPTi93X
--#define DEV_NAME "opti93x"
--#else
--#define DEV_NAME "opti92x"
--#endif
-+#define DEV_NAME KBUILD_MODNAME
+ 	ata_print_version_once(&pdev->dev, DRV_VERSION);
  
- static char * snd_opti9xx_names[] = {
- 	"unknown",
-@@ -1180,7 +1176,7 @@ static int snd_opti9xx_pnp_resume(struct pnp_card_link *pcard)
- 
- static struct pnp_card_driver opti9xx_pnpc_driver = {
- 	.flags		= PNP_DRIVER_RES_DISABLE,
--	.name		= "opti9xx",
-+	.name		= DEV_NAME,
- 	.id_table	= snd_opti9xx_pnpids,
- 	.probe		= snd_opti9xx_pnp_probe,
- 	.remove		= __devexit_p(snd_opti9xx_pnp_remove),
++	dev_alert(&pdev->dev, "inic162x support is broken with common data corruption issues and will be disabled by default, contact linux-ide@vger.kernel.org if in production use\n");
++
+ 	/* alloc host */
+ 	host = ata_host_alloc_pinfo(&pdev->dev, ppi, NR_PORTS);
+ 	hpriv = devm_kzalloc(&pdev->dev, sizeof(*hpriv), GFP_KERNEL);
 -- 
 1.7.10.4
 
