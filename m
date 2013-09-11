@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756480Ab3IKS0s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 14:26:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21702 "EHLO
+	id S1755732Ab3IKS0r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 14:26:47 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11021 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754259Ab3IKS0o (ORCPT
+	with ESMTP id S1754141Ab3IKS0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 11 Sep 2013 14:26:44 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=5BtIMuNg2zEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=usl0TziCTeQA:10 a=20KFwNOVAAAA:8 a=JDjsHSkAAAAA:8 a=VwQbUJbxAAAA:8 a=QpReyVgdzlHooMvH2x8A:9 a=jEp0ucaQiEUA:10 a=Hf6muOzgCGQA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=oujxPrUT-5MA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=ZhA1QrvdJXkA:10 a=sozttTNsAAAA:8 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=DyVgD6iCLAj66kwz9QAA:9 a=x2szoZtqnggA:10 a=jeBq3FmKZ4MA:10 a=YNKMA6yp7j4A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042904.376762940@goodmis.org>
+Message-Id: <20130911042906.286580695@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:28:19 -0400
+Date: Wed, 11 Sep 2013 00:28:31 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Bryan Schumaker <bjschuma@netapp.com>, David Jeffery <djeffery@redhat.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [072/251] lockd: protect nlm_blocked access in nlmsvc_retry_blocked
+Cc: George Cherian <george.cherian@ti.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [084/251] usb: host: xhci: Enable XHCI_SPURIOUS_SUCCESS for all controllers
+ with xhci 1.0
 References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0072-lockd-protect-nlm_blocked-access-in-nlmsvc_retry_blo.patch
+Content-Disposition: inline; filename=0084-usb-host-xhci-Enable-XHCI_SPURIOUS_SUCCESS-for-all-c.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,64 +31,83 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: David Jeffery <djeffery@redhat.com>
+From: George Cherian <george.cherian@ti.com>
 
-[ Upstream commit 1c327d962fc420aea046c16215a552710bde8231 ]
+[ Upstream commit 07f3cb7c28bf3f4dd80bfb136cf45810c46ac474 ]
 
-In nlmsvc_retry_blocked, the check that the list is non-empty and acquiring
-the pointer of the first entry is unprotected by any lock.  This allows a rare
-race condition when there is only one entry on the list.  A function such as
-nlmsvc_grant_callback() can be called, which will temporarily remove the entry
-from the list.  Between the list_empty() and list_entry(),the list may become
-empty, causing an invalid pointer to be used as an nlm_block, leading to a
-possible crash.
+Xhci controllers with hci_version > 0.96 gives spurious success
+events on short packet completion. During webcam capture the
+"ERROR Transfer event TRB DMA ptr not part of current TD" was observed.
+The same application works fine with synopsis controllers hci_version 0.96.
+The same issue is seen with Intel Pantherpoint xhci controller. So enabling
+this quirk in xhci_gen_setup if controller verion is greater than 0.96.
+For xhci-pci move the quirk to much generic place xhci_gen_setup.
 
-This patch adds the nlm_block_lock around these calls to prevent concurrent
-use of the nlm_blocked list.
+Note from Sarah:
 
-This was a regression introduced by
-f904be9cc77f361d37d71468b13ff3d1a1823dea  "lockd: Mostly remove BKL from
-the server".
+The xHCI 1.0 spec changed how hardware handles short packets.  The HW
+will notify SW of the TRB where the short packet occurred, and it will
+also give a successful status for the last TRB in a TD (the one with the
+IOC flag set).  On the second successful status, that warning will be
+triggered in the driver.
 
-Cc: Bryan Schumaker <bjschuma@netapp.com>
+Software is now supposed to not assume the TD is not completed until it
+gets that last successful status.  That means we have a slight race
+condition, although it should have little practical impact.  This patch
+papers over that issue.
+
+It's on my long-term to-do list to fix this race condition, but it is a
+much more involved patch that will probably be too big for stable.  This
+patch is needed for stable to avoid serious log spam.
+
+This patch should be backported to kernels as old as 3.0, that
+contain the commit ad808333d8201d53075a11bc8dd83b81f3d68f0b "Intel xhci:
+Ignore spurious successful event."
+
+The patch will have to be modified for kernels older than 3.2, since
+that kernel added the xhci_gen_setup function for xhci platform devices.
+The correct conflict resolution for kernels older than 3.2 is to set
+XHCI_SPURIOUS_SUCCESS in xhci_pci_quirks for all xHCI 1.0 hosts.
+
+Signed-off-by: George Cherian <george.cherian@ti.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Cc: stable@vger.kernel.org
-Signed-off-by: David Jeffery <djeffery@redhat.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- fs/lockd/svclock.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/host/xhci-pci.c |    1 -
+ drivers/usb/host/xhci.c     |    7 +++++++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/fs/lockd/svclock.c b/fs/lockd/svclock.c
-index 8d80c99..57a3922 100644
---- a/fs/lockd/svclock.c
-+++ b/fs/lockd/svclock.c
-@@ -939,6 +939,7 @@ nlmsvc_retry_blocked(void)
- 	unsigned long	timeout = MAX_SCHEDULE_TIMEOUT;
- 	struct nlm_block *block;
- 
-+	spin_lock(&nlm_blocked_lock);
- 	while (!list_empty(&nlm_blocked) && !kthread_should_stop()) {
- 		block = list_entry(nlm_blocked.next, struct nlm_block, b_list);
- 
-@@ -948,6 +949,7 @@ nlmsvc_retry_blocked(void)
- 			timeout = block->b_when - jiffies;
- 			break;
- 		}
-+		spin_unlock(&nlm_blocked_lock);
- 
- 		dprintk("nlmsvc_retry_blocked(%p, when=%ld)\n",
- 			block, block->b_when);
-@@ -957,7 +959,9 @@ nlmsvc_retry_blocked(void)
- 			retry_deferred_block(block);
- 		} else
- 			nlmsvc_grant_blocked(block);
-+		spin_lock(&nlm_blocked_lock);
+diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+index cd0fc48..aecfc58 100644
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -93,7 +93,6 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
  	}
-+	spin_unlock(&nlm_blocked_lock);
+ 	if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
+ 			pdev->device == PCI_DEVICE_ID_INTEL_PANTHERPOINT_XHCI) {
+-		xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
+ 		xhci->quirks |= XHCI_EP_LIMIT_QUIRK;
+ 		xhci->limit_active_eps = 64;
+ 		xhci->quirks |= XHCI_SW_BW_CHECKING;
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 2c117ec..bb8b3a5 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -4654,6 +4654,13 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)
  
- 	return timeout;
- }
+ 	get_quirks(dev, xhci);
+ 
++	/* In xhci controllers which follow xhci 1.0 spec gives a spurious
++	 * success event after a short transfer. This quirk will ignore such
++	 * spurious event.
++	 */
++	if (xhci->hci_version > 0x96)
++		xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
++
+ 	/* Make sure the HC is halted. */
+ 	retval = xhci_halt(xhci);
+ 	if (retval)
 -- 
 1.7.10.4
 
