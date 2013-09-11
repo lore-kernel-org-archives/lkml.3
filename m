@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756245Ab3IKQIU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 12:08:20 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:47323 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756231Ab3IKQIR (ORCPT
+	id S1756267Ab3IKQI2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 12:08:28 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:34161 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755166Ab3IKQIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 12:08:17 -0400
+	Wed, 11 Sep 2013 12:08:25 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
-        Vineet Gupta <vgupta@synopsys.com>, Arnd Bergmann <arnd@arndb.de>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Shaohua Li <shli@kernel.org>
 Cc: liuj97@gmail.com, Jiang Liu <jiang.liu@huawei.com>,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <trivial@kernel.org>,
-        Wang YanQing <udknight@gmail.com>, linux-kernel@vger.kernel.org,
+        Wang YanQing <udknight@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org
-Subject: [RFC PATCH v2 03/25] smp, ARC: kill SMP single function call interrupt
-Date: Thu, 12 Sep 2013 00:07:07 +0800
-Message-Id: <1378915649-16395-4-git-send-email-liuj97@gmail.com>
+Subject: [RFC PATCH v2 04/25] smp, ARM: kill SMP single function call interrupt
+Date: Thu, 12 Sep 2013 00:07:08 +0800
+Message-Id: <1378915649-16395-5-git-send-email-liuj97@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378915649-16395-1-git-send-email-liuj97@gmail.com>
 References: <1378915649-16395-1-git-send-email-liuj97@gmail.com>
@@ -35,43 +39,66 @@ is needed for architecture specific code to support generic SMP function
 call interfaces, so kill the redundant single function call interrupt.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Jiang Liu <liuj97@gmail.com>
 ---
- arch/arc/kernel/smp.c | 7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ arch/arm/include/asm/hardirq.h |  2 +-
+ arch/arm/kernel/smp.c          | 10 +---------
+ 2 files changed, 2 insertions(+), 10 deletions(-)
 
-diff --git a/arch/arc/kernel/smp.c b/arch/arc/kernel/smp.c
-index bca3052..f6a0373 100644
---- a/arch/arc/kernel/smp.c
-+++ b/arch/arc/kernel/smp.c
-@@ -210,7 +210,6 @@ enum ipi_msg_type {
- 	IPI_NOP = 0,
- 	IPI_RESCHEDULE = 1,
+diff --git a/arch/arm/include/asm/hardirq.h b/arch/arm/include/asm/hardirq.h
+index 2740c2a..436e60b 100644
+--- a/arch/arm/include/asm/hardirq.h
++++ b/arch/arm/include/asm/hardirq.h
+@@ -5,7 +5,7 @@
+ #include <linux/threads.h>
+ #include <asm/irq.h>
+ 
+-#define NR_IPI	6
++#define NR_IPI	5
+ 
+ typedef struct {
+ 	unsigned int __softirq_pending;
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index 2dc1934..4ea5994 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -65,7 +65,6 @@ enum ipi_msg_type {
+ 	IPI_TIMER,
+ 	IPI_RESCHEDULE,
  	IPI_CALL_FUNC,
 -	IPI_CALL_FUNC_SINGLE,
- 	IPI_CPU_STOP
+ 	IPI_CPU_STOP,
  };
  
-@@ -254,7 +253,7 @@ void smp_send_stop(void)
+@@ -475,7 +474,7 @@ void arch_send_wakeup_ipi_mask(const struct cpumask *mask)
  
  void arch_send_call_function_single_ipi(int cpu)
  {
--	ipi_send_msg(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
-+	ipi_send_msg(cpumask_of(cpu), IPI_CALL_FUNC);
+-	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
++	smp_cross_call(cpumask_of(cpu), IPI_CALL_FUNC);
  }
  
- void arch_send_call_function_ipi_mask(const struct cpumask *mask)
-@@ -286,10 +285,6 @@ static inline void __do_IPI(unsigned long *ops, struct ipi_data *ipi, int cpu)
- 			generic_smp_call_function_interrupt();
- 			break;
+ static const char *ipi_types[NR_IPI] = {
+@@ -484,7 +483,6 @@ static const char *ipi_types[NR_IPI] = {
+ 	S(IPI_TIMER, "Timer broadcast interrupts"),
+ 	S(IPI_RESCHEDULE, "Rescheduling interrupts"),
+ 	S(IPI_CALL_FUNC, "Function call interrupts"),
+-	S(IPI_CALL_FUNC_SINGLE, "Single function call interrupts"),
+ 	S(IPI_CPU_STOP, "CPU stop interrupts"),
+ };
  
--		case IPI_CALL_FUNC_SINGLE:
--			generic_smp_call_function_single_interrupt();
--			break;
+@@ -649,12 +647,6 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+ 		irq_exit();
+ 		break;
+ 
+-	case IPI_CALL_FUNC_SINGLE:
+-		irq_enter();
+-		generic_smp_call_function_single_interrupt();
+-		irq_exit();
+-		break;
 -
- 		case IPI_CPU_STOP:
- 			ipi_cpu_stop(cpu);
- 			break;
+ 	case IPI_CPU_STOP:
+ 		irq_enter();
+ 		ipi_cpu_stop(cpu);
 -- 
 1.8.1.2
 
