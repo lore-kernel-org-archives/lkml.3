@@ -1,58 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754925Ab3IKPlE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 11:41:04 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:60213 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754504Ab3IKPlB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 11:41:01 -0400
-Date: Wed, 11 Sep 2013 08:40:57 -0700
-From: Anton Vorontsov <anton@enomsg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] vmpressure: fix divide-by-0 in vmpressure_work_fn
-Message-ID: <20130911154057.GA16765@teo>
-References: <alpine.LNX.2.00.1309062254470.11420@eggly.anvils>
- <20130909110847.GB18056@dhcp22.suse.cz>
+	id S1755123Ab3IKPlb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 11:41:31 -0400
+Received: from tundra.namei.org ([65.99.196.166]:51097 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754367Ab3IKPl3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 11:41:29 -0400
+Date: Thu, 12 Sep 2013 01:41:42 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: David Howells <dhowells@redhat.com>
+cc: simo@redhat.com, zohar@linux.vnet.ibm.com, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Keyrings patches
+In-Reply-To: <10114.1378806359@warthog.procyon.org.uk>
+Message-ID: <alpine.LRH.2.02.1309120141280.4317@tundra.namei.org>
+References: <alpine.LRH.2.02.1309071426400.29124@tundra.namei.org> <alpine.LRH.2.02.1309070309360.24160@tundra.namei.org> <12075.1378340063@warthog.procyon.org.uk> <17000.1378488989@warthog.procyon.org.uk> <10114.1378806359@warthog.procyon.org.uk>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130909110847.GB18056@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 01:08:47PM +0200, Michal Hocko wrote:
-> On Fri 06-09-13 22:59:16, Hugh Dickins wrote:
-> > Hit divide-by-0 in vmpressure_work_fn(): checking vmpr->scanned before
-> > taking the lock is not enough, we must check scanned afterwards too.
+On Tue, 10 Sep 2013, David Howells wrote:
+
+> James Morris <jmorris@namei.org> wrote:
 > 
-> As vmpressure_work_fn seems the be the only place where we set scanned
-> to 0 (except for the rare occasion when scanned overflows which
-> would be really surprising) then the only possible way would be two
-> vmpressure_work_fn racing over the same work item. system_wq is
-> !WQ_NON_REENTRANT so one work item might be processed by multiple
-> workers on different CPUs. This means that the vmpr->scanned check in
-> the beginning of vmpressure_work_fn is inherently racy.
+> > > > This missed the merge for 3.12.  Do you want me to queue the changes up, 
+> > > > or do you want to send a pull request again after -rc1 ?
+> > > 
+> > > Can you queue them up now in your 'next' branch?
+> > 
+> > Nope, new patches can't go into -next until -rc1.
 > 
-> Hugh's patch fixes the issue obviously but doesn't it make more sense to
-> move the initial vmpr->scanned check under the lock instead?
-> 
-> Anton, what was the initial motivation for the out of the lock
-> check? Does it really optimize anything?
+> I think I misunderstood your offer.  When you said "to queue the changes up"
+> did you mean for immediate passage to Linus?  If so, is it too late for that?
 
-Thanks a lot for the explanation.
+Nope, I meant for -next :)
 
-Answering your question: the idea was to minimize the lock section, but the
-section is quite small anyway so I doubt that it makes any difference (during
-development I could not measure any effect of vmpressure() calls in my system,
-though the system itself was quite small).
 
-I am happy with moving the check under the lock or moving the work into
-its own WQ_NON_REENTRANT queue.
-
-Anton
+-- 
+James Morris
+<jmorris@namei.org>
