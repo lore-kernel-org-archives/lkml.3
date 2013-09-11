@@ -1,97 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab3IKBAU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 21:00:20 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39482 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752206Ab3IKBAS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 21:00:18 -0400
-Message-ID: <1378861204.2720.0.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [16/85] b43: ensue that BCMA is "y" when B43 is "y"
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Konstantin Ryabitsev <mricon@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, akpm@linux-foundation.org,
-        Hauke Mehrtens <hauke@hauke-m.de>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Date: Wed, 11 Sep 2013 02:00:04 +0100
-In-Reply-To: <522E3606.9060504@kernel.org>
-References: <lsq.1374674564.753305150@decadent.org.uk>
-	 <lsq.1374674565.595401652@decadent.org.uk>
-	 <20130909180115.GC6276@home.goodmis.org>
-	 <20130909183904.GJ7729@decadent.org.uk>
-	 <20130909144642.7d61907a@gandalf.local.home> <522E3606.9060504@kernel.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-dHhfeE67t++znghG0/VB"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.101
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1753494Ab3IKBAp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 21:00:45 -0400
+Received: from mga09.intel.com ([134.134.136.24]:26842 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753411Ab3IKBAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 21:00:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,881,1371106800"; 
+   d="scan'208";a="401501532"
+Message-ID: <522FC0DC.9030708@intel.com>
+Date: Wed, 11 Sep 2013 09:01:16 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Mark Brown <broonie@kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-i2c@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lv Zheng <lv.zheng@intel.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH RESEND 1/2] i2c: prepare runtime PM support for I2C client
+ devices
+References: <1378733679-19500-1-git-send-email-mika.westerberg@linux.intel.com> <3397524.g9aUWuArnm@vostro.rjw.lan> <20130910213522.GG29403@sirena.org.uk> <2029393.u6DaKBPszu@vostro.rjw.lan>
+In-Reply-To: <2029393.u6DaKBPszu@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/11/2013 06:32 AM, Rafael J. Wysocki wrote:
+> On Tuesday, September 10, 2013 10:35:22 PM Mark Brown wrote:
+>> On Tue, Sep 10, 2013 at 10:04:21PM +0200, Rafael J. Wysocki wrote:
+>>> On Tuesday, September 10, 2013 05:13:21 PM Mark Brown wrote:
+>>
+>>>> OK, that is very much not the model which embedded systems follow, in
+>>>> embedded systems the driver for the device is fully in control of its
+>>>> own power.  It gets resources like GPIOs and regulators which allow it
+>>>> to make fine grained decisions.
+>>
+>>> There are platforms where those resources are simply not available for
+>>> direct manipulation and we need to use ACPI methods for power management.
+>>
+>>> Now, since those methods are used in pretty much the same way for all I2C
+>>> devices, we add a PM domain for that to avoid duplicating the same code in
+>>> all of the drivers in question (patch [2/2]).  Does that make sense to you?
+>>
+>> It doesn't seem like a particular problem, but the existing usage does
+>> need to be preserved for the systems that use it so things like having
+>> auto as the default and updating the drivers seem like they're needed.
+>>
+>>>> If we're starting to get a reasonable number of buses following the same
+>>>> pattern it seems like we're in a position to start 
+>>
+>>> We need that for exactly 3 buses: platform (already done), I2C and SPI.
+>>
+>>> No other bus types are going to use ACPI this way for PM, at least for the
+>>> time being, simply because PCI, USB and SATA/IDE have their own ways of doing
+>>> this (which are bus-specific) and the spec doesn't cover other bus types
+>>> directly (it defines support for UART, but we don't have a UART bus type).
+>>
+>>> Moreover, because PCI and USB use ACPI for PM in their own ways, moving that
+>>> thing up to the driver core would be rather inconvenient.
+>>
+>> That only applies to the power domains though, what Mika was saying was
+>> that the process for enabling runtime PM (just drop a reference) also
+>> becomes easier with this method regardless of anything else - that makes
+>> sense to me as something we might want to end up with so do we want to
+>> just move towards making that a default?
+> 
+> Possibly. :-)
+> 
+> At least I don't see any fundamental obstacles ...
 
---=-dHhfeE67t++znghG0/VB
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Looks like, it all boils down to how many I2C devices should be allowed
+for runtime PM by default and how many I2C devices should be forbidden.
+, and then we allow/forbid runtime PM for the majority case in I2C core
+while individual driver can still forbid/allow it in their own code.
 
-On Mon, 2013-09-09 at 16:56 -0400, Konstantin Ryabitsev wrote:
-> On 09/09/13 02:46 PM, Steven Rostedt wrote:
-> > Initially, LKML would be archived on kernel.org, but that never
-> > happened and doesn't seem it will after the whole security breach
-> > incident.
->=20
-> I believe we're hoping vger will eventually start doing it on its own. :)
->=20
-> We do archive some of it as part of patchwork, but only actual patches.
->=20
-> > But if mid.gname.org is a better link to forward to, then perhaps
-> > Konstantin could update it.
->=20
-> If it's the general community opinion, I can easily change that. The
-> trouble is, "sucks less (most of the time)" is a subjective opinion that
-> may not necessarily be shared by others. :) I have to be very careful
-> changing such tools, as someone's workflow may be disrupted by the change=
-.
->=20
-> Therefore, for now I leave /r/ as-is, but you can use /g/ to direct to
-> gmane instead of marc.info:
->=20
-> http://lkml.kernel.org/g/5187EB95.2060605@infradead.org
-[...]
+So if the majority case is runtime PM should be allowed by default, I'm
+also OK to not forbid runtime PM for I2C client device in I2C core. My
+original intention to forbid runtime PM by default is to make sure no
+adverse effect would occur to some I2C devices that used to work well
+before runtime PM.
 
-Thanks!
-
-Ben.
-
---=20
-Ben Hutchings
-If more than one person is responsible for a bug, no one is at fault.
-
---=-dHhfeE67t++znghG0/VB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIVAwUAUi/AlOe/yOyVhhEJAQpHOA/9HAdwutDO9j/itJSK7J+VTLJ5+LtPfaBV
-fTu3oOoj5Uc+thqrTWJD8KrO9itzULPKfo3dT09E0AWrEX45gYMHkHiuoyYvtrSs
-LTuX2xL0pvAHoq6XAqjYQjO2qqxai0vX2H4Fi3yay8BUzEjQ8vO1klrtXgTN5yRE
-YwANFoLX7ym2wMPGtczFBtTk7cw4pHyRMx12AsVEp+6fmY1nhCK/Epo+0Ui3USrQ
-LdySo2Q++R7J1b0WtBluA4dTtgLg99DDWaGylegWqwhuSYY+zYowUxKgBockN8rF
-GqsNRQZTVqTSsOPk6KPWcHXzxweeKu6Ds/nlGWXNC2sQgOoCs7T3h78zdbizGSGF
-GRuFQJLx2t2JF9BLH+LpgJT9pyfXbDTvTERAOjXwV00hPYGjUgQhVhF2jBvvKP04
-4gQh9OurFsoY4OsZ8ZgARDN+OU1yMrPbQ47U48e0vDoY4kwxjeK1Jb3h2Mp/lP6V
-eSCAlnRQ5PFxheBfrfrcxTqP5aoUTY/hnXK0SjeIddbjU60d8JQdzrjYk0B2yF8S
-HcdFoFLgWApeNaIu3GwyeOjrcmJiwFhESgZ/dz9AvMt6t/Wh8zEnqriv6xVrOhUp
-8PJ9AyKkVjIEpgCST0wwXSCrlNXJxT3KWl6RZ5goWVDfkHZ47tjc7xh+llAIba0L
-pwKa4Mi6DzU=
-=ryw/
------END PGP SIGNATURE-----
-
---=-dHhfeE67t++znghG0/VB--
+Thanks,
+Aaron
