@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756757Ab3IKQLn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 12:11:43 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:36634 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756716Ab3IKQLj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 12:11:39 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Shaohua Li <shli@kernel.org>
-Cc: liuj97@gmail.com, Jiang Liu <jiang.liu@huawei.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <trivial@kernel.org>,
-        Wang YanQing <udknight@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: [RFC PATCH v2 25/25] SMP, trivial: remove unused code from smp_boot.h
-Date: Thu, 12 Sep 2013 00:07:29 +0800
-Message-Id: <1378915649-16395-26-git-send-email-liuj97@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1378915649-16395-1-git-send-email-liuj97@gmail.com>
-References: <1378915649-16395-1-git-send-email-liuj97@gmail.com>
+	id S1755846Ab3IKQMv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 12:12:51 -0400
+Received: from mga02.intel.com ([134.134.136.20]:15963 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755315Ab3IKQMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 12:12:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,885,1371106800"; 
+   d="scan'208";a="394223054"
+Date: Wed, 11 Sep 2013 18:12:43 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-i2c@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lv Zheng <lv.zheng@intel.com>, Aaron Lu <aaron.lu@intel.com>,
+        linux-arm-kernel@lists.infradead.org, Mark Brown <broonie@kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH v2 6/9] mfd: wm8994: convert to use I2C core runtime PM
+Message-ID: <20130911161242.GA13015@zurbaran>
+References: <1378913560-2752-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1378913560-2752-7-git-send-email-mika.westerberg@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378913560-2752-7-git-send-email-mika.westerberg@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <jiang.liu@huawei.com>
+Hi Mika,
 
-Function smpboot_thread_schedule() is never defined or used,
-so remove it from smp_boot.h.
+On Wed, Sep 11, 2013 at 06:32:37PM +0300, Mika Westerberg wrote:
+> The I2C core now prepares runtime PM on behalf of the I2C client device, so
+> only thing the driver needs to do is to call pm_runtime_put() at the end of
+> its ->probe().
+> 
+> This patch converts wm8994 driver to use this model.
+> 
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Acked-by: Samuel Ortiz <sameo@linux.intel.com>
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Jiang Liu <liuj97@gmail.com>
----
- include/linux/smpboot.h | 1 -
- 1 file changed, 1 deletion(-)
+I think it would make more sense for you to merge that one together with
+the related i2c changes. If you prefer that I take it through MFD,
+please let me know.
 
-diff --git a/include/linux/smpboot.h b/include/linux/smpboot.h
-index 13e9296..d600afb 100644
---- a/include/linux/smpboot.h
-+++ b/include/linux/smpboot.h
-@@ -47,6 +47,5 @@ struct smp_hotplug_thread {
- 
- int smpboot_register_percpu_thread(struct smp_hotplug_thread *plug_thread);
- void smpboot_unregister_percpu_thread(struct smp_hotplug_thread *plug_thread);
--int smpboot_thread_schedule(void);
- 
- #endif
+Cheers,
+Samuel.
+
 -- 
-1.8.1.2
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
