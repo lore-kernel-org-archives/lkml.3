@@ -1,44 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707Ab3IKObp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 10:31:45 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52211 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753925Ab3IKObn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 10:31:43 -0400
-Date: Wed, 11 Sep 2013 16:32:16 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, kexec@lists.infradead.org,
-        akpm@linux-foundation.org, zohar@linux.vnet.ibm.com,
-        d.kasatkin@samsung.com, ebiederm@xmission.com,
-        matthew.garrett@nebula.com, Dave Young <dyoung@redhat.com>
-Subject: Re: [PATCH 15/16] bootparam: Pass acpi_rsdp pointer in bootparam
-Message-ID: <20130911143216.GA933@x1.alien8.de>
-References: <1378849471-10521-1-git-send-email-vgoyal@redhat.com>
- <1378849471-10521-16-git-send-email-vgoyal@redhat.com>
- <522FA2A8.8080703@zytor.com>
- <20130911114419.GB31551@x1.alien8.de>
- <20130911134534.GB15364@redhat.com>
+	id S1754744Ab3IKOby (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 10:31:54 -0400
+Received: from a9-66.smtp-out.amazonses.com ([54.240.9.66]:44359 "EHLO
+	a9-66.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754469Ab3IKObx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 10:31:53 -0400
+Date: Wed, 11 Sep 2013 14:31:51 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/16] slab: change return type of kmem_getpages() to
+ struct page
+In-Reply-To: <1377161065-30552-3-git-send-email-iamjoonsoo.kim@lge.com>
+Message-ID: <000001410d6f7625-f84563e7-091f-4a83-b722-3f20d32c5b56-000000@email.amazonses.com>
+References: <1377161065-30552-1-git-send-email-iamjoonsoo.kim@lge.com> <1377161065-30552-3-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130911134534.GB15364@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.09.11-54.240.9.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 09:45:34AM -0400, Vivek Goyal wrote:
-> I am looking forward to that new version. CCing Dave Young. He is also
-> looking into it and going through history of patches.
+On Thu, 22 Aug 2013, Joonsoo Kim wrote:
 
-Ok, I'll CC you guys on the submission - I'd need any and all feedback I
-can get on that topic.
+> It is more understandable that kmem_getpages() return struct page.
+> And, with this, we can reduce one translation from virt addr to page and
+> makes better code than before. Below is a change of this patch.
 
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
+Acked-by: Christoph Lameter <cl@linux.com>
