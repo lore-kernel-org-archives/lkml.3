@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756562Ab3IKQKK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 12:10:10 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:46974 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755185Ab3IKQKH (ORCPT
+	id S1756581Ab3IKQKT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 12:10:19 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:56854 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755748Ab3IKQKN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 12:10:07 -0400
+	Wed, 11 Sep 2013 12:10:13 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Shaohua Li <shli@kernel.org>
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Shaohua Li <shli@kernel.org>
 Cc: liuj97@gmail.com, Jiang Liu <jiang.liu@huawei.com>,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <trivial@kernel.org>,
-        Wang YanQing <udknight@gmail.com>, linuxppc-dev@lists.ozlabs.org,
+        Wang YanQing <udknight@gmail.com>, linux390@de.ibm.com,
         linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: [RFC PATCH v2 15/25] smp, ppc: kill SMP single function call interrupt
-Date: Thu, 12 Sep 2013 00:07:19 +0800
-Message-Id: <1378915649-16395-16-git-send-email-liuj97@gmail.com>
+Subject: [RFC PATCH v2 16/25] smp, s390: prepare for killing generic_smp_call_function_single_interrupt()
+Date: Thu, 12 Sep 2013 00:07:20 +0800
+Message-Id: <1378915649-16395-17-git-send-email-liuj97@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378915649-16395-1-git-send-email-liuj97@gmail.com>
 References: <1378915649-16395-1-git-send-email-liuj97@gmail.com>
@@ -28,83 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <jiang.liu@huawei.com>
 
-Commit 9a46ad6d6df3b54 "smp: make smp_call_function_many() use logic
-similar to smp_call_function_single()" has unified the way to handle
-single and multiple cross-CPU function calls. Now only one interrupt
-is needed for architecture specific code to support generic SMP function
-call interfaces, so kill the redundant single function call interrupt.
-
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 Cc: Jiang Liu <liuj97@gmail.com>
 ---
- arch/powerpc/include/asm/smp.h |  3 +--
- arch/powerpc/kernel/smp.c      | 12 +-----------
- 2 files changed, 2 insertions(+), 13 deletions(-)
+ arch/s390/kernel/smp.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/smp.h b/arch/powerpc/include/asm/smp.h
-index 48cfc85..53faa03 100644
---- a/arch/powerpc/include/asm/smp.h
-+++ b/arch/powerpc/include/asm/smp.h
-@@ -119,8 +119,7 @@ extern int cpu_to_core_id(int cpu);
-  * in /proc/interrupts will be wrong!!! --Troy */
- #define PPC_MSG_CALL_FUNCTION   0
- #define PPC_MSG_RESCHEDULE      1
--#define PPC_MSG_CALL_FUNC_SINGLE	2
--#define PPC_MSG_DEBUGGER_BREAK  3
-+#define PPC_MSG_DEBUGGER_BREAK  2
+diff --git a/arch/s390/kernel/smp.c b/arch/s390/kernel/smp.c
+index d386c4e..81ca42a 100644
+--- a/arch/s390/kernel/smp.c
++++ b/arch/s390/kernel/smp.c
+@@ -49,7 +49,7 @@
  
- /* for irq controllers that have dedicated ipis per message (4) */
- extern int smp_request_message_ipi(int virq, int message);
-diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
-index 38b0ba6..0c53b10 100644
---- a/arch/powerpc/kernel/smp.c
-+++ b/arch/powerpc/kernel/smp.c
-@@ -123,12 +123,6 @@ static irqreturn_t reschedule_action(int irq, void *data)
- 	return IRQ_HANDLED;
+ enum {
+ 	ec_schedule = 0,
+-	ec_call_function_single,
++	ec_call_function,
+ 	ec_stop_cpu,
+ };
+ 
+@@ -437,8 +437,8 @@ static void smp_handle_ext_call(void)
+ 		smp_stop_cpu();
+ 	if (test_bit(ec_schedule, &bits))
+ 		scheduler_ipi();
+-	if (test_bit(ec_call_function_single, &bits))
+-		generic_smp_call_function_single_interrupt();
++	if (test_bit(ec_call_function, &bits))
++		generic_smp_call_function_interrupt();
  }
  
--static irqreturn_t call_function_single_action(int irq, void *data)
--{
--	generic_smp_call_function_single_interrupt();
--	return IRQ_HANDLED;
--}
--
- static irqreturn_t debug_ipi_action(int irq, void *data)
- {
- 	if (crash_ipi_function_ptr) {
-@@ -146,14 +140,12 @@ static irqreturn_t debug_ipi_action(int irq, void *data)
- static irq_handler_t smp_ipi_action[] = {
- 	[PPC_MSG_CALL_FUNCTION] =  call_function_action,
- 	[PPC_MSG_RESCHEDULE] = reschedule_action,
--	[PPC_MSG_CALL_FUNC_SINGLE] = call_function_single_action,
- 	[PPC_MSG_DEBUGGER_BREAK] = debug_ipi_action,
- };
+ static void do_ext_call_interrupt(struct ext_code ext_code,
+@@ -453,12 +453,12 @@ void arch_send_call_function_ipi_mask(const struct cpumask *mask)
+ 	int cpu;
  
- const char *smp_ipi_name[] = {
- 	[PPC_MSG_CALL_FUNCTION] =  "ipi call function",
- 	[PPC_MSG_RESCHEDULE] = "ipi reschedule",
--	[PPC_MSG_CALL_FUNC_SINGLE] = "ipi call function single",
- 	[PPC_MSG_DEBUGGER_BREAK] = "ipi debugger",
- };
- 
-@@ -225,8 +217,6 @@ irqreturn_t smp_ipi_demux(void)
- 			generic_smp_call_function_interrupt();
- 		if (all & (1 << (24 - 8 * PPC_MSG_RESCHEDULE)))
- 			scheduler_ipi();
--		if (all & (1 << (24 - 8 * PPC_MSG_CALL_FUNC_SINGLE)))
--			generic_smp_call_function_single_interrupt();
- 		if (all & (1 << (24 - 8 * PPC_MSG_DEBUGGER_BREAK)))
- 			debug_ipi_action(0, NULL);
- #else
-@@ -257,7 +247,7 @@ EXPORT_SYMBOL_GPL(smp_send_reschedule);
+ 	for_each_cpu(cpu, mask)
+-		pcpu_ec_call(pcpu_devices + cpu, ec_call_function_single);
++		pcpu_ec_call(pcpu_devices + cpu, ec_call_function);
+ }
  
  void arch_send_call_function_single_ipi(int cpu)
  {
--	do_message_pass(cpu, PPC_MSG_CALL_FUNC_SINGLE);
-+	do_message_pass(cpu, PPC_MSG_CALL_FUNCTION);
+-	pcpu_ec_call(pcpu_devices + cpu, ec_call_function_single);
++	pcpu_ec_call(pcpu_devices + cpu, ec_call_function);
  }
  
- void arch_send_call_function_ipi_mask(const struct cpumask *mask)
+ #ifndef CONFIG_64BIT
 -- 
 1.8.1.2
 
