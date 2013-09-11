@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061Ab3IKMvJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 08:51:09 -0400
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:44784 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670Ab3IKMvG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 08:51:06 -0400
-Date: Wed, 11 Sep 2013 08:51:01 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, toshi.kani@hp.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2 0/9] x86, memblock: Allocate memory near kernel image
- before SRAT parsed.
-Message-ID: <20130911125101.GA20997@htj.dyndns.org>
-References: <1378894057-30946-1-git-send-email-tangchen@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378894057-30946-1-git-send-email-tangchen@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753362Ab3IKM7U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 08:59:20 -0400
+Received: from mga02.intel.com ([134.134.136.20]:33376 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752424Ab3IKM7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 08:59:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,884,1371106800"; 
+   d="scan'208";a="376589800"
+From: tianyu.lan@intel.com
+To: rjw@sisk.pl, viresh.kumar@linaro.org
+Cc: Lan Tianyu <tianyu.lan@intel.com>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Cpufreq/governor: Remove fossil comment
+Date: Wed, 11 Sep 2013 20:49:57 +0800
+Message-Id: <1378903797-6350-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 06:07:28PM +0800, Tang Chen wrote:
-> This patch-set is based on tj's suggestion, and not fully tested. 
-> Just for review and discussion. And according to tj's suggestion, 
-> implemented a new function memblock_alloc_bottom_up() to allocate 
-> memory from bottom upwards, whihc can simplify the code.
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-For $DEITY's sake, can you please specify against which tree the
-patches are?  :(
+cpufreq_set_policy() has been changed to origin __cpufreq_set_policy()
+and policy->lock has been converted to rewrite lock by commit 5a01f2.
+So remove the comment.
 
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+---
+This patch is based on patch "cpufreq: rename __cpufreq_set_policy()
+as cpufreq_set_policy()."
+http://marc.info/?l=linux-kernel&m=137889464210638&w=2
+
+ drivers/cpufreq/cpufreq_userspace.c | 11 -----------
+ 1 file changed, 11 deletions(-)
+
+diff --git a/drivers/cpufreq/cpufreq_userspace.c b/drivers/cpufreq/cpufreq_userspace.c
+index 0307809..4dbf1db 100644
+--- a/drivers/cpufreq/cpufreq_userspace.c
++++ b/drivers/cpufreq/cpufreq_userspace.c
+@@ -38,18 +38,7 @@ static int cpufreq_set(struct cpufreq_policy *policy, unsigned int freq)
+ 	if (!per_cpu(cpu_is_managed, policy->cpu))
+ 		goto err;
+ 
+-	/*
+-	 * We're safe from concurrent calls to ->target() here
+-	 * as we hold the userspace_mutex lock. If we were calling
+-	 * cpufreq_driver_target, a deadlock situation might occur:
+-	 * A: cpufreq_set (lock userspace_mutex) ->
+-	 *      cpufreq_driver_target(lock policy->lock)
+-	 * B: cpufreq_set_policy(lock policy->lock) ->
+-	 *      __cpufreq_governor ->
+-	 *         cpufreq_governor_userspace (lock userspace_mutex)
+-	 */
+ 	ret = __cpufreq_driver_target(policy, freq, CPUFREQ_RELATION_L);
+-
+  err:
+ 	mutex_unlock(&userspace_mutex);
+ 	return ret;
 -- 
-tejun
+1.8.4.rc0.1.g8f6a3e5.dirty
+
