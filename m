@@ -1,76 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447Ab3IKBFx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 21:05:53 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:10836 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752158Ab3IKBFw (ORCPT
+	id S1752883Ab3IKBPD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 21:15:03 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:64731 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042Ab3IKBPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 21:05:52 -0400
-X-AuditID: cbfee68e-b7f756d000004512-26-522fc1eeb937
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Michael Opdenacker'" <michael.opdenacker@free-electrons.com>
-Cc: davem@davemloft.net, jogo@openwrt.org, joe@perches.com, mbizon@freebox.fr,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1378537010-7128-1-git-send-email-michael.opdenacker@free-electrons.com>
-In-reply-to: <1378537010-7128-1-git-send-email-michael.opdenacker@free-electrons.com>
-Subject: Re: [PATCH] bcm63xx_enet: remove deprecated IRQF_DISABLED
-Date: Wed, 11 Sep 2013 10:05:50 +0900
-Message-id: <003101ceae8b$0e6dff20$2b49fd60$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac6rl3C6Qd+8H+p1QVaB6nqAHTrOWwC83w6w
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKIsWRmVeSWpSXmKPExsVy+t8zQ913B/WDDE6/N7eYc76FxWL2/ccs
-	FrfXnWKzuLxrDpvFjb0vmC0eTFjFZnFsgZgDu8eWlTeZPJ5susjosb7/PovHlsUZHl9WXWP2
-	+LxJLoAtissmJTUnsyy1SN8ugSujYdNStoKJLBVHf01jbWDcwtzFyMkhIWAisXT1NBYIW0zi
-	wr31bF2MXBxCAssYJT6+mMQCU/R/yTtmiMQiRomZ32ZDOb8YJebtXcIOUsUmoCbx5cthIJuD
-	Q0TAQeL/BxOQGmaBVkaJSV37mUBqhATCJK7s/wBWzykQLnF88zGwM4QFnCQuHLvJBmKzCKhK
-	/NnXAraZV8BW4viqe0wQtqDEj8n3wOLMAloS63ceZ4Kw5SU2r3nLDLJXQkBd4tFfXZCwiICR
-	xLtH55khSkQk9r14xwhyj4TAV3aJ89dmQe0SkPg2+RALRK+sxKYD0FCRlDi44gbLBEaJWUg2
-	z0KyeRaSzbOQrFjAyLKKUTS1ILmgOCm9yEivODG3uDQvXS85P3cTIySK+3Yw3jxgfYgxGWj9
-	RGYp0eR8YBLIK4k3NDYzsjA1MTU2Mrc0I01YSZxXrcU6UEggPbEkNTs1tSC1KL6oNCe1+BAj
-	EwenVANjzF+76hMVrR3SR/1To+59O3x5lfbhbdv8rkrOzj0T+iM9tTlnI0fnIo7Xe662r568
-	J21tTXTOlN2H556eLFyXH9M987v5RP6AHcbGBo9DJYS5Pq9Zyfg28Zm+s+QeUwWxGzWNe2Oc
-	Vjw7vjzYTyFcZe7iA6xBnxdwhc+SXx19ImHq/MUqB7pTlViKMxINtZiLihMBMdYfL/gCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrEKsWRmVeSWpSXmKPExsVy+t9jAd13B/WDDI59MraYc76FxWL2/ccs
-	FrfXnWKzuLxrDpvFjb0vmC0eTFjFZnFsgZgDu8eWlTeZPJ5susjosb7/PovHlsUZHl9WXWP2
-	+LxJLoAtqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNct
-	MwfoFCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jRsOmpWwFE1kqjv6a
-	xtrAuIW5i5GTQ0LAROL/kndQtpjEhXvr2boYuTiEBBYxSsz8NpsZwvnFKDFv7xJ2kCo2ATWJ
-	L18OA9kcHCICDhL/P5iA1DALtDJKTOrazwRSIyQQJnFl/wewek6BcInjm4+BbRAWcJK4cOwm
-	G4jNIqAq8WdfCwuIzStgK3F81T0mCFtQ4sfke2BxZgEtifU7jzNB2PISm9e8ZQbZKyGgLvHo
-	ry5IWETASOLdo/PMECUiEvtevGOcwCg0C8mkWUgmzUIyaRaSlgWMLKsYRVMLkguKk9JzjfSK
-	E3OLS/PS9ZLzczcxglPEM+kdjKsaLA4xCnAwKvHw3pDTDxJiTSwrrsw9xCjBwawkwjvVCSjE
-	m5JYWZValB9fVJqTWnyIMRno0YnMUqLJ+cD0lVcSb2hsYmZkaWRmYWRibk6asJI478FW60Ah
-	gfTEktTs1NSC1CKYLUwcnFINjEW3PZf3f1B8Lr7GYfbk0sqDxwN4J+ld0CySWLZsqi//9eaH
-	G+yKub+mZnAv+nzrj1flBF1HU3sDh8stiVGWyatEJQ7/nOymuPZQToh8iW/peqG2W1fLdHRT
-	AvgaDvzZlbjynjSDelL+Vf+8Vas2rtkScrt6gQr7OWbDD8lHZGNqpnW9+XktU4mlOCPRUIu5
-	qDgRANMhaPhVAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 10 Sep 2013 21:15:02 -0400
+Message-ID: <522FC411.3030208@linaro.org>
+Date: Tue, 10 Sep 2013 18:14:57 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "Theodore Ts'o" <tytso@mit.edu>, Stephan Mueller <smueller@chronox.de>,
+        LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] /dev/random: Insufficient of entropy on many architectures
+References: <10005394.BRCyBMYWy3@tauon> <CANcMJZAHuXNQ4eUx+qpVnfJTg625HkJU_9pgBP24ykkmBww3yw@mail.gmail.com> <20130910203853.GG29237@thunk.org> <522F851D.1040101@linaro.org> <20130910211009.GI29237@thunk.org> <522F984C.2070909@linaro.org> <20130910223326.GD11063@thunk.org> <522FB9F1.3070905@linaro.org> <20130911005047.GA13315@thunk.org>
+In-Reply-To: <20130911005047.GA13315@thunk.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, September 07, 2013 3:57 PM, Michael Opdenacker wrote:
-> 
-> This patch proposes to remove the IRQF_DISABLED flag from
-> drivers/net/ethernet/broadcom/bcm63xx_enet.c
-> 
-> It's a NOOP since 2.6.35 and it will be removed one day.
-> 
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+On 09/10/2013 05:50 PM, Theodore Ts'o wrote:
+> On Tue, Sep 10, 2013 at 05:31:45PM -0700, John Stultz wrote:
+>> Yea, that point about "every single interrupt" vs "every timer
+>> interrupt". I suspect that if its every timer interrupt, this can be
+>> done easily w/ clocksources as we already do that read, but every single
+>> interrupt would have potential problems with various other devices with
+>> high irq frequency.
+> Yep.  The worse case would probably a serial port running at 230400
+> bps.  Even with a 16550A UART with the 16-byte FIFO, we're talking
+> about close to 2,000 interrupts per second.  A 16450 running at 115200
+> bps would give us 11,520 interrupts per second....
+>
+>> Right so get_cycles() really sounds like the right thing here.
+> For those platforms which have them, yes.
+>
+>> Although I wonder if you run into issues with counters that wrap
+>> quickly? Or does that not matter?
+> No, it doesn't matter.  It's really the low bits of the counter which
+> are really important to us anyway.  For example on MIPS there is a
+> register which is bumped on every CPU cycle, but its kept mod the
+> number of entries in the TLB (it's used for random TLB eviction).
+> That's what we'll probably ending using for MIPS, since its cycle
+> counter is not guaranteed to be there, and had a bug which could cause
+> timer interrupts to get lost if you tried reading from it at the wrong
+> time.
+>
+>> Right. In many cases jiffies is all that we have. Thus the check for
+>> timekeeping_valid_for_hres() can be used to at least flag that case. Not
+>> that I know what you want to do if it comes up false.
+> Right now, if get_cycles() returns 0, we fall back to only mixing in
+> the IP register from the interrupt plus the jiffies counter.  The
+> platforms where get_cycles returns 0 is:
+>
+> - MIPS (solution pending)
+> - User mode Linux
+> - Sparc 32 bit
+> - M68K
+> - M32R
+> - Hexagon
+> - H8/300
+> - FR-V
+> - CRIS
+> - AVR32
+> - ARC
+> - METAG
+> - Microblaze
+> - SCORE
+> - SH
+> - Unicore32
+>
+> Would I be correct in assuming that most of these probably don't have a
+> high-res clocksource, and so would fall back to jiffies anyway?
 
-Reviewed-by: Jingoo Han <jg1.han@samsung.com>
+So some of them (on specific hardware, likely not as an architecture
+feature) do have clocksources that are reasonably highres (m68k, sh,
+hexagon). I have no sense of the cost to read them, however. I suspect
+syncing with the maintainers and seeing if get_cycles can be enabled on
+any of these arches, or if we should add an extra flag to the
+clocksource drivers to determine if the clocksource is fast enough for
+get_cycles/sched_clock usage.
 
-Best regards,
-Jingoo Han
+Otherwise yea, I'd avoid trying to read clocksources on every irq.
 
-> ---
->  drivers/net/ethernet/broadcom/bcm63xx_enet.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
+thanks
+-john
+
+
 
