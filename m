@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753434Ab3IKAjS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 20:39:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39409 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751871Ab3IKAjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 20:39:16 -0400
-Date: Wed, 11 Sep 2013 10:39:05 +1000
-From: Dave Chinner <dchinner@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Glauber Costa <glommer@openvz.org>
-Subject: Re: linux-next: manual merge of the akpm tree with Linus' tree
-Message-ID: <20130911003905.GD2445@devil.localdomain>
-References: <20130910152753.662599171456233c5f91edb4@linux-foundation.org>
- <20130910222924.GB13318@ZenIV.linux.org.uk>
- <20130910153520.14e49cd32feb16d45eb8abac@linux-foundation.org>
- <20130910223624.GC13318@ZenIV.linux.org.uk>
- <20130910154116.cc4afe048213a779040ea3cc@linux-foundation.org>
- <20130910224823.GE13318@ZenIV.linux.org.uk>
- <20130910225934.GF13318@ZenIV.linux.org.uk>
- <CA+55aFwXXsk47WrAqF6yuVXOQHuNpxT7x-=MmLsNBptyzjH1zQ@mail.gmail.com>
- <20130910235349.GG13318@ZenIV.linux.org.uk>
- <CA+55aFwMdZAVJLakx=xxY2QXaRdOxaPGMttU=P=2tH6+RNJeog@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwMdZAVJLakx=xxY2QXaRdOxaPGMttU=P=2tH6+RNJeog@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753455Ab3IKAjj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 20:39:39 -0400
+Received: from smtprelay0057.hostedemail.com ([216.40.44.57]:39133 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751871Ab3IKAjh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 20:39:37 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1568:1593:1594:1711:1714:1730:1747:1777:1792:1801:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3876:3877:4321:4389:4605:5007:6114:6642:7652:7903:10004:10400:10848:11658:11914:12043:12294:12517:12519:12740:13019:13069:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: box34_8de7e0d1a5a55
+X-Filterd-Recvd-Size: 1570
+Message-ID: <1378859974.15187.5.camel@joe-AO722>
+Subject: Re: Resend: [PATCH 2/2] s390: provide hardware randomness from
+ zcrypt card to /dev/random
+From: Joe Perches <joe@perches.com>
+To: Torsten Duwe <duwe@lst.de>
+Cc: tytso@mit.edu, ingo.tuchscherer@de.ibm.com, linux-kernel@vger.kernel.org,
+        Hans-Georg Markgraf <MGRF@de.ibm.com>,
+        Gerald Schaefer <GERALDSC@de.ibm.com>,
+        Martin Schwidefsky <martin.schwidefsky@de.ibm.com>
+Date: Tue, 10 Sep 2013 17:39:34 -0700
+In-Reply-To: <alpine.LNX.2.00.1309041044470.3219@linux.site>
+References: <alpine.LNX.2.00.1309041044470.3219@linux.site>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 05:01:23PM -0700, Linus Torvalds wrote:
-> On Tue, Sep 10, 2013 at 4:53 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> > list_lru_add() can fail if it's already on the list; leaving the counter
-> > alone should've been conditional on that, setting the flag - no.  Said
-> > that, it probably should be WARN_ON(!...); this_cpu_inc(); ... |= ...;
-> 
-> That WARN_ON_(!..) might indeed be better (maybe just WARN_ON_ONCE())..
-> 
-> That DCACHE_LRU_LIST bit needs to be coherent with "the dentry->d_lru
-> entry is on _some_ list" (whether it's the dentry one or the shrinker
-> one), so if that list_lru_add() ever fails, that would be a sign of
-> badness.
-> 
-> And that whole function is very performance-critical, to the point
-> where we not only don't want to call down to list_lry_add(), we don't
-> even want to touch the d_lru list entry itself to even _look_ if it's
-> empty or not, because that will take a cache miss. Which was obviously
-> the whole reason for that DCACHE_LRU_LIST bit existing...
+On Wed, 2013-09-04 at 10:48 +0200, Torsten Duwe wrote:
+[]
+> +++ b/drivers/s390/crypto/zcrypt_api.c
 
-Guys, I'm about to be out of the office for 4-5 days, so this is
-real bad timing for me. When I get back I'll put some effort into
-validating that everything still works properly and performs as
-expected.
+> @@ -1141,6 +1144,36 @@ static struct hwrng zcrypt_rng_dev = {
+][
+> +static int zcrypt_hwrng_fillfn(void *unused)
+> +{
+> +       long rc;
+> +
+> +       while (!kthread_should_stop()) {
+> +               rc = zcrypt_rng((char *)zcrypt_rng_buffer);
+> +               if (rc == -ENODEV || rc == -EINVAL || rc == -ENOMEM) {
+> +                       pr_err("zcrypt_rng unavailable: %ld", rc);
 
-Cheers,
+please add terminating newlines
 
-Dave.
--- 
-Dave Chinner
-dchinner@redhat.com
+			pr_err("zcrypt_rng unavailable: %ld\n", rc);
+
+etc...
+
+
+
