@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993Ab3IKE5e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 00:57:34 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3257 "EHLO
+	id S1754933Ab3IKE5b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 00:57:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13847 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753011Ab3IKE4r (ORCPT
+	with ESMTP id S1754143Ab3IKE4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 00:56:47 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=K1To-U8uYu4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=P_mcBTHB8mkA:10 a=JDjsHSkAAAAA:8 a=Ikd4Dj_1AAAA:8 a=mJjC6ScEAAAA:8 a=VwQbUJbxAAAA:8 a=nbw4QO9JrEnshcIXSTQA:9 a=Hf6muOzgCGQA:10 a=B7-YBXcGuVcA:10 a=2NEUOfxDfW4A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Wed, 11 Sep 2013 00:56:50 -0400
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=jaaXmWPtUZkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=VYAIF170pFYA:10 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=wAwfuhEyL-vLSwEzO4gA:9 a=0kPLrQdw3YYA:10 a=dGJ0OcVc7YAA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042933.906336826@goodmis.org>
+Message-Id: <20130911042932.114401809@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:31:15 -0400
+Date: Wed, 11 Sep 2013 00:31:06 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Mark Young <MYoung@nvidia.com>, Matt Craighead <mcraighead@nvidia.com>,
-        Bruce Fields <bfields@fieldses.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [248/251] SUNRPC: Fix memory corruption issue on 32-bit highmem systems
+Cc: Takashi Iwai <tiwai@suse.de>
+Subject: [239/251] ALSA: opti9xx: Fix conflicting driver object name
 References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0248-SUNRPC-Fix-memory-corruption-issue-on-32-bit-highmem.patch
+Content-Disposition: inline; filename=0239-ALSA-opti9xx-Fix-conflicting-driver-object-name.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,53 +29,58 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-[ Upstream commit 347e2233b7667e336d9f671f1a52dfa3f0416e2c ]
+[ Upstream commit fb615499f0ad28ed74201c1cdfddf9e64e205424 ]
 
-Some architectures, such as ARM-32 do not return the same base address
-when you call kmap_atomic() twice on the same page.
-This causes problems for the memmove() call in the XDR helper routine
-"_shift_data_right_pages()", since it defeats the detection of
-overlapping memory ranges, and has been seen to corrupt memory.
+The recent commit to delay the release of kobject triggered NULL
+dereferences of opti9xx drivers.  The cause is that all
+snd-opti92x-ad1848, snd-opti92x-cs4231 and snd-opti93x drivers
+register the PnP card driver with the very same name, and also
+snd-opti92x-ad1848 and -cs4231 drivers register the ISA driver with
+the same name, too.  When these drivers are built in, quick
+"register-release-and-re-register" actions occur, and this results in
+Oops because of the same name is assigned to the kobject.
 
-The fix is to distinguish between the case where we're doing an
-inter-page copy or not. In the former case of we know that the memory
-ranges cannot possibly overlap, so we can additionally micro-optimise
-by replacing memmove() with memcpy().
+The fix is simply to assign individual names.  As a bonus, by using
+KBUILD_MODNAME, the patch reduces more lines than it adds.
 
-Reported-by: Mark Young <MYoung@nvidia.com>
-Reported-by: Matt Craighead <mcraighead@nvidia.com>
-Cc: Bruce Fields <bfields@fieldses.org>
-Cc: stable@vger.kernel.org
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Tested-by: Matt Craighead <mcraighead@nvidia.com>
+The fix is based on the suggestion by Russell King.
+
+Reported-and-tested-by: Fengguang Wu <fengguang.wu@intel.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- net/sunrpc/xdr.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ sound/isa/opti9xx/opti92x-ad1848.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/net/sunrpc/xdr.c b/net/sunrpc/xdr.c
-index 0afba1b..7e99acd 100644
---- a/net/sunrpc/xdr.c
-+++ b/net/sunrpc/xdr.c
-@@ -207,10 +207,13 @@ _shift_data_right_pages(struct page **pages, size_t pgto_base,
- 		pgfrom_base -= copy;
+diff --git a/sound/isa/opti9xx/opti92x-ad1848.c b/sound/isa/opti9xx/opti92x-ad1848.c
+index f8fbe22..e7ec347 100644
+--- a/sound/isa/opti9xx/opti92x-ad1848.c
++++ b/sound/isa/opti9xx/opti92x-ad1848.c
+@@ -172,11 +172,7 @@ MODULE_DEVICE_TABLE(pnp_card, snd_opti9xx_pnpids);
  
- 		vto = kmap_atomic(*pgto);
--		vfrom = kmap_atomic(*pgfrom);
--		memmove(vto + pgto_base, vfrom + pgfrom_base, copy);
-+		if (*pgto != *pgfrom) {
-+			vfrom = kmap_atomic(*pgfrom);
-+			memcpy(vto + pgto_base, vfrom + pgfrom_base, copy);
-+			kunmap_atomic(vfrom);
-+		} else
-+			memmove(vto + pgto_base, vto + pgfrom_base, copy);
- 		flush_dcache_page(*pgto);
--		kunmap_atomic(vfrom);
- 		kunmap_atomic(vto);
+ #endif	/* CONFIG_PNP */
  
- 	} while ((len -= copy) != 0);
+-#ifdef OPTi93X
+-#define DEV_NAME "opti93x"
+-#else
+-#define DEV_NAME "opti92x"
+-#endif
++#define DEV_NAME KBUILD_MODNAME
+ 
+ static char * snd_opti9xx_names[] = {
+ 	"unknown",
+@@ -1180,7 +1176,7 @@ static int snd_opti9xx_pnp_resume(struct pnp_card_link *pcard)
+ 
+ static struct pnp_card_driver opti9xx_pnpc_driver = {
+ 	.flags		= PNP_DRIVER_RES_DISABLE,
+-	.name		= "opti9xx",
++	.name		= DEV_NAME,
+ 	.id_table	= snd_opti9xx_pnpids,
+ 	.probe		= snd_opti9xx_pnp_probe,
+ 	.remove		= __devexit_p(snd_opti9xx_pnp_remove),
 -- 
 1.7.10.4
 
