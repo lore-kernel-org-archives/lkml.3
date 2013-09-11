@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757440Ab3IKXLo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 19:11:44 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25104 "EHLO
+	id S1757489Ab3IKXMC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 19:12:02 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15055 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756031Ab3IKXKp (ORCPT
+	with ESMTP id S1755005Ab3IKXKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 19:10:45 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=e61nue_jlPsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=TrkzcBpPKikA:10 a=yPCof4ZbAAAA:8 a=VwQbUJbxAAAA:8 a=iox4zFpeAAAA:8 a=tHz9FfFoAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=7DSvI1NPTFQA:10 a=n9GBPR9yFnkA:10 a=6O0IECtVFhoA:10 a=jeBq3FmKZ4MA:10 a=77sYii9e-cquX2gv:21 a=eQHijYMxIosPzvAG:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Wed, 11 Sep 2013 19:10:44 -0400
+X-Authority-Analysis: v=2.0 cv=R/aB6KtX c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=WZ_8_-oCCh8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=kqGNItpMEbgA:10 a=20KFwNOVAAAA:8 a=yPCof4ZbAAAA:8 a=VwQbUJbxAAAA:8 a=tmtSDGaQAAAA:8 a=ayC55rCoAAAA:8 a=RvlEQHu-AAAA:8 a=wAwfuhEyL-vLSwEzO4gA:9 a=E6k37eg1NvgA:10 a=jEp0ucaQiEUA:10 a=7DSvI1NPTFQA:10 a=jkObVMfX7fAA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042908.806789774@goodmis.org>
+Message-Id: <20130911042905.967076674@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:28:46 -0400
+Date: Wed, 11 Sep 2013 00:28:29 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Jan Beulich <JBeulich@suse.com>, Ian Campbell <Ian.Campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [099/251] xen/blkback: Check device permissions before allowing OP_DISCARD
+Cc: "Ewan D. Milne" <emilne@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [082/251] sd: fix crash when UA received on DIF enabled device
 References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0099-xen-blkback-Check-device-permissions-before-allowing.patch
+Content-Disposition: inline; filename=0082-sd-fix-crash-when-UA-received-on-DIF-enabled-device.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,58 +31,77 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: "Ewan D. Milne" <emilne@redhat.com>
 
-[ Upstream commit 604c499cbbcc3d5fe5fb8d53306aa0fae1990109 ]
+[ Upstream commit 085b513f97d8d799d28491239be4b451bcd8c2c5 ]
 
-We need to make sure that the device is not RO or that
-the request is not past the number of sectors we want to
-issue the DISCARD operation for.
+sd_prep_fn will allocate a larger CDB for the command via mempool_alloc
+for devices using DIF type 2 protection.  This CDB was being freed
+in sd_done, which results in a kernel crash if the command is retried
+due to a UNIT ATTENTION.  This change moves the code to free the larger
+CDB into sd_unprep_fn instead, which is invoked after the request is
+complete.
 
-This fixes CVE-2013-2140.
+It is no longer necessary to call scsi_print_command separately for
+this case as the ->cmnd will no longer be NULL in the normal code path.
 
-Cc: stable@vger.kernel.org
-Acked-by: Jan Beulich <JBeulich@suse.com>
-Acked-by: Ian Campbell <Ian.Campbell@citrix.com>
-[v1: Made it pr_warn instead of pr_debug]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Also removed conditional test for DIF type 2 when freeing the larger
+CDB because the protection_type could have been changed via sysfs while
+the command was executing.
+
+Signed-off-by: Ewan D. Milne <emilne@redhat.com>
+Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/block/xen-blkback/blkback.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/scsi/sd.c |   22 +++++++---------------
+ 1 file changed, 7 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-index 4fd1dea..4ed7bf9 100644
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -399,7 +399,18 @@ static int dispatch_discard_io(struct xen_blkif *blkif,
- 	int status = BLKIF_RSP_OKAY;
- 	struct block_device *bdev = blkif->vbd.bdev;
- 	unsigned long secure;
-+	struct phys_req preq;
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index a2ecd324..e157a93 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -673,10 +673,17 @@ static int scsi_setup_flush_cmnd(struct scsi_device *sdp, struct request *rq)
+ 
+ static void sd_unprep_fn(struct request_queue *q, struct request *rq)
+ {
++	struct scsi_cmnd *SCpnt = rq->special;
 +
-+	preq.sector_number = req->u.discard.sector_number;
-+	preq.nr_sects      = req->u.discard.nr_sectors;
- 
-+	err = xen_vbd_translate(&preq, blkif, WRITE);
-+	if (err) {
-+		pr_warn(DRV_PFX "access denied: DISCARD [%llu->%llu] on dev=%04x\n",
-+			preq.sector_number,
-+			preq.sector_number + preq.nr_sects, blkif->vbd.pdevice);
-+		goto fail_response;
+ 	if (rq->cmd_flags & REQ_DISCARD) {
+ 		free_page((unsigned long)rq->buffer);
+ 		rq->buffer = NULL;
+ 	}
++	if (SCpnt->cmnd != rq->cmd) {
++		mempool_free(SCpnt->cmnd, sd_cdb_pool);
++		SCpnt->cmnd = NULL;
++		SCpnt->cmd_len = 0;
 +	}
- 	blkif->st_ds_req++;
+ }
  
- 	xen_blkif_get(blkif);
-@@ -410,7 +421,7 @@ static int dispatch_discard_io(struct xen_blkif *blkif,
- 	err = blkdev_issue_discard(bdev, req->u.discard.sector_number,
- 				   req->u.discard.nr_sectors,
- 				   GFP_KERNEL, secure);
+ /**
+@@ -1540,21 +1547,6 @@ static int sd_done(struct scsi_cmnd *SCpnt)
+ 	if (rq_data_dir(SCpnt->request) == READ && scsi_prot_sg_count(SCpnt))
+ 		sd_dif_complete(SCpnt, good_bytes);
+ 
+-	if (scsi_host_dif_capable(sdkp->device->host, sdkp->protection_type)
+-	    == SD_DIF_TYPE2_PROTECTION && SCpnt->cmnd != SCpnt->request->cmd) {
 -
-+fail_response:
- 	if (err == -EOPNOTSUPP) {
- 		pr_debug(DRV_PFX "discard op failed, not supported\n");
- 		status = BLKIF_RSP_EOPNOTSUPP;
+-		/* We have to print a failed command here as the
+-		 * extended CDB gets freed before scsi_io_completion()
+-		 * is called.
+-		 */
+-		if (result)
+-			scsi_print_command(SCpnt);
+-
+-		mempool_free(SCpnt->cmnd, sd_cdb_pool);
+-		SCpnt->cmnd = NULL;
+-		SCpnt->cmd_len = 0;
+-	}
+-
+ 	return good_bytes;
+ }
+ 
 -- 
 1.7.10.4
 
