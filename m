@@ -1,204 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757494Ab3IKFmx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 01:42:53 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:33066 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754847Ab3IKFmt convert rfc822-to-8bit (ORCPT
+	id S1756828Ab3IKFng (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 01:43:36 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13847 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754459Ab3IKE5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 01:42:49 -0400
-X-IronPort-AV: E=Sophos;i="4.90,882,1371052800"; 
-   d="scan'208";a="8485439"
-Message-ID: <523001B6.3080506@cn.fujitsu.com>
-Date: Wed, 11 Sep 2013 13:37:58 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: jaegeuk.kim@samsung.com
-CC: chao2.yu@samsung.com, shu.tan@samsung.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: Re: [f2fs-dev][PATCH] f2fs: optimize fs_lock for better performance
-References: <88.C4.11914.9D4A9225@epcpsbge6.samsung.com> <1378774324.2354.103.camel@kjgkr>
-In-Reply-To: <1378774324.2354.103.camel@kjgkr>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/11 13:40:25,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/11 13:40:26
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 11 Sep 2013 00:57:12 -0400
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=clZsl2Ppd3gA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=ta-iqQOWeV8A:10 a=hD80L64hAAAA:8 a=KKAkSRfTAAAA:8 a=VwQbUJbxAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=v3rLFGiuRE8A:10 a=WwgC8nHKvroA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=YQp_XFta9NE7yrG0:21 a=Isc-DGStN6yLMmLI:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130911042920.488160985@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 11 Sep 2013 00:29:56 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mark Brown <broonie@linaro.org>, <stable@kernel.org>
+Subject: [169/251] regmap: Add missing header for !CONFIG_REGMAP stubs
+References: <20130911042707.738353451@goodmis.org>
+Content-Disposition: inline; filename=0169-regmap-Add-missing-header-for-CONFIG_REGMAP-stubs.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jaegeuk, Chao,
+3.6.11.9-rc1 stable review patch.
+If anyone has any objections, please let me know.
 
-On 09/10/2013 08:52 AM, Jaegeuk Kim wrote:
+------------------
 
-> Hi,
-> 
-> At first, thank you for the report and please follow the email writing
-> rules. :)
-> 
-> Anyway, I agree to the below issue.
-> One thing that I can think of is that we don't need to use the
-> spin_lock, since we don't care about the exact lock number, but just
-> need to get any not-collided number.
+From: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
 
-IMHO, just moving sbi->next_lock_num++ before mutex_lock(&sbi->fs_lock[next_lock])
-can avoid unbalance issue mostly.
-IMO, the case two or more threads increase sbi->next_lock_num in the same time is
-really very very little. If you think it is not rigorous, change next_lock_num to
-atomic one can fix it.
-What's your opinion?
+[ Upstream commit 49ccc142f9cbc33fdda18e8fa90c1c5b4a79c0ad ]
 
-Regards,
-Gu
+regmap.h requires linux/err.h if CONFIG_REGMAP is not defined. Without it I get
+error.
+CC      drivers/media/platform/exynos4-is/fimc-reg.o
+In file included from drivers/media/platform/exynos4-is/fimc-reg.c:14:0:
+include/linux/regmap.h: In function ‘regmap_write’:
+include/linux/regmap.h:525:10: error: ‘EINVAL’ undeclared (first use in this function)
+include/linux/regmap.h:525:10: note: each undeclared identifier is reported only once for each function it appears in
 
-> 
-> So, how about removing the spin_lock?
-> And how about using a random number?
+Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Cc: stable@kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/regmap.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-> Thanks,
-> 
-> 2013-09-06 (금), 09:48 +0000, Chao Yu:
->> Hi Kim:
->>
->>      I think there is a performance problem: when all sbi->fs_lock is
->> holded, 
->>
->> then all other threads may get the same next_lock value from
->> sbi->next_lock_num in function mutex_lock_op, 
->>
->> and wait to get the same lock at position fs_lock[next_lock], it
->> unbalance the fs_lock usage. 
->>
->> It may lost performance when we do the multithread test.
->>
->>  
->>
->> Here is the patch to fix this problem:
->>
->>  
->>
->> Signed-off-by: Yu Chao <chao2.yu@samsung.com>
->>
->> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
->>
->> old mode 100644
->>
->> new mode 100755
->>
->> index 467d42d..983bb45
->>
->> --- a/fs/f2fs/f2fs.h
->>
->> +++ b/fs/f2fs/f2fs.h
->>
->> @@ -371,6 +371,7 @@ struct f2fs_sb_info {
->>
->>         struct mutex fs_lock[NR_GLOBAL_LOCKS];  /* blocking FS
->> operations */
->>
->>         struct mutex node_write;                /* locking node writes
->> */
->>
->>         struct mutex writepages;                /* mutex for
->> writepages() */
->>
->> +       spinlock_t spin_lock;                   /* lock for
->> next_lock_num */
->>
->>         unsigned char next_lock_num;            /* round-robin global
->> locks */
->>
->>         int por_doing;                          /* recovery is doing
->> or not */
->>
->>         int on_build_free_nids;                 /* build_free_nids is
->> doing */
->>
->> @@ -533,15 +534,19 @@ static inline void mutex_unlock_all(struct
->> f2fs_sb_info *sbi)
->>
->>  
->>
->>  static inline int mutex_lock_op(struct f2fs_sb_info *sbi)
->>
->>  {
->>
->> -       unsigned char next_lock = sbi->next_lock_num %
->> NR_GLOBAL_LOCKS;
->>
->> +       unsigned char next_lock;
->>
->>         int i = 0;
->>
->>  
->>
->>         for (; i < NR_GLOBAL_LOCKS; i++)
->>
->>                 if (mutex_trylock(&sbi->fs_lock[i]))
->>
->>                         return i;
->>
->>  
->>
->> -       mutex_lock(&sbi->fs_lock[next_lock]);
->>
->> +       spin_lock(&sbi->spin_lock);
->>
->> +       next_lock = sbi->next_lock_num % NR_GLOBAL_LOCKS;
->>
->>         sbi->next_lock_num++;
->>
->> +       spin_unlock(&sbi->spin_lock);
->>
->> +
->>
->> +       mutex_lock(&sbi->fs_lock[next_lock]);
->>
->>         return next_lock;
->>
->>  }
->>
->>  
->>
->> diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
->>
->> old mode 100644
->>
->> new mode 100755
->>
->> index 75c7dc3..4f27596
->>
->> --- a/fs/f2fs/super.c
->>
->> +++ b/fs/f2fs/super.c
->>
->> @@ -657,6 +657,7 @@ static int f2fs_fill_super(struct super_block *sb,
->> void *data, int silent)
->>
->>         mutex_init(&sbi->cp_mutex);
->>
->>         for (i = 0; i < NR_GLOBAL_LOCKS; i++)
->>
->>                 mutex_init(&sbi->fs_lock[i]);
->>
->> +       spin_lock_init(&sbi->spin_lock);
->>
->>         mutex_init(&sbi->node_write);
->>
->>         sbi->por_doing = 0;
->>
->>         spin_lock_init(&sbi->stat_lock);
->>
->> (END)
->>
->>  
->>
->>
->>
->>
-> 
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index 7f7e00d..519d5f2 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -15,6 +15,7 @@
+ 
+ #include <linux/list.h>
+ #include <linux/rbtree.h>
++#include <linux/err.h>
+ 
+ struct module;
+ struct device;
+-- 
+1.7.10.4
 
 
