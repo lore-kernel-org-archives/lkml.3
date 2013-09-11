@@ -1,79 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310Ab3IKCgX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 22:36:23 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:40367 "EHLO
+	id S1753659Ab3IKCg6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 22:36:58 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:40463 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436Ab3IKCgW (ORCPT
+	with ESMTP id S1753580Ab3IKCg4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 22:36:22 -0400
-X-AuditID: cbfee68e-b7f756d000004512-94-522fd720f782
-Message-id: <522FD720.8030806@samsung.com>
-Date: Wed, 11 Sep 2013 11:36:16 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
+	Tue, 10 Sep 2013 22:36:56 -0400
+X-AuditID: cbfee6a4-b7f956d00000525e-be-522fd7417d08
+Date: Wed, 11 Sep 2013 02:36:49 +0000 (GMT)
+From: Chao Yu <chao2.yu@samsung.com>
+Subject: Re: Re: [f2fs-dev][PATCH] f2fs: optimize fs_lock for better performance
+To: =?gb2312?Q?=3F=3F=3F?= <jaegeuk.kim@samsung.com>
+Cc: =?gb2312?Q?=CC=B7=E6=AD?= <shu.tan@samsung.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-f2fs-devel@lists.sourceforge.net" 
+	<linux-f2fs-devel@lists.sourceforge.net>
+Reply-to: chao2.yu@samsung.com
 MIME-version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'MyungJoo Ham'" <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] extcon: use dev_get_platdata()
-References: <003e01ceae95$9a708ab0$cf51a010$%han@samsung.com>
-In-reply-to: <003e01ceae95$9a708ab0$cf51a010$%han@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFIsWRmVeSWpSXmKPExsWyRsSkQFfhun6QweutnBaXF15itbi8aw6b
-	xe3GFWwOzB59W1YxenzeJBfAFMVlk5Kak1mWWqRvl8CV8f/+Q9aCs2wVx46cYmpgnMfaxcjJ
-	ISFgIrF95mk2CFtM4sK99UA2F4eQwFJGiW9Nc9lgil61dEMlpjNK3DyxjgkkISTwilHiw6Vw
-	EJtXQEvi3K+7YHEWAVWJ+TOmgW1gA4rvf3EDbJCoQJjEyulXWCDqBSV+TL4HZosIqEh8Xn8c
-	rIZZwFtix8QJYL3CAuYSL2+8YoHYZSvRsu8DcxcjBwengJ1E820TiHIdif2t06Ba5SU2r3nL
-	DHKnhMBkdonOqbcZIe4RkPg2+RALSK+EgKzEpgPMEH9JShxccYNlAqPYLCQXzUIydhaSsQsY
-	mVcxiqYWJBcUJ6UXGekVJ+YWl+al6yXn525iBMbL6X/P+nYw3jxgfYgxGWjlRGYp0eR8YLzl
-	lcQbGpsZWZiamBobmVuakSasJM6r1mIdKCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoFR74KF
-	xNUrxwvbVVdeSdwdL8C5dJXEyQ8cf/9frZ5S8i6S9f61PX8CWVbzMK6x4a3l7d3b4H49yFGu
-	aI9am19iZ1iWmPrN31dadh27JZElxp0ePm3JoTA+3svJhSvXLFL4mbVarDW4oFL761V3kcaG
-	LPYHTR/kTok7nbzDoPzY49TMl0Y7Y3qVWIozEg21mIuKEwFlINRRrQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOIsWRmVeSWpSXmKPExsVy+t9jQV2F6/pBBpNeM1tcXniJ1eLyrjls
-	FrcbV7A5MHv0bVnF6PF5k1wAU1QDo01GamJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5
-	kkJeYm6qrZKLT4CuW2YO0BIlhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEN
-	Y8b/+w9ZC86yVRw7coqpgXEeaxcjJ4eEgInEq5ZuNghbTOLCvfVANheHkMB0RombJ9YxgSSE
-	BF4xSny4FA5i8wpoSZz7dRcsziKgKjF/xjSwQWxA8f0vboANEhUIk1g5/QoLRL2gxI/J98Bs
-	EQEVic/rj4PVMAt4S+yYOAGsV1jAXOLljVcsELtsJVr2fWDuYuTg4BSwk2i+bQJRriOxv3Ua
-	VKu8xOY1b5knMArMQrJhFpKyWUjKFjAyr2IUTS1ILihOSs811CtOzC0uzUvXS87P3cQIjsZn
-	UjsYVzZYHGIU4GBU4uG9IacfJMSaWFZcmXuIUYKDWUmEd6oTUIg3JbGyKrUoP76oNCe1+BBj
-	MjAAJjJLiSbnAxNFXkm8obGJmZGlkbmhhZGxOWnCSuK8B1qtA4UE0hNLUrNTUwtSi2C2MHFw
-	SjUw8syNsGGJUXid2SFbp3Lld5F5z2z+uTKx/z3z13GzhE/23mQgwe1etXqWxiJrI/mtbgcU
-	b3Cs+5S+r6t+5r1ZVVPMvTPVNSQtJjJHZt8rTn9z8bst91Xeg1ph07Jj9FetWMSxfF/Xyw2H
-	9AsjK1wktraXfPR50CofFLgmtCTt+xePOweO3u9RYinOSDTUYi4qTgQA0OE5XAoDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+X-MTR: 20130911023640647@chao2.yu
+Msgkey: 20130911023640647@chao2.yu
+X-EPLocale: zh_CN.gb2312
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20130911023640647@chao2.yu
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=gb2312
+MIME-version: 1.0
+Message-id: <7684984.194071378867007969.JavaMail.weblogic@epml15>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t/tGbqO1/WDDGbvEbO4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZ+w74FXzRrZj4cSpjA+MNnS5GTg4hAWWJp88esIDYEgImEnt3
+	9ELZYhIX7q1n62LkAqqZzyixe8cnJpAEi4CqRNum02A2G5C98DNIESeHsECAREfzXzBbRMBM
+	4vGrF8wgzcwCfUwS9+++ZYPYJiex62o3M4jNKyAocXLmE6htihI/519ghYgrSUxf+hVoAQdQ
+	XEJi1aVIiBJeiRntT6HK5SSmfV3DDGFLS5yftYER5ujF3x9Dxfkljt3eATWGV+LJ/WCYMbs3
+	f2GDsAUkpp45CNWqJtE3dxU7hM0nsWbhWxaYMbtOLWeG6b2/ZS7Y68xAF0/pfsgOYWtJzGv4
+	zYTuK14BR4lzvbtZJjDKzUKSmoWkfRaSdmQ1CxhZVjGKphYkFxQnpVeY6BUn5haX5qXrJefn
+	bmIER/mzJTsYGy5YH2IU4GBU4uE1UNQPEmJNLCuuzD3EKMHBrCTCO9UJKMSbklhZlVqUH19U
+	mpNafIhRmoNFSZz3Wat1oJBAemJJanZqakFqEUyWiYNTqoHRQTNJylSmxVHrSliyyZbb6xdF
+	n3f+9ion4cuv8KNPzV6wfS9gZjz/MSy4cdudzJVabo33l535fmCnOsPEySatsoeW53K/kru5
+	Zk/J28Nv+XI3f2TnfSu+cuq28D0H9V1rXTdNSDnc0/ntlmHrgscl/vXRE7I3+M5d935OY4np
+	nKC+22s6bx91VmIpzkg01GIuKk4EABTUvYPuAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8B2b5vw032028
 
-Hi Jingoo,
+Hi Kim,
 
-I prefer to consolidate this patchset as one patch because of simliar moditication.
+I did some tests as you mention of using random instead of spin_lock.
+The test model is as following:
+eight threads race to grab one of eight locks for one thousand times,
+and I used four methods to generate lock num: 
 
+1.atomic_add_return(1, &sbi->next_lock_num) % NR_GLOBAL_LOCKS;
+2.spin_lock(); next_lock_num++ % NR_GLOBAL_LOCKS; spin_unlock();
+3.ktime_get().tv64 % NR_GLOBAL_LOCKS;
+4.get_random_bytes(&next_lock, sizeof(unsigned int));
+
+the result indicate that:
+max count of collide continuously: 4 > 3 > 2 = 1
+max-min count of lock is grabbed: 4 > 3 > 2 = 1
+elapsed time of generating: 3 > 2 > 4 > 1
+
+So I think it's better to use atomic_add_return in round-robin method to
+cost less time and reduce collide.
+What's your opinion?
+
+thanks
+
+------- Original Message -------
+Sender : ???<jaegeuk.kim@samsung.com> S5(??)/??/?????????(???)/????
+Date : æ≈‘¬ 10, 2013 09:52 (GMT+09:00)
+Title : Re: [f2fs-dev][PATCH] f2fs: optimize fs_lock for better performance
+
+Hi,
+
+At first, thank you for the report and please follow the email writing
+rules. :)
+
+Anyway, I agree to the below issue.
+One thing that I can think of is that we don't need to use the
+spin_lock, since we don't care about the exact lock number, but just
+need to get any not-collided number.
+
+So, how about removing the spin_lock?
+And how about using a random number?
 Thanks,
-Chanwoo Choi
 
-On 09/11/2013 11:21 AM, Jingoo Han wrote:
-> Use the wrapper function for retrieving the platform data instead of
-> accessing dev->platform_data directly. This is a cosmetic change
-> to make the code simpler and enhance the readability.
+2013-09-06 (?), 09:48 +0000, Chao Yu:
+> Hi Kim:
 > 
-> ---
->  drivers/extcon/extcon-adc-jack.c |    2 +-
->  drivers/extcon/extcon-gpio.c     |    2 +-
->  drivers/extcon/extcon-palmas.c   |    2 +-
->  3 files changed, 3 insertions(+), 3 deletions(-)
+>      I think there is a performance problem: when all sbi->fs_lock is
+> holded, 
+> 
+> then all other threads may get the same next_lock value from
+> sbi->next_lock_num in function mutex_lock_op, 
+> 
+> and wait to get the same lock at position fs_lock[next_lock], it
+> unbalance the fs_lock usage. 
+> 
+> It may lost performance when we do the multithread test.
+> 
+>  
+> 
+> Here is the patch to fix this problem:
+> 
+>  
+> 
+> Signed-off-by: Yu Chao 
+> 
+> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> 
+> old mode 100644
+> 
+> new mode 100755
+> 
+> index 467d42d..983bb45
+> 
+> --- a/fs/f2fs/f2fs.h
+> 
+> +++ b/fs/f2fs/f2fs.h
+> 
+> @@ -371,6 +371,7 @@ struct f2fs_sb_info {
+> 
+>         struct mutex fs_lock[NR_GLOBAL_LOCKS];  /* blocking FS
+> operations */
+> 
+>         struct mutex node_write;                /* locking node writes
+> */
+> 
+>         struct mutex writepages;                /* mutex for
+> writepages() */
+> 
+> +       spinlock_t spin_lock;                   /* lock for
+> next_lock_num */
+> 
+>         unsigned char next_lock_num;            /* round-robin global
+> locks */
+> 
+>         int por_doing;                          /* recovery is doing
+> or not */
+> 
+>         int on_build_free_nids;                 /* build_free_nids is
+> doing */
+> 
+> @@ -533,15 +534,19 @@ static inline void mutex_unlock_all(struct
+> f2fs_sb_info *sbi)
+> 
+>  
+> 
+>  static inline int mutex_lock_op(struct f2fs_sb_info *sbi)
+> 
+>  {
+> 
+> -       unsigned char next_lock = sbi->next_lock_num %
+> NR_GLOBAL_LOCKS;
+> 
+> +       unsigned char next_lock;
+> 
+>         int i = 0;
+> 
+>  
+> 
+>         for (; i < NR_GLOBAL_LOCKS; i++)
+> 
+>                 if (mutex_trylock(&sbi->fs_lock[i]))
+> 
+>                         return i;
+> 
+>  
+> 
+> -       mutex_lock(&sbi->fs_lock[next_lock]);
+> 
+> +       spin_lock(&sbi->spin_lock);
+> 
+> +       next_lock = sbi->next_lock_num % NR_GLOBAL_LOCKS;
+> 
+>         sbi->next_lock_num++;
+> 
+> +       spin_unlock(&sbi->spin_lock);
+> 
+> +
+> 
+> +       mutex_lock(&sbi->fs_lock[next_lock]);
+> 
+>         return next_lock;
+> 
+>  }
+> 
+>  
+> 
+> diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+> 
+> old mode 100644
+> 
+> new mode 100755
+> 
+> index 75c7dc3..4f27596
+> 
+> --- a/fs/f2fs/super.c
+> 
+> +++ b/fs/f2fs/super.c
+> 
+> @@ -657,6 +657,7 @@ static int f2fs_fill_super(struct super_block *sb,
+> void *data, int silent)
+> 
+>         mutex_init(&sbi->cp_mutex);
+> 
+>         for (i = 0; i < NR_GLOBAL_LOCKS; i++)
+> 
+>                 mutex_init(&sbi->fs_lock[i]);
+> 
+> +       spin_lock_init(&sbi->spin_lock);
+> 
+>         mutex_init(&sbi->node_write);
+> 
+>         sbi->por_doing = 0;
+> 
+>         spin_lock_init(&sbi->stat_lock);
+> 
+> (END)
+> 
+>  
 > 
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 > 
 
+-- 
+Jaegeuk Kim
+SamsungˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
