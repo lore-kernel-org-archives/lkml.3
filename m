@@ -1,89 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407Ab3IKJ4P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 05:56:15 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:51841 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269Ab3IKJ4N (ORCPT
+	id S1753477Ab3IKJ4r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 05:56:47 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28834 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753260Ab3IKJ4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 05:56:13 -0400
-Date: Wed, 11 Sep 2013 10:55:52 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-i2c@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lv Zheng <lv.zheng@intel.com>, linux-arm-kernel@lists.infradead.org
-Message-ID: <20130911095552.GI29403@sirena.org.uk>
-References: <1378733679-19500-1-git-send-email-mika.westerberg@linux.intel.com>
- <3397524.g9aUWuArnm@vostro.rjw.lan>
- <20130910213522.GG29403@sirena.org.uk>
- <2029393.u6DaKBPszu@vostro.rjw.lan>
- <522FC0DC.9030708@intel.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="A1AeHK3WkQzeMGLU"
-Content-Disposition: inline
-In-Reply-To: <522FC0DC.9030708@intel.com>
-X-Cookie: Your present plans will be successful.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH RESEND 1/2] i2c: prepare runtime PM support for I2C
- client devices
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Wed, 11 Sep 2013 05:56:45 -0400
+X-Authority-Analysis: v=2.0 cv=R/aB6KtX c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=j3-r3loCb8EA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=YmFrBUDmc8QA:10 a=uP1ucDPQAAAA:8 a=KKAkSRfTAAAA:8 a=drOt6m5kAAAA:8 a=T2h1Z_K7z-JURIdn7sYA:9 a=zaWHSuwd-w0A:10 a=WwgC8nHKvroA:10 a=jeBq3FmKZ4MA:10 a=nFlfukreqcYSQcj2:21 a=FTDgeUEVp1OVyZ1Q:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130911042905.646357940@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 11 Sep 2013 00:28:27 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [080/251] ARM: 7722/1: zImage: Convert 32bits memory size and address from
+ ATAG to 64bits DTB
+References: <20130911042707.738353451@goodmis.org>
+Content-Disposition: inline; filename=0080-ARM-7722-1-zImage-Convert-32bits-memory-size-and-add.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.6.11.9-rc1 stable review patch.
+If anyone has any objections, please let me know.
 
---A1AeHK3WkQzeMGLU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+------------------
 
-On Wed, Sep 11, 2013 at 09:01:16AM +0800, Aaron Lu wrote:
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-> Looks like, it all boils down to how many I2C devices should be allowed
-> for runtime PM by default and how many I2C devices should be forbidden.
-> , and then we allow/forbid runtime PM for the majority case in I2C core
-> while individual driver can still forbid/allow it in their own code.
+[ Upstream commit faefd550c45d8d314e8f260f21565320355c947f ]
 
-> So if the majority case is runtime PM should be allowed by default, I'm
-> also OK to not forbid runtime PM for I2C client device in I2C core. My
-> original intention to forbid runtime PM by default is to make sure no
-> adverse effect would occur to some I2C devices that used to work well
-> before runtime PM.
+When CONFIG_ARM_APPENDED_DTB is selected, if the bootloader provides
+an ATAG_MEM it replaces the memory size and the memory address in the
+memory node of the device tree. In the case of a system which can
+handle more than 4GB, the memory node cell size is 4: each data
+(memory size and memory address) are 64 bits and then use 2 cells.
 
-The really big problem here is that there are I2C devices currently
-using runtime PM quite happily and forbidding it by default will break
-them.
+The current code in atags_to_fdt.c made the assumption of a cell size
+of 2 (one cell for the memory size and one cell for the memory
+address), this leads to an improper write of the data and ends with a
+boot hang.
 
-In general though requiring userspace to manually activate power saving
-features isn't going to make people happy.
+This patch writes the memory size and the memory address on the memory
+node in the device tree depending of the size of the memory node (32
+bits or 64 bits).
 
---A1AeHK3WkQzeMGLU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+It has been tested in the 2 cases:
+- with a dtb using skeleton.dtsi
+- and with a dtb using skeleton64.dtsi
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Acked-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ arch/arm/boot/compressed/atags_to_fdt.c |   44 ++++++++++++++++++++++++++-----
+ 1 file changed, 38 insertions(+), 6 deletions(-)
 
-iQIcBAEBAgAGBQJSMD4lAAoJELSic+t+oim9MKAP/jfLtDWtc+xh1vePSJpB1iDP
-6FDiNmIpxf9Sa4o7J614lrEwB8FkBH2fhWkJXZVPsZZ0tI3n75uXfasJmwxDH9Cm
-mfPK+Xl7gxss+qiHL/vhlGe2k+ti1bE7wprEE1MXZpGbgCuXPgvRyaZvpzMabqyF
-DHiRqr/dVwaBIwNveMaaiwTLvbT83V+/MWMYCzVUl2xQ1LoDx52JsnyBDy4oLAWV
-SimlDwDY4kHZP+mRoR5kZlAkNeKpHkGktJBQHvt3oyrXn9MzMQ98LlzXhL9X6jW/
-2sP2t5pDf24Ch8WISUOHsO27Jybjdy2ZbRfhugLsGG5mMRjuqxliU0sHfrT5TIDU
-nzXgIeIwPueLNiw5soFmbnr4X2wa8N/EoIxrkdS34lS3Zd45n3tXDOW/UsCKP2lZ
-CZHcJqCbwxGGmBpwtqvs9OYC6bTtUUFzan2Dj7lZfmFSa2HtjZzHvVVXkBOQUFF9
-8SMvjjZhFspxYP7vGGPdotxIoakWMwkkUTBZ9JiKTwyqC79f3a+TJW7UCCdj4Qwf
-WzHASdUMu/sI8WburE/aUufuysVKWACcdzFkgX91u/b3Wn9NYdz5sAhm+rxWgmMu
-xdq1sl7+hEuKTHO3og6mryoKDI80EgZXCsM1MBQe32cvhyuehCdAeG88q95XiGS6
-WB1/8/y8XSVVUebhafYX
-=SvlW
------END PGP SIGNATURE-----
+diff --git a/arch/arm/boot/compressed/atags_to_fdt.c b/arch/arm/boot/compressed/atags_to_fdt.c
+index aabc02a..d1153c8 100644
+--- a/arch/arm/boot/compressed/atags_to_fdt.c
++++ b/arch/arm/boot/compressed/atags_to_fdt.c
+@@ -53,6 +53,17 @@ static const void *getprop(const void *fdt, const char *node_path,
+ 	return fdt_getprop(fdt, offset, property, len);
+ }
+ 
++static uint32_t get_cell_size(const void *fdt)
++{
++	int len;
++	uint32_t cell_size = 1;
++	const uint32_t *size_len =  getprop(fdt, "/", "#size-cells", &len);
++
++	if (size_len)
++		cell_size = fdt32_to_cpu(*size_len);
++	return cell_size;
++}
++
+ static void merge_fdt_bootargs(void *fdt, const char *fdt_cmdline)
+ {
+ 	char cmdline[COMMAND_LINE_SIZE];
+@@ -95,9 +106,11 @@ static void merge_fdt_bootargs(void *fdt, const char *fdt_cmdline)
+ int atags_to_fdt(void *atag_list, void *fdt, int total_space)
+ {
+ 	struct tag *atag = atag_list;
+-	uint32_t mem_reg_property[2 * NR_BANKS];
++	/* In the case of 64 bits memory size, need to reserve 2 cells for
++	 * address and size for each bank */
++	uint32_t mem_reg_property[2 * 2 * NR_BANKS];
+ 	int memcount = 0;
+-	int ret;
++	int ret, memsize;
+ 
+ 	/* make sure we've got an aligned pointer */
+ 	if ((u32)atag_list & 0x3)
+@@ -137,8 +150,25 @@ int atags_to_fdt(void *atag_list, void *fdt, int total_space)
+ 				continue;
+ 			if (!atag->u.mem.size)
+ 				continue;
+-			mem_reg_property[memcount++] = cpu_to_fdt32(atag->u.mem.start);
+-			mem_reg_property[memcount++] = cpu_to_fdt32(atag->u.mem.size);
++			memsize = get_cell_size(fdt);
++
++			if (memsize == 2) {
++				/* if memsize is 2, that means that
++				 * each data needs 2 cells of 32 bits,
++				 * so the data are 64 bits */
++				uint64_t *mem_reg_prop64 =
++					(uint64_t *)mem_reg_property;
++				mem_reg_prop64[memcount++] =
++					cpu_to_fdt64(atag->u.mem.start);
++				mem_reg_prop64[memcount++] =
++					cpu_to_fdt64(atag->u.mem.size);
++			} else {
++				mem_reg_property[memcount++] =
++					cpu_to_fdt32(atag->u.mem.start);
++				mem_reg_property[memcount++] =
++					cpu_to_fdt32(atag->u.mem.size);
++			}
++
+ 		} else if (atag->hdr.tag == ATAG_INITRD2) {
+ 			uint32_t initrd_start, initrd_size;
+ 			initrd_start = atag->u.initrd.start;
+@@ -150,8 +180,10 @@ int atags_to_fdt(void *atag_list, void *fdt, int total_space)
+ 		}
+ 	}
+ 
+-	if (memcount)
+-		setprop(fdt, "/memory", "reg", mem_reg_property, 4*memcount);
++	if (memcount) {
++		setprop(fdt, "/memory", "reg", mem_reg_property,
++			4 * memcount * memsize);
++	}
+ 
+ 	return fdt_pack(fdt);
+ }
+-- 
+1.7.10.4
 
---A1AeHK3WkQzeMGLU--
+
