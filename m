@@ -1,79 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754403Ab3IKEaG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 00:30:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19387 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752749Ab3IKE3C (ORCPT
+	id S1754976Ab3IKEkj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 00:40:39 -0400
+Received: from ringil.hengli.com.au ([178.18.16.133]:48256 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754806Ab3IKEke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 00:29:02 -0400
-X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=dRVUMsx45IIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=2-Ivz3iTORwA:10 a=JfrnYn6hAAAA:8 a=VwQbUJbxAAAA:8 a=vmLDa1wCAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=SFncbC_4GEwA:10 a=3Rfx1nUSh_UA:10 a=gv_BBZfBKR8A:10 a=jeBq3FmKZ4MA:10 a=0BWcnzhK_fYA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042856.757671831@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:27:34 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Randy Dunlap <rdunlap@infradead.org>, Hauke Mehrtens <hauke@hauke-m.de>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [027/251] b43: ensue that BCMA is "y" when B43 is "y"
-References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0027-b43-ensue-that-BCMA-is-y-when-B43-is-y.patch
+	Wed, 11 Sep 2013 00:40:34 -0400
+Date: Wed, 11 Sep 2013 14:40:03 +1000
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Andreas Robinson <andr345@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Zhao Hongjiang <zhaohongjiang@huawei.com>,
+        David Miller <davem@davemloft.net>, tim.c.chen@linux.intel.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        linux-crypto@vger.kernel.org,
+        linux-modules <linux-modules@vger.kernel.org>,
+        Tom Gundersen <teg@jklm.no>
+Subject: Re: [PATCH] modules: add support for soft module dependencies
+Message-ID: <20130911044003.GA30913@gondor.apana.org.au>
+References: <20130724071757.GA30970@gondor.apana.org.au>
+ <87siz38q2t.fsf@rustcorp.com.au>
+ <20130725020329.GA14625@gondor.apana.org.au>
+ <CAKi4VA+=1vOOt0BqdQHQaeF1hP3DrRtCL_ObXY0cPeO7S_MtYw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKi4VA+=1vOOt0BqdQHQaeF1hP3DrRtCL_ObXY0cPeO7S_MtYw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.9-rc1 stable review patch.
-If anyone has any objections, please let me know.
+On Tue, Sep 10, 2013 at 11:01:38AM -0300, Lucas De Marchi wrote:
+>
+> However looking at the only user right now, crct10dif: couldn't we
+> detect at runtime if this module can be used instead of just trying to
+> load it as a pre softdep and possibly failing?
 
-------------------
+No as sd_mod requires crct10dif to be present.  The use of softdep
+as opposed to just a symbolic dependency is due to there being two
+modules for crct10dif, a generic version and an arch-specific one.
 
-From: Hauke Mehrtens <hauke@hauke-m.de>
-
-[ Upstream commit 693026ef2e751fd94d2e6c71028e68343cc875d5 ]
-
-When b43 gets build into the kernel and it should use bcma we have to
-ensure that bcma was also build into the kernel and not as a module.
-In this patch this is also done for SSB, although you can not
-build b43 without ssb support for now.
-
-This fixes a build problem reported by Randy Dunlap in
-5187EB95.2060605@infradead.org
-
-Reported-By: Randy Dunlap <rdunlap@infradead.org>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- drivers/net/wireless/b43/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/wireless/b43/Kconfig b/drivers/net/wireless/b43/Kconfig
-index 3876c7e..af40211 100644
---- a/drivers/net/wireless/b43/Kconfig
-+++ b/drivers/net/wireless/b43/Kconfig
-@@ -28,7 +28,7 @@ config B43
- 
- config B43_BCMA
- 	bool "Support for BCMA bus"
--	depends on B43 && BCMA
-+	depends on B43 && (BCMA = y || BCMA = B43)
- 	default y
- 
- config B43_BCMA_EXTRA
-@@ -39,7 +39,7 @@ config B43_BCMA_EXTRA
- 
- config B43_SSB
- 	bool
--	depends on B43 && SSB
-+	depends on B43 && (SSB = y || SSB = B43)
- 	default y
- 
- # Auto-select SSB PCI-HOST support, if possible
+Cheers,
 -- 
-1.7.10.4
-
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
