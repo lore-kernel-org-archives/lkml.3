@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756011Ab3IKRHx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 13:07:53 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7807 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754053Ab3IKRHw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 13:07:52 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=owWOOl27trcA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Px2ojtpeDmIA:10 a=KKAkSRfTAAAA:8 a=_9PKuV2NLYsWSrV4chsA:9 a=CjuIK1q_8ugA:10 a=WwgC8nHKvroA:10 a=GDabatD6gA0A:10 a=YsEnT1LiCnMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Wed, 11 Sep 2013 13:07:50 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org
-Subject: Re: [RFC PATCH] timekeeping: introduce timekeeping_is_busy()
-Message-ID: <20130911130750.6a60d30f@gandalf.local.home>
-In-Reply-To: <52309D13.3020305@linaro.org>
-References: <20130911150853.GA19800@Krystal>
-	<52309D13.3020305@linaro.org>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756396Ab3IKRIP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 13:08:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30017 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755433Ab3IKRIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 13:08:13 -0400
+From: Zach Brown <zab@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
+Subject: [RFC] extending splice for copy offloading
+Date: Wed, 11 Sep 2013 10:06:47 -0700
+Message-Id: <1378919210-10372-1-git-send-email-zab@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Sep 2013 09:40:51 -0700
-John Stultz <john.stultz@linaro.org> wrote:
+When I first started on this stuff I followed the lead of previous
+work and added a new syscall for the copy operation:
 
-> (and it avoids me forgetting to set the owner in some future change,
-> further mucking things up :).
+https://lkml.org/lkml/2013/5/14/618
 
-Wow, I had to read that twice to see what you really wrote. I was
-thinking "damn, John is getting vulgar!" ;-)
+Towards the end of that thread Eric Wong asked why we didn't just
+extend splice.  I immediately replied with some dumb dismissive
+answer.  Once I sat down and looked at it, though, it does make a
+lot of sense.  So good job, Eric.  +10 Dummie points for me.
 
--- Steve 
+Extending splice avoids all the noise of adding a new syscall and
+naturally falls back to buffered copying as that's what the direct
+splice path does for sendfile() today.
+
+So that's what this patch series demonstrates.  It adds a flag that
+lets splice get at the same direct splicing that sendfile() does.
+We then add a file system file_operations method to accelerate the
+copy which has access to both files.
+
+Some things to talk about:
+- I really don't care about the naming here.  If you do, holler.
+- We might want different flags for file-to-file splicing and acceleration
+- We might want flags to require or forbid acceleration
+- We might want to provide all these flags to sendfile, too
+
+Thoughts?  Objections?
+
+Bryan, do you see any problems with wiring the NFS COPY RPC under this?
+
+Martin, are we any closer to getting blk_() calls to kick off XCOPY
+bios?
+
+OCFS2 friends, is it a managable amount of work to implement an
+ocfs2_splice_direct() that only modifies a region of the destination
+file?
+
+Finally, there's a slot in the plumbers schedule next week to talk
+about this stuff. Come say hi if you're interested.
+
+-z
 
