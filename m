@@ -1,150 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757204Ab3IKUbD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 16:31:03 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:50935 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755519Ab3IKUbA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 16:31:00 -0400
-Message-ID: <5230D301.7030203@gmail.com>
-Date: Wed, 11 Sep 2013 16:30:57 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1757283Ab3IKUd6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 16:33:58 -0400
+Received: from mail.lang.hm ([64.81.33.126]:35923 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750839Ab3IKUd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 16:33:57 -0400
+Date: Wed, 11 Sep 2013 13:32:26 -0700 (PDT)
+From: David Lang <david@lang.hm>
+X-X-Sender: dlang@asgard.lang.hm
+To: Eric Sandeen <sandeen@redhat.com>
+cc: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger@dilger.ca>,
+        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>,
+        T Makphaibulchoke <tmac@hp.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-ext4@vger.kernel.org List" <linux-ext4@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org Devel" <linux-fsdevel@vger.kernel.org>,
+        aswin@hp.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        aswin_proj@lists.hp.com
+Subject: Re: [PATCH v3 0/2] ext4: increase mbcache scalability
+In-Reply-To: <52309F27.8060008@redhat.com>
+Message-ID: <alpine.DEB.2.02.1309111325270.5862@nftneq.ynat.uz>
+References: <1374108934-50550-1-git-send-email-tmac@hp.com> <1378312756-68597-1-git-send-email-tmac@hp.com> <20130905023522.GA21268@thunk.org> <52285395.1070508@hp.com> <0787C579-7E2C-4864-B8F4-98816E1E50A2@dilger.ca> <5229C939.8030108@hp.com>
+ <62D71A85-C7EE-4F5F-B481-5329F0282044@dilger.ca> <20130910210250.GH29237@thunk.org> <522FDFCC.1070007@redhat.com> <20130911113001.GB13315@thunk.org> <52309F27.8060008@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Kees Cook <keescook@chromium.org>, David Miller <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        George Spelvin <linux@horizon.com>, Jiri Kosina <jkosina@suse.cz>,
-        Jan Beulich <jbeulich@suse.com>, Eldad Zack <eldad@fogrefinery.com>,
-        kosaki.motohiro@gmail.com
-Subject: Re: [PATCH] vsprintf: drop comment claiming %n is ignored
-References: <20130911193040.GA16688@www.outflux.net>  <1378929961.4714.21.camel@joe-AO722>  <CAGXu5jKRmp_Ei=ty05W3SSqQ01agEMDVMGnZCFqQ_yYbZmMSmw@mail.gmail.com> <1378930822.4714.22.camel@joe-AO722>
-In-Reply-To: <1378930822.4714.22.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Yeah, just found those too.
-> ---
->   fs/proc/consoles.c   |  2 +-
->   fs/proc/nommu.c      | 20 ++++++++++----------
->   fs/proc/task_mmu.c   | 18 +++++++++---------
->   fs/proc/task_nommu.c | 20 ++++++++++----------
->   4 files changed, 30 insertions(+), 30 deletions(-)
->
-> diff --git a/fs/proc/consoles.c b/fs/proc/consoles.c
-> index b701eaa..42f2bb7 100644
-> --- a/fs/proc/consoles.c
-> +++ b/fs/proc/consoles.c
-> @@ -47,7 +47,7 @@ static int show_console_dev(struct seq_file *m, void *v)
->   			con_flags[a].name : ' ';
->   	flags[a] = 0;
->
-> -	seq_printf(m, "%s%d%n", con->name, con->index, &len);
-> +	len = seq_printf(m, "%s%d", con->name, con->index);
->   	len = 21 - len;
->   	if (len < 1)
->   		len = 1;
-> diff --git a/fs/proc/nommu.c b/fs/proc/nommu.c
-> index ccfd99b..91cfd19 100644
-> --- a/fs/proc/nommu.c
-> +++ b/fs/proc/nommu.c
-> @@ -50,16 +50,16 @@ static int nommu_region_show(struct seq_file *m, struct vm_region *region)
->   		ino = inode->i_ino;
->   	}
->
-> -	seq_printf(m,
-> -		   "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu %n",
-> -		   region->vm_start,
-> -		   region->vm_end,
-> -		   flags & VM_READ ? 'r' : '-',
-> -		   flags & VM_WRITE ? 'w' : '-',
-> -		   flags & VM_EXEC ? 'x' : '-',
-> -		   flags & VM_MAYSHARE ? flags & VM_SHARED ? 'S' : 's' : 'p',
-> -		   ((loff_t)region->vm_pgoff) << PAGE_SHIFT,
-> -		   MAJOR(dev), MINOR(dev), ino, &len);
-> +	len = seq_printf(m, "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu ",
-> +			 region->vm_start,
-> +			 region->vm_end,
-> +			 flags & VM_READ ? 'r' : '-',
-> +			 flags & VM_WRITE ? 'w' : '-',
-> +			 flags & VM_EXEC ? 'x' : '-',
-> +			 flags & VM_MAYSHARE ?
-> +			 flags & VM_SHARED ? 'S' : 's' : 'p',
-> +			 ((loff_t)region->vm_pgoff) << PAGE_SHIFT,
-> +			 MAJOR(dev), MINOR(dev), ino);
->
->   	if (file) {
->   		len = 25 + sizeof(void *) * 6 - len;
-> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-> index 107d026..f84ee9f 100644
-> --- a/fs/proc/task_mmu.c
-> +++ b/fs/proc/task_mmu.c
-> @@ -286,15 +286,15 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma, int is_pid)
->   	if (stack_guard_page_end(vma, end))
->   		end -= PAGE_SIZE;
->
-> -	seq_printf(m, "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu %n",
-> -			start,
-> -			end,
-> -			flags & VM_READ ? 'r' : '-',
-> -			flags & VM_WRITE ? 'w' : '-',
-> -			flags & VM_EXEC ? 'x' : '-',
-> -			flags & VM_MAYSHARE ? 's' : 'p',
-> -			pgoff,
-> -			MAJOR(dev), MINOR(dev), ino, &len);
-> +	len = seq_printf(m, "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu ",
-> +			 start,
-> +			 end,
-> +			 flags & VM_READ ? 'r' : '-',
-> +			 flags & VM_WRITE ? 'w' : '-',
-> +			 flags & VM_EXEC ? 'x' : '-',
-> +			 flags & VM_MAYSHARE ? 's' : 'p',
-> +			 pgoff,
-> +			 MAJOR(dev), MINOR(dev), ino);
->
->   	/*
->   	 * Print the dentry name for named mappings, and a
-> diff --git a/fs/proc/task_nommu.c b/fs/proc/task_nommu.c
-> index 56123a6..1d7bbe5 100644
-> --- a/fs/proc/task_nommu.c
-> +++ b/fs/proc/task_nommu.c
-> @@ -155,16 +155,16 @@ static int nommu_vma_show(struct seq_file *m, struct vm_area_struct *vma,
->   		pgoff = (loff_t)vma->vm_pgoff << PAGE_SHIFT;
->   	}
->
-> -	seq_printf(m,
-> -		   "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu %n",
-> -		   vma->vm_start,
-> -		   vma->vm_end,
-> -		   flags & VM_READ ? 'r' : '-',
-> -		   flags & VM_WRITE ? 'w' : '-',
-> -		   flags & VM_EXEC ? 'x' : '-',
-> -		   flags & VM_MAYSHARE ? flags & VM_SHARED ? 'S' : 's' : 'p',
-> -		   pgoff,
-> -		   MAJOR(dev), MINOR(dev), ino, &len);
-> +	len = seq_printf(m, "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu ",
-> +			 vma->vm_start,
-> +			 vma->vm_end,
-> +			 flags & VM_READ ? 'r' : '-',
-> +			 flags & VM_WRITE ? 'w' : '-',
-> +			 flags & VM_EXEC ? 'x' : '-',
-> +			 flags & VM_MAYSHARE ?
-> +			 flags & VM_SHARED ? 'S' : 's' : 'p',
-> +			 pgoff,
-> +			 MAJOR(dev), MINOR(dev), ino);
->
->   	if (file) {
->   		pad_len_spaces(m, len);
+On Wed, 11 Sep 2013, Eric Sandeen wrote:
 
-ack for mm parts.
+>> The reason why I'm pushing here is that mbcache shouldn't be showing
+>> up in the profiles at all if there is no external xattr block.  And so
+>> if newer versions of SELinux (like Adnreas, I've been burned by
+>> SELinux too many times in the past, so I don't use SELinux on any of
+>> my systems) is somehow causing mbcache to get triggered, we should
+>> figure this out and understand what's really going on.
+>
+> selinux, from an fs allocation behavior perspective, is simply setxattr.
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+what you are missing is that Ted is saying that unless you are using xattrs, the 
+mbcache should not show up at all.
 
+The fact that you are using SElinux, and SELinux sets the xattrs is what makes 
+this show up on your system, but other people who don't use SELinux (and so 
+don't have any xattrs set) don't see the same bottleneck.
 
+David Lang
