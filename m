@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755607Ab3IKQdu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 12:33:50 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:1515 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755256Ab3IKQdt (ORCPT
+	id S1755774Ab3IKQfb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 12:35:31 -0400
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:61082 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755202Ab3IKQf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 12:33:49 -0400
-Message-ID: <52309B5F.70406@hp.com>
-Date: Wed, 11 Sep 2013 12:33:35 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Wed, 11 Sep 2013 12:35:29 -0400
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH 1/2] seqlock: Add a new blocking reader type
-References: <1378909707-3347-1-git-send-email-Waiman.Long@hp.com> <20130911145536.GJ13318@ZenIV.linux.org.uk>
-In-Reply-To: <20130911145536.GJ13318@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130911110635.GT26785@twins.programming.kicks-ass.net>
+References: <20130910130811.507933095@infradead.org> <20130910132011.116593485@infradead.org>
+ <522FCE9D.4010707@amacapital.net> <20130911082530.GN31370@twins.programming.kicks-ass.net>
+ <20130911110635.GT26785@twins.programming.kicks-ass.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 11 Sep 2013 09:35:08 -0700
+Message-ID: <CALCETrUECkOZkxao0d1467rEFcSF3jzddNo1awshE4uK-wsWGQ@mail.gmail.com>
+Subject: Re: [PATCH 2/7] sched: Add NEED_RESCHED to the preempt_count
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Peter Anvin <hpa@zytor.com>, Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arch <linux-arch@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2013 10:55 AM, Al Viro wrote:
-> On Wed, Sep 11, 2013 at 10:28:26AM -0400, Waiman Long wrote:
->> The sequence lock (seqlock) was originally designed for the cases
->> where the readers do not need to block the writers by making the
->> readers retry the read operation when the data change.
+On Wed, Sep 11, 2013 at 4:06 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, Sep 11, 2013 at 10:25:30AM +0200, Peter Zijlstra wrote:
+>> On Tue, Sep 10, 2013 at 06:59:57PM -0700, Andy Lutomirski wrote:
+>
+>> > It looks like the intel_idle code can get confused if TIF_NEED_RESCHED
+>> > is set but the preempt resched bit is not -- the need_resched call
+>> > between monitor and mwait won't notice TIF_NEED_RESCHED.
+>> >
+>> > Is this condition possible?
 >>
->> Since then, the use cases have been expanded to include situations
->> where a thread does not need to change the data (effectively a reader)
->> at all but have to take the writer lock because it can't tolerate
->> changes to the protected structure. Some examples are the d_path()
->> function and the getcwd() syscall in fs/dcache.c where the functions
->> take the writer lock on rename_lock even though they don't need
->> to change anything in the protected data structure at all. This is
->> inefficient as a reader is now blocking other non-blocking readers
->> by pretending to be a writer.
+>> Ah indeed, I'll have to go find all idle loops out there it seems. Now
+>> if only they were easy to spot :/
 >>
->> This patch tries to eliminate this inefficiency by introducing a new
->> type of blocking reader to the seqlock locking mechanism. This new
->> blocking reader will not block other non-blocking readers, but will
->> block other blocking readers and writers.
-> Umm...  That's misleading - it doesn't _block_, it spins.  Moroever,
-> seq_readbegin() also spins in presense of writer; the main property
-> of this one is that it keeps writers away.
+>> I was hoping the generic idle thing was good enough, apparently not
+>> quite. Thanks for spotting that.
+>
+> OK, and the reason I didn't notice is that the entire TS_POLLING thing
+> is completely wrecked so we'll get the interrupt anyway.
+>
 
-I used "block" in the sense that it will stop a writer from moving 
-forward. I will update the commit log to make that more clear.
-> Folks, any suggestions on better names?  The semantics we are getting is
+I bet that this improves cross-cpu wakeup latency, too -- the old code
+would presumably wake up the cpu and then immediately interrupt it.
 
-I will welcome any better name suggestion and will incorporate that in 
-the patch.
+It might be nice to rename one or both of need_resched and
+test_need_resched, though -- the difference is somewhat inscrutable.
 
--Longman
+--Andy
