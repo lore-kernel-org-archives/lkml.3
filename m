@@ -1,60 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755846Ab3IKQMv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 12:12:51 -0400
-Received: from mga02.intel.com ([134.134.136.20]:15963 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755315Ab3IKQMt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 12:12:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,885,1371106800"; 
-   d="scan'208";a="394223054"
-Date: Wed, 11 Sep 2013 18:12:43 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-i2c@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lv Zheng <lv.zheng@intel.com>, Aaron Lu <aaron.lu@intel.com>,
-        linux-arm-kernel@lists.infradead.org, Mark Brown <broonie@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH v2 6/9] mfd: wm8994: convert to use I2C core runtime PM
-Message-ID: <20130911161242.GA13015@zurbaran>
-References: <1378913560-2752-1-git-send-email-mika.westerberg@linux.intel.com>
- <1378913560-2752-7-git-send-email-mika.westerberg@linux.intel.com>
+	id S1756758Ab3IKQNA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 12:13:00 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:60810 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755330Ab3IKQM6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 12:12:58 -0400
+Date: Wed, 11 Sep 2013 09:12:54 -0700
+From: Anton Vorontsov <anton@enomsg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] vmpressure: fix divide-by-0 in vmpressure_work_fn
+Message-ID: <20130911161254.GA17081@teo>
+References: <alpine.LNX.2.00.1309062254470.11420@eggly.anvils>
+ <20130909110847.GB18056@dhcp22.suse.cz>
+ <20130911154057.GA16765@teo>
+ <20130911160357.GA32273@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1378913560-2752-7-git-send-email-mika.westerberg@linux.intel.com>
+In-Reply-To: <20130911160357.GA32273@dhcp22.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mika,
+On Wed, Sep 11, 2013 at 06:03:57PM +0200, Michal Hocko wrote:
+> The patch below. I find it little bit nicer than Hugh's original one
+> because having the two checks sounds more confusing.
+> What do you think Hugh, Anton?
 
-On Wed, Sep 11, 2013 at 06:32:37PM +0300, Mika Westerberg wrote:
-> The I2C core now prepares runtime PM on behalf of the I2C client device, so
-> only thing the driver needs to do is to call pm_runtime_put() at the end of
-> its ->probe().
+Acked-by: Anton Vorontsov <anton@enomsg.org>
+
+Thanks!
+
+> ---
+> From 888745909da34f8aee8a208a82d467236b828d0d Mon Sep 17 00:00:00 2001
+> From: Michal Hocko <mhocko@suse.cz>
+> Date: Wed, 11 Sep 2013 17:48:10 +0200
+> Subject: [PATCH] vmpressure: fix divide-by-0 in vmpressure_work_fn
 > 
-> This patch converts wm8994 driver to use this model.
+> Hugh Dickins has reported a division by 0 when a vmpressure event is
+> processed. The reason for the exception is that a single vmpressure
+> work item (which is per memcg) might be processed by multiple CPUs
+> because it is enqueued on system_wq which is !WQ_NON_REENTRANT.
+> This means that the out of lock vmpr->scanned check in
+> vmpressure_work_fn is inherently racy and the racing workers will see
+> already zeroed scanned value after they manage to take the spin lock.
 > 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Acked-by: Samuel Ortiz <sameo@linux.intel.com>
-
-I think it would make more sense for you to merge that one together with
-the related i2c changes. If you prefer that I take it through MFD,
-please let me know.
-
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+> The patch simply moves the vmp->scanned check inside the sr_lock to fix
+> the race.
+> 
+> The issue was there since the very beginning but "vmpressure: change
+> vmpressure::sr_lock to spinlock" might have made it more visible as the
+> racing workers would sleep on the mutex and give it more time to see
+> updated value. The issue was still there, though.
+> 
+> Reported-by: Hugh Dickins <hughd@google.com>
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> Cc: stable@vger.kernel.org
+> ---
+>  mm/vmpressure.c |   17 +++++++++--------
+>  1 file changed, 9 insertions(+), 8 deletions(-)
+> 
+> diff --git a/mm/vmpressure.c b/mm/vmpressure.c
+> index e0f6283..ad679a0 100644
+> --- a/mm/vmpressure.c
+> +++ b/mm/vmpressure.c
+> @@ -164,18 +164,19 @@ static void vmpressure_work_fn(struct work_struct *work)
+>  	unsigned long scanned;
+>  	unsigned long reclaimed;
+>  
+> +	spin_lock(&vmpr->sr_lock);
+> +
+>  	/*
+> -	 * Several contexts might be calling vmpressure(), so it is
+> -	 * possible that the work was rescheduled again before the old
+> -	 * work context cleared the counters. In that case we will run
+> -	 * just after the old work returns, but then scanned might be zero
+> -	 * here. No need for any locks here since we don't care if
+> -	 * vmpr->reclaimed is in sync.
+> +	 * Several contexts might be calling vmpressure() and the work
+> +	 * item is sitting on !WQ_NON_REENTRANT workqueue so different
+> +	 * CPUs might execute it concurrently. Bail out if the scanned
+> +	 * counter is already 0 because all the work has been done already.
+>  	 */
+> -	if (!vmpr->scanned)
+> +	if (!vmpr->scanned) {
+> +		spin_unlock(&vmpr->sr_lock);
+>  		return;
+> +	}
+>  
+> -	spin_lock(&vmpr->sr_lock);
+>  	scanned = vmpr->scanned;
+>  	reclaimed = vmpr->reclaimed;
+>  	vmpr->scanned = 0;
+> -- 
+> 1.7.10.4
