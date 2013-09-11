@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182Ab3IKQIF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 12:08:05 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:59272 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754840Ab3IKQIA (ORCPT
+	id S1756209Ab3IKQIM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 12:08:12 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:49498 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756184Ab3IKQIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 12:08:00 -0400
+	Wed, 11 Sep 2013 12:08:05 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Shaohua Li <shli@kernel.org>
 Cc: liuj97@gmail.com, Jiang Liu <jiang.liu@huawei.com>,
@@ -14,108 +14,98 @@ Cc: liuj97@gmail.com, Jiang Liu <jiang.liu@huawei.com>,
         Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <trivial@kernel.org>,
         Wang YanQing <udknight@gmail.com>, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org
-Subject: [RFC PATCH v2 00/25] simplify generic cross CPU function call implementation
-Date: Thu, 12 Sep 2013 00:07:04 +0800
-Message-Id: <1378915649-16395-1-git-send-email-liuj97@gmail.com>
+Subject: [PATCH v2 01/25] Revert smp: Fix SMP function call empty cpu mask race
+Date: Thu, 12 Sep 2013 00:07:05 +0800
+Message-Id: <1378915649-16395-2-git-send-email-liuj97@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1378915649-16395-1-git-send-email-liuj97@gmail.com>
+References: <1378915649-16395-1-git-send-email-liuj97@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <jiang.liu@huawei.com>
 
-Since commit 9a46ad6d6df3b54 "smp: make smp_call_function_many() use
-logic similar to smp_call_function_single()", single and multiple
-(mask version) cross CPU function calls are handled in the same way,
-and generic_smp_call_function_interrupt() becomes an aliases of
-generic_smp_call_function_single_interrupt(), so only one interrupt
-is needed for arch code to support generic SMP function call interfaces.
-This patch series simplifies arch code by killing the redundant
-interrupt for cross CPU function calls.
+Commit f44310b98ddb7 "smp: Fix SMP function call empty cpu mask race"
+introduced field call_function_data->cpumask_ipi to resolve a race
+condition in smp_call_function_many().
 
-We choose to keep generic_smp_call_function_interrupt() instead of
-generic_smp_call_function_single_interrupt() because the former is
-more generic.
+Later commit 9a46ad6d6df3 "smp: make smp_call_function_many() use logic
+similar to smp_call_function_single()" fixed the same issue in another
+way when optimizing smp_call_function_many(), which then obsoletes
+changes introduced by commit f44310b98ddb7. So revert it.
 
-Jiang Liu (25):
-  Revert smp: Fix SMP function call empty cpu mask race
-  smp, alpha: kill SMP single function call interrupt
-  smp, ARC: kill SMP single function call interrupt
-  smp, ARM: kill SMP single function call interrupt
-  smp, ARM64: kill SMP single function call interrupt
-  smp, blackfin: kill SMP single function call interrupt
-  smp, hexagon: kill SMP single function call interrupt
-  smp, IA64: kill SMP single function call interrupt
-  smp, m32r: kill SMP single function call interrupt
-  smp, metag: kill SMP single function call interrupt
-  smp, mips: kill redundant call of
-    generic_smp_call_function_single_interrupt()
-  smp, mn10300: kill SMP single function call interrupt
-  smp, mn10300: enable arch_send_call_function_ipi_mask()
-  smp, parisc: kill SMP single function call interrupt
-  smp, ppc: kill SMP single function call interrupt
-  smp, s390: prepare for killing
-    generic_smp_call_function_single_interrupt()
-  smp, sh: kill SMP single function call interrupt
-  smp, sparc64: kill SMP single function call interrupt
-  smp, sparc: kill SMP single function call interrupt
-  smp, tile: kill SMP single function call interrupt
-  smp, tile: kill SMP single function call interrupt
-  smp, x86: kill SMP single function call interrupt
-  smp: cleanup unsued generic_smp_call_function_single_interrupt()
-  smp: rename call_single_queue as call_function_queue
-  SMP, trivial: remove unused code from smp_boot.h
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Acked-by: Wang YanQing <udknight@gmail.com>
+Cc: Jiang Liu <liuj97@gmail.com>
+---
+ kernel/smp.c | 16 ++--------------
+ 1 file changed, 2 insertions(+), 14 deletions(-)
 
- arch/alpha/kernel/smp.c                  |  9 +-------
- arch/arc/kernel/smp.c                    |  7 +-----
- arch/arm/include/asm/hardirq.h           |  2 +-
- arch/arm/kernel/smp.c                    | 10 +--------
- arch/arm64/include/asm/hardirq.h         |  2 +-
- arch/arm64/kernel/smp.c                  | 10 +--------
- arch/blackfin/mach-common/smp.c          |  7 +-----
- arch/hexagon/include/asm/smp.h           |  1 -
- arch/hexagon/kernel/smp.c                |  6 +-----
- arch/ia64/kernel/smp.c                   |  8 ++-----
- arch/m32r/include/asm/smp.h              |  1 -
- arch/m32r/kernel/smp.c                   |  9 +-------
- arch/m32r/kernel/traps.c                 |  3 +--
- arch/metag/include/asm/smp.h             |  2 --
- arch/metag/kernel/smp.c                  |  6 +-----
- arch/mips/kernel/smp.c                   |  1 -
- arch/mn10300/include/asm/smp.h           |  2 +-
- arch/mn10300/kernel/smp.c                | 19 ++++++++--------
- arch/parisc/kernel/smp.c                 |  8 +------
- arch/powerpc/include/asm/smp.h           |  3 +--
- arch/powerpc/kernel/smp.c                | 12 +----------
- arch/s390/kernel/smp.c                   | 10 ++++-----
- arch/sh/include/asm/smp.h                |  1 -
- arch/sh/kernel/smp.c                     |  5 +----
- arch/sparc/include/asm/pil.h             |  5 ++---
- arch/sparc/include/asm/smp_32.h          |  4 +---
- arch/sparc/kernel/entry.S                | 10 ++-------
- arch/sparc/kernel/leon_smp.c             | 31 ++++++--------------------
- arch/sparc/kernel/smp_32.c               | 14 ++----------
- arch/sparc/kernel/smp_64.c               | 11 +---------
- arch/sparc/kernel/sun4d_smp.c            | 31 ++++++--------------------
- arch/sparc/kernel/sun4m_smp.c            | 11 ++--------
- arch/sparc/kernel/ttable_64.S            | 12 ++++-------
- arch/sparc/mm/ultra.S                    |  5 -----
- arch/tile/include/asm/smp.h              |  7 +++---
- arch/tile/kernel/smp.c                   |  6 +-----
- arch/x86/include/asm/entry_arch.h        |  1 -
- arch/x86/include/asm/hw_irq.h            |  3 ---
- arch/x86/include/asm/irq_vectors.h       |  7 +++---
- arch/x86/include/asm/trace/irq_vectors.h |  6 ------
- arch/x86/include/asm/xen/events.h        |  1 -
- arch/x86/kernel/entry_64.S               |  2 --
- arch/x86/kernel/irqinit.c                |  4 ----
- arch/x86/kernel/smp.c                    | 24 +--------------------
- arch/x86/xen/smp.c                       | 37 +-------------------------------
- include/linux/smp.h                      |  4 +---
- include/linux/smpboot.h                  |  1 -
- kernel/smp.c                             | 36 +++++++++++--------------------
- 48 files changed, 82 insertions(+), 335 deletions(-)
-
+diff --git a/kernel/smp.c b/kernel/smp.c
+index fe9f773..a034712 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -23,7 +23,6 @@ enum {
+ struct call_function_data {
+ 	struct call_single_data	__percpu *csd;
+ 	cpumask_var_t		cpumask;
+-	cpumask_var_t		cpumask_ipi;
+ };
+ 
+ static DEFINE_PER_CPU_SHARED_ALIGNED(struct call_function_data, cfd_data);
+@@ -47,9 +46,6 @@ hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 		if (!zalloc_cpumask_var_node(&cfd->cpumask, GFP_KERNEL,
+ 				cpu_to_node(cpu)))
+ 			return notifier_from_errno(-ENOMEM);
+-		if (!zalloc_cpumask_var_node(&cfd->cpumask_ipi, GFP_KERNEL,
+-				cpu_to_node(cpu)))
+-			return notifier_from_errno(-ENOMEM);
+ 		cfd->csd = alloc_percpu(struct call_single_data);
+ 		if (!cfd->csd) {
+ 			free_cpumask_var(cfd->cpumask);
+@@ -64,7 +60,6 @@ hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 	case CPU_DEAD:
+ 	case CPU_DEAD_FROZEN:
+ 		free_cpumask_var(cfd->cpumask);
+-		free_cpumask_var(cfd->cpumask_ipi);
+ 		free_percpu(cfd->csd);
+ 		break;
+ #endif
+@@ -255,9 +250,9 @@ int smp_call_function_single(int cpu, smp_call_func_t func, void *info,
+ 				csd = &__get_cpu_var(csd_data);
+ 
+ 			csd_lock(csd);
+-
+ 			csd->func = func;
+ 			csd->info = info;
++
+ 			generic_exec_single(cpu, csd, wait);
+ 		} else {
+ 			err = -ENXIO;	/* CPU not online */
+@@ -410,13 +405,6 @@ void smp_call_function_many(const struct cpumask *mask,
+ 	if (unlikely(!cpumask_weight(cfd->cpumask)))
+ 		return;
+ 
+-	/*
+-	 * After we put an entry into the list, cfd->cpumask may be cleared
+-	 * again when another CPU sends another IPI for a SMP function call, so
+-	 * cfd->cpumask will be zero.
+-	 */
+-	cpumask_copy(cfd->cpumask_ipi, cfd->cpumask);
+-
+ 	for_each_cpu(cpu, cfd->cpumask) {
+ 		struct call_single_data *csd = per_cpu_ptr(cfd->csd, cpu);
+ 		struct call_single_queue *dst =
+@@ -433,7 +421,7 @@ void smp_call_function_many(const struct cpumask *mask,
+ 	}
+ 
+ 	/* Send a message to all CPUs in the map */
+-	arch_send_call_function_ipi_mask(cfd->cpumask_ipi);
++	arch_send_call_function_ipi_mask(cfd->cpumask);
+ 
+ 	if (wait) {
+ 		for_each_cpu(cpu, cfd->cpumask) {
 -- 
 1.8.1.2
 
