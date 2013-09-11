@@ -1,79 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112Ab3IKONV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 10:13:21 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:38898 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752656Ab3IKONU (ORCPT
+	id S1754136Ab3IKOSB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 10:18:01 -0400
+Received: from a9-99.smtp-out.amazonses.com ([54.240.9.99]:37517 "EHLO
+	a9-99.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753431Ab3IKOSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 10:13:20 -0400
-Date: Wed, 11 Sep 2013 07:13:02 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, sbw@mit.edu
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
- section?
-Message-ID: <20130911141302.GA11342@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130909135656.GT3966@linux.vnet.ibm.com>
- <20130909101629.32df27a2@gandalf.local.home>
- <20130909161708.GX3966@linux.vnet.ibm.com>
- <20130909123422.7936e868@gandalf.local.home>
- <20130909165836.GB3966@linux.vnet.ibm.com>
- <20130909172908.GA31239@Krystal>
- <20130909175656.GF3966@linux.vnet.ibm.com>
- <20130909214026.GA8830@Krystal>
- <20130909175917.794b19bd@gandalf.local.home>
- <20130909223426.GM3966@linux.vnet.ibm.com>
+	Wed, 11 Sep 2013 10:18:00 -0400
+Date: Wed, 11 Sep 2013 14:17:57 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Joe Perches <joe@perches.com>
+cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] slab: Make allocations with GFP_ZERO slightly more
+ efficient
+In-Reply-To: <1378857771.15187.4.camel@joe-AO722>
+Message-ID: <000001410d62c020-44437965-d471-4125-af3c-cfd19b393de8-000000@email.amazonses.com>
+References: <1378857771.15187.4.camel@joe-AO722>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130909223426.GM3966@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091114-1542-0000-0000-00000155B5A6
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.09.11-54.240.9.99
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 03:34:26PM -0700, Paul E. McKenney wrote:
-> On Mon, Sep 09, 2013 at 05:59:17PM -0400, Steven Rostedt wrote:
-> > On Mon, 9 Sep 2013 17:40:26 -0400
-> > Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-> > 
-> > > Agreed. So how about rcu_is_online() ?
-> > 
-> > Nope, what about all_your_base_are_belong_to_rcu()?
-> 
-> Let's see if I can remember the candidates...
-> 
-> 	rcu_is_cpu_idle() # reversed sense from the others
-> 	rcu_is_ignored() # reversed sense from the others
-> 	rcu_is_not_active() # reversed sense from the others
-> 	rcu_is_watching_cpu()
-> 	rcu_read_check()
-> 	rcu_is_active()
-> 	rcu_is_active_local()
-> 	rcu_is_online()
-> 	rcu_is_watching_task()
-> 	rcu_is_watching_thread()
-> 	rcu_is_watching_you()
-> 	all_your_base_are_belong_to_rcu()
-> 	rcu_is_active_loco()
-> 	rcu_kilroy_was_here()
-> 
-> Maybe I should just lock them all in a room overnight and see which
-> are still alive in the morning.
+On Tue, 10 Sep 2013, Joe Perches wrote:
 
-And after treating injuries, the survivor is rcu_is_watching().
+> Use the likely mechanism already around valid
+> pointer tests to better choose when to memset
+> to 0 allocations with __GFP_ZERO
 
-							Thanx, Paul
+Ok but that is not that important since the first ptr check is only for
+debuggin.
 
+Acked-by: Christoph Lameter <cl@linux.com>
