@@ -1,68 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754989Ab3IKPbC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 11:31:02 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:39495 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754812Ab3IKPa7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 11:30:59 -0400
-Message-ID: <52308C91.2000105@ahsoftware.de>
-Date: Wed, 11 Sep 2013 17:30:25 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130712 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
-Subject: Re: [PATCH] RFC: interrupt consistency check for OF GPIO IRQs
-References: <1375101368-17645-1-git-send-email-linus.walleij@linaro.org> <CACxGe6uNJNMdZ1HYGgCtLM2t2TWGCR6btjOHVmP=vDXXvvFfRg@mail.gmail.com> <CACRpkdYjJL6FZwEbB7XLnb9QtjB=3LeE9Ny6KQ4PkM3zpdNqqg@mail.gmail.com> <344239800.bDEkDg48ZQ@avalon> <CACRpkdavR=fv+y1RCNfdgQypPuRbO6isOSwGsABDrYiGeMdyZw@mail.gmail.com>
-In-Reply-To: <CACRpkdavR=fv+y1RCNfdgQypPuRbO6isOSwGsABDrYiGeMdyZw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755088Ab3IKPcu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 11:32:50 -0400
+Received: from mga14.intel.com ([143.182.124.37]:13815 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754780Ab3IKPcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 11:32:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,885,1371106800"; 
+   d="scan'208";a="293584877"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-i2c@vger.kernel.org
+Cc: Wolfram Sang <wsa@the-dreams.de>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lv Zheng <lv.zheng@intel.com>, Aaron Lu <aaron.lu@intel.com>,
+        linux-arm-kernel@lists.infradead.org, Mark Brown <broonie@kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH v2 2/9] i2c: attach/detach I2C client device to the ACPI power domain
+Date: Wed, 11 Sep 2013 18:32:33 +0300
+Message-Id: <1378913560-2752-3-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1378913560-2752-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1378913560-2752-1-git-send-email-mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 22.08.2013 00:02, schrieb Linus Walleij:
-> On Tue, Aug 20, 2013 at 12:04 AM, Laurent Pinchart
-> <laurent.pinchart@ideasonboard.com> wrote:
->> On Wednesday 31 July 2013 01:44:53 Linus Walleij wrote:
-> 
->>> I don't see how sharing works here, or how another user, i.e. another one
->>> than the user wanting to recieve the IRQ, can validly request such a line?
->>> What would the usecase for that valid request be?
->>
->> When the GPIO is wired to a status signal (such as an MMC card detect signal)
->> the driver might want to read the state of the signal independently of the
->> interrupt handler.
-> 
-> That is true. But for such a complex usecase I think it's reasonable that
-> we only specify the GPIO in the device tree, and the driver utilizing the
-> IRQ need to take that and perform gpio_to_irq() on it, and then it still
-> works to use it both ways.
+From: Lv Zheng <lv.zheng@intel.com>
 
-Hmm, the problem is that DT is seen as fixed. So if someone marks a GPIO
-as an IRQ, it can never be used otherwise. So if you really go this way,
-you should make this pretty clear in the documentation.
+If the I2C client device is enumerated from ACPI namespace it might have
+ACPI methods that needs to be called in order to transition the device to
+different power states (such as _PSx).
 
-Looking from the other side, why do you want to mark GPIOs as IRQs in
-the DT at all? And how will this be done? I found the way it was done in
-the reverted patch very confusing because it needed an IRQ number. That
-IRQ number depends on the mapping and isn't hw specific (and currently
-just human doable because of the simple mapping).
+Implement this for I2C client devices by checking if the device has an ACPI
+handle and if that's the case, attach it to the ACPI power domain. In
+addition we make sure that the device is fully powered when its ->probe()
+function gets called.
 
-Regards,
+For non-ACPI devices this patch is a no-op.
 
-Alexander Holler
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/i2c/i2c-core.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index 44374b4..ac4ea1f 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -251,6 +251,9 @@ static int i2c_device_probe(struct device *dev)
+ 	/* Make sure the adapter is active */
+ 	pm_runtime_get_sync(&client->adapter->dev);
+ 
++	if (ACPI_HANDLE(&client->dev))
++		acpi_dev_pm_attach(&client->dev, true);
++
+ 	/*
+ 	 * Enable runtime PM for the client device. If the client wants to
+ 	 * participate on runtime PM it should call pm_runtime_put() in its
+@@ -268,6 +271,9 @@ static int i2c_device_probe(struct device *dev)
+ 		pm_runtime_disable(&client->dev);
+ 		pm_runtime_set_suspended(&client->dev);
+ 		pm_runtime_put_noidle(&client->dev);
++
++		if (ACPI_HANDLE(&client->dev))
++			acpi_dev_pm_detach(&client->dev, true);
+ 	}
+ 
+ 	pm_runtime_put(&client->adapter->dev);
+@@ -304,6 +310,9 @@ static int i2c_device_remove(struct device *dev)
+ 	pm_runtime_set_suspended(&client->dev);
+ 	pm_runtime_put_noidle(&client->dev);
+ 
++	if (ACPI_HANDLE(&client->dev))
++		acpi_dev_pm_detach(&client->dev, true);
++
+ 	pm_runtime_put(&client->adapter->dev);
+ 	return status;
+ }
+-- 
+1.8.4.rc3
+
