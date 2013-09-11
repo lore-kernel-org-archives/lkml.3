@@ -1,40 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325Ab3IKOW1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 10:22:27 -0400
-Received: from a9-42.smtp-out.amazonses.com ([54.240.9.42]:57746 "EHLO
-	a9-42.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752595Ab3IKOW0 (ORCPT
+	id S1754333Ab3IKOZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 10:25:26 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:17722 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753805Ab3IKOZU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 10:22:26 -0400
-Date: Wed, 11 Sep 2013 14:22:25 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [REPOST PATCH 3/4] slab: introduce byte sized index for the
- freelist of a slab
-In-Reply-To: <20130911010434.GB24671@lge.com>
-Message-ID: <000001410d66d62b-d6711e2e-31e4-49da-8d20-efba10fc6a54-000000@email.amazonses.com>
-References: <1378447067-19832-1-git-send-email-iamjoonsoo.kim@lge.com> <1378447067-19832-4-git-send-email-iamjoonsoo.kim@lge.com> <00000140f3fed229-f49b95d4-7087-476f-b2c9-37846749aad6-000000@email.amazonses.com> <20130909043217.GB22390@lge.com>
- <00000141032dea11-c5aa9c77-b2f2-4cab-b7a0-d37665a6cec8-000000@email.amazonses.com> <20130910054342.GB24602@lge.com> <0000014109c372c6-5f3c49d4-ce8b-4760-b80d-a32e042ec09b-000000@email.amazonses.com> <20130911010434.GB24671@lge.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 11 Sep 2013 10:25:20 -0400
+Message-ID: <52307DB3.7010909@oracle.com>
+Date: Wed, 11 Sep 2013 10:26:59 -0400
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.09.11-54.240.9.42
+To: David Vrabel <david.vrabel@citrix.com>
+CC: xen-devel@lists.xen.org, linux-kernel@vger.kernel.org, JBeulich@suse.com
+Subject: Re: [Xen-devel] [PATCH v1 0/5] xen/PMU: PMU support for Xen PV guests
+References: <1378827110-4192-1-git-send-email-boris.ostrovsky@oracle.com> <523038FD.4070100@citrix.com>
+In-Reply-To: <523038FD.4070100@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Sep 2013, Joonsoo Kim wrote:
+On 09/11/2013 05:33 AM, David Vrabel wrote:
+> On 10/09/13 16:31, Boris Ostrovsky wrote:
+>> This is the Linux side of Xen PMU support for PV guests, including dom0. Only
+>> kernel changes are here, toolstack patch will be provided separately.
+>>
+>> Here is description from the hypervisor patch submission that applies to this
+>> series as well:
+>>
+>> This version has following limitations:
+>> * For accurate profiling of dom0/Xen dom0 VCPUs should be pinned.
+>> * Hypervisor code is only profiled on processors that have running dom0 VCPUs
+>> on them.
+>> * No backtrace support.
+> These are some pretty significant limitations.   Is there a plan for how
+> to remove them?
 
-> Anyway, could you review my previous patchset, that is, 'overload struct slab
-> over struct page to reduce memory usage'? I'm not sure whether your answer is
-> ack or not.
+I don't have a specific plan (other than do it after this stage is 
+finished) but I do
+have a rough idea of what would be needed to address these.
 
-I scanned over it before but I was not able to see if it was correct on
-first glance. I will look at it again.
+Hypervisor changes for all three should be pretty easy.
 
+Linux-wise, for the first one (pinned VCPU) we will probably need to make a
+change in perf_sample_data. There is a reserved filed there so perhaps we
+can use it to store PCPU (and maybe domainID). Plus a way to actually write
+the data, probably a hook or something.
+
+Backtrace support should also not be too bad: we can pass Xen IP stack in
+the shared data area to dom0 and then again have a hook or something to
+pass it to perf. (Note that backtracing is not supported for KVM neither 
+so both
+may benefit here)
+
+The second one is the most difficult: We need to be able somehow to access
+MSRs (and APIC, I think) on non-dom0 CPUs. Creating interface for such 
+access
+is not a big deal but integrating it into perf infrastructure will be a 
+challenge. There
+are other alternatives but they have problems as well.
+
+
+-boris
