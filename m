@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757353Ab3IKUuH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 16:50:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55838 "EHLO mail.zytor.com"
+	id S932081Ab3IKUvj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 16:51:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29357 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757267Ab3IKUuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 16:50:05 -0400
-Message-ID: <5230D649.3090608@zytor.com>
-Date: Wed, 11 Sep 2013 13:44:57 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1755628Ab3IKUvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 16:51:38 -0400
+Message-ID: <5230D739.9010109@redhat.com>
+Date: Wed, 11 Sep 2013 15:48:57 -0500
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Andy Lutomirski <luto@amacapital.net>,
-        Jeff Garzik <jgarzik@pobox.com>, David Safford <safford@us.ibm.com>,
-        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
-        Ashley Lai <ashley@ashleylai.com>, Rajiv Andrade <mail@srajiv.net>,
-        Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
+To: David Lang <david@lang.hm>
+CC: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger@dilger.ca>,
+        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>,
+        T Makphaibulchoke <tmac@hp.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-ext4@vger.kernel.org List" <linux-ext4@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kent Yoder <key@linux.vnet.ibm.com>,
-        David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>,
-        "Johnston, DJ" <dj.johnston@intel.com>
-Subject: Re: TPMs and random numbers
-References: <1378920168.26698.64.camel@localhost> <CALCETrVgiJuw9vj+BhchgzAH06gqEO4TYJyt8wd+2CCy33RQ3Q@mail.gmail.com> <20130911184509.GB13397@thunk.org> <CAFtxgO7XKbNn1-VW6Ha9P9wj7VAHw6Upar9udgy6dMrFNAHU0Q@mail.gmail.com> <CALCETrX0hN5hfW0rAsJ-uAKyV5eVSdhntT0TOVumLm2CDyLLBQ@mail.gmail.com> <41ba2dff-12ed-4127-acbd-ae5b40e38afd@email.android.com> <20130911202831.GC13397@thunk.org>
-In-Reply-To: <20130911202831.GC13397@thunk.org>
+        "linux-fsdevel@vger.kernel.org Devel" <linux-fsdevel@vger.kernel.org>,
+        aswin@hp.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        aswin_proj@lists.hp.com
+Subject: Re: [PATCH v3 0/2] ext4: increase mbcache scalability
+References: <1374108934-50550-1-git-send-email-tmac@hp.com> <1378312756-68597-1-git-send-email-tmac@hp.com> <20130905023522.GA21268@thunk.org> <52285395.1070508@hp.com> <0787C579-7E2C-4864-B8F4-98816E1E50A2@dilger.ca> <5229C939.8030108@hp.com> <62D71A85-C7EE-4F5F-B481-5329F0282044@dilger.ca> <20130910210250.GH29237@thunk.org> <522FDFCC.1070007@redhat.com> <20130911113001.GB13315@thunk.org> <52309F27.8060008@redhat.com> <alpine.DEB.2.02.1309111325270.5862@nftneq.ynat.uz>
+In-Reply-To: <alpine.DEB.2.02.1309111325270.5862@nftneq.ynat.uz>
 X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2013 01:28 PM, Theodore Ts'o wrote:
-> On Wed, Sep 11, 2013 at 12:25:48PM -0700, H. Peter Anvin wrote:
->> This of course has been a long-running debate.  Similarly, we could
->> make much better use of RDRAND if instead of doing data reduction in
->> rngd we could feed it to the pool and just credit fractional bits.
->> The FIPS tests that rngd runs are weak and obsoleted, but perhaps
->> better than nothing (now when we don't shut down rngd due to false
->> positives.)
+On 9/11/13 3:32 PM, David Lang wrote:
+> On Wed, 11 Sep 2013, Eric Sandeen wrote:
 > 
-> /dev/urandom is using RDRAND already, and that's what most of the
-> applications which are generating ssh host keys, session keys, etc.,
-> are using.
+>>> The reason why I'm pushing here is that mbcache shouldn't be showing
+>>> up in the profiles at all if there is no external xattr block.  And so
+>>> if newer versions of SELinux (like Adnreas, I've been burned by
+>>> SELinux too many times in the past, so I don't use SELinux on any of
+>>> my systems) is somehow causing mbcache to get triggered, we should
+>>> figure this out and understand what's really going on.
+>>
+>> selinux, from an fs allocation behavior perspective, is simply setxattr.
 > 
-> /dev/random is using RDRAND as well, but we're not giving any entropy
-> credit, so it will take longer to get the necessary randomness to
-> generate a GPG key.
+> what you are missing is that Ted is saying that unless you are using xattrs, the mbcache should not show up at all.
 > 
+> The fact that you are using SElinux, and SELinux sets the xattrs is
+> what makes this show up on your system, but other people who don't
+> use SELinux (and so don't have any xattrs set) don't see the same
+> bottleneck.
 
-We're using RDRAND in two ways: in the kernel, we're "washing" the pool
-output with it (with the notion that we'll always get the best of both
-worlds) -- we don't give any entropy credit for that.
+Sure, I understand that quite well.  But Ted was also saying that perhaps selinux had "gotten piggy" and was causing this.  I've showed that it hasn't.
 
-We are also using RDRAND with the architecturally required 512:1 data
-reduction in rngd, to produce "creditable entropy".  This is in part
-because rngd doesn't really have a way to deal with fractional entropy,
-in the light of FIPS tests and all (which don't make sense anyway for
-postconditioned output, from RDRAND, TPM or any other similar source.)
 
-One could thus posit that it would make more sense for that type of
-source to feed the kernel entropy pools directly from a kernel thread
-rather than taking a trip to user space.  In the case of RDRAND
-specifically, a kernel thread or similar could feed RDRAND to the pools
-and credit 1/512 of the data volume as entropy.  Since the factor of 512
-is an architectural lower bound (and *very* conservative) it would be
-better to let the pool system do the data reduction than doing it in
-userspace.
+This matters because unless the selinux xattrs go out of the inode into their own block, mbcache should STILL not come into it at all.
 
-Now, I'm pretty sure that some cryptographers are very unhappy about the
-fact that we use a linear operation to do the pool insertion mixing.  I
-personally am not qualified to say to what extent that is an actual problem.
+And for attrs < 100 bytes, they stay in the inode.  And on inspection, my SELinux boxes have no external attr blocks allocated.
 
-	-hpa
+mbcache only handles extended attributes that live in separately-allocated blocks, and selinux does not cause that on its own.
+
+Soo... selinux by itself should not be triggering any mbcache codepaths.
+
+Ted suggested that "selinux had gotten piggy" so I checked, and showed that it hadn't.  That's all.
+
+So at this point I think it's up to Mak to figure out why on his system, aim7 is triggering mbcache codepaths.
+
+-Eric
+
+> David Lang
 
