@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756811Ab3IKSgA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 14:36:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17028 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755373Ab3IKSf7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 14:35:59 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=wRe-vSF1Ob0A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=kSsn7R9otuIA:10 a=GQmRT1DTiQAfSP_MaZ8A:9 a=CjuIK1q_8ugA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Wed, 11 Sep 2013 14:35:57 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mario Kleiner <mario.kleiner@tuebingen.mpg.de>
-Cc: Peter Hurley <peter@hurleysoftware.com>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Clark Williams <williams@redhat.com>, Dave Airlie <airlied@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: BUG: sleeping function called from invalid context on
- 3.10.10-rt7
-Message-ID: <20130911143557.14c1fe6a@gandalf.local.home>
-In-Reply-To: <5230B673.6090800@tuebingen.mpg.de>
-References: <20130911102809.GA31663@uudg.org>
-	<20130911092623.42efd930@gandalf.local.home>
-	<5230895B.5070400@hurleysoftware.com>
-	<5230B673.6090800@tuebingen.mpg.de>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756817Ab3IKShd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 14:37:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55236 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752509Ab3IKShc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 14:37:32 -0400
+Message-ID: <5230B86C.2070708@suse.com>
+Date: Wed, 11 Sep 2013 14:37:32 -0400
+From: Jeff Mahoney <jeffm@suse.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Greg KH <gregkh@linux.com>
+Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kobject: introduce kobj_completion
+References: <5230A1AE.401@suse.com> <20130911171508.GA29741@kroah.com>
+In-Reply-To: <20130911171508.GA29741@kroah.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="VlgXnjqfALOPPCTTWX0D05j1XGOttH6FR"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Sep 2013 20:29:07 +0200
-Mario Kleiner <mario.kleiner@tuebingen.mpg.de> wrote:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--VlgXnjqfALOPPCTTWX0D05j1XGOttH6FR
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> That said, maybe preempt_disable is no longer the optimal choice there 
-> and there's some better way to achieve good protection against 
-> interruptions of that bit of code? My knowledge here is a bit rusty, and 
-> the intel kms drivers and rt stuff has changed quite a bit.
+On 9/11/13 1:15 PM, Greg KH wrote:
+> On Wed, Sep 11, 2013 at 01:00:30PM -0400, Jeff Mahoney wrote:
+>> A common way to handle kobject lifetimes in embedded in objects with
+>> different lifetime rules is to pair the kobject with a struct completi=
+on.
+>>
+>> This introduces a kobj_completion structure that can be used in place
+>> of the pairing, along with several convenience functions for
+>> initialization, release, and put-and-wait.
+>>
+>> Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+>> ---
+>>  include/linux/kobj_completion.h |   18 ++++++++++++++
+>=20
+> Does this really need a new .h file, or can we just cram it into
+> kobject.h?  It's only 13 more lines to add to that file.
 
-If you set your code to a higher priority than other tasks (and
-interrupts) than it wont be preempted there. Unless of course it blocks
-on a lock, but even then, priority inheritance will take place and it
-still should be rather quick. (unless the holder of the lock is doing
-that strange polling).
+It doesn't need to be, but it avoids everywhere that already uses a
+kobject having to include <linux/completion.h> indirectly.
 
--- Steve
+-Jeff
+
+--=20
+Jeff Mahoney
+SUSE Labs
+
+
+--VlgXnjqfALOPPCTTWX0D05j1XGOttH6FR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG/MacGPG2 v2.0.19 (Darwin)
+
+iQIcBAEBAgAGBQJSMLhsAAoJEB57S2MheeWy4bMP/1jr6XGF7thofPVWBWzJYpSG
+2FUWbBITSW/4hEd2p0K8DUS9nxZFg5mQ2K/c3siYY6a/qbWgBWnbjpkN1UVBT7Yk
+8jF4sitK13b57gp4CTfBRKiOakegdGk5DQjKUqqK2RFoCieQ3Wkc92g3qXCb6c8C
+P/QP0IPQ+JcOaMed22ystlr0uR+tbUbNyVlhICFj/qI8kBJg8PZ1O9AlqjgRkAkT
+KwsZBHMJUsaKpgHe1MTOW6lgbL68NheQyGxVfGp7ar0tCbjVKe1iIvDB9DFLFWVF
+QVDRAGpsiPcqN1J7MNQJ1Gq/Uu+nD9bwQrTVXBZRZqRAgeTwrIyvol3EPKhYFkwB
+2IbtZvO1pTmFoewW4hiewOurVYIkJZaIMIR16f2w82mGGlc35ZjdZFvx2KocleqO
+sJtqYH3lvY+vUxR9D5qUu5+1o+O843310zIPeJlDFYd3xKV3STD728w/nq6df46X
+FOodCbD33GwILNJ9m5FLjvXnRVSetvo3IPj5FFo59aEIABhvdix3wGPWw8Kqn93w
+lFR4RwocO4DRwhtlZZnsEa4V+ijBmENAPfRDp0PoNuMo/jJjYXdpftPkaVCywwHZ
+nK2P4EUeh4pLT2gs7XQFXW7lNPVka/rm9EKP83l/H0gWNLOiDNG325+NJTRsruT9
+jBBZgEaxDxHp3nV93Glt
+=Mmpi
+-----END PGP SIGNATURE-----
+
+--VlgXnjqfALOPPCTTWX0D05j1XGOttH6FR--
