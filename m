@@ -1,123 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755952Ab3IKRAi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 13:00:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51180 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753002Ab3IKRAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 13:00:37 -0400
-Message-ID: <5230A1AE.401@suse.com>
-Date: Wed, 11 Sep 2013 13:00:30 -0400
-From: Jeff Mahoney <jeffm@suse.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1756120Ab3IKRCm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 13:02:42 -0400
+Received: from mail-vb0-f51.google.com ([209.85.212.51]:41316 "EHLO
+	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752810Ab3IKRCl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 13:02:41 -0400
 MIME-Version: 1.0
-To: Greg KH <gregkh@linux.com>
-Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] kobject: introduce kobj_completion
-X-Enigmail-Version: 1.5.2
+In-Reply-To: <CA+55aFzBbKXJnaG_6X8Fff_APGJ3EkbG0thsbithDXtiEJjdHA@mail.gmail.com>
+References: <CACxGe6v8hO4sRX_KGcH=YBAMrF8mQHqWdxXEvVwoC2pVS5Yv9Q@mail.gmail.com>
+	<CA+bK7J5cAWFPLTBR2afNLm2JaKFH4_dJO_NpVL5gom0iX+L2dQ@mail.gmail.com>
+	<CA+55aFzBbKXJnaG_6X8Fff_APGJ3EkbG0thsbithDXtiEJjdHA@mail.gmail.com>
+Date: Wed, 11 Sep 2013 10:02:40 -0700
+Message-ID: <CA+8MBbLVC2==zpNV1zV3OoiSQoKfptAGqF1EQNtrhFUCn=0h7A@mail.gmail.com>
+Subject: Re: [GIT PULL] Device tree updates for v3.12
+From: Tony Luck <tony.luck@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Tim Bird <tbird20d@gmail.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A common way to handle kobject lifetimes in embedded in objects with
-different lifetime rules is to pair the kobject with a struct completion.
+On Tue, Sep 10, 2013 at 1:50 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> Of course, maybe even the stupid add_device_randomness() is fast
+> enough. I just wanted to point out that it definitely isn't some
+> optimized thing.
 
-This introduces a kobj_completion structure that can be used in place
-of the pairing, along with several convenience functions for
-initialization, release, and put-and-wait.
+When I posted the patch that mixes in the whole SMBIOS table:
 
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
----
- include/linux/kobj_completion.h |   18 ++++++++++++++
- lib/kobject.c                   |   50 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 68 insertions(+)
+commit d114a33387472555188f142ed8e98acdb8181c6d
+Author: Tony Luck <tony.luck@intel.com>
+Date:   Fri Jul 20 13:15:20 2012 -0700
 
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ b/include/linux/kobj_completion.h	2013-09-10 12:58:03.530554144 -0400
-@@ -0,0 +1,18 @@
-+#ifndef _KOBJ_COMPLETION_H_
-+#define _KOBJ_COMPLETION_H_
-+
-+#include <linux/kobject.h>
-+#include <linux/completion.h>
-+
-+struct kobj_completion {
-+	struct kobject kc_kobj;
-+	struct completion kc_unregister;
-+};
-+
-+#define kobj_to_kobj_completion(kobj) \
-+	container_of(kobj, struct kobj_completion, kc_kobj)
-+
-+void kobj_completion_init(struct kobj_completion *kc, struct kobj_type *ktype);
-+void kobj_completion_release(struct kobject *kobj);
-+void kobj_completion_del_and_wait(struct kobj_completion *kc);
-+#endif /* _KOBJ_COMPLETION_H_ */
---- a/lib/kobject.c	2013-09-10 12:57:54.198666613 -0400
-+++ b/lib/kobject.c	2013-09-10 15:22:15.122724060 -0400
-@@ -13,6 +13,7 @@
-  */
- 
- #include <linux/kobject.h>
-+#include <linux/kobj_completion.h>
- #include <linux/string.h>
- #include <linux/export.h>
- #include <linux/stat.h>
-@@ -711,6 +712,55 @@ const struct sysfs_ops kobj_sysfs_ops =
- };
- 
- /**
-+ * kobj_completion_init - initialize a kobj_completion object.
-+ * @kc: kobj_completion
-+ * @ktype: type of kobject to initialize
-+ *
-+ * kobj_completion structures can be embedded within structures with different
-+ * lifetime rules.  During the release of the enclosing object, we can
-+ * wait on the release of the kobject so that we don't free it while it's
-+ * still busy.
-+ */
-+void kobj_completion_init(struct kobj_completion *kc, struct kobj_type *ktype)
-+{
-+	init_completion(&kc->kc_unregister);
-+	kobject_init(&kc->kc_kobj, ktype);
-+}
-+EXPORT_SYMBOL_GPL(kobj_completion_init);
-+
-+/**
-+ * kobj_completion_release - release a kobj_completion object
-+ * @kobj: kobject embedded in kobj_completion
-+ *
-+ * Used with kobject_release to notify waiters that the kobject has been
-+ * released.
-+ */
-+void kobj_completion_release(struct kobject *kobj)
-+{
-+	struct kobj_completion *kc = kobj_to_kobj_completion(kobj);
-+	complete(&kc->kc_unregister);
-+}
-+EXPORT_SYMBOL_GPL(kobj_completion_release);
-+
-+/**
-+ * kobj_completion_del_and_wait - release the kobject and wait for it
-+ * @kc: kobj_completion object to release
-+ *
-+ * Delete the kobject from sysfs and drop the reference count.  Then wait
-+ * until any other outstanding references are also dropped.  This routine
-+ * is only necessary once other references may have been taken on the
-+ * kobject.  Typically this happens when the kobject has been published
-+ * to sysfs via kobject_add.
-+ */
-+void kobj_completion_del_and_wait(struct kobj_completion *kc)
-+{
-+	kobject_del(&kc->kc_kobj);
-+	kobject_put(&kc->kc_kobj);
-+	wait_for_completion(&kc->kc_unregister);
-+}
-+EXPORT_SYMBOL_GPL(kobj_completion_del_and_wait);
-+
-+/**
-  * kset_register - initialize and add a kset.
-  * @k: kset.
-  */
+    dmi: Feed DMI table to /dev/random driver
+
+I asked whether there was any size issue - as it tends to be a few
+kilobytes on laptops and desktops, and tens of kilobytes on servers.
+The answer I got back then was not to worry - digesting a few kilobytes
+wouldn't be a problem.  I just threw in a debug message to check and saw:
+
+dmi_walk_early: added 10342 bytes in 339968 cycles
+
+So a couple of hundred microseconds for me.
+
+There are plenty of machine specific values buried in there (e.g. serial
+numbers for all the DIMMs) ... so this looks like a good use of this
+much boot time.
+
+-Tony
