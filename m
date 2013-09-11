@@ -1,130 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754282Ab3IKN6d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 09:58:33 -0400
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:36867 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752763Ab3IKN63 (ORCPT
+	id S1754340Ab3IKOA6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 10:00:58 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:43961 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754024Ab3IKOA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 09:58:29 -0400
-Date: Wed, 11 Sep 2013 15:57:29 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        linux-doc@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>, devicetree@vger.kernel.org
-Subject: Re: [RFC 4/5] gpiolib: add gpiod_get() and gpiod_put() functions
-Message-ID: <20130911135728.GA24351@ulmo>
-References: <1378294169-22661-1-git-send-email-acourbot@nvidia.com>
- <1378294169-22661-5-git-send-email-acourbot@nvidia.com>
- <52279082.5010105@wwwdotorg.org>
- <CAAVeFuJCCnx+kY46BTkqTbno-j9YwV=GN3dS1aLzxc+ZYWxEdA@mail.gmail.com>
+	Wed, 11 Sep 2013 10:00:56 -0400
+Message-ID: <523076A0.3020308@linux.vnet.ibm.com>
+Date: Wed, 11 Sep 2013 19:26:48 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HcAYCG3uE/tztfnV"
-Content-Disposition: inline
-In-Reply-To: <CAAVeFuJCCnx+kY46BTkqTbno-j9YwV=GN3dS1aLzxc+ZYWxEdA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        cpufreq <cpufreq@vger.kernel.org>
+Subject: Re: cpufreq_stats NULL deref on second system suspend
+References: <522E1FEF.6080803@wwwdotorg.org> <1775778.MeiRhuYy7o@vostro.rjw.lan>	<522F86AD.6010603@wwwdotorg.org> <2521560.SfeNbV74nj@vostro.rjw.lan>	<52304439.3030301@linux.vnet.ibm.com> <CAKohpokTVzikxunqSdUYmLjTOkfhWFJ=N4TTa4rdbj2euCFY-g@mail.gmail.com> <CAKohpomzQ8Yzk+OU0btQM6DGm4xsY1RR9uYFrZD3ZHO-bhrwKQ@mail.gmail.com> <5230509D.6040205@linux.vnet.ibm.com> <CAKohpo=DfmNSMnyVRK0gfx7QGr=jOTbFo6uuGhEOaa2UMkeQAQ@mail.gmail.com>
+In-Reply-To: <CAKohpo=DfmNSMnyVRK0gfx7QGr=jOTbFo6uuGhEOaa2UMkeQAQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13091113-7014-0000-0000-00000398690A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/11/2013 05:29 PM, Viresh Kumar wrote:
+> On 11 September 2013 16:44, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> Hmm? The problem is not about merely updating the policy->cpu field; the
+>> main issue is that the existing code was not letting the cpufreq-stats
+>> code know that we updated the policy->cpu under the hood. It is important
+>> for cpufreq-stats to know this because it maintains the reference to its
+>> stats structure by associating it with the policy->cpu. So if policy->cpu
+>> changes under the hood, it loses track of its reference. So we need to
+>> keep that code informed about changes to policy->cpu. Thus, we need to call
+>> update_policy_cpu() in the CPU online path (during resume). I don't see
+>> how we can skip that.
+> 
+> Okay.. There are two different ways in which cpufreq_add_dev() work
+> currently..
+> 
+> Boot cluster (i.e. policy with boot CPU)
+> ---------------
+> 
+> Here cpufreq_remove_dev() is never called for boot cpu but all others.
+> And similarly cpufreq_add_dev() is never called for boot cpu but all others.
+> 
+> Now policy->cpu contains meaningful cpu at beginning of resume and
+> we don't need to modify that at all.. For all the remaining CPUs we
+> better call cpufreq_add_policy_cpu() rather..
+>
 
---HcAYCG3uE/tztfnV
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes, and the existing code already does that. And if you observe the placement
+of the call to update_policy_cpu() in my patch, you'll find that it won't
+be called in cases where we call cpufreq_add_policy_cpu(). Which is exactly
+what you want, IIUC.
 
-On Thu, Sep 05, 2013 at 12:44:34PM +0900, Alexandre Courbot wrote:
-> On Thu, Sep 5, 2013 at 4:56 AM, Stephen Warren <swarren@wwwdotorg.org> wr=
-ote:
-> > On 09/04/2013 05:29 AM, Alexandre Courbot wrote:
-> >> Add gpiod_get() and gpiod_put() functions that provide safer handling =
-of
-> >> GPIOs.
-> >>
-> >> These functions put the GPIO framework in line with the conventions of
-> >> other frameworks in the kernel, and help ensure every GPIO is declared
-> >> properly and valid while it is used.
-> >
-> >> diff --git a/include/linux/gpio/consumer.h b/include/linux/gpio/consum=
-er.h
-> >
-> >> +struct gpio_desc *__must_check gpiod_get(struct device *dev,
-> >> +                                      const char *con_id);
-> >> +void gpiod_put(struct gpio_desc *desc);
-> >
-> > It might be nice to add an "int index" parameter to this function. For
-> > example, a bit-banged parallel bus protocol driver might have 1
-> > chip-select GPIO, 1 clock GPIO, and 8 data GPIOs. gpiod_get(dev, "bus",
-> > 0)..gpiod_get(dev, "bus", 7) might be nicer than gpiod_get(dev,
-> > "bus0")..gpiod_get(dev, "bus7")? Possibly for client-simplicity,
-> > implement both gpiod_get(dev, con_id) (as an inline wrapper for ...) and
-> > gpiod_get_index(dev, con_id, index)?
-> >
-> > In DT terms, this would map to:
-> >
-> > cs-gpios =3D <&gpio 3 0>;
-> > clock-gpios =3D <&gpio 5 0>;
-> > bus-gpios =3D <&gpio 10 0 ... &gpio 17 0>;
-> >
-> > ... and with the mapping table registration mechanism, we could
-> > presumably add "int index" to struct gpiod_lookup.
->=20
-> Having the index argument of of_get_named_gpiod_flags() propagated
-> into gpiod_get() is something I also thought about (see the cover
-> letter), but I really can't make up my mind about it.
->=20
-> On the one hand, having several GPIO per DT property is already
-> allowed, and presumably used in bindings already. It might also make
-> sense to have several lines under the same name, e.g. for bitbanging.
->=20
-> On the other hand, I'm afraid people will abuse this, and group all
-> the GPIOs for a device under a single property instead of using proper
-> names.
+> Non-boot Cluster
+> ---------------------
+> 
+> All CPUs here are removed and at the end policy->cpu contains the last
+> cpu removed.. So, for a cluster with cpu 2 and 3.... it will contain 3..
+> 
+> Not at resume we will add cpu2 first and so need to update policy->cpu
+> to 2.. But for all other CPUs in this cluster we return early from
+> cpufreq_add_dev() and call cpufreq_add_policy_cpu() as policy->cpus
+> was fixed by call to ->init() for the first cpu of this cluster..
+> 
+> And so we never reach the line: policy->cpu = cpu;
+> 
+> For the first cpu of non-boot cluster we need to call update_policy_cpu()
+> and not for others..
+> 
 
-I wouldn't worry about this too much. Preventing abuse is a large part
-of why we have DT bindings reviews and I think that regardless of what
-the implementation allows us to, that shouldn't influence the way how
-bindings are defined.
+Yes, and that's precisely why I added the call to update_policy_cpu() only
+near the statement 'policy->cpu = cpu'. All other cases don't need to call
+that function, and in my patch, they indeed don't call that function.
 
-After all the bindings would ideally be usable on any other OS as well,
-so it should be sound irrespective of the specific implementation.
+A simple way to look at this is:
+If policy->cpu is updated anywhere in the resume (cpu online) path, we need
+to call update_policy_cpu(). Otherwise, we don't need to call that function.
+This will cover both the scenarios you described above.
 
-I think having a gpiod_get_index(dev, con_id, index) with an inline
-wrapper gpiod_get(dev, con_id) will give us the same functionality that
-we have using the current set of helpers from include/linux/of_gpio.h
-and allows non-DT to specify them in an analogous way.
+> 
+> But for the boot cluster if we can call ->init() somehow at resume time,
+> then things would be fairly similar in both cases..
+> 
+> I am running of time now, as need to leave office now...
+> I hope I made the problem more clear or probably the way I see it :)
+> 
 
-In my opinion that's enough for now. We can always refactor common
-patterns (such as busses with 0..n GPIOs) when they start to emerge.
+Well, your explanation matches my understanding of the scenarios, and
+I had written the patch keeping those scenarios in mind; so I believe the
+patch is correct as it is. So what I didn't get is this: are you suggesting
+that something is wrong in my patch, or are you just reiterating the different
+scenarios involved so that I can recheck whether my patch is right?
 
-Thierry
+If it is the former, please point me to the exact problem you found in
+my patch. If it is the latter, I'm pretty sure my patch is right, I've
+already checked it :-)
 
---HcAYCG3uE/tztfnV
-Content-Type: application/pgp-signature
+Regards,
+Srivatsa S. Bhat
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSMHbIAAoJEN0jrNd/PrOhfMwP/33SflnaUq0Sxc16i7J+nufj
-0ZLXTNxGll6byP3UbICgiIevBKANz+pXmZyVNbNVsBiFiWmp0UE4U6T5m3cLUJec
-/JK3QIdZZCBYnJ6dNCAmzUcQUt5dLpj8UDbNwQwKX1kgF6IWqwnFifLKGeUS1L+/
-E5Jh+td2kggcdyuBzxeONE8WRISsWmPOV3uBD8+7p9aQjOr5IZwJT1CHS4oAAiBA
-mmkFTTiXvzClOR1qmhSzJJTYkdo5kiA8KTGsMUDo1Z6ZgW7a4ufqQydrhGDSOXsM
-OMFjWErdxeYUw8AMvVJmqvSkXUHiXFihYV8nKMZnoRU8INbPbs28gu5Jzi51bDFO
-SeNSN4PGP4aVjgtuDiytwPe+9euSsH8EX6/xPAf5KKmUIVnAwt8WgjV0a5QbGB2i
-k4MCxy3zunvi8D6B8/cKUnTtAhkGjn2sY4txYWMmg0Sep2wXeQGVWCYXo/RCt8HT
-ms9kCiUqzh3rU3MFE0cTvA74QovILFw9zUcuH+mXN37BVifZQPVgxZcEHUx+Tu10
-6++a9Q2i2kV0Y8RfxjWxIRpBQEBFXwi4z6G+tXKinfZW7fb4ySGlQ2T8dWCEzvz+
-xpqdn+FlM7ryTXeC8W7eMcP4CL3IKBxXrynvzThgtQghCJW2D/KcbPJDnOuM0NTS
-r3telgNvSvJvenJRyrb8
-=TxGY
------END PGP SIGNATURE-----
-
---HcAYCG3uE/tztfnV--
