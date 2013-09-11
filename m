@@ -1,46 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757123Ab3IKUIq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 16:08:46 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:45674 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657Ab3IKUIo (ORCPT
+	id S1757240Ab3IKUIs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 16:08:48 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:61803 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752657Ab3IKUIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 16:08:44 -0400
+	Wed, 11 Sep 2013 16:08:46 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5j+9hDd388ynuppu9jiQJgMKnSfPJ-FbmMztioFwntta0Q@mail.gmail.com>
+In-Reply-To: <1378929419-6269-9-git-send-email-benjamin.tissoires@redhat.com>
 References: <1378929419-6269-1-git-send-email-benjamin.tissoires@redhat.com>
-	<1378929419-6269-7-git-send-email-benjamin.tissoires@redhat.com>
-	<CAGXu5j+9hDd388ynuppu9jiQJgMKnSfPJ-FbmMztioFwntta0Q@mail.gmail.com>
-Date: Wed, 11 Sep 2013 22:08:42 +0200
-Message-ID: <CAN+gG=FFUqimNKm0ZYMNL5_xeh4oWLACjC7hNbaKg_U9PajwGg@mail.gmail.com>
-Subject: Re: [PATCH v3 06/10] HID: lenovo-tpkbd: validate output report details
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+	<1378929419-6269-9-git-send-email-benjamin.tissoires@redhat.com>
+Date: Wed, 11 Sep 2013 13:08:45 -0700
+X-Google-Sender-Auth: HzHuJ6COHLs_Um8JQLkegKIuXx8
+Message-ID: <CAGXu5j+O8r6ugqr_c_A8wHxy=5NKRFGKNxU3o2=VrKKue_0Lsg@mail.gmail.com>
+Subject: Re: [PATCH v3 08/10] HID: validate feature and input report details
+From: Kees Cook <keescook@chromium.org>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
         Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
         linux-input <linux-input@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 10:06 PM, Kees Cook <keescook@chromium.org> wrote:
-> On Wed, Sep 11, 2013 at 12:56 PM, Benjamin Tissoires
-> <benjamin.tissoires@redhat.com> wrote:
->> From: Kees Cook <keescook@chromium.org>
->>
->> From: Kees Cook <keescook@chromium.org>
->>
+On Wed, Sep 11, 2013 at 12:56 PM, Benjamin Tissoires
+<benjamin.tissoires@redhat.com> wrote:
+> When dealing with usage_index, be sure to properly use unsigned instead of
+> int to avoid overflows.
 >
-> Not sure if "git am" will eat the second one, but the "From:" is
-> duplicated above...
+> When working on report fields, always validate that their report_counts are
+> in bounds.
+> Without this, a HID device could report a malicious feature report that
+> could trick the driver into a heap overflow:
+>
+> [  634.885003] usb 1-1: New USB device found, idVendor=0596, idProduct=0500
+> ...
+> [  676.469629] BUG kmalloc-192 (Tainted: G        W   ): Redzone overwritten
+>
+> CVE-2013-2897
+>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+
+Acked-by: Kees Cook <keescook@chromium.org>
+
+> ---
+> v3:
+>  - new patch: extract from the hid-multitouch patch, the generic checks so that
+>    every hid drivers will benefit from them
+>
+>  drivers/hid/hid-core.c  | 16 +++++++---------
+>  drivers/hid/hid-input.c | 11 ++++++++++-
+>  2 files changed, 17 insertions(+), 10 deletions(-)
+>
+> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> index 44b6c68..329e24e 100644
+> --- a/drivers/hid/hid-core.c
+> +++ b/drivers/hid/hid-core.c
+> @@ -94,7 +94,6 @@ EXPORT_SYMBOL_GPL(hid_register_report);
+>  static struct hid_field *hid_register_field(struct hid_report *report, unsigned usages, unsigned values)
+>  {
+>         struct hid_field *field;
+> -       int i;
+>
+>         if (report->maxfield == HID_MAX_FIELDS) {
+>                 hid_err(report->device, "too many fields in report\n");
+> @@ -113,9 +112,6 @@ static struct hid_field *hid_register_field(struct hid_report *report, unsigned
+>         field->value = (s32 *)(field->usage + usages);
+>         field->report = report;
+>
+> -       for (i = 0; i < usages; i++)
+> -               field->usage[i].usage_index = i;
+> -
+>         return field;
+>  }
+>
+> @@ -226,9 +222,9 @@ static int hid_add_field(struct hid_parser *parser, unsigned report_type, unsign
+>  {
+>         struct hid_report *report;
+>         struct hid_field *field;
+> -       int usages;
+> +       unsigned usages;
+>         unsigned offset;
+> -       int i;
+> +       unsigned i;
+>
+>         report = hid_register_report(parser->device, report_type, parser->global.report_id);
+>         if (!report) {
+> @@ -255,7 +251,8 @@ static int hid_add_field(struct hid_parser *parser, unsigned report_type, unsign
+>         if (!parser->local.usage_index) /* Ignore padding fields */
+>                 return 0;
+>
+> -       usages = max_t(int, parser->local.usage_index, parser->global.report_count);
+> +       usages = max_t(unsigned, parser->local.usage_index,
+> +                                parser->global.report_count);
+>
+>         field = hid_register_field(report, usages, parser->global.report_count);
+>         if (!field)
+> @@ -266,13 +263,14 @@ static int hid_add_field(struct hid_parser *parser, unsigned report_type, unsign
+>         field->application = hid_lookup_collection(parser, HID_COLLECTION_APPLICATION);
+>
+>         for (i = 0; i < usages; i++) {
+> -               int j = i;
+> +               unsigned j = i;
+>                 /* Duplicate the last usage we parsed if we have excess values */
+>                 if (i >= parser->local.usage_index)
+>                         j = parser->local.usage_index - 1;
+>                 field->usage[i].hid = parser->local.usage[j];
+>                 field->usage[i].collection_index =
+>                         parser->local.collection_index[j];
+> +               field->usage[i].usage_index = i;
+>         }
+>
+>         field->maxusage = usages;
+> @@ -1354,7 +1352,7 @@ int hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
+>                         goto out;
+>         }
+>
+> -       if (hid->claimed != HID_CLAIMED_HIDRAW) {
+> +       if (hid->claimed != HID_CLAIMED_HIDRAW && report->maxfield) {
+>                 for (a = 0; a < report->maxfield; a++)
+>                         hid_input_field(hid, report->field[a], cdata, interrupt);
+>                 hdrv = hid->driver;
+> diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
+> index b420f4a..8741d95 100644
+> --- a/drivers/hid/hid-input.c
+> +++ b/drivers/hid/hid-input.c
+> @@ -485,6 +485,10 @@ static void hidinput_configure_usage(struct hid_input *hidinput, struct hid_fiel
+>         if (field->flags & HID_MAIN_ITEM_CONSTANT)
+>                 goto ignore;
+>
+> +       /* Ignore if report count is out of bounds. */
+> +       if (field->report_count < 1)
+> +               goto ignore;
+> +
+>         /* only LED usages are supported in output fields */
+>         if (field->report_type == HID_OUTPUT_REPORT &&
+>                         (usage->hid & HID_USAGE_PAGE) != HID_UP_LED) {
+> @@ -1236,7 +1240,11 @@ static void report_features(struct hid_device *hid)
+>
+>         rep_enum = &hid->report_enum[HID_FEATURE_REPORT];
+>         list_for_each_entry(rep, &rep_enum->report_list, list)
+> -               for (i = 0; i < rep->maxfield; i++)
+> +               for (i = 0; i < rep->maxfield; i++) {
+> +                       /* Ignore if report count is out of bounds. */
+> +                       if (rep->field[i]->report_count < 1)
+> +                               continue;
+> +
+>                         for (j = 0; j < rep->field[i]->maxusage; j++) {
+>                                 /* Verify if Battery Strength feature is available */
+>                                 hidinput_setup_battery(hid, HID_FEATURE_REPORT, rep->field[i]);
+> @@ -1245,6 +1253,7 @@ static void report_features(struct hid_device *hid)
+>                                         drv->feature_mapping(hid, rep->field[i],
+>                                                              rep->field[i]->usage + j);
+>                         }
+> +               }
+>  }
+>
+>  static struct hid_input *hidinput_allocate(struct hid_device *hid)
+> --
+> 1.8.3.1
 >
 
-Yep, I saw that I duplicated it. Sorry :(
-Anyway, feel free to add/remove any Signed-off-by if you wish (I think
-I kept your original ones when it mattered).
 
-Cheers,
-Benjamin
+
+-- 
+Kees Cook
+Chrome OS Security
