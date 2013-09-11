@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755968Ab3IKXIW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 19:08:22 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:54141 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753691Ab3IKXIV (ORCPT
+	id S1756934Ab3IKXKt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 19:10:49 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25104 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754963Ab3IKXKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 19:08:21 -0400
-Message-ID: <5230F7DD.90905@linux.vnet.ibm.com>
-Date: Wed, 11 Sep 2013 16:08:13 -0700
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Dave Hansen <dave@sr71.net>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cl@linux.com
-Subject: Re: [RFC][PATCH] mm: percpu pages: up batch size to fix arithmetic??
- errror
-References: <20130911220859.EB8204BB@viggo.jf.intel.com>
-In-Reply-To: <20130911220859.EB8204BB@viggo.jf.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091123-9332-0000-0000-00000163113B
+	Wed, 11 Sep 2013 19:10:44 -0400
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=0VuXmfspDfQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=TOGzHjoSfPQA:10 a=r_1tXGB3AAAA:8 a=WPyIoOwQAAAA:8 a=VPGR01oulgvuwXaeG6kA:9 a=EDSpbFuiShEA:10 a=1DbiqZag68YA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130911042902.966666775@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 11 Sep 2013 00:28:10 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Markos Chandras <markos.chandras@imgtec.com>,
+        "Steven J. Hill" <Steven.Hill@imgtec.com>, <linux-mips@linux-mips.org>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: [063/251] lib/Kconfig.debug: Restrict FRAME_POINTER for MIPS
+References: <20130911042707.738353451@goodmis.org>
+Content-Disposition: inline; filename=0063-lib-Kconfig.debug-Restrict-FRAME_POINTER-for-MIPS.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2013 03:08 PM, Dave Hansen wrote:
-> I really don't know where the:
->
-> 	batch /= 4;             /* We effectively *= 4 below */
-> 	...
-> 	batch = rounddown_pow_of_two(batch + batch/2) - 1;
->
-> came from.  The round down code at *MOST* does a *= 1.5, but
-> *averages* out to be just under 1.
->
-> On a system with 128GB in a zone, this means that we've got
-> (you can see in /proc/zoneinfo for yourself):
->
->                high:  186 (744kB)
->                batch: 31  (124kB)
->
-> That 124kB is almost precisely 1/4 of the "1/2 of a meg" that we
-> were shooting for.  We're under-sizing the batches by about 4x.
-> This patch kills the /=4.
->
-> ---
-> diff -puN mm/page_alloc.c~debug-pcp-sizes-1 mm/page_alloc.c
-> --- linux.git/mm/page_alloc.c~debug-pcp-sizes-1	2013-09-11 14:41:08.532445664 -0700
-> +++ linux.git-davehans/mm/page_alloc.c	2013-09-11 15:03:47.403912683 -0700
-> @@ -4103,7 +4103,6 @@ static int __meminit zone_batchsize(stru
->   	batch = zone->managed_pages / 1024;
->   	if (batch * PAGE_SIZE > 512 * 1024)
->   		batch = (512 * 1024) / PAGE_SIZE;
-> -	batch /= 4;		/* We effectively *= 4 below */
->   	if (batch < 1)
->   		batch = 1;
->
-> _
->
+3.6.11.9-rc1 stable review patch.
+If anyone has any objections, please let me know.
 
-Looking back at the first git commit (way before my time), it appears 
-that the percpu pagesets initially had a ->high and ->low (now removed), 
-set to batch*6 and batch*2 respectively. I assume the idea was to keep 
-the number of pages in the percpu pagesets around batch*4, hence the 
-comment.
+------------------
 
-So we have this variable called "batch", and the code is trying to store 
-the _average_ number of pcp pages we want into it (not the batchsize), 
-and then we divide our "average" goal by 4 to get a batchsize. All the 
-comments refer to the size of the pcp pagesets, not to the pcp pageset 
-batchsize.
+From: Markos Chandras <markos.chandras@imgtec.com>
 
-Looking further, in current code we don't refill the pcp pagesets unless 
-they are completely empty (->low was removed a while ago), and then we 
-only add ->batch pages.
+[ Upstream commit 25c87eae1725ed77a8b44d782a86abdc279b4ede ]
 
-Has anyone looked at what type of average pcp sizing the current code 
-results in?
+FAULT_INJECTION_STACKTRACE_FILTER selects FRAME_POINTER but
+that symbol is not available for MIPS.
+
+Fixes the following problem on a randconfig:
+warning: (LOCKDEP && FAULT_INJECTION_STACKTRACE_FILTER && LATENCYTOP &&
+ KMEMCHECK) selects FRAME_POINTER which has unmet direct dependencies
+(DEBUG_KERNEL && (CRIS || M68K || FRV || UML || AVR32 || SUPERH || BLACKFIN ||
+MN10300 || METAG) || ARCH_WANT_FRAME_POINTERS)
+
+Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+Acked-by: Steven J. Hill <Steven.Hill@imgtec.com>
+Cc: linux-mips@linux-mips.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Patchwork: https://patchwork.linux-mips.org/patch/5441/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+---
+ lib/Kconfig.debug |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 2403a63..89a657a 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -1242,7 +1242,7 @@ config FAULT_INJECTION_STACKTRACE_FILTER
+ 	depends on FAULT_INJECTION_DEBUG_FS && STACKTRACE_SUPPORT
+ 	depends on !X86_64
+ 	select STACKTRACE
+-	select FRAME_POINTER if !PPC && !S390 && !MICROBLAZE && !ARM_UNWIND
++	select FRAME_POINTER if !MIPS && !PPC && !S390 && !MICROBLAZE && !ARM_UNWIND
+ 	help
+ 	  Provide stacktrace filter for fault-injection capabilities
+ 
+-- 
+1.7.10.4
+
 
