@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932081Ab3IKUvj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 16:51:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29357 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755628Ab3IKUvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 16:51:38 -0400
-Message-ID: <5230D739.9010109@redhat.com>
-Date: Wed, 11 Sep 2013 15:48:57 -0500
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S932113Ab3IKUw5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 16:52:57 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:40911 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755628Ab3IKUw4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 16:52:56 -0400
 MIME-Version: 1.0
-To: David Lang <david@lang.hm>
-CC: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger@dilger.ca>,
-        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>,
-        T Makphaibulchoke <tmac@hp.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-ext4@vger.kernel.org List" <linux-ext4@vger.kernel.org>,
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <CA+bK7J4s1y5-CfwmNB3gN5Ed800AnuH6vHe8+jRmq+pyPu9o0A@mail.gmail.com>
+References: <CACxGe6v8hO4sRX_KGcH=YBAMrF8mQHqWdxXEvVwoC2pVS5Yv9Q@mail.gmail.com>
+	<CA+bK7J5cAWFPLTBR2afNLm2JaKFH4_dJO_NpVL5gom0iX+L2dQ@mail.gmail.com>
+	<CA+55aFzBbKXJnaG_6X8Fff_APGJ3EkbG0thsbithDXtiEJjdHA@mail.gmail.com>
+	<CA+8MBbLVC2==zpNV1zV3OoiSQoKfptAGqF1EQNtrhFUCn=0h7A@mail.gmail.com>
+	<CA+bK7J4s1y5-CfwmNB3gN5Ed800AnuH6vHe8+jRmq+pyPu9o0A@mail.gmail.com>
+Date: Wed, 11 Sep 2013 13:52:55 -0700
+Message-ID: <CAOesGMhUAqKWsJEnK1-5TwRpE62WqVug9kYEziaJ3dtkEiGs4g@mail.gmail.com>
+Subject: Re: [GIT PULL] Device tree updates for v3.12
+From: Olof Johansson <olof@lixom.net>
+To: Tim Bird <tbird20d@gmail.com>
+Cc: Tony Luck <tony.luck@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org Devel" <linux-fsdevel@vger.kernel.org>,
-        aswin@hp.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        aswin_proj@lists.hp.com
-Subject: Re: [PATCH v3 0/2] ext4: increase mbcache scalability
-References: <1374108934-50550-1-git-send-email-tmac@hp.com> <1378312756-68597-1-git-send-email-tmac@hp.com> <20130905023522.GA21268@thunk.org> <52285395.1070508@hp.com> <0787C579-7E2C-4864-B8F4-98816E1E50A2@dilger.ca> <5229C939.8030108@hp.com> <62D71A85-C7EE-4F5F-B481-5329F0282044@dilger.ca> <20130910210250.GH29237@thunk.org> <522FDFCC.1070007@redhat.com> <20130911113001.GB13315@thunk.org> <52309F27.8060008@redhat.com> <alpine.DEB.2.02.1309111325270.5862@nftneq.ynat.uz>
-In-Reply-To: <alpine.DEB.2.02.1309111325270.5862@nftneq.ynat.uz>
-X-Enigmail-Version: 1.5.2
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/11/13 3:32 PM, David Lang wrote:
-> On Wed, 11 Sep 2013, Eric Sandeen wrote:
-> 
->>> The reason why I'm pushing here is that mbcache shouldn't be showing
->>> up in the profiles at all if there is no external xattr block.  And so
->>> if newer versions of SELinux (like Adnreas, I've been burned by
->>> SELinux too many times in the past, so I don't use SELinux on any of
->>> my systems) is somehow causing mbcache to get triggered, we should
->>> figure this out and understand what's really going on.
->>
->> selinux, from an fs allocation behavior perspective, is simply setxattr.
-> 
-> what you are missing is that Ted is saying that unless you are using xattrs, the mbcache should not show up at all.
-> 
-> The fact that you are using SElinux, and SELinux sets the xattrs is
-> what makes this show up on your system, but other people who don't
-> use SELinux (and so don't have any xattrs set) don't see the same
-> bottleneck.
+On Wed, Sep 11, 2013 at 1:21 PM, Tim Bird <tbird20d@gmail.com> wrote:
+> Thanks.  This gives me an order-of-magnitude measurement for this sort of thing.
+> I'll measure it directly myself on our hardware as soon as I can.
+>
+> I've heard an ugly rumor that the device tree from our silicon vendor
+> may grow to be
+> as big as 130K in the near future. I'm still following up to see if
+> there's any truth
+> to this (so don't quote me on it), but if it does get that big it
+> might be an issue.  As
+> stated previously, the vast majority of our device tree files consists
+> of values that
+> are not device-specific.
 
-Sure, I understand that quite well.  But Ted was also saying that perhaps selinux had "gotten piggy" and was causing this.  I've showed that it hasn't.
+The biggest ones in mainline today compile to a ~30K binary. Not sure
+a vendor expects to add in there to gain another 100KB.
 
 
-This matters because unless the selinux xattrs go out of the inode into their own block, mbcache should STILL not come into it at all.
-
-And for attrs < 100 bytes, they stay in the inode.  And on inspection, my SELinux boxes have no external attr blocks allocated.
-
-mbcache only handles extended attributes that live in separately-allocated blocks, and selinux does not cause that on its own.
-
-Soo... selinux by itself should not be triggering any mbcache codepaths.
-
-Ted suggested that "selinux had gotten piggy" so I checked, and showed that it hadn't.  That's all.
-
-So at this point I think it's up to Mak to figure out why on his system, aim7 is triggering mbcache codepaths.
-
--Eric
-
-> David Lang
-
+-Olof
