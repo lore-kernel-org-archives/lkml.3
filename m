@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528Ab3IKKF2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 06:05:28 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:42177 "EHLO song.cn.fujitsu.com"
+	id S1753648Ab3IKKF5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 06:05:57 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:28826 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753238Ab3IKKFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 06:05:24 -0400
+	id S1753397Ab3IKKF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 06:05:26 -0400
 X-IronPort-AV: E=Sophos;i="4.90,883,1371052800"; 
-   d="scan'208";a="8489693"
+   d="scan'208";a="8489695"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: tj@kernel.org, rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de,
         mingo@elte.hu, hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
@@ -20,63 +20,179 @@ To: tj@kernel.org, rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de,
         zhangyanfei@cn.fujitsu.com, toshi.kani@hp.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH v2 6/9] x86, acpi: Support allocate memory from bottom upwards in acpi_initrd_override().
-Date: Wed, 11 Sep 2013 18:07:34 +0800
-Message-Id: <1378894057-30946-7-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v2 9/9] mem-hotplug: Introduce movablenode boot option to control memblock allocation direction.
+Date: Wed, 11 Sep 2013 18:07:37 +0800
+Message-Id: <1378894057-30946-10-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1378894057-30946-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1378894057-30946-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/09/11 18:02:51,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/11 18:02:58,
-	Serialize complete at 2013/09/11 18:02:58
+ 2013/09/11 18:02:59,
+	Serialize complete at 2013/09/11 18:02:59
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During early boot, if the bottom up mode is set, just
-try allocating bottom up from the end of kernel image,
-and if that fails, do normal top down allocation.
+The Hot-Pluggable fired in SRAT specifies which memory is hotpluggable.
+As we mentioned before, if hotpluggable memory is used by the kernel,
+it cannot be hot-removed. So memory hotplug users may want to set all
+hotpluggable memory in ZONE_MOVABLE so that the kernel won't use it.
 
-So in function acpi_initrd_override(), we add the
-above logic.
+Memory hotplug users may also set a node as movable node, which has
+ZONE_MOVABLE only, so that the whole node can be hot-removed.
 
+But the kernel cannot use memory in ZONE_MOVABLE. By doing this, the
+kernel cannot use memory in movable nodes. This will cause NUMA
+performance down. And other users may be unhappy.
+
+So we need a way to allow users to enable and disable this functionality.
+In this patch, we introduce movablenode boot option to allow users to
+choose to reserve hotpluggable memory and set it as ZONE_MOVABLE or not.
+
+Users can specify "movablenode" in kernel commandline to enable this
+functionality. For those who don't use memory hotplug or who don't want
+to lose their NUMA performance, just don't specify anything. The kernel
+will work as before.
+
+After memblock is ready, before SRAT is parsed, we should allocate memory
+near the kernel image. So this patch does the following:
+
+1. After memblock is ready, make memblock allocate memory from low address
+   to high.
+2. After SRAT is parsed, make memblock behave as default, allocate memory
+   from high address to low.
+
+This behavior is controlled by movablenode boot option.
+
+Suggested-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 ---
- drivers/acpi/osl.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+ Documentation/kernel-parameters.txt |   15 ++++++++++++++
+ arch/x86/kernel/setup.c             |   36 +++++++++++++++++++++++++++++++++++
+ include/linux/memory_hotplug.h      |    5 ++++
+ mm/memory_hotplug.c                 |    9 ++++++++
+ 4 files changed, 65 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index e5f416c..978dcfa 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -632,6 +632,15 @@ void __init acpi_initrd_override(void *data, size_t size)
- 	if (table_nr == 0)
- 		return;
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 479eeaf..f177c83 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1769,6 +1769,21 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			that the amount of memory usable for all allocations
+ 			is not too small.
  
-+	if (memblock_direction_bottom_up()) {
-+		acpi_tables_addr = memblock_alloc_bottom_up(
-+					MEMBLOCK_ALLOC_ACCESSIBLE,
-+					max_low_pfn_mapped << PAGE_SHIFT,
-+					all_tables_size, PAGE_SIZE);
-+		if (acpi_tables_addr)
-+			goto success;
++	movablenode		[KNL,X86] This parameter enables/disables the
++			kernel to arrange hotpluggable memory ranges recorded
++			in ACPI SRAT(System Resource Affinity Table) as
++			ZONE_MOVABLE. And these memory can be hot-removed when
++			the system is up.
++			By specifying this option, all the hotpluggable memory
++			will be in ZONE_MOVABLE, which the kernel cannot use.
++			This will cause NUMA performance down. For users who
++			care about NUMA performance, just don't use it.
++			If all the memory ranges in the system are hotpluggable,
++			then the ones used by the kernel at early time, such as
++			kernel code and data segments, initrd file and so on,
++			won't be set as ZONE_MOVABLE, and won't be hotpluggable.
++			Otherwise the kernel won't have enough memory to boot.
++
+ 	MTD_Partition=	[MTD]
+ 			Format: <name>,<region-number>,<size>,<offset>
+ 
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index fa56a57..b87069b 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1104,6 +1104,31 @@ void __init setup_arch(char **cmdline_p)
+ 	trim_platform_memory_ranges();
+ 	trim_low_memory_range();
+ 
++#ifdef CONFIG_MOVABLE_NODE
++	if (movablenode_enable_srat) {
++		/*
++		 * Memory used by the kernel cannot be hot-removed because Linux
++		 * cannot migrate the kernel pages. When memory hotplug is
++		 * enabled, we should prevent memblock from allocating memory
++		 * for the kernel.
++		 *
++		 * ACPI SRAT records all hotpluggable memory ranges. But before
++		 * SRAT is parsed, we don't know about it.
++		 *
++		 * The kernel image is loaded into memory at very early time. We
++		 * cannot prevent this anyway. So on NUMA system, we set any
++		 * node the kernel resides in as un-hotpluggable.
++		 *
++		 * Since on modern servers, one node could have double-digit
++		 * gigabytes memory, we can assume the memory around the kernel
++		 * image is also un-hotpluggable. So before SRAT is parsed, just
++		 * allocate memory near the kernel image to try the best to keep
++		 * the kernel away from hotpluggable memory.
++		 */
++		memblock_set_current_direction(MEMBLOCK_DIRECTION_LOW_TO_HIGH);
 +	}
++#endif /* CONFIG_MOVABLE_NODE */
 +
- 	acpi_tables_addr =
- 		memblock_find_in_range(0, max_low_pfn_mapped << PAGE_SHIFT,
- 				       all_tables_size, PAGE_SIZE);
-@@ -639,6 +648,8 @@ void __init acpi_initrd_override(void *data, size_t size)
- 		WARN_ON(1);
- 		return;
- 	}
+ 	init_mem_mapping();
+ 
+ 	early_trap_pf_init();
+@@ -1142,6 +1167,17 @@ void __init setup_arch(char **cmdline_p)
+ 	early_acpi_boot_init();
+ 
+ 	initmem_init();
 +
-+success:
++#ifdef CONFIG_MOVABLE_NODE
++	if (movablenode_enable_srat) {
++		/*
++		 * When ACPI SRAT is parsed, which is done in initmem_init(),
++		 * set memblock back to the default behavior.
++		 */
++		memblock_set_current_direction(MEMBLOCK_DIRECTION_DEFAULT);
++	}
++#endif /* CONFIG_MOVABLE_NODE */
++
+ 	memblock_find_dma_reserve();
+ 
  	/*
- 	 * Only calling e820_add_reserve does not work and the
- 	 * tables are invalid (memory got used) later.
+diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+index dd38e62..5d2c07b 100644
+--- a/include/linux/memory_hotplug.h
++++ b/include/linux/memory_hotplug.h
+@@ -33,6 +33,11 @@ enum {
+ 	ONLINE_MOVABLE,
+ };
+ 
++#ifdef CONFIG_MOVABLE_NODE
++/* Enable/disable SRAT in movablenode boot option */
++extern bool movablenode_enable_srat;
++#endif /* CONFIG_MOVABLE_NODE */
++
+ /*
+  * pgdat resizing functions
+  */
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index ca1dd3a..7252a7d 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -1345,6 +1345,15 @@ static bool can_offline_normal(struct zone *zone, unsigned long nr_pages)
+ {
+ 	return true;
+ }
++
++bool __initdata movablenode_enable_srat;
++
++static int __init cmdline_parse_movablenode(char *p)
++{
++	movablenode_enable_srat = true;
++	return 0;
++}
++early_param("movablenode", cmdline_parse_movablenode);
+ #else /* CONFIG_MOVABLE_NODE */
+ /* ensure the node has NORMAL memory if it is still online */
+ static bool can_offline_normal(struct zone *zone, unsigned long nr_pages)
 -- 
 1.7.1
 
