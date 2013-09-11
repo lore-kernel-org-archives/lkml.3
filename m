@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271Ab3IKI7X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 04:59:23 -0400
+	id S1753326Ab3IKI7e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 04:59:34 -0400
 Received: from mailout4.w1.samsung.com ([210.118.77.14]:47123 "EHLO
 	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753216Ab3IKI7T (ORCPT
+	with ESMTP id S1753220Ab3IKI7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 04:59:19 -0400
-X-AuditID: cbfec7f5-b7ef66d00000795a-2b-523030e2cc9b
+	Wed, 11 Sep 2013 04:59:22 -0400
+X-AuditID: cbfec7f5-b7ef66d00000795a-30-523030e4319e
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org,
@@ -18,74 +18,622 @@ Cc: Bob Liu <bob.liu@oracle.com>, Mel Gorman <mgorman@suse.de>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Dave Hansen <dave.hansen@intel.com>, Minchan Kim <minchan@kernel.org>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v2 2/5] zbud: make freechunks a block local variable
-Date: Wed, 11 Sep 2013 10:59:01 +0200
-Message-id: <1378889944-23192-3-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v2 4/5] mm: use indirect zbud handle and radix tree
+Date: Wed, 11 Sep 2013 10:59:03 +0200
+Message-id: <1378889944-23192-5-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1378889944-23192-1-git-send-email-k.kozlowski@samsung.com>
 References: <1378889944-23192-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPLMWRmVeSWpSXmKPExsVy+t/xq7qPDAyCDGb/s7GYs34Nm8XGGetZ
-	LbpOTWWx+PTyAaPF6xeGFmeb3rBbXN41h83i3pr/rBZrj9xlt5j87hmjxbKv79ktDu1bxe7A
-	47F4z0smj02rOtk8Nn2axO5xYsZvFo8HhzazeHx8eovFo2/LKkaPzaerPT5vkgvgjOKySUnN
-	ySxLLdK3S+DKWHl9GlPBIe6KE2t/MDUwzuXsYuTkkBAwkWi8+4AFwhaTuHBvPVsXIxeHkMBS
-	RokrCycwQTh9TBJfrm9kBKliEzCW2Lx8CRuILSLQxygx6bIFSBGzwBkmiWtL/rN3MXJwCAu4
-	SLS3KoHUsAioSryauAtsA6+Au8S8pQdZQEokBBQk5kyyATE5BTwkTkxTAKkQAqro/HWObQIj
-	7wJGhlWMoqmlyQXFSem5RnrFibnFpXnpesn5uZsYIYH6dQfj0mNWhxgFOBiVeHgNFPWDhFgT
-	y4orcw8xSnAwK4nwvhI1CBLiTUmsrEotyo8vKs1JLT7EyMTBKdXAuLd+w9sZp7uUIlOmnrNI
-	COBPe6ZTuriMNTMtL/0hX7Ol1buLUqt+XKg4eUIxuGrxnL6TXuqn439F36kw6ll05JWwZs4R
-	JRXTnq2t8xsqnG87nHrpaqXDeu5tuPB3qasrXj9ef+X4AtVf77k8NTefbvLo/nrrxi+5nxue
-	9sxReBEVsut56oUvdkosxRmJhlrMRcWJAPgkFjUyAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrILMWRmVeSWpSXmKPExsVy+t/xq7pPDAyCDDpnc1rMWb+GzWLjjPWs
+	Fl2nprJYfHr5gNHi9QtDi7NNb9gtLu+aw2Zxb81/Vou1R+6yW0x+94zRYtnX9+wWh/atYnfg
+	8Vi85yWTx6ZVnWwemz5NYvc4MeM3i8eDQ5tZPD4+vcXi0bdlFaPH5tPVHp83yQVwRnHZpKTm
+	ZJalFunbJXBlvNvfy1iwfjpjRU/nStYGxhmVXYycHBICJhIzmq+zQ9hiEhfurWfrYuTiEBJY
+	yiixuLOdEcLpY5JoODmHFaSKTcBYYvPyJWwgtohAH6PEpMsWIEXMAmeYJK4t+Q82SljAWWL5
+	tTtMIDaLgKrE/2mdYA28Au4SC//OBhrEAbROQWLOJBsQk1PAQ+LENAWQCiGgis5f59gmMPIu
+	YGRYxSiaWppcUJyUnmukV5yYW1yal66XnJ+7iRESrF93MC49ZnWIUYCDUYmH10BRP0iINbGs
+	uDL3EKMEB7OSCO8rUYMgId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYyhrOd5L4UtWftsJ//7i48C
+	LFWXL1EI7FgVeEP2J9+BMHeuNbJdXuox2ed/2aXn/rntoD+7zsRlifXsmI3vfNkdSlbd8Jzy
+	6cTrLzwqgdwTol/8PB629vlJWUeZhu0Gq82PMxdaXpgmYcYTGDBth1OehhD/Yfv4Lay/FknM
+	u7q1d2JdxlyRSZlKLMUZiYZazEXFiQDr+CifNAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move freechunks variable in zbud_free() and zbud_alloc() to block-level
-scope (from function scope).
+Add radix tree to zbud pool and use indirect zbud handle as radix tree
+index.
+
+This allows migration of zbud pages while the handle used by zswap
+remains untouched. Previously zbud handles were virtual addresses. This
+imposed problem when page was migrated.
+
+This change also exposes and fixes race condition between:
+ - zbud_reclaim_page() (called from zswap_frontswap_store())
+and
+ - zbud_free() (called from zswap_frontswap_invalidate_page()).
+This race was present already but additional locking and in-direct use
+handle makes it frequent during high memory pressure.
+
+Race typically looks like:
+ - thread 1: zbud_reclaim_page()
+   - thread 1: zswap_writeback_entry()
+     - zbud_map()
+ - thread 0: zswap_frontswap_invalidate_page()
+   - zbud_free()
+ - thread 1: read zswap_entry from memory or call zbud_unmap(), now on
+   invalid memory address
+
+The zbud_reclaim_page() calls evict handler (zswap_writeback_entry())
+without holding pool lock. The zswap_writeback_entry() reads
+zswap_header from memory obtained from zbud_map() without holding
+tree's lock. If invalidate happens during this time the zbud_free()
+will remove handle from the tree.
+
+The new map_count fields in zbud_header try to address this problem by
+protecting handles from freeing.
+Also the call to zbud_unmap() in zswap_writeback_entry() was moved
+further - when the tree's lock could be obtained.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- mm/zbud.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ include/linux/zbud.h |    2 +-
+ mm/zbud.c            |  313 +++++++++++++++++++++++++++++++++++++++++---------
+ mm/zswap.c           |   24 +++-
+ 3 files changed, 280 insertions(+), 59 deletions(-)
 
+diff --git a/include/linux/zbud.h b/include/linux/zbud.h
+index 2571a5c..12d72df 100644
+--- a/include/linux/zbud.h
++++ b/include/linux/zbud.h
+@@ -16,7 +16,7 @@ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
+ void zbud_free(struct zbud_pool *pool, unsigned long handle);
+ int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries);
+ void *zbud_map(struct zbud_pool *pool, unsigned long handle);
+-void zbud_unmap(struct zbud_pool *pool, unsigned long handle);
++int zbud_unmap(struct zbud_pool *pool, unsigned long handle);
+ u64 zbud_get_pool_size(struct zbud_pool *pool);
+ 
+ #endif /* _ZBUD_H_ */
 diff --git a/mm/zbud.c b/mm/zbud.c
-index 3f4be72..1d5b26b 100644
+index 9be160c..795d56a 100644
 --- a/mm/zbud.c
 +++ b/mm/zbud.c
-@@ -267,7 +267,7 @@ void zbud_destroy_pool(struct zbud_pool *pool)
+@@ -50,6 +50,7 @@
+ #include <linux/preempt.h>
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
++#include <linux/radix-tree.h>
+ #include <linux/zbud.h>
+ 
+ /*****************
+@@ -69,6 +70,9 @@
+ #define NCHUNKS		(PAGE_SIZE >> CHUNK_SHIFT)
+ #define ZHDR_SIZE_ALIGNED CHUNK_SIZE
+ 
++/* Empty handle, not yet allocated */
++#define HANDLE_EMPTY	0
++
+ /**
+  * struct zbud_pool - stores metadata for each zbud pool
+  * @lock:	protects all pool fields and first|last_chunk fields of any
+@@ -83,6 +87,10 @@
+  * @pages_nr:	number of zbud pages in the pool.
+  * @ops:	pointer to a structure of user defined operations specified at
+  *		pool creation time.
++ * @page_tree:	mapping handle->zbud_header for zbud_map and migration;
++ *		many pools may exist so do not use the mapping->page_tree
++ * @last_handle: last handle calculated; used as starting point when searching
++ *		for next handle in page_tree in zbud_alloc().
+  *
+  * This structure is allocated at pool creation time and maintains metadata
+  * pertaining to a particular zbud pool.
+@@ -94,6 +102,8 @@ struct zbud_pool {
+ 	struct list_head lru;
+ 	u64 pages_nr;
+ 	struct zbud_ops *ops;
++	struct radix_tree_root page_tree;
++	unsigned long last_handle;
+ };
+ 
+ /*
+@@ -103,12 +113,23 @@ struct zbud_pool {
+  * @lru:	links the zbud page into the lru list in the pool
+  * @first_chunks:	the size of the first buddy in chunks, 0 if free
+  * @last_chunks:	the size of the last buddy in chunks, 0 if free
++ * @first_handle:	handle to page stored in first buddy
++ * @last_handle:	handle to page stored in last buddy
++ * @first_map_count:	mapped count of page stored in first buddy
++ * @last_map_count:	mapped count of page stored in last buddy
++ *
++ * When map count reaches zero the corresponding handle is removed
++ * from radix tree and cannot be used any longer.
+  */
+ struct zbud_header {
+ 	struct list_head buddy;
+ 	struct list_head lru;
++	unsigned long first_handle;
++	unsigned long last_handle;
+ 	unsigned int first_chunks;
+ 	unsigned int last_chunks;
++	short int first_map_count;
++	short int last_map_count;
+ };
+ 
+ /*****************
+@@ -135,38 +156,34 @@ static struct zbud_header *init_zbud_page(struct page *page)
+ 	struct zbud_header *zhdr = page_address(page);
+ 	zhdr->first_chunks = 0;
+ 	zhdr->last_chunks = 0;
++	zhdr->first_handle = HANDLE_EMPTY;
++	zhdr->last_handle = HANDLE_EMPTY;
++	zhdr->first_map_count = 0;
++	zhdr->last_map_count = 0;
+ 	INIT_LIST_HEAD(&zhdr->buddy);
+ 	INIT_LIST_HEAD(&zhdr->lru);
+ 	return zhdr;
+ }
+ 
+ /*
+- * Encodes the handle of a particular buddy within a zbud page
++ * Encodes the address of a particular buddy within a zbud page
+  * Pool lock should be held as this function accesses first|last_chunks
+  */
+-static unsigned long encode_handle(struct zbud_header *zhdr, enum buddy bud)
++static unsigned long calc_addr(struct zbud_header *zhdr, unsigned long handle)
+ {
+-	unsigned long handle;
++	unsigned long addr;
+ 
+ 	/*
+-	 * For now, the encoded handle is actually just the pointer to the data
+-	 * but this might not always be the case.  A little information hiding.
+ 	 * Add CHUNK_SIZE to the handle if it is the first allocation to jump
+ 	 * over the zbud header in the first chunk.
+ 	 */
+-	handle = (unsigned long)zhdr;
+-	if (bud == FIRST)
++	addr = (unsigned long)zhdr;
++	if (handle == zhdr->first_handle)
+ 		/* skip over zbud header */
+-		handle += ZHDR_SIZE_ALIGNED;
+-	else /* bud == LAST */
+-		handle += PAGE_SIZE - (zhdr->last_chunks  << CHUNK_SHIFT);
+-	return handle;
+-}
+-
+-/* Returns the zbud page where a given handle is stored */
+-static struct zbud_header *handle_to_zbud_header(unsigned long handle)
+-{
+-	return (struct zbud_header *)(handle & PAGE_MASK);
++		addr += ZHDR_SIZE_ALIGNED;
++	else /* handle == zhdr->last_handle */
++		addr += PAGE_SIZE - (zhdr->last_chunks  << CHUNK_SHIFT);
++	return addr;
+ }
+ 
+ /* Returns the number of free chunks in a zbud page */
+@@ -207,6 +224,109 @@ static int put_zbud_page(struct zbud_header *zhdr)
+ 	return 0;
+ }
+ 
++/*
++ * Increases map count for given handle.
++ *
++ * The map count is used to prevent any races between zbud_reclaim()
++ * and zbud_free().
++ *
++ * Must be called under pool->lock.
++ */
++static void get_map_count(struct zbud_header *zhdr, unsigned long handle)
++{
++	VM_BUG_ON(handle == HANDLE_EMPTY);
++	if (zhdr->first_handle == handle)
++		zhdr->first_map_count++;
++	else
++		zhdr->last_map_count++;
++}
++
++/*
++ * Decreases map count for given handle.
++ *
++ * Must be called under pool->lock.
++ *
++ * Returns 1 if no more map counts for handle exist and 0 otherwise.
++ */
++static int put_map_count(struct zbud_header *zhdr, unsigned long handle)
++{
++	VM_BUG_ON(handle == HANDLE_EMPTY);
++	if (zhdr->first_handle == handle) {
++		VM_BUG_ON(!zhdr->first_map_count);
++		return ((--zhdr->first_map_count) == 0);
++	} else {
++		VM_BUG_ON(!zhdr->last_map_count);
++		return ((--zhdr->last_map_count) == 0);
++	}
++}
++
++/*
++ * Searches for zbud header in radix tree.
++ * Returns NULL if handle could not be found.
++ *
++ * Handle could not be found in case of race between:
++ *  - zswap_writeback_entry() (called from zswap_frontswap_store())
++ * and
++ *  - zbud_free() (called from zswap_frontswap_invalidate())
++ *
++ */
++static struct zbud_header *handle_to_zbud_header(struct zbud_pool *pool,
++		unsigned long handle)
++{
++	struct zbud_header *zhdr;
++
++	rcu_read_lock();
++	zhdr = radix_tree_lookup(&pool->page_tree, handle);
++	rcu_read_unlock();
++	if (unlikely(!zhdr)) {
++		/* race: zswap_writeback_entry() and zswap_invalidate() */
++		pr_err("error: could not lookup handle %lu in tree\n", handle);
++	}
++	return zhdr;
++}
++
++/*
++ * Scans radix tree for next free handle and returns it.
++ * Returns HANDLE_EMPTY (0) if no free handle could be found.
++ *
++ * Must be called under pool->lock to be sure that there
++ * won't be other users of found handle.
++ */
++static unsigned long search_next_handle(struct zbud_pool *pool)
++{
++	unsigned long handle = pool->last_handle;
++	unsigned int retries = 0;
++	do {
++		/* 0 will be returned in case of search failure as we'll hit
++		 * the max index.
++		 */
++		handle = radix_tree_next_hole(&pool->page_tree,
++				handle + 1, ULONG_MAX);
++	} while ((handle == HANDLE_EMPTY) && (++retries < 2));
++	WARN((retries == 2), "%s: reached max number of retries (%u) when " \
++		"searching for next handle (last handle: %lu)\n",
++		       __func__, retries, pool->last_handle);
++	return handle;
++}
++
++/*
++ * Searches for next free handle in page_tree and inserts zbud_header
++ * under it. Stores the handle under given pointer and updates
++ * pool->last_handle.
++ *
++ * Must be called under pool->lock.
++ *
++ * Returns 0 on success or negative otherwise.
++ */
++static int tree_insert_zbud_header(struct zbud_pool *pool,
++		struct zbud_header *zhdr, unsigned long *handle)
++{
++	*handle = search_next_handle(pool);
++	if (unlikely(*handle == HANDLE_EMPTY))
++		return -ENOSPC;
++	pool->last_handle = *handle;
++	return radix_tree_insert(&pool->page_tree, *handle, zhdr);
++}
+ 
+ /*****************
+  * API Functions
+@@ -232,8 +352,10 @@ struct zbud_pool *zbud_create_pool(gfp_t gfp, struct zbud_ops *ops)
+ 		INIT_LIST_HEAD(&pool->unbuddied[i]);
+ 	INIT_LIST_HEAD(&pool->buddied);
+ 	INIT_LIST_HEAD(&pool->lru);
++	INIT_RADIX_TREE(&pool->page_tree, GFP_ATOMIC);
+ 	pool->pages_nr = 0;
+ 	pool->ops = ops;
++	pool->last_handle = HANDLE_EMPTY;
+ 	return pool;
+ }
+ 
+@@ -270,10 +392,11 @@ void zbud_destroy_pool(struct zbud_pool *pool)
  int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
  			unsigned long *handle)
  {
--	int chunks, i, freechunks;
-+	int chunks, i;
+-	int chunks, i;
++	int chunks, i, err;
  	struct zbud_header *zhdr = NULL;
  	enum buddy bud;
  	struct page *page;
-@@ -317,7 +317,7 @@ found:
++	unsigned long next_handle;
+ 
+ 	if (size <= 0 || gfp & __GFP_HIGHMEM)
+ 		return -EINVAL;
+@@ -288,6 +411,11 @@ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
+ 		if (!list_empty(&pool->unbuddied[i])) {
+ 			zhdr = list_first_entry(&pool->unbuddied[i],
+ 					struct zbud_header, buddy);
++			err = tree_insert_zbud_header(pool, zhdr, &next_handle);
++			if (unlikely(err)) {
++				spin_unlock(&pool->lock);
++				return err;
++			}
+ 			list_del(&zhdr->buddy);
+ 			if (zhdr->first_chunks == 0)
+ 				bud = FIRST;
+@@ -313,11 +441,22 @@ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
+ 	SetPageZbud(page);
+ 	bud = FIRST;
+ 
++	err = tree_insert_zbud_header(pool, zhdr, &next_handle);
++	if (unlikely(err)) {
++		put_zbud_page(zhdr);
++		spin_unlock(&pool->lock);
++		return err;
++	}
++
+ found:
+-	if (bud == FIRST)
++	if (bud == FIRST) {
+ 		zhdr->first_chunks = chunks;
+-	else
++		zhdr->first_handle = next_handle;
++	} else {
+ 		zhdr->last_chunks = chunks;
++		zhdr->last_handle = next_handle;
++	}
++	get_map_count(zhdr, next_handle);
  
  	if (zhdr->first_chunks == 0 || zhdr->last_chunks == 0) {
  		/* Add to unbuddied list */
--		freechunks = num_free_chunks(zhdr);
+@@ -333,12 +472,45 @@ found:
+ 		list_del(&zhdr->lru);
+ 	list_add(&zhdr->lru, &pool->lru);
+ 
+-	*handle = encode_handle(zhdr, bud);
++	*handle = next_handle;
+ 	spin_unlock(&pool->lock);
+ 
+ 	return 0;
+ }
+ 
++/*
++ * Real code for freeing handle.
++ * Removes handle from radix tree, empties chunks and handle in zbud header,
++ * removes buddy from lists and finally puts page.
++ */
++static void zbud_header_free(struct zbud_pool *pool, struct zbud_header *zhdr,
++		unsigned long handle)
++{
++	struct zbud_header *old = radix_tree_delete(&pool->page_tree, handle);
++	VM_BUG_ON(old != zhdr);
++
++	if (zhdr->first_handle == handle) {
++		zhdr->first_chunks = 0;
++		zhdr->first_handle = HANDLE_EMPTY;
++	} else {
++		zhdr->last_chunks = 0;
++		zhdr->last_handle = HANDLE_EMPTY;
++	}
++
++	/* Remove from existing buddy list */
++	list_del(&zhdr->buddy);
++
++	if (zhdr->first_chunks == 0 && zhdr->last_chunks == 0) {
++		list_del(&zhdr->lru);
++		pool->pages_nr--;
++	} else {
++		/* Add to unbuddied list */
 +		int freechunks = num_free_chunks(zhdr);
- 		list_add(&zhdr->buddy, &pool->unbuddied[freechunks]);
- 	} else {
- 		/* Add to buddied list */
-@@ -349,7 +349,6 @@ found:
- void zbud_free(struct zbud_pool *pool, unsigned long handle)
- {
++		list_add(&zhdr->buddy, &pool->unbuddied[freechunks]);
++	}
++	put_zbud_page(zhdr);
++}
++
+ /**
+  * zbud_free() - frees the allocation associated with the given handle
+  * @pool:	pool in which the allocation resided
+@@ -355,27 +527,18 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle)
  	struct zbud_header *zhdr;
--	int freechunks;
  
  	spin_lock(&pool->lock);
- 	zhdr = handle_to_zbud_header(handle);
-@@ -368,7 +367,7 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle)
- 		pool->pages_nr--;
- 	} else {
- 		/* Add to unbuddied list */
--		freechunks = num_free_chunks(zhdr);
-+		int freechunks = num_free_chunks(zhdr);
- 		list_add(&zhdr->buddy, &pool->unbuddied[freechunks]);
- 	}
+-	zhdr = handle_to_zbud_header(handle);
+-
+-	/* If first buddy, handle will be page aligned */
+-	if ((handle - ZHDR_SIZE_ALIGNED) & ~PAGE_MASK)
+-		zhdr->last_chunks = 0;
+-	else
+-		zhdr->first_chunks = 0;
+-
+-	/* Remove from existing buddy list */
+-	list_del(&zhdr->buddy);
++	zhdr = handle_to_zbud_header(pool, handle);
++	VM_BUG_ON(!zhdr);
  
+-	if (zhdr->first_chunks == 0 && zhdr->last_chunks == 0) {
+-		list_del(&zhdr->lru);
+-		pool->pages_nr--;
++	if (!put_map_count(zhdr, handle)) {
++		/*
++		 * Still mapped, so just put page count and
++		 * zbud_unmap() will free later.
++		 */
++		put_zbud_page(zhdr);
+ 	} else {
+-		/* Add to unbuddied list */
+-		int freechunks = num_free_chunks(zhdr);
+-		list_add(&zhdr->buddy, &pool->unbuddied[freechunks]);
++		zbud_header_free(pool, zhdr, handle);
+ 	}
+-
+-	put_zbud_page(zhdr);
+ 	spin_unlock(&pool->lock);
+ }
+ 
+@@ -451,15 +614,11 @@ int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
+ 		/* Protect zbud page against free */
+ 		get_zbud_page(zhdr);
+ 		/*
+-		 * We need encode the handles before unlocking, since we can
++		 * Grab handles before unlocking, since we can
+ 		 * race with free that will set (first|last)_chunks to 0
+ 		 */
+-		first_handle = 0;
+-		last_handle = 0;
+-		if (zhdr->first_chunks)
+-			first_handle = encode_handle(zhdr, FIRST);
+-		if (zhdr->last_chunks)
+-			last_handle = encode_handle(zhdr, LAST);
++		first_handle = zhdr->first_handle;
++		last_handle = zhdr->last_handle;
+ 		spin_unlock(&pool->lock);
+ 
+ 		/* Issue the eviction callback(s) */
+@@ -485,27 +644,69 @@ next:
+ /**
+  * zbud_map() - maps the allocation associated with the given handle
+  * @pool:	pool in which the allocation resides
+- * @handle:	handle associated with the allocation to be mapped
++ * @handle:	handle to be mapped
+  *
+- * While trivial for zbud, the mapping functions for others allocators
+- * implementing this allocation API could have more complex information encoded
+- * in the handle and could create temporary mappings to make the data
+- * accessible to the user.
++ * Increases the page ref count and map count for handle.
+  *
+- * Returns: a pointer to the mapped allocation
++ * Returns: a pointer to the mapped allocation or NULL if page could
++ * not be found in radix tree for given handle.
+  */
+ void *zbud_map(struct zbud_pool *pool, unsigned long handle)
+ {
+-	return (void *)(handle);
++	struct zbud_header *zhdr;
++	void *addr;
++
++	/*
++	 * Grab lock to prevent races with zbud_free or migration.
++	 */
++	spin_lock(&pool->lock);
++	zhdr = handle_to_zbud_header(pool, handle);
++	if (!zhdr) {
++		spin_unlock(&pool->lock);
++		return NULL;
++	}
++	/*
++	 * Get page so zbud_free or migration could detect that it is
++	 * mapped by someone.
++	 */
++	get_zbud_page(zhdr);
++	get_map_count(zhdr, handle);
++	addr = (void *)calc_addr(zhdr, handle);
++	spin_unlock(&pool->lock);
++
++	return addr;
+ }
+ 
+ /**
+- * zbud_unmap() - maps the allocation associated with the given handle
++ * zbud_unmap() - unmaps the allocation associated with the given handle
+  * @pool:	pool in which the allocation resides
+- * @handle:	handle associated with the allocation to be unmapped
++ * @handle:	handle to be unmapped
++ *
++ * Decreases the page ref count and map count for handle.
++ * If map count reaches 0 then handle is freed (it must be freed because
++ * zbud_free() was called already on it) and -EFAULT is returned.
++ *
++ * Returns: 0 on successful unmap, negative on error indicating that handle
++ * was invalidated already by zbud_free() and cannot be used anymore
+  */
+-void zbud_unmap(struct zbud_pool *pool, unsigned long handle)
++int zbud_unmap(struct zbud_pool *pool, unsigned long handle)
+ {
++	struct zbud_header *zhdr;
++
++	zhdr = handle_to_zbud_header(pool, handle);
++	if (unlikely(!zhdr))
++		return -ENOENT;
++	spin_lock(&pool->lock);
++	if (put_map_count(zhdr, handle)) {
++		/* racing zbud_free() could not free the handle because
++		 * we were still using it so it is our job to free */
++		zbud_header_free(pool, zhdr, handle);
++		spin_unlock(&pool->lock);
++		return -EFAULT;
++	}
++	put_zbud_page(zhdr);
++	spin_unlock(&pool->lock);
++	return 0;
+ }
+ 
+ /**
+diff --git a/mm/zswap.c b/mm/zswap.c
+index deda2b6..706046a 100644
+--- a/mm/zswap.c
++++ b/mm/zswap.c
+@@ -509,8 +509,15 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
+ 
+ 	/* extract swpentry from data */
+ 	zhdr = zbud_map(pool, handle);
++	if (!zhdr) {
++		/*
++		 * Race with zbud_free() (called from invalidate).
++		 * Entry was invalidated already.
++		 */
++		return 0;
++	}
+ 	swpentry = zhdr->swpentry; /* here */
+-	zbud_unmap(pool, handle);
++	VM_BUG_ON(swp_type(swpentry) >= MAX_SWAPFILES);
+ 	tree = zswap_trees[swp_type(swpentry)];
+ 	offset = swp_offset(swpentry);
+ 	BUG_ON(pool != tree->pool);
+@@ -520,10 +527,20 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
+ 	entry = zswap_rb_search(&tree->rbroot, offset);
+ 	if (!entry) {
+ 		/* entry was invalidated */
++		zbud_unmap(pool, handle);
+ 		spin_unlock(&tree->lock);
+ 		return 0;
+ 	}
+ 	zswap_entry_get(entry);
++	/*
++	 * Unmap zbud after obtaining tree lock and entry ref to prevent
++	 * any races with invalidate.
++	 */
++	if (zbud_unmap(pool, handle)) {
++		zswap_entry_put(entry);
++		spin_unlock(&tree->lock);
++		return 0;
++	}
+ 	spin_unlock(&tree->lock);
+ 	BUG_ON(offset != entry->offset);
+ 
+@@ -544,6 +561,7 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
+ 		dlen = PAGE_SIZE;
+ 		src = (u8 *)zbud_map(tree->pool, entry->handle) +
+ 			sizeof(struct zswap_header);
++		VM_BUG_ON(!src);
+ 		dst = kmap_atomic(page);
+ 		ret = zswap_comp_op(ZSWAP_COMPOP_DECOMPRESS, src,
+ 				entry->length, dst, &dlen);
+@@ -661,8 +679,9 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
+ 	zhdr->swpentry = swp_entry(type, offset);
+ 	buf = (u8 *)(zhdr + 1);
+ 	memcpy(buf, dst, dlen);
+-	zbud_unmap(tree->pool, handle);
++	ret = zbud_unmap(tree->pool, handle);
+ 	put_cpu_var(zswap_dstmem);
++	VM_BUG_ON(ret);
+ 
+ 	/* populate entry */
+ 	entry->offset = offset;
+@@ -726,6 +745,7 @@ static int zswap_frontswap_load(unsigned type, pgoff_t offset,
+ 	dlen = PAGE_SIZE;
+ 	src = (u8 *)zbud_map(tree->pool, entry->handle) +
+ 			sizeof(struct zswap_header);
++	VM_BUG_ON(!src);
+ 	dst = kmap_atomic(page);
+ 	ret = zswap_comp_op(ZSWAP_COMPOP_DECOMPRESS, src, entry->length,
+ 		dst, &dlen);
 -- 
 1.7.9.5
 
