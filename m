@@ -1,125 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195Ab3IKMi5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 08:38:57 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:13358 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081Ab3IKMiz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 08:38:55 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 11 Sep 2013 05:35:49 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <broonie@kernel.org>
-CC: <rob.herring@calxeda.com>, <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <rob@landley.net>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <lgirdwood@gmail.com>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V2] regulator: core: add support for configuring turn-on time through constraints
-Date: Wed, 11 Sep 2013 18:28:51 +0530
-Message-ID: <1378904331-5665-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	id S1753395Ab3IKMjR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 08:39:17 -0400
+Received: from mga03.intel.com ([143.182.124.21]:52333 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753184Ab3IKMjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 08:39:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,884,1371106800"; 
+   d="scan'208";a="358936986"
+Message-ID: <5230646F.3030701@intel.com>
+Date: Wed, 11 Sep 2013 08:39:11 -0400
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] Cpufreq: Remove fossil comment of cpufreq_set_policy
+References: <1378824287-7696-1-git-send-email-tianyu.lan@intel.com> <CAKohponpX9AedBrsASojK7fKS-rRN-AQwJT42=mrOJcNpGqE+w@mail.gmail.com> <522FE369.3030106@intel.com> <CAKohponyaogXLr5sJzQbb6ZhswMWfwhFTm-b=4Ztzg=UmKx_ig@mail.gmail.com>
+In-Reply-To: <CAKohponyaogXLr5sJzQbb6ZhswMWfwhFTm-b=4Ztzg=UmKx_ig@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Turn-on time of the regulator depends on the regulator device's
-electrical characteristics. Sometimes regulator turn-on time also
-depends on the capacitive load on the given platform and it can be
-more than the datasheet value.
+On 09/11/2013 06:08 AM, Viresh Kumar wrote:
+> On 11 September 2013 08:58, Lan Tianyu <tianyu.lan@intel.com> wrote:
+>>  From 668e1b6fd94b5c0e56a651b4c60cbbc7a6868b46 Mon Sep 17 00:00:00 2001
+>> From: Lan Tianyu <tianyu.lan@intel.com>
+>> Date: Wed, 11 Sep 2013 11:31:15 +0800
+>> Subject: [PATCH] Cpufreq/governor: Remove fossil comment
+>>
+>> cpufreq_set_policy() has been changed to origin __cpufreq_set_policy()
+>> and policy->lock has been converted to rewrite lock by commit 5a01f2.
+>> So remove it.
+>>
+>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+>> ---
+>>   drivers/cpufreq/cpufreq_userspace.c | 11 -----------
+>>   1 file changed, 11 deletions(-)
+>>
+>> diff --git a/drivers/cpufreq/cpufreq_userspace.c
+>> b/drivers/cpufreq/cpufreq_userspace.c
+>> index 0307809..4dbf1db 100644
+>> --- a/drivers/cpufreq/cpufreq_userspace.c
+>> +++ b/drivers/cpufreq/cpufreq_userspace.c
+>> @@ -38,18 +38,7 @@ static int cpufreq_set(struct cpufreq_policy *policy,
+>> unsigned int freq)
+>>          if (!per_cpu(cpu_is_managed, policy->cpu))
+>>                  goto err;
+>>
+>> -       /*
+>> -        * We're safe from concurrent calls to ->target() here
+>> -        * as we hold the userspace_mutex lock. If we were calling
+>> -        * cpufreq_driver_target, a deadlock situation might occur:
+>> -        * A: cpufreq_set (lock userspace_mutex) ->
+>> -        *      cpufreq_driver_target(lock policy->lock)
+>> -        * B: cpufreq_set_policy(lock policy->lock) ->
+>> -        *      __cpufreq_governor ->
+>> -        *         cpufreq_governor_userspace (lock userspace_mutex)
+>> -        */
+>>          ret = __cpufreq_driver_target(policy, freq, CPUFREQ_RELATION_L);
+>> -
+>>    err:
+>>          mutex_unlock(&userspace_mutex);
+>>          return ret;
+>
+> Looks fine:
+>
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+>
 
-The driver provides the enable-time as per datasheet.
-
-Add support for configure the enable ramp time through regulator
-constraints so that regulator core can take this value for enable
-time for that regulator.
-
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-Changes from V1:
-- Change property name to regulator-enable-ramp-delay and add more details
-  in DT doc.
-- add the valid pointer check for constraints before accessing it.
-
- .../devicetree/bindings/regulator/regulator.txt    |    3 +++
- drivers/regulator/core.c                           |    2 ++
- drivers/regulator/of_regulator.c                   |    6 ++++++
- include/linux/regulator/machine.h                  |    2 ++
- 4 files changed, 13 insertions(+), 0 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/regulator/regulator.txt b/Documentation/devicetree/bindings/regulator/regulator.txt
-index 2bd8f09..1939f61 100644
---- a/Documentation/devicetree/bindings/regulator/regulator.txt
-+++ b/Documentation/devicetree/bindings/regulator/regulator.txt
-@@ -14,6 +14,9 @@ Optional properties:
- - regulator-ramp-delay: ramp delay for regulator(in uV/uS)
-   For hardwares which support disabling ramp rate, it should be explicitly
-   intialised to zero (regulator-ramp-delay = <0>) for disabling ramp delay.
-+- regulator-enable-ramp-delay: Turn-on time for regulator(in uSec). This is
-+  the time time taken to reach within some proportion of the target voltage
-+  from off state.
- 
- Deprecated properties:
- - regulator-compatible: If a regulator chip contains multiple
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index a01b8b3..5217c19 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1186,6 +1186,8 @@ overflow_err:
- 
- static int _regulator_get_enable_time(struct regulator_dev *rdev)
- {
-+	if (rdev->constraints && rdev->constraints->enable_time)
-+		return rdev->constraints->enable_time;
- 	if (!rdev->desc->ops->enable_time)
- 		return rdev->desc->enable_time;
- 	return rdev->desc->ops->enable_time(rdev);
-diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
-index 7827384..ea4f36f 100644
---- a/drivers/regulator/of_regulator.c
-+++ b/drivers/regulator/of_regulator.c
-@@ -23,6 +23,8 @@ static void of_get_regulation_constraints(struct device_node *np,
- 	const __be32 *min_uA, *max_uA, *ramp_delay;
- 	struct property *prop;
- 	struct regulation_constraints *constraints = &(*init_data)->constraints;
-+	int ret;
-+	u32 pval;
- 
- 	constraints->name = of_get_property(np, "regulator-name", NULL);
- 
-@@ -73,6 +75,10 @@ static void of_get_regulation_constraints(struct device_node *np,
- 		else
- 			constraints->ramp_disable = true;
- 	}
-+
-+	ret = of_property_read_u32(np, "regulator-enable-ramp-delay", &pval);
-+	if (!ret)
-+		constraints->enable_time = pval;
- }
- 
- /**
-diff --git a/include/linux/regulator/machine.h b/include/linux/regulator/machine.h
-index 999b20c..670d154 100644
---- a/include/linux/regulator/machine.h
-+++ b/include/linux/regulator/machine.h
-@@ -95,6 +95,7 @@ struct regulator_state {
-  * @initial_state: Suspend state to set by default.
-  * @initial_mode: Mode to set at startup.
-  * @ramp_delay: Time to settle down after voltage change (unit: uV/us)
-+ * @enable_time: Turn-on time of the rails (unit: uS)
-  */
- struct regulation_constraints {
- 
-@@ -129,6 +130,7 @@ struct regulation_constraints {
- 	unsigned int initial_mode;
- 
- 	unsigned int ramp_delay;
-+	unsigned int enable_time;
- 
- 	/* constraint flags */
- 	unsigned always_on:1;	/* regulator never off when system is on */
--- 
-1.7.1.1
+Thanks. I will send formal version.
 
