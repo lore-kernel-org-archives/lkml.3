@@ -1,96 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883Ab3IKBPD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 21:15:03 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:64731 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042Ab3IKBPC (ORCPT
+	id S1753445Ab3IKBQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 21:16:28 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:13607 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752372Ab3IKBQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 21:15:02 -0400
-Message-ID: <522FC411.3030208@linaro.org>
-Date: Tue, 10 Sep 2013 18:14:57 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Stephan Mueller <smueller@chronox.de>,
-        LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] /dev/random: Insufficient of entropy on many architectures
-References: <10005394.BRCyBMYWy3@tauon> <CANcMJZAHuXNQ4eUx+qpVnfJTg625HkJU_9pgBP24ykkmBww3yw@mail.gmail.com> <20130910203853.GG29237@thunk.org> <522F851D.1040101@linaro.org> <20130910211009.GI29237@thunk.org> <522F984C.2070909@linaro.org> <20130910223326.GD11063@thunk.org> <522FB9F1.3070905@linaro.org> <20130911005047.GA13315@thunk.org>
-In-Reply-To: <20130911005047.GA13315@thunk.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 10 Sep 2013 21:16:25 -0400
+X-AuditID: cbfee68e-b7f756d000004512-6f-522fc4680947
+Message-id: <522FC468.3010005@samsung.com>
+Date: Wed, 11 Sep 2013 10:16:24 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH 1/6] extcon-gpio: Do not unnecessarily initialize variables
+References: <1377836978-24082-1-git-send-email-linux@roeck-us.net>
+ <1377836978-24082-2-git-send-email-linux@roeck-us.net>
+In-reply-to: <1377836978-24082-2-git-send-email-linux@roeck-us.net>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsWyRsSkRDfjiH6QwZsFghbzj5xjtTjwZwej
+	xZveDhaLy7vmsFk8WXiGyWLp9YtMFrcbV7BZTJi+lsXi8IoDTBavDraxOHB5rJm3htFjwecr
+	7B6vJ09g9LhzbQ+bx87vDewefVtWMXp83iTnsXFuaABHFJdNSmpOZllqkb5dAlfG+VmSBbdZ
+	K7b9PcfYwHiJpYuRk0NCwETi1KcHTBC2mMSFe+vZuhi5OIQEljJKzFo0lRWm6Nf2ZqjEIkaJ
+	L7PmMkE4rxgl5t7ZwAhSxSugJXH261+wDhYBVYmLF2Yxg9hsQPH9L26wgdiiAmESK6dfYYGo
+	F5T4MfkemC0ioCbRfKoFbAOzwCUmidZPa8ESwgL+Eu1fd4ANFRKolpi+dibYrZwCzhJPus+B
+	xZkFdCT2t05jg7DlJTavecsMMkhC4Ce7xLY1vcwQFwlIfJt8CGgoB1BCVmLTAWaI1yQlDq64
+	wTKBUWwWkptmIRk7C8nYBYzMqxhFUwuSC4qT0ouM9IoTc4tL89L1kvNzNzECY/b0v2d9Oxhv
+	HrA+xJgMtHIis5Rocj4w5vNK4g2NzYwsTE1MjY3MLc1IE1YS51VrsQ4UEkhPLEnNTk0tSC2K
+	LyrNSS0+xMjEwSnVwFgxX+UP89OAmuAzDof9k7L+swav7ktNebBrt+eUINNNZZvETkQlXN1x
+	h2FufHBRREBQksLhM/V250/1RC3jjJlZvj1y8YTo9IVb47yXsfjz/J260yphR7/bOruekMvP
+	ZD336QbW33a/dXvRk/QYnrqHFQuOHvrB1SpiPWPT1y8HkxKU+BdfPajEUpyRaKjFXFScCABB
+	/QDz7wIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJKsWRmVeSWpSXmKPExsVy+t9jAd2MI/pBBs9nc1rMP3KO1eLAnx2M
+	Fm96O1gsLu+aw2bxZOEZJoul1y8yWdxuXMFmMWH6WhaLwysOMFm8OtjG4sDlsWbeGkaPBZ+v
+	sHu8njyB0ePOtT1sHju/N7B79G1ZxejxeZOcx8a5oQEcUQ2MNhmpiSmpRQqpecn5KZl56bZK
+	3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlARyoplCXmlAKFAhKLi5X07TBNCA1x07WA
+	aYzQ9Q0JgusxMkADCWsYM87Pkiy4zVqx7e85xgbGSyxdjJwcEgImEr+2N7NB2GISF+6tB7K5
+	OIQEFjFKfJk1lwnCecUoMffOBkaQKl4BLYmzX/+ygtgsAqoSFy/MYgax2YDi+1/cAJskKhAm
+	sXL6FRaIekGJH5PvgdkiAmoSzadawDYwC1xikmj9tBYsISzgL9H+dQfYUCGBaonpa2cygdic
+	As4ST7rPgcWZBXQk9rdOY4Ow5SU2r3nLPIFRYBaSHbOQlM1CUraAkXkVo2hqQXJBcVJ6rpFe
+	cWJucWleul5yfu4mRnBCeCa9g3FVg8UhRgEORiUe3hty+kFCrIllxZW5hxglOJiVRHinOgGF
+	eFMSK6tSi/Lji0pzUosPMSYDg2Ais5Rocj4wWeWVxBsam5gZWRqZG1oYGZuTJqwkznuw1TpQ
+	SCA9sSQ1OzW1ILUIZgsTB6dUA2NP4HXW9tf54kt5HS9f3m2fOinpyIMPUh+1VQIWNmml+dUo
+	fgmPsNvPuU1dkOFsXsTVtx8uPb2gP8Ot55L14S0z/y44naPdvuHtsr/vyqNSnHZ9CRX5e6py
+	5unyp1GPROI5/t+cc6Pee/K7o096J+0v+Lfc0SnUWHNuKktfotTVJXwv713z3V2qxFKckWio
+	xVxUnAgAKgP96UwDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2013 05:50 PM, Theodore Ts'o wrote:
-> On Tue, Sep 10, 2013 at 05:31:45PM -0700, John Stultz wrote:
->> Yea, that point about "every single interrupt" vs "every timer
->> interrupt". I suspect that if its every timer interrupt, this can be
->> done easily w/ clocksources as we already do that read, but every single
->> interrupt would have potential problems with various other devices with
->> high irq frequency.
-> Yep.  The worse case would probably a serial port running at 230400
-> bps.  Even with a 16550A UART with the 16-byte FIFO, we're talking
-> about close to 2,000 interrupts per second.  A 16450 running at 115200
-> bps would give us 11,520 interrupts per second....
->
->> Right so get_cycles() really sounds like the right thing here.
-> For those platforms which have them, yes.
->
->> Although I wonder if you run into issues with counters that wrap
->> quickly? Or does that not matter?
-> No, it doesn't matter.  It's really the low bits of the counter which
-> are really important to us anyway.  For example on MIPS there is a
-> register which is bumped on every CPU cycle, but its kept mod the
-> number of entries in the TLB (it's used for random TLB eviction).
-> That's what we'll probably ending using for MIPS, since its cycle
-> counter is not guaranteed to be there, and had a bug which could cause
-> timer interrupts to get lost if you tried reading from it at the wrong
-> time.
->
->> Right. In many cases jiffies is all that we have. Thus the check for
->> timekeeping_valid_for_hres() can be used to at least flag that case. Not
->> that I know what you want to do if it comes up false.
-> Right now, if get_cycles() returns 0, we fall back to only mixing in
-> the IP register from the interrupt plus the jiffies counter.  The
-> platforms where get_cycles returns 0 is:
->
-> - MIPS (solution pending)
-> - User mode Linux
-> - Sparc 32 bit
-> - M68K
-> - M32R
-> - Hexagon
-> - H8/300
-> - FR-V
-> - CRIS
-> - AVR32
-> - ARC
-> - METAG
-> - Microblaze
-> - SCORE
-> - SH
-> - Unicore32
->
-> Would I be correct in assuming that most of these probably don't have a
-> high-res clocksource, and so would fall back to jiffies anyway?
+On 08/30/2013 01:29 PM, Guenter Roeck wrote:
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+>  drivers/extcon/extcon-gpio.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
+> index 02bec32..77d35a7 100644
+> --- a/drivers/extcon/extcon-gpio.c
+> +++ b/drivers/extcon/extcon-gpio.c
+> @@ -80,7 +80,7 @@ static int gpio_extcon_probe(struct platform_device *pdev)
+>  {
+>  	struct gpio_extcon_platform_data *pdata = pdev->dev.platform_data;
+>  	struct gpio_extcon_data *extcon_data;
+> -	int ret = 0;
+> +	int ret;
+>  
+>  	if (!pdata)
+>  		return -EBUSY;
+> 
 
-So some of them (on specific hardware, likely not as an architecture
-feature) do have clocksources that are reasonably highres (m68k, sh,
-hexagon). I have no sense of the cost to read them, however. I suspect
-syncing with the maintainers and seeing if get_cycles can be enabled on
-any of these arches, or if we should add an extra flag to the
-clocksource drivers to determine if the clocksource is fast enough for
-get_cycles/sched_clock usage.
+Applied it on extcon-linus branch.
 
-Otherwise yea, I'd avoid trying to read clocksources on every irq.
-
-thanks
--john
-
-
-
+Thanks.
+Chanwoo Choi
