@@ -1,31 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755032Ab3IKE5g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 00:57:36 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22176 "EHLO
+	id S1754993Ab3IKE5e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 00:57:34 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3257 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754127Ab3IKE4s (ORCPT
+	with ESMTP id S1753011Ab3IKE4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 00:56:48 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=sskSDooUz-gA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Dj1Wfo5368kA:10 a=eJfxgxciAAAA:8 a=ag1SF4gXAAAA:8 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=omOdbC7AAAAA:8 a=Z4Rwk6OoAAAA:8 a=6KJvHg_63jLTsBrnDioA:9 a=W39ifWXXhksA:10 a=1TSTQ8KKaH4A:10 a=dGJ0OcVc7YAA:10 a=LI9Vle30uBYA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Wed, 11 Sep 2013 00:56:47 -0400
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=K1To-U8uYu4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=P_mcBTHB8mkA:10 a=JDjsHSkAAAAA:8 a=Ikd4Dj_1AAAA:8 a=mJjC6ScEAAAA:8 a=VwQbUJbxAAAA:8 a=nbw4QO9JrEnshcIXSTQA:9 a=Hf6muOzgCGQA:10 a=B7-YBXcGuVcA:10 a=2NEUOfxDfW4A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042933.227500216@goodmis.org>
+Message-Id: <20130911042933.906336826@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:31:11 -0400
+Date: Wed, 11 Sep 2013 00:31:15 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Russ Anderson <rja@sgi.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [244/251] drivers/base/memory.c: fix show_mem_removable() to handle missing
- sections
+Cc: Mark Young <MYoung@nvidia.com>, Matt Craighead <mcraighead@nvidia.com>,
+        Bruce Fields <bfields@fieldses.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [248/251] SUNRPC: Fix memory corruption issue on 32-bit highmem systems
 References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0244-drivers-base-memory.c-fix-show_mem_removable-to-hand.patch
+Content-Disposition: inline; filename=0248-SUNRPC-Fix-memory-corruption-issue-on-32-bit-highmem.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -35,92 +31,53 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Russ Anderson <rja@sgi.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-[ Upstream commit 21ea9f5ace3a7317cc3ba1fbc749758021a83136 ]
+[ Upstream commit 347e2233b7667e336d9f671f1a52dfa3f0416e2c ]
 
-"cat /sys/devices/system/memory/memory*/removable" crashed the system.
+Some architectures, such as ARM-32 do not return the same base address
+when you call kmap_atomic() twice on the same page.
+This causes problems for the memmove() call in the XDR helper routine
+"_shift_data_right_pages()", since it defeats the detection of
+overlapping memory ranges, and has been seen to corrupt memory.
 
-The problem is that show_mem_removable() is passing a
-bad pfn to is_mem_section_removable(), which causes
+The fix is to distinguish between the case where we're doing an
+inter-page copy or not. In the former case of we know that the memory
+ranges cannot possibly overlap, so we can additionally micro-optimise
+by replacing memmove() with memcpy().
 
-    if (!node_online(page_to_nid(page)))
-
-to blow up.  Why is it passing in a bad pfn?
-
-The reason is that show_mem_removable() will loop sections_per_block
-times.  sections_per_block is 16, but mem->section_count is 8,
-indicating holes in this memory block.  Checking that the memory section
-is present before checking to see if the memory section is removable
-fixes the problem.
-
-   harp5-sys:~ # cat /sys/devices/system/memory/memory*/removable
-   0
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   1
-   BUG: unable to handle kernel paging request at ffffea00c3200000
-   IP: [<ffffffff81117ed1>] is_pageblock_removable_nolock+0x1/0x90
-   PGD 83ffd4067 PUD 37bdfce067 PMD 0
-   Oops: 0000 [#1] SMP
-   Modules linked in: autofs4 binfmt_misc rdma_ucm rdma_cm iw_cm ib_addr ib_srp scsi_transport_srp scsi_tgt ib_ipoib ib_cm ib_uverbs ib_umad iw_cxgb3 cxgb3 mdio mlx4_en mlx4_ib ib_sa mlx4_core ib_mthca ib_mad ib_core fuse nls_iso8859_1 nls_cp437 vfat fat joydev loop hid_generic usbhid hid hwperf(O) numatools(O) dm_mod iTCO_wdt ipv6 iTCO_vendor_support igb i2c_i801 ioatdma i2c_algo_bit ehci_pci pcspkr lpc_ich i2c_core ehci_hcd ptp sg mfd_core dca rtc_cmos pps_core mperf button xhci_hcd sd_mod crc_t10dif usbcore usb_common scsi_dh_emc scsi_dh_hp_sw scsi_dh_alua scsi_dh_rdac scsi_dh gru(O) xvma(O) xfs crc32c libcrc32c thermal sata_nv processor piix mptsas mptscsih scsi_transport_sas mptbase megaraid_sas fan thermal_sys hwmon ext3 jbd ata_piix ahci libahci libata scsi_mod
-   CPU: 4 PID: 5991 Comm: cat Tainted: G           O 3.11.0-rc5-rja-uv+ #10
-   Hardware name: SGI UV2000/ROMLEY, BIOS SGI UV 2000/3000 series BIOS 01/15/2013
-   task: ffff88081f034580 ti: ffff880820022000 task.ti: ffff880820022000
-   RIP: 0010:[<ffffffff81117ed1>]  [<ffffffff81117ed1>] is_pageblock_removable_nolock+0x1/0x90
-   RSP: 0018:ffff880820023df8  EFLAGS: 00010287
-   RAX: 0000000000040000 RBX: ffffea00c3200000 RCX: 0000000000000004
-   RDX: ffffea00c30b0000 RSI: 00000000001c0000 RDI: ffffea00c3200000
-   RBP: ffff880820023e38 R08: 0000000000000000 R09: 0000000000000001
-   R10: 0000000000000000 R11: 0000000000000001 R12: ffffea00c33c0000
-   R13: 0000160000000000 R14: 6db6db6db6db6db7 R15: 0000000000000001
-   FS:  00007ffff7fb2700(0000) GS:ffff88083fc80000(0000) knlGS:0000000000000000
-   CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-   CR2: ffffea00c3200000 CR3: 000000081b954000 CR4: 00000000000407e0
-   Call Trace:
-     show_mem_removable+0x41/0x70
-     dev_attr_show+0x2a/0x60
-     sysfs_read_file+0xf7/0x1c0
-     vfs_read+0xc8/0x130
-     SyS_read+0x5d/0xa0
-     system_call_fastpath+0x16/0x1b
-
-Signed-off-by: Russ Anderson <rja@sgi.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Mark Young <MYoung@nvidia.com>
+Reported-by: Matt Craighead <mcraighead@nvidia.com>
+Cc: Bruce Fields <bfields@fieldses.org>
+Cc: stable@vger.kernel.org
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Tested-by: Matt Craighead <mcraighead@nvidia.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/base/memory.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/sunrpc/xdr.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-index 7dda4f7..d63a06b 100644
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -154,6 +154,8 @@ static ssize_t show_mem_removable(struct device *dev,
- 		container_of(dev, struct memory_block, dev);
+diff --git a/net/sunrpc/xdr.c b/net/sunrpc/xdr.c
+index 0afba1b..7e99acd 100644
+--- a/net/sunrpc/xdr.c
++++ b/net/sunrpc/xdr.c
+@@ -207,10 +207,13 @@ _shift_data_right_pages(struct page **pages, size_t pgto_base,
+ 		pgfrom_base -= copy;
  
- 	for (i = 0; i < sections_per_block; i++) {
-+		if (!present_section_nr(mem->start_section_nr + i))
-+			continue;
- 		pfn = section_nr_to_pfn(mem->start_section_nr + i);
- 		ret &= is_mem_section_removable(pfn, PAGES_PER_SECTION);
- 	}
+ 		vto = kmap_atomic(*pgto);
+-		vfrom = kmap_atomic(*pgfrom);
+-		memmove(vto + pgto_base, vfrom + pgfrom_base, copy);
++		if (*pgto != *pgfrom) {
++			vfrom = kmap_atomic(*pgfrom);
++			memcpy(vto + pgto_base, vfrom + pgfrom_base, copy);
++			kunmap_atomic(vfrom);
++		} else
++			memmove(vto + pgto_base, vto + pgfrom_base, copy);
+ 		flush_dcache_page(*pgto);
+-		kunmap_atomic(vfrom);
+ 		kunmap_atomic(vto);
+ 
+ 	} while ((len -= copy) != 0);
 -- 
 1.7.10.4
 
