@@ -1,93 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754639Ab3IKO3O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 10:29:14 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:58545 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754594Ab3IKO3K (ORCPT
+	id S1754551Ab3IKO3G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 10:29:06 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:29137 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553Ab3IKO3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 10:29:10 -0400
-Date: Wed, 11 Sep 2013 10:29:09 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Lucas De Marchi <lucas.de.marchi@gmail.com>
-cc: Tom Gundersen <teg@jklm.no>, <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-modules@vger.kernel.org" <linux-modules@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] usb: ohci/uhci - add soft dependencies on ehci_hcd
-In-Reply-To: <CAKi4VAJeXoBu=kr8nhMJFneNwGFP8TFiDNNzdwQC4imyefe_jQ@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1309111015000.1352-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 11 Sep 2013 10:29:04 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+Cc: Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: [PATCH 1/2] seqlock: Add a new blocking reader type
+Date: Wed, 11 Sep 2013 10:28:26 -0400
+Message-Id: <1378909707-3347-1-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
+To: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Sep 2013, Lucas De Marchi wrote:
+The sequence lock (seqlock) was originally designed for the cases
+where the readers do not need to block the writers by making the
+readers retry the read operation when the data change.
 
-> >>> > The ordering is more of a recommendation than a necessity.  Systems
-> >>> > should work oksy if the modules are loaded in the wrong order.
-> >>> >
-> >>> > The only issue if the drivers are loaded in the wrong order is that
-> >>> > full- and low-speed devices will end up being detected and enumerated
-> >>> > twice, with a disconnection in between.  This can result in
-> >>> > disconcerting messages appearing in the system log.
-> >>> >
-> >>> > In theory, it is possible for a problem to arise.  For example, suppose
-> >>> > a full-speed flash drive is plugged in when the system starts up.
-> >>> > When uhci-hcd or ohci-hcd gets loaded, the drive will be detected and
-> >>> > it may even be mounted.  Then when ehci-hcd loads, the drive will get
-> >>> > disconnected and reconnected.  Any open file references to the original
-> >>> > mount will be orphaned.
-> 
-> Then IMO it should not only be advised to have this dependency, but
-> also require it.
+Since then, the use cases have been expanded to include situations
+where a thread does not need to change the data (effectively a reader)
+at all but have to take the writer lock because it can't tolerate
+changes to the protected structure. Some examples are the d_path()
+function and the getcwd() syscall in fs/dcache.c where the functions
+take the writer lock on rename_lock even though they don't need
+to change anything in the protected data structure at all. This is
+inefficient as a reader is now blocking other non-blocking readers
+by pretending to be a writer.
 
-Requiring the ordering won't fix all the possible problems.  For
-example, ehci-pci might be compiled into the kernel while ohci-pci is
-built as a module (although this probably could be prevented by
-tweaking the Kconfig file).
+This patch tries to eliminate this inefficiency by introducing a new
+type of blocking reader to the seqlock locking mechanism. This new
+blocking reader will not block other non-blocking readers, but will
+block other blocking readers and writers.
 
-> >> So this means that before installing ohci-hcd, modprobe would attempt
-> >> to install ehci-hcd?  And if the attempt failed, it would go ahead and
-> >> load ohci-hcd anyway?
-> >
-> > Exactly.
-> 
-> Not really. If we try to load the module, but then fail we fail the
-> operation altogether. Whereas if the module simply doesn't exist, then
-> we carry on. In reality what we do is to assume the indexes and
-> softdeps in configuration are correct)
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+---
+ include/linux/seqlock.h |   65 +++++++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 60 insertions(+), 5 deletions(-)
 
-What if somebody really does want to load ohci-pci without loading 
-ehci-pci?  That is a perfectly valid thing to do (and I often want to 
-do it for testing).
-
-It sounds like the only way to accomplish this would be to load both 
-and then unload ehci-pci.  Yes?  Or would that unload ohci-pci as well?
-
-> >> What about during unloading?  Would this mean that rmmod ohci-hcd would
-> >> automatically cause ehci-hcd to be unloaded also?  Or would unloading
-> >> ehci-hcd cause ohci-hcd to be unloaded?
-> >
-> > No, unloading does not care about dependencies.
-> 
-> modprobe -r will remove then as well, in the opposite order, i.e. post
-> softdep, module, pre softdep.  However this applies only to modprobe,
-> not to the related function in libkmod since it would be weird to
-> other programs using this library function.
-
-Aside from testing, people hardly ever unload drivers.  So this is a 
-relatively minor concern.
-
-> Try playing with this in /etc/modprobe.d/bla.conf (and replace echo
-> with whatever unknown command to test a failure scenario):
-> install bla echo install bla
-> remove bla echo remove bla
-> softdep sr_mod pre: bla
-
-Good recommendation.
-
-Alan Stern
+diff --git a/include/linux/seqlock.h b/include/linux/seqlock.h
+index 1829905..26be0d9 100644
+--- a/include/linux/seqlock.h
++++ b/include/linux/seqlock.h
+@@ -3,15 +3,18 @@
+ /*
+  * Reader/writer consistent mechanism without starving writers. This type of
+  * lock for data where the reader wants a consistent set of information
+- * and is willing to retry if the information changes.  Readers never
+- * block but they may have to retry if a writer is in
+- * progress. Writers do not wait for readers. 
++ * and is willing to retry if the information changes. There are two types
++ * of readers:
++ * 1. Non-blocking readers which never block but they may have to retry if
++ *    a writer is in progress. Writers do not wait for non-blocking readers.
++ * 2. Blocking readers which will block if a writer is in progress. A
++ *    blocking reader in progress will also block a writer.
+  *
+- * This is not as cache friendly as brlock. Also, this will not work
++ * This is not as cache friendly as brlock. Also, this may not work well
+  * for data that contains pointers, because any writer could
+  * invalidate a pointer that a reader was following.
+  *
+- * Expected reader usage:
++ * Expected non-blocking reader usage:
+  * 	do {
+  *	    seq = read_seqbegin(&foo);
+  * 	...
+@@ -268,4 +271,56 @@ write_sequnlock_irqrestore(seqlock_t *sl, unsigned long flags)
+ 	spin_unlock_irqrestore(&sl->lock, flags);
+ }
+ 
++/*
++ * The blocking reader lock out other writers, but doesn't update the count.
++ * Acts like a normal spin_lock/unlock.
++ * Don't need preempt_disable() because that is in the spin_lock already.
++ */
++static inline void read_seqlock(seqlock_t *sl)
++{
++	spin_lock(&sl->lock);
++}
++
++static inline void read_sequnlock(seqlock_t *sl)
++{
++	spin_unlock(&sl->lock);
++}
++
++static inline void read_seqlock_bh(seqlock_t *sl)
++{
++	spin_lock_bh(&sl->lock);
++}
++
++static inline void read_sequnlock_bh(seqlock_t *sl)
++{
++	spin_unlock_bh(&sl->lock);
++}
++
++static inline void read_seqlock_irq(seqlock_t *sl)
++{
++	spin_lock_irq(&sl->lock);
++}
++
++static inline void read_sequnlock_irq(seqlock_t *sl)
++{
++	spin_unlock_irq(&sl->lock);
++}
++
++static inline unsigned long __read_seqlock_irqsave(seqlock_t *sl)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&sl->lock, flags);
++	return flags;
++}
++
++#define read_seqlock_irqsave(lock, flags)				\
++	do { flags = __read_seqlock_irqsave(lock); } while (0)
++
++static inline void
++read_sequnlock_irqrestore(seqlock_t *sl, unsigned long flags)
++{
++	spin_unlock_irqrestore(&sl->lock, flags);
++}
++
+ #endif /* __LINUX_SEQLOCK_H */
+-- 
+1.7.1
 
