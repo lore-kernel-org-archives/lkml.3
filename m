@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756603Ab3IKRxL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 13:53:11 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:41518 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755078Ab3IKRxJ (ORCPT
+	id S1756476Ab3IKRyT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 13:54:19 -0400
+Received: from snt0-omc1-s8.snt0.hotmail.com ([65.55.90.19]:5297 "EHLO
+	snt0-omc1-s8.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755363Ab3IKRyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 13:53:09 -0400
-Message-ID: <5230AE02.20101@linaro.org>
-Date: Wed, 11 Sep 2013 10:53:06 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Wed, 11 Sep 2013 13:54:18 -0400
+X-Greylist: delayed 369 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Sep 2013 13:54:18 EDT
+X-TMN: [InNlMWYxf34uwc1Lx+OUHiwC3GnbzeLD]
+X-Originating-Email: [shiro.itou@outlook.com]
+Message-ID: <SNT149-W781B1B34AEC0458F8ED9B39A390@phx.gbl>
+From: =?utf-8?B?U2hpcm8gSXRvdSDkvIrmnbE=?= <shiro.itou@outlook.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Error message from kernel
+Date: Wed, 11 Sep 2013 10:47:49 -0700
+Importance: Normal
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org
-Subject: Re: [RFC PATCH] timekeeping: introduce timekeeping_is_busy()
-References: <20130911150853.GA19800@Krystal> <52309D13.3020305@linaro.org> <20130911174902.GA23532@Krystal>
-In-Reply-To: <20130911174902.GA23532@Krystal>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 11 Sep 2013 17:47:49.0209 (UTC) FILETIME=[07E83490:01CEAF17]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8BHsSKF006826
 
-On 09/11/2013 10:49 AM, Mathieu Desnoyers wrote:
-> Hi John,
->
-> * John Stultz (john.stultz@linaro.org) wrote:
->> On 09/11/2013 08:08 AM, Mathieu Desnoyers wrote:
->>> Starting from commit 06c017fdd4dc48451a29ac37fc1db4a3f86b7f40
->>> "timekeeping: Hold timekeepering locks in do_adjtimex and hardpps"
->>> (3.10 kernels), the xtime write seqlock is held across calls to
->>> __do_adjtimex(), which includes a call to notify_cmos_timer(), and hence
->>> schedule_delayed_work().
->>>
->>> This introduces a side-effect for a set of tracepoints, including mainly
->>> the workqueue tracepoints: a tracer hooking on those tracepoints and
->>> reading current time with ktime_get() will cause hard system LOCKUP such
->>> as:
->> Oh bummer. I had just worked this issue out the other day:
->>     https://lkml.org/lkml/2013/9/9/476
->>
->> Apparently it was a schroedinbug of sorts. My apologies for time you
->> spent chasing this down.
-> No worries. As soon as I've been able to reproduce it on my test box
-> (with serial port), the NMI watchdog had a pretty reasonable explanation
-> for the issue.
->
->> My plan is to pull the notify_cmos_timer call to outside of the
->> timekeeper locking (see the patch at the very end of the mail in the
->> above link), as well as try to add lockdep support to seqcount/seqlocks
->> so we can catch these sorts of issues more easily.
-> I just tried your patch, and it indeed seems to fix the lockup I've been
-> experiencing with lttng-modules. Do you plan pushing this fix into
-> master, and submitting it for inclusion into stable 3.10 and stable 3.11 ?
-Yea. I was waiting on feedback from the reporter that the fix resolves
-the issue but if it fixes it for you I'll go ahead and send it out today.
+Hi All,
 
-thanks
--john
+I try to do pcie hotplug testing. I create ext4 file system on disk and mount, then I do surprise hotplug. When I insert disk I see below error messagee. I am new to Linux kernel, Please let me know any clue for below error. Thank you for your help.
+
+[I convert error from image to text, error message not perfect. All function names correct.]
 
 
+[Firmware Bug]: the BIOS has corrupted hw-PMU resources (MSR 186 is 53003c)
+[<ffffffff8111c495>] ? mempool_alloc_s1ab+0x15/0x20
+[<ffffffff8125d02d>] submit_bio+0x8d/0x120
+[<ffffffff1311b4c36>] submit_bh+exf6/x150
+[<fffiffff811173434>] block_read_full_page+0x274/0x3d0
+[tdfffffiffilibbZ1101] blkdev_get_block+.8bdiax713
+[laffilfff8113b47e>]? __inc_zone_page_state+ENZe/Eix39
+[lialfilibff13112fc361>] ? __lru_cache_add+8x40/8x99
+[Riffffrffelibc438>]blkdev_readpage+9x113/13x28Â 
+[<Iffrifff13112e134a>]__do_page_cache_readahead+ex28a/8x218
+[<tdffff1118112e9f1>] force_page_cache_readahead.13x71/exaeÂ 
+[<1ff1ffif13112ef13] page_cache_sync_readahead +ex113.11x58
+[<ffffffff13222211 ] generic_file_aio_readilx558/9x798
+[<ffffffff1111893>] blkdev_aio_read+8x53/8xce
+[<lffffff81144311>] ?handle_mm_fault+0x23a/0x310
+[<ffffffff811213123>] do_sync_read
+[<ffffffff811212333>] ? autoremove_wake_function
+[<ffffffff811212333>] ? cp_new_stat
+[<ffffffff8112235423>] ? selinux_file_permission
+[<ffffffff8112134534>]? security_file_permission
+[<ffffffff8112235467>] vfs_read
+[<ffffffff8112436423>] sys_read
+[<ffffffff8112546788>] ? do_device_not_available
+[<ffffffff8112123566>] system_call_fastpath
 
+
+Thank You,
+Shiro 		 	   		  ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
