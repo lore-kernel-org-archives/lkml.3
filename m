@@ -1,94 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756254Ab3IKTTP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 15:19:15 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23628 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751440Ab3IKTTM (ORCPT
+	id S1756919Ab3IKTTe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 15:19:34 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34996 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756659Ab3IKTTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 15:19:12 -0400
-X-Authority-Analysis: v=2.0 cv=R/aB6KtX c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=wRe-vSF1Ob0A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=kSsn7R9otuIA:10 a=DMjpEOQyGBSUNNDS83EA:9 a=CjuIK1q_8ugA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Wed, 11 Sep 2013 15:19:10 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mario Kleiner <mario.kleiner@tuebingen.mpg.de>
-Cc: Peter Hurley <peter@hurleysoftware.com>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Clark Williams <williams@redhat.com>, Dave Airlie <airlied@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: BUG: sleeping function called from invalid context on
- 3.10.10-rt7
-Message-ID: <20130911151910.3f415c3b@gandalf.local.home>
-In-Reply-To: <5230BF5E.9000207@tuebingen.mpg.de>
-References: <20130911102809.GA31663@uudg.org>
-	<20130911092623.42efd930@gandalf.local.home>
-	<5230895B.5070400@hurleysoftware.com>
-	<5230B673.6090800@tuebingen.mpg.de>
-	<20130911143557.14c1fe6a@gandalf.local.home>
-	<5230BF5E.9000207@tuebingen.mpg.de>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 11 Sep 2013 15:19:32 -0400
+Message-ID: <5230C240.8050602@wwwdotorg.org>
+Date: Wed, 11 Sep 2013 13:19:28 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Bill Huang <bilhuang@nvidia.com>
+CC: rjw@sisk.pl, viresh.kumar@linaro.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH 1/2] cpufreq: tegra: Remove not used header and clean
+ up codes
+References: <1378898355-31290-1-git-send-email-bilhuang@nvidia.com> <1378898355-31290-2-git-send-email-bilhuang@nvidia.com>
+In-Reply-To: <1378898355-31290-2-git-send-email-bilhuang@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Sep 2013 21:07:10 +0200
-Mario Kleiner <mario.kleiner@tuebingen.mpg.de> wrote:
+On 09/11/2013 05:19 AM, Bill Huang wrote:
+> Remove inclustion of the not needed header files and remove the logic
+> to check the CPU ID to not exceeding the maximum supported CPUs.
 
-> 
-> 
-> On 11.09.13 20:35, Steven Rostedt wrote:
-> > On Wed, 11 Sep 2013 20:29:07 +0200
-> > Mario Kleiner <mario.kleiner@tuebingen.mpg.de> wrote:
-> >
-> >> That said, maybe preempt_disable is no longer the optimal choice there
-> >> and there's some better way to achieve good protection against
-> >> interruptions of that bit of code? My knowledge here is a bit rusty, and
-> >> the intel kms drivers and rt stuff has changed quite a bit.
-> >
-> > If you set your code to a higher priority than other tasks (and
-> > interrupts) than it wont be preempted there. Unless of course it blocks
-> > on a lock, but even then, priority inheritance will take place and it
-> > still should be rather quick. (unless the holder of the lock is doing
-> > that strange polling).
-> >
-> > -- Steve
-> >
-> 
-> Right, on a rt kernel. But that creates the problem of not very computer 
-> savvy users (psychologists and biologists mostly) somehow having to 
-> choose proper priorities for gpu interrupt threads and for the 
-> x-server/wayland/..., and not much protection on a non-rt kernel?
+> diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra-cpufreq.c
 
-IIUC, the preempt_disable() is only for -rt, the non-rt case already
-disables preemption with the spin_locks called before it.
+> - * Copyright (C) 2010 Google, Inc.
+> + * Copyright (c) 2013, NVIDIA Corporation.
+> + * Copyright (C) 2010-2013 Google, Inc.
 
-> 
-> preempt_disable() a few years ago looked like a good "plug and play" 
-> default solution, because the ->get_crtc_scanoutpos() function was 
-> supposed to have a very low and bounded execution time. At the time we 
-> wrote the patches for intel/radeon/nouveau, that was the case. Typical 
-> execution time (= preempt off time) was like 1-4 usecs, even on very low 
-> end hardware.
-> 
-> Seems that at least intel's kms driver does a lot of things now, which 
-> can sleep and spin inside that section? I tried to follow the posted 
-> stack trace, but got lost somewhere around the i915_read32 code and 
-> power management stuff...
+This is such a trivial patch, I don't think it's appropriate to add an
+NVIDIA (c) notice. It may well be appropriate in patch 2/2.
 
-Note, the sleeps only happen on -rt, and not in mainline.
-
-If one is going to use -rt for real-time work, it requires a bit more
-knowledge of the system. The problem with RT in general, is that it's
-hard, and anyone telling you they have a generic RT system that
-requires no computer savvyness can also be selling you a bridge over
-the east river.
-
--- Steve
+I assume that Google didn't write this patch, so why adjust that (c) notice?
