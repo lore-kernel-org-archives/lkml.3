@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755772Ab3IKQKW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 12:10:22 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:42486 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756580Ab3IKQKT (ORCPT
+	id S1756653Ab3IKQLE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 12:11:04 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:33953 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755712Ab3IKQKi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 12:10:19 -0400
+	Wed, 11 Sep 2013 12:10:38 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
-        Paul Mundt <lethal@linux-sh.org>, Shaohua Li <shli@kernel.org>
+        Chris Metcalf <cmetcalf@tilera.com>, Shaohua Li <shli@kernel.org>
 Cc: liuj97@gmail.com, Jiang Liu <jiang.liu@huawei.com>,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <trivial@kernel.org>,
         Wang YanQing <udknight@gmail.com>, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org
-Subject: [RFC PATCH v2 17/25] smp, sh: kill SMP single function call interrupt
-Date: Thu, 12 Sep 2013 00:07:21 +0800
-Message-Id: <1378915649-16395-18-git-send-email-liuj97@gmail.com>
+Subject: [RFC PATCH v2 20/25] smp, tile: kill SMP single function call interrupt
+Date: Thu, 12 Sep 2013 00:07:24 +0800
+Message-Id: <1378915649-16395-21-git-send-email-liuj97@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1378915649-16395-1-git-send-email-liuj97@gmail.com>
 References: <1378915649-16395-1-git-send-email-liuj97@gmail.com>
@@ -36,44 +36,56 @@ call interfaces, so kill the redundant single function call interrupt.
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 Cc: Jiang Liu <liuj97@gmail.com>
 ---
- arch/sh/include/asm/smp.h | 1 -
- arch/sh/kernel/smp.c      | 5 +----
- 2 files changed, 1 insertion(+), 5 deletions(-)
+ arch/tile/include/asm/smp.h | 7 +++----
+ arch/tile/kernel/smp.c      | 6 +-----
+ 2 files changed, 4 insertions(+), 9 deletions(-)
 
-diff --git a/arch/sh/include/asm/smp.h b/arch/sh/include/asm/smp.h
-index 78b0d0f4..93ce87b 100644
---- a/arch/sh/include/asm/smp.h
-+++ b/arch/sh/include/asm/smp.h
-@@ -25,7 +25,6 @@ extern int __cpu_logical_map[NR_CPUS];
- enum {
- 	SMP_MSG_FUNCTION,
- 	SMP_MSG_RESCHEDULE,
--	SMP_MSG_FUNCTION_SINGLE,
- 	SMP_MSG_TIMER,
+diff --git a/arch/tile/include/asm/smp.h b/arch/tile/include/asm/smp.h
+index 1aa759a..4b39184 100644
+--- a/arch/tile/include/asm/smp.h
++++ b/arch/tile/include/asm/smp.h
+@@ -67,19 +67,18 @@ static inline int xy_to_cpu(int x, int y)
+ /* Hypervisor message tags sent via the tile send_IPI*() routines. */
+ #define MSG_TAG_START_CPU		1
+ #define MSG_TAG_STOP_CPU		2
+-#define MSG_TAG_CALL_FUNCTION_MANY	3
+-#define MSG_TAG_CALL_FUNCTION_SINGLE	4
++#define MSG_TAG_CALL_FUNCTION		3
  
- 	SMP_MSG_NR,	/* must be last */
-diff --git a/arch/sh/kernel/smp.c b/arch/sh/kernel/smp.c
-index 86a7936..c944d5d 100644
---- a/arch/sh/kernel/smp.c
-+++ b/arch/sh/kernel/smp.c
-@@ -282,7 +282,7 @@ void arch_send_call_function_ipi_mask(const struct cpumask *mask)
- 
- void arch_send_call_function_single_ipi(int cpu)
+ /* Hook for the generic smp_call_function_many() routine. */
+ static inline void arch_send_call_function_ipi_mask(struct cpumask *mask)
  {
--	mp_ops->send_ipi(cpu, SMP_MSG_FUNCTION_SINGLE);
-+	mp_ops->send_ipi(cpu, SMP_MSG_FUNCTION);
+-	send_IPI_many(mask, MSG_TAG_CALL_FUNCTION_MANY);
++	send_IPI_many(mask, MSG_TAG_CALL_FUNCTION);
  }
  
- void smp_timer_broadcast(const struct cpumask *mask)
-@@ -309,9 +309,6 @@ void smp_message_recv(unsigned int msg)
- 	case SMP_MSG_RESCHEDULE:
- 		scheduler_ipi();
+ /* Hook for the generic smp_call_function_single() routine. */
+ static inline void arch_send_call_function_single_ipi(int cpu)
+ {
+-	send_IPI_single(cpu, MSG_TAG_CALL_FUNCTION_SINGLE);
++	send_IPI_single(cpu, MSG_TAG_CALL_FUNCTION);
+ }
+ 
+ /* Print out the boot string describing which cpus were disabled. */
+diff --git a/arch/tile/kernel/smp.c b/arch/tile/kernel/smp.c
+index cbc73a8..44d7132 100644
+--- a/arch/tile/kernel/smp.c
++++ b/arch/tile/kernel/smp.c
+@@ -134,14 +134,10 @@ void evaluate_message(int tag)
+ 		smp_stop_cpu_interrupt();
  		break;
--	case SMP_MSG_FUNCTION_SINGLE:
+ 
+-	case MSG_TAG_CALL_FUNCTION_MANY: /* Call function on cpumask */
++	case MSG_TAG_CALL_FUNCTION: /* Call function on cpumask */
+ 		generic_smp_call_function_interrupt();
+ 		break;
+ 
+-	case MSG_TAG_CALL_FUNCTION_SINGLE: /* Call function on one other CPU */
 -		generic_smp_call_function_single_interrupt();
 -		break;
- 	case SMP_MSG_TIMER:
- 		ipi_timer();
+-
+ 	default:
+ 		panic("Unknown IPI message tag %d", tag);
  		break;
 -- 
 1.8.1.2
