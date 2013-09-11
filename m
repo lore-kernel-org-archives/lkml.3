@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751505Ab3IKHBE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 03:01:04 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:34853 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973Ab3IKHBC (ORCPT
+	id S1751437Ab3IKHGZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 03:06:25 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:39909 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230Ab3IKHGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 03:01:02 -0400
-Date: Wed, 11 Sep 2013 08:00:58 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Matthias Kaehlcke <matthias.list@kaehlcke.net>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mfd: ti_am335x_tscadc: Fix idle timeout value
-Message-ID: <20130911070058.GC11227@lee--X1>
-References: <20130910210218.GB30481@raspi>
+	Wed, 11 Sep 2013 03:06:23 -0400
+Message-ID: <52301655.6080801@ahsoftware.de>
+Date: Wed, 11 Sep 2013 09:05:57 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130910210218.GB30481@raspi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: joelf@ti.com
+CC: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
+Subject: Re: [PATCH] RFC: interrupt consistency check for OF GPIO IRQs
+References: <1375101368-17645-1-git-send-email-linus.walleij@linaro.org> <CACxGe6uNJNMdZ1HYGgCtLM2t2TWGCR6btjOHVmP=vDXXvvFfRg@mail.gmail.com> <CACRpkdYjJL6FZwEbB7XLnb9QtjB=3LeE9Ny6KQ4PkM3zpdNqqg@mail.gmail.com> <51F8CC35.1070704@collabora.co.uk> <522EC392.8070002@ti.com> <522F1BF0.8080608@collabora.co.uk> <522F3408.6050608@ti.com>
+In-Reply-To: <522F3408.6050608@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Sep 2013, Matthias Kaehlcke wrote:
+Am 10.09.2013 17:00, schrieb Joel Fernandes:
 
-> The old timeout value was based on the assumption that the minimum values are
-> used for the open and sample delay and no averaging is done. In fact the ADC
-> and touchscreen driver both use an open delay of 152 cycles and averaging over
-> 16 samples. This patch adjusts the timeout value accordingly
-> 
-> Signed-off-by: Matthias Kaehlcke <matthias@kaehlcke.net>
-> ---
->  include/linux/mfd/ti_am335x_tscadc.h | 19 ++++++++++++-------
->  1 file changed, 12 insertions(+), 7 deletions(-)
-> 
-> diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
-> index db1791b..9e6a775 100644
-> --- a/include/linux/mfd/ti_am335x_tscadc.h
-> +++ b/include/linux/mfd/ti_am335x_tscadc.h
-> @@ -126,13 +126,18 @@
->  #define TOTAL_CHANNELS		8
->  
->  /*
-> -* ADC runs at 3MHz, and it takes
-> -* 15 cycles to latch one data output.
-> -* Hence the idle time for ADC to
-> -* process one sample data would be
-> -* around 5 micro seconds.
-> -*/
-> -#define IDLE_TIMEOUT 5 /* microsec */
-> + * time in us for processing a single channel, calculated as follows:
-> + *
-> + * num cycles = open delay + (sample delay + conv time) * averaging
-> + *
-> + * num cycles: 152 + (1 + 13) * 16 = 376
-> + *
-> + * clock frequency: 26MHz / 8 = 3.25MHz
-> + * clock period: 1 / 3.25MHz = 308ns
-> + *
-> + * processing time: 376 * 308ns = 116us
-> + */
-> +#define IDLE_TIMEOUT 116 /* microsec */
+> I think your initial patch is much better than fixing up DT but then I may be
+> missing other problems with your patch that Linus's patch addresses.
 
-Nice, clear explanation. I like it.
+The initial patch had the problem that it not only did introduce 
+irq-mappings for only those gpios which are marked as IRQs, but it 
+requested those gpios too and preconfigured them
 
-Patch applied, thanks.
+And that breaks every driver which uses gpios for IRQs.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+To summarize what happens if a driver uses a gpio as irq:
+
+gpio_request() // This works only if the gpio was not requested before
+gpio_direction_input()
+gpio_to_irq() // This needs an irq-mapping
+request_threaded_irq()
+
+So I would suggest multiple steps to change that:
+
+1. Create a mapping for every gpio found in DT (or all gpios if no DT is 
+used). I think that is what Linus patch does (sorry, I haven't really 
+followed this thread and didn't look in deep at the patch).
+
+2. Implement gpio_request_for_irq()
+This would just be a small macro for gpio_request(); gpio_direction_input()
+
+3. Change all drivers which do use gpio_to_irq() to use 
+gpio_request_for_irq() instead of gpio_request() and 
+gpio_direction_input(). This will end up with a big series of more or 
+less trivial patches (I count 677 occurences of gpio_to_irq) and might 
+be splitted.
+
+4. request gpios and set them to input when a gpio is marked as an IRQ 
+in the DT and DT is used. Change gpio_rquest_for_irq() to a NOP if DT is 
+used or leave it as it is for the none-dt case.
+
+
+Regards,
+
+Alexander Holler
+
