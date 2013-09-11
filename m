@@ -1,34 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181Ab3IKMda (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 08:33:30 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42309 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752552Ab3IKMd3 (ORCPT
+	id S1752896Ab3IKMhp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 08:37:45 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28870 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751630Ab3IKMhn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 08:33:29 -0400
-Date: Wed, 11 Sep 2013 13:33:00 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: ARMv8-A Architecture Reference Manual available
-Message-ID: <20130911123300.GE26777@darko.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 11 Sep 2013 08:37:43 -0400
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=BNlKMqpuY8sA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=g-RjETWgj_YA:10 a=pGLkceISAAAA:8 a=zd2uoN0lAAAA:8 a=VwQbUJbxAAAA:8 a=XT-J-ArxWfNYqGj5VMUA:9 a=CjuIK1q_8ugA:10 a=MSl-tDqOz04A:10 a=wu_e27o_rKQA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Wed, 11 Sep 2013 08:37:41 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: Re: [117/251] radeon kms: do not flush uninitialized hotplug work
+Message-ID: <20130911083741.6b2783b2@gandalf.local.home>
+In-Reply-To: <20130911090648.GA2271@swordfish.minsk.epam.com>
+References: <20130911042707.738353451@goodmis.org>
+	<20130911042911.752089217@goodmis.org>
+	<20130911090648.GA2271@swordfish.minsk.epam.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ARMv8-A Architecture Reference Manual is now publicly available:
+On Wed, 11 Sep 2013 12:06:49 +0300
+Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
 
-http://infocenter.arm.com/help/topic/com.arm.doc.ddi0487a/index.html
+> On (09/11/13 00:29), Steven Rostedt wrote:
+> > 3.6.11.9-rc1 stable review patch.
+> > If anyone has any objections, please let me know.
+> >
+> 
+> Hello,
+> Steven, this patch makes r100_irq_process() unhappy and there
+> is additional fix on top of this patch.
+> upstream 27c505ca84e164ec66ad55dcf3f5befaac83f10a
 
-Please note that free registration is required to be able to download
-(as per the previous ARM ARM and other documentation on ARM infocenter).
+Thanks!
 
-It contains both AArch32 and AArch64 for ARMv8 in a "concise" 5158 pages
-pdf. Enjoy ;)
+> 
+> I'll prepare a proper patch for stable.
+> 
 
+I took a crack at it. How's this look?
+
+-- Steve
+
+>From 39a678bf28d5c3e8266bd88ba1e831818102787e Mon Sep 17 00:00:00 2001
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Date: Thu, 29 Aug 2013 12:29:35 +0300
+Subject: [PATCH] radeon kms: fix uninitialised hotplug work usage in
+ r100_irq_process()
+
+[ Upstream commit 27c505ca84e164ec66ad55dcf3f5befaac83f10a ]
+
+Commit a01c34f72e7cd2624570818f579b5ab464f93de2 (radeon kms: do not
+flush uninitialized hotplug work) moved work initialisation phase to
+the last step of radeon_irq_kms_init(). Meelis Roos reported that this
+causes problems on his machine because drm_irq_install() uses hotplug
+work on r100.
+
+hotplug work flushed in radeon_irq_kms_fini(), with two possible cases:
+-- radeon_irq_kms_fini() call after successful radeon_irq_kms_init()
+-- radeon_irq_kms_fini() call after unsuccessful (or not called at all)
+   radeon_irq_kms_init()
+
+The latter one causes flush work on uninitialised hotplug work. Move
+work initialisation before drm_irq_install(), but keep existing agreement
+to flush hotplug work in radeon_irq_kms_fini() only for `irq.installed'
+(successful radeon_irq_kms_init()) case.
+
+WARNING: CPU: 0 PID: 243 at kernel/workqueue.c:1378 __queue_work+0x132/0x16d()
+Call Trace:
+[<c12319b3>] ? dump_stack+0xa/0x13
+[<c1022600>] ? warn_slowpath_common+0x75/0x8a
+[<c1031010>] ? __queue_work+0x132/0x16d
+[<c1031010>] ? __queue_work+0x132/0x16d
+[<c102269e>] ? warn_slowpath_null+0x1b/0x1f
+[<c1031010>] ? __queue_work+0x132/0x16d
+[<c103107b>] ? queue_work_on+0x30/0x40
+[<f8aed3f3>] ? r100_irq_process+0x16d/0x1e6 [radeon]
+[<f8ae77cf>] ? radeon_driver_irq_preinstall_kms+0xc2/0xc5 [radeon]
+[<f8974d77>] ? drm_irq_install+0xb2/0x1ac [drm]
+[<f897604d>] ? drm_vblank_init+0x196/0x1d2 [drm]
+[<f8ae78d3>] ? radeon_irq_kms_init+0x33/0xc6 [radeon]
+[<f8aef35a>] ? r100_startup+0x1a3/0x1d6 [radeon]
+[<f8ad77c8>] ? radeon_ttm_init+0x26e/0x287 [radeon]
+[<f8aef752>] ? r100_init+0x2b3/0x309 [radeon]
+[<c118082e>] ? vga_client_register+0x39/0x40
+[<f8ac535f>] ? radeon_device_init+0x54b/0x61b [radeon]
+[<f8ac40fd>] ? cail_mc_write+0x13/0x13 [radeon]
+[<f8ac6864>] ? radeon_driver_load_kms+0x82/0xda [radeon]
+[<f8978bbd>] ? drm_get_pci_dev+0x136/0x22d [drm]
+[<f8ac409b>] ? radeon_pci_probe+0x6c/0x86 [radeon]
+[<c112acf6>] ? pci_device_probe+0x4c/0x83
+[<c11846c7>] ? driver_probe_device+0x80/0x184
+[<c112a848>] ? pci_match_id+0x18/0x36
+[<c1184837>] ? __driver_attach+0x44/0x5f
+[<c11833f4>] ? bus_for_each_dev+0x50/0x5a
+[<c118433e>] ? driver_attach+0x14/0x16
+[<c11847f3>] ? __device_attach+0x28/0x28
+[<c1184045>] ? bus_add_driver+0xd6/0x1bf
+[<c1184c22>] ? driver_register+0x78/0xcf
+[<f8ba8000>] ? 0xf8ba7fff
+[<c10003bf>] ? do_one_initcall+0x8b/0x121
+[<c101e668>] ? change_page_attr_clear+0x2e/0x33
+[<f8ba8000>] ? 0xf8ba7fff
+[<c101e689>] ? set_memory_ro+0x1c/0x20
+[<c104de94>] ? set_page_attributes+0x11/0x12
+[<c104f6e1>] ? load_module+0x12fa/0x17e8
+[<c107483b>] ? map_vm_area+0x22/0x31
+[<c104fc36>] ? SyS_init_module+0x67/0x7d
+[<c1234245>] ? sysenter_do_call+0x12/0x26
+
+Reported-by: Meelis Roos <mroos@linux.ee>
+Tested-by: Meelis Roos <mroos@linux.ee>
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ drivers/gpu/drm/radeon/radeon_irq_kms.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/gpu/drm/radeon/radeon_irq_kms.c b/drivers/gpu/drm/radeon/radeon_irq_kms.c
+index 4bc6be5..03acf67 100644
+--- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
++++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
+@@ -258,16 +258,18 @@ int radeon_irq_kms_init(struct radeon_device *rdev)
+ 			dev_info(rdev->dev, "radeon: using MSI.\n");
+ 		}
+ 	}
++
++	INIT_WORK(&rdev->hotplug_work, radeon_hotplug_work_func);
++	INIT_WORK(&rdev->audio_work, r600_audio_update_hdmi);
++
+ 	rdev->irq.installed = true;
+ 	r = drm_irq_install(rdev->ddev);
+ 	if (r) {
+ 		rdev->irq.installed = false;
++		flush_work(&rdev->hotplug_work);
+ 		return r;
+ 	}
+ 
+-	INIT_WORK(&rdev->hotplug_work, radeon_hotplug_work_func);
+-	INIT_WORK(&rdev->audio_work, r600_audio_update_hdmi);
+-
+ 	DRM_INFO("radeon: irq initialized.\n");
+ 	return 0;
+ }
 -- 
-Catalin
+1.7.10.4
+
