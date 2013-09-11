@@ -1,90 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751284Ab3IKGgJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 02:36:09 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:36729 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861Ab3IKGgH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 02:36:07 -0400
-Message-ID: <52300F59.3070605@linux.vnet.ibm.com>
-Date: Wed, 11 Sep 2013 12:06:09 +0530
-From: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1751207Ab3IKGuA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 02:50:00 -0400
+Received: from mail.eperm.de ([89.247.134.16]:52681 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750741Ab3IKGt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 02:49:59 -0400
+From: Stephan Mueller <smueller@chronox.de>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net
+Subject: Re: [PATCH] /dev/random: Insufficient of entropy on many architectures
+Date: Wed, 11 Sep 2013 08:49:49 +0200
+Message-ID: <2947789.S63SVUbC3N@tauon>
+User-Agent: KMail/4.10.5 (Linux/3.10.10-200.fc19.x86_64; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20130910211454.GJ29237@thunk.org>
+References: <10005394.BRCyBMYWy3@tauon> <CAMuHMdXcXGpgE5ArcjNU-RgAr52qB8ih_b48jwR=+OqK4RDhFA@mail.gmail.com> <20130910211454.GJ29237@thunk.org>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Benjamin Herrenschmidt <benh@au1.ibm.com>,
-        Asai Thambi S P <asamymuthupa@micron.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Shivaprasad G Bhat <sbhat@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: powerpc allmodconfig build broken due to commit 15863ff3b (powerpc:
- Make chip-id information available to userspace)
-References: <522D163E.80106@roeck-us.net> <522E5FD5.40603@micron.com> <1378850569.4121.28.camel@pasglop> <20130910225029.GA26981@roeck-us.net>
-In-Reply-To: <20130910225029.GA26981@roeck-us.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091117-3568-0000-0000-00000439098F
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2013 04:20 AM, Guenter Roeck wrote:
-> On Wed, Sep 11, 2013 at 08:02:49AM +1000, Benjamin Herrenschmidt wrote:
->> On Mon, 2013-09-09 at 16:55 -0700, Asai Thambi S P wrote:
->>> On 09/08/2013 5:28 PM, Guenter Roeck wrote:
->>>> Hi all,
->>>>
+Am Dienstag, 10. September 2013, 17:14:54 schrieb Theodore Ts'o:
 
-Guenter, Ben,
+Hi Theodore,
 
-Sorry for the inconvenience. I never realized my patch could break somewhere :-(
-
-Thanks you very much for identifying and fixing this issue. Other patch looks 
-good to me.
-
--Vasant
-
-
->>>> powerpc allmodconfig build on the latest upstream kernel results in:
->>>>
->>>> ERROR: ".cpu_to_chip_id" [drivers/block/mtip32xx/mtip32xx.ko] undefined!
->>>>
->>>> This is due to commit 15863ff3b (powerpc: Make chip-id information
->>>> available to userspace).
->>>> Not surprising, as cpu_to_chip_id() is not exported.
->>>>
->>> Apart from the above error, I have a concern on the patch, purely based on the commit message.
->>> (to be honest, I am not familiar with the ppc architecture)
->>>
->>> Commit message of 15863ff3b has the following text.
->>>
->>> ******************
->>> So far "/sys/devices/system/cpu/cpuX/topology/physical_package_id"
->>> was always default (-1) on ppc64 architecture.
->>>
->>> Now, some systems have an ibm,chip-id property in the cpu nodes in
->>> the device tree. On these systems, we now use this information to
->>> display physical_package_id
->>> ******************
->>>
->>> Shouldn't the new definition of "topology_physical_package_id" apply only to those systems supporting ibm,chip-id property?
->>
->> There should be no negative side effect (appart from the missing
->> EXPORT_SYMBOL of course). If the property is not found in the
->> device-tree, the new function returns -1, so it should work fine on all
->> systems.
->>
-> Good. I submitted a patch doing just that yesterday or so.
-> Hope you'll accept it ;).
+>On Tue, Sep 10, 2013 at 10:48:00PM +0200, Geert Uytterhoeven wrote:
+>> So the first importance for random_get_fast_cycles() is that it needs
+>> to be fast. What's most important next: number of bits or
+>> high-frequency?
+>High-frequency.  For example MIPS has a register which is bumped at
+>every clock tick, modulo the number of lines in the TLB.  That's what
+>we're probably going to end up using for MIPS, on the assumption that
+>the time between interrupts is not likely going to be related to the
+>number of lines in the TLB.  :-)
 >
-> Thanks,
-> Guenter
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
+>Something like jiffies has lots of bits, but since it's updated at a
+>much slower rate, it's not as useful if we are trying to measure
+>uncertainity based on the interrupt time.  (Worse yet, depending on
+>how the architecture handles the clock, there mgiht be a very high
+>correlation between when the jiffies counter gets incremented and the
+>timer interrupt....)
 >
+>And yes, we will need to make sure this gets well documented in the
+>sources when we introduce random_get_fast_cycles()....
 
+As general hunch on the speed, I would say is a simple test that two 
+adjacent calls to obtain a time stamp show a delta. Eg.
+
+__u64 tmp = random_get_fast_cycles() - random_get_fast_cycles();
+if(0 == tmp)
+	return fail;
+return pass;
+
+
+>
+>Cheers,
+>
+>						- Ted
+
+
+Ciao
+Stephan
