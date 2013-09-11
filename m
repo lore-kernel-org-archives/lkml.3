@@ -1,108 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab3IKQ10 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 12:27:26 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:39310 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755109Ab3IKQ1Z convert rfc822-to-8bit (ORCPT
+	id S1755472Ab3IKQaF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 12:30:05 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:44007 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755147Ab3IKQaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 12:27:25 -0400
-From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
-To: =?utf-8?q?Jos=C3=A9_Miguel_Gon=C3=A7alves?= 
-	<jose.goncalves@inov.pt>
-Subject: Re: [PATCH] ARM: S3C24XX: Fix configuration of gpio port sizes on S3C24XX.
-Date: Wed, 11 Sep 2013 18:27:39 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-2-amd64; KDE/4.8.4; x86_64; ; )
-Cc: linux-samsung-soc@vger.kernel.org, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1378889173-7437-1-git-send-email-jose.goncalves@inov.pt>
-In-Reply-To: <1378889173-7437-1-git-send-email-jose.goncalves@inov.pt>
+	Wed, 11 Sep 2013 12:30:03 -0400
+Date: Wed, 11 Sep 2013 09:29:55 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Peng Tao <bergwolf@gmail.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, Christoph Hellwig <hch@infradead.org>,
+        "Dilger, Andreas" <andreas.dilger@intel.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
+Subject: Re: [PATCH] staging: Disable lustre file system for MIPS, SH, and
+ XTENSA
+Message-ID: <20130911162955.GA1103@infradead.org>
+References: <20130909015945.GA4029@kroah.com>
+ <522D3153.5000102@roeck-us.net>
+ <20130909023152.GA5329@kroah.com>
+ <522D32F6.4020705@roeck-us.net>
+ <20130909050147.GA3899@osiris>
+ <CA+a=Yy6h0y=J9-NQ6LQ8fkWxqQnTQKxAt2+Pr3fSwLQ1hefGsw@mail.gmail.com>
+ <20130911014443.GA20996@infradead.org>
+ <CA+a=Yy6GFzoBT0Bgz7z5bHZRMdEBJa+txwpCZuxA+mRTch-8mA@mail.gmail.com>
+ <20130911023026.GA6273@roeck-us.net>
+ <CA+a=Yy7+cj4Bw_4PArxMo2Manqp+aTVUi-7UcS+6-qNv7-RPyA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201309111827.39981.heiko@sntech.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+a=Yy7+cj4Bw_4PArxMo2Manqp+aTVUi-7UcS+6-qNv7-RPyA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 11. September 2013, 10:46:13 schrieb José Miguel Gonçalves:
-> Some GPIO line limits are incorrectly set which, for instance,
-> does not allow nRTS1 (GPH11) configuration on a S3C2416 chip.
-> 
-> Signed-off-by: José Miguel Gonçalves <jose.goncalves@inov.pt>
+On Wed, Sep 11, 2013 at 10:51:50AM +0800, Peng Tao wrote:
+> I'm not fighting against removing the piece of code. But if there is a
+> strong reason to keep the functionality, we need to find a way to
+> implement it. The convenience of using environment variables is that
+> job scheduler can set the environment and other existing applications
+> don't have to change. Are there other means to do the same? ioctl and
+> upcall both need application change AFAIK.
 
-I thumbed thru the SoC manuals of s3c2410, s3c2416, s3c2440 and s3c2443 and 
-these number look correct.
+There is no use case for it, the kernel has no business looking at these
+variables.  Given that you think it's not even used I don't even know
+why we're having this discussion.
 
-It would be interesting to know where the old number 16 for GPIOB did come 
-from, as _all_ S3C SoCs only have the 11 pins in this bank.
+Talking about nasty code, the whole linux-curproc.c is highly
+questionable:
+
+ - cfs_curproc_groups_nr:
+   	unused and should be removed
+
+ - cfs_cap_raise/cfs_cap_lower/cfs_cap_raised:
+   	needs to go away, modyules must not change access permissions
+	on behalf of processes
+
+ - the whole cfs_cap_t handling also needs to go away, passing around
+   capabilities is not a concept the kernel supports for a reason
+
+ - current_is_32bit:
+	Code should just use is_compat_task directly.
 
 
-Reviewed-by: Heiko Stuebner <heiko@sntech.de>
-
-
-> ---
->  arch/arm/mach-s3c24xx/include/mach/gpio.h |   10 +++++-----
->  drivers/gpio/gpio-samsung.c               |    6 +++---
->  2 files changed, 8 insertions(+), 8 deletions(-)
-> 
-> diff --git a/arch/arm/mach-s3c24xx/include/mach/gpio.h
-> b/arch/arm/mach-s3c24xx/include/mach/gpio.h index 1459156..a1435bc 100644
-> --- a/arch/arm/mach-s3c24xx/include/mach/gpio.h
-> +++ b/arch/arm/mach-s3c24xx/include/mach/gpio.h
-> @@ -31,17 +31,17 @@
->   *   2410 2412 2440 2443 2416
->   *             2442
->   *   ---- ---- ---- ---- ----
-> - * A  23   22   25   16   25
-> - * B  11   11   11   11   9
-> - * C  16   15   16   16   16
-> + * A  23   22   25   16   27
-> + * B  11   11   11   11   11
-> + * C  16   16   16   16   16
->   * D  16   16   16   16   16
->   * E  16   16   16   16   16
->   * F  8    8    8    8    8
->   * G  16   16   16   16   8
-> - * H  11   11   9    15   15
-> + * H  11   11   11   15   15
->   * J  --   --   13   16   --
->   * K  --   --   --   --   16
-> - * L  --   --   --   15   7
-> + * L  --   --   --   15   14
->   * M  --   --   --   2    2
->   */
-> 
-> diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
-> index 358a21c..29c428b 100644
-> --- a/drivers/gpio/gpio-samsung.c
-> +++ b/drivers/gpio/gpio-samsung.c
-> @@ -1053,7 +1053,7 @@ struct samsung_gpio_chip s3c24xx_gpios[] = {
->  			.base			= S3C2410_GPA(0),
->  			.owner			= THIS_MODULE,
->  			.label			= "GPIOA",
-> -			.ngpio			= 24,
-> +			.ngpio			= 27,
->  			.direction_input	= s3c24xx_gpiolib_banka_input,
->  			.direction_output	= s3c24xx_gpiolib_banka_output,
->  		},
-> @@ -1062,7 +1062,7 @@ struct samsung_gpio_chip s3c24xx_gpios[] = {
->  			.base	= S3C2410_GPB(0),
->  			.owner	= THIS_MODULE,
->  			.label	= "GPIOB",
-> -			.ngpio	= 16,
-> +			.ngpio	= 11,
->  		},
->  	}, {
->  		.chip	= {
-> @@ -1107,7 +1107,7 @@ struct samsung_gpio_chip s3c24xx_gpios[] = {
->  			.base	= S3C2410_GPH(0),
->  			.owner	= THIS_MODULE,
->  			.label	= "GPIOH",
-> -			.ngpio	= 11,
-> +			.ngpio	= 15,
->  		},
->  	},
->  		/* GPIOS for the S3C2443 and later devices. */
-
+I've just taken the time to walk through this one file, but it seems
+like most of libcfs is just as bad.
