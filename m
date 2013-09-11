@@ -1,31 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755122Ab3IKFjE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 01:39:04 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5606 "EHLO
+	id S1757411Ab3IKFjx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 01:39:53 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11316 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754537Ab3IKE5Q (ORCPT
+	with ESMTP id S1754515Ab3IKE5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 11 Sep 2013 00:57:16 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=h3jhJEscC8wA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=YMxImB4VbhIA:10 a=vmLDa1wCAAAA:8 a=QyXUC8HyAAAA:8 a=iox4zFpeAAAA:8 a=20KFwNOVAAAA:8 a=tA7aZXjiAAAA:8 a=tHz9FfFoAAAA:8 a=VwQbUJbxAAAA:8 a=Jj8e7MOrIgyRfe2jykwA:9 a=swZZ4HxajxcA:10 a=gv_BBZfBKR8A:10 a=n9GBPR9yFnkA:10 a=jEp0ucaQiEUA:10 a=qM0ISud-tAQA:10 a=6O0IECtVFhoA:10 a=jeBq3FmKZ4MA:10 a=LI9Vle30uBYA:10 a=uKUZYumxWQRgBHFT:21 a=1sFwl8HfWKWMgBAf:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=cQa7tPE-3_8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=UJplW2E2-RcA:10 a=SaWEO8HGAAAA:8 a=VnNF1IyMAAAA:8 a=J1Y8HTJGAAAA:8 a=z9odyffjMVvEqKmo1QkA:9 a=w2ubnULX9RwA:10 a=4N9Db7Z2_RYA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042918.360610115@goodmis.org>
+Message-Id: <20130911042918.876259696@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:29:43 -0400
+Date: Wed, 11 Sep 2013 00:29:46 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Neil Horman <nhorman@tuxdriver.com>, Jan Beulich <jbeulich@suse.com>,
-        Donald Dutile <ddutile@redhat.com>, Joerg Roedel <joro@8bytes.org>,
-        Andrew Cooper <andrew.cooper3@citrix.com>,
-        Malcolm Crossley <malcolm.crossley@citrix.com>,
-        Prarit Bhargava <prarit@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [156/251] x86/iommu/vt-d: Expand interrupt remapping quirk to cover x58
- chipset
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [159/251] ipv6: take rtnl_lock and mark mrt6 table as freed on namespace
+ cleanup
 References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0156-x86-iommu-vt-d-Expand-interrupt-remapping-quirk-to-c.patch
+Content-Disposition: inline; filename=0159-ipv6-take-rtnl_lock-and-mark-mrt6-table-as-freed-on-.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -35,85 +32,97 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit 803075dba31c17af110e1d9a915fe7262165b213 ]
+[ Upstream commit 905a6f96a1b18e490a75f810d733ced93c39b0e5 ]
 
-Recently we added an early quirk to detect 5500/5520 chipsets
-with early revisions that had problems with irq draining with
-interrupt remapping enabled:
+Otherwise we end up dereferencing the already freed net->ipv6.mrt pointer
+which leads to a panic (from Srivatsa S. Bhat):
 
-  commit 03bbcb2e7e292838bb0244f5a7816d194c911d62
-  Author: Neil Horman <nhorman@tuxdriver.com>
-  Date:   Tue Apr 16 16:38:32 2013 -0400
+BUG: unable to handle kernel paging request at ffff882018552020
+IP: [<ffffffffa0366b02>] ip6mr_sk_done+0x32/0xb0 [ipv6]
+PGD 290a067 PUD 207ffe0067 PMD 207ff1d067 PTE 8000002018552060
+Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+Modules linked in: ebtable_nat ebtables nfs fscache nf_conntrack_ipv4 nf_defrag_ipv4 ipt_REJECT xt_CHECKSUM iptable_mangle iptable_filter ip_tables nfsd lockd nfs_acl exportfs auth_rpcgss autofs4 sunrpc 8021q garp bridge stp llc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter
++ip6_tables ipv6 vfat fat vhost_net macvtap macvlan vhost tun kvm_intel kvm uinput iTCO_wdt iTCO_vendor_support cdc_ether usbnet mii microcode i2c_i801 i2c_core lpc_ich mfd_core shpchp ioatdma dca mlx4_core be2net wmi acpi_cpufreq mperf ext4 jbd2 mbcache dm_mirror dm_region_hash dm_log dm_mod
+CPU: 0 PID: 7 Comm: kworker/u33:0 Not tainted 3.11.0-rc1-ea45e-a #4
+Hardware name: IBM  -[8737R2A]-/00Y2738, BIOS -[B2E120RUS-1.20]- 11/30/2012
+Workqueue: netns cleanup_net
+task: ffff8810393641c0 ti: ffff881039366000 task.ti: ffff881039366000
+RIP: 0010:[<ffffffffa0366b02>]  [<ffffffffa0366b02>] ip6mr_sk_done+0x32/0xb0 [ipv6]
+RSP: 0018:ffff881039367bd8  EFLAGS: 00010286
+RAX: ffff881039367fd8 RBX: ffff882018552000 RCX: dead000000200200
+RDX: 0000000000000000 RSI: ffff881039367b68 RDI: ffff881039367b68
+RBP: ffff881039367bf8 R08: ffff881039367b68 R09: 2222222222222222
+R10: 2222222222222222 R11: 2222222222222222 R12: ffff882015a7a040
+R13: ffff882014eb89c0 R14: ffff8820289e2800 R15: 0000000000000000
+FS:  0000000000000000(0000) GS:ffff88103fc00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: ffff882018552020 CR3: 0000000001c0b000 CR4: 00000000000407f0
+Stack:
+ ffff881039367c18 ffff882014eb89c0 ffff882015e28c00 0000000000000000
+ ffff881039367c18 ffffffffa034d9d1 ffff8820289e2800 ffff882014eb89c0
+ ffff881039367c58 ffffffff815bdecb ffffffff815bddf2 ffff882014eb89c0
+Call Trace:
+ [<ffffffffa034d9d1>] rawv6_close+0x21/0x40 [ipv6]
+ [<ffffffff815bdecb>] inet_release+0xfb/0x220
+ [<ffffffff815bddf2>] ? inet_release+0x22/0x220
+ [<ffffffffa032686f>] inet6_release+0x3f/0x50 [ipv6]
+ [<ffffffff8151c1d9>] sock_release+0x29/0xa0
+ [<ffffffff81525520>] sk_release_kernel+0x30/0x70
+ [<ffffffffa034f14b>] icmpv6_sk_exit+0x3b/0x80 [ipv6]
+ [<ffffffff8152fff9>] ops_exit_list+0x39/0x60
+ [<ffffffff815306fb>] cleanup_net+0xfb/0x1a0
+ [<ffffffff81075e3a>] process_one_work+0x1da/0x610
+ [<ffffffff81075dc9>] ? process_one_work+0x169/0x610
+ [<ffffffff81076390>] worker_thread+0x120/0x3a0
+ [<ffffffff81076270>] ? process_one_work+0x610/0x610
+ [<ffffffff8107da2e>] kthread+0xee/0x100
+ [<ffffffff8107d940>] ? __init_kthread_worker+0x70/0x70
+ [<ffffffff8162a99c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff8107d940>] ? __init_kthread_worker+0x70/0x70
+Code: 20 48 89 5d e8 4c 89 65 f0 4c 89 6d f8 66 66 66 66 90 4c 8b 67 30 49 89 fd e8 db 3c 1e e1 49 8b 9c 24 90 08 00 00 48 85 db 74 06 <4c> 39 6b 20 74 20 bb f3 ff ff ff e8 8e 3c 1e e1 89 d8 4c 8b 65
+RIP  [<ffffffffa0366b02>] ip6mr_sk_done+0x32/0xb0 [ipv6]
+ RSP <ffff881039367bd8>
+CR2: ffff882018552020
 
-      iommu/vt-d: add quirk for broken interrupt remapping on 55XX chipsets
-
-It turns out this same problem is present in the intel X58
-chipset as well. See errata 69 here:
-
-  http://www.intel.com/content/www/us/en/chipsets/x58-express-specification-update.html
-
-This patch extends the pci early quirk so that the chip
-devices/revisions specified in the above update are also covered
-in the same way:
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Reviewed-by: Jan Beulich <jbeulich@suse.com>
-Acked-by: Donald Dutile <ddutile@redhat.com>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Andrew Cooper <andrew.cooper3@citrix.com>
-Cc: Malcolm Crossley <malcolm.crossley@citrix.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/1374059639-8631-1-git-send-email-nhorman@tuxdriver.com
+Reported-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Tested-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[ Small edits. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/early-quirks.c |   14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ net/ipv6/ip6mr.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
-index 94ab6b9..63bdb29 100644
---- a/arch/x86/kernel/early-quirks.c
-+++ b/arch/x86/kernel/early-quirks.c
-@@ -196,15 +196,23 @@ static void __init ati_bugs_contd(int num, int slot, int func)
- static void __init intel_remapping_check(int num, int slot, int func)
+diff --git a/net/ipv6/ip6mr.c b/net/ipv6/ip6mr.c
+index 4532973..964e3ae 100644
+--- a/net/ipv6/ip6mr.c
++++ b/net/ipv6/ip6mr.c
+@@ -256,10 +256,12 @@ static void __net_exit ip6mr_rules_exit(struct net *net)
  {
- 	u8 revision;
-+	u16 device;
+ 	struct mr6_table *mrt, *next;
  
-+	device = read_pci_config_16(num, slot, func, PCI_DEVICE_ID);
- 	revision = read_pci_config_byte(num, slot, func, PCI_REVISION_ID);
- 
- 	/*
--	 * Revision 0x13 of this chipset supports irq remapping
--	 * but has an erratum that breaks its behavior, flag it as such
-+ 	 * Revision 13 of all triggering devices id in this quirk have
-+	 * a problem draining interrupts when irq remapping is enabled,
-+	 * and should be flagged as broken.  Additionally revisions 0x12
-+	 * and 0x22 of device id 0x3405 has this problem.
- 	 */
- 	if (revision == 0x13)
- 		set_irq_remapping_broken();
-+	else if ((device == 0x3405) &&
-+	    ((revision == 0x12) ||
-+	     (revision == 0x22)))
-+		set_irq_remapping_broken();
- 
++	rtnl_lock();
+ 	list_for_each_entry_safe(mrt, next, &net->ipv6.mr6_tables, list) {
+ 		list_del(&mrt->list);
+ 		ip6mr_free_table(mrt);
+ 	}
++	rtnl_unlock();
+ 	fib_rules_unregister(net->ipv6.mr6_rules_ops);
  }
+ #else
+@@ -286,7 +288,10 @@ static int __net_init ip6mr_rules_init(struct net *net)
  
-@@ -239,6 +247,8 @@ static struct chipset early_qrk[] __initdata = {
- 	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs_contd },
- 	{ PCI_VENDOR_ID_INTEL, 0x3403, PCI_CLASS_BRIDGE_HOST,
- 	  PCI_BASE_CLASS_BRIDGE, 0, intel_remapping_check },
-+	{ PCI_VENDOR_ID_INTEL, 0x3405, PCI_CLASS_BRIDGE_HOST,
-+	  PCI_BASE_CLASS_BRIDGE, 0, intel_remapping_check },
- 	{ PCI_VENDOR_ID_INTEL, 0x3406, PCI_CLASS_BRIDGE_HOST,
- 	  PCI_BASE_CLASS_BRIDGE, 0, intel_remapping_check },
- 	{}
+ static void __net_exit ip6mr_rules_exit(struct net *net)
+ {
++	rtnl_lock();
+ 	ip6mr_free_table(net->ipv6.mrt6);
++	net->ipv6.mrt6 = NULL;
++	rtnl_unlock();
+ }
+ #endif
+ 
 -- 
 1.7.10.4
 
