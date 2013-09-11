@@ -1,79 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab3IKMjR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 08:39:17 -0400
-Received: from mga03.intel.com ([143.182.124.21]:52333 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753184Ab3IKMjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 08:39:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,884,1371106800"; 
-   d="scan'208";a="358936986"
-Message-ID: <5230646F.3030701@intel.com>
-Date: Wed, 11 Sep 2013 08:39:11 -0400
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] Cpufreq: Remove fossil comment of cpufreq_set_policy
-References: <1378824287-7696-1-git-send-email-tianyu.lan@intel.com> <CAKohponpX9AedBrsASojK7fKS-rRN-AQwJT42=mrOJcNpGqE+w@mail.gmail.com> <522FE369.3030106@intel.com> <CAKohponyaogXLr5sJzQbb6ZhswMWfwhFTm-b=4Ztzg=UmKx_ig@mail.gmail.com>
-In-Reply-To: <CAKohponyaogXLr5sJzQbb6ZhswMWfwhFTm-b=4Ztzg=UmKx_ig@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753059Ab3IKMmo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 08:42:44 -0400
+Received: from asav4.altibox.net ([81.167.36.153]:52414 "EHLO
+	asav4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751906Ab3IKMmn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 08:42:43 -0400
+From: Henrik Austad <henrik@austad.us>
+To: LKML <linux-kernel@vger.kernel.org>, LKML Doc <linux-doc@vger.kernel.org>
+Cc: Henrik Austad <henrik@austad.us>
+Subject: [PATCH] mm: update 00-INDEX
+Date: Wed, 11 Sep 2013 14:42:20 +0200
+Message-Id: <1378903340-9483-1-git-send-email-henrik@austad.us>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2013 06:08 AM, Viresh Kumar wrote:
-> On 11 September 2013 08:58, Lan Tianyu <tianyu.lan@intel.com> wrote:
->>  From 668e1b6fd94b5c0e56a651b4c60cbbc7a6868b46 Mon Sep 17 00:00:00 2001
->> From: Lan Tianyu <tianyu.lan@intel.com>
->> Date: Wed, 11 Sep 2013 11:31:15 +0800
->> Subject: [PATCH] Cpufreq/governor: Remove fossil comment
->>
->> cpufreq_set_policy() has been changed to origin __cpufreq_set_policy()
->> and policy->lock has been converted to rewrite lock by commit 5a01f2.
->> So remove it.
->>
->> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
->> ---
->>   drivers/cpufreq/cpufreq_userspace.c | 11 -----------
->>   1 file changed, 11 deletions(-)
->>
->> diff --git a/drivers/cpufreq/cpufreq_userspace.c
->> b/drivers/cpufreq/cpufreq_userspace.c
->> index 0307809..4dbf1db 100644
->> --- a/drivers/cpufreq/cpufreq_userspace.c
->> +++ b/drivers/cpufreq/cpufreq_userspace.c
->> @@ -38,18 +38,7 @@ static int cpufreq_set(struct cpufreq_policy *policy,
->> unsigned int freq)
->>          if (!per_cpu(cpu_is_managed, policy->cpu))
->>                  goto err;
->>
->> -       /*
->> -        * We're safe from concurrent calls to ->target() here
->> -        * as we hold the userspace_mutex lock. If we were calling
->> -        * cpufreq_driver_target, a deadlock situation might occur:
->> -        * A: cpufreq_set (lock userspace_mutex) ->
->> -        *      cpufreq_driver_target(lock policy->lock)
->> -        * B: cpufreq_set_policy(lock policy->lock) ->
->> -        *      __cpufreq_governor ->
->> -        *         cpufreq_governor_userspace (lock userspace_mutex)
->> -        */
->>          ret = __cpufreq_driver_target(policy, freq, CPUFREQ_RELATION_L);
->> -
->>    err:
->>          mutex_unlock(&userspace_mutex);
->>          return ret;
->
-> Looks fine:
->
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
->
+The following files moved files out of Documentation/vm/
+c6dd897f ("mm: move page-types.c from Documentation to tools/vm")
+f0f57b2b ("move hugepage test examples to tools/testing/selftests/vm)
 
-Thanks. I will send formal version.
+Remove these files from vm/00-INDEX.
+
+The following commits added new files do Documentation/vm/
+4fe4746a ("mm/fs: cleancache documentation") added vm/cleancache.txt
+d65bfacb ("mm: highmem documentation") added vm/highmem.txt
+1c9bf22c ("thp: transparent hugepage support documentation") added
+           vm/transhuge.txt
+0f8975ec ("mm: soft-dirty bits for user memory changes tracking")
+61b0d760 ("zswap: add documentation")
+27c6aec2 ("mm: frontswap: config and doc files")
+
+Add the missing documentation-files with a short description to 00-INDEX
+
+Signed-off-by: Henrik Austad <henrik@austad.us>
+---
+ Documentation/vm/00-INDEX |   20 ++++++++++++--------
+ 1 file changed, 12 insertions(+), 8 deletions(-)
+
+diff --git a/Documentation/vm/00-INDEX b/Documentation/vm/00-INDEX
+index 5481c8b..a39d066 100644
+--- a/Documentation/vm/00-INDEX
++++ b/Documentation/vm/00-INDEX
+@@ -4,10 +4,12 @@ active_mm.txt
+ 	- An explanation from Linus about tsk->active_mm vs tsk->mm.
+ balance
+ 	- various information on memory balancing.
+-hugepage-mmap.c
+-	- Example app using huge page memory with the mmap system call.
+-hugepage-shm.c
+-	- Example app using huge page memory with Sys V shared memory system calls.
++cleancache.txt
++	- Intro to cleancache and page-granularity victim cache.
++frontswap.txt
++	- Outline frontswap, part of the transcendent memory frontend.
++highmem.txt
++	- Outline of highmem and common issues.
+ hugetlbpage.txt
+ 	- a brief summary of hugetlbpage support in the Linux kernel.
+ hwpoison.txt
+@@ -16,21 +18,23 @@ ksm.txt
+ 	- how to use the Kernel Samepage Merging feature.
+ locking
+ 	- info on how locking and synchronization is done in the Linux vm code.
+-map_hugetlb.c
+-	- an example program that uses the MAP_HUGETLB mmap flag.
+ numa
+ 	- information about NUMA specific code in the Linux vm.
+ numa_memory_policy.txt
+ 	- documentation of concepts and APIs of the 2.6 memory policy support.
+ overcommit-accounting
+ 	- description of the Linux kernels overcommit handling modes.
+-page-types.c
+-	- Tool for querying page flags
+ page_migration
+ 	- description of page migration in NUMA systems.
+ pagemap.txt
+ 	- pagemap, from the userspace perspective
+ slub.txt
+ 	- a short users guide for SLUB.
++soft-dirty.txt
++	- short explanation for soft-dirty PTEs
++transhuge.txt
++	- Transparent Hugepage Support, alternative way of using hugepages.
+ unevictable-lru.txt
+ 	- Unevictable LRU infrastructure
++zswap.txt
++	- Intro to compressed cache for swap pages
+-- 
+1.7.10.4
 
