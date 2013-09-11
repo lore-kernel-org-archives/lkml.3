@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756271Ab3IKRIO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 13:08:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63214 "EHLO mx1.redhat.com"
+	id S1756168Ab3IKRMJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 13:12:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25749 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755231Ab3IKRIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 13:08:12 -0400
+	id S1755256Ab3IKRMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 13:12:07 -0400
 From: Zach Brown <zab@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-nfs@vger.kernel.org,
@@ -14,125 +14,112 @@ To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
         Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
         Eric Wong <normalperson@yhbt.net>
-Subject: [PATCH 2/3] splice: add f_op->splice_direct
-Date: Wed, 11 Sep 2013 10:06:49 -0700
-Message-Id: <1378919210-10372-3-git-send-email-zab@redhat.com>
+Subject: [PATCH 1/3] splice: add DIRECT flag for splicing between files
+Date: Wed, 11 Sep 2013 10:06:48 -0700
+Message-Id: <1378919210-10372-2-git-send-email-zab@redhat.com>
 In-Reply-To: <1378919210-10372-1-git-send-email-zab@redhat.com>
 References: <1378919210-10372-1-git-send-email-zab@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The splice_direct file_operations method gives file systems the
-opportunity to accelerate copying a region between two files.
+sendfile() is implemented by performing an internal "direct" splice
+between two regular files.  A per-task pipe buffer is allocated to
+splice between the reads from the source page cache and writes to the
+destination file page cache.
 
-The generic path attempts to copy the remainder of the region that the
-file system fails to accelerate, for whatever reason.  We may choose to
-dial this back a bit if the caller wants to avoid unaccelerated copying,
-perhaps by setting behavioural flags.
+This patch lets userspace perform these direct splices with sys_splice()
+by setting the SPLICE_F_DIRECT flag.  This provides a single syscall for
+copying a region between files without either having to store the
+destination offset in the descriptor for sendfile or having to use
+multiple splicing syscalls to and from a pipe.
 
-The SPLICE_F_DIRECT flag is arguably misused here to indicate both
-file-to-file "direct" splicing *and* acceleration.
+Providing both files to the method lets the file system lock both for
+the duration of the copy, should it need to.  If the method refuses to
+accelerate the copy, for whatever reason, we can naturally fall back to
+the generic direct splice method that sendfile uses today.
 
 Signed-off-by: Zach Brown <zab@redhat.com>
 ---
- fs/bad_inode.c     |  8 ++++++++
- fs/splice.c        | 28 +++++++++++++++++++++++-----
- include/linux/fs.h |  1 +
- 3 files changed, 32 insertions(+), 5 deletions(-)
+ fs/splice.c            | 38 ++++++++++++++++++++++++++++++++++++--
+ include/linux/splice.h |  1 +
+ 2 files changed, 37 insertions(+), 2 deletions(-)
 
-diff --git a/fs/bad_inode.c b/fs/bad_inode.c
-index 7c93953..394914b 100644
---- a/fs/bad_inode.c
-+++ b/fs/bad_inode.c
-@@ -145,6 +145,13 @@ static ssize_t bad_file_splice_read(struct file *in, loff_t *ppos,
- 	return -EIO;
- }
- 
-+static ssize_t bad_file_splice_direct(struct file *in, loff_t in_pos,
-+			struct file *out, loff_t out_pos, size_t len,
-+			unsigned int flags)
-+{
-+	return -EIO;
-+}
-+
- static const struct file_operations bad_file_ops =
- {
- 	.llseek		= bad_file_llseek,
-@@ -170,6 +177,7 @@ static const struct file_operations bad_file_ops =
- 	.flock		= bad_file_flock,
- 	.splice_write	= bad_file_splice_write,
- 	.splice_read	= bad_file_splice_read,
-+	.splice_direct	= bad_file_splice_direct,
- };
- 
- static int bad_inode_create (struct inode *dir, struct dentry *dentry,
 diff --git a/fs/splice.c b/fs/splice.c
-index c0f4e27..eac310f 100644
+index 3b7ee65..c0f4e27 100644
 --- a/fs/splice.c
 +++ b/fs/splice.c
-@@ -1284,14 +1284,12 @@ long do_splice_direct(struct file *in, loff_t *ppos, struct file *out,
- 		      loff_t *opos, size_t len, unsigned int flags)
- {
- 	struct splice_desc sd = {
--		.len		= len,
--		.total_len	= len,
- 		.flags		= flags,
--		.pos		= *ppos,
- 		.u.file		= out,
- 		.opos		= opos,
- 	};
- 	long ret;
-+	long bytes = 0;
+@@ -1347,7 +1347,7 @@ static long do_splice(struct file *in, loff_t __user *off_in,
+ 	}
  
- 	if (unlikely(!(out->f_mode & FMODE_WRITE)))
- 		return -EBADF;
-@@ -1303,11 +1301,31 @@ long do_splice_direct(struct file *in, loff_t *ppos, struct file *out,
- 	if (unlikely(ret < 0))
+ 	if (ipipe) {
+-		if (off_in)
++		if (off_in || (flags & SPLICE_F_DIRECT))
+ 			return -ESPIPE;
+ 		if (off_out) {
+ 			if (!(out->f_mode & FMODE_PWRITE))
+@@ -1381,7 +1381,7 @@ static long do_splice(struct file *in, loff_t __user *off_in,
+ 	}
+ 
+ 	if (opipe) {
+-		if (off_out)
++		if (off_out || (flags & SPLICE_F_DIRECT))
+ 			return -ESPIPE;
+ 		if (off_in) {
+ 			if (!(in->f_mode & FMODE_PREAD))
+@@ -1402,6 +1402,40 @@ static long do_splice(struct file *in, loff_t __user *off_in,
  		return ret;
+ 	}
  
-+	if ((flags & SPLICE_F_DIRECT) && out->f_op->splice_direct) {
-+		ret = out->f_op->splice_direct(in, *ppos, out, *opos, len,
-+					       flags);
-+		if (ret > 0) {
-+			bytes += ret;
-+			len -= ret;
-+			*opos += ret;
-+			*ppos += ret;
++	if (flags & SPLICE_F_DIRECT) {
++		loff_t out_pos;
 +
-+			if (len == 0)
-+				return ret;
-+		}
++		if (off_in) {
++			if (!(in->f_mode & FMODE_PREAD))
++				return -EINVAL;
++			if (copy_from_user(&offset, off_in, sizeof(loff_t)))
++				return -EFAULT;
++		} else
++			offset = in->f_pos;
++
++		if (off_out) {
++			if (!(out->f_mode & FMODE_PWRITE))
++				return -EINVAL;
++			if (copy_from_user(&out_pos, off_out, sizeof(loff_t)))
++				return -EFAULT;
++		} else
++			out_pos = out->f_pos;
++
++		ret = do_splice_direct(in, &offset, out, &out_pos, len, flags);
++
++		if (!off_in)
++			in->f_pos = offset;
++		else if (copy_to_user(off_in, &offset, sizeof(loff_t)))
++			ret = -EFAULT;
++
++		if (!off_out)
++			out->f_pos = out_pos;
++		else if (copy_to_user(off_out, &out_pos, sizeof(loff_t)))
++			ret = -EFAULT;
++
++		return ret;
 +	}
 +
-+	sd.len = len;
-+	sd.total_len = len;
-+	sd.pos = *ppos;
-+
- 	ret = splice_direct_to_actor(in, &sd, direct_splice_actor);
--	if (ret > 0)
-+	if (ret > 0) {
-+		bytes += ret;
- 		*ppos = sd.pos;
-+	}
- 
--	return ret;
-+	return bytes ? bytes : ret;
+ 	return -EINVAL;
  }
  
- static int splice_pipe_to_pipe(struct pipe_inode_info *ipipe,
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 529d871..725e6fc 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1553,6 +1553,7 @@ struct file_operations {
- 	int (*flock) (struct file *, int, struct file_lock *);
- 	ssize_t (*splice_write)(struct pipe_inode_info *, struct file *, loff_t *, size_t, unsigned int);
- 	ssize_t (*splice_read)(struct file *, loff_t *, struct pipe_inode_info *, size_t, unsigned int);
-+	ssize_t (*splice_direct)(struct file *, loff_t, struct file *, loff_t, size_t, unsigned int);
- 	int (*setlease)(struct file *, long, struct file_lock **);
- 	long (*fallocate)(struct file *file, int mode, loff_t offset,
- 			  loff_t len);
+diff --git a/include/linux/splice.h b/include/linux/splice.h
+index 74575cb..e1aa3ad 100644
+--- a/include/linux/splice.h
++++ b/include/linux/splice.h
+@@ -19,6 +19,7 @@
+ 				 /* from/to, of course */
+ #define SPLICE_F_MORE	(0x04)	/* expect more data */
+ #define SPLICE_F_GIFT	(0x08)	/* pages passed in are a gift */
++#define SPLICE_F_DIRECT	(0x10)	/* neither splice fd is a pipe */
+ 
+ /*
+  * Passed to the actors
 -- 
 1.7.11.7
 
