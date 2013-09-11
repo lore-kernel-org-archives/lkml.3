@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757414Ab3IKVAR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 17:00:17 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:63111 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755674Ab3IKVAP (ORCPT
+	id S1757239Ab3IKVMW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 17:12:22 -0400
+Received: from toccata.ens-lyon.fr ([140.77.166.68]:50363 "EHLO
+	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754640Ab3IKVMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 17:00:15 -0400
+	Wed, 11 Sep 2013 17:12:21 -0400
+Date: Wed, 11 Sep 2013 23:02:04 +0200
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Christopher Brannon <chris@the-brannons.com>
+Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        w.d.hubbs@gmail.com, kirk@reisers.ca, dan.carpenter@oracle.com,
+        andriy.shevchenko@linux.intel.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, raphael.scarv@gmail.com
+Subject: Re: [PATCH] staging: speakup: kobjects.c: Use correct values when
+ changing voice.
+Message-ID: <20130911210204.GI17803@type.youpi.perso.aquilenet.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Christopher Brannon <chris@the-brannons.com>,
+	devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+	w.d.hubbs@gmail.com, kirk@reisers.ca, dan.carpenter@oracle.com,
+	andriy.shevchenko@linux.intel.com, akpm@linux-foundation.org,
+	linux-kernel@vger.kernel.org, raphael.scarv@gmail.com
+References: <1378919127-28259-1-git-send-email-chris@the-brannons.com>
 MIME-Version: 1.0
-In-Reply-To: <20130911110901.GD26777@darko.cambridge.arm.com>
-References: <1378762380-13152-1-git-send-email-apinski@cavium.com>
-	<1378762380-13152-3-git-send-email-apinski@cavium.com>
-	<20130911110901.GD26777@darko.cambridge.arm.com>
-Date: Wed, 11 Sep 2013 14:00:14 -0700
-Message-ID: <CA+=Sn1=4KeoJ=beDVE0tb+2nS_i8pDBq9o-GJUwSZmhhLOhoPw@mail.gmail.com>
-Subject: Re: [PATCH 3/5] FS: Export poll_select_copy_remaining and rename
- poll_select_copy_remaining in compat.c so it does not pick the wrong copy.
-From: Andrew Pinski <pinskia@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Pinski <apinski@cavium.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1378919127-28259-1-git-send-email-chris@the-brannons.com>
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 4:09 AM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
-> On Mon, Sep 09, 2013 at 10:32:57PM +0100, Andrew Pinski wrote:
->>   The ILP32 ABI in ARM64 uses a slightly different pselect from either
->>   the compat or even the native LP64 ABI.  We would want to reuse some
->>   of the code path that are used as the size of the timespec is the
->>   same, so this patch exports poll_select_copy_remaining from
->>   fs/select.c and renames the copy in fs/compat.c to make sure that it
->>   is not being used.
->>
->> Signed-off-by: Andrew Pinski <apinski@cavium.com>
->
-> I think this patch has to wait until we review the ILP32 ABI for arm64.
-> When I looked at this some time ago I thought we can just use the native
-> arm64 pselect6 and ppoll. Once we agree that's not possible we can push
-> this patch. On its own it doesn't have much value.
+Christopher Brannon, le Wed 11 Sep 2013 10:05:27 -0700, a écrit :
+> When a new voice is selected, we set volume and pitch appropriate for
+> the voice.  We need to use the numeric index corresponding to the
+> voice when indexing into the volume and pitch tables, rather than
+> the raw user input that was used to select the voice.
+> Note that using the raw input can also lead to an invalid memory read
+> in the case of invalid or malicious user input.
+> 
+> Signed-off-by: Christopher Brannon <chris@the-brannons.com>
 
-Since fd_set is defined by XPG4.2  to be a struct of an array of
-"long"'s, we cannot change the definition in user space.
+Acked-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
 
-I tried using the native ppoll/pselect for the ABI first.  It worked
-for little-endian just fine but failed hard when big-endian.
-If we only care about little-endian arm64 at this point, I can remove
-this part of the patch and keep it for when we (Cavium) submits the
-big-endian patches.
+> ---
+>  drivers/staging/speakup/kobjects.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/speakup/kobjects.c b/drivers/staging/speakup/kobjects.c
+> index 61a3f7a..f31afa2 100644
+> --- a/drivers/staging/speakup/kobjects.c
+> +++ b/drivers/staging/speakup/kobjects.c
+> @@ -651,7 +651,10 @@ ssize_t spk_var_store(struct kobject *kobj, struct kobj_attribute *attr,
+>  		* If voice was just changed, we might need to reset our default
+>  		* pitch and volume.
+>  		*/
+> -		if (param->var_id == VOICE) {
+> +		if (param->var_id == VOICE && synth &&
+> +		    (ret == 0 || ret == -ERESTART)) {
+> +			var_data = param->data;
+> +			value = var_data->u.n.value;
+>  			spk_reset_default_value("pitch", synth->default_pitch,
+>  				value);
+>  			spk_reset_default_value("vol", synth->default_vol,
+> -- 
+> 1.8.1.5
+> 
 
-
-Thanks,
-Andrew Pinski
-
->
-> --
-> Catalin
+-- 
+Samuel
+Hi ! I'm a .signature virus ! Copy me into your ~/.signature, please !
