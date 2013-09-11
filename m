@@ -1,174 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757257Ab3IKUU1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 16:20:27 -0400
-Received: from smtprelay0139.hostedemail.com ([216.40.44.139]:47025 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754184Ab3IKUUZ (ORCPT
+	id S1757438Ab3IKUUi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 16:20:38 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:47746 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757314Ab3IKUUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 16:20:25 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:69:355:379:541:599:800:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1535:1544:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2691:2828:3138:3139:3140:3141:3142:3355:3622:3865:3867:3868:3871:3872:4321:4605:5007:7652:7903:10004:10848:11026:11232:11658:11914:12043:12291:12438:12517:12519:12555:12683:12740,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: linen36_77b96823fe011
-X-Filterd-Recvd-Size: 5922
-Message-ID: <1378930822.4714.22.camel@joe-AO722>
-Subject: Re: [PATCH] vsprintf: drop comment claiming %n is ignored
-From: Joe Perches <joe@perches.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: David Miller <davem@davemloft.net>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        George Spelvin <linux@horizon.com>, Jiri Kosina <jkosina@suse.cz>,
-        Jan Beulich <jbeulich@suse.com>, Eldad Zack <eldad@fogrefinery.com>
-Date: Wed, 11 Sep 2013 13:20:22 -0700
-In-Reply-To: <CAGXu5jKRmp_Ei=ty05W3SSqQ01agEMDVMGnZCFqQ_yYbZmMSmw@mail.gmail.com>
-References: <20130911193040.GA16688@www.outflux.net>
-	 <1378929961.4714.21.camel@joe-AO722>
-	 <CAGXu5jKRmp_Ei=ty05W3SSqQ01agEMDVMGnZCFqQ_yYbZmMSmw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	Wed, 11 Sep 2013 16:20:35 -0400
+Message-ID: <5230CF9B.9090509@linux.vnet.ibm.com>
+Date: Thu, 12 Sep 2013 01:46:27 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: rjw@sisk.pl, swarren@wwwdotorg.org, viresh.kumar@linaro.org
+CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpufreq: Fix crash in cpufreq-stats during suspend/resume
+References: <20130911201128.7749.61727.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20130911201128.7749.61727.stgit@srivatsabhat.in.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13091120-5140-0000-0000-000003D0BFAC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-11 at 13:18 -0700, Kees Cook wrote:
-> On Wed, Sep 11, 2013 at 1:06 PM, Joe Perches <joe@perches.com> wrote:
-> > On Wed, 2013-09-11 at 12:30 -0700, Kees Cook wrote:
-> >> The %n format is not ignored, so remove the incorrect comment about it.
-> >
-> > I think it may be better to reimplement the ignoring.
+On 09/12/2013 01:41 AM, Srivatsa S. Bhat wrote:
+> Stephen Warren reported that the cpufreq-stats code hits a NULL pointer
+> dereference during the second attempt to suspend a system. He also
+> pin-pointed the problem to commit 5302c3f "cpufreq: Perform light-weight
+> init/teardown during suspend/resume".
 > 
-> Yeah, just had a quick look, and scanf doesn't use this code at all.
-> I'd much rather remove %n again instead.
+> That commit actually ensured that the cpufreq-stats table and the
+> cpufreq-stats sysfs entries are *not* torn down (ie., not freed) during
+> suspend/resume, which makes it all the more surprising. However, it turns
+> out that the root-cause is not that we access an already freed memory, but
+> that the reference to the allocated memory gets moved around and we lose
+> track of that during resume, leading to the reported crash in a subsequent
+> suspend attempt.
 > 
-> > Maybe:
-> > ---
-> >  lib/vsprintf.c      | 18 +++++-------
-> >  net/ipv4/fib_trie.c | 30 +++++++++----------
-> >  net/ipv4/ping.c     | 19 ++++++------
-> >  net/ipv4/tcp_ipv4.c | 84 ++++++++++++++++++++++++++---------------------------
-> >  net/ipv4/udp.c      | 19 ++++++------
-> >  net/phonet/socket.c | 32 ++++++++++----------
-> >  net/sctp/objcnt.c   |  5 ++--
-> >  7 files changed, 99 insertions(+), 108 deletions(-)
+> In the suspend path, during CPU offline, the value of policy->cpu is updated
+> by choosing one of the surviving CPUs in that policy, as long as there is
+> atleast one CPU in that policy. And cpufreq_stats_update_policy_cpu() is
+> invoked to update the reference to the stats structure by assigning it to
+> the new CPU. However, in the resume path, during CPU online, we end up
+> assigning a fresh CPU as the policy->cpu, without letting cpufreq-stats
+> know about this. Thus the reference to the stats structure remains
+> (incorrectly) associated with the old CPU. So, in a subsequent suspend attempt,
+> during CPU offline, we end up accessing an incorrect location to get the
+> stats structure, which eventually leads to the NULL pointer dereference.
 > 
-> This needs fs/proc/consoles.c, nommu.c, task_mmu.c, and task_nommu.c
-> added too, if I can believe my "git grep".
+> Fix this by letting cpufreq-stats know about the update of the policy->cpu
+> during CPU online in the resume path. (Also, move the update_policy_cpu()
+> function higher up in the file, so that __cpufreq_add_dev() can invoke
+> it).
+> 
+> Reported-by: Stephen Warren <swarren@nvidia.com>
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Tested-by: Stephen Warren <swarren@nvidia.com>
+> ---
 
-Yeah, just found those too.
----
- fs/proc/consoles.c   |  2 +-
- fs/proc/nommu.c      | 20 ++++++++++----------
- fs/proc/task_mmu.c   | 18 +++++++++---------
- fs/proc/task_nommu.c | 20 ++++++++++----------
- 4 files changed, 30 insertions(+), 30 deletions(-)
+Sorry, please ignore this one. I had intended to send 3 patches as a series,
+but by mistake I ended up sending just one. I have sent the full series
+(3 patches) separately, please consider that posting.
 
-diff --git a/fs/proc/consoles.c b/fs/proc/consoles.c
-index b701eaa..42f2bb7 100644
---- a/fs/proc/consoles.c
-+++ b/fs/proc/consoles.c
-@@ -47,7 +47,7 @@ static int show_console_dev(struct seq_file *m, void *v)
- 			con_flags[a].name : ' ';
- 	flags[a] = 0;
- 
--	seq_printf(m, "%s%d%n", con->name, con->index, &len);
-+	len = seq_printf(m, "%s%d", con->name, con->index);
- 	len = 21 - len;
- 	if (len < 1)
- 		len = 1;
-diff --git a/fs/proc/nommu.c b/fs/proc/nommu.c
-index ccfd99b..91cfd19 100644
---- a/fs/proc/nommu.c
-+++ b/fs/proc/nommu.c
-@@ -50,16 +50,16 @@ static int nommu_region_show(struct seq_file *m, struct vm_region *region)
- 		ino = inode->i_ino;
- 	}
- 
--	seq_printf(m,
--		   "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu %n",
--		   region->vm_start,
--		   region->vm_end,
--		   flags & VM_READ ? 'r' : '-',
--		   flags & VM_WRITE ? 'w' : '-',
--		   flags & VM_EXEC ? 'x' : '-',
--		   flags & VM_MAYSHARE ? flags & VM_SHARED ? 'S' : 's' : 'p',
--		   ((loff_t)region->vm_pgoff) << PAGE_SHIFT,
--		   MAJOR(dev), MINOR(dev), ino, &len);
-+	len = seq_printf(m, "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu ",
-+			 region->vm_start,
-+			 region->vm_end,
-+			 flags & VM_READ ? 'r' : '-',
-+			 flags & VM_WRITE ? 'w' : '-',
-+			 flags & VM_EXEC ? 'x' : '-',
-+			 flags & VM_MAYSHARE ?
-+			 flags & VM_SHARED ? 'S' : 's' : 'p',
-+			 ((loff_t)region->vm_pgoff) << PAGE_SHIFT,
-+			 MAJOR(dev), MINOR(dev), ino);
- 
- 	if (file) {
- 		len = 25 + sizeof(void *) * 6 - len;
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 107d026..f84ee9f 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -286,15 +286,15 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma, int is_pid)
- 	if (stack_guard_page_end(vma, end))
- 		end -= PAGE_SIZE;
- 
--	seq_printf(m, "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu %n",
--			start,
--			end,
--			flags & VM_READ ? 'r' : '-',
--			flags & VM_WRITE ? 'w' : '-',
--			flags & VM_EXEC ? 'x' : '-',
--			flags & VM_MAYSHARE ? 's' : 'p',
--			pgoff,
--			MAJOR(dev), MINOR(dev), ino, &len);
-+	len = seq_printf(m, "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu ",
-+			 start,
-+			 end,
-+			 flags & VM_READ ? 'r' : '-',
-+			 flags & VM_WRITE ? 'w' : '-',
-+			 flags & VM_EXEC ? 'x' : '-',
-+			 flags & VM_MAYSHARE ? 's' : 'p',
-+			 pgoff,
-+			 MAJOR(dev), MINOR(dev), ino);
- 
- 	/*
- 	 * Print the dentry name for named mappings, and a
-diff --git a/fs/proc/task_nommu.c b/fs/proc/task_nommu.c
-index 56123a6..1d7bbe5 100644
---- a/fs/proc/task_nommu.c
-+++ b/fs/proc/task_nommu.c
-@@ -155,16 +155,16 @@ static int nommu_vma_show(struct seq_file *m, struct vm_area_struct *vma,
- 		pgoff = (loff_t)vma->vm_pgoff << PAGE_SHIFT;
- 	}
- 
--	seq_printf(m,
--		   "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu %n",
--		   vma->vm_start,
--		   vma->vm_end,
--		   flags & VM_READ ? 'r' : '-',
--		   flags & VM_WRITE ? 'w' : '-',
--		   flags & VM_EXEC ? 'x' : '-',
--		   flags & VM_MAYSHARE ? flags & VM_SHARED ? 'S' : 's' : 'p',
--		   pgoff,
--		   MAJOR(dev), MINOR(dev), ino, &len);
-+	len = seq_printf(m, "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu ",
-+			 vma->vm_start,
-+			 vma->vm_end,
-+			 flags & VM_READ ? 'r' : '-',
-+			 flags & VM_WRITE ? 'w' : '-',
-+			 flags & VM_EXEC ? 'x' : '-',
-+			 flags & VM_MAYSHARE ?
-+			 flags & VM_SHARED ? 'S' : 's' : 'p',
-+			 pgoff,
-+			 MAJOR(dev), MINOR(dev), ino);
- 
- 	if (file) {
- 		pad_len_spaces(m, len);
+Regards,
+Srivatsa S. Bhat
 
+> 
+>  drivers/cpufreq/cpufreq.c |   37 ++++++++++++++++++++++++-------------
+>  1 file changed, 24 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 5a64f66..62bdb95 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -947,6 +947,18 @@ static void cpufreq_policy_free(struct cpufreq_policy *policy)
+>  	kfree(policy);
+>  }
+> 
+> +static void update_policy_cpu(struct cpufreq_policy *policy, unsigned int cpu)
+> +{
+> +	policy->last_cpu = policy->cpu;
+> +	policy->cpu = cpu;
+> +
+> +#ifdef CONFIG_CPU_FREQ_TABLE
+> +	cpufreq_frequency_table_update_policy_cpu(policy);
+> +#endif
+> +	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
+> +			CPUFREQ_UPDATE_POLICY_CPU, policy);
+> +}
+> +
+>  static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
+>  			     bool frozen)
+>  {
+> @@ -1000,7 +1012,18 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
+>  	if (!policy)
+>  		goto nomem_out;
+> 
+> -	policy->cpu = cpu;
+> +
+> +	/*
+> +	 * In the resume path, since we restore a saved policy, the assignment
+> +	 * to policy->cpu is like an update of the existing policy, rather than
+> +	 * the creation of a brand new one. So we need to perform this update
+> +	 * by invoking update_policy_cpu().
+> +	 */
+> +	if (frozen && cpu != policy->cpu)
+> +		update_policy_cpu(policy, cpu);
+> +	else
+> +		policy->cpu = cpu;
+> +
+>  	policy->governor = CPUFREQ_DEFAULT_GOVERNOR;
+>  	cpumask_copy(policy->cpus, cpumask_of(cpu));
+> 
+> @@ -1092,18 +1115,6 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
+>  	return __cpufreq_add_dev(dev, sif, false);
+>  }
+> 
+> -static void update_policy_cpu(struct cpufreq_policy *policy, unsigned int cpu)
+> -{
+> -	policy->last_cpu = policy->cpu;
+> -	policy->cpu = cpu;
+> -
+> -#ifdef CONFIG_CPU_FREQ_TABLE
+> -	cpufreq_frequency_table_update_policy_cpu(policy);
+> -#endif
+> -	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
+> -			CPUFREQ_UPDATE_POLICY_CPU, policy);
+> -}
+> -
+>  static int cpufreq_nominate_new_policy_cpu(struct cpufreq_policy *policy,
+>  					   unsigned int old_cpu, bool frozen)
+>  {
+> 
 
