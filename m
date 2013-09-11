@@ -1,79 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757097Ab3IKU24 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 16:28:56 -0400
-Received: from imap.thunk.org ([74.207.234.97]:58511 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754757Ab3IKU2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 16:28:55 -0400
-Date: Wed, 11 Sep 2013 16:28:31 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, Jeff Garzik <jgarzik@pobox.com>,
-        David Safford <safford@us.ibm.com>,
-        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
-        Ashley Lai <ashley@ashleylai.com>, Rajiv Andrade <mail@srajiv.net>,
-        Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kent Yoder <key@linux.vnet.ibm.com>,
-        David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>,
-        "Johnston, DJ" <dj.johnston@intel.com>
-Subject: Re: TPMs and random numbers
-Message-ID: <20130911202831.GC13397@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Andy Lutomirski <luto@amacapital.net>,
-	Jeff Garzik <jgarzik@pobox.com>, David Safford <safford@us.ibm.com>,
-	Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
-	Ashley Lai <ashley@ashleylai.com>, Rajiv Andrade <mail@srajiv.net>,
-	Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Kent Yoder <key@linux.vnet.ibm.com>,
-	David Safford <safford@watson.ibm.com>,
-	Mimi Zohar <zohar@us.ibm.com>,
-	"Johnston, DJ" <dj.johnston@intel.com>
-References: <1378920168.26698.64.camel@localhost>
- <CALCETrVgiJuw9vj+BhchgzAH06gqEO4TYJyt8wd+2CCy33RQ3Q@mail.gmail.com>
- <20130911184509.GB13397@thunk.org>
- <CAFtxgO7XKbNn1-VW6Ha9P9wj7VAHw6Upar9udgy6dMrFNAHU0Q@mail.gmail.com>
- <CALCETrX0hN5hfW0rAsJ-uAKyV5eVSdhntT0TOVumLm2CDyLLBQ@mail.gmail.com>
- <41ba2dff-12ed-4127-acbd-ae5b40e38afd@email.android.com>
+	id S1757204Ab3IKUbD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 16:31:03 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:50935 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755519Ab3IKUbA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 16:31:00 -0400
+Message-ID: <5230D301.7030203@gmail.com>
+Date: Wed, 11 Sep 2013 16:30:57 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <41ba2dff-12ed-4127-acbd-ae5b40e38afd@email.android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Joe Perches <joe@perches.com>
+CC: Kees Cook <keescook@chromium.org>, David Miller <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        George Spelvin <linux@horizon.com>, Jiri Kosina <jkosina@suse.cz>,
+        Jan Beulich <jbeulich@suse.com>, Eldad Zack <eldad@fogrefinery.com>,
+        kosaki.motohiro@gmail.com
+Subject: Re: [PATCH] vsprintf: drop comment claiming %n is ignored
+References: <20130911193040.GA16688@www.outflux.net>  <1378929961.4714.21.camel@joe-AO722>  <CAGXu5jKRmp_Ei=ty05W3SSqQ01agEMDVMGnZCFqQ_yYbZmMSmw@mail.gmail.com> <1378930822.4714.22.camel@joe-AO722>
+In-Reply-To: <1378930822.4714.22.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 12:25:48PM -0700, H. Peter Anvin wrote:
-> This of course has been a long-running debate.  Similarly, we could
-> make much better use of RDRAND if instead of doing data reduction in
-> rngd we could feed it to the pool and just credit fractional bits.
-> The FIPS tests that rngd runs are weak and obsoleted, but perhaps
-> better than nothing (now when we don't shut down rngd due to false
-> positives.)
+> Yeah, just found those too.
+> ---
+>   fs/proc/consoles.c   |  2 +-
+>   fs/proc/nommu.c      | 20 ++++++++++----------
+>   fs/proc/task_mmu.c   | 18 +++++++++---------
+>   fs/proc/task_nommu.c | 20 ++++++++++----------
+>   4 files changed, 30 insertions(+), 30 deletions(-)
+>
+> diff --git a/fs/proc/consoles.c b/fs/proc/consoles.c
+> index b701eaa..42f2bb7 100644
+> --- a/fs/proc/consoles.c
+> +++ b/fs/proc/consoles.c
+> @@ -47,7 +47,7 @@ static int show_console_dev(struct seq_file *m, void *v)
+>   			con_flags[a].name : ' ';
+>   	flags[a] = 0;
+>
+> -	seq_printf(m, "%s%d%n", con->name, con->index, &len);
+> +	len = seq_printf(m, "%s%d", con->name, con->index);
+>   	len = 21 - len;
+>   	if (len < 1)
+>   		len = 1;
+> diff --git a/fs/proc/nommu.c b/fs/proc/nommu.c
+> index ccfd99b..91cfd19 100644
+> --- a/fs/proc/nommu.c
+> +++ b/fs/proc/nommu.c
+> @@ -50,16 +50,16 @@ static int nommu_region_show(struct seq_file *m, struct vm_region *region)
+>   		ino = inode->i_ino;
+>   	}
+>
+> -	seq_printf(m,
+> -		   "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu %n",
+> -		   region->vm_start,
+> -		   region->vm_end,
+> -		   flags & VM_READ ? 'r' : '-',
+> -		   flags & VM_WRITE ? 'w' : '-',
+> -		   flags & VM_EXEC ? 'x' : '-',
+> -		   flags & VM_MAYSHARE ? flags & VM_SHARED ? 'S' : 's' : 'p',
+> -		   ((loff_t)region->vm_pgoff) << PAGE_SHIFT,
+> -		   MAJOR(dev), MINOR(dev), ino, &len);
+> +	len = seq_printf(m, "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu ",
+> +			 region->vm_start,
+> +			 region->vm_end,
+> +			 flags & VM_READ ? 'r' : '-',
+> +			 flags & VM_WRITE ? 'w' : '-',
+> +			 flags & VM_EXEC ? 'x' : '-',
+> +			 flags & VM_MAYSHARE ?
+> +			 flags & VM_SHARED ? 'S' : 's' : 'p',
+> +			 ((loff_t)region->vm_pgoff) << PAGE_SHIFT,
+> +			 MAJOR(dev), MINOR(dev), ino);
+>
+>   	if (file) {
+>   		len = 25 + sizeof(void *) * 6 - len;
+> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+> index 107d026..f84ee9f 100644
+> --- a/fs/proc/task_mmu.c
+> +++ b/fs/proc/task_mmu.c
+> @@ -286,15 +286,15 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma, int is_pid)
+>   	if (stack_guard_page_end(vma, end))
+>   		end -= PAGE_SIZE;
+>
+> -	seq_printf(m, "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu %n",
+> -			start,
+> -			end,
+> -			flags & VM_READ ? 'r' : '-',
+> -			flags & VM_WRITE ? 'w' : '-',
+> -			flags & VM_EXEC ? 'x' : '-',
+> -			flags & VM_MAYSHARE ? 's' : 'p',
+> -			pgoff,
+> -			MAJOR(dev), MINOR(dev), ino, &len);
+> +	len = seq_printf(m, "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu ",
+> +			 start,
+> +			 end,
+> +			 flags & VM_READ ? 'r' : '-',
+> +			 flags & VM_WRITE ? 'w' : '-',
+> +			 flags & VM_EXEC ? 'x' : '-',
+> +			 flags & VM_MAYSHARE ? 's' : 'p',
+> +			 pgoff,
+> +			 MAJOR(dev), MINOR(dev), ino);
+>
+>   	/*
+>   	 * Print the dentry name for named mappings, and a
+> diff --git a/fs/proc/task_nommu.c b/fs/proc/task_nommu.c
+> index 56123a6..1d7bbe5 100644
+> --- a/fs/proc/task_nommu.c
+> +++ b/fs/proc/task_nommu.c
+> @@ -155,16 +155,16 @@ static int nommu_vma_show(struct seq_file *m, struct vm_area_struct *vma,
+>   		pgoff = (loff_t)vma->vm_pgoff << PAGE_SHIFT;
+>   	}
+>
+> -	seq_printf(m,
+> -		   "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu %n",
+> -		   vma->vm_start,
+> -		   vma->vm_end,
+> -		   flags & VM_READ ? 'r' : '-',
+> -		   flags & VM_WRITE ? 'w' : '-',
+> -		   flags & VM_EXEC ? 'x' : '-',
+> -		   flags & VM_MAYSHARE ? flags & VM_SHARED ? 'S' : 's' : 'p',
+> -		   pgoff,
+> -		   MAJOR(dev), MINOR(dev), ino, &len);
+> +	len = seq_printf(m, "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu ",
+> +			 vma->vm_start,
+> +			 vma->vm_end,
+> +			 flags & VM_READ ? 'r' : '-',
+> +			 flags & VM_WRITE ? 'w' : '-',
+> +			 flags & VM_EXEC ? 'x' : '-',
+> +			 flags & VM_MAYSHARE ?
+> +			 flags & VM_SHARED ? 'S' : 's' : 'p',
+> +			 pgoff,
+> +			 MAJOR(dev), MINOR(dev), ino);
+>
+>   	if (file) {
+>   		pad_len_spaces(m, len);
 
-/dev/urandom is using RDRAND already, and that's what most of the
-applications which are generating ssh host keys, session keys, etc.,
-are using.
+ack for mm parts.
 
-/dev/random is using RDRAND as well, but we're not giving any entropy
-credit, so it will take longer to get the necessary randomness to
-generate a GPG key.
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-The rason why it would be good to use TPM to fetch randomness is for
-those platforms is (a) for pre-RDRAND capable x86 systems, and (c)
-non-x86 platforms that might be using a TPM which don't have a RDRAND
-function.
 
-Also, in general, it's better to use as many entropy sources as
-possible.
-
-Cheers,
-
-					- Ted
