@@ -1,69 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756853Ab3IKTiG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 15:38:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26700 "EHLO mx1.redhat.com"
+	id S1757077Ab3IKTl1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 15:41:27 -0400
+Received: from gmmr5.centrum.cz ([46.255.225.250]:35500 "EHLO gmmr5.centrum.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754387Ab3IKTiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 15:38:04 -0400
-Message-ID: <5230C5A7.2030206@redhat.com>
-Date: Wed, 11 Sep 2013 14:33:59 -0500
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1752939Ab3IKTl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 15:41:26 -0400
+To: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
+Subject: =?utf-8?q?Re=3A_=5Bpatch_0=2F7=5D_improve_memcg_oom_killer_robustness_v2?=
+Date: Wed, 11 Sep 2013 21:41:18 +0200
+From: "azurIt" <azurit@pobox.sk>
+Cc: =?utf-8?q?Andrew_Morton?= <akpm@linux-foundation.org>,
+        =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>,
+        =?utf-8?q?David_Rientjes?= <rientjes@google.com>,
+        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
+        =?utf-8?q?KOSAKI_Motohiro?= <kosaki.motohiro@jp.fujitsu.com>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <x86@kernel.org>,
+        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <20130910183740.GI856@cmpxchg.org>, <20130910213253.A1E666C5@pobox.sk>, <20130910201222.GA25972@cmpxchg.org>, <20130910230853.FEEC19B5@pobox.sk>, <20130910211823.GJ856@cmpxchg.org>, <20130910233247.9EDF4DBA@pobox.sk>, <20130910220329.GK856@cmpxchg.org>, <20130911143305.FFEAD399@pobox.sk>, <20130911180327.GL856@cmpxchg.org>, <20130911205448.656D9D7C@pobox.sk> <20130911191150.GN856@cmpxchg.org>
+In-Reply-To: <20130911191150.GN856@cmpxchg.org>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+X-Original-From: azurit@pobox.sk
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger@dilger.ca>,
-        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>,
-        T Makphaibulchoke <tmac@hp.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-ext4@vger.kernel.org List" <linux-ext4@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org Devel" <linux-fsdevel@vger.kernel.org>,
-        aswin@hp.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        aswin_proj@lists.hp.com
-Subject: Re: [PATCH v3 0/2] ext4: increase mbcache scalability
-References: <1374108934-50550-1-git-send-email-tmac@hp.com> <1378312756-68597-1-git-send-email-tmac@hp.com> <20130905023522.GA21268@thunk.org> <52285395.1070508@hp.com> <0787C579-7E2C-4864-B8F4-98816E1E50A2@dilger.ca> <5229C939.8030108@hp.com> <62D71A85-C7EE-4F5F-B481-5329F0282044@dilger.ca> <20130910210250.GH29237@thunk.org> <522FDFCC.1070007@redhat.com> <20130911113001.GB13315@thunk.org> <52309F27.8060008@redhat.com>
-In-Reply-To: <52309F27.8060008@redhat.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Message-Id: <20130911214118.7CDF2E71@pobox.sk>
+X-Maser: brud
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/11/13 11:49 AM, Eric Sandeen wrote:
-> On 9/11/13 6:30 AM, Theodore Ts'o wrote:
->> On Tue, Sep 10, 2013 at 10:13:16PM -0500, Eric Sandeen wrote:
->>>
->>> Above doesn't tell us the prevalence of various contexts on the actual system,
->>> but they are all under 100 bytes in any case.
->>
->> OK, so in other words, on your system i_file_acl and i_file_acl_high
->> (which is where we store the block # for the external xattr block),
->> should always be zero for all inodes, yes?
-> 
-> Oh, hum - ok, so that would have been the better thing to check (or at
-> least an additional thing).
-> 
-> # find / -xdev -exec filefrag -x {} \; | awk -F : '{print $NF}' | sort | uniq -c
-> 
-> Finds quite a lot that claim to have external blocks, but it seems broken:
-> 
-> # filefrag -xv /var/lib/yum/repos/x86_64/6Server/epel
-> Filesystem type is: ef53
-> File size of /var/lib/yum/repos/x86_64/6Server/epel is 4096 (1 block, blocksize 4096)
->  ext logical physical expected length flags
->    0       0 32212996252             100 not_aligned,inline
-> /var/lib/yum/repos/x86_64/6Server/epel: 1 extent found
-> 
-> So _filefrag_ says it has a block (at a 120T physical address not on my fs!)
+>On Wed, Sep 11, 2013 at 08:54:48PM +0200, azurIt wrote:
+>> >On Wed, Sep 11, 2013 at 02:33:05PM +0200, azurIt wrote:
+>> >> >On Tue, Sep 10, 2013 at 11:32:47PM +0200, azurIt wrote:
+>> >> >> >On Tue, Sep 10, 2013 at 11:08:53PM +0200, azurIt wrote:
+>> >> >> >> >On Tue, Sep 10, 2013 at 09:32:53PM +0200, azurIt wrote:
+>> >> >> >> >> Here is full kernel log between 6:00 and 7:59:
+>> >> >> >> >> http://watchdog.sk/lkml/kern6.log
+>> >> >> >> >
+>> >> >> >> >Wow, your apaches are like the hydra.  Whenever one is OOM killed,
+>> >> >> >> >more show up!
+>> >> >> >> 
+>> >> >> >> 
+>> >> >> >> 
+>> >> >> >> Yeah, it's supposed to do this ;)
+>> >> >
+>> >> >How are you expecting the machine to recover from an OOM situation,
+>> >> >though?  I guess I don't really understand what these machines are
+>> >> >doing.  But if you are overloading them like crazy, isn't that the
+>> >> >expected outcome?
+>> >> 
+>> >> 
+>> >> 
+>> >> 
+>> >> 
+>> >> There's no global OOM, server has enough of memory. OOM is occuring only in cgroups (customers who simply don't want to pay for more memory).
+>> >
+>> >Yes, sure, but when the cgroups are thrashing, they use the disk and
+>> >CPU to the point where the overall system is affected.
+>> 
+>> 
+>> 
+>> 
+>> Didn't know that there is a disk usage because of this, i never noticed anything yet.
+>
+>You said there was heavy IO going on...?
 
-Oh, this is the special-but-not-documented "print inline extents in bytes
-not blocks"  :(
 
-I'll send a patch to ignore inline extents on fiemap calls to make this
-easier, but in the meantime, neither my RHEL6 root nor my F17 root have
-any out-of-inode selinux xattrs on 256-byte-inode filesystems.
 
-So selinux alone should not be exercising mbcache much, if at all, w/ 256 byte
-inodes.
+Yes, there usually was a big IO but it was related to that deadlocking bug in kernel (or i assume it was). I never saw a big IO in normal conditions even when there were lots of OOM in cgroups. I'm even not using swap because of this so i was assuming that lacks of memory is not doing any additional IO (or am i wrong?). And if you mean that last problem with IO from Monday, i don't exactly know what happens but it's really long time when we had so big problem with IO that it disables also root login on console.
 
--Eric
+
+
+
+>> >Okay, my suspicion is that the previous patches invoked the OOM killer
+>> >right away, whereas in this latest version it's invoked only when the
+>> >fault is finished.  Maybe the task that locked the group gets held up
+>> >somewhere else and then it takes too long until something is actually
+>> >killed.  Meanwhile, every other allocator drops into 5 reclaim cycles
+>> >before giving up, which could explain the thrashing.  And on the memcg
+>> >level we don't have BDI congestion sleeps like on the global level, so
+>> >everybody is backing off from the disk.
+>> >
+>> >Here is an incremental fix to the latest version, i.e. the one that
+>> >livelocked under heavy IO, not the one you are using right now.
+>> >
+>> >First, it reduces the reclaim retries from 5 to 2, which resembles the
+>> >global kswapd + ttfp somewhat.  Next, NOFS/NORETRY allocators are not
+>> >allowed to kick off the OOM killer, like in the global case, so that
+>> >we don't kill things and give up just because light reclaim can't free
+>> >anything.  Last, the memcg is marked under OOM when one task enters
+>> >OOM so that not everybody is livelocking in reclaim in a hopeless
+>> >situation.
+>> 
+>> 
+>> 
+>> Thank you i will boot it this night. I also created a new server load checking and recuing script so i hope i won't be forced to hard reboot the server in case something similar as before happens. Btw, patch didn't apply to 3.2.51, there were probably big changes in memory system (almost all hunks failed). I used 3.2.50 as before.
+>
+>Yes, please don't change the test base in the middle of this!
+>
