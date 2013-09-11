@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060Ab3IKPct (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 11:32:49 -0400
+	id S1755506Ab3IKPgN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 11:36:13 -0400
 Received: from mga14.intel.com ([143.182.124.37]:13815 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754560Ab3IKPcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 11:32:47 -0400
+	id S1755036Ab3IKPcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 11:32:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,885,1371106800"; 
-   d="scan'208";a="293584879"
+   d="scan'208";a="293584883"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: linux-i2c@vger.kernel.org
 Cc: Wolfram Sang <wsa@the-dreams.de>,
@@ -24,9 +24,9 @@ Cc: Wolfram Sang <wsa@the-dreams.de>,
         Liam Girdwood <lgirdwood@gmail.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH v2 4/9] [media] s5p-tv: convert to use I2C core runtime PM
-Date: Wed, 11 Sep 2013 18:32:35 +0300
-Message-Id: <1378913560-2752-5-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [PATCH v2 3/9] Input: misc - convert existing I2C client drivers to use I2C core runtime PM
+Date: Wed, 11 Sep 2013 18:32:34 +0300
+Message-Id: <1378913560-2752-4-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1378913560-2752-1-git-send-email-mika.westerberg@linux.intel.com>
 References: <1378913560-2752-1-git-send-email-mika.westerberg@linux.intel.com>
@@ -36,77 +36,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 The I2C core now prepares runtime PM on behalf of the I2C client device, so
 only thing the driver needs to do is to call pm_runtime_put() at the end of
-its ->probe().
+->probe().
 
-This patch converts s5p-tv driver to use this model.
+This patch converts bma150 and mpu3050 input drivers to use this model.
+
+While we are there remove call to pm_runtime_set_autosuspend_delay() in
+mpu3050 driver because the driver doesn't seem to use autosuspend anyway.
 
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- drivers/media/platform/s5p-tv/sii9234_drv.c | 30 ++++++-----------------------
- 1 file changed, 6 insertions(+), 24 deletions(-)
+ drivers/input/misc/bma150.c  |  4 ++--
+ drivers/input/misc/mpu3050.c | 16 ++++------------
+ 2 files changed, 6 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/media/platform/s5p-tv/sii9234_drv.c b/drivers/media/platform/s5p-tv/sii9234_drv.c
-index 3dd762e..c0e8d42 100644
---- a/drivers/media/platform/s5p-tv/sii9234_drv.c
-+++ b/drivers/media/platform/s5p-tv/sii9234_drv.c
-@@ -325,8 +325,7 @@ static int sii9234_probe(struct i2c_client *client,
- 	ctx = devm_kzalloc(&client->dev, sizeof(*ctx), GFP_KERNEL);
- 	if (!ctx) {
- 		dev_err(dev, "out of memory\n");
--		ret = -ENOMEM;
--		goto fail;
-+		return -ENOMEM;
- 	}
- 	ctx->client = client;
+diff --git a/drivers/input/misc/bma150.c b/drivers/input/misc/bma150.c
+index 865c2f9..f1bf5e9 100644
+--- a/drivers/input/misc/bma150.c
++++ b/drivers/input/misc/bma150.c
+@@ -592,7 +592,7 @@ static int bma150_probe(struct i2c_client *client,
  
-@@ -345,42 +344,25 @@ static int sii9234_probe(struct i2c_client *client,
+ 	i2c_set_clientdata(client, bma150);
  
- 	v4l2_i2c_subdev_init(&ctx->sd, client, &sii9234_ops);
- 
--	pm_runtime_enable(dev);
--
--	/* enable device */
--	ret = pm_runtime_get_sync(dev);
--	if (ret)
--		goto fail_pm;
--
- 	/* verify chip version */
- 	ret = sii9234_verify_version(client);
--	if (ret)
--		goto fail_pm_get;
-+	if (ret) {
-+		dev_err(dev, "failed to verify chip version\n");
-+		return ret;
-+	}
- 
--	/* stop processing */
- 	pm_runtime_put(dev);
- 
- 	dev_info(dev, "probe successful\n");
+-	pm_runtime_enable(&client->dev);
++	pm_runtime_put(&client->dev);
  
  	return 0;
--
--fail_pm_get:
--	pm_runtime_put_sync(dev);
--
--fail_pm:
--	pm_runtime_disable(dev);
--
--fail:
--	dev_err(dev, "probe failed\n");
--
--	return ret;
- }
  
- static int sii9234_remove(struct i2c_client *client)
+@@ -605,7 +605,7 @@ static int bma150_remove(struct i2c_client *client)
  {
- 	struct device *dev = &client->dev;
+ 	struct bma150_data *bma150 = i2c_get_clientdata(client);
  
--	pm_runtime_disable(dev);
-+	pm_runtime_get(dev);
+-	pm_runtime_disable(&client->dev);
++	pm_runtime_get(&client->dev);
  
- 	dev_info(dev, "remove successful\n");
+ 	if (client->irq > 0) {
+ 		free_irq(client->irq, bma150);
+diff --git a/drivers/input/misc/mpu3050.c b/drivers/input/misc/mpu3050.c
+index dce0d95..9f2ead5 100644
+--- a/drivers/input/misc/mpu3050.c
++++ b/drivers/input/misc/mpu3050.c
+@@ -43,8 +43,6 @@
  
+ #define MPU3050_CHIP_ID		0x69
+ 
+-#define MPU3050_AUTO_DELAY	1000
+-
+ #define MPU3050_MIN_VALUE	-32768
+ #define MPU3050_MAX_VALUE	32767
+ 
+@@ -359,11 +357,9 @@ static int mpu3050_probe(struct i2c_client *client,
+ 
+ 	input_set_drvdata(idev, sensor);
+ 
+-	pm_runtime_set_active(&client->dev);
+-
+ 	error = mpu3050_hw_init(sensor);
+ 	if (error)
+-		goto err_pm_set_suspended;
++		goto err_free_mem;
+ 
+ 	error = request_threaded_irq(client->irq,
+ 				     NULL, mpu3050_interrupt_thread,
+@@ -372,7 +368,7 @@ static int mpu3050_probe(struct i2c_client *client,
+ 	if (error) {
+ 		dev_err(&client->dev,
+ 			"can't get IRQ %d, error %d\n", client->irq, error);
+-		goto err_pm_set_suspended;
++		goto err_free_mem;
+ 	}
+ 
+ 	error = input_register_device(idev);
+@@ -381,15 +377,12 @@ static int mpu3050_probe(struct i2c_client *client,
+ 		goto err_free_irq;
+ 	}
+ 
+-	pm_runtime_enable(&client->dev);
+-	pm_runtime_set_autosuspend_delay(&client->dev, MPU3050_AUTO_DELAY);
++	pm_runtime_put(&client->dev);
+ 
+ 	return 0;
+ 
+ err_free_irq:
+ 	free_irq(client->irq, sensor);
+-err_pm_set_suspended:
+-	pm_runtime_set_suspended(&client->dev);
+ err_free_mem:
+ 	input_free_device(idev);
+ 	kfree(sensor);
+@@ -406,8 +399,7 @@ static int mpu3050_remove(struct i2c_client *client)
+ {
+ 	struct mpu3050_sensor *sensor = i2c_get_clientdata(client);
+ 
+-	pm_runtime_disable(&client->dev);
+-	pm_runtime_set_suspended(&client->dev);
++	pm_runtime_get(&client->dev);
+ 
+ 	free_irq(client->irq, sensor);
+ 	input_unregister_device(sensor->idev);
 -- 
 1.8.4.rc3
 
