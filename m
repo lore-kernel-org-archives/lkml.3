@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757353Ab3IKFhO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 01:37:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22176 "EHLO
+	id S1757337Ab3IKFhM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 01:37:12 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3257 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754565Ab3IKE5R (ORCPT
+	with ESMTP id S1754125Ab3IKE5R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 11 Sep 2013 00:57:17 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=itOs6X76HXkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=fYghgS0mSdkA:10 a=QyXUC8HyAAAA:8 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=dGJ0OcVc7YAA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=aW8-CnS0V9wA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=RPJh-y7tIBcA:10 a=yPCof4ZbAAAA:8 a=20KFwNOVAAAA:8 a=drOt6m5kAAAA:8 a=Z4Rwk6OoAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=7DSvI1NPTFQA:10 a=jEp0ucaQiEUA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=n1ldoD1PFI-sDU0A:21 a=xyNKjGH30JtYiQqQ:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042917.460646890@goodmis.org>
+Message-Id: <20130911042917.625281726@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:29:38 -0400
+Date: Wed, 11 Sep 2013 00:29:39 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [151/251] ACPI / battery: Fix parsing _BIX return value
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, Eric Paris <eparis@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [152/251] fanotify: info leak in copy_event_to_user()
 References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0151-ACPI-battery-Fix-parsing-_BIX-return-value.patch
+Content-Disposition: inline; filename=0152-fanotify-info-leak-in-copy_event_to_user.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,52 +31,35 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit 016d5baad04269e8559332df05f89bd95b52d6ad ]
+[ Upstream commit de1e0c40aceb9d5bff09c3a3b97b2f1b178af53f ]
 
-The _BIX method returns extended battery info as a package.
-According the ACPI spec (ACPI 5, Section 10.2.2.2), the first member
-of that package should be "Revision".  However, the current ACPI
-battery driver treats the first member as "Power Unit" which should
-be the second member.  This causes the result of _BIX return data
-parsing to be incorrect.
+The ->reserved field isn't cleared so we leak one byte of stack
+information to userspace.
 
-Fix this by adding a new member called 'revision' to struct
-acpi_battery and adding the offsetof() information on it to
-extended_info_offsets[] as the first row.
-
-[rjw: Changelog]
-Reported-and-tested-by: Jan Hoffmann <jan.christian.hoffmann@gmail.com>
-References: http://bugzilla.kernel.org/show_bug.cgi?id=60519
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Cc: 2.6.34+ <stable@vger.kernel.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Eric Paris <eparis@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/acpi/battery.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/notify/fanotify/fanotify_user.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
-index 7efaeaa..7663df7 100644
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -117,6 +117,7 @@ struct acpi_battery {
- 	struct acpi_device *device;
- 	struct notifier_block pm_nb;
- 	unsigned long update_time;
-+	int revision;
- 	int rate_now;
- 	int capacity_now;
- 	int voltage_now;
-@@ -359,6 +360,7 @@ static struct acpi_offsets info_offsets[] = {
- };
- 
- static struct acpi_offsets extended_info_offsets[] = {
-+	{offsetof(struct acpi_battery, revision), 0},
- 	{offsetof(struct acpi_battery, power_unit), 0},
- 	{offsetof(struct acpi_battery, design_capacity), 0},
- 	{offsetof(struct acpi_battery, full_charge_capacity), 0},
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index d438036..b670659 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -116,6 +116,7 @@ static int fill_event_metadata(struct fsnotify_group *group,
+ 	metadata->event_len = FAN_EVENT_METADATA_LEN;
+ 	metadata->metadata_len = FAN_EVENT_METADATA_LEN;
+ 	metadata->vers = FANOTIFY_METADATA_VERSION;
++	metadata->reserved = 0;
+ 	metadata->mask = event->mask & FAN_ALL_OUTGOING_EVENTS;
+ 	metadata->pid = pid_vnr(event->tgid);
+ 	if (unlikely(event->mask & FAN_Q_OVERFLOW))
 -- 
 1.7.10.4
 
