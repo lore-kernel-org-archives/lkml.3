@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756499Ab3IKE7L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 00:59:11 -0400
+	id S1756461Ab3IKE7K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 00:59:10 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3257 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754379Ab3IKE5G (ORCPT
+	with ESMTP id S1754366Ab3IKE5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 11 Sep 2013 00:57:06 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=XgSMBJCyeFcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=J9L4q4xwTgcA:10 a=40MIqcmNAAAA:8 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=Da1No7cPAAAA:8 a=h7UUX0lOYpQWgwAsNMoA:9 a=6z04QOUsx9AA:10 a=-tENaG0q7zQA:10 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=5bqIMkYVwbkOX2ff:21 a=LxpLiuDEYup16QK9:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=-sFsFYAcYMwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=oJIm2u4HeLQA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=QMaBWZzZKcRZzji6U0wA:9 a=jEp0ucaQiEUA:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042922.812919139@goodmis.org>
+Message-Id: <20130911042923.131374350@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:30:11 -0400
+Date: Wed, 11 Sep 2013 00:30:13 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Chen Gang <gang.chen@asianux.com>, Jeff Layton <jlayton@redhat.com>,
-        Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
-        Scott Lovenberg <scott.lovenberg@gmail.com>,
-        Steve French <smfrench@gmail.com>
-Subject: [184/251] cifs: extend the buffer length enought for sprintf() using
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [186/251] debugfs: debugfs_remove_recursive() must not rely on
+ list_empty(d_subdirs)
 References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0184-cifs-extend-the-buffer-length-enought-for-sprintf-us.patch
+Content-Disposition: inline; filename=0186-debugfs-debugfs_remove_recursive-must-not-rely-on-li.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,108 +31,167 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Chen Gang <gang.chen@asianux.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-[ Upstream commit 057d6332b24a4497c55a761c83c823eed9e3f23b ]
+[ Upstream commit 776164c1faac4966ab14418bb0922e1820da1d19 ]
 
-For cifs_set_cifscreds() in "fs/cifs/connect.c", 'desc' buffer length
-is 'CIFSCREDS_DESC_SIZE' (56 is less than 256), and 'ses->domainName'
-length may be "255 + '\0'".
+debugfs_remove_recursive() is wrong,
 
-The related sprintf() may cause memory overflow, so need extend related
-buffer enough to hold all things.
+1. it wrongly assumes that !list_empty(d_subdirs) means that this
+   dir should be removed.
 
-It is also necessary to be sure of 'ses->domainName' must be less than
-256, and define the related macro instead of hard code number '256'.
+   This is not that bad by itself, but:
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
-Reviewed-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-Reviewed-by: Scott Lovenberg <scott.lovenberg@gmail.com>
-CC: <stable@vger.kernel.org>
-Signed-off-by: Steve French <smfrench@gmail.com>
+2. if d_subdirs does not becomes empty after __debugfs_remove()
+   it gives up and silently fails, it doesn't even try to remove
+   other entries.
+
+   However ->d_subdirs can be non-empty because it still has the
+   already deleted !debugfs_positive() entries.
+
+3. simple_release_fs() is called even if __debugfs_remove() fails.
+
+Suppose we have
+
+	dir1/
+		dir2/
+			file2
+		file1
+
+and someone opens dir1/dir2/file2.
+
+Now, debugfs_remove_recursive(dir1/dir2) succeeds, and dir1/dir2 goes
+away.
+
+But debugfs_remove_recursive(dir1) silently fails and doesn't remove
+this directory. Because it tries to delete (the already deleted)
+dir1/dir2/file2 again and then fails due to "Avoid infinite loop"
+logic.
+
+Test-case:
+
+	#!/bin/sh
+
+	cd /sys/kernel/debug/tracing
+	echo 'p:probe/sigprocmask sigprocmask' >> kprobe_events
+	sleep 1000 < events/probe/sigprocmask/id &
+	echo -n >| kprobe_events
+
+	[ -d events/probe ] && echo "ERR!! failed to rm probe"
+
+And after that it is not possible to create another probe entry.
+
+With this patch debugfs_remove_recursive() skips !debugfs_positive()
+files although this is not strictly needed. The most important change
+is that it does not try to make ->d_subdirs empty, it simply scans
+the whole list(s) recursively and removes as much as possible.
+
+Link: http://lkml.kernel.org/r/20130726151256.GC19472@redhat.com
+
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- fs/cifs/cifsencrypt.c |    2 +-
- fs/cifs/cifsglob.h    |    1 +
- fs/cifs/connect.c     |    7 ++++---
- fs/cifs/sess.c        |    6 +++---
- 4 files changed, 9 insertions(+), 7 deletions(-)
+ fs/debugfs/inode.c |   69 +++++++++++++++++-----------------------------------
+ 1 file changed, 22 insertions(+), 47 deletions(-)
 
-diff --git a/fs/cifs/cifsencrypt.c b/fs/cifs/cifsencrypt.c
-index 9caf0c6..c6828ae 100644
---- a/fs/cifs/cifsencrypt.c
-+++ b/fs/cifs/cifsencrypt.c
-@@ -369,7 +369,7 @@ find_domain_name(struct cifs_ses *ses, const struct nls_table *nls_cp)
- 		if (blobptr + attrsize > blobend)
- 			break;
- 		if (type == NTLMSSP_AV_NB_DOMAIN_NAME) {
--			if (!attrsize)
-+			if (!attrsize || attrsize >= CIFS_MAX_DOMAINNAME_LEN)
- 				break;
- 			if (!ses->domainName) {
- 				ses->domainName =
-diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
-index 977dc0e..4af59dc 100644
---- a/fs/cifs/cifsglob.h
-+++ b/fs/cifs/cifsglob.h
-@@ -42,6 +42,7 @@
- #define MAX_TREE_SIZE (2 + MAX_SERVER_SIZE + 1 + MAX_SHARE_SIZE + 1)
- #define MAX_SERVER_SIZE 15
- #define MAX_SHARE_SIZE 80
-+#define CIFS_MAX_DOMAINNAME_LEN 256 /* max domain name length */
- #define MAX_USERNAME_SIZE 256	/* reasonable maximum for current servers */
- #define MAX_PASSWORD_SIZE 512	/* max for windows seems to be 256 wide chars */
+diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
+index 4733eab..327b802 100644
+--- a/fs/debugfs/inode.c
++++ b/fs/debugfs/inode.c
+@@ -524,8 +524,7 @@ EXPORT_SYMBOL_GPL(debugfs_remove);
+  */
+ void debugfs_remove_recursive(struct dentry *dentry)
+ {
+-	struct dentry *child;
+-	struct dentry *parent;
++	struct dentry *child, *next, *parent;
  
-diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
-index 487db09..8239cba 100644
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -1611,7 +1611,8 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
- 			if (string == NULL)
- 				goto out_nomem;
+ 	if (IS_ERR_OR_NULL(dentry))
+ 		return;
+@@ -535,61 +534,37 @@ void debugfs_remove_recursive(struct dentry *dentry)
+ 		return;
  
--			if (strnlen(string, 256) == 256) {
-+			if (strnlen(string, CIFS_MAX_DOMAINNAME_LEN)
-+					== CIFS_MAX_DOMAINNAME_LEN) {
- 				printk(KERN_WARNING "CIFS: domain name too"
- 						    " long\n");
- 				goto cifs_parse_mount_err;
-@@ -2298,8 +2299,8 @@ cifs_put_smb_ses(struct cifs_ses *ses)
+ 	parent = dentry;
++ down:
+ 	mutex_lock(&parent->d_inode->i_mutex);
++	list_for_each_entry_safe(child, next, &parent->d_subdirs, d_u.d_child) {
++		if (!debugfs_positive(child))
++			continue;
  
- #ifdef CONFIG_KEYS
+-	while (1) {
+-		/*
+-		 * When all dentries under "parent" has been removed,
+-		 * walk up the tree until we reach our starting point.
+-		 */
+-		if (list_empty(&parent->d_subdirs)) {
+-			mutex_unlock(&parent->d_inode->i_mutex);
+-			if (parent == dentry)
+-				break;
+-			parent = parent->d_parent;
+-			mutex_lock(&parent->d_inode->i_mutex);
+-		}
+-		child = list_entry(parent->d_subdirs.next, struct dentry,
+-				d_u.d_child);
+- next_sibling:
+-
+-		/*
+-		 * If "child" isn't empty, walk down the tree and
+-		 * remove all its descendants first.
+-		 */
++		/* perhaps simple_empty(child) makes more sense */
+ 		if (!list_empty(&child->d_subdirs)) {
+ 			mutex_unlock(&parent->d_inode->i_mutex);
+ 			parent = child;
+-			mutex_lock(&parent->d_inode->i_mutex);
+-			continue;
++			goto down;
+ 		}
+-		__debugfs_remove(child, parent);
+-		if (parent->d_subdirs.next == &child->d_u.d_child) {
+-			/*
+-			 * Try the next sibling.
+-			 */
+-			if (child->d_u.d_child.next != &parent->d_subdirs) {
+-				child = list_entry(child->d_u.d_child.next,
+-						   struct dentry,
+-						   d_u.d_child);
+-				goto next_sibling;
+-			}
+-
+-			/*
+-			 * Avoid infinite loop if we fail to remove
+-			 * one dentry.
+-			 */
+-			mutex_unlock(&parent->d_inode->i_mutex);
+-			break;
+-		}
+-		simple_release_fs(&debugfs_mount, &debugfs_mount_count);
++ up:
++		if (!__debugfs_remove(child, parent))
++			simple_release_fs(&debugfs_mount, &debugfs_mount_count);
+ 	}
  
--/* strlen("cifs:a:") + INET6_ADDRSTRLEN + 1 */
--#define CIFSCREDS_DESC_SIZE (7 + INET6_ADDRSTRLEN + 1)
-+/* strlen("cifs:a:") + CIFS_MAX_DOMAINNAME_LEN + 1 */
-+#define CIFSCREDS_DESC_SIZE (7 + CIFS_MAX_DOMAINNAME_LEN + 1)
+-	parent = dentry->d_parent;
++	mutex_unlock(&parent->d_inode->i_mutex);
++	child = parent;
++	parent = parent->d_parent;
+ 	mutex_lock(&parent->d_inode->i_mutex);
+-	__debugfs_remove(dentry, parent);
++
++	if (child != dentry) {
++		next = list_entry(child->d_u.d_child.next, struct dentry,
++					d_u.d_child);
++		goto up;
++	}
++
++	if (!__debugfs_remove(child, parent))
++		simple_release_fs(&debugfs_mount, &debugfs_mount_count);
+ 	mutex_unlock(&parent->d_inode->i_mutex);
+-	simple_release_fs(&debugfs_mount, &debugfs_mount_count);
+ }
+ EXPORT_SYMBOL_GPL(debugfs_remove_recursive);
  
- /* Populate username and pw fields from keyring if possible */
- static int
-diff --git a/fs/cifs/sess.c b/fs/cifs/sess.c
-index 382c06d..673db0b 100644
---- a/fs/cifs/sess.c
-+++ b/fs/cifs/sess.c
-@@ -198,7 +198,7 @@ static void unicode_domain_string(char **pbcc_area, struct cifs_ses *ses,
- 		bytes_ret = 0;
- 	} else
- 		bytes_ret = cifs_strtoUTF16((__le16 *) bcc_ptr, ses->domainName,
--					    256, nls_cp);
-+					    CIFS_MAX_DOMAINNAME_LEN, nls_cp);
- 	bcc_ptr += 2 * bytes_ret;
- 	bcc_ptr += 2;  /* account for null terminator */
- 
-@@ -256,8 +256,8 @@ static void ascii_ssetup_strings(char **pbcc_area, struct cifs_ses *ses,
- 
- 	/* copy domain */
- 	if (ses->domainName != NULL) {
--		strncpy(bcc_ptr, ses->domainName, 256);
--		bcc_ptr += strnlen(ses->domainName, 256);
-+		strncpy(bcc_ptr, ses->domainName, CIFS_MAX_DOMAINNAME_LEN);
-+		bcc_ptr += strnlen(ses->domainName, CIFS_MAX_DOMAINNAME_LEN);
- 	} /* else we will send a null domain name
- 	     so the server will default to its own domain */
- 	*bcc_ptr = 0;
 -- 
 1.7.10.4
 
