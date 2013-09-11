@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942Ab3IKI0u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 04:26:50 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26716 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752774Ab3IKI0p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 04:26:45 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=iB92Dndv-1kA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=ijuO9SoHCKkA:10 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=dGJ0OcVc7YAA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042904.220856540@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:28:18 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Liu ShuoX <shuox.liu@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [071/251] PM / Sleep: avoid autosleep in shutdown progress
-References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0071-PM-Sleep-avoid-autosleep-in-shutdown-progress.patch
+	id S1752330Ab3IKIgG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 04:36:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32758 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750781Ab3IKIgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 04:36:03 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, netdev@vger.kernel.org, wannes.rombouts@epitech.eu,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>
+Subject: [PATCH net] tuntap: correctly handle error in tun_set_iff()
+Date: Wed, 11 Sep 2013 16:24:05 +0800
+Message-Id: <1378887845-6821-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.9-rc1 stable review patch.
-If anyone has any objections, please let me know.
+Commit c8d68e6be1c3b242f1c598595830890b65cea64a (tuntap: multiqueue support)
+only call free_netdev() on err in tun_set_iff(). This causes several issues:
 
-------------------
+- memory of tun security were leaked
+- use after free since the flow gc timer was not deleted and the tfile were not
+  detached
 
-From: Liu ShuoX <shuox.liu@intel.com>
+This patch solves the above issues.
 
-[ Upstream commit e5248a111bf4048a9f3fab1a9c94c4630a10592a ]
-
-Prevent automatic system suspend from happening during system
-shutdown by making try_to_suspend() check system_state and return
-immediately if it is not SYSTEM_RUNNING.
-
-This prevents the following breakage from happening (scenario from
-Zhang Yanmin):
-
- Kernel starts shutdown and calls all device driver's shutdown
- callback.  When a driver's shutdown is called, the last wakelock is
- released and suspend-to-ram starts.  However, as some driver's shut
- down callbacks already shut down devices and disabled runtime pm,
- the suspend-to-ram calls driver's suspend callback without noticing
- that device is already off and causes crash.
-
-[rjw: Changelog]
-Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
-Cc: 3.5+ <stable@vger.kernel.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Wannes Rombouts <wannes.rombouts@epitech.eu>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
 ---
- kernel/power/autosleep.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+The patch were also needed for stable 3.8+.
+---
+ drivers/net/tun.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/power/autosleep.c b/kernel/power/autosleep.c
-index ca304046..ab79ecb 100644
---- a/kernel/power/autosleep.c
-+++ b/kernel/power/autosleep.c
-@@ -32,7 +32,8 @@ static void try_to_suspend(struct work_struct *work)
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index a639de8..e5fb5d3 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1641,11 +1641,11 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+ 		INIT_LIST_HEAD(&tun->disabled);
+ 		err = tun_attach(tun, file, false);
+ 		if (err < 0)
+-			goto err_free_dev;
++			goto err_free_flow;
  
- 	mutex_lock(&autosleep_lock);
+ 		err = register_netdevice(tun->dev);
+ 		if (err < 0)
+-			goto err_free_dev;
++			goto err_detach;
  
--	if (!pm_save_wakeup_count(initial_count)) {
-+	if (!pm_save_wakeup_count(initial_count) ||
-+		system_state != SYSTEM_RUNNING) {
- 		mutex_unlock(&autosleep_lock);
- 		goto out;
- 	}
+ 		if (device_create_file(&tun->dev->dev, &dev_attr_tun_flags) ||
+ 		    device_create_file(&tun->dev->dev, &dev_attr_owner) ||
+@@ -1689,6 +1689,11 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+ 	strcpy(ifr->ifr_name, tun->dev->name);
+ 	return 0;
+ 
++err_detach:
++	tun_detach_all(dev);
++err_free_flow:
++	tun_flow_uninit(tun);
++	security_tun_dev_free_security(tun->security);
+  err_free_dev:
+ 	free_netdev(dev);
+ 	return err;
 -- 
-1.7.10.4
-
+1.7.1
 
