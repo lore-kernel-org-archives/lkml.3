@@ -1,85 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411Ab3IKRqP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 13:46:15 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:40387 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755221Ab3IKRqN (ORCPT
+	id S1756038Ab3IKRtJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 13:49:09 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:43486 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753203Ab3IKRtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 13:46:13 -0400
-Message-ID: <5230AC61.30904@wwwdotorg.org>
-Date: Wed, 11 Sep 2013 11:46:09 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Wed, 11 Sep 2013 13:49:07 -0400
+Date: Wed, 11 Sep 2013 13:49:02 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org
+Subject: Re: [RFC PATCH] timekeeping: introduce timekeeping_is_busy()
+Message-ID: <20130911174902.GA23532@Krystal>
+References: <20130911150853.GA19800@Krystal> <52309D13.3020305@linaro.org>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: "broonie@kernel.org" <broonie@kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>
-Subject: Re: [PATCH V2] regulator: core: add support for configuring turn-on
- time through constraints
-References: <1378904331-5665-1-git-send-email-ldewangan@nvidia.com> <5230A593.9010401@wwwdotorg.org> <5230AC5E.2020504@nvidia.com>
-In-Reply-To: <5230AC5E.2020504@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52309D13.3020305@linaro.org>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2013 11:46 AM, Laxman Dewangan wrote:
-> On Wednesday 11 September 2013 10:47 PM, Stephen Warren wrote:
->> On 09/11/2013 06:58 AM, Laxman Dewangan wrote:
->>> The Turn-on time of the regulator depends on the regulator device's
->>> electrical characteristics. Sometimes regulator turn-on time also
->>> depends on the capacitive load on the given platform and it can be
->>> more than the datasheet value.
->>>
->>> The driver provides the enable-time as per datasheet.
->>>
->>> Add support for configure the enable ramp time through regulator
->>> constraints so that regulator core can take this value for enable
->>> time for that regulator.
->>> diff --git
->>> a/Documentation/devicetree/bindings/regulator/regulator.txt
->>> b/Documentation/devicetree/bindings/regulator/regulator.txt
->>>   - regulator-ramp-delay: ramp delay for regulator(in uV/uS)
->>>     For hardwares which support disabling ramp rate, it should be
->>> explicitly
->>>     intialised to zero (regulator-ramp-delay = <0>) for disabling
->>> ramp delay.
->>> +- regulator-enable-ramp-delay: Turn-on time for regulator(in uSec).
->>> This is
->>> +  the time time taken to reach within some proportion of the target
->>> voltage
->>> +  from off state.
->> This is still a bit unclear. What proportion of the target voltage?
->> There's no mention that this describes the delay due to the
->> board/environment rather than the delay due to the internal operation of
->> the regulator itself. How about:
->>
->> - regulator-enable-ramp-delay: The time taken, in uSec, for the supply
->> rail to reach the target voltage, plus/minus whatever tolerance the
->> board design requires, once the regulator output itself has ramped up.
->> This value is in addition to whatever built-in ramp time is inherent in
->> the regulator's own internal design or configuration. This property
->> describes the additional ramp time required due to board design issues
->> such as trace capacitance and load on the supply.
->>
->> That's text repeats "additional" a bit, but I think describes the
->> situation correctly?
-> 
-> I wanted to provide the absolute delay rather than additional delay on
-> top of inherit delay from device.
+Hi John,
 
-I suppose that either is fine from a DT perspective. But, the regulator
-drivers already know their internal delay, so presumably driver code
-will have to take the value from DT, and subtract out whatever delay the
-driver already embodies, in order to calculate the extra delay required?
-Or, if this property is set, does the driver-specified delay just get
-ignored?
+* John Stultz (john.stultz@linaro.org) wrote:
+> On 09/11/2013 08:08 AM, Mathieu Desnoyers wrote:
+> > Starting from commit 06c017fdd4dc48451a29ac37fc1db4a3f86b7f40
+> > "timekeeping: Hold timekeepering locks in do_adjtimex and hardpps"
+> > (3.10 kernels), the xtime write seqlock is held across calls to
+> > __do_adjtimex(), which includes a call to notify_cmos_timer(), and hence
+> > schedule_delayed_work().
+> >
+> > This introduces a side-effect for a set of tracepoints, including mainly
+> > the workqueue tracepoints: a tracer hooking on those tracepoints and
+> > reading current time with ktime_get() will cause hard system LOCKUP such
+> > as:
+> Oh bummer. I had just worked this issue out the other day:
+>     https://lkml.org/lkml/2013/9/9/476
+>
+> Apparently it was a schroedinbug of sorts. My apologies for time you
+> spent chasing this down.
+
+No worries. As soon as I've been able to reproduce it on my test box
+(with serial port), the NMI watchdog had a pretty reasonable explanation
+for the issue.
+
+> My plan is to pull the notify_cmos_timer call to outside of the
+> timekeeper locking (see the patch at the very end of the mail in the
+> above link), as well as try to add lockdep support to seqcount/seqlocks
+> so we can catch these sorts of issues more easily.
+
+I just tried your patch, and it indeed seems to fix the lockup I've been
+experiencing with lttng-modules. Do you plan pushing this fix into
+master, and submitting it for inclusion into stable 3.10 and stable 3.11 ?
+I'm planning on dealing with with this issue with a blacklist of
+kernel versions that will prevent people from building lttng-modules
+against broken kernels as soon as the patch makes it into those trees.
+
+I will reply to the rest of your email separately, so this thread can
+focus on getting the fix upstream quickly.
+
+Thanks!
+
+Mathieu
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
