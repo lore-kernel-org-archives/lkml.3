@@ -1,82 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752503Ab3IKLbg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 07:31:36 -0400
-Received: from imap.thunk.org ([74.207.234.97]:58201 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750914Ab3IKLbe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 07:31:34 -0400
-Date: Wed, 11 Sep 2013 07:30:01 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Eric Sandeen <sandeen@redhat.com>
-Cc: Andreas Dilger <adilger@dilger.ca>,
-        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>,
-        T Makphaibulchoke <tmac@hp.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-ext4@vger.kernel.org List" <linux-ext4@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org Devel" <linux-fsdevel@vger.kernel.org>,
-        aswin@hp.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        aswin_proj@lists.hp.com
-Subject: Re: [PATCH v3 0/2] ext4: increase mbcache scalability
-Message-ID: <20130911113001.GB13315@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Eric Sandeen <sandeen@redhat.com>,
-	Andreas Dilger <adilger@dilger.ca>,
-	Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>,
-	T Makphaibulchoke <tmac@hp.com>, Al Viro <viro@zeniv.linux.org.uk>,
-	"linux-ext4@vger.kernel.org List" <linux-ext4@vger.kernel.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	"linux-fsdevel@vger.kernel.org Devel" <linux-fsdevel@vger.kernel.org>,
-	aswin@hp.com, Linus Torvalds <torvalds@linux-foundation.org>,
-	aswin_proj@lists.hp.com
-References: <1374108934-50550-1-git-send-email-tmac@hp.com>
- <1378312756-68597-1-git-send-email-tmac@hp.com>
- <20130905023522.GA21268@thunk.org>
- <52285395.1070508@hp.com>
- <0787C579-7E2C-4864-B8F4-98816E1E50A2@dilger.ca>
- <5229C939.8030108@hp.com>
- <62D71A85-C7EE-4F5F-B481-5329F0282044@dilger.ca>
- <20130910210250.GH29237@thunk.org>
- <522FDFCC.1070007@redhat.com>
+	id S1751383Ab3IKLeu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 07:34:50 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:15301 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751044Ab3IKLes (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 07:34:48 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 11 Sep 2013 04:31:43 -0700
+Message-ID: <52305587.6020207@nvidia.com>
+Date: Wed, 11 Sep 2013 19:35:35 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <522FDFCC.1070007@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Mark Brown <broonie@kernel.org>
+CC: Stephen Warren <swarren@wwwdotorg.org>, Guenter Roeck <linux@roeck-us.net>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/2] hwmon: (lm90) Add power control
+References: <522E93D6.2010304@roeck-us.net> <522E94AE.7000804@wwwdotorg.org> <522E97CE.4070300@roeck-us.net> <522E9C84.9070405@wwwdotorg.org> <20130910100939.GW29403@sirena.org.uk> <522F35BF.6070909@wwwdotorg.org> <20130910170438.GS29403@sirena.org.uk> <522F5A65.8040907@wwwdotorg.org> <20130910181837.GD29403@sirena.org.uk> <522F66FB.2000608@wwwdotorg.org> <20130910185235.GF29403@sirena.org.uk>
+In-Reply-To: <20130910185235.GF29403@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 10:13:16PM -0500, Eric Sandeen wrote:
+On 09/11/2013 02:52 AM, Mark Brown wrote:
+> * PGP Signed by an unknown key
 > 
-> Above doesn't tell us the prevalence of various contexts on the actual system,
-> but they are all under 100 bytes in any case.
+> On Tue, Sep 10, 2013 at 12:37:47PM -0600, Stephen Warren wrote:
+> 
+>> OK, so for the DT binding we should make vcc-supply a required
+>> property, yet the driver will still work OK if that property just
+>> happens to be missing (or e.g. when instantiated from a board file,
+>> and there's no regulator).
+> 
+> Yup.  That way we've got both the binding and code trying to make things
+> work, hopefully that'll maximise robustness.
 
-OK, so in other words, on your system i_file_acl and i_file_acl_high
-(which is where we store the block # for the external xattr block),
-should always be zero for all inodes, yes?
+Ok, it looks like regulator_get will handle all things, looking forward
+to your patches :)
+Then I think my changes will be simple, just something like:
++	reg = devm_regulator_get(dev, "vcc");
++	if (!IS_ERR(reg)) {
++		err = regulator_enable(reg);
++		if (err < 0)
++			return err;
++	} else {
++		return PTR_ERR(reg);
++	}
 
-Thavatchai, can you check to see whether or not this is true on your
-system?  You can use debugfs on the file system, and then use the
-"stat" command to sample various inodes in your system.  Or I can make
-a version of e2fsck which counts the number of inodes with external
-xattr blocks --- it sounds like this is something we should do anyway.
+Wei.
 
-One difference might be that Eric ran this test on RHEL 6, and
-Thavatchai is using an upstream kernel, so maybe this is bloat has
-been added recently?
+> 
+> * Unknown Key
+> * 0x7EA229BD
+> 
 
-The reason why I'm pushing here is that mbcache shouldn't be showing
-up in the profiles at all if there is no external xattr block.  And so
-if newer versions of SELinux (like Adnreas, I've been burned by
-SELinux too many times in the past, so I don't use SELinux on any of
-my systems) is somehow causing mbcache to get triggered, we should
-figure this out and understand what's really going on.
-
-Sigh, I suppose I should figure out how to create a minimal KVM setup
-which uses SELinux just so I can see what the heck is going on....
-
-      	  	      	     	      	 - Ted
