@@ -1,67 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab3IKCab (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 22:30:31 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:55437 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844Ab3IKCaa (ORCPT
+	id S1753597Ab3IKCdU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 22:33:20 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48372 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752227Ab3IKCdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 22:30:30 -0400
-Date: Tue, 10 Sep 2013 19:30:26 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Peng Tao <bergwolf@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        "Dilger, Andreas" <andreas.dilger@intel.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
-Subject: Re: [PATCH] staging: Disable lustre file system for MIPS, SH, and
- XTENSA
-Message-ID: <20130911023026.GA6273@roeck-us.net>
-References: <1378688580-11935-1-git-send-email-linux@roeck-us.net>
- <20130909015945.GA4029@kroah.com>
- <522D3153.5000102@roeck-us.net>
- <20130909023152.GA5329@kroah.com>
- <522D32F6.4020705@roeck-us.net>
- <20130909050147.GA3899@osiris>
- <CA+a=Yy6h0y=J9-NQ6LQ8fkWxqQnTQKxAt2+Pr3fSwLQ1hefGsw@mail.gmail.com>
- <20130911014443.GA20996@infradead.org>
- <CA+a=Yy6GFzoBT0Bgz7z5bHZRMdEBJa+txwpCZuxA+mRTch-8mA@mail.gmail.com>
+	Tue, 10 Sep 2013 22:33:19 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <522FD64B.8090206@jp.fujitsu.com>
+Date: Wed, 11 Sep 2013 11:32:43 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+a=Yy6GFzoBT0Bgz7z5bHZRMdEBJa+txwpCZuxA+mRTch-8mA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Toshi Kani <toshi.kani@hp.com>
+CC: <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <rjw@sisk.pl>,
+        <kosaki.motohiro@jp.fujitsu.com>, <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v2] cpu/mem hotplug: Add try_online_node() for cpu_up()
+References: <1378853258-28633-1-git-send-email-toshi.kani@hp.com>
+In-Reply-To: <1378853258-28633-1-git-send-email-toshi.kani@hp.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 10:25:57AM +0800, Peng Tao wrote:
-> On Wed, Sep 11, 2013 at 9:44 AM, Christoph Hellwig <hch@infradead.org> wrote:
-> > On Wed, Sep 11, 2013 at 01:14:11AM +0800, Peng Tao wrote:
-> >> The problem is access_process_vm() is not exported since certain
-> >> version of kernel including the latest. According to Christoph in the
-> >> other mail, access_process_vm() is also a core mm function that is not
-> >> supposed to be exported. Then what kind of change shall we make in
-> >> order to keep current functionality?
-> >
-> > You should remove the higher level functionality, kernel modules are
-> > not supposed to look at userspace environment variables.
-> >
-> OK. I've looked at the specific case that Lustre uses
-> access_process_vm() to get the jobid environment variable and package
-> it into the RPC requests to server. However, it turns out that in the
-> latest Lustre server code, the jobid in a request is not used
-> anywhere. So it looks like we can just get rid of it.
+(2013/09/11 7:47), Toshi Kani wrote:
+> cpu_up() has #ifdef CONFIG_MEMORY_HOTPLUG code blocks, which
+> call mem_online_node() to put its node online if offlined and
+> then call build_all_zonelists() to initialize the zone list.
+> These steps are specific to memory hotplug, and should be
+> managed in mm/memory_hotplug.c.  lock_memory_hotplug() should
+> also be held for the whole steps.
 > 
-> Andreas, could you please confirm this? Is the jobid an obsolete
-> parameter that can be abandoned? Or is there plan to use it somehow in
-> the future?
+> For this reason, this patch replaces mem_online_node() with
+> try_online_node(), which performs the whole steps with
+> lock_memory_hotplug() held.  try_online_node() is named after
+> try_offline_node() as they have similar purpose.
 > 
-"Plan to use it in the future" is not a reason or argument to keep it today,
-especially if it is something you are not supposed to do to start with.
-If you ever need it, you should be able to find some other means to
-support a similar functionality.
+> There is no functional change in this patch.
+> 
+> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> ---
+> v2: Added pr_err() in case of NULL pgdat in try_online_node().
+> ---
 
-Guenter
+Thank you for updating it. It looks good to me.
+
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+
+Thanks,
+Yasuaki Ishimatsu
+
+>   include/linux/memory_hotplug.h |    8 +++++++-
+>   kernel/cpu.c                   |   29 +++--------------------------
+>   mm/memory_hotplug.c            |   16 ++++++++++++++--
+>   3 files changed, 24 insertions(+), 29 deletions(-)
+> 
+> diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+> index dd38e62..22203c2 100644
+> --- a/include/linux/memory_hotplug.h
+> +++ b/include/linux/memory_hotplug.h
+> @@ -94,6 +94,8 @@ extern void __online_page_set_limits(struct page *page);
+>   extern void __online_page_increment_counters(struct page *page);
+>   extern void __online_page_free(struct page *page);
+>   
+> +extern int try_online_node(int nid);
+> +
+>   #ifdef CONFIG_MEMORY_HOTREMOVE
+>   extern bool is_pageblock_removable_nolock(struct page *page);
+>   extern int arch_remove_memory(u64 start, u64 size);
+> @@ -225,6 +227,11 @@ static inline void register_page_bootmem_info_node(struct pglist_data *pgdat)
+>   {
+>   }
+>   
+> +static inline int try_online_node(int nid)
+> +{
+> +	return 0;
+> +}
+> +
+>   static inline void lock_memory_hotplug(void) {}
+>   static inline void unlock_memory_hotplug(void) {}
+>   
+> @@ -256,7 +263,6 @@ static inline void remove_memory(int nid, u64 start, u64 size) {}
+>   
+>   extern int walk_memory_range(unsigned long start_pfn, unsigned long end_pfn,
+>   		void *arg, int (*func)(struct memory_block *, void *));
+> -extern int mem_online_node(int nid);
+>   extern int add_memory(int nid, u64 start, u64 size);
+>   extern int arch_add_memory(int nid, u64 start, u64 size);
+>   extern int offline_pages(unsigned long start_pfn, unsigned long nr_pages);
+> diff --git a/kernel/cpu.c b/kernel/cpu.c
+> index d7f07a2..c10b285 100644
+> --- a/kernel/cpu.c
+> +++ b/kernel/cpu.c
+> @@ -420,11 +420,6 @@ int cpu_up(unsigned int cpu)
+>   {
+>   	int err = 0;
+>   
+> -#ifdef	CONFIG_MEMORY_HOTPLUG
+> -	int nid;
+> -	pg_data_t	*pgdat;
+> -#endif
+> -
+>   	if (!cpu_possible(cpu)) {
+>   		printk(KERN_ERR "can't online cpu %d because it is not "
+>   			"configured as may-hotadd at boot time\n", cpu);
+> @@ -435,27 +430,9 @@ int cpu_up(unsigned int cpu)
+>   		return -EINVAL;
+>   	}
+>   
+> -#ifdef	CONFIG_MEMORY_HOTPLUG
+> -	nid = cpu_to_node(cpu);
+> -	if (!node_online(nid)) {
+> -		err = mem_online_node(nid);
+> -		if (err)
+> -			return err;
+> -	}
+> -
+> -	pgdat = NODE_DATA(nid);
+> -	if (!pgdat) {
+> -		printk(KERN_ERR
+> -			"Can't online cpu %d due to NULL pgdat\n", cpu);
+> -		return -ENOMEM;
+> -	}
+> -
+> -	if (pgdat->node_zonelists->_zonerefs->zone == NULL) {
+> -		mutex_lock(&zonelists_mutex);
+> -		build_all_zonelists(NULL, NULL);
+> -		mutex_unlock(&zonelists_mutex);
+> -	}
+> -#endif
+> +	err = try_online_node(cpu_to_node(cpu));
+> +	if (err)
+> +		return err;
+>   
+>   	cpu_maps_update_begin();
+>   
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index ed85fe3..d6fc915 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -1044,17 +1044,23 @@ static void rollback_node_hotadd(int nid, pg_data_t *pgdat)
+>   }
+>   
+>   
+> -/*
+> +/**
+> + * try_online_node - online a node if offlined
+> + *
+>    * called by cpu_up() to online a node without onlined memory.
+>    */
+> -int mem_online_node(int nid)
+> +int try_online_node(int nid)
+>   {
+>   	pg_data_t	*pgdat;
+>   	int	ret;
+>   
+> +	if (node_online(nid))
+> +		return 0;
+> +
+>   	lock_memory_hotplug();
+>   	pgdat = hotadd_new_pgdat(nid, 0);
+>   	if (!pgdat) {
+> +		pr_err("Cannot online node %d due to NULL pgdat\n", nid);
+>   		ret = -ENOMEM;
+>   		goto out;
+>   	}
+> @@ -1062,6 +1068,12 @@ int mem_online_node(int nid)
+>   	ret = register_one_node(nid);
+>   	BUG_ON(ret);
+>   
+> +	if (pgdat->node_zonelists->_zonerefs->zone == NULL) {
+> +		mutex_lock(&zonelists_mutex);
+> +		build_all_zonelists(NULL, NULL);
+> +		mutex_unlock(&zonelists_mutex);
+> +	}
+> +
+>   out:
+>   	unlock_memory_hotplug();
+>   	return ret;
+> 
+
+
