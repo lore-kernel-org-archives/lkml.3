@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755347Ab3IKQBu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 12:01:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53051 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755159Ab3IKQBs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 12:01:48 -0400
-Message-ID: <5230939E.3050408@zytor.com>
-Date: Wed, 11 Sep 2013 09:00:30 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Arjan van de Ven <arjan@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Andi Kleen <ak@linux.intel.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
+	id S1755456Ab3IKQDb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 12:03:31 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:38655 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754017Ab3IKQDa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 12:03:30 -0400
+Date: Wed, 11 Sep 2013 09:03:15 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH 0/7] preempt_count rework -v2
-References: <20130910130811.507933095@infradead.org> <20130910135152.GD7537@gmail.com> <20130910135636.GA8268@gmail.com> <522F3ACC.9000701@linux.intel.com> <CA+55aFz3S6_g4TQ11VKGM3GW=a=r3qYWQ_a0qJ_5241qQz8D=w@mail.gmail.com>
-In-Reply-To: <CA+55aFz3S6_g4TQ11VKGM3GW=a=r3qYWQ_a0qJ_5241qQz8D=w@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        Peter Zijlstra <peterz@infradead.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, sbw@mit.edu
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+Message-ID: <20130911160315.GB3966@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130909165836.GB3966@linux.vnet.ibm.com>
+ <20130909172908.GA31239@Krystal>
+ <20130909175656.GF3966@linux.vnet.ibm.com>
+ <20130909214026.GA8830@Krystal>
+ <20130909175917.794b19bd@gandalf.local.home>
+ <20130909223426.GM3966@linux.vnet.ibm.com>
+ <20130911141302.GA11342@linux.vnet.ibm.com>
+ <20130911102607.16a3da91@gandalf.local.home>
+ <20130911152331.GZ3966@linux.vnet.ibm.com>
+ <20130911114916.4a53f9f0@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130911114916.4a53f9f0@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13091116-7164-0000-0000-00000189BFAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2013 09:24 AM, Linus Torvalds wrote:
-> On Tue, Sep 10, 2013 at 8:29 AM, Arjan van de Ven <arjan@linux.intel.com> wrote:
->>>
->> also.. yuck on using "dec"
->> "dec" sucks, please use "sub foo  ,1" instead
+On Wed, Sep 11, 2013 at 11:49:16AM -0400, Steven Rostedt wrote:
+> On Wed, 11 Sep 2013 08:23:31 -0700
+> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
 > 
-> That's a bigger instruction, largely due to the constant.
+> > C'mon, Steven!  I did say "after treating injuries"!  In the opinion
+> > of the surgeon, the only option was to ampute what was left of either
+> > the _cpu(), _task(), _thread(), or _you().  Heck, the damage was so
+> > severe that we couldn't even tell which one it was!
 > 
->> (dec sucks because of its broken flags behavior; it creates basically a
->> bubble in the pipeline)
-> 
-> Intel could (and should) just fix that. It's "easy" enough - you just
-> need to rename the carry flag as a separate register (and make sure
-> that the conditional instructions that don't use it don't think they
-> need it).
-> 
-> In fact I thought Intel already did that on their large cores. Are you
-> sure they still have trouble with inc/dec?
-> 
+> What a morbid thought. The possibility that "_you" was amputated.
 
-Big cores are fine, but Atom (and presumably Quark) might still suffer a
-performance penalty.
+;-) ;-) ;-)
 
-	-hpa
-
+							Thanx, Paul
 
