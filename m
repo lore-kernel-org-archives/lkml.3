@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756157Ab3IKFhT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 01:37:19 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11316 "EHLO
+	id S1757368Ab3IKFhQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 01:37:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32814 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754564Ab3IKE5R (ORCPT
+	with ESMTP id S1754546Ab3IKE5R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 11 Sep 2013 00:57:17 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=_WzgRhmuAjcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Yf8OGtSgGmEA:10 a=i0EeH86SAAAA:8 a=VwQbUJbxAAAA:8 a=c8mzyqaV5ZIASwUaoV8A:9 a=hPjdaMEvmhQA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=dFZ_0mlut2wA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=6amTVSigj54A:10 a=pGLkceISAAAA:8 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042917.861283797@goodmis.org>
+Message-Id: <20130911042918.029209862@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:29:40 -0400
+Date: Wed, 11 Sep 2013 00:29:41 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>
-Subject: [153/251] cgroup: fix umount vs cgroup_cfts_commit() race
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [154/251] x86, fpu: correct the asm constraints for fxsave, unbreak mxcsr.daz
 References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0153-cgroup-fix-umount-vs-cgroup_cfts_commit-race.patch
+Content-Disposition: inline; filename=0154-x86-fpu-correct-the-asm-constraints-for-fxsave-unbre.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,69 +29,48 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: "H.J. Lu" <hjl.tools@gmail.com>
 
-[ Upstream commit 084457f284abf6789d90509ee11dae383842b23b ]
+[ Upstream commit eaa5a990191d204ba0f9d35dbe5505ec2cdd1460 ]
 
-cgroup_cfts_commit() uses dget() to keep cgroup alive after cgroup_mutex
-is dropped, but dget() won't prevent cgroupfs from being umounted. When
-the race happens, vfs will see some dentries with non-zero refcnt while
-umount is in process.
+GCC will optimize mxcsr_feature_mask_init in arch/x86/kernel/i387.c:
 
-Keep running this:
-  mount -t cgroup -o blkio xxx /cgroup
-  umount /cgroup
+		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
+		asm volatile("fxsave %0" : : "m" (fx_scratch));
+		mask = fx_scratch.mxcsr_mask;
+		if (mask == 0)
+			mask = 0x0000ffbf;
 
-And this:
-  modprobe cfq-iosched
-  rmmod cfs-iosched
+to
 
-After a while, the BUG() in shrink_dcache_for_umount_subtree() may
-be triggered:
+		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
+		asm volatile("fxsave %0" : : "m" (fx_scratch));
+		mask = 0x0000ffbf;
 
-  BUG: Dentry xxx{i=0,n=blkio.yyy} still in use (1) [umount of cgroup cgroup]
+since asm statement doesn’t say it will update fx_scratch.  As the
+result, the DAZ bit will be cleared.  This patch fixes it. This bug
+dates back to at least kernel 2.6.12.
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: stable@vger.kernel.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: <stable@vger.kernel.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/cgroup.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ arch/x86/kernel/i387.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 9cf9102..79e528f 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2761,13 +2761,17 @@ static void cgroup_cfts_commit(struct cgroup_subsys *ss,
- {
- 	LIST_HEAD(pending);
- 	struct cgroup *cgrp, *n;
-+	struct super_block *sb = ss->root->sb;
- 
- 	/* %NULL @cfts indicates abort and don't bother if @ss isn't attached */
--	if (cfts && ss->root != &rootnode) {
-+	if (cfts && ss->root != &rootnode &&
-+	    atomic_inc_not_zero(&sb->s_active)) {
- 		list_for_each_entry(cgrp, &ss->root->allcg_list, allcg_node) {
- 			dget(cgrp->dentry);
- 			list_add_tail(&cgrp->cft_q_node, &pending);
- 		}
-+	} else {
-+		sb = NULL;
- 	}
- 
- 	mutex_unlock(&cgroup_mutex);
-@@ -2790,6 +2794,9 @@ static void cgroup_cfts_commit(struct cgroup_subsys *ss,
- 		dput(cgrp->dentry);
- 	}
- 
-+	if (sb)
-+		deactivate_super(sb);
-+
- 	mutex_unlock(&cgroup_cft_mutex);
- }
- 
+diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+index f250431..6c5a7dc 100644
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -132,7 +132,7 @@ static void __cpuinit mxcsr_feature_mask_init(void)
+ 	clts();
+ 	if (cpu_has_fxsr) {
+ 		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
+-		asm volatile("fxsave %0" : : "m" (fx_scratch));
++		asm volatile("fxsave %0" : "+m" (fx_scratch));
+ 		mask = fx_scratch.mxcsr_mask;
+ 		if (mask == 0)
+ 			mask = 0x0000ffbf;
 -- 
 1.7.10.4
 
