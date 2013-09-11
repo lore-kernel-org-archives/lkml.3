@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552Ab3IKHuo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 03:50:44 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:53102 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368Ab3IKHum (ORCPT
+	id S1752149Ab3IKIAX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 04:00:23 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:54546 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751181Ab3IKIAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 03:50:42 -0400
+	Wed, 11 Sep 2013 04:00:21 -0400
+Message-ID: <5230231E.8070104@linux.vnet.ibm.com>
+Date: Wed, 11 Sep 2013 13:30:30 +0530
+From: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <1525010.ijhgMNYcdJ@vostro.rjw.lan>
-References: <CAKohpom90VAMYHkp3stbJJ-7H3y3zrVoQ+1q=Vza2Q0JhG8bNw@mail.gmail.com>
-	<20130910141603.6225fe4e@amdc308.digital.local>
-	<1525010.ijhgMNYcdJ@vostro.rjw.lan>
-Date: Wed, 11 Sep 2013 13:20:41 +0530
-Message-ID: <CAKohpo=4sg9AkXuwBwLVuj7_sdAdwap7a0Yp41KSEHvNMyWaTQ@mail.gmail.com>
-Subject: Re: [PATCH v8 0/7] cpufreq:boost: CPU Boost mode support
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Lukasz Majewski <l.majewski@samsung.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Guenter Roeck <linux@roeck-us.net>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Shivaprasad G Bhat <sbhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH] powerpc: Export cpu_to_chip_id() to fix build error
+References: <1378777076-4699-1-git-send-email-linux@roeck-us.net> <1378850610.4121.29.camel@pasglop>
+In-Reply-To: <1378850610.4121.29.camel@pasglop>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13091107-5490-0000-0000-000004220111
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That is some important piece of information that might be useful for
-others and so cc'ing LKML and other lists..
+On 09/11/2013 03:33 AM, Benjamin Herrenschmidt wrote:
+> On Mon, 2013-09-09 at 18:37 -0700, Guenter Roeck wrote:
+>> powerpc allmodconfig build fails with:
+>>
+>> ERROR: ".cpu_to_chip_id" [drivers/block/mtip32xx/mtip32xx.ko] undefined!
+>>
+>> The problem was introduced with commit 15863ff3b (powerpc: Make chip-id
+>> information available to userspace).
+>
+> Thanks, I'll send that to Linus asap.
+>
 
-On 11 September 2013 01:06, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Tuesday, September 10, 2013 02:16:03 PM Lukasz Majewski wrote:
->> For my curiosity - what is the difference between bleeding-edge and
->> linux-next branches at kernel_pm?
+Verified on today's Linus tree. This issue is fixed.
+
+Thanks a lot.
+
+-Vasant
+
+> Ben.
 >
-> linux-next are patches that I'm going to push to Linus in the future and that
-> have passed automated build testing.  I still may drop one of them occasionally
-> or add tags to commits and rebase the branch as a result, though.
+>> Export the missing symbol.
+>>
+>> Cc: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
+>> Cc: Shivaprasad G Bhat <sbhat@linux.vnet.ibm.com>
+>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+>> ---
+>>   arch/powerpc/kernel/smp.c |    1 +
+>>   1 file changed, 1 insertion(+)
+>>
+>> diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
+>> index 442d8e2..8e59abc 100644
+>> --- a/arch/powerpc/kernel/smp.c
+>> +++ b/arch/powerpc/kernel/smp.c
+>> @@ -611,6 +611,7 @@ int cpu_to_chip_id(int cpu)
+>>   	of_node_put(np);
+>>   	return of_get_ibm_chip_id(np);
+>>   }
+>> +EXPORT_SYMBOL(cpu_to_chip_id);
+>>
+>>   /* Helper routines for cpu to core mapping */
+>>   int cpu_core_index_of_thread(int cpu)
 >
-> bleeding-edge is linux-next plus patches under automated build testing, but it
-> may contain some purely experimental stuff too.  During a merge window, like
-> for example today, it also may contain material for the second next release
-> (like 3.13 at the moment).
 >
-> In addition to those, there are topic branches like pm-cpufreq, acpica etc.
-> that are only material either in the Linus' tree already or going to be pushed
-> to Linus going forward and I don't rebase them.
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
 >
-> So if you want a stable branch to work on top of, either use one of the topic
-> branches (but please note that they may be somewhat behind Linus sometimes), or
-> ask me for one directly.
->
-> Thanks,
-> Rafael
->
+
