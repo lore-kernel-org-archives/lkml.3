@@ -1,134 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab3IKPMF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 11:12:05 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:43245 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754052Ab3IKPMC (ORCPT
+	id S1754712Ab3IKPQx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 11:16:53 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:58995 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753316Ab3IKPQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 11:12:02 -0400
-Date: Wed, 11 Sep 2013 11:12:00 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        John Stultz <john.stultz@linaro.org>
-Cc: lttng-dev@lists.lttng.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [RFC PATCH lttng-modules] Fix: use timekeeping_is_busy() to fix
-	ktime_get() hard lockup
-Message-ID: <20130911151200.GB19800@Krystal>
+	Wed, 11 Sep 2013 11:16:52 -0400
+Message-ID: <5230895B.5070400@hurleysoftware.com>
+Date: Wed, 11 Sep 2013 11:16:43 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Clark Williams <williams@redhat.com>,
+        Mario Kleiner <mario.kleiner@tuebingen.mpg.de>,
+        Dave Airlie <airlied@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: BUG: sleeping function called from invalid context on 3.10.10-rt7
+References: <20130911102809.GA31663@uudg.org> <20130911092623.42efd930@gandalf.local.home>
+In-Reply-To: <20130911092623.42efd930@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix an issue affecting lttng-modules with Linux kernels starting with
-3.10.
+On 09/11/2013 09:26 AM, Steven Rostedt wrote:
+> On Wed, 11 Sep 2013 07:28:09 -0300
+> "Luis Claudio R. Goncalves" <lclaudio@uudg.org> wrote:
+>
+>> Hello,
+>>
+>> I saw two different occurrences of "BUG: sleeping function called from
+>> invalid context" happening on 3.10.10-rt7. The first one happened on
+>> drm_vblank_get() -> i915_get_vblank_timestamp() and was flooding dmesg
+>> after Xorg started. I silenced that with a hackish patch, just for fun, and
+>> found a second problem, this time on tty_ldisc_reinit().
+>>
+>> The logs:
+>>
+>> [   23.973991] BUG: sleeping function called from invalid context at /home/lclaudio/SANDBOX/mrg-rt-v2-devel/kernel/rtmutex.c:659
+>> [   23.973992] in_atomic(): 1, irqs_disabled(): 0, pid: 517, name: Xorg
+>> [   23.973993] 2 locks held by Xorg/517:
+>> [   23.973993]  #0:
+>> [   23.973994]  (
+>> [   23.973994] &dev->vbl_lock
+>> [   23.973995] ){......}
+>> [   23.973995] , at:
+>> [   23.974007] [<ffffffffa0024c60>] drm_vblank_get+0x30/0x2b0 [drm]
+>> [   23.974008]  #1:
+>> [   23.974008]  (
+>> [   23.974008] &dev->vblank_time_lock
+>> [   23.974008] ){......}
+>> [   23.974009] , at:
+>> [   23.974013] [<ffffffffa0024ce1>] drm_vblank_get+0xb1/0x2b0 [drm]
+>> [   23.974013] Preemption disabled at:
+>> [   23.974021] [<ffffffffa008bc95>] i915_get_vblank_timestamp+0x45/0xa0 [i915]
+>> [   23.974023] CPU: 3 PID: 517 Comm: Xorg Not tainted 3.10.10-rt7+ #5
+>> [   23.974024] Hardware name: Hewlett-Packard p7-1512/2ADA, BIOS 8.15 02/05/2013
+>> [   23.974024]  0000000000070008
+>> [   23.974025]  ffff88017a08bae0
+>> [   23.974025]  ffffffff8164b790
+>> [   23.974025]  ffff88017a08baf8
+>> [   23.974026]  ffffffff8107e62f
+>> [   23.974026]  ffff880179840040
+>> [   23.974026]  ffff88017a08bb18
+>> [   23.974027]  ffffffff81651ac4
+>> [   23.974027]  0000000000000002
+>> [   23.974027]  ffff880179840000
+>> [   23.974028]  ffff88017a08bb48
+>> [   23.974028]  ffffffffa0084e67
+>> [   23.974028] Call Trace:
+>> [   23.974033]  [<ffffffff8164b790>] dump_stack+0x19/0x1b
+>> [   23.974035]  [<ffffffff8107e62f>] __might_sleep+0xff/0x170
+>> [   23.974037]  [<ffffffff81651ac4>] rt_spin_lock+0x24/0x60
+>> [   23.974043]  [<ffffffffa0084e67>] i915_read32+0x27/0x170 [i915]
+>> [   23.974048]  [<ffffffffa008a591>] i915_pipe_enabled+0x31/0x40 [i915]
+>> [   23.974054]  [<ffffffffa008a6be>] i915_get_crtc_scanoutpos+0x3e/0x1b0 [i915]
+>> [   23.974056]  [<ffffffff81087025>] ? sched_clock_cpu+0xb5/0x100
+>> [   23.974062]  [<ffffffffa00245d4>] drm_calc_vbltimestamp_from_scanoutpos+0xf4/0x430 [drm]
+>> [   23.974068]  [<ffffffffa008bc95>] i915_get_vblank_timestamp+0x45/0xa0 [i915]
+>> [   23.974073]  [<ffffffffa0024998>] drm_get_last_vbltimestamp+0x48/0x70 [drm]
+>> [   23.974078]  [<ffffffffa0024db5>] drm_vblank_get+0x185/0x2b0 [drm]
+>> [   23.974079]  [<ffffffff81087025>] ? sched_clock_cpu+0xb5/0x100
+>> [   23.974085]  [<ffffffffa0025d03>] drm_wait_vblank+0x83/0x5d0 [drm]
+>> [   23.974086]  [<ffffffff81087025>] ? sched_clock_cpu+0xb5/0x100
+>> [   23.974088]  [<ffffffff810af143>] ? __lock_acquire.isra.31+0x273/0xa70
+>> [   23.974093]  [<ffffffffa00212a2>] drm_ioctl+0x552/0x6a0 [drm]
+>> [   23.974096]  [<ffffffff8128d886>] ? avc_has_perm_flags+0x126/0x1c0
+>> [   23.974098]  [<ffffffff8128d788>] ? avc_has_perm_flags+0x28/0x1c0
+>> [   23.974099]  [<ffffffff810ad49e>] ? put_lock_stats.isra.23+0xe/0x40
+>> [   23.974101]  [<ffffffff811a0095>] do_vfs_ioctl+0x325/0x5b0
+>> [   23.974103]  [<ffffffff8128fc3e>] ? file_has_perm+0x8e/0xa0
+>> [   23.974105]  [<ffffffff811a03a1>] SyS_ioctl+0x81/0xa0
+>> [   23.974107]  [<ffffffff8165a342>] tracesys+0xdd/0xe2
+>>
+>>
+>> and
+>>
+>>
+>> [   25.423675] BUG: sleeping function called from invalid context at /home/lclaudio/SANDBOX/mrg-rt-v2-devel/kernel/rtmutex.c:659
+>> [   25.423676] in_atomic(): 1, irqs_disabled(): 1, pid: 188, name: plymouthd
+>> [   25.423676] 3 locks held by plymouthd/188:
+>> [   25.423682]  #0:  (&tty->legacy_mutex){......}, at: [<ffffffff816528d0>] tty_lock_nested+0x40/0x90
+>> [   25.423686]  #1:  (&tty->ldisc_mutex){......}, at: [<ffffffff8139b482>] tty_ldisc_hangup+0x152/0x300
+>> [   25.423688]  #2:  (tty_ldisc_lock){......}, at: [<ffffffff8139a9c2>] tty_ldisc_reinit+0x72/0x130
+>> [   25.423689] Preemption disabled at:[<ffffffff8139a9c2>] tty_ldisc_reinit+0x72/0x130
+>> [   25.423691] CPU: 2 PID: 188 Comm: plymouthd Not tainted 3.10.10-rt7+ #6
+>> [   25.423692] Hardware name: Hewlett-Packard p7-1512/2ADA, BIOS 8.15 02/05/2013
+>> [   25.423694]  005ff00000000000 ffff8801788ada68 ffffffff8164b790 ffff8801788ada80
+>> [   25.423695]  ffffffff8107e62f ffff8801991ce1a0 ffff8801788adaa0 ffffffff81651ac4
+>> [   25.423696]  0000000000000000 ffffea0005e26680 ffff8801788adaf8 ffffffff81130984
+>> [   25.423696] Call Trace:
+>> [   25.423700]  [<ffffffff8164b790>] dump_stack+0x19/0x1b
+>> [   25.423702]  [<ffffffff8107e62f>] __might_sleep+0xff/0x170
+>> [   25.423704]  [<ffffffff81651ac4>] rt_spin_lock+0x24/0x60
+>> [   25.423707]  [<ffffffff81130984>] free_hot_cold_page+0xb4/0x3c0
+>> [   25.423710]  [<ffffffff81178209>] ?unfreeze_partials.isra.42+0x229/0x2b0
+>> [   25.423711]  [<ffffffff81130dc7>] __free_pages+0x47/0x70
+>> [   25.423713]  [<ffffffff81130fb2>] __free_memcg_kmem_pages+0x22/0x50
+>> [   25.423714]  [<ffffffff81177528>] __free_slab+0xe8/0x1e0
+>> [   25.423716]  [<ffffffff81177654>] free_delayed+0x34/0x50
+>> [   25.423717]  [<ffffffff81649633>] __slab_free+0x273/0x36b
+>> [   25.423719]  [<ffffffff810acde9>] ? get_lock_stats+0x19/0x60
+>> [   25.423721]  [<ffffffff810ad49e>] ? put_lock_stats.isra.23+0xe/0x40
+>> [   25.423722]  [<ffffffff81178794>] kfree+0x1c4/0x210
+>> [   25.423724]  [<ffffffff8139a9f5>] ? tty_ldisc_reinit+0xa5/0x130
+>> [   25.423725]  [<ffffffff8139a9f5>] tty_ldisc_reinit+0xa5/0x130
+>> [   25.423726]  [<ffffffff8139b49f>] tty_ldisc_hangup+0x16f/0x300
+>> [   25.423728]  [<ffffffff81082e1d>] ? get_parent_ip+0xd/0x50
+>> [   25.423731]  [<ffffffff8104d736>] ? unpin_current_cpu+0x16/0x70
+>> [   25.423732]  [<ffffffff81392136>] __tty_hangup+0x346/0x460
+>> [   25.423733]  [<ffffffff81392260>] tty_vhangup+0x10/0x20
+>> [   25.423735]  [<ffffffff8139d6e1>] pty_close+0x131/0x180
+>> [   25.423736]  [<ffffffff813936ad>] tty_release+0x11d/0x5f0
+>> [   25.423737]  [<ffffffff810acde9>] ? get_lock_stats+0x19/0x60
+>> [   25.423747]  [<ffffffff81009d84>] ? native_sched_clock+0x24/0x80
+>> [   25.423749]  [<ffffffff81087025>] ? sched_clock_cpu+0xb5/0x100
+>> [   25.423750]  [<ffffffff810acde9>] ? get_lock_stats+0x19/0x60
+>> [   25.423752]  [<ffffffff8118eb45>] __fput+0xf5/0x250
+>> [   25.423762]  [<ffffffff8118ed6e>] ____fput+0xe/0x10
+>> [   25.423764]  [<ffffffff8106f1cc>] task_work_run+0xac/0xe0
+>> [   25.423765]  [<ffffffff81002a11>] do_notify_resume+0x91/0xf0
+>> [   25.423767]  [<ffffffff8165a41c>] int_signal+0x12/0x17
+>>
+>>
+>> About the hackish patch I used to silence the constant i915 complaints,
+>> even though the comments on drm_calc_vbltimestamp_from_scanoutpos() state
+>> the preempt_disable is there for a reason, I removed it for the RT case. I
+>> really wanted to confirm if there was anything else after that complaint.
+>
+> The funny part is, there's a comment there that shows that this was
+> done even for "PREEMPT_RT". Unfortunately, the call to
+> "get_scanout_position()" can call functions that use the rt-mutex
+> "sleeping spin locks" and it breaks there.
+>
+> I guess we need to ask the authors of the mainline patch exactly why
+> that preempt_disable() is needed?
 
-This patch depends on Linux kernel patch:
-"timekeeping: introduce timekeeping_is_busy()"
+The drm core associates a timestamp with each vertical blank frame #.
+Drm drivers can optionally support a 'high resolution' hw timestamp.
+The vblank frame #/timestamp tuple is user-space visible.
 
-Starting from Linux kernel commit
-06c017fdd4dc48451a29ac37fc1db4a3f86b7f40 "timekeeping: Hold
-timekeepering locks in do_adjtimex and hardpps" (3.10 kernels), the
-xtime write seqlock is held across calls to __do_adjtimex(), which
-includes a call to notify_cmos_timer(), and hence
-schedule_delayed_work().
+The i915 drm driver supports a hw timestamp via this drm helper function
+which computes the timestamp from the crtc scan position (based on the
+pixel clock).
 
-This introduces a side-effect for a set of tracepoints, including mainly
-the workqueue tracepoints: a tracer hooking on those tracepoints and
-reading current time with ktime_get() will cause hard system LOCKUP such
-as:
+For mainline, the preempt_disable/_enable() isn't actually necessary
+because every call tree that leads here already has preemption disabled.
 
-WARNING: CPU: 6 PID: 2258 at kernel/watchdog.c:245 watchdog_overflow_callback+0x93/0x9e()
-Watchdog detected hard LOCKUP on cpu 6
-Modules linked in: lttng_probe_workqueue(O) lttng_probe_vmscan(O) lttng_probe_udp(O) lttng_probe_timer(O) lttng_probe_s]
-CPU: 6 PID: 2258 Comm: ntpd Tainted: G           O 3.11.0 #158
-Hardware name: Supermicro X7DAL/X7DAL, BIOS 6.00 12/03/2007
-0000000000000000 ffffffff814f83eb ffffffff813b206a ffff88042fd87c78
-ffffffff8106a07c 0000000000000000 ffffffff810c94c2 0000000000000000
-ffff88041f31bc00 0000000000000000 ffff88042fd87d68 ffff88042fd87ef8
-Call Trace:
-<NMI>  [<ffffffff813b206a>] ? dump_stack+0x41/0x51
-[<ffffffff8106a07c>] ? warn_slowpath_common+0x79/0x92
-[<ffffffff810c94c2>] ? watchdog_overflow_callback+0x93/0x9e
-[<ffffffff8106a12d>] ? warn_slowpath_fmt+0x45/0x4a
-[<ffffffff810c94c2>] ? watchdog_overflow_callback+0x93/0x9e
-[<ffffffff810c942f>] ? watchdog_enable_all_cpus.part.2+0x31/0x31
-[<ffffffff810ecc66>] ? __perf_event_overflow+0x12c/0x1ae
-[<ffffffff810eab60>] ? perf_event_update_userpage+0x13/0xc2
-[<ffffffff81016820>] ? intel_pmu_handle_irq+0x26a/0x2fd
-[<ffffffff813b7a0b>] ? perf_event_nmi_handler+0x24/0x3d
-[<ffffffff813b728f>] ? nmi_handle.isra.3+0x58/0x12f
-[<ffffffff813b7a59>] ? perf_ibs_nmi_handler+0x35/0x35
-[<ffffffff813b7404>] ? do_nmi+0x9e/0x2bc
-[<ffffffff813b6af7>] ? end_repeat_nmi+0x1e/0x2e
-[<ffffffff810a2a33>] ? read_seqcount_begin.constprop.4+0x8/0xf
-[<ffffffff810a2a33>] ? read_seqcount_begin.constprop.4+0x8/0xf
-[<ffffffff810a2a33>] ? read_seqcount_begin.constprop.4+0x8/0xf
-<<EOE>>  [<ffffffff810a2d6c>] ? ktime_get+0x23/0x5e
-[<ffffffffa0314670>] ? lib_ring_buffer_clock_read.isra.28+0x1f/0x21 [lttng_ring_buffer_client_discard]
-[<ffffffffa0314786>] ? lttng_event_reserve+0x112/0x3f3 [lttng_ring_buffer_client_discard]
-[<ffffffffa045b1c5>] ? __event_probe__workqueue_queue_work+0x72/0xe0 [lttng_probe_workqueue]
-[<ffffffff812ef7e9>] ? sock_aio_read.part.10+0x110/0x124
-[<ffffffff81133a36>] ? do_sync_readv_writev+0x50/0x76
-[<ffffffff8107d514>] ? __queue_work+0x1ab/0x265
-[<ffffffff8107da7e>] ? queue_delayed_work_on+0x3f/0x4e
-[<ffffffff810a473d>] ? __do_adjtimex+0x408/0x413
-[<ffffffff810a3e9a>] ? do_adjtimex+0x98/0xee
-[<ffffffff8106cec6>] ? SYSC_adjtimex+0x32/0x5d
-[<ffffffff813bb74b>] ? tracesys+0xdd/0xe2
+For -RT, the maybe i915 register spinlock (uncore.lock) should be raw?
 
-LTTng uses ktime to have the same time-base across kernel and
-user-space, so traces gathered from LTTng-modules and LTTng-UST can be
-correlated. We plan on using ktime until a fast, scalable, and
-fine-grained time-source for tracing that can be used across kernel and
-user-space, and which does not rely on read seqlock for kernel-level
-synchronization, makes its way into the kernel.
+Regards,
+Peter Hurley
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
----
-diff --git a/wrapper/trace-clock.h b/wrapper/trace-clock.h
-index bced61c..2f9df7a 100644
---- a/wrapper/trace-clock.h
-+++ b/wrapper/trace-clock.h
-@@ -32,6 +32,7 @@
- #include <linux/ktime.h>
- #include <linux/time.h>
- #include <linux/hrtimer.h>
-+#include <linux/version.h>
- #include "random.h"
- 
- static inline u64 trace_clock_monotonic_wrapper(void)
-@@ -45,6 +46,10 @@ static inline u64 trace_clock_monotonic_wrapper(void)
- 	if (in_nmi())
- 		return (u64) -EIO;
- 
-+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0))
-+	if (timekeeping_is_busy())
-+		return (u64) -EIO;
-+#endif
- 	ktime = ktime_get();
- 	return ktime_to_ns(ktime);
- }
 
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+>>
+>> diff --git a/drivers/gpu/drm/drm_irq.c b/drivers/gpu/drm/drm_irq.c
+>> index f92da0a..bd2e8e2 100644
+>> --- a/drivers/gpu/drm/drm_irq.c
+>> +++ b/drivers/gpu/drm/drm_irq.c
+>> @@ -631,7 +631,7 @@ int drm_calc_vbltimestamp_from_scanoutpos(struct drm_device *dev, int crtc,
+>>   		/* Disable preemption to make it very likely to
+>>   		 * succeed in the first iteration even on PREEMPT_RT kernel.
+>>   		 */
+>> -		preempt_disable();
+>> +		preempt_disable_nort();
+>>
+>>   		/* Get system timestamp before query. */
+>>   		stime = ktime_get();
+>> @@ -644,7 +644,7 @@ int drm_calc_vbltimestamp_from_scanoutpos(struct drm_device *dev, int crtc,
+>>   		if (!drm_timestamp_monotonic)
+>>   			mono_time_offset = ktime_get_monotonic_offset();
+>>
+>> -		preempt_enable();
+>> +		preempt_enable_nort();
+>>
+>>   		/* Return as no-op if scanout query unsupported or failed. */
+>>   		if (!(vbl_status & DRM_SCANOUTPOS_VALID)) {
+>>
+
