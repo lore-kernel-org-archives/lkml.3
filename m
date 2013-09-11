@@ -1,69 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203Ab3IKIpt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 04:45:49 -0400
-Received: from mail-bn1lp0156.outbound.protection.outlook.com ([207.46.163.156]:33307
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1753026Ab3IKIyP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 04:54:15 -0400
+Received: from lmv.inov.pt ([146.193.64.2]:52612 "EHLO lmv.inov.pt"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752494Ab3IKIpr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 04:45:47 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: Jani Nikula <jani.nikula@linux.intel.com>
-CC: Aaron Lu <aaron.lu@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Daniel Vetter" <daniel@ffwll.ch>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        Yves-Alexis Perez <corsac@debian.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Lee Chun-Yi <jlee@novell.com>, Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH 2/2] ACPI / video / i915: Remove ACPI backlight if
- firmware expects Windows 8
-Thread-Topic: [PATCH 2/2] ACPI / video / i915: Remove ACPI backlight if
- firmware expects Windows 8
-Thread-Index: AQHOrTh4P2SImvKSpUu3tJlbFkAqyJm9JHkAgAAt1ACAADO4AIAAVGuAgAElbgCAAFwIAIAAZyGAgAB5BYCAAAAZAA==
-Date: Wed, 11 Sep 2013 08:45:41 +0000
-Message-ID: <1378889140.945.0.camel@x230.lan>
-References: <522D88C3.7000808@intel.com> <5155010.Y1gov7SKhP@vostro.rjw.lan>
-	 <87eh8wail7.fsf@intel.com> <1889567.vxI8heiC3B@vostro.rjw.lan>
-	 <20130911013206.GA556@mint-spring.sh.intel.com> <87hadrycf4.fsf@intel.com>
-In-Reply-To: <87hadrycf4.fsf@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:470:1f07:1371:91f6:fb4b:7e67:dab0]
-x-forefront-prvs: 09669DB681
-x-forefront-antispam-report: SFV:NSPM;SFS:(377424004)(24454002)(51704005)(189002)(199002)(46102001)(19580405001)(83322001)(63696002)(77982001)(59766001)(79102001)(81816001)(51856001)(81342001)(81686001)(65816001)(36756003)(80022001)(69226001)(33646001)(74876001)(19580395003)(49866001)(47736001)(4396001)(81542001)(47976001)(76796001)(76786001)(80976001)(50986001)(54356001)(83072001)(53806001)(74366001)(76482001)(56816003)(77096001)(31966008)(56776001)(54316002)(74662001)(74706001)(74502001)(47446002)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB221;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:91f6:fb4b:7e67:dab0;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <6AA43F885902D84CAE761135FBF3867B@namprd05.prod.outlook.com>
+	id S1751150Ab3IKIyN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 04:54:13 -0400
+X-Greylist: delayed 445 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Sep 2013 04:54:12 EDT
+From: =?UTF-8?q?Jos=C3=A9=20Miguel=20Gon=C3=A7alves?= 
+	<jose.goncalves@inov.pt>
+To: linux-samsung-soc@vger.kernel.org
+Cc: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Jos=C3=A9=20Miguel=20Gon=C3=A7alves?= 
+	<jose.goncalves@inov.pt>
+Subject: [PATCH] ARM: S3C24XX: Fix configuration of gpio port sizes on S3C24XX.
+Date: Wed, 11 Sep 2013 09:46:13 +0100
+Message-Id: <1378889173-7437-1-git-send-email-jose.goncalves@inov.pt>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-INOV-EmailServer-Information: Please contact the Email service provider for more information
+X-INOV-EmailServer: Found to be clean
+X-INOV-EmailServer-From: jose.goncalves@inov.pt
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8B8jsTG003379
 
-On Wed, 2013-09-11 at 11:45 +0300, Jani Nikula wrote:
+Some GPIO line limits are incorrectly set which, for instance,
+does not allow nRTS1 (GPH11) configuration on a S3C2416 chip.
 
-> Before plunging forward, have you observed any difference between the
-> boot modes? We have reports [1] that the backlight behaviour is
-> different with UEFI vs. UEFI+CSM or legacy boot. So I'm wondering if the
-> acpi_gbl_osi_data >= ACPI_OSI_WIN_8 check in patch 2/2 is the whole
-> story.
-> 
-> Further, if we tell the BIOS we're Windows 8 to use the tested BIOS code
-> paths, what guarantees do we have of UEFI+CSM or legacy boots working?
+Signed-off-by: Jos√© Miguel Gon√ßalves <jose.goncalves@inov.pt>
+---
+ arch/arm/mach-s3c24xx/include/mach/gpio.h |   10 +++++-----
+ drivers/gpio/gpio-samsung.c               |    6 +++---
+ 2 files changed, 8 insertions(+), 8 deletions(-)
 
-We have no evidence of Windows behaving differently based on the exposed
-firmware type.
-
+diff --git a/arch/arm/mach-s3c24xx/include/mach/gpio.h b/arch/arm/mach-s3c24xx/include/mach/gpio.h
+index 1459156..a1435bc 100644
+--- a/arch/arm/mach-s3c24xx/include/mach/gpio.h
++++ b/arch/arm/mach-s3c24xx/include/mach/gpio.h
+@@ -31,17 +31,17 @@
+  *   2410 2412 2440 2443 2416
+  *             2442
+  *   ---- ---- ---- ---- ----
+- * A  23   22   25   16   25
+- * B  11   11   11   11   9
+- * C  16   15   16   16   16
++ * A  23   22   25   16   27
++ * B  11   11   11   11   11
++ * C  16   16   16   16   16
+  * D  16   16   16   16   16
+  * E  16   16   16   16   16
+  * F  8    8    8    8    8
+  * G  16   16   16   16   8
+- * H  11   11   9    15   15
++ * H  11   11   11   15   15
+  * J  --   --   13   16   --
+  * K  --   --   --   --   16
+- * L  --   --   --   15   7
++ * L  --   --   --   15   14
+  * M  --   --   --   2    2
+  */
+ 
+diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
+index 358a21c..29c428b 100644
+--- a/drivers/gpio/gpio-samsung.c
++++ b/drivers/gpio/gpio-samsung.c
+@@ -1053,7 +1053,7 @@ struct samsung_gpio_chip s3c24xx_gpios[] = {
+ 			.base			= S3C2410_GPA(0),
+ 			.owner			= THIS_MODULE,
+ 			.label			= "GPIOA",
+-			.ngpio			= 24,
++			.ngpio			= 27,
+ 			.direction_input	= s3c24xx_gpiolib_banka_input,
+ 			.direction_output	= s3c24xx_gpiolib_banka_output,
+ 		},
+@@ -1062,7 +1062,7 @@ struct samsung_gpio_chip s3c24xx_gpios[] = {
+ 			.base	= S3C2410_GPB(0),
+ 			.owner	= THIS_MODULE,
+ 			.label	= "GPIOB",
+-			.ngpio	= 16,
++			.ngpio	= 11,
+ 		},
+ 	}, {
+ 		.chip	= {
+@@ -1107,7 +1107,7 @@ struct samsung_gpio_chip s3c24xx_gpios[] = {
+ 			.base	= S3C2410_GPH(0),
+ 			.owner	= THIS_MODULE,
+ 			.label	= "GPIOH",
+-			.ngpio	= 11,
++			.ngpio	= 15,
+ 		},
+ 	},
+ 		/* GPIOS for the S3C2443 and later devices. */
 -- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+1.7.10.4
+
