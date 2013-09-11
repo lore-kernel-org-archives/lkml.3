@@ -1,135 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755640Ab3IKRm5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 13:42:57 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:58267 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755268Ab3IKRmz (ORCPT
+	id S1755984Ab3IKRol (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 13:44:41 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:36405 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751327Ab3IKRok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 13:42:55 -0400
-Message-ID: <5230AB6E.1070807@ahsoftware.de>
-Date: Wed, 11 Sep 2013 19:42:06 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Grant Likely <grant.likely@linaro.org>,
+	Wed, 11 Sep 2013 13:44:40 -0400
+Date: Wed, 11 Sep 2013 14:45:02 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
-Subject: Re: [PATCH] RFC: interrupt consistency check for OF GPIO IRQs
-References: <1375101368-17645-1-git-send-email-linus.walleij@linaro.org> <CACxGe6uNJNMdZ1HYGgCtLM2t2TWGCR6btjOHVmP=vDXXvvFfRg@mail.gmail.com> <CACRpkdYjJL6FZwEbB7XLnb9QtjB=3LeE9Ny6KQ4PkM3zpdNqqg@mail.gmail.com> <344239800.bDEkDg48ZQ@avalon> <CACRpkdavR=fv+y1RCNfdgQypPuRbO6isOSwGsABDrYiGeMdyZw@mail.gmail.com> <52308C91.2000105@ahsoftware.de> <523096FE.8080901@collabora.co.uk>
-In-Reply-To: <523096FE.8080901@collabora.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        Jason Cooper <jason@lakedaemon.net>, Olof Johansson <olof@lixom.net>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>
+Subject: Re: [GIT PULL] clockevents/clocksource : armada-370-xp fixes,
+ sh_cmt, em_sti  timer-sp and nomadik changes
+Message-ID: <20130911174501.GA11003@localhost>
+References: <5224EEB4.2080902@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5224EEB4.2080902@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 11.09.2013 18:14, schrieb Javier Martinez Canillas:
-> On 09/11/2013 05:30 PM, Alexander Holler wrote:
->> Am 22.08.2013 00:02, schrieb Linus Walleij:
->>> On Tue, Aug 20, 2013 at 12:04 AM, Laurent Pinchart
->>> <laurent.pinchart@ideasonboard.com> wrote:
->>>> On Wednesday 31 July 2013 01:44:53 Linus Walleij wrote:
->>>
->>>>> I don't see how sharing works here, or how another user, i.e. another one
->>>>> than the user wanting to recieve the IRQ, can validly request such a line?
->>>>> What would the usecase for that valid request be?
->>>>
->>>> When the GPIO is wired to a status signal (such as an MMC card detect signal)
->>>> the driver might want to read the state of the signal independently of the
->>>> interrupt handler.
->>>
->>> That is true. But for such a complex usecase I think it's reasonable that
->>> we only specify the GPIO in the device tree, and the driver utilizing the
->>> IRQ need to take that and perform gpio_to_irq() on it, and then it still
->>> works to use it both ways.
->>
->> Hmm, the problem is that DT is seen as fixed. So if someone marks a GPIO
->> as an IRQ, it can never be used otherwise. So if you really go this way,
->> you should make this pretty clear in the documentation.
->>
->
-> DT is fixed because that describes the hardware which is fixed of course. So if
-> a chip IRQ line is connected to a GPIO pin in a controller that should be
-> described in the DT and that pin can't be used for anything else.
->
+Hi Thomas, Daniel,
 
-If you request an gpio for every gpio which defined as IRQ centrally, 
-drivers can't just use that gpio as gpio afterwards. And there might be 
-one driver which uses the irq but another one which wants the gpio. But 
-if you define a gpio as irq in dt, you take away that choice.
+On Mon, Sep 02, 2013 at 10:01:56PM +0200, Daniel Lezcano wrote:
+[..]
+> 
+> The following changes since commit cfb6d656d569510ac9239583ce09e4c92ad54719:
+> 
+>   Merge branch 'timers/clockevents-next' of
+> git://git.linaro.org/people/dlezcano/clockevents into timers/core
+> (2013-08-21 14:59:23 +0200)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.linaro.org/people/dlezcano/clockevents.git timers/clockevents
+> 
+> for you to fetch changes up to 63ce2cc474ce962d936ae6dfaa6ae2354b1db5b2:
+> 
+>   clocksource: armada-370-xp: Add detailed clock requirements in
+> devicetree binding (2013-09-02 21:44:58 +0200)
+> 
 
->> Looking from the other side, why do you want to mark GPIOs as IRQs in
->> the DT at all?
->
-> Because from the component point-of-view that is wired to the SoC, that GPIO is
-> an IRQ line and so it has to be described.
->
->> And how will this be done? I found the way it was done in
->> the reverted patch very confusing because it needed an IRQ number. That
->> IRQ number depends on the mapping and isn't hw specific (and currently
->> just human doable because of the simple mapping).
->>
->
-> That's is not true. You don't define an IRQ number what you define is a GPIO
-> number that is mapped as IRQ. The GPIO number does not depend on the mapping and
-> it only depends on the GPIO controller.
->
-> This has absolutely nothing to do with the reverted patches and is described in
-> Documentation/devicetree/bindings/interrupt-controller/interrupts.txt.
->
-> The only difference is that the reverted patches did actually take an action
-> when a GPIO pin was mapped as an IRQ (requesting the GPIO and as input).
->
-> So for example in an OMAP board DT you can define something like this:
->
-> ethernet@5,0 {
->          compatible = "smsc,lan9221", "smsc,lan9115";
->          interrupt-parent = <&gpio6>;
->          interrupts = <16 8>;
-> };
->
-> Since each OMAP GPIO bank has 32 GPIO pins, then what you are defining is that
-> the GPIO 176 (5 * 32 + 16) will be mapped as the IRQ line for the ethernet
-> controller.
->
-> I explained the exact use case I'm trying to solve in the thread "Re: [PATCH v3]
-> gpio: interrupt consistency check for OF GPIO IRQs" [1] if you need more
-> context. I'm sure others cc'ed in this thread have different (but similar)
-> requirements.
+I've seen Ingo's timer pull on September 3rd, so I'm pretty
+sure this late pull won't make it for v3.12.
 
-So I would extend my previous proposal
-(http://www.mail-archive.com/linux-omap@vger.kernel.org/msg95202.html)
-for a gpio_request_as_irq() such, that I would change that to 
-request_irq_new(number, irq_controller) where the irq_controller would 
-be the gpio-controller in case of omap (while marking gpio_to_irq() as 
-deprecated).
-
-So request_irq_new() would than do the following on omap if the 
-irq-controller is a gpio-controller:
-
-gpio_request() // This works only if the gpio was not requested before
-gpio_direction_input()
-(build irq-mapping)
-gpio_to_irq() // This needs an irq-mapping
-return request_threaded_irq()
-
-and all drivers could replace the above sequence just with 
-request_irq_new(number_from_dt, irq-controller_from_dt).
-
-How's that?
-
-Regards,
-
-Alexander Holler
+Can you confirm this?
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
