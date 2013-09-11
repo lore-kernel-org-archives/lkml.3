@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474Ab3IKHmz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 03:42:55 -0400
-Received: from ares07.inai.de ([5.9.24.206]:53603 "EHLO ares07.inai.de"
+	id S1752146Ab3IKHpR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 03:45:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8004 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751052Ab3IKHmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 03:42:53 -0400
-Date: Wed, 11 Sep 2013 09:42:52 +0200 (CEST)
-From: Jan Engelhardt <jengelh@inai.de>
-To: Matt Porter <matt.porter@linaro.org>
-cc: Linux USB List <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Introducing libgadget 0.0.1
-In-Reply-To: <20130904172532.GA10973@ohporter.com>
-Message-ID: <alpine.LSU.2.11.1309110940430.29134@nerf07.vanv.qr>
-References: <20130904172532.GA10973@ohporter.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	id S1751034Ab3IKHpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 03:45:15 -0400
+Date: Wed, 11 Sep 2013 09:46:00 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: [197/251] iwl4965: reset firmware after rfkill off
+Message-ID: <20130911074559.GA2368@redhat.com>
+References: <20130911042707.738353451@goodmis.org>
+ <20130911042924.950506810@goodmis.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130911042924.950506810@goodmis.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 2013-09-04 19:25, Matt Porter wrote:
+On Wed, Sep 11, 2013 at 12:30:24AM -0400, Steven Rostedt wrote:
+> 3.6.11.9-rc1 stable review patch.
+> If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> From: Stanislaw Gruszka <sgruszka@redhat.com>
+> 
+> [ Upstream commit 788f7a56fce1bcb2067b62b851a086fca48a0056 ]
 
->With the move to configfs for creation of arbitrary USB composite gadgets,
->I found myself wanting a simple C library to configure and parse gadgets
->in a system. It has no other dependencies other than libc itself.
->
->It can be found at:
->
->	git://git.linaro.org/people/mporter/libgadget.git
+This require follow up - upstream commit:
 
-Hm but there is already a libgadget (and not just one) if you query a 
-particular search engine entitled Google :}
+commit b2fcc0aee58a3435566dd6d8501a0b355552f28b
+Author: Stanislaw Gruszka <sgruszka@redhat.com>
+Date:   Wed Aug 21 10:18:19 2013 +0200
 
->$ mkdir /config
->$ mount -t configfs none /config
+    iwl4965: fix rfkill set state regression
 
-Do your tools support input of a different location?
-(systemd mounts configfs at /sys/kernel/config.)
+which seems to be missed on the set.
 
->$ gadget-acm-ecm
->$ show-gadgets
->ID 1d6b:0104 'g1'
->[...]
-
+Stanislaw
