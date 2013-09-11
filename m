@@ -1,281 +1,378 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756698Ab3IKSCa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 14:02:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49899 "EHLO mx1.redhat.com"
+	id S1756702Ab3IKSDr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 14:03:47 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:54824 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754159Ab3IKSC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 14:02:29 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Len Brown <len.brown@intel.com>,
-        Kristen Carlson Accardi <kristen@linux.intel.com>
-Subject: [PATCH] x86 powertop, replace numa based core ID with physical ID
-Date: Wed, 11 Sep 2013 14:02:19 -0400
-Message-Id: <1378922539-21387-1-git-send-email-prarit@redhat.com>
+	id S1754170Ab3IKSDn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 14:03:43 -0400
+Date: Wed, 11 Sep 2013 14:03:27 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: azurIt <azurit@pobox.sk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/7] improve memcg oom killer robustness v2
+Message-ID: <20130911180327.GL856@cmpxchg.org>
+References: <20130909201238.GH856@cmpxchg.org>
+ <20130910201359.D0984EFF@pobox.sk>
+ <20130910183740.GI856@cmpxchg.org>
+ <20130910213253.A1E666C5@pobox.sk>
+ <20130910201222.GA25972@cmpxchg.org>
+ <20130910230853.FEEC19B5@pobox.sk>
+ <20130910211823.GJ856@cmpxchg.org>
+ <20130910233247.9EDF4DBA@pobox.sk>
+ <20130910220329.GK856@cmpxchg.org>
+ <20130911143305.FFEAD399@pobox.sk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130911143305.FFEAD399@pobox.sk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Len, here are some test results.
+On Wed, Sep 11, 2013 at 02:33:05PM +0200, azurIt wrote:
+> >On Tue, Sep 10, 2013 at 11:32:47PM +0200, azurIt wrote:
+> >> >On Tue, Sep 10, 2013 at 11:08:53PM +0200, azurIt wrote:
+> >> >> >On Tue, Sep 10, 2013 at 09:32:53PM +0200, azurIt wrote:
+> >> >> >> Here is full kernel log between 6:00 and 7:59:
+> >> >> >> http://watchdog.sk/lkml/kern6.log
+> >> >> >
+> >> >> >Wow, your apaches are like the hydra.  Whenever one is OOM killed,
+> >> >> >more show up!
+> >> >> 
+> >> >> 
+> >> >> 
+> >> >> Yeah, it's supposed to do this ;)
+> >
+> >How are you expecting the machine to recover from an OOM situation,
+> >though?  I guess I don't really understand what these machines are
+> >doing.  But if you are overloading them like crazy, isn't that the
+> >expected outcome?
+> 
+> 
+> 
+> 
+> 
+> There's no global OOM, server has enough of memory. OOM is occuring only in cgroups (customers who simply don't want to pay for more memory).
 
-On a 2-socket AMD 6276 system with the existing turbostat I see
+Yes, sure, but when the cgroups are thrashing, they use the disk and
+CPU to the point where the overall system is affected.
 
-pk cor CPU   GHz  TSC
-          0.74 1.15
-0   0   8 1.48 2.30
-0   1   9 1.48 2.30
-0   2  10 1.53 2.30
-0   3  11 1.46 2.30
-0   4  12 1.49 2.30
-0   5  13 1.47 2.30
-0   6  14 1.48 2.30
-0   7  15 1.54 2.30
-1   0  24 1.49 2.30
-1   1  25 1.48 2.30
-1   2  26 1.48 2.30
-1   3  27 1.51 2.30
-1   4  28 1.52 2.30
-1   5  29 1.43 2.30
-1   6  30 1.51 2.30
-1   7  31 1.49 2.30
+> >> >> >> >> What do you think? I'm now running kernel with your previous patch, not with the newest one.
+> >> >> >> >
+> >> >> >> >Which one exactly?  Can you attach the diff?
+> >> >> >> 
+> >> >> >> 
+> >> >> >> 
+> >> >> >> I meant, the problem above occured on kernel with your latest patch:
+> >> >> >> http://watchdog.sk/lkml/7-2-memcg-fix.patch
+> >> >> >
+> >> >> >The above log has the following callstack:
+> >> >> >
+> >> >> >Sep 10 07:59:43 server01 kernel: [ 3846.337628]  [<ffffffff810d19fe>] dump_header+0x7e/0x1e0
+> >> >> >Sep 10 07:59:43 server01 kernel: [ 3846.337707]  [<ffffffff810d18ff>] ? find_lock_task_mm+0x2f/0x70
+> >> >> >Sep 10 07:59:43 server01 kernel: [ 3846.337790]  [<ffffffff810d18ff>] ? find_lock_task_mm+0x2f/0x70
+> >> >> >Sep 10 07:59:43 server01 kernel: [ 3846.337874]  [<ffffffff81094bb0>] ? __css_put+0x50/0x90
+> >> >> >Sep 10 07:59:43 server01 kernel: [ 3846.337952]  [<ffffffff810d1ec5>] oom_kill_process+0x85/0x2a0
+> >> >> >Sep 10 07:59:43 server01 kernel: [ 3846.338037]  [<ffffffff810d2448>] mem_cgroup_out_of_memory+0xa8/0xf0
+> >> >> >Sep 10 07:59:43 server01 kernel: [ 3846.338120]  [<ffffffff81110858>] T.1154+0x8b8/0x8f0
+> >> >> >Sep 10 07:59:43 server01 kernel: [ 3846.338201]  [<ffffffff81110fa6>] mem_cgroup_charge_common+0x56/0xa0
+> >> >> >Sep 10 07:59:43 server01 kernel: [ 3846.338283]  [<ffffffff81111035>] mem_cgroup_newpage_charge+0x45/0x50
+> >> >> >Sep 10 07:59:43 server01 kernel: [ 3846.338364]  [<ffffffff810f3039>] handle_pte_fault+0x609/0x940
+> >> >> >Sep 10 07:59:43 server01 kernel: [ 3846.338451]  [<ffffffff8102ab1f>] ? pte_alloc_one+0x3f/0x50
+> >> >> >Sep 10 07:59:43 server01 kernel: [ 3846.338532]  [<ffffffff8107e455>] ? sched_clock_local+0x25/0x90
+> >> >> >Sep 10 07:59:43 server01 kernel: [ 3846.338617]  [<ffffffff810f34d7>] handle_mm_fault+0x167/0x340
+> >> >> >Sep 10 07:59:43 server01 kernel: [ 3846.338699]  [<ffffffff8102714b>] do_page_fault+0x13b/0x490
+> >> >> >Sep 10 07:59:43 server01 kernel: [ 3846.338781]  [<ffffffff810f8848>] ? do_brk+0x208/0x3a0
+> >> >> >Sep 10 07:59:43 server01 kernel: [ 3846.338865]  [<ffffffff812dba22>] ? gr_learn_resource+0x42/0x1e0
+> >> >> >Sep 10 07:59:43 server01 kernel: [ 3846.338951]  [<ffffffff815cb7bf>] page_fault+0x1f/0x30
+> >> >> >
+> >> >> >The charge code seems to be directly invoking the OOM killer, which is
+> >> >> >not possible with 7-2-memcg-fix.  Are you sure this is the right patch
+> >> >> >for this log?  This _looks_ more like what 7-1-memcg-fix was doing,
+> >> >> >with a direct kill in the charge context and a fixup later on.
+> >> >> 
+> >> >> I, luckyly, still have the kernel source from which that kernel was build. I tried to re-apply the 7-2-memcg-fix.patch:
+> >> >> 
+> >> >> # patch -p1 --dry-run < 7-2-memcg-fix.patch 
+> >> >> patching file arch/x86/mm/fault.c
+> >> >> Reversed (or previously applied) patch detected!  Assume -R? [n] 
+> >> >> Apply anyway? [n] 
+> >> >> Skipping patch.
+> >> >> 4 out of 4 hunks ignored -- saving rejects to file arch/x86/mm/fault.c.rej
+> >> >> patching file include/linux/memcontrol.h
+> >> >> Hunk #1 succeeded at 141 with fuzz 2 (offset 21 lines).
+> >> >> Hunk #2 succeeded at 391 with fuzz 1 (offset 39 lines).
+> >> >
+> >> >Uhm, some of it applied...  I have absolutely no idea what state that
+> >> >tree is in now...
+> >> 
+> >> I used '--dry-run' so it should be ok :)
+> >
+> >Ah, right.
+> >
+> >> >> patching file include/linux/mm.h
+> >> >> Reversed (or previously applied) patch detected!  Assume -R? [n] 
+> >> >> Apply anyway? [n] 
+> >> >> Skipping patch.
+> >> >> 1 out of 1 hunk ignored -- saving rejects to file include/linux/mm.h.rej
+> >> >> patching file include/linux/sched.h
+> >> >> Reversed (or previously applied) patch detected!  Assume -R? [n] 
+> >> >> Apply anyway? [n] 
+> >> >> Skipping patch.
+> >> >> 1 out of 1 hunk ignored -- saving rejects to file include/linux/sched.h.rej
+> >> >> patching file mm/memcontrol.c
+> >> >> Reversed (or previously applied) patch detected!  Assume -R? [n] 
+> >> >> Apply anyway? [n] 
+> >> >> Skipping patch.
+> >> >> 10 out of 10 hunks ignored -- saving rejects to file mm/memcontrol.c.rej
+> >> >> patching file mm/memory.c
+> >> >> Reversed (or previously applied) patch detected!  Assume -R? [n] 
+> >> >> Apply anyway? [n] 
+> >> >> Skipping patch.
+> >> >> 2 out of 2 hunks ignored -- saving rejects to file mm/memory.c.rej
+> >> >> patching file mm/oom_kill.c
+> >> >> Reversed (or previously applied) patch detected!  Assume -R? [n] 
+> >> >> Apply anyway? [n] 
+> >> >> Skipping patch.
+> >> >> 1 out of 1 hunk ignored -- saving rejects to file mm/oom_kill.c.rej
+> >> >> 
+> >> >> 
+> >> >> Can you tell from this if the source has the right patch?
+> >> >
+> >> >Not reliably, I don't think.  Can you send me
+> >> >
+> >> >  include/linux/memcontrol.h
+> >> >  mm/memcontrol.c
+> >> >  mm/memory.c
+> >> >  mm/oom_kill.c
+> >> >
+> >> >from those sources?
+> >> >
+> >> >It might be easier to start the application from scratch...  Keep in
+> >> >mind that 7-2 was not an incremental fix, you need to remove the
+> >> >previous memcg patches (as opposed to 7-1).
+> >> 
+> >> 
+> >> 
+> >> Yes, i used only 7-2 from your patches. Here are the files:
+> >> http://watchdog.sk/lkml/kernel
+> >> 
+> >> orig - kernel source which was used to build the kernel i was talking about earlier
+> >> new - newly unpacked and patched 3.2.50 with all of 'my' patches
+> >
+> >Ok, thanks!
+> >
+> >> Here is how your patch was applied:
+> >> 
+> >> # patch -p1 < 7-2-memcg-fix.patch 
+> >> patching file arch/x86/mm/fault.c
+> >> Hunk #1 succeeded at 944 (offset 102 lines).
+> >> Hunk #2 succeeded at 970 (offset 102 lines).
+> >> Hunk #3 succeeded at 1273 with fuzz 1 (offset 212 lines).
+> >> Hunk #4 succeeded at 1382 (offset 223 lines).
+> >
+> >Ah, I forgot about this one.  Could you provide that file (fault.c) as
+> >well please?
+> 
+> 
+> 
+> 
+> I added it.
 
-As you can see only 8 of each 16 cores are reported.  The issue is that the
-core_id sysfs file is not physical-based; it is numa-based and it may differ
-from that of the physical enumeration, especially in the cases where sockets
-are split by numa nodes.  It looks like we really want the physical core_id
-and not the numa core_id.  After the patch,
+Thanks.  This one looks good, too.
 
-pk cor CPU   GHz  TSC
-           1.47 2.30
- 0   0   0 1.46 2.30
- 0   1   1 1.44 2.30
- 0   2   2 1.51 2.30
- 0   3   3 1.49 2.30
- 0   4   4 1.51 2.30
- 0   5   5 1.51 2.30
- 0   6   6 1.49 2.30
- 0   7   7 1.49 2.30
- 0   8   8 1.47 2.30
- 0   9   9 1.48 2.30
- 0  10  10 1.64 2.30
- 0  11  11 1.54 2.30
- 0  12  12 1.51 2.30
- 0  13  13 1.46 2.30
- 0  14  14 1.49 2.30
- 0  15  15 1.46 2.30
- 1   0  16 1.49 2.30
- 1   1  17 1.44 2.30
- 1   2  18 1.51 2.30
- 1   3  19 1.44 2.30
- 1   4  20 1.50 2.30
- 1   5  21 1.44 2.30
- 1   6  22 1.50 2.30
- 1   7  23 1.44 2.30
- 1   8  24 1.48 2.30
- 1   9  25 1.46 2.30
- 1  10  26 1.47 2.30
- 1  11  27 1.49 2.30
- 1  12  28 1.52 2.30
- 1  13  29 1.43 2.30
- 1  14  30 1.51 2.30
- 1  15  31 1.45 2.30
+> >> patching file include/linux/memcontrol.h
+> >> Hunk #1 succeeded at 122 with fuzz 2 (offset 2 lines).
+> >> Hunk #2 succeeded at 354 (offset 2 lines).
+> >
+> >Looks good, still.
+> >
+> >> patching file include/linux/mm.h
+> >> Hunk #1 succeeded at 163 (offset 7 lines).
+> >> patching file include/linux/sched.h
+> >> Hunk #1 succeeded at 1644 (offset 76 lines).
+> >> patching file mm/memcontrol.c
+> >> Hunk #1 succeeded at 1752 (offset 9 lines).
+> >> Hunk #2 succeeded at 1777 (offset 9 lines).
+> >> Hunk #3 succeeded at 1828 (offset 9 lines).
+> >> Hunk #4 succeeded at 1867 (offset 9 lines).
+> >> Hunk #5 succeeded at 2256 (offset 9 lines).
+> >> Hunk #6 succeeded at 2317 (offset 9 lines).
+> >> Hunk #7 succeeded at 2348 (offset 9 lines).
+> >> Hunk #8 succeeded at 2411 (offset 9 lines).
+> >> Hunk #9 succeeded at 2419 (offset 9 lines).
+> >> Hunk #10 succeeded at 2432 (offset 9 lines).
+> >> patching file mm/memory.c
+> >> Hunk #1 succeeded at 3712 (offset 273 lines).
+> >> Hunk #2 succeeded at 3812 (offset 317 lines).
+> >> patching file mm/oom_kill.c
+> >
+> >These look good as well.
+> >
+> >That leaves the weird impossible stack trace.  Did you double check
+> >that this crash came from a kernel with those exact files?
+> 
+> 
+> 
+> Yes i'm sure.
 
-As a sanity check I also ran on a dual-socket E5-26XX v2 system:
+Okay, my suspicion is that the previous patches invoked the OOM killer
+right away, whereas in this latest version it's invoked only when the
+fault is finished.  Maybe the task that locked the group gets held up
+somewhere else and then it takes too long until something is actually
+killed.  Meanwhile, every other allocator drops into 5 reclaim cycles
+before giving up, which could explain the thrashing.  And on the memcg
+level we don't have BDI congestion sleeps like on the global level, so
+everybody is backing off from the disk.
 
-pk cor CPU    %c0  GHz  TSC SMI    %c1    %c3    %c6    %c7 CTMP PTMP   %pc2   %pc3   %pc6   %pc7  Pkg_W  Cor_W RAM_W PKG_% RAM_%
-             0.04 1.30 2.69   0   0.12   0.00  99.84   0.00   32   32  12.28   0.00  86.59   0.00  11.20   2.74  6.48  0.00  0.00
- 0   0   0   0.23 1.20 2.69   0   0.43   0.00  99.34   0.00   26   27  12.39   0.00  86.61   0.00   5.76   1.53  1.85  0.00  0.00
- 0   0  20   0.05 1.21 2.69   0   0.61
- 0   1   1   0.02 1.23 2.69   0   0.08   0.00  99.90   0.00   26
- 0   1  21   0.02 1.26 2.69   0   0.08
- 0   2   2   0.02 1.29 2.69   0   0.06   0.00  99.92   0.00   25
- 0   2  22   0.02 1.35 2.69   0   0.06
- 0   3   3   0.02 1.28 2.69   0   0.06   0.00  99.92   0.00   25
- 0   3  23   0.02 1.35 2.69   0   0.06
- 0   4   4   0.03 1.25 2.69   0   0.06   0.00  99.90   0.00   32
- 0   4  24   0.02 1.33 2.69   0   0.08
- 0   9   5   0.02 1.35 2.69   0   0.05   0.00  99.93   0.00   28
- 0   9  25   0.02 1.34 2.69   0   0.05
- 0  10   6   0.02 1.25 2.69   0   0.05   0.00  99.93   0.00   21
- 0  10  26   0.02 1.34 2.69   0   0.05
- 0  11   7   0.02 1.29 2.69   0   0.06   0.00  99.92   0.00   32
- 0  11  27   0.02 1.35 2.69   0   0.06
- 0  12   8   0.02 1.27 2.69   0   0.06   0.00  99.92   0.00   31
- 0  12  28   0.02 1.33 2.69   0   0.06
- 0  13   9   0.02 1.25 2.69   0   0.05   0.00  99.93   0.00   20
- 0  13  29   0.02 1.30 2.69   0   0.06
- 1   0  10   0.04 1.23 2.69   0   0.10   0.00  99.86   0.00   29   32  12.16   0.00  86.59   0.00   5.45   1.22  4.63  0.00  0.00
- 1   0  30   0.03 1.20 2.69   0   0.11
- 1   1  11   0.04 1.20 2.69   0   0.10   0.00  99.86   0.00   30
- 1   1  31   0.03 1.20 2.69   0   0.11
- 1   2  12   0.03 1.20 2.69   0   0.08   0.00  99.89   0.00   29
- 1   2  32   0.02 1.20 2.69   0   0.09
- 1   3  13   0.21 1.20 2.69   0   0.11   0.00  99.68   0.00   29
- 1   3  33   0.03 1.20 2.69   0   0.30
- 1   4  14   0.04 1.20 2.69   0   0.08   0.00  99.88   0.00   31
- 1   4  34   0.02 1.20 2.69   0   0.10
- 1   9  15   0.03 1.20 2.69   0   0.08   0.00  99.88   0.00   26
- 1   9  35   0.02 1.20 2.69   0   0.10
- 1  10  16   0.03 1.20 2.69   0   0.08   0.00  99.89   0.00   28
- 1  10  36   0.02 1.20 2.69   0   0.09
- 1  11  17   0.03 1.20 2.69   0   0.08   0.00  99.89   0.00   26
- 1  11  37   0.02 1.20 2.69   0   0.09
- 1  12  18   0.33 1.44 2.69   0   0.09   0.00  99.58   0.00   25
- 1  12  38   0.02 1.20 2.69   0   0.40
- 1  13  19   0.11 1.74 2.69   0   0.10   0.00  99.79   0.00   31
- 1  13  39   0.03 1.20 2.69   0   0.17
+Here is an incremental fix to the latest version, i.e. the one that
+livelocked under heavy IO, not the one you are using right now.
 
-And after the patch,
+First, it reduces the reclaim retries from 5 to 2, which resembles the
+global kswapd + ttfp somewhat.  Next, NOFS/NORETRY allocators are not
+allowed to kick off the OOM killer, like in the global case, so that
+we don't kill things and give up just because light reclaim can't free
+anything.  Last, the memcg is marked under OOM when one task enters
+OOM so that not everybody is livelocking in reclaim in a hopeless
+situation.
 
-pk cor CPU    %c0  GHz  TSC SMI    %c1    %c3    %c6    %c7 CTMP PTMP   %pc2   %pc3   %pc6   %pc7  Pkg_W  Cor_W RAM_W PKG_% RAM_%
-             0.04 1.22 2.69   0  50.05   0.00  99.83   0.00   33   32  12.29   0.00  86.75   0.00  11.33   2.73  6.35  0.00  0.00
- 0   0   0   0.14 1.21 2.69   0   0.34   0.00  99.53   0.00   26   27  12.43   0.00  86.77   0.00   5.83   1.53  1.92  0.00  0.00
- 0   1   1   0.02 1.24 2.69   0   0.06   0.00  99.92   0.00   26
- 0   2   2   0.02 1.29 2.69   0   0.09   0.00  99.90   0.00   26
- 0   3   3   0.02 1.31 2.69   0   0.09   0.00  99.89   0.00   24
- 0   4   4   0.03 1.27 2.69   0   0.11   0.00  99.87   0.00   33
- 0   5   5   0.02 1.30 2.69   0   0.10   0.00  99.88   0.00   28
- 0   6   6   0.02 1.25 2.69   0   0.08   0.00  99.90   0.00   21
- 0   7   7   0.02 1.22 2.69   0   0.09   0.00  99.89   0.00   32
- 0   8   8   0.02 1.26 2.69   0   0.10   0.00  99.88   0.00   31
- 0   9   9   0.02 1.30 2.69   0   0.08   0.00  99.90   0.00   21
- 0  20  20   0.04 1.23 2.69   0  99.96
- 0  21  21   0.02 1.30 2.69   0  99.98
- 0  22  22   0.02 1.34 2.69   0  99.98
- 0  23  23   0.02 1.33 2.69   0  99.98
- 0  24  24   0.02 1.28 2.69   0  99.98
- 0  25  25   0.02 1.27 2.69   0  99.98
- 0  26  26   0.02 1.34 2.69   0  99.98
- 0  27  27   0.02 1.33 2.69   0  99.98
- 0  28  28   0.02 1.29 2.69   0  99.98
- 0  29  29   0.02 1.31 2.69   0  99.98
- 1   0  30   0.02 1.20 2.69   0  99.98
- 1   1  31   0.03 1.20 2.69   0  99.97
- 1   2  32   0.02 1.20 2.69   0  99.98
- 1   3  33   0.03 1.20 2.69   0  99.97
- 1   4  34   0.02 1.20 2.69   0  99.98
- 1   5  35   0.02 1.20 2.69   0  99.98
- 1   6  36   0.02 1.20 2.69   0  99.98
- 1   7  37   0.02 1.20 2.69   0  99.98
- 1   8  38   0.02 1.20 2.69   0  99.98
- 1   9  39   0.02 1.20 2.69   0  99.98
- 1  10  10   0.05 1.20 2.69   0   0.13   0.00  99.82   0.00   29   32  12.16   0.00  86.74   0.00   5.50   1.21  4.43  0.00  0.00
- 1  11  11   0.03 1.20 2.69   0   0.14   0.00  99.83   0.00   29
- 1  12  12   0.40 1.20 2.69   0   0.11   0.00  99.49   0.00   30
- 1  13  13   0.03 1.20 2.69   0   0.12   0.00  99.85   0.00   29
- 1  14  14   0.03 1.20 2.69   0   0.09   0.00  99.88   0.00   32
- 1  15  15   0.03 1.20 2.69   0   0.10   0.00  99.87   0.00   27
- 1  16  16   0.03 1.20 2.69   0   0.10   0.00  99.86   0.00   29
- 1  17  17   0.03 1.20 2.69   0   0.11   0.00  99.86   0.00   28
- 1  18  18   0.03 1.20 2.69   0   0.09   0.00  99.88   0.00   26
- 1  19  19   0.04 1.20 2.69   0   0.10   0.00  99.86   0.00   30
-
-which AFAICT is correct.
-
-P.
-
--------------8<-----------------
-
-x86 powertop, replace numa based core ID with physical ID
-
-On a 2-socket AMD 6276 processor system, where each socket has 8 2-thread
-cores for a total of 16, turbostat only reports 8 cores for each socket
-and drops data.
-
-This happens because the sysfs file
-/sys/devices/system/cpu/cpu%d/topology/core_id which is used to fetch the
-"core_id" of each core is numa-centric and not physically based.
-
-This results in fewer cores being allocated than are present and data gets
-dropped.
-
-For example, on the system above "turbostat -vvv" reports
-
-max_core_id 7, sizing for 8 cores per package
-max_package_id 1, sizing for 2 packages
-
-when it should report
-
-max_core_id 31, sizing for 16 cores per package
-max_package_id 1, sizing for 2 packages
-
-This patch swaps the numa based core_id for the physical core_id, which is
-what we really want.  The numa core_id is now only used for debug output.
-
-Successfully tested on the system above and also verified on an Intel
-dual-socket E5-26XX system.
-
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Kristen Carlson Accardi <kristen@linux.intel.com>
 ---
- tools/power/x86/turbostat/turbostat.c |   20 +++++++++++++-------
- 1 file changed, 13 insertions(+), 7 deletions(-)
 
-diff --git a/tools/power/x86/turbostat/turbostat.c b/tools/power/x86/turbostat/turbostat.c
-index fe70207..f7c91e0 100644
---- a/tools/power/x86/turbostat/turbostat.c
-+++ b/tools/power/x86/turbostat/turbostat.c
-@@ -2009,6 +2009,7 @@ void topology_probe()
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 56643fe..f565857 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1878,6 +1878,7 @@ static void mem_cgroup_oom(struct mem_cgroup *memcg, gfp_t mask)
+ 	 */
+ 	css_get(&memcg->css);
+ 	current->memcg_oom.memcg = memcg;
++	mem_cgroup_mark_under_oom(memcg);
+ 	current->memcg_oom.gfp_mask = mask;
+ }
+ 
+@@ -1929,7 +1930,6 @@ bool mem_cgroup_oom_synchronize(bool handle)
+ 	 * under OOM is always welcomed, use TASK_KILLABLE here.
+ 	 */
+ 	prepare_to_wait(&memcg_oom_waitq, &owait.wait, TASK_KILLABLE);
+-	mem_cgroup_mark_under_oom(memcg);
+ 
+ 	locked = mem_cgroup_oom_trylock(memcg);
+ 
+@@ -1937,12 +1937,10 @@ bool mem_cgroup_oom_synchronize(bool handle)
+ 		mem_cgroup_oom_notify(memcg);
+ 
+ 	if (locked && !memcg->oom_kill_disable) {
+-		mem_cgroup_unmark_under_oom(memcg);
+ 		finish_wait(&memcg_oom_waitq, &owait.wait);
+ 		mem_cgroup_out_of_memory(memcg, current->memcg_oom.gfp_mask);
+ 	} else {
+ 		schedule();
+-		mem_cgroup_unmark_under_oom(memcg);
+ 		finish_wait(&memcg_oom_waitq, &owait.wait);
+ 	}
+ 
+@@ -1956,6 +1954,7 @@ bool mem_cgroup_oom_synchronize(bool handle)
+ 		memcg_oom_recover(memcg);
+ 	}
+ cleanup:
++	mem_cgroup_unmark_under_oom(memcg);
+ 	current->memcg_oom.memcg = NULL;
+ 	css_put(&memcg->css);
+ 	return true;
+@@ -2250,7 +2249,7 @@ enum {
+ };
+ 
+ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+-				unsigned int nr_pages, bool invoke_oom)
++				unsigned int nr_pages, bool enter_oom)
  {
- 	int i;
- 	int max_core_id = 0;
-+	int min_core_id = 0;
- 	int max_package_id = 0;
- 	int max_siblings = 0;
- 	struct cpu_topology {
-@@ -2058,7 +2059,7 @@ void topology_probe()
+ 	unsigned long csize = nr_pages * PAGE_SIZE;
+ 	struct mem_cgroup *mem_over_limit;
+@@ -2285,6 +2284,11 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+ 	if (!(gfp_mask & __GFP_WAIT))
+ 		return CHARGE_WOULDBLOCK;
+ 
++	if (enter_oom) {
++		mem_cgroup_oom(mem_over_limit, gfp_mask);
++		return CHARGE_NOMEM;
++	}
++
+ 	ret = mem_cgroup_hierarchical_reclaim(mem_over_limit, NULL,
+ 					      gfp_mask, flags, NULL);
+ 	if (mem_cgroup_margin(mem_over_limit) >= nr_pages)
+@@ -2308,9 +2312,6 @@ static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
+ 	if (mem_cgroup_wait_acct_move(mem_over_limit))
+ 		return CHARGE_RETRY;
+ 
+-	if (invoke_oom)
+-		mem_cgroup_oom(mem_over_limit, gfp_mask);
+-
+ 	return CHARGE_NOMEM;
+ }
+ 
+@@ -2325,8 +2326,8 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
+ 				   bool oom)
+ {
+ 	unsigned int batch = max(CHARGE_BATCH, nr_pages);
+-	int nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
+ 	struct mem_cgroup *memcg = NULL;
++	int nr_reclaim_retries = 2;
+ 	int ret;
  
  	/*
- 	 * For online cpus
--	 * find max_core_id, max_package_id
-+	 * find min_core_id, max_core_id, max_package_id
+@@ -2352,6 +2353,9 @@ static int __mem_cgroup_try_charge(struct mm_struct *mm,
  	 */
- 	for (i = 0; i <= topo.max_cpu_num; ++i) {
- 		int siblings;
-@@ -2068,22 +2069,27 @@ void topology_probe()
- 				fprintf(stderr, "cpu%d NOT PRESENT\n", i);
- 			continue;
- 		}
--		cpus[i].core_id = get_core_id(i);
-+		cpus[i].core_id = i;
- 		if (cpus[i].core_id > max_core_id)
- 			max_core_id = cpus[i].core_id;
- 
- 		cpus[i].physical_package_id = get_physical_package_id(i);
--		if (cpus[i].physical_package_id > max_package_id)
-+		if (cpus[i].physical_package_id > max_package_id) {
- 			max_package_id = cpus[i].physical_package_id;
-+			min_core_id = i;
-+		}
- 
- 		siblings = get_num_ht_siblings(i);
- 		if (siblings > max_siblings)
- 			max_siblings = siblings;
- 		if (verbose > 1)
--			fprintf(stderr, "cpu %d pkg %d core %d\n",
--				i, cpus[i].physical_package_id, cpus[i].core_id);
-+			fprintf(stderr,
-+				"cpu %d pkg %d phys-core %d numa-core %d\n",
-+				i, cpus[i].physical_package_id,
-+				cpus[i].core_id, get_core_id(i));
- 	}
--	topo.num_cores_per_pkg = max_core_id + 1;
-+	topo.num_cores_per_pkg = (max_core_id - min_core_id) + 1;
+ 	if (!*ptr && !mm)
+ 		goto bypass;
 +
- 	if (verbose > 1)
- 		fprintf(stderr, "max_core_id %d, sizing for %d cores per package\n",
- 			max_core_id, topo.num_cores_per_pkg);
-@@ -2175,7 +2181,7 @@ int initialize_counters(int cpu_id)
- 	int my_thread_id, my_core_id, my_package_id;
++	if (!(gfp_mask & __GFP_FS) || (gfp_mask & __GFP_NORETRY))
++		oom = false;
+ again:
+ 	if (*ptr) { /* css should be a valid one */
+ 		memcg = *ptr;
+@@ -2402,7 +2406,7 @@ again:
+ 	}
  
- 	my_package_id = get_physical_package_id(cpu_id);
--	my_core_id = get_core_id(cpu_id);
-+	my_core_id = cpu_id % topo.num_cores_per_pkg;
+ 	do {
+-		bool invoke_oom = oom && !nr_oom_retries;
++		bool enter_oom = false;
  
- 	if (cpu_is_first_sibling_in_core(cpu_id)) {
- 		my_thread_id = 0;
--- 
-1.7.9.3
-
+ 		/* If killed, bypass charge */
+ 		if (fatal_signal_pending(current)) {
+@@ -2410,7 +2414,13 @@ again:
+ 			goto bypass;
+ 		}
+ 
+-		ret = mem_cgroup_do_charge(memcg, gfp_mask, batch, invoke_oom);
++		if (oom && !nr_reclaim_retries)
++			enter_oom = true;
++
++		if (atomic_read(&memcg->under_oom))
++			enter_oom = true;
++
++		ret = mem_cgroup_do_charge(memcg, gfp_mask, batch, enter_oom);
+ 		switch (ret) {
+ 		case CHARGE_OK:
+ 			break;
+@@ -2422,12 +2432,12 @@ again:
+ 		case CHARGE_WOULDBLOCK: /* !__GFP_WAIT */
+ 			css_put(&memcg->css);
+ 			goto nomem;
+-		case CHARGE_NOMEM: /* OOM routine works */
+-			if (!oom || invoke_oom) {
++		case CHARGE_NOMEM:
++			if (!nr_reclaim_retries || enter_oom) {
+ 				css_put(&memcg->css);
+ 				goto nomem;
+ 			}
+-			nr_oom_retries--;
++			nr_reclaim_retries--;
+ 			break;
+ 		}
+ 	} while (ret != CHARGE_OK);
