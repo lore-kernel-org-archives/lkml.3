@@ -1,58 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757145Ab3IKT4p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 15:56:45 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:42578 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757030Ab3IKT4m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 15:56:42 -0400
-Message-ID: <5230CAF7.6010103@wwwdotorg.org>
-Date: Wed, 11 Sep 2013 13:56:39 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Stephen Warren <swarren@nvidia.com>, Russell King <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC v2 13/16] ARM: tegra: split tegra_pmc_init() in two
-References: <1376964271-22715-1-git-send-email-sebastian.hesselbarth@gmail.com> <1377638890-371-14-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1377638890-371-14-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1757237Ab3IKT5R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 15:57:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55160 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756944Ab3IKT5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 15:57:13 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Kees Cook <keescook@chromium.org>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 02/10] HID: zeroplus: validate output report details
+Date: Wed, 11 Sep 2013 21:56:51 +0200
+Message-Id: <1378929419-6269-3-git-send-email-benjamin.tissoires@redhat.com>
+In-Reply-To: <1378929419-6269-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1378929419-6269-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/27/2013 03:28 PM, Sebastian Hesselbarth wrote:
-> From: Stephen Warren <swarren@nvidia.com>
-> 
-> Tegra's board file currently initializes clocks much earlier than those
-> for most other ARM SoCs. The reason is:
-> 
-> * The PMC HW block is involved in the path of some interrupts (i.e. it
-> inverts, or not, the IRQ input pin dedicated to the PMIC).
-> 
-> * So, that part of the PMC must be initialized early so that the IRQ
-> polarity is correct.
-> 
-> * The PMC initialization is currently monolithic, and the PMC has some
-> clock inputs, so the init routine ends up calling of_clk_get_by_name(),
-> and hence clocks must be set up early too.
-> 
-> In order to defer clock initialization to the more typical location,
-> split out the portions of tegra_pmc_init() that are truly IRQ-related
-> into a separate tegra_pmc_init_irq(), which can be called from the
-> machine descriptor's .init_irq() function, and defer the rest until
-> the machine descriptor's .init_machine() function. With arch/arm calling
-> of_clk_init(NULL) from time_init() this also allows the removal of
-> .init_time() hook.
+From: Kees Cook <keescook@chromium.org>
 
-Sebastian, I assume you're targeting v3.13 or later for this patch
-series? If so, it might be a good idea if I apply this patch myself to
-the Tegra tree so that I can base any future Tegra patches on top of it
-to avoid any possible conflicts. I can put this patch first in the
-cleanup branch so you can merge it into whatever tree you use for the
-rest of this series. Does that work for you? If so, let me know. Thanks.
+The zeroplus HID driver was not checking the size of allocated values
+in fields it used. A HID device could send a malicious output report
+that would cause the driver to write beyond the output report allocation
+during initialization, causing a heap overflow:
+
+[ 1442.728680] usb 1-1: New USB device found, idVendor=0c12, idProduct=0005
+...
+[ 1466.243173] BUG kmalloc-192 (Tainted: G        W   ): Redzone overwritten
+
+CVE-2013-2889
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: stable@vger.kernel.org
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+---
+v3:
+ - no changes
+
+ drivers/hid/hid-zpff.c | 18 +++++-------------
+ 1 file changed, 5 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/hid/hid-zpff.c b/drivers/hid/hid-zpff.c
+index 6ec28a3..a29756c 100644
+--- a/drivers/hid/hid-zpff.c
++++ b/drivers/hid/hid-zpff.c
+@@ -68,21 +68,13 @@ static int zpff_init(struct hid_device *hid)
+ 	struct hid_report *report;
+ 	struct hid_input *hidinput = list_entry(hid->inputs.next,
+ 						struct hid_input, list);
+-	struct list_head *report_list =
+-			&hid->report_enum[HID_OUTPUT_REPORT].report_list;
+ 	struct input_dev *dev = hidinput->input;
+-	int error;
++	int i, error;
+ 
+-	if (list_empty(report_list)) {
+-		hid_err(hid, "no output report found\n");
+-		return -ENODEV;
+-	}
+-
+-	report = list_entry(report_list->next, struct hid_report, list);
+-
+-	if (report->maxfield < 4) {
+-		hid_err(hid, "not enough fields in report\n");
+-		return -ENODEV;
++	for (i = 0; i < 4; i++) {
++		report = hid_validate_values(hid, HID_OUTPUT_REPORT, 0, i, 1);
++		if (!report)
++			return -ENODEV;
+ 	}
+ 
+ 	zpff = kzalloc(sizeof(struct zpff_device), GFP_KERNEL);
+-- 
+1.8.3.1
+
