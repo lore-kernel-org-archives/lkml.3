@@ -1,137 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551Ab3IKO3G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 10:29:06 -0400
-Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:29137 "EHLO
-	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553Ab3IKO3E (ORCPT
+	id S1754660Ab3IKOaG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 10:30:06 -0400
+Received: from a194-81.smtp-out.amazonses.com ([199.255.194.81]:58230 "EHLO
+	a194-81.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753947Ab3IKOaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 10:29:04 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-Cc: Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: [PATCH 1/2] seqlock: Add a new blocking reader type
-Date: Wed, 11 Sep 2013 10:28:26 -0400
-Message-Id: <1378909707-3347-1-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-To: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
+	Wed, 11 Sep 2013 10:30:04 -0400
+Date: Wed, 11 Sep 2013 14:30:03 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH 01/16] slab: correct pfmemalloc check
+In-Reply-To: <1377161065-30552-2-git-send-email-iamjoonsoo.kim@lge.com>
+Message-ID: <000001410d6dd2ea-858fd952-3568-44e9-ac6a-070810b732d0-000000@email.amazonses.com>
+References: <1377161065-30552-1-git-send-email-iamjoonsoo.kim@lge.com> <1377161065-30552-2-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.194.81
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sequence lock (seqlock) was originally designed for the cases
-where the readers do not need to block the writers by making the
-readers retry the read operation when the data change.
+On Thu, 22 Aug 2013, Joonsoo Kim wrote:
 
-Since then, the use cases have been expanded to include situations
-where a thread does not need to change the data (effectively a reader)
-at all but have to take the writer lock because it can't tolerate
-changes to the protected structure. Some examples are the d_path()
-function and the getcwd() syscall in fs/dcache.c where the functions
-take the writer lock on rename_lock even though they don't need
-to change anything in the protected data structure at all. This is
-inefficient as a reader is now blocking other non-blocking readers
-by pretending to be a writer.
+> And, therefore we should check pfmemalloc in page flag of first page,
+> but current implementation don't do that. virt_to_head_page(obj) just
+> return 'struct page' of that object, not one of first page, since the SLAB
+> don't use __GFP_COMP when CONFIG_MMU. To get 'struct page' of first page,
+> we first get a slab and try to get it via virt_to_head_page(slab->s_mem).
 
-This patch tries to eliminate this inefficiency by introducing a new
-type of blocking reader to the seqlock locking mechanism. This new
-blocking reader will not block other non-blocking readers, but will
-block other blocking readers and writers.
-
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
----
- include/linux/seqlock.h |   65 +++++++++++++++++++++++++++++++++++++++++++---
- 1 files changed, 60 insertions(+), 5 deletions(-)
-
-diff --git a/include/linux/seqlock.h b/include/linux/seqlock.h
-index 1829905..26be0d9 100644
---- a/include/linux/seqlock.h
-+++ b/include/linux/seqlock.h
-@@ -3,15 +3,18 @@
- /*
-  * Reader/writer consistent mechanism without starving writers. This type of
-  * lock for data where the reader wants a consistent set of information
-- * and is willing to retry if the information changes.  Readers never
-- * block but they may have to retry if a writer is in
-- * progress. Writers do not wait for readers. 
-+ * and is willing to retry if the information changes. There are two types
-+ * of readers:
-+ * 1. Non-blocking readers which never block but they may have to retry if
-+ *    a writer is in progress. Writers do not wait for non-blocking readers.
-+ * 2. Blocking readers which will block if a writer is in progress. A
-+ *    blocking reader in progress will also block a writer.
-  *
-- * This is not as cache friendly as brlock. Also, this will not work
-+ * This is not as cache friendly as brlock. Also, this may not work well
-  * for data that contains pointers, because any writer could
-  * invalidate a pointer that a reader was following.
-  *
-- * Expected reader usage:
-+ * Expected non-blocking reader usage:
-  * 	do {
-  *	    seq = read_seqbegin(&foo);
-  * 	...
-@@ -268,4 +271,56 @@ write_sequnlock_irqrestore(seqlock_t *sl, unsigned long flags)
- 	spin_unlock_irqrestore(&sl->lock, flags);
- }
- 
-+/*
-+ * The blocking reader lock out other writers, but doesn't update the count.
-+ * Acts like a normal spin_lock/unlock.
-+ * Don't need preempt_disable() because that is in the spin_lock already.
-+ */
-+static inline void read_seqlock(seqlock_t *sl)
-+{
-+	spin_lock(&sl->lock);
-+}
-+
-+static inline void read_sequnlock(seqlock_t *sl)
-+{
-+	spin_unlock(&sl->lock);
-+}
-+
-+static inline void read_seqlock_bh(seqlock_t *sl)
-+{
-+	spin_lock_bh(&sl->lock);
-+}
-+
-+static inline void read_sequnlock_bh(seqlock_t *sl)
-+{
-+	spin_unlock_bh(&sl->lock);
-+}
-+
-+static inline void read_seqlock_irq(seqlock_t *sl)
-+{
-+	spin_lock_irq(&sl->lock);
-+}
-+
-+static inline void read_sequnlock_irq(seqlock_t *sl)
-+{
-+	spin_unlock_irq(&sl->lock);
-+}
-+
-+static inline unsigned long __read_seqlock_irqsave(seqlock_t *sl)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&sl->lock, flags);
-+	return flags;
-+}
-+
-+#define read_seqlock_irqsave(lock, flags)				\
-+	do { flags = __read_seqlock_irqsave(lock); } while (0)
-+
-+static inline void
-+read_sequnlock_irqrestore(seqlock_t *sl, unsigned long flags)
-+{
-+	spin_unlock_irqrestore(&sl->lock, flags);
-+}
-+
- #endif /* __LINUX_SEQLOCK_H */
--- 
-1.7.1
-
+Maybe using __GFP_COMP would make it consistent across all allocators and
+avoid the issue? We then do only have to set the flags on the first page.
