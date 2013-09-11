@@ -1,172 +1,320 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580Ab3IKCD7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 22:03:59 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:22832 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663Ab3IKCD5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 22:03:57 -0400
-X-AuditID: cbfee691-b7f4a6d0000074fc-9b-522fcf8b3bd2
-Message-id: <522FCF8C.9040205@samsung.com>
-Date: Wed, 11 Sep 2013 11:03:56 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH 2/6] extcon-gpio: If the gpio driver/chip supports
- debounce, use it
-References: <1377836978-24082-1-git-send-email-linux@roeck-us.net>
- <1377836978-24082-3-git-send-email-linux@roeck-us.net>
- <522FC476.7060100@samsung.com> <522FCE08.5000704@roeck-us.net>
-In-reply-to: <522FCE08.5000704@roeck-us.net>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLIsWRmVeSWpSXmKPExsWyRsSkSLf7vH6QQcsaLYv5R86xWhz4s4PR
-	4k1vB4vF5V1z2CyeLDzDZLH0+kUmi9uNK9gsJkxfy2JxeMUBJotXB9tYHLg81sxbw+ix4PMV
-	do/Xkycwety5tofNY+f3BnaPvi2rGD0+b5Lz2Dg3NIAjissmJTUnsyy1SN8ugSujve8xe8E+
-	5YqXK68zNzAekupi5OSQEDCRuNG0kh3CFpO4cG89WxcjF4eQwFJGiRl39zHDFL2cfZ8RIjGd
-	UeL2uk5WCOcVo8SC3y1AGQ4OXgEtiU/LLEAaWARUJZ41vmAEsdmAwvtf3GADsUUFwiRWTr/C
-	AmLzCghK/Jh8D8wWEVCTaD7VAraZWeASk0Trp7VgCWGBSImZ555CLdvDKHFoxRmwBKeAjsT7
-	jqNg5zED2ftbp7FB2PISm9e8ZQZpkBD4yS7RMvUPI8RJAhLfJh9iAblUQkBWYtMBqNckJQ6u
-	uMEygVFsFpKjZiEZOwvJ2AWMzKsYRVMLkguKk9KLTPWKE3OLS/PS9ZLzczcxAqP29L9nE3cw
-	3j9gfYgxGWjlRGYp0eR8YNTnlcQbGpsZWZiamBobmVuakSasJM6r3mIdKCSQnliSmp2aWpBa
-	FF9UmpNafIiRiYNTqoHxpJy2euOybfM3VfiK73875WnTvX9pf0re9Vr1/ov1mXny5AobuU+3
-	2OK4BJp4ZdqqU1W+XTER1KjYt99xe2PnSf4Xv7YL6kk4Vbwx/v9z+tvT/6pO/pxx44r706Td
-	iS4MLIxNfy4Lp91d0HXeeHYrv/DDX1JmImc7qszfphw8atzQx5x3Y9liJZbijERDLeai4kQA
-	l399q/ACAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFKsWRmVeSWpSXmKPExsVy+t9jQd3u8/pBBleuKlrMP3KO1eLAnx2M
-	Fm96O1gsLu+aw2bxZOEZJoul1y8yWdxuXMFmMWH6WhaLwysOMFm8OtjG4sDlsWbeGkaPBZ+v
-	sHu8njyB0ePOtT1sHju/N7B79G1ZxejxeZOcx8a5oQEcUQ2MNhmpiSmpRQqpecn5KZl56bZK
-	3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlARyoplCXmlAKFAhKLi5X07TBNCA1x07WA
-	aYzQ9Q0JgusxMkADCWsYM9r7HrMX7FOueLnyOnMD4yGpLkZODgkBE4mXs+8zQthiEhfurWfr
-	YuTiEBKYzihxe10nK4TzilFiwe8WoCoODl4BLYlPyyxAGlgEVCWeNb4Aa2YDCu9/cYMNxBYV
-	CJNYOf0KC4jNKyAo8WPyPTBbREBNovlUC9gCZoFLTBKtn9aCJYQFIiVmnnsKtWwPo8ShFWfA
-	EpwCOhLvO44yg9jMQPb+1mlsELa8xOY1b5knMArMQrJkFpKyWUjKFjAyr2IUTS1ILihOSs81
-	1CtOzC0uzUvXS87P3cQITgnPpHYwrmywOMQowMGoxMN7Q04/SIg1say4MvcQowQHs5II71Qn
-	oBBvSmJlVWpRfnxRaU5q8SHGZGAYTGSWEk3OB6arvJJ4Q2MTMyNLI3NDCyNjc9KElcR5D7Ra
-	BwoJpCeWpGanphakFsFsYeLglGpgXJovYcbL5jBtjoHlxHdGnjWP9ugoz64vPr8houB17Yrr
-	87OcfL9ZGph99Og4ZSDDdmXST6b3wcadnJnVdZbVri1t6ROXByU1tu2T3f183bH80N6r75YE
-	bDsdMPvD3FR5n+jlzPwHZld7GL5rt/B8NDPEoGH/9yvWgv9uvv6o8a2O67thrfdDJZbijERD
-	Leai4kQAfHmVGU0DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1753476Ab3IKCEX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 22:04:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6094 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752112Ab3IKCEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 22:04:22 -0400
+Message-ID: <522FCF82.90403@redhat.com>
+Date: Tue, 10 Sep 2013 22:03:46 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/50] Basic scheduler support for automatic NUMA balancing
+ V7
+References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
+In-Reply-To: <1378805550-29949-1-git-send-email-mgorman@suse.de>
+Content-Type: multipart/mixed;
+ boundary="------------040901090407070100070706"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2013 10:57 AM, Guenter Roeck wrote:
-> On 09/10/2013 06:16 PM, Chanwoo Choi wrote:
->> Hi Guenter
->>
->> I agree to use gpio_set_debounce() API but, I suggest following patch to code clean.
->> and I'd like you to use declarative sentence on patch name instead of 'If ...'.
->>
->> On 08/30/2013 01:29 PM, Guenter Roeck wrote:
->>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->>> ---
->>>   drivers/extcon/extcon-gpio.c |    5 +++++
->>>   1 file changed, 5 insertions(+)
->>>
->>> diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
->>> index 77d35a7..973600e 100644
->>> --- a/drivers/extcon/extcon-gpio.c
->>> +++ b/drivers/extcon/extcon-gpio.c
->>> @@ -111,6 +111,11 @@ static int gpio_extcon_probe(struct platform_device *pdev)
->>>       if (ret < 0)
->>>           goto err;
->>>
->>> +    /* Use gpio debounce if available. If so, don't debounce in software. */
->>> +    if (pdata->debounce &&
->>> +        !gpio_set_debounce(extcon_data->gpio, pdata->debounce * 1000))
->>> +        extcon_data->debounce_jiffies = 0;
->>> +
->>>       INIT_DELAYED_WORK(&extcon_data->work, gpio_extcon_work);
->>>
->>>       extcon_data->irq = gpio_to_irq(extcon_data->gpio);
->>>
->>
->> diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
->> index 3943ce2..0777e72 100644
->> --- a/drivers/extcon/extcon-gpio.c
->> +++ b/drivers/extcon/extcon-gpio.c
->> @@ -56,8 +56,10 @@ static irqreturn_t gpio_irq_handler(int irq, void *dev_id)
->>   {
->>          struct gpio_extcon_data *extcon_data = dev_id;
->>
->> -       queue_delayed_work(system_power_efficient_wq, &extcon_data->work,
->> -                             extcon_data->debounce_jiffies);
->> +       if (extcon_data->debounce_jiffies)
->> +               queue_delayed_work(system_power_efficient_wq,
->> +                                  &extcon_data->work,
->> +                                  extcon_data->debounce_jiffies);
+This is a multi-part message in MIME format.
+--------------040901090407070100070706
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+
+On 09/10/2013 05:31 AM, Mel Gorman wrote:
+> It has been a long time since V6 of this series and time for an update. Much
+> of this is now stabilised with the most important addition being the inclusion
+> of Peter and Rik's work on grouping tasks that share pages together.
 > 
-> I am a bit lost about this one. The above means that the workqueue would not be executed
-> at all if debounce_jiffies is 0 (and if pdata->debounce is 0), meaning an event would
-> never be generated. With the original code, the workqueue will be executed immediately
-> if debounce_jiffies is 0, which I think is exactly what we need.
-> 
->>          return IRQ_HANDLED;
->>   }
->>
->> @@ -100,7 +102,14 @@ static int gpio_extcon_probe(struct platform_device *pdev)
->>          extcon_data->state_off = pdata->state_off;
->>          if (pdata->state_on && pdata->state_off)
->>                  extcon_data->edev.print_state = extcon_gpio_print_state;
->> -       extcon_data->debounce_jiffies = msecs_to_jiffies(pdata->debounce);
->> +       extcon_data->debounce_jiffies = 0;
->> +       if (pdata->debounce) {
->> +               ret = gpio_set_debounce(extcon_data->gpio,
->> +                                       pdata->debounce * 1000);
->> +               if (ret < 0)
->> +                       extcon_data->debounce_jiffies =
->> +                               msecs_to_jiffies(pdata->debounce);
->> +       }
->>
-> Ok, though it is unnecessary to initialize debounce_jiffies (it is pre-initialized
-> from the allocation), so I'll drop that line.
+> This series has a number of goals. It reduces overhead of automatic balancing
+> through scan rate reduction and the avoidance of TLB flushes. It selects a
+> preferred node and moves tasks towards their memory as well as moving memory
+> toward their task. It handles shared pages and groups related tasks together.
 
-OK.
+The attached two patches should fix the task grouping issues
+we discussed on #mm earlier.
 
-> 
->>          ret = extcon_dev_register(&extcon_data->edev, &pdev->dev);
->>          if (ret < 0)
->> @@ -111,11 +120,6 @@ static int gpio_extcon_probe(struct platform_device *pdev)
->>          if (ret < 0)
->>                  goto err;
->>
->> -       /* Use gpio debounce if available. If so, don't debounce in software. */
->> -       if (pdata->debounce &&
->> -           !gpio_set_debounce(extcon_data->gpio, pdata->debounce * 1000))
->> -               extcon_data->debounce_jiffies = 0;
->> -
->>          INIT_DELAYED_WORK(&extcon_data->work, gpio_extcon_work);
->>
->>          extcon_data->irq = gpio_to_irq(extcon_data->gpio);
->> @@ -146,7 +150,8 @@ static int gpio_extcon_remove(struct platform_device *pdev)
->>   {
->>          struct gpio_extcon_data *extcon_data = platform_get_drvdata(pdev);
->>
->> -       cancel_delayed_work_sync(&extcon_data->work);
->> +       if (extcon_data->debounce_jiffies)
->> +               cancel_delayed_work_sync(&extcon_data->work);
-> 
-> I think we would have to call cancel_work_sync() in the else case to make sure
-> that no work is in the process of being executed - which just turns out to execute
-> the same code as cancel_delayed_work_sync(). So the if/else would just add complexity
-> with no real gain.
+Now on to the load balancer. When specjbb takes up way fewer
+CPUs than what are available on a node, it is possible for
+multiple specjbb processes to end up on the same NUMA node,
+and the load balancer makes no attempt to move some of them
+to completely idle loads.
 
-OK.
+I have not figured out yet how to fix that behaviour...
 
-Thanks,
-Chanwoo Choi
+-- 
+All rights reversed
 
+--------------040901090407070100070706
+Content-Type: text/x-patch;
+ name="0061-exec-leave-numa-group.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="0061-exec-leave-numa-group.patch"
+
+Subject: sched,numa: call task_numa_free from do_execve
+
+It is possible for a task in a numa group to call exec, and
+have the new (unrelated) executable inherit the numa group
+association from its former self.
+
+This has the potential to break numa grouping, and is trivial
+to fix.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+ fs/exec.c             | 1 +
+ include/linux/sched.h | 4 ++++
+ kernel/sched/sched.h  | 5 -----
+ 3 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/fs/exec.c b/fs/exec.c
+index ffd7a81..a6da73b 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1548,6 +1548,7 @@ static int do_execve_common(const char *filename,
+ 	current->fs->in_exec = 0;
+ 	current->in_execve = 0;
+ 	acct_update_integrals(current);
++	task_numa_free(current);
+ 	free_bprm(bprm);
+ 	if (displaced)
+ 		put_files_struct(displaced);
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 97df20f..44a7cc7 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1453,6 +1453,7 @@ struct task_struct {
+ extern void task_numa_fault(int last_node, int node, int pages, int flags);
+ extern pid_t task_numa_group_id(struct task_struct *p);
+ extern void set_numabalancing_state(bool enabled);
++extern void task_numa_free(struct task_struct *p);
+ #else
+ static inline void task_numa_fault(int last_node, int node, int pages,
+ 				   int flags)
+@@ -1465,6 +1466,9 @@ static inline pid_t task_numa_group_id(struct task_struct *p)
+ static inline void set_numabalancing_state(bool enabled)
+ {
+ }
++static inline void task_numa_free(struct task_struct *p)
++{
++}
+ #endif
+ 
+ static inline struct pid *task_pid(struct task_struct *task)
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 1fae56e..93fa176 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -559,11 +559,6 @@ static inline u64 rq_clock_task(struct rq *rq)
+ extern void sched_setnuma(struct task_struct *p, int node);
+ extern int migrate_task_to(struct task_struct *p, int cpu);
+ extern int migrate_swap(struct task_struct *, struct task_struct *);
+-extern void task_numa_free(struct task_struct *p);
+-#else /* CONFIG_NUMA_BALANCING */
+-static inline void task_numa_free(struct task_struct *p)
+-{
+-}
+ #endif /* CONFIG_NUMA_BALANCING */
+ 
+ #ifdef CONFIG_SMP
+
+--------------040901090407070100070706
+Content-Type: text/x-patch;
+ name="0062-numa-join-group-carefully.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="0062-numa-join-group-carefully.patch"
+
+Subject: sched,numa: be more careful about joining numa groups
+
+Due to the way the pid is truncated, and tasks are moved between
+CPUs by the scheduler, it is possible for the current task_numa_fault
+to group together tasks that do not actually share memory together.
+
+This patch adds a few easy sanity checks to task_numa_fault, joining
+tasks together if they share the same tsk->mm, or if the fault was on
+a page with an elevated mapcount, in a shared VMA.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+ include/linux/sched.h |  6 ++++--
+ kernel/sched/fair.c   | 23 +++++++++++++++++------
+ mm/huge_memory.c      |  4 +++-
+ mm/memory.c           |  8 ++++++--
+ 4 files changed, 30 insertions(+), 11 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 44a7cc7..de942a8 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1450,13 +1450,15 @@ struct task_struct {
+ #define TNF_NO_GROUP	0x02
+ 
+ #ifdef CONFIG_NUMA_BALANCING
+-extern void task_numa_fault(int last_node, int node, int pages, int flags);
++extern void task_numa_fault(int last_node, int node, int pages, int flags,
++			    struct vm_area_struct *vma, int mapcount);
+ extern pid_t task_numa_group_id(struct task_struct *p);
+ extern void set_numabalancing_state(bool enabled);
+ extern void task_numa_free(struct task_struct *p);
+ #else
+ static inline void task_numa_fault(int last_node, int node, int pages,
+-				   int flags)
++				   int flags, struct vm_area_struct *vma,
++				   int mapcount)
+ {
+ }
+ static inline pid_t task_numa_group_id(struct task_struct *p)
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 8b3d877..22e859f 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1323,7 +1323,8 @@ static void double_lock(spinlock_t *l1, spinlock_t *l2)
+ 	spin_lock_nested(l2, SINGLE_DEPTH_NESTING);
+ }
+ 
+-static void task_numa_group(struct task_struct *p, int cpu, int pid)
++static void task_numa_group(struct task_struct *p, int cpu, int pid,
++			    struct vm_area_struct *vma, int mapcount)
+ {
+ 	struct numa_group *grp, *my_grp;
+ 	struct task_struct *tsk;
+@@ -1380,10 +1381,19 @@ static void task_numa_group(struct task_struct *p, int cpu, int pid)
+ 	if (my_grp->nr_tasks == grp->nr_tasks && my_grp > grp)
+ 		goto unlock;
+ 
+-	if (!get_numa_group(grp))
+-		goto unlock;
++	/* Always join threads in the same process. */
++	if (tsk->mm == current->mm)
++		join = true;
++
++	/*
++	 * Simple filter to avoid false positives due to PID collisions,
++	 * accesses on KSM shared pages, etc...
++	 */
++	if (mapcount > 1 && (vma->vm_flags & VM_SHARED))
++		join = true;
+ 
+-	join = true;
++	if (join && !get_numa_group(grp))
++		join = false;
+ 
+ unlock:
+ 	rcu_read_unlock();
+@@ -1437,7 +1447,8 @@ void task_numa_free(struct task_struct *p)
+ /*
+  * Got a PROT_NONE fault for a page on @node.
+  */
+-void task_numa_fault(int last_cpupid, int node, int pages, int flags)
++void task_numa_fault(int last_cpupid, int node, int pages, int flags,
++		     struct vm_area_struct *vma, int mapcount)
+ {
+ 	struct task_struct *p = current;
+ 	bool migrated = flags & TNF_MIGRATED;
+@@ -1478,7 +1489,7 @@ void task_numa_fault(int last_cpupid, int node, int pages, int flags)
+ 
+ 		priv = (pid == (p->pid & LAST__PID_MASK));
+ 		if (!priv && !(flags & TNF_NO_GROUP))
+-			task_numa_group(p, cpu, pid);
++			task_numa_group(p, cpu, pid, vma, mapcount);
+ 	}
+ 
+ 	/*
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 6f883df..a175191 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1298,6 +1298,7 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	bool page_locked;
+ 	bool migrated = false;
+ 	int flags = 0;
++	int mapcount = 0;
+ 
+ 	spin_lock(&mm->page_table_lock);
+ 	if (unlikely(!pmd_same(pmd, *pmdp)))
+@@ -1306,6 +1307,7 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	page = pmd_page(pmd);
+ 	BUG_ON(is_huge_zero_page(page));
+ 	page_nid = page_to_nid(page);
++	mapcount = page_mapcount(page);
+ 	last_cpupid = page_cpupid_last(page);
+ 	count_vm_numa_event(NUMA_HINT_FAULTS);
+ 	if (page_nid == this_nid)
+@@ -1388,7 +1390,7 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		page_unlock_anon_vma_read(anon_vma);
+ 
+ 	if (page_nid != -1)
+-		task_numa_fault(last_cpupid, page_nid, HPAGE_PMD_NR, flags);
++		task_numa_fault(last_cpupid, page_nid, HPAGE_PMD_NR, flags, vma, mapcount);
+ 
+ 	return 0;
+ }
+diff --git a/mm/memory.c b/mm/memory.c
+index 2e1d43b..8cef83c 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3545,6 +3545,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	int target_nid;
+ 	bool migrated = false;
+ 	int flags = 0;
++	int mapcount = 0;
+ 
+ 	/*
+ 	* The "pte" at this point cannot be used safely without
+@@ -3583,6 +3584,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 
+ 	last_cpupid = page_cpupid_last(page);
+ 	page_nid = page_to_nid(page);
++	mapcount = page_mapcount(page);
+ 	target_nid = numa_migrate_prep(page, vma, addr, page_nid);
+ 	pte_unmap_unlock(ptep, ptl);
+ 	if (target_nid == -1) {
+@@ -3599,7 +3601,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 
+ out:
+ 	if (page_nid != -1)
+-		task_numa_fault(last_cpupid, page_nid, 1, flags);
++		task_numa_fault(last_cpupid, page_nid, 1, flags, vma, mapcount);
+ 	return 0;
+ }
+ 
+@@ -3641,6 +3643,7 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		int target_nid;
+ 		bool migrated = false;
+ 		int flags = 0;
++		int mapcount;
+ 
+ 		if (!pte_present(pteval))
+ 			continue;
+@@ -3670,6 +3673,7 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 
+ 		last_cpupid = page_cpupid_last(page);
+ 		page_nid = page_to_nid(page);
++		mapcount = page_mapcount(page);
+ 		target_nid = numa_migrate_prep(page, vma, addr, page_nid);
+ 		pte_unmap_unlock(pte, ptl);
+ 		if (target_nid != -1) {
+@@ -3683,7 +3687,7 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		}
+ 
+ 		if (page_nid != -1)
+-			task_numa_fault(last_cpupid, page_nid, 1, flags);
++			task_numa_fault(last_cpupid, page_nid, 1, flags, vma, mapcount);
+ 
+ 		pte = pte_offset_map_lock(mm, pmdp, addr, &ptl);
+ 	}
+
+--------------040901090407070100070706--
