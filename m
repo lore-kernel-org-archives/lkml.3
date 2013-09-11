@@ -1,78 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757187Ab3IKT5P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 15:57:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60252 "EHLO mx1.redhat.com"
+	id S932090Ab3IKT7f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 15:59:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61377 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755101Ab3IKT5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 15:57:12 -0400
+	id S1757186Ab3IKT5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 15:57:14 -0400
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
         Kees Cook <keescook@chromium.org>,
         Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 00/10] HID: validate report details
-Date: Wed, 11 Sep 2013 21:56:49 +0200
-Message-Id: <1378929419-6269-1-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH v3 03/10] HID: sony: validate HID output report details
+Date: Wed, 11 Sep 2013 21:56:52 +0200
+Message-Id: <1378929419-6269-4-git-send-email-benjamin.tissoires@redhat.com>
+In-Reply-To: <1378929419-6269-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1378929419-6269-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+From: Kees Cook <keescook@chromium.org>
 
-here is the v3 of the CVE fixes.
+This driver must validate the availability of the HID output report and
+its size before it can write LED states via buzz_set_leds(). This stops
+a heap overflow that is possible if a device provides a malicious HID
+output report:
 
-I have tested the multitouch and logitech-dj part, and the lenovo-tpkbd has been
-tested in the bug referenced in patch 10.
+[  108.171280] usb 1-1: New USB device found, idVendor=054c, idProduct=0002
+...
+[  117.507877] BUG kmalloc-192 (Not tainted): Redzone overwritten
 
-Cheers,
-Benjamin
+CVE-2013-2890
 
-Changes since v2:
-- fix lenovo-tpkbd report validation
-- fix lenovo-tpkbd not releasing the device when the report was not valid
-- use generic tests found in previous hid-multitouch patches, so that this will
-  not happen again
-- fix input_report index retrieving in hid-multitouch
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: stable@vger.kernel.org
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+---
+v3:
+ - no changes
 
-Original message from Kees (v2):
+ drivers/hid/hid-sony.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-These patches introduce a validation function for HID devices that do
-direct report value accesses, solving a number of heap smashing flaws.
-
-This version changes to using an field-index-based checker for the new
-"hid_validate_values()" which requires callers to loop across fields if
-they use more than one field.
-
-Benjamin Tissoires (3):
-  HID: validate feature and input report details
-  HID: multitouch: validate indexes details
-  HID: lenovo-tpkbd: fix leak if tpkbd_probe_tp fails
-
-Kees Cook (7):
-  HID: provide a helper for validating hid reports
-  HID: zeroplus: validate output report details
-  HID: sony: validate HID output report details
-  HID: steelseries: validate output report details
-  HID: LG: validate HID output report details
-  HID: lenovo-tpkbd: validate output report details
-  HID: logitech-dj: validate output report details
-
- drivers/hid/hid-core.c         | 74 +++++++++++++++++++++++++++++++++++++-----
- drivers/hid/hid-input.c        | 11 ++++++-
- drivers/hid/hid-lenovo-tpkbd.c | 25 ++++++++++----
- drivers/hid/hid-lg2ff.c        | 19 ++---------
- drivers/hid/hid-lg3ff.c        | 29 ++++-------------
- drivers/hid/hid-lg4ff.c        | 20 +-----------
- drivers/hid/hid-lgff.c         | 17 ++--------
- drivers/hid/hid-logitech-dj.c  | 10 ++++--
- drivers/hid/hid-multitouch.c   | 26 ++++++++-------
- drivers/hid/hid-sony.c         |  4 +++
- drivers/hid/hid-steelseries.c  |  5 +++
- drivers/hid/hid-zpff.c         | 18 +++-------
- include/linux/hid.h            |  4 +++
- 13 files changed, 146 insertions(+), 116 deletions(-)
-
+diff --git a/drivers/hid/hid-sony.c b/drivers/hid/hid-sony.c
+index 30dbb6b..b18320d 100644
+--- a/drivers/hid/hid-sony.c
++++ b/drivers/hid/hid-sony.c
+@@ -537,6 +537,10 @@ static int buzz_init(struct hid_device *hdev)
+ 	drv_data = hid_get_drvdata(hdev);
+ 	BUG_ON(!(drv_data->quirks & BUZZ_CONTROLLER));
+ 
++	/* Validate expected report characteristics. */
++	if (!hid_validate_values(hdev, HID_OUTPUT_REPORT, 0, 0, 7))
++		return -ENODEV;
++
+ 	buzz = kzalloc(sizeof(*buzz), GFP_KERNEL);
+ 	if (!buzz) {
+ 		hid_err(hdev, "Insufficient memory, cannot allocate driver data\n");
 -- 
 1.8.3.1
 
