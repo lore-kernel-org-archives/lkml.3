@@ -1,58 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757494Ab3IKVRZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 17:17:25 -0400
-Received: from dcvr.yhbt.net ([64.71.152.64]:37351 "EHLO dcvr.yhbt.net"
+	id S1757397Ab3IKVX6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 17:23:58 -0400
+Received: from mga02.intel.com ([134.134.136.20]:23383 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757397Ab3IKVRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 17:17:24 -0400
-Date: Wed, 11 Sep 2013 21:17:23 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: Zach Brown <zab@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>
-Subject: Re: [RFC] extending splice for copy offloading
-Message-ID: <20130911211722.GA9725@dcvr.yhbt.net>
-References: <1378919210-10372-1-git-send-email-zab@redhat.com>
+	id S1757084Ab3IKVX5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 17:23:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,886,1371106800"; 
+   d="scan'208";a="401979540"
+From: "Dilger, Andreas" <andreas.dilger@intel.com>
+To: Christoph Hellwig <hch@infradead.org>, Peng Tao <bergwolf@gmail.com>
+CC: Guenter Roeck <linux@roeck-us.net>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
+Subject: Re: [PATCH] staging: Disable lustre file system for MIPS, SH, and
+ XTENSA
+Thread-Topic: [PATCH] staging: Disable lustre file system for MIPS, SH, and
+ XTENSA
+Thread-Index: AQHOrklEd3VMd3m790y9aLBKGonWLpnAOb+AgAALhYCAAAFBAIAABfsAgADkkYD//+2NgA==
+Date: Wed, 11 Sep 2013 21:23:54 +0000
+Message-ID: <CE56334C.69F30%andreas.dilger@intel.com>
+In-Reply-To: <20130911162955.GA1103@infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.254.109.190]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <AB336507B7C7324EB58C57460B9F60F1@intel.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378919210-10372-1-git-send-email-zab@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zach Brown <zab@redhat.com> wrote:
-> Towards the end of that thread Eric Wong asked why we didn't just
-> extend splice.  I immediately replied with some dumb dismissive
-> answer.  Once I sat down and looked at it, though, it does make a
-> lot of sense.  So good job, Eric.  +10 Dummie points for me.
+On 2013/09/11 10:29 AM, "Christoph Hellwig" <hch@infradead.org> wrote:
+>Talking about nasty code, the whole linux-curproc.c is highly
+>questionable:
+>
+> - cfs_curproc_groups_nr:
+>   	unused and should be removed
 
-Thanks for revisiting that :>
+This is already removed in the upstream Lustre code, it just hasn't made
+it into the kernel yet.
 
-> Some things to talk about:
-> - I really don't care about the naming here.  If you do, holler.
+>- cfs_cap_raise/cfs_cap_lower/cfs_cap_raised:
+>   	needs to go away, modyules must not change access permissions
+>	on behalf of processes
 
-Exposing "DIRECT" to userspace now might confuse users into expecting
-O_DIRECT behavior.  I say this as an easily-confused user.
+These are only used on the server so that threads running as user UID/GID
+can write to recovery log files.  There is likely a different way that
+this could be done, it has probably been this way from years ago when we
+used the VFS to do file IO on the server and it was doing file permission
+checking again.
 
-In the future, perhaps O_DIRECT behavior can become per-splice (instead
-of just per-open) and can save SPLICE_F_DIRECT for that.
+> - the whole cfs_cap_t handling also needs to go away, passing around
+>   capabilities is not a concept the kernel supports for a reason
+>
+> - current_is_32bit:
+>	Code should just use is_compat_task directly.
 
-> - We might want different flags for file-to-file splicing and acceleration
-> - We might want flags to require or forbid acceleration
+This was already removed in the upstream Lustre code.
 
-> - We might want to provide all these flags to sendfile, too
+>I've just taken the time to walk through this one file, but it seems
+>like most of libcfs is just as bad.
 
-Another syscall?  I prefer not.  Better to just maintain the sendfile
-API as-is for compatibility reasons and nudge users towards splice.
+Sure, and that's why Lustre is in drivers/staging and not fs/, and I don't
+make any claims to the contrary.  We are slowly cleaning out these macros
+(added when we wanted to get Lustre working on MacOS and WinNT), but it
+will take some time.  XFS lived with an IRIX shim layer for years, and
+still
+has a whole vnode abstraction layer that nobody seems to be complaining
+about, so I don't think it is unreasonable for us to take some time to
+clean
+up Lustre.
 
-> Thoughts?  Objections?
+Cheers, Andreas
+-- 
+Andreas Dilger
 
-I'll try to test/comment more in a week or two (not much time for
-computing until then).
+Lustre Software Architect
+Intel High Performance Data Division
+
+
