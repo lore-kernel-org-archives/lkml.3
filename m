@@ -1,105 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362Ab3IKKcN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 06:32:13 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:34656 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750988Ab3IKKcL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 06:32:11 -0400
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        sparclinux@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: [PATCH] sparc: fix MSI build failure on Sparc32
-Date: Wed, 11 Sep 2013 12:32:05 +0200
-Message-Id: <1378895525-23772-1-git-send-email-thomas.petazzoni@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <522D1DAE.5010100@roeck-us.net>
-References: <522D1DAE.5010100@roeck-us.net>
+	id S1753624Ab3IKKcX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 06:32:23 -0400
+Received: from [207.46.163.241] ([207.46.163.241]:18691 "EHLO
+	na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753049Ab3IKKcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 06:32:21 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: Jani Nikula <jani.nikula@linux.intel.com>
+CC: Aaron Lu <aaron.lu@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Daniel Vetter" <daniel@ffwll.ch>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        Yves-Alexis Perez <corsac@debian.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
+        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Lee Chun-Yi <jlee@novell.com>, Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH 2/2] ACPI / video / i915: Remove ACPI backlight if
+ firmware expects Windows 8
+Thread-Topic: [PATCH 2/2] ACPI / video / i915: Remove ACPI backlight if
+ firmware expects Windows 8
+Thread-Index: AQHOrTh4P2SImvKSpUu3tJlbFkAqyJm9JHkAgAAt1ACAADO4AIAAVGuAgAElbgCAAFwIAIAAZyGAgAB5BYCAAByP8YAAAMSA
+Date: Wed, 11 Sep 2013 10:30:17 +0000
+Message-ID: <1378895417.945.2.camel@x230.lan>
+References: <522D88C3.7000808@intel.com> <5155010.Y1gov7SKhP@vostro.rjw.lan>
+	 <87eh8wail7.fsf@intel.com> <1889567.vxI8heiC3B@vostro.rjw.lan>
+	 <20130911013206.GA556@mint-spring.sh.intel.com> <87hadrycf4.fsf@intel.com>
+	 <1378889140.945.0.camel@x230.lan> <87d2ofy7li.fsf@intel.com>
+In-Reply-To: <87d2ofy7li.fsf@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:470:1f07:1371:91f6:fb4b:7e67:dab0]
+x-forefront-prvs: 09669DB681
+x-forefront-antispam-report: SFV:NSPM;SFS:(24454002)(189002)(199002)(377424004)(51704005)(54356001)(36756003)(74876001)(83072001)(74706001)(53806001)(33646001)(79102001)(19580405001)(59766001)(47736001)(77982001)(46102001)(63696002)(83322001)(51856001)(49866001)(81542001)(50986001)(47976001)(19580395003)(69226001)(4396001)(81342001)(56776001)(76786001)(80976001)(54316002)(80022001)(31966008)(74662001)(81816001)(47446002)(81686001)(74502001)(56816003)(65816001)(74366001)(76796001)(76482001)(77096001)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB222;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:2001:470:1f07:1371:91f6:fb4b:7e67:dab0;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <4847B66A956DC249A340F90BA1CD9519@namprd05.prod.outlook.com>
+MIME-Version: 1.0
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8BAWVY9004027
 
-Commit ebd97be635 ('PCI: remove ARCH_SUPPORTS_MSI kconfig option')
-removes the ARCH_SUPPORTS_MSI Kconfig option that allowed
-architectures to indicate whether they support PCI MSI or not. Now,
-PCI MSI support can be compiled in on any architecture thanks to the
-use of weak functions thanks to 4287d824f265 ('PCI: use weak functions
-for MSI arch-specific functions').
+On Wed, 2013-09-11 at 13:29 +0300, Jani Nikula wrote:
+> On Wed, 11 Sep 2013, Matthew Garrett <matthew.garrett@nebula.com> wrote:
+> > On Wed, 2013-09-11 at 11:45 +0300, Jani Nikula wrote:
+> >
+> >> Before plunging forward, have you observed any difference between the
+> >> boot modes? We have reports [1] that the backlight behaviour is
+> >> different with UEFI vs. UEFI+CSM or legacy boot. So I'm wondering if the
+> >> acpi_gbl_osi_data >= ACPI_OSI_WIN_8 check in patch 2/2 is the whole
+> >> story.
+> >> 
+> >> Further, if we tell the BIOS we're Windows 8 to use the tested BIOS code
+> >> paths, what guarantees do we have of UEFI+CSM or legacy boots working?
+> >
+> > We have no evidence of Windows behaving differently based on the exposed
+> > firmware type.
+> 
+> By "behaving differently", do you mean internally adapting to the boot
+> mode, or exhibiting different behaviour to the user?
 
-So, architecture specific code is now responsible to ensure that its
-PCI MSI code builds in all cases, or be appropriately conditionally
-compiled.
+As far as backlight control goes, both.
 
-On Sparc, the MSI support is only provided for Sparc64, so the
-ARCH_SUPPORTS_MSI kconfig option was only selected for SPARC64, and
-not for the Sparc architecture as a whole. Therefore, removing
-ARCH_SUPPORTS_MSI broke Sparc32 configurations with CONFIG_PCI_MSI=y,
-because the Sparc-specific MSI code is not designed to be built on
-Sparc32.
+> We have evidence of the firmware behaving differently (VBT, backlight)
+> based on the boot mode, all else being equal. We don't adapt to that,
+> and we fail. I don't know if we should adapt, or do things differently
+> altogether. I don't even know if Windows 8 works on all boot modes on
+> the machines in question.
 
-To solve this, this commit ensures that the Sparc MSI code is only
-built on Sparc64. This is done thanks to a new Kconfig Makefile helper
-option SPARC64_PCI_MSI, modeled after the existing SPARC64_PCI. The
-SPARC64_PCI_MSI option is an hidden option that is true when both
-Sparc64 PCI support is enabled and MSI is enabled. The
-arch/sparc/kernel/pci_msi.c file is now only built when
-SPARC64_PCI_MSI is true.
+Sure, but Windows knows nothing about VBT or opregion-backed backlight
+control. That's up to the Intel driver.
 
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Reported-by: Guenter Roeck <linux@roeck-us.net>
----
- arch/sparc/Kconfig         | 7 ++++++-
- arch/sparc/kernel/Makefile | 3 ++-
- 2 files changed, 8 insertions(+), 2 deletions(-)
-
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index 1570ad2..a284efa 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -507,12 +507,17 @@ config SUN_OPENPROMFS
- 	  Only choose N if you know in advance that you will not need to modify
- 	  OpenPROM settings on the running system.
- 
--# Makefile helper
-+# Makefile helpers
- config SPARC64_PCI
- 	bool
- 	default y
- 	depends on SPARC64 && PCI
- 
-+config SPARC64_PCI_MSI
-+	bool
-+	default y
-+	depends on SPARC64_PCI && PCI_MSI
-+
- endmenu
- 
- menu "Executable file formats"
-diff --git a/arch/sparc/kernel/Makefile b/arch/sparc/kernel/Makefile
-index d432fb2..d15cc17 100644
---- a/arch/sparc/kernel/Makefile
-+++ b/arch/sparc/kernel/Makefile
-@@ -1,3 +1,4 @@
-+
- #
- # Makefile for the linux kernel.
- #
-@@ -99,7 +100,7 @@ obj-$(CONFIG_STACKTRACE)     += stacktrace.o
- obj-$(CONFIG_SPARC64_PCI)    += pci.o pci_common.o psycho_common.o
- obj-$(CONFIG_SPARC64_PCI)    += pci_psycho.o pci_sabre.o pci_schizo.o
- obj-$(CONFIG_SPARC64_PCI)    += pci_sun4v.o pci_sun4v_asm.o pci_fire.o
--obj-$(CONFIG_PCI_MSI)        += pci_msi.o
-+obj-$(CONFIG_SPARC64_PCI_MSI) += pci_msi.o
- 
- obj-$(CONFIG_COMPAT)         += sys32.o sys_sparc32.o signal32.o
- 
 -- 
-1.8.1.2
-
+Matthew Garrett <matthew.garrett@nebula.com>
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
