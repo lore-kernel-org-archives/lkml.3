@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497Ab3IKEaN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 00:30:13 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8749 "EHLO
+	id S1754470Ab3IKEaL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 00:30:11 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26240 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752893Ab3IKE3F (ORCPT
+	with ESMTP id S1752839Ab3IKE3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 00:29:05 -0400
-X-Authority-Analysis: v=2.0 cv=R/aB6KtX c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=5x7BNMs7wXsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=gW3uYUFvsx0A:10 a=SaWEO8HGAAAA:8 a=omOdbC7AAAAA:8 a=h1aNt0RaAAAA:8 a=J1Y8HTJGAAAA:8 a=-wuDyYV1lnloW63rLi8A:9 a=w2ubnULX9RwA:10 a=9n0VZpmWo7gA:10 a=4N9Db7Z2_RYA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Wed, 11 Sep 2013 00:29:04 -0400
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=FimGvo4joy8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=U013quMCeBUA:10 a=20KFwNOVAAAA:8 a=J1Y8HTJGAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=jEp0ucaQiEUA:10 a=4N9Db7Z2_RYA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042859.498983830@goodmis.org>
+Message-Id: <20130911042858.736772187@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:27:50 -0400
+Date: Wed, 11 Sep 2013 00:27:46 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Gao feng <gaofeng@cn.fujitsu.com>,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [043/251] ipv6: ip6_append_data_mtu did not care about pmtudisc and frag_size
+Cc: Dave Jones <davej@redhat.com>, "David S. Miller" <davem@davemloft.net>
+Subject: [039/251] x25: Fix broken locking in ioctl error paths.
 References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0043-ipv6-ip6_append_data_mtu-did-not-care-about-pmtudisc.patch
+Content-Disposition: inline; filename=0039-x25-Fix-broken-locking-in-ioctl-error-paths.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,137 +29,66 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Dave Jones <davej@redhat.com>
 
-[ Upstream commit 75a493e60ac4bbe2e977e7129d6d8cbb0dd236be ]
+[ Upstream commit 4ccb93ce7439b63c31bc7597bfffd13567fa483d ]
 
-If the socket had an IPV6_MTU value set, ip6_append_data_mtu lost track
-of this when appending the second frame on a corked socket. This results
-in the following splat:
+Two of the x25 ioctl cases have error paths that break out of the function without
+unlocking the socket, leading to this warning:
 
-[37598.993962] ------------[ cut here ]------------
-[37598.994008] kernel BUG at net/core/skbuff.c:2064!
-[37598.994008] invalid opcode: 0000 [#1] SMP
-[37598.994008] Modules linked in: tcp_lp uvcvideo videobuf2_vmalloc videobuf2_memops videobuf2_core videodev media vfat fat usb_storage fuse ebtable_nat xt_CHECKSUM bridge stp llc ipt_MASQUERADE nf_conntrack_netbios_ns nf_conntrack_broadcast ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat
-+nf_nat_ipv4 nf_nat iptable_mangle nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack ebtable_filter ebtables ip6table_filter ip6_tables be2iscsi iscsi_boot_sysfs bnx2i cnic uio cxgb4i cxgb4 cxgb3i cxgb3 mdio libcxgbi ib_iser rdma_cm ib_addr iw_cm ib_cm ib_sa ib_mad ib_core iscsi_tcp libiscsi_tcp libiscsi
-+scsi_transport_iscsi rfcomm bnep iTCO_wdt iTCO_vendor_support snd_hda_codec_conexant arc4 iwldvm mac80211 snd_hda_intel acpi_cpufreq mperf coretemp snd_hda_codec microcode cdc_wdm cdc_acm
-[37598.994008]  snd_hwdep cdc_ether snd_seq snd_seq_device usbnet mii joydev btusb snd_pcm bluetooth i2c_i801 e1000e lpc_ich mfd_core ptp iwlwifi pps_core snd_page_alloc mei cfg80211 snd_timer thinkpad_acpi snd tpm_tis soundcore rfkill tpm tpm_bios vhost_net tun macvtap macvlan kvm_intel kvm uinput binfmt_misc
-+dm_crypt i915 i2c_algo_bit drm_kms_helper drm i2c_core wmi video
-[37598.994008] CPU 0
-[37598.994008] Pid: 27320, comm: t2 Not tainted 3.9.6-200.fc18.x86_64 #1 LENOVO 27744PG/27744PG
-[37598.994008] RIP: 0010:[<ffffffff815443a5>]  [<ffffffff815443a5>] skb_copy_and_csum_bits+0x325/0x330
-[37598.994008] RSP: 0018:ffff88003670da18  EFLAGS: 00010202
-[37598.994008] RAX: ffff88018105c018 RBX: 0000000000000004 RCX: 00000000000006c0
-[37598.994008] RDX: ffff88018105a6c0 RSI: ffff88018105a000 RDI: ffff8801e1b0aa00
-[37598.994008] RBP: ffff88003670da78 R08: 0000000000000000 R09: ffff88018105c040
-[37598.994008] R10: ffff8801e1b0aa00 R11: 0000000000000000 R12: 000000000000fff8
-[37598.994008] R13: 00000000000004fc R14: 00000000ffff0504 R15: 0000000000000000
-[37598.994008] FS:  00007f28eea59740(0000) GS:ffff88023bc00000(0000) knlGS:0000000000000000
-[37598.994008] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[37598.994008] CR2: 0000003d935789e0 CR3: 00000000365cb000 CR4: 00000000000407f0
-[37598.994008] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[37598.994008] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[37598.994008] Process t2 (pid: 27320, threadinfo ffff88003670c000, task ffff88022c162ee0)
-[37598.994008] Stack:
-[37598.994008]  ffff88022e098a00 ffff88020f973fc0 0000000000000008 00000000000004c8
-[37598.994008]  ffff88020f973fc0 00000000000004c4 ffff88003670da78 ffff8801e1b0a200
-[37598.994008]  0000000000000018 00000000000004c8 ffff88020f973fc0 00000000000004c4
-[37598.994008] Call Trace:
-[37598.994008]  [<ffffffff815fc21f>] ip6_append_data+0xccf/0xfe0
-[37598.994008]  [<ffffffff8158d9f0>] ? ip_copy_metadata+0x1a0/0x1a0
-[37598.994008]  [<ffffffff81661f66>] ? _raw_spin_lock_bh+0x16/0x40
-[37598.994008]  [<ffffffff8161548d>] udpv6_sendmsg+0x1ed/0xc10
-[37598.994008]  [<ffffffff812a2845>] ? sock_has_perm+0x75/0x90
-[37598.994008]  [<ffffffff815c3693>] inet_sendmsg+0x63/0xb0
-[37598.994008]  [<ffffffff812a2973>] ? selinux_socket_sendmsg+0x23/0x30
-[37598.994008]  [<ffffffff8153a450>] sock_sendmsg+0xb0/0xe0
-[37598.994008]  [<ffffffff810135d1>] ? __switch_to+0x181/0x4a0
-[37598.994008]  [<ffffffff8153d97d>] sys_sendto+0x12d/0x180
-[37598.994008]  [<ffffffff810dfb64>] ? __audit_syscall_entry+0x94/0xf0
-[37598.994008]  [<ffffffff81020ed1>] ? syscall_trace_enter+0x231/0x240
-[37598.994008]  [<ffffffff8166a7e7>] tracesys+0xdd/0xe2
-[37598.994008] Code: fe 07 00 00 48 c7 c7 04 28 a6 81 89 45 a0 4c 89 4d b8 44 89 5d a8 e8 1b ac b1 ff 44 8b 5d a8 4c 8b 4d b8 8b 45 a0 e9 cf fe ff ff <0f> 0b 66 0f 1f 84 00 00 00 00 00 66 66 66 66 90 55 48 89 e5 48
-[37598.994008] RIP  [<ffffffff815443a5>] skb_copy_and_csum_bits+0x325/0x330
-[37598.994008]  RSP <ffff88003670da18>
-[37599.007323] ---[ end trace d69f6a17f8ac8eee ]---
+================================================
+[ BUG: lock held when returning to user space! ]
+3.10.0-rc7+ #36 Not tainted
+------------------------------------------------
+trinity-child2/31407 is leaving the kernel with locks still held!
+1 lock held by trinity-child2/31407:
+ #0:  (sk_lock-AF_X25){+.+.+.}, at: [<ffffffffa024b6da>] x25_ioctl+0x8a/0x740 [x25]
 
-While there, also check if path mtu discovery is activated for this
-socket. The logic was adapted from ip6_append_data when first writing
-on the corked socket.
-
-This bug was introduced with commit
-0c1833797a5a6ec23ea9261d979aa18078720b74 ("ipv6: fix incorrect ipsec
-fragment").
-
-v2:
-a) Replace IPV6_PMTU_DISC_DO with IPV6_PMTUDISC_PROBE.
-b) Don't pass ipv6_pinfo to ip6_append_data_mtu (suggestion by Gao
-   feng, thanks!).
-c) Change mtu to unsigned int, else we get a warning about
-   non-matching types because of the min()-macro type-check.
-
-Acked-by: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Dave Jones <davej@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- net/ipv6/ip6_output.c |   16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ net/x25/af_x25.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index a26d44c..c088717 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -1182,11 +1182,12 @@ static inline struct ipv6_rt_hdr *ip6_rthdr_dup(struct ipv6_rt_hdr *src,
- 	return src ? kmemdup(src, (src->hdrlen + 1) * 8, gfp) : NULL;
- }
+diff --git a/net/x25/af_x25.c b/net/x25/af_x25.c
+index a306bc6..b943e3e 100644
+--- a/net/x25/af_x25.c
++++ b/net/x25/af_x25.c
+@@ -1586,11 +1586,11 @@ out_cud_release:
+ 	case SIOCX25CALLACCPTAPPRV: {
+ 		rc = -EINVAL;
+ 		lock_sock(sk);
+-		if (sk->sk_state != TCP_CLOSE)
+-			break;
+-		clear_bit(X25_ACCPT_APPRV_FLAG, &x25->flags);
++		if (sk->sk_state == TCP_CLOSE) {
++			clear_bit(X25_ACCPT_APPRV_FLAG, &x25->flags);
++			rc = 0;
++		}
+ 		release_sock(sk);
+-		rc = 0;
+ 		break;
+ 	}
  
--static void ip6_append_data_mtu(int *mtu,
-+static void ip6_append_data_mtu(unsigned int *mtu,
- 				int *maxfraglen,
- 				unsigned int fragheaderlen,
- 				struct sk_buff *skb,
--				struct rt6_info *rt)
-+				struct rt6_info *rt,
-+				bool pmtuprobe)
- {
- 	if (!(rt->dst.flags & DST_XFRM_TUNNEL)) {
- 		if (skb == NULL) {
-@@ -1198,7 +1199,9 @@ static void ip6_append_data_mtu(int *mtu,
- 			 * this fragment is not first, the headers
- 			 * space is regarded as data space.
- 			 */
--			*mtu = dst_mtu(rt->dst.path);
-+			*mtu = min(*mtu, pmtuprobe ?
-+				   rt->dst.dev->mtu :
-+				   dst_mtu(rt->dst.path));
- 		}
- 		*maxfraglen = ((*mtu - fragheaderlen) & ~7)
- 			      + fragheaderlen - sizeof(struct frag_hdr);
-@@ -1215,11 +1218,10 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
- 	struct ipv6_pinfo *np = inet6_sk(sk);
- 	struct inet_cork *cork;
- 	struct sk_buff *skb, *skb_prev = NULL;
--	unsigned int maxfraglen, fragheaderlen;
-+	unsigned int maxfraglen, fragheaderlen, mtu;
- 	int exthdrlen;
- 	int dst_exthdrlen;
- 	int hh_len;
--	int mtu;
- 	int copy;
- 	int err;
- 	int offset = 0;
-@@ -1381,7 +1383,9 @@ alloc_new_skb:
- 			/* update mtu and maxfraglen if necessary */
- 			if (skb == NULL || skb_prev == NULL)
- 				ip6_append_data_mtu(&mtu, &maxfraglen,
--						    fragheaderlen, skb, rt);
-+						    fragheaderlen, skb, rt,
-+						    np->pmtudisc ==
-+						    IPV6_PMTUDISC_PROBE);
- 
- 			skb_prev = skb;
+@@ -1598,14 +1598,15 @@ out_cud_release:
+ 		rc = -EINVAL;
+ 		lock_sock(sk);
+ 		if (sk->sk_state != TCP_ESTABLISHED)
+-			break;
++			goto out_sendcallaccpt_release;
+ 		/* must call accptapprv above */
+ 		if (test_bit(X25_ACCPT_APPRV_FLAG, &x25->flags))
+-			break;
++			goto out_sendcallaccpt_release;
+ 		x25_write_internal(sk, X25_CALL_ACCEPTED);
+ 		x25->state = X25_STATE_3;
+-		release_sock(sk);
+ 		rc = 0;
++out_sendcallaccpt_release:
++		release_sock(sk);
+ 		break;
+ 	}
  
 -- 
 1.7.10.4
