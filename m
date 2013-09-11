@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756722Ab3IKSGB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 14:06:01 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52740 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753476Ab3IKSF7 (ORCPT
+	id S1756042Ab3IKSHj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 14:07:39 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:53758 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753573Ab3IKSHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 14:05:59 -0400
-Date: Wed, 11 Sep 2013 20:05:42 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Peter Anvin <hpa@zytor.com>, Mike Galbraith <bitbucket@online.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/7] sched: Add NEED_RESCHED to the preempt_count
-Message-ID: <20130911180541.GR31370@twins.programming.kicks-ass.net>
-References: <20130910130811.507933095@infradead.org>
- <20130910132011.116593485@infradead.org>
- <522FCE9D.4010707@amacapital.net>
- <20130911082530.GN31370@twins.programming.kicks-ass.net>
- <20130911110635.GT26785@twins.programming.kicks-ass.net>
- <CALCETrUECkOZkxao0d1467rEFcSF3jzddNo1awshE4uK-wsWGQ@mail.gmail.com>
+	Wed, 11 Sep 2013 14:07:37 -0400
+Message-ID: <5230B078.3070306@linux.vnet.ibm.com>
+Date: Wed, 11 Sep 2013 23:33:36 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrUECkOZkxao0d1467rEFcSF3jzddNo1awshE4uK-wsWGQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        cpufreq <cpufreq@vger.kernel.org>
+Subject: Re: cpufreq_stats NULL deref on second system suspend
+References: <522E1FEF.6080803@wwwdotorg.org> <1775778.MeiRhuYy7o@vostro.rjw.lan> <522F86AD.6010603@wwwdotorg.org> <2521560.SfeNbV74nj@vostro.rjw.lan> <52304439.3030301@linux.vnet.ibm.com> <523094CD.3000506@wwwdotorg.org>
+In-Reply-To: <523094CD.3000506@wwwdotorg.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13091117-8878-0000-0000-000008CD1272
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 09:35:08AM -0700, Andy Lutomirski wrote:
-> I bet that this improves cross-cpu wakeup latency, too -- the old code
-> would presumably wake up the cpu and then immediately interrupt it.
+On 09/11/2013 09:35 PM, Stephen Warren wrote:
+> On 09/11/2013 04:21 AM, Srivatsa S. Bhat wrote:
+>> On 09/11/2013 04:04 AM, Rafael J. Wysocki wrote:
+>>> On Tuesday, September 10, 2013 02:53:01 PM Stephen Warren wrote:
+>>>> On 09/09/2013 05:14 PM, Rafael J. Wysocki wrote:
+>>>>> On Monday, September 09, 2013 03:29:06 PM Stephen Warren wrote:
+>>>>>> On 09/09/2013 02:24 PM, Rafael J. Wysocki wrote:
+>>>>>>> On Monday, September 09, 2013 02:01:32 PM Stephen Warren wrote:
+>>>>>>>> On 09/09/2013 02:01 PM, Rafael J. Wysocki wrote:
+>>>>>>>>> On Monday, September 09, 2013 01:22:23 PM Stephen Warren wrote:
+>>>>>>>>>> Viresh,
+>>>>>>>>>>
+>>>>>>>>>> I'm seeing the crash below when suspending my system for the second time.
+> ...
+>> Stephen, I went through the code and I think I found out what is going wrong.
+>> Can you please try the following patch?
+> 
+> Unfortunately, I still see the exact same failure/backtrace with this
+> patch applied.
+> 
 
-Yeah,. its what clued Mike in to there being a problem.
+Oh, is it? Can you please give me the map of the related cpus on your
+system? (ie., cat /sys/devices/system/cpu/cpu*/cpufreq/related_cpus for
+each CPU.)
 
-> It might be nice to rename one or both of need_resched and
-> test_need_resched, though -- the difference is somewhat inscrutable.
+I must be missing something...
+ 
+Regards,
+Srivatsa S. Bhat
 
-I agreed, I've just been unable to come up with anything sane.
-
-The best I could come up with is renaming
-{set,clear,test}_need_resched() to {}_tif_need_resched(), so we then end
-up with test_tif_need_resched(), which is slightly more different from
-need_resched().
-
-Ideas?
