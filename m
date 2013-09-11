@@ -1,215 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756864Ab3IKSyr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 14:54:47 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:43620 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754311Ab3IKSyq (ORCPT
+	id S932084Ab3IKSyz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 14:54:55 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24379 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932065Ab3IKSyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 14:54:46 -0400
-Date: Wed, 11 Sep 2013 14:54:41 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH] timekeeping: introduce timekeeping_is_busy()
-Message-ID: <20130911185441.GC23532@Krystal>
-References: <20130911150853.GA19800@Krystal> <52309D13.3020305@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52309D13.3020305@linaro.org>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 11 Sep 2013 14:54:51 -0400
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=BNlKMqpuY8sA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=g-RjETWgj_YA:10 a=pGLkceISAAAA:8 a=ag1SF4gXAAAA:8 a=VwQbUJbxAAAA:8 a=cY1P8z3Y1v6u_aVJI2AA:9 a=CjuIK1q_8ugA:10 a=MSl-tDqOz04A:10 a=1TSTQ8KKaH4A:10 a=SjKPycFA614A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Wed, 11 Sep 2013 14:54:49 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, Alex Deucher <alexander.deucher@amd.com>
+Subject: Re: [117/251] radeon kms: do not flush uninitialized hotplug work
+Message-ID: <20130911145449.1679a883@gandalf.local.home>
+In-Reply-To: <20130911184839.GA2261@swordfish.minsk.epam.com>
+References: <20130911042707.738353451@goodmis.org>
+	<20130911042911.752089217@goodmis.org>
+	<20130911090648.GA2271@swordfish.minsk.epam.com>
+	<20130911083741.6b2783b2@gandalf.local.home>
+	<20130911143629.GB2209@swordfish.minsk.epam.com>
+	<20130911160016.GC24542@kroah.com>
+	<20130911121318.31974aeb@gandalf.local.home>
+	<20130911184839.GA2261@swordfish.minsk.epam.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* John Stultz (john.stultz@linaro.org) wrote:
-> On 09/11/2013 08:08 AM, Mathieu Desnoyers wrote:
-[...]
+On Wed, 11 Sep 2013 21:48:39 +0300
+Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
 
-Now focusing on features (the fix discussion is in a separate
-sub-thread):
-
+> On (09/11/13 12:13), Steven Rostedt wrote:
+> > On Wed, 11 Sep 2013 09:00:16 -0700
+> > Greg KH <gregkh@linuxfoundation.org> wrote:
+> > 
+> > > On Wed, Sep 11, 2013 at 05:36:29PM +0300, Sergey Senozhatsky wrote:
+> > > > This one on top of stable 3.6.11 git.
+> > > 
+> > > What do you mean by this?
+> > > 
 > 
-> > LTTng uses ktime to have the same time-base across kernel and
-> > user-space, so traces gathered from LTTng-modules and LTTng-UST can be
-> > correlated. We plan on using ktime until a fast, scalable, and
-> > fine-grained time-source for tracing that can be used across kernel and
-> > user-space, and which does not rely on read seqlock for kernel-level
-> > synchronization, makes its way into the kernel.
+> I thought it was for linux-3.6.y stable branch. sorry, wrong
+> assumption.
 > 
-> So my fix for the issue aside, I could see cases where using timekeeping
-> for tracing could run into similar issues, so something like your
-> timekeeping_is_busy() check sounds reasonable.
-
-Yep, it would certainly make those use of ktime_get() more robust
-against internal changes.
-
-> I might suggest we wrap
-> the timekeeper locking in a helper function so we don't have the
-> spinlock(); set_owner(); write_seqcount(); pattern all over the place
-> (and it avoids me forgetting to set the owner in some future change,
-> further mucking things up :).
-
-Good idea.
-
-> As for your waiting for "fast, scalable, and fine-grained time-source
-> for tracing that can be used across kernel and user-space, and which
-> does not rely on read seqlock for kernel-level synchronization" wish,
-> I'd be interested in hearing ideas if anyone has them.
-
-So far, the best I could come up with is this: using a RCU (or RCU-like)
-scheme to protect in-kernel timestamp reads (possibly with RCU sched,
-which is based on preemption disabling), and use a sequence lock to
-protect reads from user-space.
-
-Time updates within the kernel would have to deal with both RCU pointer
-update and track quiescent state, and would need to hold a write seqlock
-to synchronize against concurrent user-space reads.
-
-> After getting the recent lock-hold reduction work merged in 3.10, I had
-> some thoughts that maybe we could do some sort of rcu style timekeeper
-> switch. The down side is that there really is a time bound in which the
-> timekeeper state is valid for, so there would have to be some sort of
-> seqcount style "retry if we didn't finish the calculation within the
-> valid bound" (which can run into similar deadlock problems if the
-> updater is delayed by a reader spinning waiting for an update).
-
-What could make a reader fail to finish the calculation within the valid
-time bound ? Besides preemption ? If it's caused by a too long
-interrupt, this will have an effect on the entire timekeeping, because
-the timer interrupt will likely be delayed, and therefore the periodical
-update changing the write seqlock value will be delayed too. So for the
-interrupt case, it looks like a "too long" interrupt (or interrupt
-disable section) will already disrupt timekeeping with the current
-design.
-
+> > 
+> > It's for my stable branch. Although, 3.6.11.8 is a far cry from 3.6.11
+> > and the patch does not apply.
+> >
 > 
-> Also there is the memory issue of having N timekeeper structures hanging
-> around, since there could be many readers delayed mid-calculation, but
-> that could probably be bound by falling back to a seqcount (and again,
-> that opens up deadlock possibilities). Anyway, it all gets pretty
-> complicated pretty quickly, which makes ensuring correctness even harder. :(
+> oh... so, we were not talking about linux-3.6.y branch from
+> git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git ?
 > 
-> But yea, I'd be interested in other ideas and approaches.
+> a thousand apologies.
+> 
 
-If we can afford a synchronize_rcu_sched() wherever the write seqlock is
-needed, we could go with the following. Please note that I use
-synchronize_rcu_sched() rather than call_rcu_sched() here because I try
-to avoid having too many timekeeper structures hanging around, and I
-think it can be generally a good think to ensure timekeeping core does
-not depend on the memory allocator (but I could very well be wrong).
+Yeah, this is my extended stable, which is located in:
 
-In kernel/time/timekeeper.c:
-
-static DEFINE_MUTEX(timekeeper_mutex);
-static seqcount_t timekeeper_user_seq;
-
-struct timekeeper_rcu {
-        struct a[2];
-        struct timekeeper *p;   /* current */
-};
-
-/* Timekeeper structure for kernel readers */
-static struct timekeeper_rcu timekeeper_rcu;
-
-/* Timekeeper structure for userspace readers */
-static struct timekeeper timekeeper_user;
-
-/* for updates */
-update_time()
-{
-        struct timekeeper *next_p;
-
-        mutex_lock(&timekeeper_mutex);
-
-        /* RCU update, for kernel readers */
-        if (timekeeper_rcu.p == &timekeeper_rcu.a[0])
-                next_p = &timekeeper_rcu.a[1];
-        else
-                next_p = &timekeeper_rcu.a[0];
-
-        timekeeper_copy(next_p, timekeeper_rcu.p);
-        timekeeper_do_update(next_p, ...);
-
-        rcu_assign_pointer(timekeeper_rcu.p, next_p);
-
-        /*
-         * Ensure there are no more readers in flight accessing the old
-         * element.
-         */
-        synchronize_rcu_sched();
-
-        /* seqlock update, for user-space readers */
-        write_seqcount_begin(&timekeeper_user_seq);
-        timekeeper_do_update_user(&timekeeper_user);
-        write_seqcount_end(&timekeeper_user_seq);
-
-        mutex_unlock(&timekeeper_mutex);
-}
+git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+v3.6-stable
 
 
-/*
- * Accessing time from kernel. Should be called with preemption
- * disabled.
- */
-u64 __read_time_kernel()
-{
-        struct timekeeper *p;
+I base the stable 3.6-rt patches off of this.
 
-        p = rcu_dereference(timekeeper_rcu.p);
-        return get_value_from(p);
-}
-
-/* Accessing time from user-space (vDSO) */
-
-u64 read_time_user()
-{
-        /*
-         * Read timekeeper_user within a read_seqcount loop.
-         */
-}
-
-
-As far as I see, the write seqcount is currently taken by:
-
-- do_settimeofday()
-- timekeeping_inject_offset()
-- timekeeping_set_tai_offset()
-- change_clocksource()
-- timekeeping_init()
-- timekeeping_inject_sleeptime()
-- timekeeping_resume()
-- timekeeping_suspend()
-- update_wall_time()
-- do_adjtimex()
-- hardpps()
-
-It might be good to breakdown which of these functions could afford a
-synchronize_rcu_sched(), and which can't. Maybe part of the solution
-could be to use different data structures, and separate synchronization,
-for the ajdtime part (executed in thread context) vs for
-update_wall_time, AFAIK executed in interrupt context. We might also
-want to consider that the adjtime part needs to be global, vs
-update_wall_time which could possibly be done on per-cpu data
-structures, which could simplify synchronization.
-
-Thoughts ?
-
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+-- Steve
