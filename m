@@ -1,146 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477Ab3IKJ4r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 05:56:47 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28834 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753260Ab3IKJ4p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 05:56:45 -0400
-X-Authority-Analysis: v=2.0 cv=R/aB6KtX c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=j3-r3loCb8EA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=YmFrBUDmc8QA:10 a=uP1ucDPQAAAA:8 a=KKAkSRfTAAAA:8 a=drOt6m5kAAAA:8 a=T2h1Z_K7z-JURIdn7sYA:9 a=zaWHSuwd-w0A:10 a=WwgC8nHKvroA:10 a=jeBq3FmKZ4MA:10 a=nFlfukreqcYSQcj2:21 a=FTDgeUEVp1OVyZ1Q:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042905.646357940@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:28:27 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [080/251] ARM: 7722/1: zImage: Convert 32bits memory size and address from
- ATAG to 64bits DTB
-References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0080-ARM-7722-1-zImage-Convert-32bits-memory-size-and-add.patch
+	id S1753569Ab3IKKF3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 06:05:29 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:28826 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751126Ab3IKKFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 06:05:24 -0400
+X-IronPort-AV: E=Sophos;i="4.90,883,1371052800"; 
+   d="scan'208";a="8489692"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: tj@kernel.org, rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de,
+        mingo@elte.hu, hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, toshi.kani@hp.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: [PATCH v2 7/9] x86, acpi, crash, kdump: Do reserve_crashkernel() after SRAT is parsed.
+Date: Wed, 11 Sep 2013 18:07:35 +0800
+Message-Id: <1378894057-30946-8-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1378894057-30946-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1378894057-30946-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/09/11 18:02:51,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/09/11 18:02:58,
+	Serialize complete at 2013/09/11 18:02:58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.9-rc1 stable review patch.
-If anyone has any objections, please let me know.
+Memory reserved for crashkernel could be large. So we should not allocate
+this memory bottom up from the end of kernel image.
 
-------------------
+When SRAT is parsed, we will be able to know whihc memory is hotpluggable,
+and we can avoid allocating this memory for the kernel. So reorder
+reserve_crashkernel() after SRAT is parsed.
 
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-
-[ Upstream commit faefd550c45d8d314e8f260f21565320355c947f ]
-
-When CONFIG_ARM_APPENDED_DTB is selected, if the bootloader provides
-an ATAG_MEM it replaces the memory size and the memory address in the
-memory node of the device tree. In the case of a system which can
-handle more than 4GB, the memory node cell size is 4: each data
-(memory size and memory address) are 64 bits and then use 2 cells.
-
-The current code in atags_to_fdt.c made the assumption of a cell size
-of 2 (one cell for the memory size and one cell for the memory
-address), this leads to an improper write of the data and ends with a
-boot hang.
-
-This patch writes the memory size and the memory address on the memory
-node in the device tree depending of the size of the memory node (32
-bits or 64 bits).
-
-It has been tested in the 2 cases:
-- with a dtb using skeleton.dtsi
-- and with a dtb using skeleton64.dtsi
-
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Acked-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 ---
- arch/arm/boot/compressed/atags_to_fdt.c |   44 ++++++++++++++++++++++++++-----
- 1 file changed, 38 insertions(+), 6 deletions(-)
+ arch/x86/kernel/setup.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/boot/compressed/atags_to_fdt.c b/arch/arm/boot/compressed/atags_to_fdt.c
-index aabc02a..d1153c8 100644
---- a/arch/arm/boot/compressed/atags_to_fdt.c
-+++ b/arch/arm/boot/compressed/atags_to_fdt.c
-@@ -53,6 +53,17 @@ static const void *getprop(const void *fdt, const char *node_path,
- 	return fdt_getprop(fdt, offset, property, len);
- }
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 7372be7..fa56a57 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1130,8 +1130,6 @@ void __init setup_arch(char **cmdline_p)
+ 	acpi_initrd_override((void *)initrd_start, initrd_end - initrd_start);
+ #endif
  
-+static uint32_t get_cell_size(const void *fdt)
-+{
-+	int len;
-+	uint32_t cell_size = 1;
-+	const uint32_t *size_len =  getprop(fdt, "/", "#size-cells", &len);
-+
-+	if (size_len)
-+		cell_size = fdt32_to_cpu(*size_len);
-+	return cell_size;
-+}
-+
- static void merge_fdt_bootargs(void *fdt, const char *fdt_cmdline)
- {
- 	char cmdline[COMMAND_LINE_SIZE];
-@@ -95,9 +106,11 @@ static void merge_fdt_bootargs(void *fdt, const char *fdt_cmdline)
- int atags_to_fdt(void *atag_list, void *fdt, int total_space)
- {
- 	struct tag *atag = atag_list;
--	uint32_t mem_reg_property[2 * NR_BANKS];
-+	/* In the case of 64 bits memory size, need to reserve 2 cells for
-+	 * address and size for each bank */
-+	uint32_t mem_reg_property[2 * 2 * NR_BANKS];
- 	int memcount = 0;
--	int ret;
-+	int ret, memsize;
+-	reserve_crashkernel();
+-
+ 	vsmp_init();
  
- 	/* make sure we've got an aligned pointer */
- 	if ((u32)atag_list & 0x3)
-@@ -137,8 +150,25 @@ int atags_to_fdt(void *atag_list, void *fdt, int total_space)
- 				continue;
- 			if (!atag->u.mem.size)
- 				continue;
--			mem_reg_property[memcount++] = cpu_to_fdt32(atag->u.mem.start);
--			mem_reg_property[memcount++] = cpu_to_fdt32(atag->u.mem.size);
-+			memsize = get_cell_size(fdt);
-+
-+			if (memsize == 2) {
-+				/* if memsize is 2, that means that
-+				 * each data needs 2 cells of 32 bits,
-+				 * so the data are 64 bits */
-+				uint64_t *mem_reg_prop64 =
-+					(uint64_t *)mem_reg_property;
-+				mem_reg_prop64[memcount++] =
-+					cpu_to_fdt64(atag->u.mem.start);
-+				mem_reg_prop64[memcount++] =
-+					cpu_to_fdt64(atag->u.mem.size);
-+			} else {
-+				mem_reg_property[memcount++] =
-+					cpu_to_fdt32(atag->u.mem.start);
-+				mem_reg_property[memcount++] =
-+					cpu_to_fdt32(atag->u.mem.size);
-+			}
-+
- 		} else if (atag->hdr.tag == ATAG_INITRD2) {
- 			uint32_t initrd_start, initrd_size;
- 			initrd_start = atag->u.initrd.start;
-@@ -150,8 +180,10 @@ int atags_to_fdt(void *atag_list, void *fdt, int total_space)
- 		}
- 	}
+ 	io_delay_init();
+@@ -1146,6 +1144,12 @@ void __init setup_arch(char **cmdline_p)
+ 	initmem_init();
+ 	memblock_find_dma_reserve();
  
--	if (memcount)
--		setprop(fdt, "/memory", "reg", mem_reg_property, 4*memcount);
-+	if (memcount) {
-+		setprop(fdt, "/memory", "reg", mem_reg_property,
-+			4 * memcount * memsize);
-+	}
- 
- 	return fdt_pack(fdt);
- }
++	/*
++	 * Reserve memory for crash kernel after SRAT is parsed so that it
++	 * won't consume hotpluggable memory.
++	 */
++	reserve_crashkernel();
++
+ #ifdef CONFIG_KVM_GUEST
+ 	kvmclock_init();
+ #endif
 -- 
-1.7.10.4
-
+1.7.1
 
