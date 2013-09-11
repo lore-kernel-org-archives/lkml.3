@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876Ab3ILFk5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 01:40:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29603 "EHLO
+	id S1755721Ab3ILFkz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 01:40:55 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20765 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755162Ab3ILFks (ORCPT
+	with ESMTP id S1755178Ab3ILFks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Sep 2013 01:40:48 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=J9E0ZRLPa1YA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=bx0J_NTXmJoA:10 a=lVtvZNkcAAAA:8 a=VwQbUJbxAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=-ng5EX9Dtv0A:10 a=0kPLrQdw3YYA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=rI-6bICtw10A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=qqTWZQZkASMA:10 a=ZUspVpn8AAAA:8 a=VwQbUJbxAAAA:8 a=tmtSDGaQAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=GkFi8FPdP50A:10 a=shBqTchMq3sA:10 a=jkObVMfX7fAA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042904.698152940@goodmis.org>
+Message-Id: <20130911042906.129186463@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:28:21 -0400
+Date: Wed, 11 Sep 2013 00:28:30 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Eldad Zack <eldad@fogrefinery.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [074/251] ALSA: usb-audio: 6fire: return correct XRUN indication
+Cc: Jack Hill <jackhill@jackhill.us>,
+        Saurav Kashyap <saurav.kashyap@qlogic.com>,
+        Giridhar Malavali <giridhar.malavali@qlogic.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [083/251] qla2xxx: Properly set the tagging for commands.
 References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0074-ALSA-usb-audio-6fire-return-correct-XRUN-indication.patch
+Content-Disposition: inline; filename=0083-qla2xxx-Properly-set-the-tagging-for-commands.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,37 +32,65 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Eldad Zack <eldad@fogrefinery.com>
+From: Saurav Kashyap <saurav.kashyap@qlogic.com>
 
-[ Upstream commit be2f93a4c4981b3646b6f98f477154411b8516cb ]
+[ Upstream commit c3ccb1d7cf4c4549151876dd37c0944a682fd9e1 ]
 
-Return SNDRV_PCM_POS_XRUN (snd_pcm_uframes_t) instead of
-SNDRV_PCM_STATE_XRUN (snd_pcm_state_t) from the pointer
-function of 6fire, as expected by snd_pcm_update_hw_ptr0().
+This fixes a regression where Xyratex controllers and disks were lost by the
+driver:
 
-Caught by sparse.
+https://bugzilla.kernel.org/show_bug.cgi?id=59601
 
-Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
+Reported-by: Jack Hill <jackhill@jackhill.us>
+Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
+Signed-off-by: Giridhar Malavali <giridhar.malavali@qlogic.com>
 Cc: <stable@vger.kernel.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- sound/usb/6fire/pcm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/qla2xxx/qla_iocb.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/sound/usb/6fire/pcm.c b/sound/usb/6fire/pcm.c
-index 3143d9c..7c4f311 100644
---- a/sound/usb/6fire/pcm.c
-+++ b/sound/usb/6fire/pcm.c
-@@ -540,7 +540,7 @@ static snd_pcm_uframes_t usb6fire_pcm_pointer(
- 	snd_pcm_uframes_t ret;
+diff --git a/drivers/scsi/qla2xxx/qla_iocb.c b/drivers/scsi/qla2xxx/qla_iocb.c
+index 70dbf53..f2254d2 100644
+--- a/drivers/scsi/qla2xxx/qla_iocb.c
++++ b/drivers/scsi/qla2xxx/qla_iocb.c
+@@ -424,6 +424,8 @@ qla2x00_start_scsi(srb_t *sp)
+ 			    __constant_cpu_to_le16(CF_SIMPLE_TAG);
+ 			break;
+ 		}
++	} else {
++		cmd_pkt->control_flags = __constant_cpu_to_le16(CF_SIMPLE_TAG);
+ 	}
  
- 	if (rt->panic || !sub)
--		return SNDRV_PCM_STATE_XRUN;
-+		return SNDRV_PCM_POS_XRUN;
+ 	/* Load SCSI command packet. */
+@@ -1353,11 +1355,11 @@ qla24xx_build_scsi_crc_2_iocbs(srb_t *sp, struct cmd_type_crc_2 *cmd_pkt,
+ 		    fcp_cmnd->task_attribute = TSK_ORDERED;
+ 		    break;
+ 		default:
+-		    fcp_cmnd->task_attribute = 0;
++		    fcp_cmnd->task_attribute = TSK_SIMPLE;
+ 		    break;
+ 		}
+ 	} else {
+-		fcp_cmnd->task_attribute = 0;
++		fcp_cmnd->task_attribute = TSK_SIMPLE;
+ 	}
  
- 	spin_lock_irqsave(&sub->lock, flags);
- 	ret = sub->dma_off;
+ 	cmd_pkt->fcp_rsp_dseg_len = 0; /* Let response come in status iocb */
+@@ -1563,7 +1565,12 @@ qla24xx_start_scsi(srb_t *sp)
+ 		case ORDERED_QUEUE_TAG:
+ 			cmd_pkt->task = TSK_ORDERED;
+ 			break;
++		default:
++		    cmd_pkt->task = TSK_SIMPLE;
++		    break;
+ 		}
++	} else {
++		cmd_pkt->task = TSK_SIMPLE;
+ 	}
+ 
+ 	/* Load SCSI command packet. */
 -- 
 1.7.10.4
 
