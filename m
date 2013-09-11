@@ -1,188 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753597Ab3IKCdU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 22:33:20 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48372 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752227Ab3IKCdT (ORCPT
+	id S1753310Ab3IKCgX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 22:36:23 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:40367 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab3IKCgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 22:33:19 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <522FD64B.8090206@jp.fujitsu.com>
-Date: Wed, 11 Sep 2013 11:32:43 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <rjw@sisk.pl>,
-        <kosaki.motohiro@jp.fujitsu.com>, <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH v2] cpu/mem hotplug: Add try_online_node() for cpu_up()
-References: <1378853258-28633-1-git-send-email-toshi.kani@hp.com>
-In-Reply-To: <1378853258-28633-1-git-send-email-toshi.kani@hp.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+	Tue, 10 Sep 2013 22:36:22 -0400
+X-AuditID: cbfee68e-b7f756d000004512-94-522fd720f782
+Message-id: <522FD720.8030806@samsung.com>
+Date: Wed, 11 Sep 2013 11:36:16 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'MyungJoo Ham'" <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] extcon: use dev_get_platdata()
+References: <003e01ceae95$9a708ab0$cf51a010$%han@samsung.com>
+In-reply-to: <003e01ceae95$9a708ab0$cf51a010$%han@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFIsWRmVeSWpSXmKPExsWyRsSkQFfhun6QweutnBaXF15itbi8aw6b
+	xe3GFWwOzB59W1YxenzeJBfAFMVlk5Kak1mWWqRvl8CV8f/+Q9aCs2wVx46cYmpgnMfaxcjJ
+	ISFgIrF95mk2CFtM4sK99UA2F4eQwFJGiW9Nc9lgil61dEMlpjNK3DyxjgkkISTwilHiw6Vw
+	EJtXQEvi3K+7YHEWAVWJ+TOmgW1gA4rvf3EDbJCoQJjEyulXWCDqBSV+TL4HZosIqEh8Xn8c
+	rIZZwFtix8QJYL3CAuYSL2+8YoHYZSvRsu8DcxcjBwengJ1E820TiHIdif2t06Ba5SU2r3nL
+	DHKnhMBkdonOqbcZIe4RkPg2+RALSK+EgKzEpgPMEH9JShxccYNlAqPYLCQXzUIydhaSsQsY
+	mVcxiqYWJBcUJ6UXGekVJ+YWl+al6yXn525iBMbL6X/P+nYw3jxgfYgxGWjlRGYp0eR8YLzl
+	lcQbGpsZWZiamBobmVuakSasJM6r1mIdKCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoFR74KF
+	xNUrxwvbVVdeSdwdL8C5dJXEyQ8cf/9frZ5S8i6S9f61PX8CWVbzMK6x4a3l7d3b4H49yFGu
+	aI9am19iZ1iWmPrN31dadh27JZElxp0ePm3JoTA+3svJhSvXLFL4mbVarDW4oFL761V3kcaG
+	LPYHTR/kTok7nbzDoPzY49TMl0Y7Y3qVWIozEg21mIuKEwFlINRRrQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOIsWRmVeSWpSXmKPExsVy+t9jQV2F6/pBBpNeM1tcXniJ1eLyrjls
+	FrcbV7A5MHv0bVnF6PF5k1wAU1QDo01GamJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5
+	kkJeYm6qrZKLT4CuW2YO0BIlhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEN
+	Y8b/+w9ZC86yVRw7coqpgXEeaxcjJ4eEgInEq5ZuNghbTOLCvfVANheHkMB0RombJ9YxgSSE
+	BF4xSny4FA5i8wpoSZz7dRcsziKgKjF/xjSwQWxA8f0vboANEhUIk1g5/QoLRL2gxI/J98Bs
+	EQEVic/rj4PVMAt4S+yYOAGsV1jAXOLljVcsELtsJVr2fWDuYuTg4BSwk2i+bQJRriOxv3Ua
+	VKu8xOY1b5knMArMQrJhFpKyWUjKFjAyr2IUTS1ILihOSs811CtOzC0uzUvXS87P3cQIjsZn
+	UjsYVzZYHGIU4GBU4uG9IacfJMSaWFZcmXuIUYKDWUmEd6oTUIg3JbGyKrUoP76oNCe1+BBj
+	MjAAJjJLiSbnAxNFXkm8obGJmZGlkbmhhZGxOWnCSuK8B1qtA4UE0hNLUrNTUwtSi2C2MHFw
+	SjUw8syNsGGJUXid2SFbp3Lld5F5z2z+uTKx/z3z13GzhE/23mQgwe1etXqWxiJrI/mtbgcU
+	b3Cs+5S+r6t+5r1ZVVPMvTPVNSQtJjJHZt8rTn9z8bst91Xeg1ph07Jj9FetWMSxfF/Xyw2H
+	9AsjK1wktraXfPR50CofFLgmtCTt+xePOweO3u9RYinOSDTUYi4qTgQA0OE5XAoDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/09/11 7:47), Toshi Kani wrote:
-> cpu_up() has #ifdef CONFIG_MEMORY_HOTPLUG code blocks, which
-> call mem_online_node() to put its node online if offlined and
-> then call build_all_zonelists() to initialize the zone list.
-> These steps are specific to memory hotplug, and should be
-> managed in mm/memory_hotplug.c.  lock_memory_hotplug() should
-> also be held for the whole steps.
-> 
-> For this reason, this patch replaces mem_online_node() with
-> try_online_node(), which performs the whole steps with
-> lock_memory_hotplug() held.  try_online_node() is named after
-> try_offline_node() as they have similar purpose.
-> 
-> There is no functional change in this patch.
-> 
-> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> ---
-> v2: Added pr_err() in case of NULL pgdat in try_online_node().
-> ---
+Hi Jingoo,
 
-Thank you for updating it. It looks good to me.
-
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+I prefer to consolidate this patchset as one patch because of simliar moditication.
 
 Thanks,
-Yasuaki Ishimatsu
+Chanwoo Choi
 
->   include/linux/memory_hotplug.h |    8 +++++++-
->   kernel/cpu.c                   |   29 +++--------------------------
->   mm/memory_hotplug.c            |   16 ++++++++++++++--
->   3 files changed, 24 insertions(+), 29 deletions(-)
+On 09/11/2013 11:21 AM, Jingoo Han wrote:
+> Use the wrapper function for retrieving the platform data instead of
+> accessing dev->platform_data directly. This is a cosmetic change
+> to make the code simpler and enhance the readability.
 > 
-> diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-> index dd38e62..22203c2 100644
-> --- a/include/linux/memory_hotplug.h
-> +++ b/include/linux/memory_hotplug.h
-> @@ -94,6 +94,8 @@ extern void __online_page_set_limits(struct page *page);
->   extern void __online_page_increment_counters(struct page *page);
->   extern void __online_page_free(struct page *page);
->   
-> +extern int try_online_node(int nid);
-> +
->   #ifdef CONFIG_MEMORY_HOTREMOVE
->   extern bool is_pageblock_removable_nolock(struct page *page);
->   extern int arch_remove_memory(u64 start, u64 size);
-> @@ -225,6 +227,11 @@ static inline void register_page_bootmem_info_node(struct pglist_data *pgdat)
->   {
->   }
->   
-> +static inline int try_online_node(int nid)
-> +{
-> +	return 0;
-> +}
-> +
->   static inline void lock_memory_hotplug(void) {}
->   static inline void unlock_memory_hotplug(void) {}
->   
-> @@ -256,7 +263,6 @@ static inline void remove_memory(int nid, u64 start, u64 size) {}
->   
->   extern int walk_memory_range(unsigned long start_pfn, unsigned long end_pfn,
->   		void *arg, int (*func)(struct memory_block *, void *));
-> -extern int mem_online_node(int nid);
->   extern int add_memory(int nid, u64 start, u64 size);
->   extern int arch_add_memory(int nid, u64 start, u64 size);
->   extern int offline_pages(unsigned long start_pfn, unsigned long nr_pages);
-> diff --git a/kernel/cpu.c b/kernel/cpu.c
-> index d7f07a2..c10b285 100644
-> --- a/kernel/cpu.c
-> +++ b/kernel/cpu.c
-> @@ -420,11 +420,6 @@ int cpu_up(unsigned int cpu)
->   {
->   	int err = 0;
->   
-> -#ifdef	CONFIG_MEMORY_HOTPLUG
-> -	int nid;
-> -	pg_data_t	*pgdat;
-> -#endif
-> -
->   	if (!cpu_possible(cpu)) {
->   		printk(KERN_ERR "can't online cpu %d because it is not "
->   			"configured as may-hotadd at boot time\n", cpu);
-> @@ -435,27 +430,9 @@ int cpu_up(unsigned int cpu)
->   		return -EINVAL;
->   	}
->   
-> -#ifdef	CONFIG_MEMORY_HOTPLUG
-> -	nid = cpu_to_node(cpu);
-> -	if (!node_online(nid)) {
-> -		err = mem_online_node(nid);
-> -		if (err)
-> -			return err;
-> -	}
-> -
-> -	pgdat = NODE_DATA(nid);
-> -	if (!pgdat) {
-> -		printk(KERN_ERR
-> -			"Can't online cpu %d due to NULL pgdat\n", cpu);
-> -		return -ENOMEM;
-> -	}
-> -
-> -	if (pgdat->node_zonelists->_zonerefs->zone == NULL) {
-> -		mutex_lock(&zonelists_mutex);
-> -		build_all_zonelists(NULL, NULL);
-> -		mutex_unlock(&zonelists_mutex);
-> -	}
-> -#endif
-> +	err = try_online_node(cpu_to_node(cpu));
-> +	if (err)
-> +		return err;
->   
->   	cpu_maps_update_begin();
->   
-> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> index ed85fe3..d6fc915 100644
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -1044,17 +1044,23 @@ static void rollback_node_hotadd(int nid, pg_data_t *pgdat)
->   }
->   
->   
-> -/*
-> +/**
-> + * try_online_node - online a node if offlined
-> + *
->    * called by cpu_up() to online a node without onlined memory.
->    */
-> -int mem_online_node(int nid)
-> +int try_online_node(int nid)
->   {
->   	pg_data_t	*pgdat;
->   	int	ret;
->   
-> +	if (node_online(nid))
-> +		return 0;
-> +
->   	lock_memory_hotplug();
->   	pgdat = hotadd_new_pgdat(nid, 0);
->   	if (!pgdat) {
-> +		pr_err("Cannot online node %d due to NULL pgdat\n", nid);
->   		ret = -ENOMEM;
->   		goto out;
->   	}
-> @@ -1062,6 +1068,12 @@ int mem_online_node(int nid)
->   	ret = register_one_node(nid);
->   	BUG_ON(ret);
->   
-> +	if (pgdat->node_zonelists->_zonerefs->zone == NULL) {
-> +		mutex_lock(&zonelists_mutex);
-> +		build_all_zonelists(NULL, NULL);
-> +		mutex_unlock(&zonelists_mutex);
-> +	}
-> +
->   out:
->   	unlock_memory_hotplug();
->   	return ret;
+> ---
+>  drivers/extcon/extcon-adc-jack.c |    2 +-
+>  drivers/extcon/extcon-gpio.c     |    2 +-
+>  drivers/extcon/extcon-palmas.c   |    2 +-
+>  3 files changed, 3 insertions(+), 3 deletions(-)
 > 
-
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
