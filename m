@@ -1,108 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756914Ab3IKF3c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 01:29:32 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3257 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754676Ab3IKE5Y (ORCPT
+	id S1756903Ab3IKF3b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 01:29:31 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:40180 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752843Ab3IKF32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 00:57:24 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=0yG17XBjxDgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=0uUWFsrF_t0A:10 a=drOt6m5kAAAA:8 a=rOZy-w5a2GWlp-KOJYsA:9 a=jeBq3FmKZ4MA:10 a=fjmxQhJhPmMA:10 a=HZu-ZW16r_oM0FjT:21 a=LZzpSwfLUtYp1P1c:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042913.035142627@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:29:12 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [125/251] ARM: make vectors page inaccessible from userspace
-References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0125-ARM-make-vectors-page-inaccessible-from-userspace.patch
+	Wed, 11 Sep 2013 01:29:28 -0400
+Date: Tue, 10 Sep 2013 22:24:45 -0700
+From: Anton Vorontsov <anton@enomsg.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] battery-2.6.git
+Message-ID: <20130911052445.GA8508@lizard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.9-rc1 stable review patch.
-If anyone has any objections, please let me know.
+Hello Linus,
 
-------------------
+Please pull battery-2.6 git tree to receive changes prepared for the v3.12
+release. Here is what we have:
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+New drivers:
 
-[ Upstream commit a5463cd3435475386cbbe7b06e01292ac169d36f ]
+- APM X-Gene system reboot driver by Feng Kan and Loc Ho (APM).
 
-If kuser helpers are not provided by the kernel, disable user access to
-the vectors page.  With the kuser helpers gone, there is no reason for
-this page to be visible to userspace.
+- Qualcomm MSM reboot/poweroff driver by Abhimanyu Kapur (Codeaurora).
 
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- arch/arm/include/asm/page.h |    2 ++
- arch/arm/kernel/process.c   |    7 ++++++-
- arch/arm/mm/mmu.c           |    4 ++++
- 3 files changed, 12 insertions(+), 1 deletion(-)
+- Texas Instruments BQ24190 charger driver by Mark A. Greer (Animal Creek
+  Technologies).
 
-diff --git a/arch/arm/include/asm/page.h b/arch/arm/include/asm/page.h
-index ecf9019..5c35852 100644
---- a/arch/arm/include/asm/page.h
-+++ b/arch/arm/include/asm/page.h
-@@ -142,7 +142,9 @@ extern void __cpu_copy_user_highpage(struct page *to, struct page *from,
- #define clear_page(page)	memset((void *)(page), 0, PAGE_SIZE)
- extern void copy_page(void *to, const void *from);
- 
-+#ifdef CONFIG_KUSER_HELPERS
- #define __HAVE_ARCH_GATE_AREA 1
-+#endif
- 
- #ifdef CONFIG_ARM_LPAE
- #include <asm/pgtable-3level-types.h>
-diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-index 693b744..427ddbc 100644
---- a/arch/arm/kernel/process.c
-+++ b/arch/arm/kernel/process.c
-@@ -508,6 +508,7 @@ unsigned long arch_randomize_brk(struct mm_struct *mm)
- }
- 
- #ifdef CONFIG_MMU
-+#ifdef CONFIG_KUSER_HELPERS
- /*
-  * The vectors page is always readable from user space for the
-  * atomic helpers and the signal restart code. Insert it into the
-@@ -540,9 +541,13 @@ int in_gate_area_no_mm(unsigned long addr)
- {
- 	return in_gate_area(NULL, addr);
- }
-+#define is_gate_vma(vma)	((vma) = &gate_vma)
-+#else
-+#define is_gate_vma(vma)	0
-+#endif
- 
- const char *arch_vma_name(struct vm_area_struct *vma)
- {
--	return (vma == &gate_vma) ? "[vectors]" : NULL;
-+	return is_gate_vma(vma) ? "[vectors]" : NULL;
- }
- #endif
-diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index 889f3de..50d4aff 100644
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -1125,7 +1125,11 @@ static void __init devicemaps_init(struct machine_desc *mdesc)
- 	map.pfn = __phys_to_pfn(virt_to_phys(vectors));
- 	map.virtual = 0xffff0000;
- 	map.length = PAGE_SIZE;
-+#ifdef CONFIG_KUSER_HELPERS
- 	map.type = MT_HIGH_VECTORS;
-+#else
-+	map.type = MT_LOW_VECTORS;
-+#endif
- 	create_mapping(&map);
- 
- 	if (!vectors_high()) {
--- 
-1.7.10.4
+- Texas Instruments TWL4030 MADC battery driver by Lukas Märdian and Marek
+  Belisko (Golden Delicious Computers). The driver is used on Freerunner
+  GTA04 phones.
+
+Highlighted fixes and improvements:
+
+- Suspend/wakeup logic improvements: power supply objects will block
+  system suspend until all power supply events are processed. Thanks to
+  Zoran Markovic (Linaro), Arve Hjonnevag and Todd Poynor (Google).
+
+Thanks!
+
+Anton
 
 
+The following changes since commit c095ba7224d8edc71dcef0d655911399a8bd4a3f:
+
+  Linux 3.11-rc4 (2013-08-04 13:46:46 -0700)
+
+are available in the git repository at:
+
+  git://git.infradead.org/battery-2.6.git tags/for-v3.12
+
+for you to fetch changes up to db15e6312efd537e2deb2cbad110c23f98704a3c:
+
+  rx51_battery: Fix channel number when reading adc value (2013-08-30 17:49:15 -0700)
+
+----------------------------------------------------------------
+Abhimanyu Kapur (1):
+      power: reset: Add msm restart support
+
+Andrea Adami (2):
+      power supply: collie_battery: Convert to use dev_pm_ops
+      power_supply: tosa_battery: Get rid of irq_to_gpio usage
+
+Anton Vorontsov (1):
+      bq24190_charger: Workaround SS definition problem on i386 builds
+
+Dan Carpenter (1):
+      ab8500-charger: We print an unintended error message
+
+Jingoo Han (1):
+      power_supply: Replace strict_strtol() with kstrtol()
+
+Kevin Hilman (1):
+      MAINTAINERS: drivers/power: add entry for SmartReflex AVS drivers
+
+Libo Chen (1):
+      max8925_power: Fix missing of_node_put
+
+Loc Ho (1):
+      power: Add APM X-Gene system reboot driver
+
+Marek Belisko (3):
+      rx51_battery: Replace hardcoded channels values.
+      power: Add twl4030_madc battery driver.
+      rx51_battery: Fix channel number when reading adc value
+
+Mark A. Greer (1):
+      bq24190_charger: Add support for TI BQ24190 Battery Charger
+
+Paul Gortmaker (1):
+      power_supply: Make goldfish_battery depend on GOLDFISH || COMPILE_TEST
+
+Pawel Moll (1):
+      vexpress-poweroff: Should depend on the required infrastructure
+
+Peter Ujfalusi (1):
+      twl4030-charger: Fix compiler warning with regulator_enable()
+
+Zoran Markovic (1):
+      power_supply: Prevent suspend until power supply events are processed
+
+ .../bindings/power_supply/msm-poweroff.txt         |   17 +
+ MAINTAINERS                                        |    8 +
+ drivers/power/Kconfig                              |   15 +-
+ drivers/power/Makefile                             |    2 +
+ drivers/power/ab8500_charger.c                     |    1 +
+ drivers/power/bq24190_charger.c                    | 1549 ++++++++++++++++++++
+ drivers/power/collie_battery.c                     |    2 +-
+ drivers/power/max8925_power.c                      |    1 +
+ drivers/power/power_supply_core.c                  |   38 +-
+ drivers/power/power_supply_sysfs.c                 |    2 +-
+ drivers/power/reset/Kconfig                        |   15 +-
+ drivers/power/reset/Makefile                       |    2 +
+ drivers/power/reset/msm-poweroff.c                 |   73 +
+ drivers/power/reset/xgene-reboot.c                 |  103 ++
+ drivers/power/rx51_battery.c                       |   14 +-
+ drivers/power/tosa_battery.c                       |    2 +-
+ drivers/power/twl4030_charger.c                    |    7 +-
+ drivers/power/twl4030_madc_battery.c               |  245 ++++
+ include/linux/power/bq24190_charger.h              |   16 +
+ include/linux/power/twl4030_madc_battery.h         |   39 +
+ include/linux/power_supply.h                       |    3 +
+ 21 files changed, 2137 insertions(+), 17 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/power_supply/msm-poweroff.txt
+ create mode 100644 drivers/power/bq24190_charger.c
+ create mode 100644 drivers/power/reset/msm-poweroff.c
+ create mode 100644 drivers/power/reset/xgene-reboot.c
+ create mode 100644 drivers/power/twl4030_madc_battery.c
+ create mode 100644 include/linux/power/bq24190_charger.h
+ create mode 100644 include/linux/power/twl4030_madc_battery.h
