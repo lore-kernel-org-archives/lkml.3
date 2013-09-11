@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757337Ab3IKFhM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 01:37:12 -0400
+	id S1754562Ab3IKE5R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 00:57:17 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3257 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754125Ab3IKE5R (ORCPT
+	with ESMTP id S1754125Ab3IKE4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 00:57:17 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=aW8-CnS0V9wA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=RPJh-y7tIBcA:10 a=yPCof4ZbAAAA:8 a=20KFwNOVAAAA:8 a=drOt6m5kAAAA:8 a=Z4Rwk6OoAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=7DSvI1NPTFQA:10 a=jEp0ucaQiEUA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=n1ldoD1PFI-sDU0A:21 a=xyNKjGH30JtYiQqQ:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Wed, 11 Sep 2013 00:56:48 -0400
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=s6I0JK2KrpsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=C1K2otXl-6wA:10 a=VwQbUJbxAAAA:8 a=1XWaLZrsAAAA:8 a=TSbVqHtbAAAA:8 a=wAwfuhEyL-vLSwEzO4gA:9 a=LI9Vle30uBYA:10 a=UTB_XpHje0EA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042917.625281726@goodmis.org>
+Message-Id: <20130911042933.394039776@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:29:39 -0400
+Date: Wed, 11 Sep 2013 00:31:12 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, Eric Paris <eparis@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [152/251] fanotify: info leak in copy_event_to_user()
+Cc: Tejun Heo <tj@kernel.org>, Jamie Liu <jamieliu@google.com>
+Subject: [245/251] workqueue: cond_resched() after processing each work item
 References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0152-fanotify-info-leak-in-copy_event_to_user.patch
+Content-Disposition: inline; filename=0245-workqueue-cond_resched-after-processing-each-work-it.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,35 +29,60 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Tejun Heo <tj@kernel.org>
 
-[ Upstream commit de1e0c40aceb9d5bff09c3a3b97b2f1b178af53f ]
+[ Upstream commit b22ce2785d97423846206cceec4efee0c4afd980 ]
 
-The ->reserved field isn't cleared so we leak one byte of stack
-information to userspace.
+If !PREEMPT, a kworker running work items back to back can hog CPU.
+This becomes dangerous when a self-requeueing work item which is
+waiting for something to happen races against stop_machine.  Such
+self-requeueing work item would requeue itself indefinitely hogging
+the kworker and CPU it's running on while stop_machine would wait for
+that CPU to enter stop_machine while preventing anything else from
+happening on all other CPUs.  The two would deadlock.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Eric Paris <eparis@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Jamie Liu reports that this deadlock scenario exists around
+scsi_requeue_run_queue() and libata port multiplier support, where one
+port may exclude command processing from other ports.  With the right
+timing, scsi_requeue_run_queue() can end up requeueing itself trying
+to execute an IO which is asked to be retried while another device has
+an exclusive access, which in turn can't make forward progress due to
+stop_machine.
+
+Fix it by invoking cond_resched() after executing each work item.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Jamie Liu <jamieliu@google.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+References: http://thread.gmane.org/gmane.linux.kernel/1552567
+Cc: stable@vger.kernel.org
+--
+ kernel/workqueue.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 ---
- fs/notify/fanotify/fanotify_user.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/workqueue.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-index d438036..b670659 100644
---- a/fs/notify/fanotify/fanotify_user.c
-+++ b/fs/notify/fanotify/fanotify_user.c
-@@ -116,6 +116,7 @@ static int fill_event_metadata(struct fsnotify_group *group,
- 	metadata->event_len = FAN_EVENT_METADATA_LEN;
- 	metadata->metadata_len = FAN_EVENT_METADATA_LEN;
- 	metadata->vers = FANOTIFY_METADATA_VERSION;
-+	metadata->reserved = 0;
- 	metadata->mask = event->mask & FAN_ALL_OUTGOING_EVENTS;
- 	metadata->pid = pid_vnr(event->tgid);
- 	if (unlikely(event->mask & FAN_Q_OVERFLOW))
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 0352a81..ce44f31 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2105,6 +2105,15 @@ __acquires(&gcwq->lock)
+ 		dump_stack();
+ 	}
+ 
++	/*
++	 * The following prevents a kworker from hogging CPU on !PREEMPT
++	 * kernels, where a requeueing work item waiting for something to
++	 * happen could deadlock with stop_machine as such work item could
++	 * indefinitely requeue itself while all other CPUs are trapped in
++	 * stop_machine.
++	 */
++	cond_resched();
++
+ 	spin_lock_irq(&gcwq->lock);
+ 
+ 	/* clear cpu intensive status */
 -- 
 1.7.10.4
 
