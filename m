@@ -1,69 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756988Ab3IKTJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 15:09:27 -0400
-Received: from smtprelay0204.hostedemail.com ([216.40.44.204]:50153 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752587Ab3IKTJZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 15:09:25 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2525:2553:2560:2563:2682:2685:2693:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3871:3872:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:7652:7875:7903:9025:9040:9388:10004:10400:10848:11232:11257:11473:11658:11914:12043:12438:12517:12519:12679:12740:12926:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:
-X-HE-Tag: women37_51f7d32890b1b
-X-Filterd-Recvd-Size: 2296
-Message-ID: <1378926562.4714.11.camel@joe-AO722>
-Subject: Re: [PATCH] staging: dgnc: fix potential format string flaw
-From: Joe Perches <joe@perches.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tushar Behera <tushar.behera@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Lidza Louina <lidza.louina@gmail.com>
-Date: Wed, 11 Sep 2013 12:09:22 -0700
-In-Reply-To: <CAGXu5j+H_RLwj9c6CKxMpaYeR9kS-qDnK+e1mOHHt9zh6vAm=w@mail.gmail.com>
-References: <20130911044116.GA17294@www.outflux.net>
-	 <1378875632.606.5.camel@joe-AO722>
-	 <CAGXu5jLm1RNp4mB2KfeRumTqeWgcAsZ4CpQQQGA67WukERefXQ@mail.gmail.com>
-	 <20130911093118.GD25896@mwanda>
-	 <CAGXu5j+H_RLwj9c6CKxMpaYeR9kS-qDnK+e1mOHHt9zh6vAm=w@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756741Ab3IKTMK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 15:12:10 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:54835 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751393Ab3IKTMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 15:12:06 -0400
+Date: Wed, 11 Sep 2013 15:11:50 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: azurIt <azurit@pobox.sk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/7] improve memcg oom killer robustness v2
+Message-ID: <20130911191150.GN856@cmpxchg.org>
+References: <20130910183740.GI856@cmpxchg.org>
+ <20130910213253.A1E666C5@pobox.sk>
+ <20130910201222.GA25972@cmpxchg.org>
+ <20130910230853.FEEC19B5@pobox.sk>
+ <20130910211823.GJ856@cmpxchg.org>
+ <20130910233247.9EDF4DBA@pobox.sk>
+ <20130910220329.GK856@cmpxchg.org>
+ <20130911143305.FFEAD399@pobox.sk>
+ <20130911180327.GL856@cmpxchg.org>
+ <20130911205448.656D9D7C@pobox.sk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130911205448.656D9D7C@pobox.sk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-11 at 11:19 -0700, Kees Cook wrote:
-> On Wed, Sep 11, 2013 at 2:31 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> > On Tue, Sep 10, 2013 at 10:19:17PM -0700, Kees Cook wrote:
-> >> In the former case, format characters will get processed by the
-> >> sprintf logic. In the latter, they are printed as-is. In this specific
-> >> case, if there was a way to inject strings like "ohai %n" into the
-> >> msgbuf string, the former would actually attempt to resolve the %n. In
-> >> the simple case, this could lead to Oopses, and in the unlucky case,
-> >> it could allow arbitrary memory writing and execution control.
-> >>
-> >> http://en.wikipedia.org/wiki/Uncontrolled_format_string
+On Wed, Sep 11, 2013 at 08:54:48PM +0200, azurIt wrote:
+> >On Wed, Sep 11, 2013 at 02:33:05PM +0200, azurIt wrote:
+> >> >On Tue, Sep 10, 2013 at 11:32:47PM +0200, azurIt wrote:
+> >> >> >On Tue, Sep 10, 2013 at 11:08:53PM +0200, azurIt wrote:
+> >> >> >> >On Tue, Sep 10, 2013 at 09:32:53PM +0200, azurIt wrote:
+> >> >> >> >> Here is full kernel log between 6:00 and 7:59:
+> >> >> >> >> http://watchdog.sk/lkml/kern6.log
+> >> >> >> >
+> >> >> >> >Wow, your apaches are like the hydra.  Whenever one is OOM killed,
+> >> >> >> >more show up!
+> >> >> >> 
+> >> >> >> 
+> >> >> >> 
+> >> >> >> Yeah, it's supposed to do this ;)
+> >> >
+> >> >How are you expecting the machine to recover from an OOM situation,
+> >> >though?  I guess I don't really understand what these machines are
+> >> >doing.  But if you are overloading them like crazy, isn't that the
+> >> >expected outcome?
+> >> 
+> >> 
+> >> 
+> >> 
+> >> 
+> >> There's no global OOM, server has enough of memory. OOM is occuring only in cgroups (customers who simply don't want to pay for more memory).
 > >
-> > The kernel ignores %n so hopefully it can't actually write to memory.
+> >Yes, sure, but when the cgroups are thrashing, they use the disk and
+> >CPU to the point where the overall system is affected.
 > 
-> I wish! This is not the case, though. See FORMAT_TYPE_NRCHARS in
-> lib/vsprintf.c's vsnprintf().
 > 
-> $ git grep '%n' | wc -l
-> 111
+> 
+> 
+> Didn't know that there is a disk usage because of this, i never noticed anything yet.
 
-Umm.
+You said there was heavy IO going on...?
 
-See: lib/vsprintf.c
+> >Okay, my suspicion is that the previous patches invoked the OOM killer
+> >right away, whereas in this latest version it's invoked only when the
+> >fault is finished.  Maybe the task that locked the group gets held up
+> >somewhere else and then it takes too long until something is actually
+> >killed.  Meanwhile, every other allocator drops into 5 reclaim cycles
+> >before giving up, which could explain the thrashing.  And on the memcg
+> >level we don't have BDI congestion sleeps like on the global level, so
+> >everybody is backing off from the disk.
+> >
+> >Here is an incremental fix to the latest version, i.e. the one that
+> >livelocked under heavy IO, not the one you are using right now.
+> >
+> >First, it reduces the reclaim retries from 5 to 2, which resembles the
+> >global kswapd + ttfp somewhat.  Next, NOFS/NORETRY allocators are not
+> >allowed to kick off the OOM killer, like in the global case, so that
+> >we don't kill things and give up just because light reclaim can't free
+> >anything.  Last, the memcg is marked under OOM when one task enters
+> >OOM so that not everybody is livelocking in reclaim in a hopeless
+> >situation.
+> 
+> 
+> 
+> Thank you i will boot it this night. I also created a new server load checking and recuing script so i hope i won't be forced to hard reboot the server in case something similar as before happens. Btw, patch didn't apply to 3.2.51, there were probably big changes in memory system (almost all hunks failed). I used 3.2.50 as before.
 
-/**
- * vsnprintf - Format a string and place it in a buffer
-[...]
- * %n is ignored
-
-%n does work for vsscanf though.
-
-
+Yes, please don't change the test base in the middle of this!
