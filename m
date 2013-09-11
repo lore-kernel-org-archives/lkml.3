@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751207Ab3IKGuA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 02:50:00 -0400
-Received: from mail.eperm.de ([89.247.134.16]:52681 "EHLO mail.eperm.de"
+	id S1751335Ab3IKGud (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 02:50:33 -0400
+Received: from mga14.intel.com ([143.182.124.37]:26648 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750741Ab3IKGt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 02:49:59 -0400
-From: Stephan Mueller <smueller@chronox.de>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net
-Subject: Re: [PATCH] /dev/random: Insufficient of entropy on many architectures
-Date: Wed, 11 Sep 2013 08:49:49 +0200
-Message-ID: <2947789.S63SVUbC3N@tauon>
-User-Agent: KMail/4.10.5 (Linux/3.10.10-200.fc19.x86_64; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20130910211454.GJ29237@thunk.org>
-References: <10005394.BRCyBMYWy3@tauon> <CAMuHMdXcXGpgE5ArcjNU-RgAr52qB8ih_b48jwR=+OqK4RDhFA@mail.gmail.com> <20130910211454.GJ29237@thunk.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+	id S1751255Ab3IKGuP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 02:50:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,882,1371106800"; 
+   d="scan'208";a="358794987"
+From: "Berg, Johannes" <johannes.berg@intel.com>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+CC: "Otcheretianski, Andrei" <andrei.otcheretianski@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: RE: [199/251] genetlink: fix family dump race
+Thread-Topic: [199/251] genetlink: fix family dump race
+Thread-Index: AQHOrqt5r+EF14TrnEyVL6LQnOb565nAGMpA
+Date: Wed, 11 Sep 2013 06:50:10 +0000
+Message-ID: <1DC40B07CD6EC041A66726C271A73AE61AABAF33@IRSMSX102.ger.corp.intel.com>
+References: <20130911042707.738353451@goodmis.org>
+ <20130911042925.297207769@goodmis.org>
+In-Reply-To: <20130911042925.297207769@goodmis.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.33.239.181]
 Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 10. September 2013, 17:14:54 schrieb Theodore Ts'o:
+> 3.6.11.9-rc1 stable review patch.
+> If anyone has any objections, please let me know.
 
-Hi Theodore,
+Yes, this patch is broken and we reverted it upstream. 
 
->On Tue, Sep 10, 2013 at 10:48:00PM +0200, Geert Uytterhoeven wrote:
->> So the first importance for random_get_fast_cycles() is that it needs
->> to be fast. What's most important next: number of bits or
->> high-frequency?
->High-frequency.  For example MIPS has a register which is bumped at
->every clock tick, modulo the number of lines in the TLB.  That's what
->we're probably going to end up using for MIPS, on the assumption that
->the time between interrupts is not likely going to be related to the
->number of lines in the TLB.  :-)
->
->Something like jiffies has lots of bits, but since it's updated at a
->much slower rate, it's not as useful if we are trying to measure
->uncertainity based on the interrupt time.  (Worse yet, depending on
->how the architecture handles the clock, there mgiht be a very high
->correlation between when the jiffies counter gets incremented and the
->timer interrupt....)
->
->And yes, we will need to make sure this gets well documented in the
->sources when we introduce random_get_fast_cycles()....
+johannes
+-- 
 
-As general hunch on the speed, I would say is a simple test that two 
-adjacent calls to obtain a time stamp show a delta. Eg.
+Intel GmbH
+Dornacher Strasse 1
+85622 Feldkirchen/Muenchen, Deutschland
+Sitz der Gesellschaft: Feldkirchen bei Muenchen
+Geschaeftsfuehrer: Christian Lamprechter, Hannes Schwaderer, Douglas Lusk
+Registergericht: Muenchen HRB 47456
+Ust.-IdNr./VAT Registration No.: DE129385895
+Citibank Frankfurt a.M. (BLZ 502 109 00) 600119052
 
-__u64 tmp = random_get_fast_cycles() - random_get_fast_cycles();
-if(0 == tmp)
-	return fail;
-return pass;
-
-
->
->Cheers,
->
->						- Ted
-
-
-Ciao
-Stephan
