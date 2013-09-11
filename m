@@ -1,79 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170Ab3IKE3s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 00:29:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10414 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752680Ab3IKE3A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 00:29:00 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=CG8f9SzwHFsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=nnwHGGW9uisA:10 a=VwQbUJbxAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=0kPLrQdw3YYA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042854.773188302@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:27:23 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: NeilBrown <neilb@suse.de>
-Subject: [016/251] md/raid10: fix two bugs affecting RAID10 reshape.
-References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0016-md-raid10-fix-two-bugs-affecting-RAID10-reshape.patch
+	id S1754783Ab3IKEoO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 00:44:14 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:39613 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753506Ab3IKEoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 00:44:12 -0400
+Date: Tue, 10 Sep 2013 21:40:43 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Lidza Louina <lidza.louina@gmail.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, devel@driverdev.osuosl.org
+Subject: [PATCH] staging: dgap: fix overflows and format strings
+Message-ID: <20130911044043.GA17276@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.9-rc1 stable review patch.
-If anyone has any objections, please let me know.
+The boot message buffer could potentially overflow the stack and the
+heap. Additionally make sure format strings could not leak into printk()
+calls.
 
-------------------
-
-From: NeilBrown <neilb@suse.de>
-
-[ Upstream commit 78eaa0d4cbcdb345992fa3dd22b3bcbb473cc064 ]
-
-1/ If a RAID10 is being reshaped to a fewer number of devices
- and is stopped while this is ongoing, then when the array is
- reassembled the 'mirrors' array will be allocated too small.
- This will lead to an access error or memory corruption.
-
-2/ A sanity test for a reshaping RAID10 array is restarted
- is slightly incorrect.
-
-Due to the first bug, this is suitable for any -stable
-kernel since 3.5 where this code was introduced.
-
-Cc: stable@vger.kernel.org (v3.5+)
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/md/raid10.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/dgap/dgap_driver.c |   17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-index cd7394b..e2d5778 100644
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -3434,7 +3434,7 @@ static struct r10conf *setup_conf(struct mddev *mddev)
+diff --git a/drivers/staging/dgap/dgap_driver.c b/drivers/staging/dgap/dgap_driver.c
+index 724a685..40ef785 100644
+--- a/drivers/staging/dgap/dgap_driver.c
++++ b/drivers/staging/dgap/dgap_driver.c
+@@ -474,7 +474,7 @@ static void dgap_cleanup_board(struct board_t *brd)
  
- 	/* FIXME calc properly */
- 	conf->mirrors = kzalloc(sizeof(struct raid10_info)*(mddev->raid_disks +
--							    max(0,mddev->delta_disks)),
-+							    max(0,-mddev->delta_disks)),
- 				GFP_KERNEL);
- 	if (!conf->mirrors)
- 		goto out;
-@@ -3578,7 +3578,7 @@ static int run(struct mddev *mddev)
- 		    conf->geo.far_offset == 0)
- 			goto out_free_conf;
- 		if (conf->prev.far_copies != 1 &&
--		    conf->geo.far_offset == 0)
-+		    conf->prev.far_offset == 0)
- 			goto out_free_conf;
+                 DGAP_LOCK(dgap_global_lock, flags);
+                 brd->msgbuf = NULL;
+-                printk(brd->msgbuf_head);
++                printk("%s", brd->msgbuf_head);
+                 kfree(brd->msgbuf_head);
+                 brd->msgbuf_head = NULL;
+                 DGAP_UNLOCK(dgap_global_lock, flags);
+@@ -628,7 +628,7 @@ static int dgap_found_board(struct pci_dev *pdev, int id)
+ 	DPR_INIT(("dgap_scan(%d) - printing out the msgbuf\n", i));
+ 	DGAP_LOCK(dgap_global_lock, flags);
+ 	brd->msgbuf = NULL;
+-	printk(brd->msgbuf_head);
++	printk("%s", brd->msgbuf_head);
+ 	kfree(brd->msgbuf_head);
+ 	brd->msgbuf_head = NULL;
+ 	DGAP_UNLOCK(dgap_global_lock, flags);
+@@ -955,25 +955,28 @@ static void dgap_mbuf(struct board_t *brd, const char *fmt, ...) {
+ 	char		buf[1024];
+ 	int		i;
+ 	unsigned long	flags;
++	size_t		length;
+ 
+ 	DGAP_LOCK(dgap_global_lock, flags);
+ 
+ 	/* Format buf using fmt and arguments contained in ap. */
+ 	va_start(ap, fmt);
+-	i = vsprintf(buf, fmt,  ap);
++	i = vsnprintf(buf, sizeof(buf), fmt,  ap);
+ 	va_end(ap);
+ 
+ 	DPR((buf));
+ 
+ 	if (!brd || !brd->msgbuf) {
+-		printk(buf);
++		printk("%s", buf);
+ 		DGAP_UNLOCK(dgap_global_lock, flags);
+ 		return;
  	}
  
+-	memcpy(brd->msgbuf, buf, strlen(buf));
+-	brd->msgbuf += strlen(buf);
+-	*brd->msgbuf = 0;
++	length = strlen(buf) + 1;
++	if (brd->msgbuf - brd->msgbuf_head < length)
++		length = brd->msgbuf - brd->msgbuf_head;
++	memcpy(brd->msgbuf, buf, length);
++	brd->msgbuf += length;
+ 
+ 	DGAP_UNLOCK(dgap_global_lock, flags);
+ }
 -- 
-1.7.10.4
+1.7.9.5
 
 
+-- 
+Kees Cook
+Chrome OS Security
