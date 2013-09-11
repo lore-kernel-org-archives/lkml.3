@@ -1,64 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab3IKPW1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 11:22:27 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:34402 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754836Ab3IKPWZ (ORCPT
+	id S1754867Ab3IKPYA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 11:24:00 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:59042 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752981Ab3IKPX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 11:22:25 -0400
-Date: Wed, 11 Sep 2013 08:22:22 -0700
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com,
-        zheng.z.yan@intel.com, dhsharp@google.com
-Subject: [PATCH] perf,x86: add constraint for IVB
- CYCLE_ACTIVITY:CYCLES_LDM_PENDING
-Message-ID: <20130911152222.GA28761@google.com>
+	Wed, 11 Sep 2013 11:23:58 -0400
+Date: Wed, 11 Sep 2013 08:23:31 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, sbw@mit.edu
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+Message-ID: <20130911152331.GZ3966@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130909161708.GX3966@linux.vnet.ibm.com>
+ <20130909123422.7936e868@gandalf.local.home>
+ <20130909165836.GB3966@linux.vnet.ibm.com>
+ <20130909172908.GA31239@Krystal>
+ <20130909175656.GF3966@linux.vnet.ibm.com>
+ <20130909214026.GA8830@Krystal>
+ <20130909175917.794b19bd@gandalf.local.home>
+ <20130909223426.GM3966@linux.vnet.ibm.com>
+ <20130911141302.GA11342@linux.vnet.ibm.com>
+ <20130911102607.16a3da91@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130911102607.16a3da91@gandalf.local.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13091115-6688-0000-0000-0000019577E0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 11, 2013 at 10:26:07AM -0400, Steven Rostedt wrote:
+> On Wed, 11 Sep 2013 07:13:02 -0700
+> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > On Mon, Sep 09, 2013 at 03:34:26PM -0700, Paul E. McKenney wrote:
+> > > On Mon, Sep 09, 2013 at 05:59:17PM -0400, Steven Rostedt wrote:
+> > > > On Mon, 9 Sep 2013 17:40:26 -0400
+> > > > Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+> > > > 
+> > > > > Agreed. So how about rcu_is_online() ?
+> > > > 
+> > > > Nope, what about all_your_base_are_belong_to_rcu()?
+> > > 
+> > > Let's see if I can remember the candidates...
+> > > 
+> > > 	rcu_is_cpu_idle() # reversed sense from the others
+> > > 	rcu_is_ignored() # reversed sense from the others
+> > > 	rcu_is_not_active() # reversed sense from the others
+> > > 	rcu_is_watching_cpu()
+> > > 	rcu_read_check()
+> > > 	rcu_is_active()
+> > > 	rcu_is_active_local()
+> > > 	rcu_is_online()
+> > > 	rcu_is_watching_task()
+> > > 	rcu_is_watching_thread()
+> > > 	rcu_is_watching_you()
+> > > 	all_your_base_are_belong_to_rcu()
+> > > 	rcu_is_active_loco()
+> > > 	rcu_kilroy_was_here()
+> > > 
+> > > Maybe I should just lock them all in a room overnight and see which
+> > > are still alive in the morning.
+> > 
+> > And after treating injuries, the survivor is rcu_is_watching().
+> > 
+> 
+> But, but, but...
+> 
+> That wasn't one of the contenders!
+> 
+> What happened? Did rcu_is_watching_cpu(), rcu_is_watching_task(),
+> rcu_is_watching_thread() and rcu_is_watching_you() all get together to
+> gang up on the others, and then combined to be one?
+> 
+> It's another Iraq! Several segments joined together by an outside
+> force and they don't play well together. And like Iraq (and the US),
+> hidden inside of this "community" is "rcu_is_watching_you"!
 
-The IvyBridge event CYCLE_ACTIVITY:CYCLES_LDM_PENDING can only
-be measured on counters 0-3 when HT is off. When HT is on, you
-only have counters 0-3.
+C'mon, Steven!  I did say "after treating injuries"!  In the opinion
+of the surgeon, the only option was to ampute what was left of either
+the _cpu(), _task(), _thread(), or _you().  Heck, the damage was so
+severe that we couldn't even tell which one it was!
 
-If you program it on the eight counters for 1s on a 3GHz
-IVB laptop running a noploop, you see:
-
-           2 747 527 CYCLE_ACTIVITY:CYCLES_LDM_PENDING
-           2 747 527 CYCLE_ACTIVITY:CYCLES_LDM_PENDING
-           2 747 527 CYCLE_ACTIVITY:CYCLES_LDM_PENDING
-           2 747 527 CYCLE_ACTIVITY:CYCLES_LDM_PENDING
-       3 280 563 608 CYCLE_ACTIVITY:CYCLES_LDM_PENDING
-       3 280 563 608 CYCLE_ACTIVITY:CYCLES_LDM_PENDING
-       3 280 563 608 CYCLE_ACTIVITY:CYCLES_LDM_PENDING
-       3 280 563 608 CYCLE_ACTIVITY:CYCLES_LDM_PENDING
-
-Clearly the last 4 values are bogus.
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
- arch/x86/kernel/cpu/perf_event_intel.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 0abf674..c62d883 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -124,6 +124,7 @@ static struct event_constraint intel_ivb_event_constraints[] __read_mostly =
- 	INTEL_UEVENT_CONSTRAINT(0x0148, 0x4), /* L1D_PEND_MISS.PENDING */
- 	INTEL_UEVENT_CONSTRAINT(0x0279, 0xf), /* IDQ.EMTPY */
- 	INTEL_UEVENT_CONSTRAINT(0x019c, 0xf), /* IDQ_UOPS_NOT_DELIVERED.CORE */
-+	INTEL_UEVENT_CONSTRAINT(0x02a3, 0xf), /* CYCLE_ACTIVITY.CYCLES_LDM_PENDING */
- 	INTEL_UEVENT_CONSTRAINT(0x04a3, 0xf), /* CYCLE_ACTIVITY.CYCLES_NO_EXECUTE */
- 	INTEL_UEVENT_CONSTRAINT(0x05a3, 0xf), /* CYCLE_ACTIVITY.STALLS_L2_PENDING */
- 	INTEL_UEVENT_CONSTRAINT(0x06a3, 0xf), /* CYCLE_ACTIVITY.STALLS_LDM_PENDING */
--- 
-1.8.4
+							Thanx, Paul
 
