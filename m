@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718Ab3IKE7e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 00:59:34 -0400
+	id S1756697Ab3IKE7c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 00:59:32 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13847 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754606Ab3IKE5V (ORCPT
+	with ESMTP id S1754427Ab3IKE5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 00:57:21 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=4lliHvy_dd8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=qjHHzMx7v7oA:10 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8 a=gvl4HP8tAAAA:8 a=wAwfuhEyL-vLSwEzO4gA:9 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=OTgC_HKJBnUA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Wed, 11 Sep 2013 00:57:10 -0400
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=kxAOY3v-hBEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=eWU4qceznocA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=Tty9oNO6AAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042915.750358015@goodmis.org>
+Message-Id: <20130911042921.257344440@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:29:28 -0400
+Date: Wed, 11 Sep 2013 00:30:01 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [141/251] Bluetooth: ath3k: dont use stack memory for DMA
+Cc: Mateusz Guzik <mguzik@redhat.com>, Amit Shah <amit.shah@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [174/251] virtio: console: fix race with port unplug and open/close
 References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0141-Bluetooth-ath3k-don-t-use-stack-memory-for-DMA.patch
+Content-Disposition: inline; filename=0174-virtio-console-fix-race-with-port-unplug-and-open-cl.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,82 +30,60 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Amit Shah <amit.shah@redhat.com>
 
-[ Upstream commit 517828a87994f41af6ae5a0f96f0f069f05baa81 ]
+[ Upstream commit 057b82be3ca3d066478e43b162fc082930a746c9 ]
 
-Memory allocated by vmalloc (including stack) can not be used for DMA,
-i.e. data pointer on usb_control_msg() should not point to stack memory.
+There's a window between find_port_by_devt() returning a port and us
+taking a kref on the port, where the port could get unplugged.  Fix it
+by taking the reference in find_port_by_devt() itself.
 
-Resolves:
-https://bugzilla.redhat.com/show_bug.cgi?id=977558
+Problem reported and analyzed by Mateusz Guzik.
 
-Reported-and-tested-by: Andy Lawrence <dr.diesel@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+CC: <stable@vger.kernel.org>
+Reported-by: Mateusz Guzik <mguzik@redhat.com>
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/bluetooth/ath3k.c |   38 +++++++++++++++++++++++++++++---------
- 1 file changed, 29 insertions(+), 9 deletions(-)
+ drivers/char/virtio_console.c |   13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
-index b0395b0..e224a48 100644
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -176,24 +176,44 @@ error:
+diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+index d2f7eb0..abca6eb 100644
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -257,9 +257,12 @@ static struct port *find_port_by_devt_in_portdev(struct ports_device *portdev,
+ 	unsigned long flags;
  
- static int ath3k_get_state(struct usb_device *udev, unsigned char *state)
- {
--	int pipe = 0;
-+	int ret, pipe = 0;
-+	char *buf;
-+
-+	buf = kmalloc(sizeof(*buf), GFP_KERNEL);
-+	if (!buf)
-+		return -ENOMEM;
+ 	spin_lock_irqsave(&portdev->ports_lock, flags);
+-	list_for_each_entry(port, &portdev->ports, list)
+-		if (port->cdev->dev == dev)
++	list_for_each_entry(port, &portdev->ports, list) {
++		if (port->cdev->dev == dev) {
++			kref_get(&port->kref);
+ 			goto out;
++		}
++	}
+ 	port = NULL;
+ out:
+ 	spin_unlock_irqrestore(&portdev->ports_lock, flags);
+@@ -793,14 +796,10 @@ static int port_fops_open(struct inode *inode, struct file *filp)
+ 	struct port *port;
+ 	int ret;
  
- 	pipe = usb_rcvctrlpipe(udev, 0);
--	return usb_control_msg(udev, pipe, ATH3K_GETSTATE,
--			USB_TYPE_VENDOR | USB_DIR_IN, 0, 0,
--			state, 0x01, USB_CTRL_SET_TIMEOUT);
-+	ret = usb_control_msg(udev, pipe, ATH3K_GETSTATE,
-+			      USB_TYPE_VENDOR | USB_DIR_IN, 0, 0,
-+			      buf, sizeof(*buf), USB_CTRL_SET_TIMEOUT);
-+
-+	*state = *buf;
-+	kfree(buf);
-+
-+	return ret;
- }
++	/* We get the port with a kref here */
+ 	port = find_port_by_devt(cdev->dev);
+ 	filp->private_data = port;
  
- static int ath3k_get_version(struct usb_device *udev,
- 			struct ath3k_version *version)
- {
--	int pipe = 0;
-+	int ret, pipe = 0;
-+	struct ath3k_version *buf;
-+	const int size = sizeof(*buf);
-+
-+	buf = kmalloc(size, GFP_KERNEL);
-+	if (!buf)
-+		return -ENOMEM;
- 
- 	pipe = usb_rcvctrlpipe(udev, 0);
--	return usb_control_msg(udev, pipe, ATH3K_GETVERSION,
--			USB_TYPE_VENDOR | USB_DIR_IN, 0, 0, version,
--			sizeof(struct ath3k_version),
--			USB_CTRL_SET_TIMEOUT);
-+	ret = usb_control_msg(udev, pipe, ATH3K_GETVERSION,
-+			      USB_TYPE_VENDOR | USB_DIR_IN, 0, 0,
-+			      buf, size, USB_CTRL_SET_TIMEOUT);
-+
-+	memcpy(version, buf, size);
-+	kfree(buf);
-+
-+	return ret;
- }
- 
- static int ath3k_load_fwfile(struct usb_device *udev,
+-	/* Prevent against a port getting hot-unplugged at the same time */
+-	spin_lock_irq(&port->portdev->ports_lock);
+-	kref_get(&port->kref);
+-	spin_unlock_irq(&port->portdev->ports_lock);
+-
+ 	/*
+ 	 * Don't allow opening of console port devices -- that's done
+ 	 * via /dev/hvc
 -- 
 1.7.10.4
 
