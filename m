@@ -1,74 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757503Ab3IKFnx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 01:43:53 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22176 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434Ab3IKE5L (ORCPT
+	id S1753636Ab3IKFqr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 01:46:47 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:39447 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751645Ab3IKFqq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 00:57:11 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=Tp_39xzQ4O4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=PKFiNyLHrtgA:10 a=CDq0vqnqAAAA:8 a=VwQbUJbxAAAA:8 a=_jlGtV7tAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=MsgQWG-0GjQA:10 a=L1RTw_NLzc0A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042920.638727355@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:29:57 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Curt Brune <curt@cumulusnetworks.com>, Guenter Roeck <linux@roeck-us.net>
-Subject: [170/251] hwmon: (adt7470) Fix incorrect return code check
-References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0170-hwmon-adt7470-Fix-incorrect-return-code-check.patch
+	Wed, 11 Sep 2013 01:46:46 -0400
+Date: Wed, 11 Sep 2013 07:46:38 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 0/5] perf/urgent fixes
+Message-ID: <20130911054638.GA15395@gmail.com>
+References: <1378836722-31326-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378836722-31326-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.9-rc1 stable review patch.
-If anyone has any objections, please let me know.
 
-------------------
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-From: Curt Brune <curt@cumulusnetworks.com>
+> From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> 
+> Hi Ingo,
+> 
+> 	Please consider pulling,
+> 
+> - Arnaldo
+> 
+> The following changes since commit 72f4a11d2fb16792f5e5107922652366194cfd66:
+> 
+>   Merge tag 'perf-urgent-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/urgent (2013-09-06 14:08:08 +0200)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
+> 
+> for you to fetch changes up to e08eedca944bd6419c9441012e98e7af14ebd175:
+> 
+>   perf: Fix up MMAP2 buffer space reservation (2013-09-10 10:42:20 -0300)
+> 
+> ----------------------------------------------------------------
+> perf/urgent fixes:
+> 
+> . Handle perf.data files with no tracepoints in 'perf trace', fixing a
+>   segfault.
+> 
+> . Fix up MMAP2 buffer space reservation, a problem that was caught via
+>   'perf test' consistency tests.
+> 
+> . Add attr->mmap2 support in the tools, a patch that should've been merged
+>   together with the kernel counterpart:
+> 
+>     13d7a24 "perf: Add attr->mmap2 attribute to an event".
+> 
+>   Merging it allowed us to catch the MMAP buffer space reservation problem via
+>   'perf test'. From Stephane Eranian.
+> 
+> . Make sure we can find PERF_SAMPLE_ID in the variable part of PERF_RECORD_
+>   ring buffer records in 'perf kvm', where direct manipulation of sample_type
+>   was being done.
+> 
+>   Fixed by making use of the perf_evlist__set_sample_bit() helper and by
+>   setting the evlist->id_pos in perf_evlist__open(), from Adrian Hunter.
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Adrian Hunter (2):
+>       perf evlist: Fix id pos in perf_evlist__open()
+>       perf kvm: Fix sample_type manipulation
+> 
+> Arnaldo Carvalho de Melo (2):
+>       perf trace: Handle perf.data files with no tracepoints
+>       perf: Fix up MMAP2 buffer space reservation
+> 
+> Stephane Eranian (1):
+>       perf tools: Add attr->mmap2 support
+> 
+>  kernel/events/core.c           |  1 +
+>  tools/perf/builtin-annotate.c  |  1 +
+>  tools/perf/builtin-inject.c    | 15 ++++++++++
+>  tools/perf/builtin-kvm.c       | 18 ++++++------
+>  tools/perf/builtin-mem.c       |  1 +
+>  tools/perf/builtin-report.c    |  1 +
+>  tools/perf/builtin-script.c    |  1 +
+>  tools/perf/tests/perf-record.c | 15 +++++++---
+>  tools/perf/util/build-id.c     |  1 +
+>  tools/perf/util/event.c        | 56 ++++++++++++++++++++++++++++--------
+>  tools/perf/util/event.h        | 19 ++++++++++++
+>  tools/perf/util/evlist.c       | 12 ++++++++
+>  tools/perf/util/evsel.c        |  5 ++--
+>  tools/perf/util/header.c       |  3 ++
+>  tools/perf/util/machine.c      | 53 +++++++++++++++++++++++++++++++++-
+>  tools/perf/util/machine.h      |  1 +
+>  tools/perf/util/map.c          |  8 +++++-
+>  tools/perf/util/map.h          |  8 ++++--
+>  tools/perf/util/session.c      | 65 ++++++++++++++++++++----------------------
+>  tools/perf/util/tool.h         |  1 +
+>  20 files changed, 220 insertions(+), 65 deletions(-)
 
-[ Upstream commit 93d783bcca69bfacc8dc739d8a050498402587b5 ]
+Pulled, thanks Arnaldo!
 
-In adt7470_write_word_data(), which writes two bytes using
-i2c_smbus_write_byte_data(), the return codes are incorrectly AND-ed
-together when they should be OR-ed together.
-
-The return code of i2c_smbus_write_byte_data() is zero for success.
-
-The upshot is only the first byte was ever written to the hardware.
-The 2nd byte was never written out.
-
-I noticed that trying to set the fan speed limits was not working
-correctly on my system.  Setting the fan speed limits is the only
-code that uses adt7470_write_word_data().  After making the change
-the limit settings work and the alarms work also.
-
-Signed-off-by: Curt Brune <curt@cumulusnetworks.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- drivers/hwmon/adt7470.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/hwmon/adt7470.c b/drivers/hwmon/adt7470.c
-index 54ec8905..034085d 100644
---- a/drivers/hwmon/adt7470.c
-+++ b/drivers/hwmon/adt7470.c
-@@ -215,7 +215,7 @@ static inline int adt7470_write_word_data(struct i2c_client *client, u8 reg,
- 					  u16 value)
- {
- 	return i2c_smbus_write_byte_data(client, reg, value & 0xFF)
--	       && i2c_smbus_write_byte_data(client, reg + 1, value >> 8);
-+	       || i2c_smbus_write_byte_data(client, reg + 1, value >> 8);
- }
- 
- static void adt7470_init_client(struct i2c_client *client)
--- 
-1.7.10.4
-
-
+	Ingo
