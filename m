@@ -1,54 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756748Ab3IKSIH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 14:08:07 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:60693 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756723Ab3IKSIF (ORCPT
+	id S1755298Ab3IKSNF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 14:13:05 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:34994 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753559Ab3IKSNB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 14:08:05 -0400
+	Wed, 11 Sep 2013 14:13:01 -0400
+Date: Wed, 11 Sep 2013 13:12:26 -0500
+From: Josh Cartwright <joshc@codeaurora.org>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-arm-msm@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] ARM: msm: Add support for MSM8974 Dragonboard
+Message-ID: <20130911181226.GU808@joshc.qualcomm.com>
+References: <1375743779-24993-1-git-send-email-rvaswani@codeaurora.org>
+ <1375780486.2725.7.camel@iivanov-dev.int.mm-sol.com>
 MIME-Version: 1.0
-In-Reply-To: <20130911180541.GR31370@twins.programming.kicks-ass.net>
-References: <20130910130811.507933095@infradead.org> <20130910132011.116593485@infradead.org>
- <522FCE9D.4010707@amacapital.net> <20130911082530.GN31370@twins.programming.kicks-ass.net>
- <20130911110635.GT26785@twins.programming.kicks-ass.net> <CALCETrUECkOZkxao0d1467rEFcSF3jzddNo1awshE4uK-wsWGQ@mail.gmail.com>
- <20130911180541.GR31370@twins.programming.kicks-ass.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 11 Sep 2013 11:07:43 -0700
-Message-ID: <CALCETrVU993N6HBkP-G2u-sCu6y6HOp9FknFpah+mpzztE=kkA@mail.gmail.com>
-Subject: Re: [PATCH 2/7] sched: Add NEED_RESCHED to the preempt_count
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Peter Anvin <hpa@zytor.com>, Mike Galbraith <bitbucket@online.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arch <linux-arch@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375780486.2725.7.camel@iivanov-dev.int.mm-sol.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 11:05 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, Sep 11, 2013 at 09:35:08AM -0700, Andy Lutomirski wrote:
->> I bet that this improves cross-cpu wakeup latency, too -- the old code
->> would presumably wake up the cpu and then immediately interrupt it.
->
-> Yeah,. its what clued Mike in to there being a problem.
->
->> It might be nice to rename one or both of need_resched and
->> test_need_resched, though -- the difference is somewhat inscrutable.
->
-> I agreed, I've just been unable to come up with anything sane.
->
-> The best I could come up with is renaming
-> {set,clear,test}_need_resched() to {}_tif_need_resched(), so we then end
-> up with test_tif_need_resched(), which is slightly more different from
-> need_resched().
+Hey Ivan-
 
-Nothing great.  That's at least better than the current state, I think.
+On Tue, Aug 06, 2013 at 12:14:46PM +0300, Ivan T. Ivanov wrote:
+[..]
+> Enable low-level debug print routines to direct their
+> output to the serial port on MSM 8974 devices.
+> 
+> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> ---
+>  arch/arm/Kconfig.debug                     |    8 ++++++++
+>  arch/arm/mach-msm/board-dt-8974.c          |    2 ++
+>  arch/arm/mach-msm/include/mach/msm_iomap.h |    4 ++++
+>  3 files changed, 14 insertions(+)
+[..]
+> diff --git a/arch/arm/mach-msm/board-dt-8974.c b/arch/arm/mach-msm/board-dt-8974.c
+> index 697623e..0ce016a 100644
+> --- a/arch/arm/mach-msm/board-dt-8974.c
+> +++ b/arch/arm/mach-msm/board-dt-8974.c
+> @@ -12,6 +12,7 @@
+>  
+>  #include <linux/of_platform.h>
+>  #include <asm/mach/arch.h>
+> +#include <asm/mach/map.h>
+>  
+>  static const char * const msm8974_dt_match[] __initconst = {
+>  	"qcom,msm8974-db",
+> @@ -20,4 +21,5 @@ static const char * const msm8974_dt_match[] __initconst = {
+>  
+>  DT_MACHINE_START(MSM8974_DT, "Qualcomm MSM (Flattened Device Tree)")
+>  	.dt_compat = msm8974_dt_match,
+> +	.map_io = debug_ll_io_init,
 
---Andy
+If/when you get this patch cooked up ontop of Rohit's, changes to this
+file (renamed to board-dt.c) should not be necessary.  As of bc37324
+("ARM: mmu: Call debug_ll_io_init if no map_io function is specified"),
+the debug ll uart mapping is setup automatically.
+
+Thanks,
+  Josh
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
