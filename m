@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755472Ab3IKQaF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 12:30:05 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:44007 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755147Ab3IKQaD (ORCPT
+	id S1755607Ab3IKQdu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 12:33:50 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:1515 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755256Ab3IKQdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 12:30:03 -0400
-Date: Wed, 11 Sep 2013 09:29:55 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Peng Tao <bergwolf@gmail.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, Christoph Hellwig <hch@infradead.org>,
-        "Dilger, Andreas" <andreas.dilger@intel.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
-Subject: Re: [PATCH] staging: Disable lustre file system for MIPS, SH, and
- XTENSA
-Message-ID: <20130911162955.GA1103@infradead.org>
-References: <20130909015945.GA4029@kroah.com>
- <522D3153.5000102@roeck-us.net>
- <20130909023152.GA5329@kroah.com>
- <522D32F6.4020705@roeck-us.net>
- <20130909050147.GA3899@osiris>
- <CA+a=Yy6h0y=J9-NQ6LQ8fkWxqQnTQKxAt2+Pr3fSwLQ1hefGsw@mail.gmail.com>
- <20130911014443.GA20996@infradead.org>
- <CA+a=Yy6GFzoBT0Bgz7z5bHZRMdEBJa+txwpCZuxA+mRTch-8mA@mail.gmail.com>
- <20130911023026.GA6273@roeck-us.net>
- <CA+a=Yy7+cj4Bw_4PArxMo2Manqp+aTVUi-7UcS+6-qNv7-RPyA@mail.gmail.com>
+	Wed, 11 Sep 2013 12:33:49 -0400
+Message-ID: <52309B5F.70406@hp.com>
+Date: Wed, 11 Sep 2013 12:33:35 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+a=Yy7+cj4Bw_4PArxMo2Manqp+aTVUi-7UcS+6-qNv7-RPyA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH 1/2] seqlock: Add a new blocking reader type
+References: <1378909707-3347-1-git-send-email-Waiman.Long@hp.com> <20130911145536.GJ13318@ZenIV.linux.org.uk>
+In-Reply-To: <20130911145536.GJ13318@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 10:51:50AM +0800, Peng Tao wrote:
-> I'm not fighting against removing the piece of code. But if there is a
-> strong reason to keep the functionality, we need to find a way to
-> implement it. The convenience of using environment variables is that
-> job scheduler can set the environment and other existing applications
-> don't have to change. Are there other means to do the same? ioctl and
-> upcall both need application change AFAIK.
+On 09/11/2013 10:55 AM, Al Viro wrote:
+> On Wed, Sep 11, 2013 at 10:28:26AM -0400, Waiman Long wrote:
+>> The sequence lock (seqlock) was originally designed for the cases
+>> where the readers do not need to block the writers by making the
+>> readers retry the read operation when the data change.
+>>
+>> Since then, the use cases have been expanded to include situations
+>> where a thread does not need to change the data (effectively a reader)
+>> at all but have to take the writer lock because it can't tolerate
+>> changes to the protected structure. Some examples are the d_path()
+>> function and the getcwd() syscall in fs/dcache.c where the functions
+>> take the writer lock on rename_lock even though they don't need
+>> to change anything in the protected data structure at all. This is
+>> inefficient as a reader is now blocking other non-blocking readers
+>> by pretending to be a writer.
+>>
+>> This patch tries to eliminate this inefficiency by introducing a new
+>> type of blocking reader to the seqlock locking mechanism. This new
+>> blocking reader will not block other non-blocking readers, but will
+>> block other blocking readers and writers.
+> Umm...  That's misleading - it doesn't _block_, it spins.  Moroever,
+> seq_readbegin() also spins in presense of writer; the main property
+> of this one is that it keeps writers away.
 
-There is no use case for it, the kernel has no business looking at these
-variables.  Given that you think it's not even used I don't even know
-why we're having this discussion.
+I used "block" in the sense that it will stop a writer from moving 
+forward. I will update the commit log to make that more clear.
+> Folks, any suggestions on better names?  The semantics we are getting is
 
-Talking about nasty code, the whole linux-curproc.c is highly
-questionable:
+I will welcome any better name suggestion and will incorporate that in 
+the patch.
 
- - cfs_curproc_groups_nr:
-   	unused and should be removed
-
- - cfs_cap_raise/cfs_cap_lower/cfs_cap_raised:
-   	needs to go away, modyules must not change access permissions
-	on behalf of processes
-
- - the whole cfs_cap_t handling also needs to go away, passing around
-   capabilities is not a concept the kernel supports for a reason
-
- - current_is_32bit:
-	Code should just use is_compat_task directly.
-
-
-I've just taken the time to walk through this one file, but it seems
-like most of libcfs is just as bad.
+-Longman
