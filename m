@@ -1,48 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755267Ab3IKXCS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 19:02:18 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:49806 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754726Ab3IKXCP (ORCPT
+	id S1754774Ab3IKXIL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 19:08:11 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:34833 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753804Ab3IKXIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 19:02:15 -0400
+	Wed, 11 Sep 2013 19:08:10 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130911185944.GA1798@laptop.programming.kicks-ass.net>
-References: <20130910130811.507933095@infradead.org>
-	<20130910135152.GD7537@gmail.com>
-	<20130910135636.GA8268@gmail.com>
-	<CA+55aFwmEQeF+PtM7cuaQ8OkuTS=R4JJ61Wwfv8u-Svo-V3KwQ@mail.gmail.com>
-	<20130910164519.GL31370@twins.programming.kicks-ass.net>
-	<CA+55aFz7WtcdkwKEGoqCzmC9HsY0LPK-oVK_oATYhRnbGq=2GA@mail.gmail.com>
-	<20130910212509.GA18147@laptop.programming.kicks-ass.net>
-	<CA+55aFxsEYQPXnoxNXAeSPEkk3uT8iq-_KJVe2M2qZZbtL=cbA@mail.gmail.com>
-	<20130911131323.GQ31370@twins.programming.kicks-ass.net>
-	<CA+55aFyxcHvQUe_h8cyQrNbGJ6-G_NQnK9pVenABLjCF-7WMXg@mail.gmail.com>
-	<20130911185944.GA1798@laptop.programming.kicks-ass.net>
-Date: Wed, 11 Sep 2013 16:02:14 -0700
-X-Google-Sender-Auth: UBNjW78nWIRMa3DvHIReijU4yKc
-Message-ID: <CA+55aFxDbqeFumkVApf-L2pi+FQn06GQqQf4rWkzOC4LF=fn=A@mail.gmail.com>
-Subject: Re: [PATCH 0/7] preempt_count rework -v2
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Peter Anvin <hpa@zytor.com>, Mike Galbraith <bitbucket@online.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
+In-Reply-To: <CAKcLGm-wJjBeSczCi7-XkyDMd444HoQcFVfmpkPYZ2WcExCxaA@mail.gmail.com>
+References: <CAKcLGm8EMruO5e8yw+nArTjyCGSvLB5pjnGZYvz0xdF9M99iwQ@mail.gmail.com>
+	<52119B4E.4060409@linux.vnet.ibm.com>
+	<20130819044444.GD26832@bbox>
+	<CAKcLGm-wJjBeSczCi7-XkyDMd444HoQcFVfmpkPYZ2WcExCxaA@mail.gmail.com>
+Date: Wed, 11 Sep 2013 18:08:08 -0500
+Message-ID: <CAKcLGm_NrnK8yCfsBWoT0mBC+kyG3kgVt61ORfazbWaRBDya7A@mail.gmail.com>
+Subject: Re: BUG: scheduling while atomic 3.10.7 in ZRAM Swap
+From: Mitch Harder <mitch.harder@sabayonlinux.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Michael wang <wangyun@linux.vnet.ibm.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Nitin Gupta <ngupta@vflare.org>,
+        Jerome Marchand <jmarchand@redhat.com>, devel@driverdev.osuosl.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 11:59 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+On Tue, Aug 20, 2013 at 9:51 AM, Mitch Harder
+<mitch.harder@sabayonlinux.org> wrote:
+> On Sun, Aug 18, 2013 at 11:44 PM, Minchan Kim <minchan@kernel.org> wrote:
+>> Hello,
+>>
+>> On Mon, Aug 19, 2013 at 12:13:02PM +0800, Michael wang wrote:
+>>> Hi, Mitch
+>>>
+>>> On 08/17/2013 10:01 PM, Mitch Harder wrote:
+>>> > I'm encountering a BUG while using a ZRAM Swap device.
+>>> >
+>>> > The call trace seems to involve the changes recently added to 3.10.6
+>>> > by the patch:
+>>> > zram: use zram->lock to protect zram_free_page() in swap free notify path
+>>> >
+>>> > The hardware is a x86 single CPU AMD Athlon XP system with 1GB RAM.
+>>> >
+>>> > I'm implementing a 352MB ZRAM swap device, and also have 1GB swap
+>>> > space on the hard disk.
+>>>
+>>> IMHO, it was caused by that swap_entry_free() was invoked with page
+>>> spin-locked, thus zram_slot_free_notify() should not use rw-lock which
+>>> may goto sleep.
+>>>
+>>> CC folks related.
+>>
+>> Thanks for Ccing me, Michael,
+>>
+>> Mitch, It's known problem and it should be fixed by [1] in recent linux-next.
+>>
+>> [1] a0c516cbfc, zram: don't grab mutex in zram_slot_free_noity
+>>
+>> Thanks for the report!
+>>
 >
-> OK, stripped it down further, I couldn't quite see how to collapse the
-> unary and binary operator variants though :/
+> Thanks.
+>
+> If I apply the zram patches from linux-next, the problem seems to be resolved.
 
-Ok, this looks pretty good. I assume it works too? ;)
+Is it planned to send the patch: "zram: don't grab mutex in
+zram_slot_free_noity"  to stable?
 
-                 Linus
+I noticed that 3.10.11 still doesn't have this patch.
+
+Right now, I'm manually applying 4 zram patches to my 3.10.11 kernel
+(although I had to rework them to apply cleanly):
+
+zram: Add auto loading of module if user opens /dev/zram.
+zram: prevent data loss in error cases of function zram_bvec_write()
+zram: fix invalid memory access
+zram: don't grab mutex in zram_slot_free_noity
+
+I knew I'd get errors if I didn't rework the "zram: Add auto loading
+of module if user opens /dev/zram" patch to apply to 3.10.  The other
+three patches seemed to address important issues also, based on their
+git commit description.
