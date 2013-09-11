@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298Ab3IKSNF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 14:13:05 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:34994 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753559Ab3IKSNB (ORCPT
+	id S1755616Ab3IKSOw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 14:14:52 -0400
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:31307 "EHLO
+	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752208Ab3IKSOu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 14:13:01 -0400
-Date: Wed, 11 Sep 2013 13:12:26 -0500
-From: Josh Cartwright <joshc@codeaurora.org>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
-        David Brown <davidb@codeaurora.org>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-arm-msm@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] ARM: msm: Add support for MSM8974 Dragonboard
-Message-ID: <20130911181226.GU808@joshc.qualcomm.com>
-References: <1375743779-24993-1-git-send-email-rvaswani@codeaurora.org>
- <1375780486.2725.7.camel@iivanov-dev.int.mm-sol.com>
+	Wed, 11 Sep 2013 14:14:50 -0400
+From: "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: ISS StorageDev <iss_storagedev@hp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        Moritz Muehlenhoff <jmm@debian.org>
+Subject: RE: [patch -resend] cciss: info leak in cciss_ioctl32_passthru()
+Thread-Topic: [patch -resend] cciss: info leak in cciss_ioctl32_passthru()
+Thread-Index: AQHOrsH/MVwVPsZLhkiC38Pmqu8F95nA15ZA
+Date: Wed, 11 Sep 2013 18:13:31 +0000
+Message-ID: <48275AD710FCA34184C2B6186B4016B32D0FD7E5@G6W2491.americas.hpqcorp.net>
+References: <20130603092645.GD16171@debian> <20130911073832.GB25349@mwanda>
+In-Reply-To: <20130911073832.GB25349@mwanda>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [15.193.49.23]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375780486.2725.7.camel@iivanov-dev.int.mm-sol.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Ivan-
 
-On Tue, Aug 06, 2013 at 12:14:46PM +0300, Ivan T. Ivanov wrote:
-[..]
-> Enable low-level debug print routines to direct their
-> output to the serial port on MSM 8974 devices.
-> 
-> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> ---
->  arch/arm/Kconfig.debug                     |    8 ++++++++
->  arch/arm/mach-msm/board-dt-8974.c          |    2 ++
->  arch/arm/mach-msm/include/mach/msm_iomap.h |    4 ++++
->  3 files changed, 14 insertions(+)
-[..]
-> diff --git a/arch/arm/mach-msm/board-dt-8974.c b/arch/arm/mach-msm/board-dt-8974.c
-> index 697623e..0ce016a 100644
-> --- a/arch/arm/mach-msm/board-dt-8974.c
-> +++ b/arch/arm/mach-msm/board-dt-8974.c
-> @@ -12,6 +12,7 @@
->  
->  #include <linux/of_platform.h>
->  #include <asm/mach/arch.h>
-> +#include <asm/mach/map.h>
->  
->  static const char * const msm8974_dt_match[] __initconst = {
->  	"qcom,msm8974-db",
-> @@ -20,4 +21,5 @@ static const char * const msm8974_dt_match[] __initconst = {
->  
->  DT_MACHINE_START(MSM8974_DT, "Qualcomm MSM (Flattened Device Tree)")
->  	.dt_compat = msm8974_dt_match,
-> +	.map_io = debug_ll_io_init,
 
-If/when you get this patch cooked up ontop of Rohit's, changes to this
-file (renamed to board-dt.c) should not be necessary.  As of bc37324
-("ARM: mmu: Call debug_ll_io_init if no map_io function is specified"),
-the debug ll uart mapping is setup automatically.
+-----Original Message-----
+From: Dan Carpenter [mailto:dan.carpenter@oracle.com] 
+Sent: Wednesday, September 11, 2013 2:39 AM
+To: Miller, Mike (OS Dev); Andrew Morton
+Cc: ISS StorageDev; linux-kernel@vger.kernel.org; kernel-janitors@vger.kernel.org; Moritz Muehlenhoff
+Subject: [patch -resend] cciss: info leak in cciss_ioctl32_passthru()
 
-Thanks,
-  Josh
+The arg64 struct has a hole after ->buf_size which isn't cleared.
+Or if any of the calls to copy_from_user() fail then that would cause an information leak as well.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+This was assigned CVE-2013-2147.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+
+Acked-by: Mike Miller <mike.miller@hp.com>
+
+diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c index 6374dc1..34971aa 100644
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -1189,6 +1189,7 @@ static int cciss_ioctl32_passthru(struct block_device *bdev, fmode_t mode,
+ 	int err;
+ 	u32 cp;
+ 
++	memset(&arg64, 0, sizeof(arg64));
+ 	err = 0;
+ 	err |=
+ 	    copy_from_user(&arg64.LUN_info, &arg32->LUN_info,
