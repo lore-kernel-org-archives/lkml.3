@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943Ab3IKMZd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 08:25:33 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:44766 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752170Ab3IKMZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 08:25:32 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Chuansheng Liu <chuansheng.liu@intel.com>
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        zhuangzhi.li@intel.com, fei.li@intel.com
-Subject: Re: [PATCH] ACPI / osl: implement acpi_os_sleep() with msleep()
-Date: Wed, 11 Sep 2013 14:36:31 +0200
-Message-ID: <37297227.So9eVdeflb@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1378921377.26153.26.camel@cliu38-desktop-build>
-References: <1378921377.26153.26.camel@cliu38-desktop-build>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1753146Ab3IKMZw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 08:25:52 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11051 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753009Ab3IKMZu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 08:25:50 -0400
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Jd0jaqIKetIA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=NR4DbnF22M8A:10 a=QyXUC8HyAAAA:8 a=1Bw8bsyBgav4PYRO3GUA:9 a=CjuIK1q_8ugA:10 a=dGJ0OcVc7YAA:10 a=T1N8hdXCnR8A:10 a=Z2fySeUBMngA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Wed, 11 Sep 2013 08:25:48 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Berg, Johannes" <johannes.berg@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "Otcheretianski, Andrei" <andrei.otcheretianski@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [199/251] genetlink: fix family dump race
+Message-ID: <20130911082548.743f830a@gandalf.local.home>
+In-Reply-To: <1DC40B07CD6EC041A66726C271A73AE61AABAF33@IRSMSX102.ger.corp.intel.com>
+References: <20130911042707.738353451@goodmis.org>
+	<20130911042925.297207769@goodmis.org>
+	<1DC40B07CD6EC041A66726C271A73AE61AABAF33@IRSMSX102.ger.corp.intel.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 12, 2013 01:42:57 AM Chuansheng Liu wrote:
-> 
-> Currently the acpi_os_sleep() is using the schedule_timeout_interruptible(),
-> which can be interrupted by signal, which causes the real sleep time is shorter.
-> 
-> According to the ACPI spec:
-> The Sleep term is used to implement long-term timing requirements.
-> Execution is delayed for at least the required number of milliseconds.
-> 
-> The sleeping time should be at least of the required number msecs, here
-> using msleep() to implement it.
-> 
-> Also if the real time is shorter, we meet the device POWER ON issue.
+On Wed, 11 Sep 2013 06:50:10 +0000
+"Berg, Johannes" <johannes.berg@intel.com> wrote:
 
-What exactly is the "power on" issue?
-
-Rafael
-
-
-> CC: lizhuangzhi <zhuangzhi.li@intel.com>
-> CC: Li Fei <fei.li@intel.com>
-> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-> ---
->  drivers/acpi/osl.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 3.6.11.9-rc1 stable review patch.
+> > If anyone has any objections, please let me know.
 > 
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index e5f416c..b1629b5 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -820,7 +820,7 @@ acpi_status acpi_os_remove_interrupt_handler(u32 irq, acpi_osd_handler handler)
->  
->  void acpi_os_sleep(u64 ms)
->  {
-> -	schedule_timeout_interruptible(msecs_to_jiffies(ms));
-> +	msleep(ms);
->  }
->  
->  void acpi_os_stall(u32 us)
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> Yes, this patch is broken and we reverted it upstream. 
+
+Thanks! I'll revert it.
+
+-- Steve
