@@ -1,89 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523Ab3IKRPx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 13:15:53 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:46176 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754385Ab3IKRPw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 13:15:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <1378901968-7368-1-git-send-email-broonie@kernel.org>
-References: <1378901968-7368-1-git-send-email-broonie@kernel.org>
-Date: Wed, 11 Sep 2013 14:15:51 -0300
-Message-ID: <CACnwZYeNe4T27eqiQ+LW-ot9Hk8Qk0Uzg7b3jH7xF_euHOWYhQ@mail.gmail.com>
-Subject: Re: [PATCH] regulator: core: Split devres code out into a separate file
-From: Thiago Farina <tfransosi@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>,
-        linux list <linux-kernel@vger.kernel.org>,
-        linaro-kernel@lists.linaro.org, Mark Brown <broonie@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1756580Ab3IKRQr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 13:16:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41776 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755557Ab3IKRQp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 13:16:45 -0400
+From: Zach Brown <zab@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Eric Wong <normalperson@yhbt.net>
+Subject: [PATCH 3/3] btrfs: implement .splice_direct extent copying
+Date: Wed, 11 Sep 2013 10:06:50 -0700
+Message-Id: <1378919210-10372-4-git-send-email-zab@redhat.com>
+In-Reply-To: <1378919210-10372-1-git-send-email-zab@redhat.com>
+References: <1378919210-10372-1-git-send-email-zab@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 9:19 AM, Mark Brown <broonie@kernel.org> wrote:
-> From: Mark Brown <broonie@linaro.org>
->
-> Cut down on the size of core.c a bit more and ensure that the devres
-> versions of things don't do too much peering inside the internals of
-> the APIs they wrap.
->
-> Signed-off-by: Mark Brown <broonie@linaro.org>
-> ---
->  drivers/regulator/Makefile   |   2 +-
->  drivers/regulator/core.c     | 252 +------------------------------------------
->  drivers/regulator/devres.c   | 252 +++++++++++++++++++++++++++++++++++++++++++
->  drivers/regulator/internal.h |  38 +++++++
->  4 files changed, 292 insertions(+), 252 deletions(-)
->  create mode 100644 drivers/regulator/devres.c
->  create mode 100644 drivers/regulator/internal.h
-> diff --git a/drivers/regulator/internal.h b/drivers/regulator/internal.h
-> new file mode 100644
-> index 0000000..84bbda1
-> --- /dev/null
-> +++ b/drivers/regulator/internal.h
-> @@ -0,0 +1,38 @@
-> +/*
-> + * internal.h  --  Voltage/Current Regulator framework internal code
-> + *
-> + * Copyright 2007, 2008 Wolfson Microelectronics PLC.
-> + * Copyright 2008 SlimLogic Ltd.
-> + *
-> + * Author: Liam Girdwood <lrg@slimlogic.co.uk>
-> + *
-> + *  This program is free software; you can redistribute  it and/or modify it
-> + *  under  the terms of  the GNU General  Public License as published by the
-> + *  Free Software Foundation;  either version 2 of the  License, or (at your
-> + *  option) any later version.
-> + *
-> + */
-> +
-> +#ifndef __REGULATOR_INTERNAL_H
-> +#define __REGULATOR_INTERNAL_H
-> +
-> +/*
-> + * struct regulator
-> + *
-> + * One for each consumer device.
-> + */
-> +struct regulator {
-> +       struct device *dev;
-> +       struct list_head list;
-> +       unsigned int always_on:1;
-> +       unsigned int bypass:1;
-> +       int uA_load;
-> +       int min_uV;
-> +       int max_uV;
-> +       char *supply_name;
-> +       struct device_attribute dev_attr;
-> +       struct regulator_dev *rdev;
-> +       struct dentry *debugfs;
-> +};
-> +
-don't you need any forward declaration here nor any include (like for
-list_head and device_attribute)?
+This patch re-uses the existing btrfs file cloning ioctl code to
+implement the .splice_direct copy offloading file operation.
 
---
-Thiago
+The existing extent item copying btrfs_ioctl_clone() is renamed to a
+shared btrfs_clone_extents().  The ioctl specific code (mostly simple
+entry-point stuff that splice() already does elsewhere) is moved to a
+new much smaller btrfs_ioctl_clone().
+
+btrfs_splice_direct() thus inherits the conservative limitations of the
+btrfs clone ioctl: it only allows block-aligned copies between files on
+the same snapshot.
+
+Signed-off-by: Zach Brown <zab@redhat.com>
+---
+ fs/btrfs/ctree.h |  2 ++
+ fs/btrfs/file.c  | 11 ++++++++++
+ fs/btrfs/ioctl.c | 64 +++++++++++++++++++++++++++++++-------------------------
+ 3 files changed, 48 insertions(+), 29 deletions(-)
+
+diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
+index e795bf1..f73830e 100644
+--- a/fs/btrfs/ctree.h
++++ b/fs/btrfs/ctree.h
+@@ -3648,6 +3648,8 @@ int btrfs_defrag_file(struct inode *inode, struct file *file,
+ 		      u64 newer_than, unsigned long max_pages);
+ void btrfs_get_block_group_info(struct list_head *groups_list,
+ 				struct btrfs_ioctl_space_info *space);
++long btrfs_clone_extents(struct file *file, struct file *src_file, u64 off,
++			 u64 olen, u64 destoff);
+ 
+ /* file.c */
+ int btrfs_auto_defrag_init(void);
+diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
+index 4d2eb64..82aec93 100644
+--- a/fs/btrfs/file.c
++++ b/fs/btrfs/file.c
+@@ -2557,6 +2557,16 @@ out:
+ 	return offset;
+ }
+ 
++static long btrfs_splice_direct(struct file *in, loff_t in_pos,
++				struct file *out, loff_t out_pos, size_t len,
++				unsigned int flags)
++{
++	int ret = btrfs_clone_extents(out, in, in_pos, len, out_pos);
++	if (ret == 0)
++		ret = len;
++	return ret;
++}
++
+ const struct file_operations btrfs_file_operations = {
+ 	.llseek		= btrfs_file_llseek,
+ 	.read		= do_sync_read,
+@@ -2573,6 +2583,7 @@ const struct file_operations btrfs_file_operations = {
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl	= btrfs_ioctl,
+ #endif
++	.splice_direct	= btrfs_splice_direct,
+ };
+ 
+ void btrfs_auto_defrag_exit(void)
+diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
+index 238a055..cddf6ef 100644
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -2469,13 +2469,12 @@ out:
+ 	return ret;
+ }
+ 
+-static noinline long btrfs_ioctl_clone(struct file *file, unsigned long srcfd,
+-				       u64 off, u64 olen, u64 destoff)
++long btrfs_clone_extents(struct file *file, struct file *src_file, u64 off,
++			 u64 olen, u64 destoff)
+ {
+ 	struct inode *inode = file_inode(file);
++	struct inode *src = file_inode(src_file);
+ 	struct btrfs_root *root = BTRFS_I(inode)->root;
+-	struct fd src_file;
+-	struct inode *src;
+ 	struct btrfs_trans_handle *trans;
+ 	struct btrfs_path *path;
+ 	struct extent_buffer *leaf;
+@@ -2498,10 +2497,6 @@ static noinline long btrfs_ioctl_clone(struct file *file, unsigned long srcfd,
+ 	 *   they don't overlap)?
+ 	 */
+ 
+-	/* the destination must be opened for writing */
+-	if (!(file->f_mode & FMODE_WRITE) || (file->f_flags & O_APPEND))
+-		return -EINVAL;
+-
+ 	if (btrfs_root_readonly(root))
+ 		return -EROFS;
+ 
+@@ -2509,48 +2504,36 @@ static noinline long btrfs_ioctl_clone(struct file *file, unsigned long srcfd,
+ 	if (ret)
+ 		return ret;
+ 
+-	src_file = fdget(srcfd);
+-	if (!src_file.file) {
+-		ret = -EBADF;
+-		goto out_drop_write;
+-	}
+-
+ 	ret = -EXDEV;
+-	if (src_file.file->f_path.mnt != file->f_path.mnt)
+-		goto out_fput;
+-
+-	src = file_inode(src_file.file);
++	if (src_file->f_path.mnt != file->f_path.mnt)
++		goto out_drop_write;
+ 
+ 	ret = -EINVAL;
+ 	if (src == inode)
+ 		same_inode = 1;
+ 
+-	/* the src must be open for reading */
+-	if (!(src_file.file->f_mode & FMODE_READ))
+-		goto out_fput;
+-
+ 	/* don't make the dst file partly checksummed */
+ 	if ((BTRFS_I(src)->flags & BTRFS_INODE_NODATASUM) !=
+ 	    (BTRFS_I(inode)->flags & BTRFS_INODE_NODATASUM))
+-		goto out_fput;
++		goto out_drop_write;
+ 
+ 	ret = -EISDIR;
+ 	if (S_ISDIR(src->i_mode) || S_ISDIR(inode->i_mode))
+-		goto out_fput;
++		goto out_drop_write;
+ 
+ 	ret = -EXDEV;
+ 	if (src->i_sb != inode->i_sb)
+-		goto out_fput;
++		goto out_drop_write;
+ 
+ 	ret = -ENOMEM;
+ 	buf = vmalloc(btrfs_level_size(root, 0));
+ 	if (!buf)
+-		goto out_fput;
++		goto out_drop_write;
+ 
+ 	path = btrfs_alloc_path();
+ 	if (!path) {
+ 		vfree(buf);
+-		goto out_fput;
++		goto out_drop_write;
+ 	}
+ 	path->reada = 2;
+ 
+@@ -2867,13 +2850,36 @@ out_unlock:
+ 		mutex_unlock(&inode->i_mutex);
+ 	vfree(buf);
+ 	btrfs_free_path(path);
+-out_fput:
+-	fdput(src_file);
+ out_drop_write:
+ 	mnt_drop_write_file(file);
+ 	return ret;
+ }
+ 
++static noinline long btrfs_ioctl_clone(struct file *file, unsigned long srcfd,
++				       u64 off, u64 olen, u64 destoff)
++{
++	struct fd src_file;
++	int ret;
++
++	/* the destination must be opened for writing */
++	if (!(file->f_mode & FMODE_WRITE) || (file->f_flags & O_APPEND))
++		return -EINVAL;
++
++	src_file = fdget(srcfd);
++	if (!src_file.file)
++		return -EBADF;
++
++	/* the src must be open for reading */
++	if (!(src_file.file->f_mode & FMODE_READ))
++		ret = -EINVAL;
++	else
++		ret = btrfs_clone_extents(file, src_file.file, off, olen,
++					  destoff);
++
++	fdput(src_file);
++	return ret;
++}
++
+ static long btrfs_ioctl_clone_range(struct file *file, void __user *argp)
+ {
+ 	struct btrfs_ioctl_clone_range_args args;
+-- 
+1.7.11.7
+
