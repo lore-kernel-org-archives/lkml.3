@@ -1,68 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754408Ab3IKWhN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 18:37:13 -0400
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:39210
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751313Ab3IKWhG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 18:37:06 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI936eI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275dhz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
-Message-ID: <1378939017.12204.409.camel@snotra.buserror.net>
-Subject: Re: [PATCH] powerpc 8xx: Fixing issue with CONFIG_PIN_TLB
-From: Scott Wood <scottwood@freescale.com>
-To: Christophe Leroy <christophe.leroy@c-s.fr>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-Date: Wed, 11 Sep 2013 17:36:57 -0500
-In-Reply-To: <201309111644.r8BGiuDZ016325@localhost.localdomain>
-References: <201309111644.r8BGiuDZ016325@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+	id S1754955Ab3IKWoc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 18:44:32 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:46823 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753775Ab3IKWob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 18:44:31 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: swarren@wwwdotorg.org, viresh.kumar@linaro.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] cpufreq: Fix crash in cpufreq-stats during suspend/resume
+Date: Thu, 12 Sep 2013 00:55:33 +0200
+Message-ID: <1728661.WtXmRBqPEX@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20130911201239.7832.72612.stgit@srivatsabhat.in.ibm.com>
+References: <20130911201239.7832.72612.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-11 at 18:44 +0200, Christophe Leroy wrote:
-> Activating CONFIG_PIN_TLB is supposed to pin the IMMR and the first three
-> 8Mbytes pages. But the setting of the MD_CTR was missing so as the index is
-> decremented every DTLB update, the pinning of the third 8Mbytes page was
-> overwriting the DTLB entry for IMMR.
+On Thursday, September 12, 2013 01:42:59 AM Srivatsa S. Bhat wrote:
+> Stephen Warren reported that the cpufreq-stats code hits a NULL pointer
+> dereference during the second attempt to suspend a system. He also
+> pin-pointed the problem to commit 5302c3f "cpufreq: Perform light-weight
+> init/teardown during suspend/resume".
 > 
-> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+> That commit actually ensured that the cpufreq-stats table and the
+> cpufreq-stats sysfs entries are *not* torn down (ie., not freed) during
+> suspend/resume, which makes it all the more surprising. However, it turns
+> out that the root-cause is not that we access an already freed memory, but
+> that the reference to the allocated memory gets moved around and we lose
+> track of that during resume, leading to the reported crash in a subsequent
+> suspend attempt.
 > 
-> diff -ur linux-3.11.org/arch/powerpc/kernel/head_8xx.S linux-3.11/arch/powerpc/kernel/head_8xx.S
-> --- linux-3.11.org/arch/powerpc/kernel/head_8xx.S	2013-09-02 22:46:10.000000000 +0200
-> +++ linux-3.11/arch/powerpc/kernel/head_8xx.S	2013-09-09 11:28:54.000000000 +0200
-> @@ -862,6 +862,9 @@
->  	addis	r11, r11, 0x0080	/* Add 8M */
->  	mtspr	SPRN_MD_RPN, r11
+> In the suspend path, during CPU offline, the value of policy->cpu is updated
+> by choosing one of the surviving CPUs in that policy, as long as there is
+> atleast one CPU in that policy. And cpufreq_stats_update_policy_cpu() is
+> invoked to update the reference to the stats structure by assigning it to
+> the new CPU. However, in the resume path, during CPU online, we end up
+> assigning a fresh CPU as the policy->cpu, without letting cpufreq-stats
+> know about this. Thus the reference to the stats structure remains
+> (incorrectly) associated with the old CPU. So, in a subsequent suspend attempt,
+> during CPU offline, we end up accessing an incorrect location to get the
+> stats structure, which eventually leads to the NULL pointer dereference.
+> 
+> Fix this by letting cpufreq-stats know about the update of the policy->cpu
+> during CPU online in the resume path. (Also, move the update_policy_cpu()
+> function higher up in the file, so that __cpufreq_add_dev() can invoke
+> it).
+> 
+> Reported-by: Stephen Warren <swarren@nvidia.com>
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Tested-by: Stephen Warren <swarren@nvidia.com>
+
+Applied, thanks Srivatsa!
+
+> ---
+> 
+>  drivers/cpufreq/cpufreq.c |   37 ++++++++++++++++++++++++-------------
+>  1 file changed, 24 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 5a64f66..62bdb95 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -947,6 +947,18 @@ static void cpufreq_policy_free(struct cpufreq_policy *policy)
+>  	kfree(policy);
+>  }
 >  
-> +	addi	r10, r10, 0x0100
-> +	mtspr	SPRN_MD_CTR, r10
+> +static void update_policy_cpu(struct cpufreq_policy *policy, unsigned int cpu)
+> +{
+> +	policy->last_cpu = policy->cpu;
+> +	policy->cpu = cpu;
 > +
->  	addis	r8, r8, 0x0080		/* Add 8M */
->  	mtspr	SPRN_MD_EPN, r8
->  	mtspr	SPRN_MD_TWC, r9
-
-I wonder why we don't start from entry 31 so we can actually make use of
-that autodecrement.  What will happen when we load the first normal TLB
-entry later on?  I don't see any setting of SPRN_MD_CTR after this code,
-so won't it overwrite entry 30 (the middle 8M) in the CONFIG_PIN_TLB
-case?
-
-Ben, would patches like this be considered bugfixes as far as merging
-goes, or would they be for next given that it's something that's never
-really worked right and hasn't been touched in years?
-
--Scott
-
-
-
+> +#ifdef CONFIG_CPU_FREQ_TABLE
+> +	cpufreq_frequency_table_update_policy_cpu(policy);
+> +#endif
+> +	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
+> +			CPUFREQ_UPDATE_POLICY_CPU, policy);
+> +}
+> +
+>  static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
+>  			     bool frozen)
+>  {
+> @@ -1000,7 +1012,18 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
+>  	if (!policy)
+>  		goto nomem_out;
+>  
+> -	policy->cpu = cpu;
+> +
+> +	/*
+> +	 * In the resume path, since we restore a saved policy, the assignment
+> +	 * to policy->cpu is like an update of the existing policy, rather than
+> +	 * the creation of a brand new one. So we need to perform this update
+> +	 * by invoking update_policy_cpu().
+> +	 */
+> +	if (frozen && cpu != policy->cpu)
+> +		update_policy_cpu(policy, cpu);
+> +	else
+> +		policy->cpu = cpu;
+> +
+>  	policy->governor = CPUFREQ_DEFAULT_GOVERNOR;
+>  	cpumask_copy(policy->cpus, cpumask_of(cpu));
+>  
+> @@ -1092,18 +1115,6 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
+>  	return __cpufreq_add_dev(dev, sif, false);
+>  }
+>  
+> -static void update_policy_cpu(struct cpufreq_policy *policy, unsigned int cpu)
+> -{
+> -	policy->last_cpu = policy->cpu;
+> -	policy->cpu = cpu;
+> -
+> -#ifdef CONFIG_CPU_FREQ_TABLE
+> -	cpufreq_frequency_table_update_policy_cpu(policy);
+> -#endif
+> -	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
+> -			CPUFREQ_UPDATE_POLICY_CPU, policy);
+> -}
+> -
+>  static int cpufreq_nominate_new_policy_cpu(struct cpufreq_policy *policy,
+>  					   unsigned int old_cpu, bool frozen)
+>  {
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
