@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431Ab3IKJAX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 05:00:23 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:47123 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752042Ab3IKI7Q (ORCPT
+	id S1753404Ab3IKJAV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 05:00:21 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:37904 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752268Ab3IKI7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 04:59:16 -0400
-X-AuditID: cbfec7f5-b7ef66d00000795a-27-523030e23456
+	Wed, 11 Sep 2013 04:59:17 -0400
+X-AuditID: cbfec7f4-b7f0a6d000007b1b-4f-523030e4182e
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org,
@@ -17,269 +17,373 @@ Cc: Bob Liu <bob.liu@oracle.com>, Mel Gorman <mgorman@suse.de>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Dave Hansen <dave.hansen@intel.com>, Minchan Kim <minchan@kernel.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>
-Subject: [PATCH v2 1/5] zbud: use page ref counter for zbud pages
-Date: Wed, 11 Sep 2013 10:59:00 +0200
-Message-id: <1378889944-23192-2-git-send-email-k.kozlowski@samsung.com>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v2 5/5] mm: migrate zbud pages
+Date: Wed, 11 Sep 2013 10:59:04 +0200
+Message-id: <1378889944-23192-6-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1378889944-23192-1-git-send-email-k.kozlowski@samsung.com>
 References: <1378889944-23192-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCLMWRmVeSWpSXmKPExsVy+t/xq7qPDAyCDNreSVnMWb+GzWLjjPWs
-	Fl2nprJYfHr5gNHi9QtDi7NNb9gtLu+aw2Zxb81/Vou1R+6yW0x+94zRYtnX9+wWh/atYreY
-	1/6S1YHXY/Gel0wem1Z1snls+jSJ3ePEjN8sHg8ObWbx+Pj0FotH35ZVjB6bT1d7fN4kF8AZ
-	xWWTkpqTWZZapG+XwJXxacFj5oLlThUv9kxmbGDcZNLFyMkhIWAised1IwuELSZx4d56ti5G
-	Lg4hgaWMEs2HmpkgnD4miS/XNzKCVLEJGEtsXr6EDcQWEehjlJh02QKkiFngH5NEx/s5YAlh
-	AUeJvstfWbsYOThYBFQlni9LAwnzCrhLrNuwBCwsIaAgMWeSDYjJKeAhcWKaAkiFEFBF569z
-	bBMYeRcwMqxiFE0tTS4oTkrPNdIrTswtLs1L10vOz93ECAnZrzsYlx6zOsQowMGoxMNroKgf
-	JMSaWFZcmXuIUYKDWUmE95WoQZAQb0piZVVqUX58UWlOavEhRiYOTqkGxownGi3rDi4Ru/55
-	YXThtaUMB0NrKr/sv6Z2uyr57fnWUIcwDzaVlRd/ec/4vvlR9+bkK5n2384d/JoVfX6V/R7/
-	wDcfLOyDvtkl37Z+O10rwyvOrOSGpPKX5gWqD5V3vJyoNZ8tzthTVISJtVfSOD7wt4JZM09P
-	bvn5X1K/L35K6HlbdKTplxJLcUaioRZzUXEiAKh4CjE3AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrALMWRmVeSWpSXmKPExsVy+t/xq7pPDAyCDM6d0rGYs34Nm8XGGetZ
+	LbpOTWWx+PTyAaPF6xeGFmeb3rBbXN41h83i3pr/rBZrj9xlt5j87hmjxbKv79ktDu1bxe7A
+	47F4z0smj02rOtk8Nn2axO5xYsZvFo8HhzazeHx8eovFo2/LKkaPzaerPT5vkgvgjOKySUnN
+	ySxLLdK3S+DKaHz5jK1giX/Fm5k9rA2Mcx26GDk5JARMJP782MkMYYtJXLi3nq2LkYtDSGAp
+	o8Sjn3egnD4miYaTc1hBqtgEjCU2L1/CBmKLCPQxSky6bAFSxCxwhkni2pL/7CAJYQE9iQ8f
+	u8DGsgioSmxe8gqsgVfAXWJp5wOWLkYOoHUKEnMm2YCYnAIeEiemKYBUCAFVdP46xzaBkXcB
+	I8MqRtHU0uSC4qT0XEO94sTc4tK8dL3k/NxNjJBQ/bKDcfExq0OMAhyMSjy8N+T0g4RYE8uK
+	K3MPMUpwMCuJ8L4SNQgS4k1JrKxKLcqPLyrNSS0+xMjEwSnVwBjqdSPHZXJZQfUy+9Y9V8P9
+	Np0INfyyKMUg+/5SjenyZgH+f3SvOrk2HQlqZTu6YmvWif4TAZ8iRRw05DWV1Gzimfz8sqb3
+	vQ5PParDdFS5+IQ3n5f+mYX+J6Qu8lyca9LTdWW6+q0TVUsVf71dyJ/AfMjf7XdXeizHsjbR
+	vjKvTR8vplqmKbEUZyQaajEXFScCAKdprlszAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use page reference counter for zbud pages. The ref counter replaces
-zbud_header.under_reclaim flag and ensures that zbud page won't be freed
-when zbud_free() is called during reclaim. It allows implementation of
-additional reclaim paths.
+Add migration support for zbud. This allows adding __GFP_MOVABLE flag
+when allocating zbud pages and effectively CMA pool can be used for
+zswap.
 
-The page count is incremented when:
- - a handle is created and passed to zswap (in zbud_alloc()),
- - user-supplied eviction callback is called (in zbud_reclaim_page()).
+zbud pages are not movable and are not stored under any LRU (except
+zbud's LRU). PageZbud flag is used in isolate_migratepages_range() to
+grab zbud pages and pass them later for migration.
+
+page->private field is used for storing pointer to zbud_pool.
+This pointer to zbud_pool is needed during migration for locking the
+pool and accessing radix tree.
+
+The zbud migration code utilizes mapping so many exceptions to migrate
+code was added. It can be replaced for example with pin page control
+subsystem:
+http://article.gmane.org/gmane.linux.kernel.mm/105308
+In such case the zbud migration code (zbud_migrate_page()) can be safely
+re-used.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
-Reviewed-by: Bob Liu <bob.liu@oracle.com>
 ---
- mm/zbud.c |  117 +++++++++++++++++++++++++++++++++----------------------------
- 1 file changed, 64 insertions(+), 53 deletions(-)
+ include/linux/zbud.h |    1 +
+ mm/compaction.c      |    7 +++
+ mm/migrate.c         |   17 +++++-
+ mm/zbud.c            |  164 +++++++++++++++++++++++++++++++++++++++++++++++---
+ mm/zswap.c           |    4 +-
+ 5 files changed, 179 insertions(+), 14 deletions(-)
 
+diff --git a/include/linux/zbud.h b/include/linux/zbud.h
+index 12d72df..3bc2e38 100644
+--- a/include/linux/zbud.h
++++ b/include/linux/zbud.h
+@@ -11,6 +11,7 @@ struct zbud_ops {
+ 
+ struct zbud_pool *zbud_create_pool(gfp_t gfp, struct zbud_ops *ops);
+ void zbud_destroy_pool(struct zbud_pool *pool);
++int zbud_put_page(struct page *page);
+ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
+ 	unsigned long *handle);
+ void zbud_free(struct zbud_pool *pool, unsigned long handle);
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 05ccb4c..8acd198 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -534,6 +534,12 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 			goto next_pageblock;
+ 		}
+ 
++		if (PageZbud(page)) {
++			BUG_ON(PageLRU(page));
++			get_page(page);
++			goto isolated;
++		}
++
+ 		/*
+ 		 * Check may be lockless but that's ok as we recheck later.
+ 		 * It's possible to migrate LRU pages and balloon pages
+@@ -601,6 +607,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 		/* Successfully isolated */
+ 		cc->finished_update_migrate = true;
+ 		del_page_from_lru_list(page, lruvec, page_lru(page));
++isolated:
+ 		list_add(&page->lru, migratelist);
+ 		cc->nr_migratepages++;
+ 		nr_isolated++;
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 6f0c244..5254eb2 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -36,6 +36,7 @@
+ #include <linux/hugetlb_cgroup.h>
+ #include <linux/gfp.h>
+ #include <linux/balloon_compaction.h>
++#include <linux/zbud.h>
+ 
+ #include <asm/tlbflush.h>
+ 
+@@ -105,6 +106,8 @@ void putback_movable_pages(struct list_head *l)
+ 				page_is_file_cache(page));
+ 		if (unlikely(balloon_page_movable(page)))
+ 			balloon_page_putback(page);
++		else if (unlikely(PageZbud(page)))
++			zbud_put_page(page);
+ 		else
+ 			putback_lru_page(page);
+ 	}
+@@ -832,6 +835,10 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
+ 		goto skip_unmap;
+ 	}
+ 
++	if (unlikely(PageZbud(page))) {
++		remap_swapcache = 0;
++		goto skip_unmap;
++	}
+ 	/* Establish migration ptes or remove ptes */
+ 	try_to_unmap(page, TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
+ 
+@@ -902,13 +909,19 @@ out:
+ 		list_del(&page->lru);
+ 		dec_zone_page_state(page, NR_ISOLATED_ANON +
+ 				page_is_file_cache(page));
+-		putback_lru_page(page);
++		if (unlikely(PageZbud(page)))
++			zbud_put_page(page);
++		else
++			putback_lru_page(page);
+ 	}
+ 	/*
+ 	 * Move the new page to the LRU. If migration was not successful
+ 	 * then this will free the page.
+ 	 */
+-	putback_lru_page(newpage);
++	if (unlikely(PageZbud(newpage)))
++		zbud_put_page(newpage);
++	else
++		putback_lru_page(newpage);
+ 	if (result) {
+ 		if (rc)
+ 			*result = rc;
 diff --git a/mm/zbud.c b/mm/zbud.c
-index ad1e781..3f4be72 100644
+index 795d56a..de8132d 100644
 --- a/mm/zbud.c
 +++ b/mm/zbud.c
-@@ -109,7 +109,6 @@ struct zbud_header {
- 	struct list_head lru;
- 	unsigned int first_chunks;
- 	unsigned int last_chunks;
--	bool under_reclaim;
- };
+@@ -51,6 +51,8 @@
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+ #include <linux/radix-tree.h>
++#include <linux/fs.h>
++#include <linux/pagemap.h>
+ #include <linux/zbud.h>
  
  /*****************
-@@ -138,16 +137,9 @@ static struct zbud_header *init_zbud_page(struct page *page)
- 	zhdr->last_chunks = 0;
- 	INIT_LIST_HEAD(&zhdr->buddy);
- 	INIT_LIST_HEAD(&zhdr->lru);
--	zhdr->under_reclaim = 0;
- 	return zhdr;
- }
- 
--/* Resets the struct page fields and frees the page */
--static void free_zbud_page(struct zbud_header *zhdr)
--{
--	__free_page(virt_to_page(zhdr));
--}
+@@ -211,17 +213,9 @@ static void get_zbud_page(struct zbud_header *zhdr)
+  *
+  * Returns 1 if page was freed and 0 otherwise.
+  */
+-static int put_zbud_page(struct zbud_header *zhdr)
++static inline int put_zbud_page(struct zbud_header *zhdr)
+ {
+-	struct page *page = virt_to_page(zhdr);
+-	VM_BUG_ON(!PageZbud(page));
 -
- /*
-  * Encodes the handle of a particular buddy within a zbud page
-  * Pool lock should be held as this function accesses first|last_chunks
-@@ -188,6 +180,31 @@ static int num_free_chunks(struct zbud_header *zhdr)
- 	return NCHUNKS - zhdr->first_chunks - zhdr->last_chunks - 1;
+-	if (put_page_testzero(page)) {
+-		ClearPageZbud(page);
+-		free_hot_cold_page(page, 0);
+-		return 1;
+-	}
+-	return 0;
++	return zbud_put_page(virt_to_page(zhdr));
  }
  
-+/*
-+ * Increases ref count for zbud page.
+ /*
+@@ -261,6 +255,27 @@ static int put_map_count(struct zbud_header *zhdr, unsigned long handle)
+ }
+ 
+ /*
++ * Replaces item expected in radix tree by a new item, while holding pool lock.
 + */
-+static void get_zbud_page(struct zbud_header *zhdr)
++static int tree_replace(struct zbud_pool *pool,
++			unsigned long handle, void *expected, void *replacement)
 +{
-+	get_page(virt_to_page(zhdr));
++	void **pslot;
++	void *item = NULL;
++
++	VM_BUG_ON(!expected);
++	VM_BUG_ON(!replacement);
++	pslot = radix_tree_lookup_slot(&pool->page_tree, handle);
++	if (pslot)
++		item = radix_tree_deref_slot_protected(pslot,
++							&pool->lock);
++	if (item != expected)
++		return -ENOENT;
++	radix_tree_replace_slot(pslot, replacement);
++	return 0;
 +}
 +
 +/*
-+ * Decreases ref count for zbud page and frees the page if it reaches 0
-+ * (no external references, e.g. handles).
+  * Searches for zbud header in radix tree.
+  * Returns NULL if handle could not be found.
+  *
+@@ -328,6 +343,110 @@ static int tree_insert_zbud_header(struct zbud_pool *pool,
+ 	return radix_tree_insert(&pool->page_tree, *handle, zhdr);
+ }
+ 
++/*
++ * Copy page during migration.
++ *
++ * Must be called under pool->lock.
++ */
++static void copy_zbud_page(struct page *newpage, struct page *page)
++{
++	void *to, *from;
++	SetPageZbud(newpage);
++	newpage->mapping = page->mapping;
++	set_page_private(newpage, page_private(page));
++	/* copy data */
++	to = kmap_atomic(newpage);
++	from = kmap_atomic(page);
++	memcpy(to, from, PAGE_SIZE);
++	kunmap_atomic(from);
++	kunmap_atomic(to);
++}
++
++/*
++ * Replaces old zbud header in radix tree with new, updates page
++ * count (puts old, gets new) and puts map_count for old page.
++ *
++ * The map_count for new page is not increased because it was already
++ * copied by copy_zbud_page().
++ *
++ * Must be called under pool->lock.
++ */
++static void replace_page_handles(struct zbud_pool *pool,
++		struct zbud_header *zhdr, struct zbud_header *newzhdr)
++{
++	if (zhdr->first_handle) {
++		int ret = tree_replace(pool, zhdr->first_handle, zhdr,
++				newzhdr);
++		VM_BUG_ON(ret);
++		get_zbud_page(newzhdr);
++		/* get_map_count() skipped, already copied */
++		put_map_count(zhdr, zhdr->first_handle);
++		put_zbud_page(zhdr);
++	}
++	if (zhdr->last_handle) {
++		int ret = tree_replace(pool, zhdr->last_handle, zhdr,
++				newzhdr);
++		VM_BUG_ON(ret);
++		get_zbud_page(newzhdr);
++		/* get_map_count() skipped, already copied */
++		put_map_count(zhdr, zhdr->last_handle);
++		put_zbud_page(zhdr);
++	}
++}
++
++
++/*
++ * Migrates zbud page.
++ * Returns 0 on success or -EAGAIN if page was dirtied by zbud_map during
++ * migration.
++ */
++static int zbud_migrate_page(struct address_space *mapping,
++		struct page *newpage, struct page *page,
++		enum migrate_mode mode)
++{
++	int rc = 0;
++	struct zbud_header *zhdr, *newzhdr;
++	struct zbud_pool *pool;
++	int expected_cnt = 1; /* one page reference from isolate */
++
++	VM_BUG_ON(!PageLocked(page));
++	zhdr = page_address(page);
++	newzhdr = page_address(newpage);
++	pool = (struct zbud_pool *)page_private(page);
++	VM_BUG_ON(!pool);
++
++	spin_lock(&pool->lock);
++	if (zhdr->first_handle)
++		expected_cnt++;
++	if (zhdr->last_handle)
++		expected_cnt++;
++
++	if (page_count(page) != expected_cnt) {
++		/* Still used by someone (paraller compaction) or dirtied
++		 * by zbud_map() before we acquired spin_lock. */
++		rc = -EAGAIN;
++		goto out;
++	}
++	copy_zbud_page(newpage, page);
++	replace_page_handles(pool, zhdr, newzhdr);
++	/* Update lists */
++	list_replace(&zhdr->lru, &newzhdr->lru);
++	list_replace(&zhdr->buddy, &newzhdr->buddy);
++	memset(zhdr, 0, sizeof(struct zbud_header));
++
++out:
++	spin_unlock(&pool->lock);
++	return rc;
++}
++
++static const struct address_space_operations zbud_aops = {
++	.migratepage	= zbud_migrate_page,
++};
++const struct address_space zbud_space = {
++	.a_ops		= &zbud_aops,
++};
++EXPORT_SYMBOL_GPL(zbud_space);
++
+ /*****************
+  * API Functions
+ *****************/
+@@ -370,6 +489,29 @@ void zbud_destroy_pool(struct zbud_pool *pool)
+ 	kfree(pool);
+ }
+ 
++/*
++ * zbud_put_page() - decreases ref count for zbud page
++ * @page:	zbud page to put
++ *
++ * Page is freed if reference count reaches 0.
 + *
 + * Returns 1 if page was freed and 0 otherwise.
 + */
-+static int put_zbud_page(struct zbud_header *zhdr)
++int zbud_put_page(struct page *page)
 +{
-+	struct page *page = virt_to_page(zhdr);
++	VM_BUG_ON(!PageZbud(page));
++
 +	if (put_page_testzero(page)) {
++		VM_BUG_ON(PageLocked(page));
++		page->mapping = NULL;
++		set_page_private(page, 0);
++		ClearPageZbud(page);
 +		free_hot_cold_page(page, 0);
 +		return 1;
 +	}
 +	return 0;
 +}
 +
-+
- /*****************
-  * API Functions
- *****************/
-@@ -273,6 +290,7 @@ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
- 				bud = FIRST;
- 			else
- 				bud = LAST;
-+			get_zbud_page(zhdr);
- 			goto found;
- 		}
- 	}
-@@ -284,6 +302,10 @@ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
- 		return -ENOMEM;
- 	spin_lock(&pool->lock);
- 	pool->pages_nr++;
-+	/*
-+	 * We will be using zhdr instead of page, so
-+	 * don't increase the page count.
-+	 */
+ /**
+  * zbud_alloc() - allocates a region of a given size
+  * @pool:	zbud pool from which to allocate
+@@ -439,6 +581,8 @@ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
+ 	 */
  	zhdr = init_zbud_page(page);
+ 	SetPageZbud(page);
++	page->mapping = (struct address_space *)&zbud_space;
++	set_page_private(page, (unsigned long)pool);
  	bud = FIRST;
  
-@@ -318,10 +340,11 @@ found:
-  * @pool:	pool in which the allocation resided
-  * @handle:	handle associated with the allocation returned by zbud_alloc()
-  *
-- * In the case that the zbud page in which the allocation resides is under
-- * reclaim, as indicated by the PG_reclaim flag being set, this function
-- * only sets the first|last_chunks to 0.  The page is actually freed
-- * once both buddies are evicted (see zbud_reclaim_page() below).
-+ * This function sets first|last_chunks to 0, removes zbud header from
-+ * appropriate lists (LRU, buddied/unbuddied) and puts the reference count
-+ * for it. The page is actually freed once both buddies are evicted
-+ * (zbud_free() called on both handles or page reclaim in zbud_reclaim_page()
-+ * below).
-  */
- void zbud_free(struct zbud_pool *pool, unsigned long handle)
- {
-@@ -337,19 +360,11 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle)
- 	else
- 		zhdr->first_chunks = 0;
+ 	err = tree_insert_zbud_header(pool, zhdr, &next_handle);
+diff --git a/mm/zswap.c b/mm/zswap.c
+index 706046a..ac8b768 100644
+--- a/mm/zswap.c
++++ b/mm/zswap.c
+@@ -665,8 +665,8 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
  
--	if (zhdr->under_reclaim) {
--		/* zbud page is under reclaim, reclaim will free */
--		spin_unlock(&pool->lock);
--		return;
--	}
--
- 	/* Remove from existing buddy list */
- 	list_del(&zhdr->buddy);
- 
- 	if (zhdr->first_chunks == 0 && zhdr->last_chunks == 0) {
--		/* zbud page is empty, free */
- 		list_del(&zhdr->lru);
--		free_zbud_page(zhdr);
- 		pool->pages_nr--;
- 	} else {
- 		/* Add to unbuddied list */
-@@ -357,6 +372,7 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle)
- 		list_add(&zhdr->buddy, &pool->unbuddied[freechunks]);
- 	}
- 
-+	put_zbud_page(zhdr);
- 	spin_unlock(&pool->lock);
- }
- 
-@@ -378,21 +394,23 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle)
-  * To avoid these, this is how zbud_reclaim_page() should be called:
- 
-  * The user detects a page should be reclaimed and calls zbud_reclaim_page().
-- * zbud_reclaim_page() will remove a zbud page from the pool LRU list and call
-- * the user-defined eviction handler with the pool and handle as arguments.
-+ * zbud_reclaim_page() will move zbud page to the beginning of the pool
-+ * LRU list, increase the page reference count and call the user-defined
-+ * eviction handler with the pool and handle as arguments.
-  *
-  * If the handle can not be evicted, the eviction handler should return
-- * non-zero. zbud_reclaim_page() will add the zbud page back to the
-- * appropriate list and try the next zbud page on the LRU up to
-+ * non-zero. zbud_reclaim_page() will drop the reference count for page
-+ * obtained earlier and try the next zbud page on the LRU up to
-  * a user defined number of retries.
-  *
-  * If the handle is successfully evicted, the eviction handler should
-  * return 0 _and_ should have called zbud_free() on the handle. zbud_free()
-- * contains logic to delay freeing the page if the page is under reclaim,
-- * as indicated by the setting of the PG_reclaim flag on the underlying page.
-+ * will remove the page from appropriate lists (LRU, buddied/unbuddied) and
-+ * drop the reference count associated with given handle.
-+ * Then the zbud_reclaim_page() will drop reference count obtained earlier.
-  *
-- * If all buddies in the zbud page are successfully evicted, then the
-- * zbud page can be freed.
-+ * If all buddies in the zbud page are successfully evicted, then dropping
-+ * this last reference count will free the page.
-  *
-  * Returns: 0 if page is successfully freed, otherwise -EINVAL if there are
-  * no pages to evict or an eviction handler is not registered, -EAGAIN if
-@@ -400,7 +418,7 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle)
-  */
- int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
- {
--	int i, ret, freechunks;
-+	int i, ret;
- 	struct zbud_header *zhdr;
- 	unsigned long first_handle = 0, last_handle = 0;
- 
-@@ -411,11 +429,24 @@ int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
- 		return -EINVAL;
- 	}
- 	for (i = 0; i < retries; i++) {
-+		if (list_empty(&pool->lru)) {
-+			/*
-+			 * LRU was emptied during evict calls in previous
-+			 * iteration but put_zbud_page() returned 0 meaning
-+			 * that someone still holds the page. This may
-+			 * happen when some other mm mechanism increased
-+			 * the page count.
-+			 * In such case we succedded with reclaim.
-+			 */
-+			spin_unlock(&pool->lock);
-+			return 0;
-+		}
- 		zhdr = list_tail_entry(&pool->lru, struct zbud_header, lru);
-+		/* Move this last element to beginning of LRU */
- 		list_del(&zhdr->lru);
--		list_del(&zhdr->buddy);
-+		list_add(&zhdr->lru, &pool->lru);
- 		/* Protect zbud page against free */
--		zhdr->under_reclaim = true;
-+		get_zbud_page(zhdr);
- 		/*
- 		 * We need encode the handles before unlocking, since we can
- 		 * race with free that will set (first|last)_chunks to 0
-@@ -440,29 +471,9 @@ int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
- 				goto next;
- 		}
- next:
--		spin_lock(&pool->lock);
--		zhdr->under_reclaim = false;
--		if (zhdr->first_chunks == 0 && zhdr->last_chunks == 0) {
--			/*
--			 * Both buddies are now free, free the zbud page and
--			 * return success.
--			 */
--			free_zbud_page(zhdr);
--			pool->pages_nr--;
--			spin_unlock(&pool->lock);
-+		if (put_zbud_page(zhdr))
- 			return 0;
--		} else if (zhdr->first_chunks == 0 ||
--				zhdr->last_chunks == 0) {
--			/* add to unbuddied list */
--			freechunks = num_free_chunks(zhdr);
--			list_add(&zhdr->buddy, &pool->unbuddied[freechunks]);
--		} else {
--			/* add to buddied list */
--			list_add(&zhdr->buddy, &pool->buddied);
--		}
--
--		/* add to beginning of LRU */
--		list_add(&zhdr->lru, &pool->lru);
-+		spin_lock(&pool->lock);
- 	}
- 	spin_unlock(&pool->lock);
- 	return -EAGAIN;
+ 	/* store */
+ 	len = dlen + sizeof(struct zswap_header);
+-	ret = zbud_alloc(tree->pool, len, __GFP_NORETRY | __GFP_NOWARN,
+-		&handle);
++	ret = zbud_alloc(tree->pool, len,
++			__GFP_NORETRY | __GFP_NOWARN | __GFP_MOVABLE, &handle);
+ 	if (ret == -ENOSPC) {
+ 		zswap_reject_compress_poor++;
+ 		goto freepage;
 -- 
 1.7.9.5
 
