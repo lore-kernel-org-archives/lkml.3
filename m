@@ -1,86 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754774Ab3IKXIL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 19:08:11 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:34833 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753804Ab3IKXIK (ORCPT
+	id S1755968Ab3IKXIW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 19:08:22 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:54141 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753691Ab3IKXIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 19:08:10 -0400
+	Wed, 11 Sep 2013 19:08:21 -0400
+Message-ID: <5230F7DD.90905@linux.vnet.ibm.com>
+Date: Wed, 11 Sep 2013 16:08:13 -0700
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <CAKcLGm-wJjBeSczCi7-XkyDMd444HoQcFVfmpkPYZ2WcExCxaA@mail.gmail.com>
-References: <CAKcLGm8EMruO5e8yw+nArTjyCGSvLB5pjnGZYvz0xdF9M99iwQ@mail.gmail.com>
-	<52119B4E.4060409@linux.vnet.ibm.com>
-	<20130819044444.GD26832@bbox>
-	<CAKcLGm-wJjBeSczCi7-XkyDMd444HoQcFVfmpkPYZ2WcExCxaA@mail.gmail.com>
-Date: Wed, 11 Sep 2013 18:08:08 -0500
-Message-ID: <CAKcLGm_NrnK8yCfsBWoT0mBC+kyG3kgVt61ORfazbWaRBDya7A@mail.gmail.com>
-Subject: Re: BUG: scheduling while atomic 3.10.7 in ZRAM Swap
-From: Mitch Harder <mitch.harder@sabayonlinux.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Michael wang <wangyun@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Nitin Gupta <ngupta@vflare.org>,
-        Jerome Marchand <jmarchand@redhat.com>, devel@driverdev.osuosl.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Dave Hansen <dave@sr71.net>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cl@linux.com
+Subject: Re: [RFC][PATCH] mm: percpu pages: up batch size to fix arithmetic??
+ errror
+References: <20130911220859.EB8204BB@viggo.jf.intel.com>
+In-Reply-To: <20130911220859.EB8204BB@viggo.jf.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13091123-9332-0000-0000-00000163113B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 9:51 AM, Mitch Harder
-<mitch.harder@sabayonlinux.org> wrote:
-> On Sun, Aug 18, 2013 at 11:44 PM, Minchan Kim <minchan@kernel.org> wrote:
->> Hello,
->>
->> On Mon, Aug 19, 2013 at 12:13:02PM +0800, Michael wang wrote:
->>> Hi, Mitch
->>>
->>> On 08/17/2013 10:01 PM, Mitch Harder wrote:
->>> > I'm encountering a BUG while using a ZRAM Swap device.
->>> >
->>> > The call trace seems to involve the changes recently added to 3.10.6
->>> > by the patch:
->>> > zram: use zram->lock to protect zram_free_page() in swap free notify path
->>> >
->>> > The hardware is a x86 single CPU AMD Athlon XP system with 1GB RAM.
->>> >
->>> > I'm implementing a 352MB ZRAM swap device, and also have 1GB swap
->>> > space on the hard disk.
->>>
->>> IMHO, it was caused by that swap_entry_free() was invoked with page
->>> spin-locked, thus zram_slot_free_notify() should not use rw-lock which
->>> may goto sleep.
->>>
->>> CC folks related.
->>
->> Thanks for Ccing me, Michael,
->>
->> Mitch, It's known problem and it should be fixed by [1] in recent linux-next.
->>
->> [1] a0c516cbfc, zram: don't grab mutex in zram_slot_free_noity
->>
->> Thanks for the report!
->>
+On 09/11/2013 03:08 PM, Dave Hansen wrote:
+> I really don't know where the:
 >
-> Thanks.
+> 	batch /= 4;             /* We effectively *= 4 below */
+> 	...
+> 	batch = rounddown_pow_of_two(batch + batch/2) - 1;
 >
-> If I apply the zram patches from linux-next, the problem seems to be resolved.
+> came from.  The round down code at *MOST* does a *= 1.5, but
+> *averages* out to be just under 1.
+>
+> On a system with 128GB in a zone, this means that we've got
+> (you can see in /proc/zoneinfo for yourself):
+>
+>                high:  186 (744kB)
+>                batch: 31  (124kB)
+>
+> That 124kB is almost precisely 1/4 of the "1/2 of a meg" that we
+> were shooting for.  We're under-sizing the batches by about 4x.
+> This patch kills the /=4.
+>
+> ---
+> diff -puN mm/page_alloc.c~debug-pcp-sizes-1 mm/page_alloc.c
+> --- linux.git/mm/page_alloc.c~debug-pcp-sizes-1	2013-09-11 14:41:08.532445664 -0700
+> +++ linux.git-davehans/mm/page_alloc.c	2013-09-11 15:03:47.403912683 -0700
+> @@ -4103,7 +4103,6 @@ static int __meminit zone_batchsize(stru
+>   	batch = zone->managed_pages / 1024;
+>   	if (batch * PAGE_SIZE > 512 * 1024)
+>   		batch = (512 * 1024) / PAGE_SIZE;
+> -	batch /= 4;		/* We effectively *= 4 below */
+>   	if (batch < 1)
+>   		batch = 1;
+>
+> _
+>
 
-Is it planned to send the patch: "zram: don't grab mutex in
-zram_slot_free_noity"  to stable?
+Looking back at the first git commit (way before my time), it appears 
+that the percpu pagesets initially had a ->high and ->low (now removed), 
+set to batch*6 and batch*2 respectively. I assume the idea was to keep 
+the number of pages in the percpu pagesets around batch*4, hence the 
+comment.
 
-I noticed that 3.10.11 still doesn't have this patch.
+So we have this variable called "batch", and the code is trying to store 
+the _average_ number of pcp pages we want into it (not the batchsize), 
+and then we divide our "average" goal by 4 to get a batchsize. All the 
+comments refer to the size of the pcp pagesets, not to the pcp pageset 
+batchsize.
 
-Right now, I'm manually applying 4 zram patches to my 3.10.11 kernel
-(although I had to rework them to apply cleanly):
+Looking further, in current code we don't refill the pcp pagesets unless 
+they are completely empty (->low was removed a while ago), and then we 
+only add ->batch pages.
 
-zram: Add auto loading of module if user opens /dev/zram.
-zram: prevent data loss in error cases of function zram_bvec_write()
-zram: fix invalid memory access
-zram: don't grab mutex in zram_slot_free_noity
+Has anyone looked at what type of average pcp sizing the current code 
+results in?
 
-I knew I'd get errors if I didn't rework the "zram: Add auto loading
-of module if user opens /dev/zram" patch to apply to 3.10.  The other
-three patches seemed to address important issues also, based on their
-git commit description.
