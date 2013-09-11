@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756238Ab3IKSQy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 14:16:54 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:39543 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753588Ab3IKSQx (ORCPT
+	id S1756397Ab3IKSTO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 14:19:14 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:37695 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753177Ab3IKSTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 14:16:53 -0400
+	Wed, 11 Sep 2013 14:19:12 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130910220638.GG11427@tassilo.jf.intel.com>
-References: <CACT4Y+Y6r=HV7nFgbu=B=d-4ka3J4yotRjgX1M1xGkNkFn1sOQ@mail.gmail.com>
- <20130910220638.GG11427@tassilo.jf.intel.com>
-From: Dmitry Vyukov <dvyukov@google.com>
-Date: Wed, 11 Sep 2013 22:16:32 +0400
-Message-ID: <CACT4Y+Y2-d0TFq=oq-xFt8udrYc0r8_aROdUfVU29KJBhwWpAQ@mail.gmail.com>
-Subject: Re: Out-of-bounds access in get_wchan (arch/x86/kernel/process_64.c)
-To: Andi Kleen <ak@linux.intel.com>, Wolfram Gloger <wg@malloc.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Paul Turner <pjt@google.com>,
-        Andrey Konovalov <andreyknvl@google.com>,
-        Kostya Serebryany <kcc@google.com>
+In-Reply-To: <20130911093118.GD25896@mwanda>
+References: <20130911044116.GA17294@www.outflux.net>
+	<1378875632.606.5.camel@joe-AO722>
+	<CAGXu5jLm1RNp4mB2KfeRumTqeWgcAsZ4CpQQQGA67WukERefXQ@mail.gmail.com>
+	<20130911093118.GD25896@mwanda>
+Date: Wed, 11 Sep 2013 11:19:11 -0700
+X-Google-Sender-Auth: 2ye04srGC1ol7HN6V80lYzk7vn0
+Message-ID: <CAGXu5j+H_RLwj9c6CKxMpaYeR9kS-qDnK+e1mOHHt9zh6vAm=w@mail.gmail.com>
+Subject: Re: [PATCH] staging: dgnc: fix potential format string flaw
+From: Kees Cook <keescook@chromium.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Joe Perches <joe@perches.com>, devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tushar Behera <tushar.behera@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Lidza Louina <lidza.louina@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 2:06 AM, Andi Kleen <ak@linux.intel.com> wrote:
->> Indeed, get_wchan ensures that fp<stack+THREAD_SIZE, but then dereferences fp+8:
+On Wed, Sep 11, 2013 at 2:31 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> On Tue, Sep 10, 2013 at 10:19:17PM -0700, Kees Cook wrote:
+>> In the former case, format characters will get processed by the
+>> sprintf logic. In the latter, they are printed as-is. In this specific
+>> case, if there was a way to inject strings like "ohai %n" into the
+>> msgbuf string, the former would actually attempt to resolve the %n. In
+>> the simple case, this could lead to Oopses, and in the unlucky case,
+>> it could allow arbitrary memory writing and execution control.
 >>
->> 434                 if (fp < (unsigned long)stack ||
->> 435                     fp >= (unsigned long)stack+THREAD_SIZE)
->> 436                         return 0;
->> 437                 ip = *(u64 *)(fp+8);
->>
->> It must check that fp+8<stack+THREAD_SIZE.
->> As far as I see, the bug can lead to garbage return values or in the
->> worst case to crash.
+>> http://en.wikipedia.org/wiki/Uncontrolled_format_string
 >
-> Thanks for the report.
->
-> The change looks good to me. Can you please submit a formal signed off patch
-> to x86@kernel.org ?
+> The kernel ignores %n so hopefully it can't actually write to memory.
 
-Hi Andi,
+I wish! This is not the case, though. See FORMAT_TYPE_NRCHARS in
+lib/vsprintf.c's vsnprintf().
 
-Wolfram has a patch for it.
-Wolfram, please send your patch to x86@kernel.org.
+$ git grep '%n' | wc -l
+111
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
