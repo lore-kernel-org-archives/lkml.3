@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756447Ab3IKXKq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 19:10:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15055 "EHLO
+	id S1757194Ab3IKXLV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 19:11:21 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7378 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754823Ab3IKXKn (ORCPT
+	with ESMTP id S1756174Ab3IKXKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 19:10:43 -0400
-X-Authority-Analysis: v=2.0 cv=R/aB6KtX c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=VF7dqGJyqkkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=9X23uQxbAoYA:10 a=20KFwNOVAAAA:8 a=J1Y8HTJGAAAA:8 a=saDzm_MoSTlAY2t1-XoA:9 a=jEp0ucaQiEUA:10 a=4N9Db7Z2_RYA:10 a=jeBq3FmKZ4MA:10 a=IOg8bgcf99sfnX3y:21 a=HV7KrVFm9ykUnRZ6:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Wed, 11 Sep 2013 19:10:46 -0400
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=d9hS-i982MoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=s4Z7wkT3hRoA:10 a=1XWaLZrsAAAA:8 a=J1Y8HTJGAAAA:8 a=ahAPg7YLhdxFjBaGidcA:9 a=UTB_XpHje0EA:10 a=4N9Db7Z2_RYA:10 a=jeBq3FmKZ4MA:10 a=DHJNRD0nMRSrFHD5:21 a=V-bNNCtMoUQWLnRr:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042901.990340930@goodmis.org>
+Message-Id: <20130911042902.161548139@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:28:04 -0400
+Date: Wed, 11 Sep 2013 00:28:05 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, Jason Wang <jasowang@redhat.com>,
+Cc: "Steinar H. Gunderson" <sesse@google.com>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [057/251] macvtap: do not zerocopy if iov needs more pages than MAX_SKB_FRAGS
+Subject: [058/251] vlan: mask vlan prio bits
 References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0057-macvtap-do-not-zerocopy-if-iov-needs-more-pages-than.patch
+Content-Disposition: inline; filename=0058-vlan-mask-vlan-prio-bits.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,126 +31,100 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit ece793fcfc417b3925844be88a6a6dc82ae8f7c6 ]
+[ Upstream commit d4b812dea4a236f729526facf97df1a9d18e191c ]
 
-We try to linearize part of the skb when the number of iov is greater than
-MAX_SKB_FRAGS. This is not enough since each single vector may occupy more than
-one pages, so zerocopy_sg_fromiovec() may still fail and may break the guest
-network.
+In commit 48cc32d38a52d0b68f91a171a8d00531edc6a46e
+("vlan: don't deliver frames for unknown vlans to protocols")
+Florian made sure we set pkt_type to PACKET_OTHERHOST
+if the vlan id is set and we could find a vlan device for this
+particular id.
 
-Solve this problem by calculate the pages needed for iov before trying to do
-zerocopy and switch to use copy instead of zerocopy if it needs more than
-MAX_SKB_FRAGS.
+But we also have a problem if prio bits are set.
 
-This is done through introducing a new helper to count the pages for iov, and
-call uarg->callback() manually when switching from zerocopy to copy to notify
-vhost.
+Steinar reported an issue on a router receiving IPv6 frames with a
+vlan tag of 4000 (id 0, prio 2), and tunneled into a sit device,
+because skb->vlan_tci is set.
 
-We can do further optimization on top.
+Forwarded frame is completely corrupted : We can see (8100:4000)
+being inserted in the middle of IPv6 source address :
 
-This bug were introduced from b92946e2919134ebe2a4083e4302236295ea2a73
-(macvtap: zerocopy: validate vectors before building skb).
+16:48:00.780413 IP6 2001:16d8:8100:4000:ee1c:0:9d9:bc87 >
+9f94:4d95:2001:67c:29f4::: ICMP6, unknown icmp6 type (0), length 64
+       0x0000:  0000 0029 8000 c7c3 7103 0001 a0ae e651
+       0x0010:  0000 0000 ccce 0b00 0000 0000 1011 1213
+       0x0020:  1415 1617 1819 1a1b 1c1d 1e1f 2021 2223
+       0x0030:  2425 2627 2829 2a2b 2c2d 2e2f 3031 3233
 
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
+It seems we are not really ready to properly cope with this right now.
+
+We can probably do better in future kernels :
+vlan_get_ingress_priority() should be a netdev property instead of
+a per vlan_dev one.
+
+For stable kernels, lets clear vlan_tci to fix the bugs.
+
+Reported-by: Steinar H. Gunderson <sesse@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/net/macvtap.c |   62 +++++++++++++++++++++++++++++--------------------
- 1 file changed, 37 insertions(+), 25 deletions(-)
+ include/linux/if_vlan.h |    3 +--
+ net/8021q/vlan_core.c   |    2 +-
+ net/core/dev.c          |   11 +++++++++--
+ 3 files changed, 11 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index 28c8ad9..43d3ed8 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -642,6 +642,28 @@ static int macvtap_skb_to_vnet_hdr(const struct sk_buff *skb,
- 	return 0;
+diff --git a/include/linux/if_vlan.h b/include/linux/if_vlan.h
+index 9b0c614..fef94f5 100644
+--- a/include/linux/if_vlan.h
++++ b/include/linux/if_vlan.h
+@@ -82,9 +82,8 @@ static inline int is_vlan_dev(struct net_device *dev)
  }
  
-+static unsigned long iov_pages(const struct iovec *iv, int offset,
-+			       unsigned long nr_segs)
-+{
-+	unsigned long seg, base;
-+	int pages = 0, len, size;
-+
-+	while (nr_segs && (offset >= iv->iov_len)) {
-+		offset -= iv->iov_len;
-+		++iv;
-+		--nr_segs;
-+	}
-+
-+	for (seg = 0; seg < nr_segs; seg++) {
-+		base = (unsigned long)iv[seg].iov_base + offset;
-+		len = iv[seg].iov_len - offset;
-+		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
-+		pages += size;
-+		offset = 0;
-+	}
-+
-+	return pages;
-+}
+ #define vlan_tx_tag_present(__skb)	((__skb)->vlan_tci & VLAN_TAG_PRESENT)
+-#define vlan_tx_nonzero_tag_present(__skb) \
+-	(vlan_tx_tag_present(__skb) && ((__skb)->vlan_tci & VLAN_VID_MASK))
+ #define vlan_tx_tag_get(__skb)		((__skb)->vlan_tci & ~VLAN_TAG_PRESENT)
++#define vlan_tx_tag_get_id(__skb)	((__skb)->vlan_tci & VLAN_VID_MASK)
  
- /* Get packet from user space buffer */
- static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
-@@ -688,31 +710,15 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
- 	if (unlikely(count > UIO_MAXIOV))
- 		goto err;
+ #if defined(CONFIG_VLAN_8021Q) || defined(CONFIG_VLAN_8021Q_MODULE)
  
--	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY))
--		zerocopy = true;
--
--	if (zerocopy) {
--		/* Userspace may produce vectors with count greater than
--		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
--		 * to let the rest of data to be fit in the frags.
--		 */
--		if (count > MAX_SKB_FRAGS) {
--			copylen = iov_length(iv, count - MAX_SKB_FRAGS);
--			if (copylen < vnet_hdr_len)
--				copylen = 0;
--			else
--				copylen -= vnet_hdr_len;
--		}
--		/* There are 256 bytes to be copied in skb, so there is enough
--		 * room for skb expand head in case it is used.
--		 * The rest buffer is mapped from userspace.
--		 */
--		if (copylen < vnet_hdr.hdr_len)
--			copylen = vnet_hdr.hdr_len;
--		if (!copylen)
--			copylen = GOODCOPY_LEN;
-+	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY)) {
-+		copylen = vnet_hdr.hdr_len ? vnet_hdr.hdr_len : GOODCOPY_LEN;
- 		linear = copylen;
--	} else {
-+		if (iov_pages(iv, vnet_hdr_len + copylen, count)
-+		    <= MAX_SKB_FRAGS)
-+			zerocopy = true;
-+	}
-+
-+	if (!zerocopy) {
- 		copylen = len;
- 		linear = vnet_hdr.hdr_len;
+diff --git a/net/8021q/vlan_core.c b/net/8021q/vlan_core.c
+index fe29a64..d5f07cb 100644
+--- a/net/8021q/vlan_core.c
++++ b/net/8021q/vlan_core.c
+@@ -8,7 +8,7 @@
+ bool vlan_do_receive(struct sk_buff **skbp)
+ {
+ 	struct sk_buff *skb = *skbp;
+-	u16 vlan_id = skb->vlan_tci & VLAN_VID_MASK;
++	u16 vlan_id = vlan_tx_tag_get_id(skb);
+ 	struct net_device *vlan_dev;
+ 	struct vlan_pcpu_stats *rx_stats;
+ 
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 9b5e388..1012a02 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -3317,8 +3317,15 @@ ncls:
+ 		}
  	}
-@@ -724,9 +730,15 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
  
- 	if (zerocopy)
- 		err = zerocopy_sg_from_iovec(skb, iv, vnet_hdr_len, count);
--	else
-+	else {
- 		err = skb_copy_datagram_from_iovec(skb, 0, iv, vnet_hdr_len,
- 						   len);
-+		if (!err && m && m->msg_control) {
-+			struct ubuf_info *uarg = m->msg_control;
-+			uarg->callback(uarg, false);
-+		}
+-	if (vlan_tx_nonzero_tag_present(skb))
+-		skb->pkt_type = PACKET_OTHERHOST;
++	if (unlikely(vlan_tx_tag_present(skb))) {
++		if (vlan_tx_tag_get_id(skb))
++			skb->pkt_type = PACKET_OTHERHOST;
++		/* Note: we might in the future use prio bits
++		 * and set skb->priority like in vlan_do_receive()
++		 * For the time being, just ignore Priority Code Point
++		 */
++		skb->vlan_tci = 0;
 +	}
-+
- 	if (err)
- 		goto err_kfree;
  
+ 	/* deliver only exact match when indicated */
+ 	null_or_dev = deliver_exact ? skb->dev : NULL;
 -- 
 1.7.10.4
 
