@@ -1,124 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab3IKK4f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 06:56:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15956 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752125Ab3IKK4e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 06:56:34 -0400
-Date: Wed, 11 Sep 2013 13:58:38 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org,
-        wannes rombouts <wannes.rombouts@epitech.eu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net] tuntap: correctly handle error in tun_set_iff()
-Message-ID: <20130911105838.GA4969@redhat.com>
-References: <1378887845-6821-1-git-send-email-jasowang@redhat.com>
- <20130911093843.GA20836@redhat.com>
- <540640927.12279419.1378893304081.JavaMail.root@redhat.com>
- <20130911100804.GA21091@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130911100804.GA21091@redhat.com>
+	id S1754112Ab3IKK5Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 06:57:16 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:63124 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753967Ab3IKK5N convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 06:57:13 -0400
+Content-Type: text/plain; charset=US-ASCII
+Mime-Version: 1.0 (Mac OS X Mail 6.5 \(1508\))
+Subject: Re: [PATCH 2/2] am335x-boneblack: add eMMC DT entry
+From: Koen Kooi <koen@dominion.thruhere.net>
+In-Reply-To: <523040B5.60407@ti.com>
+Date: Wed, 11 Sep 2013 12:57:12 +0200
+Cc: <linux-omap@vger.kernel.org>, <bcousson@baylibre.com>, <tony@atomide.com>,
+        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ijc+devicetree@hellion.org.uk>, <linux@arm.linux.org.uk>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <341E26D5-851E-433A-BC53-3B3A43B78D46@dominion.thruhere.net>
+References: <1378879946-13037-1-git-send-email-koen@dominion.thruhere.net> <1378879946-13037-3-git-send-email-koen@dominion.thruhere.net> <523040B5.60407@ti.com>
+To: Sekhar Nori <nsekhar@ti.com>
+X-Mailer: Apple Mail (2.1508)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 01:08:04PM +0300, Michael S. Tsirkin wrote:
-> On Wed, Sep 11, 2013 at 05:55:04AM -0400, Jason Wang wrote:
-> > 
-> > 
-> > ----- Original Message -----
-> > > On Wed, Sep 11, 2013 at 04:24:05PM +0800, Jason Wang wrote:
-> > > > Commit c8d68e6be1c3b242f1c598595830890b65cea64a (tuntap: multiqueue
-> > > > support)
-> > > > only call free_netdev() on err in tun_set_iff(). This causes several
-> > > > issues:
-> > > > 
-> > > > - memory of tun security were leaked
-> > > 
-> > > Not just tun security -  sock reference too (didn't detach)
-> > > 
-> > 
-> > Yes, I mention it in the next item.
-> 
-> That line's a bit too long btw.
-> Keep it under 70 chars for commit logs.
-> 
-> > > > - use after free since the flow gc timer was not deleted and the tfile were
-> > > > not
-> > > >   detached
-> > > > 
-> > > > This patch solves the above issues.
-> > > > 
-> > > > Reported-by: Wannes Rombouts <wannes.rombouts@epitech.eu>
-> > > > Cc: Michael S. Tsirkin <mst@redhat.com>
-> > > > Signed-off-by: Jason Wang <jasowang@redhat.com>
-> > > > ---
-> > > > The patch were also needed for stable 3.8+.
-> > > > ---
-> > > >  drivers/net/tun.c |    9 +++++++--
-> > > >  1 files changed, 7 insertions(+), 2 deletions(-)
-> > > > 
-> > > > diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> > > > index a639de8..e5fb5d3 100644
-> > > > --- a/drivers/net/tun.c
-> > > > +++ b/drivers/net/tun.c
-> > > > @@ -1641,11 +1641,11 @@ static int tun_set_iff(struct net *net, struct file
-> > > > *file, struct ifreq *ifr)
-> > > >  		INIT_LIST_HEAD(&tun->disabled);
-> > > >  		err = tun_attach(tun, file, false);
-> > > >  		if (err < 0)
-> > > > -			goto err_free_dev;
-> > > > +			goto err_free_flow;
-> > > >  
-> > > >  		err = register_netdevice(tun->dev);
-> > > >  		if (err < 0)
-> > > > -			goto err_free_dev;
-> > > > +			goto err_detach;
-> > > >  
-> > > >  		if (device_create_file(&tun->dev->dev, &dev_attr_tun_flags) ||
-> > > >  		    device_create_file(&tun->dev->dev, &dev_attr_owner) ||
-> > > > @@ -1689,6 +1689,11 @@ static int tun_set_iff(struct net *net, struct file
-> > > > *file, struct ifreq *ifr)
-> > > >  	strcpy(ifr->ifr_name, tun->dev->name);
-> > > >  	return 0;
-> > > >  
-> > > > +err_detach:
-> > > > +	tun_detach_all(dev);
-> > > > +err_free_flow:
-> > > > +	tun_flow_uninit(tun);
-> > > > +	security_tun_dev_free_security(tun->security);
-> > > 
-> > > This bit looks wrong: if flow_init fails, we
-> > > need security_tun_dev_free_security, don't we?
-> > > I think we need:
-> > > 	+err_free_sec:	security_tun_dev_free_security(tun->security);
-> > > and goto here on flow_init failures.
-> > 
-> > tun_flow_init() always succeed. So we're ok here.
-> 
-> True. So please make it return void then.
 
-Heh I was looking at a stale tree, this is already fixed
-in commit 944a1376b.
+Op 11 sep. 2013, om 12:06 heeft Sekhar Nori <nsekhar@ti.com> het volgende geschreven:
 
-> > > 
-> > > >   err_free_dev:
-> > > 
-> > > Pls shift this one 1 space left for consistency.
-> > > 
-> > 
-> > Ok.
-> > > >  	free_netdev(dev);
-> > > >  	return err;
-> > > > --
-> > > > 1.7.1
-> > > --
-> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > > the body of a message to majordomo@vger.kernel.org
-> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > Please read the FAQ at  http://www.tux.org/lkml/
-> > > 
+> On Wednesday 11 September 2013 11:42 AM, Koen Kooi wrote:
+>> Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
+>> ---
+>> arch/arm/boot/dts/am335x-bone-common.dtsi |  7 +++++++
+>> arch/arm/boot/dts/am335x-boneblack.dts    | 15 +++++++++++++++
+>> 2 files changed, 22 insertions(+)
+>> 
+>> diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
+>> index ced256c..9c61fef 100644
+>> --- a/arch/arm/boot/dts/am335x-bone-common.dtsi
+>> +++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
+>> @@ -241,6 +241,13 @@
+>> 			regulator-always-on;
+>> 		};
+>> 	};
+>> +
+>> +	vmmcsd_fixed: fixedregulator@0 {
+>> +		compatible = "regulator-fixed";
+>> +		regulator-name = "vmmcsd_fixed";
+>> +		regulator-min-microvolt = <3300000>;
+>> +		regulator-max-microvolt = <3300000>;
+>> +	};
+>> };
+>> 
+>> &cpsw_emac0 {
+>> diff --git a/arch/arm/boot/dts/am335x-boneblack.dts b/arch/arm/boot/dts/am335x-boneblack.dts
+>> index 197cadf..c09947a 100644
+>> --- a/arch/arm/boot/dts/am335x-boneblack.dts
+>> +++ b/arch/arm/boot/dts/am335x-boneblack.dts
+>> @@ -15,3 +15,18 @@
+>> 	regulator-max-microvolt = <1800000>;
+>> 	regulator-always-on;
+>> };
+>> +
+>> +&mmc1 { 
+>> +	vmmc-supply = <&vmmcsd_fixed>;
+>> +};
+>> +
+>> +&mmc2 { 
+>> +	vmmc-supply = <&vmmcsd_fixed>;
+>> +	pinctrl-names = "default";
+>> +	pinctrl-0 = <&emmc_pins>;
+>> +	bus-width = <8>;
+>> +	ti,non-removable;
+> 
+> There is a standard binding available for this: "non-removable"
+> There should not be a need to introduce a TI specific binding for this
+> (I know this is not your fault).
+> 
+> I will send a patch to change the existing .dts files and update the
+> driver - can you drop this line for now so we don't introduce more
+> incompatibilities? I can send a patch adding "non-removable" to this
+> node as part of my clean-up series.
+
+Sure, I'll send a v2 shortly. Thank you very much for killing another ti, prefixed node!
+
+regards,
+
+Koen
+
