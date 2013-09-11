@@ -1,102 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757077Ab3IKTl1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 15:41:27 -0400
-Received: from gmmr5.centrum.cz ([46.255.225.250]:35500 "EHLO gmmr5.centrum.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752939Ab3IKTl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 15:41:26 -0400
-To: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
-Subject: =?utf-8?q?Re=3A_=5Bpatch_0=2F7=5D_improve_memcg_oom_killer_robustness_v2?=
-Date: Wed, 11 Sep 2013 21:41:18 +0200
-From: "azurIt" <azurit@pobox.sk>
-Cc: =?utf-8?q?Andrew_Morton?= <akpm@linux-foundation.org>,
-        =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>,
-        =?utf-8?q?David_Rientjes?= <rientjes@google.com>,
-        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
-        =?utf-8?q?KOSAKI_Motohiro?= <kosaki.motohiro@jp.fujitsu.com>,
-        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <x86@kernel.org>,
-        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <20130910183740.GI856@cmpxchg.org>, <20130910213253.A1E666C5@pobox.sk>, <20130910201222.GA25972@cmpxchg.org>, <20130910230853.FEEC19B5@pobox.sk>, <20130910211823.GJ856@cmpxchg.org>, <20130910233247.9EDF4DBA@pobox.sk>, <20130910220329.GK856@cmpxchg.org>, <20130911143305.FFEAD399@pobox.sk>, <20130911180327.GL856@cmpxchg.org>, <20130911205448.656D9D7C@pobox.sk> <20130911191150.GN856@cmpxchg.org>
-In-Reply-To: <20130911191150.GN856@cmpxchg.org>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
-X-Original-From: azurit@pobox.sk
+	id S1756965Ab3IKTn6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 15:43:58 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:58850 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752939Ab3IKTn4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 15:43:56 -0400
+Message-ID: <5230C7F6.3080803@wwwdotorg.org>
+Date: Wed, 11 Sep 2013 13:43:50 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Message-Id: <20130911214118.7CDF2E71@pobox.sk>
-X-Maser: brud
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+CC: Mark Brown <broonie@kernel.org>, Lars Poeschel <poeschel@lemonage.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>,
+        joelf@ti.com
+Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
+References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de> <52279524.8090006@wwwdotorg.org> <20130909161924.GT29403@sirena.org.uk> <2052193.CMUEUJFRgS@lem-wkst-02> <522F78CB.2020507@wwwdotorg.org> <20130910213718.GH29403@sirena.org.uk> <522F9E6C.2010905@wwwdotorg.org> <522FBED9.9000305@collabora.co.uk>
+In-Reply-To: <522FBED9.9000305@collabora.co.uk>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->On Wed, Sep 11, 2013 at 08:54:48PM +0200, azurIt wrote:
->> >On Wed, Sep 11, 2013 at 02:33:05PM +0200, azurIt wrote:
->> >> >On Tue, Sep 10, 2013 at 11:32:47PM +0200, azurIt wrote:
->> >> >> >On Tue, Sep 10, 2013 at 11:08:53PM +0200, azurIt wrote:
->> >> >> >> >On Tue, Sep 10, 2013 at 09:32:53PM +0200, azurIt wrote:
->> >> >> >> >> Here is full kernel log between 6:00 and 7:59:
->> >> >> >> >> http://watchdog.sk/lkml/kern6.log
->> >> >> >> >
->> >> >> >> >Wow, your apaches are like the hydra.  Whenever one is OOM killed,
->> >> >> >> >more show up!
->> >> >> >> 
->> >> >> >> 
->> >> >> >> 
->> >> >> >> Yeah, it's supposed to do this ;)
->> >> >
->> >> >How are you expecting the machine to recover from an OOM situation,
->> >> >though?  I guess I don't really understand what these machines are
->> >> >doing.  But if you are overloading them like crazy, isn't that the
->> >> >expected outcome?
->> >> 
->> >> 
->> >> 
->> >> 
->> >> 
->> >> There's no global OOM, server has enough of memory. OOM is occuring only in cgroups (customers who simply don't want to pay for more memory).
->> >
->> >Yes, sure, but when the cgroups are thrashing, they use the disk and
->> >CPU to the point where the overall system is affected.
->> 
->> 
->> 
->> 
->> Didn't know that there is a disk usage because of this, i never noticed anything yet.
->
->You said there was heavy IO going on...?
+On 09/10/2013 06:52 PM, Javier Martinez Canillas wrote:
+> On 09/11/2013 12:34 AM, Stephen Warren wrote:
+>> On 09/10/2013 03:37 PM, Mark Brown wrote:
+>>> On Tue, Sep 10, 2013 at 01:53:47PM -0600, Stephen Warren wrote:
+>>>
+>>>> Doesn't this patch call gpio_request() on the GPIO first, and
+>>>> hence prevent the driver's own gpio_request() from succeeding,
+>>>> since the GPIO is already requested? If this is not a problem, it
+>>>> sounds like a bug in gpio_request() not ensuring mutual exclusion
+>>>> for the GPIO.
+>>>
+>>> Or at the very least something that's likely to break in the
+>>> future.
+>>
+>> Looking at the GPIO code, it already prevents double-requests:
+>>
+>>>         if (test_and_set_bit(FLAG_REQUESTED, &desc->flags) == 0) {
+>>>                 desc_set_label(desc, label ? : "?");
+>>>                 status = 0;
+>>>         } else {
+>>>                 status = -EBUSY;
+>>>                 module_put(chip->owner);
+>>>                 goto done;
+>>>         }
+>>
+>> And I tested it in practice, and it really does fail.
+>>
+> 
+> I'm a bit confused now. Doesn't the fact that gpio_request() prevents
+> double-requests mean that the use-case that you say that have not been covered
+> by this patch can't actually happen?
+> 
+> I mean, if when using board files an explicit call to gpio_request() is made by
+> platform code then a driver can't call gpio_request() for the same gpio. So this
+> patch shouldn't cause any regression since is just auto-requesting a GPIO when
+> is mapped as an IRQ in a DT which basically will be the same that was made by
+> board files before.
 
+I'm not familiar with the board file path; Linus describe this.
 
+It sounds like that path is for the case where a driver /only/ cares
+about using a pin as an IRQ, and hence the driver only calls
+request_irq(). The board file is (earlier) calling gpio_request() in
+order to set up that input pin to work correctly as an IRQ. Hence, there
+is no double-call to gpio_request().
 
-Yes, there usually was a big IO but it was related to that deadlocking bug in kernel (or i assume it was). I never saw a big IO in normal conditions even when there were lots of OOM in cgroups. I'm even not using swap because of this so i was assuming that lacks of memory is not doing any additional IO (or am i wrong?). And if you mean that last problem with IO from Monday, i don't exactly know what happens but it's really long time when we had so big problem with IO that it disables also root login on console.
+The case I said wouldn't work is:
 
+* This patch calls gpio_request() in order to make the pin work as an IRQ.
 
+* Driver uses the pin as both a GPIO and an IRQ, and hence calls
+gpio_request() and request_irq().
 
+So, there's a double-call to gpio_request(), which fails, and the driver
+fails to probe.
 
->> >Okay, my suspicion is that the previous patches invoked the OOM killer
->> >right away, whereas in this latest version it's invoked only when the
->> >fault is finished.  Maybe the task that locked the group gets held up
->> >somewhere else and then it takes too long until something is actually
->> >killed.  Meanwhile, every other allocator drops into 5 reclaim cycles
->> >before giving up, which could explain the thrashing.  And on the memcg
->> >level we don't have BDI congestion sleeps like on the global level, so
->> >everybody is backing off from the disk.
->> >
->> >Here is an incremental fix to the latest version, i.e. the one that
->> >livelocked under heavy IO, not the one you are using right now.
->> >
->> >First, it reduces the reclaim retries from 5 to 2, which resembles the
->> >global kswapd + ttfp somewhat.  Next, NOFS/NORETRY allocators are not
->> >allowed to kick off the OOM killer, like in the global case, so that
->> >we don't kill things and give up just because light reclaim can't free
->> >anything.  Last, the memcg is marked under OOM when one task enters
->> >OOM so that not everybody is livelocking in reclaim in a hopeless
->> >situation.
->> 
->> 
->> 
->> Thank you i will boot it this night. I also created a new server load checking and recuing script so i hope i won't be forced to hard reboot the server in case something similar as before happens. Btw, patch didn't apply to 3.2.51, there were probably big changes in memory system (almost all hunks failed). I used 3.2.50 as before.
->
->Yes, please don't change the test base in the middle of this!
->
+I believe this situation is exactly what cause the original patch to the
+OMAP driver to be reverted; that patch should have touched the HW
+directly to solve the problem when the IRQ was requested, rather than
+calling into the GPIO subsystem (which also has the side-effect of
+touching the HW in the same way as desired).
+
+> To give you an example of an use-case that this patch is trying to solve:
+> 
+> OMAP SoCs have a General-Purpose Memory Controller (GPMC) that can be used to
+> interface with Pseudo-SRAM devices such as ethernet controllers. So with board
+> files we currently have this (arch/arm/mach-omap2/gpmc-smsc911x.c):
+> ...
+
+As we discussed on IRC (so mainly for the record in the mailing list
+archive), I believe that if a driver wants to use a pin as an interrupt
+and only an interrupt, even if the pin has the capability in HW to be a
+GPIO (or absolutely anything else at all), then the only call in the
+entire kernel (board code, DT core code, IRQ core, driver, ...) should
+be a single request_irq(), and the IRQ chip driver needs to program the
+HW appropriately to make that work.
