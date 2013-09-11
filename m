@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455Ab3IKAjj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 20:39:39 -0400
-Received: from smtprelay0057.hostedemail.com ([216.40.44.57]:39133 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751871Ab3IKAjh (ORCPT
+	id S1753407Ab3IKAlb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 20:41:31 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:54393 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912Ab3IKAla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 20:39:37 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1568:1593:1594:1711:1714:1730:1747:1777:1792:1801:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3876:3877:4321:4389:4605:5007:6114:6642:7652:7903:10004:10400:10848:11658:11914:12043:12294:12517:12519:12740:13019:13069:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: box34_8de7e0d1a5a55
-X-Filterd-Recvd-Size: 1570
-Message-ID: <1378859974.15187.5.camel@joe-AO722>
-Subject: Re: Resend: [PATCH 2/2] s390: provide hardware randomness from
- zcrypt card to /dev/random
-From: Joe Perches <joe@perches.com>
-To: Torsten Duwe <duwe@lst.de>
-Cc: tytso@mit.edu, ingo.tuchscherer@de.ibm.com, linux-kernel@vger.kernel.org,
-        Hans-Georg Markgraf <MGRF@de.ibm.com>,
-        Gerald Schaefer <GERALDSC@de.ibm.com>,
-        Martin Schwidefsky <martin.schwidefsky@de.ibm.com>
-Date: Tue, 10 Sep 2013 17:39:34 -0700
-In-Reply-To: <alpine.LNX.2.00.1309041044470.3219@linux.site>
-References: <alpine.LNX.2.00.1309041044470.3219@linux.site>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 10 Sep 2013 20:41:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130911103005.edd86001b641e53becc05ad2@canb.auug.org.au>
+References: <20130910143807.4c32d548e08d2184061f52cb@canb.auug.org.au>
+	<20130910152753.662599171456233c5f91edb4@linux-foundation.org>
+	<CA+55aFwiK+=7N3EDoX+s8dVCoraba9bCPrgqHgsMKppogEFBnw@mail.gmail.com>
+	<20130910154400.75bb3328fbb9eaa937715652@linux-foundation.org>
+	<20130911103005.edd86001b641e53becc05ad2@canb.auug.org.au>
+Date: Tue, 10 Sep 2013 17:41:29 -0700
+X-Google-Sender-Auth: A_xrS1GByQbUii2JRDauiPNupRE
+Message-ID: <CA+55aFwHMdOsyMO70DpPaBLMtuDSu43v4Gi0Vc1aKVyJhHrT=g@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the akpm tree with Linus' tree
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Chinner <dchinner@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-04 at 10:48 +0200, Torsten Duwe wrote:
-[]
-> +++ b/drivers/s390/crypto/zcrypt_api.c
+On Tue, Sep 10, 2013 at 5:30 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>
+> So, Andrew, you should be able to just about send those 375 patches to
+> Linus (I know that there may be some fix folding to do before that) and
+> have him apply them on top of v3.11-rc7-14-gfa8218d in a separate branch
+> and then merge that branch.
 
-> @@ -1141,6 +1144,36 @@ static struct hwrng zcrypt_rng_dev = {
-][
-> +static int zcrypt_hwrng_fillfn(void *unused)
-> +{
-> +       long rc;
-> +
-> +       while (!kthread_should_stop()) {
-> +               rc = zcrypt_rng((char *)zcrypt_rng_buffer);
-> +               if (rc == -ENODEV || rc == -EINVAL || rc == -ENOMEM) {
-> +                       pr_err("zcrypt_rng unavailable: %ld", rc);
+That's how I have been doing Andrew's patch-bombs anyway, since I
+started asking him what they were based on (they *usually* apply on
+top of my current tip, but during the merge window so much happens
+that it wasn't all that unusual that one or two patches didn't quite
+apply). So these days I just always do a "git checkout -b akpm
+<base-andrew-gives-me>" and apply the patches that way.
 
-please add terminating newlines
+It's just that normally the base is within about six hours of my tip
+anyway. This would be the first time it's way back.
 
-			pr_err("zcrypt_rng unavailable: %ld\n", rc);
+But I much prefer having more of a merge of well-tested code over
+having an easier merge of something that was rebased. That's
+especially true if the rebasing ends up delaying me getting the
+patches in the first place. I detest having merge windows where the
+last few days are busy, I'd really much rather have a couple of days
+with very little going on before doing the -rc1 (in the hope that rc1
+actually ends up being pretty good).
 
-etc...
+> I have included the "git diff-tree --cc"
+> output from my merge of that into linux-next yesterday.  Some of it is
+> not applicable yet (since there are still some other outstanding trees),
+> but it gives you some idea of how little the merge is a problem.
 
+Yes. We actually seldom have real merge problems. The only really
+annoying merges tend to be when somebody did something that isn't
+really code-related, like sorting a big list of entries (Makefiles,
+Kconfig files, device tree cleanups) and then both sides do a fair
+amount of changes on their respective - and very different - sides.
 
+The "multiple people worked on the same code" part is fairly unusual,
+and particular if I know the code and can even compile it, it's all
+fine.
 
+              Linus
