@@ -1,131 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757542Ab3ILC3V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 22:29:21 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:60315 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708Ab3ILC3U (ORCPT
+	id S1752455Ab3ILCja (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 22:39:30 -0400
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:19075 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052Ab3ILCj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 22:29:20 -0400
-From: Tejun Heo <tj@kernel.org>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, kay@vrfy.org, ebiederm@xmission.com,
-        netdev@vger.kernel.org, lizefan@huawei.com
-Subject: [PATCHSET] sysfs: disentangle kobject namespace handling from sysfs
-Date: Wed, 11 Sep 2013 22:29:02 -0400
-Message-Id: <1378952949-7900-1-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.3.1
+	Wed, 11 Sep 2013 22:39:29 -0400
+Message-ID: <5230D450.7000609@hp.com>
+Date: Wed, 11 Sep 2013 20:36:32 +0000
+From: Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "Theodore Ts'o" <tytso@mit.edu>, Eric Sandeen <sandeen@redhat.com>
+CC: David Lang <david@lang.hm>, Andreas Dilger <adilger@dilger.ca>,
+        T Makphaibulchoke <tmac@hp.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-ext4@vger.kernel.org List" <linux-ext4@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org Devel" <linux-fsdevel@vger.kernel.org>,
+        aswin@hp.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        aswin_proj@lists.hp.com
+Subject: Re: [PATCH v3 0/2] ext4: increase mbcache scalability
+References: <52285395.1070508@hp.com> <0787C579-7E2C-4864-B8F4-98816E1E50A2@dilger.ca> <5229C939.8030108@hp.com> <62D71A85-C7EE-4F5F-B481-5329F0282044@dilger.ca> <20130910210250.GH29237@thunk.org> <522FDFCC.1070007@redhat.com> <20130911113001.GB13315@thunk.org> <52309F27.8060008@redhat.com> <alpine.DEB.2.02.1309111325270.5862@nftneq.ynat.uz> <5230D739.9010109@redhat.com> <20130911212523.GE13397@thunk.org>
+In-Reply-To: <20130911212523.GE13397@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 09/11/2013 09:25 PM, Theodore Ts'o wrote:
+> On Wed, Sep 11, 2013 at 03:48:57PM -0500, Eric Sandeen wrote:
+>>
+>> So at this point I think it's up to Mak to figure out why on his system, aim7 is triggering mbcache codepaths.
+>>
+> 
+> Yes, the next thing is to see if on his systems, whether or not he's
+> seeing external xattr blocks.
+> 
+> 					- Ted
+> 
 
-I'll send out multiple patchsets to separate out sysfs from driver
-core and kobject.  The eventual goal is making sysfs modular enough so
-that cgroup can replace its nightmarish cgroupfs implementation which
-repeated and worsened all the past mistakes of sysfs.  This patchset
-is first of the effort and separates out kobject namespace handling
-from sysfs.
+I seem to be seeing the same thing as Eric is seeing.
 
-I never really understood why namespace support was added the way it
-was added.  Namespace information is communicated to sysfs via
-callbacks and back-queries to upper layer, which is a very unusual and
-weird thing to do when all the involved operations are synchronous.
-For example, a tagged attribute creation looks like the following.
+On one of my systems,
 
- driver code                    driver callback
-        v                                 ^
- netdev_class_create_file()               |
-        v                       class_attr->namespace()
- class_create_file()            class_attr_namespace()
-        v                                 |
- sysfs_create_file()	                  |
-        v                                 |
- sysfs_attr_ns() -------------> sysfs_ops->namespace()
+# find / -mount -exec getfattr --only-values -m security.* {} 2>/dev/null \; | wc -c
+2725655
+# df -i /
+Filesystem            Inodes   IUsed   IFree IUse% Mounted on
+/dev/mapper/vg_dhg1-lv_root
+[tmac@lxbuild linux]$ man find
+                     1974272   84737 1889535    5% /
+# find /home -mount -exec getfattr --only-values -m security.* {} 2>/dev/null \; | wc -c
+274173
+# df -i /home
+Filesystem            Inodes   IUsed   IFree IUse% Mounted on
+/dev/mapper/vg_dhg1-lv_home
+                      192384    7862  184522    5% /home
 
-This is an absurd thing to do.  It significantly obfuscates what's
-going on and adds unnecessary uncertainties - for example, can
-namespace() return value disagree with the recorded s_ns value without
-being renamed?  If so, how should that be handled?  If not, what
-guarantees that?  Even the basic placements of callbacks don't make
-much, if any, sense.  Why is per-directory namespace() callback in
-kobj_type while per-attr namespace() callback is in sysfs_ops?  What
-does this even mean?
+For both filesystems, the security xattr are about 32.17 and 34.87 bytes respectively.
 
-Maybe there's some grand design scheme governing all this but it isn't
-obvious at all and the whole thing looks like a hodgepodge of
-short-sighted hacks.
+I also see a similar problem with filefrag.
 
-There is absolutely *nothing* which requires this convolution.  NS tag
-can simply be passed down the stack just like any other type of
-information and adding an extra argument or variant of interface to
-pass down the extra information is way more straight-forward and
-apparently even takes less amount of code, so let's please stop the
-insanity.
+# filefrag -xv /bin/sh
+Filesystem type is: ef53
+File size of /bin/sh is 938736 (230 blocks, blocksize 4096)
+ ext logical physical expected length flags
+   0       0 23622459548             100 not_aligned,inline
+/bin/sh: 1 extent found
+ 
+# getfattr -m - -d /bin/sh
+getfattr: Removing leading '/' from absolute path names
+# file: bin/sh
+security.selinux="system_u:object_r:shell_exec_t:s0"
 
-This patchset contains the following seven patches.
+debugfs:  stat /bin/sh
+Inode: 1441795   Type: symlink    Mode:  0777   Flags: 0x0
+Generation: 3470616846    Version: 0x00000000:00000001
+User:     0   Group:     0   Size: 4
+File ACL: 0    Directory ACL: 0
+Links: 1   Blockcount: 0
+Fragment:  Address: 0    Number: 0    Size: 0
+ ctime: 0x50c2779d:ad792a58 -- Fri Dec  7 16:11:25 2012
+ atime: 0x52311211:006d1658 -- Wed Sep 11 19:00:01 2013
+ mtime: 0x50c2779d:ad792a58 -- Fri Dec  7 16:11:25 2012
+crtime: 0x50c2779d:ad792a58 -- Fri Dec  7 16:11:25 2012
+Size of extra inode fields: 28
+Extended attributes stored in inode body: 
+  selinux = "system_u:object_r:bin_t:s0\000" (27)
+Fast_link_dest: bash
 
- 0001-sysfs-drop-semicolon-from-to_sysfs_dirent-definition.patch
- 0002-sysfs-make-attr-namespace-interface-less-convoluted.patch
- 0003-sysfs-remove-ktype-namespace-invocations-in-director.patch
- 0004-sysfs-remove-ktype-namespace-invocations-in-symlink-.patch
- 0005-sysfs-drop-kobj_ns_type-handling.patch
- 0006-sysfs-clean-up-sysfs_get_dirent.patch
- 0007-sysfs-name-comes-before-ns.patch
+At this point, I'm not sure why we get into the mbcache path when SELinux is enabled.  As mentioned in one my earlier replies to Andreas, I did see actual calls into ext4_xattr_cache.
 
-0001 is a minor prep patch.
+There seems to be one difference between 3.11 kernel and 2.6 kernel in set_inode_init_security(). There is an additional attempt to initialize evm xattr.  But I do not seem to be seeing any evm xattr in any file.
 
-0002 removes the attr namespace callback.
+I will continue to try to find out how we get into the mbcache path.  Please let me know if anyone has any suggestion.
 
-0003-0004 push the dir namespace callback invocations from sysfs to
-kobjct layer.  Eventually, this callback should go too.
+Thanks,
+Mak.
 
-0005 simplifies sysfs ns support such that sysfs doesn't have any
-specific knowledge of kobj namespaces.  It now purely deals with
-pointer tags.  Combined with the previous changes, this makes sysfs ns
-support mostly modular.
 
-0006-0007 are cleanup patches to make param orders conventional and
-consistent - optional param after mandatory one; otherwise, things get
-extremely confusing with different variants of interfaces which take
-or don't take optional params.  No idea how/why this was done the
-wrong way.
 
-This patchset is based on top of the current master
-c2d95729e3094ecdd8c54e856bbe971adbbd7f48 ("Merge branch 'akpm'
-(patches from Andrew Morton)") and available in the following git
-branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-sysfs-separate-out-ns
-
-The series was lightly tested with normal and basic namespace
-operations.  diffstat follows.
-
- drivers/base/class.c             |   29 ++----
- drivers/base/core.c              |    8 +
- drivers/gpio/gpiolib.c           |    2
- drivers/md/bitmap.c              |    4
- drivers/md/md.c                  |    2
- drivers/md/md.h                  |    2
- drivers/net/bonding/bond_sysfs.c |   14 ---
- fs/sysfs/bin.c                   |    2
- fs/sysfs/dir.c                   |  163 ++++++++++++++-------------------------
- fs/sysfs/file.c                  |  105 ++++++-------------------
- fs/sysfs/group.c                 |   29 +++---
- fs/sysfs/inode.c                 |    6 -
- fs/sysfs/mount.c                 |   24 +----
- fs/sysfs/symlink.c               |   49 +++--------
- fs/sysfs/sysfs.h                 |   43 +++-------
- include/linux/device.h           |   24 ++++-
- include/linux/kobject.h          |    1
- include/linux/netdevice.h        |   16 +++
- include/linux/sysfs.h            |   88 ++++++++++++++-------
- lib/kobject.c                    |   31 ++++++-
- net/core/net-sysfs.c             |   14 +--
- 21 files changed, 294 insertions(+), 362 deletions(-)
-
-Thanks.
-
---
-tejun
