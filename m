@@ -1,152 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757055Ab3IKTds (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 15:33:48 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:35705 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752509Ab3IKTdq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 15:33:46 -0400
-Message-ID: <5230C596.7010000@wwwdotorg.org>
-Date: Wed, 11 Sep 2013 13:33:42 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1756853Ab3IKTiG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 15:38:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26700 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754387Ab3IKTiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 15:38:04 -0400
+Message-ID: <5230C5A7.2030206@redhat.com>
+Date: Wed, 11 Sep 2013 14:33:59 -0500
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Bill Huang <bilhuang@nvidia.com>
-CC: rjw@sisk.pl, viresh.kumar@linaro.org, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH 2/2] cpufreq: tegra: Re-model Tegra cpufreq driver
-References: <1378898355-31290-1-git-send-email-bilhuang@nvidia.com> <1378898355-31290-3-git-send-email-bilhuang@nvidia.com>
-In-Reply-To: <1378898355-31290-3-git-send-email-bilhuang@nvidia.com>
-X-Enigmail-Version: 1.4.6
+To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger@dilger.ca>,
+        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>,
+        T Makphaibulchoke <tmac@hp.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-ext4@vger.kernel.org List" <linux-ext4@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org Devel" <linux-fsdevel@vger.kernel.org>,
+        aswin@hp.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        aswin_proj@lists.hp.com
+Subject: Re: [PATCH v3 0/2] ext4: increase mbcache scalability
+References: <1374108934-50550-1-git-send-email-tmac@hp.com> <1378312756-68597-1-git-send-email-tmac@hp.com> <20130905023522.GA21268@thunk.org> <52285395.1070508@hp.com> <0787C579-7E2C-4864-B8F4-98816E1E50A2@dilger.ca> <5229C939.8030108@hp.com> <62D71A85-C7EE-4F5F-B481-5329F0282044@dilger.ca> <20130910210250.GH29237@thunk.org> <522FDFCC.1070007@redhat.com> <20130911113001.GB13315@thunk.org> <52309F27.8060008@redhat.com>
+In-Reply-To: <52309F27.8060008@redhat.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2013 05:19 AM, Bill Huang wrote:
-> Re-model Tegra cpufreq driver to support all Tegra series of SoCs.
+On 9/11/13 11:49 AM, Eric Sandeen wrote:
+> On 9/11/13 6:30 AM, Theodore Ts'o wrote:
+>> On Tue, Sep 10, 2013 at 10:13:16PM -0500, Eric Sandeen wrote:
+>>>
+>>> Above doesn't tell us the prevalence of various contexts on the actual system,
+>>> but they are all under 100 bytes in any case.
+>>
+>> OK, so in other words, on your system i_file_acl and i_file_acl_high
+>> (which is where we store the block # for the external xattr block),
+>> should always be zero for all inodes, yes?
 > 
-> * Make tegra-cpufreq.c a generic Tegra cpufreq driver.
-> * Move Tegra20 specific codes into tegra20-cpufreq.c.
-> * Bind Tegra cpufreq dirver with a fake device so defer probe would work
->   when we're going to get regulator in the driver to support voltage
->   scaling (DVFS).
-> * Call tegra_cpufreq_init() in Tegra machine code specifically so it
->   won't be called in multi-platform kernel which is not running on Tegra
->   SoCs.
+> Oh, hum - ok, so that would have been the better thing to check (or at
+> least an additional thing).
+> 
+> # find / -xdev -exec filefrag -x {} \; | awk -F : '{print $NF}' | sort | uniq -c
+> 
+> Finds quite a lot that claim to have external blocks, but it seems broken:
+> 
+> # filefrag -xv /var/lib/yum/repos/x86_64/6Server/epel
+> Filesystem type is: ef53
+> File size of /var/lib/yum/repos/x86_64/6Server/epel is 4096 (1 block, blocksize 4096)
+>  ext logical physical expected length flags
+>    0       0 32212996252             100 not_aligned,inline
+> /var/lib/yum/repos/x86_64/6Server/epel: 1 extent found
+> 
+> So _filefrag_ says it has a block (at a 120T physical address not on my fs!)
 
-That's a lot of things for one patch. Can this please be split up?
+Oh, this is the special-but-not-documented "print inline extents in bytes
+not blocks"  :(
 
-In particular, I would like a separate patch for the final bullet point,
-and for that patch to be the first in the series, so that we can merge
-it into both the Tegra and cpufreq trees if needed to resolve any conflicts.
+I'll send a patch to ignore inline extents on fiemap calls to make this
+easier, but in the meantime, neither my RHEL6 root nor my F17 root have
+any out-of-inode selinux xattrs on 256-byte-inode filesystems.
 
-> diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+So selinux alone should not be exercising mbcache much, if at all, w/ 256 byte
+inodes.
 
->  config ARM_TEGRA_CPUFREQ
-> -	bool "TEGRA CPUFreq support"
-> -	depends on ARCH_TEGRA
-> +	bool
-> +	select CPU_FREQ_TABLE
-
-Why make this a hidden option? It'd be best to leave it user-visible, so
-that existing defconfigs aren't broken by this change.
-
-> +config ARM_EXYNOS_CPUFREQ
-> +	bool
->  	select CPU_FREQ_TABLE
-
-I think that Exynos change is a mistake?
-
-> +
-> +config ARM_TEGRA20_CPUFREQ
-> +	bool "NVIDIA TEGRA20"
-> +	depends on ARCH_TEGRA
-
-Shouldn't that be ARCH_TEGRA_2x_SOC specifically?
-
->  	default y
-
-Does the syntax "default ARM_TEGRA_CPUFREQ" work? Actually, this should
-depend on ARM_TEGRA_CPUFREQ rather than select it, and that way you can
-keep this "default y" and it'll only be enabled if Tegra cpufreq is enabled.
-
-In summary, I think the following should work well:
-
-config ARM_TEGRA_CPUFREQ
-	bool "TEGRA CPUFreq support"
-	depends on ARCH_TEGRA
-	select CPU_FREQ_TABLE
-
-config ARM_TEGRA20_CPUFREQ
-	bool "NVIDIA TEGRA20"
-	depends on ARM_TEGRA_CPUFREQ && ARCH_TEGRA_2x_SOC
-	default y
-	help
-	  This adds the CPUFreq driver for NVIDIA TEGRA20 SoC.
-
-	  If in doubt, say N.
-
-> diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra-cpufreq.c
-
-> -#define NUM_CPUS	2
-> +#define NUM_CPUS	4
-
-NUM_ or MAX_?
-
-> diff --git a/drivers/cpufreq/tegra-cpufreq.h b/drivers/cpufreq/tegra-cpufreq.h
-
-> +struct tegra_cpufreq_data {
-> +	struct device *dev;
-> +	struct clk	*cpu_clk;
-> +	struct cpufreq_frequency_table	*freq_table;
-> +	void (*vote_emc_on_cpu_rate)(unsigned long);
-> +	int (*cpu_clk_set_rate)(unsigned long);
-> +	void (*cpufreq_clk_init)(void);
-> +	void (*cpufreq_clk_exit)(void);
-> +};
-
-There's a mix of runtime and configuration-time data there. It'd be
-nicer to split the two out, so that all the configuration data could be
-in a const struct that's pointed to by a field in the runtime data
-struct, or passed back out of tegra20_cpufreq_init() as a separate
-pointer variable and assigned to a separate global in tegra-cpufreq.c,
-to avoid double-indirections everywhere at runtime.
-
-> diff --git a/drivers/cpufreq/tegra20-cpufreq.c b/drivers/cpufreq/tegra20-cpufreq.c
-
-> +static struct cpufreq_frequency_table freq_table[] = {
-> +	{ .frequency = 216000 },
-> +	{ .frequency = 312000 },
-> +	{ .frequency = 456000 },
-> +	{ .frequency = 608000 },
-> +	{ .frequency = 760000 },
-> +	{ .frequency = 816000 },
-> +	{ .frequency = 912000 },
-> +	{ .frequency = 1000000 },
-> +	{ .frequency = CPUFREQ_TABLE_END },
-> +};
-
-Should/can we query that list from the clock driver?
-
-> +int tegra20_cpufreq_init(struct tegra_cpufreq_data *data)
-...
-> +	data->cpu_clk = cpu_clk;
-> +	data->freq_table = freq_table;
-> +	data->vote_emc_on_cpu_rate = tegra20_vote_emc_on_cpu_rate;
-> +	data->cpu_clk_set_rate = tegra20_cpu_clk_set_rate;
-> +	data->cpufreq_clk_init = tegra20_cpufreq_clk_init;
-> +	data->cpufreq_clk_exit = tegra20_cpufreq_clk_exit;
-
-With the struct split I proposed above, most of that could just be:
-
-*soc_config = &tegra20_cpufreq_config;
-
-where there's an extra function parameter "struct tegra_cpufreq_config
-**soc_config", and most of those values are in a static const
-tegra_cpufreq_config tegra20_cpufreq_config = { ... }.
-
+-Eric
