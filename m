@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756652Ab3IKE71 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 00:59:27 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22176 "EHLO
+	id S1756638Ab3IKE7Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 00:59:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3257 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754415Ab3IKE5J (ORCPT
+	with ESMTP id S1754412Ab3IKE5J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 11 Sep 2013 00:57:09 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=cdLb9vFUF8wA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=YOfW3OP1mHkA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=Tty9oNO6AAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=z5GaRly54Q4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=t1ig5eYNstoA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=VnNF1IyMAAAA:8 a=Tty9oNO6AAAA:8 a=WG6wbt25S0_cMdkusm8A:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042921.404738116@goodmis.org>
+Message-Id: <20130911042921.553555614@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:30:02 -0400
+Date: Wed, 11 Sep 2013 00:30:03 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Amit Shah <amit.shah@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>
-Subject: [175/251] virtio: console: fix race in port_fops_open() and port unplug
+Cc: chayang <chayang@redhat.com>, YOGANANTH SUBRAMANIAN <anantyog@in.ibm.com>,
+        FuXiangChun <xfu@redhat.com>, Qunfang Zhang <qzhang@redhat.com>,
+        Sibiao Luo <sluo@redhat.com>, Amit Shah <amit.shah@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [176/251] virtio: console: clean up port data immediately at time of unplug
 References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0175-virtio-console-fix-race-in-port_fops_open-and-port-u.patch
+Content-Disposition: inline; filename=0176-virtio-console-clean-up-port-data-immediately-at-tim.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,41 +34,127 @@ If anyone has any objections, please let me know.
 
 From: Amit Shah <amit.shah@redhat.com>
 
-[ Upstream commit 671bdea2b9f210566610603ecbb6584c8a201c8c ]
+[ Upstream commit ea3768b4386a8d1790f4cc9a35de4f55b92d6442 ]
 
-Between open() being called and processed, the port can be unplugged.
-Check if this happened, and bail out.
+We used to keep the port's char device structs and the /sys entries
+around till the last reference to the port was dropped.  This is
+actually unnecessary, and resulted in buggy behaviour:
 
-A simple test script to reproduce this is:
+1. Open port in guest
+2. Hot-unplug port
+3. Hot-plug a port with the same 'name' property as the unplugged one
 
-while true; do for i in $(seq 1 100); do echo $i > /dev/vport0p3; done; done;
+This resulted in hot-plug being unsuccessful, as a port with the same
+name already exists (even though it was unplugged).
 
-This opens and closes the port a lot of times; unplugging the port while
-this is happening triggers the bug.
+This behaviour resulted in a warning message like this one:
+
+-------------------8<---------------------------------------
+WARNING: at fs/sysfs/dir.c:512 sysfs_add_one+0xc9/0x130() (Not tainted)
+Hardware name: KVM
+sysfs: cannot create duplicate filename
+'/devices/pci0000:00/0000:00:04.0/virtio0/virtio-ports/vport0p1'
+
+Call Trace:
+ [<ffffffff8106b607>] ? warn_slowpath_common+0x87/0xc0
+ [<ffffffff8106b6f6>] ? warn_slowpath_fmt+0x46/0x50
+ [<ffffffff811f2319>] ? sysfs_add_one+0xc9/0x130
+ [<ffffffff811f23e8>] ? create_dir+0x68/0xb0
+ [<ffffffff811f2469>] ? sysfs_create_dir+0x39/0x50
+ [<ffffffff81273129>] ? kobject_add_internal+0xb9/0x260
+ [<ffffffff812733d8>] ? kobject_add_varg+0x38/0x60
+ [<ffffffff812734b4>] ? kobject_add+0x44/0x70
+ [<ffffffff81349de4>] ? get_device_parent+0xf4/0x1d0
+ [<ffffffff8134b389>] ? device_add+0xc9/0x650
+
+-------------------8<---------------------------------------
+
+Instead of relying on guest applications to release all references to
+the ports, we should go ahead and unregister the port from all the core
+layers.  Any open/read calls on the port will then just return errors,
+and an unplug/plug operation on the host will succeed as expected.
+
+This also caused buggy behaviour in case of the device removal (not just
+a port): when the device was removed (which means all ports on that
+device are removed automatically as well), the ports with active
+users would clean up only when the last references were dropped -- and
+it would be too late then to be referencing char device pointers,
+resulting in oopses:
+
+-------------------8<---------------------------------------
+PID: 6162   TASK: ffff8801147ad500  CPU: 0   COMMAND: "cat"
+ #0 [ffff88011b9d5a90] machine_kexec at ffffffff8103232b
+ #1 [ffff88011b9d5af0] crash_kexec at ffffffff810b9322
+ #2 [ffff88011b9d5bc0] oops_end at ffffffff814f4a50
+ #3 [ffff88011b9d5bf0] die at ffffffff8100f26b
+ #4 [ffff88011b9d5c20] do_general_protection at ffffffff814f45e2
+ #5 [ffff88011b9d5c50] general_protection at ffffffff814f3db5
+    [exception RIP: strlen+2]
+    RIP: ffffffff81272ae2  RSP: ffff88011b9d5d00  RFLAGS: 00010246
+    RAX: 0000000000000000  RBX: ffff880118901c18  RCX: 0000000000000000
+    RDX: ffff88011799982c  RSI: 00000000000000d0  RDI: 3a303030302f3030
+    RBP: ffff88011b9d5d38   R8: 0000000000000006   R9: ffffffffa0134500
+    R10: 0000000000001000  R11: 0000000000001000  R12: ffff880117a1cc10
+    R13: 00000000000000d0  R14: 0000000000000017  R15: ffffffff81aff700
+    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
+ #6 [ffff88011b9d5d00] kobject_get_path at ffffffff8126dc5d
+ #7 [ffff88011b9d5d40] kobject_uevent_env at ffffffff8126e551
+ #8 [ffff88011b9d5dd0] kobject_uevent at ffffffff8126e9eb
+ #9 [ffff88011b9d5de0] device_del at ffffffff813440c7
+
+-------------------8<---------------------------------------
+
+So clean up when we have all the context, and all that's left to do when
+the references to the port have dropped is to free up the port struct
+itself.
 
 CC: <stable@vger.kernel.org>
+Reported-by: chayang <chayang@redhat.com>
+Reported-by: YOGANANTH SUBRAMANIAN <anantyog@in.ibm.com>
+Reported-by: FuXiangChun <xfu@redhat.com>
+Reported-by: Qunfang Zhang <qzhang@redhat.com>
+Reported-by: Sibiao Luo <sluo@redhat.com>
 Signed-off-by: Amit Shah <amit.shah@redhat.com>
 Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/char/virtio_console.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/char/virtio_console.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index abca6eb..a57cc3b 100644
+index a57cc3b..e6a51da 100644
 --- a/drivers/char/virtio_console.c
 +++ b/drivers/char/virtio_console.c
-@@ -798,6 +798,10 @@ static int port_fops_open(struct inode *inode, struct file *filp)
+@@ -1261,14 +1261,6 @@ static void remove_port(struct kref *kref)
  
- 	/* We get the port with a kref here */
- 	port = find_port_by_devt(cdev->dev);
-+	if (!port) {
-+		/* Port was unplugged before we could proceed */
-+		return -ENXIO;
-+	}
- 	filp->private_data = port;
+ 	port = container_of(kref, struct port, kref);
  
+-	sysfs_remove_group(&port->dev->kobj, &port_attribute_group);
+-	device_destroy(pdrvdata.class, port->dev->devt);
+-	cdev_del(port->cdev);
+-
+-	kfree(port->name);
+-
+-	debugfs_remove(port->debugfs_file);
+-
+ 	kfree(port);
+ }
+ 
+@@ -1322,6 +1314,14 @@ static void unplug_port(struct port *port)
+ 	 */
+ 	port->portdev = NULL;
+ 
++	sysfs_remove_group(&port->dev->kobj, &port_attribute_group);
++	device_destroy(pdrvdata.class, port->dev->devt);
++	cdev_del(port->cdev);
++
++	kfree(port->name);
++
++	debugfs_remove(port->debugfs_file);
++
  	/*
+ 	 * Locks around here are not necessary - a port can't be
+ 	 * opened after we removed the port struct from ports_list
 -- 
 1.7.10.4
 
