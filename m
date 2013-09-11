@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636Ab3IKC0N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 22:26:13 -0400
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:47998 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753605Ab3IKC0K (ORCPT
+	id S1753673Ab3IKC0W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 22:26:22 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:63483 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753605Ab3IKC0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 22:26:10 -0400
+	Tue, 10 Sep 2013 22:26:19 -0400
 MIME-Version: 1.0
-Date: Tue, 10 Sep 2013 19:26:10 -0700
-X-Google-Sender-Auth: TtnTRPYSyXmFg_UQYFAuTLXL_Ig
-Message-ID: <CA+55aFyTpb8k523=qqeO9LMvs6EgmaRdohip0FcTX7Qip1VyxA@mail.gmail.com>
-Subject: RIP - dead harddisk..
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Peter Anvin <hpa@linux.intel.com>, Guenter Roeck <linux@roeck-us.net>,
-        Dave Airlie <airlied@linux.ie>, Bruce Fields <bfields@fieldses.org>
+In-Reply-To: <20130911014443.GA20996@infradead.org>
+References: <1378688580-11935-1-git-send-email-linux@roeck-us.net>
+ <20130909015945.GA4029@kroah.com> <522D3153.5000102@roeck-us.net>
+ <20130909023152.GA5329@kroah.com> <522D32F6.4020705@roeck-us.net>
+ <20130909050147.GA3899@osiris> <CA+a=Yy6h0y=J9-NQ6LQ8fkWxqQnTQKxAt2+Pr3fSwLQ1hefGsw@mail.gmail.com>
+ <20130911014443.GA20996@infradead.org>
+From: Peng Tao <bergwolf@gmail.com>
+Date: Wed, 11 Sep 2013 10:25:57 +0800
+Message-ID: <CA+a=Yy6GFzoBT0Bgz7z5bHZRMdEBJa+txwpCZuxA+mRTch-8mA@mail.gmail.com>
+Subject: Re: [PATCH] staging: Disable lustre file system for MIPS, SH, and XTENSA
+To: Christoph Hellwig <hch@infradead.org>,
+        "Dilger, Andreas" <andreas.dilger@intel.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The timing absolutely sucks, but it looks like the SSD in my main
-workstation just died on me.
+On Wed, Sep 11, 2013 at 9:44 AM, Christoph Hellwig <hch@infradead.org> wrote:
+> On Wed, Sep 11, 2013 at 01:14:11AM +0800, Peng Tao wrote:
+>> The problem is access_process_vm() is not exported since certain
+>> version of kernel including the latest. According to Christoph in the
+>> other mail, access_process_vm() is also a core mm function that is not
+>> supposed to be exported. Then what kind of change shall we make in
+>> order to keep current functionality?
+>
+> You should remove the higher level functionality, kernel modules are
+> not supposed to look at userspace environment variables.
+>
+OK. I've looked at the specific case that Lustre uses
+access_process_vm() to get the jobid environment variable and package
+it into the RPC requests to server. However, it turns out that in the
+latest Lustre server code, the jobid in a request is not used
+anywhere. So it looks like we can just get rid of it.
 
-I had pushed out _most_ of my pulls today, so realistically I didn't
-lose a lot of work. However, any people having outstanding pull
-requests or patches that they expected me to merge that are not in the
-current tree on git.kernel.org, you may want to re-send the email,
-because I had archived emails as I merged them, and I may not have
-found all the ones that never made it out.. I know a few involved,
-but....
+Andreas, could you please confirm this? Is the jobid an obsolete
+parameter that can be abandoned? Or is there plan to use it somehow in
+the future?
 
-That said, wait until tomorrow. I'll try to see if I can recover the
-disk, but right now my machine refuses to even see the boot sector on
-it, and tries to boot from the network instead. So I'm not all that
-hopeful.
-
-If worst comes to worst, I'll just do the last next days of the merge
-window on the laptop that I was planning on finishing it off with
-anyway, since I have travel coming up. At least this didn't happen at
-the very beginning of the merge window...
-
-                   Linus
+Thanks,
+Tao
