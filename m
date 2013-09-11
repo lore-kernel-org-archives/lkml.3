@@ -1,189 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665Ab3IKIHL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 04:07:11 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:46576 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752588Ab3IKIHA (ORCPT
+	id S1752800Ab3IKII0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 04:08:26 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:38881 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751265Ab3IKIIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 04:07:00 -0400
+	Wed, 11 Sep 2013 04:08:24 -0400
+Date: Wed, 11 Sep 2013 10:59:44 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Chris Brannon <chris@the-brannons.com>
+Cc: devel@driverdev.osuosl.org, Kirk Reiser <kirk@reisers.ca>,
+        Raphael S Carvalho <raphael.scarv@gmail.com>, speakup@braille.uwo.ca,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        Samuel Thibault <samuel.thibault@ens-lyon.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: Re: [PATCH 1/1] staging/speakup/kobjects.c: Code improvement.
+Message-ID: <20130911075944.GA25896@mwanda>
+References: <1378160418-13898-1-git-send-email-raphael.scarv@gmail.com>
+ <87fvtefy10.fsf@mushroom.PK5001Z>
+ <CACz=WeeE+jxdaxpR_amF60deDcEy8nChYYfY3UA3CNfhmOB8Gw@mail.gmail.com>
+ <87y576edm6.fsf@mushroom.PK5001Z>
+ <20130910231228.GF6329@mwanda>
+ <878uz4du2k.fsf@mushroom.PK5001Z>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1309101853170.16010@axis700.grange>
-References: <Pine.LNX.4.64.1309091656200.6602@axis700.grange>
-	<CAKohponZ+FnzqXYMbBzbun0-1iQMi2fS4syrEBC_MdF41vLCeA@mail.gmail.com>
-	<Pine.LNX.4.64.1309101656150.16010@axis700.grange>
-	<CAKohpomBBKLhNemVUpUHAftGhPJJe+ZB7T_9UYLD7LwpR1nK0g@mail.gmail.com>
-	<Pine.LNX.4.64.1309101740120.16010@axis700.grange>
-	<CAKohpomK7Y_6aLMA3B+hZrtgYq9U89ihgkbvYWA3BsKN3gJD3g@mail.gmail.com>
-	<Pine.LNX.4.64.1309101853170.16010@axis700.grange>
-Date: Wed, 11 Sep 2013 13:36:58 +0530
-Message-ID: <CAKohpokaHU0V86DPB7nEQ8ndwu_mJ_x_Uz47XPHZeyAW3hcP_w@mail.gmail.com>
-Subject: Re: "cpufreq: fix serialization issues with freq change notifiers"
- breaks cpufreq too
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Greg KH <greg@kroah.com>, "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>
-Content-Type: multipart/mixed; boundary=089e01182678039c6604e6171b3b
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <878uz4du2k.fsf@mushroom.PK5001Z>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---089e01182678039c6604e6171b3b
-Content-Type: text/plain; charset=ISO-8859-1
+On Tue, Sep 10, 2013 at 06:29:39PM -0700, Chris Brannon wrote:
+> Ok.  I just sent up a patch to the driverdev list.  I missed a few
+> of the Cc's that were on this thread, though.
+> Also, it will conflict with Raphael's cleanup.
 
-On 10 September 2013 22:37, Guennadi Liakhovetski <g.liakhovetski@gmx.de> wrote:
-> On Tue, 10 Sep 2013, Viresh Kumar wrote:
->> Quite straight forward actually..
->
-> Apparently, not quite.
+You're missing Raphael's CC in particular...
 
-I overlooked the situation where we return early from ->target() routines.. :(
+Really, Raphael's patch arrived first.  No one seems to have any
+objections to his patch.  Normally apply it first and then apply this
+one.  If we decide to push this one to -stable then we would redo it (in
+other words push the one you just sent).
 
-Please try attached patches, I will repost them later (once I am able to
-convince Rafael that these are really important :) )
+Of course, the merge window is open right now so nothing is going to be
+applied for a couple weeks.
 
---
-viresh
+regards,
+dan carpenter
 
---089e01182678039c6604e6171b3b
-Content-Type: application/octet-stream; 
-	name="0001-cpufreq-distinguish-drivers-that-do-asynchronous-not.patch"
-Content-Disposition: attachment; 
-	filename="0001-cpufreq-distinguish-drivers-that-do-asynchronous-not.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hlg93iqy0
-
-RnJvbSBhMTUzNzUyNzE5Nzc0NzYzZjllZGQ4ZjQ2MjkxZjFiYWI3MjJmN2Q2IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpNZXNzYWdlLUlkOiA8YTE1Mzc1MjcxOTc3NDc2M2Y5ZWRkOGY0NjI5MWYx
-YmFiNzIyZjdkNi4xMzc4ODg1NjY4LmdpdC52aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRnJvbTog
-VmlyZXNoIEt1bWFyIDx2aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRGF0ZTogV2VkLCAxNCBBdWcg
-MjAxMyAxOTozODoyNCArMDUzMApTdWJqZWN0OiBbUEFUQ0ggMS8yXSBjcHVmcmVxOiBkaXN0aW5n
-dWlzaCBkcml2ZXJzIHRoYXQgZG8gYXN5bmNocm9ub3VzCiBub3RpZmljYXRpb25zCgpUaGVyZSBh
-cmUgZmV3IHNwZWNpYWwgY2FzZXMgbGlrZSBleHlub3M1NDQwIHdoaWNoIGRvZXNuJ3Qgc2VuZCBQ
-T1NUQ0hBTkdFCm5vdGlmaWNhdGlvbiBmcm9tIHRoZWlyIC0+dGFyZ2V0KCkgcm91dGluZSBhbmQg
-Y2FsbCBzb21lIGtpbmQgb2YgYm90dG9tIGhhbHZlcwpmb3IgZG9pbmcgdGhpcyB3b3JrLCB3b3Jr
-L3Rhc2tsZXQvZXRjLi4gRnJvbSB3aGljaCB0aGV5IGZpbmFsbHkgc2VuZCBQT1NUQ0hBTkdFCm5v
-dGlmaWNhdGlvbi4KCkl0cyBiZXR0ZXIgaWYgd2UgZGlzdGluZ3Vpc2ggdGhlbSBmcm9tIG90aGVy
-IGNwdWZyZXEgZHJpdmVycyBpbiBzb21lIHdheSBzbyB0aGF0CmNvcmUgY2FuIGhhbmRsZSB0aGVt
-IHNwZWNpYWxseS4gU28gdGhpcyBwYXRjaCBpbnRyb2R1Y2VzIGFub3RoZXIgZmxhZzoKQ1BVRlJF
-UV9BU1lOQ19OT1RJRklDQVRJT04sIHdoaWNoIHdpbGwgYmUgc2V0IGJ5IHN1Y2ggZHJpdmVycy4K
-ClRoaXMgYWxzbyBjaGFuZ2VzIGV4eW5vczU0NDAtY3B1ZnJlcS5jIGluIG9yZGVyIHRvIHNldCB0
-aGlzIGZsYWcuCgpTaWduZWQtb2ZmLWJ5OiBWaXJlc2ggS3VtYXIgPHZpcmVzaC5rdW1hckBsaW5h
-cm8ub3JnPgotLS0KIGRyaXZlcnMvY3B1ZnJlcS9leHlub3M1NDQwLWNwdWZyZXEuYyB8IDIgKy0K
-IGluY2x1ZGUvbGludXgvY3B1ZnJlcS5oICAgICAgICAgICAgICB8IDYgKysrKysrCiAyIGZpbGVz
-IGNoYW5nZWQsIDcgaW5zZXJ0aW9ucygrKSwgMSBkZWxldGlvbigtKQoKZGlmZiAtLWdpdCBhL2Ry
-aXZlcnMvY3B1ZnJlcS9leHlub3M1NDQwLWNwdWZyZXEuYyBiL2RyaXZlcnMvY3B1ZnJlcS9leHlu
-b3M1NDQwLWNwdWZyZXEuYwppbmRleCBkNTE0YzE1Li5mNDQ2NjRhIDEwMDY0NAotLS0gYS9kcml2
-ZXJzL2NwdWZyZXEvZXh5bm9zNTQ0MC1jcHVmcmVxLmMKKysrIGIvZHJpdmVycy9jcHVmcmVxL2V4
-eW5vczU0NDAtY3B1ZnJlcS5jCkBAIC0zNDIsNyArMzQyLDcgQEAgc3RhdGljIGludCBleHlub3Nf
-Y3B1ZnJlcV9jcHVfaW5pdChzdHJ1Y3QgY3B1ZnJlcV9wb2xpY3kgKnBvbGljeSkKIH0KIAogc3Rh
-dGljIHN0cnVjdCBjcHVmcmVxX2RyaXZlciBleHlub3NfZHJpdmVyID0gewotCS5mbGFncwkJPSBD
-UFVGUkVRX1NUSUNLWSwKKwkuZmxhZ3MJCT0gQ1BVRlJFUV9TVElDS1kgfCBDUFVGUkVRX0FTWU5D
-X05PVElGSUNBVElPTiwKIAkudmVyaWZ5CQk9IGV4eW5vc192ZXJpZnlfc3BlZWQsCiAJLnRhcmdl
-dAkJPSBleHlub3NfdGFyZ2V0LAogCS5nZXQJCT0gZXh5bm9zX2dldHNwZWVkLApkaWZmIC0tZ2l0
-IGEvaW5jbHVkZS9saW51eC9jcHVmcmVxLmggYi9pbmNsdWRlL2xpbnV4L2NwdWZyZXEuaAppbmRl
-eCBkNTY4ZjM5Li5jNzcwYmMwIDEwMDY0NAotLS0gYS9pbmNsdWRlL2xpbnV4L2NwdWZyZXEuaAor
-KysgYi9pbmNsdWRlL2xpbnV4L2NwdWZyZXEuaApAQCAtMjE5LDYgKzIxOSwxMiBAQCBzdHJ1Y3Qg
-Y3B1ZnJlcV9kcml2ZXIgewogCQkJCQkgKiBmcmVxdWVuY3kgdHJhbnNpdGlvbnMgKi8KICNkZWZp
-bmUgQ1BVRlJFUV9QTV9OT19XQVJOCTB4MDQJLyogZG9uJ3Qgd2FybiBvbiBzdXNwZW5kL3Jlc3Vt
-ZSBzcGVlZAogCQkJCQkgKiBtaXNtYXRjaGVzICovCisvKgorICogRHJpdmVyIHdpbGwgZG8gUE9T
-VENIQU5HRSBub3RpZmljYXRpb25zIGZyb20gb3V0c2lkZSBvZiB0aGVpciAtPnRhcmdldCgpCisg
-KiByb3V0aW5lIGFuZCBzbyBtdXN0IHNldCBjcHVmcmVxX2RyaXZlci0+ZmxhZ3Mgd2l0aCB0aGlz
-IGZsYWcsIHNvIHRoYXQgY29yZQorICogY2FuIGhhbmRsZSB0aGVtIHNwZWNpYWxseS4KKyAqLwor
-I2RlZmluZSBDUFVGUkVRX0FTWU5DX05PVElGSUNBVElPTiAweDA4CiAKIGludCBjcHVmcmVxX3Jl
-Z2lzdGVyX2RyaXZlcihzdHJ1Y3QgY3B1ZnJlcV9kcml2ZXIgKmRyaXZlcl9kYXRhKTsKIGludCBj
-cHVmcmVxX3VucmVnaXN0ZXJfZHJpdmVyKHN0cnVjdCBjcHVmcmVxX2RyaXZlciAqZHJpdmVyX2Rh
-dGEpOwotLSAKMS43LjEyLnJjMi4xOC5nNjFiNDcyZQoK
---089e01182678039c6604e6171b3b
-Content-Type: application/octet-stream; 
-	name="0002-cpufreq-fix-notification-serialization-issues.patch"
-Content-Disposition: attachment; 
-	filename="0002-cpufreq-fix-notification-serialization-issues.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hlg93izp1
-
-RnJvbSA0Mjg1MWUzYzJmYzRhOGU3MDQ2ODNjMzA5YzAzZDVhZjQyYThmMzk4IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpNZXNzYWdlLUlkOiA8NDI4NTFlM2MyZmM0YThlNzA0NjgzYzMwOWMwM2Q1
-YWY0MmE4ZjM5OC4xMzc4ODg1NjY4LmdpdC52aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KSW4tUmVw
-bHktVG86IDxhMTUzNzUyNzE5Nzc0NzYzZjllZGQ4ZjQ2MjkxZjFiYWI3MjJmN2Q2LjEzNzg4ODU2
-NjguZ2l0LnZpcmVzaC5rdW1hckBsaW5hcm8ub3JnPgpSZWZlcmVuY2VzOiA8YTE1Mzc1MjcxOTc3
-NDc2M2Y5ZWRkOGY0NjI5MWYxYmFiNzIyZjdkNi4xMzc4ODg1NjY4LmdpdC52aXJlc2gua3VtYXJA
-bGluYXJvLm9yZz4KRnJvbTogVmlyZXNoIEt1bWFyIDx2aXJlc2gua3VtYXJAbGluYXJvLm9yZz4K
-RGF0ZTogV2VkLCAxMSBTZXAgMjAxMyAxMTo0MjoxOCArMDUzMApTdWJqZWN0OiBbUEFUQ0ggMi8y
-XSBjcHVmcmVxOiBmaXggbm90aWZpY2F0aW9uIHNlcmlhbGl6YXRpb24gaXNzdWVzCgpTb21ldGlt
-ZXMgLT50YXJnZXQoKSByZXR1cm5zIGVhcmxpZXIgdGhhbiBleHBlY3RlZCwgZXZlbiB3aXRob3V0
-IGRvaW5nIGFueQpQUkVDSEFOR0Ugbm90aWZpY2F0aW9ucywgaW4gc3VjaCBjYXNlcyB3ZSBhcmVu
-J3QgZGVjcmVtZW50aW5nIG91cgp0cmFuc2l0aW9uX29uZ29pbmcgY291bnRlciBhbmQgdGhhdCBt
-YWtlcyBpdCBnbyBjcmF6eSBmb3IgdGhvc2UgY2FzZXMuCgpUaGlzIHBhdGNoIGZpeGVzIHRoaXMg
-aXNzdWUgYnkgdGFraW5nIGNhcmUgb2YgdHJhbnNpdGlvbl9vbmdvaW5nIGNvdW50IGF0CnNldmVy
-YWwgcGxhY2VzLiBOb3cgd2Ugc2ltcGx5IGRlY3JlbWVudCByZWZjb3VudCBhdCB0aGUgZW5kIG9m
-CmNwdWZyZXFfb3V0X29mX3N5bmMoKSAmIF9fY3B1ZnJlcV9kcml2ZXJfdGFyZ2V0KCkgZm9yIGRy
-aXZlcnMgdGhhdCBkb24ndCBkbwpBU1lOQyBub3RpZmljYXRpb25zLCBmb3Igb3RoZXJzIHdlIGRv
-IHRoYXQgZnJvbSBQT1NUQ0hBTkdFIG5vdGlmaWVyLgoKVGhlc2UgZHJpdmVycyBhbHNvIHJldHVy
-biAtRUlOUFJPR1JFU1MgZnJvbSB0aGVpciB0YXJnZXQoKSByb3V0aW5lcyB0byBtYXJrIHRoYXQK
-dHJhbnN0aW9uIHdpbGwgYmUgY29tcGxldGVkIGxhdGVyLgoKU2lnbmVkLW9mZi1ieTogVmlyZXNo
-IEt1bWFyIDx2aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KLS0tCiBkcml2ZXJzL2NwdWZyZXEvY3B1
-ZnJlcS5jICAgICAgICAgICAgfCA0MiArKysrKysrKysrKysrKysrKysrKysrKysrKysrLS0tLS0t
-LS0KIGRyaXZlcnMvY3B1ZnJlcS9leHlub3M1NDQwLWNwdWZyZXEuYyB8ICAzICsrKwogMiBmaWxl
-cyBjaGFuZ2VkLCAzNiBpbnNlcnRpb25zKCspLCA5IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBh
-L2RyaXZlcnMvY3B1ZnJlcS9jcHVmcmVxLmMgYi9kcml2ZXJzL2NwdWZyZXEvY3B1ZnJlcS5jCmlu
-ZGV4IDljYzU2MDkuLjk2NDQxNTAgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvY3B1ZnJlcS9jcHVmcmVx
-LmMKKysrIGIvZHJpdmVycy9jcHVmcmVxL2NwdWZyZXEuYwpAQCAtMzQ4LDcgKzM0OCw4IEBAIHZv
-aWQgY3B1ZnJlcV9ub3RpZnlfdHJhbnNpdGlvbihzdHJ1Y3QgY3B1ZnJlcV9wb2xpY3kgKnBvbGlj
-eSwKIAlmb3JfZWFjaF9jcHUoZnJlcXMtPmNwdSwgcG9saWN5LT5jcHVzKQogCQlfX2NwdWZyZXFf
-bm90aWZ5X3RyYW5zaXRpb24ocG9saWN5LCBmcmVxcywgc3RhdGUpOwogCi0JaWYgKHN0YXRlID09
-IENQVUZSRVFfUE9TVENIQU5HRSkgeworCWlmICgoY3B1ZnJlcV9kcml2ZXItPmZsYWdzICYgQ1BV
-RlJFUV9BU1lOQ19OT1RJRklDQVRJT04pCisJCQkmJiAoc3RhdGUgPT0gQ1BVRlJFUV9QT1NUQ0hB
-TkdFKSkgewogCQl1bnNpZ25lZCBsb25nIGZsYWdzOwogCiAJCS8qCkBAIC0xNDA2LDYgKzE0MDcs
-MTcgQEAgc3RhdGljIHZvaWQgY3B1ZnJlcV9vdXRfb2Zfc3luYyh1bnNpZ25lZCBpbnQgY3B1LCB1
-bnNpZ25lZCBpbnQgb2xkX2ZyZXEsCiAKIAljcHVmcmVxX25vdGlmeV90cmFuc2l0aW9uKHBvbGlj
-eSwgJmZyZXFzLCBDUFVGUkVRX1BSRUNIQU5HRSk7CiAJY3B1ZnJlcV9ub3RpZnlfdHJhbnNpdGlv
-bihwb2xpY3ksICZmcmVxcywgQ1BVRlJFUV9QT1NUQ0hBTkdFKTsKKworCS8qCisJICogRm9yIGRy
-aXZlcnMgd2l0aCBDUFVGUkVRX0FTWU5DX05PVElGSUNBVElPTiBmbGFnIHNldCwgd2UgZGVjcmVt
-ZW50CisJICogdHJhbnNpdGlvbl9vbmdvaW5nIGZyb20gUE9TVENIQU5HRSBub3RpZmllcnMuCisJ
-ICovCisJaWYgKGNwdWZyZXFfZHJpdmVyLT5mbGFncyAmIENQVUZSRVFfQVNZTkNfTk9USUZJQ0FU
-SU9OKQorCQlyZXR1cm47CisKKwl3cml0ZV9sb2NrX2lycXNhdmUoJmNwdWZyZXFfZHJpdmVyX2xv
-Y2ssIGZsYWdzKTsKKwlwb2xpY3ktPnRyYW5zaXRpb25fb25nb2luZy0tOworCXdyaXRlX3VubG9j
-a19pcnFyZXN0b3JlKCZjcHVmcmVxX2RyaXZlcl9sb2NrLCBmbGFncyk7CiB9CiAKIC8qKgpAQCAt
-MTY5NiwxNCArMTcwOCw2IEBAIGludCBfX2NwdWZyZXFfZHJpdmVyX3RhcmdldChzdHJ1Y3QgY3B1
-ZnJlcV9wb2xpY3kgKnBvbGljeSwKIAlpZiAoY3B1ZnJlcV9kaXNhYmxlZCgpKQogCQlyZXR1cm4g
-LUVOT0RFVjsKIAotCXdyaXRlX2xvY2tfaXJxc2F2ZSgmY3B1ZnJlcV9kcml2ZXJfbG9jaywgZmxh
-Z3MpOwotCWlmIChwb2xpY3ktPnRyYW5zaXRpb25fb25nb2luZykgewotCQl3cml0ZV91bmxvY2tf
-aXJxcmVzdG9yZSgmY3B1ZnJlcV9kcml2ZXJfbG9jaywgZmxhZ3MpOwotCQlyZXR1cm4gLUVCVVNZ
-OwotCX0KLQlwb2xpY3ktPnRyYW5zaXRpb25fb25nb2luZysrOwotCXdyaXRlX3VubG9ja19pcnFy
-ZXN0b3JlKCZjcHVmcmVxX2RyaXZlcl9sb2NrLCBmbGFncyk7Ci0KIAkvKiBNYWtlIHN1cmUgdGhh
-dCB0YXJnZXRfZnJlcSBpcyB3aXRoaW4gc3VwcG9ydGVkIHJhbmdlICovCiAJaWYgKHRhcmdldF9m
-cmVxID4gcG9saWN5LT5tYXgpCiAJCXRhcmdldF9mcmVxID0gcG9saWN5LT5tYXg7CkBAIC0xNzE2
-LDkgKzE3MjAsMjkgQEAgaW50IF9fY3B1ZnJlcV9kcml2ZXJfdGFyZ2V0KHN0cnVjdCBjcHVmcmVx
-X3BvbGljeSAqcG9saWN5LAogCWlmICh0YXJnZXRfZnJlcSA9PSBwb2xpY3ktPmN1cikKIAkJcmV0
-dXJuIDA7CiAKKwl3cml0ZV9sb2NrX2lycXNhdmUoJmNwdWZyZXFfZHJpdmVyX2xvY2ssIGZsYWdz
-KTsKKwlpZiAocG9saWN5LT50cmFuc2l0aW9uX29uZ29pbmcpIHsKKwkJd3JpdGVfdW5sb2NrX2ly
-cXJlc3RvcmUoJmNwdWZyZXFfZHJpdmVyX2xvY2ssIGZsYWdzKTsKKwkJcmV0dXJuIC1FQlVTWTsK
-Kwl9CisJcG9saWN5LT50cmFuc2l0aW9uX29uZ29pbmcrKzsKKwl3cml0ZV91bmxvY2tfaXJxcmVz
-dG9yZSgmY3B1ZnJlcV9kcml2ZXJfbG9jaywgZmxhZ3MpOworCiAJaWYgKGNwdWZyZXFfZHJpdmVy
-LT50YXJnZXQpCiAJCXJldHZhbCA9IGNwdWZyZXFfZHJpdmVyLT50YXJnZXQocG9saWN5LCB0YXJn
-ZXRfZnJlcSwgcmVsYXRpb24pOwogCisJLyoKKwkgKiBGb3IgZHJpdmVycyB3aXRoIENQVUZSRVFf
-QVNZTkNfTk9USUZJQ0FUSU9OIGZsYWcgc2V0LCB3ZSBkZWNyZW1lbnQKKwkgKiB0cmFuc2l0aW9u
-X29uZ29pbmcgZnJvbSBQT1NUQ0hBTkdFIG5vdGlmaWVycy4KKwkgKi8KKwlpZiAoKGNwdWZyZXFf
-ZHJpdmVyLT5mbGFncyAmIENQVUZSRVFfQVNZTkNfTk9USUZJQ0FUSU9OKQorCQkJJiYgKHJldHZh
-bCA9PSAtRUlOUFJPR1JFU1MpKQorCQlyZXR1cm4gcmV0dmFsOworCisJd3JpdGVfbG9ja19pcnFz
-YXZlKCZjcHVmcmVxX2RyaXZlcl9sb2NrLCBmbGFncyk7CisJcG9saWN5LT50cmFuc2l0aW9uX29u
-Z29pbmctLTsKKwl3cml0ZV91bmxvY2tfaXJxcmVzdG9yZSgmY3B1ZnJlcV9kcml2ZXJfbG9jaywg
-ZmxhZ3MpOworCiAJcmV0dXJuIHJldHZhbDsKIH0KIEVYUE9SVF9TWU1CT0xfR1BMKF9fY3B1ZnJl
-cV9kcml2ZXJfdGFyZ2V0KTsKZGlmZiAtLWdpdCBhL2RyaXZlcnMvY3B1ZnJlcS9leHlub3M1NDQw
-LWNwdWZyZXEuYyBiL2RyaXZlcnMvY3B1ZnJlcS9leHlub3M1NDQwLWNwdWZyZXEuYwppbmRleCBm
-NDQ2NjRhLi4xZTM5MWFjIDEwMDY0NAotLS0gYS9kcml2ZXJzL2NwdWZyZXEvZXh5bm9zNTQ0MC1j
-cHVmcmVxLmMKKysrIGIvZHJpdmVycy9jcHVmcmVxL2V4eW5vczU0NDAtY3B1ZnJlcS5jCkBAIC0y
-NTEsNiArMjUxLDkgQEAgc3RhdGljIGludCBleHlub3NfdGFyZ2V0KHN0cnVjdCBjcHVmcmVxX3Bv
-bGljeSAqcG9saWN5LAogCiAJCV9fcmF3X3dyaXRlbCh0bXAsIGR2ZnNfaW5mby0+YmFzZSArIFhN
-VV9DMF8zX1BTVEFURSArIGkgKiA0KTsKIAl9CisKKwkvKiBNYXJrIHRyYW5zaXRpb24gYXMgSW4t
-cHJvZ3Jlc3MgKi8KKwlyZXQgPSAtRUlOUFJPR1JFU1M7CiBvdXQ6CiAJbXV0ZXhfdW5sb2NrKCZj
-cHVmcmVxX2xvY2spOwogCXJldHVybiByZXQ7Ci0tIAoxLjcuMTIucmMyLjE4Lmc2MWI0NzJlCgo=
---089e01182678039c6604e6171b3b--
