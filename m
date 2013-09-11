@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756747Ab3IKE7k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 00:59:40 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22176 "EHLO
+	id S1756732Ab3IKE7i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 00:59:38 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13847 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754247Ab3IKE46 (ORCPT
+	with ESMTP id S1754229Ab3IKE46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 11 Sep 2013 00:56:58 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=_UtqrmwR0vEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Sx4qtyAM1UgA:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=_picTQVsrCXNaikNwXkA:9 a=MSl-tDqOz04A:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=QGt8pn3mYAIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=_w5-F3P5Qf0A:10 a=pGLkceISAAAA:8 a=ag1SF4gXAAAA:8 a=AMTp1_9230GDt9f3md0A:9 a=MSl-tDqOz04A:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042926.952725867@goodmis.org>
+Message-Id: <20130911042927.438399713@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:30:36 -0400
+Date: Wed, 11 Sep 2013 00:30:39 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Johan Hovold <jhovold@gmail.com>,
+Cc: Thomas Pugliese <thomas.pugliese@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [209/251] USB: mos7720: fix broken control requests
+Subject: [212/251] wusbcore: fix kernel panic when disconnecting a wireless USB->serial
+ device
 References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0209-USB-mos7720-fix-broken-control-requests.patch
+Content-Disposition: inline; filename=0212-wusbcore-fix-kernel-panic-when-disconnecting-a-wirel.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,78 +31,56 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Thomas Pugliese <thomas.pugliese@gmail.com>
 
-[ Upstream commit ef6c8c1d733e244f0499035be0dabe1f4ed98c6f ]
+[ Upstream commit ec58fad1feb76c323ef47efff1d1e8660ed4644c ]
 
-The parallel-port code of the drivers used a stack allocated
-control-request buffer for asynchronous (and possibly deferred) control
-requests. This not only violates the no-DMA-from-stack requirement but
-could also lead to corrupt control requests being submitted.
+This patch fixes a kernel panic that can occur when disconnecting a
+wireless USB->serial device.  When the serial device disconnects, the
+device cleanup procedure ends up calling usb_hcd_disable_endpoint on the
+serial device's endpoints.  The wusbcore uses the ABORT_RPIPE command to
+abort all transfers on the given endpoint but it does not properly give
+back the URBs when the transfer results return from the HWA.  This patch
+prevents the transfer result processing code from bailing out when it sees
+a WA_XFER_STATUS_ABORTED result code so that these urbs are flushed
+properly by usb_hcd_disable_endpoint.  It also updates wa_urb_dequeue to
+handle the case where the endpoint has already been cleaned up when
+usb_kill_urb is called which is where the panic originally occurred.
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Thomas Pugliese <thomas.pugliese@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/usb/serial/mos7720.c |   21 ++++++++++++++-------
- 1 file changed, 14 insertions(+), 7 deletions(-)
+ drivers/usb/wusbcore/wa-xfer.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/serial/mos7720.c b/drivers/usb/serial/mos7720.c
-index b691404..3d3b53d 100644
---- a/drivers/usb/serial/mos7720.c
-+++ b/drivers/usb/serial/mos7720.c
-@@ -97,6 +97,7 @@ struct urbtracker {
- 	struct list_head        urblist_entry;
- 	struct kref             ref_count;
- 	struct urb              *urb;
-+	struct usb_ctrlrequest	*setup;
- };
- 
- enum mos7715_pp_modes {
-@@ -278,6 +279,7 @@ static void destroy_urbtracker(struct kref *kref)
- 	struct mos7715_parport *mos_parport = urbtrack->mos_parport;
- 
- 	usb_free_urb(urbtrack->urb);
-+	kfree(urbtrack->setup);
- 	kfree(urbtrack);
- 	kref_put(&mos_parport->ref_count, destroy_mos_parport);
- }
-@@ -360,7 +362,6 @@ static int write_parport_reg_nonblock(struct mos7715_parport *mos_parport,
- 	struct urbtracker *urbtrack;
- 	int ret_val;
- 	unsigned long flags;
--	struct usb_ctrlrequest setup;
- 	struct usb_serial *serial = mos_parport->serial;
- 	struct usb_device *usbdev = serial->dev;
- 
-@@ -378,14 +379,20 @@ static int write_parport_reg_nonblock(struct mos7715_parport *mos_parport,
- 		kfree(urbtrack);
- 		return -ENOMEM;
+diff --git a/drivers/usb/wusbcore/wa-xfer.c b/drivers/usb/wusbcore/wa-xfer.c
+index 57c01ab..1ebc17e 100644
+--- a/drivers/usb/wusbcore/wa-xfer.c
++++ b/drivers/usb/wusbcore/wa-xfer.c
+@@ -1110,6 +1110,12 @@ int wa_urb_dequeue(struct wahc *wa, struct urb *urb)
  	}
--	setup.bRequestType = (__u8)0x40;
--	setup.bRequest = (__u8)0x0e;
--	setup.wValue = get_reg_value(reg, dummy);
--	setup.wIndex = get_reg_index(reg);
--	setup.wLength = 0;
-+	urbtrack->setup = kmalloc(sizeof(*urbtrack->setup), GFP_KERNEL);
-+	if (!urbtrack->setup) {
-+		usb_free_urb(urbtrack->urb);
-+		kfree(urbtrack);
-+		return -ENOMEM;
+ 	spin_lock_irqsave(&xfer->lock, flags);
+ 	rpipe = xfer->ep->hcpriv;
++	if (rpipe == NULL) {
++		pr_debug("%s: xfer id 0x%08X has no RPIPE.  %s",
++			__func__, wa_xfer_id(xfer),
++			"Probably already aborted.\n" );
++		goto out_unlock;
 +	}
-+	urbtrack->setup->bRequestType = (__u8)0x40;
-+	urbtrack->setup->bRequest = (__u8)0x0e;
-+	urbtrack->setup->wValue = get_reg_value(reg, dummy);
-+	urbtrack->setup->wIndex = get_reg_index(reg);
-+	urbtrack->setup->wLength = 0;
- 	usb_fill_control_urb(urbtrack->urb, usbdev,
- 			     usb_sndctrlpipe(usbdev, 0),
--			     (unsigned char *)&setup,
-+			     (unsigned char *)urbtrack->setup,
- 			     NULL, 0, async_complete, urbtrack);
- 	kref_init(&urbtrack->ref_count);
- 	INIT_LIST_HEAD(&urbtrack->urblist_entry);
+ 	/* Check the delayed list -> if there, release and complete */
+ 	spin_lock_irqsave(&wa->xfer_list_lock, flags2);
+ 	if (!list_empty(&xfer->list_node) && xfer->seg == NULL)
+@@ -1493,8 +1499,7 @@ static void wa_xfer_result_cb(struct urb *urb)
+ 			break;
+ 		}
+ 		usb_status = xfer_result->bTransferStatus & 0x3f;
+-		if (usb_status == WA_XFER_STATUS_ABORTED
+-		    || usb_status == WA_XFER_STATUS_NOT_FOUND)
++		if (usb_status == WA_XFER_STATUS_NOT_FOUND)
+ 			/* taken care of already */
+ 			break;
+ 		xfer_id = xfer_result->dwTransferID;
 -- 
 1.7.10.4
 
