@@ -1,71 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512Ab3IKFSk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 01:18:40 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:59623 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752281Ab3IKFSf convert rfc822-to-8bit (ORCPT
+	id S1755283Ab3IKE5r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 00:57:47 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3257 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754142Ab3IKE4t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 01:18:35 -0400
-Content-Type: text/plain; charset=US-ASCII
-Mime-Version: 1.0 (Mac OS X Mail 6.5 \(1508\))
-Subject: Re: [PATCH 0/3] ARM: dts: Enable EDMA, MMC and SPI on AM33XX for v3.13
-From: Koen Kooi <koen@dominion.thruhere.net>
-In-Reply-To: <522F7DC0.7030603@ti.com>
-Date: Wed, 11 Sep 2013 07:18:32 +0200
-Cc: Benoit Cousson <bcousson@baylibre.com>, Nishanth Menon <nm@ti.com>,
-        Devicetree Discuss <devicetree@vger.kernel.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>
-Content-Transfer-Encoding: 7BIT
-Message-Id: <88E4C15C-B1AA-4A39-A5E1-CF9E8420C2BE@dominion.thruhere.net>
-References: <1378841079-15796-1-git-send-email-joelf@ti.com> <5EB8AE91-A996-4CF1-86B7-C8FDEC177E89@dominion.thruhere.net> <522F7DC0.7030603@ti.com>
-To: Joel Fernandes <joelf@ti.com>
-X-Mailer: Apple Mail (2.1508)
+	Wed, 11 Sep 2013 00:56:49 -0400
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=rtVuEUoX3JIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=YgdE7FNah_QA:10 a=hGzw-44bAAAA:8 a=VwQbUJbxAAAA:8 a=wMNdZWldAAAA:8 a=wAwfuhEyL-vLSwEzO4gA:9 a=dowx1zmaLagA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130911042932.294397927@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 11 Sep 2013 00:31:07 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [240/251] powerpc: Work around gcc miscompilation of __pa() on 64-bit
+References: <20130911042707.738353451@goodmis.org>
+Content-Disposition: inline; filename=0240-powerpc-Work-around-gcc-miscompilation-of-__pa-on-64.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.6.11.9-rc1 stable review patch.
+If anyone has any objections, please let me know.
 
-Op 10 sep. 2013, om 22:14 heeft Joel Fernandes <joelf@ti.com> het volgende geschreven:
+------------------
 
-> On 09/10/2013 02:39 PM, Koen Kooi wrote:
->> 
->> Op 10 sep. 2013, om 21:24 heeft Joel Fernandes <joelf@ti.com> het volgende geschreven:
->> 
->>> Here are last few patches required to add EDMA and MMC/SPI support for AM33xx.
->>> 
->>> Now that all dependent DMA patches and fixes are in linux next or mainline, except
->>> for [1] which should go in for 3.12 -rc cycle, it is safe to enable MMC and SPI support
->>> and this patch series enables it. These are originally Matt Porter's patches with
->>> changes to make it work with recent kernels, addition of irq, memory resources and
->>> enable other extra properties.
->>> 
->>> These patches should cleanly apply on master branch after Koen's patch [2] for basic
->>> BBB DT support is applied.
->>> 
->>> MMC support is enabled for: Beaglebone, AM335x EVM and EVM-SK boards. MMC support
->>> for BBB is intentionally not added due to custom fixes and other patches that are
->>> in Koen's tree and which will be separately submitted by him.
->> 
->> Correct, but your patches for MMC support on BBW are missing the card detect entries to make it hotplug work.
-> 
-> I thought it was determined that this would be submitted by you separately after
-> rebasing as we discussed [1] and [2].
+From: Paul Mackerras <paulus@samba.org>
 
-I have no problem submitting that, I just think it's weird that the patch you submitted contains a known broken version for BBW.
+[ Upstream commit bdbc29c19b2633b1d9c52638fb732bcde7a2031a ]
 
-> 
-> [1] https://lkml.org/lkml/2013/9/6/183
-> [2] http://marc.info/?l=linux-omap&m=137879246709612&w=2
-> 
-> 
-> Regards,
-> 
-> -Joel
+On 64-bit, __pa(&static_var) gets miscompiled by recent versions of
+gcc as something like:
+
+        addis 3,2,.LANCHOR1+4611686018427387904@toc@ha
+        addi 3,3,.LANCHOR1+4611686018427387904@toc@l
+
+This ends up effectively ignoring the offset, since its bottom 32 bits
+are zero, and means that the result of __pa() still has 0xC in the top
+nibble.  This happens with gcc 4.8.1, at least.
+
+To work around this, for 64-bit we make __pa() use an AND operator,
+and for symmetry, we make __va() use an OR operator.  Using an AND
+operator rather than a subtraction ends up with slightly shorter code
+since it can be done with a single clrldi instruction, whereas it
+takes three instructions to form the constant (-PAGE_OFFSET) and add
+it on.  (Note that MEMORY_START is always 0 on 64-bit.)
+
+CC: <stable@vger.kernel.org>
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ arch/powerpc/Kconfig            |    1 +
+ arch/powerpc/include/asm/page.h |   10 ++++++++++
+ 2 files changed, 11 insertions(+)
+
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index 352f416..3254335 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -973,6 +973,7 @@ config RELOCATABLE
+ 	  must live at a different physical address than the primary
+ 	  kernel.
+ 
++# This value must have zeroes in the bottom 60 bits otherwise lots will break
+ config PAGE_OFFSET
+ 	hex
+ 	default "0xc000000000000000"
+diff --git a/arch/powerpc/include/asm/page.h b/arch/powerpc/include/asm/page.h
+index f072e97..2e6c4e5a 100644
+--- a/arch/powerpc/include/asm/page.h
++++ b/arch/powerpc/include/asm/page.h
+@@ -211,9 +211,19 @@ extern long long virt_phys_offset;
+ #define __va(x) ((void *)(unsigned long)((phys_addr_t)(x) + VIRT_PHYS_OFFSET))
+ #define __pa(x) ((unsigned long)(x) - VIRT_PHYS_OFFSET)
+ #else
++#ifdef CONFIG_PPC64
++/*
++ * gcc miscompiles (unsigned long)(&static_var) - PAGE_OFFSET
++ * with -mcmodel=medium, so we use & and | instead of - and + on 64-bit.
++ */
++#define __va(x) ((void *)(unsigned long)((phys_addr_t)(x) | PAGE_OFFSET))
++#define __pa(x) ((unsigned long)(x) & 0x0fffffffffffffffUL)
++
++#else /* 32-bit, non book E */
+ #define __va(x) ((void *)(unsigned long)((phys_addr_t)(x) + PAGE_OFFSET - MEMORY_START))
+ #define __pa(x) ((unsigned long)(x) - PAGE_OFFSET + MEMORY_START)
+ #endif
++#endif
+ 
+ /*
+  * Unfortunately the PLT is in the BSS in the PPC32 ELF ABI,
+-- 
+1.7.10.4
+
 
