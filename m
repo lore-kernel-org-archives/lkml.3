@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab3IKEjW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 00:39:22 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:38433 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753274Ab3IKEjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 00:39:18 -0400
-Date: Tue, 10 Sep 2013 21:39:11 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ian Campbell <ian.campbell@citrix.com>, xen-devel@lists.xenproject.org,
-        netdev@vger.kernel.org
-Subject: [PATCH] xen-netback: fix possible format string flaw
-Message-ID: <20130911043911.GA17237@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+	id S1754424Ab3IKEaI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 00:30:08 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7273 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752068Ab3IKE24 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 00:28:56 -0400
+X-Authority-Analysis: v=2.0 cv=R/aB6KtX c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=-a6E2YZRoXgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=v_ahs11aANsA:10 a=VwQbUJbxAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=0kPLrQdw3YYA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130911042853.813273255@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 11 Sep 2013 00:27:17 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Takashi Iwai <tiwai@suse.de>
+Subject: [010/251] ALSA: usx2y: Fix unlocked snd_pcm_stop() call
+References: <20130911042707.738353451@goodmis.org>
+Content-Disposition: inline; filename=0010-ALSA-usx2y-Fix-unlocked-snd_pcm_stop-call.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes sure a format string cannot accidentally leak into the
-kthread_run() call.
+3.6.11.9-rc1 stable review patch.
+If anyone has any objections, please let me know.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
+------------------
+
+From: Takashi Iwai <tiwai@suse.de>
+
+[ Upstream commit 5be1efb4c2ed79c3d7c0cbcbecae768377666e84 ]
+
+snd_pcm_stop() must be called in the PCM substream lock context.
+
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/net/xen-netback/interface.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/usb/usx2y/usbusx2yaudio.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
-index 625c6f4..77fee1d 100644
---- a/drivers/net/xen-netback/interface.c
-+++ b/drivers/net/xen-netback/interface.c
-@@ -406,7 +406,7 @@ int xenvif_connect(struct xenvif *vif, unsigned long tx_ring_ref,
- 
- 	init_waitqueue_head(&vif->wq);
- 	vif->task = kthread_create(xenvif_kthread,
--				   (void *)vif, vif->dev->name);
-+				   (void *)vif, "%s", vif->dev->name);
- 	if (IS_ERR(vif->task)) {
- 		pr_warn("Could not allocate kthread for %s\n", vif->dev->name);
- 		err = PTR_ERR(vif->task);
+diff --git a/sound/usb/usx2y/usbusx2yaudio.c b/sound/usb/usx2y/usbusx2yaudio.c
+index 520ef96..43d337d 100644
+--- a/sound/usb/usx2y/usbusx2yaudio.c
++++ b/sound/usb/usx2y/usbusx2yaudio.c
+@@ -273,7 +273,11 @@ static void usX2Y_clients_stop(struct usX2Ydev *usX2Y)
+ 		struct snd_usX2Y_substream *subs = usX2Y->subs[s];
+ 		if (subs) {
+ 			if (atomic_read(&subs->state) >= state_PRERUNNING) {
++				unsigned long flags;
++
++				snd_pcm_stream_lock_irqsave(subs->pcm_substream, flags);
+ 				snd_pcm_stop(subs->pcm_substream, SNDRV_PCM_STATE_XRUN);
++				snd_pcm_stream_unlock_irqrestore(subs->pcm_substream, flags);
+ 			}
+ 			for (u = 0; u < NRURBS; u++) {
+ 				struct urb *urb = subs->urb[u];
 -- 
-1.7.9.5
+1.7.10.4
 
 
--- 
-Kees Cook
-Chrome OS Security
