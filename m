@@ -1,85 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404Ab3IKAbt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 20:31:49 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:53266 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751950Ab3IKAbs (ORCPT
+	id S1753348Ab3IKAev (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 20:34:51 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:62250 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751966Ab3IKAet (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 20:31:48 -0400
-Message-ID: <522FB9F1.3070905@linaro.org>
-Date: Tue, 10 Sep 2013 17:31:45 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Stephan Mueller <smueller@chronox.de>,
-        LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] /dev/random: Insufficient of entropy on many architectures
-References: <10005394.BRCyBMYWy3@tauon> <CANcMJZAHuXNQ4eUx+qpVnfJTg625HkJU_9pgBP24ykkmBww3yw@mail.gmail.com> <20130910203853.GG29237@thunk.org> <522F851D.1040101@linaro.org> <20130910211009.GI29237@thunk.org> <522F984C.2070909@linaro.org> <20130910223326.GD11063@thunk.org>
-In-Reply-To: <20130910223326.GD11063@thunk.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 10 Sep 2013 20:34:49 -0400
+X-AuditID: cbfee68d-b7fe86d0000077a5-c6-522fbaa8e2f8
+Message-id: <522FBAA8.2060506@samsung.com>
+Date: Wed, 11 Sep 2013 09:34:48 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'MyungJoo Ham'" <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] extcon: Remove casting the return value which is a void
+ pointer
+References: <005201cead1e$1f2007a0$5d6016e0$%han@samsung.com>
+In-reply-to: <005201cead1e$1f2007a0$5d6016e0$%han@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNIsWRmVeSWpSXmKPExsWyRsSkQHfFLv0gg8/nhSwuL7zEanF51xw2
+	i9uNK9gcmD36tqxi9Pi8SS6AKYrLJiU1J7MstUjfLoEr4/3kN0wFl5grtsxqYW5gfM/UxcjJ
+	ISFgInGk5TELhC0mceHeerYuRi4OIYGljBK3j91ngym6d2wuE0RiOqPElFVPoKpeMUq8WfeF
+	uYuRg4NXQEvi91sjkAYWAVWJBc+62EFsNqDw/hc3wAaJCoRJrJx+BWwbr4CgxI/J98BsEQEV
+	ic/rj4PVMAt4S+yYOIEVxBYGqr9w7B1YjZCArcSRVTPBbE4BO4nZl68zQtTrSOxvnQbVKy+x
+	ec1bZpDbJASms0v0nd7GBnGQgMS3yYdYQO6UEJCV2HSAGeIxSYmDK26wTGAUm4XkpFlIxs5C
+	MnYBI/MqRtHUguSC4qT0IkO94sTc4tK8dL3k/NxNjMCIOf3vWe8OxtsHrA8xJgOtnMgsJZqc
+	D4y4vJJ4Q2MzIwtTE1NjI3NLM9KElcR51VqsA4UE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUw
+	3nvQH212U6Pk1sT6fyscrjvVT2o4P+Wr9qrdUsmNF2p/2Z0qVtiy6MGcs7OnFyX5si0NP5D4
+	dOH77xvFEh3LmfJixWSMgtl2hAZ+KW0xn9b52lC9SXLX71SxF0tqajsqw9YEXLm7nHUB8955
+	ti+4chhCutSnl2/zWaDn+detwefIMaZjG/JXKLEUZyQaajEXFScCANZcS4WuAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBIsWRmVeSWpSXmKPExsVy+t9jQd0Vu/SDDH6081hcXniJ1eLyrjls
+	FrcbV7A5MHv0bVnF6PF5k1wAU1QDo01GamJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5
+	kkJeYm6qrZKLT4CuW2YO0BIlhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEN
+	Y8b7yW+YCi4xV2yZ1cLcwPieqYuRk0NCwETi3rG5ULaYxIV769m6GLk4hASmM0pMWfUEynnF
+	KPFm3RfmLkYODl4BLYnfb41AGlgEVCUWPOtiB7HZgML7X9xgA7FFBcIkVk6/wgJi8woISvyY
+	fA/MFhFQkfi8/jhYDbOAt8SOiRNYQWxhoPoLx96B1QgJ2EocWTUTzOYUsJOYffk6I0S9jsT+
+	1mlQvfISm9e8ZZ7AKDALyYpZSMpmISlbwMi8ilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4
+	Hp9J72Bc1WBxiFGAg1GJh/eGnH6QEGtiWXFl7iFGCQ5mJRHeqU5AId6UxMqq1KL8+KLSnNTi
+	Q4zJwBCYyCwlmpwPTBV5JfGGxiZmRpZG5oYWRsbmpAkrifMebLUOFBJITyxJzU5NLUgtgtnC
+	xMEp1cCYsu7od5aDYrt2JWmmsjcKBe/aco9XchHTOoFdypt+vmvbuf/qIt4l+mEFj/f8XSIv
+	EFeS/aOAn/d/x/l7Ow5acO/+vmmtzuGas/Vsz3u4dYw13qVFXd2dmMdyQKiN5U3L3MSnn/8m
+	Pt4S3Ss2Lcf4WVXax+YP1WzKEuZ7Oz8cu1LrucHI2GidEktxRqKhFnNRcSIAK9IsdAsDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2013 03:33 PM, Theodore Ts'o wrote:
-> On Tue, Sep 10, 2013 at 03:08:12PM -0700, John Stultz wrote:
->> One other area you might look at is using the delta between when the
->> next hrtimer was scheduled for and when we actually expired it? That's
->> something we could cheaply calculate on every hrtimer expiration. Though
->> I probably should be hesitant with my suggestions, as I'm not well
->> versed in RNG theory.
-> What we need is a time source which whose granularity is substantially
-> finer-grained that the rate at which interrupts are delievered to the
-> system (preferably by a factor at least 8 or 16).  It also needs to be
-> fast enough (since we will be calling it on every single interrupt)
-> that the overhead doesn't cause architecture maintainers to break out
-> their torches and pitchforks and come looking for me.  :-)
+Hi Jingoo,
 
-Yea, that point about "every single interrupt" vs "every timer
-interrupt". I suspect that if its every timer interrupt, this can be
-done easily w/ clocksources as we already do that read, but every single
-interrupt would have potential problems with various other devices with
-high irq frequency.
+On 09/09/2013 02:33 PM, Jingoo Han wrote:
+> Casting the return value which is a void pointer is redundant.
+> The conversion from void pointer to any other pointer type is
+> guaranteed by the C programming language.
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+>  drivers/extcon/extcon-class.c |    8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
 
+Applied it on extcon-linus branch.
 
-
-> Reading from a cycle counter is therefore ideal; it doesn't need to be
-> synchronized across CPU's, and I don't care if it gets stops ticking
-> when the system is suspended, and I don't care if the rate at which it
-> increment is dependent on CPU clock speed getting jacked up and down
-> for by power management systems.  (And in fact, if it's going to cost
-> extra overhead to correct for the CPU being suspended or running at a
-> 1.6 MHz instead of 2.8 MHz, that's a bug, not a feature.)  We just
-> need something fine-grained.
-Right so get_cycles() really sounds like the right thing here.
-
-Although I wonder if you run into issues with counters that wrap
-quickly? Or does that not matter?
-
-
-> The problem is what do we do on platforms that don't have a cycle
-> counter.  Stephan Mueller has proposed using the "best" clocksource as
-> a default fallback.  Which might be OK, but I still remember that
-> really, REALLY angry customer who discovered that gettimeofday() was
-> breathtakingly slow on an IBM X440 (at least, when they were calling
-> it at super high rates).
-Yea, I'm familiar with that box. :)
-
-
-> I just have no idea what various clock sources might do on different
-> architectures, and if many of the more older ones (i.e., sparc 32,
-> m32, h8, etc.) are just going to fall back to jiffies, I'm not sure
-> it's worth it.
-
-Right. In many cases jiffies is all that we have. Thus the check for
-timekeeping_valid_for_hres() can be used to at least flag that case. Not
-that I know what you want to do if it comes up false.
-
-thanks
--john
+Thanks,
+Chanwoo Choi
 
