@@ -1,92 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753644Ab3IKK0F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 06:26:05 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:51925 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753444Ab3IKK0B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 06:26:01 -0400
-Message-ID: <1378895123.5476.83.camel@marge.simpson.net>
-Subject: Re: [PATCH V3]hrtimer: Fix a performance regression by disable
- reprogramming in remove_hrtimer
-From: Mike Galbraith <bitbucket@online.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, ethan.kernel@gmail.com,
-        rjw@sisk.pl, daniel.lezcano@linaro.org, linux-pm@vger.kernel.org,
-        lenb@kernel.org
-Date: Wed, 11 Sep 2013 12:25:23 +0200
-In-Reply-To: <20130911085643.GS26785@twins.programming.kicks-ass.net>
-References: <24EECBCC-F655-404F-8946-73CC36095A5F@gmail.com>
-	 <1378362989.18435.2.camel@marge.simpson.net>
-	 <20130905111428.GB23362@gmail.com>
-	 <1378386697.6567.9.camel@marge.simpson.net>
-	 <20130905133750.GA26637@gmail.com>
-	 <1378445942.5434.31.camel@marge.simpson.net>
-	 <20130909122325.GX31370@twins.programming.kicks-ass.net>
-	 <1378730538.5586.30.camel@marge.simpson.net>
-	 <20130909133044.GB31370@twins.programming.kicks-ass.net>
-	 <20130909134635.GB26785@twins.programming.kicks-ass.net>
-	 <20130911085643.GS26785@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:DkocL5eBc3Q9SHRfw5PyPGID+M262PvHj58yuMgFK3c
- Mr5bJ9jVVBqq5F8zTXr83/tPLn4duSXpAM8hW6d8TTkALDlszQ
- wc53fiYr5V+G7azpS9jO/MMrONawqhtDw1rcOVMlavRGFn1V3d
- 1Pdaf36g37mvLskAB0ekwxhw1h/wWNLGa1nidWwpydWLHBvnCo
- KzOujC5RkPubz/yDETTEJ1hll46A1gSbwrXO4qSY6yLhdCuxkC
- 2MFqxyaRxmQv2ynflcXQB93kf74jC48ykbKLAY8hLyFRiNqfei
- RglMfvGyH00dzWP6RyhRdazp6Dpl1c6PWEYCiuv2Tn1KR2uYDi
- VRZZiP7FQaXxOq5axtPZy9qQ1KUfCv1Ks/Ge/uCmcVLagD9PiW
- KSuvpJveiYyLQ==
+	id S1753778Ab3IKK13 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 06:27:29 -0400
+Received: from mga03.intel.com ([143.182.124.21]:13717 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752739Ab3IKK12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 06:27:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,883,1371106800"; 
+   d="scan'208";a="358889271"
+From: Jani Nikula <jani.nikula@linux.intel.com>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: Aaron Lu <aaron.lu@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Daniel Vetter <daniel@ffwll.ch>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        "intel-gfx\@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        Yves-Alexis Perez <corsac@debian.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel\@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        "Lee\, Chun-Yi" <joeyli.kernel@gmail.com>,
+        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Lee Chun-Yi <jlee@novell.com>, Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH 2/2] ACPI / video / i915: Remove ACPI backlight if firmware expects Windows 8
+In-Reply-To: <1378889140.945.0.camel@x230.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+References: <522D88C3.7000808@intel.com> <5155010.Y1gov7SKhP@vostro.rjw.lan> <87eh8wail7.fsf@intel.com> <1889567.vxI8heiC3B@vostro.rjw.lan> <20130911013206.GA556@mint-spring.sh.intel.com> <87hadrycf4.fsf@intel.com> <1378889140.945.0.camel@x230.lan>
+User-Agent: Notmuch/0.16+64~g94fe857 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Wed, 11 Sep 2013 13:29:29 +0300
+Message-ID: <87d2ofy7li.fsf@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-11 at 10:56 +0200, Peter Zijlstra wrote: 
-> On Mon, Sep 09, 2013 at 03:46:35PM +0200, Peter Zijlstra wrote:
-> > On Mon, Sep 09, 2013 at 03:30:44PM +0200, Peter Zijlstra wrote:
-> > > diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-> > > index fa6964d..486c0ba 100644
-> > > --- a/drivers/idle/intel_idle.c
-> > > +++ b/drivers/idle/intel_idle.c
-> > > @@ -359,6 +359,14 @@ static int intel_idle(struct cpuidle_device *dev,
-> > >  	if (!(lapic_timer_reliable_states & (1 << (cstate))))
-> > >  		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
-> > >  
-> > > +	current_thread_into()->status |= TS_POLLING;
-> > > +
-> > > +	/*
-> > > +	 * Order against setting of TS_POLLING against the reading of
-> > > +	 * NEED_RESCHED, matched by resched_task().
-> > > +	 */
-> > > +	smp_mb();
-> > > +
-> > >  	if (!need_resched()) {
-> > >  
-> > >  		__monitor((void *)&current_thread_info()->flags, 0, 0);
-> > > @@ -367,6 +375,8 @@ static int intel_idle(struct cpuidle_device *dev,
-> > >  			__mwait(eax, ecx);
-> > >  	}
-> > >  
-> > > +	current_thread_into()->status &= ~TS_POLLING;
-> > > +
-> > >  	if (!(lapic_timer_reliable_states & (1 << (cstate))))
-> > >  		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
-> > 
-> > Hmm, arguably it would be better to set this from
-> > intel_idle_cpuidle_driver_init() and clear it whenever this goes away.
-> > Not sure how all that works, the cpuidle driver framework seems 'weird'.
-> 
-> OK, so I went over the idle stuff again, and we do set TS_POLLING like
-> stuff, it got hidden in current_{clr,set}_polling().
-> 
-> Still if that patch causes extra IPIs its bound to be broken in some
-> creative way.. I'll prod.
+On Wed, 11 Sep 2013, Matthew Garrett <matthew.garrett@nebula.com> wrote:
+> On Wed, 2013-09-11 at 11:45 +0300, Jani Nikula wrote:
+>
+>> Before plunging forward, have you observed any difference between the
+>> boot modes? We have reports [1] that the backlight behaviour is
+>> different with UEFI vs. UEFI+CSM or legacy boot. So I'm wondering if the
+>> acpi_gbl_osi_data >= ACPI_OSI_WIN_8 check in patch 2/2 is the whole
+>> story.
+>> 
+>> Further, if we tell the BIOS we're Windows 8 to use the tested BIOS code
+>> paths, what guarantees do we have of UEFI+CSM or legacy boots working?
+>
+> We have no evidence of Windows behaving differently based on the exposed
+> firmware type.
 
-(thanks, when I get a break from testing/poking this'n'that, I'll take a
-peek too...  well, good_intentions++ anyway;)
+By "behaving differently", do you mean internally adapting to the boot
+mode, or exhibiting different behaviour to the user?
 
+We have evidence of the firmware behaving differently (VBT, backlight)
+based on the boot mode, all else being equal. We don't adapt to that,
+and we fail. I don't know if we should adapt, or do things differently
+altogether. I don't even know if Windows 8 works on all boot modes on
+the machines in question.
+
+
+BR,
+Jani.
+
+
+-- 
+Jani Nikula, Intel Open Source Technology Center
