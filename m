@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756191Ab3IKRFe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 13:05:34 -0400
-Received: from hurricane.the-brannons.com ([64.62.188.119]:40243 "EHLO
-	hurricane.the-brannons.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756062Ab3IKRFc (ORCPT
+	id S1756011Ab3IKRHx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 13:07:53 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7807 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754053Ab3IKRHw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 13:05:32 -0400
-From: Christopher Brannon <chris@the-brannons.com>
-To: devel@driverdev.osuosl.org
-Cc: gregkh@linuxfoundation.org, w.d.hubbs@gmail.com, kirk@reisers.ca,
-        samuel.thibault@ens-lyon.org, dan.carpenter@oracle.com,
-        andriy.shevchenko@linux.intel.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, raphael.scarv@gmail.com
-Subject: [PATCH] staging: speakup: kobjects.c: Use correct values when changing voice.
-Date: Wed, 11 Sep 2013 10:05:27 -0700
-Message-Id: <1378919127-28259-1-git-send-email-chris@the-brannons.com>
-X-Mailer: git-send-email 1.8.1.5
+	Wed, 11 Sep 2013 13:07:52 -0400
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=owWOOl27trcA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Px2ojtpeDmIA:10 a=KKAkSRfTAAAA:8 a=_9PKuV2NLYsWSrV4chsA:9 a=CjuIK1q_8ugA:10 a=WwgC8nHKvroA:10 a=GDabatD6gA0A:10 a=YsEnT1LiCnMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Wed, 11 Sep 2013 13:07:50 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org
+Subject: Re: [RFC PATCH] timekeeping: introduce timekeeping_is_busy()
+Message-ID: <20130911130750.6a60d30f@gandalf.local.home>
+In-Reply-To: <52309D13.3020305@linaro.org>
+References: <20130911150853.GA19800@Krystal>
+	<52309D13.3020305@linaro.org>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a new voice is selected, we set volume and pitch appropriate for
-the voice.  We need to use the numeric index corresponding to the
-voice when indexing into the volume and pitch tables, rather than
-the raw user input that was used to select the voice.
-Note that using the raw input can also lead to an invalid memory read
-in the case of invalid or malicious user input.
+On Wed, 11 Sep 2013 09:40:51 -0700
+John Stultz <john.stultz@linaro.org> wrote:
 
-Signed-off-by: Christopher Brannon <chris@the-brannons.com>
----
- drivers/staging/speakup/kobjects.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+> (and it avoids me forgetting to set the owner in some future change,
+> further mucking things up :).
 
-diff --git a/drivers/staging/speakup/kobjects.c b/drivers/staging/speakup/kobjects.c
-index 61a3f7a..f31afa2 100644
---- a/drivers/staging/speakup/kobjects.c
-+++ b/drivers/staging/speakup/kobjects.c
-@@ -651,7 +651,10 @@ ssize_t spk_var_store(struct kobject *kobj, struct kobj_attribute *attr,
- 		* If voice was just changed, we might need to reset our default
- 		* pitch and volume.
- 		*/
--		if (param->var_id == VOICE) {
-+		if (param->var_id == VOICE && synth &&
-+		    (ret == 0 || ret == -ERESTART)) {
-+			var_data = param->data;
-+			value = var_data->u.n.value;
- 			spk_reset_default_value("pitch", synth->default_pitch,
- 				value);
- 			spk_reset_default_value("vol", synth->default_vol,
--- 
-1.8.1.5
+Wow, I had to read that twice to see what you really wrote. I was
+thinking "damn, John is getting vulgar!" ;-)
+
+-- Steve 
 
