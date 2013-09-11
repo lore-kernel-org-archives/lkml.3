@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760Ab3IKMI6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 08:08:58 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:46350 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323Ab3IKMI5 (ORCPT
+	id S1752363Ab3IKMN1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 08:13:27 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:23827 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751780Ab3IKMN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 08:08:57 -0400
-Date: Wed, 11 Sep 2013 21:08:16 +0500
-From: "Zubair Lutfullah :" <zubair.lutfullah@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Jonathan Cameron <jic23@kernel.org>,
-        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
-        linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bigeasy@linutronix.de,
-        gregkh@linuxfoundation.org
-Subject: Re: [PATCH 1/2] input: ti_am335x_tsc: Enable shared IRQ for TSC
-Message-ID: <20130911160815.GA9748@gmail.com>
-References: <1378034277-26728-1-git-send-email-zubair.lutfullah@gmail.com>
- <1378034277-26728-2-git-send-email-zubair.lutfullah@gmail.com>
- <522C5F96.20001@kernel.org>
- <20130909161230.GA25107@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130909161230.GA25107@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 11 Sep 2013 08:13:26 -0400
+X-AuditID: cbfee61b-b7f776d0000016c8-48-52305e64a96e
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [GIT PULL] DMA-mapping updates for v3.12 (part 2)
+Date: Wed, 11 Sep 2013 14:13:15 +0200
+Message-id: <1378901595-29830-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNJMWRmVeSWpSXmKPExsVy+t9jAd2UOIMgg56nehaXd81hs1h75C67
+	xaO+t+wOzB4nZvxm8ejbsorR4/MmuQDmKC6blNSczLLUIn27BK6M/48PsRUs5a7on/ieuYFx
+	C2cXIyeHhICJxJWOZlYIW0ziwr31bCC2kMAiRon13d4QdjuTxJP3QSA2m4ChRNfbLrAaEQEj
+	ic8vroD1Mgv4Stx5tYoFxBYWsJJ4cvYzE4jNIqAq8WnLWrB6XgEPiXt3LzN2MXIA7VKQmDPJ
+	ZgIj9wJGhlWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwV5+Jr2DcVWDxSFGAQ5GJR7eG3L6
+	QUKsiWXFlbmHGCU4mJVEeB+YGgQJ8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Yah0oJJCeWJKa
+	nZpakFoEk2Xi4JRqYFxVlyWp85xzq41ixaw3l65FHWiSkXhTNyV9fvhUb7W1h1Z/sakp/s72
+	+HFHV6PiPZ2ynOB13tlJu23CU+QKXuQY8Ep//KIptqF4xe7UzfouorN2pixePtWx/8NWszh5
+	s5DAOOf7Ajt6P9U9OPb38Wn3dJV6a+s4MdH+Lfq7Z8xfPuPRgTzuhUosxRmJhlrMRcWJAC2c
+	7ljuAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 09:12:30AM -0700, Dmitry Torokhov wrote:
-> On Sun, Sep 08, 2013 at 12:29:26PM +0100, Jonathan Cameron wrote:
-> > On 09/01/13 12:17, Zubair Lutfullah wrote:
-> > > Enable shared IRQ to allow ADC to share IRQ line from
-> > > parent MFD core. Only FIFO0 IRQs are for TSC and handled
-> > > on the TSC side.
-> > > 
-> > > Step mask would be updated from cached variable only previously.
-> > > In rare cases when both TSC and ADC are used, the cached
-> > > variable gets mixed up.
-> > > The step mask is written with the required mask every time.
-> > > 
-> > > Rachna Patil (TI) laid ground work for shared IRQ.
-> > > 
-> > > Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-> > Whilst I would have prefered an mfd under these drivers and elegant handling
-> > of the interrupts, I guess if this works it is at least not terribly invasive.
-> > 
-> > However, this does need an Ack from Dmitry before I can take it (or for
-> > Dmitry to take it himself?)
-> 
-> I completely agree with Jonathan, more elegant handling would be nice
-> but current one will do for now.
-> 
-> Since most of the work on the driver is going through IIO tree I think
-> it would make sense for this patch to go through it as well.
-> 
-> Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Hi Linus,
 
-Thank-you.
-ZubairLK
+I would like to ask You for pulling another update of Contiguous Memory
+Allocator driver for dma-mapping subsystem for v3.12.
 
+
+The following changes since commit 26b0332e30c7f93e780aaa054bd84e3437f84354:
+
+  Merge tag 'dmaengine-3.12' of git://git.kernel.org/pub/scm/linux/kernel/git/djbw/dmaengine (2013-09-09 18:07:15 -0700)
+
+are available in the git repository at:
+
+
+  git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git for-v3.12-fix
+
+for you to fetch changes up to aca0156a9c4ba47ca021b69d1fd7442aff49a7ab:
+
+  drivers: of: fix build break if asm/dma-contiguous.h is missing (2013-09-10 15:43:40 +0200)
+
+----------------------------------------------------------------
+Marek Szyprowski (1):
+      drivers: of: fix build break if asm/dma-contiguous.h is missing
+
+ drivers/of/of_reserved_mem.c |    2 --
+ 1 file changed, 2 deletions(-)
+
+----------------------------------------------------------------
+
+This pull request contains a build bugfix for the device tree support
+for reserved memory regions. Due to superfluous include the common code
+failed to build on ARM64 and MIPS architectures.
+
+I'm really sorry for disturbing you with such stupid patch, but the
+patch that caused the build break has lived at linux-next for about two
+weeks and noone noticed the issue, what convinced me that everything is
+ok.
+
+Thanks!
+
+Best regards
+Marek Szyprowski
+Samsung R&D Institute Poland
