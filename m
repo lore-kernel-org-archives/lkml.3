@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754234Ab3IKE3y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 00:29:54 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7273 "EHLO
+	id S1754216Ab3IKE3w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 00:29:52 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8009 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752689Ab3IKE3A (ORCPT
+	with ESMTP id S1752599Ab3IKE3A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 11 Sep 2013 00:29:00 -0400
-X-Authority-Analysis: v=2.0 cv=R/aB6KtX c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=87s40ppL47gA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Ze9momzLAUEA:10 a=EUspDBNiAAAA:8 a=VwQbUJbxAAAA:8 a=vmLDa1wCAAAA:8 a=O4hWxVBIvsPn1Sn08iQA:9 a=gv_BBZfBKR8A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=DRGCriMyc8oA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=2rpjM7BEhQcA:10 a=zd2uoN0lAAAA:8 a=1XWaLZrsAAAA:8 a=VwQbUJbxAAAA:8 a=8HAeRkdQAAAA:8 a=RpB8WmTJAAAA:8 a=T-x-hHzpmzn4ME2396IA:9 a=wu_e27o_rKQA:10 a=UTB_XpHje0EA:10 a=LI9Vle30uBYA:10 a=-4xtSMBTtIIA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042855.437244622@goodmis.org>
+Message-Id: <20130911042854.288193946@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:27:27 -0400
+Date: Wed, 11 Sep 2013 00:27:20 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [020/251] ath9k_hw: Assign default xlna config for AR9485
+Cc: Shane Huang <shane.huang@amd.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Tejun Heo <tj@kernel.org>, Jean Delvare <khali@linux-fr.org>
+Subject: [013/251] i2c-piix4: Add AMD CZ SMBus device ID
 References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0020-ath9k_hw-Assign-default-xlna-config-for-AR9485.patch
+Content-Disposition: inline; filename=0013-i2c-piix4-Add-AMD-CZ-SMBus-device-ID.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,61 +30,71 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: Shane Huang <shane.huang@amd.com>
 
-[ Upstream commit 30d5b709da23f4ab9836c7f66d2d2e780a69cf12 ]
+[ Upstream commit b996ac90f595dda271cbd858b136b45557fc1a57 ]
 
-For AR9485 boards with XLNA, the default gpio config
-is not set correctly, fix this.
+To add AMD CZ SMBus controller device ID.
 
+[bhelgaas: drop pci_ids.h update]
+Signed-off-by: Shane Huang <shane.huang@amd.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Reviewed-by: Tejun Heo <tj@kernel.org>
+Reviewed-by: Jean Delvare <khali@linux-fr.org>
 Cc: stable@vger.kernel.org
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |    8 ++++++--
- drivers/net/wireless/ath/ath9k/ar9003_phy.h    |    2 ++
- 2 files changed, 8 insertions(+), 2 deletions(-)
+ Documentation/i2c/busses/i2c-piix4 |    2 +-
+ drivers/i2c/busses/Kconfig         |    1 +
+ drivers/i2c/busses/i2c-piix4.c     |    3 ++-
+ 3 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
-index d066f25..e8e3929 100644
---- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
-@@ -3562,7 +3562,7 @@ static u16 ar9003_hw_ant_ctrl_chain_get(struct ath_hw *ah, int chain,
- static void ar9003_hw_ant_ctrl_apply(struct ath_hw *ah, bool is2ghz)
- {
- 	int chain;
--	u32 regval;
-+	u32 regval, value;
- 	u32 ant_div_ctl1;
- 	static const u32 switch_chain_reg[AR9300_MAX_CHAINS] = {
- 			AR_PHY_SWITCH_CHAIN_0,
-@@ -3570,7 +3570,11 @@ static void ar9003_hw_ant_ctrl_apply(struct ath_hw *ah, bool is2ghz)
- 			AR_PHY_SWITCH_CHAIN_2,
- 	};
+diff --git a/Documentation/i2c/busses/i2c-piix4 b/Documentation/i2c/busses/i2c-piix4
+index 1e6634f..a370b20 100644
+--- a/Documentation/i2c/busses/i2c-piix4
++++ b/Documentation/i2c/busses/i2c-piix4
+@@ -13,7 +13,7 @@ Supported adapters:
+   * AMD SP5100 (SB700 derivative found on some server mainboards)
+     Datasheet: Publicly available at the AMD website
+     http://support.amd.com/us/Embedded_TechDocs/44413.pdf
+-  * AMD Hudson-2
++  * AMD Hudson-2, CZ
+     Datasheet: Not publicly available
+   * Standard Microsystems (SMSC) SLC90E66 (Victory66) southbridge
+     Datasheet: Publicly available at the SMSC website http://www.smsc.com
+diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+index 970a161..8f81b11 100644
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -137,6 +137,7 @@ config I2C_PIIX4
+ 	    ATI SB700/SP5100
+ 	    ATI SB800
+ 	    AMD Hudson-2
++	    AMD CZ
+ 	    Serverworks OSB4
+ 	    Serverworks CSB5
+ 	    Serverworks CSB6
+diff --git a/drivers/i2c/busses/i2c-piix4.c b/drivers/i2c/busses/i2c-piix4.c
+index 8bbd6ec..a216d9d 100644
+--- a/drivers/i2c/busses/i2c-piix4.c
++++ b/drivers/i2c/busses/i2c-piix4.c
+@@ -22,7 +22,7 @@
+ 	Intel PIIX4, 440MX
+ 	Serverworks OSB4, CSB5, CSB6, HT-1000, HT-1100
+ 	ATI IXP200, IXP300, IXP400, SB600, SB700/SP5100, SB800
+-	AMD Hudson-2
++	AMD Hudson-2, CZ
+ 	SMSC Victory66
  
--	u32 value = ar9003_hw_ant_ctrl_common_get(ah, is2ghz);
-+	if (AR_SREV_9485(ah) && (ar9003_hw_get_rx_gain_idx(ah) == 0))
-+		ath9k_hw_cfg_output(ah, AR9300_EXT_LNA_CTL_GPIO_AR9485,
-+				    AR_GPIO_OUTPUT_MUX_AS_PCIE_ATTENTION_LED);
-+
-+	value = ar9003_hw_ant_ctrl_common_get(ah, is2ghz);
- 
- 	if (AR_SREV_9462(ah)) {
- 		REG_RMW_FIELD(ah, AR_PHY_SWITCH_COM,
-diff --git a/drivers/net/wireless/ath/ath9k/ar9003_phy.h b/drivers/net/wireless/ath/ath9k/ar9003_phy.h
-index 84d3d49..3dead81 100644
---- a/drivers/net/wireless/ath/ath9k/ar9003_phy.h
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_phy.h
-@@ -339,6 +339,8 @@
- 
- #define AR_PHY_CCA_NOM_VAL_9330_2GHZ          -118
- 
-+#define AR9300_EXT_LNA_CTL_GPIO_AR9485 9
-+
- /*
-  * AGC Field Definitions
-  */
+    Note: we assume there can only be one device, with one or more
+@@ -523,6 +523,7 @@ static DEFINE_PCI_DEVICE_TABLE(piix4_ids) = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_IXP400_SMBUS) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_SBX00_SMBUS) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_HUDSON2_SMBUS) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, 0x790b) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_SERVERWORKS,
+ 		     PCI_DEVICE_ID_SERVERWORKS_OSB4) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_SERVERWORKS,
 -- 
 1.7.10.4
 
