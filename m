@@ -1,88 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab3IKJgo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 05:36:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38817 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751126Ab3IKJgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 05:36:42 -0400
-Date: Wed, 11 Sep 2013 12:38:43 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, wannes.rombouts@epitech.eu,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net] tuntap: correctly handle error in tun_set_iff()
-Message-ID: <20130911093843.GA20836@redhat.com>
-References: <1378887845-6821-1-git-send-email-jasowang@redhat.com>
+	id S1753487Ab3IKJh0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 05:37:26 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38921 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751028Ab3IKJhZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 05:37:25 -0400
+Date: Wed, 11 Sep 2013 10:36:46 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v5 11/13] xen: introduce xen_alloc/free_coherent_pages
+Message-ID: <20130911093646.GA26777@darko.cambridge.arm.com>
+References: <20130905160905.GI11887@arm.com>
+ <alpine.DEB.2.02.1309051742390.6397@kaball.uk.xensource.com>
+ <20130906141444.GE1946@arm.com>
+ <alpine.DEB.2.02.1309061554260.6397@kaball.uk.xensource.com>
+ <20130906155928.GH1946@arm.com>
+ <alpine.DEB.2.02.1309061706480.6397@kaball.uk.xensource.com>
+ <20130906162018.GJ1946@arm.com>
+ <alpine.DEB.2.02.1309061740050.6397@kaball.uk.xensource.com>
+ <8492887B-2509-42B5-A5F9-A711C519D912@arm.com>
+ <alpine.DEB.2.02.1309091732230.6397@kaball.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1378887845-6821-1-git-send-email-jasowang@redhat.com>
+In-Reply-To: <alpine.DEB.2.02.1309091732230.6397@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 04:24:05PM +0800, Jason Wang wrote:
-> Commit c8d68e6be1c3b242f1c598595830890b65cea64a (tuntap: multiqueue support)
-> only call free_netdev() on err in tun_set_iff(). This causes several issues:
+On Mon, Sep 09, 2013 at 05:46:59PM +0100, Stefano Stabellini wrote:
+> On Mon, 9 Sep 2013, Catalin Marinas wrote:
+> > >>> They could also happen in a DomU if we assign a physical device to it
+> > >>> (and an SMMU is not available).
+> > >> 
+> > >> The problem is that you don't necessarily know one kind of coherency you
+> > >> know for a physical device. As I said, we plan to do this DT-driven.
+> > > 
+> > > OK, but if I call arm64_swiotlb_dma_ops.alloc passing the right
+> > > arguments to it, I should be able to get the right coherency for the
+> > > right device, correct?
+> > 
+> > I think it needs a bit more work on the Xen part.  Basically
+> > dma_alloc_attrs() calls get_dma_ops() to obtain the best DMA operations
+> > for a device.  arm64_swiotlb_dma_ops is just the default implementation
+> > and I'll add a _noncoherent variant as well.  Default dma_ops will be
+> > set to one of these during boot.  But a device is also allowed to have
+> > its own dev->archdata.dma_ops, set via set_dma_ops().
+> > 
+> > So even if you set the default dma_ops to Xen ops, you may not get them
+> > via dma_alloc_coherent().  I don't see any easier solution other than
+> > patching the dma_alloc_attrs() function to issue a Hyp call after the
+> > memory has been allocated with the get_dma_ops()->alloc().  But I don't
+> > like this either.
 > 
-> - memory of tun security were leaked
-
-Not just tun security -  sock reference too (didn't detach)
-
-> - use after free since the flow gc timer was not deleted and the tfile were not
->   detached
+> I see. This problem affects arch/arm as well.
+> Either we add an if (!xen_domain()) in get_dma_ops, or we could make
+> get_dma_ops a function pointer and let people overwrite it.
+> See below the first option implemented for arch/arm on top of the
+> swiotlb series:
 > 
-> This patch solves the above issues.
 > 
-> Reported-by: Wannes Rombouts <wannes.rombouts@epitech.eu>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
-> The patch were also needed for stable 3.8+.
-> ---
->  drivers/net/tun.c |    9 +++++++--
->  1 files changed, 7 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index a639de8..e5fb5d3 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -1641,11 +1641,11 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
->  		INIT_LIST_HEAD(&tun->disabled);
->  		err = tun_attach(tun, file, false);
->  		if (err < 0)
-> -			goto err_free_dev;
-> +			goto err_free_flow;
+> diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+> index 7d6e4f9..0b8b5e4 100644
+> --- a/arch/arm/include/asm/dma-mapping.h
+> +++ b/arch/arm/include/asm/dma-mapping.h
+> @@ -12,6 +12,8 @@
+>  #include <asm/memory.h>
+>  #include <asm/cacheflush.h>
 >  
->  		err = register_netdevice(tun->dev);
->  		if (err < 0)
-> -			goto err_free_dev;
-> +			goto err_detach;
+> +#include <xen/xen.h>
+> +
+>  #define DMA_ERROR_CODE	(~0)
+>  extern struct dma_map_ops *dma_ops;
+>  extern struct dma_map_ops arm_dma_ops;
+> @@ -19,7 +21,7 @@ extern struct dma_map_ops arm_coherent_dma_ops;
 >  
->  		if (device_create_file(&tun->dev->dev, &dev_attr_tun_flags) ||
->  		    device_create_file(&tun->dev->dev, &dev_attr_owner) ||
-> @@ -1689,6 +1689,11 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
->  	strcpy(ifr->ifr_name, tun->dev->name);
->  	return 0;
->  
-> +err_detach:
-> +	tun_detach_all(dev);
-> +err_free_flow:
-> +	tun_flow_uninit(tun);
-> +	security_tun_dev_free_security(tun->security);
+>  static inline struct dma_map_ops *get_dma_ops(struct device *dev)
+>  {
+> -	if (dev && dev->archdata.dma_ops)
+> +	if (!xen_domain() && dev && dev->archdata.dma_ops)
+>  		return dev->archdata.dma_ops;
+>  	return dma_ops;
+>  }
+> diff --git a/arch/arm/include/asm/xen/page-coherent.h b/arch/arm/include/asm/xen/page-coherent.h
+> index af2cf8d..c2232fe 100644
+> --- a/arch/arm/include/asm/xen/page-coherent.h
+> +++ b/arch/arm/include/asm/xen/page-coherent.h
+> @@ -9,6 +9,8 @@ static inline void *xen_alloc_coherent_pages(struct device *hwdev, size_t size,
+>  		dma_addr_t *dma_handle, gfp_t flags,
+>  		struct dma_attrs *attrs)
+>  {
+> +	if (hwdev && hwdev->archdata.dma_ops)
+> +		return hwdev->archdata.dma_ops->alloc(hwdev, size, dma_handle, flags, attrs);
+>  	return arm_dma_ops.alloc(hwdev, size, dma_handle, flags, attrs);
 
-This bit looks wrong: if flow_init fails, we
-need security_tun_dev_free_security, don't we?
-I think we need:
-	+err_free_sec:	security_tun_dev_free_security(tun->security);
-and goto here on flow_init failures.
+I still don't like xen digging into the archdata internals. What about:
 
->   err_free_dev:
+diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+index 5b579b9..5fa472c 100644
+--- a/arch/arm/include/asm/dma-mapping.h
++++ b/arch/arm/include/asm/dma-mapping.h
+@@ -15,13 +15,20 @@
+ extern struct dma_map_ops arm_dma_ops;
+ extern struct dma_map_ops arm_coherent_dma_ops;
+ 
+-static inline struct dma_map_ops *get_dma_ops(struct device *dev)
++static inline struct dma_map_ops *__get_dma_ops(struct device *dev)
+ {
+ 	if (dev && dev->archdata.dma_ops)
+ 		return dev->archdata.dma_ops;
+ 	return &arm_dma_ops;
+ }
+ 
++static inline struct dma_map_ops *get_dma_ops(struct device *dev)
++{
++	if (xen_domain())
++		return xen_dma_ops;
++	return __get_dma_ops(dev);
++}
++
+ static inline void set_dma_ops(struct device *dev, struct dma_map_ops *ops)
+ {
+ 	BUG_ON(!dev);
+@@ -32,7 +39,7 @@ static inline void set_dma_ops(struct device *dev, struct dma_map_ops *ops)
+ 
+ static inline int dma_set_mask(struct device *dev, u64 mask)
+ {
+-	return get_dma_ops(dev)->set_dma_mask(dev, mask);
++	return __get_dma_ops(dev)->set_dma_mask(dev, mask);
+ }
+ 
+ #ifdef __arch_page_to_dma
 
-Pls shift this one 1 space left for consistency.
+And in xen_alloc_coherent_pages():
 
->  	free_netdev(dev);
->  	return err;
-> -- 
-> 1.7.1
+	return __get_dma_ops(dev).alloc(...);
+
+Alternatively, add the xen_domain() check in dma_alloc_attrs() instead
+of get_dma_ops() (and other functions like map_sg etc.)
+
+-- 
+Catalin
