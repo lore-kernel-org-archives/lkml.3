@@ -1,107 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756531Ab3IKQ4G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 12:56:06 -0400
-Received: from a10-13.smtp-out.amazonses.com ([54.240.10.13]:33717 "EHLO
-	a10-13.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754075Ab3IKQ4E (ORCPT
+	id S1756569Ab3IKQ4s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 12:56:48 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14950 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755945Ab3IKQ4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 12:56:04 -0400
-Date: Wed, 11 Sep 2013 16:56:02 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Mike Galbraith <bitbucket@online.de>
-cc: Gilad Ben-Yossef <gilad@benyossef.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [RFC] Restrict kernel spawning of threads to a specified set of
- cpus.
-In-Reply-To: <1378911206.5476.134.camel@marge.simpson.net>
-Message-ID: <000001410df378f7-b779c67a-a733-48b9-9e2a-cde27ac449cf-000000@email.amazonses.com>
-References: <00000140efbcb701-c26320b3-f434-4538-bc80-8e92fed6f303-000000@email.amazonses.com> <CAOtvUMe=jcAHXNJU_rTAAokaE4KZNUTFsHVVTTxgFW_xj8ONxg@mail.gmail.com> <1378795659.6046.41.camel@marge.simpson.net> <CAOtvUMfhLQYK95uPm8idG_vYv-9yG2-KSkScjMBCSuvtffW1Dg@mail.gmail.com>
- <1378797995.6046.54.camel@marge.simpson.net> <CAOtvUMdRmDYP_e7eFX1akU8vZ=dcVOnFDrBjKufumOaBxxXF3A@mail.gmail.com> <0000014109b5ec0e-ca64a736-ce4a-4be2-abf6-bbf2c1c15f80-000000@email.amazonses.com> <1378869632.5476.34.camel@marge.simpson.net>
- <000001410d659f85-21128fa5-a252-4006-804c-4ff03acbd50f-000000@email.amazonses.com> <1378911206.5476.134.camel@marge.simpson.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.09.11-54.240.10.13
+	Wed, 11 Sep 2013 12:56:45 -0400
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=3u6ctyNp5LsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=DZsiSy7ctyIA:10 a=cm27Pg_UAAAA:8 a=KKAkSRfTAAAA:8 a=VwQbUJbxAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=zv9_9hqRWm8A:10 a=WwgC8nHKvroA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130911042905.329546322@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 11 Sep 2013 00:28:25 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Chih-Chung Chang <chihchung@chromium.org>,
+        Dylan Reid <dgreid@chromium.org>, Mark Brown <broonie@linaro.org>
+Subject: [078/251] ASoC: max98088 - fix element type of the register cache.
+References: <20130911042707.738353451@goodmis.org>
+Content-Disposition: inline; filename=0078-ASoC-max98088-fix-element-type-of-the-register-cache.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is a draft of a patch to do autoconfig if CONFIG_NO_HZ_FULL_ALL is
-set.
+3.6.11.9-rc1 stable review patch.
+If anyone has any objections, please let me know.
 
+------------------
 
-Subject: Simple autoconfig for tickless system
+From: Chih-Chung Chang <chihchung@chromium.org>
 
-This is on top of the prior patch that restricts the cpus that
-kthread can spawn processes on.
+[ Upstream commit cb6f66a2d278e57a6c9d8fb59bd9ebd8ab3965c2 ]
 
-It ensures that one processor per node is kept in regular
-HZ mode and also adds that cpu to the kthread_mask so that
-OS services (like kswapd etc) can run.
+The registers of max98088 are 8 bits, not 16 bits. This bug causes the
+contents of registers to be overwritten with bad values when the codec
+is suspended and then resumed.
 
-On a two node system two processors will be available for kthread and OS services.
-The rest will be tickless and kept as free from OS services as possible.
+Signed-off-by: Chih-Chung Chang <chihchung@chromium.org>
+Signed-off-by: Dylan Reid <dgreid@chromium.org>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Cc: stable@vger.kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ sound/soc/codecs/max98088.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Index: linux/kernel/time/tick-sched.c
-===================================================================
---- linux.orig/kernel/time/tick-sched.c	2013-09-05 09:10:59.000000000 -0500
-+++ linux/kernel/time/tick-sched.c	2013-09-11 11:46:59.387888072 -0500
-@@ -330,7 +330,30 @@ static int tick_nohz_init_all(void)
- 	}
- 	err = 0;
- 	cpumask_setall(tick_nohz_full_mask);
-+
-+	/* Exempt boot processor and use it for OS services */
- 	cpumask_clear_cpu(smp_processor_id(), tick_nohz_full_mask);
-+	cpumask_set(smp_processor_id(), cpumask_kthread_mask);
-+
-+	/* And one processor for each NUMA node */
-+	for_each_node(node) {
-+		struct cpumask *m = cpumask_of_node(node);
-+
-+		/* Boot node ? */
-+		if (node == numa_node_id())
-+			continue;
-+
-+		/*
-+		 * Exempt the first processor on each node that has
-+		 * processors available.
-+		 */
-+		if (cpumask_weight(m)) {
-+			int cpu = cpumask_first(m);
-+
-+			cpumask_clear_cpu(cpu, tick_nohz_full_mask);
-+			cpumask_set(cpu, cpu_kthread_mask);
-+		}
-+	}
- 	tick_nohz_full_running = true;
- #endif
- 	return err;
-Index: linux/kernel/cpu.c
-===================================================================
---- linux.orig/kernel/cpu.c	2013-09-11 10:45:47.686052132 -0500
-+++ linux/kernel/cpu.c	2013-09-11 11:49:34.122210075 -0500
-@@ -682,12 +682,14 @@ static DECLARE_BITMAP(cpu_kthread_bits,
- const struct cpumask *const cpu_kthread_mask = to_cpumask(cpu_kthread_bits);
- EXPORT_SYMBOL(cpu_kthread_mask);
-
-+#ifndef CONFIG_NO_HZ_FULL_ALL
- static int __init kthread_setup(char *str)
+diff --git a/sound/soc/codecs/max98088.c b/sound/soc/codecs/max98088.c
+index 4790568..8df4597 100644
+--- a/sound/soc/codecs/max98088.c
++++ b/sound/soc/codecs/max98088.c
+@@ -1594,7 +1594,7 @@ static int max98088_dai2_digital_mute(struct snd_soc_dai *codec_dai, int mute)
+ 
+ static void max98088_sync_cache(struct snd_soc_codec *codec)
  {
-         cpulist_parse(str, (struct cpumask *)&cpu_kthread_bits);
-         return 1;
- }
- __setup("kthread=", kthread_setup);
-+#endif
+-       u16 *reg_cache = codec->reg_cache;
++       u8 *reg_cache = codec->reg_cache;
+        int i;
+ 
+        if (!codec->cache_sync)
+-- 
+1.7.10.4
 
 
- void set_cpu_possible(unsigned int cpu, bool possible)
