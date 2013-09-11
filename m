@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756325Ab3IKRwk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 13:52:40 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18962 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755513Ab3IKRwj (ORCPT
+	id S1756603Ab3IKRxL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 13:53:11 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:41518 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755078Ab3IKRxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 13:52:39 -0400
-X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=cpn0iEa-oVMA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=uXgjhyO7DfoA:10 a=yPCof4ZbAAAA:8 a=tHz9FfFoAAAA:8 a=yjqx7b281KjzkrXuNWQA:9 a=CjuIK1q_8ugA:10 a=7DSvI1NPTFQA:10 a=6O0IECtVFhoA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Wed, 11 Sep 2013 13:52:37 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Jason Baron <jbaron@akamai.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com
-Subject: Re: Regression :-) Re: [GIT PULL RESEND] x86/jumpmplabel changes
- for v3.12-rc1
-Message-ID: <20130911135237.245386fb@gandalf.local.home>
-In-Reply-To: <20130911172552.GB6870@phenom.dumpdata.com>
-References: <201309110248.r8B2miI2032449@terminus.zytor.com>
-	<20130911134717.GA10925@phenom.dumpdata.com>
-	<20130911135745.GB11043@phenom.dumpdata.com>
-	<20130911142545.GA11364@phenom.dumpdata.com>
-	<20130911105633.1c029147@gandalf.local.home>
-	<20130911152149.GA22076@phenom.dumpdata.com>
-	<20130911114708.1b42aec0@gandalf.local.home>
-	<20130911161745.GA5884@phenom.dumpdata.com>
-	<20130911130507.44a2b115@gandalf.local.home>
-	<20130911172552.GB6870@phenom.dumpdata.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 11 Sep 2013 13:53:09 -0400
+Message-ID: <5230AE02.20101@linaro.org>
+Date: Wed, 11 Sep 2013 10:53:06 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org
+Subject: Re: [RFC PATCH] timekeeping: introduce timekeeping_is_busy()
+References: <20130911150853.GA19800@Krystal> <52309D13.3020305@linaro.org> <20130911174902.GA23532@Krystal>
+In-Reply-To: <20130911174902.GA23532@Krystal>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Sep 2013 13:25:52 -0400
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+On 09/11/2013 10:49 AM, Mathieu Desnoyers wrote:
+> Hi John,
+>
+> * John Stultz (john.stultz@linaro.org) wrote:
+>> On 09/11/2013 08:08 AM, Mathieu Desnoyers wrote:
+>>> Starting from commit 06c017fdd4dc48451a29ac37fc1db4a3f86b7f40
+>>> "timekeeping: Hold timekeepering locks in do_adjtimex and hardpps"
+>>> (3.10 kernels), the xtime write seqlock is held across calls to
+>>> __do_adjtimex(), which includes a call to notify_cmos_timer(), and hence
+>>> schedule_delayed_work().
+>>>
+>>> This introduces a side-effect for a set of tracepoints, including mainly
+>>> the workqueue tracepoints: a tracer hooking on those tracepoints and
+>>> reading current time with ktime_get() will cause hard system LOCKUP such
+>>> as:
+>> Oh bummer. I had just worked this issue out the other day:
+>>     https://lkml.org/lkml/2013/9/9/476
+>>
+>> Apparently it was a schroedinbug of sorts. My apologies for time you
+>> spent chasing this down.
+> No worries. As soon as I've been able to reproduce it on my test box
+> (with serial port), the NMI watchdog had a pretty reasonable explanation
+> for the issue.
+>
+>> My plan is to pull the notify_cmos_timer call to outside of the
+>> timekeeper locking (see the patch at the very end of the mail in the
+>> above link), as well as try to add lockdep support to seqcount/seqlocks
+>> so we can catch these sorts of issues more easily.
+> I just tried your patch, and it indeed seems to fix the lockup I've been
+> experiencing with lttng-modules. Do you plan pushing this fix into
+> master, and submitting it for inclusion into stable 3.10 and stable 3.11 ?
+Yea. I was waiting on feedback from the reporter that the fix resolves
+the issue but if it fixes it for you I'll go ahead and send it out today.
+
+thanks
+-john
 
 
-> commit 97ce2c88f9ad42e3c60a9beb9fca87abf3639faa
-> Author: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> Date:   Wed Oct 12 16:17:54 2011 -0700
-> 
->     jump-label: initialize jump-label subsystem much earlier
->     
->     Initialize jump_labels much, much earlier, so they're available for use
->     during system setup.
->     
->     Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
->     Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> 
-> 
-> implies that yes.
 
-Unfortunately it does not. All that patch did was move
-jump_label_init() up more. If anything, it implies "no".
-
-The question is, can we enable jump_labels before jump_label_init()?
-
-Note, we may still be able to (as it seems to work), the thing is, the
-only thing that static_key_slow_inc() does is to tell jump_label_init()
-to enable it. Before jump_label_init() is called, nothing has changed.
-No code modification, all users of paravirt_ticketlocks_enabled are
-still off.
-
--- Steve
