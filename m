@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756559Ab3IKFJh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 01:09:37 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:60655 "EHLO
+	id S1756544Ab3IKFLu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 01:11:50 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:55155 "EHLO
 	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753137Ab3IKFJg (ORCPT
+	with ESMTP id S1755029Ab3IKFJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 01:09:36 -0400
-X-AuditID: 9c93017e-b7c00ae000002eb6-68-522ffb0e0b30
+	Wed, 11 Sep 2013 01:09:37 -0400
+X-AuditID: 9c93017e-b7c00ae000002eb6-6c-522ffb0e5b0d
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 2/9] perf annotate: Reuse path from the result of addr2line
-Date: Wed, 11 Sep 2013 14:09:26 +0900
-Message-Id: <1378876173-13363-3-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 5/9] perf tools: Do not try to call addr2line for non-binary files
+Date: Wed, 11 Sep 2013 14:09:29 +0900
+Message-Id: <1378876173-13363-6-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1378876173-13363-1-git-send-email-namhyung@kernel.org>
 References: <1378876173-13363-1-git-send-email-namhyung@kernel.org>
@@ -26,33 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-In the symbol__get_source_line(), path and src_line->path will have
-same value, but they were allocated separately, and leaks one.
-Just share path to src_line->path.
+No need to call addr2line since they don't have such information.
 
 Reviewed-by: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/annotate.c | 6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ tools/perf/util/sort.c    |  3 ---
+ tools/perf/util/srcline.c | 11 +++++++++--
+ 2 files changed, 9 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index bfc5a27597d6..4f97ae3ec9c0 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -1143,11 +1143,7 @@ static int symbol__get_source_line(struct symbol *sym, struct map *map,
- 		if (getline(&path, &line_len, fp) < 0 || !line_len)
- 			goto next_close;
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 0d633a059df4..113aa92b1191 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -259,9 +259,6 @@ static int hist_entry__srcline_snprintf(struct hist_entry *self, char *bf,
+ 	if (!self->ms.map)
+ 		goto out_ip;
  
--		src_line->path = malloc(sizeof(char) * line_len + 1);
--		if (!src_line->path)
--			goto next_close;
+-	if (!strncmp(self->ms.map->dso->long_name, "/tmp/perf-", 10))
+-		goto out_ip;
 -
--		strcpy(src_line->path, path);
-+		src_line->path = path;
- 		insert_source_line(&tmp_root, src_line);
+ 	path = get_srcline(self->ms.map->dso->long_name, self->ip);
+ 	self->srcline = path;
  
- 	next_close:
+diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
+index 7e92cca6f502..777f91880cdb 100644
+--- a/tools/perf/util/srcline.c
++++ b/tools/perf/util/srcline.c
+@@ -57,11 +57,17 @@ char *get_srcline(const char *dso_name, unsigned long addr)
+ {
+ 	char *file;
+ 	unsigned line;
+-	char *srcline;
++	char *srcline = SRCLINE_UNKNOWN;
+ 	size_t size;
+ 
++	if (dso_name[0] == '[')
++		goto out;
++
++	if (!strncmp(dso_name, "/tmp/perf-", 10))
++		goto out;
++
+ 	if (!addr2line(dso_name, addr, &file, &line))
+-		return SRCLINE_UNKNOWN;
++		goto out;
+ 
+ 	/* just calculate actual length */
+ 	size = snprintf(NULL, 0, "%s:%u", file, line) + 1;
+@@ -73,6 +79,7 @@ char *get_srcline(const char *dso_name, unsigned long addr)
+ 		srcline = SRCLINE_UNKNOWN;
+ 
+ 	free(file);
++out:
+ 	return srcline;
+ }
+ 
 -- 
 1.7.11.7
 
