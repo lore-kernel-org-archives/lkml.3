@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755710Ab3IKE6S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 00:58:18 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13847 "EHLO
+	id S1755687Ab3IKE6R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 00:58:17 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3257 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754210Ab3IKE44 (ORCPT
+	with ESMTP id S1754211Ab3IKE44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 11 Sep 2013 00:56:56 -0400
-X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=5Av21j2b-x0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Z0ji_k5uTiEA:10 a=tHz9FfFoAAAA:8 a=yPCof4ZbAAAA:8 a=VwQbUJbxAAAA:8 a=38eI-UBrmworDQ2UwVoA:9 a=6O0IECtVFhoA:10 a=7DSvI1NPTFQA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=V4T/IJbi c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=Ycy18gBuY3IA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=qrX8sv4p1xEA:10 a=VwQbUJbxAAAA:8 a=vmLDa1wCAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=gv_BBZfBKR8A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042928.688592044@goodmis.org>
+Message-Id: <20130911042928.531372455@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:30:46 -0400
+Date: Wed, 11 Sep 2013 00:30:45 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [219/251] xen/events: initialize local per-cpu mask for all possible events
+Cc: Jussi Kivilinna <jussi.kivilinna@iki.fi>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [218/251] zd1201: do not use stack as URB transfer_buffer
 References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0219-xen-events-initialize-local-per-cpu-mask-for-all-pos.patch
+Content-Disposition: inline; filename=0218-zd1201-do-not-use-stack-as-URB-transfer_buffer.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,46 +30,41 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
 
-[ Upstream commit 84ca7a8e45dafb49cd5ca90a343ba033e2885c17 ]
+[ Upstream commit 1206ff4ff9d2ef7468a355328bc58ac6ebf5be44 ]
 
-The sizeof() argument in init_evtchn_cpu_bindings() is incorrect
-resulting in only the first 64 (or 32 in 32-bit guests) ports having
-their bindings being initialized to VCPU 0.
+Patch fixes zd1201 not to use stack as URB transfer_buffer. URB buffers need
+to be DMA-able, which stack is not.
 
-In most cases this does not cause a problem as request_irq() will set
-the irq affinity which will set the correct local per-cpu mask.
-However, if the request_irq() is called on a VCPU other than 0, there
-is a window between the unmasking of the event and the affinity being
-set were an event may be lost because it is not locally unmasked on
-any VCPU. If request_irq() is called on VCPU 0 then local irqs are
-disabled during the window and the race does not occur.
+Patch is only compile tested.
 
-Fix this by initializing all NR_EVENT_CHANNEL bits in the local
-per-cpu masks.
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: stable@vger.kernel.org
+Cc: stable@vger.kernel.org
+Signed-off-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/xen/events.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/zd1201.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 99c5345..3987f6f 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -324,7 +324,7 @@ static void init_evtchn_cpu_bindings(void)
+diff --git a/drivers/net/wireless/zd1201.c b/drivers/net/wireless/zd1201.c
+index 48273dd..4312eca 100644
+--- a/drivers/net/wireless/zd1201.c
++++ b/drivers/net/wireless/zd1201.c
+@@ -98,10 +98,12 @@ static int zd1201_fw_upload(struct usb_device *dev, int apfw)
+ 		goto exit;
  
- 	for_each_possible_cpu(i)
- 		memset(per_cpu(cpu_evtchn_mask, i),
--		       (i == 0) ? ~0 : 0, sizeof(*per_cpu(cpu_evtchn_mask, i)));
-+		       (i == 0) ? ~0 : 0, NR_EVENT_CHANNELS/8);
- }
+ 	err = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0), 0x4,
+-	    USB_DIR_IN | 0x40, 0,0, &ret, sizeof(ret), ZD1201_FW_TIMEOUT);
++	    USB_DIR_IN | 0x40, 0, 0, buf, sizeof(ret), ZD1201_FW_TIMEOUT);
+ 	if (err < 0)
+ 		goto exit;
  
- static inline void clear_evtchn(int port)
++	memcpy(&ret, buf, sizeof(ret));
++
+ 	if (ret & 0x80) {
+ 		err = -EIO;
+ 		goto exit;
 -- 
 1.7.10.4
 
