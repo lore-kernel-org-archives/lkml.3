@@ -1,139 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757438Ab3IKUUi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 16:20:38 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:47746 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757314Ab3IKUUf (ORCPT
+	id S1757455Ab3IKUVS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 16:21:18 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:48918 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757225Ab3IKUVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 16:20:35 -0400
-Message-ID: <5230CF9B.9090509@linux.vnet.ibm.com>
-Date: Thu, 12 Sep 2013 01:46:27 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Wed, 11 Sep 2013 16:21:16 -0400
 MIME-Version: 1.0
-To: rjw@sisk.pl, swarren@wwwdotorg.org, viresh.kumar@linaro.org
-CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpufreq: Fix crash in cpufreq-stats during suspend/resume
-References: <20130911201128.7749.61727.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20130911201128.7749.61727.stgit@srivatsabhat.in.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091120-5140-0000-0000-000003D0BFAC
+In-Reply-To: <CA+8MBbLVC2==zpNV1zV3OoiSQoKfptAGqF1EQNtrhFUCn=0h7A@mail.gmail.com>
+References: <CACxGe6v8hO4sRX_KGcH=YBAMrF8mQHqWdxXEvVwoC2pVS5Yv9Q@mail.gmail.com>
+	<CA+bK7J5cAWFPLTBR2afNLm2JaKFH4_dJO_NpVL5gom0iX+L2dQ@mail.gmail.com>
+	<CA+55aFzBbKXJnaG_6X8Fff_APGJ3EkbG0thsbithDXtiEJjdHA@mail.gmail.com>
+	<CA+8MBbLVC2==zpNV1zV3OoiSQoKfptAGqF1EQNtrhFUCn=0h7A@mail.gmail.com>
+Date: Wed, 11 Sep 2013 13:21:15 -0700
+Message-ID: <CA+bK7J4s1y5-CfwmNB3gN5Ed800AnuH6vHe8+jRmq+pyPu9o0A@mail.gmail.com>
+Subject: Re: [GIT PULL] Device tree updates for v3.12
+From: Tim Bird <tbird20d@gmail.com>
+To: Tony Luck <tony.luck@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2013 01:41 AM, Srivatsa S. Bhat wrote:
-> Stephen Warren reported that the cpufreq-stats code hits a NULL pointer
-> dereference during the second attempt to suspend a system. He also
-> pin-pointed the problem to commit 5302c3f "cpufreq: Perform light-weight
-> init/teardown during suspend/resume".
-> 
-> That commit actually ensured that the cpufreq-stats table and the
-> cpufreq-stats sysfs entries are *not* torn down (ie., not freed) during
-> suspend/resume, which makes it all the more surprising. However, it turns
-> out that the root-cause is not that we access an already freed memory, but
-> that the reference to the allocated memory gets moved around and we lose
-> track of that during resume, leading to the reported crash in a subsequent
-> suspend attempt.
-> 
-> In the suspend path, during CPU offline, the value of policy->cpu is updated
-> by choosing one of the surviving CPUs in that policy, as long as there is
-> atleast one CPU in that policy. And cpufreq_stats_update_policy_cpu() is
-> invoked to update the reference to the stats structure by assigning it to
-> the new CPU. However, in the resume path, during CPU online, we end up
-> assigning a fresh CPU as the policy->cpu, without letting cpufreq-stats
-> know about this. Thus the reference to the stats structure remains
-> (incorrectly) associated with the old CPU. So, in a subsequent suspend attempt,
-> during CPU offline, we end up accessing an incorrect location to get the
-> stats structure, which eventually leads to the NULL pointer dereference.
-> 
-> Fix this by letting cpufreq-stats know about the update of the policy->cpu
-> during CPU online in the resume path. (Also, move the update_policy_cpu()
-> function higher up in the file, so that __cpufreq_add_dev() can invoke
-> it).
-> 
-> Reported-by: Stephen Warren <swarren@nvidia.com>
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> Tested-by: Stephen Warren <swarren@nvidia.com>
-> ---
+Thanks.  This gives me an order-of-magnitude measurement for this sort of thing.
+I'll measure it directly myself on our hardware as soon as I can.
 
-Sorry, please ignore this one. I had intended to send 3 patches as a series,
-but by mistake I ended up sending just one. I have sent the full series
-(3 patches) separately, please consider that posting.
+I've heard an ugly rumor that the device tree from our silicon vendor
+may grow to be
+as big as 130K in the near future. I'm still following up to see if
+there's any truth
+to this (so don't quote me on it), but if it does get that big it
+might be an issue.  As
+stated previously, the vast majority of our device tree files consists
+of values that
+are not device-specific.
 
-Regards,
-Srivatsa S. Bhat
+I'll keep an eye on it and propose something if it turns out to be a real issue.
 
-> 
->  drivers/cpufreq/cpufreq.c |   37 ++++++++++++++++++++++++-------------
->  1 file changed, 24 insertions(+), 13 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 5a64f66..62bdb95 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -947,6 +947,18 @@ static void cpufreq_policy_free(struct cpufreq_policy *policy)
->  	kfree(policy);
->  }
-> 
-> +static void update_policy_cpu(struct cpufreq_policy *policy, unsigned int cpu)
-> +{
-> +	policy->last_cpu = policy->cpu;
-> +	policy->cpu = cpu;
-> +
-> +#ifdef CONFIG_CPU_FREQ_TABLE
-> +	cpufreq_frequency_table_update_policy_cpu(policy);
-> +#endif
-> +	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
-> +			CPUFREQ_UPDATE_POLICY_CPU, policy);
-> +}
-> +
->  static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
->  			     bool frozen)
->  {
-> @@ -1000,7 +1012,18 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
->  	if (!policy)
->  		goto nomem_out;
-> 
-> -	policy->cpu = cpu;
-> +
-> +	/*
-> +	 * In the resume path, since we restore a saved policy, the assignment
-> +	 * to policy->cpu is like an update of the existing policy, rather than
-> +	 * the creation of a brand new one. So we need to perform this update
-> +	 * by invoking update_policy_cpu().
-> +	 */
-> +	if (frozen && cpu != policy->cpu)
-> +		update_policy_cpu(policy, cpu);
-> +	else
-> +		policy->cpu = cpu;
-> +
->  	policy->governor = CPUFREQ_DEFAULT_GOVERNOR;
->  	cpumask_copy(policy->cpus, cpumask_of(cpu));
-> 
-> @@ -1092,18 +1115,6 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
->  	return __cpufreq_add_dev(dev, sif, false);
->  }
-> 
-> -static void update_policy_cpu(struct cpufreq_policy *policy, unsigned int cpu)
-> -{
-> -	policy->last_cpu = policy->cpu;
-> -	policy->cpu = cpu;
-> -
-> -#ifdef CONFIG_CPU_FREQ_TABLE
-> -	cpufreq_frequency_table_update_policy_cpu(policy);
-> -#endif
-> -	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
-> -			CPUFREQ_UPDATE_POLICY_CPU, policy);
-> -}
-> -
->  static int cpufreq_nominate_new_policy_cpu(struct cpufreq_policy *policy,
->  					   unsigned int old_cpu, bool frozen)
->  {
-> 
 
+On Wed, Sep 11, 2013 at 10:02 AM, Tony Luck <tony.luck@gmail.com> wrote:
+> On Tue, Sep 10, 2013 at 1:50 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>> Of course, maybe even the stupid add_device_randomness() is fast
+>> enough. I just wanted to point out that it definitely isn't some
+>> optimized thing.
+>
+> When I posted the patch that mixes in the whole SMBIOS table:
+>
+> commit d114a33387472555188f142ed8e98acdb8181c6d
+> Author: Tony Luck <tony.luck@intel.com>
+> Date:   Fri Jul 20 13:15:20 2012 -0700
+>
+>     dmi: Feed DMI table to /dev/random driver
+>
+> I asked whether there was any size issue - as it tends to be a few
+> kilobytes on laptops and desktops, and tens of kilobytes on servers.
+> The answer I got back then was not to worry - digesting a few kilobytes
+> wouldn't be a problem.  I just threw in a debug message to check and saw:
+>
+> dmi_walk_early: added 10342 bytes in 339968 cycles
+>
+> So a couple of hundred microseconds for me.
+>
+> There are plenty of machine specific values buried in there (e.g. serial
+> numbers for all the DIMMs) ... so this looks like a good use of this
+> much boot time.
+>
+> -Tony
+
+
+
+-- 
+ -- Tim Bird
+Senior Software Engineer, Sony Mobile
+Architecture Group Chair, CE Workgroup, Linux Foundation
