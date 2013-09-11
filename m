@@ -1,72 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210Ab3IKDLH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 23:11:07 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:62657 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752539Ab3IKDLF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 23:11:05 -0400
+	id S1753694Ab3IKDQE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 23:16:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27842 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752420Ab3IKDQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Sep 2013 23:16:01 -0400
+Message-ID: <522FDFCC.1070007@redhat.com>
+Date: Tue, 10 Sep 2013 22:13:16 -0500
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <1378805550-29949-2-git-send-email-mgorman@suse.de>
-References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
-	<1378805550-29949-2-git-send-email-mgorman@suse.de>
-Date: Wed, 11 Sep 2013 11:11:03 +0800
-Message-ID: <CAJd=RBDBoJ42OkrqsD787O2ZYt9iPvwJo6DubDcVuS0tKRv9ng@mail.gmail.com>
-Subject: Re: [PATCH 01/50] sched: monolithic code dump of what is being pushed upstream
-From: Hillf Danton <dhillf@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
+To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger@dilger.ca>,
+        Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>,
+        T Makphaibulchoke <tmac@hp.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-ext4@vger.kernel.org List" <linux-ext4@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org Devel" <linux-fsdevel@vger.kernel.org>,
+        aswin@hp.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        aswin_proj@lists.hp.com
+Subject: Re: [PATCH v3 0/2] ext4: increase mbcache scalability
+References: <1374108934-50550-1-git-send-email-tmac@hp.com> <1378312756-68597-1-git-send-email-tmac@hp.com> <20130905023522.GA21268@thunk.org> <52285395.1070508@hp.com> <0787C579-7E2C-4864-B8F4-98816E1E50A2@dilger.ca> <5229C939.8030108@hp.com> <62D71A85-C7EE-4F5F-B481-5329F0282044@dilger.ca> <20130910210250.GH29237@thunk.org>
+In-Reply-To: <20130910210250.GH29237@thunk.org>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 5:31 PM, Mel Gorman <mgorman@suse.de> wrote:
-> @@ -5045,15 +5038,50 @@ static int need_active_balance(struct lb_env *env)
->
->  static int active_load_balance_cpu_stop(void *data);
->
-> +static int should_we_balance(struct lb_env *env)
-> +{
-> +       struct sched_group *sg = env->sd->groups;
-> +       struct cpumask *sg_cpus, *sg_mask;
-> +       int cpu, balance_cpu = -1;
-> +
-> +       /*
-> +        * In the newly idle case, we will allow all the cpu's
-> +        * to do the newly idle load balance.
-> +        */
-> +       if (env->idle == CPU_NEWLY_IDLE)
-> +               return 1;
-> +
-> +       sg_cpus = sched_group_cpus(sg);
-> +       sg_mask = sched_group_mask(sg);
-> +       /* Try to find first idle cpu */
-> +       for_each_cpu_and(cpu, sg_cpus, env->cpus) {
-> +               if (!cpumask_test_cpu(cpu, sg_mask) || !idle_cpu(cpu))
-> +                       continue;
-> +
-> +               balance_cpu = cpu;
-> +               break;
-> +       }
-> +
-> +       if (balance_cpu == -1)
-> +               balance_cpu = group_balance_cpu(sg);
-> +
-> +       /*
-> +        * First idle cpu or the first cpu(busiest) in this sched group
-> +        * is eligible for doing load balancing at this and above domains.
-> +        */
-> +       return balance_cpu != env->dst_cpu;
+On 9/10/13 4:02 PM, Theodore Ts'o wrote:
+> On Tue, Sep 10, 2013 at 02:47:33PM -0600, Andreas Dilger wrote:
+>> I agree that SELinux is enabled on enterprise distributions by default,
+>> but I'm also interested to know how much overhead this imposes.  I would
+>> expect that writing large external xattrs for each file would have quite
+>> a significant performance overhead that should not be ignored.  Reducing
+>> the mbcache overhead is good, but eliminating it entirely is better.
+> 
+> I was under the impression that using a 256 byte inode (which gives a
+> bit over 100 bytes worth of xattr space) was plenty for SELinux.  If
+> it turns out that SELinux's use of xattrs have gotten especially
+> piggy, then we may need to revisit the recommended inode size for
+> those systems who insist on using SELinux...  even if we eliminate the
+> overhead associated with mbcache, the fact that files are requiring a
+> separate xattr is going to seriously degrade performance.
 
-FYI: Here is a bug reported by Dave Chinner.
-https://lkml.org/lkml/2013/9/10/1
+On my RHEL6 system,
 
-And lets see if any changes in your SpecJBB results without it.
+# find / -xdev -exec getfattr --only-values -m security.* {} 2>/dev/null \; | wc -c
+11082179
 
-Hillf
+bytes of names for:
+
+# df -i /
+Filesystem            Inodes   IUsed   IFree IUse% Mounted on
+/dev/mapper/vg_bp05-lv_root
+                     3276800  280785 2996015    9% /
+
+280785 inodes used,
+
+so:
+11082179/280785 = ~39.5 bytes per value on average, plus:
+
+# echo -n "security.selinux" | wc -c
+16
+
+16 bytes for the name is only about 55-56 bytes per selinux attr on average.
+
+So nope, not "especially piggy" on average.
+
+Another way to do it is this; list all possible file contexts, and make
+a histogram of sizes:
+
+# for CONTEXT in `semanage fcontext -l | awk '{print $NF}' `; do echo -n $CONTEXT | wc -c; done | sort -n | uniq -c
+      1 7
+     33 8
+    356 26
+     14 27
+     14 28
+     37 29
+     75 30
+    237 31
+    295 32
+    425 33
+    324 34
+    445 35
+    548 36
+    229 37
+    193 38
+    181 39
+    259 40
+     81 41
+    108 42
+     96 43
+     55 44
+     55 45
+     16 46
+     41 47
+     23 48
+     28 49
+     36 50
+     10 51
+     10 52
+      5 54
+      2 57
+
+so a 57 byte value is max, but there aren't many of the larger values.
+
+Above doesn't tell us the prevalence of various contexts on the actual system,
+but they are all under 100 bytes in any case.
+
+-Eric
+
+> 	       	  	   	     - Ted
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
