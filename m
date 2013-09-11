@@ -1,86 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754482Ab3IKO0Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 10:26:24 -0400
-Received: from mga14.intel.com ([143.182.124.37]:57911 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754442Ab3IKO0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 10:26:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,884,1371106800"; 
-   d="scan'208";a="293555338"
-Message-ID: <52307D9D.3070801@intel.com>
-Date: Wed, 11 Sep 2013 10:26:37 -0400
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: lenb@kernel.org, yinghai@kernel.org, bhelgaas@google.com,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 2/4] ACPI/Resource: Add address translation support
-References: <1378477486-8758-1-git-send-email-tianyu.lan@intel.com> <1378477486-8758-3-git-send-email-tianyu.lan@intel.com> <12539726.iB4h1i35EF@vostro.rjw.lan> <522D3002.5050304@intel.com>
-In-Reply-To: <522D3002.5050304@intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1754581Ab3IKO3H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 10:29:07 -0400
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:26387 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752595Ab3IKO3E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 10:29:04 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+Cc: Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: [PATCH 2/2] dcache: use read_seqlock/unlock() in read_seqbegin_or_lock() & friend
+Date: Wed, 11 Sep 2013 10:28:27 -0400
+Message-Id: <1378909707-3347-2-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1378909707-3347-1-git-send-email-Waiman.Long@hp.com>
+References: <1378909707-3347-1-git-send-email-Waiman.Long@hp.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/2013 10:18 PM, Lan Tianyu wrote:
-> On 2013年09月07日 08:15, Rafael J. Wysocki wrote:
->> On Friday, September 06, 2013 10:24:44 AM Lan Tianyu wrote:
->>> According ACPI 5.0 spec Section 19.1.8
->>> "For bridges, translate addresses across the bridge, this is the
->>> offset that must be added to the address on the secondary side
->>> to obtain the address on the primary side. Non-bridge devices
->>> must list 0."
->>
->> Can you please have a look into the previous versions of the spec and double
->> check that this change won't confuse systems that implement them?
->>
->
-> Hi Rafael:
->           I check all versions. This part has existed and not been
-> changed since ACPI 1.0.
->
+This patch modifies read_seqbegin_or_lock() and need_seqretry() to
+use newly introduced read_seqlock() and read_sequnlock() primitives
+so that they won't change the sequence number even if they fall back
+to take the lock.  This is OK as no change to the protected data
+structure is being made. It will prevent one fallback to lock taking
+from cascading into a series of lock taking reducing performance
+because of the sequence number change. It will also allow other
+sequence reader to go ahead while a reader lock is taken.
 
-Hi Rafael:
-	Do you have other comments on this?
+This patch also updates some of the inaccurate comments in the code.
 
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+---
+ fs/dcache.c |   31 ++++++++++++++++---------------
+ 1 files changed, 16 insertions(+), 15 deletions(-)
 
->> Otherwise it looks OK to me.
->>
->> Thanks,
->> Rafael
->>
->>
->>> This patch is to add address translation offset to the start/end
->>> of struct resource in the acpi_dev_resource_address_space().
->>> Further more, non-bridge device's translation_offset should 0.
->>> So this change will affect other devices.
->>>
->>>
->>> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
->>> ---
->>>   drivers/acpi/resource.c | 4 ++--
->>>   1 file changed, 2 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/drivers/acpi/resource.c b/drivers/acpi/resource.c
->>> index 929f416..84bc3db 100644
->>> --- a/drivers/acpi/resource.c
->>> +++ b/drivers/acpi/resource.c
->>> @@ -192,8 +192,8 @@ bool acpi_dev_resource_address_space(struct acpi_resource *ares,
->>>   	if (ACPI_FAILURE(status))
->>>   		return true;
->>>
->>> -	res->start = addr.minimum;
->>> -	res->end = addr.maximum;
->>> +	res->start = addr.minimum + addr.translation_offset;
->>> +	res->end = addr.maximum + addr.translation_offset;
->>>   	window = addr.producer_consumer == ACPI_PRODUCER;
->>>
->>>   	switch(addr.resource_type) {
->>>
->
->
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 4d9df3c..8191ca5 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -90,8 +90,8 @@ static struct kmem_cache *dentry_cache __read_mostly;
+ 
+ /**
+  * read_seqbegin_or_lock - begin a sequence number check or locking block
+- * lock: sequence lock
+- * seq : sequence number to be checked
++ * @lock: sequence lock
++ * @seq : sequence number to be checked
+  *
+  * First try it once optimistically without taking the lock. If that fails,
+  * take the lock. The sequence number is also used as a marker for deciding
+@@ -103,7 +103,7 @@ static inline void read_seqbegin_or_lock(seqlock_t *lock, int *seq)
+ 	if (!(*seq & 1))	/* Even */
+ 		*seq = read_seqbegin(lock);
+ 	else			/* Odd */
+-		write_seqlock(lock);
++		read_seqlock(lock);
+ }
+ 
+ static inline int need_seqretry(seqlock_t *lock, int seq)
+@@ -114,7 +114,7 @@ static inline int need_seqretry(seqlock_t *lock, int seq)
+ static inline void done_seqretry(seqlock_t *lock, int seq)
+ {
+ 	if (seq & 1)
+-		write_sequnlock(lock);
++		read_sequnlock(lock);
+ }
+ 
+ /*
+@@ -2673,9 +2673,9 @@ static int prepend(char **buffer, int *buflen, const char *str, int namelen)
+ 
+ /**
+  * prepend_name - prepend a pathname in front of current buffer pointer
+- * buffer: buffer pointer
+- * buflen: allocated length of the buffer
+- * name:   name string and length qstr structure
++ * @buffer: buffer pointer
++ * @buflen: allocated length of the buffer
++ * @name:   name string and length qstr structure
+  *
+  * With RCU path tracing, it may race with d_move(). Use ACCESS_ONCE() to
+  * make sure that either the old or the new name pointer and length are
+@@ -2713,14 +2713,15 @@ static int prepend_name(char **buffer, int *buflen, struct qstr *name)
+  * @buffer: pointer to the end of the buffer
+  * @buflen: pointer to buffer length
+  *
+- * The function tries to write out the pathname without taking any lock other
+- * than the RCU read lock to make sure that dentries won't go away. It only
+- * checks the sequence number of the global rename_lock as any change in the
+- * dentry's d_seq will be preceded by changes in the rename_lock sequence
+- * number. If the sequence number had been change, it will restart the whole
+- * pathname back-tracing sequence again. It performs a total of 3 trials of
+- * lockless back-tracing sequences before falling back to take the
+- * rename_lock.
++ * The function will first try to write out the pathname without taking any
++ * lock other than the RCU read lock to make sure that dentries won't go away.
++ * It only checks the sequence number of the global rename_lock as any change
++ * in the dentry's d_seq will be preceded by changes in the rename_lock
++ * sequence number. If the sequence number had been changed, it will restart
++ * the whole pathname back-tracing sequence again by taking the rename_lock.
++ * In this case, there is no need to take the RCU read lock as the recursive
++ * parent pointer references will keep the dentry chain alive as long as no
++ * rename operation is performed.
+  */
+ static int prepend_path(const struct path *path,
+ 			const struct path *root,
+-- 
+1.7.1
 
