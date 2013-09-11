@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149Ab3IKIAX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 04:00:23 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:54546 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab3IKIAV (ORCPT
+	id S1752578Ab3IKIGt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 04:06:49 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:56034 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565Ab3IKIGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 04:00:21 -0400
-Message-ID: <5230231E.8070104@linux.vnet.ibm.com>
-Date: Wed, 11 Sep 2013 13:30:30 +0530
-From: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Wed, 11 Sep 2013 04:06:44 -0400
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Guenter Roeck <linux@roeck-us.net>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Shivaprasad G Bhat <sbhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH] powerpc: Export cpu_to_chip_id() to fix build error
-References: <1378777076-4699-1-git-send-email-linux@roeck-us.net> <1378850610.4121.29.camel@pasglop>
-In-Reply-To: <1378850610.4121.29.camel@pasglop>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091107-5490-0000-0000-000004220111
+In-Reply-To: <CAOesGMiBN5SaEY26SxGaw9E4ViR3cC0PcwNMEd4cLJZMfomprQ@mail.gmail.com>
+References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
+	<1378817379-8238-2-git-send-email-lee.jones@linaro.org>
+	<CAOesGMgySNLKo_H0h4MCbAWvyW0h2bWa96drWBpnhAYYQwH9mw@mail.gmail.com>
+	<20130910153037.GA11227@lee--X1>
+	<CAOesGMiBN5SaEY26SxGaw9E4ViR3cC0PcwNMEd4cLJZMfomprQ@mail.gmail.com>
+Date: Wed, 11 Sep 2013 10:06:43 +0200
+Message-ID: <CACRpkdY24uU=tXirJqrxLH-45ORFGybJOg-2tDOkpSmFUQUiiw@mail.gmail.com>
+Subject: Re: [PATCH 01/38] ARM: ux500: Remove PrimeCell IDs from Nomadik I2C
+ DT nodes
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2013 03:33 AM, Benjamin Herrenschmidt wrote:
-> On Mon, 2013-09-09 at 18:37 -0700, Guenter Roeck wrote:
->> powerpc allmodconfig build fails with:
->>
->> ERROR: ".cpu_to_chip_id" [drivers/block/mtip32xx/mtip32xx.ko] undefined!
->>
->> The problem was introduced with commit 15863ff3b (powerpc: Make chip-id
->> information available to userspace).
->
-> Thanks, I'll send that to Linus asap.
->
+On Tue, Sep 10, 2013 at 6:57 PM, Olof Johansson <olof@lixom.net> wrote:
 
-Verified on today's Linus tree. This issue is fixed.
-
-Thanks a lot.
-
--Vasant
-
-> Ben.
+> I have a very weird experience with snowball right now. I noticed this
+> yesterday when I decided to look at why multi_v7_defconfig doesn't
+> boot on it:
 >
->> Export the missing symbol.
->>
->> Cc: Vasant Hegde <hegdevasant@linux.vnet.ibm.com>
->> Cc: Shivaprasad G Bhat <sbhat@linux.vnet.ibm.com>
->> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->> ---
->>   arch/powerpc/kernel/smp.c |    1 +
->>   1 file changed, 1 insertion(+)
->>
->> diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
->> index 442d8e2..8e59abc 100644
->> --- a/arch/powerpc/kernel/smp.c
->> +++ b/arch/powerpc/kernel/smp.c
->> @@ -611,6 +611,7 @@ int cpu_to_chip_id(int cpu)
->>   	of_node_put(np);
->>   	return of_get_ibm_chip_id(np);
->>   }
->> +EXPORT_SYMBOL(cpu_to_chip_id);
->>
->>   /* Helper routines for cpu to core mapping */
->>   int cpu_core_index_of_thread(int cpu)
->
->
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
->
+> * u8500_defconfig doesn't boot as a DT kernel, since the machine ID is
+> still enabled. If I disable the machine ID, it doesn't boot.
+> * Same for multi_v7_defconfig, since that is only DT: It doesn't boot.
 
+Weird, yeah there is something wrong on Torvalds' HEAD, with
+earlyprint it says:
+
+Uncompressing Linux... done, booting the kernel.
+Error: unrecognized/unsupported processor variant (0x412fc091).
+This comes from arch/arm/kernel/head-common.S
+
+I'm trying to bisect and find out what is causing this...
+
+Yours,
+Linus Walleij
