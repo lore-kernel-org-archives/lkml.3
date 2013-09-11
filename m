@@ -1,207 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591Ab3IKLO6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 07:14:58 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:17950 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754458Ab3IKLOy (ORCPT
+	id S1754686Ab3IKLPJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 07:15:09 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:42592 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754604Ab3IKLPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 07:14:54 -0400
-X-AuditID: cbfee691-b7f4a6d0000074fc-58-523050acfe7c
-From: Yadwinder Singh Brar <yadi.brar@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>
-Subject: [RFC 2/4] power: asv: Add a common asv driver for exynos SoCs.
-Date: Wed, 11 Sep 2013 16:44:06 +0530
-Message-id: <1378898048-25205-3-git-send-email-yadi.brar@samsung.com>
-X-Mailer: git-send-email 1.7.0.4
-In-reply-to: <1378898048-25205-1-git-send-email-yadi.brar@samsung.com>
-References: <1378898048-25205-1-git-send-email-yadi.brar@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpikeLIzCtJLcpLzFFi42JZI2JSpbsmwCDI4OIacYveBVfZLDY9vsZq
-	cXnXHDaLGef3MVncblzBZtG/sJfJYv2M1ywWx2YsYbTY+NXDYs70d0wOXB53ru1h89i8pN6j
-	b8sqRo9Hi1sYPT5vkgtgjeKySUnNySxLLdK3S+DKuPD+L1PBI8WKFQceMzcw/pHuYuTkkBAw
-	kXj7/AgLhC0mceHeerYuRi4OIYGljBLLF9xlgila8HglO0RiOqPEz+s3mCCcNiaJK99AWjg4
-	2ASMJF4dswNpEBFQkNjc+4wVpIZZ4DmTxNc9c9lAEsIC7hL/308AW8cioCpx/ucyZhCbV8BV
-	Yn/7AmaIbQoSrcsOsYPM5BRwk1gzxR4kLARUcnvzKaiSTewSSzsVIcYISHybfIgFpFxCQFZi
-	0wGoEkmJgytusExgFF7AyLCKUTS1ILmgOCm9yFSvODG3uDQvXS85P3cTIzD8T/97NnEH4/0D
-	1ocYk4HGTWSWEk3OB8ZPXkm8obGZkYWpiamxkbmlGWnCSuK86i3WgUIC6YklqdmpqQWpRfFF
-	pTmpxYcYmTg4pRoYmx/p7hJxeXfgW5qrWcovA54fD3gN49cz1KccZ6p66tJ9X/24k+xLVab6
-	AO2nn1/nzJTzWHtnlc82q+vOp0W8JU633Z8pddC2Wi+kVCgw2Dvm2pfG33MuTfro6F/6QYPn
-	ijZPfsW268Lb7cJPMEUmZZS8FCv5tDWs91VMyLoeRxnxmTdltl1UYinOSDTUYi4qTgQALleb
-	J5UCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAIsWRmVeSWpSXmKPExsVy+t9jQd01AQZBBhff8Vj0LrjKZrHp8TVW
-	i8u75rBZzDi/j8niduMKNov+hb1MFutnvGaxODZjCaPFxq8eFnOmv2Ny4PK4c20Pm8fmJfUe
-	fVtWMXo8WtzC6PF5k1wAa1QDo01GamJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJe
-	Ym6qrZKLT4CuW2YO0FFKCmWJOaVAoYDE4mIlfTtME0JD3HQtYBojdH1DguB6jAzQQMIaxowL
-	7/8yFTxSrFhx4DFzA+Mf6S5GTg4JAROJBY9XskPYYhIX7q1n62Lk4hASmM4o8fP6DSYIp41J
-	4so3kAwHB5uAkcSrY3YgDSICChKbe5+xgtQwCzxnkvi6Zy4bSEJYwF3i//sJLCA2i4CqxPmf
-	y5hBbF4BV4n97QuYIbYpSLQuO8QOMpNTwE1izRR7kLAQUMntzaeYJzDyLmBkWMUomlqQXFCc
-	lJ5rpFecmFtcmpeul5yfu4kRHF/PpHcwrmqwOMQowMGoxMN7Q04/SIg1say4MvcQowQHs5II
-	7wNTgyAh3pTEyqrUovz4otKc1OJDjMlAR01klhJNzgfGfl5JvKGxibmpsamliYWJmSVpwkri
-	vAdbrQOFBNITS1KzU1MLUotgtjBxcEo1MArlm9XdUHRlF5/xyzf0oHPpnLDISoOMqFshvAvv
-	aURF9N/XDy28WVIQ9uRuxrmTWTu2hbAp3HWbufCYwLW3WQ8Xhswzu8/YamURuWui493pSStW
-	tE6KkAtNrvNn0t3xwSeSY9mKL1psT9R+B0y4t+vKbu8Tjnb7XKZPej357tf65gfZcgeU7JVY
-	ijMSDbWYi4oTARSAx+nzAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 11 Sep 2013 07:15:02 -0400
+Date: Wed, 11 Sep 2013 13:14:53 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Cc: Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH 2/7] sched: Add NEED_RESCHED to the preempt_count
+Message-ID: <20130911111453.GP31370@twins.programming.kicks-ass.net>
+References: <20130910130811.507933095@infradead.org>
+ <20130910132011.116593485@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130910132011.116593485@infradead.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a common platform driver to register ASV members for exynos
-SoCs.
 
-Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
+Prompted by a question from Mike I updated the Changelog to explain why
+we need to keep TIF_NEED_RESCHED.
+
 ---
- drivers/power/asv/Kconfig      |   13 +++++++
- drivers/power/asv/Makefile     |    1 +
- drivers/power/asv/exynos-asv.c |   72 ++++++++++++++++++++++++++++++++++++++++
- drivers/power/asv/exynos-asv.h |   21 +++++++++++
- 4 files changed, 107 insertions(+), 0 deletions(-)
- create mode 100644 drivers/power/asv/exynos-asv.c
- create mode 100644 drivers/power/asv/exynos-asv.h
+Subject: sched: Add NEED_RESCHED to the preempt_count
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Wed Aug 14 14:55:31 CEST 2013
 
-diff --git a/drivers/power/asv/Kconfig b/drivers/power/asv/Kconfig
-index 7cd84bd..6104b09 100644
---- a/drivers/power/asv/Kconfig
-+++ b/drivers/power/asv/Kconfig
-@@ -9,3 +9,16 @@ menuconfig POWER_ASV
- 	  manufacturing process.
+In order to combine the preemption and need_resched test we need to
+fold the need_resched information into the preempt_count value.
+
+Since the NEED_RESCHED flag is set across CPUs this needs to be an
+atomic operation, however we very much want to avoid making
+preempt_count atomic, therefore we keep the existing TIF_NEED_RESCHED
+infrastructure in place but at 3 sites test it and fold its value into
+preempt_count; namely:
+
+ - resched_task() when setting TIF_NEED_RESCHED on the current task
+ - scheduler_ipi() when resched_task() sets TIF_NEED_RESCHED on a
+                   remote task it follows it up with a reschedule IPI
+                   and we can modify the cpu local preempt_count from
+                   there.
+ - cpu_idle_loop() for when resched_task() found tsk_is_polling().
+
+We use an inverted bitmask to indicate need_resched so that a 0 means
+both need_resched and !atomic.
+
+Also remove the barrier() in preempt_enable() between
+preempt_enable_no_resched() and preempt_check_resched() to avoid
+having to reload the preemption value and allow the compiler to use
+the flags of the previuos decrement. I couldn't come up with any sane
+reason for this barrier() to be there as preempt_enable_no_resched()
+already has a barrier() before doing the decrement.
+
+Suggested-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ include/linux/preempt.h     |   42 +++++++++++++++++++++++++++++++++++++-----
+ include/linux/sched.h       |    2 +-
+ include/linux/thread_info.h |    1 +
+ kernel/context_tracking.c   |    2 +-
+ kernel/cpu/idle.c           |   10 ++++++++++
+ kernel/sched/core.c         |   18 ++++++++++++++----
+ 6 files changed, 64 insertions(+), 11 deletions(-)
+
+--- a/include/linux/preempt.h
++++ b/include/linux/preempt.h
+@@ -10,9 +10,19 @@
+ #include <linux/linkage.h>
+ #include <linux/list.h>
  
- 	  Say Y here to enable Adaptive Supply voltage support.
++/*
++ * We use the MSB mostly because its available; see <linux/hardirq.h> for
++ * the other bits.
++ */
++#define PREEMPT_NEED_RESCHED	0x80000000
 +
-+if POWER_ASV
-+
-+config POWER_EXYNOS_ASV
-+	bool "Adaptive Supply Voltage for Exynos"
-+	help
-+	  Exynos supports ASV depending upon the ASV group fused on chip.
-+	  Users can request ASV specific to a frequency for a particular member
-+	  from corresponding DVFS driver.
-+
-+	  Say Y here to enable Exynos Adaptive Voltage Scaling.
-+
-+endif
-diff --git a/drivers/power/asv/Makefile b/drivers/power/asv/Makefile
-index 62921da..9a94868 100644
---- a/drivers/power/asv/Makefile
-+++ b/drivers/power/asv/Makefile
-@@ -1 +1,2 @@
- obj-$(CONFIG_POWER_ASV)			+= asv.o
-+obj-$(CONFIG_POWER_EXYNOS_ASV)		+= exynos-asv.o
-diff --git a/drivers/power/asv/exynos-asv.c b/drivers/power/asv/exynos-asv.c
-new file mode 100644
-index 0000000..d3f43a4
---- /dev/null
-+++ b/drivers/power/asv/exynos-asv.c
-@@ -0,0 +1,72 @@
-+/* Common Exynos ASV(Adaptive Supply Voltage) driver
++/*
++ * We mask the PREEMPT_NEED_RESCHED bit so as not to confuse all current users
++ * that think a non-zero value indicates we cannot preempt.
++ */
+ static __always_inline int preempt_count(void)
+ {
+-	return current_thread_info()->preempt_count;
++	return current_thread_info()->preempt_count & ~PREEMPT_NEED_RESCHED;
+ }
+ 
+ static __always_inline int *preempt_count_ptr(void)
+@@ -20,6 +30,30 @@ static __always_inline int *preempt_coun
+ 	return &current_thread_info()->preempt_count;
+ }
+ 
++/*
++ * We fold the NEED_RESCHED bit into the preempt count such that
++ * preempt_enable() can decrement and test for needing to reschedule with a
++ * single instruction.
 + *
-+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
-+ *		http://www.samsung.com/
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+*/
++ * We invert the actual bit, so that when the decrement hits 0 we know we both
++ * need to resched (the bit is cleared) and can resched (no preempt count).
++ */
 +
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/slab.h>
-+#include <linux/of_address.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/power/asv-driver.h>
-+#include "exynos-asv.h"
-+
-+static int exynos_asv_probe(struct platform_device *pdev)
++static __always_inline void set_preempt_need_resched(void)
 +{
-+	struct device_node *chip_id;
-+	struct exynos_asv_common *exynos_asv_info;
-+	void __iomem *base;
-+	int ret = 0;
-+
-+	exynos_asv_info = kzalloc(sizeof(struct exynos_asv_common), GFP_KERNEL);
-+	if (!exynos_asv_info)
-+		return -ENOMEM;
-+
-+	chip_id = of_find_compatible_node(NULL, NULL,
-+						"samsung,exynos4210-chipid");
-+	if (!chip_id) {
-+		pr_err("%s: unable to find chipid\n", __func__);
-+		ret = -ENODEV;
-+		goto err_node;
-+	}
-+
-+	base = of_iomap(chip_id, 0);
-+	if (!base) {
-+		pr_err("%s: unable to map chip_id register\n", __func__);
-+		ret = -ENOMEM;
-+		goto err_map;
-+	}
-+
-+	exynos_asv_info->base = base;
-+
-+	/* call SoC specific intialisation routine */
-+
-+	register_asv_member(exynos_asv_info->asv_list, exynos_asv_info->nr_mem);
-+
-+	iounmap(base);
-+err_map:
-+	of_node_put(chip_id);
-+err_node:
-+	kfree(exynos_asv_info);
-+
-+	return ret;
++	*preempt_count_ptr() &= ~PREEMPT_NEED_RESCHED;
 +}
 +
-+static struct platform_driver exynos_asv_platdrv = {
-+	.driver = {
-+		.name	= "exynos-asv",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= exynos_asv_probe,
-+};
-+module_platform_driver(exynos_asv_platdrv);
++static __always_inline void clear_preempt_need_resched(void)
++{
++	*preempt_count_ptr() |= PREEMPT_NEED_RESCHED;
++}
 +
-+MODULE_AUTHOR("Yadwinder Singh Brar<yadi.brar@samsung.com>");
-+MODULE_DESCRIPTION("Common Exynos ASV driver");
-+MODULE_LICENSE("GPL");
-diff --git a/drivers/power/asv/exynos-asv.h b/drivers/power/asv/exynos-asv.h
-new file mode 100644
-index 0000000..89a1ae8
---- /dev/null
-+++ b/drivers/power/asv/exynos-asv.h
-@@ -0,0 +1,21 @@
-+/*
-+ * Exynos - Adaptive Supply Voltage Driver Header File
-+ *
-+ * copyright (c) 2013 samsung electronics co., ltd.
-+ *		http://www.samsung.com/
-+ *
-+ * this program is free software; you can redistribute it and/or modify
-+ * it under the terms of the gnu general public license version 2 as
-+ * published by the free software foundation.
-+*/
++static __always_inline bool test_preempt_need_resched(void)
++{
++	return !(*preempt_count_ptr() & PREEMPT_NEED_RESCHED);
++}
 +
-+#ifndef __EXYNOS_ASV_D_H
-+#define __EXYNOS_ASV_D_H __FILE__
+ #if defined(CONFIG_DEBUG_PREEMPT) || defined(CONFIG_PREEMPT_TRACER)
+   extern void add_preempt_count(int val);
+   extern void sub_preempt_count(int val);
+@@ -37,7 +71,7 @@ asmlinkage void preempt_schedule(void);
+ 
+ #define preempt_check_resched() \
+ do { \
+-	if (unlikely(test_thread_flag(TIF_NEED_RESCHED))) \
++	if (unlikely(!*preempt_count_ptr())) \
+ 		preempt_schedule(); \
+ } while (0)
+ 
+@@ -47,7 +81,7 @@ void preempt_schedule_context(void);
+ 
+ #define preempt_check_resched_context() \
+ do { \
+-	if (unlikely(test_thread_flag(TIF_NEED_RESCHED))) \
++	if (unlikely(!*preempt_count_ptr())) \
+ 		preempt_schedule_context(); \
+ } while (0)
+ #else
+@@ -83,7 +117,6 @@ do { \
+ #define preempt_enable() \
+ do { \
+ 	preempt_enable_no_resched(); \
+-	barrier(); \
+ 	preempt_check_resched(); \
+ } while (0)
+ 
+@@ -111,7 +144,6 @@ do { \
+ #define preempt_enable_notrace() \
+ do { \
+ 	preempt_enable_no_resched_notrace(); \
+-	barrier(); \
+ 	preempt_check_resched_context(); \
+ } while (0)
+ 
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2405,7 +2405,7 @@ static inline int signal_pending_state(l
+ 
+ static inline int need_resched(void)
+ {
+-	return unlikely(test_thread_flag(TIF_NEED_RESCHED));
++	return unlikely(test_preempt_need_resched());
+ }
+ 
+ /*
+--- a/include/linux/thread_info.h
++++ b/include/linux/thread_info.h
+@@ -104,6 +104,7 @@ static inline int test_ti_thread_flag(st
+ #define test_thread_flag(flag) \
+ 	test_ti_thread_flag(current_thread_info(), flag)
+ 
++#define test_need_resched()	test_thread_flag(TIF_NEED_RESCHED)
+ #define set_need_resched()	set_thread_flag(TIF_NEED_RESCHED)
+ #define clear_need_resched()	clear_thread_flag(TIF_NEED_RESCHED)
+ 
+--- a/kernel/context_tracking.c
++++ b/kernel/context_tracking.c
+@@ -115,7 +115,7 @@ void __sched notrace preempt_schedule_co
+ {
+ 	enum ctx_state prev_ctx;
+ 
+-	if (likely(!preemptible()))
++	if (likely(preempt_count() || irqs_disabled()))
+ 		return;
+ 
+ 	/*
+--- a/kernel/cpu/idle.c
++++ b/kernel/cpu/idle.c
+@@ -106,6 +106,13 @@ static void cpu_idle_loop(void)
+ 				current_set_polling();
+ 			}
+ 			arch_cpu_idle_exit();
++			/*
++			 * We need to test and propagate the TIF_NEED_RESCHED
++			 * bit here because we might not have send the
++			 * reschedule IPI to idle tasks.
++			 */
++			if (test_need_resched())
++				set_preempt_need_resched();
+ 		}
+ 		tick_nohz_idle_exit();
+ 		schedule_preempt_disabled();
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -526,8 +526,10 @@ void resched_task(struct task_struct *p)
+ 	set_tsk_need_resched(p);
+ 
+ 	cpu = task_cpu(p);
+-	if (cpu == smp_processor_id())
++	if (cpu == smp_processor_id()) {
++		set_preempt_need_resched();
+ 		return;
++	}
+ 
+ 	/* NEED_RESCHED must be visible before we test polling */
+ 	smp_mb();
+@@ -1411,6 +1413,14 @@ static void sched_ttwu_pending(void)
+ 
+ void scheduler_ipi(void)
+ {
++	/*
++	 * Fold TIF_NEED_RESCHED into the preempt_count; anybody setting
++	 * TIF_NEED_RESCHED remotely (for the first time) will also send
++	 * this IPI.
++	 */
++	if (test_need_resched())
++		set_preempt_need_resched();
 +
-+struct exynos_asv_common {
-+	struct asv_info *asv_list;
-+	unsigned int nr_mem;
-+	void __iomem *base;
-+};
-+
-+#endif	/* __EXYNOS_ASV_D_H */
--- 
-1.7.0.4
+ 	if (llist_empty(&this_rq()->wake_list)
+ 			&& !tick_nohz_full_cpu(smp_processor_id())
+ 			&& !got_nohz_idle_kick())
+@@ -2445,6 +2455,7 @@ static void __sched __schedule(void)
+ 	put_prev_task(rq, prev);
+ 	next = pick_next_task(rq);
+ 	clear_tsk_need_resched(prev);
++	clear_preempt_need_resched();
+ 	rq->skip_clock_update = 0;
+ 
+ 	if (likely(prev != next)) {
+@@ -2531,7 +2542,7 @@ asmlinkage void __sched notrace preempt_
+ 	 * If there is a non-zero preempt_count or interrupts are disabled,
+ 	 * we do not want to preempt the current task. Just return..
+ 	 */
+-	if (likely(!preemptible()))
++	if (likely(preempt_count() || irqs_disabled()))
+ 		return;
+ 
+ 	do {
+@@ -2556,11 +2567,10 @@ EXPORT_SYMBOL(preempt_schedule);
+  */
+ asmlinkage void __sched preempt_schedule_irq(void)
+ {
+-	struct thread_info *ti = current_thread_info();
+ 	enum ctx_state prev_state;
+ 
+ 	/* Catch callers which need to be fixed */
+-	BUG_ON(ti->preempt_count || !irqs_disabled());
++	BUG_ON(preempt_count() || !irqs_disabled());
+ 
+ 	prev_state = exception_enter();
+ 
 
