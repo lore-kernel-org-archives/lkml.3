@@ -1,110 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754340Ab3IKOA6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 10:00:58 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:43961 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754024Ab3IKOA4 (ORCPT
+	id S1754107Ab3IKOIr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 10:08:47 -0400
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:51072 "EHLO
+	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752763Ab3IKOIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 10:00:56 -0400
-Message-ID: <523076A0.3020308@linux.vnet.ibm.com>
-Date: Wed, 11 Sep 2013 19:26:48 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Wed, 11 Sep 2013 10:08:45 -0400
+Date: Wed, 11 Sep 2013 11:08:22 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <ak@linux.intel.com>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [GIT PULL 0/5] perf/urgent fixes
+Message-ID: <20130911140822.GD1866@ghostprotocols.net>
+References: <1378836722-31326-1-git-send-email-acme@infradead.org>
+ <20130911055503.GB15395@gmail.com>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cpufreq <cpufreq@vger.kernel.org>
-Subject: Re: cpufreq_stats NULL deref on second system suspend
-References: <522E1FEF.6080803@wwwdotorg.org> <1775778.MeiRhuYy7o@vostro.rjw.lan>	<522F86AD.6010603@wwwdotorg.org> <2521560.SfeNbV74nj@vostro.rjw.lan>	<52304439.3030301@linux.vnet.ibm.com> <CAKohpokTVzikxunqSdUYmLjTOkfhWFJ=N4TTa4rdbj2euCFY-g@mail.gmail.com> <CAKohpomzQ8Yzk+OU0btQM6DGm4xsY1RR9uYFrZD3ZHO-bhrwKQ@mail.gmail.com> <5230509D.6040205@linux.vnet.ibm.com> <CAKohpo=DfmNSMnyVRK0gfx7QGr=jOTbFo6uuGhEOaa2UMkeQAQ@mail.gmail.com>
-In-Reply-To: <CAKohpo=DfmNSMnyVRK0gfx7QGr=jOTbFo6uuGhEOaa2UMkeQAQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091113-7014-0000-0000-00000398690A
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130911055503.GB15395@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2013 05:29 PM, Viresh Kumar wrote:
-> On 11 September 2013 16:44, Srivatsa S. Bhat
-> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->> Hmm? The problem is not about merely updating the policy->cpu field; the
->> main issue is that the existing code was not letting the cpufreq-stats
->> code know that we updated the policy->cpu under the hood. It is important
->> for cpufreq-stats to know this because it maintains the reference to its
->> stats structure by associating it with the policy->cpu. So if policy->cpu
->> changes under the hood, it loses track of its reference. So we need to
->> keep that code informed about changes to policy->cpu. Thus, we need to call
->> update_policy_cpu() in the CPU online path (during resume). I don't see
->> how we can skip that.
+Em Wed, Sep 11, 2013 at 07:55:03AM +0200, Ingo Molnar escreveu:
+>  16645 perf_event_open(0x1eb7f00, 0xffffffff, 0, 0xffffffff, 0) = -1 EINVAL (Invalid argument)
 > 
-> Okay.. There are two different ways in which cpufreq_add_dev() work
-> currently..
+> Caused by:
 > 
-> Boot cluster (i.e. policy with boot CPU)
-> ---------------
+>  575a9aab0f85 perf tools: Add attr->mmap2 support
 > 
-> Here cpufreq_remove_dev() is never called for boot cpu but all others.
-> And similarly cpufreq_add_dev() is never called for boot cpu but all others.
+> We must not force mmap2 support to be present on the kernel side - new 
+> perf top should work on older kernels just as well.
 > 
-> Now policy->cpu contains meaningful cpu at beginning of resume and
-> we don't need to modify that at all.. For all the remaining CPUs we
-> better call cpufreq_add_policy_cpu() rather..
->
+> So I've unpulled the tree for now.
 
-Yes, and the existing code already does that. And if you observe the placement
-of the call to update_policy_cpu() in my patch, you'll find that it won't
-be called in cases where we call cpufreq_add_policy_cpu(). Which is exactly
-what you want, IIUC.
+yeah, I noticed this late yesterday, made it to work like the fallback
+for perf_event_attr.{sample_id_all,exclude_{guest,host}} and folded that
+into Stephane's patch, with a committer note, to keep things bisectable.
 
-> Non-boot Cluster
-> ---------------------
-> 
-> All CPUs here are removed and at the end policy->cpu contains the last
-> cpu removed.. So, for a cluster with cpu 2 and 3.... it will contain 3..
-> 
-> Not at resume we will add cpu2 first and so need to update policy->cpu
-> to 2.. But for all other CPUs in this cluster we return early from
-> cpufreq_add_dev() and call cpufreq_add_policy_cpu() as policy->cpus
-> was fixed by call to ->init() for the first cpu of this cluster..
-> 
-> And so we never reach the line: policy->cpu = cpu;
-> 
-> For the first cpu of non-boot cluster we need to call update_policy_cpu()
-> and not for others..
-> 
+Can you please do a test pull with the updated branch + tag below? If
+you prefer me to do the whole dance and send a regular pull request,
+please let me now.
 
-Yes, and that's precisely why I added the call to update_policy_cpu() only
-near the statement 'policy->cpu = cpu'. All other cases don't need to call
-that function, and in my patch, they indeed don't call that function.
+- Arnaldo
 
-A simple way to look at this is:
-If policy->cpu is updated anywhere in the resume (cpu online) path, we need
-to call update_policy_cpu(). Otherwise, we don't need to call that function.
-This will cover both the scenarios you described above.
+tag perf-urgent-for-mingo
+Tagger: Arnaldo Carvalho de Melo <acme@redhat.com>
+Date:   Wed Sep 11 10:59:37 2013 -0300
 
-> 
-> But for the boot cluster if we can call ->init() somehow at resume time,
-> then things would be fairly similar in both cases..
-> 
-> I am running of time now, as need to leave office now...
-> I hope I made the problem more clear or probably the way I see it :)
-> 
+perf/urgent fixes:
 
-Well, your explanation matches my understanding of the scenarios, and
-I had written the patch keeping those scenarios in mind; so I believe the
-patch is correct as it is. So what I didn't get is this: are you suggesting
-that something is wrong in my patch, or are you just reiterating the different
-scenarios involved so that I can recheck whether my patch is right?
+. Handle perf.data files with no tracepoints in 'perf trace', fixing a
+  segfault.
 
-If it is the former, please point me to the exact problem you found in
-my patch. If it is the latter, I'm pretty sure my patch is right, I've
-already checked it :-)
+. Fix up MMAP2 buffer space reservation, a problem that was caught via
+  'perf test' consistency tests.
 
-Regards,
-Srivatsa S. Bhat
+. Add attr->mmap2 support in the tools, a patch that should've been merged
+  together with the kernel counterpart:
+
+    13d7a24 "perf: Add attr->mmap2 attribute to an event".
+
+  Merging it allowed us to catch the MMAP buffer space reservation problem via
+  'perf test'. From Stephane Eranian.
+
+  The tools deals with older kernels by disabling this feature, resetting the
+  perf_event_attr.mmap2 bit, when -EINVAL is returned by perf_event_open, just
+  like with perf_event_attr.{sample_id_all,exclude_{guest,host}}.
+
+  When such fallback happens the perf_missing_features.mmap2 flag is set to
+  true and can be used by tooling that strictly needs this feature to check
+  for its availability on the running kernel.
+
+. Make sure we can find PERF_SAMPLE_ID in the variable part of PERF_RECORD_
+  ring buffer records in 'perf kvm', where direct manipulation of sample_type
+  was being done.
+
+  Fixed by making use of the perf_evlist__set_sample_bit() helper and by
+  setting the evlist->id_pos in perf_evlist__open(), from Adrian Hunter.
+
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAABAgAGBQJSMHggAAoJENZQFvNTUqpAGwcP/jPE/xxeyX8+qzCfTs3+I8rs
+2vQlqrkHxILF4yFIL9LmPc/cjknfZ2681Z8ExQoRZkwIhnFpPXo3pifpBpUgMpDY
+sX6oYnevtlg2R1UfEZkpqzpudTalnhvpXapqcyG/ITr83lz4aqRQuB6BEHO/Rk9u
+FSIar2sov84ZrtgCN5xdrl8eEjqtCM21EmKVGUhsTTeHzjCEE5zNairEPcbkY3j1
+diQxk2V4pp3gdAniSkRQ52nwNiQphcUKk9aN2/UdQmzgVJ4JUu6Pl8VpvMeWe0gt
+sk6j78YUYJY9rW64sRt4JNAh2/70OUp5pQ5z+uYF6xBYTc1isxxGwC+IR/L0FzJe
+h5yvVIglzKL7LIkT076VzCI44kgGXEtvoqPOnTmCYSXuPNbKfdzFaK9zOr59qvHo
+5gd4caPq0OsEC5dpsWkXm/awzrnUpUa7CuVO+2giW6aWxv8/XtbSdoVESaD4qVDG
+X+KK/lnRI1mH28bZDzR4MxbfXsB8JA4b78sTjk3QAX5jusCPwzdmzg+WtZY6CsQg
+k/PGT6Pu3YLh0QPCV/1tYqRKPOT1T8Vzvoc/xNX8Yr/KnkV94Deu4otBwOSpthBi
+7BUfngXF31bOZxOUpnzoZb3DBFrJjNsHXy78QiIpv5f1DjpfRcDe54+hYxM9uAS1
+sD+gvcG60j2mPwpp1ju+
+=S8gx
+-----END PGP SIGNATURE-----
 
