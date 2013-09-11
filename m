@@ -1,114 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755732Ab3IKS0r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 14:26:47 -0400
+	id S1756759Ab3IKS1a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 14:27:30 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11021 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754141Ab3IKS0o (ORCPT
+	with ESMTP id S1755331Ab3IKS0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 14:26:44 -0400
-X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=oujxPrUT-5MA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=ZhA1QrvdJXkA:10 a=sozttTNsAAAA:8 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=DyVgD6iCLAj66kwz9QAA:9 a=x2szoZtqnggA:10 a=jeBq3FmKZ4MA:10 a=YNKMA6yp7j4A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Wed, 11 Sep 2013 14:26:46 -0400
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=cpn0iEa-oVMA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=uXgjhyO7DfoA:10 a=yPCof4ZbAAAA:8 a=b6cOVhxc6wDWmF5dgLwA:9 a=CjuIK1q_8ugA:10 a=7DSvI1NPTFQA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042906.286580695@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:28:31 -0400
+Date: Wed, 11 Sep 2013 14:26:44 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: George Cherian <george.cherian@ti.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [084/251] usb: host: xhci: Enable XHCI_SPURIOUS_SUCCESS for all controllers
- with xhci 1.0
-References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0084-usb-host-xhci-Enable-XHCI_SPURIOUS_SUCCESS-for-all-c.patch
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Jason Baron <jbaron@akamai.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com
+Subject: Re: Regression :-) Re: [GIT PULL RESEND] x86/jumpmplabel changes
+ for v3.12-rc1
+Message-ID: <20130911142644.68d614c9@gandalf.local.home>
+In-Reply-To: <20130911180113.GB29406@phenom.dumpdata.com>
+References: <20130911134717.GA10925@phenom.dumpdata.com>
+	<20130911135745.GB11043@phenom.dumpdata.com>
+	<20130911142545.GA11364@phenom.dumpdata.com>
+	<20130911105633.1c029147@gandalf.local.home>
+	<20130911152149.GA22076@phenom.dumpdata.com>
+	<20130911114708.1b42aec0@gandalf.local.home>
+	<20130911161745.GA5884@phenom.dumpdata.com>
+	<20130911130507.44a2b115@gandalf.local.home>
+	<20130911172552.GB6870@phenom.dumpdata.com>
+	<20130911135237.245386fb@gandalf.local.home>
+	<20130911180113.GB29406@phenom.dumpdata.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.9-rc1 stable review patch.
-If anyone has any objections, please let me know.
+On Wed, 11 Sep 2013 14:01:13 -0400
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
 
-------------------
 
-From: George Cherian <george.cherian@ti.com>
+> <confused>
+> 
+> I am thins would still work:
+> 
+> 
+> 47 static __always_inline void arch_spin_unlock(arch_spinlock_t *lock)             
+> 148 {                                                                               
+> 149         if (TICKET_SLOWPATH_FLAG &&                                             
+> 150             static_key_false(&paravirt_ticketlocks_enabled)) {                  
+> 
+> (from arch/x86/include/asm/spinlock.h) as the static_key_false
+> would check the key->enabled. Which had been incremented?
+> 
+> Granted there are no patching done yet, but that should still allow
+> this code path to be taken?
 
-[ Upstream commit 07f3cb7c28bf3f4dd80bfb136cf45810c46ac474 ]
+Lets look at static_key_false():
 
-Xhci controllers with hci_version > 0.96 gives spurious success
-events on short packet completion. During webcam capture the
-"ERROR Transfer event TRB DMA ptr not part of current TD" was observed.
-The same application works fine with synopsis controllers hci_version 0.96.
-The same issue is seen with Intel Pantherpoint xhci controller. So enabling
-this quirk in xhci_gen_setup if controller verion is greater than 0.96.
-For xhci-pci move the quirk to much generic place xhci_gen_setup.
+If jump labels is not enabled, you are correct. It simply looks like
+this:
 
-Note from Sarah:
+static __always_inline bool static_key_false(struct static_key *key)
+{
+	if (unlikely(atomic_read(&key->enabled)) > 0)
+		return true;
+	return false;
+}
 
-The xHCI 1.0 spec changed how hardware handles short packets.  The HW
-will notify SW of the TRB where the short packet occurred, and it will
-also give a successful status for the last TRB in a TD (the one with the
-IOC flag set).  On the second successful status, that warning will be
-triggered in the driver.
 
-Software is now supposed to not assume the TD is not completed until it
-gets that last successful status.  That means we have a slight race
-condition, although it should have little practical impact.  This patch
-papers over that issue.
+But that's not the case here. Here we have code modifying jump labels,
+where static_key_false() looks like this:
 
-It's on my long-term to-do list to fix this race condition, but it is a
-much more involved patch that will probably be too big for stable.  This
-patch is needed for stable to avoid serious log spam.
+static __always_inline bool static_key_false(struct static_key *key)
+{
+	return arch_static_branch(key);
+}
 
-This patch should be backported to kernels as old as 3.0, that
-contain the commit ad808333d8201d53075a11bc8dd83b81f3d68f0b "Intel xhci:
-Ignore spurious successful event."
+static __always_inline bool arch_static_branch(struct static_key *key)
+{
+	asm goto("1:"
+		".byte " __stringify(STATIC_KEY_INIT_NOP) "\n\t"
+		".pushsection __jump_table,  \"aw\" \n\t"
+		_ASM_ALIGN "\n\t"
+		_ASM_PTR "1b, %l[l_yes], %c0 \n\t"
+		".popsection \n\t"
+		: :  "i" (key) : : l_yes);
+	return false;
+l_yes:
+	return true;
+}
 
-The patch will have to be modified for kernels older than 3.2, since
-that kernel added the xhci_gen_setup function for xhci platform devices.
-The correct conflict resolution for kernels older than 3.2 is to set
-XHCI_SPURIOUS_SUCCESS in xhci_pci_quirks for all xHCI 1.0 hosts.
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- drivers/usb/host/xhci-pci.c |    1 -
- drivers/usb/host/xhci.c     |    7 +++++++
- 2 files changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-index cd0fc48..aecfc58 100644
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -93,7 +93,6 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
- 	}
- 	if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
- 			pdev->device == PCI_DEVICE_ID_INTEL_PANTHERPOINT_XHCI) {
--		xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
- 		xhci->quirks |= XHCI_EP_LIMIT_QUIRK;
- 		xhci->limit_active_eps = 64;
- 		xhci->quirks |= XHCI_SW_BW_CHECKING;
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 2c117ec..bb8b3a5 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -4654,6 +4654,13 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)
- 
- 	get_quirks(dev, xhci);
- 
-+	/* In xhci controllers which follow xhci 1.0 spec gives a spurious
-+	 * success event after a short transfer. This quirk will ignore such
-+	 * spurious event.
-+	 */
-+	if (xhci->hci_version > 0x96)
-+		xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
+
+Look in that assembly. That "STATIC_KEY_INIT_NOP" is the byte code for
+a nop, and until we modify it, arch_static_branch() will always return
+false, no matter what "key->enable" is.
+
+
+In fact, your call trace you posted earlier proves my point!
+
+[    4.966912]  [<ffffffff810542e0>] ? poke_int3_handler+0x40/0x40
+[    4.966916]  [<ffffffff816a0cf3>] dump_stack+0x59/0x7b
+[    4.966920]  [<ffffffff81051e0a>] __jump_label_transform+0x18a/0x230
+[    4.966923]  [<ffffffff81162980>] ? fire_user_return_notifiers+0x70/0x70
+[    4.966926]  [<ffffffff81051f15>] arch_jump_label_transform_static+0x65/0x90
+[    4.966930]  [<ffffffff81cfbbfb>] jump_label_init+0x75/0xa3
+[    4.966932]  [<ffffffff81cd3e3c>] start_kernel+0x168/0x3ff
+[    4.966934]  [<ffffffff81cd3af2>] ? repair_env_string+0x5b/0x5b
+[    4.966938]  [<ffffffff81cd35f3>] x86_64_start_reservations+0x2a/0x2c
+[    4.966941]  [<ffffffff81cd833a>] xen_start_kernel+0x594/0x596
+
+This blew up in your patch:
+
+ 	if (type == JUMP_LABEL_ENABLE) {
+ 		/*
+ 		 * We are enabling this jump label. If it is not a nop
+ 		 * then something must have gone wrong.
+ 		 */
+-		if (unlikely(memcmp((void *)entry->code, ideal_nop, 5) != 0))
+-			bug_at((void *)entry->code, __LINE__);
++		if (init) {
++			if (unlikely(memcmp((void *)entry->code, ideal_nop, 5) != 0)) {
++				static int log = 0;
 +
- 	/* Make sure the HC is halted. */
- 	retval = xhci_halt(xhci);
- 	if (retval)
--- 
-1.7.10.4
++				if (log == 0) {
++					pr_warning("op %pS\n", (void *)entry->code);
++					dump_stack();
++				}
++				log++;
++			}
++		}
 
 
+It was expecting to have the ideal nop, because on boot up it didn't
+expect to have something already marked for enable. It only thought this
+to be the case after initialization. This explains your origin error
+message:
+
+Unexpected op at trace_clock_global+0x6b/0x120 [ffffffff8113a21b] (0f 1f 44 00 00)
+
+The NOP was still the default nop, but it was expecting the ideal nop
+because it normally only gets into this path after the init was already
+done.
+
+My point is, it wasn't until jump_label_init() where it did the
+conversion from nop to calling the label.
+
+I'm looking to NAK your patch because it is obvious that the jump label
+code isn't doing what you expect it to be doing. And it wasn't until my
+checks were in place for you to notice.
+
+-- Steve
