@@ -1,79 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528Ab3IKBAy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Sep 2013 21:00:54 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:9725 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753411Ab3IKBAv (ORCPT
+	id S1753411Ab3IKBEQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Sep 2013 21:04:16 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:65174 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500Ab3IKBEP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 21:00:51 -0400
-X-AuditID: cbfee68f-b7f656d0000058e3-f7-522fc0c2e930
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Michael Opdenacker'" <michael.opdenacker@free-electrons.com>
-Cc: davem@davemloft.net, emilio@elopez.com.ar, mugunthanvnm@ti.com,
-        hsweeten@visionengravers.com, netdev@vger.kernel.org,
+	Tue, 10 Sep 2013 21:04:15 -0400
+X-AuditID: 9c93017e-b7c76ae000003897-33-522fc18d1a07
+Date: Wed, 11 Sep 2013 10:04:34 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-References: <1378531257-5446-1-git-send-email-michael.opdenacker@free-electrons.com>
-In-reply-to: <1378531257-5446-1-git-send-email-michael.opdenacker@free-electrons.com>
-Subject: Re: [PATCH] net: korina: remove deprecated IRQF_DISABLED
-Date: Wed, 11 Sep 2013 10:00:49 +0900
-Message-id: <003001ceae8a$5b0ad700$11208500$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac6rigzd6hkl1y62RPawu6ebhvjYMwDAAzyg
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDIsWRmVeSWpSXmKPExsVy+t8zfd1DB/SDDHa/Ybd4eUjTYs75FhaL
-	Zxu+sFjMnfOd3eLyrjlsFg8mrGKzuPqg3OLYAjEHDo8tK28yefx55+7xZNNFRo++LasYPY7f
-	2M7k8XmTnMfzMz/YAtijuGxSUnMyy1KL9O0SuDIu3mpkL/jOXNH56zdjA+N05i5GTg4JAROJ
-	6X+XsEDYYhIX7q1n62Lk4hASWMYosfl/MztM0fb/XawQiUWMEod7X0BV/WKUmH7tDytIFZuA
-	msSXL4eBOjg4RAQcJP5/MAGpYRaYxSjRevgU2DohgTCJPVuvs4LUcAqES/zaALZAWMBR4syf
-	DjCbRUBVYuGSRWA2r4CtxOfft1ghbEGJH5PvgV3KLKAlsX7ncSYIW15i85q3zCAjJQTUJR79
-	1QUJiwgYSfz88QeqRERi34t3jCDnSAj8ZZdoXP2bEWKXgMS3yYdYIHplJTYdgAaKpMTBFTdY
-	JjBKzEKyeRaSzbOQbJ6FZMUCRpZVjKKpBckFxUnpRcZ6xYm5xaV56XrJ+bmbGCEx3b+D8e4B
-	60OMyUDrJzJLiSbnA1NCXkm8obGZkYWpiamxkbmlGWnCSuK8ai3WgUIC6YklqdmpqQWpRfFF
-	pTmpxYcYmTg4pRoYtzcVds4XuRA95ULwEnG5BpPexgC5w2qLJllsNHRbW/BHy8/pMqO4dHa+
-	XPve61byB/J7bb4xtaxQmlo9Y4o+u8fVi7NjD11vcwzO2Nyb481ab/68x+BylNgm9XXZW5gv
-	Xr/wzvTt508u0589vhqWVx2x6Cr3tC2GqxfzGQf9veIa8lv/roebEktxRqKhFnNRcSIAdqjm
-	6/8CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJKsWRmVeSWpSXmKPExsVy+t9jAd1DB/SDDI5eZbZ4eUjTYs75FhaL
-	Zxu+sFjMnfOd3eLyrjlsFg8mrGKzuPqg3OLYAjEHDo8tK28yefx55+7xZNNFRo++LasYPY7f
-	2M7k8XmTnMfzMz/YAtijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJz
-	U22VXHwCdN0yc4BOUlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmXLzV
-	yF7wnbmi89dvxgbG6cxdjJwcEgImEtv/d7FC2GISF+6tZ+ti5OIQEljEKHG49wWU84tRYvq1
-	P2BVbAJqEl++HGbvYuTgEBFwkPj/wQSkhllgFqNE6+FTYFOFBMIk9my9zgpSwykQLvFrAztI
-	WFjAUeLMnw4wm0VAVWLhkkVgNq+ArcTn37dYIWxBiR+T77GA2MwCWhLrdx5ngrDlJTavecsM
-	MlJCQF3i0V9dkLCIgJHEzx9/oEpEJPa9eMc4gVFoFpJJs5BMmoVk0iwkLQsYWVYxiqYWJBcU
-	J6XnGuoVJ+YWl+al6yXn525iBCeMZ1I7GFc2WBxiFOBgVOLhvSGnHyTEmlhWXJl7iFGCg1lJ
-	hHeqE1CINyWxsiq1KD++qDQntfgQYzLQoxOZpUST84HJLK8k3tDYxMzI0sjMwsjE3Jw0YSVx
-	3gOt1oFCAumJJanZqakFqUUwW5g4OKUaGOVvxys5693cNn9Suk1R5bv/t1S7t76ba57Lwbbk
-	958HN856i+99xt5yS9B603QvlbDvTf9zHkxdujzg/NGukqzJXJwz2+bGOHaqnddkdeN4xfdO
-	hF3k1LJfGXqeTyzsrp9QDFqiwRlmx+4kZeBWLWvk++JIktf379bP+23aZm6fHNN0+NXrT0os
-	xRmJhlrMRcWJAPfDkIFcAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+Subject: Re: [REPOST PATCH 3/4] slab: introduce byte sized index for the
+ freelist of a slab
+Message-ID: <20130911010434.GB24671@lge.com>
+References: <1378447067-19832-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1378447067-19832-4-git-send-email-iamjoonsoo.kim@lge.com>
+ <00000140f3fed229-f49b95d4-7087-476f-b2c9-37846749aad6-000000@email.amazonses.com>
+ <20130909043217.GB22390@lge.com>
+ <00000141032dea11-c5aa9c77-b2f2-4cab-b7a0-d37665a6cec8-000000@email.amazonses.com>
+ <20130910054342.GB24602@lge.com>
+ <0000014109c372c6-5f3c49d4-ce8b-4760-b80d-a32e042ec09b-000000@email.amazonses.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0000014109c372c6-5f3c49d4-ce8b-4760-b80d-a32e042ec09b-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, September 07, 2013 2:21 PM, Michael Opdenacker wrote:
+On Tue, Sep 10, 2013 at 09:25:05PM +0000, Christoph Lameter wrote:
+> On Tue, 10 Sep 2013, Joonsoo Kim wrote:
 > 
-> This patch proposes to remove the IRQF_DISABLED flag from
-> drivers/net/ethernet/korina.c
+> > On Mon, Sep 09, 2013 at 02:44:03PM +0000, Christoph Lameter wrote:
+> > > On Mon, 9 Sep 2013, Joonsoo Kim wrote:
+> > >
+> > > > 32 byte is not minimum object size, minimum *kmalloc* object size
+> > > > in default configuration. There are some slabs that their object size is
+> > > > less than 32 byte. If we have a 8 byte sized kmem_cache, it has 512 objects
+> > > > in 4K page.
+> > >
+> > > As far as I can recall only SLUB supports 8 byte objects. SLABs mininum
+> > > has always been 32 bytes.
+> >
+> > No.
+> > There are many slabs that their object size are less than 32 byte.
+> > And I can also create a 8 byte sized slab in my kernel with SLAB.
 > 
-> It's a NOOP since 2.6.35 and it will be removed one day.
+> Well the minimum size for the kmalloc array is 32 bytes. These are custom
+> slabs. KMALLOC_SHIFT_LOW is set to 5 in include/linux/slab.h.
 > 
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-
-Reviewed-by: Jingoo Han <jg1.han@samsung.com>
-
-Best regards,
-Jingoo Han
-
-> ---
->  drivers/net/ethernet/korina.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
+> Ok so there are some slabs like that. Hmmm.. We have sizes 16 and 24 in
+> your list. 16*256 is still 4096. So this would still work fine if we would
+> forbid a size of 8 or increase that by default to 16.
+> 
+> > > On x86 f.e. it would add useless branching. The branches are never taken.
+> > > You only need these if you do bad things to the system like requiring
+> > > large contiguous allocs.
+> >
+> > As I said before, since there is a possibility that some runtime loaded modules
+> > use a 8 byte sized slab, we can't determine index size in compile time. Otherwise
+> > we should always use short int sized index and I think that it is worse than
+> > adding a branch.
+> 
+> We can enforce a mininum slab size and an order limit so that it fits. And
+> then there would be no additional branching.
 > 
 
+Okay. I will respin this patchset with your suggestion.
+
+Anyway, could you review my previous patchset, that is, 'overload struct slab
+over struct page to reduce memory usage'? I'm not sure whether your answer is
+ack or not.
+
+Thanks.
