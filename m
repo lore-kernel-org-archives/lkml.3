@@ -1,48 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755297Ab3ILMuL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 08:50:11 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:44745 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754013Ab3ILMuI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 08:50:08 -0400
-X-IronPort-AV: E=Sophos;i="4.90,891,1371081600"; 
-   d="scan'208";a="50835380"
-Date: Thu, 12 Sep 2013 13:49:41 +0100
-From: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xensource.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>
-Subject: [PULL] (xen) stable/for-linus-3.12-rc0-tag-three for v3.12-rc1
-Message-ID: <alpine.DEB.2.02.1309121328030.32236@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754189Ab3ILMxP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 08:53:15 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:42603 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752380Ab3ILMxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 08:53:13 -0400
+Date: Thu, 12 Sep 2013 14:53:50 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Young <dyoung@redhat.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        kexec@lists.infradead.org, akpm@linux-foundation.org,
+        zohar@linux.vnet.ibm.com, d.kasatkin@samsung.com,
+        ebiederm@xmission.com, matthew.garrett@nebula.com
+Subject: Re: [PATCH 15/16] bootparam: Pass acpi_rsdp pointer in bootparam
+Message-ID: <20130912125350.GB9280@x1.alien8.de>
+References: <1378849471-10521-1-git-send-email-vgoyal@redhat.com>
+ <1378849471-10521-16-git-send-email-vgoyal@redhat.com>
+ <522FA2A8.8080703@zytor.com>
+ <20130911114419.GB31551@x1.alien8.de>
+ <20130911134534.GB15364@redhat.com>
+ <20130911143216.GA933@x1.alien8.de>
+ <20130912064930.GA5288@dhcp-16-126.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130912064930.GA5288@dhcp-16-126.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
-we have two more Xen fixes for the balloon driver:
+On Thu, Sep 12, 2013 at 03:34:15PM +0800, Dave Young wrote:
+> I'm playing with skipping SetVirtualAddressMap in kexec kernel, for
+> same kernel the test result is ok for me both for kexec and kdump.
+> Takao Indoh sent a patch with this approatch, but his V2 switched to
+> use physical mapping. During my test, additional data of config table
 
- git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git stable/for-linus-3.12-rc0-tag-three
+Physical mapping won't work because of some very brilliant Apple UEFI
+implementations, as I came to realize. My previous version did that :)
 
+> elems need to be saved besides of fw_vendor, runtime and tables or
+> dereference taglep->guid will panic.
+>
+> Also kexec userspace need to fill efi_info in bootparams and pass the
+> previous saved efi data to 2nd kernel.
 
+Hmm, yes, we need to tell the kexec kernel the EFI regions.
 
-The following changes since commit c3b7cb1fd8c1513be99fb3cfb7f39c5116d80dac:
+> I'm worrying just skiping enter virt mode have risk though it's an
+> easy solution. Your 1:1 mapping approatch looks better. I look forward
+> to test your new patchset.
 
-  xen/spinlock: Don't use __initdate for xen_pv_spin (2013-09-09 13:08:49 -0400)
+Yeah, we had a discussion at the SUSE Labs conf about whether we could
+really skip SetVirtualAddressMap in the first kernel and do it in the
+kexec kernel but the first kernel might want to call runtime services
+for whatever reason and for that we need the runtime services. So we
+opted for the stable VA mappings.
 
-David Vrabel (1):
-      xen/balloon: ensure preemption is disabled when using a scratch page
+> Are you also working on kexec userspace part? Already have a patch?
 
-Wei Liu (1):
-      xen/balloon: remove BUG_ON in increase_reservation
+Why userspace part - I'm thinking the kexec'ed kernel would simply add
+the mappings made by SetVirtualAddressMap without calling it. And it
+will know which mappings go to which virtual addresses because we start
+at the -4G virtual address and go downwards and the mappings will have
+the same addresses per UEFI implementation.
 
- drivers/xen/balloon.c |   13 +++++++------
- 1 files changed, 7 insertions(+), 6 deletions(-)
+It'll make more sense when you see the code, I hope :)
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
