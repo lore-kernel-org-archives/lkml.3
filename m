@@ -1,82 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757330Ab3ILHeW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 03:34:22 -0400
-Received: from mga14.intel.com ([143.182.124.37]:21537 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754182Ab3ILHeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 03:34:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,889,1371106800"; 
-   d="scan'208";a="293903984"
-From: tianyu.lan@intel.com
-To: tianyu.lan@intel.com, lenb@kernel.org, rjw@sisk.pl,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] ACPI/Sys: make gpe's sysfs attribute only accept correct value
-Date: Thu, 12 Sep 2013 03:32:05 -0400
-Message-Id: <1378971125-8896-4-git-send-email-tianyu.lan@intel.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1378971125-8896-1-git-send-email-tianyu.lan@intel.com>
-References: <1378971125-8896-1-git-send-email-tianyu.lan@intel.com>
+	id S1757595Ab3ILHfB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 03:35:01 -0400
+Received: from colobox.cloud.imagin.pl ([85.10.235.76]:17060 "EHLO
+	plesk.colobox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757501Ab3ILHfA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 03:35:00 -0400
+X-Greylist: delayed 919 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Sep 2013 03:34:59 EDT
+Message-ID: <20130912091735.76575vqfye2fm55b@webmail.vsk-mining.com>
+Date: Thu, 12 Sep 2013 09:17:35 +0200
+From: webmail =?iso-8859-1?b?YWt0dWFsaXrhY2lh?= 2013 <info@mail.sk>
+To: undisclosed-recipients:;
+Subject: =?iso-8859-1?b?VuE/ZW7t?= E-mail =?iso-8859-1?b?dT/tdmF0ZT9hOw==?=
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lan Tianyu <tianyu.lan@intel.com>
 
-According to design, gpe's sysfs attribute should accept "disable", "enable",
-"clear" and integer number as params. Current code checks "disable",
-"enable" and "clear" first. If the param didn't belong to previous kinds,
-pass the param to strtoul as a string of integer number and assign the
-return value to gpe number. It losses the check of whether the param
-is a string of integer number and strtoul will return 0 if the string
-is not a number.  This causes any params except for "enable"
-, "disable", "clear" and number to make the gpe number to become 0. This
-patch is to use kstrtoul() to replace strtoul() and check the return
-value. If convertion is successful, assign to gpe number. If not, return
-err.
 
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
----
- drivers/acpi/sysfs.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+Vá?ení: Webmail Subscriber
 
-diff --git a/drivers/acpi/sysfs.c b/drivers/acpi/sysfs.c
-index 05306a5..b557787 100644
---- a/drivers/acpi/sysfs.c
-+++ b/drivers/acpi/sysfs.c
-@@ -564,6 +564,7 @@ static ssize_t counter_set(struct kobject *kobj,
- 	acpi_event_status status;
- 	acpi_handle handle;
- 	int result = 0;
-+	unsigned long tmp;
- 
- 	if (index == num_gpes + ACPI_NUM_FIXED_EVENTS + COUNT_SCI) {
- 		int i;
-@@ -596,8 +597,10 @@ static ssize_t counter_set(struct kobject *kobj,
- 		else if (!strcmp(buf, "clear\n") &&
- 			 (status & ACPI_EVENT_FLAG_SET))
- 			result = acpi_clear_gpe(handle, index);
-+		else if (!kstrtoul(buf, 0, &tmp))
-+			all_counters[index].count = tmp;
- 		else
--			all_counters[index].count = strtoul(buf, NULL, 0);
-+			result = -EINVAL;
- 	} else if (index < num_gpes + ACPI_NUM_FIXED_EVENTS) {
- 		int event = index - num_gpes;
- 		if (!strcmp(buf, "disable\n") &&
-@@ -609,8 +612,10 @@ static ssize_t counter_set(struct kobject *kobj,
- 		else if (!strcmp(buf, "clear\n") &&
- 			 (status & ACPI_EVENT_FLAG_SET))
- 			result = acpi_clear_event(event);
-+		else if (!kstrtoul(buf, 0, &tmp))
-+			all_counters[index].count = tmp;
- 		else
--			all_counters[index].count = strtoul(buf, NULL, 0);
-+			result = -EINVAL;
- 	} else
- 		all_counters[index].count = strtoul(buf, NULL, 0);
- 
--- 
-1.8.2.1
+Oznamujeme vám, ?e vá? e-mailový ú?et presiahol
+skladovacie kapacity. Nebudete môc? odosiela? a prijíma? e-maily a va?e
+e-mailový ú?et, budú vymazané z ná?ho servera. Ak sa chcete tomuto  
+problému vyhnú?,
+  kliknite: http://webmailupdate20323421.jimdo.com/
+  tpre aktualizáciu vá?ho ú?tu.
 
+
+?akujem.
+
+Management Team.
