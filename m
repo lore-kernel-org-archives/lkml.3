@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756367Ab3ILSDk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:03:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57112 "EHLO
+	id S1756384Ab3ILSDl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:03:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57107 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755797Ab3ILR7Y (ORCPT
+	with ESMTP id S1755773Ab3ILR7Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Sep 2013 13:59:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Xi Wang <xii@google.com>, Eric Dumazet <edumazet@google.com>,
+        Tom Herbert <therbert@google.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Denys Fedorysychenko <nuclearcat@nuclearcat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 36/46] net: bridge: convert MLDv2 Query MRC into msecs_to_jiffies for max_delay
-Date: Thu, 12 Sep 2013 10:58:47 -0700
-Message-Id: <20130912175724.903513538@linuxfoundation.org>
+Subject: [ 35/46] net: revert 8728c544a9c ("net: dev_pick_tx() fix")
+Date: Thu, 12 Sep 2013 10:58:46 -0700
+Message-Id: <20130912175724.803604186@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130912175721.001906199@linuxfoundation.org>
 References: <20130912175721.001906199@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,43 +30,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 2d98c29b6fb3de44d9eaa73c09f9cf7209346383 ]
+[ Upstream commit 702821f4ea6f68db18aa1de7d8ed62c6ba586a64 ]
 
-While looking into MLDv1/v2 code, I noticed that bridging code does
-not convert it's max delay into jiffies for MLDv2 messages as we do
-in core IPv6' multicast code.
+commit 8728c544a9cbdc ("net: dev_pick_tx() fix") and commit
+b6fe83e9525a ("bonding: refine IFF_XMIT_DST_RELEASE capability")
+are quite incompatible : Queue selection is disabled because skb
+dst was dropped before entering bonding device.
 
-RFC3810, 5.1.3. Maximum Response Code says:
+This causes major performance regression, mainly because TCP packets
+for a given flow can be sent to multiple queues.
 
-  The Maximum Response Code field specifies the maximum time allowed
-  before sending a responding Report. The actual time allowed, called
-  the Maximum Response Delay, is represented in units of milliseconds,
-  and is derived from the Maximum Response Code as follows: [...]
+This is particularly visible when using the new FQ packet scheduler
+with MQ + FQ setup on the slaves.
 
-As we update timers that work with jiffies, we need to convert it.
+We can safely revert the first commit now that 416186fbf8c5b
+("net: Split core bits of netdev_pick_tx into __netdev_pick_tx")
+properly caps the queue_index.
 
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Linus Lüssing <linus.luessing@web.de>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Reported-by: Xi Wang <xii@google.com>
+Diagnosed-by: Xi Wang <xii@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Tom Herbert <therbert@google.com>
+Cc: Alexander Duyck <alexander.h.duyck@intel.com>
+Cc: Denys Fedorysychenko <nuclearcat@nuclearcat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bridge/br_multicast.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/core/flow_dissector.c |   11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
---- a/net/bridge/br_multicast.c
-+++ b/net/bridge/br_multicast.c
-@@ -1193,7 +1193,8 @@ static int br_ip6_multicast_query(struct
- 		mld2q = (struct mld2_query *)icmp6_hdr(skb);
- 		if (!mld2q->mld2q_nsrcs)
- 			group = &mld2q->mld2q_mca;
--		max_delay = mld2q->mld2q_mrc ? MLDV2_MRC(ntohs(mld2q->mld2q_mrc)) : 1;
-+
-+		max_delay = max(msecs_to_jiffies(MLDV2_MRC(ntohs(mld2q->mld2q_mrc))), 1UL);
- 	}
+--- a/net/core/flow_dissector.c
++++ b/net/core/flow_dissector.c
+@@ -345,14 +345,9 @@ u16 __netdev_pick_tx(struct net_device *
+ 		if (new_index < 0)
+ 			new_index = skb_tx_hash(dev, skb);
  
- 	if (!group)
+-		if (queue_index != new_index && sk) {
+-			struct dst_entry *dst =
+-				    rcu_dereference_check(sk->sk_dst_cache, 1);
+-
+-			if (dst && skb_dst(skb) == dst)
+-				sk_tx_queue_set(sk, queue_index);
+-
+-		}
++		if (queue_index != new_index && sk &&
++		    rcu_access_pointer(sk->sk_dst_cache))
++			sk_tx_queue_set(sk, queue_index);
+ 
+ 		queue_index = new_index;
+ 	}
 
 
