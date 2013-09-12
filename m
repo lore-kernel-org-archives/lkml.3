@@ -1,111 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab3ILFky (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 01:40:54 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22683 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754710Ab3ILFkt (ORCPT
+	id S1756358Ab3ILFmF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 01:42:05 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:41195 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756155Ab3ILFmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 01:40:49 -0400
-X-Authority-Analysis: v=2.0 cv=R/aB6KtX c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=Xa6iNwQGp3gA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=B9ZDx8YuNPwA:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=T2h1Z_K7z-JURIdn7sYA:9 a=MSl-tDqOz04A:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042903.629501025@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:28:14 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Alexandr Ivanov <alexandr.sky@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [067/251] USB: option: add D-Link DWM-152/C1 and DWM-156/C1
-References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0067-USB-option-add-D-Link-DWM-152-C1-and-DWM-156-C1.patch
+	Thu, 12 Sep 2013 01:42:02 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org, monstr@monstr.eu
+Cc: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>
+Subject: [PATCH] dma: pl330: Simplify irq allocation
+Date: Thu, 12 Sep 2013 07:41:59 +0200
+Message-Id: <adfc1d873c6eb80ac7055a8758f1804a752a142d.1378964515.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-16946-1378964519-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.9-rc1 stable review patch.
-If anyone has any objections, please let me know.
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-------------------
+--=_mimegpg-monstr-desktop-16946-1378964519-0001
 
-From: "Alexandr \\\\\\\"Sky\\\\\\\" Ivanov" <alexandr.sky@gmail.com>
+Use devm_request_irq function.
 
-[ Upstream commit ca24763588844b14f019ffc45c7df6d9e8f932c5 ]
-
-Adding support for D-Link DWM-152/C1 and DWM-156/C1 devices.
-
-DWM-152/C1:
-T:  Bus=01 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  6 Spd=480 MxCh= 0
-D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
-P:  Vendor=07d1 ProdID=3e01 Rev= 0.00
-S:  Product=USB Configuration
-S:  SerialNumber=1234567890ABCDEF
-C:* #Ifs= 5 Cfg#= 1 Atr=e0 MxPwr=500mA
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-E:  Ad=81(I) Atr=03(Int.) MxPS=  64 Ivl=2ms
-E:  Ad=82(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=01(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-E:  Ad=83(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-E:  Ad=84(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=03(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 3 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-E:  Ad=85(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=04(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 4 Alt= 0 #EPs= 2 Cls=08(stor.) Sub=06 Prot=50 Driver=usb-storage
-E:  Ad=05(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=86(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-
-DWM-156/C1:
-T:  Bus=01 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  8 Spd=480 MxCh= 0
-D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
-P:  Vendor=07d1 ProdID=3e02 Rev= 0.00
-S:  Product=DataCard Device
-S:  SerialNumber=1234567890ABCDEF
-C:* #Ifs= 5 Cfg#= 1 Atr=e0 MxPwr=500mA
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-E:  Ad=81(I) Atr=03(Int.) MxPS=  64 Ivl=2ms
-E:  Ad=82(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=01(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-E:  Ad=83(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-E:  Ad=84(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=03(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 3 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-E:  Ad=85(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=04(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 4 Alt= 0 #EPs= 2 Cls=08(stor.) Sub=06 Prot=50 Driver=usb-storage
-E:  Ad=05(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=86(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-
-Signed-off-by: Alexandr Ivanov <alexandr.sky@gmail.com>
-Cc: stable <stable@vger.kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 ---
- drivers/usb/serial/option.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/dma/pl330.c | 10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index e142114..d53681f 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -1311,6 +1311,8 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d02, 0xff, 0x00, 0x00) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d03, 0xff, 0x02, 0x01) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d03, 0xff, 0x00, 0x00) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x07d1, 0x3e01, 0xff, 0xff, 0xff) }, /* D-Link DWM-152/C1 */
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x07d1, 0x3e02, 0xff, 0xff, 0xff) }, /* D-Link DWM-156/C1 */
- 	{ } /* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, option_ids);
--- 
-1.7.10.4
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index a562d24..58623dc 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -2923,7 +2923,7 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
+ 	amba_set_drvdata(adev, pdmac);
+
+ 	irq = adev->irq[0];
+-	ret = request_irq(irq, pl330_irq_handler, 0,
++	ret = devm_request_irq(&adev->dev, irq, pl330_irq_handler, 0,
+ 			dev_name(&adev->dev), pi);
+ 	if (ret)
+ 		return ret;
+@@ -2931,7 +2931,7 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
+ 	pi->pcfg.periph_id = adev->periphid;
+ 	ret = pl330_add(pi);
+ 	if (ret)
+-		goto probe_err1;
++		return ret;
+
+ 	INIT_LIST_HEAD(&pdmac->desc_pool);
+ 	spin_lock_init(&pdmac->pool_lock);
+@@ -3044,8 +3044,6 @@ probe_err3:
+ 	}
+ probe_err2:
+ 	pl330_del(pi);
+-probe_err1:
+-	free_irq(irq, pi);
+
+ 	return ret;
+ }
+@@ -3055,7 +3053,6 @@ static int pl330_remove(struct amba_device *adev)
+ 	struct dma_pl330_dmac *pdmac = amba_get_drvdata(adev);
+ 	struct dma_pl330_chan *pch, *_p;
+ 	struct pl330_info *pi;
+-	int irq;
+
+ 	if (!pdmac)
+ 		return 0;
+@@ -3082,9 +3079,6 @@ static int pl330_remove(struct amba_device *adev)
+
+ 	pl330_del(pi);
+
+-	irq = adev->irq[0];
+-	free_irq(irq, pi);
+-
+ 	return 0;
+ }
+
+--
+1.8.2.3
 
 
+--=_mimegpg-monstr-desktop-16946-1378964519-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlIxVCcACgkQykllyylKDCED0wCdFeupstD9Qm/XZnkx4r1qV6V8
+xiwAn1GqdgnULIEXov9PLX/U0UA4Zas5
+=NO3U
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-16946-1378964519-0001--
