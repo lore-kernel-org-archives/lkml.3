@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757928Ab3ILGj6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 02:39:58 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:60283 "EHLO
+	id S932163Ab3ILGli (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 02:41:38 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:60697 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757714Ab3ILGj4 (ORCPT
+	with ESMTP id S1752995Ab3ILGle (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 02:39:56 -0400
-X-AuditID: cbfee68d-b7fe86d0000077a5-92-523161bbd6a6
+	Thu, 12 Sep 2013 02:41:34 -0400
+X-AuditID: cbfee691-b7f4a6d0000074fc-78-5231621c2448
 From: Jingoo Han <jg1.han@samsung.com>
-To: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Hans J. Koch'" <hjk@hansjkoch.de>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <001001ceaf82$978a36f0$c69ea4d0$%han@samsung.com>
-In-reply-to: <001001ceaf82$978a36f0$c69ea4d0$%han@samsung.com>
-Subject: [PATCH 5/5] uio: uio_sercos3: remove unnecessary pci_set_drvdata()
-Date: Thu, 12 Sep 2013 15:39:55 +0900
-Message-id: <001401ceaf82$e4b26970$ae173c50$%han@samsung.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Peter Tyser'" <ptyser@xes-inc.com>
+Subject: [PATCH 1/3] mfd: lpc_ich: remove unnecessary pci_set_drvdata()
+Date: Thu, 12 Sep 2013 15:41:32 +0900
+Message-id: <001501ceaf83$1e558220$5b008660$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac6vgpOjT534nRYfSDiuPQlOOHeZTQAADxmA
+Thread-index: Ac6vgx4pjQNLnVsKTseFP8zkmoiH8w==
 Content-language: ko
-x-cr-hashedpuzzle: BpIF CfFn K6yQ NnXd PsRW TBSJ TKPA X8FP Zzf+ bbPA feDk lt6o
- mIGw osAI qnzy
- uVBR;4;ZwByAGUAZwBrAGgAQABsAGkAbgB1AHgAZgBvAHUAbgBkAGEAdABpAG8AbgAuAG8AcgBnADsAaABqAGsAQABoAGEAbgBzAGoAawBvAGMAaAAuAGQAZQA7AGoAZwAxAC4AaABhAG4AQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnAA==;Sosha1_v1;7;{6E757F82-C2E4-4099-AD5D-9FB83E0964A7};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Thu,
- 12 Sep 2013 06:39:48
- GMT;WwBQAEEAVABDAEgAIAA1AC8ANQBdACAAdQBpAG8AOgAgAHUAaQBvAF8AcwBlAHIAYwBvAHMAMwA6ACAAcgBlAG0AbwB2AGUAIAB1AG4AbgBlAGMAZQBzAHMAYQByAHkAIABwAGMAaQBfAHMAZQB0AF8AZAByAHYAZABhAHQAYQAoACkA
-x-cr-puzzleid: {6E757F82-C2E4-4099-AD5D-9FB83E0964A7}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCIsWRmVeSWpSXmKPExsVy+t8zI93diYZBBifbtCyaF69nszh6djq7
-	xeWFl1gtLu+aw+bA4jH/oZfH/rlr2D36tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoErY97yD0wF
-	HWwVc46/YW5gbGbtYuTkkBAwkeh41soEYYtJXLi3nq2LkYtDSGAZo8Si+beBijjAit7sC4OI
-	L2KU6J77kRXC+cUo8fzSd0aQbjYBNYkvXw6zg9giAqYSG99PAYszC2RLHPv+lwXEFhKwlXj/
-	dQnYNk4BO4kpq04wg9jCAt4Sl/tWs4AsYxFQlTi8VRwkzAtUfmz1HhYIW1Dix+R7LBAjtSTW
-	7zzOBGHLS2xe85YZ4k51iUd/dSEuMJLYdX4PVLmIxL4X7xhBTpYQmMMqcen3CmaIh00ljq/e
-	xA6ReMkusW3Je7CbWQQEJL5NPsQCMVRWYtMBqHpJiYMrbrBMYJSaheSkWUhOmoXkpFlIdi9g
-	ZFnFKJpakFxQnJReZKhXnJhbXJqXrpecn7uJERLDvTsYbx+wPsSYDLR+IrOUaHI+MAXklcQb
-	GpsZWZiamBobmVuakSasJM6r1mIdKCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoFxwbufjpe3
-	ZjJ/T3x2RMBwjfed6qbqpakHzqzI2haSZhbmvvycSFp93D9mi/5ZURH7vmxzWSktHKWt/vRd
-	dg9nsEzO6Zti7q2ZszUz5p+1eL6UQd3wfFrIgRmGf9ZvuJZ62OXkbOdjK2fvvvFt848lspM+
-	Blw53cr+4dqLJx+u3NMoqjrZvjB8oxJLcUaioRZzUXEiAHGrRwH3AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIKsWRmVeSWpSXmKPExsVy+t9jAd3diYZBBt1r1SyaF69nszh6djq7
-	xeWFl1gtLu+aw+bA4jH/oZfH/rlr2D36tqxi9Pi8SS6AJaqB0SYjNTEltUghNS85PyUzL91W
-	yTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaKWSQlliTilQKCCxuFhJ3w7ThNAQN10L
-	mMYIXd+QILgeIwM0kLCOMWPe8g9MBR1sFXOOv2FuYGxm7WLk4JAQMJF4sy+si5ETyBSTuHBv
-	PVsXIxeHkMAiRonuuR9ZIZxfjBLPL31nBKliE1CT+PLlMDuILSJgKrHx/RSwOLNAtsSx739Z
-	QGwhAVuJ91+XMIHYnAJ2ElNWnWAGsYUFvCUu961mAVnMIqAqcXirOEiYF6j82Oo9LBC2oMSP
-	yfdYIEZqSazfeZwJwpaX2LzmLTPEzeoSj/7qQlxgJLHr/B6ochGJfS/eMYKcLCEwh1Xi0u8V
-	zBCPmUocX72JfQKjyCwkK2YhWTELyYpZSGYtYGRZxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7
-	iRGcIJ5J7WBc2WBxiFGAg1GJh7djlkGQEGtiWXFl7iFGCQ5mJRHeeHPDICHelMTKqtSi/Pii
-	0pzU4kOMycAAmMgsJZqcD0xeeSXxhsYmZkaWRmYWRibm5qQJK4nzHmi1DhQSSE8sSc1OTS1I
-	LYLZwsTBKdXAaHbpzeu0J8Fng04c5uRJLLp8r2/PtT57V8kljrpL0wqa0+f+4/b7XSgdUZDN
-	tfSosFv1w/VbHW6diesuTjz6WHex2rtNPa9j9jwS6zZRYinNPWevlrZE3CR5R9S0F28EYpwc
-	ntdIKtds0Xbu/xtlLnFiweUrZX/fv7swMSlK3sQopG7KRIFMJZbijERDLeai4kQAOe/4hlQD	AAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNIsWRmVeSWpSXmKPExsVy+t8zY12ZJMMgg2VNXBaXF15itbj/9Sij
+	xeVdc9gsDj5/y2JxupvVgdXjzrU9bB7zTgZ69G1ZxejxeZOcx6r22awBrFFcNimpOZllqUX6
+	dglcGd+33WQumMNesfvCLOYGxk+sXYwcHBICJhLNt5S7GDmBTDGJC/fWs3UxcnEICSxjlNh1
+	qJcFImEice3YSSaIxCJGicZZa9khnF+MEq0T+9lAqtgE1CS+fDnMDjJVRMBL4tadIJAws0CW
+	xK+tG8EGCQu4S5x6fp4VxGYRUJX4dLyHEcTmFbCVePTlMzuELSjxY/I9FoheLYn1O48zQdjy
+	EpvXvGWGOFpd4tFfXYhNehJn11pDVIhI7HvxjhHkMgmBfewS058vh1olIPFt8iEWiFZZiU0H
+	mCHekpQ4uOIGywRGsVlIFs9CsngWksWzkKxYwMiyilE0tSC5oDgpvchUrzgxt7g0L10vOT93
+	EyMk4ibuYLx/wPoQYzLQ+onMUqLJ+cCIzSuJNzQ2M7IwNTE1NjK3NCNNWEmcV73FOlBIID2x
+	JDU7NbUgtSi+qDQntfgQIxMHp1QD42atyoUG3YdZhBQky2Z2lyb65vcxRhxa4byqrMvrqMVF
+	OdlXOyVnH79mtnj5gZlVDF1ZKataut1efmVhvVevH6SkszvDbi574MVTPGUVrcs3Zz24suDb
+	pW72X0/Xtv5853fK58hVP8deo4PPU96u/Of/0sat7VftHa3t77YyFr4WWiRQ+uPyTiWW4oxE
+	Qy3mouJEAJTF/mfOAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJKsWRmVeSWpSXmKPExsVy+t9jAV2ZJMMgg9WNbBaXF15itbj/9Sij
+	xeVdc9gsDj5/y2JxupvVgdXjzrU9bB7zTgZ69G1ZxejxeZOcx6r22awBrFENjDYZqYkpqUUK
+	qXnJ+SmZeem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QLuVFMoSc0qBQgGJxcVK
+	+naYJoSGuOlawDRG6PqGBMH1GBmggYR1jBnft91kLpjDXrH7wizmBsZPrF2MnBwSAiYS146d
+	ZIKwxSQu3FvP1sXIxSEksIhRonHWWnYI5xejROvEfjaQKjYBNYkvXw4DJTg4RAS8JG7dCQIJ
+	MwtkSfzaupEFxBYWcJc49fw82AIWAVWJT8d7GEFsXgFbiUdfPrND2IISPybfY4Ho1ZJYv/M4
+	E4QtL7F5zVtmkPESAuoSj/7qQmzSkzi71hqiQkRi34t3jBMYBWYhGTQLyaBZSAbNQtKygJFl
+	FaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZwRD+T2sG4ssHiEKMAB6MSD2/HLIMgIdbEsuLK
+	3EOMEhzMSiK88eaGQUK8KYmVValF+fFFpTmpxYcYk4H+nMgsJZqcD0w2eSXxhsYmZkaWRmYW
+	Ribm5qQJK4nzHmi1DhQSSE8sSc1OTS1ILYLZwsTBKdXAmM5t4rYz3emiddFDPo6gZZcf7NqZ
+	ezXBrqgtt919z6bCpIgGsQNPNuyTT396Y3bJqV2vjH5wZd3kfdpsH9xwqK9I0jWtmG3u6Tln
+	+xdmFz7w2mt04Hnl07r0HubC8+W7PGo5VTd9ZV1pZXdYoexPIG+QYK77ssmfN4Z9uLU2xTH0
+	99RXE1ruKrEUZyQaajEXFScCAG7kZOssAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -67,21 +59,29 @@ device driver data to NULL.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/uio/uio_sercos3.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/mfd/lpc_ich.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/drivers/uio/uio_sercos3.c b/drivers/uio/uio_sercos3.c
-index 5419832..9cfdfca 100644
---- a/drivers/uio/uio_sercos3.c
-+++ b/drivers/uio/uio_sercos3.c
-@@ -188,7 +188,6 @@ static void sercos3_pci_remove(struct pci_dev *dev)
- 	uio_unregister_device(info);
- 	pci_release_regions(dev);
- 	pci_disable_device(dev);
+diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
+index 9483bc8..316af07 100644
+--- a/drivers/mfd/lpc_ich.c
++++ b/drivers/mfd/lpc_ich.c
+@@ -969,7 +969,6 @@ static int lpc_ich_probe(struct pci_dev *dev,
+ 	if (!cell_added) {
+ 		dev_warn(&dev->dev, "No MFD cells added\n");
+ 		lpc_ich_restore_config_space(dev);
+-		pci_set_drvdata(dev, NULL);
+ 		return -ENODEV;
+ 	}
+ 
+@@ -980,7 +979,6 @@ static void lpc_ich_remove(struct pci_dev *dev)
+ {
+ 	mfd_remove_devices(&dev->dev);
+ 	lpc_ich_restore_config_space(dev);
 -	pci_set_drvdata(dev, NULL);
- 	for (i = 0; i < 5; i++) {
- 		if (info->mem[i].internal_addr)
- 			iounmap(info->mem[i].internal_addr);
+ }
+ 
+ static struct pci_driver lpc_ich_driver = {
 -- 
 1.7.10.4
 
