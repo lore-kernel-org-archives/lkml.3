@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752790Ab3ILOTV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 10:19:21 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:48882 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404Ab3ILOTU (ORCPT
+	id S1752901Ab3ILOTc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 10:19:32 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:35341 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752179Ab3ILOTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 10:19:20 -0400
-X-AuditID: cbfee61b-b7f776d0000016c8-35-5231cd66ccaa
+	Thu, 12 Sep 2013 10:19:30 -0400
+X-AuditID: cbfee61a-b7f7a6d00000235f-c5-5231cd702dab
 From: Robert Baldyga <r.baldyga@samsung.com>
 To: balbi@ti.com
 Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com,
-        m.szyprowski@samsung.com, Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH 0/6] usb: s3c-hsotg: fixes for proper functioning
-Date: Thu, 12 Sep 2013 16:18:46 +0200
-Message-id: <1378995532-32142-1-git-send-email-r.baldyga@samsung.com>
+        m.szyprowski@samsung.com, Robert Baldyga <r.baldyga@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [PATCH 1/6] usb: s3c-hsotg: change dependency to PLAT_SAMSUNG
+Date: Thu, 12 Sep 2013 16:18:47 +0200
+Message-id: <1378995532-32142-2-git-send-email-r.baldyga@samsung.com>
 X-Mailer: git-send-email 1.7.10
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNLMWRmVeSWpSXmKPExsVy+t9jQd20s4ZBBleW6VtsnLGe1eLg/XqL
-	5sXr2Swu75rDZrFoWSuzxdojd9ktHhzeye7A7rF/7hp2j74tqxg9jt/YzuTxeZNcAEsUl01K
-	ak5mWWqRvl0CV8b2jdkFL9grGp/bNTBuZuti5OSQEDCRuLb9LpQtJnHh3nogm4tDSGA6o8SZ
-	ZU9YIJwuJomOBddYQarYBHQktnyfwAhiiwgISKx/cYkdpIhZYDujxJP/XUAJDg5hAUeJrndu
-	IDUsAqoS56YtBwvzCrhKTDzqCrFMXuLp/T6wxbwCghI/Jt9jAbGZBdQlJs1bxAxhy0scvPKc
-	ZQIj3ywkZbOQlM1CUraAkXkVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnCQPpPewbiqweIQ
-	owAHoxIPb+JiwyAh1sSy4srcQ4wSHMxKIryfJwKFeFMSK6tSi/Lji0pzUosPMUpzsCiJ8x5s
-	tQ4UEkhPLEnNTk0tSC2CyTJxcEo1ME4OMD2wPLNk4fvtF+I8uFZeqwh+uvDxo48vO2aXWUz1
-	UfF73+sTXKka8PeVpkLSckmHz1Miz67YFP3WZ6vwnYspXpWizS3yL/TybExVv3wrYIoWfct7
-	+gjna9fDzEorpv5OWnNIIIy7znixelKoceNO2eim3dUf0xREXy762CbnwHL1TUDJByWW4oxE
-	Qy3mouJEAGtzPHNOAgAA
+In-reply-to: <1378995532-32142-1-git-send-email-r.baldyga@samsung.com>
+References: <1378995532-32142-1-git-send-email-r.baldyga@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMLMWRmVeSWpSXmKPExsVy+t9jQd2Cs4ZBBlMm2lhsnLGe1eLg/XqL
+	5sXr2SzONr1ht7i8aw6bxaJlrcwWa4/cZbd4cHgnuwOHx/65a9g9+rasYvQ4fmM7k8fnTXIB
+	LFFcNimpOZllqUX6dglcGd8u9LIX7OGo+Pp4HUsDYy97FyMnh4SAicTae0tZIWwxiQv31rN1
+	MXJxCAlMZ5TY/mkuE4TTxSQx/ccRsCo2AR2JLd8nMILYIgICEutfXGIHKWIWeMIoMfXIK7Cx
+	wgJuElN/QaxgEVCVWNvdDWbzCrhK/Lr9mw1inbzE0/t9YDYnUH3fbpDVHEDbXCUmbk2ZwMi7
+	gJFhFaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZwUD2T2sG4ssHiEKMAB6MSD2/HLIMgIdbE
+	suLK3EOMEhzMSiK8nycaBgnxpiRWVqUW5ccXleakFh9ilOZgURLnPdBqHSgkkJ5YkpqdmlqQ
+	WgSTZeLglGpgPJn+dPbyVwLMPIvmmrizFkwuujjFov+czpudU6MnWG05I25/g2vax2Uz5bcF
+	KeXM0fCxW3xTw3lC6NEFE+r1PnZpLva0KEmN/8TU3Ct6bu1tvxjGuc+iEhmuPOozrfqnUB5w
+	p27dwdQQiVOcsvNinhY+CUgwsF7L3c+kvuX4rVtZWd+tAx/aKbEUZyQaajEXFScCAJbkytMm	AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches add few fixes:
-- remove unneeded disconnect from ErlySusp interrupt handling
-- remove deprecated driver dependency CONFIG_S3C_DEV_USB_HSOTG
-- fix driver unregistration function
-- fix "protocol stall" handling, by enqueue new ep0 request when stalled
-- add correct interrput handling in dedicated-fifos mode
-- fix endpoint halt clearing, when it is not currently halted
+From: Marek Szyprowski <m.szyprowski@samsung.com>
 
-Chanho Park (1):
-  usb: s3c-hsotg: do not disconnect gadget when receiving ErlySusp intr
+On device tree based Samsung SoC platforms (like Exynos) no platform
+devices are defined and CONFIG_S3C_DEV_USB_HSOTG is no longer available,
+so change the driver dependency to more generic and approperiate
+CONFIG_PLAT_SAMSUNG, as the driver can be used on almost all Samsung
+platforms.
 
-Marek Szyprowski (2):
-  usb: s3c-hsotg: change dependency to PLAT_SAMSUNG
-  usb: s3c-hsotg: fix unregistration function
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/usb/gadget/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Robert Baldyga (3):
-  USB: gadget: s3c-hsotg: fix "protocol stall" handling
-  USB: gadget: s3c-hsotg: fix dedicated fifos handling
-  USB: gadget: s3c-hsotg: fix clear feature ENDPOINT_HALT
-
- drivers/usb/gadget/Kconfig     |    2 +-
- drivers/usb/gadget/s3c-hsotg.c |   81 +++++++++++++++++++++++++++-------------
- 2 files changed, 56 insertions(+), 27 deletions(-)
-
+diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
+index 8e93683..08fc9dd 100644
+--- a/drivers/usb/gadget/Kconfig
++++ b/drivers/usb/gadget/Kconfig
+@@ -282,7 +282,7 @@ config USB_PXA27X
+ 
+ config USB_S3C_HSOTG
+ 	tristate "S3C HS/OtG USB Device controller"
+-	depends on S3C_DEV_USB_HSOTG
++	depends on PLAT_SAMSUNG
+ 	help
+ 	  The Samsung S3C64XX USB2.0 high-speed gadget controller
+ 	  integrated into the S3C64XX series SoC.
 -- 
 1.7.9.5
 
