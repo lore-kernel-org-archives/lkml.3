@@ -1,121 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756895Ab3ILUvd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 16:51:33 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:44850 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754427Ab3ILUvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 16:51:31 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Samuel Ortiz <samuel@sortiz.org>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        "David S . Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: [PATCH] net/irda/mcs7780: fix memory leaks in mcs_net_open()
-Date: Fri, 13 Sep 2013 00:51:20 +0400
-Message-Id: <1379019080-25354-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.8.1.2
+	id S1757295Ab3ILUwb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 16:52:31 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:39315 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754247Ab3ILUwa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 16:52:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130912204910.GB3262@gmail.com>
+References: <20130912133855.GA23780@gmail.com>
+	<CA+55aFwgyjqRHxLaWGxxsg_v07FrxbVTeLdHTGp7MfeSRjrKsQ@mail.gmail.com>
+	<CA+55aFyCeXXr=57em8CC_Uzfk5PvOw0RHyA309wuOP-oDL7VxA@mail.gmail.com>
+	<CA+55aFxbjX6T2L2LRfdCVDznjtJTMJAz3QCVyMWXH0y6c=S2kQ@mail.gmail.com>
+	<20130912203358.GE32644@gmail.com>
+	<CA+55aFwwO3+-EndiLxO+2cmpYGvt_R7vbOBbFvELsmDcWDGdAQ@mail.gmail.com>
+	<20130912204910.GB3262@gmail.com>
+Date: Thu, 12 Sep 2013 13:52:29 -0700
+X-Google-Sender-Auth: FfJbMLYE50aQQoeURyzN-l8p1QY
+Message-ID: <CA+55aFyJCJJmwgf0kKFqA-aP-Gq6Y-1RhTsf2NokRcixtbbk3A@mail.gmail.com>
+Subject: Re: [GIT PULL] perf fixes
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If rx_urb allocation fails in mcs_setup_urbs(), tx_urb leaks.
-If mcs_receive_start() fails in mcs_net_open(), the both urbs are not deallocated.
+On Thu, Sep 12, 2013 at 1:49 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+>
+> I think the window of breakage is relatively small (you managed to hit
+> it), but should we add a quirk for this?
 
-The patch fixes the issues and by the way fixes label indentation.
+Was the breakage entirely inside the merge window? ie no released kernels?
 
-Found by Linux Driver Verification project (linuxtesting.org).
+If so, just ignore it.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/net/irda/mcs7780.c | 40 +++++++++++++++++++++++-----------------
- 1 file changed, 23 insertions(+), 17 deletions(-)
-
-diff --git a/drivers/net/irda/mcs7780.c b/drivers/net/irda/mcs7780.c
-index f07c340..3f138ca 100644
---- a/drivers/net/irda/mcs7780.c
-+++ b/drivers/net/irda/mcs7780.c
-@@ -191,8 +191,8 @@ static inline int mcs_setup_transceiver_vishay(struct mcs_cb *mcs)
- 		goto error;
- 
- 	ret = 0;
--	error:
--		return ret;
-+error:
-+	return ret;
- }
- 
- /* Setup a communication between mcs7780 and agilent chip. */
-@@ -501,8 +501,11 @@ static inline int mcs_setup_urbs(struct mcs_cb *mcs)
- 		return 0;
- 
- 	mcs->rx_urb = usb_alloc_urb(0, GFP_KERNEL);
--	if (!mcs->rx_urb)
-+	if (!mcs->rx_urb) {
-+		usb_free_urb(mcs->tx_urb);
-+		mcs->tx_urb = NULL;
- 		return 0;
-+	}
- 
- 	return 1;
- }
-@@ -643,9 +646,9 @@ static int mcs_speed_change(struct mcs_cb *mcs)
- 	ret = mcs_set_reg(mcs, MCS_MODE_REG, rval);
- 
- 	mcs->speed = mcs->new_speed;
--	error:
--		mcs->new_speed = 0;
--		return ret;
-+error:
-+	mcs->new_speed = 0;
-+	return ret;
- }
- 
- /* Ioctl calls not supported at this time.  Can be an area of future work. */
-@@ -738,17 +741,20 @@ static int mcs_net_open(struct net_device *netdev)
- 
- 	ret = mcs_receive_start(mcs);
- 	if (ret)
--		goto error3;
-+		goto error4;
- 
- 	netif_start_queue(netdev);
- 	return 0;
- 
--	error3:
--		irlap_close(mcs->irlap);
--	error2:
--		kfree_skb(mcs->rx_buff.skb);
--	error1:
--		return ret;
-+error4:
-+	usb_free_urb(mcs->rx_urb);
-+	usb_free_urb(mcs->tx_urb);
-+error3:
-+	irlap_close(mcs->irlap);
-+error2:
-+	kfree_skb(mcs->rx_buff.skb);
-+error1:
-+	return ret;
- }
- 
- /* Receive callback function.  */
-@@ -946,11 +952,11 @@ static int mcs_probe(struct usb_interface *intf,
- 	usb_set_intfdata(intf, mcs);
- 	return 0;
- 
--	error2:
--		free_netdev(ndev);
-+error2:
-+	free_netdev(ndev);
- 
--	error1:
--		return ret;
-+error1:
-+	return ret;
- }
- 
- /* The current device is removed, the USB layer tells us to shut down. */
--- 
-1.8.1.2
-
+             Linus
