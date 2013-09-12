@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756728Ab3ILSqg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:46:36 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:42624 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754486Ab3ILSqe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 14:46:34 -0400
+	id S1755042Ab3ILSv0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:51:26 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:44111 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753935Ab3ILSvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 14:51:25 -0400
+Date: Thu, 12 Sep 2013 11:51:07 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] Restrict kernel spawning of threads to a specified set of
+ cpus.
+Message-ID: <20130912185107.GV3966@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <00000140efbcb701-c26320b3-f434-4538-bc80-8e92fed6f303-000000@email.amazonses.com>
+ <20130911220228.GB15367@somewhere>
+ <000001411282afa6-fe9c0543-0447-492b-991e-dc8214884b88-000000@email.amazonses.com>
+ <20130912141625.GA23357@somewhere>
+ <00000141128d759a-44dcacb6-8f48-4f9b-8381-d14003bd6da1-000000@email.amazonses.com>
+ <20130912143137.GA23839@somewhere>
+ <0000014112a921ae-51d171bf-e8d4-4569-bd20-94dabda2d5ba-000000@email.amazonses.com>
+ <20130912151102.GB23839@somewhere>
+ <20130912153922.GP3966@linux.vnet.ibm.com>
+ <20130912183503.GB25386@somewhere>
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <523205E1.2040704@gmail.com>
-References: <1379003839-16068-1-git-send-email-galak@codeaurora.org>
-	<CAOesGMisWLwYKotGDFPW6PyHJs=_+fohTdC08SGjsv2FXaa7Fg@mail.gmail.com>
-	<25E0B143-658E-4CCC-A88A-0AF70FFF33CE@codeaurora.org>
-	<CAOesGMhfdvyJ_2AA2e8iO_2e=q7KgpyNbcriPKFw-RLormG6bA@mail.gmail.com>
-	<3E38F48E-EE41-4564-84A1-36CF07B08811@codeaurora.org>
-	<CAOesGMhN0jEx065cpf989P-JbuxPiOaPRsP4BD3VoW-n5ebP+w@mail.gmail.com>
-	<9DD9D9A7-ED55-412F-A18D-599D1E365003@codeaurora.org>
-	<523205E1.2040704@gmail.com>
-Date: Thu, 12 Sep 2013 11:46:33 -0700
-Message-ID: <CAOesGMhSZzpyT5XyECByLnvef0E+92y+uaXByiG0Vpm9f05AxQ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: msm: Move msm devicetrees under a Qualcomm dir
-From: Olof Johansson <olof@lixom.net>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Kumar Gala <galak@codeaurora.org>, David Brown <davidb@codeaurora.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
-        Rohit Vaswani <rvaswani@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130912183503.GB25386@somewhere>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13091218-5806-0000-0000-000022B7AC59
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 11:20 AM, Rob Herring <robherring2@gmail.com> wrote:
+On Thu, Sep 12, 2013 at 08:35:05PM +0200, Frederic Weisbecker wrote:
+> On Thu, Sep 12, 2013 at 08:39:22AM -0700, Paul E. McKenney wrote:
+> > On Thu, Sep 12, 2013 at 05:11:04PM +0200, Frederic Weisbecker wrote:
+> > > On Thu, Sep 12, 2013 at 02:52:56PM +0000, Christoph Lameter wrote:
+> > > > On Thu, 12 Sep 2013, Frederic Weisbecker wrote:
+> > > > 
+> > > > > > > Ok but you can change the affinity of a kthread from userspace, as
+> > > > > > > long as you define a cpu set that is among that kthread's cpus allowed.
+> > > > > >
+> > > > > > Ok but at that point kthread has already spawned a lot of kernel threads.
+> > > > > >
+> > > > > > The same is true for init and kmod.
+> > > > > >
+> > > > >
+> > > > > Ok but then we just need to set the affinity of all these kthreads.
+> > > > > A simple lookup on /proc/[0-9]+/ should do the trick.
+> > > > 
+> > > > Yea but the kernel option makes it easy. No extras needed. Kernel brings
+> > > > it up user space cleanly configured and ready to go.
+> > > 
+> > > Ok but really that's just two lines of bash. I really wish we don't complicate
+> > > core kernel code for that.
+> > 
+> > OK, I will bite...  How do you handle the case where you have collected
+> > all the kthreads, one of the kthreads spawns another kthread, then you
+> > set affinity on the collected kthreads, which does not include the newly
+> > spawned one?
+> 
+> Just offline the CPUs you want to isolate, affine your kthreads and re-online
+> the CPUs.
+> 
+> If you're lucky enough to have 1024 CPUs, a winter night should be enough ;-)
 
-> As Stephen W has pointed out previously, the dtb filename itself is or
-> may be an ABI and the bootloader may be hardcoded to a name. So we
-> should avoid future renames.
+Running at RT prio 99 to reduce the probability of respawns?  ;-)
 
-We still have the choice of producing the dtb files under
-arch/arm/boot/dts even if we move dts/dtsi files one level deeper, as
-long as we keep the filenames consistent. So we can do a move, just
-not a rename.
+							Thanx, Paul
 
-
--Olof
