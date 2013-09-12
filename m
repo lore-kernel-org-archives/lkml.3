@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757062Ab3ILSWS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:22:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57042 "EHLO
+	id S1756923Ab3ILSWQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:22:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57048 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753000Ab3ILR7N (ORCPT
+	with ESMTP id S1755477Ab3ILR7N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Sep 2013 13:59:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Asbjoern Sloth Toennesen <ast@fiberby.net>,
-        Vlad Yasevich <vyasevich@gmail.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 18/46] rtnetlink: rtnl_bridge_getlink: Call nlmsg_find_attr() with ifinfomsg header
-Date: Thu, 12 Sep 2013 10:58:29 -0700
-Message-Id: <20130912175723.015181731@linuxfoundation.org>
+Subject: [ 19/46] tun: signedness bug in tun_get_user()
+Date: Thu, 12 Sep 2013 10:58:30 -0700
+Message-Id: <20130912175723.116264829@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130912175721.001906199@linuxfoundation.org>
 References: <20130912175721.001906199@linuxfoundation.org>
@@ -28,70 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Asbjoern Sloth Toennesen <ast@fiberby.net>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit 3e805ad288c524bb65aad3f1e004402223d3d504 ]
+[ Upstream commit 15718ea0d844e4816dbd95d57a8a0e3e264ba90e ]
 
-Fix the iproute2 command `bridge vlan show`, after switching from
-rtgenmsg to ifinfomsg.
+The recent fix d9bf5f1309 "tun: compare with 0 instead of total_len" is
+not totally correct.  Because "len" and "sizeof()" are size_t type, that
+means they are never less than zero.
 
-Let's start with a little history:
-
-Feb 20:   Vlad Yasevich got his VLAN-aware bridge patchset included in
-          the 3.9 merge window.
-          In the kernel commit 6cbdceeb, he added attribute support to
-          bridge GETLINK requests sent with rtgenmsg.
-
-Mar 6th:  Vlad got this iproute2 reference implementation of the bridge
-          vlan netlink interface accepted (iproute2 9eff0e5c)
-
-Apr 25th: iproute2 switched from using rtgenmsg to ifinfomsg (63338dca)
-          http://patchwork.ozlabs.org/patch/239602/
-          http://marc.info/?t=136680900700007
-
-Apr 28th: Linus released 3.9
-
-Apr 30th: Stephen released iproute2 3.9.0
-
-The `bridge vlan show` command haven't been working since the switch to
-ifinfomsg, or in a released version of iproute2. Since the kernel side
-only supports rtgenmsg, which iproute2 switched away from just prior to
-the iproute2 3.9.0 release.
-
-I haven't been able to find any documentation, about neither rtgenmsg
-nor ifinfomsg, and in which situation to use which, but kernel commit
-88c5b5ce seams to suggest that ifinfomsg should be used.
-
-Fixing this in kernel will break compatibility, but I doubt that anybody
-have been using it due to this bug in the user space reference
-implementation, at least not without noticing this bug. That said the
-functionality is still fully functional in 3.9, when reversing iproute2
-commit 63338dca.
-
-This could also be fixed in iproute2, but thats an ugly patch that would
-reintroduce rtgenmsg in iproute2, and from searching in netdev it seams
-like rtgenmsg usage is discouraged. I'm assuming that the only reason
-that Vlad implemented the kernel side to use rtgenmsg, was because
-iproute2 was using it at the time.
-
-Signed-off-by: Asbjoern Sloth Toennesen <ast@fiberby.net>
-Reviewed-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/rtnetlink.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/tun.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -2374,7 +2374,7 @@ static int rtnl_bridge_getlink(struct sk
- 	struct nlattr *extfilt;
- 	u32 filter_mask = 0;
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1076,8 +1076,9 @@ static ssize_t tun_get_user(struct tun_s
+ 	u32 rxhash;
  
--	extfilt = nlmsg_find_attr(cb->nlh, sizeof(struct rtgenmsg),
-+	extfilt = nlmsg_find_attr(cb->nlh, sizeof(struct ifinfomsg),
- 				  IFLA_EXT_MASK);
- 	if (extfilt)
- 		filter_mask = nla_get_u32(extfilt);
+ 	if (!(tun->flags & TUN_NO_PI)) {
+-		if ((len -= sizeof(pi)) > total_len)
++		if (len < sizeof(pi))
+ 			return -EINVAL;
++		len -= sizeof(pi);
+ 
+ 		if (memcpy_fromiovecend((void *)&pi, iv, 0, sizeof(pi)))
+ 			return -EFAULT;
+@@ -1085,8 +1086,9 @@ static ssize_t tun_get_user(struct tun_s
+ 	}
+ 
+ 	if (tun->flags & TUN_VNET_HDR) {
+-		if ((len -= tun->vnet_hdr_sz) > total_len)
++		if (len < tun->vnet_hdr_sz)
+ 			return -EINVAL;
++		len -= tun->vnet_hdr_sz;
+ 
+ 		if (memcpy_fromiovecend((void *)&gso, iv, offset, sizeof(gso)))
+ 			return -EFAULT;
 
 
