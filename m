@@ -1,129 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756828Ab3ILSIb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:08:31 -0400
-Received: from mga14.intel.com ([143.182.124.37]:14134 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756064Ab3ILSI2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 14:08:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,892,1371106800"; 
-   d="scan'208";a="294146123"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH] perf tools: fix objdump line parsing offset validation
-Date: Thu, 12 Sep 2013 21:15:21 +0300
-Message-Id: <1379009721-27667-1-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
+	id S1756745Ab3ILSIu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:08:50 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:53317 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755300Ab3ILSIs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 14:08:48 -0400
+Date: Thu, 12 Sep 2013 20:08:46 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        andi@firstfloor.org, peterz@infradead.org, tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf/x86/intel: Clean up checkpoint-interrupt
+ bits
+Message-ID: <20130912180846.GK18242@two.firstfloor.org>
+References: <tip-dvb4q0rydkfp00kqat4p5bah@git.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <tip-dvb4q0rydkfp00kqat4p5bah@git.kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When parsing lines from objdump a line containing source
-code starting with a numeric label is mistaken for a line
-of disassembly starting with a memory address.  Current
-validation fails to recognise that the "memory address" is
-out of range and calculates an invalid offset which later
-causes this segfault:
+On Thu, Sep 12, 2013 at 11:04:34AM -0700, tip-bot for Peter Zijlstra wrote:
+> Commit-ID:  2b9e344df384e595db24ac61ae5f780e9b024878
+> Gitweb:     http://git.kernel.org/tip/2b9e344df384e595db24ac61ae5f780e9b024878
+> Author:     Peter Zijlstra <peterz@infradead.org>
+> AuthorDate: Thu, 12 Sep 2013 12:53:44 +0200
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Thu, 12 Sep 2013 19:13:37 +0200
+> 
+> perf/x86/intel: Clean up checkpoint-interrupt bits
+> 
+> Clean up the weird CP interrupt exception code by keeping a CP mask.
+> 
+> Andi suggested this implementation but weirdly didn't actually
+> implement it himself, do so now because it removes the conditional in
+> the interrupt handler and avoids the assumption its only on cnt2.
 
-Program received signal SIGSEGV, Segmentation fault.
-0x0000000000457315 in disasm__calc_percent (notes=0xc98970, evidx=0, offset=143705, end=2127526177, path=0x7fffffffbf50)
-    at util/annotate.c:631
-631				hits += h->addr[offset++];
-(gdb) bt
- #0  0x0000000000457315 in disasm__calc_percent (notes=0xc98970, evidx=0, offset=143705, end=2127526177, path=0x7fffffffbf50)
-    at util/annotate.c:631
- #1  0x00000000004d65e3 in annotate_browser__calc_percent (browser=0x7fffffffd130, evsel=0xa01da0) at ui/browsers/annotate.c:364
- #2  0x00000000004d7433 in annotate_browser__run (browser=0x7fffffffd130, evsel=0xa01da0, hbt=0x0) at ui/browsers/annotate.c:672
- #3  0x00000000004d80c9 in symbol__tui_annotate (sym=0xc989a0, map=0xa02660, evsel=0xa01da0, hbt=0x0) at ui/browsers/annotate.c:962
- #4  0x00000000004d7aa0 in hist_entry__tui_annotate (he=0xdf73f0, evsel=0xa01da0, hbt=0x0) at ui/browsers/annotate.c:823
- #5  0x00000000004dd648 in perf_evsel__hists_browse (evsel=0xa01da0, nr_events=1, helpline=
-    0x58b768 "For a higher level overview, try: perf report --sort comm,dso", ev_name=0xa02cd0 "cycles", left_exits=false, hbt=
-    0x0, min_pcnt=0, env=0xa011e0) at ui/browsers/hists.c:1659
- #6  0x00000000004de372 in perf_evlist__tui_browse_hists (evlist=0xa01520, help=
-    0x58b768 "For a higher level overview, try: perf report --sort comm,dso", hbt=0x0, min_pcnt=0, env=0xa011e0)
-    at ui/browsers/hists.c:1950
- #7  0x000000000042cf6b in __cmd_report (rep=0x7fffffffd6c0) at builtin-report.c:581
- #8  0x000000000042e25d in cmd_report (argc=0, argv=0x7fffffffe4b0, prefix=0x0) at builtin-report.c:965
- #9  0x000000000041a0e1 in run_builtin (p=0x801548, argc=1, argv=0x7fffffffe4b0) at perf.c:319
- #10 0x000000000041a319 in handle_internal_command (argc=1, argv=0x7fffffffe4b0) at perf.c:376
- #11 0x000000000041a465 in run_argv (argcp=0x7fffffffe38c, argv=0x7fffffffe380) at perf.c:420
- #12 0x000000000041a707 in main (argc=1, argv=0x7fffffffe4b0) at perf.c:521
+Looks good to me. Thanks.
 
-After the fix is applied the symbol can be annotated
-showing the problematic line "1:      rep"
-
-copy_user_generic_string  /usr/lib/debug/lib/modules/3.9.10-100.fc17.x86_64/vmlinux
-             */
-            ENTRY(copy_user_generic_string)
-                    CFI_STARTPROC
-                    ASM_STAC
-                    andl %edx,%edx
-              and    %edx,%edx
-                    jz 4f
-              je     37
-                    cmpl $8,%edx
-              cmp    $0x8,%edx
-                    jb 2f           /* less than 8 bytes, go to byte copy loop */
-              jb     33
-                    ALIGN_DESTINATION
-              mov    %edi,%ecx
-              and    $0x7,%ecx
-              je     28
-              sub    $0x8,%ecx
-              neg    %ecx
-              sub    %ecx,%edx
-        1a:   mov    (%rsi),%al
-              mov    %al,(%rdi)
-              inc    %rsi
-              inc    %rdi
-              dec    %ecx
-              jne    1a
-                    movl %edx,%ecx
-        28:   mov    %edx,%ecx
-                    shrl $3,%ecx
-              shr    $0x3,%ecx
-                    andl $7,%edx
-              and    $0x7,%edx
-            1:      rep
-100.00        rep    movsq %ds:(%rsi),%es:(%rdi)
-                    movsq
-            2:      movl %edx,%ecx
-        33:   mov    %edx,%ecx
-            3:      rep
-              rep    movsb %ds:(%rsi),%es:(%rdi)
-                    movsb
-            4:      xorl %eax,%eax
-        37:   xor    %eax,%eax
-              data32 xchg %ax,%ax
-                    ASM_CLAC
-                    ret
-              retq
-
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/util/annotate.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index bfc5a27..7eae548 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -809,7 +809,7 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
- 		    end = map__rip_2objdump(map, sym->end);
- 
- 		offset = line_ip - start;
--		if (offset < 0 || (u64)line_ip > end)
-+		if ((u64)line_ip < start || (u64)line_ip > end)
- 			offset = -1;
- 		else
- 			parsed_line = tmp2 + 1;
--- 
-1.7.11.7
-
+-Andi
