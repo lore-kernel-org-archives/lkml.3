@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755572Ab3ILSjc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:39:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64257 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754637Ab3ILSja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 14:39:30 -0400
-Date: Thu, 12 Sep 2013 14:38:49 -0400
-From: Dave Jones <davej@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: trinity finds ftrace/perf bug. Film at 11.
-Message-ID: <20130912183849.GA16674@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	Ingo Molnar <mingo@kernel.org>
-References: <20130911135434.GA678@redhat.com>
- <20130912141913.2ffc7077@gandalf.local.home>
+	id S1756403Ab3ILSnt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:43:49 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:59180 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755182Ab3ILSnr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 14:43:47 -0400
+Date: Thu, 12 Sep 2013 15:43:41 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] perf fixes
+Message-ID: <20130912184341.GA11400@ghostprotocols.net>
+References: <20130912133855.GA23780@gmail.com>
+ <CA+55aFwgyjqRHxLaWGxxsg_v07FrxbVTeLdHTGp7MfeSRjrKsQ@mail.gmail.com>
+ <CA+55aFyCeXXr=57em8CC_Uzfk5PvOw0RHyA309wuOP-oDL7VxA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130912141913.2ffc7077@gandalf.local.home>
+In-Reply-To: <CA+55aFyCeXXr=57em8CC_Uzfk5PvOw0RHyA309wuOP-oDL7VxA@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 02:19:13PM -0400, Steven Rostedt wrote:
- > 
- > This is something that either Peter or Frederic need to look at.
+Em Thu, Sep 12, 2013 at 11:10:37AM -0700, Linus Torvalds escreveu:
+> On Thu, Sep 12, 2013 at 11:03 AM, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> > When I compiled "perf" at the same time as doing a big kernel compile,
+> > the kernel compile failed
+ 
+> Oops. That may actually have been me being a bit *too* eager with a
+> "make allmodconfig" build. I can't reproduce it, and I'm starting to
+> suspect that I instead had two kernel compiles going, not one kernel
+> compile and a tools/perf/ compile.
+ 
+>   "Yo Dawg, I heard you like kernel compiles, so I put a kernel
+> compile in your kernel compile so that you can compile the kernel
+> while you compile the kernel".
 
-I spent yesterday trying to bisect this, but kept running into other perf/ftrace traces,
-which makes it pretty much impossible.
+:-)
+ 
+> But at least the "make install" problem is repeatable, though.
 
-The current one I'm staring at is this from LIST_DEBUG..
+Well, I just tried it, and the only thing that gets rebuilt are the CHK
+environment tests that try to figure out what can be built into perf,
+i.e. perl, python, libaudit, etc.
 
-list_del corruption. next->prev should be prev (ffff88000fb812b0), but was ffff88000fb812b0. (next=ffff88009df8b7b0).
+Its something that annoys me as well, but not so much as to make me
+figure out how to make those be done only if some source file changed.
 
-The sharp eyed will notice that those first two addresses are actually the same.
-So we matched the next->prev != prev test, but at the time we got to the printk that follows
-in the WARN, the inverse was true. Smells like a race of some kind.
+But then, if you remove, say, libelf from your system so that you get a
+perf tool that uses just /proc/kallsyms, it wouldn't detect it...
 
-[ 2481.228418] Call Trace:
-[ 2481.232705]  [<ffffffff8171f5dd>] dump_stack+0x54/0x74
-[ 2481.237025]  [<ffffffff810540bd>] warn_slowpath_common+0x7d/0xa0
-[ 2481.241357]  [<ffffffff8105412c>] warn_slowpath_fmt+0x4c/0x50
-[ 2481.245637]  [<ffffffff810540e5>] ? warn_slowpath_fmt+0x5/0x50
-[ 2481.249890]  [<ffffffff8132c222>] __list_del_entry+0x62/0xf0
-[ 2481.254109]  [<ffffffff81143a88>] list_del_event+0xc8/0xe0
-[ 2481.258310]  [<ffffffff81143b2b>] perf_remove_from_context+0x8b/0xf0
-[ 2481.262497]  [<ffffffff81145444>] perf_event_release_kernel+0x54/0x90
-[ 2481.266688]  [<ffffffff811464d3>] put_event+0x133/0x1c0
-[ 2481.270866]  [<ffffffff811463d0>] ? put_event+0x30/0x1c0
-[ 2481.275066]  [<ffffffff81146570>] perf_release+0x10/0x20
-[ 2481.279277]  [<ffffffff811bf2ca>] __fput+0xfa/0x2e0
-[ 2481.283488]  [<ffffffff811bf4fe>] ____fput+0xe/0x10
-[ 2481.287713]  [<ffffffff8107c11c>] task_work_run+0xac/0xe0
-[ 2481.291958]  [<ffffffff810559bc>] do_exit+0x2cc/0xcc0
-[ 2481.296194]  [<ffffffff81732880>] ? ftrace_call+0x5/0x2f
-[ 2481.300435]  [<ffffffff810577cc>] do_group_exit+0x4c/0xc0
-[ 2481.304654]  [<ffffffff81057854>] SyS_exit_group+0x14/0x20
-[ 2481.308857]  [<ffffffff81732e54>] tracesys+0xdd/0xe2
-[ 2481.313051] ---[ end trace fa3e551eb20e0c0f ]---
+Perhaps in that case we should say: want a new build with a different
+environment? Do a 'make clean' first.
 
-	Dave
+But if I do it as a normal user and then try installing as root... it
+behaves like you described, duh :-\
 
+Because of this:
+
+    * new build flags or prefix
+
+Will check...
+
+- Arnaldo
