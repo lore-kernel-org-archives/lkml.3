@@ -1,52 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827Ab3ILPVc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 11:21:32 -0400
-Received: from www.sr71.net ([198.145.64.142]:35973 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753694Ab3ILPVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 11:21:31 -0400
-Message-ID: <5231DBE9.2090008@sr71.net>
-Date: Thu, 12 Sep 2013 08:21:13 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1753978Ab3ILPZC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 11:25:02 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:32773 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753147Ab3ILPY7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 11:24:59 -0400
+Date: Thu, 12 Sep 2013 16:24:55 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Milo Kim <milo.kim@ti.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-pwm@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>, devicetree@vger.kernel.org
+Subject: Re: [PATCH v3 4/4] Documentation: add LP3943 DT bindings and document
+Message-ID: <20130912152455.GN11227@lee--X1>
+References: <1378949700-6384-1-git-send-email-milo.kim@ti.com>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Cody P Schafer <cody@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH] mm: percpu pages: up batch size to fix arithmetic??
- errror
-References: <20130911220859.EB8204BB@viggo.jf.intel.com> <5230F7DD.90905@linux.vnet.ibm.com> <5230FB0A.70901@linux.vnet.ibm.com> <523108B7.7050101@sr71.net> <00000141128835e1-8664ca3a-c439-4d9d-89cb-308664595db4-000000@email.amazonses.com>
-In-Reply-To: <00000141128835e1-8664ca3a-c439-4d9d-89cb-308664595db4-000000@email.amazonses.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1378949700-6384-1-git-send-email-milo.kim@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2013 07:16 AM, Christoph Lameter wrote:
-> On Wed, 11 Sep 2013, Dave Hansen wrote:
-> 
->> 3. We want ->high to approximate the size of the cache which is
->>    private to a given cpu.  But, that's complicated by the L3 caches
->>    and hyperthreading today.
-> 
-> well lets keep it well below that. There are other caches (slab related
-> f.e.) that are also in constant use.
+On Thu, 12 Sep 2013, Milo Kim wrote:
 
-At the moment, we've got a on-size-fits-all approach.  If you have more
-than 512MB of RAM in a zone, you get the high=186(744kb)/batch=31(124kb)
-behavior.  On my laptop, I've got 3500kB of L2+L3 for 4 logical cpus, or
-~875kB/cpu.  According to what you're saying, the high mark is probably
-a _bit_ too high.  On a modern server CPU, the caches are about double
-that (per cpu).
-
->> I'll take one of my big systems and run it with some various ->high
->> settings and see if it makes any difference.
+> Bindings for LP3943 MFD, GPIO and PWM controller are added.
+> And LP3943 driver document is added also.
 > 
-> Do you actually see contention issues on the locks? I think we have a
-> tendency to batch too much in too many caches.
+> Cc: devicetree@vger.kernel.org
+> Cc: Lee Jones <lee.jones@linaro.org>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: Thierry Reding <thierry.reding@gmail.com>
+> Signed-off-by: Milo Kim <milo.kim@ti.com>
+> ---
+>  Documentation/00-INDEX                             |    2 +
+>  .../devicetree/bindings/gpio/gpio-lp3943.txt       |   37 ++++++++++++
+>  Documentation/devicetree/bindings/mfd/lp3943.txt   |   33 +++++++++++
+>  .../devicetree/bindings/pwm/pwm-lp3943.txt         |   58 ++++++++++++++++++
+>  Documentation/lp3943.txt                           |   62 ++++++++++++++++++++
 
-Nope.  This all came out of me wondering what that /=4 did.  It's pretty
-clear that we've diverged a bit from what the original intent of the
-code was.  We need to at _least_ fix the comments up.
+I don't think we want driver documentation here.
+
+>  5 files changed, 192 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/gpio/gpio-lp3943.txt
+>  create mode 100644 Documentation/devicetree/bindings/mfd/lp3943.txt
+>  create mode 100644 Documentation/devicetree/bindings/pwm/pwm-lp3943.txt
+>  create mode 100644 Documentation/lp3943.txt
+> 
+> diff --git a/Documentation/00-INDEX b/Documentation/00-INDEX
+> index 0c4cc68..5dd921f 100644
+> --- a/Documentation/00-INDEX
+> +++ b/Documentation/00-INDEX
+> @@ -285,6 +285,8 @@ logo.gif
+>  	- full colour GIF image of Linux logo (penguin - Tux).
+>  logo.txt
+>  	- info on creator of above logo & site to get additional images from.
+> +lp3943.txt
+> +	- info on LP3943 MFD driver structure.
+
+-- " --
+
+> diff --git a/Documentation/devicetree/bindings/gpio/gpio-lp3943.txt b/Documentation/devicetree/bindings/gpio/gpio-lp3943.txt
+> diff --git a/Documentation/devicetree/bindings/mfd/lp3943.txt b/Documentation/devicetree/bindings/mfd/lp3943.txt
+> diff --git a/Documentation/devicetree/bindings/pwm/pwm-lp3943.txt b/Documentation/devicetree/bindings/pwm/pwm-lp3943.txt
+> diff --git a/Documentation/lp3943.txt b/Documentation/lp3943.txt
+> new file mode 100644
+> index 0000000..576ebd0
+> --- /dev/null
+> +++ b/Documentation/lp3943.txt
+> @@ -0,0 +1,62 @@
+> +TI/National Semiconductor LP3943 MFD driver
+> +===========================================
+> +
+> +LP3943 is an integrated device capable of driving 16 output channels.
+> +It can be used for GPIO expander and PWM generators.
+> +LP3493 registers are controlled via the I2C interface.
+> +
+> +Driver structure
+> +----------------
+> +                                  LED control    General usage for a device
+> +                                  ___________   ____________________________
+> +
+> +  LP3943 MFD ---- GPIO expander    leds-gpio        eg) HW enable pin
+> +              |
+> +              --- PWM generator    leds-pwm         eg) PWM input
+> +
+> +
+> +Why do we need GPIO and PWM drivers instead of LED driver?
+> +To support LED control and general usage, GPIO and PWM drivers are necessary.
+> +
+> +According to the datasheet(1), it's just a LED driver which has 16 channels.
+> +But here is another application, a GPIO expander.(2)
+> +
+> +  (1) http://www.ti.com/lit/ds/snvs256b/snvs256b.pdf
+> +  (2) http://www.ti.com/lit/an/snva287a/snva287a.pdf
+> +
+> +Internal two PWM channels are used for LED dimming effect.
+> +And each output pin can be used as a GPIO as well.
+> +LED functionality can work with GPIOs or PWMs.
+> +LEDs can be controlled with legacy leds-gpio(static brightness) or
+> +leds-pwm drivers(dynamic brightness control).
+> +Additionally, it can be used for generic GPIO and PWM controller.
+> +For example, a GPIO is HW enable pin of a device.
+> +PWM is input pin of a backlight device.
+> +
+> +
+> +LP3943 PWM port map
+> +-------------------
+> +Each PWM channel can be mapped to one or multiple output pins.
+> +
+> +For example, PWM 0 is used for a backlight device.
+> +PWM 1 is for RGB LEDs.
+> +
+> +  PWM channel    Output pins    PWM consumer
+> +  ___________    ___________    ____________
+> +  PWM 0          pin 1          backlight
+> +  PWM 1          pin 7, 8, 9    RGB LEDs
+> +
+> +Then, PWM port map is as below.
+> +PWM 0: num_outputs = 1, output = pin 1
+> +PWM 1: num_outputs = 3, output = pin 7, 8, 9
+> +
+> +The 'lp3943_pwm_map' structure is used for this feature.
+> +
+> +
+> +Device tree supported
+> +---------------------
+> +Please refer to the documents below.
+> +
+> +Documentation/devicetree/bindings/mfd/lp3943.txt
+> +Documentation/devicetree/bindings/gpio/gpio-lp3943.txt
+> +Documentation/devicetree/bindings/pwm/pwm-lp3943.txt
+
+Why do you need to document your driver in this way?
+
+If this stuff is really important (and most of it really isn't), then
+put it either in the commit log or in the driver.
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
