@@ -1,64 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085Ab3ILGlh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 02:41:37 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:36049 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753382Ab3ILGle (ORCPT
+	id S932177Ab3ILGnK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 02:43:10 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:26287 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753458Ab3ILGnI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 02:41:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <52315E9A.3000607@linux.vnet.ibm.com>
-References: <522E1FEF.6080803@wwwdotorg.org>
-	<1775778.MeiRhuYy7o@vostro.rjw.lan>
-	<522F86AD.6010603@wwwdotorg.org>
-	<2521560.SfeNbV74nj@vostro.rjw.lan>
-	<52304439.3030301@linux.vnet.ibm.com>
-	<CAKohpokTVzikxunqSdUYmLjTOkfhWFJ=N4TTa4rdbj2euCFY-g@mail.gmail.com>
-	<CAKohpomzQ8Yzk+OU0btQM6DGm4xsY1RR9uYFrZD3ZHO-bhrwKQ@mail.gmail.com>
-	<5230509D.6040205@linux.vnet.ibm.com>
-	<CAKohpo=DfmNSMnyVRK0gfx7QGr=jOTbFo6uuGhEOaa2UMkeQAQ@mail.gmail.com>
-	<CAKohpo=8mqRmmk17D52yiR9w1V4Z+2UzZ2kzABtrxHbYR+sQzw@mail.gmail.com>
-	<52315E9A.3000607@linux.vnet.ibm.com>
-Date: Thu, 12 Sep 2013 12:11:33 +0530
-Message-ID: <CAKohpo=LuoKTf+mX1oBt97K3sJVu0iN=whN7VGw6kuartnrr+w@mail.gmail.com>
-Subject: Re: cpufreq_stats NULL deref on second system suspend
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cpufreq <cpufreq@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 12 Sep 2013 02:43:08 -0400
+X-AuditID: cbfee690-b7f3b6d000007a15-7f-5231627be174
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Samuel Ortiz'" <sameo@linux.intel.com>,
+        "'Lee Jones'" <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Guenter Roeck'" <linux@roeck-us.net>,
+        "'Heiko Schocher'" <hs@denx.de>
+References: <001501ceaf83$1e558220$5b008660$%han@samsung.com>
+In-reply-to: <001501ceaf83$1e558220$5b008660$%han@samsung.com>
+Subject: [PATCH 2/3] mfd: sm501: remove unnecessary pci_set_drvdata()
+Date: Thu, 12 Sep 2013 15:43:07 +0900
+Message-id: <001601ceaf83$56ead450$04c07cf0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac6vgx4pjQNLnVsKTseFP8zkmoiH8wAAAmGQ
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHIsWRmVeSWpSXmKPExsVy+t8zfd3qJMMgg8VPhCx23LnPbHF54SVW
+	i/tfjzJaXN41h83iycIzTBanu1kd2DzmzTrB4nHn2h4g62Sgx87vDewefVtWMXp83iQXwBbF
+	ZZOSmpNZllqkb5fAlbHn1B62guNsFYtfzWJtYFzF2sXIySEhYCJxbUk/G4QtJnHh3nogm4tD
+	SGAZo8SmKy1sMEXN3Z9ZIRLTGSWuzL/CDpIQEvjFKNG/pw7EZhNQk/jy5TBQnINDRMBPomEF
+	O0g9s0A3o8SU9w+YIeptJY6vaAazOQXsJB5OWwl2hbCAq8S1W9cYQWwWAVWJh43zWEDm8ALV
+	t16wAAnzCghK/Jh8jwXEZhbQkli/8zgThC0vsXnNW2aQcgkBdYlHf3VBwiICRhLrHx6GKhGR
+	2PfiHSPIORICb9klHjyYD7VKQOLb5EMsEL2yEpsOMEO8KylxcMUNlgmMErOQbJ6FZPMsJJtn
+	IVmxgJFlFaNoakFyQXFSepGJXnFibnFpXrpecn7uJkZI3E7YwXjvgPUhxmSg9ROZpUST84Fx
+	n1cSb2hsZmRhamJqbGRuaUaasJI4r3qLdaCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGRibh
+	11Ojn77jS1jhc/3G4kTOtTLt5efl77j6X1A7cGpPrcLP8tBVB1d+sV5/7MDcI2ySkUlHdtU3
+	212uPn1tX/Sdg3ohlgV3t/3Zv+6fm8DNleHKjA8+rHujErhi0bkWiXvrDIMPGuRxTJ3RcuXk
+	qrbJgrWeO6dfnB330qrj+E6zu5J16at/JUcqsRRnJBpqMRcVJwIAHJHyz/ECAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNKsWRmVeSWpSXmKPExsVy+t9jQd3qJMMgg9en+Cx23LnPbHF54SVW
+	i/tfjzJaXN41h83iycIzTBanu1kd2DzmzTrB4nHn2h4g62Sgx87vDewefVtWMXp83iQXwBbV
+	wGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA3SFkkJZ
+	Yk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwjjFjz6k9bAXH2SoWv5rF2sC4irWL
+	kZNDQsBEorn7M5QtJnHh3nq2LkYuDiGB6YwSV+ZfYQdJCAn8YpTo31MHYrMJqEl8+XIYKM7B
+	ISLgJ9Gwgh2knlmgm1FiyvsHzBD1thLHVzSD2ZwCdhIPp60EWyAs4Cpx7dY1RhCbRUBV4mHj
+	PBaQObxA9a0XLEDCvAKCEj8m32MBsZkFtCTW7zzOBGHLS2xe85YZpFxCQF3i0V9dkLCIgJHE
+	+oeHoUpEJPa9eMc4gVFoFpJJs5BMmoVk0iwkLQsYWVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn
+	525iBCeFZ1I7GFc2WBxiFOBgVOLh7ZhlECTEmlhWXJl7iFGCg1lJhDfe3DBIiDclsbIqtSg/
+	vqg0J7X4EGMy0J8TmaVEk/OBCSuvJN7Q2MTMyNLIzMLIxNycNGElcd4DrdaBQgLpiSWp2amp
+	BalFMFuYODilGhjrHr/JKnnk/OvIjF7elT0LA9fNV9wsV8Gt0SX8Z9mXnPkzOCyavWfu5T0h
+	KaecN1XzUEP8zKMPt/E9PFGaVxPC0N3LcjB2y6bix3ZJtfc2tp6oTTnFeV42xcWiMKcxPaJZ
+	+1Bo+If+tPDmOLnCw1f88v+b/I27X+4aN/fNiR3Hl3ke1gzL61diKc5INNRiLipOBAC23RSF
+	TgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 September 2013 11:56, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> I had the same thought when solving this bug.. We have had similar issues with
-> CPU hotplug notifiers too: why are they invoked in the same order during both
-> CPU down and up, instead of reversing the order? I even had a patchset to perform
-> reverse-invocation of notifiers.. http://lwn.net/Articles/508072/
-> ... but people didn't find that very compelling to have.
->
+The driver core clears the driver data to NULL after device_release
+or on probe failure. Thus, it is not needed to manually clear the
+device driver data to NULL.
 
-> It does to me too, but I think the reason nobody really bothered is because perhaps
-> not many other subsystems care about the order in which CPUs are torn down or
-> brought up; they just need the total number to match.. cpufreq is one exception
-> as we saw with this bug.
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/mfd/sm501.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-Probably its time to re-spin that series and make CPUFreq as one of the users
-of that patchset.. Resume should be just opposite of suspend and so
-that patchset
-would make sense even if not many people care about it :)
+diff --git a/drivers/mfd/sm501.c b/drivers/mfd/sm501.c
+index 3799a3d..c2c8c91 100644
+--- a/drivers/mfd/sm501.c
++++ b/drivers/mfd/sm501.c
+@@ -1660,7 +1660,6 @@ static int sm501_pci_probe(struct pci_dev *dev,
+  err3:
+ 	pci_disable_device(dev);
+  err2:
+-	pci_set_drvdata(dev, NULL);
+ 	kfree(sm);
+  err1:
+ 	return err;
+@@ -1695,7 +1694,6 @@ static void sm501_pci_remove(struct pci_dev *dev)
+ 	release_resource(sm->regs_claim);
+ 	kfree(sm->regs_claim);
+ 
+-	pci_set_drvdata(dev, NULL);
+ 	pci_disable_device(dev);
+ }
+ 
+-- 
+1.7.10.4
 
-Over that there is one more problem that I see, don't know if it is really a big
-issue..
 
-After a suspend/resume value of policy->cpu may get changed... And so the
-hierarchy of sysfs cpufreq files too.. Folder that had links to other
-CPUs folder
-can now be actual folders instead of links and vice versa..
-
-Don't know if this can break something ??
