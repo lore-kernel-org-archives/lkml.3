@@ -1,108 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995Ab3ILHPL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 03:15:11 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:45378 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751346Ab3ILHPG (ORCPT
+	id S1753479Ab3ILHQq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 03:16:46 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:41933 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751475Ab3ILHQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 03:15:06 -0400
-X-AuditID: cbfee690-b7f3b6d000007a15-24-523169f8c33e
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Kishon Vijay Abraham I'" <kishon@ti.com>
-Cc: "'Pratyush Anand'" <pratyush.anand@st.com>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Mohit KUMAR'" <Mohit.KUMAR@st.com>,
-        "'Arnd Bergmann'" <arnd@arndb.de>, "'Sean Cross'" <xobs@kosagi.com>,
-        "'Thierry Reding'" <thierry.reding@gmail.com>,
-        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <002801ce8376$a807dbf0$f81793d0$@samsung.com>
- <51ED49D6.9050209@ti.com> <000701ce8741$fe47deb0$fad79c10$@samsung.com>
- <51EE22DF.6090902@ti.com> <001301ce8772$522dfc50$f689f4f0$@samsung.com>
- <5231607C.10702@ti.com>
-In-reply-to: <5231607C.10702@ti.com>
-Subject: Re: [PATCH V3] pci: exynos: split into two parts such as Synopsys part
- and Exynos part
-Date: Thu, 12 Sep 2013 16:15:04 +0900
-Message-id: <003501ceaf87$cda45db0$68ed1910$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac6vgjA5UH78b855SFOzq0Q4r44D2AABOVKg
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCKsWRmVeSWpSXmKPExsVy+t8zQ90fmYZBBleOCVr8nXSM3WJJU4bF
-	y0OaFvOPnGO1uLzwEqtF74KrbBYXnvawWVzeNYfN4uy842wWM87vY7LYOPUXo0X7JWWLn7vm
-	sVg0Hn3AatH65AGjA7/H71+TGD12zrrL7rFgU6nH94Xz2T36tqxi9Hj6Yy+zx/Eb25k8Pm+S
-	C+CI4rJJSc3JLEst0rdL4MqYf+wfc8FsjoqTDcoNjKfYuhg5OCQETCRunXHqYuQEMsUkLtxb
-	DxTm4hASWMYose7xV2aIhInE6iUfWSESixglzs0+zg7h/GKUOLaggxGkik1ATeLLl8PsILaI
-	gI7EwtPrmUGKmAXeMEtcXn2MCaLjOaPE4yO/wDo4BVQkVj7rAbOFBRIl5r7+wAxyE4uAqsS2
-	46UgYV4BW4nlvY2sELagxI/J91hAbGYBLYn1O48zQdjyEpvXvGWGeEdd4tFfXYgbjCTmdmxm
-	hCgRkdj34h0jyAkSAjs4JFYfnwGWYBEQkPg2+RALRK+sxKYDUB9LShxccYNlAqPELCSbZyHZ
-	PAvJ5llIVixgZFnFKJpakFxQnJReZKJXnJhbXJqXrpecn7uJEZIiJuxgvHfA+hBjMtD6icxS
-	osn5wBSTVxJvaGxmZGFqYmpsZG5pRpqwkjiveot1oJBAemJJanZqakFqUXxRaU5q8SFGJg5O
-	qQbGjH9mgt4Ndy/fiY5T29Zzor1P/+P2VXk/O3sesN88MvmOXUrBl5fbNZc/We56f+LKu/N3
-	ct8ud89uTnP/UZ/jl+d92sz404rm/4c+Ke72aslTOXN90zrGtDfL5zQ9ZV/H1lOe5dukYu3G
-	bs26J0l753KLeR0Caww/9IYG8FXO06kI4D6jyTFFiaU4I9FQi7moOBEAzRq6KicDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrEKsWRmVeSWpSXmKPExsVy+t9jAd0fmYZBBvO7eCz+TjrGbrGkKcPi
-	5SFNi/lHzrFaXF54idWid8FVNosLT3vYLC7vmsNmcXbecTaLGef3MVlsnPqL0aL9krLFz13z
-	WCwajz5gtWh98oDRgd/j969JjB47Z91l91iwqdTj+8L57B59W1Yxejz9sZfZ4/iN7UwenzfJ
-	BXBENTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gCd
-	rqRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPMmH/sH3PBbI6Kkw3KDYyn
-	2LoYOTkkBEwkVi/5yAphi0lcuLceKM7FISSwiFHi3Ozj7BDOL0aJYws6GEGq2ATUJL58OcwO
-	YosI6EgsPL2eGaSIWeANs8Tl1ceYIDqeM0o8PvILrINTQEVi5bMeMFtYIFFi7usPQB0cHCwC
-	qhLbjpeChHkFbCWW9zayQtiCEj8m32MBsZkFtCTW7zzOBGHLS2xe8xasVUJAXeLRX12IG4wk
-	5nZsZoQoEZHY9+Id4wRGoVlIJs1CMmkWkkmzkLQsYGRZxSiaWpBcUJyUnmukV5yYW1yal66X
-	nJ+7iRGcgp5J72Bc1WBxiFGAg1GJh7djlkGQEGtiWXFl7iFGCQ5mJRHeeHPDICHelMTKqtSi
-	/Pii0pzU4kOMyUB/TmSWEk3OB6bHvJJ4Q2MTMyNLIzMLIxNzc9KElcR5D7ZaBwoJpCeWpGan
-	phakFsFsYeLglGpg3Gzr8F76q7j7c4VPE7lfLphzKdJMQm9nQerri6G+W94Lu8RW3PYu8j0R
-	3zXta/01paszLm+Qi0xXs5qYUGKz/PsuIbX5u7LtLn1Ie+G9//isewvj+A//WHp5R7p2u6ve
-	/is6QSrz/p/SMZHmzln0Q7CjIp13s1zRzi0Gn/clnoxp+bdhupX0BSWW4oxEQy3mouJEAOL8
-	zfyFAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 12 Sep 2013 03:16:44 -0400
+Message-ID: <5231695D.5070404@linux.vnet.ibm.com>
+Date: Thu, 12 Sep 2013 12:42:29 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Warren <swarren@wwwdotorg.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] cpufreq: Prevent problems in update_policy_cpu()
+ if last_cpu == new_cpu
+References: <20130911201239.7832.72612.stgit@srivatsabhat.in.ibm.com> <20130911201334.7832.49714.stgit@srivatsabhat.in.ibm.com> <CAKohpomgd8X4UwFaVtJ49=CXTg2cyEirvD4_mj5ohqS5fk064Q@mail.gmail.com> <52315D7D.3030406@linux.vnet.ibm.com> <CAKohpoktJkAWf2xvRKmz3ZUW3wiRqHYdaR6d_HKsXZPXiiK53Q@mail.gmail.com> <52315F98.8020305@linux.vnet.ibm.com> <CAKohpomsHSMWmGAACurpN1dYSsvHvH6w_SDpQ5c7CE_1R2MGMg@mail.gmail.com>
+In-Reply-To: <CAKohpomsHSMWmGAACurpN1dYSsvHvH6w_SDpQ5c7CE_1R2MGMg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13091207-5140-0000-0000-000003D18787
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 July 2013 12:30 PM, Kishon Vijay Abraham I wrote:
-> >> .
-> >> .
-> >>>>> +			of_pci_range_to_resource(&range, np, &pp->cfg);
-> >>>>> +			pp->config.cfg0_size = resource_size(&pp->cfg)/2;
-> >>>>> +			pp->config.cfg1_size = resource_size(&pp->cfg)/2;
-> >>>>> +		}
-> >>>>> +	}
-> >>>>> +
-> >>>>> +	pp->dbi_base = devm_ioremap(pp->dev, pp->cfg.start,
-> >>>>> +				resource_size(&pp->cfg));
-> >>>>
-> >>>> Why is configuraion space divided into two?
-> >>>
-> >>> Sorry, I don't know the exact reason. :(
-> >>> Pratyush Anand may know about this.
-> >>> Pratyush Anand, could you answer the question?
-> >>>
-> >>> Also, if you find some problems, please let me know.
+On 09/12/2013 12:14 PM, Viresh Kumar wrote:
+> On 12 September 2013 12:00, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> Looking at the rate at which we are bumping into each others thoughts, I think
+>> maybe we should switch from email to IRC ;-) ;-)
 > 
-> One more query..
+> Unbelievable, Even I thought so this morning :)
 > 
-> Where is inbound translation configuration done in your driver? how should it
-> be done?
+> One more thing that I wanted to say for some other threads..
+> Your changelogs are simply superb.. The amount of information that you put in
+> them is fantastic.. 
 
-Hi Kishon,
+Thank you! :-) I'm glad to hear that!
 
-Sorry, I cannot understand your question exactly.
-However, the following thread would be helpful.
+Believe it or not, I spend almost an equal (if not more) amount of time ensuring
+that I get the changelog absolutely right, compared to the time I spend actually
+writing the code. The reason is that, I have been pleasantly surprised by the
+power of the changelog in numerous occasions: the very act of composing a proper 
+changelog forces me to think *much* more clearly than when writing code. And it
+often gives me the opportunity to rethink the *entire* approach/solution and not
+just the implementation, since I need to explain the full context in it, not
+just what the code does. And *that* exercise can reveal more complex/subtle bugs
+than mere code review can ever do. That's why I put so much emphasis on writing
+a perfect changelog :-) [Believe it or not, I have had times when I figured out
+that my entire solution was utterly nonsensical when I began writing the changelog,
+*after* reviewing and testing the code! ... and of course I had to rework the
+entire patch! ;-( ]
 
-http://www.spinics.net/lists/arm-kernel/msg252078.html
-https://lkml.org/lkml/2013/6/17/890
+And to prevent myself from going overboard with writing the changelog (like making
+it way too verbose or convoluted with too much detail), I have a simple mechanism/
+handy rule in place:
 
-Best regards.
-Jingoo Han
+The changelog should be such that, whoever reads the changelog should feel that
+the time he spent reading it was totally worth it. IOW, it should not simply
+regurgitate what is already obvious from the code. Instead it should provide
+insights into the subtle aspects or tradeoffs relevant to the patch; in short, it
+should explain the "_why_ behind the _what_" as clearly and in as few words as
+possible :-)
+
+Well, atleast I _try_ to stick to that rule :-)
+
+> I never do it that way and so get caught by Rafael a number
+> of times :)
+> 
+
+Hehe ;-)
+
+> Need to learn this from you for sure :)
+> 
+> Btw, I am on Freenode for many Linaro channels.... Where can I find you on
+> IRC? (Haven't sent this in a private mail as others might also find it useful)
+> 
+
+You can find me on ##kernel on freenode. Or, Rafael has a #pm channel for power
+management discussions on tinc.sekrit.org.
+
+Regards,
+Srivatsa S. Bhat
+
 
