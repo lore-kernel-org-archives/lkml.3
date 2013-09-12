@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588Ab3ILTL0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 15:11:26 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:47470 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752208Ab3ILTLY (ORCPT
+	id S1753729Ab3ILTMU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 15:12:20 -0400
+Received: from mail-qe0-f46.google.com ([209.85.128.46]:37647 "EHLO
+	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752412Ab3ILTMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 15:11:24 -0400
+	Thu, 12 Sep 2013 15:12:19 -0400
+Date: Thu, 12 Sep 2013 16:12:13 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] perf fixes
+Message-ID: <20130912191213.GB11400@ghostprotocols.net>
+References: <20130912133855.GA23780@gmail.com>
+ <CA+55aFwgyjqRHxLaWGxxsg_v07FrxbVTeLdHTGp7MfeSRjrKsQ@mail.gmail.com>
+ <CA+55aFyCeXXr=57em8CC_Uzfk5PvOw0RHyA309wuOP-oDL7VxA@mail.gmail.com>
+ <20130912184341.GA11400@ghostprotocols.net>
 MIME-Version: 1.0
-In-Reply-To: <1379012038-31764-1-git-send-email-msalter@redhat.com>
-References: <1379012038-31764-1-git-send-email-msalter@redhat.com>
-Date: Thu, 12 Sep 2013 21:11:23 +0200
-X-Google-Sender-Auth: cbfMjgZF5KZz_13Elipp2o7qGrg
-Message-ID: <CAMuHMdUDsYwJeJQi=yZBY7CfXxhd7RsFUUcZKns8z-5JqX=00g@mail.gmail.com>
-Subject: Re: [PATCH] Kconfig cleanup (PARPORT_PC dependencies)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mark Salter <msalter@redhat.com>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Henderson <rth@twiddle.net>,
-        Vineet Gupta <vgupta@synopsys.com>,
-        Russell King <linux@arm.linux.org.uk>, Tony Luck <tony.luck@intel.com>,
-        Michal Simek <monstr@monstr.eu>, Ralf Baechle <ralf@linux-mips.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130912184341.GA11400@ghostprotocols.net>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 8:53 PM, Mark Salter <msalter@redhat.com> wrote:
-> Remove messy dependencies from PARPORT_PC by having it depend on one
-> Kconfig symbol (ARCH_MAY_HAVE_PC_PARPORT) and having architectures
-> which need it declare ARCH_MAY_HAVE_PC_PARPORT in arch/*/Kconfig.
-> New architectures are unlikely to need PARPORT_PC, so this avoids
-> having an ever growing list of architectures to exclude. Those
-> architectures which do declare ARCH_MAY_HAVE_PC_PARPORT in this
-> patch are the ones which have an asm/parport.h.
->
-> Signed-off-by: Mark Salter <msalter@redhat.com>
+Em Thu, Sep 12, 2013 at 03:43:41PM -0300, Arnaldo Carvalho de Melo escreveu:
+> But if I do it as a normal user and then try installing as root... it
+> behaves like you described, duh :-\
+> 
+> Because of this:
+> 
+>     * new build flags or prefix
+> 
+> Will check...
 
-Thanks!
+This is the cause:
 
-For the m68k part:
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-Gr{oetje,eeting}s,
+### Detect prefix changes
+TRACK_CFLAGS = $(subst ','\'',$(CFLAGS)):\
+             $(bindir_SQ):$(perfexecdir_SQ):$(template_dir_SQ):$(prefix_SQ)
 
-                        Geert
+$(OUTPUT)PERF-CFLAGS: .FORCE-PERF-CFLAGS
+        @FLAGS='$(TRACK_CFLAGS)'; \
+            if test x"$$FLAGS" != x"`cat $(OUTPUT)PERF-CFLAGS 2>/dev/null`" ; then \
+                echo 1>&2 "    * new build flags or prefix"; \
+                echo "$$FLAGS" >$(OUTPUT)PERF-CFLAGS; \
+            fi
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+That "prefix" thing, i.e.:
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+             $(bindir_SQ):$(perfexecdir_SQ):$(template_dir_SQ):$(prefix_SQ)
+
+
+As user it is:
+
+/home/acme/bin:libexec/perf-core:share/perf-core/templates:/home/acme
+
+while as root it becomes:
+
+/root/bin:libexec/perf-core:share/perf-core/templates:/root
+
+And that causes the whole thing to be rebuilt when going from 'make' as normal
+user to 'make install' as root.
+
+All the other things in that TRACK_CFLAGS part is equal.
+
+We probably got all this from the 'git' makefile, checking how it is done
+there these days...
+
+- Arnaldo
