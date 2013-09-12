@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753985Ab3ILPN4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 11:13:56 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:24812 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752738Ab3ILPNz (ORCPT
+	id S1754523Ab3ILPO3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 11:14:29 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48912 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753558Ab3ILPO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 11:13:55 -0400
-Message-ID: <1378998712.12538.18.camel@misato.fc.hp.com>
-Subject: Re: [Bug report] Warning when hot-add an ACPI0004 device.
-From: Toshi Kani <toshi.kani@hp.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Date: Thu, 12 Sep 2013 09:11:52 -0600
-In-Reply-To: <52314A89.2060809@cn.fujitsu.com>
-References: <52314A89.2060809@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 12 Sep 2013 11:14:28 -0400
+Date: Thu, 12 Sep 2013 17:14:20 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: airlied@linux.ie, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [BUG] completely bonkers use of set_need_resched +
+ VM_FAULT_NOPAGE
+Message-ID: <20130912151420.GA31370@twins.programming.kicks-ass.net>
+References: <20130912150645.GZ31370@twins.programming.kicks-ass.net>
+ <5231D99D.80706@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5231D99D.80706@canonical.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-09-12 at 13:00 +0800, Tang Chen wrote:
-> Hi Rafael, Toshi,
-> 
-> When we hot-add an ACPI0004 device, we got the following warning:
-> 
-> 	acpi ACPI0004:01: Attempt to re-insert
-> 
-> The ACPI0004 device is a System Board in Fujitsu server, which has two
-> numa nodes (processors and memory).
-> 
-> It seems that we reserved the ACPI_NOTIFY_DEVICE_CHECK event twice in
-> acpi_hotplug_notify_cb().
-> 
-> 
-> According to bisect, this happens after the following commit:
-> 
->  From 68a67f6c78b80525d9b3c6672e7782de95e56a83 Mon Sep 17 00:00:00 2001
-> From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-> Date: Sun, 3 Mar 2013 23:05:55 +0100
-> Subject: [PATCH 1/1] ACPI / container: Use common hotplug code
-> 
-> Switch the ACPI container driver to using common device hotplug code
-> introduced previously.  This reduces the driver down to a trivial
-> definition and registration of a struct acpi_scan_handler object.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Acked-by: Toshi Kani <toshi.kani@hp.com>
-> Tested-by: Toshi Kani <toshi.kani@hp.com>
-> ---
->   drivers/acpi/container.c | 146 
-> ++++-------------------------------------------
->   1 file changed, 10 insertions(+), 136 deletions(-)
-> 
-> 
-> I'm now investigating this problem. If you have any idea about why this
-> happens, please let me know.
+On Thu, Sep 12, 2013 at 05:11:25PM +0200, Maarten Lankhorst wrote:
+> Op 12-09-13 17:06, Peter Zijlstra schreef:
+> > Hi Dave,
+> >
+> > So I'm poking around the preemption code and stumbled upon:
+> >
+> > drivers/gpu/drm/i915/i915_gem.c:                set_need_resched();
+> > drivers/gpu/drm/ttm/ttm_bo_vm.c:                        set_need_resched();
+> > drivers/gpu/drm/ttm/ttm_bo_vm.c:                        set_need_resched();
+> > drivers/gpu/drm/udl/udl_gem.c:          set_need_resched();
+> >
+> > All these sites basically do:
+> >
+> >   while (!trylock())
+> >   	yield();
+> >
+> > which is a horrible and broken locking pattern. 
+> >
+> > Firstly its deadlock prone, suppose the faulting process is a FIFOn+1
+> > task that preempted the lock holder at FIFOn.
+> >
+> > Secondly the implementation is worse than usual by abusing
+> > VM_FAULT_NOPAGE, which is supposed to install a PTE so that the fault
+> > doesn't retry, but you're using it as a get out of fault path. And
+> > you're using set_need_resched() which is not something a driver should
+> > _ever_ touch.
+> >
+> > Now I'm going to take away set_need_resched() -- and while you can
+> > 'reimplement' it using set_thread_flag() you're not going to do that
+> > because it will be broken due to changes to the preempt code.
+> >
+> > So please as to fix ASAP and don't allow anybody to trick you into
+> > merging silly things like that again ;-)
+> >
+> Agreed, but this is a case of locking inversion. How do you propose to get around that?
 
-With the above change, container devices use the common notify handler,
-which logs the warning message in question when it receives device check
-twice on a same device.  Before the change, the container-specific
-notify handler did not log this message in the same case (but considered
-it as an eject request).
+me? No idea, I've never looked at the actual locking in DRM. Someone
+who's familiar with that code would have to tackle that.
 
-So, I suspect that you are getting device check twice regardless of the
-kernel change.  Can you check KERN_DEBUG messages to see if that is the
-case?  The notify handler logs all events with KERN_DEBUG.
-
-Thanks,
--Toshi
-
+I just spotted the fail because I was going to remove set_need_resched()
+and had a WTF moment when I tripped over this stuff.
