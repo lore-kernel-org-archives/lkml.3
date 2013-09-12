@@ -1,275 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757573Ab3ILBfQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 21:35:16 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:38722 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751236Ab3ILBfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 21:35:14 -0400
-From: Milo Kim <milo.kim@ti.com>
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-pwm@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        <devicetree@vger.kernel.org>, Milo Kim <milo.kim@ti.com>
-Subject: [PATCH v3 4/4] Documentation: add LP3943 DT bindings and document
-Date: Thu, 12 Sep 2013 10:35:00 +0900
-Message-ID: <1378949700-6384-1-git-send-email-milo.kim@ti.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1755870Ab3ILBga (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 21:36:30 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:38747 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750861Ab3ILBg3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 21:36:29 -0400
+Message-ID: <52311A98.9040603@hurleysoftware.com>
+Date: Wed, 11 Sep 2013 21:36:24 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Maximiliano Curia <maxy@gnuservers.com.ar>
+CC: Margarita Manterola <margamanterola@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Large pastes into readline enabled programs causes breakage from
+ v2.6.31 onwards
+References: <CAP+fKSpvJqeh8JCHisByDBsGWPOWOcDN4qeVYJOn1tgg8HR0eg@mail.gmail.com> <51F1B015.50804@hurleysoftware.com> <20130730124117.41DC55E4006@freak.gnuservers.com.ar> <51F7E4ED.4050409@hurleysoftware.com> <20130808175839.GB21618@gnuservers.com.ar> <52120EAE.5060906@hurleysoftware.com> <20130903211253.GA22253@gnuservers.com.ar>
+In-Reply-To: <20130903211253.GA22253@gnuservers.com.ar>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bindings for LP3943 MFD, GPIO and PWM controller are added.
-And LP3943 driver document is added also.
+On 09/03/2013 05:12 PM, Maximiliano Curia wrote:
+> ¡Hola Peter!
+>
+> El 2013-08-19 a las 08:25 -0400, Peter Hurley escribió:
+>> My primary concern is canonical readers not become stuck with a full
+>> read buffer, even with bogus input data (IOW, that an error condition will
+>> not prevent a reader from making forward progress). I believe that won't
+>> happen with this change, but what I really need in this case is a detailed
+>> analysis from you of why that won't happen. That analysis should be in
+>> the patch changelog. (Feel free to send me private mail if you need help
+>> preparing a patch.)
+>
+> I'm not sure what level of analysis you are looking for.
 
-Cc: devicetree@vger.kernel.org
-Cc: Lee Jones <lee.jones@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>
-Signed-off-by: Milo Kim <milo.kim@ti.com>
----
- Documentation/00-INDEX                             |    2 +
- .../devicetree/bindings/gpio/gpio-lp3943.txt       |   37 ++++++++++++
- Documentation/devicetree/bindings/mfd/lp3943.txt   |   33 +++++++++++
- .../devicetree/bindings/pwm/pwm-lp3943.txt         |   58 ++++++++++++++++++
- Documentation/lp3943.txt                           |   62 ++++++++++++++++++++
- 5 files changed, 192 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio-lp3943.txt
- create mode 100644 Documentation/devicetree/bindings/mfd/lp3943.txt
- create mode 100644 Documentation/devicetree/bindings/pwm/pwm-lp3943.txt
- create mode 100644 Documentation/lp3943.txt
+For example, why will CPU 0 (the reader) not hang forever under the following
+circumstances?
 
-diff --git a/Documentation/00-INDEX b/Documentation/00-INDEX
-index 0c4cc68..5dd921f 100644
---- a/Documentation/00-INDEX
-+++ b/Documentation/00-INDEX
-@@ -285,6 +285,8 @@ logo.gif
- 	- full colour GIF image of Linux logo (penguin - Tux).
- logo.txt
- 	- info on creator of above logo & site to get additional images from.
-+lp3943.txt
-+	- info on LP3943 MFD driver structure.
- m68k/
- 	- directory with info about Linux on Motorola 68k architecture.
- magic-number.txt
-diff --git a/Documentation/devicetree/bindings/gpio/gpio-lp3943.txt b/Documentation/devicetree/bindings/gpio/gpio-lp3943.txt
-new file mode 100644
-index 0000000..80fcb7d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/gpio/gpio-lp3943.txt
-@@ -0,0 +1,37 @@
-+TI/National Semiconductor LP3943 GPIO controller
-+
-+Required properties:
-+  - compatible: "ti,lp3943-gpio"
-+  - gpio-controller: Marks the device node as a GPIO controller.
-+  - #gpio-cells: Should be 2. See gpio.txt in this directory for a
-+                 description of the cells format.
-+
-+Example:
-+Simple LED controls with LP3943 GPIO controller
-+
-+&i2c4 {
-+	lp3943@60 {
-+		compatible = "ti,lp3943";
-+		reg = <0x60>;
-+
-+		gpioex: gpio {
-+			compatible = "ti,lp3943-gpio";
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+		};
-+	};
-+};
-+
-+leds {
-+	compatible = "gpio-leds";
-+	indicator1 {
-+		label = "indi1";
-+		gpios = <&gpioex 9 GPIO_ACTIVE_LOW>;
-+	};
-+
-+	indicator2 {
-+		label = "indi2";
-+		gpios = <&gpioex 10 GPIO_ACTIVE_LOW>;
-+		default-state = "off";
-+	};
-+};
-diff --git a/Documentation/devicetree/bindings/mfd/lp3943.txt b/Documentation/devicetree/bindings/mfd/lp3943.txt
-new file mode 100644
-index 0000000..e8591d6
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/lp3943.txt
-@@ -0,0 +1,33 @@
-+TI/National Semiconductor LP3943 MFD driver
-+
-+Required properties:
-+  - compatible: "ti,lp3943"
-+  - reg: I2C slave address. From 0x60 to 0x67.
-+
-+LP3943 consists of two sub-devices, lp3943-gpio and lp3943-pwm.
-+
-+For the LP3943 GPIO properties please refer to:
-+Documentation/devicetree/bindings/gpio/gpio-lp3943.txt
-+
-+For the LP3943 PWM properties please refer to:
-+Documentation/devicetree/bindings/pwm/pwm-lp3943.txt
-+
-+Example:
-+
-+lp3943@60 {
-+	compatible = "ti,lp3943";
-+	reg = <0x60>;
-+
-+	gpioex: gpio {
-+		compatible = "ti,lp3943-gpio";
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+	};
-+
-+	pwm3943: pwm {
-+		compatible = "ti,lp3943-pwm";
-+		#pwm-cells = <2>;
-+		ti,pwm0 = <8 9 10>;
-+		ti,pwm1 = <15>;
-+	};
-+};
-diff --git a/Documentation/devicetree/bindings/pwm/pwm-lp3943.txt b/Documentation/devicetree/bindings/pwm/pwm-lp3943.txt
-new file mode 100644
-index 0000000..7bd9d3b
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pwm/pwm-lp3943.txt
-@@ -0,0 +1,58 @@
-+TI/National Semiconductor LP3943 PWM controller
-+
-+Required properties:
-+  - compatible: "ti,lp3943-pwm"
-+  - #pwm-cells: Should be 2. See pwm.txt in this directory for a
-+                description of the cells format.
-+                Note that this hardware limits the period length to the
-+                range 6250~1600000.
-+  - ti,pwm0 or ti,pwm1: Output pin number(s) for PWM channel 0 or 1.
-+    0 = output 0
-+    1 = output 1
-+    .
-+    .
-+    15 = output 15
-+
-+Example:
-+PWM 0 is for RGB LED brightness control
-+PWM 1 is for brightness control of LP8557 backlight device
-+
-+&i2c3 {
-+	lp3943@60 {
-+		compatible = "ti,lp3943";
-+		reg = <0x60>;
-+
-+		/*
-+		 * PWM 0 : output 8, 9 and 10
-+		 * PWM 1 : output 15
-+		 */
-+		pwm3943: pwm {
-+			compatible = "ti,lp3943-pwm";
-+			#pwm-cells = <2>;
-+			ti,pwm0 = <8 9 10>;
-+			ti,pwm1 = <15>;
-+		};
-+	};
-+
-+};
-+
-+/* LEDs control with PWM 0 of LP3943 */
-+pwmleds {
-+	compatible = "pwm-leds";
-+	rgb {
-+		label = "indi::rgb";
-+		pwms = <&pwm3943 0 10000>;
-+		max-brightness = <255>;
-+	};
-+};
-+
-+&i2c4 {
-+	/* Backlight control with PWM 1 of LP3943 */
-+	backlight@2c {
-+		compatible = "ti,lp8557";
-+		reg = <0x2c>;
-+
-+		pwms = <&pwm3943 1 10000>;
-+		pwm-names = "lp8557";
-+	};
-+};
-diff --git a/Documentation/lp3943.txt b/Documentation/lp3943.txt
-new file mode 100644
-index 0000000..576ebd0
---- /dev/null
-+++ b/Documentation/lp3943.txt
-@@ -0,0 +1,62 @@
-+TI/National Semiconductor LP3943 MFD driver
-+===========================================
-+
-+LP3943 is an integrated device capable of driving 16 output channels.
-+It can be used for GPIO expander and PWM generators.
-+LP3493 registers are controlled via the I2C interface.
-+
-+Driver structure
-+----------------
-+                                  LED control    General usage for a device
-+                                  ___________   ____________________________
-+
-+  LP3943 MFD ---- GPIO expander    leds-gpio        eg) HW enable pin
-+              |
-+              --- PWM generator    leds-pwm         eg) PWM input
-+
-+
-+Why do we need GPIO and PWM drivers instead of LED driver?
-+To support LED control and general usage, GPIO and PWM drivers are necessary.
-+
-+According to the datasheet(1), it's just a LED driver which has 16 channels.
-+But here is another application, a GPIO expander.(2)
-+
-+  (1) http://www.ti.com/lit/ds/snvs256b/snvs256b.pdf
-+  (2) http://www.ti.com/lit/an/snva287a/snva287a.pdf
-+
-+Internal two PWM channels are used for LED dimming effect.
-+And each output pin can be used as a GPIO as well.
-+LED functionality can work with GPIOs or PWMs.
-+LEDs can be controlled with legacy leds-gpio(static brightness) or
-+leds-pwm drivers(dynamic brightness control).
-+Additionally, it can be used for generic GPIO and PWM controller.
-+For example, a GPIO is HW enable pin of a device.
-+PWM is input pin of a backlight device.
-+
-+
-+LP3943 PWM port map
-+-------------------
-+Each PWM channel can be mapped to one or multiple output pins.
-+
-+For example, PWM 0 is used for a backlight device.
-+PWM 1 is for RGB LEDs.
-+
-+  PWM channel    Output pins    PWM consumer
-+  ___________    ___________    ____________
-+  PWM 0          pin 1          backlight
-+  PWM 1          pin 7, 8, 9    RGB LEDs
-+
-+Then, PWM port map is as below.
-+PWM 0: num_outputs = 1, output = pin 1
-+PWM 1: num_outputs = 3, output = pin 7, 8, 9
-+
-+The 'lp3943_pwm_map' structure is used for this feature.
-+
-+
-+Device tree supported
-+---------------------
-+Please refer to the documents below.
-+
-+Documentation/devicetree/bindings/mfd/lp3943.txt
-+Documentation/devicetree/bindings/gpio/gpio-lp3943.txt
-+Documentation/devicetree/bindings/pwm/pwm-lp3943.txt
--- 
-1.7.9.5
+CPU 0                                | CPU 1
+                                      |
+n_tty_read()                         | n_tty_receive_buf2()
+   .                                  |   receive_room
+   .                                  |     .
+   .                                  |     is waitqueue_active()? no
+   add_wait_queue()                   |       .
+     .                                |       .
+     is input_available_p()?          |       .
+       no - schedule_timeout()  <-- reader sleeps
+
+                                      |       .
+                                      |       return 0
+                                      | exit i/o loop in flush_to_ldisc() work function
+                                      |
+
+
+A complete and detailed analysis would go a long way to getting this patch
+accepted. If you show that your patch won't hang readers _and_ fixes the
+larger-than-4k-paste bug, then the readline() deficiencies will probably be
+overlooked.
+
+> The driver will block
+> when there are no readers but as soon as there is a read call it unblocks.
+> I've added this information to the patch description that I'm including below.
+>
+>> And the patch above has a bug that allows a negative 'left' to be
+>> assigned to tty->receive_room which will be interpreted as a very large
+>> positive value.
+>
+> Ok, fixed with an else clause. It could also use an extra &&, but it looks a
+> bit confusing.
+>
+>> This approach still has several drawbacks.
+>
+>> 1) Since additional state is reset when the termios is changed by
+>> readline(), the canonical line buffer state will be bogus.
+>> This renders the termios change by readline() pointless; the
+>> caller will not be able to retrieve expected input properly.
+>
+>> 2) Since the input data is interpreted with the current termios when
+>> data is received, any embedded control characters will not be
+>> interpreted properly; again, the caller will not be able to retrieve
+>> expected input properly.
+>
+> Indeed this is correct, however this is not an issue of this patch but of the
+> current interaction between the kernel and readline.
+
+My point here was this: the whole point of readline() flipping termios settings
+back and forth is to allow readline() to use one setting while the caller
+uses a different setting.
+
+If you don't care that the readline() caller doesn't receives its input
+properly when pasted, why is the solution to this problem patching the
+linux kernel instead of ripping out the termios-flipping that readline()
+does?
+
+> In order to fix this, the
+> reading buffer should always be in raw and only when responding to a read call
+> for canonical mode should it be interpreted. This is a very big change, and
+> I'm not sure if anybody will be interested in implementing it.
+
+So the receiver only echoes input once it's been read???  Because if implemented
+as you suggest, until the input has been read you wouldn't know what termios
+settings to apply for the echoed chars (or even if to echo).
+
+>>> What do you think? Is the proposed solution, or something along those lines,
+>>> acceptable?
+>
+>> I'm wondering if this problem might be best addressed on the paste side
+>> instead of the read side. Although this wouldn't be a magic bullet, it
+>> would be easier to control when more paste data is added.
+>
+> I don't see how this could work, could you elaborate?
+
+Well, the vt driver already supports a PASTE_SELECTION ioctl
+which bypasses the flip buffers. Something similar might be suitable
+for line-oriented pasting, where only one line is written at a time.
+I haven't given too much thought to how/what would perform the wake
+up of the paster; right now, the vt driver implements unthrottle to
+continue pasting.
+
+> This is the patch proposal, for comments:
+>
+>  From 81afd3b666cbf94bb9923ebf87fb2017a7cd645e Mon Sep 17 00:00:00 2001
+> From: Maximiliano Curia <maxy@gnuservers.com.ar>
+> Date: Tue, 3 Sep 2013 22:48:34 +0200
+> Subject: [PATCH] Only let characters through when there are active readers.
+>
+> If there is an active reader, previous behavior is in place. When there is no
+> active reader, input is blocked until the next read call unblocks it.
+>
+> This fixes a long standing issue with readline when pasting more than 4096
+> bytes.
+> ---
+>   drivers/tty/n_tty.c | 9 ++++++++-
+>   1 file changed, 8 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+> index 4bf0fc0..cdc3b19 100644
+> --- a/drivers/tty/n_tty.c
+> +++ b/drivers/tty/n_tty.c
+> @@ -147,9 +147,16 @@ static int set_room(struct tty_struct *tty)
+>   	 * pending newlines, let characters through without limit, so
+>   	 * that erase characters will be handled.  Other excess
+>   	 * characters will be beeped.
+> +	 * If there is no reader waiting for the input, block instead of
+> +	 * letting the characters through.
+>   	 */
+>   	if (left <= 0)
+> -		left = ldata->icanon && !ldata->canon_data;
+> +		if (waitqueue_active(&tty->read_wait)) {
+> +			left = ldata->icanon && !ldata->canon_data;
+> +		} else {
+> +			left = 0;
+> +		}
+
+Style nitpick. Single-line if-else shouldn't have braces.
+
+> +
+>   	old_left = tty->receive_room;
+>   	tty->receive_room = left;
+>
+>
 
