@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751736Ab3ILNdt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 09:33:49 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:44319 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750951Ab3ILNdr (ORCPT
+	id S1752208Ab3ILNe2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 09:34:28 -0400
+Received: from www.linutronix.de ([62.245.132.108]:58721 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751228Ab3ILNe1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 09:33:47 -0400
+	Thu, 12 Sep 2013 09:34:27 -0400
+Date: Thu, 12 Sep 2013 15:33:48 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Libin <huawei.libin@huawei.com>
+cc: akpm@linux-foundation.org, tj@kernel.org, viro@zeniv.linux.org.uk,
+        eparis@redhat.com, rusty@rustcorp.com.au, ebiederm@xmission.com,
+        paulmck@linux.vnet.ibm.com, john.stultz@linaro.org, mingo@redhat.com,
+        peterz@infradead.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, lizefan@huawei.com,
+        jovi.zhangwei@huawei.com, guohanjun@huawei.com,
+        zhangdianfang@huawei.com, wangyijing@huawei.com
+Subject: Re: [PATCH 05/14] hrtimer: Fix invalid wakeup in do_nanosleep
+In-Reply-To: <1377784669-28140-6-git-send-email-huawei.libin@huawei.com>
+Message-ID: <alpine.DEB.2.02.1309121527320.4089@ionos.tec.linutronix.de>
+References: <1377784669-28140-1-git-send-email-huawei.libin@huawei.com> <1377784669-28140-6-git-send-email-huawei.libin@huawei.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20130912115710.25951.98497.stgit@srivatsabhat.in.ibm.com>
-References: <20130912115710.25951.98497.stgit@srivatsabhat.in.ibm.com>
-Date: Thu, 12 Sep 2013 19:03:47 +0530
-Message-ID: <CAKohponfLQnPhpLwkOBQ--AXnmD+bvZ85iKQBts1c1wEZmBZuQ@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: Detect spurious invocations of update_policy_cpu()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Warren <swarren@wwwdotorg.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 September 2013 17:29, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> The function update_policy_cpu() is expected to be called when the policy->cpu
-> of a cpufreq policy is to be changed: ie., the new CPU nominated to become the
-> policy->cpu is different from the old one.
->
-> Print a warning if it is invoked with new_cpu == old_cpu, since such an
-> invocation might hint at a faulty logic in the caller.
->
-> Suggested-by: Viresh Kumar <viresh.kumar@linaro.org>
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> ---
->
->  drivers/cpufreq/cpufreq.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+On Thu, 29 Aug 2013, Libin wrote:
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> If thread is preempted before calling set_current_state(TASK_INTERRUPTIBLE),
+> and the other thread set the condition followed with wake_up_process. After
+> that when this thread is re-scheduled, calling set_current_state to set itself
+> as state TASK_INTERRUPTIBLE, if it is preempted again after that and before
+> __set_current_state(TASK_RUNNING), it triggers the invalid wakeup problem.
+
+do_nanosleep() is only called from sys_nanosleep() and
+sys_clock_nanosleep() user space interfaces.
+
+So the task is not going to be woken up by some magic other thread
+except by a signal. The latter is handled by the scheduler which will
+return with state running. So what kind of problem are you trying to
+solve?
+
+Thanks,
+
+	tglx
+
+
+
+ 
