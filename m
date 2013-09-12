@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753703Ab3ILOlc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 10:41:32 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:51745 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751736Ab3ILOla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 10:41:30 -0400
-Date: Thu, 12 Sep 2013 16:42:07 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: Dave Young <dyoung@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+	id S1753376Ab3ILOkf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 10:40:35 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54412 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752368Ab3ILOke (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 10:40:34 -0400
+Date: Thu, 12 Sep 2013 15:33:40 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Fan Rong <cinifr@gmail.com>, "coosty@163.com" <coosty@163.com>,
+        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "zohar@linux.vnet.ibm.com" <zohar@linux.vnet.ibm.com>,
-        "d.kasatkin@samsung.com" <d.kasatkin@samsung.com>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>
-Subject: Re: [PATCH 15/16] bootparam: Pass acpi_rsdp pointer in bootparam
-Message-ID: <20130912144207.GA10495@x1.alien8.de>
-References: <1378849471-10521-1-git-send-email-vgoyal@redhat.com>
- <1378849471-10521-16-git-send-email-vgoyal@redhat.com>
- <522FA2A8.8080703@zytor.com>
- <20130911114419.GB31551@x1.alien8.de>
- <20130911134534.GB15364@redhat.com>
- <20130911143216.GA933@x1.alien8.de>
- <20130912064930.GA5288@dhcp-16-126.nay.redhat.com>
- <20130912125350.GB9280@x1.alien8.de>
- <1378996498.945.4.camel@x230.lan>
+        "pawel.moll@arm.co" <pawel.moll@arm.co>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Subject: Re: [PATCH 3/4] Add physical count arch timer support for
+	clocksource in ARMv7.
+Message-ID: <20130912143340.GL12758@n2100.arm.linux.org.uk>
+References: <1378968687-8200-1-git-send-email-cinifr@gmail.com> <1378968687-8200-4-git-send-email-cinifr@gmail.com> <20130912112452.GA22013@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1378996498.945.4.camel@x230.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130912112452.GA22013@e106331-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 02:34:58PM +0000, Matthew Garrett wrote:
-> The second kernel still needs to be passed a pointer to the EFI tables
-> and memory map.
+On Thu, Sep 12, 2013 at 12:24:52PM +0100, Mark Rutland wrote:
+> On Thu, Sep 12, 2013 at 07:51:26AM +0100, Fan Rong wrote:
+> > diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+> > index 41c6946..a4981d2 100644
+> > --- a/drivers/clocksource/Kconfig
+> > +++ b/drivers/clocksource/Kconfig
+> > @@ -109,3 +109,11 @@ config VF_PIT_TIMER
+> >  	bool
+> >  	help
+> >  	  Support for Period Interrupt Timer on Freescale Vybrid Family SoCs.
+> > +menu "Clock Source"
+> > +
+> > +config ARM_ARCH_TIMER_USE_PHYCNT
+> > +	bool "Use Physical Count Timer"
+> > +	depends on ARM_ARCH_TIMER
+> > +	help
+> > +          If bootloader dont set Virtual Offset register,Physical Count Timer is needed to replace Virtual Count Timer.
+> > +endmenu
+> 
+> This cannot be a compile-time option as above in a multiplatform build.
+> Other paltforms (e.g. KVM guests) *must* use the virtual counters to get
+> any semblance of a consistent view of time.
 
-Date: Thu, 12 Sep 2013 14:53:50 +0200
-From: Borislav Petkov <bp@alien8.de
-Message-ID: <20130912125350.GB9280@x1.alien8.de>
+Also, for future reference:
 
-On Thu, Sep 12, 2013 at 03:34:15PM +0800, Dave Young wrote:
-> Also kexec userspace need to fill efi_info in bootparams and pass the
-> previous saved efi data to 2nd kernel.
+1. Use a single blank lines to separate thing like 'menu' and 'endmenu'.
+2. Wrap your the help sensibly, don't put it all on one line.
+3. It's conventional to use tabs up to below "help" and then two spaces
+   to indent the help text.
+4. "," always has one space after it.
 
-Hmm, yes, we need to tell the kexec kernel the EFI regions.
-
--- 
-Regards/Gruss,
-Boris.
+Thanks.
