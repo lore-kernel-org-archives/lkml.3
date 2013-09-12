@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932167Ab3ILF2Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 01:28:16 -0400
-Received: from ringil.hengli.com.au ([178.18.16.133]:42567 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751346Ab3ILF2P (ORCPT
+	id S1753384Ab3ILFgR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 01:36:17 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:52633 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752700Ab3ILFgP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 01:28:15 -0400
-Date: Thu, 12 Sep 2013 15:28:06 +1000
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: andr345@gmail.com, rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        arthur.marsh@internode.on.net, tim.c.chen@linux.intel.com,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Re: [3.12-rc1] Dependency on module-init-tools >= 3.11 ?
-Message-ID: <20130912052806.GA15737@gondor.apana.org.au>
-References: <1374283864.22432.393.camel@schen9-DESK>
- <20130720053021.GA19689@gondor.apana.org.au>
- <201307201456.JIC35412.VFOMFJOQLOtHFS@I-love.SAKURA.ne.jp>
- <201309112043.HBD04609.FOtLSOFVQHFOJM@I-love.SAKURA.ne.jp>
- <20130912042622.GA15181@gondor.apana.org.au>
- <201309121403.FIH09821.JtLOVOSFOFHFQM@I-love.SAKURA.ne.jp>
+	Thu, 12 Sep 2013 01:36:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201309121403.FIH09821.JtLOVOSFOFHFQM@I-love.SAKURA.ne.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52310E43.1090808@intel.com>
+References: <Pine.LNX.4.64.1309091656200.6602@axis700.grange>
+	<2703632.ul5ekQh5oq@vostro.rjw.lan>
+	<CAKohpo=RKB-_EO=cjaOorAfN=y_cMgJg-j6=xtX71a-TwujgsA@mail.gmail.com>
+	<2013615.oHjWkmedue@vostro.rjw.lan>
+	<CAKohpokEZcwF-zL6rTXYyC_x=SJzGFvdvxqvmvyhJHa8nPXogQ@mail.gmail.com>
+	<52310E43.1090808@intel.com>
+Date: Thu, 12 Sep 2013 11:06:14 +0530
+Message-ID: <CAKohpomuJNQmk5fg5en5usPgipj7hzXUVNMhz1MjAS-47X4Ggg@mail.gmail.com>
+Subject: Re: "cpufreq: fix serialization issues with freq change notifiers"
+ breaks cpufreq too
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Greg KH <greg@kroah.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 02:03:41PM +0900, Tetsuo Handa wrote:
-> Herbert Xu wrote:
-> > This way at least you'll have a working system until your initramfs
-> > tool is fixed to do the right thing.
-> 
-> Thank you. But it is module-init-tools-3.9-21.el6_4 in RHEL 6.4.
-> We can't wait until Red Hat backports module-init-tools >= 3.11 to RHEL 6.x.
-> 
-> Since most people are already using module-init-tools >= 3.11 and
-> there is workaround for my case (i.e. choose built-in), just updating
-> 
->   module-init-tools      0.9.10                  # depmod -V
-> 
-> line at "Current Minimal Requirements" in Documentation/Changes will be OK.
+On 12 September 2013 06:13, Rafael J. Wysocki
+<rafael.j.wysocki@intel.com> wrote:
+> Yes, if you can point to a specific driver having this problem.
 
-The trouble is not all distros will include the softdep modules in
-the initramfs.  So for now I think we will have to live with a fallback.
+There are so many of those (I know it because I went through almost all drivers
+recently with my cleanup series): cpufreq-cpu0, omap-cpufreq,
+exynos-cpufreq, etc..
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+They all do this:
+
+A. If new freq is more than old: Increase voltage
+B. Change freq
+C. If new freq is less than old: decrease voltage
