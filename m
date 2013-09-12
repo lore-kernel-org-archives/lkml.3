@@ -1,28 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756017Ab3ILR7f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 13:59:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57184 "EHLO
+	id S1755983Ab3ILR7d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 13:59:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57167 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755926Ab3ILR7a (ORCPT
+	with ESMTP id S1755674Ab3ILR7a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Sep 2013 13:59:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sangjung Woo <sangjung.woo@samsung.com>,
-        Myugnjoo Ham <myungjoo.ham@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 44/46] drivers/rtc/rtc-max77686.c: Fix wrong register
-Date: Thu, 12 Sep 2013 10:58:55 -0700
-Message-Id: <20130912175725.743396410@linuxfoundation.org>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Willy Tarreau <w@1wt.eu>,
+        Jochen De Smet <jochen.armkernel@leahnim.org>,
+        Peter Sanford <psanford@nearbuy.io>,
+        Ethan Tuttle <ethan@ethantuttle.com>,
+        =?UTF-8?q?Ch=C3=A9ny=20Yves-Gael?= <yves@cheny.fr>,
+        Ryan Press <ryan@presslab.us>,
+        Simon Guinot <simon.guinot@sequanux.org>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Vincent Donnefort <vdonnefort@gmail.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        "David S. Miller" <davem@davemloft.net>, vdonnefort@lacie.com
+Subject: [ 42/46] net: mvneta: properly disable HW PHY polling and ensure adjust_link() works
+Date: Thu, 12 Sep 2013 10:58:53 -0700
+Message-Id: <20130912175725.527963105@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130912175721.001906199@linuxfoundation.org>
 References: <20130912175721.001906199@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,38 +40,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sangjung Woo <sangjung.woo@samsung.com>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit 1748cbf7f7c464593232cde914f5a103181a83b5 upstream.
+[ Upstream commit 714086029116b6b0a34e67ba1dd2f0d1cf26770c ]
 
-Fix a read of the wrong register when checking whether the RTC timer has
-reached the alarm time.
+This commit fixes a long-standing bug that has been reported by many
+users: on some Armada 370 platforms, only the network interface that
+has been used in U-Boot to tftp the kernel works properly in
+Linux. The other network interfaces can see a 'link up', but are
+unable to transmit data. The reports were generally made on the Armada
+370-based Mirabox, but have also been given on the Armada 370-RD
+board.
 
-Signed-off-by: Sangjung Woo <sangjung.woo@samsung.com>
-Signed-off-by: Myugnjoo Ham <myungjoo.ham@samsung.com>
-Reviewed-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+The network MAC in the Armada 370/XP (supported by the mvneta driver
+in Linux) has a functionality that allows it to continuously poll the
+PHY and directly update the MAC configuration accordingly (speed,
+duplex, etc.). The very first versions of the driver submitted for
+review were using this hardware mechanism, but due to this, the driver
+was not integrated with the kernel phylib. Following reviews, the
+driver was changed to use the phylib, and therefore a software based
+polling. In software based polling, Linux regularly talks to the PHY
+over the MDIO bus, and sees if the link status has changed. If it's
+the case then the adjust_link() callback of the driver is called to
+update the MAC configuration accordingly.
+
+However, it turns out that the adjust_link() callback was not
+configuring the hardware in a completely correct way: while it was
+setting the speed and duplex bits correctly, it wasn't telling the
+hardware to actually take into account those bits rather than what the
+hardware-based PHY polling mechanism has concluded. So, in fact the
+adjust_link() callback was basically a no-op.
+
+However, the network happened to be working because on the network
+interfaces used by U-Boot for tftp on Armada 370 platforms because the
+hardware PHY polling was enabled by the bootloader, and left enabled
+by Linux. However, the second network interface not used for tftp (or
+both network interfaces if the kernel is loaded from USB, NAND or SD
+card) didn't had the hardware PHY polling enabled.
+
+This patch fixes this situation by:
+
+ (1) Making sure that the hardware PHY polling is disabled by clearing
+     the MVNETA_PHY_POLLING_ENABLE bit in the MVNETA_UNIT_CONTROL
+     register in the driver ->probe() function.
+
+ (2) Making sure that the duplex and speed selections made by the
+     adjust_link() callback are taken into account by clearing the
+     MVNETA_GMAC_AN_SPEED_EN and MVNETA_GMAC_AN_DUPLEX_EN bits in the
+     MVNETA_GMAC_AUTONEG_CONFIG register.
+
+This patch has been tested on Armada 370 Mirabox, and now both network
+interfaces are usable after boot.
+
+[ Problem introduced by commit c5aff18 ("net: mvneta: driver for
+  Marvell Armada 370/XP network unit") ]
+
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Willy Tarreau <w@1wt.eu>
+Cc: Jochen De Smet <jochen.armkernel@leahnim.org>
+Cc: Peter Sanford <psanford@nearbuy.io>
+Cc: Ethan Tuttle <ethan@ethantuttle.com>
+Cc: Chény Yves-Gael <yves@cheny.fr>
+Cc: Ryan Press <ryan@presslab.us>
+Cc: Simon Guinot <simon.guinot@sequanux.org>
+Cc: vdonnefort@lacie.com
+Cc: stable@vger.kernel.org
+Acked-by: Jason Cooper <jason@lakedaemon.net>
+Tested-by: Vincent Donnefort <vdonnefort@gmail.com>
+Tested-by: Yves-Gael Cheny <yves@cheny.fr>
+Tested-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/rtc/rtc-max77686.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/marvell/mvneta.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
---- a/drivers/rtc/rtc-max77686.c
-+++ b/drivers/rtc/rtc-max77686.c
-@@ -240,9 +240,9 @@ static int max77686_rtc_read_alarm(struc
- 	}
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -136,7 +136,9 @@
+ #define      MVNETA_GMAC_FORCE_LINK_PASS         BIT(1)
+ #define      MVNETA_GMAC_CONFIG_MII_SPEED        BIT(5)
+ #define      MVNETA_GMAC_CONFIG_GMII_SPEED       BIT(6)
++#define      MVNETA_GMAC_AN_SPEED_EN             BIT(7)
+ #define      MVNETA_GMAC_CONFIG_FULL_DUPLEX      BIT(12)
++#define      MVNETA_GMAC_AN_DUPLEX_EN            BIT(13)
+ #define MVNETA_MIB_COUNTERS_BASE                 0x3080
+ #define      MVNETA_MIB_LATE_COLLISION           0x7c
+ #define MVNETA_DA_FILT_SPEC_MCAST                0x3400
+@@ -911,6 +913,13 @@ static void mvneta_defaults_set(struct m
+ 	/* Assign port SDMA configuration */
+ 	mvreg_write(pp, MVNETA_SDMA_CONFIG, val);
  
- 	alrm->pending = 0;
--	ret = regmap_read(info->max77686->regmap, MAX77686_REG_STATUS1, &val);
-+	ret = regmap_read(info->max77686->regmap, MAX77686_REG_STATUS2, &val);
- 	if (ret < 0) {
--		dev_err(info->dev, "%s:%d fail to read status1 reg(%d)\n",
-+		dev_err(info->dev, "%s:%d fail to read status2 reg(%d)\n",
- 				__func__, __LINE__, ret);
- 		goto out;
- 	}
++	/* Disable PHY polling in hardware, since we're using the
++	 * kernel phylib to do this.
++	 */
++	val = mvreg_read(pp, MVNETA_UNIT_CONTROL);
++	val &= ~MVNETA_PHY_POLLING_ENABLE;
++	mvreg_write(pp, MVNETA_UNIT_CONTROL, val);
++
+ 	mvneta_set_ucast_table(pp, -1);
+ 	mvneta_set_special_mcast_table(pp, -1);
+ 	mvneta_set_other_mcast_table(pp, -1);
+@@ -2288,7 +2297,9 @@ static void mvneta_adjust_link(struct ne
+ 			val = mvreg_read(pp, MVNETA_GMAC_AUTONEG_CONFIG);
+ 			val &= ~(MVNETA_GMAC_CONFIG_MII_SPEED |
+ 				 MVNETA_GMAC_CONFIG_GMII_SPEED |
+-				 MVNETA_GMAC_CONFIG_FULL_DUPLEX);
++				 MVNETA_GMAC_CONFIG_FULL_DUPLEX |
++				 MVNETA_GMAC_AN_SPEED_EN |
++				 MVNETA_GMAC_AN_DUPLEX_EN);
+ 
+ 			if (phydev->duplex)
+ 				val |= MVNETA_GMAC_CONFIG_FULL_DUPLEX;
 
 
