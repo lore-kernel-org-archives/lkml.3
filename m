@@ -1,92 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600Ab3ILOkw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 10:40:52 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34038 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752368Ab3ILOku (ORCPT
+	id S1753904Ab3ILOmc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 10:42:32 -0400
+Received: from mail-de.keymile.com ([195.8.104.250]:38827 "EHLO
+	mail-de.keymile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752053Ab3ILOmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 10:40:50 -0400
-Date: Thu, 12 Sep 2013 15:39:22 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Fan Rong <cinifr@gmail.com>
-Cc: "coosty@163.com" <coosty@163.com>,
-        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pawel.moll@arm.co" <pawel.moll@arm.co>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>
-Subject: Re: [PATCH 0/4] Add smp support for Allwinner A20 and phy arch
- count timer
-Message-ID: <20130912143922.GC22013@e106331-lin.cambridge.arm.com>
-References: <1378968687-8200-1-git-send-email-cinifr@gmail.com>
+	Thu, 12 Sep 2013 10:42:31 -0400
+Message-ID: <5231D2CF.5080400@keymile.com>
+Date: Thu, 12 Sep 2013 16:42:23 +0200
+From: Gerlando Falauto <gerlando.falauto@keymile.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130807 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378968687-8200-1-git-send-email-cinifr@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: John Stultz <john.stultz@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        "Brunck, Holger" <Holger.Brunck@keymile.com>,
+        "Longchamp, Valentin" <Valentin.Longchamp@keymile.com>,
+        "Bigler, Stefan" <Stefan.Bigler@keymile.com>, sboyd@codeaurora.org
+Subject: Re: kernel deadlock
+References: <521F6D06.1040107@keymile.com> <E92455D61233364C88CCD4A6DAB2E2850E09518110@SRVDEHAN1MX1.keymile.net> <521FDD12.7050000@linaro.org> <52212511.9050206@keymile.com> <5221264F.4070402@linaro.org> <5225F8EF.3040701@keymile.com> <52261BBB.60904@linaro.org> <20130909100853.GJ31370@twins.programming.kicks-ass.net>
+In-Reply-To: <20130909100853.GJ31370@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 07:51:23AM +0100, Fan Rong wrote:
-> The patchs add smp support for Allwinner A20. It add cpuregister node
-> in dts forsmp configure. The patchs also add a options for phy count
-> timer to replace vir count timer as ARM arch timer clocksource. About
-> ARM arch timer: 1. Current kernel use vir count timer, vir count timer
-> can be accessed in any cpu mode for kernel, but it need bootloader set
-> vir count offset rigister zero at first. 2. Phy count timer can be
-> accessed in most cpu mode for kernel except NS-PL1 mode when register
-> CNTHCTL.PL1PCTEN is set to zero. To ensure to use phy count timer,
-> bootloader should set register CNTHCTL.PL1PCTEN is 1 at first. At all,
-> to ensure kernel can use arch timer, bootload should set some generic
-> timer register(cntvoff or cnthctl) at first. the kernel should select
-> which count timer by reading current kernel running mode. 
+Hi Peter,
 
-Sorry, but I find the above text difficult to understand. It jumps
-between several issues and isn't well formatted.
+sorry for the slow response...
 
-You seem to be suggesting a kernel change (using CNTPCT), but also
-bootloader changes (setting CNTHCTL.PL1PCTEN) to make this possible at
-all. If the bootloader needs to be modified, why can it not be modified
-to set CNTVOFF (or to boot the kernel in Hyp where it can set it
-itself)?
+On 09/09/2013 12:08 PM, Peter Zijlstra wrote:
+> On Tue, Sep 03, 2013 at 10:26:19AM -0700, John Stultz wrote:
+>> Enabling the SCHED_FEAT(HRTICK, true) bit tends to cause lots of issues
+>> on the various hardware I have, tripping the lockdep warnings on various
+>> other issues:
+>
+> Does whatever kernel you guys are running have this commit:
 
-I'm not sure what you mean by selecting which timer to use be reading
-the current running mode. We currently decide to use CNTVCT if booted in
-PL1, or CNTPCT if booted in Hyp. I assume this isn't the mode you're
-referring to?
+That didn't seem to make a difference (it had already been pointed out 
+by Stephen Boyd).
+In any case, latest patch from John fixes the problem... Hooray! :-)
 
-Thanks,
-Mark.
+Thanks again John!
+Gerlando
 
-> 
-> Fan Rong (4):
->   Add smp support for Allwinner A20(sunxi 7i).
->   Add cpuconfig nodes in dts for smp configure.
->   Add physical count arch timer support for clocksource in ARMv7.
->   Add arch count timer node in dts for Allwinner A20(sunxi 7i).
-> 
->  arch/arm/boot/dts/sun7i-a20.dtsi     |   18 +-
->  arch/arm/include/asm/arch_timer.h    |   11 ++
->  arch/arm/mach-sunxi/Makefile         |    2 +
->  arch/arm/mach-sunxi/headsmp.S        |   12 ++
->  arch/arm/mach-sunxi/platform.h       |  346 ++++++++++++++++++++++++++++++++++
->  arch/arm/mach-sunxi/platsmp.c        |  166 ++++++++++++++++
->  arch/arm/mach-sunxi/sunxi.c          |    4 +
->  drivers/clocksource/Kconfig          |    8 +
->  drivers/clocksource/arm_arch_timer.c |   10 +-
->  9 files changed, 574 insertions(+), 3 deletions(-)
->  create mode 100644 arch/arm/mach-sunxi/headsmp.S
->  create mode 100644 arch/arm/mach-sunxi/platform.h
->  create mode 100644 arch/arm/mach-sunxi/platsmp.c
-> 
-> -- 
-> 1.7.9.5
-> 
-> 
+
+>
+> ---
+> commit 971ee28cbd1ccd87b3164facd9359a534c1d2892
+> Author: Peter Zijlstra <peterz@infradead.org>
+> Date:   Fri Jun 28 11:18:53 2013 +0200
+>
+>      sched: Fix HRTICK
+>
+>      David reported that the HRTICK sched feature was borken; which was enough
+>      motivation for me to finally fix it ;-)
+>
+>      We should not allow hrtimer code to do softirq wakeups while holding scheduler
+>      locks. The hrtimer code only needs this when we accidentally try to program an
+>      expired time. We don't much care about those anyway since we have the regular
+>      tick to fall back to.
+>
+>      Reported-by: David Ahern <dsahern@gmail.com>
+>      Tested-by: David Ahern <dsahern@gmail.com>
+>      Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+>      Link: http://lkml.kernel.org/r/20130628091853.GE29209@dyad.programming.kicks-ass.net
+>      Signed-off-by: Ingo Molnar <mingo@kernel.org>
+>
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 9b1f2e5..0d8eb45 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -370,13 +370,6 @@ static struct rq *this_rq_lock(void)
+>   #ifdef CONFIG_SCHED_HRTICK
+>   /*
+>    * Use HR-timers to deliver accurate preemption points.
+> - *
+> - * Its all a bit involved since we cannot program an hrt while holding the
+> - * rq->lock. So what we do is store a state in in rq->hrtick_* and ask for a
+> - * reschedule event.
+> - *
+> - * When we get rescheduled we reprogram the hrtick_timer outside of the
+> - * rq->lock.
+>    */
+>
+>   static void hrtick_clear(struct rq *rq)
+> @@ -404,6 +397,15 @@ static enum hrtimer_restart hrtick(struct hrtimer *timer)
+>   }
+>
+>   #ifdef CONFIG_SMP
+> +
+> +static int __hrtick_restart(struct rq *rq)
+> +{
+> +	struct hrtimer *timer = &rq->hrtick_timer;
+> +	ktime_t time = hrtimer_get_softexpires(timer);
+> +
+> +	return __hrtimer_start_range_ns(timer, time, 0, HRTIMER_MODE_ABS_PINNED, 0);
+> +}
+> +
+>   /*
+>    * called from hardirq (IPI) context
+>    */
+> @@ -412,7 +414,7 @@ static void __hrtick_start(void *arg)
+>   	struct rq *rq = arg;
+>
+>   	raw_spin_lock(&rq->lock);
+> -	hrtimer_restart(&rq->hrtick_timer);
+> +	__hrtick_restart(rq);
+>   	rq->hrtick_csd_pending = 0;
+>   	raw_spin_unlock(&rq->lock);
+>   }
+> @@ -430,7 +432,7 @@ void hrtick_start(struct rq *rq, u64 delay)
+>   	hrtimer_set_expires(timer, time);
+>
+>   	if (rq == this_rq()) {
+> -		hrtimer_restart(timer);
+> +		__hrtick_restart(rq);
+>   	} else if (!rq->hrtick_csd_pending) {
+>   		__smp_call_function_single(cpu_of(rq), &rq->hrtick_csd, 0);
+>   		rq->hrtick_csd_pending = 1;
+>
+
