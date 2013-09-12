@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756832Ab3ILUab (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 16:30:31 -0400
-Received: from www.linutronix.de ([62.245.132.108]:60974 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754216Ab3ILUa1 (ORCPT
+	id S1756869Ab3ILUaq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 16:30:46 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57605 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756509Ab3ILUab (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 16:30:27 -0400
-Date: Thu, 12 Sep 2013 22:30:15 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] tick: broadcast: Deny per-cpu clockevents from being
- broadcast sources
-In-Reply-To: <1379004640-15117-2-git-send-email-soren.brinkmann@xilinx.com>
-Message-ID: <alpine.DEB.2.02.1309122224420.4089@ionos.tec.linutronix.de>
-References: <1379004640-15117-1-git-send-email-soren.brinkmann@xilinx.com> <1379004640-15117-2-git-send-email-soren.brinkmann@xilinx.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 12 Sep 2013 16:30:31 -0400
+Date: Thu, 12 Sep 2013 22:30:20 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Dave Airlie <airlied@linux.ie>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [BUG] completely bonkers use of set_need_resched +
+ VM_FAULT_NOPAGE
+Message-ID: <20130912203020.GB1798@laptop.programming.kicks-ass.net>
+References: <20130912150645.GZ31370@twins.programming.kicks-ass.net>
+ <CAKMK7uFF2GkYapa2_DLv4WYAd0t+POaT+Vy9HG=HQhzMmtH9nA@mail.gmail.com>
+ <20130912154329.GB31370@twins.programming.kicks-ass.net>
+ <CAKMK7uFTYB-E5ksVNEBqGJusJ5TKJv5X4hiPv1mno9tJKuUAdA@mail.gmail.com>
+ <20130912162210.GE31370@twins.programming.kicks-ass.net>
+ <20130912163543.GB12961@nuc-i3427.alporthouse.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130912163543.GB12961@nuc-i3427.alporthouse.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Sep 2013, Soren Brinkmann wrote:
-> From: Stephen Boyd <sboyd@codeaurora.org>
-> 
-> On most ARM systems the per-cpu clockevents are truly per-cpu in
-> the sense that they can't be controlled on any other CPU besides
-> the CPU that they interrupt. If one of these clockevents were to
-> become a broadcast source we will run into a lot of trouble
-> because the broadcast source is enabled on the first CPU to go
-> into deep idle (if that CPU suffers from FEAT_C3_STOP) and that
-> could be a different CPU than what the clockevent is interrupting
-> (or even worse the CPU that the clockevent interrupts could be
-> offline).
-> 
-> Theoretically it's possible to support per-cpu clockevents as the
-> broadcast source but so far we haven't needed this and supporting
-> it is rather complicated. Let's just deny the possibility for now
-> until this becomes a reality (let's hope it never does!).
+On Thu, Sep 12, 2013 at 05:35:43PM +0100, Chris Wilson wrote:
+> Not quite, as it would be possible for the evil userspace to trigger a
+> GPU hang that would cause the sane userspace to spin indefinitely 
+> waiting for the error recovery to kick in.
 
-Well, we can't do it this way. There are globally accessible clock
-event devices which deliver only to cpu0. So the mask check might be
-causing failure here.
+So with FIFOn+1 preempting FIFOn its a live-lock because the faulting
+thread will forever keep yielding to itself since its the highest
+priority task around, therefore the set_need_resched() is an absolute
+NOP in that case.
 
-Just add a feature flag CLOCK_EVT_FEAT_PERCPU to the clock event
-device and check for it.
+For OTHER it might run another task with set_need_resched(), without
+set_need_resched() it'll simply spin on the fault until it runs out of
+time and gets force preempted and another task gets to run.
 
-Thanks,
+So for either case, the set_need_resched() doesn't make an appreciable
+difference.
 
-	tglx
-
+Removing it will not make evil userspace much worse -- at worst it will
+cause slightly more wasted cycles.
