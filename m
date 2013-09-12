@@ -1,187 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755047Ab3ILDRz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 23:17:55 -0400
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:17689
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751514Ab3ILDRy (ORCPT
+	id S1757486Ab3ILDTG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 23:19:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50961 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751538Ab3ILDTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 23:17:54 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(z551bizzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h1155h)
-From: Peter Chen <peter.chen@freescale.com>
-To: <rusty@rustcorp.com.au>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCH 1/1] module: Make wait module's refcount to zero procedure as async
-Date: Thu, 12 Sep 2013 11:14:36 +0800
-Message-ID: <1378955676-12708-1-git-send-email-peter.chen@freescale.com>
-X-Mailer: git-send-email 1.7.1
+	Wed, 11 Sep 2013 23:19:04 -0400
+Date: Wed, 11 Sep 2013 20:19:12 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, kay@vrfy.org, ebiederm@xmission.com,
+        netdev@vger.kernel.org, lizefan@huawei.com
+Subject: Re: [PATCHSET] sysfs: disentangle kobject namespace handling from
+ sysfs
+Message-ID: <20130912031912.GA9773@kroah.com>
+References: <1378952949-7900-1-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378952949-7900-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, if module's refcount is not zero during the unload,
-it waits there until the user decreases that refcount. Assume
-we have two modules (A & B), there are no symbol relationship
-between each other. module B is module A's user, if the end
-user tries to unload module A first wrongly, it will stop there
-until there is another user process to unload B, and this
-process can't be killed.
-One use case is: the QA engineers do error test, they unload
-module wrongly on purpose, after that, they find the console
-is stopped there, and they can't do any thing go on.
+On Wed, Sep 11, 2013 at 10:29:02PM -0400, Tejun Heo wrote:
+> Hello,
+> 
+> I'll send out multiple patchsets to separate out sysfs from driver
+> core and kobject.  The eventual goal is making sysfs modular enough so
+> that cgroup can replace its nightmarish cgroupfs implementation which
+> repeated and worsened all the past mistakes of sysfs.  This patchset
+> is first of the effort and separates out kobject namespace handling
+> from sysfs.
+> 
+> I never really understood why namespace support was added the way it
+> was added.
 
-Signed-off-by: Peter Chen <peter.chen@freescale.com>
----
- include/linux/module.h |    4 +-
- kernel/module.c        |   61 ++++++++++++++++++++++++++---------------------
- 2 files changed, 36 insertions(+), 29 deletions(-)
+I just took the patches and didn't ask questions :)
 
-diff --git a/include/linux/module.h b/include/linux/module.h
-index 05f2447..12edf07 100644
---- a/include/linux/module.h
-+++ b/include/linux/module.h
-@@ -367,8 +367,8 @@ struct module
- 	/* What modules do I depend on? */
- 	struct list_head target_list;
- 
--	/* Who is waiting for us to be unloaded */
--	struct task_struct *waiter;
-+	/* The work for waiting refcount to zero */
-+	struct work_struct wait_refcount_work;
- 
- 	/* Destruction function. */
- 	void (*exit)(void);
-diff --git a/kernel/module.c b/kernel/module.c
-index dc58274..94abc7e 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -61,6 +61,7 @@
- #include <linux/pfn.h>
- #include <linux/bsearch.h>
- #include <linux/fips.h>
-+#include <linux/delay.h>
- #include <uapi/linux/module.h>
- #include "module-internal.h"
- 
-@@ -644,8 +645,6 @@ static int module_unload_init(struct module *mod)
- 
- 	/* Hold reference count during initialization. */
- 	__this_cpu_write(mod->refptr->incs, 1);
--	/* Backwards compatibility macros put refcount during init. */
--	mod->waiter = current;
- 
- 	return 0;
- }
-@@ -813,19 +812,38 @@ EXPORT_SYMBOL(module_refcount);
- /* This exists whether we can unload or not */
- static void free_module(struct module *mod);
- 
-+/* Final destruction now no one is using it. */
-+static void module_final_free(struct module *mod)
-+{
-+	if (mod->exit != NULL)
-+		mod->exit();
-+	blocking_notifier_call_chain(&module_notify_list,
-+				     MODULE_STATE_GOING, mod);
-+	async_synchronize_full();
-+
-+	/* Store the name of the last unloaded module for diagnostic purposes */
-+	strlcpy(last_unloaded_module, mod->name, sizeof(last_unloaded_module));
-+
-+	free_module(mod);
-+}
-+
- static void wait_for_zero_refcount(struct module *mod)
- {
--	/* Since we might sleep for some time, release the mutex first */
--	mutex_unlock(&module_mutex);
- 	for (;;) {
- 		pr_debug("Looking at refcount...\n");
--		set_current_state(TASK_UNINTERRUPTIBLE);
- 		if (module_refcount(mod) == 0)
- 			break;
--		schedule();
-+		msleep(1000);
- 	}
--	current->state = TASK_RUNNING;
--	mutex_lock(&module_mutex);
-+	module_final_free(mod);
-+}
-+
-+static void wait_module_refcount(struct work_struct *work)
-+{
-+	struct module *mod = container_of(work,
-+		struct module, wait_refcount_work);
-+
-+	wait_for_zero_refcount(mod);
- }
- 
- SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
-@@ -859,8 +877,7 @@ SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
- 
- 	/* Doing init or already dying? */
- 	if (mod->state != MODULE_STATE_LIVE) {
--		/* FIXME: if (force), slam module count and wake up
--                   waiter --RR */
-+		/* FIXME: if (force), slam module count */
- 		pr_debug("%s already dying\n", mod->name);
- 		ret = -EBUSY;
- 		goto out;
-@@ -876,30 +893,23 @@ SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
- 		}
- 	}
- 
--	/* Set this up before setting mod->state */
--	mod->waiter = current;
--
- 	/* Stop the machine so refcounts can't move and disable module. */
- 	ret = try_stop_module(mod, flags, &forced);
- 	if (ret != 0)
- 		goto out;
- 
- 	/* Never wait if forced. */
--	if (!forced && module_refcount(mod) != 0)
--		wait_for_zero_refcount(mod);
-+	if (!forced && module_refcount(mod) != 0) {
-+		INIT_WORK(&mod->wait_refcount_work, wait_module_refcount);
-+		schedule_work(&mod->wait_refcount_work);
-+		ret = -EBUSY;
-+		goto out;
-+	}
- 
- 	mutex_unlock(&module_mutex);
--	/* Final destruction now no one is using it. */
--	if (mod->exit != NULL)
--		mod->exit();
--	blocking_notifier_call_chain(&module_notify_list,
--				     MODULE_STATE_GOING, mod);
--	async_synchronize_full();
- 
--	/* Store the name of the last unloaded module for diagnostic purposes */
--	strlcpy(last_unloaded_module, mod->name, sizeof(last_unloaded_module));
-+	module_final_free(mod);
- 
--	free_module(mod);
- 	return 0;
- out:
- 	mutex_unlock(&module_mutex);
-@@ -1005,9 +1015,6 @@ void module_put(struct module *module)
- 		__this_cpu_inc(module->refptr->decs);
- 
- 		trace_module_put(module, _RET_IP_);
--		/* Maybe they're waiting for us to drop reference? */
--		if (unlikely(!module_is_live(module)))
--			wake_up_process(module->waiter);
- 		preempt_enable();
- 	}
- }
--- 
-1.7.1
+> Namespace information is communicated to sysfs via
+> callbacks and back-queries to upper layer, which is a very unusual and
+> weird thing to do when all the involved operations are synchronous.
+> For example, a tagged attribute creation looks like the following.
+> 
+>  driver code                    driver callback
+>         v                                 ^
+>  netdev_class_create_file()               |
+>         v                       class_attr->namespace()
+>  class_create_file()            class_attr_namespace()
+>         v                                 |
+>  sysfs_create_file()	                  |
+>         v                                 |
+>  sysfs_attr_ns() -------------> sysfs_ops->namespace()
+> 
+> This is an absurd thing to do.  It significantly obfuscates what's
+> going on and adds unnecessary uncertainties - for example, can
+> namespace() return value disagree with the recorded s_ns value without
+> being renamed?  If so, how should that be handled?  If not, what
+> guarantees that?  Even the basic placements of callbacks don't make
+> much, if any, sense.  Why is per-directory namespace() callback in
+> kobj_type while per-attr namespace() callback is in sysfs_ops?  What
+> does this even mean?
+> 
+> Maybe there's some grand design scheme governing all this but it isn't
+> obvious at all and the whole thing looks like a hodgepodge of
+> short-sighted hacks.
+> 
+> There is absolutely *nothing* which requires this convolution.  NS tag
+> can simply be passed down the stack just like any other type of
+> information and adding an extra argument or variant of interface to
+> pass down the extra information is way more straight-forward and
+> apparently even takes less amount of code, so let's please stop the
+> insanity.
+> 
+> This patchset contains the following seven patches.
+> 
+>  0001-sysfs-drop-semicolon-from-to_sysfs_dirent-definition.patch
+>  0002-sysfs-make-attr-namespace-interface-less-convoluted.patch
+>  0003-sysfs-remove-ktype-namespace-invocations-in-director.patch
+>  0004-sysfs-remove-ktype-namespace-invocations-in-symlink-.patch
+>  0005-sysfs-drop-kobj_ns_type-handling.patch
+>  0006-sysfs-clean-up-sysfs_get_dirent.patch
+>  0007-sysfs-name-comes-before-ns.patch
+> 
+> 0001 is a minor prep patch.
+> 
+> 0002 removes the attr namespace callback.
+> 
+> 0003-0004 push the dir namespace callback invocations from sysfs to
+> kobjct layer.  Eventually, this callback should go too.
+> 
+> 0005 simplifies sysfs ns support such that sysfs doesn't have any
+> specific knowledge of kobj namespaces.  It now purely deals with
+> pointer tags.  Combined with the previous changes, this makes sysfs ns
+> support mostly modular.
+> 
+> 0006-0007 are cleanup patches to make param orders conventional and
+> consistent - optional param after mandatory one; otherwise, things get
+> extremely confusing with different variants of interfaces which take
+> or don't take optional params.  No idea how/why this was done the
+> wrong way.
+> 
+> This patchset is based on top of the current master
+> c2d95729e3094ecdd8c54e856bbe971adbbd7f48 ("Merge branch 'akpm'
+> (patches from Andrew Morton)") and available in the following git
+> branch.
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-sysfs-separate-out-ns
 
+Nice job with these.  Do you want me to add them to my tree for 3.13, or
+do you want to take them through yours as you will be building on top of
+them?
 
+If yours, feel free to add:
+	Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+To all of these.
+
+And thanks for cleaning this up, it looks much better now.
+
+greg k-h
