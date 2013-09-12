@@ -1,93 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755282Ab3ILVu6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 17:50:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:49041 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754781Ab3ILVu4 (ORCPT
+	id S1755538Ab3ILVwE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 17:52:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59330 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753768Ab3ILVwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 17:50:56 -0400
-Message-ID: <52323734.4070908@canonical.com>
-Date: Thu, 12 Sep 2013 23:50:44 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Thomas Hellstrom <thellstrom@vmware.com>
-CC: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Peter Zijlstra <peterz@infradead.org>, Dave Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
+	Thu, 12 Sep 2013 17:52:01 -0400
+Date: Thu, 12 Sep 2013 14:52:00 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Stefan Lippers-Hollmann <s.L-H@gmx.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [BUG] completely bonkers use of set_need_resched + VM_FAULT_NOPAGE
-References: <20130912150645.GZ31370@twins.programming.kicks-ass.net> <CAKMK7uFF2GkYapa2_DLv4WYAd0t+POaT+Vy9HG=HQhzMmtH9nA@mail.gmail.com> <5231E18D.7070306@canonical.com> <5231EF5A.7010901@vmware.com>
-In-Reply-To: <5231EF5A.7010901@vmware.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [ 00/16] 3.11.1-stable review
+Message-ID: <20130912215200.GA8630@kroah.com>
+References: <20130912181156.173326121@linuxfoundation.org>
+ <20130912182240.GA10404@kroah.com>
+ <20130912182730.GA11890@kroah.com>
+ <201309122142.06194.s.L-H@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201309122142.06194.s.L-H@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 12-09-13 18:44, Thomas Hellstrom schreef:
-> On 09/12/2013 05:45 PM, Maarten Lankhorst wrote:
->> Op 12-09-13 17:36, Daniel Vetter schreef:
->>> On Thu, Sep 12, 2013 at 5:06 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->>>> So I'm poking around the preemption code and stumbled upon:
->>>>
->>>> drivers/gpu/drm/i915/i915_gem.c:                set_need_resched();
->>>> drivers/gpu/drm/ttm/ttm_bo_vm.c:                        set_need_resched();
->>>> drivers/gpu/drm/ttm/ttm_bo_vm.c:                        set_need_resched();
->>>> drivers/gpu/drm/udl/udl_gem.c:          set_need_resched();
->>>>
->>>> All these sites basically do:
->>>>
->>>>    while (!trylock())
->>>>          yield();
->>>>
->>>> which is a horrible and broken locking pattern.
->>>>
->>>> Firstly its deadlock prone, suppose the faulting process is a FIFOn+1
->>>> task that preempted the lock holder at FIFOn.
->>>>
->>>> Secondly the implementation is worse than usual by abusing
->>>> VM_FAULT_NOPAGE, which is supposed to install a PTE so that the fault
->>>> doesn't retry, but you're using it as a get out of fault path. And
->>>> you're using set_need_resched() which is not something a driver should
->>>> _ever_ touch.
->>>>
->>>> Now I'm going to take away set_need_resched() -- and while you can
->>>> 'reimplement' it using set_thread_flag() you're not going to do that
->>>> because it will be broken due to changes to the preempt code.
->>>>
->>>> So please as to fix ASAP and don't allow anybody to trick you into
->>>> merging silly things like that again ;-)
->>> The set_need_resched in i915_gem.c:i915_gem_fault can actually be
->>> removed. It was there to give the error handler a chance to sneak in
->>> and reset the hw/sw tracking when the gpu is dead. That hack goes back
->>> to the days when the locking around our error handler was somewhere
->>> between nonexistent and totally broken, nowadays we keep things from
->>> live-locking by a bit of magic in i915_mutex_lock_interruptible. I'll
->>> whip up a patch to rip this out. I'll also check that our testsuite
->>> properly exercises this path (needs a bit of work on a quick look for
->>> better coverage).
->>>
->>> The one in ttm is just bonghits to shut up lockdep: ttm can recurse
->>> into it's own pagefault handler and then deadlock, the trylock just
->>> keeps lockdep quiet. We've had that bug arise in drm/i915 due to some
->>> fun userspace did and now have testcases for them. The right solution
->>> to fix this is to use copy_to|from_user_atomic in ttm everywhere it
->>> holds locks and have slowpaths which drops locks, copies stuff into a
->>> temp allocation and then continues. At least that's how we've fixed
->>> all those inversions in i915-gem. I'm not volunteering to fix this ;-)
->> Ah the case where a mmap'd address is passed to the execbuf ioctl? :P
->>
->> Fine I'll look into it a bit, hopefully before tuesday. Else it might take a bit longer since I'll be on my way to plumbers..
->
-> I think a possible fix would be if fault() were allowed to return an error and drop the mmap_sem() before returning.
->
-> Otherwise we need to track down all copy_to_user / copy_from_user which happen with bo::reserve held.
-CONFIG_PROVE_LOCKING=y
+On Thu, Sep 12, 2013 at 09:41:59PM +0000, Stefan Lippers-Hollmann wrote:
+> Hi
+> 
+> On Thursday 12 September 2013, Greg Kroah-Hartman wrote:
+> > On Thu, Sep 12, 2013 at 11:22:40AM -0700, Greg Kroah-Hartman wrote:
+> > > On Thu, Sep 12, 2013 at 11:18:40AM -0700, Linus Torvalds wrote:
+> > > > On Thu, Sep 12, 2013 at 11:17 AM, Linus Torvalds
+> > > > <torvalds@linux-foundation.org> wrote:
+> > > > > Your script may be a bit buggered...
+> > > > 
+> > > > Or maybe I should take that as a sign that 3.11 is doing really well?
+> > > > 
+> > > > I'll be optimistic.
+> > > 
+> > > Hm, something went wrong here, let me track it down...
+> > 
+> > Ok, that was my fault, was working off of a 'master' branch in a repo
+> > that expected it to be on the linux-3.11.y branch.  Here's the real
+> > pseudo-shortlog below.
+> […]
+> 
+> This unfortunately affects the linked patch files as well, which are as
+> empty as the shortlog (compressed zero byte files); the sha256sum are 
+> correct:
+> 
+> $ wget -qO- kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.11.1-rc1.gz | gzip -d
+> $
+> 
+> $ wget -qO- kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.11.1-rc1.bz2 | bzip2 -d
+> $
+> 
+> $ wget -qO- kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.11.1-rc1.xz | xz -d
+> xz: (stdin): File format not recognized
 
-and hard grab that reserve lock within the fault handler, done.. lockdep will spit it out for you :p
+Ah, good catch, I've copied up the patch properly and it should mirror
+out soon.
 
-~Maarten
+thanks,
+
+greg k-h
