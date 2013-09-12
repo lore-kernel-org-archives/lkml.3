@@ -1,56 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127Ab3ILPKM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 11:10:12 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:45981 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753105Ab3ILPKK (ORCPT
+	id S1754161Ab3ILPKf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 11:10:35 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54699 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752703Ab3ILPKe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 11:10:10 -0400
-Message-ID: <5231D949.8010408@colorfullife.com>
-Date: Thu, 12 Sep 2013 17:10:01 +0200
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Thu, 12 Sep 2013 11:10:34 -0400
+Message-ID: <5231D953.4070908@ti.com>
+Date: Thu, 12 Sep 2013 20:40:11 +0530
+From: Balaji T K <balajitk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-To: davidlohr.bueso@hp.com
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sedat Dilek <sedat.dilek@gmail.com>
-Subject: Re: [PATCH] ipc,msg: shorten critical region in msgsnd
-References: <5231B181.7080705@colorfullife.com>
-In-Reply-To: <5231B181.7080705@colorfullife.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Matt Porter <matt.porter@linaro.org>, Chris Ball <cjb@laptop.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>, Tony Lindgren <tony@atomide.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: Uninitialized rx_req/tx_req (was: Re: [PATCH v2 2/3] mmc: omap_hsmmc:
+ Skip platform_get_resource_byname() for dt case)
+References: <CAMuHMdVVjkZBZyJe2qnUxHeRVo+8WD_Vx1ZKin_pA7XLRCW8uw@mail.gmail.com>
+In-Reply-To: <CAMuHMdVVjkZBZyJe2qnUxHeRVo+8WD_Vx1ZKin_pA7XLRCW8uw@mail.gmail.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-
-On 09/12/2013 02:20 PM, Manfred Spraul wrote:
+On Thursday 12 September 2013 06:11 PM, Geert Uytterhoeven wrote:
+> On Tue, Mar 5, 2013 at 10:13 PM, Matt Porter <mporter@ti.com> wrote:
+>> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>
+>> MMC driver probe will abort for DT case because of failed
+>> platform_get_resource_byname() lookup. Fix it by skipping resource
+>> byname lookup for device tree build.
+>>
+>> Issue is hidden because hwmod popullates the IO resources which
+>> helps to succeed platform_get_resource_byname() and probe.
+>>
+>> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> ---
+>>   drivers/mmc/host/omap_hsmmc.c |   28 +++++++++++++++-------------
+>>   1 file changed, 15 insertions(+), 13 deletions(-)
+>>
+>> diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+>> index e79b12d..8ae1225 100644
+>> --- a/drivers/mmc/host/omap_hsmmc.c
+>> +++ b/drivers/mmc/host/omap_hsmmc.c
+>> @@ -1896,21 +1896,23 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
+>>
+>>          omap_hsmmc_conf_bus_power(host);
+>>
+>> -       res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "tx");
+>> -       if (!res) {
+>> -               dev_err(mmc_dev(host->mmc), "cannot get DMA TX channel\n");
+>> -               ret = -ENXIO;
+>> -               goto err_irq;
+>> -       }
+>> -       tx_req = res->start;
+>> +       if (!pdev->dev.of_node) {
+>> +               res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "tx");
+>> +               if (!res) {
+>> +                       dev_err(mmc_dev(host->mmc), "cannot get DMA TX channel\n");
+>> +                       ret = -ENXIO;
+>> +                       goto err_irq;
+>> +               }
+>> +               tx_req = res->start;
+>>
+>> -       res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "rx");
+>> -       if (!res) {
+>> -               dev_err(mmc_dev(host->mmc), "cannot get DMA RX channel\n");
+>> -               ret = -ENXIO;
+>> -               goto err_irq;
+>> +               res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "rx");
+>> +               if (!res) {
+>> +                       dev_err(mmc_dev(host->mmc), "cannot get DMA RX channel\n");
+>> +                       ret = -ENXIO;
+>> +                       goto err_irq;
+>> +               }
+>> +               rx_req = res->start;
+>>          }
+>> -       rx_req = res->start;
+>>
+>>          dma_cap_zero(mask);
+>>          dma_cap_set(DMA_SLAVE, mask);
 >
-> And: What about the other users of obtain_object_check?
-> exit_sem() is also quite long, but I didn't spot any obvious problems.
+> Now this is in mainline, I get (gcc 4.1.2):
 >
-a) I think semtimed(), msgsnd() and msgrcv() must be fixed:
-They either leak memory or tasks can sleep forever.
-I haven't checked the shm code, I would expect that there are similar 
-problems.
+> drivers/mmc/host/omap_hsmmc.c: In function ‘omap_hsmmc_probe’:
+> drivers/mmc/host/omap_hsmmc.c:1779: warning: ‘rx_req’ may be used
+> uninitialized in this function
+> drivers/mmc/host/omap_hsmmc.c:1779: warning: ‘tx_req’ may be used
+> uninitialized in this function
+>
+> Indeed, rx_req and tx_req are not initialized in the DT case.
+>
+> Initializing them to zero is probably not the right fix. Where are the values
+> supposed to come from in the DT case?
+>
+> Gr{oetje,eeting}s,
+>
+>                          Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                  -- Linus Torvalds
+>
 
-b) There are additional races at least with selinux:
-security/selinux/hooks.c
-- selinux_sem_semop() accesses sma->sem_perm.security->sid.
-- selinux_sem_free_security() does kfree() q_perm.security.
-
-Right now, both operations can happen in parallel -> use after free.
-
-I think the security_xx_yy() calls within ipc/*.c must only be called:
-     - after checking _perm.deleted
-     - with ipc_perm.lock acquired (to prevent parallel RMID calls).
-
-Davidlohr:
-What would be your proposal?
-
---
-     Manfred
