@@ -1,60 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756173Ab3ILXNv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 19:13:51 -0400
-Received: from cns1-135.icoremail.net ([120.31.129.135]:40379 "HELO
-	cns1-7.icoremail.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with SMTP id S1753406Ab3ILXNu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 19:13:50 -0400
-Date: Fri, 13 Sep 2013 07:01:32 +0800
-From: "Sunny" <sales4@chinamiaoji.com>
-Reply-To: northchinalutuo@eastlutuo.com
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: A4 paper and A3 paper
-Message-ID: <201309130701325312585@chinamiaoji.com>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
-X-CM-TRANSID: SwGowHC7KAawRzJSSraoAA--.1219S4
-X-Coremail-Antispam: 1UD129KBjDUn29KB7ZKAUJUUUUU529EdanIXcx71UUUUU7v73
-	VFW2AGmfu7bjvjm3AaLaJ3UjIYCTnIWjp_UUUFX7k042IEc7kJM7k042IE4IxYO2xFxVAq
-	jxCEw4Av424lb7IF0VCFIxCj07C26xAqzxv262kKe7AKxwAYjxAI6xCI4x8I1I0E4c8EcI
-	0Ec7CjxVAaw2AFwI1lb7IF0VCFIxCj07C26xCIbckI1I0E14v7M7k0a2IF6F4UM7kC6x80
-	4xWl14x267AKxVWUJVW8JwAFc2x0x2IEx4CE42xK8VAvwI8IcIk0rVWrJVCq3wAFIxvE14
-	AKwVWUJVWUGwA2ocxC64kIII0Yj41l84x0c7CEw4AK67xGY2AK021l84ACjcxK6xIIjxv2
-	0xvE14v26F1j6w1UM28EF7xvwVC0I7IYx2IY6xkF7I0E14v26r4j6F4UM28EF7xvwVC2z2
-	80aVAFwI0_GcCE3s1l84ACjcxK6I8E87Iv6xkF7I0E14v26rxl6s0DM2kK64x0aVW7GwIE
-	548m6rI_Jw1UWr17M2kK64x0aVW7GwIE548m6rv_Jw1UWr17M2AIxVAIcxkEcVAq07x20x
-	vEncxIr21l57IF6s8CjcxG0xyl5I8CrVACY4xI64kE6c02F40Ex7xfMcIj6xIIjxv20xvE
-	14v26r1q6rW5McIj6I8E87Iv67AKxVWxJr0_GcWlOx8S6xCaFVCjc4AY6r1j6r4UM4x0Y4
-	8IcxkI7VAKI48JM4xvF2IEb7IF0Fy264kE64k0F24lFcxC0VAYjxAxZF0Ex2IqxwCY02Av
-	z4vE14v_uwCF04k20xvY0x0EwIxGrwCF54CYxVAaw2AFwI0_Wryj6r4UJr1l4c8EcI0Ec7
-	CjxVAaw2AFwI0_Wryj6r4UJr1l4I8I3I0E4IkC6x0Yz7v_Jr0_Gr1l4IxYO2xFxVAFwI0_
-	Wryj6r4UJr1l4IxY624lx2IqxVAqx4xG67AKxVWUJVWUGwC20s026x8GjcxK67AKxVWUGV
-	WUWwC2zVAF1VAY17CE14v26r1j6r15MIIYrxkI7VAKI48JMIIF0xvE2Ix0cI8IcVAFwI0_
-	Jr0_JF4lIxAIcVC0I7IYx2IY6xkF7I0E14v26r1j6r4UMIIF0xvE42xK8VAvwI8IcIk0rV
-	W3JVWrJr1lIxAIcVC2z280aVAFwI0_Gr1j6F4UJwCI42IY6I8E87Iv6xkF7I0E14v26r4U
-	JVWxJr1l6VACY4xI67k04243AbIYCTnIWIevJa73UjIFyTuYvjxUvZXODUUUU
-X-Originating-IP: [110.241.72.178]
-X-CM-SenderInfo: 5vdov2uu6fxx5qdpxtxrmlhudrp/
+	id S1756482Ab3ILXVG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 19:21:06 -0400
+Received: from ozlabs.org ([203.10.76.45]:56404 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755450Ab3ILXVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 19:21:04 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de,
+        tip-bot for Peter Zijlstra <tipbot@zytor.com>
+cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/core] sched/fair: Fix group power_orig computation
+In-reply-to: <tip-db2pe0vxwunv37plc7onnugj@git.kernel.org>
+References: <tip-db2pe0vxwunv37plc7onnugj@git.kernel.org>
+Comments: In-reply-to tip-bot for Peter Zijlstra <tipbot@zytor.com>
+   message dated "Thu, 12 Sep 2013 11:05:45 -0700."
+X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
+Date: Fri, 13 Sep 2013 09:21:03 +1000
+Message-ID: <18117.1379028063@ale.ozlabs.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8CNEIPx017197
 
-Dear Purchasing manager:
-here is paper leading supplier from China
-our main products include A3 copy paper, A4 copy paper, offset paper, newsprint paper and so on
-we can do the packing as customer's request
-if you need any of them please reply me
-Best wishes
-Sunny
+tip-bot for Peter Zijlstra <tipbot@zytor.com> wrote:
 
-Manager
-North China Lutuo international Co., Limited
-Tel:+86-311-69012252
-Skype: northchinalutuo
-Email:northchinalutuo@eastlutuo.comÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> Commit-ID:  863bffc80898b8df295ebac111af2335ec05f85d
+> Gitweb:     http://git.kernel.org/tip/863bffc80898b8df295ebac111af2335ec05f85d
+> Author:     Peter Zijlstra <peterz@infradead.org>
+> AuthorDate: Wed, 28 Aug 2013 11:44:39 +0200
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Thu, 12 Sep 2013 19:14:43 +0200
+> 
+> sched/fair: Fix group power_orig computation
+> 
+> When looking at the code I noticed we don't actually compute
+> sgp->power_orig correctly for groups, fix that.
+> 
+> Currently the only consumer of that value is fix_small_capacity()
+> which is only used on POWER7+ and that code excludes this case by
+> being limited to SD_SHARE_CPUPOWER which is only ever set on the SMT
+> domain which must be the lowest domain and this has singleton groups.
+> 
+> So nothing should be affected by this change.
+> 
+> Cc: Michael Neuling <mikey@neuling.org>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Link: http://lkml.kernel.org/n/tip-db2pe0vxwunv37plc7onnugj@git.kernel.org
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+
+FWIW, this doesn't seem to break POWER7.  
+
+Thanks!
+Mikey
+
+> ---
+>  kernel/sched/fair.c | 16 +++++++++++-----
+>  1 file changed, 11 insertions(+), 5 deletions(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index f9f4385..baba313 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -4450,7 +4450,7 @@ void update_group_power(struct sched_domain *sd, int cpu)
+>  {
+>  	struct sched_domain *child = sd->child;
+>  	struct sched_group *group, *sdg = sd->groups;
+> -	unsigned long power;
+> +	unsigned long power, power_orig;
+>  	unsigned long interval;
+>  
+>  	interval = msecs_to_jiffies(sd->balance_interval);
+> @@ -4462,7 +4462,7 @@ void update_group_power(struct sched_domain *sd, int cpu)
+>  		return;
+>  	}
+>  
+> -	power = 0;
+> +	power_orig = power = 0;
+>  
+>  	if (child->flags & SD_OVERLAP) {
+>  		/*
+> @@ -4470,8 +4470,12 @@ void update_group_power(struct sched_domain *sd, int cpu)
+>  		 * span the current group.
+>  		 */
+>  
+> -		for_each_cpu(cpu, sched_group_cpus(sdg))
+> -			power += power_of(cpu);
+> +		for_each_cpu(cpu, sched_group_cpus(sdg)) {
+> +			struct sched_group *sg = cpu_rq(cpu)->sd->groups;
+> +
+> +			power_orig += sg->sgp->power_orig;
+> +			power += sg->sgp->power;
+> +		}
+>  	} else  {
+>  		/*
+>  		 * !SD_OVERLAP domains can assume that child groups
+> @@ -4480,12 +4484,14 @@ void update_group_power(struct sched_domain *sd, int cpu)
+>  
+>  		group = child->groups;
+>  		do {
+> +			power_orig += group->sgp->power_orig;
+>  			power += group->sgp->power;
+>  			group = group->next;
+>  		} while (group != child->groups);
+>  	}
+>  
+> -	sdg->sgp->power_orig = sdg->sgp->power = power;
+> +	sdg->sgp->power_orig = power_orig;
+> +	sdg->sgp->power = power;
+>  }
+>  
+>  /*
+> 
