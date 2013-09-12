@@ -1,93 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754751Ab3ILQdu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 12:33:50 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29399 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753419Ab3ILQdt (ORCPT
+	id S1754826Ab3ILQfB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 12:35:01 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:54239 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754539Ab3ILQe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 12:33:49 -0400
-X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=8Xn6f6vUUR8A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=bsfkZG73aToA:10 a=pGLkceISAAAA:8 a=yNmjjCb9rB8HNEUXgLwA:9 a=CjuIK1q_8ugA:10 a=MSl-tDqOz04A:10 a=q9VEUjVdft50Nz9H:21 a=vg8MSBqdHlSUL3h5:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Thu, 12 Sep 2013 12:33:47 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Wang YanQing <udknight@gmail.com>
-Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]trace: fix wrong help information about snapshot
-Message-ID: <20130912123347.5bf5de1e@gandalf.local.home>
-In-Reply-To: <20130912150401.GA3960@udknight>
-References: <20130912150401.GA3960@udknight>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 12 Sep 2013 12:34:59 -0400
+Message-ID: <5231ED31.7080102@codeaurora.org>
+Date: Thu, 12 Sep 2013 09:34:57 -0700
+From: Rohit Vaswani <rvaswani@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: David Brown <davidb@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
+        devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-arm-msm@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] ARM: msm: Add support for MSM8974 Dragonboard
+References: <1375743779-24993-1-git-send-email-rvaswani@codeaurora.org>  <1375780486.2725.7.camel@iivanov-dev.int.mm-sol.com>  <20130911180006.GA12624@codeaurora.org> <1378994706.16481.6.camel@iivanov-dev.int.mm-sol.com>
+In-Reply-To: <1378994706.16481.6.camel@iivanov-dev.int.mm-sol.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Sep 2013 23:04:01 +0800
-Wang YanQing <udknight@gmail.com> wrote:
+On 9/12/2013 7:05 AM, Ivan T. Ivanov wrote:
+> Hi,
+>
+> On Wed, 2013-09-11 at 11:00 -0700, David Brown wrote:
+>> On Tue, Aug 06, 2013 at 12:14:46PM +0300, Ivan T. Ivanov wrote:
+>>
+>>> Attached patch enables earlyprink for this board.
+>>>
+>>> [920] booting linux @ 0x8000, ramdisk @ 0x2000000 (1067699), tags/device tree @ 0x1e00000
+>>> Uncompressing Linux... done, booting the kernel.
+>>> [    0.000000] Booting Linux on physical CPU 0x0
+>>> [    0.000000] Linux version 3.11.0-rc4-00003-g7c8394e (iivanov@dev) (gcc version 4.6.3 (GCC) ) #502 SMP PREEMPT Tue Aug 6 12:09:07 EEST3
+>>> [    0.000000] CPU: ARMv7 Processor [512f06f0] revision 0 (ARMv7), cr=10c5387d
+>>> [    0.000000] CPU: PIPT / VIPT nonaliasing data cache, PIPT instruction cache
+>>> [    0.000000] Machine: Qualcomm MSM (Flattened Device Tree), model: Qualcomm MSM8974 Dragonboard
+>> We'll need to have either Rohit include this in his patch series, or
+>> you'll have to format this as a valid patch.
+> I don't have preferences. Rohit could you send this patch
+> with you changes?
 
-> 
-> Cat snapshot give me:
-> " tracer: nop
-> 
->  * Snapshot is freed *
-> 
->  Snapshot commands:
->  echo 0 > snapshot : Clears and frees snapshot buffer
->  echo 1 > snapshot : Allocates snapshot buffer, if not already allocated.
->                       Takes a snapshot of the main buffer.
->  echo 2 > snapshot : Clears snapshot buffer (but does not allocate)
->                       (Doesn't have to be '2' works with any number that
->                        is not a '0' or '1')"
-> 
-> But after read the code, I found the right information about "echo 2 > snapshot"
-> should looks like below:
-> 
-> " echo 2 > snapshot : Clears snapshot buffer (but does not free)
->                       (Doesn't have to be '2' works with any number that
->                        is not a '0' or '1')"
-
-Actually, they both are correct:
-
-	default:
-		if (tr->allocated_snapshot) {
-			if (iter->cpu_file == RING_BUFFER_ALL_CPUS)
-				tracing_reset_online_cpus(&tr->max_buffer);
-			else
-				tracing_reset(&tr->max_buffer,	iter->cpu_file);
-		}
-		break;
-	}
-
-It does nothing if it isn't allocated.
-
-Perhaps we need it to say "(but does not allocate or free)"
-
--- Steve
+Yep. Will fixup this as part of the initial support.
+> Regards,
+> Ivan
+>
+>> Thanks,
+>> David
+>>
+>
 
 
+Thanks,
+Rohit Vaswani
 
-> 
-> Signed-off-by: Wang YanQing <udknight@gmail.com>
-> ---
->  kernel/trace/trace.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index 7974ba2..d0da660 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -2760,7 +2760,7 @@ static void show_snapshot_main_help(struct seq_file *m)
->  	seq_printf(m, "# echo 0 > snapshot : Clears and frees snapshot buffer\n");
->  	seq_printf(m, "# echo 1 > snapshot : Allocates snapshot buffer, if not already allocated.\n");
->  	seq_printf(m, "#                      Takes a snapshot of the main buffer.\n");
-> -	seq_printf(m, "# echo 2 > snapshot : Clears snapshot buffer (but does not allocate)\n");
-> +	seq_printf(m, "# echo 2 > snapshot : Clears snapshot buffer (but does not free)\n");
->  	seq_printf(m, "#                      (Doesn't have to be '2' works with any number that\n");
->  	seq_printf(m, "#                       is not a '0' or '1')\n");
->  }
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, hosted by The Linux Foundation
 
