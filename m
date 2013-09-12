@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757622Ab3ILC31 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 22:29:27 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:51281 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752613Ab3ILC3Y (ORCPT
+	id S1757696Ab3ILCar (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 22:30:47 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:46955 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757596Ab3ILC3Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 22:29:24 -0400
+	Wed, 11 Sep 2013 22:29:25 -0400
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, kay@vrfy.org, ebiederm@xmission.com,
         netdev@vger.kernel.org, lizefan@huawei.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3/7] sysfs: remove ktype->namespace() invocations in directory code
-Date: Wed, 11 Sep 2013 22:29:05 -0400
-Message-Id: <1378952949-7900-4-git-send-email-tj@kernel.org>
+Subject: [PATCH 4/7] sysfs: remove ktype->namespace() invocations in symlink code
+Date: Wed, 11 Sep 2013 22:29:06 -0400
+Message-Id: <1378952949-7900-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1378952949-7900-1-git-send-email-tj@kernel.org>
 References: <1378952949-7900-1-git-send-email-tj@kernel.org>
@@ -21,232 +21,160 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For some unrecognizable reason, namespace information is communicated
-to sysfs through ktype->namespace() callback when there's *nothing*
-which needs the use of a callback.  The whole sequence of operations
-is completely synchronous and sysfs operations simply end up calling
-back into the layer which just invoked it in order to find out the
-namespace information, which is completely backwards, obfuscates
-what's going on and unnecessarily tangles two separate layers.
+There's no reason for sysfs to be calling ktype->namespace().  It is
+backwards, obfuscates what's going on and unnecessarily tangles two
+separate layers.
 
-This patch doesn't remove ktype->namespace() but shifts its handling
-to kobject layer.  We probably want to get rid of the callback in the
-long term.
+There are two places where symlink code calls ktype->namespace().
 
-This patch adds an explicit param to sysfs_{create|rename|move}_dir()
-and renames them to sysfs_{create|rename|move}_dir_ns(), respectively.
-ktype->namespace() invocations are moved to the calling sites of the
-above functions.  A new helper kboject_namespace() is introduced which
-directly tests kobj_ns_type_operations->type which should give the
-same result as testing sysfs_fs_type(parent_sd) and returns @kobj's
-namespace tag as necessary.  kobject_namespace() is extern as it will
-be used from another file in the following patches.
+* sysfs_do_create_link_sd() calls it to find out the namespace tag of
+  the target directory.  Unless symlinking races with cross-namespace
+  renaming, this equals @target_sd->s_ns.
 
-This patch should be an equivalent conversion without any functional
+* sysfs_rename_link() uses it to find out the new namespace to rename
+  to and the new namespace can be different from the existing one.
+  The function is renamed to sysfs_rename_link_ns() with an explicit
+  @ns argument and the ktype->namespace() invocation is shifted to the
+  device layer.
+
+While this patch replaces ktype->namespace() invocation with the
+recorded result in @target_sd, this shouldn't result in any behvior
 difference.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Eric W. Biederman <ebiederm@xmission.com>
 Cc: Kay Sievers <kay@vrfy.org>
 ---
- fs/sysfs/dir.c          | 23 ++++++++---------------
- include/linux/kobject.h |  1 +
- include/linux/sysfs.h   | 20 ++++++++++++--------
- lib/kobject.c           | 28 ++++++++++++++++++++++++----
- 4 files changed, 45 insertions(+), 27 deletions(-)
+ drivers/base/core.c   |  8 +++++---
+ fs/sysfs/symlink.c    | 16 +++++++---------
+ include/linux/sysfs.h | 16 ++++++++++++----
+ 3 files changed, 24 insertions(+), 16 deletions(-)
 
-diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index 834c64c..878ac3a 100644
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -730,14 +730,14 @@ static enum kobj_ns_type sysfs_read_ns_type(struct kobject *kobj)
- }
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index c7cfadc..3335000 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -1881,6 +1881,7 @@ EXPORT_SYMBOL_GPL(device_destroy);
+  */
+ int device_rename(struct device *dev, const char *new_name)
+ {
++	struct kobject *kobj = &dev->kobj;
+ 	char *old_device_name = NULL;
+ 	int error;
+ 
+@@ -1898,13 +1899,14 @@ int device_rename(struct device *dev, const char *new_name)
+ 	}
+ 
+ 	if (dev->class) {
+-		error = sysfs_rename_link(&dev->class->p->subsys.kobj,
+-			&dev->kobj, old_device_name, new_name);
++		error = sysfs_rename_link_ns(&dev->class->p->subsys.kobj,
++					     kobj, old_device_name,
++					     new_name, kobject_namespace(kobj));
+ 		if (error)
+ 			goto out;
+ 	}
+ 
+-	error = kobject_rename(&dev->kobj, new_name);
++	error = kobject_rename(kobj, new_name);
+ 	if (error)
+ 		goto out;
+ 
+diff --git a/fs/sysfs/symlink.c b/fs/sysfs/symlink.c
+index 2dd4507..12d58ad 100644
+--- a/fs/sysfs/symlink.c
++++ b/fs/sysfs/symlink.c
+@@ -52,7 +52,7 @@ static int sysfs_do_create_link_sd(struct sysfs_dirent *parent_sd,
+ 
+ 	ns_type = sysfs_ns_type(parent_sd);
+ 	if (ns_type)
+-		sd->s_ns = target->ktype->namespace(target);
++		sd->s_ns = target_sd->s_ns;
+ 	sd->s_symlink.target_sd = target_sd;
+ 	target_sd = NULL;	/* reference is now owned by the symlink */
+ 
+@@ -181,19 +181,20 @@ void sysfs_remove_link(struct kobject *kobj, const char *name)
+ EXPORT_SYMBOL_GPL(sysfs_remove_link);
  
  /**
-- *	sysfs_create_dir - create a directory for an object.
-- *	@kobj:		object we're creating directory for.
-+ * sysfs_create_dir_ns - create a directory for an object with a namespace tag
-+ * @kobj: object we're creating directory for
-+ * @ns: the namespace tag to use
+- *	sysfs_rename_link - rename symlink in object's directory.
++ *	sysfs_rename_link_ns - rename symlink in object's directory.
+  *	@kobj:	object we're acting for.
+  *	@targ:	object we're pointing to.
+  *	@old:	previous name of the symlink.
+  *	@new:	new name of the symlink.
++ *	@new_ns: new namespace of the symlink.
+  *
+  *	A helper function for the common rename symlink idiom.
   */
--int sysfs_create_dir(struct kobject *kobj)
-+int sysfs_create_dir_ns(struct kobject *kobj, const void *ns)
+-int sysfs_rename_link(struct kobject *kobj, struct kobject *targ,
+-			const char *old, const char *new)
++int sysfs_rename_link_ns(struct kobject *kobj, struct kobject *targ,
++			 const char *old, const char *new, const void *new_ns)
  {
- 	enum kobj_ns_type type;
- 	struct sysfs_dirent *parent_sd, *sd;
--	const void *ns = NULL;
- 	int error = 0;
+ 	struct sysfs_dirent *parent_sd, *sd = NULL;
+-	const void *old_ns = NULL, *new_ns = NULL;
++	const void *old_ns = NULL;
+ 	int result;
  
- 	BUG_ON(!kobj);
-@@ -750,8 +750,6 @@ int sysfs_create_dir(struct kobject *kobj)
- 	if (!parent_sd)
- 		return -ENOENT;
+ 	if (!kobj)
+@@ -215,16 +216,13 @@ int sysfs_rename_link(struct kobject *kobj, struct kobject *targ,
+ 	if (sd->s_symlink.target_sd->s_dir.kobj != targ)
+ 		goto out;
  
 -	if (sysfs_ns_type(parent_sd))
--		ns = kobj->ktype->namespace(kobj);
- 	type = sysfs_read_ns_type(kobj);
- 
- 	error = create_dir(kobj, parent_sd, type, ns, kobject_name(kobj), &sd);
-@@ -909,26 +907,21 @@ int sysfs_rename(struct sysfs_dirent *sd,
- 	return error;
- }
- 
--int sysfs_rename_dir(struct kobject *kobj, const char *new_name)
-+int sysfs_rename_dir_ns(struct kobject *kobj, const char *new_name,
-+			const void *new_ns)
- {
- 	struct sysfs_dirent *parent_sd = kobj->sd->s_parent;
--	const void *new_ns = NULL;
+-		new_ns = targ->ktype->namespace(targ);
 -
--	if (sysfs_ns_type(parent_sd))
--		new_ns = kobj->ktype->namespace(kobj);
+ 	result = sysfs_rename(sd, parent_sd, new_ns, new);
  
- 	return sysfs_rename(kobj->sd, parent_sd, new_ns, new_name);
+ out:
+ 	sysfs_put(sd);
+ 	return result;
  }
+-EXPORT_SYMBOL_GPL(sysfs_rename_link);
++EXPORT_SYMBOL_GPL(sysfs_rename_link_ns);
  
--int sysfs_move_dir(struct kobject *kobj, struct kobject *new_parent_kobj)
-+int sysfs_move_dir_ns(struct kobject *kobj, struct kobject *new_parent_kobj,
-+		      const void *new_ns)
- {
- 	struct sysfs_dirent *sd = kobj->sd;
- 	struct sysfs_dirent *new_parent_sd;
--	const void *new_ns = NULL;
- 
- 	BUG_ON(!sd->s_parent);
--	if (sysfs_ns_type(sd->s_parent))
--		new_ns = kobj->ktype->namespace(kobj);
- 	new_parent_sd = new_parent_kobj && new_parent_kobj->sd ?
- 		new_parent_kobj->sd : &sysfs_root;
- 
-diff --git a/include/linux/kobject.h b/include/linux/kobject.h
-index de6dcbcc..e7ba650 100644
---- a/include/linux/kobject.h
-+++ b/include/linux/kobject.h
-@@ -107,6 +107,7 @@ extern int __must_check kobject_move(struct kobject *, struct kobject *);
- extern struct kobject *kobject_get(struct kobject *kobj);
- extern void kobject_put(struct kobject *kobj);
- 
-+extern const void *kobject_namespace(struct kobject *kobj);
- extern char *kobject_get_path(struct kobject *kobj, gfp_t flag);
- 
- struct kobj_type {
+ static int sysfs_get_target_path(struct sysfs_dirent *parent_sd,
+ 				 struct sysfs_dirent *target_sd, char *path)
 diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
-index 82f7fac..7f56bad 100644
+index 7f56bad..c792f73 100644
 --- a/include/linux/sysfs.h
 +++ b/include/linux/sysfs.h
-@@ -182,11 +182,13 @@ struct sysfs_dirent;
- int sysfs_schedule_callback(struct kobject *kobj, void (*func)(void *),
- 			    void *data, struct module *owner);
+@@ -213,8 +213,9 @@ int __must_check sysfs_create_link_nowarn(struct kobject *kobj,
+ 					  const char *name);
+ void sysfs_remove_link(struct kobject *kobj, const char *name);
  
--int __must_check sysfs_create_dir(struct kobject *kobj);
-+int __must_check sysfs_create_dir_ns(struct kobject *kobj, const void *ns);
- void sysfs_remove_dir(struct kobject *kobj);
--int __must_check sysfs_rename_dir(struct kobject *kobj, const char *new_name);
--int __must_check sysfs_move_dir(struct kobject *kobj,
--				struct kobject *new_parent_kobj);
-+int __must_check sysfs_rename_dir_ns(struct kobject *kobj, const char *new_name,
-+				     const void *new_ns);
-+int __must_check sysfs_move_dir_ns(struct kobject *kobj,
-+				   struct kobject *new_parent_kobj,
-+				   const void *new_ns);
+-int sysfs_rename_link(struct kobject *kobj, struct kobject *target,
+-			const char *old_name, const char *new_name);
++int sysfs_rename_link_ns(struct kobject *kobj, struct kobject *target,
++			 const char *old_name, const char *new_name,
++			 const void *new_ns);
  
- int __must_check sysfs_create_file_ns(struct kobject *kobj,
- 				      const struct attribute *attr,
-@@ -258,7 +260,7 @@ static inline int sysfs_schedule_callback(struct kobject *kobj,
- 	return -ENOSYS;
+ void sysfs_delete_link(struct kobject *dir, struct kobject *targ,
+ 			const char *name);
+@@ -340,8 +341,9 @@ static inline void sysfs_remove_link(struct kobject *kobj, const char *name)
+ {
  }
  
--static inline int sysfs_create_dir(struct kobject *kobj)
-+static inline int sysfs_create_dir_ns(struct kobject *kobj, const void *ns)
+-static inline int sysfs_rename_link(struct kobject *k, struct kobject *t,
+-				    const char *old_name, const char *new_name)
++static inline int sysfs_rename_link_ns(struct kobject *k, struct kobject *t,
++				       const char *old_name,
++				       const char *new_name, const void *ns)
  {
  	return 0;
  }
-@@ -267,13 +269,15 @@ static inline void sysfs_remove_dir(struct kobject *kobj)
- {
+@@ -454,4 +456,10 @@ static inline void sysfs_remove_file(struct kobject *kobj,
+ 	return sysfs_remove_file_ns(kobj, attr, NULL);
  }
  
--static inline int sysfs_rename_dir(struct kobject *kobj, const char *new_name)
-+static inline int sysfs_rename_dir_ns(struct kobject *kobj,
-+				      const char *new_name, const void *new_ns)
- {
- 	return 0;
- }
- 
--static inline int sysfs_move_dir(struct kobject *kobj,
--				 struct kobject *new_parent_kobj)
-+static inline int sysfs_move_dir_ns(struct kobject *kobj,
-+				    struct kobject *new_parent_kobj,
-+				    const void *new_ns)
- {
- 	return 0;
- }
-diff --git a/lib/kobject.c b/lib/kobject.c
-index 9621751..85fb3a1 100644
---- a/lib/kobject.c
-+++ b/lib/kobject.c
-@@ -18,6 +18,24 @@
- #include <linux/stat.h>
- #include <linux/slab.h>
- 
-+/**
-+ * kobject_namespace - return @kobj's namespace tag
-+ * @kobj: kobject in question
-+ *
-+ * Returns namespace tag of @kobj if its parent has namespace ops enabled
-+ * and thus @kobj should have a namespace tag associated with it.  Returns
-+ * %NULL otherwise.
-+ */
-+const void *kobject_namespace(struct kobject *kobj)
++static inline int sysfs_rename_link(struct kobject *kobj, struct kobject *target,
++				    const char *old_name, const char *new_name)
 +{
-+	const struct kobj_ns_type_operations *ns_ops = kobj_ns_ops(kobj);
-+
-+	if (!ns_ops || ns_ops->type == KOBJ_NS_TYPE_NONE)
-+		return NULL;
-+
-+	return kobj->ktype->namespace(kobj);
++	return sysfs_rename_link_ns(kobj, target, old_name, new_name, NULL);
 +}
 +
- /*
-  * populate_dir - populate directory with attributes.
-  * @kobj: object we're working on.
-@@ -46,8 +64,9 @@ static int populate_dir(struct kobject *kobj)
- 
- static int create_dir(struct kobject *kobj)
- {
--	int error = 0;
--	error = sysfs_create_dir(kobj);
-+	int error;
-+
-+	error = sysfs_create_dir_ns(kobj, kobject_namespace(kobj));
- 	if (!error) {
- 		error = populate_dir(kobj);
- 		if (error)
-@@ -428,7 +447,7 @@ int kobject_rename(struct kobject *kobj, const char *new_name)
- 		goto out;
- 	}
- 
--	error = sysfs_rename_dir(kobj, new_name);
-+	error = sysfs_rename_dir_ns(kobj, new_name, kobject_namespace(kobj));
- 	if (error)
- 		goto out;
- 
-@@ -472,6 +491,7 @@ int kobject_move(struct kobject *kobj, struct kobject *new_parent)
- 		if (kobj->kset)
- 			new_parent = kobject_get(&kobj->kset->kobj);
- 	}
-+
- 	/* old object path */
- 	devpath = kobject_get_path(kobj, GFP_KERNEL);
- 	if (!devpath) {
-@@ -486,7 +506,7 @@ int kobject_move(struct kobject *kobj, struct kobject *new_parent)
- 	sprintf(devpath_string, "DEVPATH_OLD=%s", devpath);
- 	envp[0] = devpath_string;
- 	envp[1] = NULL;
--	error = sysfs_move_dir(kobj, new_parent);
-+	error = sysfs_move_dir_ns(kobj, new_parent, kobject_namespace(kobj));
- 	if (error)
- 		goto out;
- 	old_parent = kobj->parent;
+ #endif /* _SYSFS_H_ */
 -- 
 1.8.3.1
 
