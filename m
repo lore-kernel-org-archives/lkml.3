@@ -1,84 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754469Ab3ILQnB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 12:43:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55918 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753358Ab3ILQnA (ORCPT
+	id S1754767Ab3ILQoS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 12:44:18 -0400
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:56096 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753871Ab3ILQoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 12:43:00 -0400
-Date: Thu, 12 Sep 2013 09:42:58 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Mitch Harder <mitch.harder@sabayonlinux.org>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Michael wang <wangyun@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Nitin Gupta <ngupta@vflare.org>,
-        Jerome Marchand <jmarchand@redhat.com>, devel@driverdev.osuosl.org
-Subject: Re: BUG: scheduling while atomic 3.10.7 in ZRAM Swap
-Message-ID: <20130912164258.GC11614@kroah.com>
-References: <CAKcLGm8EMruO5e8yw+nArTjyCGSvLB5pjnGZYvz0xdF9M99iwQ@mail.gmail.com>
- <52119B4E.4060409@linux.vnet.ibm.com>
- <20130819044444.GD26832@bbox>
- <CAKcLGm-wJjBeSczCi7-XkyDMd444HoQcFVfmpkPYZ2WcExCxaA@mail.gmail.com>
- <CAKcLGm_NrnK8yCfsBWoT0mBC+kyG3kgVt61ORfazbWaRBDya7A@mail.gmail.com>
+	Thu, 12 Sep 2013 12:44:17 -0400
+Message-ID: <5231EF5A.7010901@vmware.com>
+Date: Thu, 12 Sep 2013 18:44:10 +0200
+From: Thomas Hellstrom <thellstrom@vmware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKcLGm_NrnK8yCfsBWoT0mBC+kyG3kgVt61ORfazbWaRBDya7A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+CC: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Peter Zijlstra <peterz@infradead.org>, Dave Airlie <airlied@linux.ie>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [BUG] completely bonkers use of set_need_resched + VM_FAULT_NOPAGE
+References: <20130912150645.GZ31370@twins.programming.kicks-ass.net> <CAKMK7uFF2GkYapa2_DLv4WYAd0t+POaT+Vy9HG=HQhzMmtH9nA@mail.gmail.com> <5231E18D.7070306@canonical.com>
+In-Reply-To: <5231E18D.7070306@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 06:08:08PM -0500, Mitch Harder wrote:
-> On Tue, Aug 20, 2013 at 9:51 AM, Mitch Harder
-> <mitch.harder@sabayonlinux.org> wrote:
-> > On Sun, Aug 18, 2013 at 11:44 PM, Minchan Kim <minchan@kernel.org> wrote:
-> >> Hello,
-> >>
-> >> On Mon, Aug 19, 2013 at 12:13:02PM +0800, Michael wang wrote:
-> >>> Hi, Mitch
-> >>>
-> >>> On 08/17/2013 10:01 PM, Mitch Harder wrote:
-> >>> > I'm encountering a BUG while using a ZRAM Swap device.
-> >>> >
-> >>> > The call trace seems to involve the changes recently added to 3.10.6
-> >>> > by the patch:
-> >>> > zram: use zram->lock to protect zram_free_page() in swap free notify path
-> >>> >
-> >>> > The hardware is a x86 single CPU AMD Athlon XP system with 1GB RAM.
-> >>> >
-> >>> > I'm implementing a 352MB ZRAM swap device, and also have 1GB swap
-> >>> > space on the hard disk.
-> >>>
-> >>> IMHO, it was caused by that swap_entry_free() was invoked with page
-> >>> spin-locked, thus zram_slot_free_notify() should not use rw-lock which
-> >>> may goto sleep.
-> >>>
-> >>> CC folks related.
-> >>
-> >> Thanks for Ccing me, Michael,
-> >>
-> >> Mitch, It's known problem and it should be fixed by [1] in recent linux-next.
-> >>
-> >> [1] a0c516cbfc, zram: don't grab mutex in zram_slot_free_noity
-> >>
-> >> Thanks for the report!
-> >>
-> >
-> > Thanks.
-> >
-> > If I apply the zram patches from linux-next, the problem seems to be resolved.
-> 
-> Is it planned to send the patch: "zram: don't grab mutex in
-> zram_slot_free_noity"  to stable?
-> 
-> I noticed that 3.10.11 still doesn't have this patch.
+On 09/12/2013 05:45 PM, Maarten Lankhorst wrote:
+> Op 12-09-13 17:36, Daniel Vetter schreef:
+>> On Thu, Sep 12, 2013 at 5:06 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>> So I'm poking around the preemption code and stumbled upon:
+>>>
+>>> drivers/gpu/drm/i915/i915_gem.c:                set_need_resched();
+>>> drivers/gpu/drm/ttm/ttm_bo_vm.c:                        set_need_resched();
+>>> drivers/gpu/drm/ttm/ttm_bo_vm.c:                        set_need_resched();
+>>> drivers/gpu/drm/udl/udl_gem.c:          set_need_resched();
+>>>
+>>> All these sites basically do:
+>>>
+>>>    while (!trylock())
+>>>          yield();
+>>>
+>>> which is a horrible and broken locking pattern.
+>>>
+>>> Firstly its deadlock prone, suppose the faulting process is a FIFOn+1
+>>> task that preempted the lock holder at FIFOn.
+>>>
+>>> Secondly the implementation is worse than usual by abusing
+>>> VM_FAULT_NOPAGE, which is supposed to install a PTE so that the fault
+>>> doesn't retry, but you're using it as a get out of fault path. And
+>>> you're using set_need_resched() which is not something a driver should
+>>> _ever_ touch.
+>>>
+>>> Now I'm going to take away set_need_resched() -- and while you can
+>>> 'reimplement' it using set_thread_flag() you're not going to do that
+>>> because it will be broken due to changes to the preempt code.
+>>>
+>>> So please as to fix ASAP and don't allow anybody to trick you into
+>>> merging silly things like that again ;-)
+>> The set_need_resched in i915_gem.c:i915_gem_fault can actually be
+>> removed. It was there to give the error handler a chance to sneak in
+>> and reset the hw/sw tracking when the gpu is dead. That hack goes back
+>> to the days when the locking around our error handler was somewhere
+>> between nonexistent and totally broken, nowadays we keep things from
+>> live-locking by a bit of magic in i915_mutex_lock_interruptible. I'll
+>> whip up a patch to rip this out. I'll also check that our testsuite
+>> properly exercises this path (needs a bit of work on a quick look for
+>> better coverage).
+>>
+>> The one in ttm is just bonghits to shut up lockdep: ttm can recurse
+>> into it's own pagefault handler and then deadlock, the trylock just
+>> keeps lockdep quiet. We've had that bug arise in drm/i915 due to some
+>> fun userspace did and now have testcases for them. The right solution
+>> to fix this is to use copy_to|from_user_atomic in ttm everywhere it
+>> holds locks and have slowpaths which drops locks, copies stuff into a
+>> temp allocation and then continues. At least that's how we've fixed
+>> all those inversions in i915-gem. I'm not volunteering to fix this ;-)
+> Ah the case where a mmap'd address is passed to the execbuf ioctl? :P
+>
+> Fine I'll look into it a bit, hopefully before tuesday. Else it might take a bit longer since I'll be on my way to plumbers..
 
-That's because it isn't in a released kernel from Linus yet.  Wait for
-3.12-rc1 to come out, then I will queue it up.
+I think a possible fix would be if fault() were allowed to return an 
+error and drop the mmap_sem() before returning.
 
-thanks,
+Otherwise we need to track down all copy_to_user / copy_from_user which 
+happen with bo::reserve held.
 
-greg k-h
+/Thomas
