@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756027Ab3ILRtf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 13:49:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56736 "EHLO
+	id S1755342Ab3ILRp3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 13:45:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56691 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755344Ab3ILRpa (ORCPT
+	with ESMTP id S1755215Ab3ILRpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 13:45:30 -0400
+	Thu, 12 Sep 2013 13:45:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Ding Tianhong <dingtianhong@huawei.com>,
-        George Kargiotakis <kargig@void.gr>, P J P <ppandit@redhat.com>,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Roman Gushchin <klamm@yandex-team.ru>, Changli Gao <xiaosuo@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 11/23] ipv6: remove max_addresses check from ipv6_create_tempaddr
-Date: Thu, 12 Sep 2013 10:45:07 -0700
-Message-Id: <20130912174452.975290789@linuxfoundation.org>
+Subject: [ 02/23] net: check net.core.somaxconn sysctl values
+Date: Thu, 12 Sep 2013 10:44:58 -0700
+Message-Id: <20130912174452.047792291@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130912174451.748805761@linuxfoundation.org>
 References: <20130912174451.748805761@linuxfoundation.org>
@@ -30,64 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Roman Gushchin <klamm@yandex-team.ru>
 
-[ Upstream commit 4b08a8f1bd8cb4541c93ec170027b4d0782dab52 ]
+[ Upstream commit 5f671d6b4ec3e6d66c2a868738af2cdea09e7509 ]
 
-Because of the max_addresses check attackers were able to disable privacy
-extensions on an interface by creating enough autoconfigured addresses:
+It's possible to assign an invalid value to the net.core.somaxconn
+sysctl variable, because there is no checks at all.
 
-<http://seclists.org/oss-sec/2012/q4/292>
+The sk_max_ack_backlog field of the sock structure is defined as
+unsigned short. Therefore, the backlog argument in inet_listen()
+shouldn't exceed USHRT_MAX. The backlog argument in the listen() syscall
+is truncated to the somaxconn value. So, the somaxconn value shouldn't
+exceed 65535 (USHRT_MAX).
+Also, negative values of somaxconn are meaningless.
 
-But the check is not actually needed: max_addresses protects the
-kernel to install too many ipv6 addresses on an interface and guards
-addrconf_prefix_rcv to install further addresses as soon as this limit
-is reached. We only generate temporary addresses in direct response of
-a new address showing up. As soon as we filled up the maximum number of
-addresses of an interface, we stop installing more addresses and thus
-also stop generating more temp addresses.
+before:
+$ sysctl -w net.core.somaxconn=256
+net.core.somaxconn = 256
+$ sysctl -w net.core.somaxconn=65536
+net.core.somaxconn = 65536
+$ sysctl -w net.core.somaxconn=-100
+net.core.somaxconn = -100
 
-Even if the attacker tries to generate a lot of temporary addresses
-by announcing a prefix and removing it again (lifetime == 0) we won't
-install more temp addresses, because the temporary addresses do count
-to the maximum number of addresses, thus we would stop installing new
-autoconfigured addresses when the limit is reached.
+after:
+$ sysctl -w net.core.somaxconn=256
+net.core.somaxconn = 256
+$ sysctl -w net.core.somaxconn=65536
+error: "Invalid argument" setting key "net.core.somaxconn"
+$ sysctl -w net.core.somaxconn=-100
+error: "Invalid argument" setting key "net.core.somaxconn"
 
-This patch fixes CVE-2013-0343 (but other layer-2 attacks are still
-possible).
+Based on a prior patch from Changli Gao.
 
-Thanks to Ding Tianhong to bring this topic up again.
-
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Ding Tianhong <dingtianhong@huawei.com>
-Cc: George Kargiotakis <kargig@void.gr>
-Cc: P J P <ppandit@redhat.com>
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Acked-by: Ding Tianhong <dingtianhong@huawei.com>
+Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
+Reported-by: Changli Gao <xiaosuo@gmail.com>
+Suggested-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/addrconf.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ net/core/sysctl_net_core.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -910,12 +910,10 @@ retry:
- 	if (ifp->flags & IFA_F_OPTIMISTIC)
- 		addr_flags |= IFA_F_OPTIMISTIC;
+--- a/net/core/sysctl_net_core.c
++++ b/net/core/sysctl_net_core.c
+@@ -19,6 +19,9 @@
+ #include <net/sock.h>
+ #include <net/net_ratelimit.h>
  
--	ift = !max_addresses ||
--	      ipv6_count_addresses(idev) < max_addresses ?
--		ipv6_add_addr(idev, &addr, tmp_plen,
--			      ipv6_addr_type(&addr)&IPV6_ADDR_SCOPE_MASK,
--			      addr_flags) : NULL;
--	if (!ift || IS_ERR(ift)) {
-+	ift = ipv6_add_addr(idev, &addr, tmp_plen,
-+			    ipv6_addr_type(&addr)&IPV6_ADDR_SCOPE_MASK,
-+			    addr_flags);
-+	if (IS_ERR(ift)) {
- 		in6_ifa_put(ifp);
- 		in6_dev_put(idev);
- 		printk(KERN_INFO
++static int zero = 0;
++static int ushort_max = USHRT_MAX;
++
+ #ifdef CONFIG_RPS
+ static int rps_sock_flow_sysctl(ctl_table *table, int write,
+ 				void __user *buffer, size_t *lenp, loff_t *ppos)
+@@ -197,7 +200,9 @@ static struct ctl_table netns_core_table
+ 		.data		= &init_net.core.sysctl_somaxconn,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
++		.extra1		= &zero,
++		.extra2		= &ushort_max,
++		.proc_handler	= proc_dointvec_minmax
+ 	},
+ 	{ }
+ };
 
 
