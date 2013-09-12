@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752208Ab3ILNe2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 09:34:28 -0400
-Received: from www.linutronix.de ([62.245.132.108]:58721 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228Ab3ILNe1 (ORCPT
+	id S1752828Ab3ILNep (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 09:34:45 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:44512 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752444Ab3ILNen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 09:34:27 -0400
-Date: Thu, 12 Sep 2013 15:33:48 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Libin <huawei.libin@huawei.com>
-cc: akpm@linux-foundation.org, tj@kernel.org, viro@zeniv.linux.org.uk,
-        eparis@redhat.com, rusty@rustcorp.com.au, ebiederm@xmission.com,
-        paulmck@linux.vnet.ibm.com, john.stultz@linaro.org, mingo@redhat.com,
-        peterz@infradead.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, lizefan@huawei.com,
-        jovi.zhangwei@huawei.com, guohanjun@huawei.com,
-        zhangdianfang@huawei.com, wangyijing@huawei.com
-Subject: Re: [PATCH 05/14] hrtimer: Fix invalid wakeup in do_nanosleep
-In-Reply-To: <1377784669-28140-6-git-send-email-huawei.libin@huawei.com>
-Message-ID: <alpine.DEB.2.02.1309121527320.4089@ionos.tec.linutronix.de>
-References: <1377784669-28140-1-git-send-email-huawei.libin@huawei.com> <1377784669-28140-6-git-send-email-huawei.libin@huawei.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 12 Sep 2013 09:34:43 -0400
+Message-ID: <5231C2EF.8080200@gmail.com>
+Date: Thu, 12 Sep 2013 06:34:39 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Ingo Molnar <mingo@kernel.org>
+CC: linux-kernel@vger.kernel.org, acme@ghostprotocols.net, fweisbec@gmail.com,
+        peterz@infradead.org, jolsa@redhat.com, namhyung@kernel.org,
+        xiaoguangrong@linux.vnet.ibm.com, runzhen@linux.vnet.ibm.com,
+        Runzhen Wang <icycoder@gmail.com>
+Subject: Re: [PATCH 14/16] perf kvm: reuse some code of perf_kvm__timerfd_create()
+References: <1369527896-3650-1-git-send-email-dsahern@gmail.com> <1369527896-3650-15-git-send-email-dsahern@gmail.com> <20130912130849.GA23826@gmail.com>
+In-Reply-To: <20130912130849.GA23826@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Aug 2013, Libin wrote:
+On 9/12/13 6:08 AM, Ingo Molnar wrote:
+>
+> btw., I tried to build perf on a really old distro that has no timerfd.h,
+> and got:
 
-> If thread is preempted before calling set_current_state(TASK_INTERRUPTIBLE),
-> and the other thread set the condition followed with wake_up_process. After
-> that when this thread is re-scheduled, calling set_current_state to set itself
-> as state TASK_INTERRUPTIBLE, if it is preempted again after that and before
-> __set_current_state(TASK_RUNNING), it triggers the invalid wakeup problem.
+Right. I hit that last week or so with RHEL5 as a build server.
 
-do_nanosleep() is only called from sys_nanosleep() and
-sys_clock_nanosleep() user space interfaces.
+timerfd was introduced before perf so any system with perf capability 
+will also have timerfd. So the problem is strictly building perf on an 
+older system. Are you using a tarball created by one of the 'make 
+perf-*' options? Is the expectation that the resulting perf binary will 
+be used for both record and report paths?
 
-So the task is not going to be woken up by some magic other thread
-except by a signal. The latter is handled by the scheduler which will
-return with state running. So what kind of problem are you trying to
-solve?
+I could compile out the feature if timerfd is not available or add a 
+compat layer in perf (e.g., if not defined, define it).
 
-Thanks,
-
-	tglx
-
-
-
- 
+David
