@@ -1,106 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757600Ab3ILAny (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 20:43:54 -0400
-Received: from mga11.intel.com ([192.55.52.93]:25795 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751268Ab3ILAnw convert rfc822-to-8bit (ORCPT
+	id S1756999Ab3ILAsQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 20:48:16 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:43919 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751427Ab3ILAsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 20:43:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,887,1371106800"; 
-   d="scan'208";a="400277110"
-Message-ID: <52310E43.1090808@intel.com>
-Date: Thu, 12 Sep 2013 02:43:47 +0200
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 11 Sep 2013 20:48:15 -0400
+Date: Wed, 11 Sep 2013 20:48:11 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org
+Subject: Re: [RFC PATCH] timekeeping: introduce timekeeping_is_busy()
+Message-ID: <20130912004811.GA6096@Krystal>
+References: <20130911150853.GA19800@Krystal> <52309D13.3020305@linaro.org> <20130911185441.GC23532@Krystal> <20130911203618.GH3966@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Greg KH <greg@kroah.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: "cpufreq: fix serialization issues with freq change notifiers"
- breaks cpufreq too
-References: <Pine.LNX.4.64.1309091656200.6602@axis700.grange> <2703632.ul5ekQh5oq@vostro.rjw.lan> <CAKohpo=RKB-_EO=cjaOorAfN=y_cMgJg-j6=xtX71a-TwujgsA@mail.gmail.com> <2013615.oHjWkmedue@vostro.rjw.lan> <CAKohpokEZcwF-zL6rTXYyC_x=SJzGFvdvxqvmvyhJHa8nPXogQ@mail.gmail.com>
-In-Reply-To: <CAKohpokEZcwF-zL6rTXYyC_x=SJzGFvdvxqvmvyhJHa8nPXogQ@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII;
-	format=flowed
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130911203618.GH3966@linux.vnet.ibm.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/12/2013 2:39 AM, Viresh Kumar wrote:
-> On 11 September 2013 18:48, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
->> On Wednesday, September 11, 2013 02:08:44 PM Viresh Kumar wrote:
->>> That looked like a straight forward issue/bug to me and so I haven't
->>> gotten deep into it..
->> Which you should always do when you're going to deal with concurrency issues.
->> Even if they appear to be obvious, they often are far from that, like in this
->> case.
-> /me Nods
->
->>> Scenario 2:
->>> --------------
->>> Governor is changing freq and has called __cpufreq_driver_target().
->>> At the same time we are changing scaling_{min|max}_freq from
->>> sysfs, which would eventually end up calling governors:
->>> CPUFREQ_GOV_LIMITS notification, that will also call:
->>> __cpufreq_driver_target()..
->>>
->>> So, we eventually have two concurrent calls to ->target() and we
->>> don't really know how hardware will behave in this case.. Most of
->>> the implementations of ->target() routines just go and change
->>> freq/voltage without checking if we are already in progress of doing
->>> that (i.e. based on expectation that this call is not re entrant)..
->>>
->>> Now anything can happen at hardware level, which I don't have
->>> all insight of :(
->> That is more theoretical, however.
-> Maybe we can get more deeper into it then :)
-> Platform have something like this in their target()
+* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> On Wed, Sep 11, 2013 at 02:54:41PM -0400, Mathieu Desnoyers wrote:
+[...]
+> > If we can afford a synchronize_rcu_sched() wherever the write seqlock is
+> > needed, we could go with the following. Please note that I use
+> > synchronize_rcu_sched() rather than call_rcu_sched() here because I try
+> > to avoid having too many timekeeper structures hanging around, and I
+> > think it can be generally a good think to ensure timekeeping core does
+> > not depend on the memory allocator (but I could very well be wrong).
+> 
+> The issue called out with this the last time I remember it being put
+> forward was that grace periods can be delayed for longer than is an
+> acceptable gap between timekeeping updates.  But maybe something has
+> changed since then -- that was a few years ago.
 
-Which platform?
+Assuming we have lockdep support for seqlock, and we ensure there is no
+deadlock between timekeeper seqlock and other locks. Also, given our
+intent is more or less to allow execution contexts nested over the write
+seqlock to read time (e.g. nmi handlers), I think we could do the
+following:
 
-> A. If new freq is more than old: Increase voltage
-> B. Change freq
-> C. If new freq is less than old: decrease voltage
->
-> Now, two concurrent calls to target are X and Y, where X is trying to increase
-> freq and Y is trying to decrease it..
->
-> And this is the sequence that followed due to races..
->
-> X.A: voltage increased for larger freq
-> Y.A: nothing happened here
-> Y.B: freq decreased
-> Y.C: voltage decreased
-> X.B: freq increased
-> X.C: nothing happened..
->
-> We ended up setting a freq which is not supported by the voltage we have
-> set.. That will probably make clock to CPU unstable and system wouldn't
-> be workable anymore...
->
-> And so I think even this case must also get some space in the changelog :)
+updates:
+- spinlock irq save
+- take a shadow copy of the old timekeeper structure.
+- store the CPU number that owns the lock into a variable.
+- barrier()     /* store cpu nr before seqlock from nested NMI POV */
+- write seqlock begin
+- perform timekeeper structure update
+- write seqlock end
+- barrier()     /* store seqlock before cpu nr from nested NMI POV */
+- store -1 into lock owner variable
+- spin unlock irqrestore
 
-Yes, if you can point to a specific driver having this problem.
+kernel read-side:
+- try read seqlock loop for fast path
+- if seqlock read fails, check if we are the CPU owning the lock
+  (variable stored by the update). If it is so, fall-back to the shadow
+  copy, else, retry seqlock.
+
+This approach would _only_ work if there is no deadlock involving a lock
+nested within the write seqlock. Hence the importance of adding lockdep
+support if we choose this locking design.
+
+Thoughts ?
 
 Thanks,
-Rafael
 
---------------------------------------------------------------------
+Mathieu
 
-Intel Technology Poland sp. z o.o.
-ul. Slowackiego 173 | 80-298 Gdansk | Sad Rejonowy Gdansk Polnoc | VII Wydzial Gospodarczy Krajowego Rejestru Sadowego - KRS 101882 | NIP 957-07-52-316 | Kapital zakladowy 200.000 PLN.
 
-Ta wiadomosc wraz z zalacznikami jest przeznaczona dla okreslonego adresata i moze zawierac informacje poufne. W razie przypadkowego otrzymania tej wiadomosci, prosimy o powiadomienie nadawcy oraz trwale jej usuniecie; jakiekolwiek przegladanie lub rozpowszechnianie jest zabronione.
-This e-mail and any attachments may contain confidential material for the sole use of the intended recipient(s). If you are not the intended recipient, please contact the sender and delete all copies; any review or distribution by others is strictly prohibited.
-
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
