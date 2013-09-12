@@ -1,143 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755114Ab3ILS7m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:59:42 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:60641 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752965Ab3ILS7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 14:59:41 -0400
-Message-ID: <52320F18.4040407@sgi.com>
-Date: Thu, 12 Sep 2013 11:59:36 -0700
-From: Mike Travis <travis@sgi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	id S1755448Ab3ILTCK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 15:02:10 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:10048 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754867Ab3ILTCJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 15:02:09 -0400
+Message-ID: <52320FA3.7000908@hp.com>
+Date: Thu, 12 Sep 2013 15:01:55 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Peter Zijlstra <peterz@infradead.org>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 9/9] x86/UV: Add ability to disable UV NMI handler
-References: <20130905225032.879120272@asylum.americas.sgi.com> <20130905225034.343366161@asylum.americas.sgi.com> <20130909124349.GY31370@twins.programming.kicks-ass.net> <522E0037.3090107@sgi.com> <20130910090349.GN26785@twins.programming.kicks-ass.net> <20130912172731.GR3966@linux.vnet.ibm.com>
-In-Reply-To: <20130912172731.GR3966@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH 0/2 v2] dcache: get/release read lock in read_seqbegin_or_lock()
+ & friend
+References: <1378997735-22844-1-git-send-email-Waiman.Long@hp.com> <CA+55aFwsqHJE1D-z8_kU+1VEpUTB=EU57kqmKao580gYZVOjrw@mail.gmail.com> <CA+55aFy8Nq7yf9CJwFuyfSmkUzFKRHHOE6O8=4HjmaWpku3fhw@mail.gmail.com>
+In-Reply-To: <CA+55aFy8Nq7yf9CJwFuyfSmkUzFKRHHOE6O8=4HjmaWpku3fhw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/12/2013 01:30 PM, Linus Torvalds wrote:
+> On Thu, Sep 12, 2013 at 9:38 AM, Linus Torvalds
+> <torvalds@linux-foundation.org>  wrote:
+>> On Thu, Sep 12, 2013 at 7:55 AM, Waiman Long<Waiman.Long@hp.com>  wrote:
+>>> Change log
+>>> ----------
+>>> v1->v2:
+>>>    - Rename the new seqlock primitives to read_seqexcl_lock* and
+>>>      read_seqexcl_unlock*.
+>> Applied.
+> Btw, when I tried to benchmark this, I failed miserably.
+>
+> Why?
 
+This patch is just a safety guard to prevent occasional bad performance 
+because of some bad timing. It will not improve performance for many 
+cases because the seqbegin/seqretry sequence succeeds without actual retry.
 
-On 9/12/2013 10:27 AM, Paul E. McKenney wrote:
-> On Tue, Sep 10, 2013 at 11:03:49AM +0200, Peter Zijlstra wrote:
->> On Mon, Sep 09, 2013 at 10:07:03AM -0700, Mike Travis wrote:
->>> On 9/9/2013 5:43 AM, Peter Zijlstra wrote:
->>>> On Thu, Sep 05, 2013 at 05:50:41PM -0500, Mike Travis wrote:
->>>>> For performance reasons, the NMI handler may be disabled to lessen the
->>>>> performance impact caused by the multiple perf tools running concurently.
->>>>> If the system nmi command is issued when the UV NMI handler is disabled,
->>>>> the "Dazed and Confused" messages occur for all cpus.  The NMI handler is
->>>>> disabled by setting the nmi disabled variable to '1'.  Setting it back to
->>>>> '0' will re-enable the NMI handler.
->>>>
->>>> I'm not entirely sure why this is still needed now that you've moved all
->>>> really expensive bits into the UNKNOWN handler.
->>>>
->>>
->>> Yes, it could be considered optional.  My primary use was to isolate
->>> new bugs I found to see if my NMI changes were causing them.  But it
->>> appears that they are not since the problems occur with or without
->>> using the NMI entry into KDB.  So it can be safely removed.
->>
->> OK, as a debug option it might make sense, but removing it is (of course)
->> fine with me ;-)
->>
->>> (The basic problem is that if you hang out in KDB too long the machine
->>> locks up.  
->>
->> Yeah, known issue. Not much you can do about it either I suspect. The
->> system generally isn't build for things like that.
->>
->>> Other problems like the rcu stall detector does not have a
->>> means to be "touched" like the nmi_watchdog_timer so it fires off a
->>> few to many, many messages.  
->>
->> That however might be easily cured if you ask Paul nicely ;-)
-> 
-> RCU's grace-period mechanism is supposed to be what touches it.  ;-)
-> 
-> But what is it that you are looking for?  If you want to silence it
-> completely, the rcu_cpu_stall_suppress boot/sysfs parameter is what
-> you want to use.
+> If you do a threaded benchmark of "getcwd()", you end up spending all
+> your time in a spinlock anyway: get_fs_root_and_pwd() takes the
+> fs->lock to get the root/pwd.
 
-We have by default rcutree.rcu_cpu_stall_suppress=1 on the kernel
-cmdline.  I'll double check if it was set during my testing.
+I am aware that there is another spinlock bottleneck in the fs struct 
+for getcwd().
 
-> 
->>> Another, any network connections will time
->>> out if you are in KDB more than say 20 or 30 seconds.)
-> 
-> Ah, you are looking for RCU to refrain from complaining about grace
-> periods that have been delayed by breakpoints in the kernel?  Is there
-> some way that RCU can learn that a breakpoint has happened?  If so,
-> this should not be hard.
+> Now, AIM7 probably uses processes, not threads, so you don't see this,
+> and maybe I shouldn't care. But looking at it, it annoys me
+> enormously, because the whole get_fs_root_and_pwd() is just stupid.
 
-Yes, exactly.  After a UV NMI event which might or might not call KDB,
-but definitely can consume some time with the system stopped, I have
-these notifications:
+AIM7 don't do much getcwd() calls, so it is not a real bottleneck for 
+the benchmark. The lockref patch boosts the short workload performance. 
+The  prepend_path patch was to fix the incorrect perf record data as 
+perf makes heavy use of d_path(). The change made to getcwd() was just a 
+side benefit. But then it still have other spinlock bottleneck.
 
-static void uv_nmi_touch_watchdogs(void)
-{
-        touch_softlockup_watchdog_sync();
-        clocksource_touch_watchdog();
-        rcu_cpu_stall_reset();
-        touch_nmi_watchdog();
-}
+> Putting it all under the RCU lock and then changing it to use
+> get_fs_root_and_pwd_rcu() that just uses the fs->seq sequence
+> read-lock looks absolutely trivial.
 
+Yes, I think we can do something similar for this. I will take a look to 
+see how it can be fixed.
 
-In all the cases I checked, I had all the cpus in the NMI event so
-I don't think it was a straggler who triggered the problem.  One
-question though, the above is called by all cpus exiting the NMI
-event.  Should I limit that to only one cpu?
-
-Note btw, that this also happens when KGDB/KDB is entered via the
-sysrq-trigger 'g' event.
-
-Perhaps there is some other timer that is going off?
-
-> If not, I must fall back on the rcu_cpu_stall_suppress that I mentioned
-> earlier.
-> 
->>> One other problem is with the perf tool.  It seems running more than
->>> about 2 or 3 perf top instances on a medium (1k cpu threads) sized
->>> system, they start behaving badly with a bunch of NMI stackdumps
->>> appearing on the console.  Eventually the system become unusable.
->>
->> Yuck.. I haven't seen anything like that on the 'tiny' systems I have :/
-> 
-> Indeed, with that definition of "medium", large must be truly impressive!
-
-I say medium because it's only one rack w/~4TB of memory (and quite
-popular).  Large would be 4k cpus/64TB.  Not sure yet what is "huge",
-at least in terms of an SSI system.
-
-> 
-> 							Thanx, Paul
-> 
->>> On a large system (4k), the perf tools get an error message (sorry
->>> don't have it handy at the moment) the basically implies that the
->>> perf config option is not set.  Again, I wanted to remove the new
->>> NMI handler to insure that it wasn't doing something weird, and
->>> it wasn't.
->>
->> Cute.. 
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
-> 
+-Longman
