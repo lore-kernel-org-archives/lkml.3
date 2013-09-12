@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757218Ab3ILUjg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 16:39:36 -0400
-Received: from www.linutronix.de ([62.245.132.108]:32811 "EHLO
+	id S1757231Ab3ILUlR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 16:41:17 -0400
+Received: from www.linutronix.de ([62.245.132.108]:32823 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755538Ab3ILUjf (ORCPT
+	with ESMTP id S1753198Ab3ILUlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 16:39:35 -0400
-Date: Thu, 12 Sep 2013 22:39:27 +0200 (CEST)
+	Thu, 12 Sep 2013 16:41:16 -0400
+Date: Thu, 12 Sep 2013 22:41:07 +0200 (CEST)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-cc: Peter Zijlstra <peterz@infradead.org>, Dave Airlie <airlied@linux.ie>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [BUG] completely bonkers use of set_need_resched +
- VM_FAULT_NOPAGE
-In-Reply-To: <CAKMK7uHqufs64=pD=o--958Ns+NAsrwUTNpcd2_WGQnoJRnfOQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1309122238430.4089@ionos.tec.linutronix.de>
-References: <20130912150645.GZ31370@twins.programming.kicks-ass.net> <CAKMK7uFF2GkYapa2_DLv4WYAd0t+POaT+Vy9HG=HQhzMmtH9nA@mail.gmail.com> <20130912154329.GB31370@twins.programming.kicks-ass.net> <CAKMK7uFTYB-E5ksVNEBqGJusJ5TKJv5X4hiPv1mno9tJKuUAdA@mail.gmail.com>
- <20130912162210.GE31370@twins.programming.kicks-ass.net> <CAKMK7uGsgYOtKQrCoq26RV9a_8na14sbpanUxM2_3EBwz-3vVw@mail.gmail.com> <alpine.DEB.2.02.1309122157300.4089@ionos.tec.linutronix.de> <CAKMK7uHJansZzKxrr8p0c2X5pEeb-BSxLa6=tnsDmwo-k__Xcg@mail.gmail.com>
- <alpine.DEB.2.02.1309122219370.4089@ionos.tec.linutronix.de> <CAKMK7uHqufs64=pD=o--958Ns+NAsrwUTNpcd2_WGQnoJRnfOQ@mail.gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+cc: Herbert Xu <herbert@gondor.hengli.com.au>, Fan Du <fan.du@windriver.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        David Miller <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCHv3 linux-next] hrtimer: Add notifier when clock_was_set
+ was called
+In-Reply-To: <CANcMJZCvoynPh4rCkKfnGTHeG2evpKwS0gj_VLmFtmbRusmEog@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1309122240210.4089@ionos.tec.linutronix.de>
+References: <1375866296-15079-1-git-send-email-fan.du@windriver.com> <1375866296-15079-2-git-send-email-fan.du@windriver.com> <52021177.6020306@redhat.com> <520213F2.5090401@windriver.com> <520214C6.6000307@redhat.com> <520B4552.2000607@windriver.com>
+ <alpine.DEB.2.02.1308181102230.4089@ionos.tec.linutronix.de> <5212CCCA.4090907@windriver.com> <alpine.DEB.2.02.1309121441420.4089@ionos.tec.linutronix.de> <20130912134409.GB21212@gondor.apana.org.au>
+ <CANcMJZCvoynPh4rCkKfnGTHeG2evpKwS0gj_VLmFtmbRusmEog@mail.gmail.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Sep 2013, Daniel Vetter wrote:
-
-> On Thu, Sep 12, 2013 at 10:20 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> >> I think for ttm drivers it's just execbuf being exploitable. But on
-> >> drm/i915 we've
-> >> had the same issue with the pwrite/pread ioctls, so a simple
-> >> glBufferData(glMap) kind of recursion from gl clients blew the kernel
-> >> to pieces ...
+On Thu, 12 Sep 2013, John Stultz wrote:
+> On Thu, Sep 12, 2013 at 6:44 AM, Herbert Xu <herbert@gondor.apana.org.au> wrote:
+> > On Thu, Sep 12, 2013 at 03:21:24PM +0200, Thomas Gleixner wrote:
+> >>
+> >> > (3): http://www.spinics.net/lists/netdev/msg245169.html
+> >>
+> >> Thanks for the explanation so far.
+> >>
+> >> What's still unclear to me is why these timeouts are bound to wall
+> >> time in the first place.
+> >>
+> >> Is there any real reason why the key life time can't simply be
+> >> expressed in monotonic time, e.g. N seconds after creation or M
+> >> seconds after usage? Looking at the relevant RFCs I can't find any
+> >> requirement for binding the life time to wall time.
+> >>
+> >> A life time of 10 minutes does not change when the wall clock is
+> >> adjusted for whatever reasons. It's still 10 minutes and not some
+> >> random result of the wall clock adjustments. But I might be wrong as
+> >> usual :)
 > >
-> > And the only answer you folks came up with is set_need_resched() and
-> > yield()? Oh well....
+> > Well we started out with straight timers.  It was changed because
+> > people wanted IPsec SAs to expire after a suspect/resume which
+> > AFAIK does not touch normal timers.
 > 
-> The yield was for a different lifelock, and that one is also fixed by
-> now. The fault handler deadlock was fixed in the usual "drop locks and
-> jump into slowpath" fasion, at least in drm/i915.
+> I'm not sure I've totally groked the specific need here, but if you're
+> wanting a monotonic clockbase that includes suspend time, then you
+> might checkout CLOCK_BOOTTIME.
 
-So we can remove that whole yield/set_need_resched() mess completely ?
+Duh, completely forgot about that one. Sure that would avoid the whole
+business.
 
 Thanks,
 
