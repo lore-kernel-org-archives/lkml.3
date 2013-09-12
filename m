@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757872Ab3ILISt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 04:18:49 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:55867 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753841Ab3ILISq convert rfc822-to-8bit (ORCPT
+	id S1757583Ab3ILIUL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 04:20:11 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:38522 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757484Ab3ILIUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 04:18:46 -0400
-Date: Thu, 12 Sep 2013 03:18:44 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH] Documentation/kbuild/kconfig.txt: Doesn't make
- listnewconfig replacing yes "" | make oldconfig ?
-To: Regid Ichira <regid23@nt1.in>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20130912003548.GF8821@nt1.in>
-In-Reply-To: <20130912003548.GF8821@nt1.in> (from regid23@nt1.in on Wed Sep
-	11 19:35:48 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1378973924.1974.12@driftwood>
+	Thu, 12 Sep 2013 04:20:09 -0400
+Message-ID: <52317849.90101@linux.vnet.ibm.com>
+Date: Thu, 12 Sep 2013 13:46:09 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: rjw@sisk.pl, swarren@wwwdotorg.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] cpufreq: Remove extra blank line
+References: <cover.1378963070.git.viresh.kumar@linaro.org> <22f0d94203b9e3d29f123c0e80df4b012e01dbb5.1378963070.git.viresh.kumar@linaro.org>
+In-Reply-To: <22f0d94203b9e3d29f123c0e80df4b012e01dbb5.1378963070.git.viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13091208-9574-0000-0000-00000998C3D9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2013 07:35:48 PM, Regid Ichira wrote:
-> Signed-off-by: Regid Ichira <regid23@nt1.in>
+On 09/12/2013 10:55 AM, Viresh Kumar wrote:
+> We don't need a blank line just at start of a block, lets remove it.
+> 
+
+Well, I felt having that line avoids clutter, especially since the code
+around it was already a bit hard to read..
+
+Anyway, I don't have any strong opinions either way. So no objections
+from my side. (But you might have to rebase this patch on top of Rafael's
+tree, due to the recent changes he pushed in to this code).
+
+Regards,
+Srivatsa S. Bhat
+
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 > ---
->  Documentation/kbuild/kconfig.txt | 11 ++---------
->  1 file changed, 2 insertions(+), 9 deletions(-)
+>  drivers/cpufreq/cpufreq.c | 1 -
+>  1 file changed, 1 deletion(-)
 > 
-> diff --git a/Documentation/kbuild/kconfig.txt  
-> b/Documentation/kbuild/kconfig.txt
-> index 8ef6dbb..14cc40c 100644
-> --- a/Documentation/kbuild/kconfig.txt
-> +++ b/Documentation/kbuild/kconfig.txt
-> @@ -20,16 +20,9 @@ symbols have been introduced.
->  To see a list of new config symbols when using "make oldconfig", use
-> 
->  	cp user/some/old.config .config
-> -	yes "" | make oldconfig >conf.new
-> +	make listnewconfig
-> 
-> -and the config program will list as (NEW) any new symbols that have
-> -unknown values.  Of course, the .config file is also updated with
-> -new (default) values, so you can use:
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 5a64f66..28477eb 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -1185,7 +1185,6 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
+>  	if (cpu != policy->cpu && !frozen) {
+>  		sysfs_remove_link(&dev->kobj, "cpufreq");
+>  	} else if (cpus > 1) {
 > -
-> -	grep "(NEW)" conf.new
-> -
-> -to see the new config symbols or you can use diffconfig to see the
-> -differences between the previous and new .config files:
-> +and the config program will list any new symbols, one per line.
+>  		new_cpu = cpufreq_nominate_new_policy_cpu(policy, cpu, frozen);
+>  		if (new_cpu >= 0) {
+>  			WARN_ON(lock_policy_rwsem_write(cpu));
 > 
->  	scripts/diffconfig .config.old .config | less
 
-Heh. I just make a miniconfig out of both of them and diff those, but  
-that got rejected when I tried to push it upstream circa 2006 and I've  
-just maintained it locally ever since...
-
-Acked-by: Rob Landley <rob@landley.net>
-
-I'll sit on this for a bit to see if the kbulid guys apply it first,  
-and if not forward it through the trivial tree.
-
-Rob
