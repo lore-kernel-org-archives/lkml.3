@@ -1,89 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174Ab3ILPpo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 11:45:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47476 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753181Ab3ILPpn (ORCPT
+	id S1754861Ab3ILPox (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 11:44:53 -0400
+Received: from benson.vm.bytemark.co.uk ([212.110.190.137]:54691 "EHLO
+	benson.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753264Ab3ILPow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 11:45:43 -0400
-Message-ID: <5231E18D.7070306@canonical.com>
-Date: Thu, 12 Sep 2013 17:45:17 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-CC: Peter Zijlstra <peterz@infradead.org>, Dave Airlie <airlied@linux.ie>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [BUG] completely bonkers use of set_need_resched + VM_FAULT_NOPAGE
-References: <20130912150645.GZ31370@twins.programming.kicks-ass.net> <CAKMK7uFF2GkYapa2_DLv4WYAd0t+POaT+Vy9HG=HQhzMmtH9nA@mail.gmail.com>
-In-Reply-To: <CAKMK7uFF2GkYapa2_DLv4WYAd0t+POaT+Vy9HG=HQhzMmtH9nA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 12 Sep 2013 11:44:52 -0400
+X-Greylist: delayed 320 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Sep 2013 11:44:52 EDT
+Message-ID: <1379000686.10076.76.camel@kazak.uk.xensource.com>
+Subject: Re: [linux-sunxi] Re: [PATCH 4/4] Add arch count timer node in dts
+ for Allwinner A20(sunxi 7i).
+From: Ian Campbell <ijc@hellion.org.uk>
+To: linux-sunxi@googlegroups.com
+Cc: Fan Rong <cinifr@gmail.com>, "coosty@163.com" <coosty@163.com>,
+        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "pawel.moll@arm.co" <pawel.moll@arm.co>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
+Date: Thu, 12 Sep 2013 16:44:46 +0100
+In-Reply-To: <20130912145756.GD22013@e106331-lin.cambridge.arm.com>
+References: <1378968687-8200-1-git-send-email-cinifr@gmail.com>
+	 <1378968687-8200-5-git-send-email-cinifr@gmail.com>
+	 <20130912145756.GD22013@e106331-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 12-09-13 17:36, Daniel Vetter schreef:
-> On Thu, Sep 12, 2013 at 5:06 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> So I'm poking around the preemption code and stumbled upon:
->>
->> drivers/gpu/drm/i915/i915_gem.c:                set_need_resched();
->> drivers/gpu/drm/ttm/ttm_bo_vm.c:                        set_need_resched();
->> drivers/gpu/drm/ttm/ttm_bo_vm.c:                        set_need_resched();
->> drivers/gpu/drm/udl/udl_gem.c:          set_need_resched();
->>
->> All these sites basically do:
->>
->>   while (!trylock())
->>         yield();
->>
->> which is a horrible and broken locking pattern.
->>
->> Firstly its deadlock prone, suppose the faulting process is a FIFOn+1
->> task that preempted the lock holder at FIFOn.
->>
->> Secondly the implementation is worse than usual by abusing
->> VM_FAULT_NOPAGE, which is supposed to install a PTE so that the fault
->> doesn't retry, but you're using it as a get out of fault path. And
->> you're using set_need_resched() which is not something a driver should
->> _ever_ touch.
->>
->> Now I'm going to take away set_need_resched() -- and while you can
->> 'reimplement' it using set_thread_flag() you're not going to do that
->> because it will be broken due to changes to the preempt code.
->>
->> So please as to fix ASAP and don't allow anybody to trick you into
->> merging silly things like that again ;-)
-> The set_need_resched in i915_gem.c:i915_gem_fault can actually be
-> removed. It was there to give the error handler a chance to sneak in
-> and reset the hw/sw tracking when the gpu is dead. That hack goes back
-> to the days when the locking around our error handler was somewhere
-> between nonexistent and totally broken, nowadays we keep things from
-> live-locking by a bit of magic in i915_mutex_lock_interruptible. I'll
-> whip up a patch to rip this out. I'll also check that our testsuite
-> properly exercises this path (needs a bit of work on a quick look for
-> better coverage).
->
-> The one in ttm is just bonghits to shut up lockdep: ttm can recurse
-> into it's own pagefault handler and then deadlock, the trylock just
-> keeps lockdep quiet. We've had that bug arise in drm/i915 due to some
-> fun userspace did and now have testcases for them. The right solution
-> to fix this is to use copy_to|from_user_atomic in ttm everywhere it
-> holds locks and have slowpaths which drops locks, copies stuff into a
-> temp allocation and then continues. At least that's how we've fixed
-> all those inversions in i915-gem. I'm not volunteering to fix this ;-)
-Ah the case where a mmap'd address is passed to the execbuf ioctl? :P
+On Thu, 2013-09-12 at 15:57 +0100, Mark Rutland wrote:
 
-Fine I'll look into it a bit, hopefully before tuesday. Else it might take a bit longer since I'll be on my way to plumbers..
-> The one in udl just looks like copypasta from i915, without any
-> justification (at least I don't see any) for why it's there. Probably
-> can die, too, since there isn't any gpu to reset on usb display-link
-> devices ...
->
-> Cheers, Daniel
+> > +			interrupts = <1 13 0x308>,
+> > +				     <1 14 0x308>,
+> > +				     <1 11 0x308>,
+> > +				     <1 10 0x308>;
+> > +			clock-frequency = <24000000>;
+> 
+> If at all possible, your bootloader should set CNTFREQ, and
+> clock-frequency should only be used as a last resort when it's
+> impossible to get it to set CNTFREQ. It's not possible to set CNTFREQ
+> from the non-secure side, so guests (which might not be Linux, and might
+> not handle DT in the same way) may see a completely wrong frequency
+> value.
+
+https://groups.google.com/forum/#!topic/linux-sunxi/56Wj1IT-pKU
+
+Ian.
 
