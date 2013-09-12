@@ -1,134 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757706Ab3ILJmA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 05:42:00 -0400
-Received: from verein.lst.de ([213.95.11.211]:55332 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751811Ab3ILJl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 05:41:58 -0400
-Date: Thu, 12 Sep 2013 11:41:00 +0200 (CEST)
-From: Torsten Duwe <duwe@lst.de>
-Reply-To: Torsten Duwe <duwe@lst.de>
-To: tytso@mit.edu, ingo.tuchscherer@de.ibm.com
-cc: linux-kernel@vger.kernel.org, Hans-Georg Markgraf <MGRF@de.ibm.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Joe Perches <joe@perches.com>
-Subject: [Resend PATCH 2/2] s390: provide hardware randomness from zcrypt
- card to /dev/random
-Message-ID: <alpine.LNX.2.00.1309121139000.3818@linux.site>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-Organization: LST e.V.
+	id S1757758Ab3ILJng (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 05:43:36 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:46689 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751306Ab3ILJnf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 05:43:35 -0400
+Date: Thu, 12 Sep 2013 10:43:31 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Thiago Farina <tfransosi@gmail.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>,
+        linux list <linux-kernel@vger.kernel.org>,
+        linaro-kernel@lists.linaro.org
+Message-ID: <20130912094331.GB29403@sirena.org.uk>
+References: <1378901968-7368-1-git-send-email-broonie@kernel.org>
+ <CACnwZYeNe4T27eqiQ+LW-ot9Hk8Qk0Uzg7b3jH7xF_euHOWYhQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SIVARdI9NlIk32Qm"
+Content-Disposition: inline
+In-Reply-To: <CACnwZYeNe4T27eqiQ+LW-ot9Hk8Qk0Uzg7b3jH7xF_euHOWYhQ@mail.gmail.com>
+X-Cookie: Your present plans will be successful.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: core: Split devres code out into a separate
+ file
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Running completely virtualised, system Z severely lacks good true random sources.
-Gathering entropy in a virtual environment is difficult. To compensate, there is
-specialised crypto hardware which includes a source for hardware randomness;
-the zcrypt driver is able to access this random source. This patch adds a kernel
-thread that feeds the random bits via the interface created with the previous patch.
+--SIVARdI9NlIk32Qm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Torsten Duwe <duwe@lst.de>
+On Wed, Sep 11, 2013 at 02:15:51PM -0300, Thiago Farina wrote:
 
----
- zcrypt_api.c |   51 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 51 insertions(+)
---- a/drivers/s390/crypto/zcrypt_api.c
-+++ b/drivers/s390/crypto/zcrypt_api.c
-@@ -38,6 +38,8 @@
- #include <linux/atomic.h>
- #include <asm/uaccess.h>
- #include <linux/hw_random.h>
-+#include <linux/kthread.h>
-+#include <linux/delay.h>
- #include <linux/debugfs.h>
- #include <asm/debug.h>
- 
-@@ -99,6 +99,13 @@ static ssize_t zcrypt_online_store(struc
- 
- 	if (sscanf(buf, "%d\n", &online) != 1 || online < 0 || online > 1)
- 		return -EINVAL;
-+	if (zdev->ops->rng) {
-+		if (zdev->online == 0 && online == 1)
-+			zcrypt_rng_device_add();
-+		if (zdev->online == 1 && online == 0)
-+			zcrypt_rng_device_remove();
-+
-+	}
- 	zdev->online = online;
- 	ZCRYPT_DBF_DEV(DBF_INFO, zdev, "dev%04xo%dman", zdev->ap_dev->qid,
- 		       zdev->online);
-@@ -1117,6 +1119,7 @@ static int zcrypt_rng_device_count;
- static u32 *zcrypt_rng_buffer;
- static int zcrypt_rng_buffer_index;
- static DEFINE_MUTEX(zcrypt_rng_mutex);
-+static struct task_struct *zcrypt_hwrng_fill;
- 
- static int zcrypt_rng_data_read(struct hwrng *rng, u32 *data)
- {
-@@ -1141,6 +1144,36 @@ static struct hwrng zcrypt_rng_dev = {
- 	.data_read	= zcrypt_rng_data_read,
- };
- 
-+static int zcrypt_hwrng_fillfn(void *unused)
-+{
-+	long rc;
-+
-+	while (!kthread_should_stop()) {
-+		rc = zcrypt_rng((char *)zcrypt_rng_buffer);
-+		if (rc == -ENODEV || rc == -EINVAL || rc == -ENOMEM) {
-+			pr_err("zcrypt_rng unavailable: %ld\n", rc);
-+			break;
-+		}
-+		if (rc == -EAGAIN || rc == -ERESTARTSYS) {
-+			pr_info("zcrypt_rng interrupted: %ld\n", rc);
-+			msleep_interruptible(1000);
-+			continue;
-+		}
-+		if (rc == 0) {
-+			pr_err("zcrypt_rng: no data available\n");
-+			msleep_interruptible(10000);
-+			continue;
-+		}
-+		if (rc < 0) {
-+			pr_err("zcrypt_rng unknown error: %ld\n", rc);
-+			break;
-+		}
-+		add_hwgenerator_randomness((void *)zcrypt_rng_buffer, rc);
-+	}
-+	zcrypt_hwrng_fill = 0;
-+	return 0;
-+}
-+
- static int zcrypt_rng_device_add(void)
- {
- 	int rc = 0;
-@@ -1157,6 +1189,12 @@ static int zcrypt_rng_device_add(void)
- 		if (rc)
- 			goto out_free;
- 		zcrypt_rng_device_count = 1;
-+		zcrypt_hwrng_fill = kthread_run(zcrypt_hwrng_fillfn,
-+			NULL, "zc_hwrng");
-+		if (zcrypt_hwrng_fill == ERR_PTR(-ENOMEM)) {
-+			pr_err("zcrypt_hwrng_fill thread creation failed\n");
-+			zcrypt_hwrng_fill = 0;
-+		}
- 	} else
- 		zcrypt_rng_device_count++;
- 	mutex_unlock(&zcrypt_rng_mutex);
-@@ -1174,6 +1211,10 @@ static void zcrypt_rng_device_remove(voi
- 	mutex_lock(&zcrypt_rng_mutex);
- 	zcrypt_rng_device_count--;
- 	if (zcrypt_rng_device_count == 0) {
-+		if (zcrypt_hwrng_fill) {
-+			kthread_stop(zcrypt_hwrng_fill);
-+			zcrypt_hwrng_fill = 0;
-+		}
- 		hwrng_unregister(&zcrypt_rng_dev);
- 		free_page((unsigned long) zcrypt_rng_buffer);
- 	}
+> don't you need any forward declaration here nor any include (like for
+> list_head and device_attribute)?
+
+Probably, though all the users should have pulled in the regulator API
+headers.
+
+--SIVARdI9NlIk32Qm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSMYzAAAoJELSic+t+oim9MwsP/2xIKFD/W5Y/YR2a/FUMjcT/
+Y7ctEUCS0NeOGew1+bSFfoESAByzfJT6woMjbAiCiHFtT9aJPGHpQpevyjQh0iRV
+eIj9zEQ+77gvgdiOo9Ivk0ROXJSZl2ymFa3+HRMrrF1EXxXXySikK0qhNlUy4pPL
+9H3+7flBdSBFIPOhkF9r1E4h9kqcMsAjuBSVjebmQSEGLiKNOZKD6ajSovRS9CAT
+OJg4Ybiyjvi5Gx9wDfXKHV3mRzYK8ghEZoM5WLIIypapPhCeQMqVxp7oQrf9dUTt
+QJE5eu+SnpVIc3KbaDGQNGP1qL6Rem0Xuc4YoD58hcnPF4VMc4LPTFczBVjLQY6v
+tfqoUhnWU/R7qogzvJjMcmN3pQkUOcO3JGplsV7WHFO8pFz6V6RhhF0d+UnyWEOH
+JVHG31kw4eibNsLG0u8OE2uSQB/hmQHMXxr7U2ttpCXZbJCBtDjt69jjJ1FnnZg+
+PcOzIvZEuiGhLiHjEGBT3CGduftPgf4mHvWQEOjx4JVrvDiuUqn+UZIjo6YtqKqA
+6R0S1olHmk9xEAKWgc7IgBtAnenzlx7Qgl9SnZmriVCkd/8gJsgUzW21ui+Y4+o4
+/65Iss/LuPjvbu3NFXdFBLLz8o8aaGVwqi3TfMTy3+CoyA1B+QQrgrDm58lLglu1
+dUR/mdgStC4Q4jVsvJPM
+=IEVo
+-----END PGP SIGNATURE-----
+
+--SIVARdI9NlIk32Qm--
