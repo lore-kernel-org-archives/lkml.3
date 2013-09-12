@@ -1,25 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756331Ab3ILSDW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:03:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57143 "EHLO
+	id S1756367Ab3ILSDk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:03:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57112 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755717Ab3ILR7Z (ORCPT
+	with ESMTP id S1755797Ab3ILR7Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 13:59:25 -0400
+	Thu, 12 Sep 2013 13:59:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Bohac <jbohac@suse.cz>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>,
         Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 37/46] ICMPv6: treat dest unreachable codes 5 and 6 as EACCES, not EPROTO
-Date: Thu, 12 Sep 2013 10:58:48 -0700
-Message-Id: <20130912175725.008444144@linuxfoundation.org>
+Subject: [ 36/46] net: bridge: convert MLDv2 Query MRC into msecs_to_jiffies for max_delay
+Date: Thu, 12 Sep 2013 10:58:47 -0700
+Message-Id: <20130912175724.903513538@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130912175721.001906199@linuxfoundation.org>
 References: <20130912175721.001906199@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,72 +32,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Bohac <jbohac@suse.cz>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit 61e76b178dbe7145e8d6afa84bb4ccea71918994 ]
+[ Upstream commit 2d98c29b6fb3de44d9eaa73c09f9cf7209346383 ]
 
-RFC 4443 has defined two additional codes for ICMPv6 type 1 (destination
-unreachable) messages:
-        5 - Source address failed ingress/egress policy
-	6 - Reject route to destination
+While looking into MLDv1/v2 code, I noticed that bridging code does
+not convert it's max delay into jiffies for MLDv2 messages as we do
+in core IPv6' multicast code.
 
-Now they are treated as protocol error and icmpv6_err_convert() converts them
-to EPROTO.
+RFC3810, 5.1.3. Maximum Response Code says:
 
-RFC 4443 says:
-	"Codes 5 and 6 are more informative subsets of code 1."
+  The Maximum Response Code field specifies the maximum time allowed
+  before sending a responding Report. The actual time allowed, called
+  the Maximum Response Delay, is represented in units of milliseconds,
+  and is derived from the Maximum Response Code as follows: [...]
 
-Treat codes 5 and 6 as code 1 (EACCES)
+As we update timers that work with jiffies, we need to convert it.
 
-Btw, connect() returning -EPROTO confuses firefox, so that fallback to
-other/IPv4 addresses does not work:
-https://bugzilla.mozilla.org/show_bug.cgi?id=910773
-
-Signed-off-by: Jiri Bohac <jbohac@suse.cz>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Linus Lüssing <linus.luessing@web.de>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/uapi/linux/icmpv6.h |    2 ++
- net/ipv6/icmp.c             |   10 +++++++++-
- 2 files changed, 11 insertions(+), 1 deletion(-)
+ net/bridge/br_multicast.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/include/uapi/linux/icmpv6.h
-+++ b/include/uapi/linux/icmpv6.h
-@@ -115,6 +115,8 @@ struct icmp6hdr {
- #define ICMPV6_NOT_NEIGHBOUR		2
- #define ICMPV6_ADDR_UNREACH		3
- #define ICMPV6_PORT_UNREACH		4
-+#define ICMPV6_POLICY_FAIL		5
-+#define ICMPV6_REJECT_ROUTE		6
+--- a/net/bridge/br_multicast.c
++++ b/net/bridge/br_multicast.c
+@@ -1193,7 +1193,8 @@ static int br_ip6_multicast_query(struct
+ 		mld2q = (struct mld2_query *)icmp6_hdr(skb);
+ 		if (!mld2q->mld2q_nsrcs)
+ 			group = &mld2q->mld2q_mca;
+-		max_delay = mld2q->mld2q_mrc ? MLDV2_MRC(ntohs(mld2q->mld2q_mrc)) : 1;
++
++		max_delay = max(msecs_to_jiffies(MLDV2_MRC(ntohs(mld2q->mld2q_mrc))), 1UL);
+ 	}
  
- /*
-  *	Codes for Time Exceeded
---- a/net/ipv6/icmp.c
-+++ b/net/ipv6/icmp.c
-@@ -931,6 +931,14 @@ static const struct icmp6_err {
- 		.err	= ECONNREFUSED,
- 		.fatal	= 1,
- 	},
-+	{	/* POLICY_FAIL */
-+		.err	= EACCES,
-+		.fatal	= 1,
-+	},
-+	{	/* REJECT_ROUTE	*/
-+		.err	= EACCES,
-+		.fatal	= 1,
-+	},
- };
- 
- int icmpv6_err_convert(u8 type, u8 code, int *err)
-@@ -942,7 +950,7 @@ int icmpv6_err_convert(u8 type, u8 code,
- 	switch (type) {
- 	case ICMPV6_DEST_UNREACH:
- 		fatal = 1;
--		if (code <= ICMPV6_PORT_UNREACH) {
-+		if (code < ARRAY_SIZE(tab_unreach)) {
- 			*err  = tab_unreach[code].err;
- 			fatal = tab_unreach[code].fatal;
- 		}
+ 	if (!group)
 
 
