@@ -1,99 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755590Ab3ILTYe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 15:24:34 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:39985 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753519Ab3ILTYd (ORCPT
+	id S1755741Ab3ILT05 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 15:26:57 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:38180 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753904Ab3ILT0z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 15:24:33 -0400
-Message-ID: <1379013759.13477.12.camel@misato.fc.hp.com>
-Subject: Re: [RESEND PATCH v2 3/9] x86, dma: Support allocate memory from
- bottom upwards in dma_contiguous_reserve().
-From: Toshi Kani <toshi.kani@hp.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: tj@kernel.org, rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de,
-        mingo@elte.hu, hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Date: Thu, 12 Sep 2013 13:22:39 -0600
-In-Reply-To: <1378979537-21196-4-git-send-email-tangchen@cn.fujitsu.com>
-References: <1378979537-21196-1-git-send-email-tangchen@cn.fujitsu.com>
-	 <1378979537-21196-4-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 12 Sep 2013 15:26:55 -0400
+Subject: Re: [PATCH] ARM: msm: Move msm devicetrees under a Qualcomm dir
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=US-ASCII
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <CAOesGMhSZzpyT5XyECByLnvef0E+92y+uaXByiG0Vpm9f05AxQ@mail.gmail.com>
+Date: Thu, 12 Sep 2013 14:26:53 -0500
+Cc: Rob Herring <robherring2@gmail.com>, David Brown <davidb@codeaurora.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
+        Rohit Vaswani <rvaswani@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <584008C3-983C-4423-A76E-38DD67C2F1D9@codeaurora.org>
+References: <1379003839-16068-1-git-send-email-galak@codeaurora.org> <CAOesGMisWLwYKotGDFPW6PyHJs=_+fohTdC08SGjsv2FXaa7Fg@mail.gmail.com> <25E0B143-658E-4CCC-A88A-0AF70FFF33CE@codeaurora.org> <CAOesGMhfdvyJ_2AA2e8iO_2e=q7KgpyNbcriPKFw-RLormG6bA@mail.gmail.com> <3E38F48E-EE41-4564-84A1-36CF07B08811@codeaurora.org> <CAOesGMhN0jEx065cpf989P-JbuxPiOaPRsP4BD3VoW-n5ebP+w@mail.gmail.com> <9DD9D9A7-ED55-412F-A18D-599D1E365003@codeaurora.org> <523205E1.2040704@gmail.com> <CAOesGMhSZzpyT5XyECByLnvef0E+92y+uaXByiG0Vpm9f05AxQ@mail.gmail.com>
+To: Olof Johansson <olof@lixom.net>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-09-12 at 17:52 +0800, Tang Chen wrote:
-> During early boot, if the bottom up mode is set, just
-> try allocating bottom up from the end of kernel image,
-> and if that fails, do normal top down allocation.
+
+On Sep 12, 2013, at 1:46 PM, Olof Johansson wrote:
+
+> On Thu, Sep 12, 2013 at 11:20 AM, Rob Herring <robherring2@gmail.com> wrote:
 > 
-> So in function dma_contiguous_reserve(), we add the
-> above logic.
+>> As Stephen W has pointed out previously, the dtb filename itself is or
+>> may be an ABI and the bootloader may be hardcoded to a name. So we
+>> should avoid future renames.
 > 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> ---
->  drivers/base/dma-contiguous.c |   17 ++++++++++++++---
->  1 files changed, 14 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
-> index 99802d6..aada945 100644
-> --- a/drivers/base/dma-contiguous.c
-> +++ b/drivers/base/dma-contiguous.c
-> @@ -228,17 +228,28 @@ int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
->  			goto err;
->  		}
->  	} else {
-> +		phys_addr_t addr;
-> +
-> +		if (memblock_direction_bottom_up()) {
-> +			addr = memblock_alloc_bottom_up(
-> +						MEMBLOCK_ALLOC_ACCESSIBLE,
-> +						limit, size, alignment);
-> +			if (addr)
-> +				goto success;
-> +		}
-
-I am afraid that this version went to a wrong direction.  Allocating
-from the bottom up needs to be an internal logic within the memblock
-allocator.  It should not require the callers to be aware of the
-direction and make a special request.
-
-Thanks,
--Toshi
+> We still have the choice of producing the dtb files under
+> arch/arm/boot/dts even if we move dts/dtsi files one level deeper, as
+> long as we keep the filenames consistent. So we can do a move, just
+> not a rename.
 
 
-> +
->  		/*
->  		 * Use __memblock_alloc_base() since
->  		 * memblock_alloc_base() panic()s.
->  		 */
-> -		phys_addr_t addr = __memblock_alloc_base(size, alignment, limit);
-> +		addr = __memblock_alloc_base(size, alignment, limit);
->  		if (!addr) {
->  			ret = -ENOMEM;
->  			goto err;
-> -		} else {
-> -			base = addr;
->  		}
-> +
-> +success:
-> +		base = addr;
->  	}
->  
->  	/*
+Looking at arch/arm/boot/dts/ we are all over the place, so what's the naming convention we are going forward with?
 
+- k
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
