@@ -1,51 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756439Ab3ILGeu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 02:34:50 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:52722 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755021Ab3ILGes (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 02:34:48 -0400
-Message-ID: <52315F98.8020305@linux.vnet.ibm.com>
-Date: Thu, 12 Sep 2013 12:00:48 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1756555Ab3ILGe7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 02:34:59 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:38885 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756468Ab3ILGe4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 02:34:56 -0400
+Message-ID: <5231607C.10702@ti.com>
+Date: Thu, 12 Sep 2013 12:04:36 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Warren <swarren@wwwdotorg.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] cpufreq: Prevent problems in update_policy_cpu()
- if last_cpu == new_cpu
-References: <20130911201239.7832.72612.stgit@srivatsabhat.in.ibm.com> <20130911201334.7832.49714.stgit@srivatsabhat.in.ibm.com> <CAKohpomgd8X4UwFaVtJ49=CXTg2cyEirvD4_mj5ohqS5fk064Q@mail.gmail.com> <52315D7D.3030406@linux.vnet.ibm.com> <CAKohpoktJkAWf2xvRKmz3ZUW3wiRqHYdaR6d_HKsXZPXiiK53Q@mail.gmail.com>
-In-Reply-To: <CAKohpoktJkAWf2xvRKmz3ZUW3wiRqHYdaR6d_HKsXZPXiiK53Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jingoo Han <jg1.han@samsung.com>
+CC: "'Pratyush Anand'" <pratyush.anand@st.com>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
+        <linux-samsung-soc@vger.kernel.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Mohit KUMAR'" <Mohit.KUMAR@st.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>, "'Sean Cross'" <xobs@kosagi.com>,
+        "'Thierry Reding'" <thierry.reding@gmail.com>,
+        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH V3] pci: exynos: split into two parts such as Synopsys
+ part and Exynos part
+References: <002801ce8376$a807dbf0$f81793d0$@samsung.com> <51ED49D6.9050209@ti.com> <000701ce8741$fe47deb0$fad79c10$@samsung.com> <51EE22DF.6090902@ti.com> <001301ce8772$522dfc50$f689f4f0$@samsung.com>
+In-Reply-To: <001301ce8772$522dfc50$f689f4f0$@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091206-6102-0000-0000-0000042AB675
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2013 12:01 PM, Viresh Kumar wrote:
-> On 12 September 2013 11:51, Srivatsa S. Bhat
-> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->> That said, indeed currently there is no code in cpufreq that invokes the
->> function with last == new. So its not like we are masking an existing bug with
->> this patch. If you like, perhaps we can change this patch to print a warning
->> when it gets input values with last == new? That prevents disasters and also
->> warns when some code is buggy. Sounds like a win-win.
-> 
-> Exactly what I thought while I was midway reading your mail :)
-> Probably a WARN().. So that we don't miss any other bugs :)
-> 
+Hi Jingoo,
 
-Looking at the rate at which we are bumping into each others thoughts, I think
-maybe we should switch from email to IRC ;-) ;-)
+On Tuesday 23 July 2013 12:30 PM, Jingoo Han wrote:
+> On Tuesday, July 23, 2013 3:30 PM, Kishon Vijay Abraham I wrote:
+>> On Tuesday 23 July 2013 06:44 AM, Jingoo Han wrote:
+>>> On Tuesday, July 23, 2013 12:04 AM, Kishon Vijay Abraham I wrote:
+>>>> On Thursday 18 July 2013 10:51 AM, Jingoo Han wrote:
+>>>>> Exynos PCIe IP consists of Synopsys specific part and Exynos
+>>>>> specific part. Only core block is a Synopsys designware part;
+>>>>> other parts are Exynos specific.
+>>>>> Also, the Synopsys designware part can be shared with other
+>>>>> platforms; thus, it can be split two parts such as Synopsys
+>>>>> designware part and Exynos specific part.
+>>>>
+>>>> some more queries and comments..
+>>>
+>> .
+>> .
+>> <snip>
+>> .
+>> .
+>>>>> +			of_pci_range_to_resource(&range, np, &pp->cfg);
+>>>>> +			pp->config.cfg0_size = resource_size(&pp->cfg)/2;
+>>>>> +			pp->config.cfg1_size = resource_size(&pp->cfg)/2;
+>>>>> +		}
+>>>>> +	}
+>>>>> +
+>>>>> +	pp->dbi_base = devm_ioremap(pp->dev, pp->cfg.start,
+>>>>> +				resource_size(&pp->cfg));
+>>>>
+>>>> Why is configuraion space divided into two?
+>>>
+>>> Sorry, I don't know the exact reason. :(
+>>> Pratyush Anand may know about this.
+>>> Pratyush Anand, could you answer the question?
+>>>
+>>> Also, if you find some problems, please let me know.
 
-Regards,
-Srivatsa S. Bhat
+One more query..
 
+Where is inbound translation configuration done in your driver? how should it
+be done?
+
+Thanks
+Kishon
