@@ -1,89 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756530Ab3ILSEj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:04:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37836 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756056Ab3ILSEf (ORCPT
+	id S1756623Ab3ILSEz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:04:55 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:35599 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756562Ab3ILSEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 14:04:35 -0400
-Date: Thu, 12 Sep 2013 11:03:55 -0700
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-06c939c1f41b1c28bb17fae074ad610e22a01db8@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <20130909112636.GQ31370@twins.programming.kicks-ass.net>
-References: <20130909112636.GQ31370@twins.programming.kicks-ass.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86/intel: Fix Silvermont offcore masks
-Git-Commit-ID: 06c939c1f41b1c28bb17fae074ad610e22a01db8
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 12 Sep 2013 14:04:47 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 12 Sep 2013 11:04:01 -0700 (PDT)
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <3E38F48E-EE41-4564-84A1-36CF07B08811@codeaurora.org>
+References: <1379003839-16068-1-git-send-email-galak@codeaurora.org>
+	<CAOesGMisWLwYKotGDFPW6PyHJs=_+fohTdC08SGjsv2FXaa7Fg@mail.gmail.com>
+	<25E0B143-658E-4CCC-A88A-0AF70FFF33CE@codeaurora.org>
+	<CAOesGMhfdvyJ_2AA2e8iO_2e=q7KgpyNbcriPKFw-RLormG6bA@mail.gmail.com>
+	<3E38F48E-EE41-4564-84A1-36CF07B08811@codeaurora.org>
+Date: Thu, 12 Sep 2013 11:04:46 -0700
+Message-ID: <CAOesGMhN0jEx065cpf989P-JbuxPiOaPRsP4BD3VoW-n5ebP+w@mail.gmail.com>
+Subject: Re: [PATCH] ARM: msm: Move msm devicetrees under a Qualcomm dir
+From: Olof Johansson <olof@lixom.net>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: David Brown <davidb@codeaurora.org>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
+        Rohit Vaswani <rvaswani@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  06c939c1f41b1c28bb17fae074ad610e22a01db8
-Gitweb:     http://git.kernel.org/tip/06c939c1f41b1c28bb17fae074ad610e22a01db8
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Mon, 9 Sep 2013 13:26:36 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 12 Sep 2013 19:12:27 +0200
-
-perf/x86/intel: Fix Silvermont offcore masks
-
-Fengguang Wu reported:
-
-> sparse warnings: (new ones prefixed by >>)
+On Thu, Sep 12, 2013 at 10:55 AM, Kumar Gala <galak@codeaurora.org> wrote:
 >
-> >> arch/x86/kernel/cpu/perf_event_intel.c:901:9: sparse: constant 0x768005ffff is so big it is long
-> >> arch/x86/kernel/cpu/perf_event_intel.c:902:9: sparse: constant 0x768005ffff is so big it is long
+> On Sep 12, 2013, at 12:06 PM, Olof Johansson wrote:
 >
-> vim +901 arch/x86/kernel/cpu/perf_event_intel.c
+>> On Thu, Sep 12, 2013 at 9:53 AM, Kumar Gala <galak@codeaurora.org> wrote:
+>>>
+>>> On Sep 12, 2013, at 11:46 AM, Olof Johansson wrote:
+>>>
+>>>> On Thu, Sep 12, 2013 at 9:37 AM, Kumar Gala <galak@codeaurora.org> wrote:
+>>>>> Use the Qualcomm vendor prefix (qcom) as the directory name for
+>>>>> Qualcomm MSM devicetrees going forward.
+>>>>>
+>>>>> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+>>>>
+>>>> Let's not move just one platform like this. If we are to do this, we
+>>>> should move everything, and that will be really painful and needs to
+>>>> be done in a controlled manner, probably scripted and right before a
+>>>> -rc1 or such.
+>>>
+>>>
+>>> Than I suggest we deal with it when we pull the device trees out of the kernel tree.
+>>>
+>>> As such, I'd tell Rohit to go forward with the file being named apq8074-dragonboard.dtb for the time being.
+>>
+>> My original request to please use a common prefix for your product
+>> families stands. Please prefix with msm-*, or if you have to, qcom-*
+>> instead, since you guys can't seem to make your mind up on standard
+>> prefixes (msm, apq, etc).
 >
->    895	 },
->    896	};
->    897
->    898	static struct extra_reg intel_slm_extra_regs[] __read_mostly =
->    899	{
->    900		/* must define OFFCORE_RSP_X first, see intel_fixup_er() */
->  > 901		INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0x768005ffff, RSP_0),
->  > 902		INTEL_UEVENT_EXTRA_REG(0x02b7, MSR_OFFCORE_RSP_1, 0x768005ffff, RSP_1),
->    903		EVENT_EXTRA_END
->    904	};
->    905
+> This is silly, I dont see the reason to go with qcom-apq<SOC>-<BOARD>.dts and than in the future drop qcom- when we mostly likely shift to a dir structure.
+>
+> As engineers we are all too aware of the lack of sanity in marketing names, but its what we have so we have to live with it.
 
-Extend those constants to 64 bits.
+And we all have a choice whether we let the marketing people's
+insanity spread into our engineering projects, or if we keep it as
+sane as possible in spite of them.
 
-Reported-by: fengguang.wu@intel.com
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20130909112636.GQ31370@twins.programming.kicks-ass.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/perf_event_intel.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+I wouldn't have an objection here if there was some sort of rationale
+between what "apq" and "msm" means. But it seems like qualcomm rolls a
+dice and decides if a platform will have one name or the other.
+Dragonboard dmesg says msm<foo>. DTS file for the same board says apq.
+DTSI file says one thing, overridden by the dts to something else.
+Total chaos.
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index c62d883..9db76c3 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -899,8 +899,8 @@ static __initconst const u64 atom_hw_cache_event_ids
- static struct extra_reg intel_slm_extra_regs[] __read_mostly =
- {
- 	/* must define OFFCORE_RSP_X first, see intel_fixup_er() */
--	INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0x768005ffff, RSP_0),
--	INTEL_UEVENT_EXTRA_REG(0x02b7, MSR_OFFCORE_RSP_1, 0x768005ffff, RSP_1),
-+	INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0x768005ffffull, RSP_0),
-+	INTEL_UEVENT_EXTRA_REG(0x02b7, MSR_OFFCORE_RSP_1, 0x768005ffffull, RSP_1),
- 	EVENT_EXTRA_END
- };
- 
+I would be fine with adding two instead of one (after all, platforms
+like TI has this for AM* vs OMAP*, etc), but there _has_ to be some
+sort of consistency or you might just as well assign a random string
+as name.
+
+So, if you can't come up with a reasonable, rational and consistent
+naming scheme (which, apparantly, you can't since your marketing guys
+are in control of this and they don't get it right), then at least
+prefix with a common string for the platform. That's all I'm asking.
+
+
+-Olof
