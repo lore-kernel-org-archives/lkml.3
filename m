@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754859Ab3ILVkU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 17:40:20 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:52372 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754144Ab3ILVkS (ORCPT
+	id S1755344Ab3ILVkh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 17:40:37 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:34469 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754669Ab3ILVke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 17:40:18 -0400
+	Thu, 12 Sep 2013 17:40:34 -0400
+Date: Thu, 12 Sep 2013 23:40:29 +0200
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+To: Regid Ichira <regid23@nt1.in>
+Cc: Michal Marek <mmarek@suse.cz>, Rob Landley <rob@landley.net>,
+        linux-kbuild@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation/kbuild/kconfig.txt: Doesn't make
+ listnewconfig replacing yes "" | make oldconfig ?
+Message-ID: <20130912214028.GA3362@free.fr>
+References: <20130912003548.GF8821@nt1.in>
 MIME-Version: 1.0
-In-Reply-To: <87vc25pvvm.fsf@linaro.org>
-References: <1378913560-2752-1-git-send-email-mika.westerberg@linux.intel.com>
-	<1378913560-2752-2-git-send-email-mika.westerberg@linux.intel.com>
-	<87vc25pvvm.fsf@linaro.org>
-Date: Thu, 12 Sep 2013 14:40:15 -0700
-Message-ID: <CAGa+x85vxX8dbmk-8mOEQ03q6Ud1a-OfnV7t5-rNtu06vn_cSQ@mail.gmail.com>
-Subject: Re: [PATCH v2 1/9] i2c: prepare runtime PM support for I2C client devices
-From: Kevin Hilman <khilman@linaro.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-i2c@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-acpi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Lv Zheng <lv.zheng@intel.com>, Aaron Lu <aaron.lu@intel.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Mark Brown <broonie@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130912003548.GF8821@nt1.in>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 2:34 PM, Kevin Hilman <khilman@linaro.org> wrote:
-> Mika Westerberg <mika.westerberg@linux.intel.com> writes:
->
->> From: Aaron Lu <aaron.lu@intel.com>
->>
->> This patch adds runtime PM support for the I2C bus in a similar way that
->> has been done for PCI bus already. This means that the I2C bus core
->> prepares runtime PM for a client device just before a driver is about to be
->> bound to it. Devices that are not bound to any driver are not prepared for
->> runtime PM.
->>
->> In order to take advantage of this runtime PM support, the client device
->> driver needs drop the device runtime PM reference count by calling
->> pm_runtime_put() in its ->probe() callback and possibly implement rest of
->> the runtime PM callbacks.
->>
->> If the driver doesn't support runtime PM (like most of the existing I2C
->> client drivers), the device in question is regarded as being runtime PM
->> active and powered on.
->
-> But for existing drivers which already support runtime PM (at least 7 by
-> a quick grep), they will be stuck runtime enabled and stop hitting
-> low-power states after this patch.
+Regid, All,
 
-Oops, nevermind.  I was mixing this up with runtime PM on the i2c
-adapter but this is for the i2c client.
+On 2013-09-12 03:35 +0300, Regid Ichira spake thusly:
+> Signed-off-by: Regid Ichira <regid23@nt1.in>
 
-Sorry for the noise.
+Acked-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
 
-Kevin
+> ---
+>  Documentation/kbuild/kconfig.txt | 11 ++---------
+>  1 file changed, 2 insertions(+), 9 deletions(-)
+> 
+> diff --git a/Documentation/kbuild/kconfig.txt b/Documentation/kbuild/kconfig.txt
+> index 8ef6dbb..14cc40c 100644
+> --- a/Documentation/kbuild/kconfig.txt
+> +++ b/Documentation/kbuild/kconfig.txt
+> @@ -20,16 +20,9 @@ symbols have been introduced.
+>  To see a list of new config symbols when using "make oldconfig", use
+>  
+>  	cp user/some/old.config .config
+> -	yes "" | make oldconfig >conf.new
+> +	make listnewconfig 
+>  
+> -and the config program will list as (NEW) any new symbols that have
+> -unknown values.  Of course, the .config file is also updated with
+> -new (default) values, so you can use:
+> -
+> -	grep "(NEW)" conf.new
+> -
+> -to see the new config symbols or you can use diffconfig to see the
+> -differences between the previous and new .config files:
+> +and the config program will list any new symbols, one per line.
+>  
+>  	scripts/diffconfig .config.old .config | less
+>  
+> -- 
+> 1.8.4.rc3
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
+| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
+| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
+'------------------------------^-------^------------------^--------------------'
