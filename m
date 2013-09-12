@@ -1,100 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704Ab3ILSgu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:36:50 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:52307 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756173Ab3ILSfp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 14:35:45 -0400
-From: Koen Kooi <koen@dominion.thruhere.net>
-To: linux-kernel@vger.kernel.org
-Cc: bcousson@baylibre.com, tony@atomide.com, rob.herring@calxeda.com,
-        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
-        ijc+devicetree@hellion.org.uk, linux@arm.linux.org.uk,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Koen Kooi <koen@dominion.thruhere.net>
-Subject: [PATCH v4 2/4] ARM: dts: am335x-boneblack: add eMMC DT entry
-Date: Thu, 12 Sep 2013 20:35:33 +0200
-Message-Id: <1379010935-25943-3-git-send-email-koen@dominion.thruhere.net>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1379010935-25943-1-git-send-email-koen@dominion.thruhere.net>
-References: <1379010935-25943-1-git-send-email-koen@dominion.thruhere.net>
+	id S1756758Ab3ILShI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:37:08 -0400
+Received: from smtp.newsguy.com ([74.209.136.69]:60147 "EHLO smtp.newsguy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754899Ab3ILShE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 14:37:04 -0400
+From: Mike Dunn <mikedunn@newsguy.com>
+To: thierry.reding@gmail.com
+Cc: Mike Dunn <mikedunn@newsguy.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-pwm@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Robert Jarzmik <robert.jarzmik@free.fr>,
+        Marek Vasut <marex@denx.de>
+Subject: [PATCH] pwm-backlight: allow for non-increasing brightness levels
+Date: Thu, 12 Sep 2013 11:35:52 -0700
+Message-Id: <1379010952-8928-1-git-send-email-mikedunn@newsguy.com>
+X-Mailer: git-send-email 1.8.1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pinmux is specified in am335x-bone-common.dtsi to be reused by the eMMC cape.
+Currently the driver assumes that the values specified in the brightness-levels
+device tree property increase as they are parsed from left to right.  But boards
+that invert the signal between the PWM output and the backlight will need to
+specify decreasing brightness-levels.  This patch removes the assumption that
+the last element of the array is the max value, and instead searches the array
+for the max value and uses that as the normalizing value when determining the
+duty cycle.
 
-Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
+Signed-off-by: Mike Dunn <mikedunn@newsguy.com>
 ---
- arch/arm/boot/dts/am335x-bone-common.dtsi | 22 ++++++++++++++++++++++
- arch/arm/boot/dts/am335x-boneblack.dts    | 14 ++++++++++++++
- 2 files changed, 36 insertions(+)
+ drivers/video/backlight/pwm_bl.c | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
-index 0d95d54..bc8d1a2 100644
---- a/arch/arm/boot/dts/am335x-bone-common.dtsi
-+++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
-@@ -113,6 +113,21 @@
- 				0x160 (PIN_INPUT | MUX_MODE7) /* GPIO0_6 */
- 			>;
- 		};
-+
-+		emmc_pins: pinmux_emmc_pins {
-+			pinctrl-single,pins = <
-+				0x80 (PIN_INPUT_PULLUP | MUX_MODE2) /* gpmc_csn1.mmc1_clk, INPUT_PULLUP | MODE2 */
-+				0x84 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_csn2.mmc1_cmd, INPUT_PULLUP | MODE2 */
-+				0x00 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad0.mmc1_dat0, INPUT_PULLUP | MODE1 */
-+				0x04 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad1.mmc1_dat1, INPUT_PULLUP | MODE1 */
-+				0x08 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad2.mmc1_dat2, INPUT_PULLUP | MODE1 */
-+				0x0c (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad3.mmc1_dat3, INPUT_PULLUP | MODE1 */
-+				0x10 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad4.mmc1_dat4, INPUT_PULLUP | MODE1 */
-+				0x14 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad5.mmc1_dat5, INPUT_PULLUP | MODE1 */
-+				0x18 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad6.mmc1_dat6, INPUT_PULLUP | MODE1 */
-+				0x1c (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad7.mmc1_dat7, INPUT_PULLUP | MODE1 */
-+			>;
-+		};
- 	};
+diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
+index 1fea627..d66aaa0 100644
+--- a/drivers/video/backlight/pwm_bl.c
++++ b/drivers/video/backlight/pwm_bl.c
+@@ -27,6 +27,7 @@ struct pwm_bl_data {
+ 	unsigned int		period;
+ 	unsigned int		lth_brightness;
+ 	unsigned int		*levels;
++	unsigned int		max_level;
+ 	int			(*notify)(struct device *,
+ 					  int brightness);
+ 	void			(*notify_after)(struct device *,
+@@ -57,7 +58,7 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
  
- 	ocp {
-@@ -242,6 +257,13 @@
- 			regulator-always-on;
- 		};
- 	};
-+
-+	vmmcsd_fixed: fixedregulator@0 {
-+		compatible = "regulator-fixed";
-+		regulator-name = "vmmcsd_fixed";
-+		regulator-min-microvolt = <3300000>;
-+		regulator-max-microvolt = <3300000>;
-+	};
- };
+ 		if (pb->levels) {
+ 			duty_cycle = pb->levels[brightness];
+-			max = pb->levels[max];
++			max = pb->levels[pb->max_level];
+ 		} else {
+ 			duty_cycle = brightness;
+ 		}
+@@ -195,7 +196,15 @@ static int pwm_backlight_probe(struct platform_device *pdev)
+ 	}
  
- &cpsw_emac0 {
-diff --git a/arch/arm/boot/dts/am335x-boneblack.dts b/arch/arm/boot/dts/am335x-boneblack.dts
-index 197cadf..f4703cf 100644
---- a/arch/arm/boot/dts/am335x-boneblack.dts
-+++ b/arch/arm/boot/dts/am335x-boneblack.dts
-@@ -15,3 +15,17 @@
- 	regulator-max-microvolt = <1800000>;
- 	regulator-always-on;
- };
-+
-+&mmc1 { 
-+	vmmc-supply = <&vmmcsd_fixed>;
-+};
-+
-+&mmc2 { 
-+	vmmc-supply = <&vmmcsd_fixed>;
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&emmc_pins>;
-+	bus-width = <8>;
-+	status = "okay";
-+	ti,vcc-aux-disable-is-sleep;
-+};
-+
+ 	if (data->levels) {
+-		max = data->levels[data->max_brightness];
++		int i, max_value = 0, max_idx = 0;
++		for (i = 0; i <= data->max_brightness; i++) {
++			if (data->levels[i] > max_value) {
++				max_value = data->levels[i];
++				max_idx = i;
++			}
++		}
++		pb->max_level = max_idx;
++		max = data->levels[max_idx];
+ 		pb->levels = data->levels;
+ 	} else
+ 		max = data->max_brightness;
 -- 
-1.8.2.1
+1.8.1.5
 
