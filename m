@@ -1,81 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758Ab3ILShI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:37:08 -0400
-Received: from smtp.newsguy.com ([74.209.136.69]:60147 "EHLO smtp.newsguy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754899Ab3ILShE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 14:37:04 -0400
-From: Mike Dunn <mikedunn@newsguy.com>
-To: thierry.reding@gmail.com
-Cc: Mike Dunn <mikedunn@newsguy.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-pwm@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Robert Jarzmik <robert.jarzmik@free.fr>,
-        Marek Vasut <marex@denx.de>
-Subject: [PATCH] pwm-backlight: allow for non-increasing brightness levels
-Date: Thu, 12 Sep 2013 11:35:52 -0700
-Message-Id: <1379010952-8928-1-git-send-email-mikedunn@newsguy.com>
-X-Mailer: git-send-email 1.8.1.5
+	id S1756215Ab3ILSfp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:35:45 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:43013 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755733Ab3ILSfm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 14:35:42 -0400
+From: Koen Kooi <koen@dominion.thruhere.net>
+To: linux-kernel@vger.kernel.org
+Cc: bcousson@baylibre.com, tony@atomide.com, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
+        ijc+devicetree@hellion.org.uk, linux@arm.linux.org.uk,
+        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Koen Kooi <koen@dominion.thruhere.net>
+Subject: [PATCH v4 0/2] ARM: dts: Beaglebone MMC fixes
+Date: Thu, 12 Sep 2013 20:35:31 +0200
+Message-Id: <1379010935-25943-1-git-send-email-koen@dominion.thruhere.net>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the driver assumes that the values specified in the brightness-levels
-device tree property increase as they are parsed from left to right.  But boards
-that invert the signal between the PWM output and the backlight will need to
-specify decreasing brightness-levels.  This patch removes the assumption that
-the last element of the array is the max value, and instead searches the array
-for the max value and uses that as the normalizing value when determining the
-duty cycle.
+Here are two patches to fix MMC on beaglebone, one fixes card detect on BBW,
+the other adds the eMMC entry for BBB and its fixed regulator. After that mmc1
+gets a nice speed boost by moving to 4-bit mode and LED triggers get assigned.
 
-Signed-off-by: Mike Dunn <mikedunn@newsguy.com>
+This series depends on:
+
+http://comments.gmane.org/gmane.linux.kernel.stable/63648
+https://lkml.org/lkml/2013/9/10/454
+http://comments.gmane.org/gmane.linux.kernel.mmc/22381
+
+Or as git-cherry would put it:
+
+[koen@rrMBP patches]$ git cherry -v
++ 564fc88cc64387af5312e2abd8019c75a13223b2 ARM: OMAP2+: am335x-bone*: add DT for BeagleBone Black
++ e5133ed98acc1c3e01c370b851041a8ca629cd15 ARM: EDMA: Fix clearing of unused list for DT DMA resources
++ ac71bb58605d3bdd5d14af770a639fb3ff11c612 ARM: dts: add AM33XX EDMA support
++ 31a8270a299c57c7de7510f44d9dc36fd1787243 ARM: dts: add AM33XX SPI DMA support
++ 4fa0a4cb9ea17da30cf43085c03e5ec1361a4fc2 ARM: dts: add AM33XX MMC support and documentation
++ 0553f50bd45f019a0cc11050e2f20bddbf07dfe0 ARM: dts: am335x-bone: add CD for mmc1
++ 7d64f765630a2921a63b82f93f9959a6de37f29d ARM: dts: am335x-boneblack: add eMMC DT entry
++ dc96cd4003e2668d8ec7e7fe19e402e97a198f81 ARM: dts: am335x-bone-common: switch mmc1 to 4-bit mode
++ f8262e78830cda56c936724549ba9f04dddde312 ARM: dts: am335x-bone-common: add cpu0 and mmc1 triggers
+
+Also available as a git branch at https://github.com/koenkooi/linux/commits/mainline
+
+Changes since v3:
+	Addressed Nishants nitpicks for commit messages
+	Addressed Russ' comments about moving LDO3 for mmc1 out of the common dtsi
+
+Changes since v2:
+	Missing pinmux entries for eMMC added
+
+Changes since v1:
+	Removed ti,non-removable entry from eMMC node, see http://marc.info/?l=linux-arm-kernel&m=137889435710552&w=2
 ---
- drivers/video/backlight/pwm_bl.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
-index 1fea627..d66aaa0 100644
---- a/drivers/video/backlight/pwm_bl.c
-+++ b/drivers/video/backlight/pwm_bl.c
-@@ -27,6 +27,7 @@ struct pwm_bl_data {
- 	unsigned int		period;
- 	unsigned int		lth_brightness;
- 	unsigned int		*levels;
-+	unsigned int		max_level;
- 	int			(*notify)(struct device *,
- 					  int brightness);
- 	void			(*notify_after)(struct device *,
-@@ -57,7 +58,7 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
- 
- 		if (pb->levels) {
- 			duty_cycle = pb->levels[brightness];
--			max = pb->levels[max];
-+			max = pb->levels[pb->max_level];
- 		} else {
- 			duty_cycle = brightness;
- 		}
-@@ -195,7 +196,15 @@ static int pwm_backlight_probe(struct platform_device *pdev)
- 	}
- 
- 	if (data->levels) {
--		max = data->levels[data->max_brightness];
-+		int i, max_value = 0, max_idx = 0;
-+		for (i = 0; i <= data->max_brightness; i++) {
-+			if (data->levels[i] > max_value) {
-+				max_value = data->levels[i];
-+				max_idx = i;
-+			}
-+		}
-+		pb->max_level = max_idx;
-+		max = data->levels[max_idx];
- 		pb->levels = data->levels;
- 	} else
- 		max = data->max_brightness;
+Alexander Holler (1):
+  arm: bone: dts: add CD for mmc1
+
+Koen Kooi (3):
+  am335x-boneblack: add eMMC DT entry
+  ARM: am335x-bone-common: switch mmc1 to 4-bit mode
+  ARM: dts: am335x-bone-common: add cpu0 and mmc1 triggers
+
+ arch/arm/boot/dts/am335x-bone-common.dtsi | 39 +++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/am335x-bone.dts         |  1 -
+ arch/arm/boot/dts/am335x-boneblack.dts    | 14 +++++++++++
+ 3 files changed, 53 insertions(+), 1 deletion(-)
+
 -- 
-1.8.1.5
-
+1.8.2.1
