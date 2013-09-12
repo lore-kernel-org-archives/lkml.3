@@ -1,88 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932163Ab3ILGli (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 02:41:38 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:60697 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752995Ab3ILGle (ORCPT
+	id S932085Ab3ILGlh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 02:41:37 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:36049 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753382Ab3ILGle (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Sep 2013 02:41:34 -0400
-X-AuditID: cbfee691-b7f4a6d0000074fc-78-5231621c2448
-From: Jingoo Han <jg1.han@samsung.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Peter Tyser'" <ptyser@xes-inc.com>
-Subject: [PATCH 1/3] mfd: lpc_ich: remove unnecessary pci_set_drvdata()
-Date: Thu, 12 Sep 2013 15:41:32 +0900
-Message-id: <001501ceaf83$1e558220$5b008660$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac6vgx4pjQNLnVsKTseFP8zkmoiH8w==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNIsWRmVeSWpSXmKPExsVy+t8zY12ZJMMgg2VNXBaXF15itbj/9Sij
-	xeVdc9gsDj5/y2JxupvVgdXjzrU9bB7zTgZ69G1ZxejxeZOcx6r22awBrFFcNimpOZllqUX6
-	dglcGd+33WQumMNesfvCLOYGxk+sXYwcHBICJhLNt5S7GDmBTDGJC/fWs3UxcnEICSxjlNh1
-	qJcFImEice3YSSaIxCJGicZZa9khnF+MEq0T+9lAqtgE1CS+fDnMDjJVRMBL4tadIJAws0CW
-	xK+tG8EGCQu4S5x6fp4VxGYRUJX4dLyHEcTmFbCVePTlMzuELSjxY/I9FoheLYn1O48zQdjy
-	EpvXvGWGOFpd4tFfXYhNehJn11pDVIhI7HvxjhHkMgmBfewS058vh1olIPFt8iEWiFZZiU0H
-	mCHekpQ4uOIGywRGsVlIFs9CsngWksWzkKxYwMiyilE0tSC5oDgpvchUrzgxt7g0L10vOT93
-	EyMk4ibuYLx/wPoQYzLQ+onMUqLJ+cCIzSuJNzQ2M7IwNTE1NjK3NCNNWEmcV73FOlBIID2x
-	JDU7NbUgtSi+qDQntfgQIxMHp1QD42atyoUG3YdZhBQky2Z2lyb65vcxRhxa4byqrMvrqMVF
-	OdlXOyVnH79mtnj5gZlVDF1ZKataut1efmVhvVevH6SkszvDbi574MVTPGUVrcs3Zz24suDb
-	pW72X0/Xtv5853fK58hVP8deo4PPU96u/Of/0sat7VftHa3t77YyFr4WWiRQ+uPyTiWW4oxE
-	Qy3mouJEAJTF/mfOAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJKsWRmVeSWpSXmKPExsVy+t9jAV2ZJMMgg9WNbBaXF15itbj/9Sij
-	xeVdc9gsDj5/y2JxupvVgdXjzrU9bB7zTgZ69G1ZxejxeZOcx6r22awBrFENjDYZqYkpqUUK
-	qXnJ+SmZeem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QLuVFMoSc0qBQgGJxcVK
-	+naYJoSGuOlawDRG6PqGBMH1GBmggYR1jBnft91kLpjDXrH7wizmBsZPrF2MnBwSAiYS146d
-	ZIKwxSQu3FvP1sXIxSEksIhRonHWWnYI5xejROvEfjaQKjYBNYkvXw4DJTg4RAS8JG7dCQIJ
-	MwtkSfzaupEFxBYWcJc49fw82AIWAVWJT8d7GEFsXgFbiUdfPrND2IISPybfY4Ho1ZJYv/M4
-	E4QtL7F5zVtmkPESAuoSj/7qQmzSkzi71hqiQkRi34t3jBMYBWYhGTQLyaBZSAbNQtKygJFl
-	FaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZwRD+T2sG4ssHiEKMAB6MSD2/HLIMgIdbEsuLK
-	3EOMEhzMSiK88eaGQUK8KYmVValF+fFFpTmpxYcYk4H+nMgsJZqcD0w2eSXxhsYmZkaWRmYW
-	Ribm5qQJK4nzHmi1DhQSSE8sSc1OTS1ILYLZwsTBKdXAmM5t4rYz3emiddFDPo6gZZcf7NqZ
-	ezXBrqgtt919z6bCpIgGsQNPNuyTT396Y3bJqV2vjH5wZd3kfdpsH9xwqK9I0jWtmG3u6Tln
-	+xdmFz7w2mt04Hnl07r0HubC8+W7PGo5VTd9ZV1pZXdYoexPIG+QYK77ssmfN4Z9uLU2xTH0
-	99RXE1ruKrEUZyQaajEXFScCAG7kZOssAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+MIME-Version: 1.0
+In-Reply-To: <52315E9A.3000607@linux.vnet.ibm.com>
+References: <522E1FEF.6080803@wwwdotorg.org>
+	<1775778.MeiRhuYy7o@vostro.rjw.lan>
+	<522F86AD.6010603@wwwdotorg.org>
+	<2521560.SfeNbV74nj@vostro.rjw.lan>
+	<52304439.3030301@linux.vnet.ibm.com>
+	<CAKohpokTVzikxunqSdUYmLjTOkfhWFJ=N4TTa4rdbj2euCFY-g@mail.gmail.com>
+	<CAKohpomzQ8Yzk+OU0btQM6DGm4xsY1RR9uYFrZD3ZHO-bhrwKQ@mail.gmail.com>
+	<5230509D.6040205@linux.vnet.ibm.com>
+	<CAKohpo=DfmNSMnyVRK0gfx7QGr=jOTbFo6uuGhEOaa2UMkeQAQ@mail.gmail.com>
+	<CAKohpo=8mqRmmk17D52yiR9w1V4Z+2UzZ2kzABtrxHbYR+sQzw@mail.gmail.com>
+	<52315E9A.3000607@linux.vnet.ibm.com>
+Date: Thu, 12 Sep 2013 12:11:33 +0530
+Message-ID: <CAKohpo=LuoKTf+mX1oBt97K3sJVu0iN=whN7VGw6kuartnrr+w@mail.gmail.com>
+Subject: Re: cpufreq_stats NULL deref on second system suspend
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        cpufreq <cpufreq@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver core clears the driver data to NULL after device_release
-or on probe failure. Thus, it is not needed to manually clear the
-device driver data to NULL.
+On 12 September 2013 11:56, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> I had the same thought when solving this bug.. We have had similar issues with
+> CPU hotplug notifiers too: why are they invoked in the same order during both
+> CPU down and up, instead of reversing the order? I even had a patchset to perform
+> reverse-invocation of notifiers.. http://lwn.net/Articles/508072/
+> ... but people didn't find that very compelling to have.
+>
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/mfd/lpc_ich.c |    2 --
- 1 file changed, 2 deletions(-)
+> It does to me too, but I think the reason nobody really bothered is because perhaps
+> not many other subsystems care about the order in which CPUs are torn down or
+> brought up; they just need the total number to match.. cpufreq is one exception
+> as we saw with this bug.
 
-diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
-index 9483bc8..316af07 100644
---- a/drivers/mfd/lpc_ich.c
-+++ b/drivers/mfd/lpc_ich.c
-@@ -969,7 +969,6 @@ static int lpc_ich_probe(struct pci_dev *dev,
- 	if (!cell_added) {
- 		dev_warn(&dev->dev, "No MFD cells added\n");
- 		lpc_ich_restore_config_space(dev);
--		pci_set_drvdata(dev, NULL);
- 		return -ENODEV;
- 	}
- 
-@@ -980,7 +979,6 @@ static void lpc_ich_remove(struct pci_dev *dev)
- {
- 	mfd_remove_devices(&dev->dev);
- 	lpc_ich_restore_config_space(dev);
--	pci_set_drvdata(dev, NULL);
- }
- 
- static struct pci_driver lpc_ich_driver = {
--- 
-1.7.10.4
+Probably its time to re-spin that series and make CPUFreq as one of the users
+of that patchset.. Resume should be just opposite of suspend and so
+that patchset
+would make sense even if not many people care about it :)
 
+Over that there is one more problem that I see, don't know if it is really a big
+issue..
 
+After a suspend/resume value of policy->cpu may get changed... And so the
+hierarchy of sysfs cpufreq files too.. Folder that had links to other
+CPUs folder
+can now be actual folders instead of links and vice versa..
+
+Don't know if this can break something ??
