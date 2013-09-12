@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757228Ab3ILSOk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:14:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57063 "EHLO
+	id S1757207Ab3ILSOj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:14:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57067 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755120Ab3ILR7R (ORCPT
+	with ESMTP id S1755149Ab3ILR7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Sep 2013 13:59:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jesper Dangaard Brouer <brouer@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 25/46] net_sched: restore "linklayer atm" handling
-Date: Thu, 12 Sep 2013 10:58:36 -0700
-Message-Id: <20130912175723.743750832@linuxfoundation.org>
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: [ 26/46] sfc: Fix lookup of default RX MAC filters when steered using ethtool
+Date: Thu, 12 Sep 2013 10:58:37 -0700
+Message-Id: <20130912175723.855881875@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130912175721.001906199@linuxfoundation.org>
 References: <20130912175721.001906199@linuxfoundation.org>
@@ -27,194 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jesper Dangaard Brouer <brouer@redhat.com>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-[ Upstream commit 8a8e3d84b1719a56f9151909e80ea6ebc5b8e318 ]
+[ Upstream commit f3851b0acc5a75bd33c6d344a2e4f920e1622ff0 ]
 
-commit 56b765b79 ("htb: improved accuracy at high rates")
-broke the "linklayer atm" handling.
+commit 385904f819e3 ('sfc: Don't use
+efx_filter_{build,hash,increment}() for default MAC filters') used the
+wrong name to find the index of default RX MAC filters at insertion/
+update time.  This could result in memory corruption and would in any
+case silently fail to update the filter.
 
- tc class add ... htb rate X ceil Y linklayer atm
-
-The linklayer setting is implemented by modifying the rate table
-which is send to the kernel.  No direct parameter were
-transferred to the kernel indicating the linklayer setting.
-
-The commit 56b765b79 ("htb: improved accuracy at high rates")
-removed the use of the rate table system.
-
-To keep compatible with older iproute2 utils, this patch detects
-the linklayer by parsing the rate table.  It also supports future
-versions of iproute2 to send this linklayer parameter to the
-kernel directly. This is done by using the __reserved field in
-struct tc_ratespec, to convey the choosen linklayer option, but
-only using the lower 4 bits of this field.
-
-Linklayer detection is limited to speeds below 100Mbit/s, because
-at high rates the rtab is gets too inaccurate, so bad that
-several fields contain the same values, this resembling the ATM
-detect.  Fields even start to contain "0" time to send, e.g. at
-1000Mbit/s sending a 96 bytes packet cost "0", thus the rtab have
-been more broken than we first realized.
-
-Signed-off-by: Jesper Dangaard Brouer <brouer@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/sch_generic.h      |    9 ++++++++-
- include/uapi/linux/pkt_sched.h |   10 +++++++++-
- net/sched/sch_api.c            |   41 +++++++++++++++++++++++++++++++++++++++++
- net/sched/sch_generic.c        |    1 +
- net/sched/sch_htb.c            |   13 +++++++++++++
- 5 files changed, 72 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/sfc/filter.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/net/sch_generic.h
-+++ b/include/net/sch_generic.h
-@@ -682,13 +682,19 @@ struct psched_ratecfg {
- 	u64	rate_bps;
- 	u32	mult;
- 	u16	overhead;
-+	u8	linklayer;
- 	u8	shift;
- };
+--- a/drivers/net/ethernet/sfc/filter.c
++++ b/drivers/net/ethernet/sfc/filter.c
+@@ -675,7 +675,7 @@ s32 efx_filter_insert_filter(struct efx_
+ 		BUILD_BUG_ON(EFX_FILTER_INDEX_UC_DEF != 0);
+ 		BUILD_BUG_ON(EFX_FILTER_INDEX_MC_DEF !=
+ 			     EFX_FILTER_MC_DEF - EFX_FILTER_UC_DEF);
+-		rep_index = spec->type - EFX_FILTER_INDEX_UC_DEF;
++		rep_index = spec->type - EFX_FILTER_UC_DEF;
+ 		ins_index = rep_index;
  
- static inline u64 psched_l2t_ns(const struct psched_ratecfg *r,
- 				unsigned int len)
- {
--	return ((u64)(len + r->overhead) * r->mult) >> r->shift;
-+	len += r->overhead;
-+
-+	if (unlikely(r->linklayer == TC_LINKLAYER_ATM))
-+		return ((u64)(DIV_ROUND_UP(len,48)*53) * r->mult) >> r->shift;
-+
-+	return ((u64)len * r->mult) >> r->shift;
- }
- 
- extern void psched_ratecfg_precompute(struct psched_ratecfg *r, const struct tc_ratespec *conf);
-@@ -699,6 +705,7 @@ static inline void psched_ratecfg_getrat
- 	memset(res, 0, sizeof(*res));
- 	res->rate = r->rate_bps >> 3;
- 	res->overhead = r->overhead;
-+	res->linklayer = (r->linklayer & TC_LINKLAYER_MASK);
- }
- 
- #endif
---- a/include/uapi/linux/pkt_sched.h
-+++ b/include/uapi/linux/pkt_sched.h
-@@ -73,9 +73,17 @@ struct tc_estimator {
- #define TC_H_ROOT	(0xFFFFFFFFU)
- #define TC_H_INGRESS    (0xFFFFFFF1U)
- 
-+/* Need to corrospond to iproute2 tc/tc_core.h "enum link_layer" */
-+enum tc_link_layer {
-+	TC_LINKLAYER_UNAWARE, /* Indicate unaware old iproute2 util */
-+	TC_LINKLAYER_ETHERNET,
-+	TC_LINKLAYER_ATM,
-+};
-+#define TC_LINKLAYER_MASK 0x0F /* limit use to lower 4 bits */
-+
- struct tc_ratespec {
- 	unsigned char	cell_log;
--	unsigned char	__reserved;
-+	__u8		linklayer; /* lower 4 bits */
- 	unsigned short	overhead;
- 	short		cell_align;
- 	unsigned short	mpu;
---- a/net/sched/sch_api.c
-+++ b/net/sched/sch_api.c
-@@ -285,6 +285,45 @@ static struct Qdisc_ops *qdisc_lookup_op
- 	return q;
- }
- 
-+/* The linklayer setting were not transferred from iproute2, in older
-+ * versions, and the rate tables lookup systems have been dropped in
-+ * the kernel. To keep backward compatible with older iproute2 tc
-+ * utils, we detect the linklayer setting by detecting if the rate
-+ * table were modified.
-+ *
-+ * For linklayer ATM table entries, the rate table will be aligned to
-+ * 48 bytes, thus some table entries will contain the same value.  The
-+ * mpu (min packet unit) is also encoded into the old rate table, thus
-+ * starting from the mpu, we find low and high table entries for
-+ * mapping this cell.  If these entries contain the same value, when
-+ * the rate tables have been modified for linklayer ATM.
-+ *
-+ * This is done by rounding mpu to the nearest 48 bytes cell/entry,
-+ * and then roundup to the next cell, calc the table entry one below,
-+ * and compare.
-+ */
-+static __u8 __detect_linklayer(struct tc_ratespec *r, __u32 *rtab)
-+{
-+	int low       = roundup(r->mpu, 48);
-+	int high      = roundup(low+1, 48);
-+	int cell_low  = low >> r->cell_log;
-+	int cell_high = (high >> r->cell_log) - 1;
-+
-+	/* rtab is too inaccurate at rates > 100Mbit/s */
-+	if ((r->rate > (100000000/8)) || (rtab[0] == 0)) {
-+		pr_debug("TC linklayer: Giving up ATM detection\n");
-+		return TC_LINKLAYER_ETHERNET;
-+	}
-+
-+	if ((cell_high > cell_low) && (cell_high < 256)
-+	    && (rtab[cell_low] == rtab[cell_high])) {
-+		pr_debug("TC linklayer: Detected ATM, low(%d)=high(%d)=%u\n",
-+			 cell_low, cell_high, rtab[cell_high]);
-+		return TC_LINKLAYER_ATM;
-+	}
-+	return TC_LINKLAYER_ETHERNET;
-+}
-+
- static struct qdisc_rate_table *qdisc_rtab_list;
- 
- struct qdisc_rate_table *qdisc_get_rtab(struct tc_ratespec *r, struct nlattr *tab)
-@@ -308,6 +347,8 @@ struct qdisc_rate_table *qdisc_get_rtab(
- 		rtab->rate = *r;
- 		rtab->refcnt = 1;
- 		memcpy(rtab->data, nla_data(tab), 1024);
-+		if (r->linklayer == TC_LINKLAYER_UNAWARE)
-+			r->linklayer = __detect_linklayer(r, rtab->data);
- 		rtab->next = qdisc_rtab_list;
- 		qdisc_rtab_list = rtab;
- 	}
---- a/net/sched/sch_generic.c
-+++ b/net/sched/sch_generic.c
-@@ -908,6 +908,7 @@ void psched_ratecfg_precompute(struct ps
- 	memset(r, 0, sizeof(*r));
- 	r->overhead = conf->overhead;
- 	r->rate_bps = (u64)conf->rate << 3;
-+	r->linklayer = (conf->linklayer & TC_LINKLAYER_MASK);
- 	r->mult = 1;
- 	/*
- 	 * Calibrate mult, shift so that token counting is accurate
---- a/net/sched/sch_htb.c
-+++ b/net/sched/sch_htb.c
-@@ -1312,6 +1312,7 @@ static int htb_change_class(struct Qdisc
- 	struct htb_sched *q = qdisc_priv(sch);
- 	struct htb_class *cl = (struct htb_class *)*arg, *parent;
- 	struct nlattr *opt = tca[TCA_OPTIONS];
-+	struct qdisc_rate_table *rtab = NULL, *ctab = NULL;
- 	struct nlattr *tb[TCA_HTB_MAX + 1];
- 	struct tc_htb_opt *hopt;
- 
-@@ -1333,6 +1334,18 @@ static int htb_change_class(struct Qdisc
- 	if (!hopt->rate.rate || !hopt->ceil.rate)
- 		goto failure;
- 
-+	/* Keeping backward compatible with rate_table based iproute2 tc */
-+	if (hopt->rate.linklayer == TC_LINKLAYER_UNAWARE) {
-+		rtab = qdisc_get_rtab(&hopt->rate, tb[TCA_HTB_RTAB]);
-+		if (rtab)
-+			qdisc_put_rtab(rtab);
-+	}
-+	if (hopt->ceil.linklayer == TC_LINKLAYER_UNAWARE) {
-+		ctab = qdisc_get_rtab(&hopt->ceil, tb[TCA_HTB_CTAB]);
-+		if (ctab)
-+			qdisc_put_rtab(ctab);
-+	}
-+
- 	if (!cl) {		/* new class */
- 		struct Qdisc *new_q;
- 		int prio;
+ 		spin_lock_bh(&state->lock);
 
 
