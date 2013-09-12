@@ -1,90 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755799Ab3ILRcF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 13:32:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56589 "EHLO
+	id S1755831Ab3ILRcb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 13:32:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56555 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754827Ab3ILR0i (ORCPT
+	with ESMTP id S1754366Ab3ILR0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 13:26:38 -0400
+	Thu, 12 Sep 2013 13:26:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 09/19] ipv6: drop packets with multiple fragmentation headers
-Date: Thu, 12 Sep 2013 10:26:18 -0700
-Message-Id: <20130912172525.185359532@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [ 00/19] 3.0.96-stable review
+Date: Thu, 12 Sep 2013 10:26:09 -0700
+Message-Id: <20130912172524.135620246@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130912172524.135620246@linuxfoundation.org>
-References: <20130912172524.135620246@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.0.96 release.
+There are 19 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Sat Sep 14 17:24:38 UTC 2013.
+Anything received after that time might be too late.
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.96-rc1.gz
+and the diffstat can be found below.
 
-[ Upstream commit f46078cfcd77fa5165bf849f5e568a7ac5fa569c ]
+thanks,
 
-It is not allowed for an ipv6 packet to contain multiple fragmentation
-headers. So discard packets which were already reassembled by
-fragmentation logic and send back a parameter problem icmp.
+greg k-h
 
-The updates for RFC 6980 will come in later, I have to do a bit more
-research here.
+-------------
+Pseudo-Shortlog of commits:
 
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/ipv6.h  |    1 +
- net/ipv6/reassembly.c |    5 +++++
- 2 files changed, 6 insertions(+)
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.0.96-rc1
 
---- a/include/linux/ipv6.h
-+++ b/include/linux/ipv6.h
-@@ -255,6 +255,7 @@ struct inet6_skb_parm {
- #define IP6SKB_XFRM_TRANSFORMED	1
- #define IP6SKB_FORWARDED	2
- #define IP6SKB_REROUTED		4
-+#define IP6SKB_FRAGMENTED      16
- };
- 
- #define IP6CB(skb)	((struct inet6_skb_parm*)((skb)->cb))
---- a/net/ipv6/reassembly.c
-+++ b/net/ipv6/reassembly.c
-@@ -516,6 +516,7 @@ static int ip6_frag_reasm(struct frag_qu
- 	head->tstamp = fq->q.stamp;
- 	ipv6_hdr(head)->payload_len = htons(payload_len);
- 	IP6CB(head)->nhoff = nhoff;
-+	IP6CB(head)->flags |= IP6SKB_FRAGMENTED;
- 
- 	/* Yes, and fold redundant checksum back. 8) */
- 	if (head->ip_summed == CHECKSUM_COMPLETE)
-@@ -551,6 +552,9 @@ static int ipv6_frag_rcv(struct sk_buff
- 	const struct ipv6hdr *hdr = ipv6_hdr(skb);
- 	struct net *net = dev_net(skb_dst(skb)->dev);
- 
-+	if (IP6CB(skb)->flags & IP6SKB_FRAGMENTED)
-+		goto fail_hdr;
-+
- 	IP6_INC_STATS_BH(net, ip6_dst_idev(skb_dst(skb)), IPSTATS_MIB_REASMREQDS);
- 
- 	/* Jumbo payload inhibits frag. header */
-@@ -571,6 +575,7 @@ static int ipv6_frag_rcv(struct sk_buff
- 				 ip6_dst_idev(skb_dst(skb)), IPSTATS_MIB_REASMOKS);
- 
- 		IP6CB(skb)->nhoff = (u8 *)fhdr - skb_network_header(skb);
-+		IP6CB(skb)->flags |= IP6SKB_FRAGMENTED;
- 		return 1;
- 	}
- 
+Dominik Dingel <dingel@linux.vnet.ibm.com>
+    KVM: s390: move kvm_guest_enter,exit closer to sie
+
+Geert Uytterhoeven <geert@linux-m68k.org>
+    m32r: make memset() global for CONFIG_KERNEL_BZIP2=y
+
+Geert Uytterhoeven <geert@linux-m68k.org>
+    m32r: add memcpy() for CONFIG_KERNEL_GZIP=y
+
+Geert Uytterhoeven <geert@linux-m68k.org>
+    m32r: consistently use "suffix-$(...)"
+
+Paul Gortmaker <paul.gortmaker@windriver.com>
+    pci: frv architecture needs generic setup-bus infrastructure
+
+Cong Wang <xiyou.wangcong@gmail.com>
+    PARISC: include <linux/prefetch.h> in drivers/parisc/iommu-helpers.h
+
+Ying Xue <ying.xue@windriver.com>
+    tipc: fix lockdep warning during bearer initialization
+
+Jiri Bohac <jbohac@suse.cz>
+    ICMPv6: treat dest unreachable codes 5 and 6 as EACCES, not EPROTO
+
+Daniel Borkmann <dborkman@redhat.com>
+    net: bridge: convert MLDv2 Query MRC into msecs_to_jiffies for max_delay
+
+Thomas Graf <tgraf@suug.ch>
+    ipv6: Don't depend on per socket memory for neighbour discovery messages
+
+Hannes Frederic Sowa <hannes@stressinduktion.org>
+    ipv6: drop packets with multiple fragmentation headers
+
+Hannes Frederic Sowa <hannes@stressinduktion.org>
+    ipv6: remove max_addresses check from ipv6_create_tempaddr
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    tun: signedness bug in tun_get_user()
+
+Hannes Frederic Sowa <hannes@stressinduktion.org>
+    ipv6: don't stop backtracking in fib6_lookup_1 if subtree does not match
+
+Eric Dumazet <edumazet@google.com>
+    tcp: cubic: fix bug in bictcp_acked()
+
+Eric Dumazet <edumazet@google.com>
+    tcp: cubic: fix overflow error in bictcp_update()
+
+Eric Dumazet <edumazet@google.com>
+    fib_trie: remove potential out of bound access
+
+Roman Gushchin <klamm@yandex-team.ru>
+    net: check net.core.somaxconn sysctl values
+
+stephen hemminger <stephen@networkplumber.org>
+    htb: fix sign extension bug
+
+
+-------------
+
+Diffstat:
+
+ Makefile                           |  4 ++--
+ arch/m32r/boot/compressed/Makefile |  6 +++---
+ arch/m32r/boot/compressed/misc.c   | 12 +++++++++++-
+ arch/s390/kvm/kvm-s390.c           | 17 +++++++++++------
+ drivers/net/tun.c                  |  6 ++++--
+ drivers/parisc/iommu-helpers.h     |  2 ++
+ drivers/pci/Makefile               |  1 +
+ include/linux/icmpv6.h             |  2 ++
+ include/linux/ipv6.h               |  1 +
+ net/bridge/br_multicast.c          |  3 ++-
+ net/core/sysctl_net_core.c         |  7 ++++++-
+ net/ipv4/fib_trie.c                |  5 +----
+ net/ipv4/tcp_cubic.c               | 12 +++++++-----
+ net/ipv6/addrconf.c                | 10 ++++------
+ net/ipv6/icmp.c                    | 10 +++++++++-
+ net/ipv6/ip6_fib.c                 | 16 ++++++++++++----
+ net/ipv6/ndisc.c                   | 16 +++++++++-------
+ net/ipv6/reassembly.c              |  5 +++++
+ net/sched/sch_htb.c                |  2 +-
+ net/tipc/eth_media.c               | 15 ++++++++++++++-
+ 20 files changed, 107 insertions(+), 45 deletions(-)
 
 
