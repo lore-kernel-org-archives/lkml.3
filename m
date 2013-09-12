@@ -1,63 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753526Ab3ILOUW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 10:20:22 -0400
-Received: from a9-46.smtp-out.amazonses.com ([54.240.9.46]:56901 "EHLO
-	a9-46.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752539Ab3ILOUU (ORCPT
+	id S1753001Ab3ILOTg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 10:19:36 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:15686 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752179Ab3ILOTd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 10:20:20 -0400
-Date: Thu, 12 Sep 2013 14:20:18 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Ingo Molnar <mingo@kernel.org>
-cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        sbw@mit.edu
-Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
- section?
-In-Reply-To: <20130912063940.GC11583@gmail.com>
-Message-ID: <00000141128b3e55-996e72db-3257-4d38-801a-ab70a7a20ca2-000000@email.amazonses.com>
-References: <20130909105347.GK31370@twins.programming.kicks-ass.net> <20130909132343.GN3966@linux.vnet.ibm.com> <20130909133604.GC31370@twins.programming.kicks-ass.net> <000001410333127c-486c74ec-3209-4c5e-a92f-0c11e00fa141-000000@email.amazonses.com>
- <20130909150854.GD26785@twins.programming.kicks-ass.net> <0000014103534c88-48ee11a3-a581-4e52-b2df-3a1168047d96-000000@email.amazonses.com> <20130909160024.GA25555@gmail.com> <20130909120328.583a586d@gandalf.local.home> <20130909161130.GA27188@gmail.com>
- <0000014109cebf30-d652cc46-6cf8-4bf1-8ca3-8f9a12c1d7e9-000000@email.amazonses.com> <20130912063940.GC11583@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.09.12-54.240.9.46
+	Thu, 12 Sep 2013 10:19:33 -0400
+X-AuditID: cbfee61b-b7f776d0000016c8-4a-5231cd74f48c
+From: Robert Baldyga <r.baldyga@samsung.com>
+To: balbi@ti.com
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com,
+        m.szyprowski@samsung.com, Robert Baldyga <r.baldyga@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [PATCH 2/6] usb: s3c-hsotg: fix unregistration function
+Date: Thu, 12 Sep 2013 16:18:48 +0200
+Message-id: <1378995532-32142-3-git-send-email-r.baldyga@samsung.com>
+X-Mailer: git-send-email 1.7.10
+In-reply-to: <1378995532-32142-1-git-send-email-r.baldyga@samsung.com>
+References: <1378995532-32142-1-git-send-email-r.baldyga@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprELMWRmVeSWpSXmKPExsVy+t9jQd2Ss4ZBBsd6eS02zljPanHwfr1F
+	8+L1bBZnm96wW1zeNYfNYtGyVmaLtUfusls8OLyT3YHDY//cNewefVtWMXocv7GdyePzJrkA
+	ligum5TUnMyy1CJ9uwSujP9PYwr+CVS87VnA1sC4jq+LkZNDQsBEYuqZ86wQtpjEhXvr2boY
+	uTiEBKYzSuz9eJwZwuliktjdspERpIpNQEdiy/cJYLaIgIDE+heX2EGKmAWeMEpMPfKKHSQh
+	LOAg8WT/exYQm0VAVWLepF1gDbwCrhLvj61igVgnL/H0fh8biM0p4CbRtxtkNQfQNleJiVtT
+	JjDyLmBkWMUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHFLPpHcwrmqwOMQowMGoxMObuNgw
+	SIg1say4MvcQowQHs5II7+eJQCHelMTKqtSi/Pii0pzU4kOM0hwsSuK8B1utA4UE0hNLUrNT
+	UwtSi2CyTBycUg2MBocKc9tm3G3Qc7ASMz20htUpr8xmUoj4rZ9iNQJPrnW7/9P5JBXm0/rz
+	Xwl/wr9qH+85Btw/NWML/ot9Oq/ExtthwMFsXTNdXebejz9rO/cqG2+7yxqird/+RurHqvmb
+	fhZN4DbaoFivo3B7WtcGGTHLIyq3Gb/K+eflFot92iNx5mR0+j8lluKMREMt5qLiRABjA51N
+	JQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Sep 2013, Ingo Molnar wrote:
+From: Marek Szyprowski <m.szyprowski@samsung.com>
 
->
-> * Christoph Lameter <cl@linux.com> wrote:
->
-> > On Mon, 9 Sep 2013, Ingo Molnar wrote:
-> >
-> > > I saw those, he posted 'needs testing' patches. He still behaved
-> > > passive-aggressively, pretending that it was some difficult task to
-> > > perform, as if we were pulling his teeth.
-> >
-> > I need your review of those. I will rediff as soon as rc1 is out to send
-> > something that can be put into -next. Please tell me until then if the
-> > approach is ok. I dont think we can do anything in the merge window.
->
-> The patch looked OK. Have you tested it, such as using a this_cpu op on a
-> PREEMPT=y kernel in a preemptible section? That should trigger the preempt
-> warning.
+After driver conversion to udc_start/udc_stop infrastructure (commit
+"usb:hsotg:samsung: Use new udc_start and udc_stop callbacks"
+f65f0f1098) the gadget unregistration function is almost always called
+with 'driver' parameter being NULL, what caused that the unregistration
+code has not been executed at all. This is a leftover from the earlier
+verison of this function (which used simple start/stop interface), where
+driver parameter was obligatory.
 
-The reason that certain __this_cpu ops were converted to raw_cpu ops is
-because they triggered the preemption check. The test was done in a kvm
-environment (as evident from the description).
+This patch removes the NULL check for the 'driver' pointer and removes
+all dereferences of it. It also moves disabling voltage regulators out
+of the atomic context, because handling regulators (which are usually
+i2c devices) might require sleeping.
 
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/usb/gadget/s3c-hsotg.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
+diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
+index af22f24..b13a4f9 100644
+--- a/drivers/usb/gadget/s3c-hsotg.c
++++ b/drivers/usb/gadget/s3c-hsotg.c
+@@ -2961,9 +2961,6 @@ static int s3c_hsotg_udc_stop(struct usb_gadget *gadget,
+ 	if (!hsotg)
+ 		return -ENODEV;
+ 
+-	if (!driver || driver != hsotg->driver || !driver->unbind)
+-		return -EINVAL;
+-
+ 	/* all endpoints should be shutdown */
+ 	for (ep = 0; ep < hsotg->num_of_eps; ep++)
+ 		s3c_hsotg_ep_disable(&hsotg->eps[ep].ep);
+@@ -2971,15 +2968,15 @@ static int s3c_hsotg_udc_stop(struct usb_gadget *gadget,
+ 	spin_lock_irqsave(&hsotg->lock, flags);
+ 
+ 	s3c_hsotg_phy_disable(hsotg);
+-	regulator_bulk_disable(ARRAY_SIZE(hsotg->supplies), hsotg->supplies);
+ 
+-	hsotg->driver = NULL;
++	if (!driver)
++		hsotg->driver = NULL;
++
+ 	hsotg->gadget.speed = USB_SPEED_UNKNOWN;
+ 
+ 	spin_unlock_irqrestore(&hsotg->lock, flags);
+ 
+-	dev_info(hsotg->dev, "unregistered gadget driver '%s'\n",
+-		 driver->driver.name);
++	regulator_bulk_disable(ARRAY_SIZE(hsotg->supplies), hsotg->supplies);
+ 
+ 	return 0;
+ }
+-- 
+1.7.9.5
 
