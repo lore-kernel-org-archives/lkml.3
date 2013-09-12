@@ -1,66 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932160Ab3ILFmj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 01:42:39 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26034 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755031Ab3ILFkr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 01:40:47 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=9tzUimky9rwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=E7-7XTOIapsA:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=CfwX4e2vhy4p_dhnA2sA:9 a=MSl-tDqOz04A:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130911042903.777465020@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 11 Sep 2013 00:28:15 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Luiz Angelo Daros de Luca <luizluca@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [068/251] usb: serial: cp210x: Add USB ID for Netgear Switches embedded serial
- adapter
-References: <20130911042707.738353451@goodmis.org>
-Content-Disposition: inline; filename=0068-usb-serial-cp210x-Add-USB-ID-for-Netgear-Switches-em.patch
+	id S932183Ab3ILFmw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 01:42:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24166 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753262Ab3ILFmu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 01:42:50 -0400
+Date: Thu, 12 Sep 2013 08:44:53 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, Rob Landley <rob@landley.net>,
+        mtosatti@redhat.com
+Subject: Re: [PATCH V2] Documentation/kvm: Update cpuid documentation for
+ steal  time and pv eoi
+Message-ID: <20130912054453.GA13116@redhat.com>
+References: <y>
+ <1378284526-863-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378284526-863-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.9-rc1 stable review patch.
-If anyone has any objections, please let me know.
+On Wed, Sep 04, 2013 at 02:18:46PM +0530, Raghavendra K T wrote:
+> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+> ---
+>  Changes in V2:
+>   Correction in the description of steal time and added msr info (Michael S Tsirkin)
 
-------------------
+Thanks. Some comments below:
 
-From: Luiz Angelo Daros de Luca <luizluca@gmail.com>
+>  Documentation/virtual/kvm/cpuid.txt | 10 ++++++++++
+>  1 file changed, 10 insertions(+)
+> 
+> diff --git a/Documentation/virtual/kvm/cpuid.txt b/Documentation/virtual/kvm/cpuid.txt
+> index 22ff659..6c4fb20 100644
+> --- a/Documentation/virtual/kvm/cpuid.txt
+> +++ b/Documentation/virtual/kvm/cpuid.txt
+> @@ -43,6 +43,16 @@ KVM_FEATURE_CLOCKSOURCE2           ||     3 || kvmclock available at msrs
+>  KVM_FEATURE_ASYNC_PF               ||     4 || async pf can be enabled by
+>                                     ||       || writing to msr 0x4b564d02
+>  ------------------------------------------------------------------------------
+> +KVM_FEATURE_STEAL_TIME             ||     5 || Steal time available at msr
+> +                                   ||       || 0x4b564d03. The feature is enabled
+> +                                   ||       || by guest when host has schedstat
+> +                                   ||       || or task delay accounting support.
 
-[ Upstream commit 90625070c4253377025878c4e82feed8b35c7116 ]
+Well I think we really should be documenting the host/guest interface
+here.
+After all it starts out
+	A guest running on a kvm host, can check some of its features using
+	cpuid.
+And guests really should not try to guess whether host
+has schedstat or task delay accounting support based on this bit.
+So I would just say:
+	"steal time can be enabled by writing to msr 0x4b564d02"
+just like async pf.
 
-This adds NetGear Managed Switch M4100 series, M5300 series, M7100 series
-USB ID (0846:0110) to the cp210x driver. Without this, the serial
-adapter is not recognized in Linux. Description was obtained from
-an Netgear Eng.
 
-Signed-off-by: Luiz Angelo Daros de Luca <luizluca@gmail.com>
-Cc: stable <stable@vger.kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- drivers/usb/serial/cp210x.c |    1 +
- 1 file changed, 1 insertion(+)
+> +------------------------------------------------------------------------------
+> +KVM_FEATURE_PV_EOI                 ||     6 || overrides the generic EOI
+> +                                   ||       || implementation with a
+> +                                   ||       || paravirtualized version. Available
+> +                                   ||       || at msr 0x4b564d04.
 
-diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
-index 5ad932d..5e64f6c 100644
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -60,6 +60,7 @@ static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(0x0489, 0xE000) }, /* Pirelli Broadband S.p.A, DP-L10 SIP/GSM Mobile */
- 	{ USB_DEVICE(0x0489, 0xE003) }, /* Pirelli Broadband S.p.A, DP-L10 SIP/GSM Mobile */
- 	{ USB_DEVICE(0x0745, 0x1000) }, /* CipherLab USB CCD Barcode Scanner 1000 */
-+	{ USB_DEVICE(0x0846, 0x1100) }, /* NetGear Managed Switch M4100 series, M5300 series, M7100 series */
- 	{ USB_DEVICE(0x08e6, 0x5501) }, /* Gemalto Prox-PU/CU contactless smartcard reader */
- 	{ USB_DEVICE(0x08FD, 0x000A) }, /* Digianswer A/S , ZigBee/802.15.4 MAC Device */
- 	{ USB_DEVICE(0x0BED, 0x1100) }, /* MEI (TM) Cashflow-SC Bill/Voucher Acceptor */
--- 
-1.7.10.4
+Actually there's no override: guest can still use the
+standard EOI even if PV EOI MSR is enabled.
+
+There's a detailed explanation of PV EOI in
+Documentation/virtual/kvm/msr.txt
+I think the following would be enough:
+
+	"paravirtualized end of interrupt handler can be enabled by writing to msr 0x4b564d04"
+
+
+> +------------------------------------------------------------------------------
+>  KVM_FEATURE_PV_UNHALT              ||     7 || guest checks this feature bit
+>                                     ||       || before enabling paravirtualized
+>                                     ||       || spinlock support.
+> -- 
+> 1.7.11.7
+
 
 
