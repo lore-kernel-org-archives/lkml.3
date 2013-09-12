@@ -1,76 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab3ILMxP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 08:53:15 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:42603 "EHLO mail.skyhub.de"
+	id S1754221Ab3ILM5N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 08:57:13 -0400
+Received: from mail.eperm.de ([89.247.134.16]:38411 "EHLO mail.eperm.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752380Ab3ILMxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 08:53:13 -0400
-Date: Thu, 12 Sep 2013 14:53:50 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Dave Young <dyoung@redhat.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        kexec@lists.infradead.org, akpm@linux-foundation.org,
-        zohar@linux.vnet.ibm.com, d.kasatkin@samsung.com,
-        ebiederm@xmission.com, matthew.garrett@nebula.com
-Subject: Re: [PATCH 15/16] bootparam: Pass acpi_rsdp pointer in bootparam
-Message-ID: <20130912125350.GB9280@x1.alien8.de>
-References: <1378849471-10521-1-git-send-email-vgoyal@redhat.com>
- <1378849471-10521-16-git-send-email-vgoyal@redhat.com>
- <522FA2A8.8080703@zytor.com>
- <20130911114419.GB31551@x1.alien8.de>
- <20130911134534.GB15364@redhat.com>
- <20130911143216.GA933@x1.alien8.de>
- <20130912064930.GA5288@dhcp-16-126.nay.redhat.com>
+	id S1753612Ab3ILM5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 08:57:12 -0400
+From: Stephan Mueller <smueller@chronox.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
+        dave.taht@bufferbloat.net
+Subject: Re: [PATCH] /dev/random: Insufficient of entropy on many architectures
+Date: Thu, 12 Sep 2013 14:57:04 +0200
+Message-ID: <2277854.fnx9Fj2PUt@tauon>
+User-Agent: KMail/4.10.5 (Linux/3.10.10-200.fc19.x86_64; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CAMuHMdUNPp9a_dAoeJvrZFGFxStU96Ws+WSp2gRocMngZrNSAA@mail.gmail.com>
+References: <10005394.BRCyBMYWy3@tauon> <2140053.ysf7239sM3@tauon> <CAMuHMdUNPp9a_dAoeJvrZFGFxStU96Ws+WSp2gRocMngZrNSAA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130912064930.GA5288@dhcp-16-126.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 03:34:15PM +0800, Dave Young wrote:
-> I'm playing with skipping SetVirtualAddressMap in kexec kernel, for
-> same kernel the test result is ok for me both for kexec and kdump.
-> Takao Indoh sent a patch with this approatch, but his V2 switched to
-> use physical mapping. During my test, additional data of config table
+Am Donnerstag, 12. September 2013, 14:47:23 schrieb Geert Uytterhoeven:
 
-Physical mapping won't work because of some very brilliant Apple UEFI
-implementations, as I came to realize. My previous version did that :)
+Hi Geert,
 
-> elems need to be saved besides of fw_vendor, runtime and tables or
-> dereference taglep->guid will panic.
+>On Thu, Sep 12, 2013 at 2:35 PM, Stephan Mueller <smueller@chronox.de> 
+wrote:
+>>>On Thu, Sep 12, 2013 at 2:08 PM, Stephan Mueller
+>>><smueller@chronox.de>
+>>>
+>> wrote:
+>>>>>BTW, I prefer a different name than "random_get_fast_cycles()", as
+>>>>>it's better to have something that returns different and
+>>>>>unpredictable numbers than an actual monotonic cycle counter.
+>>>>>
+>>>> A monotonic counter is fully ok. Note, for /dev/random, the
+>>>> occurrence
+>>>> of events delivers entropy. Thus, we have to be able to precisely
+>>>> measure that occurrence. The timer itself does not need to deliver
+>>>> any
+>>>> entropy as long as it is fast.
+>>>
+>>>Well, in my specific case (m68k/Amiga) I can use:
+>>>  - a 24-bit counter running at only ca. 15 or 31 kHz (actual
+>>>
+>>>frequency may vary),
+>>>
+>>>  - a 16-bit counter running at ca. 700 kHz.
+>>>
+>>>That is, if they have to be monotonic cycle counters.
+>>>
+>>>If not, I can mix the two (e.g. "a << 8 | (b & 0xff)") to get a
+>>>32-bit
+>>>value. That result would be fine for /dev/random, I guess, but it's
+>>>not really "get_cycles()".
+>>>
+>> Note, get_cycles should return an u64.
 >
-> Also kexec userspace need to fill efi_info in bootparams and pass the
-> previous saved efi data to 2nd kernel.
+>Currently cycles_t is 64-bit (defined as a 64-bit type, that still
+>doesn't say anything about the actual values) on blackfin, c6x, cris,
+>ia64, m32r, parisc64, ppc64, s390x, tile, x86, and xtensa.
+>On all other architectures cycles_t is 32 bit.
+>
+>> Not sure what a and b here is, but if a is the 24 bit value and b the
+>> faster 16 bit value, wouldn't there be a gap?
+>
+>No, 24 + 8 = 32 (cycles_t is 32-bit on m68k).
 
-Hmm, yes, we need to tell the kexec kernel the EFI regions.
+With gap I meant a logical break as discussed below.
+>
+>> I.e. wouldn't it be better to use the full 16 bit counter as low
+>> value
+>> and OR the 24 bit on bits 48 to 17?
+>> 
+>> Yet, there is a break in that counter: the 16 low bits rotate several
+>> times (around 10 times) before bit 17 is changed once.
+>
+>Sure, but it's also slower, as this will be called for every interrupt,
+>and the counters (accessed by byte!) are on a slow bus. Think of Ted's
+>L3-cache-miss story.
 
-> I'm worrying just skiping enter virt mode have risk though it's an
-> easy solution. Your 1:1 mapping approatch looks better. I look forward
-> to test your new patchset.
+I see. Well, I think a fast running 8 bit counter is to little 
+considering that the maximum entropy an event may have is assumed to be 
+/dev/random is 11 bits.
 
-Yeah, we had a discussion at the SUSE Labs conf about whether we could
-really skip SetVirtualAddressMap in the first kernel and do it in the
-kexec kernel but the first kernel might want to call runtime services
-for whatever reason and for that we need the runtime services. So we
-opted for the stable VA mappings.
+Thus, I would not be comfortable with the proposed 8 bit fast counter. 
+Of course one may say, the 31 or 15 kHz counter is still fast, but is it 
+sufficiently fast so that an observer (ie. somebody outside the kernel) 
+cannot measure that event with (11 - 8) = 3 low bits precision of that 
+slow counter in the worst case?
 
-> Are you also working on kexec userspace part? Already have a patch?
 
-Why userspace part - I'm thinking the kexec'ed kernel would simply add
-the mappings made by SetVirtualAddressMap without calling it. And it
-will know which mappings go to which virtual addresses because we start
-at the -4G virtual address and go downwards and the mappings will have
-the same addresses per UEFI implementation.
+>
+>Gr{oetje,eeting}s,
+>
+>                        Geert
+>
+>--
+>Geert Uytterhoeven -- There's lots of Linux beyond ia32 --
+>geert@linux-m68k.org
+>
+>In personal conversations with technical people, I call myself a
+>hacker. But when I'm talking to journalists I just say "programmer" or
+>something like that. -- Linus Torvalds
 
-It'll make more sense when you see the code, I hope :)
 
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
+Ciao
+Stephan
