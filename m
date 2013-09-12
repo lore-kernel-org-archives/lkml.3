@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342Ab3ILRp3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 13:45:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56691 "EHLO
+	id S1756046Ab3ILRtw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 13:49:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56726 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755215Ab3ILRpY (ORCPT
+	with ESMTP id S1755331Ab3ILRp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 13:45:24 -0400
+	Thu, 12 Sep 2013 13:45:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roman Gushchin <klamm@yandex-team.ru>, Changli Gao <xiaosuo@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 02/23] net: check net.core.somaxconn sysctl values
-Date: Thu, 12 Sep 2013 10:44:58 -0700
-Message-Id: <20130912174452.047792291@linuxfoundation.org>
+Subject: [ 10/23] tun: signedness bug in tun_get_user()
+Date: Thu, 12 Sep 2013 10:45:06 -0700
+Message-Id: <20130912174452.868503548@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130912174451.748805761@linuxfoundation.org>
 References: <20130912174451.748805761@linuxfoundation.org>
@@ -28,70 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roman Gushchin <klamm@yandex-team.ru>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit 5f671d6b4ec3e6d66c2a868738af2cdea09e7509 ]
+[ Upstream commit 15718ea0d844e4816dbd95d57a8a0e3e264ba90e ]
 
-It's possible to assign an invalid value to the net.core.somaxconn
-sysctl variable, because there is no checks at all.
+The recent fix d9bf5f1309 "tun: compare with 0 instead of total_len" is
+not totally correct.  Because "len" and "sizeof()" are size_t type, that
+means they are never less than zero.
 
-The sk_max_ack_backlog field of the sock structure is defined as
-unsigned short. Therefore, the backlog argument in inet_listen()
-shouldn't exceed USHRT_MAX. The backlog argument in the listen() syscall
-is truncated to the somaxconn value. So, the somaxconn value shouldn't
-exceed 65535 (USHRT_MAX).
-Also, negative values of somaxconn are meaningless.
-
-before:
-$ sysctl -w net.core.somaxconn=256
-net.core.somaxconn = 256
-$ sysctl -w net.core.somaxconn=65536
-net.core.somaxconn = 65536
-$ sysctl -w net.core.somaxconn=-100
-net.core.somaxconn = -100
-
-after:
-$ sysctl -w net.core.somaxconn=256
-net.core.somaxconn = 256
-$ sysctl -w net.core.somaxconn=65536
-error: "Invalid argument" setting key "net.core.somaxconn"
-$ sysctl -w net.core.somaxconn=-100
-error: "Invalid argument" setting key "net.core.somaxconn"
-
-Based on a prior patch from Changli Gao.
-
-Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
-Reported-by: Changli Gao <xiaosuo@gmail.com>
-Suggested-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/sysctl_net_core.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/net/tun.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/net/core/sysctl_net_core.c
-+++ b/net/core/sysctl_net_core.c
-@@ -19,6 +19,9 @@
- #include <net/sock.h>
- #include <net/net_ratelimit.h>
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -615,8 +615,9 @@ static ssize_t tun_get_user(struct tun_s
+ 	int offset = 0;
  
-+static int zero = 0;
-+static int ushort_max = USHRT_MAX;
-+
- #ifdef CONFIG_RPS
- static int rps_sock_flow_sysctl(ctl_table *table, int write,
- 				void __user *buffer, size_t *lenp, loff_t *ppos)
-@@ -197,7 +200,9 @@ static struct ctl_table netns_core_table
- 		.data		= &init_net.core.sysctl_somaxconn,
- 		.maxlen		= sizeof(int),
- 		.mode		= 0644,
--		.proc_handler	= proc_dointvec
-+		.extra1		= &zero,
-+		.extra2		= &ushort_max,
-+		.proc_handler	= proc_dointvec_minmax
- 	},
- 	{ }
- };
+ 	if (!(tun->flags & TUN_NO_PI)) {
+-		if ((len -= sizeof(pi)) > count)
++		if (len < sizeof(pi))
+ 			return -EINVAL;
++		len -= sizeof(pi);
+ 
+ 		if (memcpy_fromiovecend((void *)&pi, iv, 0, sizeof(pi)))
+ 			return -EFAULT;
+@@ -624,8 +625,9 @@ static ssize_t tun_get_user(struct tun_s
+ 	}
+ 
+ 	if (tun->flags & TUN_VNET_HDR) {
+-		if ((len -= tun->vnet_hdr_sz) > count)
++		if (len < tun->vnet_hdr_sz)
+ 			return -EINVAL;
++		len -= tun->vnet_hdr_sz;
+ 
+ 		if (memcpy_fromiovecend((void *)&gso, iv, offset, sizeof(gso)))
+ 			return -EFAULT;
 
 
