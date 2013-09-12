@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757195Ab3ILSY4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:24:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57029 "EHLO
+	id S1755362Ab3ILR7J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 13:59:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56976 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755375Ab3ILR7L (ORCPT
+	with ESMTP id S1755054Ab3ILR7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 13:59:11 -0400
+	Thu, 12 Sep 2013 13:59:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sridhar Samudrala <sri@us.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 14/46] rtnetlink: Fix inverted check in ndo_dflt_fdb_del()
-Date: Thu, 12 Sep 2013 10:58:25 -0700
-Message-Id: <20130912175722.593718496@linuxfoundation.org>
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        John Fastabend <john.r.fastabend@intel.com>
+Subject: [ 04/46] macvlan: validate flags
+Date: Thu, 12 Sep 2013 10:58:15 -0700
+Message-Id: <20130912175721.545555624@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130912175721.001906199@linuxfoundation.org>
 References: <20130912175721.001906199@linuxfoundation.org>
@@ -27,29 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sridhar Samudrala <sri@us.ibm.com>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-[ Upstream commit 645359930231d5e78fd3296a38b98c1a658a7ade ]
+[ Upstream commit 1512747820367c8b3b8b72035f0f78c62f2bf1e9 ]
 
-Fix inverted check when deleting an fdb entry.
+commit df8ef8f3aaa6692970a436204c4429210addb23a
+    macvlan: add FDB bridge ops and macvlan flags
+added a flags field to macvlan, which can be
+controlled from userspace.
+The idea is to make the interface future-proof
+so we can add flags and not new fields.
 
-Signed-off-by: Sridhar Samudrala <sri@us.ibm.com>
+However, flags value isn't validated, as a result,
+userspace can't detect which flags are supported.
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: John Fastabend <john.r.fastabend@intel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/rtnetlink.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/macvlan.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -2142,7 +2142,7 @@ int ndo_dflt_fdb_del(struct ndmsg *ndm,
- 	/* If aging addresses are supported device will need to
- 	 * implement its own handler for this.
- 	 */
--	if (ndm->ndm_state & NUD_PERMANENT) {
-+	if (!(ndm->ndm_state & NUD_PERMANENT)) {
- 		pr_info("%s: FDB only supports static addresses\n", dev->name);
- 		return -EINVAL;
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -727,6 +727,10 @@ static int macvlan_validate(struct nlatt
+ 			return -EADDRNOTAVAIL;
  	}
+ 
++	if (data && data[IFLA_MACVLAN_FLAGS] &&
++	    nla_get_u16(data[IFLA_MACVLAN_FLAGS]) & ~MACVLAN_FLAG_NOPROMISC)
++		return -EINVAL;
++
+ 	if (data && data[IFLA_MACVLAN_MODE]) {
+ 		switch (nla_get_u32(data[IFLA_MACVLAN_MODE])) {
+ 		case MACVLAN_MODE_PRIVATE:
 
 
