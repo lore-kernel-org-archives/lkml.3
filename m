@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755567Ab3ILRpl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 13:45:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56778 "EHLO
+	id S1755904Ab3ILRrK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 13:47:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56788 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754844Ab3ILRpj (ORCPT
+	with ESMTP id S1755529Ab3ILRpl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 13:45:39 -0400
+	Thu, 12 Sep 2013 13:45:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 18/23] macvtap: do not zerocopy if iov needs more pages than MAX_SKB_FRAGS
-Date: Thu, 12 Sep 2013 10:45:14 -0700
-Message-Id: <20130912174453.735312348@linuxfoundation.org>
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 21/23] m32r: add memcpy() for CONFIG_KERNEL_GZIP=y
+Date: Thu, 12 Sep 2013 10:45:17 -0700
+Message-Id: <20130912174454.037622248@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130912174451.748805761@linuxfoundation.org>
 References: <20130912174451.748805761@linuxfoundation.org>
@@ -28,123 +30,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit ece793fcfc417b3925844be88a6a6dc82ae8f7c6 upstream.
+commit a8abbca6617e1caa2344d2d38d0a35f3e5928b79 upstream.
 
-We try to linearize part of the skb when the number of iov is greater than
-MAX_SKB_FRAGS. This is not enough since each single vector may occupy more than
-one pages, so zerocopy_sg_fromiovec() may still fail and may break the guest
-network.
+Fix the m32r link error:
 
-Solve this problem by calculate the pages needed for iov before trying to do
-zerocopy and switch to use copy instead of zerocopy if it needs more than
-MAX_SKB_FRAGS.
+    LD      arch/m32r/boot/compressed/vmlinux
+  arch/m32r/boot/compressed/misc.o: In function `zlib_updatewindow':
+  misc.c:(.text+0x190): undefined reference to `memcpy'
+  misc.c:(.text+0x190): relocation truncated to fit: R_M32R_26_PLTREL against undefined symbol `memcpy'
+  make[5]: *** [arch/m32r/boot/compressed/vmlinux] Error 1
 
-This is done through introducing a new helper to count the pages for iov, and
-call uarg->callback() manually when switching from zerocopy to copy to notify
-vhost.
+by adding our own implementation of memcpy().
 
-We can do further optimization on top.
-
-This bug were introduced from b92946e2919134ebe2a4083e4302236295ea2a73
-(macvtap: zerocopy: validate vectors before building skb).
-
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Hirokazu Takata <takata@linux-m32r.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/macvtap.c |   62 +++++++++++++++++++++++++++++---------------------
- 1 file changed, 37 insertions(+), 25 deletions(-)
 
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -642,6 +642,28 @@ static int macvtap_skb_to_vnet_hdr(const
- 	return 0;
- }
+---
+ arch/m32r/boot/compressed/misc.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+--- a/arch/m32r/boot/compressed/misc.c
++++ b/arch/m32r/boot/compressed/misc.c
+@@ -39,6 +39,16 @@ static void *memset(void *s, int c, size
+ #endif
  
-+static unsigned long iov_pages(const struct iovec *iv, int offset,
-+			       unsigned long nr_segs)
+ #ifdef CONFIG_KERNEL_GZIP
++void *memcpy(void *dest, const void *src, size_t n)
 +{
-+	unsigned long seg, base;
-+	int pages = 0, len, size;
++	char *d = dest;
++	const char *s = src;
++	while (n--)
++		*d++ = *s++;
 +
-+	while (nr_segs && (offset >= iv->iov_len)) {
-+		offset -= iv->iov_len;
-+		++iv;
-+		--nr_segs;
-+	}
-+
-+	for (seg = 0; seg < nr_segs; seg++) {
-+		base = (unsigned long)iv[seg].iov_base + offset;
-+		len = iv[seg].iov_len - offset;
-+		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
-+		pages += size;
-+		offset = 0;
-+	}
-+
-+	return pages;
++	return dest;
 +}
- 
- /* Get packet from user space buffer */
- static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
-@@ -688,31 +710,15 @@ static ssize_t macvtap_get_user(struct m
- 	if (unlikely(count > UIO_MAXIOV))
- 		goto err;
- 
--	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY))
--		zerocopy = true;
--
--	if (zerocopy) {
--		/* Userspace may produce vectors with count greater than
--		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
--		 * to let the rest of data to be fit in the frags.
--		 */
--		if (count > MAX_SKB_FRAGS) {
--			copylen = iov_length(iv, count - MAX_SKB_FRAGS);
--			if (copylen < vnet_hdr_len)
--				copylen = 0;
--			else
--				copylen -= vnet_hdr_len;
--		}
--		/* There are 256 bytes to be copied in skb, so there is enough
--		 * room for skb expand head in case it is used.
--		 * The rest buffer is mapped from userspace.
--		 */
--		if (copylen < vnet_hdr.hdr_len)
--			copylen = vnet_hdr.hdr_len;
--		if (!copylen)
--			copylen = GOODCOPY_LEN;
-+	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY)) {
-+		copylen = vnet_hdr.hdr_len ? vnet_hdr.hdr_len : GOODCOPY_LEN;
- 		linear = copylen;
--	} else {
-+		if (iov_pages(iv, vnet_hdr_len + copylen, count)
-+		    <= MAX_SKB_FRAGS)
-+			zerocopy = true;
-+	}
 +
-+	if (!zerocopy) {
- 		copylen = len;
- 		linear = vnet_hdr.hdr_len;
- 	}
-@@ -724,9 +730,15 @@ static ssize_t macvtap_get_user(struct m
- 
- 	if (zerocopy)
- 		err = zerocopy_sg_from_iovec(skb, iv, vnet_hdr_len, count);
--	else
-+	else {
- 		err = skb_copy_datagram_from_iovec(skb, 0, iv, vnet_hdr_len,
- 						   len);
-+		if (!err && m && m->msg_control) {
-+			struct ubuf_info *uarg = m->msg_control;
-+			uarg->callback(uarg);
-+		}
-+	}
-+
- 	if (err)
- 		goto err_kfree;
- 
+ #define BOOT_HEAP_SIZE             0x10000
+ #include "../../../../lib/decompress_inflate.c"
+ #endif
 
 
