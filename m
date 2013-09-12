@@ -1,65 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855Ab3ILOaY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 10:30:24 -0400
-Received: from mga01.intel.com ([192.55.52.88]:47420 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751770Ab3ILOaW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 10:30:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,891,1371106800"; 
-   d="asc'?scan'208";a="400633945"
-Date: Thu, 12 Sep 2013 19:12:09 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, monstr@monstr.eu,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: Re: [PATCH] dma: pl330: Simplify irq allocation
-Message-ID: <20130912134208.GE17188@intel.com>
-References: <7a8e72582d8f4262a70bb9b7050fb6cb3be15578.1378305608.git.michal.simek@xilinx.com>
+	id S1753023Ab3ILObF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 10:31:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47060 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752256Ab3ILObC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 10:31:02 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="98e8jtXdkpgskNou"
-Content-Disposition: inline
-In-Reply-To: <7a8e72582d8f4262a70bb9b7050fb6cb3be15578.1378305608.git.michal.simek@xilinx.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130912131655.GA8619@hmsreliant.think-freely.org>
+References: <1378496168-3684-1-git-send-email-nhorman@tuxdriver.com>
+	<CACVXFVPRWEXMHyGhfZVGX2HrL3cguqVBUjTS51r2p8EGt=EPdg@mail.gmail.com>
+	<20130911141943.GA3181@neilslaptop.think-freely.org>
+	<CACVXFVNfkfsSJJUK_BWHLnddk=NAWDJoERmg_qycYa11G_X2RA@mail.gmail.com>
+	<20130912131655.GA8619@hmsreliant.think-freely.org>
+Date: Thu, 12 Sep 2013 22:30:59 +0800
+Message-ID: <CACVXFVP45r2HHonckK+mbiX9BkpxwQoDAbzy2dwXa_DwJHe=cA@mail.gmail.com>
+Subject: Re: [PATCH] firmware: Be a bit more verbose about direct firmware
+ loading failure
+From: Ming Lei <ming.lei@canonical.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Sep 12, 2013 at 9:16 PM, Neil Horman <nhorman@tuxdriver.com> wrote:
+>>
+> Please re-read the patch, then point out to me which printk the above action
+> will trigger, because its not happening in my testing. If you'll take a look at
+> fw_get_filesystem_firmware, you'll see that if the filp_open on a firmware file
+> fails, we continue the for loop through the list of available search paths.  No
+> error is generated in the case you describe above.
 
---98e8jtXdkpgskNou
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+You are right, sorry for missing "if (IS_ERR(file))  continue;",  and looks the
+patch is good.
 
-On Wed, Sep 04, 2013 at 04:40:17PM +0200, Michal Simek wrote:
-> Use devm_request_irq function.
+Acked-by: Ming Lei <ming.lei@canonical.com>
 
-Applied, thanks
-
-~Vinod
-
---98e8jtXdkpgskNou
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSMcSwAAoJEHwUBw8lI4NH3T0QAMCHKvzae0fRLZlv/XiLB0bS
-G6BxiIi7pk67r3ohOeBE9QqPVVfn5zI5hLti33A7B+kQMs4MVwN18p6xZz8jhafh
-sEPALxZXfSVB5VAPRQ5y9etinPSGedbi7CeYXKn3OrQwsvqhFkty7SPbn/pFn5wl
-ur6zw0Z6LuRB4D+MoeAx6i83jWM3q/QVQYz7TT4eNGfhKYUbt4QFL6b8u4me8lBi
-Qxwmf8DlW1vbGPkRBPu1Vy77PxwmP7DoJuUzyaY8pURjPXzaULIKO26NxVe6MN+1
-khyFSnEzNTaKIDDoc5qmq2H7yCgIt+oPJt89AkkN8nj9+DbBBOw/c7Hvb1XNKKyv
-Mj70S45IewA7j5SagFVqDlujSjanx8ssNnqvAxoBPwpSmaDRFhm61Vv6w8Nso24f
-u6AnWHnIAKq2cHO2wpdyn3z36+26vDcWbMdKjjRXSbTWwLe+CbK7rE5lEA3EvhYg
-sByTNIuwt1atZfxs+WZtPOD/EV9ORYEUYVNVrwjEjvPX5+lJkkFN+qt/Ir/GXV+r
-xOTDqcdYplzmGqH2GOdgtnFkpJ4uk4aHYI7FZQEX8aGHUfMSUpXyz8x/PJLUfiYm
-rcNAY9dnJd6ZMyy87wulQvJ+2zVYU/WOq3Ctyjcz+EPhpILzli8+0kGclTN7u5aB
-R0xMShp+lTRQ6+/9YdEE
-=cSop
------END PGP SIGNATURE-----
-
---98e8jtXdkpgskNou--
+Thanks,
+--
+Ming Lei
