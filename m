@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756785Ab3ILUaM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 16:30:12 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:47294 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756426Ab3ILU3z (ORCPT
+	id S1756732Ab3ILUaJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 16:30:09 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:65429 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752753Ab3ILU34 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 16:29:55 -0400
+	Thu, 12 Sep 2013 16:29:56 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
@@ -15,9 +15,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 3/4] perf tools: Add new comm infrastructure
-Date: Thu, 12 Sep 2013 22:29:42 +0200
-Message-Id: <1379017783-27032-4-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 4/4] perf tools: Compare hists comm by addresses
+Date: Thu, 12 Sep 2013 22:29:43 +0200
+Message-Id: <1379017783-27032-5-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1379017783-27032-1-git-send-email-fweisbec@gmail.com>
 References: <1379017783-27032-1-git-send-email-fweisbec@gmail.com>
@@ -25,19 +25,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This new comm infrastructure provides two features:
-
-1) It keeps track of all comms lifecycle for a given thread. This
-way we can associate a timeframe to any thread comm, as long as
-PERF_SAMPLE_TIME samples are joined to comm and fork events.
-
-As a result we should have more precise comm sorted hists with
-seperated entries for pre and post exec time after a fork.
-
-2) It also makes sure that a given comm string is not duplicated
-but rather shared among the threads that refer to it. This way the
-threads comm can be compared against pointer values from the sort
-infrastructure.
+Now that comm strings are allocated only once and refcounted to be shared
+among threads, these can now be safely compared by addresses. This
+should remove most hists collapses on post processing.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
@@ -48,343 +38,23 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/Makefile      |    2 +
- tools/perf/util/comm.c   |  107 ++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/comm.h   |   20 +++++++++
- tools/perf/util/thread.c |   92 +++++++++++++++++++++++++++++----------
- tools/perf/util/thread.h |    3 +-
- 5 files changed, 199 insertions(+), 25 deletions(-)
- create mode 100644 tools/perf/util/comm.c
- create mode 100644 tools/perf/util/comm.h
+ tools/perf/util/sort.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 3a0ff7f..36e6958 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -270,6 +270,7 @@ LIB_H += util/color.h
- LIB_H += util/values.h
- LIB_H += util/sort.h
- LIB_H += util/hist.h
-+LIB_H += util/comm.h
- LIB_H += util/thread.h
- LIB_H += util/thread_map.h
- LIB_H += util/trace-event.h
-@@ -337,6 +338,7 @@ LIB_OBJS += $(OUTPUT)util/machine.o
- LIB_OBJS += $(OUTPUT)util/map.o
- LIB_OBJS += $(OUTPUT)util/pstack.o
- LIB_OBJS += $(OUTPUT)util/session.o
-+LIB_OBJS += $(OUTPUT)util/comm.o
- LIB_OBJS += $(OUTPUT)util/thread.o
- LIB_OBJS += $(OUTPUT)util/thread_map.o
- LIB_OBJS += $(OUTPUT)util/trace-event-parse.o
-diff --git a/tools/perf/util/comm.c b/tools/perf/util/comm.c
-new file mode 100644
-index 0000000..87f4a10
---- /dev/null
-+++ b/tools/perf/util/comm.c
-@@ -0,0 +1,107 @@
-+#include "comm.h"
-+#include "util.h"
-+#include <stdlib.h>
-+#include <stdio.h>
-+
-+struct comm_str {
-+	char *str;
-+	struct rb_node rb_node;
-+	int ref;
-+};
-+
-+/* Should perhaps be moved to struct machine */
-+static struct rb_root comm_str_root;
-+
-+static void comm_str_get(struct comm_str *cs)
-+{
-+	cs->ref++;
-+}
-+
-+static void comm_str_put(struct comm_str *cs)
-+{
-+	if (!--cs->ref) {
-+		rb_erase(&cs->rb_node, &comm_str_root);
-+		free(cs->str);
-+		free(cs);
-+	}
-+}
-+
-+static struct comm_str *comm_str_alloc(const char *str)
-+{
-+	struct comm_str *cs;
-+
-+	cs = zalloc(sizeof(*cs));
-+	if (!cs)
-+		return NULL;
-+
-+	cs->str = strdup(str);
-+	if (!cs->str) {
-+		free(cs);
-+		return NULL;
-+	}
-+
-+	return cs;
-+}
-+
-+static struct comm_str *comm_str_findnew(const char *str, struct rb_root *root)
-+{
-+	struct rb_node **p = &root->rb_node;
-+	struct rb_node *parent = NULL;
-+	struct comm_str *iter, *new;
-+	int cmp;
-+
-+	while (*p != NULL) {
-+		parent = *p;
-+		iter = rb_entry(parent, struct comm_str, rb_node);
-+
-+		cmp = strcmp(str, iter->str);
-+		if (!cmp)
-+			return iter;
-+
-+		if (cmp < 0)
-+			p = &(*p)->rb_left;
-+		else
-+			p = &(*p)->rb_right;
-+	}
-+
-+	new = comm_str_alloc(str);
-+	if (!new)
-+		return NULL;
-+
-+	rb_link_node(&new->rb_node, parent, p);
-+	rb_insert_color(&new->rb_node, root);
-+
-+	return new;
-+}
-+
-+struct comm *comm__new(const char *str, u64 timestamp)
-+{
-+	struct comm *self;
-+
-+	self = zalloc(sizeof(*self));
-+	if (!self)
-+		return NULL;
-+
-+	self->start = timestamp;
-+
-+	self->comm_str = comm_str_findnew(str, &comm_str_root);
-+	if (!self->comm_str) {
-+		free(self);
-+		return NULL;
-+	}
-+
-+	comm_str_get(self->comm_str);
-+
-+	return self;
-+}
-+
-+void comm__free(struct comm *self)
-+{
-+	comm_str_put(self->comm_str);
-+	free(self);
-+}
-+
-+const char *comm__str(struct comm *self)
-+{
-+	return self->comm_str->str;
-+}
-diff --git a/tools/perf/util/comm.h b/tools/perf/util/comm.h
-new file mode 100644
-index 0000000..2e47fb7
---- /dev/null
-+++ b/tools/perf/util/comm.h
-@@ -0,0 +1,20 @@
-+#ifndef __PERF_COMM_H
-+#define __PERF_COMM_H
-+
-+#include "../perf.h"
-+#include <linux/rbtree.h>
-+#include <linux/list.h>
-+
-+struct comm_str;
-+
-+struct comm {
-+	struct comm_str *comm_str;
-+	u64 start;
-+	struct list_head list;
-+};
-+
-+void comm__free(struct comm *self);
-+struct comm *comm__new(const char *str, u64 timestamp);
-+const char *comm__str(struct comm *self);
-+
-+#endif  /* __PERF_COMM_H */
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index 1466baf..63c4b78 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -6,9 +6,12 @@
- #include "thread.h"
- #include "util.h"
- #include "debug.h"
-+#include "comm.h"
- 
- struct thread *thread__new(pid_t pid, pid_t tid)
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 26d8f11..3b307e7 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -79,7 +79,8 @@ struct sort_entry sort_thread = {
+ static int64_t
+ sort__comm_cmp(struct hist_entry *left, struct hist_entry *right)
  {
-+	char *comm_str;
-+	struct comm *comm;
- 	struct thread *self = zalloc(sizeof(*self));
- 
- 	if (self != NULL) {
-@@ -16,47 +19,88 @@ struct thread *thread__new(pid_t pid, pid_t tid)
- 		self->pid_ = pid;
- 		self->tid = tid;
- 		self->ppid = -1;
--		self->comm = malloc(32);
--		if (self->comm)
--			snprintf(self->comm, 32, ":%d", self->tid);
-+		INIT_LIST_HEAD(&self->comm_list);
-+
-+		comm_str = malloc(32);
-+		if (!comm_str)
-+			goto err_thread;
-+
-+		snprintf(comm_str, 32, ":%d", tid);
-+		comm = comm__new(comm_str, 0);
-+		free(comm_str);
-+		if (!comm)
-+			goto err_thread;
-+
-+		list_add(&comm->list, &self->comm_list);
- 	}
- 
- 	return self;
-+
-+err_thread:
-+	free(self);
-+	return NULL;
+-	return right->thread->tid - left->thread->tid;
++	/* Compare the addr that should be unique among comm */
++	return thread__comm_curr(right->thread) - thread__comm_curr(left->thread);
  }
  
- void thread__delete(struct thread *self)
- {
-+	struct comm *comm, *tmp;
-+
- 	map_groups__exit(&self->mg);
--	free(self->comm);
-+	list_for_each_entry_safe(comm, tmp, &self->comm_list, list) {
-+		list_del(&comm->list);
-+		comm__free(comm);
-+	}
-+
- 	free(self);
- }
- 
--int thread__set_comm(struct thread *self, const char *comm,
--		     u64 timestamp __maybe_unused)
-+static struct comm *curr_comm(struct thread *self)
- {
--	int err;
-+	if (list_empty(&self->comm_list))
-+		return NULL;
- 
--	if (self->comm)
--		free(self->comm);
--	self->comm = strdup(comm);
--	err = self->comm == NULL ? -ENOMEM : 0;
--	if (!err) {
--		self->comm_set = true;
-+	return list_first_entry(&self->comm_list, struct comm, list);
-+}
-+
-+/* CHECKME: time should always be 0 if event aren't ordered */
-+int thread__set_comm(struct thread *self, const char *str, u64 timestamp)
-+{
-+	struct comm *new, *curr = curr_comm(self);
-+
-+	/* Override latest entry if it had no specific time coverage */
-+	if (!curr->start) {
-+		list_del(&curr->list);
-+		comm__free(curr);
- 	}
--	return err;
-+
-+	new = comm__new(str, timestamp);
-+	if (!new)
-+		return -ENOMEM;
-+
-+	list_add(&new->list, &self->comm_list);
-+	self->comm_set = true;
-+
-+	return 0;
- }
- 
- const char *thread__comm_curr(struct thread *self)
- {
--	return self->comm;
-+	struct comm *comm = curr_comm(self);
-+
-+	if (!comm)
-+		return NULL;
-+
-+	return comm__str(comm);
- }
- 
-+/* CHECKME: it should probably better return the max comm len from its comm list */
- int thread__comm_len(struct thread *self)
- {
- 	if (!self->comm_len) {
--		if (!self->comm)
-+		const char *comm = thread__comm_curr(self);
-+		if (!comm)
- 			return 0;
--		self->comm_len = strlen(self->comm);
-+		self->comm_len = strlen(comm);
- 	}
- 
- 	return self->comm_len;
-@@ -74,17 +118,17 @@ void thread__insert_map(struct thread *self, struct map *map)
- 	map_groups__insert(&self->mg, map);
- }
- 
--int thread__fork(struct thread *self, struct thread *parent,
--		 u64 timestamp __maybe_unused)
-+int thread__fork(struct thread *self, struct thread *parent, u64 timestamp)
- {
--	int i;
-+	int i, err;
- 
- 	if (parent->comm_set) {
--		if (self->comm)
--			free(self->comm);
--		self->comm = strdup(parent->comm);
--		if (!self->comm)
-+		const char *comm = thread__comm_curr(parent);
-+		if (!comm)
- 			return -ENOMEM;
-+		err = thread__set_comm(self, comm, timestamp);
-+		if (!err)
-+			return err;
- 		self->comm_set = true;
- 	}
- 
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index fda69d9..f55416b 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -2,6 +2,7 @@
- #define __PERF_THREAD_H
- 
- #include <linux/rbtree.h>
-+#include <linux/list.h>
- #include <unistd.h>
- #include <sys/types.h>
- #include "symbol.h"
-@@ -18,7 +19,7 @@ struct thread {
- 	char			shortname[3];
- 	bool			comm_set;
- 	bool			dead; /* if set thread has exited */
--	char			*comm;
-+	struct list_head	comm_list;
- 	int			comm_len;
- 
- 	void			*priv;
+ static int64_t
 -- 
 1.7.5.4
 
