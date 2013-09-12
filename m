@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217Ab3ILL7I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 07:59:08 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:63501 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752312Ab3ILL7G (ORCPT
+	id S1753864Ab3ILMAJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 08:00:09 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:33701 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753612Ab3ILMAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 07:59:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <2947789.S63SVUbC3N@tauon>
-References: <10005394.BRCyBMYWy3@tauon>
-	<CAMuHMdXcXGpgE5ArcjNU-RgAr52qB8ih_b48jwR=+OqK4RDhFA@mail.gmail.com>
-	<20130910211454.GJ29237@thunk.org>
-	<2947789.S63SVUbC3N@tauon>
-Date: Thu, 12 Sep 2013 13:59:04 +0200
-X-Google-Sender-Auth: gTrGaXts98AudvWLF5lLuygq12c
-Message-ID: <CAMuHMdWMiD1kw34CUJ-KCbk4mKggjtMzxVPpkN=ddfaq_vs9sg@mail.gmail.com>
-Subject: Re: [PATCH] /dev/random: Insufficient of entropy on many architectures
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
-        dave.taht@bufferbloat.net
-Content-Type: text/plain; charset=UTF-8
+	Thu, 12 Sep 2013 08:00:08 -0400
+Message-ID: <1378987204.24408.1.camel@edumazet-glaptop>
+Subject: Re: [PATCH] Inet-hashtable: Change the range of sk->hash lock to
+ avoid the race condition.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jun Chen <jun.d.chen@intel.com>
+Cc: edumazet@google.com, davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 12 Sep 2013 05:00:04 -0700
+In-Reply-To: <1379003549.12328.6.camel@chenjun-workstation>
+References: <1379003549.12328.6.camel@chenjun-workstation>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 8:49 AM, Stephan Mueller <smueller@chronox.de> wrote:
-> __u64 tmp = random_get_fast_cycles() - random_get_fast_cycles();
-> if(0 == tmp)
->         return fail;
-> return pass;
+On Thu, 2013-09-12 at 12:32 -0400, Jun Chen wrote:
+> When try to add node to list in __inet_hash_nolisten function, first get the
+> list and then to lock for using, but in extremeness case, others can del this
+> node before locking it, then the node should be null.So this patch try to lock
+> firstly and then get the list for using to avoid this race condition.
 
-That will fail if the cycle counter runs at less than say 4 times the
-CPU clock...
+I suspect another bug. This should not happen.
 
-BTW, I prefer a different name than "random_get_fast_cycles()", as it's better
-to have something that returns different and unpredictable numbers than an
-actual monotonic cycle counter.
+Care to describe the problem you got ?
 
-Gr{oetje,eeting}s,
+Thanks
 
-                        Geert
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
