@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932145Ab3ILF1k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 01:27:40 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:42053 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755137Ab3ILF1g (ORCPT
+	id S932167Ab3ILF2Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 01:28:16 -0400
+Received: from ringil.hengli.com.au ([178.18.16.133]:42567 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751346Ab3ILF2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 01:27:36 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl, swarren@wwwdotorg.org, srivatsa.bhat@linux.vnet.ibm.com
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 5/5] cpufreq: use correct values of cpus in __cpufreq_remove_dev_finish()
-Date: Thu, 12 Sep 2013 10:55:48 +0530
-Message-Id: <8f777cc6b41b2fed4bf71ce2adc36800353d5738.1378963070.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1378963070.git.viresh.kumar@linaro.org>
-References: <cover.1378963070.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1378963070.git.viresh.kumar@linaro.org>
-References: <cover.1378963070.git.viresh.kumar@linaro.org>
+	Thu, 12 Sep 2013 01:28:15 -0400
+Date: Thu, 12 Sep 2013 15:28:06 +1000
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: andr345@gmail.com, rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        arthur.marsh@internode.on.net, tim.c.chen@linux.intel.com,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Re: [3.12-rc1] Dependency on module-init-tools >= 3.11 ?
+Message-ID: <20130912052806.GA15737@gondor.apana.org.au>
+References: <1374283864.22432.393.camel@schen9-DESK>
+ <20130720053021.GA19689@gondor.apana.org.au>
+ <201307201456.JIC35412.VFOMFJOQLOtHFS@I-love.SAKURA.ne.jp>
+ <201309112043.HBD04609.FOtLSOFVQHFOJM@I-love.SAKURA.ne.jp>
+ <20130912042622.GA15181@gondor.apana.org.au>
+ <201309121403.FIH09821.JtLOVOSFOFHFQM@I-love.SAKURA.ne.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201309121403.FIH09821.JtLOVOSFOFHFQM@I-love.SAKURA.ne.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This broke after a recent change "cedb70a cpufreq: Split __cpufreq_remove_dev()
-into two parts" from Srivatsa..
+On Thu, Sep 12, 2013 at 02:03:41PM +0900, Tetsuo Handa wrote:
+> Herbert Xu wrote:
+> > This way at least you'll have a working system until your initramfs
+> > tool is fixed to do the right thing.
+> 
+> Thank you. But it is module-init-tools-3.9-21.el6_4 in RHEL 6.4.
+> We can't wait until Red Hat backports module-init-tools >= 3.11 to RHEL 6.x.
+> 
+> Since most people are already using module-init-tools >= 3.11 and
+> there is workaround for my case (i.e. choose built-in), just updating
+> 
+>   module-init-tools      0.9.10                  # depmod -V
+> 
+> line at "Current Minimal Requirements" in Documentation/Changes will be OK.
 
-Consider a scenario where we have two CPUs in a policy (0 & 1) and we are
-removing cpu 1. On the call to __cpufreq_remove_dev_prepare() we have cleared 1
-from policy->cpus and now on a call to __cpufreq_remove_dev_finish() we read
-cpumask_weight of policy->cpus, which will come as 1 and this code will behave
-as if we are removing the last cpu from policy :)
+The trouble is not all distros will include the softdep modules in
+the initramfs.  So for now I think we will have to live with a fallback.
 
-Fix it by clearing cpu mask in __cpufreq_remove_dev_finish() instead of
-__cpufreq_remove_dev_prepare().
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/cpufreq.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 0e11fcb..b556d46 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1175,12 +1175,9 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
- 			policy->governor->name, CPUFREQ_NAME_LEN);
- #endif
- 
--	WARN_ON(lock_policy_rwsem_write(cpu));
-+	lock_policy_rwsem_read(cpu);
- 	cpus = cpumask_weight(policy->cpus);
--
--	if (cpus > 1)
--		cpumask_clear_cpu(cpu, policy->cpus);
--	unlock_policy_rwsem_write(cpu);
-+	unlock_policy_rwsem_read(cpu);
- 
- 	if (cpu != policy->cpu) {
- 		if (!frozen)
-@@ -1222,9 +1219,12 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
- 		return -EINVAL;
- 	}
- 
--	lock_policy_rwsem_read(cpu);
-+	WARN_ON(lock_policy_rwsem_write(cpu));
- 	cpus = cpumask_weight(policy->cpus);
--	unlock_policy_rwsem_read(cpu);
-+
-+	if (cpus > 1)
-+		cpumask_clear_cpu(cpu, policy->cpus);
-+	unlock_policy_rwsem_write(cpu);
- 
- 	/* If cpu is last user of policy, free policy */
- 	if (cpus == 1) {
+Cheers,
 -- 
-1.7.12.rc2.18.g61b472e
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
