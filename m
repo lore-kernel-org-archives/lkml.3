@@ -1,49 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787Ab3ILPnf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 11:43:35 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:52403 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754664Ab3ILPmZ (ORCPT
+	id S1754174Ab3ILPpo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 11:45:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47476 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753181Ab3ILPpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 11:42:25 -0400
-From: Koen Kooi <koen@dominion.thruhere.net>
-To: linux-kernel@vger.kernel.org
-Cc: bcousson@baylibre.com, tony@atomide.com, rob.herring@calxeda.com,
-        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
-        ijc+devicetree@hellion.org.uk, linux@arm.linux.org.uk,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Koen Kooi <koen@dominion.thruhere.net>
-Subject: [PATCH 3/4] ARM: am335x-bone-common: switch mmc1 to 4-bit mode
-Date: Thu, 12 Sep 2013 17:42:11 +0200
-Message-Id: <1379000532-27376-4-git-send-email-koen@dominion.thruhere.net>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1379000532-27376-1-git-send-email-koen@dominion.thruhere.net>
-References: <1379000532-27376-1-git-send-email-koen@dominion.thruhere.net>
+	Thu, 12 Sep 2013 11:45:43 -0400
+Message-ID: <5231E18D.7070306@canonical.com>
+Date: Thu, 12 Sep 2013 17:45:17 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+CC: Peter Zijlstra <peterz@infradead.org>, Dave Airlie <airlied@linux.ie>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [BUG] completely bonkers use of set_need_resched + VM_FAULT_NOPAGE
+References: <20130912150645.GZ31370@twins.programming.kicks-ass.net> <CAKMK7uFF2GkYapa2_DLv4WYAd0t+POaT+Vy9HG=HQhzMmtH9nA@mail.gmail.com>
+In-Reply-To: <CAKMK7uFF2GkYapa2_DLv4WYAd0t+POaT+Vy9HG=HQhzMmtH9nA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The micro-SD slot hooks up all four data pins so lets' use them.
+Op 12-09-13 17:36, Daniel Vetter schreef:
+> On Thu, Sep 12, 2013 at 5:06 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> So I'm poking around the preemption code and stumbled upon:
+>>
+>> drivers/gpu/drm/i915/i915_gem.c:                set_need_resched();
+>> drivers/gpu/drm/ttm/ttm_bo_vm.c:                        set_need_resched();
+>> drivers/gpu/drm/ttm/ttm_bo_vm.c:                        set_need_resched();
+>> drivers/gpu/drm/udl/udl_gem.c:          set_need_resched();
+>>
+>> All these sites basically do:
+>>
+>>   while (!trylock())
+>>         yield();
+>>
+>> which is a horrible and broken locking pattern.
+>>
+>> Firstly its deadlock prone, suppose the faulting process is a FIFOn+1
+>> task that preempted the lock holder at FIFOn.
+>>
+>> Secondly the implementation is worse than usual by abusing
+>> VM_FAULT_NOPAGE, which is supposed to install a PTE so that the fault
+>> doesn't retry, but you're using it as a get out of fault path. And
+>> you're using set_need_resched() which is not something a driver should
+>> _ever_ touch.
+>>
+>> Now I'm going to take away set_need_resched() -- and while you can
+>> 'reimplement' it using set_thread_flag() you're not going to do that
+>> because it will be broken due to changes to the preempt code.
+>>
+>> So please as to fix ASAP and don't allow anybody to trick you into
+>> merging silly things like that again ;-)
+> The set_need_resched in i915_gem.c:i915_gem_fault can actually be
+> removed. It was there to give the error handler a chance to sneak in
+> and reset the hw/sw tracking when the gpu is dead. That hack goes back
+> to the days when the locking around our error handler was somewhere
+> between nonexistent and totally broken, nowadays we keep things from
+> live-locking by a bit of magic in i915_mutex_lock_interruptible. I'll
+> whip up a patch to rip this out. I'll also check that our testsuite
+> properly exercises this path (needs a bit of work on a quick look for
+> better coverage).
+>
+> The one in ttm is just bonghits to shut up lockdep: ttm can recurse
+> into it's own pagefault handler and then deadlock, the trylock just
+> keeps lockdep quiet. We've had that bug arise in drm/i915 due to some
+> fun userspace did and now have testcases for them. The right solution
+> to fix this is to use copy_to|from_user_atomic in ttm everywhere it
+> holds locks and have slowpaths which drops locks, copies stuff into a
+> temp allocation and then continues. At least that's how we've fixed
+> all those inversions in i915-gem. I'm not volunteering to fix this ;-)
+Ah the case where a mmap'd address is passed to the execbuf ioctl? :P
 
-Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
----
- arch/arm/boot/dts/am335x-bone-common.dtsi | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
-index cfec441..80407ff 100644
---- a/arch/arm/boot/dts/am335x-bone-common.dtsi
-+++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
-@@ -290,6 +290,7 @@
- 
- &mmc1 {
- 	status = "okay";
-+	bus-width = <0x4>;
- 	vmmc-supply = <&ldo3_reg>;
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&mmc1_pins>;
--- 
-1.8.2.1
+Fine I'll look into it a bit, hopefully before tuesday. Else it might take a bit longer since I'll be on my way to plumbers..
+> The one in udl just looks like copypasta from i915, without any
+> justification (at least I don't see any) for why it's there. Probably
+> can die, too, since there isn't any gpu to reset on usb display-link
+> devices ...
+>
+> Cheers, Daniel
 
