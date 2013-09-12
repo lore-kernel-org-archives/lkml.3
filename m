@@ -1,124 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756483Ab3ILHFe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 03:05:34 -0400
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:64546 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755214Ab3ILHFQ (ORCPT
+	id S1752995Ab3ILHPL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 03:15:11 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:45378 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751346Ab3ILHPG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 03:05:16 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: netdev@vger.kernel.org
-Cc: Michal Simek <monstr@monstr.eu>, "David S. Miller" <davem@davemloft.net>,
-        Jens Renner <renner@efe-gmbh.de>, Libo Chen <libo.chen@huawei.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] net: emaclite: Code cleanup
-Date: Thu, 12 Sep 2013 09:05:11 +0200
-Message-Id: <22c8762e2e6eb8bb7d8b945b8f0a17f54e5c718c.1378969499.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <196d8368eee2d45eeeab40e96e2971f78ed8a79b.1378969499.git.michal.simek@xilinx.com>
-References: <196d8368eee2d45eeeab40e96e2971f78ed8a79b.1378969499.git.michal.simek@xilinx.com>
-In-Reply-To: <196d8368eee2d45eeeab40e96e2971f78ed8a79b.1378969499.git.michal.simek@xilinx.com>
-References: <196d8368eee2d45eeeab40e96e2971f78ed8a79b.1378969499.git.michal.simek@xilinx.com>
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-28876-1378969513-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Thu, 12 Sep 2013 03:15:06 -0400
+X-AuditID: cbfee690-b7f3b6d000007a15-24-523169f8c33e
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Kishon Vijay Abraham I'" <kishon@ti.com>
+Cc: "'Pratyush Anand'" <pratyush.anand@st.com>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Mohit KUMAR'" <Mohit.KUMAR@st.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>, "'Sean Cross'" <xobs@kosagi.com>,
+        "'Thierry Reding'" <thierry.reding@gmail.com>,
+        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <002801ce8376$a807dbf0$f81793d0$@samsung.com>
+ <51ED49D6.9050209@ti.com> <000701ce8741$fe47deb0$fad79c10$@samsung.com>
+ <51EE22DF.6090902@ti.com> <001301ce8772$522dfc50$f689f4f0$@samsung.com>
+ <5231607C.10702@ti.com>
+In-reply-to: <5231607C.10702@ti.com>
+Subject: Re: [PATCH V3] pci: exynos: split into two parts such as Synopsys part
+ and Exynos part
+Date: Thu, 12 Sep 2013 16:15:04 +0900
+Message-id: <003501ceaf87$cda45db0$68ed1910$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac6vgjA5UH78b855SFOzq0Q4r44D2AABOVKg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCKsWRmVeSWpSXmKPExsVy+t8zQ90fmYZBBleOCVr8nXSM3WJJU4bF
+	y0OaFvOPnGO1uLzwEqtF74KrbBYXnvawWVzeNYfN4uy842wWM87vY7LYOPUXo0X7JWWLn7vm
+	sVg0Hn3AatH65AGjA7/H71+TGD12zrrL7rFgU6nH94Xz2T36tqxi9Hj6Yy+zx/Eb25k8Pm+S
+	C+CI4rJJSc3JLEst0rdL4MqYf+wfc8FsjoqTDcoNjKfYuhg5OCQETCRunXHqYuQEMsUkLtxb
+	DxTm4hASWMYose7xV2aIhInE6iUfWSESixglzs0+zg7h/GKUOLaggxGkik1ATeLLl8PsILaI
+	gI7EwtPrmUGKmAXeMEtcXn2MCaLjOaPE4yO/wDo4BVQkVj7rAbOFBRIl5r7+wAxyE4uAqsS2
+	46UgYV4BW4nlvY2sELagxI/J91hAbGYBLYn1O48zQdjyEpvXvGWGeEdd4tFfXYgbjCTmdmxm
+	hCgRkdj34h0jyAkSAjs4JFYfnwGWYBEQkPg2+RALRK+sxKYDUB9LShxccYNlAqPELCSbZyHZ
+	PAvJ5llIVixgZFnFKJpakFxQnJReZKJXnJhbXJqXrpecn7uJEZIiJuxgvHfA+hBjMtD6icxS
+	osn5wBSTVxJvaGxmZGFqYmpsZG5pRpqwkjiveot1oJBAemJJanZqakFqUXxRaU5q8SFGJg5O
+	qQbGjH9mgt4Ndy/fiY5T29Zzor1P/+P2VXk/O3sesN88MvmOXUrBl5fbNZc/We56f+LKu/N3
+	ct8ud89uTnP/UZ/jl+d92sz404rm/4c+Ke72aslTOXN90zrGtDfL5zQ9ZV/H1lOe5dukYu3G
+	bs26J0l753KLeR0Caww/9IYG8FXO06kI4D6jyTFFiaU4I9FQi7moOBEAzRq6KicDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrEKsWRmVeSWpSXmKPExsVy+t9jAd0fmYZBBvO7eCz+TjrGbrGkKcPi
+	5SFNi/lHzrFaXF54idWid8FVNosLT3vYLC7vmsNmcXbecTaLGef3MVlsnPqL0aL9krLFz13z
+	WCwajz5gtWh98oDRgd/j969JjB47Z91l91iwqdTj+8L57B59W1Yxejz9sZfZ4/iN7UwenzfJ
+	BXBENTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gCd
+	rqRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPMmH/sH3PBbI6Kkw3KDYyn
+	2LoYOTkkBEwkVi/5yAphi0lcuLceKM7FISSwiFHi3Ozj7BDOL0aJYws6GEGq2ATUJL58OcwO
+	YosI6EgsPL2eGaSIWeANs8Tl1ceYIDqeM0o8PvILrINTQEVi5bMeMFtYIFFi7usPQB0cHCwC
+	qhLbjpeChHkFbCWW9zayQtiCEj8m32MBsZkFtCTW7zzOBGHLS2xe8xasVUJAXeLRX12IG4wk
+	5nZsZoQoEZHY9+Id4wRGoVlIJs1CMmkWkkmzkLQsYGRZxSiaWpBcUJyUnmukV5yYW1yal66X
+	nJ+7iRGcgp5J72Bc1WBxiFGAg1GJh7djlkGQEGtiWXFl7iFGCQ5mJRHeeHPDICHelMTKqtSi
+	/Pii0pzU4kOMyUB/TmSWEk3OB6bHvJJ4Q2MTMyNLIzMLIxNzc9KElcR5D7ZaBwoJpCeWpGan
+	phakFsFsYeLglGpg3Gzr8F76q7j7c4VPE7lfLphzKdJMQm9nQerri6G+W94Lu8RW3PYu8j0R
+	3zXta/01paszLm+Qi0xXs5qYUGKz/PsuIbX5u7LtLn1Ie+G9//isewvj+A//WHp5R7p2u6ve
+	/is6QSrz/p/SMZHmzln0Q7CjIp13s1zRzi0Gn/clnoxp+bdhupX0BSWW4oxEQy3mouJEAOL8
+	zfyFAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+On Tuesday 23 July 2013 12:30 PM, Kishon Vijay Abraham I wrote:
+> >> .
+> >> .
+> >>>>> +			of_pci_range_to_resource(&range, np, &pp->cfg);
+> >>>>> +			pp->config.cfg0_size = resource_size(&pp->cfg)/2;
+> >>>>> +			pp->config.cfg1_size = resource_size(&pp->cfg)/2;
+> >>>>> +		}
+> >>>>> +	}
+> >>>>> +
+> >>>>> +	pp->dbi_base = devm_ioremap(pp->dev, pp->cfg.start,
+> >>>>> +				resource_size(&pp->cfg));
+> >>>>
+> >>>> Why is configuraion space divided into two?
+> >>>
+> >>> Sorry, I don't know the exact reason. :(
+> >>> Pratyush Anand may know about this.
+> >>> Pratyush Anand, could you answer the question?
+> >>>
+> >>> Also, if you find some problems, please let me know.
+> 
+> One more query..
+> 
+> Where is inbound translation configuration done in your driver? how should it
+> be done?
 
---=_mimegpg-monstr-desktop-28876-1378969513-0001
+Hi Kishon,
 
-No function changes (s/\ \t/\t/g)
+Sorry, I cannot understand your question exactly.
+However, the following thread would be helpful.
 
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
- drivers/net/ethernet/xilinx/xilinx_emaclite.c | 28 +++++++++++++--------------
- 1 file changed, 14 insertions(+), 14 deletions(-)
+http://www.spinics.net/lists/arm-kernel/msg252078.html
+https://lkml.org/lkml/2013/6/17/890
 
-diff --git a/drivers/net/ethernet/xilinx/xilinx_emaclite.c b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-index de39098..80dd404 100644
---- a/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-+++ b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-@@ -31,7 +31,7 @@
- #define DRIVER_NAME "xilinx_emaclite"
+Best regards.
+Jingoo Han
 
- /* Register offsets for the EmacLite Core */
--#define XEL_TXBUFF_OFFSET 	0x0		/* Transmit Buffer */
-+#define XEL_TXBUFF_OFFSET	0x0		/* Transmit Buffer */
- #define XEL_MDIOADDR_OFFSET	0x07E4		/* MDIO Address Register */
- #define XEL_MDIOWR_OFFSET	0x07E8		/* MDIO Write Data Register */
- #define XEL_MDIORD_OFFSET	0x07EC		/* MDIO Read Data Register */
-@@ -63,13 +63,13 @@
- #define XEL_MDIOCTRL_MDIOEN_MASK  0x00000008	/* MDIO Enable */
-
- /* Global Interrupt Enable Register (GIER) Bit Masks */
--#define XEL_GIER_GIE_MASK	0x80000000 	/* Global Enable */
-+#define XEL_GIER_GIE_MASK	0x80000000	/* Global Enable */
-
- /* Transmit Status Register (TSR) Bit Masks */
--#define XEL_TSR_XMIT_BUSY_MASK	 0x00000001 	/* Tx complete */
--#define XEL_TSR_PROGRAM_MASK	 0x00000002 	/* Program the MAC address */
--#define XEL_TSR_XMIT_IE_MASK	 0x00000008 	/* Tx interrupt enable bit */
--#define XEL_TSR_XMIT_ACTIVE_MASK 0x80000000 	/* Buffer is active, SW bit
-+#define XEL_TSR_XMIT_BUSY_MASK	 0x00000001	/* Tx complete */
-+#define XEL_TSR_PROGRAM_MASK	 0x00000002	/* Program the MAC address */
-+#define XEL_TSR_XMIT_IE_MASK	 0x00000008	/* Tx interrupt enable bit */
-+#define XEL_TSR_XMIT_ACTIVE_MASK 0x80000000	/* Buffer is active, SW bit
- 						 * only. This is not documented
- 						 * in the HW spec */
-
-@@ -77,21 +77,21 @@
- #define XEL_TSR_PROG_MAC_ADDR	(XEL_TSR_XMIT_BUSY_MASK | XEL_TSR_PROGRAM_MASK)
-
- /* Receive Status Register (RSR) */
--#define XEL_RSR_RECV_DONE_MASK	0x00000001 	/* Rx complete */
--#define XEL_RSR_RECV_IE_MASK	0x00000008 	/* Rx interrupt enable bit */
-+#define XEL_RSR_RECV_DONE_MASK	0x00000001	/* Rx complete */
-+#define XEL_RSR_RECV_IE_MASK	0x00000008	/* Rx interrupt enable bit */
-
- /* Transmit Packet Length Register (TPLR) */
--#define XEL_TPLR_LENGTH_MASK	0x0000FFFF 	/* Tx packet length */
-+#define XEL_TPLR_LENGTH_MASK	0x0000FFFF	/* Tx packet length */
-
- /* Receive Packet Length Register (RPLR) */
--#define XEL_RPLR_LENGTH_MASK	0x0000FFFF 	/* Rx packet length */
-+#define XEL_RPLR_LENGTH_MASK	0x0000FFFF	/* Rx packet length */
-
--#define XEL_HEADER_OFFSET	12 		/* Offset to length field */
--#define XEL_HEADER_SHIFT	16 		/* Shift value for length */
-+#define XEL_HEADER_OFFSET	12		/* Offset to length field */
-+#define XEL_HEADER_SHIFT	16		/* Shift value for length */
-
- /* General Ethernet Definitions */
--#define XEL_ARP_PACKET_SIZE		28 	/* Max ARP packet size */
--#define XEL_HEADER_IP_LENGTH_OFFSET	16 	/* IP Length Offset */
-+#define XEL_ARP_PACKET_SIZE		28	/* Max ARP packet size */
-+#define XEL_HEADER_IP_LENGTH_OFFSET	16	/* IP Length Offset */
-
-
-
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-28876-1378969513-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlIxZ6kACgkQykllyylKDCHAPwCffRkJYEoiSdtGsNGMIHigwKoK
-AmIAn26iM8TaSgOFhidyagO72+LQbWEY
-=3rHa
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-28876-1378969513-0001--
