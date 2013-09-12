@@ -1,124 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756499Ab3ILSfw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:35:52 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:55829 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755894Ab3ILSft (ORCPT
+	id S1756394Ab3ILSfr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:35:47 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:58515 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756057Ab3ILSfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 14:35:49 -0400
-Date: Thu, 12 Sep 2013 11:35:41 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mike Travis <travis@sgi.com>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dimitri Sivanich <sivanich@sgi.com>, Hedi Berriche <hedi@sgi.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 9/9] x86/UV: Add ability to disable UV NMI handler
-Message-ID: <20130912183541.GA11712@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130905225032.879120272@asylum.americas.sgi.com>
- <20130905225034.343366161@asylum.americas.sgi.com>
- <20130909124349.GY31370@twins.programming.kicks-ass.net>
- <522E0037.3090107@sgi.com>
- <20130910090349.GN26785@twins.programming.kicks-ass.net>
- <20130912172731.GR3966@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130912172731.GR3966@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091218-0928-0000-0000-0000018A1724
+	Thu, 12 Sep 2013 14:35:44 -0400
+From: Koen Kooi <koen@dominion.thruhere.net>
+To: linux-kernel@vger.kernel.org
+Cc: bcousson@baylibre.com, tony@atomide.com, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
+        ijc+devicetree@hellion.org.uk, linux@arm.linux.org.uk,
+        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Alexander Holler <holler@ahsoftware.de>,
+        Koen Kooi <koen@dominion.thruhere.net>
+Subject: [PATCH v4 1/4] ARM: dts: am335x-bone: add CD for mmc1
+Date: Thu, 12 Sep 2013 20:35:32 +0200
+Message-Id: <1379010935-25943-2-git-send-email-koen@dominion.thruhere.net>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1379010935-25943-1-git-send-email-koen@dominion.thruhere.net>
+References: <1379010935-25943-1-git-send-email-koen@dominion.thruhere.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 10:27:31AM -0700, Paul E. McKenney wrote:
-> On Tue, Sep 10, 2013 at 11:03:49AM +0200, Peter Zijlstra wrote:
-> > On Mon, Sep 09, 2013 at 10:07:03AM -0700, Mike Travis wrote:
-> > > On 9/9/2013 5:43 AM, Peter Zijlstra wrote:
-> > > > On Thu, Sep 05, 2013 at 05:50:41PM -0500, Mike Travis wrote:
-> > > >> For performance reasons, the NMI handler may be disabled to lessen the
-> > > >> performance impact caused by the multiple perf tools running concurently.
-> > > >> If the system nmi command is issued when the UV NMI handler is disabled,
-> > > >> the "Dazed and Confused" messages occur for all cpus.  The NMI handler is
-> > > >> disabled by setting the nmi disabled variable to '1'.  Setting it back to
-> > > >> '0' will re-enable the NMI handler.
-> > > > 
-> > > > I'm not entirely sure why this is still needed now that you've moved all
-> > > > really expensive bits into the UNKNOWN handler.
-> > > > 
-> > > 
-> > > Yes, it could be considered optional.  My primary use was to isolate
-> > > new bugs I found to see if my NMI changes were causing them.  But it
-> > > appears that they are not since the problems occur with or without
-> > > using the NMI entry into KDB.  So it can be safely removed.
-> > 
-> > OK, as a debug option it might make sense, but removing it is (of course)
-> > fine with me ;-)
-> > 
-> > > (The basic problem is that if you hang out in KDB too long the machine
-> > > locks up.  
-> > 
-> > Yeah, known issue. Not much you can do about it either I suspect. The
-> > system generally isn't build for things like that.
-> > 
-> > > Other problems like the rcu stall detector does not have a
-> > > means to be "touched" like the nmi_watchdog_timer so it fires off a
-> > > few to many, many messages.  
-> > 
-> > That however might be easily cured if you ask Paul nicely ;-)
-> 
-> RCU's grace-period mechanism is supposed to be what touches it.  ;-)
-> 
-> But what is it that you are looking for?  If you want to silence it
-> completely, the rcu_cpu_stall_suppress boot/sysfs parameter is what
-> you want to use.
-> 
-> > > Another, any network connections will time
-> > > out if you are in KDB more than say 20 or 30 seconds.)
-> 
-> Ah, you are looking for RCU to refrain from complaining about grace
-> periods that have been delayed by breakpoints in the kernel?  Is there
-> some way that RCU can learn that a breakpoint has happened?  If so,
-> this should not be hard.
+From: Alexander Holler <holler@ahsoftware.de>
 
-But wait...  RCU relies on the jiffies counter for RCU CPU stall warnings.
-Doesn't the jiffies counter stop during breakpoints?
+This enables the use of MMC cards even when no card was inserted at boot.
 
-							Thanx, Paul
+Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
+---
+ arch/arm/boot/dts/am335x-bone-common.dtsi | 14 ++++++++++++++
+ arch/arm/boot/dts/am335x-bone.dts         |  1 -
+ 2 files changed, 14 insertions(+), 1 deletion(-)
 
-> If not, I must fall back on the rcu_cpu_stall_suppress that I mentioned
-> earlier.
-> 
-> > > One other problem is with the perf tool.  It seems running more than
-> > > about 2 or 3 perf top instances on a medium (1k cpu threads) sized
-> > > system, they start behaving badly with a bunch of NMI stackdumps
-> > > appearing on the console.  Eventually the system become unusable.
-> > 
-> > Yuck.. I haven't seen anything like that on the 'tiny' systems I have :/
-> 
-> Indeed, with that definition of "medium", large must be truly impressive!
-> 
-> 							Thanx, Paul
-> 
-> > > On a large system (4k), the perf tools get an error message (sorry
-> > > don't have it handy at the moment) the basically implies that the
-> > > perf config option is not set.  Again, I wanted to remove the new
-> > > NMI handler to insure that it wasn't doing something weird, and
-> > > it wasn't.
-> > 
-> > Cute.. 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
+diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
+index 2f66ded..0d95d54 100644
+--- a/arch/arm/boot/dts/am335x-bone-common.dtsi
++++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
+@@ -107,6 +107,12 @@
+ 				0x14c (PIN_INPUT_PULLDOWN | MUX_MODE7)
+ 			>;
+ 		};
++
++		mmc1_pins: pinmux_mmc1_pins {
++			pinctrl-single,pins = <
++				0x160 (PIN_INPUT | MUX_MODE7) /* GPIO0_6 */
++			>;
++		};
+ 	};
+ 
+ 	ocp {
+@@ -260,3 +266,11 @@
+ 	pinctrl-0 = <&davinci_mdio_default>;
+ 	pinctrl-1 = <&davinci_mdio_sleep>;
+ };
++
++&mmc1 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&mmc1_pins>;
++	cd-gpios = <&gpio0 6 GPIO_ACTIVE_HIGH>;
++	cd-inverted;
++};
+diff --git a/arch/arm/boot/dts/am335x-bone.dts b/arch/arm/boot/dts/am335x-bone.dts
+index d5f43fe..0d63348 100644
+--- a/arch/arm/boot/dts/am335x-bone.dts
++++ b/arch/arm/boot/dts/am335x-bone.dts
+@@ -17,6 +17,5 @@
+ };
+ 
+ &mmc1 {
+-	status = "okay";
+ 	vmmc-supply = <&ldo3_reg>;
+ };
+-- 
+1.8.2.1
 
