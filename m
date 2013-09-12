@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901Ab3ILOTc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 10:19:32 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:35341 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752179Ab3ILOTa (ORCPT
+	id S1753127Ab3ILOTj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 10:19:39 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:15691 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752179Ab3ILOTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 10:19:30 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-c5-5231cd702dab
+	Thu, 12 Sep 2013 10:19:37 -0400
+X-AuditID: cbfee61b-b7f776d0000016c8-4e-5231cd78ef9f
 From: Robert Baldyga <r.baldyga@samsung.com>
 To: balbi@ti.com
 Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com,
-        m.szyprowski@samsung.com, Robert Baldyga <r.baldyga@samsung.com>,
+        m.szyprowski@samsung.com, Chanho Park <chanho61.park@samsung.com>,
+        Robert Baldyga <r.baldyga@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH 1/6] usb: s3c-hsotg: change dependency to PLAT_SAMSUNG
-Date: Thu, 12 Sep 2013 16:18:47 +0200
-Message-id: <1378995532-32142-2-git-send-email-r.baldyga@samsung.com>
+Subject: [PATCH 3/6] usb: s3c-hsotg: do not disconnect gadget when receiving
+ ErlySusp intr
+Date: Thu, 12 Sep 2013 16:18:49 +0200
+Message-id: <1378995532-32142-4-git-send-email-r.baldyga@samsung.com>
 X-Mailer: git-send-email 1.7.10
 In-reply-to: <1378995532-32142-1-git-send-email-r.baldyga@samsung.com>
 References: <1378995532-32142-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMLMWRmVeSWpSXmKPExsVy+t9jQd2Cs4ZBBlMm2lhsnLGe1eLg/XqL
-	5sXr2SzONr1ht7i8aw6bxaJlrcwWa4/cZbd4cHgnuwOHx/65a9g9+rasYvQ4fmM7k8fnTXIB
-	LFFcNimpOZllqUX6dglcGd8u9LIX7OGo+Pp4HUsDYy97FyMnh4SAicTae0tZIWwxiQv31rN1
-	MXJxCAlMZ5TY/mkuE4TTxSQx/ccRsCo2AR2JLd8nMILYIgICEutfXGIHKWIWeMIoMfXIK7Cx
-	wgJuElN/QaxgEVCVWNvdDWbzCrhK/Lr9mw1inbzE0/t9YDYnUH3fbpDVHEDbXCUmbk2ZwMi7
-	gJFhFaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZwUD2T2sG4ssHiEKMAB6MSD2/HLIMgIdbE
-	suLK3EOMEhzMSiK8nycaBgnxpiRWVqUW5ccXleakFh9ilOZgURLnPdBqHSgkkJ5YkpqdmlqQ
-	WgSTZeLglGpgPJn+dPbyVwLMPIvmmrizFkwuujjFov+czpudU6MnWG05I25/g2vax2Uz5bcF
-	KeXM0fCxW3xTw3lC6NEFE+r1PnZpLva0KEmN/8TU3Ct6bu1tvxjGuc+iEhmuPOozrfqnUB5w
-	p27dwdQQiVOcsvNinhY+CUgwsF7L3c+kvuX4rVtZWd+tAx/aKbEUZyQaajEXFScCAJbkytMm	AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGLMWRmVeSWpSXmKPExsVy+t9jQd2Ks4ZBBquOSVlsnLGe1eLg/XqL
+	y/u1LZoXr2ezONv0ht3i8q45bBaLlrUyW6w9cpfd4sHhnewOnB77565h9+jbsorR4/iN7Uwe
+	nzfJBbBEcdmkpOZklqUW6dslcGX8/v2QueADe8WN6ZOZGxjPsHUxcnBICJhI9N9i6mLkBDLF
+	JC7cWw8U5uIQEpjOKLH75Sp2CKeLSaL5zktWkCo2AR2JLd8nMILYIgICEutfXAIrYhboZ5LY
+	uO8aWJGwQIzE4dfz2EBsFgFViTOvloHFeQVcJeYee8sOsU5e4un9PrAaTgE3ib7d68EuEgKq
+	mbg1ZQIj7wJGhlWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwaH1THoH46oGi0OMAhyMSjy8
+	iYsNg4RYE8uKK3MPMUpwMCuJ8H6eCBTiTUmsrEotyo8vKs1JLT7EKM3BoiTOe7DVOlBIID2x
+	JDU7NbUgtQgmy8TBKdXAyFiu2/CUuaPZx8P6keUj9Qlv2q222DaI8uufnhY/+cH8C18vM+7X
+	OCY9Y3GP5vMjvssP+2gYL+66ZM/VveTkA+7pU6s2Vi+xdmC99zHxtGRu7Hyhba/jje6VTBBc
+	O/mW/P2vX68yJRpVu59rdLt7Ql5B13Pb591XA33mCc+7qDl1adbth85X05RYijMSDbWYi4oT
+	AUJYWjMpAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marek Szyprowski <m.szyprowski@samsung.com>
+From: Chanho Park <chanho61.park@samsung.com>
 
-On device tree based Samsung SoC platforms (like Exynos) no platform
-devices are defined and CONFIG_S3C_DEV_USB_HSOTG is no longer available,
-so change the driver dependency to more generic and approperiate
-CONFIG_PLAT_SAMSUNG, as the driver can be used on almost all Samsung
-platforms.
+DWC2 databook indicates if the core sets "ErlySusp" bit, an idle state has been
+detected on the USB for 3 ms. This situation can be occurred when waiting
+a request from user daemon. So, we should keep the connection between udc and
+gadget even though this interrupt is occurred.
 
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Signed-off-by: Chanho Park <chanho61.park@samsung.com>
 Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/usb/gadget/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/gadget/s3c-hsotg.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-index 8e93683..08fc9dd 100644
---- a/drivers/usb/gadget/Kconfig
-+++ b/drivers/usb/gadget/Kconfig
-@@ -282,7 +282,7 @@ config USB_PXA27X
+diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
+index b13a4f9..dd5524c 100644
+--- a/drivers/usb/gadget/s3c-hsotg.c
++++ b/drivers/usb/gadget/s3c-hsotg.c
+@@ -2474,8 +2474,6 @@ irq_retry:
+ 	if (gintsts & GINTSTS_ErlySusp) {
+ 		dev_dbg(hsotg->dev, "GINTSTS_ErlySusp\n");
+ 		writel(GINTSTS_ErlySusp, hsotg->regs + GINTSTS);
+-
+-		s3c_hsotg_disconnect(hsotg);
+ 	}
  
- config USB_S3C_HSOTG
- 	tristate "S3C HS/OtG USB Device controller"
--	depends on S3C_DEV_USB_HSOTG
-+	depends on PLAT_SAMSUNG
- 	help
- 	  The Samsung S3C64XX USB2.0 high-speed gadget controller
- 	  integrated into the S3C64XX series SoC.
+ 	/*
 -- 
 1.7.9.5
 
