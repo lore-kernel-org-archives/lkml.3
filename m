@@ -1,91 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755154Ab3ILCZx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 22:25:53 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:44409 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751424Ab3ILCZv (ORCPT
+	id S1756162Ab3ILC0E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 22:26:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43783 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755258Ab3ILC0B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 22:25:51 -0400
-Date: Thu, 12 Sep 2013 10:26:12 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-To: Jani Nikula <jani.nikula@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Daniel Vetter <daniel@ffwll.ch>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        Yves-Alexis Perez <corsac@debian.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Lee Chun-Yi <jlee@novell.com>, Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH 2/2] ACPI / video / i915: Remove ACPI backlight if
- firmware expects Windows 8
-Message-ID: <20130912022611.GA11167@aaronlu.sh.intel.com>
-References: <522D88C3.7000808@intel.com>
- <5155010.Y1gov7SKhP@vostro.rjw.lan>
- <87eh8wail7.fsf@intel.com>
- <1889567.vxI8heiC3B@vostro.rjw.lan>
- <20130911013206.GA556@mint-spring.sh.intel.com>
- <87hadrycf4.fsf@intel.com>
+	Wed, 11 Sep 2013 22:26:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87hadrycf4.fsf@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130911141943.GA3181@neilslaptop.think-freely.org>
+References: <1378496168-3684-1-git-send-email-nhorman@tuxdriver.com>
+	<CACVXFVPRWEXMHyGhfZVGX2HrL3cguqVBUjTS51r2p8EGt=EPdg@mail.gmail.com>
+	<20130911141943.GA3181@neilslaptop.think-freely.org>
+Date: Thu, 12 Sep 2013 10:25:58 +0800
+Message-ID: <CACVXFVNfkfsSJJUK_BWHLnddk=NAWDJoERmg_qycYa11G_X2RA@mail.gmail.com>
+Subject: Re: [PATCH] firmware: Be a bit more verbose about direct firmware
+ loading failure
+From: Ming Lei <ming.lei@canonical.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 11:45:19AM +0300, Jani Nikula wrote:
-> On Wed, 11 Sep 2013, Aaron Lu <aaron.lu@intel.com> wrote:
-> > It is possible the i915 driver decides not to register a backlight
-> > interface for the graphics card for some reason(memory allocation failed
-> > or it knows the native control does not work on this card or whatever),
-> > so I would prefer let i915 tell ACPI video that it has registered a
-> > native backlight control interface as Jani has said.
-> >
-> > Then together with the video.use_native_backlight, we can register or
-> > not register ACPI video backlight interface accordingly. Or rather, we
-> > can simply not register ACPI video backlight interface for Win8 systems
-> > as long as i915 indicates that it has native backlight control(if the
-> > native control is broken, i915 should fix it or blacklist it so that
-> > i915 will not indicate it has native backlight control and ACPI video
-> > will continue to register its own).
-> >
-> > How does this sound?
-> 
-> Sounds good to me.
-> 
-> Before plunging forward, have you observed any difference between the
-> boot modes? We have reports [1] that the backlight behaviour is
+On Wed, Sep 11, 2013 at 10:19 PM, Neil Horman <nhorman@tuxdriver.com> wrote:
+> On Wed, Sep 11, 2013 at 07:54:28PM +0800, Ming Lei wrote:
+>> On Sat, Sep 7, 2013 at 3:36 AM, Neil Horman <nhorman@tuxdriver.com> wrote:
+>> > The direct firmware loading interface is a bit quiet about failures.  Failures
+>>
+>> Because there are several pre-defined search paths, and generally the
+>> requested firmware only exists in one of these paths.
+>>
+> This is true, but you'll note this patch doesn't make any noise in the event
+> that a firmware isn't found until all the search paths are exhausted.  I didn't
+> consider this "unexpected".
 
-Not yet from ACPI's point of view.
+Yes, it will cause noise, suppose the firmware is in the last search path, and
+we may always get the warning during the first three searches, and it
+is certainly
+annoying, isn't it?
 
-> different with UEFI vs. UEFI+CSM or legacy boot. So I'm wondering if the
-> acpi_gbl_osi_data >= ACPI_OSI_WIN_8 check in patch 2/2 is the whole
-> story.
+>
+>> > that occur during loading are masked if firmware exists in multiple locations,
+>> > and may be masked entirely in the event that we fall back to the user mode
+>>
+>> You still can figure out the request falls back to user mode loading since we
+>> have the "firmware: direct-loading firmware %s" log.
+>>
+> Yes, but you're looking at it backwards, that only prints out if the direct load
+> works.  If it doesn't, you get silence, which is bad.
 
-This check in patch 2/2 is a policy: for Win8 system, we think the
-native backlight control has a better chance of working than the ACPI
-video's, so I think the check is enough in ACPI video.
+OK, you can change to only log the failure.
 
-> 
-> Further, if we tell the BIOS we're Windows 8 to use the tested BIOS code
-> paths, what guarantees do we have of UEFI+CSM or legacy boots working?
+>
+>> > helper code.  It would be nice to see some of the more unexpected errors get
+>>
+>> What are the unexpected errors?
+>>
+> If you get a short read in the direct load path for example, or if someone
+> mounts an nfs share over the firmware search path and you get an ESTALE.
 
-I suppose the 'tested BIOS code paths' means the pure UEFI boot mode? I
-don't know what guatantees do we have since I don't know what happened
-underneath after the backlight register is set in i915 driver, you or
-other i915 driver people should know more than I do :-)
+That is easy to find, and no one should mount one fs on firmware path.
 
-BTW, after the backlight register is set in i915, is it that some
-find of firmware code will run in response to the setting of the
-register(e.g. the BLC_PWM_CTL/BLC_PWM_CPU_CTL/PCI_LBPC reg)?
+> Alternatively, if the vmalloc fails during the direct load path, these would be
+> "unexpected" errors
 
-Thanks,
-Aaron
+This one might make sense since size of some firmwares may be several mega
+bytes, and vmalloc space is a bit limited on 32bit arch, so how about just log
+this failure in fw_read_file_contents()?
+
+>
+>> > logged, so in the event that you expect the direct firmware loader to work (like
+>> > if CONFIG_FW_LOADER_USER_HELPER is enabled), and something goes wrong, you can
+>> > figure out what happened.
+>>
+>> Looks we didn't meet this case, do you have real examples?
+>>
+> Yeah, we had a vmalloc failure in the direct load path, and unknowingly had
+> forgot to configure CONFIG_FW_LOADER_USER_HELPER, so the module load failed with
+> an ENOENT, even though the firmware was clearly present on the filesystem.  This
+> patch helped us track that down.
+
+Fair enough, looks it is helpful to add some log, :-)
+
+>
+> Neil
+>
+>> >
+>> > Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+>> > CC: Ming Lei <ming.lei@canonical.com>
+>> > CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> > ---
+>> >  drivers/base/firmware_class.c | 38 +++++++++++++++++++++++++-------------
+>> >  1 file changed, 25 insertions(+), 13 deletions(-)
+>> >
+>> > diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+>> > index 10a4467..eb8fb94 100644
+>> > --- a/drivers/base/firmware_class.c
+>> > +++ b/drivers/base/firmware_class.c
+>> > @@ -282,31 +282,35 @@ static noinline_for_stack long fw_file_size(struct file *file)
+>> >         return st.size;
+>> >  }
+>> >
+>> > -static bool fw_read_file_contents(struct file *file, struct firmware_buf *fw_buf)
+>> > +static int fw_read_file_contents(struct file *file, struct firmware_buf *fw_buf)
+>> >  {
+>> >         long size;
+>> >         char *buf;
+>> > +       int rc;
+>> >
+>> >         size = fw_file_size(file);
+>> >         if (size <= 0)
+>> > -               return false;
+>> > +               return -EINVAL;
+>> >         buf = vmalloc(size);
+>> >         if (!buf)
+>> > -               return false;
+>> > -       if (kernel_read(file, 0, buf, size) != size) {
+>> > +               return -ENOMEM;
+>> > +       rc = kernel_read(file, 0, buf, size);
+>> > +       if (rc != size) {
+>> > +               if (rc > 0)
+>> > +                       rc = -EIO;
+>> >                 vfree(buf);
+>> > -               return false;
+>> > +               return rc;
+>> >         }
+>> >         fw_buf->data = buf;
+>> >         fw_buf->size = size;
+>> > -       return true;
+>> > +       return 0;
+>> >  }
+>> >
+>> > -static bool fw_get_filesystem_firmware(struct device *device,
+>> > +static int fw_get_filesystem_firmware(struct device *device,
+>> >                                        struct firmware_buf *buf)
+>> >  {
+>> >         int i;
+>> > -       bool success = false;
+>> > +       int rc = -ENOENT;
+>> >         char *path = __getname();
+>> >
+>> >         for (i = 0; i < ARRAY_SIZE(fw_path); i++) {
+>> > @@ -321,14 +325,17 @@ static bool fw_get_filesystem_firmware(struct device *device,
+>> >                 file = filp_open(path, O_RDONLY, 0);
+>> >                 if (IS_ERR(file))
+>> >                         continue;
+>> > -               success = fw_read_file_contents(file, buf);
+>> > +               rc = fw_read_file_contents(file, buf);
+>> >                 fput(file);
+>> > -               if (success)
+>> > +               if (rc)
+>> > +                       dev_warn(device, "firmware, attempted to load %s, but failed with error %d\n",
+>> > +                               path, rc);
+>>
+>> The above may introduce noises.
+>>
+>> > +               else
+>> >                         break;
+>> >         }
+>> >         __putname(path);
+>> >
+>> > -       if (success) {
+>> > +       if (!rc) {
+>> >                 dev_dbg(device, "firmware: direct-loading firmware %s\n",
+>> >                         buf->fw_id);
+>> >                 mutex_lock(&fw_lock);
+>> > @@ -337,7 +344,7 @@ static bool fw_get_filesystem_firmware(struct device *device,
+>> >                 mutex_unlock(&fw_lock);
+>> >         }
+>> >
+>> > -       return success;
+>> > +       return rc;
+>> >  }
+>> >
+>> >  /* firmware holds the ownership of pages */
+>> > @@ -1086,9 +1093,14 @@ _request_firmware(const struct firmware **firmware_p, const char *name,
+>> >                 }
+>> >         }
+>> >
+>> > -       if (!fw_get_filesystem_firmware(device, fw->priv))
+>> > +       ret = fw_get_filesystem_firmware(device, fw->priv);
+>> > +       if (ret) {
+>> > +               dev_warn(device, "Direct firmware load failed with error %d\n",
+>> > +                        ret);
+>> > +               dev_warn(device, "Falling back to user helper\n");
+>>
+>> You should merge the two warnings to into one?
+>>
+>> >                 ret = fw_load_from_user_helper(fw, name, device,
+>> >                                                uevent, nowait, timeout);
+>> > +       }
+>> >
+>> >         /* don't cache firmware handled without uevent */
+>> >         if (!ret)
+>>
+>>
+>> Thanks,
+>> --
+>> Ming Lei
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
