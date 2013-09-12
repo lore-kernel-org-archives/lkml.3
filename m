@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755580Ab3ILR7Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 13:59:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56992 "EHLO
+	id S1755923Ab3ILR72 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 13:59:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57107 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755120Ab3ILR7G (ORCPT
+	with ESMTP id S1755674Ab3ILR7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 13:59:06 -0400
+	Thu, 12 Sep 2013 13:59:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
-        Yuchung Cheng <ycheng@google.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 09/46] tcp: cubic: fix overflow error in bictcp_update()
-Date: Thu, 12 Sep 2013 10:58:20 -0700
-Message-Id: <20130912175722.075408798@linuxfoundation.org>
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, Andrey Vagin <avagin@openvz.org>
+Subject: [ 30/46] tcp: dont apply tsoffset if rcv_tsecr is zero
+Date: Thu, 12 Sep 2013 10:58:41 -0700
+Message-Id: <20130912175724.275939984@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130912175721.001906199@linuxfoundation.org>
 References: <20130912175721.001906199@linuxfoundation.org>
@@ -30,68 +33,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Andrew Vagin <avagin@openvz.org>
 
-[ Upstream commit 2ed0edf9090bf4afa2c6fc4f38575a85a80d4b20 ]
+[ Upstream commit e3e12028315749b7fa2edbc37328e5847be9ede9 ]
 
-commit 17a6e9f1aa9 ("tcp_cubic: fix clock dependency") added an
-overflow error in bictcp_update() in following code :
+The zero value means that tsecr is not valid, so it's a special case.
 
-/* change the unit from HZ to bictcp_HZ */
-t = ((tcp_time_stamp + msecs_to_jiffies(ca->delay_min>>3) -
-      ca->epoch_start) << BICTCP_HZ) / HZ;
+tsoffset is used to customize tcp_time_stamp for one socket.
+tsoffset is usually zero, it's used when a socket was moved from one
+host to another host.
 
-Because msecs_to_jiffies() being unsigned long, compiler does
-implicit type promotion.
+Currently this issue affects logic of tcp_rcv_rtt_measure_ts. Due to
+incorrect value of rcv_tsecr, tcp_rcv_rtt_measure_ts sets rto to
+TCP_RTO_MAX.
 
-We really want to constrain (tcp_time_stamp - ca->epoch_start)
-to a signed 32bit value, or else 't' has unexpected high values.
-
-This bugs triggers an increase of retransmit rates ~24 days after
-boot [1], as the high order bit of tcp_time_stamp flips.
-
-[1] for hosts with HZ=1000
-
-Big thanks to Van Jacobson for spotting this problem.
-
-Diagnosed-by: Van Jacobson <vanj@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Neal Cardwell <ncardwell@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Cc: Stephen Hemminger <stephen@networkplumber.org>
-Acked-by: Neal Cardwell <ncardwell@google.com>
+Reported-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Cc: James Morris <jmorris@namei.org>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_cubic.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ net/ipv4/tcp_input.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/net/ipv4/tcp_cubic.c
-+++ b/net/ipv4/tcp_cubic.c
-@@ -206,8 +206,8 @@ static u32 cubic_root(u64 a)
-  */
- static inline void bictcp_update(struct bictcp *ca, u32 cwnd)
- {
--	u64 offs;
--	u32 delta, t, bic_target, max_cnt;
-+	u32 delta, bic_target, max_cnt;
-+	u64 offs, t;
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -3598,7 +3598,10 @@ static bool tcp_parse_aligned_timestamp(
+ 		++ptr;
+ 		tp->rx_opt.rcv_tsval = ntohl(*ptr);
+ 		++ptr;
+-		tp->rx_opt.rcv_tsecr = ntohl(*ptr) - tp->tsoffset;
++		if (*ptr)
++			tp->rx_opt.rcv_tsecr = ntohl(*ptr) - tp->tsoffset;
++		else
++			tp->rx_opt.rcv_tsecr = 0;
+ 		return true;
+ 	}
+ 	return false;
+@@ -3623,7 +3626,7 @@ static bool tcp_fast_parse_options(const
+ 	}
  
- 	ca->ack_cnt++;	/* count the number of ACKs */
+ 	tcp_parse_options(skb, &tp->rx_opt, 1, NULL);
+-	if (tp->rx_opt.saw_tstamp)
++	if (tp->rx_opt.saw_tstamp && tp->rx_opt.rcv_tsecr)
+ 		tp->rx_opt.rcv_tsecr -= tp->tsoffset;
  
-@@ -250,9 +250,11 @@ static inline void bictcp_update(struct
- 	 * if the cwnd < 1 million packets !!!
- 	 */
+ 	return true;
+@@ -5376,7 +5379,7 @@ static int tcp_rcv_synsent_state_process
+ 	int saved_clamp = tp->rx_opt.mss_clamp;
  
-+	t = (s32)(tcp_time_stamp - ca->epoch_start);
-+	t += msecs_to_jiffies(ca->delay_min >> 3);
- 	/* change the unit from HZ to bictcp_HZ */
--	t = ((tcp_time_stamp + msecs_to_jiffies(ca->delay_min>>3)
--	      - ca->epoch_start) << BICTCP_HZ) / HZ;
-+	t <<= BICTCP_HZ;
-+	do_div(t, HZ);
+ 	tcp_parse_options(skb, &tp->rx_opt, 0, &foc);
+-	if (tp->rx_opt.saw_tstamp)
++	if (tp->rx_opt.saw_tstamp && tp->rx_opt.rcv_tsecr)
+ 		tp->rx_opt.rcv_tsecr -= tp->tsoffset;
  
- 	if (t < ca->bic_K)		/* t - K */
- 		offs = ca->bic_K - t;
+ 	if (th->ack) {
 
 
