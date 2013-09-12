@@ -1,86 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755174Ab3ILMuF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 08:50:05 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:41446 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754013Ab3ILMuD (ORCPT
+	id S1755297Ab3ILMuL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 08:50:11 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:44745 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754013Ab3ILMuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 08:50:03 -0400
+	Thu, 12 Sep 2013 08:50:08 -0400
+X-IronPort-AV: E=Sophos;i="4.90,891,1371081600"; 
+   d="scan'208";a="50835380"
+Date: Thu, 12 Sep 2013 13:49:41 +0100
+From: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xensource.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>
+Subject: [PULL] (xen) stable/for-linus-3.12-rc0-tag-three for v3.12-rc1
+Message-ID: <alpine.DEB.2.02.1309121328030.32236@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20130827082326.GE6152@lee--X1>
-References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
-	<1370521041-32318-22-git-send-email-lee.jones@linaro.org>
-	<CACRpkdY2KOxX=oA7i9GUnzpwRKiK2rXqTBPVpg+zW082f2TJdg@mail.gmail.com>
-	<20130821101448.GJ29850@lee--X1>
-	<CACRpkdYjvFTJAUL6xKxjkVd_v=DHHRkswoB_eq0Npqj5Sw23KQ@mail.gmail.com>
-	<20130822092130.GB22023@lee--X1>
-	<CACRpkdYLJdmhCqXpQ0s5nbxRoFdZ3bLn+hxAhkoGHYfvugc=7A@mail.gmail.com>
-	<20130827082326.GE6152@lee--X1>
-Date: Thu, 12 Sep 2013 14:50:02 +0200
-Message-ID: <CACRpkdYvAfEh6UGa7qR_e9ynj3TkPSM2RKtr7Scw7L3p10AgXA@mail.gmail.com>
-Subject: Re: [PATCH 21/33] clk: ux500: Add Device Tree support for the PRCC
- Kernel clock
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 27, 2013 at 10:23 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> On Fri, 23 Aug 2013, Linus Walleij wrote:
->> On Thu, Aug 22, 2013 at 11:21 AM, Lee Jones <lee.jones@linaro.org> wrote:
+Linus,
+we have two more Xen fixes for the balloon driver:
 
->> > 1. Duplicate each of the; clk_reg_prcmu_*(), clk_reg_prcc_pclk(),
->> > clk_reg_prcc_kclk() calls into your proposed u8500_clk_init_dt(),
->> > which, while keeping everything separate would be unrealistic.
->>
->> I think this is perfectly realistic.
->>
->> You're not going to duplicate each clk_register_clkdev(),
->> which makes it way smaller than the original function,
->> and since one of the function will be inside a
->>
->> #ifdef CONFIG_OF
->> #endif
->>
->> After we switch the entire platform to DT-only it will be pretty
->> obvious which big chunk of code that needs to go away, it's
->> a clean cut.
->>
->> (Note: I know the #ifdef CONFIG_OF is not necessary anymore
->> since we switched to multiplatform, but I intend that marker for
->> humans, not machines.)
->
-> This sounds gross. To duplicate; u8500_clk_init(), u8540_clk_init()
-> and u9540_clk_init() just for the sake of loading a few pointers into
-> an array for a small part of the development cycle sounds obscene.
->
-> I genuinely think keeping the current patch in this series and then
-> removing the clk_register_clkdev() in the remove ATAG support series
-> is the best way to go.
+ git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git stable/for-linus-3.12-rc0-tag-three
 
-So what I am worrying about is not only the looks of the code
-and what is beautiful or not may be something of an opinion
-anway.
 
-What I worry about is leaving all the calls to clk_register_clkdev()
-in the DT boot path. Because that has the potential to hide a lot
-of bugs, as clk_get() from drivers that should've got named and
-probed randomly now will still find their clocks from their old
-device names, instead of using the <&ampersand> clocks from
-the device tree.
 
-But if you still don't like this, let me cook a counter-patch so
-I can realized on my own how terribly wrong I am...
+The following changes since commit c3b7cb1fd8c1513be99fb3cfb7f39c5116d80dac:
 
-Yours,
-Linus Walleij
+  xen/spinlock: Don't use __initdate for xen_pv_spin (2013-09-09 13:08:49 -0400)
+
+David Vrabel (1):
+      xen/balloon: ensure preemption is disabled when using a scratch page
+
+Wei Liu (1):
+      xen/balloon: remove BUG_ON in increase_reservation
+
+ drivers/xen/balloon.c |   13 +++++++------
+ 1 files changed, 7 insertions(+), 6 deletions(-)
