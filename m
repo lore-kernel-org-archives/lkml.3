@@ -1,107 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756539Ab3ILURc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 16:17:32 -0400
-Received: from mx11.netapp.com ([216.240.18.76]:39787 "EHLO mx11.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753803Ab3ILURa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 16:17:30 -0400
-X-IronPort-AV: E=Sophos;i="4.90,892,1371106800"; 
-   d="scan'208";a="49291458"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Linux/m68k <linux-m68k@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Kernel size increase of +256 KiB (was: Re: RPCSEC_GSS: Share
- all credential caches on a per-transport basis)
-Thread-Topic: Kernel size increase of +256 KiB (was: Re: RPCSEC_GSS: Share
- all credential caches on a per-transport basis)
-Thread-Index: AQHOr7tznpOxKw98ykmpioj1Q9on0JnCmnmAgABVoICAAA/1AA==
-Date: Thu, 12 Sep 2013 20:17:23 +0000
-Message-ID: <1379017042.2627.3.camel@leira.trondhjem.org>
-References: <CAMuHMdViO7yNJ5rxvRkv5NhmW6PQY1N+HW75NwokFnGQp+nxxw@mail.gmail.com>
-	 <1378995227.3117.9.camel@leira.trondhjem.org>
-	 <CAMuHMdV+gVwKbk=RS0CNdiMuom-1j-8FAu+aVMLMDeOm3EXb1A@mail.gmail.com>
-In-Reply-To: <CAMuHMdV+gVwKbk=RS0CNdiMuom-1j-8FAu+aVMLMDeOm3EXb1A@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <62C5D6F1628FEB4F8A05EE2F9C092075@hq.netapp.com>
+	id S1756680Ab3ILURq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 16:17:46 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:37353 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756567Ab3ILURl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 16:17:41 -0400
+Date: Thu, 12 Sep 2013 13:17:17 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mike Travis <travis@sgi.com>, Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dimitri Sivanich <sivanich@sgi.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 9/9] x86/UV: Add ability to disable UV NMI handler
+Message-ID: <20130912201717.GX3966@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130905225032.879120272@asylum.americas.sgi.com>
+ <20130905225034.343366161@asylum.americas.sgi.com>
+ <20130909124349.GY31370@twins.programming.kicks-ass.net>
+ <522E0037.3090107@sgi.com>
+ <20130910090349.GN26785@twins.programming.kicks-ass.net>
+ <20130912172731.GR3966@linux.vnet.ibm.com>
+ <52320F18.4040407@sgi.com>
+ <20130912194833.GW8742@dangermouse.emea.sgi.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130912194833.GW8742@dangermouse.emea.sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13091220-7164-0000-0000-00000195A03A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8CKHZMV016232
 
-On Thu, 2013-09-12 at 21:20 +0200, Geert Uytterhoeven wrote:
-> On Thu, Sep 12, 2013 at 4:13 PM, Myklebust, Trond
-> <Trond.Myklebust@netapp.com> wrote:
-> >> > --- a/net/sunrpc/auth_gss/auth_gss.c
-> >> > +++ b/net/sunrpc/auth_gss/auth_gss.c
-> >> > @@ -51,6 +51,7 @@
-> >> >  #include <linux/sunrpc/rpc_pipe_fs.h>
-> >> >  #include <linux/sunrpc/gss_api.h>
-> >> >  #include <asm/uaccess.h>
-> >> > +#include <linux/hashtable.h>
-> >> >
-> >> >  #include "../netns.h"
-> >> >
-> >> > @@ -71,6 +72,9 @@ static unsigned int gss_expired_cred_retry_delay = GSS_RETRY_EXPIRED;
-> >> >   * using integrity (two 4-byte integers): */
-> >> >  #define GSS_VERF_SLACK         100
-> >> >
-> >> > +static DEFINE_HASHTABLE(gss_auth_hash_table, 16);
-> >> > +static DEFINE_SPINLOCK(gss_auth_hash_lock);
-> >>
-> >> Today's m68k/atari-defconfig kernel no longer boots, as it became larger than
-> >> 4 MiB.
-> >>
-> >> bloat-o-meter tells me:
-> >>
-> >> function                                     old     new   delta
-> >> gss_auth_hash_table                            -  262144 +262144
-> >>
-> >> Woops...
-> >
-> > Whoops indeed. The above should have declared 16 buckets, and not 1<<16.
-> > I fell for Sasha's subtle trap...
-> >
-> >> Are you trying to game Tim's survey? ;-)
-> >> (question 13 at http://www.embeddedlinuxconference.com/cgi-bin/survey.cgi)
-> >>
-> >> Can this memory be allocated dynamically / only when it's used?
-> >
-> > :-) It's declared inside a module, so that should already be the case,
+On Thu, Sep 12, 2013 at 08:48:33PM +0100, Hedi Berriche wrote:
+> On Thu, Sep 12, 2013 at 19:59 Mike Travis wrote:
+> | On 9/12/2013 10:27 AM, Paul E. McKenney wrote:
+> |
+> | > But what is it that you are looking for?  If you want to silence it
+> | > completely, the rcu_cpu_stall_suppress boot/sysfs parameter is what
+> | > you want to use.
+> | 
+> | We have by default rcutree.rcu_cpu_stall_suppress=1 on the kernel
+> | cmdline.  I'll double check if it was set during my testing.
 > 
-> Only for the modular case. What about builtin, e.g. for nfsroot?
+> FWIW, for recent enough kernels the correct boot parameter is
+> rcupdate.rcu_cpu_stall_suppress.
 > 
-> Or is it better to not build in NFS_V4 support in that case?
-> 
-> config NFS_V4
->           If unsure, say Y.
-> 
-> config NFSD_V4
->           If unsure, say N.
-> 
-> So that's why my defconfig has NFS_V4 but not NFSD_V4.
+> It used to be rcutree.rcu_cpu_stall_suppress, but that has changed after
+> commit 6bfc09e.
 
-It should be possible now to compile in NFSv3 support (and/or NFSv2),
-while keeping NFSv4 a module. That will usually result in
-CONFIG_SUNRPC_GSS=m...
+Good point, Hedi!  That change happened when rcutiny gained RCU CPU
+stall warning capability.
 
-Of course, if your defconfig doesn't have module support then, yes, your
-only option to avoid compiling in rpcsec_gss is to not select NFSv4 at
-all.
+							Thanx, Paul
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
