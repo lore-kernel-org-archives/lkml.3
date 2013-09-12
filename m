@@ -1,130 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755964Ab3ILL1n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 07:27:43 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:47496 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754389Ab3ILL1l (ORCPT
+	id S1752885Ab3ILLgw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 07:36:52 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:38154 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751906Ab3ILLgu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 07:27:41 -0400
-Message-ID: <5231A4FE.1070704@ahsoftware.de>
-Date: Thu, 12 Sep 2013 13:26:54 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
-Subject: Re: [PATCH] RFC: interrupt consistency check for OF GPIO IRQs
-References: <1375101368-17645-1-git-send-email-linus.walleij@linaro.org> <CACxGe6uNJNMdZ1HYGgCtLM2t2TWGCR6btjOHVmP=vDXXvvFfRg@mail.gmail.com> <CACRpkdYjJL6FZwEbB7XLnb9QtjB=3LeE9Ny6KQ4PkM3zpdNqqg@mail.gmail.com> <344239800.bDEkDg48ZQ@avalon> <CACRpkdavR=fv+y1RCNfdgQypPuRbO6isOSwGsABDrYiGeMdyZw@mail.gmail.com> <52308C91.2000105@ahsoftware.de> <523096FE.8080901@collabora.co.uk> <5230AB6E.1070807@ahsoftware.de> <5231817F.8000901@ahsoftware.de> <5231934D.4060706@collabora.co.uk> <52319741.5050407@ahsoftware.de> <5231A0F8.1070505@ahsoftware.de>
-In-Reply-To: <5231A0F8.1070505@ahsoftware.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 12 Sep 2013 07:36:50 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V2] cpufreq: use correct values of cpus in __cpufreq_remove_dev_finish()
+Date: Thu, 12 Sep 2013 17:06:33 +0530
+Message-Id: <01cdf0d2a0523bd0c2bc73d63055df0bf477b5fb.1378984168.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 12.09.2013 13:09, schrieb Alexander Holler:
-> Am 12.09.2013 12:28, schrieb Alexander Holler:
->> Am 12.09.2013 12:11, schrieb Javier Martinez Canillas:
->>> On 09/12/2013 10:55 AM, Alexander Holler wrote:
->>
->> ...
->>>>
->>>> By the way, how do you define two GPIOs/IRQs from different
->>>> gpio-banks/irq-controllers wuth that scheme?
->>>>
->>>
->>> That is indeed a very good question and I don't have a definite answer.
->>>
->>>> Would that be like below?
->>>>
->>>>   ethernet@5,0 {
->>>>            compatible = "smsc,lan9221", "smsc,lan9115";
->>>>            interrupt-parent = <&gpio6>;
->>>>            interrupts = <16 8>;
->>>>            interrupt-parent = <&gpio7>;
->>>>            interrupts = <1 IRQF_TRIGGER_FALLING>; /* GPIO7_1 */
->>>>   };
->>>>
->>
->> ...
->>
->>> So, if I understood the code correctly the DT IRQ core doesn't expect
->>> a device
->>> node to have more than one "interrupt-parent" property.
->>>
->>> It *should* work though if you have multiple "interrupts" properties
->>> defined and
->>> all of them have the same "interrupt-parent":
->>>
->>>         interrupt-parent = <&gpio6>;
->>>         interrupts = <1 IRQF_TRIGGER_HIGH>; /* GPIO6_1 */
->>>         interrupts = <2 IRQF_TRIGGER_LOW>; /* GPIO6_2 */
->>>
->>> since of_irq_map_one() will be called for each "interrupts" and the
->>> correct
->>> "interrupt-parent" will get obtained by of_irq_find_parent().
->>
->> I assumed that answer. So to make such a scenario possible, something
->> like this might be neccessary:
->>
->>           interrupts = <&gpio6 1 IRQF_TRIGGER_HIGH>; /* GPIO6_1 */
->>           interrupts = <&gpio7 2 IRQF_TRIGGER_LOW>; /* GPIO7_2 */
->>
->> or, to be compatible
->>
->>           interrupts = <1 IRQF_TRIGGER_HIGH &gpio6>; /* GPIO6_1 */
->>           interrupts = <1 IRQF_TRIGGER_LOW &gpio7>; /* GPIO7_1 */
->>
->> Another problem is the naming. In all the above cases, the driver would
->> not know which IRQ he should use for what. Maybe the order defines it,
->> but that wouldn't be very verbose. And I think just changing the name
->> would make travelling the tree impossible, as only the driver itself
->> would know the name and it's meaning.
->
-> On a second look, travelling the tree is still possible if the solution
-> would be like above (without that interrupt-parent). So if a driver
-> requires two interrupts he could use
->
->        interrupt-foo = <1 IRQF_TRIGGER_HIGH &gpio6>; /* GPIO6_1 */
->        interrupt-bar = <1 IRQF_TRIGGER_LOW &gpio7>; /* GPIO7_1 */
->
-> And travelling the tree will still be possible because walking from the
-> interrupt-controllers (those gpio) downwards would end up at the
-> interrupt definitions, so the name of them isn't needed to find them in
-> the tree.
+This broke after a recent change "cedb70a cpufreq: Split __cpufreq_remove_dev()
+into two parts" from Srivatsa..
 
-I've just seen how they solved it for dma:
+Consider a scenario where we have two CPUs in a policy (0 & 1) and we are
+removing cpu 1. On the call to __cpufreq_remove_dev_prepare() we have cleared 1
+from policy->cpus and now on a call to __cpufreq_remove_dev_finish() we read
+cpumask_weight of policy->cpus, which will come as 1 and this code will behave
+as if we are removing the last cpu from policy :)
 
-			dmas = <&edma0 16
-				&edma0 17>;
-			dma-names = "rx", "tx";
+Fix it by clearing cpu mask in __cpufreq_remove_dev_finish() instead of
+__cpufreq_remove_dev_prepare().
 
-so it would be like
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+V1->V2:
+- sent separately without cleanup patches
+- use cpumask_any_but() instead of cpumask_first()
 
-       interrupts = <1 IRQF_TRIGGER_HIGH &gpio6>; /* GPIO6_1 */
-       interrupts = <1 IRQF_TRIGGER_LOW &gpio7>; /* GPIO7_1 */
-       interrupt-names = "foo", "bar";
+ drivers/cpufreq/cpufreq.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-Or this would be possible:
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 43c24aa..dbfe219 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1125,7 +1125,7 @@ static int cpufreq_nominate_new_policy_cpu(struct cpufreq_policy *policy,
+ 	int ret;
+ 
+ 	/* first sibling now owns the new sysfs dir */
+-	cpu_dev = get_cpu_device(cpumask_first(policy->cpus));
++	cpu_dev = get_cpu_device(cpumask_any_but(policy->cpus, old_cpu));
+ 
+ 	/* Don't touch sysfs files during light-weight tear-down */
+ 	if (frozen)
+@@ -1189,12 +1189,9 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
+ 			policy->governor->name, CPUFREQ_NAME_LEN);
+ #endif
+ 
+-	WARN_ON(lock_policy_rwsem_write(cpu));
++	lock_policy_rwsem_read(cpu);
+ 	cpus = cpumask_weight(policy->cpus);
+-
+-	if (cpus > 1)
+-		cpumask_clear_cpu(cpu, policy->cpus);
+-	unlock_policy_rwsem_write(cpu);
++	unlock_policy_rwsem_read(cpu);
+ 
+ 	if (cpu != policy->cpu) {
+ 		if (!frozen)
+@@ -1237,9 +1234,12 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
+ 		return -EINVAL;
+ 	}
+ 
+-	lock_policy_rwsem_read(cpu);
++	WARN_ON(lock_policy_rwsem_write(cpu));
+ 	cpus = cpumask_weight(policy->cpus);
+-	unlock_policy_rwsem_read(cpu);
++
++	if (cpus > 1)
++		cpumask_clear_cpu(cpu, policy->cpus);
++	unlock_policy_rwsem_write(cpu);
+ 
+ 	/* If cpu is last user of policy, free policy */
+ 	if (cpus == 1) {
+-- 
+1.7.12.rc2.18.g61b472e
 
-       interrupt-parent = <&gpio6 &gpio7>;
-       interrupts = <1 IRQF_TRIGGER_HIGH>; /* GPIO6_1 */
-       interrupts = <1 IRQF_TRIGGER_LOW>; /* GPIO7_1 */
-       interrupt-names = "foo", "bar";
-
-Regards,
-
-Alexander
