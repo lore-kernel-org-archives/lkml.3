@@ -1,57 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab3ILP6u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 11:58:50 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:44979 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754182Ab3ILP6t (ORCPT
+	id S1754682Ab3ILP7c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 11:59:32 -0400
+Received: from smtprelay0146.hostedemail.com ([216.40.44.146]:49507 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754375Ab3ILP7a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 11:58:49 -0400
-MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <20130912154329.GB31370@twins.programming.kicks-ass.net>
-References: <20130912150645.GZ31370@twins.programming.kicks-ass.net>
-	<CAKMK7uFF2GkYapa2_DLv4WYAd0t+POaT+Vy9HG=HQhzMmtH9nA@mail.gmail.com>
-	<20130912154329.GB31370@twins.programming.kicks-ass.net>
-Date: Thu, 12 Sep 2013 17:58:49 +0200
-Message-ID: <CAKMK7uFTYB-E5ksVNEBqGJusJ5TKJv5X4hiPv1mno9tJKuUAdA@mail.gmail.com>
-Subject: Re: [BUG] completely bonkers use of set_need_resched + VM_FAULT_NOPAGE
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Dave Airlie <airlied@linux.ie>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 12 Sep 2013 11:59:30 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::::::::nhorman@tuxd
+X-HE-Tag: boot85_5213d8c8c6530
+X-Filterd-Recvd-Size: 4607
+Message-ID: <1379001562.2075.9.camel@joe-AO722>
+Subject: Re: [RFC PATCH] vsnprintf: Remove use of %n and convert existing
+ uses
+From: Joe Perches <joe@perches.com>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        linux-kernel@vger.kernel.org, kosaki.motohiro@jp.fujitsu.com,
+        keescook@chromium.org, fweisbec@gmail.com, dan.carpenter@oracle.com,
+        devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        tushar.behera@linaro.org, lidza.louina@gmail.com, davem@davemloft.net,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, courmisch@gmail.com, vyasevich@gmail.com,
+        nhorman@tuxdriver.com, netdev@vger.kernel.org,
+        linux-sctp@vger.kernel.org
+Date: Thu, 12 Sep 2013 08:59:22 -0700
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B732A@saturn3.aculab.com>
+References: <1378926562.4714.11.camel@joe-AO722>
+	 <CAGXu5jLO6109fkejXqX=WhkQnfAUeWtTcow0v1BNqyi=8=Qa3Q@mail.gmail.com>
+	 <1378928700.4714.17.camel@joe-AO722>
+	 <CAGXu5jLTjrPr=GwOmMcu55Qp9K-_XS75xq9NJ0vBUEwy-i_YMw@mail.gmail.com>
+	 <1378941761.4714.37.camel@joe-AO722>
+	 <201309120840.HHE37542.OJMFFHSOQOtVFL@I-love.SAKURA.ne.jp>
+	 <1378944257.4714.45.camel@joe-AO722>
+	 <20130912001911.GO13318@ZenIV.linux.org.uk>
+	 <AE90C24D6B3A694183C094C60CF0A2F6026B732A@saturn3.aculab.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 5:43 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> The one in ttm is just bonghits to shut up lockdep: ttm can recurse
->> into it's own pagefault handler and then deadlock, the trylock just
->> keeps lockdep quiet. We've had that bug arise in drm/i915 due to some
->> fun userspace did and now have testcases for them. The right solution
->> to fix this is to use copy_to|from_user_atomic in ttm everywhere it
->> holds locks and have slowpaths which drops locks, copies stuff into a
->> temp allocation and then continues. At least that's how we've fixed
->> all those inversions in i915-gem. I'm not volunteering to fix this ;-)
->
-> Yikes.. so how common is it? If I simply rip the set_need_resched() out
-> it will 'spin' on the fault a little longer until a 'natural' preemption
-> point -- if such a thing is every going to happen.
+On Thu, 2013-09-12 at 09:06 +0100, David Laight wrote:
+> > On Wed, Sep 11, 2013 at 05:04:17PM -0700, Joe Perches wrote:
+> > > On Thu, 2013-09-12 at 08:40 +0900, Tetsuo Handa wrote:
+> > > > Joe Perches wrote:
+> > > > > -	seq_printf(m, "%s%d%n", con->name, con->index, &len);
+> > > > > +	len = seq_printf(m, "%s%d", con->name, con->index);
+> > > >
+> > > > Isn't len always 0 or -1 ?
+> > >
+> > > Right.  Well you're no fun...
+[]
+> > > Suggestions?
+> 
+> Change the return type of seq_printf() to void and require that
+> code use access functions/macros to find the length and error
+> status. Possibly save the length of the last call separately.
 
-It's a case of "our userspace doesn't do this", so as long as you're
-not evil and frob the drm device nodes of ttm drivers directly the
-deadlock will never happen. No idea how much contention actually
-happens on e.g. shared buffer objects - in i915 we have just one lock
-and so suffer quite a bit more from contention. So no idea how much
-removing the yield would hurt.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Are there any races if this is done?
+---
+ fs/seq_file.c            | 15 +++++++--------
+ include/linux/seq_file.h |  6 ++++--
+ 2 files changed, 11 insertions(+), 10 deletions(-)
+
+diff --git a/fs/seq_file.c b/fs/seq_file.c
+index 3135c25..b6c9eab 100644
+--- a/fs/seq_file.c
++++ b/fs/seq_file.c
+@@ -389,32 +389,31 @@ int seq_escape(struct seq_file *m, const char *s, const char *esc)
+ }
+ EXPORT_SYMBOL(seq_escape);
+ 
+-int seq_vprintf(struct seq_file *m, const char *f, va_list args)
++void seq_vprintf(struct seq_file *m, const char *f, va_list args)
+ {
+ 	int len;
+ 
+ 	if (m->count < m->size) {
+ 		len = vsnprintf(m->buf + m->count, m->size - m->count, f, args);
++		m->last_len = len;
+ 		if (m->count + len < m->size) {
+ 			m->count += len;
+-			return 0;
++			m->last_rtn = 0;
++			return;
+ 		}
+ 	}
+ 	seq_set_overflow(m);
+-	return -1;
++	m->last_rtn = -1;
+ }
+ EXPORT_SYMBOL(seq_vprintf);
+ 
+-int seq_printf(struct seq_file *m, const char *f, ...)
++void seq_printf(struct seq_file *m, const char *f, ...)
+ {
+-	int ret;
+ 	va_list args;
+ 
+ 	va_start(args, f);
+-	ret = seq_vprintf(m, f, args);
++	seq_vprintf(m, f, args);
+ 	va_end(args);
+-
+-	return ret;
+ }
+ EXPORT_SYMBOL(seq_printf);
+ 
+diff --git a/include/linux/seq_file.h b/include/linux/seq_file.h
+index 4e32edc..9af05e1 100644
+--- a/include/linux/seq_file.h
++++ b/include/linux/seq_file.h
+@@ -20,6 +20,8 @@ struct seq_file {
+ 	size_t size;
+ 	size_t from;
+ 	size_t count;
++	size_t last_len;
++	int last_rtn;
+ 	loff_t index;
+ 	loff_t read_pos;
+ 	u64 version;
+@@ -89,8 +91,8 @@ int seq_putc(struct seq_file *m, char c);
+ int seq_puts(struct seq_file *m, const char *s);
+ int seq_write(struct seq_file *seq, const void *data, size_t len);
+ 
+-__printf(2, 3) int seq_printf(struct seq_file *, const char *, ...);
+-__printf(2, 0) int seq_vprintf(struct seq_file *, const char *, va_list args);
++__printf(2, 3) void seq_printf(struct seq_file *, const char *, ...);
++__printf(2, 0) void seq_vprintf(struct seq_file *, const char *, va_list args);
+ 
+ int seq_path(struct seq_file *, const struct path *, const char *);
+ int seq_dentry(struct seq_file *, struct dentry *, const char *);
+
+
