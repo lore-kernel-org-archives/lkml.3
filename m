@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192Ab3ILSB2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:01:28 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:38679 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756172Ab3ILSBY (ORCPT
+	id S1756199Ab3ILSBr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:01:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57160 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755911Ab3ILR72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 14:01:24 -0400
-Date: Thu, 12 Sep 2013 20:01:20 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Patch v5 0/9] liblockdep: userspace lockdep
-Message-ID: <20130912180120.GB32511@gmail.com>
-References: <1371163284-6346-1-git-send-email-sasha.levin@oracle.com>
- <20130626122408.GJ28407@twins.programming.kicks-ass.net>
- <20130626155325.GB7399@gmail.com>
- <51CB4328.7010006@oracle.com>
- <20130627090722.GC4398@gmail.com>
- <51CC4461.50207@oracle.com>
- <51DA127E.3040706@oracle.com>
- <20130708083914.GB3948@gmail.com>
- <5231FCA1.4090803@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5231FCA1.4090803@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 12 Sep 2013 13:59:28 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Eric Dumazet <edumazet@google.com>, Jiri Benc <jbenc@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 41/46] net: ipv6: tcp: fix potential use after free in tcp_v6_do_rcv
+Date: Thu, 12 Sep 2013 10:58:52 -0700
+Message-Id: <20130912175725.418006506@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20130912175721.001906199@linuxfoundation.org>
+References: <20130912175721.001906199@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-* Sasha Levin <sasha.levin@oracle.com> wrote:
+------------------
 
-> On 07/08/2013 04:39 AM, Ingo Molnar wrote:
-> >
-> >* Sasha Levin <sasha.levin@oracle.com> wrote:
-> >
-> >>>>The other issue is that with lock classes disabled you have to hit an
-> >>>>actual deadlock to trigger any output.
-> >>>>
-> >>>>I.e. much of the power of lockdep is diminished :-/ When actual
-> >>>>deadlocks are triggered then it's not particularly complex to debug
-> >>>>user-space apps: gdb the hung task(s) and look at the backtraces.
-> >>>
-> >>>Lock classes are disabled only if you're using the LD_PRELOAD method
-> >>>of testing. If you actually re-compile your code with the library (by
-> >>>just including the header and setting a #define to enable it) you will
-> >>>have lock classes.
-> >>
-> >>Hi Ingo,
-> >>
-> >>Just wondering if you're planning on pushing it over to Linus from your
-> >>tree, or should I go ahead and do it on my own?
-> >
-> >PeterZ is in favor as well so I'll apply them after the merge window, for
-> >v3.12.
-> 
-> Hi Ingo,
-> 
-> Do you intend to send liblockdep in this merge window as planned?
+From: Daniel Borkmann <dborkman@redhat.com>
 
-If Peter agrees with them and picks them up then the next merge window 
-would be fine I guess.
+[ Upstream commit 3a1c756590633c0e86df606e5c618c190926a0df ]
 
-Thanks,
+In tcp_v6_do_rcv() code, when processing pkt options, we soley work
+on our skb clone opt_skb that we've created earlier before entering
+tcp_rcv_established() on our way. However, only in condition ...
 
-	Ingo
+  if (np->rxopt.bits.rxtclass)
+    np->rcv_tclass = ipv6_get_dsfield(ipv6_hdr(skb));
+
+... we work on skb itself. As we extract every other information out
+of opt_skb in ipv6_pktoptions path, this seems wrong, since skb can
+already be released by tcp_rcv_established() earlier on. When we try
+to access it in ipv6_hdr(), we will dereference freed skb.
+
+[ Bug added by commit 4c507d2897bd9b ("net: implement IP_RECVTOS for
+  IP_PKTOPTIONS") ]
+
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Jiri Benc <jbenc@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/ipv6/tcp_ipv6.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -1426,7 +1426,7 @@ ipv6_pktoptions:
+ 		if (np->rxopt.bits.rxhlim || np->rxopt.bits.rxohlim)
+ 			np->mcast_hops = ipv6_hdr(opt_skb)->hop_limit;
+ 		if (np->rxopt.bits.rxtclass)
+-			np->rcv_tclass = ipv6_get_dsfield(ipv6_hdr(skb));
++			np->rcv_tclass = ipv6_get_dsfield(ipv6_hdr(opt_skb));
+ 		if (ipv6_opt_accepted(sk, opt_skb)) {
+ 			skb_set_owner_r(opt_skb, sk);
+ 			opt_skb = xchg(&np->pktoptions, opt_skb);
+
+
