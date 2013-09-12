@@ -1,82 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788Ab3ILBZv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 21:25:51 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33289 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751418Ab3ILBZu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 21:25:50 -0400
-Date: Thu, 12 Sep 2013 03:25:31 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org
-Subject: Re: [RFC PATCH] timekeeping: introduce timekeeping_is_busy()
-Message-ID: <20130912012531.GS31370@twins.programming.kicks-ass.net>
-References: <20130911150853.GA19800@Krystal>
- <52309D13.3020305@linaro.org>
- <20130911185441.GC23532@Krystal>
- <20130911203618.GH3966@linux.vnet.ibm.com>
- <20130912004811.GA6096@Krystal>
+	id S1751778Ab3ILBbX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 21:31:23 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46890 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751012Ab3ILBbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 21:31:21 -0400
+From: Milo Kim <milo.kim@ti.com>
+To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Thierry Reding <thierry.reding@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-pwm@vger.kernel.org>, Linus Walleij <linus.walleij@linaro.org>,
+        Milo Kim <milo.kim@ti.com>
+Subject: [PATCH v3 0/4] LP3943 MFD driver for a GPIO expander and a PWM generator
+Date: Thu, 12 Sep 2013 10:30:41 +0900
+Message-ID: <1378949441-6073-1-git-send-email-milo.kim@ti.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130912004811.GA6096@Krystal>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 08:48:11PM -0400, Mathieu Desnoyers wrote:
-> Thoughts ?
+LP3943 is an integrated device capable of driving 16 output channels.
+It can be used for GPIO expander and PWM generators.
+LP3493 registers are controlled via the I2C interface.
 
+This patch-set consists of four parts - MFD, GPIO, PWM and documents.
 
-struct foo {
-	...
-};
+Major updates in v3:
 
-spinlock_t foo_lock;
-unsigned int foo_head = 0;
-unsigned int foo_tail = 0;
-struct foo foo_array[2];
+* MFD
+  Lee Jones pointed confusing pin number notation.
+  Now, each output pin number is exactly matched to each enum value.
 
-void foo_assign(struct foo f)
-{
-	spin_lock(&foo_lock);
-	foo_head++;
-	smp_wmb();
-	foo_array[foo_head & 1] = f;
-	smp_wmb();
-	foo_tail++;
-	spin_unlock(&foo_lock);
-}
+  LP3943 has a static configuration from platform data or the device tree,
+  So, I keep the driver structure instead of using the pin control subsystem.
+  (https://lkml.org/lkml/2013/8/14/490)
 
-struct foo foo_get(void)
-{
-	unsigned int tail, head;
-	struct foo ret;
+* PWM
+  Do not emulate 'set_polarity' function in case of unsupported feature by
+  the chip.
+  Code fixes based on Thierry Reding's comments.
+  (https://lkml.org/lkml/2013/8/14/188)
 
-again:
-	tail = ACCESS_ONCE(foo_tail);
-	smp_rmb();
-	ret = foo_array[tail & 1];
-	smp_rmb();
-	head = ACCESS_ONCE(foo_head);
-	if (head - tail >= 2)
-		goto again;
+* Documentation
+  From Thierry's suggestion, detailed driver description was moved to
+  'Documentation/lp3943.txt'.
+  Fix device tree bindings from maintainers' comments.
+  (https://lkml.org/lkml/2013/7/31/226)
+  (https://lkml.org/lkml/2013/8/14/569)
 
-	return ret;
-}
+Milo Kim (4):
+  mfd: add LP3943 MFD driver
+  gpio: add LP3943 I2C GPIO expander driver
+  pwm: add LP3943 PWM driver
+  Documentation: add LP3943 DT bindings and document
 
-Should work and get you the most recent 'complete' foo even when
-foo_get() is called nested inside foo_assign().
+ Documentation/00-INDEX                             |    2 +
+ .../devicetree/bindings/gpio/gpio-lp3943.txt       |   37 +++
+ Documentation/devicetree/bindings/mfd/lp3943.txt   |   33 ++
+ .../devicetree/bindings/pwm/pwm-lp3943.txt         |   58 ++++
+ Documentation/lp3943.txt                           |   62 ++++
+ drivers/gpio/Kconfig                               |    8 +
+ drivers/gpio/Makefile                              |    1 +
+ drivers/gpio/gpio-lp3943.c                         |  242 +++++++++++++++
+ drivers/mfd/Kconfig                                |   11 +
+ drivers/mfd/Makefile                               |    1 +
+ drivers/mfd/lp3943.c                               |  148 +++++++++
+ drivers/pwm/Kconfig                                |   10 +
+ drivers/pwm/Makefile                               |    1 +
+ drivers/pwm/pwm-lp3943.c                           |  314 ++++++++++++++++++++
+ include/linux/mfd/lp3943.h                         |  114 +++++++
+ 15 files changed, 1042 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-lp3943.txt
+ create mode 100644 Documentation/devicetree/bindings/mfd/lp3943.txt
+ create mode 100644 Documentation/devicetree/bindings/pwm/pwm-lp3943.txt
+ create mode 100644 Documentation/lp3943.txt
+ create mode 100644 drivers/gpio/gpio-lp3943.c
+ create mode 100644 drivers/mfd/lp3943.c
+ create mode 100644 drivers/pwm/pwm-lp3943.c
+ create mode 100644 include/linux/mfd/lp3943.h
 
-
+-- 
+1.7.9.5
 
