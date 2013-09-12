@@ -1,84 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964Ab3ILPjb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 11:39:31 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:47350 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752932Ab3ILPja (ORCPT
+	id S1754247Ab3ILPkI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 11:40:08 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:57427 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753153Ab3ILPkF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 11:39:30 -0400
-Date: Thu, 12 Sep 2013 08:39:22 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Restrict kernel spawning of threads to a specified set of
- cpus.
-Message-ID: <20130912153922.GP3966@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <00000140efbcb701-c26320b3-f434-4538-bc80-8e92fed6f303-000000@email.amazonses.com>
- <20130911220228.GB15367@somewhere>
- <000001411282afa6-fe9c0543-0447-492b-991e-dc8214884b88-000000@email.amazonses.com>
- <20130912141625.GA23357@somewhere>
- <00000141128d759a-44dcacb6-8f48-4f9b-8381-d14003bd6da1-000000@email.amazonses.com>
- <20130912143137.GA23839@somewhere>
- <0000014112a921ae-51d171bf-e8d4-4569-bd20-94dabda2d5ba-000000@email.amazonses.com>
- <20130912151102.GB23839@somewhere>
+	Thu, 12 Sep 2013 11:40:05 -0400
+Date: Thu, 12 Sep 2013 16:40:00 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Milo Kim <milo.kim@ti.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-pwm@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>
+Subject: Re: [PATCH v3 1/4] mfd: add LP3943 MFD driver
+Message-ID: <20130912154000.GP11227@lee--X1>
+References: <1378949524-6143-1-git-send-email-milo.kim@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130912151102.GB23839@somewhere>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1378949524-6143-1-git-send-email-milo.kim@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091215-9332-0000-0000-000001656930
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 05:11:04PM +0200, Frederic Weisbecker wrote:
-> On Thu, Sep 12, 2013 at 02:52:56PM +0000, Christoph Lameter wrote:
-> > On Thu, 12 Sep 2013, Frederic Weisbecker wrote:
-> > 
-> > > > > Ok but you can change the affinity of a kthread from userspace, as
-> > > > > long as you define a cpu set that is among that kthread's cpus allowed.
-> > > >
-> > > > Ok but at that point kthread has already spawned a lot of kernel threads.
-> > > >
-> > > > The same is true for init and kmod.
-> > > >
-> > >
-> > > Ok but then we just need to set the affinity of all these kthreads.
-> > > A simple lookup on /proc/[0-9]+/ should do the trick.
-> > 
-> > Yea but the kernel option makes it easy. No extras needed. Kernel brings
-> > it up user space cleanly configured and ready to go.
-> 
-> Ok but really that's just two lines of bash. I really wish we don't complicate
-> core kernel code for that.
+On Thu, 12 Sep 2013, Milo Kim wrote:
 
-OK, I will bite...  How do you handle the case where you have collected
-all the kthreads, one of the kthreads spawns another kthread, then you
-set affinity on the collected kthreads, which does not include the newly
-spawned one?
+> LP3943 has 16 output pins which can be used as GPIO expander and PWM generator.
+> 
+> * Regmap I2C interface for R/W LP3943 registers
+> 
+> * Atomic operations for output pin assignment
+>   The driver should check whether requested pin is available or not.
+>   If the pin is already used, pin request returns as a failure.
+>   A driver data, 'pin_used' is checked when gpio_request() and
+>   pwm_request() are called. If the pin is available, then pin_used is set.
+>   And it is cleared when gpio_free() and pwm_free().
+> 
+> * Device tree support
+>   Compatible strings for GPIO and PWM driver.
+>   LP3943 platform data is PWM related, so parsing the device tree is
+>   implemented in the PWM driver.
+> 
+> Cc: Lee Jones <lee.jones@linaro.org>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: Thierry Reding <thierry.reding@gmail.com>
+> Signed-off-by: Milo Kim <milo.kim@ti.com>
+> ---
+> * Patch v3
+>   Now, output pin number is exactly matched with enum value of '
+>   lp3943_pwm_output'.
+>   Use dev_get_platdata() helper function in probe().
+>   Use module_i2c_driver() for initcall.
+> 
+> * Patch v2
+>   Handle atomic operations for output pin assignment.
+> 
+>  drivers/mfd/Kconfig        |   11 ++++
+>  drivers/mfd/Makefile       |    1 +
+>  drivers/mfd/lp3943.c       |  148 ++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/lp3943.h |  114 ++++++++++++++++++++++++++++++++++
+>  4 files changed, 274 insertions(+)
+>  create mode 100644 drivers/mfd/lp3943.c
+>  create mode 100644 include/linux/mfd/lp3943.h
 
-							Thanx, Paul
+Code looks good to me. For the MFD parts:
 
-> I think we all agree that the big issue here is that CPU isolation requires to set up
-> a fragmented set of features and it's not at all obvious to do it correctly: full dynticks,
-> rcu nocbs, kthreads affinity, timer_list, hrtimers, workqueues, IPIs, etc...
-> 
-> So IMHO what is missing is a reliable userspace tool that can handle all that: do
-> the checks on pre-requirements, handle the kthreads and even user task affinity, tweak
-> some sysctl stuffs to turn off features that generate noise, etc...
-> 
-> > This also allows us to cleanup kernel uses of cpumasks in such a way that
-> > proper thread placement for various other uses (reclaim f.e. kswpad) is
-> > possible.
-> 
-> Same here, a central tool should be able to solve that.
-> 
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
