@@ -1,68 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755397Ab3ILHbP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 03:31:15 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:45619 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689Ab3ILHbN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 03:31:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <5231836102000078000F29AD@nat28.tlf.novell.com>
-References: <20130911193040.GA16688@www.outflux.net>
-	<1378929961.4714.21.camel@joe-AO722>
-	<CAGXu5jKRmp_Ei=ty05W3SSqQ01agEMDVMGnZCFqQ_yYbZmMSmw@mail.gmail.com>
-	<5231836102000078000F29AD@nat28.tlf.novell.com>
-Date: Thu, 12 Sep 2013 00:31:12 -0700
-X-Google-Sender-Auth: rQ7igQJ8Wg3gxITfqQ6xgnVAzkc
-Message-ID: <CAGXu5jKMqnL_V9NP8kUHqLp1jZDNM3VySEEnPHSFMH_N8Np7HA@mail.gmail.com>
-Subject: Re: [PATCH] vsprintf: drop comment claiming %n is ignored
-From: Kees Cook <keescook@chromium.org>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Joe Perches <joe@perches.com>, David Miller <davem@davemloft.net>,
-        Eldad Zack <eldad@fogrefinery.com>, George Spelvin <linux@horizon.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755848Ab3ILHcS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 03:32:18 -0400
+Received: from mga02.intel.com ([134.134.136.20]:53656 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752599Ab3ILHcR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 03:32:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,889,1371106800"; 
+   d="scan'208";a="377022672"
+From: tianyu.lan@intel.com
+To: tianyu.lan@intel.com, lenb@kernel.org, rjw@sisk.pl,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] ACPI: EC/Button drivers clean up and correct gpe's sysfs attribute  
+Date: Thu, 12 Sep 2013 03:32:02 -0400
+Message-Id: <1378971125-8896-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 12:03 AM, Jan Beulich <JBeulich@suse.com> wrote:
->>>> On 11.09.13 at 22:18, Kees Cook <keescook@chromium.org> wrote:
->> On Wed, Sep 11, 2013 at 1:06 PM, Joe Perches <joe@perches.com> wrote:
->>> On Wed, 2013-09-11 at 12:30 -0700, Kees Cook wrote:
->>>> The %n format is not ignored, so remove the incorrect comment about it.
->>>
->>> I think it may be better to reimplement the ignoring.
->>
->> Yeah, just had a quick look, and scanf doesn't use this code at all.
->> I'd much rather remove %n again instead.
->
-> Why would you want to artificially make the function diverge
-> from the spec? People shouldn't be caught by surprises if at all
-> possible, and one can certainly not expect people to go look at
-> the comment before the function implementation to find out
-> what basic (standard) features _do not_ work (one can expect
-> so when trying to find out about _extensions_).
+The patch 1-2 are to clean up EC/Button drivers' code.
+The patch 3 is to correct the process of abnormal param for gpe sysfs attribute.
 
-The spec, in this case, is considered harmful. Without %n, format
-string flaws are at worst "just" information leaks. Being able to
-downgrade potential arbitrary memory writing vulnerabilities into info
-leak vulnerabilities would be a very nice improvement. As another
-point of reference, even Android's libc replacement, bionic, doesn't
-implement %n for the very same reasons.
+ drivers/acpi/button.c |  9 +++------
+ drivers/acpi/ec.c     | 49 ++++++++++++++++++++++++-------------------------
+ drivers/acpi/sysfs.c  |  9 +++++++--
+ 3 files changed, 34 insertions(+), 33 deletions(-)
 
-Since there are so few users of %n in the kernel, it seems that this
-goal is not totally outside the realm of possibility in the
-short-term. The inclusion of the WARN_ON() was suggested for the very
-reason of helping a potential user of %n to notice that it's not
-supported.
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+[PATCH 1/3] ACPI/Button: Using input_set_capability() to mark
+[PATCH 2/3] ACPI/EC: Convert all printk to dynamic debug function
+[PATCH 3/3] ACPI/Sys: make gpe's sysfs attribute only accept correct
