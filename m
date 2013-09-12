@@ -1,93 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756938Ab3ILUbK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 16:31:10 -0400
-Received: from mx11.netapp.com ([216.240.18.76]:28785 "EHLO mx11.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755956Ab3ILUbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 16:31:06 -0400
-X-IronPort-AV: E=Sophos;i="4.90,892,1371106800"; 
-   d="scan'208";a="49293906"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        Linux linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Please pull NFS client changes (part 2)
-Thread-Topic: [GIT PULL] Please pull NFS client changes (part 2)
-Thread-Index: AQHOr/cBPj6sy++ZHEKSuRAOnn9d0g==
-Date: Thu, 12 Sep 2013 20:31:05 +0000
-Message-ID: <1379017863.2627.5.camel@leira.trondhjem.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <70C865C4D9F3BA4684792FC51FC0A372@hq.netapp.com>
+	id S1757000Ab3ILUbY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 16:31:24 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:53492 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756956Ab3ILUbU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 16:31:20 -0400
+Date: Thu, 12 Sep 2013 22:31:16 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: David Ahern <dsahern@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] perf fixes
+Message-ID: <20130912203116.GD32644@gmail.com>
+References: <20130912133855.GA23780@gmail.com>
+ <CA+55aFwgyjqRHxLaWGxxsg_v07FrxbVTeLdHTGp7MfeSRjrKsQ@mail.gmail.com>
+ <CA+55aFyCeXXr=57em8CC_Uzfk5PvOw0RHyA309wuOP-oDL7VxA@mail.gmail.com>
+ <20130912184341.GA11400@ghostprotocols.net>
+ <52321CE4.1080804@gmail.com>
+ <20130912200236.GC11400@ghostprotocols.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130912200236.GC11400@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8CKVGkJ016330
 
-Hi Linus,
 
-The following changes since commit b1b3e136948a2bf4915326acb0d825d7d180753f:
+* Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
 
-  NFSv4: use mach cred for SECINFO_NO_NAME w/ integrity (2013-09-07 18:39:25 -0400)
+> Em Thu, Sep 12, 2013 at 12:58:28PM -0700, David Ahern escreveu:
+> > On 9/12/13 11:43 AM, Arnaldo Carvalho de Melo wrote:
+> >
+> > > Its something that annoys me as well, but not so much as to make me 
+> > > figure out how to make those be done only if some source file 
+> > > changed.
+> > 
+> > Jiri and I have both taken stabs at a config-based build rather than 
+> > probing. Just need to finish it.
+> 
+> But even then it would be nice to have a:
+> 
+> make autoconfig
+> 
+> That is what we have now, but only then we would try to do all that 
+> probing. Caching it somehow, as Ingo suggested, would get the best of 
+> both worlds.
 
-are available in the git repository at:
+Caching should be relatively straightforward: I'd suggest splitting up all 
+the feature tests current present in tools/perf/config/feature-tests.mak 
+into separate .c files which build into working binaries.
 
-  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.12-2
+Instead of having 20 testcases crammed into a single Makefile:
 
-for you to fetch changes up to 23c323af0375a7f63732bed0386aba5935b8de69:
+comet:~/tip/tools/perf> git grep -w main config/feature-tests.mak 
+config/feature-tests.mak:int main(void)
+config/feature-tests.mak:int main(void)
+config/feature-tests.mak:int main(void)
+config/feature-tests.mak:int main(void)
+config/feature-tests.mak:int main(void)
+config/feature-tests.mak:int main(void)
+config/feature-tests.mak:int main(void)
+config/feature-tests.mak:int main(int argc, char *argv[])
+config/feature-tests.mak:int main(void)
+config/feature-tests.mak:int main(void)
+config/feature-tests.mak:int main(void)
+config/feature-tests.mak:int main(void)
+config/feature-tests.mak:int main(void)
+config/feature-tests.mak:int main(void)
+config/feature-tests.mak:int main(void)
+config/feature-tests.mak:int main(void)
+config/feature-tests.mak:int main(void)
+config/feature-tests.mak:int main(void)
+config/feature-tests.mak:int main(void)
+config/feature-tests.mak:int main(void)
 
-  SUNRPC: No, I did not intend to create a 256KiB hashtable (2013-09-12 10:16:31 -0400)
+Why not put those into 20x standalone .c files and try to build them as an 
+explicit make command attempt from within the main Makefile? If the build 
+fails then the feature flag is set to off, if it succeeds it's defined.
 
-----------------------------------------------------------------
-NFS client bugfixes:
+That makes feature tests generally easier to debug, easier to understand 
+and generally easier to extend as well.
 
-- Fix a few credential reference leaks resulting from the SP4_MACH_CRED
-  NFSv4.1 state protection code.
-- Fix the SUNRPC bloatometer footprint: convert a 256K hashtable into the
-  intended 64 byte structure.
-- Fix a long standing XDR issue with FREE_STATEID
-- Fix a potential WARN_ON spamming issue
-- Fix a missing dprintk() kuid conversion
+'Feature test binaries' that are already built will be 'cached' 
+automatically, and the result of their build attempt will be a quick 
+success.
 
-New features:
-- Enable the NFSv4.1 state protection support for the WRITE and COMMIT
-  operations.
+This is relatively simple, well-known, powerful and I see no reason why it 
+wouldn't work. No separate config language or special files are needed - 
+just .c files, binaries and a Makefile.
 
-----------------------------------------------------------------
-Andy Adamson (1):
-      NFSv4.1 fix decode_free_stateid
+'make clean' would get rid of the binaries.
 
-Geert Uytterhoeven (1):
-      sunrpc: Add missing kuids conversion for printing
+[ It could even be made to work against package removal if we really 
+  wanted to: if there's a common, known include file related to the 
+  feature (such as /usr/include/libaudit.h), then that include file
+  could be added to the feature-test binary's list of dependencies. If the
+  package is removed and the include file goes away, then the dependency
+  breaks automatically and the binary is 'rebuilt', auto-detecting the
+  failed dependency. ]
 
-Trond Myklebust (1):
-      SUNRPC: No, I did not intend to create a 256KiB hashtable
+Thanks,
 
-Weston Andros Adamson (4):
-      NFSv4.1: sp4_mach_cred: ask for WRITE and COMMIT
-      NFSv4.1: fix SECINFO* use of put_rpccred
-      NFSv4.1: sp4_mach_cred: no need to ref count creds
-      NFSv4.1: sp4_mach_cred: WARN_ON -> WARN_ON_ONCE
-
- fs/nfs/nfs4_fs.h               | 10 +++++-----
- fs/nfs/nfs4proc.c              | 22 ++++++++++++++--------
- fs/nfs/nfs4xdr.c               | 17 ++---------------
- net/sunrpc/auth_generic.c      |  2 +-
- net/sunrpc/auth_gss/auth_gss.c |  2 +-
- 5 files changed, 23 insertions(+), 30 deletions(-)
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+	Ingo
