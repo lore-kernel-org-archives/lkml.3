@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712Ab3ILMUG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 08:20:06 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44463 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754016Ab3ILMUE (ORCPT
+	id S1754774Ab3ILMUY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 08:20:24 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:54189 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753919Ab3ILMUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 08:20:04 -0400
-Date: Thu, 12 Sep 2013 14:19:53 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jean Pihet <jean.pihet@linaro.org>
-Cc: Will Deacon <will.deacon@arm.com>, Jiri Olsa <jolsa@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH 0/3] perf: parse the dwarf backtrace info from
- .debug_frame section
-Message-ID: <20130912121953.GX31370@twins.programming.kicks-ass.net>
-References: <1378720815-23964-1-git-send-email-jean.pihet@linaro.org>
- <CAFrcx1mQ-P7byYfqP-0bYabUzTDeSWyHFx2FJQ6wQLYEcV_Pxw@mail.gmail.com>
+	Thu, 12 Sep 2013 08:20:22 -0400
+Message-ID: <5231B181.7080705@colorfullife.com>
+Date: Thu, 12 Sep 2013 14:20:17 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFrcx1mQ-P7byYfqP-0bYabUzTDeSWyHFx2FJQ6wQLYEcV_Pxw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: davidlohr.bueso@hp.com
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sedat Dilek <sedat.dilek@gmail.com>
+Subject: Re: [PATCH] ipc,msg: shorten critical region in msgsnd
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 02:07:23PM +0200, Jean Pihet wrote:
-> Hi,
-> 
-> -- Adding more maintainers in the To: list --
-> 
-> Ping about the patch set, is this one acceptable for mainline?
+Hi Davidlohr,
 
-The below looks to be mostly ARM bits and I would suspect Will to take
-care of them.
+I think the patch (3dd1f784ed6603d7ab1043e51e6371235edf2313) is still 
+unsafe, i.e. my correction (bebcb928c820d0ee83aca4b192adc195e43e66a2) 
+doesn't fix everything:
 
-> On 9 September 2013 12:00, Jean Pihet <jean.pihet@linaro.org> wrote:
+AFAICS, ipc_obtain_object_check:
+- look up the id in the idr tree
+- check if it is deleted
+- return without taking any locks.
 
-> >  arch/arm/Kconfig                        |  2 +
-> >  arch/arm/include/uapi/asm/Kbuild        |  1 +
-> >  arch/arm/include/uapi/asm/perf_regs.h   | 23 +++++++++++
-> >  arch/arm/kernel/Makefile                |  1 +
-> >  arch/arm/kernel/perf_regs.c             | 30 ++++++++++++++
-> >  tools/perf/arch/arm/Makefile            |  3 ++
-> >  tools/perf/arch/arm/include/perf_regs.h | 54 +++++++++++++++++++++++++
-> >  tools/perf/arch/arm/util/unwind.c       | 48 ++++++++++++++++++++++
-> >  tools/perf/config/Makefile              |  9 +++--
-> >  tools/perf/util/unwind.c                | 71 +++++++++++++++++++++++++--------
+This means that the "is not deleted" information can be stale immediately.
 
-This one looks to be generic code, Acme who do we want to look at that?
+Thus do_msgsnd() in ipc/msg.c contains a memory leak:
+>        rcu_read_lock();
+>         msq = msq_obtain_object_check(ns, msqid);
+>         if (IS_ERR(msq)) {
+>                 err = PTR_ERR(msq);
+>                 goto out_unlock1;
+>         }
+<<<< what if the code is preempted here and RMID is processed?
+The code below would queue the message into an already removed queue.
+The queue is freed by the rcu callback, but the message memory is leaked.
 
-> >  10 files changed, 223 insertions(+), 19 deletions(-)
-> >  create mode 100644 arch/arm/include/uapi/asm/perf_regs.h
-> >  create mode 100644 arch/arm/kernel/perf_regs.c
-> >  create mode 100644 tools/perf/arch/arm/include/perf_regs.h
-> >  create mode 100644 tools/perf/arch/arm/util/unwind.c
-> >
-> > --
-> > 1.7.11.7
-> >
+> ipc_lock_object(&msq->q_perm);
+>
+
+Is this analysis correct?
+
+And: What about the other users of obtain_object_check?
+exit_sem() is also quite long, but I didn't spot any obvious problems.
+
+--
+     Manfred
