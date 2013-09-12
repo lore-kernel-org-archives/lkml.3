@@ -1,104 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700Ab3ILQxL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 12:53:11 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:56480 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753195Ab3ILQxJ (ORCPT
+	id S1754864Ab3ILQxh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 12:53:37 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:23061 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754652Ab3ILQxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 12:53:09 -0400
-Date: Thu, 12 Sep 2013 09:53:04 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Subject: Re: [RFC PATCH 5/6] extcon-gpio: Describe devicetree bindings
-Message-ID: <20130912165304.GA12202@roeck-us.net>
-References: <1377836978-24082-1-git-send-email-linux@roeck-us.net>
- <1377836978-24082-6-git-send-email-linux@roeck-us.net>
- <20130912164100.GF22013@e106331-lin.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130912164100.GF22013@e106331-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 12 Sep 2013 12:53:36 -0400
+Message-ID: <1379004807.10738.3.camel@concerto>
+Subject: [PATCH] SCSI: buslogic: Added check for DMA mapping errors (was Re:
+ [BusLogic] DMA-API: device driver failed to check map error)
+From: Khalid Aziz <khalid.aziz@oracle.com>
+To: James Bottomley <jbottomley@parallels.com>
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Date: Thu, 12 Sep 2013 10:53:27 -0600
+In-Reply-To: <1378816604.6973.53.camel@dabdike.int.hansenpartnership.com>
+References: <201309101503.ECC18788.SOOVOJLFtQHMFF@I-love.SAKURA.ne.jp>
+	 <1378816604.6973.53.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 05:41:00PM +0100, Mark Rutland wrote:
-> On Fri, Aug 30, 2013 at 05:29:37AM +0100, Guenter Roeck wrote:
-> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> > ---
-> >  .../devicetree/bindings/extcon/extcon-gpio         |   23 ++++++++++++++++++++
-> >  1 file changed, 23 insertions(+)
-> >  create mode 100644 Documentation/devicetree/bindings/extcon/extcon-gpio
-> > 
-> > diff --git a/Documentation/devicetree/bindings/extcon/extcon-gpio b/Documentation/devicetree/bindings/extcon/extcon-gpio
-> > new file mode 100644
-> > index 0000000..091ddc6
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/extcon/extcon-gpio
-> > @@ -0,0 +1,23 @@
-> > +Device-Tree bindings for extcon/extcon-gpio driver
-> 
-> Bindings shouldn't refer to Linux-specifics like particular drivers.
-> What class of hardware are you actually trying to describe?
-> 
-Agreed. Question is where to put the bindings, as they are not really 
-specific to the extcon driver. The extcon driver merely implements 
-the bindings. This is why the "compatible" statement reads "gpio-connector"
-and not "extcon-something".
+Added check for DMA mapping errors for request sense data
+buffer. Checking for mapping error can avoid potential wild
+writes. This patch was prompted by the warning from
+dma_unmap when kernel is compiled with CONFIG_DMA_API_DEBUG.
 
-The bindings describe a connector managed through gpio pins.
 
-> > +
-> > +Required properties:
-> > +	- compatible = "gpio-connector";
-> > +	- presence-detect-gpios - presence detect gpio pin
-> > +
-> > +Optional properties:
-> > +	- debounce-interval - debounce interval in milli-seconds
-> > +	- state-on - on (connected) state
-> > +	- state-off - off (disconnected) state
-> > +	  Depending on the type of connector or cable, states may
-> > +	  for example be reported as "connected"/"disconnected"
-> > +	  or "inserted"/"removed".
-> 
-> I don't understand what the state-* properties describe. Do these
-> provide semantic information to drivers? What is the full set of valid
-> values?
-> 
-That is merely text which is ultimately passed on to the user.
-Guess 'semantic information' might be a way to phrase it.
+Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
+---
+ drivers/scsi/BusLogic.c |   32 +++++++++++++++++++++-----------
+ 1 file changed, 21 insertions(+), 11 deletions(-)
 
-> > +
-> > +Example node:
-> > +
-> > +	some-connector {
-> > +		compatible = "gpio-connector";
-> > +		presence-detect-gpios = <&gpio1 7 1>;
-> > +		debounce-interval = <1>;
-> > +		state-on = "connected";
-> > +		state-on = "disconnected";
-> > +	};
-> 
-> I'm not sure how much value this adds to bindings over describing the
-> gpios directly. This seems to add a layer of indirection because of
-> Linux internals.
-> 
-Not sure I understand what you mean with "describing the gpios directly".
-Can you elaborate and/or provide an example ?
+diff --git a/drivers/scsi/BusLogic.c b/drivers/scsi/BusLogic.c
+index feab3a5..90cf1aa 100644
+--- a/drivers/scsi/BusLogic.c
++++ b/drivers/scsi/BusLogic.c
+@@ -26,8 +26,8 @@
+ 
+ */
+ 
+-#define blogic_drvr_version		"2.1.16"
+-#define blogic_drvr_date		"18 July 2002"
++#define blogic_drvr_version		"2.1.17"
++#define blogic_drvr_date		"12 September 2013"
+ 
+ #include <linux/module.h>
+ #include <linux/init.h>
+@@ -311,12 +311,13 @@ static struct blogic_ccb *blogic_alloc_ccb(struct blogic_adapter *adapter)
+   caller.
+ */
+ 
+-static void blogic_dealloc_ccb(struct blogic_ccb *ccb)
++static void blogic_dealloc_ccb(struct blogic_ccb *ccb, int dma_unmap)
+ {
+ 	struct blogic_adapter *adapter = ccb->adapter;
+ 
+ 	scsi_dma_unmap(ccb->command);
+-	pci_unmap_single(adapter->pci_device, ccb->sensedata,
++	if (dma_unmap)
++		pci_unmap_single(adapter->pci_device, ccb->sensedata,
+ 			 ccb->sense_datalen, PCI_DMA_FROMDEVICE);
+ 
+ 	ccb->command = NULL;
+@@ -2762,8 +2763,8 @@ static void blogic_process_ccbs(struct blogic_adapter *adapter)
+ 			/*
+ 			   Place CCB back on the Host Adapter's free list.
+ 			 */
+-			blogic_dealloc_ccb(ccb);
+-#if 0				/* this needs to be redone different for new EH */
++			blogic_dealloc_ccb(ccb, 1);
++#if 0			/* this needs to be redone different for new EH */
+ 			/*
+ 			   Bus Device Reset CCBs have the command field
+ 			   non-NULL only when a Bus Device Reset was requested
+@@ -2791,7 +2792,7 @@ static void blogic_process_ccbs(struct blogic_adapter *adapter)
+ 				if (ccb->status == BLOGIC_CCB_RESET &&
+ 						ccb->tgt_id == tgt_id) {
+ 					command = ccb->command;
+-					blogic_dealloc_ccb(ccb);
++					blogic_dealloc_ccb(ccb, 1);
+ 					adapter->active_cmds[tgt_id]--;
+ 					command->result = DID_RESET << 16;
+ 					command->scsi_done(command);
+@@ -2862,7 +2863,7 @@ static void blogic_process_ccbs(struct blogic_adapter *adapter)
+ 			/*
+ 			   Place CCB back on the Host Adapter's free list.
+ 			 */
+-			blogic_dealloc_ccb(ccb);
++			blogic_dealloc_ccb(ccb, 1);
+ 			/*
+ 			   Call the SCSI Command Completion Routine.
+ 			 */
+@@ -3034,6 +3035,7 @@ static int blogic_qcmd_lck(struct scsi_cmnd *command,
+ 	int buflen = scsi_bufflen(command);
+ 	int count;
+ 	struct blogic_ccb *ccb;
++	dma_addr_t sense_buf;
+ 
+ 	/*
+ 	   SCSI REQUEST_SENSE commands will be executed automatically by the
+@@ -3179,9 +3181,17 @@ static int blogic_qcmd_lck(struct scsi_cmnd *command,
+ 	}
+ 	memcpy(ccb->cdb, cdb, cdblen);
+ 	ccb->sense_datalen = SCSI_SENSE_BUFFERSIZE;
+-	ccb->sensedata = pci_map_single(adapter->pci_device,
++	sense_buf = pci_map_single(adapter->pci_device,
+ 				command->sense_buffer, ccb->sense_datalen,
+ 				PCI_DMA_FROMDEVICE);
++	if (dma_mapping_error(&adapter->pci_device->dev, sense_buf)) {
++		blogic_err("DMA mapping for sense data buffer failed\n",
++				adapter);
++		scsi_dma_map(command);
++		blogic_dealloc_ccb(ccb, 0);
++		return SCSI_MLQUEUE_HOST_BUSY;
++	}
++	ccb->sensedata = sense_buf;
+ 	ccb->command = command;
+ 	command->scsi_done = comp_cb;
+ 	if (blogic_multimaster_type(adapter)) {
+@@ -3203,7 +3213,7 @@ static int blogic_qcmd_lck(struct scsi_cmnd *command,
+ 			if (!blogic_write_outbox(adapter, BLOGIC_MBOX_START,
+ 						ccb)) {
+ 				blogic_warn("Still unable to write Outgoing Mailbox - " "Host Adapter Dead?\n", adapter);
+-				blogic_dealloc_ccb(ccb);
++				blogic_dealloc_ccb(ccb, 1);
+ 				command->result = DID_ERROR << 16;
+ 				command->scsi_done(command);
+ 			}
+@@ -3337,7 +3347,7 @@ static int blogic_resetadapter(struct blogic_adapter *adapter, bool hard_reset)
+ 
+ 	for (ccb = adapter->all_ccbs; ccb != NULL; ccb = ccb->next_all)
+ 		if (ccb->status == BLOGIC_CCB_ACTIVE)
+-			blogic_dealloc_ccb(ccb);
++			blogic_dealloc_ccb(ccb, 1);
+ 	/*
+ 	 * Wait a few seconds between the Host Adapter Hard Reset which
+ 	 * initiates a SCSI Bus Reset and issuing any SCSI Commands.  Some
+-- 
+1.7.10.4
 
-How would you describe the use of gpio pins used to detect board presence ?
-That doesn't seem very Linux specific to me.
 
-Thanks,
-Guenter
+
