@@ -1,69 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755810Ab3ILL1b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 07:27:31 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:42412 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755691Ab3ILL13 (ORCPT
+	id S1755964Ab3ILL1n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 07:27:43 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:47496 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754389Ab3ILL1l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 07:27:29 -0400
+	Thu, 12 Sep 2013 07:27:41 -0400
+Message-ID: <5231A4FE.1070704@ahsoftware.de>
+Date: Thu, 12 Sep 2013 13:26:54 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <1378985091-9447-1-git-send-email-bilhuang@nvidia.com>
-References: <1378985091-9447-1-git-send-email-bilhuang@nvidia.com>
-Date: Thu, 12 Sep 2013 16:57:28 +0530
-Message-ID: <CAKohpom-8abJCL_VrdvowmKUkfyEw0svne-RpXFhhO1AH6NPew@mail.gmail.com>
-Subject: Re: [PATCH v2 0/4] Remodel Tegra cpufreq driver to support Tegra
- series SoCs
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Bill Huang <bilhuang@nvidia.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        linux-tegra@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
+Subject: Re: [PATCH] RFC: interrupt consistency check for OF GPIO IRQs
+References: <1375101368-17645-1-git-send-email-linus.walleij@linaro.org> <CACxGe6uNJNMdZ1HYGgCtLM2t2TWGCR6btjOHVmP=vDXXvvFfRg@mail.gmail.com> <CACRpkdYjJL6FZwEbB7XLnb9QtjB=3LeE9Ny6KQ4PkM3zpdNqqg@mail.gmail.com> <344239800.bDEkDg48ZQ@avalon> <CACRpkdavR=fv+y1RCNfdgQypPuRbO6isOSwGsABDrYiGeMdyZw@mail.gmail.com> <52308C91.2000105@ahsoftware.de> <523096FE.8080901@collabora.co.uk> <5230AB6E.1070807@ahsoftware.de> <5231817F.8000901@ahsoftware.de> <5231934D.4060706@collabora.co.uk> <52319741.5050407@ahsoftware.de> <5231A0F8.1070505@ahsoftware.de>
+In-Reply-To: <5231A0F8.1070505@ahsoftware.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 September 2013 16:54, Bill Huang <bilhuang@nvidia.com> wrote:
-> This patch series remodel Tegra cpufreq driver to make it more easy to
-> add new SoC support, in addition to that, adding probe function in the
-> driver to let probe defer can be used to control init sequence when we
-> going to support DVFS.
+Am 12.09.2013 13:09, schrieb Alexander Holler:
+> Am 12.09.2013 12:28, schrieb Alexander Holler:
+>> Am 12.09.2013 12:11, schrieb Javier Martinez Canillas:
+>>> On 09/12/2013 10:55 AM, Alexander Holler wrote:
+>>
+>> ...
+>>>>
+>>>> By the way, how do you define two GPIOs/IRQs from different
+>>>> gpio-banks/irq-controllers wuth that scheme?
+>>>>
+>>>
+>>> That is indeed a very good question and I don't have a definite answer.
+>>>
+>>>> Would that be like below?
+>>>>
+>>>>   ethernet@5,0 {
+>>>>            compatible = "smsc,lan9221", "smsc,lan9115";
+>>>>            interrupt-parent = <&gpio6>;
+>>>>            interrupts = <16 8>;
+>>>>            interrupt-parent = <&gpio7>;
+>>>>            interrupts = <1 IRQF_TRIGGER_FALLING>; /* GPIO7_1 */
+>>>>   };
+>>>>
+>>
+>> ...
+>>
+>>> So, if I understood the code correctly the DT IRQ core doesn't expect
+>>> a device
+>>> node to have more than one "interrupt-parent" property.
+>>>
+>>> It *should* work though if you have multiple "interrupts" properties
+>>> defined and
+>>> all of them have the same "interrupt-parent":
+>>>
+>>>         interrupt-parent = <&gpio6>;
+>>>         interrupts = <1 IRQF_TRIGGER_HIGH>; /* GPIO6_1 */
+>>>         interrupts = <2 IRQF_TRIGGER_LOW>; /* GPIO6_2 */
+>>>
+>>> since of_irq_map_one() will be called for each "interrupts" and the
+>>> correct
+>>> "interrupt-parent" will get obtained by of_irq_find_parent().
+>>
+>> I assumed that answer. So to make such a scenario possible, something
+>> like this might be neccessary:
+>>
+>>           interrupts = <&gpio6 1 IRQF_TRIGGER_HIGH>; /* GPIO6_1 */
+>>           interrupts = <&gpio7 2 IRQF_TRIGGER_LOW>; /* GPIO7_2 */
+>>
+>> or, to be compatible
+>>
+>>           interrupts = <1 IRQF_TRIGGER_HIGH &gpio6>; /* GPIO6_1 */
+>>           interrupts = <1 IRQF_TRIGGER_LOW &gpio7>; /* GPIO7_1 */
+>>
+>> Another problem is the naming. In all the above cases, the driver would
+>> not know which IRQ he should use for what. Maybe the order defines it,
+>> but that wouldn't be very verbose. And I think just changing the name
+>> would make travelling the tree impossible, as only the driver itself
+>> would know the name and it's meaning.
 >
-> Changes since v1:
+> On a second look, travelling the tree is still possible if the solution
+> would be like above (without that interrupt-parent). So if a driver
+> requires two interrupts he could use
 >
-> - Split up patches.
-> - Split configuration-time data out of structure "tegra_cpufreq_data".
-> - Bug fixes.
+>        interrupt-foo = <1 IRQF_TRIGGER_HIGH &gpio6>; /* GPIO6_1 */
+>        interrupt-bar = <1 IRQF_TRIGGER_LOW &gpio7>; /* GPIO7_1 */
 >
-> Bill Huang (4):
->   cpufreq: tegra: Call tegra_cpufreq_init() specifically in machine
->     code
->   cpufreq: tegra: Remove not used header files and clean up codes
->   cpufreq: tegra: Re-model Tegra cpufreq driver
->   ARM: tegra: defconfig updates
->
->  arch/arm/configs/tegra_defconfig  |    1 +
->  arch/arm/mach-tegra/common.c      |    2 +
->  drivers/cpufreq/Kconfig.arm       |    8 +-
->  drivers/cpufreq/Makefile          |    1 +
->  drivers/cpufreq/tegra-cpufreq.c   |  194 +++++++++++++++++--------------------
->  drivers/cpufreq/tegra-cpufreq.h   |   42 ++++++++
->  drivers/cpufreq/tegra20-cpufreq.c |  138 ++++++++++++++++++++++++++
->  include/linux/tegra-soc.h         |   11 ++-
->  8 files changed, 290 insertions(+), 107 deletions(-)
->  create mode 100644 drivers/cpufreq/tegra-cpufreq.h
->  create mode 100644 drivers/cpufreq/tegra20-cpufreq.c
+> And travelling the tree will still be possible because walking from the
+> interrupt-controllers (those gpio) downwards would end up at the
+> interrupt definitions, so the name of them isn't needed to find them in
+> the tree.
 
-I haven't gone deeper into these yet, but there are some cleaup
-patches that I have prepared/posted earlier, which will be queued
-by Rafael soon.. And after that you would be required to rebase
-your stuff on top of it..  As there would be many conflicts..
+I've just seen how they solved it for dma:
 
---
-viresh
+			dmas = <&edma0 16
+				&edma0 17>;
+			dma-names = "rx", "tx";
+
+so it would be like
+
+       interrupts = <1 IRQF_TRIGGER_HIGH &gpio6>; /* GPIO6_1 */
+       interrupts = <1 IRQF_TRIGGER_LOW &gpio7>; /* GPIO7_1 */
+       interrupt-names = "foo", "bar";
+
+Or this would be possible:
+
+       interrupt-parent = <&gpio6 &gpio7>;
+       interrupts = <1 IRQF_TRIGGER_HIGH>; /* GPIO6_1 */
+       interrupts = <1 IRQF_TRIGGER_LOW>; /* GPIO7_1 */
+       interrupt-names = "foo", "bar";
+
+Regards,
+
+Alexander
