@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024Ab3ILRvd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 13:51:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56705 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755220Ab3ILRp0 (ORCPT
+	id S1754701Ab3ILRzl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 13:55:41 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:60106 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754186Ab3ILRzj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 13:45:26 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrey Konovalov <andreyknvl@google.com>,
-        Eric Dumazet <edumazet@google.com>, Dmitry Vyukov <dvyukov@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 05/23] fib_trie: remove potential out of bound access
-Date: Thu, 12 Sep 2013 10:45:01 -0700
-Message-Id: <20130912174452.354632606@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130912174451.748805761@linuxfoundation.org>
-References: <20130912174451.748805761@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Thu, 12 Sep 2013 13:55:39 -0400
+Subject: Re: [PATCH] ARM: msm: Move msm devicetrees under a Qualcomm dir
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=US-ASCII
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <CAOesGMhfdvyJ_2AA2e8iO_2e=q7KgpyNbcriPKFw-RLormG6bA@mail.gmail.com>
+Date: Thu, 12 Sep 2013 12:55:36 -0500
+Cc: David Brown <davidb@codeaurora.org>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
+        Rohit Vaswani <rvaswani@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <3E38F48E-EE41-4564-84A1-36CF07B08811@codeaurora.org>
+References: <1379003839-16068-1-git-send-email-galak@codeaurora.org> <CAOesGMisWLwYKotGDFPW6PyHJs=_+fohTdC08SGjsv2FXaa7Fg@mail.gmail.com> <25E0B143-658E-4CCC-A88A-0AF70FFF33CE@codeaurora.org> <CAOesGMhfdvyJ_2AA2e8iO_2e=q7KgpyNbcriPKFw-RLormG6bA@mail.gmail.com>
+To: Olof Johansson <olof@lixom.net>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+On Sep 12, 2013, at 12:06 PM, Olof Johansson wrote:
 
-From: Eric Dumazet <edumazet@google.com>
+> On Thu, Sep 12, 2013 at 9:53 AM, Kumar Gala <galak@codeaurora.org> wrote:
+>> 
+>> On Sep 12, 2013, at 11:46 AM, Olof Johansson wrote:
+>> 
+>>> On Thu, Sep 12, 2013 at 9:37 AM, Kumar Gala <galak@codeaurora.org> wrote:
+>>>> Use the Qualcomm vendor prefix (qcom) as the directory name for
+>>>> Qualcomm MSM devicetrees going forward.
+>>>> 
+>>>> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+>>> 
+>>> Let's not move just one platform like this. If we are to do this, we
+>>> should move everything, and that will be really painful and needs to
+>>> be done in a controlled manner, probably scripted and right before a
+>>> -rc1 or such.
+>> 
+>> 
+>> Than I suggest we deal with it when we pull the device trees out of the kernel tree.
+>> 
+>> As such, I'd tell Rohit to go forward with the file being named apq8074-dragonboard.dtb for the time being.
+> 
+> My original request to please use a common prefix for your product
+> families stands. Please prefix with msm-*, or if you have to, qcom-*
+> instead, since you guys can't seem to make your mind up on standard
+> prefixes (msm, apq, etc).
 
-[ Upstream commit aab515d7c32a34300312416c50314e755ea6f765 ]
+This is silly, I dont see the reason to go with qcom-apq<SOC>-<BOARD>.dts and than in the future drop qcom- when we mostly likely shift to a dir structure.  As engineers we are all too aware of the lack of sanity in marketing names, but its what we have so we have to live with it.
 
-AddressSanitizer [1] dynamic checker pointed a potential
-out of bound access in leaf_walk_rcu()
+- k
 
-We could allocate one more slot in tnode_new() to leave the prefetch()
-in-place but it looks not worth the pain.
-
-Bug added in commit 82cfbb008572b ("[IPV4] fib_trie: iterator recode")
-
-[1] :
-https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
-
-Reported-by: Andrey Konovalov <andreyknvl@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Dmitry Vyukov <dvyukov@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/fib_trie.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
-
---- a/net/ipv4/fib_trie.c
-+++ b/net/ipv4/fib_trie.c
-@@ -71,7 +71,6 @@
- #include <linux/init.h>
- #include <linux/list.h>
- #include <linux/slab.h>
--#include <linux/prefetch.h>
- #include <linux/export.h>
- #include <net/net_namespace.h>
- #include <net/ip.h>
-@@ -1772,10 +1771,8 @@ static struct leaf *leaf_walk_rcu(struct
- 			if (!c)
- 				continue;
- 
--			if (IS_LEAF(c)) {
--				prefetch(rcu_dereference_rtnl(p->child[idx]));
-+			if (IS_LEAF(c))
- 				return (struct leaf *) c;
--			}
- 
- 			/* Rescan start scanning in new node */
- 			p = (struct tnode *) c;
-
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
