@@ -1,557 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266Ab3ILEeS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 00:34:18 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59269 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752617Ab3ILEeO (ORCPT
+	id S1754605Ab3ILEha (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 00:37:30 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:36811 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752842Ab3ILEh2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 00:34:14 -0400
-Date: Thu, 12 Sep 2013 14:34:02 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: <linux-next@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for Sep 12
-Message-Id: <20130912143402.73f77e0cef1e19576b77a6b5@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__12_Sep_2013_14_34_02_+1000_6C3DocR20j6XuGtB"
+	Thu, 12 Sep 2013 00:37:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAOmKuSpgwGcTaQTEdtH+9g-6WwNwseVU6X+hhntK31EOTM=WRA@mail.gmail.com>
+References: <20130910190901.GA10105@radagast> <CAOmKuSrbaLqaYiJFwonHzC-S003vgg2x0xUG4TGKDpMgvCCGHQ@mail.gmail.com>
+ <20130911183825.GC10105@radagast> <CAOmKuSpJ4rX0p0a1gGvc3fVazTg=+43tDfTFiJSrxmAxXihf-A@mail.gmail.com>
+ <20130911190033.GD10105@radagast> <CAOmKuSoZQ=uDAD7P94EPfKEp97to3DqwWk=GW7OZ-98+S6nTBA@mail.gmail.com>
+ <20130911204714.GH10105@radagast> <CAOmKuSpgwGcTaQTEdtH+9g-6WwNwseVU6X+hhntK31EOTM=WRA@mail.gmail.com>
+From: Alexey Pelykh <alexey.pelykh@gmail.com>
+Date: Thu, 12 Sep 2013 07:37:07 +0300
+Message-ID: <CAOmKuSpRpb0mRnORvK-q1MMV3BHZaY8_yTyQV-iE+=gj1hqK7Q@mail.gmail.com>
+Subject: Re: commit 5fe212364 causes division by zero with large bauds
+To: balbi@ti.com
+Cc: Tony Lindgren <tony@atomide.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        linux-serial@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__12_Sep_2013_14_34_02_+1000_6C3DocR20j6XuGtB
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Actually, here it is, but not formatted properly
 
-Hi all,
+diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
+index 816d1a2..146e712 100644
+--- a/drivers/tty/serial/omap-serial.c
++++ b/drivers/tty/serial/omap-serial.c
+@@ -240,14 +240,14 @@ serial_omap_baud_is_mode16(struct uart_port
+*port, unsigned int baud)
+ {
+  unsigned int n13 = port->uartclk / (13 * baud);
+  unsigned int n16 = port->uartclk / (16 * baud);
+- int baudAbsDiff13 = baud - (port->uartclk / (13 * n13));
+- int baudAbsDiff16 = baud - (port->uartclk / (16 * n16));
++ int baudAbsDiff13 = n13 ? (baud - (port->uartclk / (13 * n13))) : INT_MAX;
++ int baudAbsDiff16 = n16 ? (baud - (port->uartclk / (16 * n16))) : INT_MAX;
+  if(baudAbsDiff13 < 0)
+  baudAbsDiff13 = -baudAbsDiff13;
+  if(baudAbsDiff16 < 0)
+  baudAbsDiff16 = -baudAbsDiff16;
 
-Please do not add any code for v3.13 to your linux-next included branches
-until after v3.12-rc1 is released.
+- return (baudAbsDiff13 > baudAbsDiff16);
++ return (baudAbsDiff13 >= baudAbsDiff16);
+ }
 
-Changes since 20130911:
+ /*
+@@ -258,13 +258,13 @@ serial_omap_baud_is_mode16(struct uart_port
+*port, unsigned int baud)
+ static unsigned int
+ serial_omap_get_divisor(struct uart_port *port, unsigned int baud)
+ {
+- unsigned int divisor;
++ unsigned int mode;
 
-The akpm tree gained a conflict against Linus' tree.
+  if (!serial_omap_baud_is_mode16(port, baud))
+- divisor = 13;
++ mode = 13;
+  else
+- divisor = 16;
+- return port->uartclk/(baud * divisor);
++ mode = 16;
++ return port->uartclk/(mode * baud);
+ }
 
-----------------------------------------------------------------------------
+ static void serial_omap_enable_ms(struct uart_port *port)
 
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc,
-sparc64 and arm defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 222 trees (counting Linus' and 30 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.  And to Paul
-Gortmaker for triage and bug fixes.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master (c2d9572 Merge branch 'akpm' (patches from Andrew Mor=
-ton))
-Merging fixes/master (fa8218d Merge tag 'regmap-v3.11-rc7' of git://git.ker=
-nel.org/pub/scm/linux/kernel/git/broonie/regmap)
-Merging kbuild-current/rc-fixes (ad81f05 Linux 3.11-rc1)
-Merging arc-current/for-curr (07b9b65 ARC: fix new Section mismatches in bu=
-ild (post __cpuinit cleanup))
-Merging arm-current/fixes (6e46645 Linux 3.11)
-Merging m68k-current/for-linus (5549005 m68k/atari: ARAnyM - Always use phy=
-sical addresses in NatFeat calls)
-Merging metag-fixes/fixes (3b2f64d Linux 3.11-rc2)
-Merging powerpc-merge/merge (363edbe powerpc: Default arch idle could cede =
-processor on pseries)
-Merging sparc/master (4de9ad9 Merge git://git.kernel.org/pub/scm/linux/kern=
-el/git/cmetcalf/linux-tile)
-Merging net/master (f3ad857 net_sched: htb: fix a typo in htb_change_class(=
-))
-Merging ipsec/master (302a50b xfrm: Fix potential null pointer dereference =
-in xdst_queue_output)
-Merging sound-current/for-linus (3d0049e Merge tag 'asoc-v3.12-4' of git://=
-git.kernel.org/pub/scm/linux/kernel/git/broonie/sound into for-linus)
-Merging pci-current/for-linus (a923874 Merge tag 'pci-v3.12-changes' of git=
-://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci)
-Merging wireless/master (f4e1a4d rt2800: change initialization sequence to =
-fix system freeze)
-Merging driver-core.current/driver-core-linus (816434e Merge branch 'x86-sp=
-inlocks-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip)
-Merging tty.current/tty-linus (c095ba7 Linux 3.11-rc4)
-Merging usb.current/usb-linus (26b0332 Merge tag 'dmaengine-3.12' of git://=
-git.kernel.org/pub/scm/linux/kernel/git/djbw/dmaengine)
-Merging staging.current/staging-linus (26b0332 Merge tag 'dmaengine-3.12' o=
-f git://git.kernel.org/pub/scm/linux/kernel/git/djbw/dmaengine)
-Merging char-misc.current/char-misc-linus (b36f4be Linux 3.11-rc6)
-Merging input-current/for-linus (c7dc657 Input: evdev - add EVIOCREVOKE ioc=
-tl)
-Merging md-current/for-linus (f94c0b6 md/raid5: fix interaction of 'replace=
-' and 'recovery'.)
-Merging audit-current/for-linus (c158a35 audit: no leading space in audit_l=
-og_d_path prefix)
-Merging crypto-current/master (77dbd7a crypto: api - Fix race condition in =
-larval lookup)
-Merging ide/master (64110c1 ide: sgiioc4: Staticize ioc4_ide_attach_one())
-Merging dwmw2/master (5950f08 pcmcia: remove RPX board stuff)
-Merging sh-current/sh-fixes-for-linus (4403310 SH: Convert out[bwl] macros =
-to inline functions)
-Merging devicetree-current/devicetree/merge (cf9e236 of/irq: init struct re=
-source to 0 in of_irq_to_resource())
-Merging rr-fixes/fixes (6c2580c Merge branch 'for-linus' of git://git.kerne=
-l.org/pub/scm/linux/kernel/git/egtvedt/linux-avr32)
-Merging mfd-fixes/master (5649d8f mfd: ab8500-sysctrl: Let sysctrl driver w=
-ork without pdata)
-Merging vfio-fixes/for-linus (d24cdbf vfio-pci: Avoid deadlock on remove)
-Merging drm-intel-fixes/for-linux-next-fixes (6e46645 Linux 3.11)
-Merging asm-generic/master (fb9de7e xtensa: Use generic asm/mmu.h for nommu)
-Merging arc/for-next (d8dfad3 Linux 3.11-rc7)
-Merging arm/for-next (4f57a10 Merge branch 'mw-fixes' into for-next)
-Merging arm-perf/for-next/perf (ad81f05 Linux 3.11-rc1)
-Merging davinci/davinci-next (fe0d422 Linux 3.0-rc6)
-Merging arm64/upstream (4d5e0b1 Documentation/arm64: clarify requirements f=
-or DTB placement)
-Merging blackfin/for-linus (eb043d3 smp: blackfin: fix check error, using a=
-tomic_ops to handle atomic_t type)
-Merging c6x/for-linux-next (f934af0 add memory barrier to arch_local_irq_re=
-store)
-Merging cris/for-next (be8cb7f CRIS: drop unused Kconfig symbols)
-Merging h8300-remove/h8300-remove (b307c32 fs/minix: Drop dependency on H83=
-00)
-CONFLICT (content): Merge conflict in drivers/net/ethernet/8390/Kconfig
-Merging hexagon/linux-next (de44443 HEXAGON: Remove non existent reference =
-to GENERIC_KERNEL_EXECVE & GENERIC_KERNEL_THREAD)
-Merging ia64/next (2e7b2d2 pstore: Remove the messages related to compressi=
-on failure)
-Merging m68k/for-next (21e884b m68k/m68knommu: Implement __get_user_unalign=
-ed/__put_user_unaligned())
-Merging m68knommu/for-next (c065edd m68k: remove 16 unused boards in Kconfi=
-g.machine)
-Merging metag/for-next (b6ef916 irq-imgpdc: add ImgTec PDC irqchip driver)
-Merging microblaze/next (54ea21f microblaze: Show message when reset gpio i=
-s not present)
-Merging mips/mips-for-linux-next (eb37e6d Merge branch '3.11-fixes' into mi=
-ps-for-linux-next)
-Merging openrisc/for-upstream (6af6095 openrisc: remove HAVE_VIRT_TO_BUS)
-Merging parisc/for-next (6c700d7 [PARISC] hpux: Remove obsolete regs parame=
-ter from do_execve() in hpux_execve())
-Merging parisc-hd/for-next (9f0f4fb parisc: add generic 32- and 64-bit defc=
-onfigs)
-Merging powerpc/next (8d7551e Merge tag 'cris-for-3.12' of git://jni.nu/cri=
-s)
-Merging 4xx/next (2074b1d powerpc: Fix irq distribution)
-Merging mpc5xxx/next (f2110cb dts: mpc512x: prepare for preprocessor suppor=
-t)
-Merging galak/next (9e2ecdb powerpc/fsl-booke: add the reg prop for pci bri=
-dge device node for T4/B4)
-Merging s390/features (9e75c627 s390/irq: reduce size of external interrupt=
- handler hash array)
-Merging sh/sh-latest (37284bd Merge branches 'sh/hw-breakpoints' and 'sh/se=
-rial-of' into sh-latest)
-CONFLICT (content): Merge conflict in include/linux/serial_sci.h
-CONFLICT (content): Merge conflict in drivers/tty/serial/sh-sci.c
-CONFLICT (content): Merge conflict in arch/sh/kernel/cpu/sh2a/Makefile
-Merging sparc-next/master (f8ce1fa Merge tag 'modules-next-for-linus' of gi=
-t://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux)
-Merging tile/master (06da662 tile: refresh tile defconfig files)
-Merging unicore32/unicore32 (c284464 arch/unicore32: remove CONFIG_EXPERIME=
-NTAL)
-Merging xtensa/for_next (8872366 xtensa: Fix broken allmodconfig build)
-Merging aio-direct/for-next (b080082 tmpfs: add support for read_iter and w=
-rite_iter)
-CONFLICT (content): Merge conflict in fs/direct-io.c
-CONFLICT (content): Merge conflict in fs/block_dev.c
-Merging btrfs/next (d7396f0 Btrfs: optimize key searches in btrfs_search_sl=
-ot)
-Merging ceph/master (9c89d62 fscache: check consistency does not decrement =
-refcount)
-Merging cifs/for-next (42873b0 CIFS: Respect epoch value from create lease =
-context v2)
-Merging configfs/linux-next (b930c26 Merge branch 'for-linus' of git://git.=
-kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs)
-Merging ecryptfs/next (cb69f36 ecryptfs: avoid ctx initialization race)
-Merging ext3/for_next (97a2847 Merge branch 'for-3.12' of git://git.kernel.=
-org/pub/scm/linux/kernel/git/jeffm/linux-reiserfs into for_next_testing)
-Merging ext4/dev (ad4eec6 ext4: allow specifying external journal by pathna=
-me mount option)
-Merging f2fs/dev (26b0332 Merge tag 'dmaengine-3.12' of git://git.kernel.or=
-g/pub/scm/linux/kernel/git/djbw/dmaengine)
-Merging fscache/fscache (19ce0a7 CIFS: FS-Cache: Uncache unread pages in ci=
-fs_readpages() before freeing them)
-Merging fuse/for-next (700d8b0 Merge branch 'writepages.v2' into for-next)
-Merging gfs2/master (0c90180 GFS2: dirty inode correctly in gfs2_write_end)
-Merging jfs/jfs-next (a0263d8 jfs: fix error path in ialloc)
-Merging logfs/master (3394661 Fix the call to BUG() caused by no free segme=
-nt found)
-Merging nfs/linux-next (312cd95 NFSv4.1: sp4_mach_cred: WARN_ON -> WARN_ON_=
-ONCE)
-Merging nfsd/nfsd-next (d4a5165 rpc: let xdr layer allocate gssproxy receie=
-ve pages)
-Merging ocfs2/linux-next (4538df6 ocfs2: Don't spam on -EDQUOT.)
-Merging omfs/for-next (976d167 Linux 3.1-rc9)
-Merging squashfs/master (9e01242 Squashfs: add corruption check for type in=
- squashfs_readdir())
-Merging v9fs/for-next (50192ab fs/9p: avoid accessing utsname after namespa=
-ce has been torn down)
-Merging ubifs/linux-next (c23e9b7 UBIFS: remove invalid warn msg with tst_r=
-ecovery enabled)
-Merging xfs/for-next (74ffa79 xfs: don't assert fail on bad inode numbers)
-Merging vfs/for-next (f5e1dd3 super: fix for destroy lrus)
-Merging pci/next (a923874 Merge tag 'pci-v3.12-changes' of git://git.kernel=
-.org/pub/scm/linux/kernel/git/helgaas/pci)
-Merging hid/for-next (2f39579 Merge branch 'for-3.12/upstream' into for-nex=
-t)
-Merging i2c/i2c/for-next (b720423 i2c: rcar: add rcar-H2 support)
-Merging jdelvare-hwmon/master (e5c832d vfs: fix dentry RCU to refcounting p=
-ossibly sleeping dput())
-Merging hwmon-staging/hwmon-next (8876dd7 hwmon: (ina2xx) Remove casting th=
-e return value which is a void pointer)
-Merging v4l-dvb/master (d6cd75e Merge branch 'patchwork' into to_next)
-CONFLICT (content): Merge conflict in drivers/media/platform/s5p-mfc/s5p_mf=
-c_dec.c
-Merging kbuild/for-next (9aebd48 Merge branch 'kbuild/kconfig' into kbuild/=
-for-next)
-Merging kconfig/for-next (4eae518 localmodconfig: Fix localyesconfig to set=
- to 'y' not 'm')
-Merging libata/for-next (062728a Merge branch 'for-3.12' into for-next)
-Merging pstore/master (bd08ec3 pstore/ram: Restore ecc information block)
-Merging pm/linux-next (f74a274 Merge branch 'pm-cpufreq-next' into linux-ne=
-xt)
-Merging idle/next (5c99726b Merge branch 'fspin' into next)
-Merging apm/for-next (fb9d78a Merge branch 'for-linus' of git://git.kernel.=
-org/pub/scm/linux/kernel/git/jikos/apm)
-Merging cpupowerutils/master (f166033 cpupower tools: add install target to=
- the debug tools' makefiles)
-Merging thermal/next (50e66c7 drivers: thermal: add check when unregisterin=
-g cpu cooling)
-Merging ieee1394/for-next (db9ae8f firewire: ohci: Fix deadlock at bus rese=
-t)
-Merging ubi/linux-next (8930fa5 UBI: Fix invalidate_fastmap())
-Merging dlm/next (c6ca7bc dlm: remove signal blocking)
-Merging swiotlb/linux-next (af51a9f swiotlb: Do not export swiotlb_bounce s=
-ince there are no external consumers)
-Merging slave-dma/next (71af442 Merge branch 'for-linus' into next)
-Merging dmaengine/next (4a43f39 dmaengine: dma_sync_wait and dma_find_chann=
-el undefined)
-Merging net-next/master (e7d33bb lockref: add ability to mark lockrefs "dea=
-d")
-Merging ipsec-next/master (aba8269 {ipv4,xfrm}: Introduce xfrm_tunnel_notif=
-ier for xfrm tunnel mode callback)
-CONFLICT (content): Merge conflict in include/net/xfrm.h
-Merging wireless-next/master (f212781 net: ipv6: mld: document force_mld_ve=
-rsion in ip-sysctl.txt)
-Merging bluetooth/master (5dd6d5b Bluetooth: Only schedule raw queue when u=
-ser channel is active)
-Merging infiniband/for-next (82af24a Merge branches 'cxgb4', 'flowsteer', '=
-ipoib', 'iser', 'mlx4', 'ocrdma' and 'qib' into for-next)
-Merging mtd/master (ef9a61b Merge tag 'for-linus-20130909' of git://git.inf=
-radead.org/linux-mtd)
-Merging l2-mtd/master (378a472 mtd: lpddr_cmds: make function static)
-Merging crypto/master (6841152 Reinstate "crypto: crct10dif - Wrap crc_t10d=
-if function all to use crypto transform framework")
-Merging drm/drm-next (86a7e12 Merge branch 'exynos-drm-next' of git://git.k=
-ernel.org/pub/scm/linux/kernel/git/daeinki/drm-exynos into drm-next)
-Merging drm-intel/for-linux-next (0d97174 drm/i915/dvo: set crtc timings ag=
-ain for panel fixed modes)
-Merging drm-tegra/drm/for-next (03da0e7 drm/tegra: Parse device tree earlie=
-r)
-Merging sound/for-next (83f7215 ALSA: hda - Add Toshiba Satellite C870 to M=
-SI blacklist)
-Merging sound-asoc/for-next (2ae2caf Merge remote-tracking branch 'asoc/fix=
-/rsnd' into asoc-linus)
-Merging modules/modules-next (942e443 module: Fix mod->mkobj.kobj potential=
-ly freed too early)
-Merging virtio/virtio-next (9e266ec virtio_pci: pm: Use CONFIG_PM_SLEEP ins=
-tead of CONFIG_PM)
-Merging input/next (52764fe Input: add SYN_MAX and SYN_CNT constants)
-Merging input-mt/for-next (ad81f05 Linux 3.11-rc1)
-Merging cgroup/for-next (58b79a9 cgroup: fix cgroup post-order descendant w=
-alk of empty subtree)
-Merging block/for-next (8875e36 skd: get rid of readq() and a pr_err() buil=
-d warning)
-Merging device-mapper/for-next (7fff5e8 dm stripe: silence a couple sparse =
-warnings)
-Merging embedded/master (4744b43 embedded: fix vc_translate operator preced=
-ence)
-Merging firmware/master (6e03a20 firmware: speed up request_firmware(), v3)
-Merging pcmcia/master (80af9e6 pcmcia at91_cf: fix raw gpio number usage)
-Merging mmc/mmc-next (9d731e7 Revert "mmc: tmio-mmc: Remove .set_pwr() call=
-back from platform data")
-Merging kgdb/kgdb-next (6bedf31 kdb: Remove unhandled ssb command)
-Merging slab/for-next (9de1bc8 mm, slab_common: add 'unlikely' to size chec=
-k of kmalloc_slab())
-Merging uclinux/for-next (6dbe51c Linux 3.9-rc1)
-Merging md/for-next (bfc90cb raid5: only wakeup necessary threads)
-Merging mfd/master (9c31e88 Merge tag 'mfd-lee-3.12-2' of git://git.linaro.=
-org/people/ljones/mfd)
-Merging mfd-lj/for-mfd-next (cb28a30 mfd: wm8994: Remove unused irq_lock)
-Merging battery/master (db15e63 rx51_battery: Fix channel number when readi=
-ng adc value)
-Merging fbdev/for-next (5e8be02 video: atmel_lcdfb: add device tree suport)
-Merging viafb/viafb-next (838ac78 viafb: avoid refresh and mode lookup in s=
-et_par)
-Merging omap_dss2/for-next (6f001cc Merge branch '3.12/dss-legacy-removal' =
-into for-next)
-Merging regulator/for-next (3e4e8f1 Merge remote-tracking branch 'regulator=
-/fix/palmas' into regulator-linus)
-Merging security/next (7320336 Merge branch 'smack-for-3.12' of git://git.g=
-itorious.org/smack-next/kernel into ra-next)
-Merging selinux/master (0b4bdb3 Revert "SELinux: do not handle seclabel as =
-a special flag")
-CONFLICT (content): Merge conflict in security/selinux/hooks.c
-Merging lblnet/master (07bc9dc Merge branch 'merge' of git://git.kernel.org=
-/pub/scm/linux/kernel/git/benh/powerpc)
-Merging watchdog/master (f9a67f3 watchdog: s3c2410_wdt: simplify use of dev=
-m_ioremap_resource)
-Merging dwmw2-iommu/master (6491d4d intel-iommu: Free old page tables befor=
-e creating superpage)
-Merging iommu/next (f098cc4 Merge branches 'arm/exynos', 'ppc/pamu', 'arm/s=
-mmu', 'x86/amd' and 'iommu/fixes' into next)
-Merging vfio/next (dac09b5 vfio: fix documentation)
-Merging osd/linux-next (861d666 exofs: don't leak io_state and pages on rea=
-d error)
-Merging jc_docs/docs-next (5c050fb docs: update the development process doc=
-ument)
-Merging trivial/for-next (2e515bf Merge branch 'for-linus' of git://git.ker=
-nel.org/pub/scm/linux/kernel/git/jikos/trivial)
-Merging audit/for-next (dcd6c92 Linux 3.3-rc1)
-Merging fsnotify/for-next (1ca39ab inotify: automatically restart syscalls)
-Merging devicetree/devicetree/next (2bc552d of/platform: add error reportin=
-g to of_amba_device_create())
-Merging dt-rh/for-next (8851b9f include: dt-binding: input: create a DT hea=
-der defining key codes.)
-Merging spi/for-next (015ef31 Merge remote-tracking branch 'spi/fix/pxa' in=
-to spi-linus)
-Merging tip/auto-latest (ad4eef7 Merge branch 'x86/urgent')
-Merging edac/linux_next (de4772c edac: sb_edac.c should not require prescen=
-ce of IMC_DDRIO device)
-Merging edac-amd/for-next (75a9551 cpc925_edac: Use proper array terminatio=
-n)
-Merging ftrace/for-next (a0a5a05 ftrace/rcu: Do not trace debug_lockdep_rcu=
-_enabled())
-Merging rcu/rcu/next (25f27ce Merge branches 'doc.2013.08.19a', 'fixes.2013=
-.08.20a', 'sysidle.2013.08.31a' and 'torture.2013.08.20a' into HEAD)
-Merging cputime/cputime (c3e0ef9 [S390] fix cputime overflow in uptime_proc=
-_show)
-Merging uprobes/for-next (0326f5a uprobes/core: Handle breakpoint and singl=
-estep exceptions)
-Merging kvm/linux-next (6b9e4fa Merge tag 'kvm-arm-for-3.12' of git://git.l=
-inaro.org/people/cdall/linux-kvm-arm into queue)
-Merging kvm-arm/kvm-arm-next (1fe40f6 ARM: KVM: Add newlines to panic strin=
-gs)
-Merging kvm-ppc/kvm-ppc-next (6b9e4fa Merge tag 'kvm-arm-for-3.12' of git:/=
-/git.linaro.org/people/cdall/linux-kvm-arm into queue)
-Merging oprofile/for-next (f722406 Linux 3.10-rc1)
-Merging fw-nohz/nohz/next (74876a9 printk: Wake up klogd using irq_work)
-Merging xen-tip/linux-next (5582c05 Merge remote branch 'xentip/stable/for-=
-linus-3.12' into linux-next)
-Merging percpu/for-next (abec1a8 percpu: Make __verify_pcu_ptr handle per c=
-pu pointers to arrays)
-Merging workqueues/for-next (016564d workqueue: fix pool ID allocation leak=
-age and remove BUILD_BUG_ON() in init_workqueues)
-Merging drivers-x86/linux-next (5c07eae platform/x86: panasonic-laptop: reu=
-se module_acpi_driver)
-Merging hwpoison/hwpoison (46e387b Merge branch 'hwpoison-hugepages' into h=
-wpoison)
-Merging sysctl/master (4e474a0 sysctl: protect poll() in entries that may g=
-o away)
-Merging regmap/for-next (365c9ee Merge remote-tracking branch 'regmap/topic=
-/sparse' into regmap-next)
-Merging hsi/for-next (43139a6 HSI: hsi_char: Update ioctl-number.txt)
-Merging leds/for-next (61abeba leds: wm831x-status: Request a REG resource)
-CONFLICT (modify/delete): drivers/leds/leds-renesas-tpu.c deleted in HEAD a=
-nd modified in leds/for-next. Version leds/for-next of drivers/leds/leds-re=
-nesas-tpu.c left in tree.
-$ git rm -f drivers/leds/leds-renesas-tpu.c
-Merging driver-core/driver-core-next (816434e Merge branch 'x86-spinlocks-f=
-or-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip)
-Merging tty/tty-next (2d1d3f3 hvc_xen: Remove unnecessary __GFP_ZERO from k=
-zalloc)
-Merging usb/usb-next (26b0332 Merge tag 'dmaengine-3.12' of git://git.kerne=
-l.org/pub/scm/linux/kernel/git/djbw/dmaengine)
-Merging usb-gadget/next (0f2aa8c usb: musb: ux500: Add check for NULL board=
- data)
-Merging staging/staging-next (26b0332 Merge tag 'dmaengine-3.12' of git://g=
-it.kernel.org/pub/scm/linux/kernel/git/djbw/dmaengine)
-Merging char-misc/char-misc-next (3cc1f95 drivers: uio: Kconfig: add MMU de=
-pendancy for UIO)
-Merging scsi/for-next (fc85799 [SCSI] fnic: fnic Driver Tuneables Exposed t=
-hrough CLI)
-Merging target-updates/for-next (2999ee7 target/iscsi: Bump versions to v4.=
-1.0)
-Merging target-merge/for-next-merge (d4e4ab8 Linux 3.11-rc5)
-Merging ibft/linux-next (935a9fe ibft: Fix finding IBFT ACPI table on UEFI)
-Merging isci/all (6734092 isci: add a couple __iomem annotations)
-Merging bcon/master (e284f34 netconsole: s/syslogd/cancd/ in documentation)
-CONFLICT (content): Merge conflict in drivers/block/Kconfig
-Merging tmem/linux-next (8f0d816 Linux 3.7-rc3)
-Merging writeback/writeback-for-next (8bb495e Linux 3.10)
-Merging hwspinlock/linux-next (8b37fcf hwspinlock: add MAINTAINERS entries)
-Merging pinctrl/for-next (c9e3b2d pinctrl: sunxi: Fix off-by-one for valid =
-offset range checking)
-Merging vhost/linux-next (8c325ee vhost: wake up worker outside spin_lock)
-Merging remoteproc/for-next (b977785 remoteproc: fix kconfig dependencies f=
-or VIRTIO)
-Merging rpmsg/for-next (397944d rpmsg: fix kconfig dependencies for VIRTIO)
-Merging gpio/for-next (be1a4b1 gpio: improve error path in gpiolib)
-Merging arm-soc/for-next (364e751 Merge tag 'ep93xx-fixes-for-3.12' of git:=
-//github.com/RyanMallon/linux-ep93xx into fixes)
-Merging bcm2835/for-next (7d13205 Linux 3.10-rc6)
-Merging cortex/for-next (3ad87ac ARM: ARMv7-M: Fix name of NVIC handler fun=
-ction)
-Merging ep93xx/ep93xx-for-next (6868a89 Merge branch 'ep93xx-fixes' into ep=
-93xx-for-next)
-Merging imx-mxs/for-next (d8b6471 Merge branches 'imx/fixes', 'imx/soc' and=
- 'imx/dt' into for-next)
-Merging ixp4xx/next (19f949f Linux 3.8)
-Merging msm/for-next (8fb0bf1 Merge branch 'for-3.12/msm-cleanup2' into for=
--next)
-Merging mvebu/for-next (e3cd46e Merge branch 'mvebu/dove_pcie-mbus-dt' into=
- for-next)
-CONFLICT (content): Merge conflict in drivers/pci/host/pci-mvebu.c
-CONFLICT (content): Merge conflict in drivers/pci/host/Kconfig
-CONFLICT (content): Merge conflict in arch/arm/boot/dts/kirkwood.dtsi
-Merging renesas/next (63c9972 Merge branch 'clocksource-fixes-for-v3.12' in=
-to next)
-CONFLICT (content): Merge conflict in arch/arm/boot/dts/r8a7790.dtsi
-CONFLICT (content): Merge conflict in arch/arm/boot/dts/r8a73a4.dtsi
-Merging samsung/for-next (84b6f2e Merge branch 'v3.11-samsung-fixes-2' into=
- for-next)
-Merging tegra/for-next (d8dfad3 Linux 3.11-rc7)
-Merging dma-mapping/dma-mapping-next (aca0156 drivers: of: fix build break =
-if asm/dma-contiguous.h is missing)
-Merging pwm/for-next (1e185c7 pwm: pxa: Use module_platform_driver)
-Merging dma-buf/for-next (19e8697 dma-buf: Expose buffer size to userspace =
-(v2))
-Merging userns/for-next (c7b96ac userns:  Kill nsown_capable it makes the w=
-rong thing easy)
-Merging ktest/for-next (df5f7c6 ktest: Reset grub menu cache with different=
- machines)
-Merging signal/for-next (20b4fb4 Merge branch 'for-linus' of git://git.kern=
-el.org/pub/scm/linux/kernel/git/viro/vfs)
-Merging clk/clk-next (12d29886 clk: only call get_parent if there is one)
-Merging random/dev (b980955 random: fix locking dependency with the tasklis=
-t_lock)
-Merging lzo-update/lzo-update (42b775a lib/lzo: huge LZO decompression spee=
-dup on ARM by using unaligned access)
-Merging arm64-hugepages/for-next/hugepages (af07484 ARM64: mm: THP support.)
-Merging ptr-ret/PTR_RET (ad151d5 GFS2: Replace PTR_RET with PTR_ERR_OR_ZERO)
-Merging aio/master (d9b2c87 aio: rcu_read_lock protection for new rcu_deref=
-erence calls)
-CONFLICT (content): Merge conflict in fs/nfs/direct.c
-CONFLICT (content): Merge conflict in fs/block_dev.c
-Applying: aio: semantic fixup
-Applying: aio: another semantic merge fix
-Merging scsi-post-merge/merge-base:master (65112dc Merge git://git.samba.or=
-g/sfrench/cifs-2.6)
-Merging akpm-current/current (ea8adca mm-page-writebackc-add-strictlimit-fe=
-ature-fix)
-CONFLICT (content): Merge conflict in scripts/checkpatch.pl
-CONFLICT (content): Merge conflict in mm/sparse.c
-CONFLICT (content): Merge conflict in mm/mlock.c
-CONFLICT (content): Merge conflict in mm/mempolicy.c
-CONFLICT (content): Merge conflict in kernel/fork.c
-CONFLICT (content): Merge conflict in include/linux/smp.h
-CONFLICT (content): Merge conflict in fs/namespace.c
-CONFLICT (content): Merge conflict in fs/namei.c
-CONFLICT (content): Merge conflict in drivers/rtc/rtc-hid-sensor-time.c
-CONFLICT (content): Merge conflict in drivers/block/aoe/aoeblk.c
-CONFLICT (add/add): Merge conflict in Documentation/block/cmdline-partition=
-.txt
-Applying: fat: fix up for lockref changes
-$ git checkout -b akpm remotes/origin/akpm/master
-Applying: memcg: remove redundant code in mem_cgroup_force_empty_write()
-Applying: memcg, vmscan: integrate soft reclaim tighter with zone shrinking=
- code
-Applying: memcg: get rid of soft-limit tree infrastructure
-Applying: vmscan, memcg: do softlimit reclaim also for targeted reclaim
-Applying: memcg: enhance memcg iterator to support predicates
-Applying: mm: fix memcg-less page reclaim
-Applying: memcg: track children in soft limit excess to improve soft limit
-Applying: memcg, vmscan: do not attempt soft limit reclaim if it would not =
-scan anything
-Applying: memcg: track all children over limit in the root
-Applying: memcg, vmscan: do not fall into reclaim-all pass too quickly
-Applying: memcg: trivial cleanups
-Applying: arch: mm: remove obsolete init OOM protection
-Applying: arch: mm: do not invoke OOM killer on kernel fault OOM
-Applying: arch: mm: pass userspace fault flag to generic fault handler
-CONFLICT (content): Merge conflict in arch/powerpc/mm/fault.c
-Applying: x86: finish user fault error path with fatal signal
-Applying: mm: memcg: enable memcg OOM killer only for user faults
-Applying: mm: memcg: rework and document OOM waiting and wakeup
-Applying: mm: memcg: do not trap chargers with full callstack on OOM
-Applying: memcg: correct RESOURCE_MAX to ULLONG_MAX
-Applying: memcg: rename RESOURCE_MAX to RES_COUNTER_MAX
-Applying: memcg: avoid overflow caused by PAGE_ALIGN
-Applying: memcg: reduce function dereference
-Applying: memcg: remove MEMCG_NR_FILE_MAPPED
-Applying: memcg: check for proper lock held in mem_cgroup_update_page_stat
-Applying: memcg: add per cgroup writeback pages accounting
-Applying: memcg: document cgroup dirty/writeback memory statistics
-Applying: mm: make lru_add_drain_all() selective
-Applying: truncate: drop 'oldsize' truncate_pagecache() parameter
-Applying: mm: drop actor argument of do_generic_file_read()
-Applying: mm-drop-actor-argument-of-do_generic_file_read-fix
-Applying: thp: account anon transparent huge pages into NR_ANON_PAGES
-Applying: mm: cleanup add_to_page_cache_locked()
-Applying: thp: move maybe_pmd_mkwrite() out of mk_huge_pmd()
-Applying: thp: do_huge_pmd_anonymous_page() cleanup
-Applying: thp: consolidate code between handle_mm_fault() and do_huge_pmd_a=
-nonymous_page()
-Applying: mm, thp: count thp_fault_fallback anytime thp fault fails
-Applying: kernel: replace strict_strto*() with kstrto*()
-Applying: mm/Kconfig: add MMU dependency for MIGRATION.
-Merging akpm/master (6257713 mm/Kconfig: add MMU dependency for MIGRATION.)
-
---Signature=_Thu__12_Sep_2013_14_34_02_+1000_6C3DocR20j6XuGtB
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSMUQ/AAoJEECxmPOUX5FEl3EP/2stVvyOtxsOX8EOAatuWPPx
-sChafI14SNQrqWXUONrTN4Wu2HRGxmMtrcVlmuNNAy9QJuAXhGm5u67ZavVIoAb2
-JcN0LPx/YMjSDN2Bf1H208b8TxWwMFWOJAOMet8zmCYVxe6eyNWD2ldf4CqcoL8X
-Wr8w58tI+1l0QIwFmIhjHVVNI/8DjWaoKY83jLpqDHAmitPw2uKscvSzVleebqMS
-BSyIRsVs/LjccfjA30WvK+R1yUWXMszh8oxr9qWPqGa/OQdeeShIqtp270GdGzKd
-rq0Q68MaGoAxq/GjzjHhg7RRrl/Y57/EIPta22yBEOLXa3MNUIL88R7tSSWfSc4l
-liRTzr0/uvx//p6o7Af3v51DAUE+RAofAT4NguVs8IEIF7oI1QVJk4Wz2UmhblIn
-91SNsGaaToGQKqvVIu93KA6M2tDzjjJO5hQEzSA/F4y7584IzcbQiYbdOjGBEBTz
-JdMKx5604QcW1yGF6xmiW6cc5ZQ3Nm+BaWlxHulyKmrcYIrlCo8I3CcAvUqGXiMo
-+r8BcWixMKziM3qnDxpNorPXR4Dilh0mUt0AVaJ493HqiEyZBMbFvXweDITHycuY
-3g4yXwhu3GrFncRS8LuPfjoU8eUu+Q9RBBXiHYht1JcQw1Hlf0Z/1ooKywxyPHMt
-W4KKhMitb/svtPYOnXJk
-=adeU
------END PGP SIGNATURE-----
-
---Signature=_Thu__12_Sep_2013_14_34_02_+1000_6C3DocR20j6XuGtB--
+On Thu, Sep 12, 2013 at 7:32 AM, Alexey Pelykh <alexey.pelykh@gmail.com> wrote:
+> On Wed, Sep 11, 2013 at 11:47 PM, Felipe Balbi <balbi@ti.com> wrote:
+>> Hi,
+>>
+>> On Wed, Sep 11, 2013 at 10:19:47PM +0300, Alexey Pelykh wrote:
+>>> On Wed, Sep 11, 2013 at 10:00 PM, Felipe Balbi <balbi@ti.com> wrote:
+>>> > On Wed, Sep 11, 2013 at 09:48:13PM +0300, Alexey Pelykh wrote:
+>>> >> On Wed, Sep 11, 2013 at 9:38 PM, Felipe Balbi <balbi@ti.com> wrote:
+>>> >> > Hi,
+>>> >> >
+>>> >> > On Wed, Sep 11, 2013 at 09:22:26AM +0300, Alexey Pelykh wrote:
+>>> >> >> Hi Felipe,
+>>> >> >>
+>>> >> >> Thanks for finding this issue. Indeed, there is a bug on 3M+ baud
+>>> >> >> rates. First patch is close to a complete fix, but still contains
+>>> >> >> div-by-zero issue. Here is my version:
+>>> >> >>
+>>> >> >> diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
+>>> >> >> index 816d1a2..808a880 100644
+>>> >> >> --- a/drivers/tty/serial/omap-serial.c
+>>> >> >> +++ b/drivers/tty/serial/omap-serial.c
+>>> >> >> @@ -240,8 +240,8 @@ serial_omap_baud_is_mode16(struct uart_port *port,
+>>> >> >> unsigned int baud)
+>>> >> >>  {
+>>> >> >>         unsigned int n13 = port->uartclk / (13 * baud);
+>>> >> >>         unsigned int n16 = port->uartclk / (16 * baud);
+>>> >> >> -       int baudAbsDiff13 = baud - (port->uartclk / (13 * n13));
+>>> >> >> -       int baudAbsDiff16 = baud - (port->uartclk / (16 * n16));
+>>> >> >> +       int baudAbsDiff13 = n13 ? (baud - (port->uartclk / (13 * n13))) : INT_MAX;
+>>> >> >> +       int baudAbsDiff16 = n16 ? (baud - (port->uartclk / (16 * n16))) : INT_MAX;
+>>> >> >
+>>> >> > IOW:
+>>> >> >
+>>> >> > int baudAbsDiff13 = 0;
+>>> >> >
+>>> >> > if (n13)
+>>> >> >         baudAbsDiff13 = (baud - (port->uartclk / (13 * n13)));
+>>> >>
+>>> >> Not quite same code, INT_MAX instead of 0. With 0 a div-by-zero
+>>> >> exception will still occur on 3686400.
+>>> >
+>>> > why, there's no division after that point, right ? Besides,
+>>> > serial_omap_baud_is_mode16() is supposed to return a boolean value.
+>>> >
+>>> > Setting baudAbsDiff1[36] to 0 will cause no problems, you're only using
+>>> > that value with a boolean expression, no divisions whatsoever. Division
+>>> > is done after using serial_omap_baud_is_mode16() to initialize divisor
+>>> > to 13 or 16 (which is a misnamer, since that's the oversampling
+>>> > parameter).
+>>> >
+>>>
+>>> Yes, variables are a bit misnamed, that should be fixed someday.
+>>> Regarding 0 vs INT_MAX, in case of 0 values will be
+>>> 300: divisor = 12307 (13)
+>>> 600: divisor = 6153 (13)
+>>> 1200: divisor = 3076 (13)
+>>> 2400: divisor = 1538 (13)
+>>> 4800: divisor = 625 (16)
+>>> 9600: divisor = 384 (13)
+>>> 14400: divisor = 256 (13)
+>>> 19200: divisor = 192 (13)
+>>> 28800: divisor = 128 (13)
+>>> 38400: divisor = 96 (13)
+>>> 57600: divisor = 64 (13)
+>>> 115200: divisor = 32 (13)
+>>> 230400: divisor = 16 (13)
+>>> 460800: divisor = 8 (13)
+>>> 921600: divisor = 4 (13)
+>>> 1000000: divisor = 3 (16)
+>>> 1843200: divisor = 2 (13)
+>>> 3000000: divisor = 1 (16)
+>>> 3686400: divisor = 0 (16) << error here, should be 1 (13), as it is with INT_MAX
+>>
+>> I get it now... your boolean check wants to use the closer baud to
+>> requested baud, so it's mode16 if the delta between baudAbsDiff16 and
+>> requested rate is less than delta between baudAbsDiff13 and requested
+>> baud.
+>>
+>>> >> > which is exactly what my patch did. I fail to see where division by zero
+>>> >> > would be coming from.
+>>> >> >
+>>> >> >>         if(baudAbsDiff13 < 0)
+>>> >> >>                 baudAbsDiff13 = -baudAbsDiff13;
+>>> >> >>         if(baudAbsDiff16 < 0)
+>>> >> >>
+>>> >> >>
+>>> >> >> With 48MHz UART clock, it will give
+>>> >> >> 300: divisor = 12307 (13), real rate 300 (0.000000%)
+>>> >> >> 600: divisor = 6153 (13), real rate 600 (0.000000%)
+>>> >> >> 1200: divisor = 3076 (13), real rate 1200 (0.000000%)
+>>> >> >> 2400: divisor = 1538 (13), real rate 2400 (0.000000%)
+>>> >> >
+>>> >> > TRM has these all set with oversampling of 16. In fact only 460800,
+>>> >> > 921600, 1843200 and 3686400 should be using oversampling of 13.
+>>> >> >
+>>> >>
+>>> >> That's true, but TRM anyways does not contain all possible baud rates
+>>> >> (1M e.g.). IMO, as long as error rate is the same as in TRM,
+>>> >> it makes no difference what combination of (mode, divisor) to use.
+>>> >>
+>>> >> > --
+>>> >> > balbi
+>>> >>
+>>> >> A complex solution may be implemented: use LUT for baud rates that TRM
+>>> >> defines explicitly, and use calculation if lookup failed.
+>>> >
+>>> > why would you try calculating anything if there is nothing in the table
+>>> > which can support it ? Whatever is in the lookup table, are the only
+>>> > baud rates the SoC supports, right ?
+>>> >
+>>>
+>>> Actually, I haven't found any statement in TRM, which would mention
+>>> that listed baudrates in referenced table are the only supported baud
+>>> rates,
+>>> and all others are illegal.
+>>
+>> "The UART clocks are connected to produce a baud rate of up to 3.6 Mbps.
+>> Table 24-122 lists the *supported* baud rates, requested divisor, and
+>> corresponding error versus the standard baud rate."
+>>
+>>> At least 1M which I use extensively works perfectly, and I can not
+>>> figure out any idea why it would not do so.
+>>
+>> it might very well work, but it's not officially *supported* by the IP.
+>
+> That's true, but I don't see any reason why driver should disallow
+> usage of baud rates that are not supported, but possible by hardware:
+> "The UART clocks are connected to produce a baud rate of up to 3.6M bits/s."
+>
+>>
+>> --
+>> balbi
+>
+> I've changed calculation a bit to give priority to mode16, and now it
+> gives TRM table as-is + extra baud rates
+> 300: divisor = 10000 (16), real rate 300 (0.000000%)
+> 600: divisor = 5000 (16), real rate 600 (0.000000%)
+> 1200: divisor = 2500 (16), real rate 1200 (0.000000%)
+> 2400: divisor = 1250 (16), real rate 2400 (0.000000%)
+> 4800: divisor = 625 (16), real rate 4800 (0.000000%)
+> 9600: divisor = 312 (16), real rate 9615 (0.156250%)
+> 14400: divisor = 208 (16), real rate 14423 (0.159722%)
+> 19200: divisor = 156 (16), real rate 19230 (0.156250%)
+> 28800: divisor = 104 (16), real rate 28846 (0.159722%)
+> 38400: divisor = 78 (16), real rate 38461 (0.158854%)
+> 57600: divisor = 52 (16), real rate 57692 (0.159722%)
+> 115200: divisor = 26 (16), real rate 115384 (0.159722%)
+> 230400: divisor = 13 (16), real rate 230769 (0.160156%)
+> 460800: divisor = 8 (13), real rate 461538 (0.160156%)
+> 921600: divisor = 4 (13), real rate 923076 (0.160156%)
+> 1000000: divisor = 3 (16), real rate 1000000 (0.000000%)
+> 1843200: divisor = 2 (13), real rate 1846153 (0.160211%)
+> 3000000: divisor = 1 (16), real rate 3000000 (0.000000%)
+> 3686400: divisor = 1 (13), real rate 3692307 (0.160238%)
+>
+> If that's acceptable behavior, I'll prepare a patch.
+>
+> Thanks,
+> Alexey
