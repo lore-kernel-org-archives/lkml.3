@@ -1,56 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753159Ab3ILMEN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 08:04:13 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:50086 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751778Ab3ILMEL (ORCPT
+	id S1753832Ab3ILMFK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 08:05:10 -0400
+Received: from e24smtp05.br.ibm.com ([32.104.18.26]:47986 "EHLO
+	e24smtp05.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752982Ab3ILMFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 08:04:11 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] cpufreq: Detect spurious invocations of update_policy_cpu()
-To: rjw@sisk.pl, viresh.kumar@linaro.org, swarren@wwwdotorg.org
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Thu, 12 Sep 2013 17:29:09 +0530
-Message-ID: <20130912115710.25951.98497.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Thu, 12 Sep 2013 08:05:08 -0400
+Date: Thu, 12 Sep 2013 09:05:00 -0300
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ehea: remove deprecated IRQF_DISABLED
+Message-ID: <20130912120500.GB28361@oc0268524204.ibm.com>
+References: <1378957571-3574-1-git-send-email-michael.opdenacker@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378957571-3574-1-git-send-email-michael.opdenacker@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091212-0928-0000-0000-000001A196BD
+x-cbid: 13091212-2362-0000-0000-00000BC35B00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function update_policy_cpu() is expected to be called when the policy->cpu
-of a cpufreq policy is to be changed: ie., the new CPU nominated to become the
-policy->cpu is different from the old one.
+On Thu, Sep 12, 2013 at 05:46:11AM +0200, Michael Opdenacker wrote:
+> This patch proposes to remove the IRQF_DISABLED flag from
+> drivers/net/ethernet/ibm/ehea/ehea_main.c
+> 
+> It's a NOOP since 2.6.35 and it will be removed one day.
+> 
+> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+> ---
+>  drivers/net/ethernet/ibm/ehea/ehea_main.c | 7 +++----
+>  1 file changed, 3 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/ibm/ehea/ehea_main.c b/drivers/net/ethernet/ibm/ehea/ehea_main.c
+> index 35853b4..04e0ef1 100644
+> --- a/drivers/net/ethernet/ibm/ehea/ehea_main.c
+> +++ b/drivers/net/ethernet/ibm/ehea/ehea_main.c
+> @@ -1285,7 +1285,7 @@ static int ehea_reg_interrupts(struct net_device *dev)
+> 
+>  	ret = ibmebus_request_irq(port->qp_eq->attr.ist1,
+>  				  ehea_qp_aff_irq_handler,
+> -				  IRQF_DISABLED, port->int_aff_name, port);
+> +				  0, port->int_aff_name, port);
+>  	if (ret) {
+>  		netdev_err(dev, "failed registering irq for qp_aff_irq_handler:ist=%X\n",
+>  			   port->qp_eq->attr.ist1);
+> @@ -1303,8 +1303,7 @@ static int ehea_reg_interrupts(struct net_device *dev)
+>  			 "%s-queue%d", dev->name, i);
+>  		ret = ibmebus_request_irq(pr->eq->attr.ist1,
+>  					  ehea_recv_irq_handler,
+> -					  IRQF_DISABLED, pr->int_send_name,
+> -					  pr);
+> +					  0, pr->int_send_name, pr);
+>  		if (ret) {
+>  			netdev_err(dev, "failed registering irq for ehea_queue port_res_nr:%d, ist=%X\n",
+>  				   i, pr->eq->attr.ist1);
+> @@ -3320,7 +3319,7 @@ static int ehea_probe_adapter(struct platform_device *dev)
+>  	}
+> 
+>  	ret = ibmebus_request_irq(adapter->neq->attr.ist1,
+> -				  ehea_interrupt_neq, IRQF_DISABLED,
+> +				  ehea_interrupt_neq, 0,
+>  				  "ehea_neq", adapter);
+>  	if (ret) {
+>  		dev_err(&dev->dev, "requesting NEQ IRQ failed\n");
+> -- 
+> 1.8.1.2
+> 
 
-Print a warning if it is invoked with new_cpu == old_cpu, since such an
-invocation might hint at a faulty logic in the caller.
-
-Suggested-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-
- drivers/cpufreq/cpufreq.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 43c24aa..2084132 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -949,7 +949,7 @@ static void cpufreq_policy_free(struct cpufreq_policy *policy)
- 
- static void update_policy_cpu(struct cpufreq_policy *policy, unsigned int cpu)
- {
--	if (cpu == policy->cpu)
-+	if (WARN_ON(cpu == policy->cpu))
- 		return;
- 
- 	policy->last_cpu = policy->cpu;
+Acked-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
 
