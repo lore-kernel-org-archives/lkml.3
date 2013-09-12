@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289Ab3ILXGb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 19:06:31 -0400
-Received: from longford.logfs.org ([213.229.74.203]:60219 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753413Ab3ILXG3 (ORCPT
+	id S1756612Ab3ILXHT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 19:07:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59718 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756202Ab3ILXHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 19:06:29 -0400
-Date: Thu, 12 Sep 2013 17:31:48 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Stephan Mueller <smueller@chronox.de>,
-        LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] /dev/random: Insufficient of entropy on many
- architectures
-Message-ID: <20130912213148.GE3809@logfs.org>
-References: <10005394.BRCyBMYWy3@tauon>
- <CANcMJZAHuXNQ4eUx+qpVnfJTg625HkJU_9pgBP24ykkmBww3yw@mail.gmail.com>
- <20130910203853.GG29237@thunk.org>
- <522F851D.1040101@linaro.org>
- <20130910211009.GI29237@thunk.org>
- <522F984C.2070909@linaro.org>
+	Thu, 12 Sep 2013 19:07:16 -0400
+Date: Thu, 12 Sep 2013 16:07:15 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [ 00/19] 3.0.96-stable review
+Message-ID: <20130912230715.GA5565@kroah.com>
+References: <20130912172524.135620246@linuxfoundation.org>
+ <52324031.7090003@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <522F984C.2070909@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <52324031.7090003@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 September 2013 15:08:12 -0700, John Stultz wrote:
-> Though
-> I probably should be hesitant with my suggestions, as I'm not well
-> versed in RNG theory.
+On Thu, Sep 12, 2013 at 03:29:05PM -0700, Guenter Roeck wrote:
+> On 09/12/2013 10:26 AM, Greg Kroah-Hartman wrote:
+> >This is the start of the stable review cycle for the 3.0.96 release.
+> >There are 19 patches in this series, all will be posted as a response
+> >to this one.  If anyone has any issues with these being applied, please
+> >let me know.
+> >
+> >Responses should be made by Sat Sep 14 17:24:38 UTC 2013.
+> >Anything received after that time might be too late.
+> >
+> >The whole patch series can be found in one patch at:
+> >	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.96-rc1.gz
+> >and the diffstat can be found below.
+> >
+> 
+> Build results:
+> 	total: 98 pass: 71 skipped: 16 fail: 11
 
-The basic principle of Ted's RNG is very simple and quite sane:
-- You collect as much data as possible, some of which is (hopefully)
-  unpredictable.
-- All the data gets dumped into a small buffer.
-- When reading from the buffer, you create a crypto-hash of the entire
-  buffer.  Even if most of the buffer is predictable, the few
-  unpredictable bits will randomly flip every output bit.
-- Half of the hash gets returned to the reader, the other half gets
-  added back into the pool.
+Thanks for testing and letting me know.
 
-It doesn't matter if you collect predictable data - it neither helps
-nor hurts.  But you should collect as much unpredictable data as
-possible and do it as cheaply as possible.  If you want to improve the
-RNG, you either collect more data, collect better (less predictable)
-data or make the collection cheaper.
-
-Jörn
-
---
-People really ought to be forced to read their code aloud over the phone.
-That would rapidly improve the choice of identifiers.
--- Al Viro
+greg k-h
