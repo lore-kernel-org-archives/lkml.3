@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756338Ab3ILXcM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 19:32:12 -0400
-Received: from imap.thunk.org ([74.207.234.97]:59306 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755688Ab3ILXcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 19:32:07 -0400
-Date: Thu, 12 Sep 2013 19:31:55 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Stephan Mueller <smueller@chronox.de>,
-        LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] /dev/random: Insufficient of entropy on many
- architectures
-Message-ID: <20130912233155.GB5279@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	=?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
-	John Stultz <john.stultz@linaro.org>,
-	Stephan Mueller <smueller@chronox.de>,
-	LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	Thomas Gleixner <tglx@linutronix.de>
-References: <10005394.BRCyBMYWy3@tauon>
- <CANcMJZAHuXNQ4eUx+qpVnfJTg625HkJU_9pgBP24ykkmBww3yw@mail.gmail.com>
- <20130910203853.GG29237@thunk.org>
- <522F851D.1040101@linaro.org>
- <20130910211009.GI29237@thunk.org>
- <522F984C.2070909@linaro.org>
- <20130910223326.GD11063@thunk.org>
- <522FB9F1.3070905@linaro.org>
- <20130911005047.GA13315@thunk.org>
- <20130912210717.GC3809@logfs.org>
+	id S1756900Ab3ILXc3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 19:32:29 -0400
+Received: from longford.logfs.org ([213.229.74.203]:60229 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756460Ab3ILXc1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 19:32:27 -0400
+Date: Thu, 12 Sep 2013 17:57:18 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: David Safford <safford@us.ibm.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
+        Ashley Lai <ashley@ashleylai.com>, Rajiv Andrade <mail@srajiv.net>,
+        Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>, "Ted Ts'o" <tytso@mit.edu>,
+        Kent Yoder <key@linux.vnet.ibm.com>,
+        David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>,
+        "Johnston, DJ" <dj.johnston@intel.com>
+Subject: Re: TPMs and random numbers
+Message-ID: <20130912215718.GF3809@logfs.org>
+References: <1378920168.26698.64.camel@localhost>
+ <CALCETrVgiJuw9vj+BhchgzAH06gqEO4TYJyt8wd+2CCy33RQ3Q@mail.gmail.com>
+ <1378925224.26698.90.camel@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130912210717.GC3809@logfs.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <1378925224.26698.90.camel@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 05:07:17PM -0400, Jörn Engel wrote:
-> 
-> I happen to have a real-world system with >100k interrupts per second
-> and - surprise - add_interrupt_randomness() showed up prominently in
-> the profiles.  I was also told twice to just remove that call.  I
-> resisted both times and have done far more work to reduce overhead
-> while still collecting entropy.  Some others would have caved in.
+On Wed, 11 September 2013 14:47:04 -0400, David Safford wrote:
+>
+> But I also think that the existing (certified) TPMs are good enough 
+> for direct use.
 
-Would it be possible for you to send me the perf numbers that you saw?
+That is equivalent to trusting the TPM chip not to be malicious.  It
+requires trusting the chip designer, trusting every single employee of
+the chip designer, as some of them may be plants from a random
+countries spook organization, trusting the fab where the chip was
+manufactured, trusting your local dealer not to replace one chip with
+another in a similar packaging, trusting third-party components the
+designers may have incorporated, trusting intermediate steps between
+designer and fab or fab and local dealer, trusting your own employees,
+etc.
 
-What platform is this?  x86?   Some embedded processor?
+If you sum it all up, you quickly depend on hundreds of people in
+multiple countries that have the ability to subvert your chips RNG
+without you being able to notice any difference.
 
-> One option is to add the "input_pool.entropy_count > trickle_thresh"
-> condition that all other entropy sources currently have.  But instead
-> I would rather rename fast_mix() to not_too_fast_mix() and implement a
-> real fast_mix().  Essentially just xor the collected numbers into a
-> pool and schedule something to shuffle the bits at a later point.
+Or rather, you would only be able to notice the difference if you were
+the person that subverted the chip.  So the NSA may be able to tell
+whether the Chinese have subverted a specific chip.  Honi soit...
 
-We can try some different things to make fast_mix() faster, but it
-would be good to get some hard numbers before we start deciding we
-need to do something more complicated.
+JÃ¶rn
 
-One thing that comes to mind is that fast_mix() is only called in
-exactly one place, and we always pass in a long.  So there are
-certainly ways that we could optimize fast_mix even keeping the
-current mixing algorithm.
-
-Cheers,
-
-						- Ted
+--
+"Security vulnerabilities are here to stay."
+-- Scott Culp, Manager of the Microsoft Security Response Center, 2001
