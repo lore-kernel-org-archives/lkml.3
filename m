@@ -1,111 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab3ILLKP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 07:10:15 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:44291 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390Ab3ILLKN (ORCPT
+	id S1753735Ab3ILLLY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 07:11:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34414 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753353Ab3ILLLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 07:10:13 -0400
-Message-ID: <5231A0F8.1070505@ahsoftware.de>
-Date: Thu, 12 Sep 2013 13:09:44 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Thu, 12 Sep 2013 07:11:21 -0400
+Date: Thu, 12 Sep 2013 04:10:25 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-egcm21k1e6gcyxpcgjxtmsq3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, jolsa@redhat.com, fweisbec@gmail.com,
+        adrian.hunter@intel.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, jolsa@redhat.com, fweisbec@gmail.com,
+        dsahern@gmail.com, adrian.hunter@intel.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf trace:
+  Handle perf.data files with no tracepoints
+Git-Commit-ID: ccf53eac2097fb47bc40875ffb22c2d10fa8c46c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
-Subject: Re: [PATCH] RFC: interrupt consistency check for OF GPIO IRQs
-References: <1375101368-17645-1-git-send-email-linus.walleij@linaro.org> <CACxGe6uNJNMdZ1HYGgCtLM2t2TWGCR6btjOHVmP=vDXXvvFfRg@mail.gmail.com> <CACRpkdYjJL6FZwEbB7XLnb9QtjB=3LeE9Ny6KQ4PkM3zpdNqqg@mail.gmail.com> <344239800.bDEkDg48ZQ@avalon> <CACRpkdavR=fv+y1RCNfdgQypPuRbO6isOSwGsABDrYiGeMdyZw@mail.gmail.com> <52308C91.2000105@ahsoftware.de> <523096FE.8080901@collabora.co.uk> <5230AB6E.1070807@ahsoftware.de> <5231817F.8000901@ahsoftware.de> <5231934D.4060706@collabora.co.uk> <52319741.5050407@ahsoftware.de>
-In-Reply-To: <52319741.5050407@ahsoftware.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 12 Sep 2013 04:10:33 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 12.09.2013 12:28, schrieb Alexander Holler:
-> Am 12.09.2013 12:11, schrieb Javier Martinez Canillas:
->> On 09/12/2013 10:55 AM, Alexander Holler wrote:
->
-> ...
->>>
->>> By the way, how do you define two GPIOs/IRQs from different
->>> gpio-banks/irq-controllers wuth that scheme?
->>>
->>
->> That is indeed a very good question and I don't have a definite answer.
->>
->>> Would that be like below?
->>>
->>>   ethernet@5,0 {
->>>            compatible = "smsc,lan9221", "smsc,lan9115";
->>>            interrupt-parent = <&gpio6>;
->>>            interrupts = <16 8>;
->>>            interrupt-parent = <&gpio7>;
->>>            interrupts = <1 IRQF_TRIGGER_FALLING>; /* GPIO7_1 */
->>>   };
->>>
->
-> ...
->
->> So, if I understood the code correctly the DT IRQ core doesn't expect
->> a device
->> node to have more than one "interrupt-parent" property.
->>
->> It *should* work though if you have multiple "interrupts" properties
->> defined and
->> all of them have the same "interrupt-parent":
->>
->>         interrupt-parent = <&gpio6>;
->>         interrupts = <1 IRQF_TRIGGER_HIGH>; /* GPIO6_1 */
->>         interrupts = <2 IRQF_TRIGGER_LOW>; /* GPIO6_2 */
->>
->> since of_irq_map_one() will be called for each "interrupts" and the
->> correct
->> "interrupt-parent" will get obtained by of_irq_find_parent().
->
-> I assumed that answer. So to make such a scenario possible, something
-> like this might be neccessary:
->
->           interrupts = <&gpio6 1 IRQF_TRIGGER_HIGH>; /* GPIO6_1 */
->           interrupts = <&gpio7 2 IRQF_TRIGGER_LOW>; /* GPIO7_2 */
->
-> or, to be compatible
->
->           interrupts = <1 IRQF_TRIGGER_HIGH &gpio6>; /* GPIO6_1 */
->           interrupts = <1 IRQF_TRIGGER_LOW &gpio7>; /* GPIO7_1 */
->
-> Another problem is the naming. In all the above cases, the driver would
-> not know which IRQ he should use for what. Maybe the order defines it,
-> but that wouldn't be very verbose. And I think just changing the name
-> would make travelling the tree impossible, as only the driver itself
-> would know the name and it's meaning.
+Commit-ID:  ccf53eac2097fb47bc40875ffb22c2d10fa8c46c
+Gitweb:     http://git.kernel.org/tip/ccf53eac2097fb47bc40875ffb22c2d10fa8c46c
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Fri, 6 Sep 2013 15:19:01 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 9 Sep 2013 15:50:44 -0300
 
-On a second look, travelling the tree is still possible if the solution 
-would be like above (without that interrupt-parent). So if a driver 
-requires two interrupts he could use
+perf trace: Handle perf.data files with no tracepoints
 
-       interrupt-foo = <1 IRQF_TRIGGER_HIGH &gpio6>; /* GPIO6_1 */
-       interrupt-bar = <1 IRQF_TRIGGER_LOW &gpio7>; /* GPIO7_1 */
+Before:
 
-And travelling the tree will still be possible because walking from the 
-interrupt-controllers (those gpio) downwards would end up at the 
-interrupt definitions, so the name of them isn't needed to find them in 
-the tree.
+  perf trace -i perf.data
+  Segmentation fault (core dumped)
+  #
 
-Regards,
+After:
 
-Alexander Holler
+ # perf trace -i perf.data
+ Data file does not have raw_syscalls:sys_enter events
+ #
 
+When there are no tracepoints in a perf.data file the struct pevent
+that contains the list of tracepoints that will be used to lookup the
+tracepoint id by name will not be populated, causing a NULL deref.
+
+And we don't need to do all that dance to look at pevents for an entry
+with a slighly different name to then lookup the tracepoint by its id on
+the evlist, just use the perf_evlist__find_tracepoint_by_name() routine,
+that will find the tracepoint, if present.
+
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-egcm21k1e6gcyxpcgjxtmsq3@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/session.c | 40 +++++++---------------------------------
+ 1 file changed, 7 insertions(+), 33 deletions(-)
+
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 476caa1..0308d9e 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1620,52 +1620,26 @@ int __perf_session__set_tracepoints_handlers(struct perf_session *session,
+ 					     const struct perf_evsel_str_handler *assocs,
+ 					     size_t nr_assocs)
+ {
+-	struct perf_evlist *evlist = session->evlist;
+-	struct event_format *format;
+ 	struct perf_evsel *evsel;
+-	char *tracepoint, *name;
+ 	size_t i;
+ 	int err;
+ 
+ 	for (i = 0; i < nr_assocs; i++) {
+-		err = -ENOMEM;
+-		tracepoint = strdup(assocs[i].name);
+-		if (tracepoint == NULL)
+-			goto out;
+-
+-		err = -ENOENT;
+-		name = strchr(tracepoint, ':');
+-		if (name == NULL)
+-			goto out_free;
+-
+-		*name++ = '\0';
+-		format = pevent_find_event_by_name(session->pevent,
+-						   tracepoint, name);
+-		if (format == NULL) {
+-			/*
+-			 * Adding a handler for an event not in the session,
+-			 * just ignore it.
+-			 */
+-			goto next;
+-		}
+-
+-		evsel = perf_evlist__find_tracepoint_by_id(evlist, format->id);
++		/*
++		 * Adding a handler for an event not in the session,
++		 * just ignore it.
++		 */
++		evsel = perf_evlist__find_tracepoint_by_name(session->evlist, assocs[i].name);
+ 		if (evsel == NULL)
+-			goto next;
++			continue;
+ 
+ 		err = -EEXIST;
+ 		if (evsel->handler.func != NULL)
+-			goto out_free;
++			goto out;
+ 		evsel->handler.func = assocs[i].handler;
+-next:
+-		free(tracepoint);
+ 	}
+ 
+ 	err = 0;
+ out:
+ 	return err;
+-
+-out_free:
+-	free(tracepoint);
+-	goto out;
+ }
