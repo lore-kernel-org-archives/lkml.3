@@ -1,235 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965Ab3ILCmB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 22:42:01 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:37238 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302Ab3ILCl7 convert rfc822-to-8bit (ORCPT
+	id S1757536Ab3ILCnp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 22:43:45 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:33918 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052Ab3ILCnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 22:41:59 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-35-523129f5f604
-From: =?UTF-8?B?5L+e6LaF?= <chao2.yu@samsung.com>
-To: "'Gu Zheng'" <guz.fnst@cn.fujitsu.com>, jaegeuk.kim@samsung.com
-Cc: shu.tan@samsung.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-References: <88.C4.11914.9D4A9225@epcpsbge6.samsung.com>
- <1378774324.2354.103.camel@kjgkr> <523001B6.3080506@cn.fujitsu.com>
-In-reply-to: <523001B6.3080506@cn.fujitsu.com>
-Subject: RE: [f2fs-dev][PATCH] f2fs: optimize fs_lock for better performance
-Date: Thu, 12 Sep 2013 10:40:27 +0800
-Message-id: <001001ceaf61$a4ea9a90$eebfcfb0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQHGGmG1UIdClQlJJ/WiYLzMNbXhgAGqy+RaAe5/xT6ZtbwSAA==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrELMWRmVeSWpSXmKPExsVy+t9jQd2vmoZBBtu2iVo8bz/AbHF9118m
-	i0uL3C327D3JYnF51xw2i9aF55kd2Dz+H5zE7LF7wWcmj74tqxg9Pm+SC2CJ4rJJSc3JLEst
-	0rdL4Mq4Me0na8FytYr7K1YxNjBek+5i5OSQEDCRuLbsDzOELSZx4d56ti5GLg4hgemMEs1P
-	O6GcH4wSLw8/Zepi5OBgEzCU2PkxGKRBRMBRYuGpnSwgYWaBOokdB1RBwkJA5pJzp5hAbE4B
-	PYkDz16C2cICPhK7d9xkBSlnEVCVWHhYHSTMK2Ap0dW2mhHCFpT4MfkeC4jNLKAuMWneImYI
-	W1viybsLrBBnKkjsOPuaEeICJ4mee0eg6sUlNh65xTKBUWgWklGzkIyahWTULCQtCxhZVjGK
-	phYkFxQnpeca6hUn5haX5qXrJefnbmIEx8QzqR2MKxssDjEKcDAq8fB2zDIIEmJNLCuuzD3E
-	KMHBrCTCe+sfUIg3JbGyKrUoP76oNCe1+BCjNAeLkjjvgVbrQCGB9MSS1OzU1ILUIpgsEwen
-	VAMj51mbxzfjt2vfvtc/zSbz/Rbza6z+Cx/fC6y4aMd/fnVobeWskiN7y1az/n8Yv7D/elpz
-	hsScsGNOzct3uKvyH3q0nFHDfK+h9Y8Z1yw69aYnyfllb+kKmRpxXTRmWmudzj3tsqaVLle3
-	fbpQZnj35s8UT5dglf3zVdpcLuouebMu8tFdTuWbSizFGYmGWsxFxYkAA4ng6IUCAAA=
+	Wed, 11 Sep 2013 22:43:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130912022040.GT31370@twins.programming.kicks-ass.net>
+References: <20130910135636.GA8268@gmail.com>
+	<CA+55aFwmEQeF+PtM7cuaQ8OkuTS=R4JJ61Wwfv8u-Svo-V3KwQ@mail.gmail.com>
+	<20130910164519.GL31370@twins.programming.kicks-ass.net>
+	<CA+55aFz7WtcdkwKEGoqCzmC9HsY0LPK-oVK_oATYhRnbGq=2GA@mail.gmail.com>
+	<20130910212509.GA18147@laptop.programming.kicks-ass.net>
+	<CA+55aFxsEYQPXnoxNXAeSPEkk3uT8iq-_KJVe2M2qZZbtL=cbA@mail.gmail.com>
+	<20130911131323.GQ31370@twins.programming.kicks-ass.net>
+	<CA+55aFyxcHvQUe_h8cyQrNbGJ6-G_NQnK9pVenABLjCF-7WMXg@mail.gmail.com>
+	<20130911185944.GA1798@laptop.programming.kicks-ass.net>
+	<CA+55aFxDbqeFumkVApf-L2pi+FQn06GQqQf4rWkzOC4LF=fn=A@mail.gmail.com>
+	<20130912022040.GT31370@twins.programming.kicks-ass.net>
+Date: Wed, 11 Sep 2013 19:43:42 -0700
+X-Google-Sender-Auth: H3y0310SM33wbMu74gYErvJjmxI
+Message-ID: <CA+55aFwdS5-U8UtjZ8qsKyn7ap05MPXMFeU-GXgU2PE5KrCrHg@mail.gmail.com>
+Subject: Re: [PATCH 0/7] preempt_count rework -v2
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Peter Anvin <hpa@zytor.com>, Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gu
+On Wed, Sep 11, 2013 at 7:20 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>
+> I split the thing up into two macros GEN_UNARY_RMWcc and
+> GEN_BINARY_RMWcc which ends up being more readable as well as smaller
+> code overall.
 
-> -----Original Message-----
-> From: Gu Zheng [mailto:guz.fnst@cn.fujitsu.com]
-> Sent: Wednesday, September 11, 2013 1:38 PM
-> To: jaegeuk.kim@samsung.com
-> Cc: chao2.yu@samsung.com; shu.tan@samsung.com;
-> linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org;
-> linux-f2fs-devel@lists.sourceforge.net
-> Subject: Re: [f2fs-dev][PATCH] f2fs: optimize fs_lock for better performance
-> 
-> Hi Jaegeuk, Chao,
-> 
-> On 09/10/2013 08:52 AM, Jaegeuk Kim wrote:
-> 
-> > Hi,
-> >
-> > At first, thank you for the report and please follow the email writing
-> > rules. :)
-> >
-> > Anyway, I agree to the below issue.
-> > One thing that I can think of is that we don't need to use the
-> > spin_lock, since we don't care about the exact lock number, but just
-> > need to get any not-collided number.
-> 
-> IMHO, just moving sbi->next_lock_num++ before
-> mutex_lock(&sbi->fs_lock[next_lock])
-> can avoid unbalance issue mostly.
-> IMO, the case two or more threads increase sbi->next_lock_num in the same
-> time is really very very little. If you think it is not rigorous, change
-> next_lock_num to atomic one can fix it.
-> What's your opinion?
-> 
-> Regards,
-> Gu
+Yes, that looks like the right abstraction level. Powerful without
+being complicated.
 
-I did the test sbi->next_lock_num++ compare with the atomic one,
-And I found performance of them is almost the same under a small number thread racing.
-So as your and Kim's opinion, it's enough to use "sbi->next_lock_num++" to fix this issue.
+> I also attempted to convert asm/bitops.h, although I'm not sure it'll
+> compile right with older GCCs due to the comment near BITOP_ADDR()
 
-Thanks for the advice.
-> 
-> >
-> > So, how about removing the spin_lock?
-> > And how about using a random number?
-> 
-> > Thanks,
-> >
-> > 2013-09-06 (금), 09:48 +0000, Chao Yu:
-> >> Hi Kim:
-> >>
-> >>      I think there is a performance problem: when all sbi->fs_lock is
-> >> holded,
-> >>
-> >> then all other threads may get the same next_lock value from
-> >> sbi->next_lock_num in function mutex_lock_op,
-> >>
-> >> and wait to get the same lock at position fs_lock[next_lock], it
-> >> unbalance the fs_lock usage.
-> >>
-> >> It may lost performance when we do the multithread test.
-> >>
-> >>
-> >>
-> >> Here is the patch to fix this problem:
-> >>
-> >>
-> >>
-> >> Signed-off-by: Yu Chao <chao2.yu@samsung.com>
-> >>
-> >> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-> >>
-> >> old mode 100644
-> >>
-> >> new mode 100755
-> >>
-> >> index 467d42d..983bb45
-> >>
-> >> --- a/fs/f2fs/f2fs.h
-> >>
-> >> +++ b/fs/f2fs/f2fs.h
-> >>
-> >> @@ -371,6 +371,7 @@ struct f2fs_sb_info {
-> >>
-> >>         struct mutex fs_lock[NR_GLOBAL_LOCKS];  /* blocking FS
-> >> operations */
-> >>
-> >>         struct mutex node_write;                /* locking node
-> writes
-> >> */
-> >>
-> >>         struct mutex writepages;                /* mutex for
-> >> writepages() */
-> >>
-> >> +       spinlock_t spin_lock;                   /* lock for
-> >> next_lock_num */
-> >>
-> >>         unsigned char next_lock_num;            /* round-robin
-> global
-> >> locks */
-> >>
-> >>         int por_doing;                          /* recovery is doing
-> >> or not */
-> >>
-> >>         int on_build_free_nids;                 /* build_free_nids is
-> >> doing */
-> >>
-> >> @@ -533,15 +534,19 @@ static inline void mutex_unlock_all(struct
-> >> f2fs_sb_info *sbi)
-> >>
-> >>
-> >>
-> >>  static inline int mutex_lock_op(struct f2fs_sb_info *sbi)
-> >>
-> >>  {
-> >>
-> >> -       unsigned char next_lock = sbi->next_lock_num %
-> >> NR_GLOBAL_LOCKS;
-> >>
-> >> +       unsigned char next_lock;
-> >>
-> >>         int i = 0;
-> >>
-> >>
-> >>
-> >>         for (; i < NR_GLOBAL_LOCKS; i++)
-> >>
-> >>                 if (mutex_trylock(&sbi->fs_lock[i]))
-> >>
-> >>                         return i;
-> >>
-> >>
-> >>
-> >> -       mutex_lock(&sbi->fs_lock[next_lock]);
-> >>
-> >> +       spin_lock(&sbi->spin_lock);
-> >>
-> >> +       next_lock = sbi->next_lock_num % NR_GLOBAL_LOCKS;
-> >>
-> >>         sbi->next_lock_num++;
-> >>
-> >> +       spin_unlock(&sbi->spin_lock);
-> >>
-> >> +
-> >>
-> >> +       mutex_lock(&sbi->fs_lock[next_lock]);
-> >>
-> >>         return next_lock;
-> >>
-> >>  }
-> >>
-> >>
-> >>
-> >> diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-> >>
-> >> old mode 100644
-> >>
-> >> new mode 100755
-> >>
-> >> index 75c7dc3..4f27596
-> >>
-> >> --- a/fs/f2fs/super.c
-> >>
-> >> +++ b/fs/f2fs/super.c
-> >>
-> >> @@ -657,6 +657,7 @@ static int f2fs_fill_super(struct super_block
-> >> *sb, void *data, int silent)
-> >>
-> >>         mutex_init(&sbi->cp_mutex);
-> >>
-> >>         for (i = 0; i < NR_GLOBAL_LOCKS; i++)
-> >>
-> >>                 mutex_init(&sbi->fs_lock[i]);
-> >>
-> >> +       spin_lock_init(&sbi->spin_lock);
-> >>
-> >>         mutex_init(&sbi->node_write);
-> >>
-> >>         sbi->por_doing = 0;
-> >>
-> >>         spin_lock_init(&sbi->stat_lock);
-> >>
-> >> (END)
-> >>
-> >>
-> >>
-> >>
-> >>
-> >>
-> >
-> 
-> 
-> =
+Actually, since you now have that memory clobber, it no longer
+matters, and "m" is the right thing.
 
+That said, the very same memory clobber may be what makes this whole
+approach a loss, if it causes gcc to do tons of reloads or other
+random things.
+
+That memory clobber wasn't an issue for the whole
+__preempt_count_dec_and_test() thing, because there we needed to keep
+anything before the decrement contained anyway.
+
+For other cases? Who knows.. A lot of the "change and test atomically"
+things have the same containment need, so it might not be a problem.
+
+> I might have to add the clobber to the macro arguments so we can do
+> version without "memory" clobber, although bitops is inconsistent with
+> that as well, __test_and_clear_bit() doesn't have a memory clobber but
+> __test_and_change_bit() does.
+
+You do need the memory clobber. The "asm goto" version can not have
+outputs, so "=m" and "+m" are both no-go, and so the only thing left
+is that memory clobber, as far as I can see..
+
+The bitops didn't use to need it, because they had that "+/=m" that
+already tells gcc that the target is changed.
+
+           Linus
