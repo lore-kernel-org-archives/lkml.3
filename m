@@ -1,80 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365Ab3ILLOU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 07:14:20 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43329 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753477Ab3ILLOR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 07:14:17 -0400
-Message-ID: <5231A1FA.5040705@ti.com>
-Date: Thu, 12 Sep 2013 16:44:02 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1755452Ab3ILLPI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 07:15:08 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:61082 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751577Ab3ILLPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 07:15:06 -0400
+Message-ID: <5231A233.1060900@imgtec.com>
+Date: Thu, 12 Sep 2013 12:14:59 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Pratyush Anand <pratyush.anand@st.com>
-CC: Jingoo Han <jg1.han@samsung.com>, "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        Mohit KUMAR DCG <Mohit.KUMAR@st.com>,
-        "'Arnd Bergmann'" <arnd@arndb.de>, "'Sean Cross'" <xobs@kosagi.com>,
-        "'Thierry Reding'" <thierry.reding@gmail.com>,
-        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH V3] pci: exynos: split into two parts such as Synopsys
- part and Exynos part
-References: <000701ce8741$fe47deb0$fad79c10$@samsung.com> <51EE22DF.6090902@ti.com> <001301ce8772$522dfc50$f689f4f0$@samsung.com> <5231607C.10702@ti.com> <003501ceaf87$cda45db0$68ed1910$%han@samsung.com> <20130912093018.GA2124@pratyush-vbox> <52318CCC.4040604@ti.com> <20130912095213.GA5995@pratyush-vbox> <5231925B.3030104@ti.com> <20130912101803.GB5995@pratyush-vbox> <20130912104602.GC5995@pratyush-vbox>
-In-Reply-To: <20130912104602.GC5995@pratyush-vbox>
+To: Jiang Liu <liuj97@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Shaohua Li <shli@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <trivial@kernel.org>,
+        Wang YanQing <udknight@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arch@vger.kernel.org>,
+        linux-metag <linux-metag@vger.kernel.org>
+Subject: Re: [RFC PATCH v2 10/25] smp, metag: kill SMP single function call
+ interrupt
+References: <1378915649-16395-1-git-send-email-liuj97@gmail.com> <1378915649-16395-11-git-send-email-liuj97@gmail.com>
+In-Reply-To: <1378915649-16395-11-git-send-email-liuj97@gmail.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_09_12_12_15_00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 12 September 2013 04:16 PM, Pratyush Anand wrote:
-> On Thu, Sep 12, 2013 at 03:48:03PM +0530, Pratyush Anand wrote:
->> On Thu, Sep 12, 2013 at 06:07:23PM +0800, Kishon Vijay Abraham I wrote:
->>> Hi,
->>>
->>> On Thursday 12 September 2013 03:22 PM, Pratyush Anand wrote:
->>>> Hi Kishon,
->>>>
->>>> On Thu, Sep 12, 2013 at 05:43:40PM +0800, Kishon Vijay Abraham I wrote:
->>>>> Hi,
->>>>>
->>>>> On Thursday 12 September 2013 03:00 PM, Pratyush Anand wrote:
->>>>>> Hi Jingoo,
->>>>>>
->>>>>>
->>>>>> On Thu, Sep 12, 2013 at 03:15:04PM +0800, Jingoo Han wrote:
->>>>>>> On Tuesday 23 July 2013 12:30 PM, Kishon Vijay Abraham I wrote:
->>>>>>>>>> .
->>>>>>>>>> .
->>
->> [...]
->>
->>>>> when I do ifconfig eth0 up, I get *r8169 0000:01:00.0 eth0: link up.*
->>>>> But I dont receive any packets and ping also fails and the tx and rx packet
->>>>> count is also 0. Could it be related to inbound translation?
->>>>
->>>> A PCIe analyser log would tell a definite cause. Most likely either
->>>> inbound translation is not working or INTx/MSI is not working.
->>>
->>> I have enabled only legacy interrupts. Whenever I connect or disconnect
->>> ethernet cable I get link up/link down message and also the interrupt count for
->>> eth0 increases. So I'm not doubting INTx interrupts as such.
+On 11/09/13 17:07, Jiang Liu wrote:
+> From: Jiang Liu <jiang.liu@huawei.com>
 > 
-> Just a question, what is the MRRS of your RC? if it is 128, can you
-
-it's 512.
-> try with passing pci=pcie_bus_peer2peer  in your bootargs.
+> Commit 9a46ad6d6df3b54 "smp: make smp_call_function_many() use logic
+> similar to smp_call_function_single()" has unified the way to handle
+> single and multiple cross-CPU function calls. Now only one interrupt
+> is needed for architecture specific code to support generic SMP function
+> call interfaces, so kill the redundant single function call interrupt.
 > 
-> Again, analyser will help a lot in diagnosing such issues.
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Cc: Jiang Liu <liuj97@gmail.com>
 
-dont have a analyser here :-(
+Seems to work.
 
-Thanks
-Kishon
+Acked-by: James Hogan <james.hogan@imgtec.com>
+
+Cheers
+James
+
+> ---
+>  arch/metag/include/asm/smp.h | 2 --
+>  arch/metag/kernel/smp.c      | 6 +-----
+>  2 files changed, 1 insertion(+), 7 deletions(-)
+> 
+> diff --git a/arch/metag/include/asm/smp.h b/arch/metag/include/asm/smp.h
+> index e0373f8..1d7e770 100644
+> --- a/arch/metag/include/asm/smp.h
+> +++ b/arch/metag/include/asm/smp.h
+> @@ -7,13 +7,11 @@
+>  
+>  enum ipi_msg_type {
+>  	IPI_CALL_FUNC,
+> -	IPI_CALL_FUNC_SINGLE,
+>  	IPI_RESCHEDULE,
+>  };
+>  
+>  extern void arch_send_call_function_single_ipi(int cpu);
+>  extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
+> -#define arch_send_call_function_ipi_mask arch_send_call_function_ipi_mask
+>  
+>  asmlinkage void secondary_start_kernel(void);
+>  
+> diff --git a/arch/metag/kernel/smp.c b/arch/metag/kernel/smp.c
+> index 7c01131..5b3933b4 100644
+> --- a/arch/metag/kernel/smp.c
+> +++ b/arch/metag/kernel/smp.c
+> @@ -491,7 +491,7 @@ void arch_send_call_function_ipi_mask(const struct cpumask *mask)
+>  
+>  void arch_send_call_function_single_ipi(int cpu)
+>  {
+> -	send_ipi_message(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
+> +	send_ipi_message(cpumask_of(cpu), IPI_CALL_FUNC);
+>  }
+>  
+>  void show_ipi_list(struct seq_file *p)
+> @@ -546,10 +546,6 @@ static int do_IPI(struct pt_regs *regs)
+>  			generic_smp_call_function_interrupt();
+>  			break;
+>  
+> -		case IPI_CALL_FUNC_SINGLE:
+> -			generic_smp_call_function_single_interrupt();
+> -			break;
+> -
+>  		default:
+>  			pr_crit("CPU%u: Unknown IPI message 0x%lx\n",
+>  				cpu, nextmsg);
+> 
+
