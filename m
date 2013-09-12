@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756233Ab3ILTp2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 15:45:28 -0400
-Received: from www.linutronix.de ([62.245.132.108]:60727 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756184Ab3ILTp0 (ORCPT
+	id S1756517Ab3ILTqc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 15:46:32 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:37339 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753978Ab3ILTqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 15:45:26 -0400
-Date: Thu, 12 Sep 2013 21:45:24 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sasha Levin <sasha.levin@oracle.com>
-cc: fweisbec@gmail.com, LKML <linux-kernel@vger.kernel.org>,
-        trinity@vger.kernel.org
-Subject: Re: softirq: soft lockup in __do_softirq
-In-Reply-To: <522C8D27.30600@oracle.com>
-Message-ID: <alpine.DEB.2.02.1309122142450.4089@ionos.tec.linutronix.de>
-References: <522C8D27.30600@oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 12 Sep 2013 15:46:30 -0400
+Date: Thu, 12 Sep 2013 15:46:22 -0400 (EDT)
+Message-Id: <20130912.154622.1374963493079488096.davem@davemloft.net>
+To: tj@kernel.org
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, kay@vrfy.org,
+        ebiederm@xmission.com, netdev@vger.kernel.org, lizefan@huawei.com
+Subject: Re: [PATCH 2/7] sysfs: make attr namespace interface less
+ convoluted
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1378952949-7900-3-git-send-email-tj@kernel.org>
+References: <1378952949-7900-1-git-send-email-tj@kernel.org>
+	<1378952949-7900-3-git-send-email-tj@kernel.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 12 Sep 2013 12:46:26 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 8 Sep 2013, Sasha Levin wrote:
+From: Tejun Heo <tj@kernel.org>
+Date: Wed, 11 Sep 2013 22:29:04 -0400
 
-> Hi all,
+> sysfs ns (namespace) implementation became more convoluted than
+> necessary while trying to hide ns information from visible interface.
+> The relatively recent attr ns support is a good example.
 > 
-> While fuzzing with trinity inside a KVM tools guest, running latest -next
-> kernel, I've
-> stumbled on the following:
+> * attr ns tag is determined by sysfs_ops->namespace() callback while
+>   dir tag is determined by kobj_type->namespace().  The placement is
+>   arbitrary.
 > 
-> [ 8096.714511] BUG: soft lockup - CPU#0 stuck for 22s! [trinity-child16:37848]
-> [ 8096.724284]  [<ffffffff84109bee>] ? _raw_spin_unlock+0x4e/0x60
-> [ 8096.724284]  [<ffffffff8112b4be>] irq_exit+0x8e/0x140
-> [ 8096.724284]  [<ffffffff84114975>] do_IRQ+0xb5/0xe0
-> [ 8096.724284]  [<ffffffff8410a06d>] common_interrupt+0x6d/0x6d
-> [ 8096.724284]  <EOI>
-> [ 8096.724284]  [<ffffffff8115f19d>] ? finish_task_switch+0xad/0x150
-> [ 8096.724284]  [<ffffffff84109acc>] ? _raw_spin_unlock_irq+0x4c/0x80
-> [ 8096.724284]  [<ffffffff84109aab>] ? _raw_spin_unlock_irq+0x2b/0x80
-> [ 8096.724284]  [<ffffffff8115f19d>] finish_task_switch+0xad/0x150
-> [ 8096.724284]  [<ffffffff8115f160>] ? finish_task_switch+0x70/0x150
-> [ 8096.724284]  [<ffffffff84106a29>] __schedule+0x719/0x7c0
-> [ 8096.724284]  [<ffffffff84107114>] preempt_schedule_irq+0xb4/0x100
-> [ 8096.724284]  [<ffffffff8410a226>] retint_kernel+0x26/0x30
-> [ 8096.724284]  [<ffffffff812220c5>] ? context_tracking_user_enter+0x175/0x180
-> [ 8096.724284]  [<ffffffff810768cf>] syscall_trace_leave+0xff/0x130
-> [ 8096.724284]  [<ffffffff84112985>] int_check_syscall_exit_work+0x34/0x3d
-> [ 8096.724284] Code: 48 89 55 80 0f 1f 00 65 c7 04 25 40 47 1d 00 00 00 00 00
-> 48 83 3d dc b6 91 04 00 75 0a 0f 0b eb fe 66 0f 1f 44 00 00 fb 66 66 90 <66>
-> 66 90 65 4c 8b 34 25 48 da 00 00 31 db 49 8d 96 28 e0 ff ff
+> * Instead of performing operations with explicit ns tag, the namespace
+>   callback is routed through sysfs_attr_ns(), sysfs_ops->namespace(),
+>   class_attr_namespace(), class_attr->namespace().  It's not simpler
+>   in any sense.  The only thing this convolution does is traversing
+>   the whole stack backwards.
+> 
+> The namespace callbacks are unncessary because the operations involved
+> are inherently synchronous.  The information can be provided in in
+> straight-forward top-down direction and reversing that direction is
+> unnecessary and against basic design principles.
+> 
+> This backward interface is unnecessarily convoluted and hinders
+> properly separating out sysfs from driver model / kobject for proper
+> layering.  This patch updates attr ns support such that
+> 
+> * sysfs_ops->namespace() and class_attr->namespace() are dropped.
+> 
+> * sysfs_{create|remove}_file_ns(), which take explicit @ns param, are
+>   added and sysfs_{create|remove}_file() are now simple wrappers
+>   around the ns aware functions.
+> 
+> * ns handling is dropped from sysfs_chmod_file().  Nobody uses it at
+>   this point.  sysfs_chmod_file_ns() can be added later if necessary.
+> 
+> * Explicit @ns is propagated through class_{create|remove}_file_ns()
+>   and netdev_class_{create|remove}_file_ns().
+> 
+> * driver/net/bonding which is currently the only user of attr
+>   namespace is updated to use netdev_class_{create|remove}_file_ns()
+>   with @bh->net as the ns tag instead of using the namespace callback.
+> 
+> This patch should be an equivalent conversion without any functional
+> difference.  It makes the code easier to follow, reduces lines of code
+> a bit and helps proper separation and layering.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
 
-All I can guess from that sparse information that you are observing an
-interrupt storm caused by what ever the heck. It's not a softirq storm
-as softirq breaks out after N iterations.
+For networking bits:
 
-Thanks,
-
-	tglx
-
-
+Acked-by: David S. Miller <davem@davemloft.net>
