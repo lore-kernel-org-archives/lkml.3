@@ -1,97 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757772Ab3ILDjc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 23:39:32 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:48053 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752203Ab3ILDjb (ORCPT
+	id S1757808Ab3ILDjj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 23:39:39 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:53710 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757630Ab3ILDjg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 23:39:31 -0400
+	Wed, 11 Sep 2013 23:39:36 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Tejun Heo <tj@kernel.org>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, kay@vrfy.org,
+        netdev@vger.kernel.org, lizefan@huawei.com
+References: <1378952949-7900-1-git-send-email-tj@kernel.org>
+	<1378952949-7900-8-git-send-email-tj@kernel.org>
+Date: Wed, 11 Sep 2013 20:39:27 -0700
+In-Reply-To: <1378952949-7900-8-git-send-email-tj@kernel.org> (Tejun Heo's
+	message of "Wed, 11 Sep 2013 22:29:09 -0400")
+Message-ID: <87a9ji4sk0.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Date: Wed, 11 Sep 2013 23:39:31 -0400
-Message-ID: <CAHFgRy-dNMFgrWtz9g=MphL58ti3TSYziE-gwS6K1rwN8zJmtA@mail.gmail.com>
-Subject: Linus Git (3.11.0+) - security/apparmor/include/policy.h:363
- suspicious rcu_dereference_check() usage!
-From: Miles Lane <miles.lane@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX181ncn4IfoJil772aBOvczujf9KTi/9Xxo=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0030]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Tejun Heo <tj@kernel.org>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 7/7] sysfs: @name comes before @ns
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[   29.804534] [ INFO: suspicious RCU usage. ]
-[   29.804539] 3.11.0+ #5 Not tainted
-[   29.804541] -------------------------------
-[   29.804545] security/apparmor/include/policy.h:363 suspicious
-rcu_dereference_check() usage!
-[   29.804548]
-[   29.804548] other info that might help us debug this:
-[   29.804548]
-[   29.804553]
-[   29.804553] rcu_scheduler_active = 1, debug_locks = 1
-[   29.804558] 2 locks held by apparmor_parser/1268:
-[   29.804560]  #0:  (sb_writers#9){.+.+.+}, at: [<ffffffff81120a4c>]
-file_start_write+0x27/0x29
-[   29.804576]  #1:  (&ns->lock){+.+.+.}, at: [<ffffffff811f5d88>]
-aa_replace_profiles+0x166/0x57c
-[   29.804589]
-[   29.804589] stack backtrace:
-[   29.804595] CPU: 0 PID: 1268 Comm: apparmor_parser Not tainted 3.11.0+ #5
-[   29.804599] Hardware name: ASUSTeK Computer Inc.         UL50VT
-         /UL50VT    , BIOS 217     03/01/2010
-[   29.804602]  0000000000000000 ffff8800b95a1d90 ffffffff8144eb9b
-ffff8800b94db540
-[   29.804611]  ffff8800b95a1dc0 ffffffff81087439 ffff880138cc3a18
-ffff880138cc3a18
-[   29.804619]  ffff8800b9464a90 ffff880138cc3a38 ffff8800b95a1df0
-ffffffff811f5084
-[   29.804628] Call Trace:
-[   29.804636]  [<ffffffff8144eb9b>] dump_stack+0x4e/0x82
-[   29.804642]  [<ffffffff81087439>] lockdep_rcu_suspicious+0xfc/0x105
-[   29.804649]  [<ffffffff811f5084>] __aa_update_replacedby+0x53/0x7f
-[   29.804655]  [<ffffffff811f5408>] __replace_profile+0x11f/0x1ed
-[   29.804661]  [<ffffffff811f6032>] aa_replace_profiles+0x410/0x57c
-[   29.804668]  [<ffffffff811f16d4>] profile_replace+0x35/0x4c
-[   29.804674]  [<ffffffff81120fa3>] vfs_write+0xad/0x113
-[   29.804680]  [<ffffffff81121609>] SyS_write+0x44/0x7a
-[   29.804687]  [<ffffffff8145bfd2>] system_call_fastpath+0x16/0x1b
-[   29.804691]
-[   29.804694] ===============================
-[   29.804697] [ INFO: suspicious RCU usage. ]
-[   29.804700] 3.11.0+ #5 Not tainted
-[   29.804703] -------------------------------
-[   29.804706] security/apparmor/policy.c:566 suspicious
-rcu_dereference_check() usage!
-[   29.804709]
-[   29.804709] other info that might help us debug this:
-[   29.804709]
-[   29.804714]
-[   29.804714] rcu_scheduler_active = 1, debug_locks = 1
-[   29.804718] 2 locks held by apparmor_parser/1268:
-[   29.804721]  #0:  (sb_writers#9){.+.+.+}, at: [<ffffffff81120a4c>]
-file_start_write+0x27/0x29
-[   29.804733]  #1:  (&ns->lock){+.+.+.}, at: [<ffffffff811f5d88>]
-aa_replace_profiles+0x166/0x57c
-[   29.804744]
-[   29.804744] stack backtrace:
-[   29.804750] CPU: 0 PID: 1268 Comm: apparmor_parser Not tainted 3.11.0+ #5
-[   29.804753] Hardware name: ASUSTeK Computer Inc.         UL50VT
-         /UL50VT    , BIOS 217     03/01/2010
-[   29.804756]  0000000000000000 ffff8800b95a1d80 ffffffff8144eb9b
-ffff8800b94db540
-[   29.804764]  ffff8800b95a1db0 ffffffff81087439 ffff8800b95b02b0
-0000000000000000
-[   29.804772]  ffff8800b9efba08 ffff880138cc3a38 ffff8800b95a1dd0
-ffffffff811f4f94
-[   29.804779] Call Trace:
-[   29.804786]  [<ffffffff8144eb9b>] dump_stack+0x4e/0x82
-[   29.804791]  [<ffffffff81087439>] lockdep_rcu_suspicious+0xfc/0x105
-[   29.804798]  [<ffffffff811f4f94>] aa_free_replacedby_kref+0x4d/0x62
-[   29.804804]  [<ffffffff811f4f47>] ? aa_put_namespace+0x17/0x17
-[   29.804810]  [<ffffffff811f4f0b>] kref_put+0x36/0x40
-[   29.804816]  [<ffffffff811f5423>] __replace_profile+0x13a/0x1ed
-[   29.804822]  [<ffffffff811f6032>] aa_replace_profiles+0x410/0x57c
-[   29.804829]  [<ffffffff811f16d4>] profile_replace+0x35/0x4c
-[   29.804835]  [<ffffffff81120fa3>] vfs_write+0xad/0x113
-[   29.804840]  [<ffffffff81121609>] SyS_write+0x44/0x7a
-[   29.804847]  [<ffffffff8145bfd2>] system_call_fastpath+0x16/0x1b
+Tejun Heo <tj@kernel.org> writes:
+
+> Some internal sysfs functions which take explicit namespace argument
+> are weird in that they place the optional @ns in front of @name which
+> is contrary to the established convention.  This is confusing and
+> error-prone especially as @ns and @name may be interchanged without
+> causing compilation warning.
+>
+> Swap the positions of @name and @ns in the following internal
+> functions.
+
+Nacked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+
+@ns is more significant so it should come first.
+
+Where do we have the backwards convention of putting @name first?
+
+Eric
