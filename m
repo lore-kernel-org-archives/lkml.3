@@ -1,86 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756294Ab3ILSCy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:02:54 -0400
-Received: from mail.kapsi.fi ([217.30.184.167]:43863 "EHLO mail.kapsi.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752631Ab3ILSCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 14:02:52 -0400
-Message-ID: <5232018F.3000009@iki.fi>
-Date: Thu, 12 Sep 2013 21:01:51 +0300
-From: Antti Palosaari <crope@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@infradead.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media <linux-media@vger.kernel.org>
-Subject: Re: [PATCH -next] staging/media: fix msi3101 build errors
-References: <20130912143402.73f77e0cef1e19576b77a6b5@canb.auug.org.au> <5231FCFC.40505@infradead.org>
-In-Reply-To: <5231FCFC.40505@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 82.128.186.45
-X-SA-Exim-Mail-From: crope@iki.fi
-X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
+	id S1756331Ab3ILSDW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:03:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57143 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755717Ab3ILR7Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 13:59:25 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jiri Bohac <jbohac@suse.cz>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 37/46] ICMPv6: treat dest unreachable codes 5 and 6 as EACCES, not EPROTO
+Date: Thu, 12 Sep 2013 10:58:48 -0700
+Message-Id: <20130912175725.008444144@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
+In-Reply-To: <20130912175721.001906199@linuxfoundation.org>
+References: <20130912175721.001906199@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Randy,
-It is already fixed, waiting for Mauro's processing.
-https://patchwork.kernel.org/patch/2856771/
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-regards
-Antti
+------------------
 
-On 09/12/2013 08:42 PM, Randy Dunlap wrote:
-> From: Randy Dunlap <rdunlap@infradead.org>
->
-> Fix build error when VIDEOBUF2_CORE=m and USB_MSI3101=y.
->
-> drivers/built-in.o: In function `msi3101_buf_queue':
-> sdr-msi3101.c:(.text+0x1298d6): undefined reference to `vb2_buffer_done'
-> drivers/built-in.o: In function `msi3101_cleanup_queued_bufs':
-> sdr-msi3101.c:(.text+0x1299c7): undefined reference to `vb2_buffer_done'
-> drivers/built-in.o: In function `msi3101_isoc_handler':
-> sdr-msi3101.c:(.text+0x12a08d): undefined reference to `vb2_plane_vaddr'
-> sdr-msi3101.c:(.text+0x12a0b9): undefined reference to `vb2_buffer_done'
-> drivers/built-in.o: In function `msi3101_probe':
-> sdr-msi3101.c:(.text+0x12a1c5): undefined reference to `vb2_vmalloc_memops'
-> sdr-msi3101.c:(.text+0x12a1d7): undefined reference to `vb2_queue_init'
-> drivers/built-in.o:(.rodata+0x34cf0): undefined reference to `vb2_ioctl_reqbufs'
-> drivers/built-in.o:(.rodata+0x34cf4): undefined reference to `vb2_ioctl_querybuf'
-> drivers/built-in.o:(.rodata+0x34cf8): undefined reference to `vb2_ioctl_qbuf'
-> drivers/built-in.o:(.rodata+0x34d00): undefined reference to `vb2_ioctl_dqbuf'
-> drivers/built-in.o:(.rodata+0x34d04): undefined reference to `vb2_ioctl_create_bufs'
-> drivers/built-in.o:(.rodata+0x34d08): undefined reference to `vb2_ioctl_prepare_buf'
-> drivers/built-in.o:(.rodata+0x34d18): undefined reference to `vb2_ioctl_streamon'
-> drivers/built-in.o:(.rodata+0x34d1c): undefined reference to `vb2_ioctl_streamoff'
-> drivers/built-in.o:(.rodata+0x35580): undefined reference to `vb2_fop_read'
-> drivers/built-in.o:(.rodata+0x35588): undefined reference to `vb2_fop_poll'
-> drivers/built-in.o:(.rodata+0x35598): undefined reference to `vb2_fop_mmap'
-> drivers/built-in.o:(.rodata+0x355a0): undefined reference to `vb2_fop_release'
-> drivers/built-in.o:(.data+0x23b40): undefined reference to `vb2_ops_wait_prepare'
-> drivers/built-in.o:(.data+0x23b44): undefined reference to `vb2_ops_wait_finish'
->
-> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-> Cc: Antti Palosaari <crope@iki.fi>
-> ---
->   drivers/staging/media/msi3101/Kconfig |    2 ++
->   1 file changed, 2 insertions(+)
->
-> --- linux-next-20130912.orig/drivers/staging/media/msi3101/Kconfig
-> +++ linux-next-20130912/drivers/staging/media/msi3101/Kconfig
-> @@ -1,3 +1,5 @@
->   config USB_MSI3101
->   	tristate "Mirics MSi3101 SDR Dongle"
->   	depends on USB && VIDEO_DEV && VIDEO_V4L2
-> +	select VIDEOBUF2_CORE
-> +	select VIDEOBUF2_VMALLOC
->
+From: Jiri Bohac <jbohac@suse.cz>
+
+[ Upstream commit 61e76b178dbe7145e8d6afa84bb4ccea71918994 ]
+
+RFC 4443 has defined two additional codes for ICMPv6 type 1 (destination
+unreachable) messages:
+        5 - Source address failed ingress/egress policy
+	6 - Reject route to destination
+
+Now they are treated as protocol error and icmpv6_err_convert() converts them
+to EPROTO.
+
+RFC 4443 says:
+	"Codes 5 and 6 are more informative subsets of code 1."
+
+Treat codes 5 and 6 as code 1 (EACCES)
+
+Btw, connect() returning -EPROTO confuses firefox, so that fallback to
+other/IPv4 addresses does not work:
+https://bugzilla.mozilla.org/show_bug.cgi?id=910773
+
+Signed-off-by: Jiri Bohac <jbohac@suse.cz>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ include/uapi/linux/icmpv6.h |    2 ++
+ net/ipv6/icmp.c             |   10 +++++++++-
+ 2 files changed, 11 insertions(+), 1 deletion(-)
+
+--- a/include/uapi/linux/icmpv6.h
++++ b/include/uapi/linux/icmpv6.h
+@@ -115,6 +115,8 @@ struct icmp6hdr {
+ #define ICMPV6_NOT_NEIGHBOUR		2
+ #define ICMPV6_ADDR_UNREACH		3
+ #define ICMPV6_PORT_UNREACH		4
++#define ICMPV6_POLICY_FAIL		5
++#define ICMPV6_REJECT_ROUTE		6
+ 
+ /*
+  *	Codes for Time Exceeded
+--- a/net/ipv6/icmp.c
++++ b/net/ipv6/icmp.c
+@@ -931,6 +931,14 @@ static const struct icmp6_err {
+ 		.err	= ECONNREFUSED,
+ 		.fatal	= 1,
+ 	},
++	{	/* POLICY_FAIL */
++		.err	= EACCES,
++		.fatal	= 1,
++	},
++	{	/* REJECT_ROUTE	*/
++		.err	= EACCES,
++		.fatal	= 1,
++	},
+ };
+ 
+ int icmpv6_err_convert(u8 type, u8 code, int *err)
+@@ -942,7 +950,7 @@ int icmpv6_err_convert(u8 type, u8 code,
+ 	switch (type) {
+ 	case ICMPV6_DEST_UNREACH:
+ 		fatal = 1;
+-		if (code <= ICMPV6_PORT_UNREACH) {
++		if (code < ARRAY_SIZE(tab_unreach)) {
+ 			*err  = tab_unreach[code].err;
+ 			fatal = tab_unreach[code].fatal;
+ 		}
 
 
--- 
-http://palosaari.fi/
