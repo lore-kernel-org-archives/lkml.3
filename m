@@ -1,65 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754335Ab3ILPLz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 11:11:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47304 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753181Ab3ILPLy (ORCPT
+	id S1754391Ab3ILPMD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 11:12:03 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54769 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754351Ab3ILPMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 11:11:54 -0400
-Message-ID: <5231D99D.80706@canonical.com>
-Date: Thu, 12 Sep 2013 17:11:25 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	Thu, 12 Sep 2013 11:12:00 -0400
+Message-ID: <5231D9B4.5000308@ti.com>
+Date: Thu, 12 Sep 2013 20:41:48 +0530
+From: Balaji T K <balajitk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: airlied@linux.ie, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [BUG] completely bonkers use of set_need_resched + VM_FAULT_NOPAGE
-References: <20130912150645.GZ31370@twins.programming.kicks-ass.net>
-In-Reply-To: <20130912150645.GZ31370@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Matt Porter <matt.porter@linaro.org>, Chris Ball <cjb@laptop.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>, Tony Lindgren <tony@atomide.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: Uninitialized rx_req/tx_req (was: Re: [PATCH v2 2/3] mmc: omap_hsmmc:
+ Skip platform_get_resource_byname() for dt case)
+References: <CAMuHMdVVjkZBZyJe2qnUxHeRVo+8WD_Vx1ZKin_pA7XLRCW8uw@mail.gmail.com>
+In-Reply-To: <CAMuHMdVVjkZBZyJe2qnUxHeRVo+8WD_Vx1ZKin_pA7XLRCW8uw@mail.gmail.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 12-09-13 17:06, Peter Zijlstra schreef:
-> Hi Dave,
+On Thursday 12 September 2013 06:11 PM, Geert Uytterhoeven wrote:
+> On Tue, Mar 5, 2013 at 10:13 PM, Matt Porter <mporter@ti.com> wrote:
+>> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>
+>> MMC driver probe will abort for DT case because of failed
+>> platform_get_resource_byname() lookup. Fix it by skipping resource
+>> byname lookup for device tree build.
+>>
+>> Issue is hidden because hwmod popullates the IO resources which
+>> helps to succeed platform_get_resource_byname() and probe.
+>>
+>> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> ---
+>>   drivers/mmc/host/omap_hsmmc.c |   28 +++++++++++++++-------------
+>>   1 file changed, 15 insertions(+), 13 deletions(-)
+>>
+>> diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+>> index e79b12d..8ae1225 100644
+>> --- a/drivers/mmc/host/omap_hsmmc.c
+>> +++ b/drivers/mmc/host/omap_hsmmc.c
+>> @@ -1896,21 +1896,23 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
+>>
+>>          omap_hsmmc_conf_bus_power(host);
+>>
+>> -       res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "tx");
+>> -       if (!res) {
+>> -               dev_err(mmc_dev(host->mmc), "cannot get DMA TX channel\n");
+>> -               ret = -ENXIO;
+>> -               goto err_irq;
+>> -       }
+>> -       tx_req = res->start;
+>> +       if (!pdev->dev.of_node) {
+>> +               res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "tx");
+>> +               if (!res) {
+>> +                       dev_err(mmc_dev(host->mmc), "cannot get DMA TX channel\n");
+>> +                       ret = -ENXIO;
+>> +                       goto err_irq;
+>> +               }
+>> +               tx_req = res->start;
+>>
+>> -       res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "rx");
+>> -       if (!res) {
+>> -               dev_err(mmc_dev(host->mmc), "cannot get DMA RX channel\n");
+>> -               ret = -ENXIO;
+>> -               goto err_irq;
+>> +               res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "rx");
+>> +               if (!res) {
+>> +                       dev_err(mmc_dev(host->mmc), "cannot get DMA RX channel\n");
+>> +                       ret = -ENXIO;
+>> +                       goto err_irq;
+>> +               }
+>> +               rx_req = res->start;
+>>          }
+>> -       rx_req = res->start;
+>>
+>>          dma_cap_zero(mask);
+>>          dma_cap_set(DMA_SLAVE, mask);
 >
-> So I'm poking around the preemption code and stumbled upon:
+> Now this is in mainline, I get (gcc 4.1.2):
 >
-> drivers/gpu/drm/i915/i915_gem.c:                set_need_resched();
-> drivers/gpu/drm/ttm/ttm_bo_vm.c:                        set_need_resched();
-> drivers/gpu/drm/ttm/ttm_bo_vm.c:                        set_need_resched();
-> drivers/gpu/drm/udl/udl_gem.c:          set_need_resched();
+> drivers/mmc/host/omap_hsmmc.c: In function ‘omap_hsmmc_probe’:
+> drivers/mmc/host/omap_hsmmc.c:1779: warning: ‘rx_req’ may be used
+> uninitialized in this function
+> drivers/mmc/host/omap_hsmmc.c:1779: warning: ‘tx_req’ may be used
+> uninitialized in this function
 >
-> All these sites basically do:
+> Indeed, rx_req and tx_req are not initialized in the DT case.
 >
->   while (!trylock())
->   	yield();
+> Initializing them to zero is probably not the right fix. Where are the values
+> supposed to come from in the DT case?
 >
-> which is a horrible and broken locking pattern. 
->
-> Firstly its deadlock prone, suppose the faulting process is a FIFOn+1
-> task that preempted the lock holder at FIFOn.
->
-> Secondly the implementation is worse than usual by abusing
-> VM_FAULT_NOPAGE, which is supposed to install a PTE so that the fault
-> doesn't retry, but you're using it as a get out of fault path. And
-> you're using set_need_resched() which is not something a driver should
-> _ever_ touch.
->
-> Now I'm going to take away set_need_resched() -- and while you can
-> 'reimplement' it using set_thread_flag() you're not going to do that
-> because it will be broken due to changes to the preempt code.
->
-> So please as to fix ASAP and don't allow anybody to trick you into
-> merging silly things like that again ;-)
->
-Agreed, but this is a case of locking inversion. How do you propose to get around that?
+Hi,
 
-~Maarten
+rx_req and tx_req are not used in DT case [1].
+dma_request_slave_channel is used to get dma info from mmc dt node.
+
+__dma_request_channel is fallback case for non dt boot.
+
+Note __dma_request_channel is called if dma info is not populated in
+dts files.
+
+static inline struct dma_chan
+*__dma_request_slave_channel_compat(const dma_cap_mask_t *mask,
+				  dma_filter_fn fn, void *fn_param,
+				  struct device *dev, char *name)
+{
+	struct dma_chan *chan;
+
+	chan = dma_request_slave_channel(dev, name);
+	if (chan)
+		return chan;
+
+	return __dma_request_channel(mask, fn, fn_param);
+}
+
+> Gr{oetje,eeting}s,
+>
+>                          Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                  -- Linus Torvalds
+>
+
