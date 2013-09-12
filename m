@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755584Ab3ILSfK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:35:10 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:61482 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753000Ab3ILSfI (ORCPT
+	id S1756593Ab3ILSfx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:35:53 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:39944 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756351Ab3ILSfr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 14:35:08 -0400
-Date: Thu, 12 Sep 2013 20:35:05 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Restrict kernel spawning of threads to a specified set of
- cpus.
-Message-ID: <20130912183503.GB25386@somewhere>
-References: <00000140efbcb701-c26320b3-f434-4538-bc80-8e92fed6f303-000000@email.amazonses.com>
- <20130911220228.GB15367@somewhere>
- <000001411282afa6-fe9c0543-0447-492b-991e-dc8214884b88-000000@email.amazonses.com>
- <20130912141625.GA23357@somewhere>
- <00000141128d759a-44dcacb6-8f48-4f9b-8381-d14003bd6da1-000000@email.amazonses.com>
- <20130912143137.GA23839@somewhere>
- <0000014112a921ae-51d171bf-e8d4-4569-bd20-94dabda2d5ba-000000@email.amazonses.com>
- <20130912151102.GB23839@somewhere>
- <20130912153922.GP3966@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130912153922.GP3966@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 12 Sep 2013 14:35:47 -0400
+From: Koen Kooi <koen@dominion.thruhere.net>
+To: linux-kernel@vger.kernel.org
+Cc: bcousson@baylibre.com, tony@atomide.com, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
+        ijc+devicetree@hellion.org.uk, linux@arm.linux.org.uk,
+        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Koen Kooi <koen@dominion.thruhere.net>
+Subject: [PATCH v4 4/4] ARM: dts: am335x-bone-common: add cpu0 and mmc1 triggers
+Date: Thu, 12 Sep 2013 20:35:35 +0200
+Message-Id: <1379010935-25943-5-git-send-email-koen@dominion.thruhere.net>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1379010935-25943-1-git-send-email-koen@dominion.thruhere.net>
+References: <1379010935-25943-1-git-send-email-koen@dominion.thruhere.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 08:39:22AM -0700, Paul E. McKenney wrote:
-> On Thu, Sep 12, 2013 at 05:11:04PM +0200, Frederic Weisbecker wrote:
-> > On Thu, Sep 12, 2013 at 02:52:56PM +0000, Christoph Lameter wrote:
-> > > On Thu, 12 Sep 2013, Frederic Weisbecker wrote:
-> > > 
-> > > > > > Ok but you can change the affinity of a kthread from userspace, as
-> > > > > > long as you define a cpu set that is among that kthread's cpus allowed.
-> > > > >
-> > > > > Ok but at that point kthread has already spawned a lot of kernel threads.
-> > > > >
-> > > > > The same is true for init and kmod.
-> > > > >
-> > > >
-> > > > Ok but then we just need to set the affinity of all these kthreads.
-> > > > A simple lookup on /proc/[0-9]+/ should do the trick.
-> > > 
-> > > Yea but the kernel option makes it easy. No extras needed. Kernel brings
-> > > it up user space cleanly configured and ready to go.
-> > 
-> > Ok but really that's just two lines of bash. I really wish we don't complicate
-> > core kernel code for that.
-> 
-> OK, I will bite...  How do you handle the case where you have collected
-> all the kthreads, one of the kthreads spawns another kthread, then you
-> set affinity on the collected kthreads, which does not include the newly
-> spawned one?
+This matches the vendor 3.8.x configuration that is shipping with the boards.
 
-Just offline the CPUs you want to isolate, affine your kthreads and re-online
-the CPUs.
+The LED layout is now:
 
-If you're lucky enough to have 1024 CPUs, a winter night should be enough ;-)
+USR0: heartbeat
+USR1: mmc0 (micro-SD slot)
+USR2: cpu0
+USR3: mmc1 (eMMC)
+
+The cpu0 triggers was put in between the mmc triggers to make is easier to see
+where the disk activity is.
+
+Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
+---
+ arch/arm/boot/dts/am335x-bone-common.dtsi | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
+index 303df81..adce9fe 100644
+--- a/arch/arm/boot/dts/am335x-bone-common.dtsi
++++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
+@@ -204,12 +204,14 @@
+ 		led@4 {
+ 			label = "beaglebone:green:usr2";
+ 			gpios = <&gpio1 23 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "cpu0";
+ 			default-state = "off";
+ 		};
+ 
+ 		led@5 {
+ 			label = "beaglebone:green:usr3";
+ 			gpios = <&gpio1 24 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "mmc1";
+ 			default-state = "off";
+ 		};
+ 	};
+-- 
+1.8.2.1
+
