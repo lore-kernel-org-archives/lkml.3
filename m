@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757332Ab3ILBIy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 21:08:54 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32901 "EHLO
+	id S1757519Ab3ILBJV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 21:09:21 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4762 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751873Ab3ILBIw convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1757462Ab3ILBJT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 21:08:52 -0400
-X-Authority-Analysis: v=2.0 cv=R/aB6KtX c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=9-Pj8MEF376GNuv5zvUA:9 a=QEXdDO2ut3YA:10 a=ZeF8Lb1y77fDh4Dx:21 a=w7qRRJghlb4SC7Qw:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Wed, 11 Sep 2013 21:09:19 -0400
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=BlFRXlQ3G-i6-0yzTUUA:9 a=QEXdDO2ut3YA:10 a=AK5NDuejd-hlnPrJ:21 a=ZYByAbW_FTrqajoU:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Date: Wed, 11 Sep 2013 21:08:50 -0400
+Date: Wed, 11 Sep 2013 21:09:17 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: LKML <linux-kernel@vger.kernel.org>,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         John Kacur <jkacur@redhat.com>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [ANNOUNCE] 3.2.50-rt71
-Message-ID: <20130911210850.702bdded@gandalf.local.home>
+Subject: [ANNOUNCE] 3.0.89-rt118
+Message-ID: <20130911210917.1efe6c2e@gandalf.local.home>
 X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -31,30 +31,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Dear RT Folks,
 
-I'm pleased to announce the 3.2.50-rt71 stable release.
+I'm pleased to announce the 3.0.89-rt118 stable release.
 
 
 You can get this release via the git tree at:
 
   git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
 
-  branch: v3.2-rt
-  Head SHA1: ce97f8430a19c032746d72f1addbc03c57acdce6
+  branch: v3.0-rt
+  Head SHA1: 5df5fdd22f799e1919b2def24b24b9f48abdba2f
 
 
-Or to build 3.2.50-rt71 directly, the following patches should be applied:
+Or to build 3.0.89-rt118 directly, the following patches should be applied:
 
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
+  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
 
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.50.xz
+  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.89.xz
 
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.50-rt71.patch.xz
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.89-rt118.patch.xz
 
 
 
-You can also build from 3.2.50-rt70 by applying the incremental patch:
+You can also build from 3.0.89-rt117 by applying the incremental patch:
 
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/incr/patch-3.2.50-rt70-rt71.patch.xz
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/incr/patch-3.0.89-rt117-rt118.patch.xz
 
 
 
@@ -63,7 +63,7 @@ Enjoy,
 -- Steve
 
 
-Changes from v3.2.50-rt70:
+Changes from v3.0.89-rt117:
 
 ---
 
@@ -91,7 +91,7 @@ Steven Rostedt (5):
 
 Steven Rostedt (Red Hat) (2):
       hwlat-detect/trace: Export trace_clock_local for hwlat-detector
-      Linux 3.2.50-rt71
+      Linux 3.0.89-rt118
 
 Uwe Kleine-König (1):
       list_bl.h: fix it for for !SMP && !DEBUG_SPINLOCK
@@ -115,10 +115,10 @@ Zhao Hongjiang (1):
  12 files changed, 264 insertions(+), 63 deletions(-)
 ---------------------------
 diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 8ceb100..b08a373 100644
+index c859bb4..e51191f 100644
 --- a/arch/x86/kernel/cpu/mcheck/mce.c
 +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1139,7 +1139,7 @@ static enum hrtimer_restart mce_start_timer(struct hrtimer *timer)
+@@ -1171,7 +1171,7 @@ static enum hrtimer_restart mce_start_timer(struct hrtimer *timer)
  		*n = min(*n*2, round_jiffies_relative(check_interval*HZ));
  
  	hrtimer_forward(timer, timer->base->get_time(),
@@ -127,7 +127,7 @@ index 8ceb100..b08a373 100644
  	return HRTIMER_RESTART;
  }
  
-@@ -1435,7 +1435,7 @@ static void __mcheck_cpu_init_timer(void)
+@@ -1452,7 +1452,7 @@ static void __mcheck_cpu_init_timer(void)
  	if (!*n)
  		return;
  
@@ -137,11 +137,11 @@ index 8ceb100..b08a373 100644
  }
  
 diff --git a/drivers/gpu/drm/i915/i915_gem_execbuffer.c b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-index b1bb734..8bef4a5 100644
+index 1ca53ff..4d04a9f 100644
 --- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
 +++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-@@ -1216,7 +1216,9 @@ i915_gem_do_execbuffer(struct drm_device *dev, void *data,
- 		dev_priv->relative_constants_mode = mode;
+@@ -1189,7 +1189,9 @@ i915_gem_do_execbuffer(struct drm_device *dev, void *data,
+ 		}
  	}
  
 +#ifndef CONFIG_PREEMPT_RT_BASE
@@ -400,10 +400,10 @@ index b7b7c90..6f61d5f 100644
  
  	/* handling partial reads is more trouble than it's worth */
 diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index f70a65b..42f79fb 100644
+index 71c2c0b..9f67f91 100644
 --- a/include/linux/interrupt.h
 +++ b/include/linux/interrupt.h
-@@ -271,6 +271,7 @@ struct irq_affinity_notify {
+@@ -255,6 +255,7 @@ struct irq_affinity_notify {
  	unsigned int irq;
  	struct kref kref;
  	struct work_struct work;
@@ -476,7 +476,7 @@ index 31f9d75..becd7a6 100644
  
  /**
 diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 5ef0c31..063c2bb 100644
+index 3bcbf99..4abfd5d 100644
 --- a/kernel/cpu.c
 +++ b/kernel/cpu.c
 @@ -78,6 +78,7 @@ struct hotplug_pcp {
@@ -528,7 +528,7 @@ index 5ef0c31..063c2bb 100644
  	return 0;
  }
  
-@@ -508,6 +518,7 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+@@ -487,6 +497,7 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
  		.hcpu = hcpu,
  	};
  	cpumask_var_t cpumask;
@@ -536,7 +536,7 @@ index 5ef0c31..063c2bb 100644
  
  	if (num_online_cpus() == 1)
  		return -EBUSY;
-@@ -518,6 +529,12 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+@@ -497,6 +508,12 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
  	/* Move the downtaker off the unplug cpu */
  	if (!alloc_cpumask_var(&cpumask, GFP_KERNEL))
  		return -ENOMEM;
@@ -549,7 +549,7 @@ index 5ef0c31..063c2bb 100644
  	cpumask_andnot(cpumask, cpu_online_mask, cpumask_of(cpu));
  	set_cpus_allowed_ptr(current, cpumask);
  	free_cpumask_var(cpumask);
-@@ -526,7 +543,8 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+@@ -505,7 +522,8 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
  	if (mycpu == cpu) {
  		printk(KERN_ERR "Yuck! Still on unplug CPU\n!");
  		migrate_enable();
@@ -559,7 +559,7 @@ index 5ef0c31..063c2bb 100644
  	}
  
  	cpu_hotplug_begin();
-@@ -545,6 +563,8 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+@@ -524,6 +542,8 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
  		goto out_release;
  	}
  
@@ -568,7 +568,7 @@ index 5ef0c31..063c2bb 100644
  	/* Notifiers are done. Don't let any more tasks pin this CPU. */
  	cpu_unplug_sync(cpu);
  
-@@ -582,6 +602,9 @@ out_cancel:
+@@ -561,6 +581,9 @@ out_cancel:
  	cpu_hotplug_done();
  	if (!err)
  		cpu_notify_nofail(CPU_POST_DEAD | mod, hcpu);
@@ -579,7 +579,7 @@ index 5ef0c31..063c2bb 100644
  }
  
 diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index b3c753e..88a4ff5 100644
+index d750268..3d7d5f6 100644
 --- a/kernel/irq/manage.c
 +++ b/kernel/irq/manage.c
 @@ -141,6 +141,62 @@ static inline void
@@ -698,7 +698,7 @@ index b3c753e..88a4ff5 100644
  	}
  
  	raw_spin_lock_irqsave(&desc->lock, flags);
-@@ -783,9 +856,6 @@ static irqreturn_t irq_thread_fn(struct irq_desc *desc,
+@@ -780,9 +853,6 @@ static irqreturn_t irq_thread_fn(struct irq_desc *desc,
   */
  static int irq_thread(void *data)
  {
@@ -708,7 +708,7 @@ index b3c753e..88a4ff5 100644
  	struct irqaction *action = data;
  	struct irq_desc *desc = irq_to_desc(action->irq);
  	irqreturn_t (*handler_fn)(struct irq_desc *desc,
-@@ -798,7 +868,6 @@ static int irq_thread(void *data)
+@@ -795,7 +865,6 @@ static int irq_thread(void *data)
  	else
  		handler_fn = irq_thread_fn;
  
@@ -716,7 +716,7 @@ index b3c753e..88a4ff5 100644
  	current->irqaction = action;
  
  	while (!irq_wait_for_interrupt(action)) {
-@@ -961,6 +1030,9 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+@@ -932,11 +1001,17 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
  	 */
  	if (new->thread_fn && !nested) {
  		struct task_struct *t;
@@ -726,10 +726,8 @@ index b3c753e..88a4ff5 100644
  
  		t = kthread_create(irq_thread, new, "irq/%d-%s", irq,
  				   new->name);
-@@ -968,6 +1040,9 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 			ret = PTR_ERR(t);
- 			goto out_mput;
- 		}
+ 		if (IS_ERR(t))
+ 			return PTR_ERR(t);
 +
 +		sched_setscheduler(t, SCHED_FIFO, &param);
 +
@@ -737,10 +735,10 @@ index b3c753e..88a4ff5 100644
  		 * We keep the reference to the task struct even if
  		 * the thread dies to avoid that the interrupt code
 diff --git a/kernel/sched.c b/kernel/sched.c
-index dbd9a43..4c37a42 100644
+index 96dd9c2..59bb8bc 100644
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -4803,8 +4803,10 @@ static inline void sched_submit_work(struct task_struct *tsk)
+@@ -4436,8 +4436,10 @@ static inline void sched_submit_work(struct task_struct *tsk)
  	/*
  	 * If a worker went to sleep, notify and ask workqueue whether
  	 * it wants to wake up a task to maintain concurrency.
@@ -753,7 +751,7 @@ index dbd9a43..4c37a42 100644
  
  	/*
 diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-index 4b63943..7d5241e 100644
+index 8b3a185..fa0c206 100644
 --- a/kernel/time/ntp.c
 +++ b/kernel/time/ntp.c
 @@ -10,6 +10,7 @@
@@ -764,7 +762,7 @@ index 4b63943..7d5241e 100644
  #include <linux/math64.h>
  #include <linux/timex.h>
  #include <linux/time.h>
-@@ -490,11 +491,52 @@ static void sync_cmos_clock(struct work_struct *work)
+@@ -494,11 +495,52 @@ static void sync_cmos_clock(struct work_struct *work)
  	schedule_delayed_work(&sync_cmos_work, timespec_to_jiffies(&next));
  }
  
@@ -818,7 +816,7 @@ index 4b63943..7d5241e 100644
  #else
  static inline void notify_cmos_timer(void) { }
 diff --git a/kernel/timer.c b/kernel/timer.c
-index 2f114d1..7fa30e0 100644
+index 2e21a6c..07070cb 100644
 --- a/kernel/timer.c
 +++ b/kernel/timer.c
 @@ -76,7 +76,9 @@ struct tvec_root {
@@ -860,7 +858,7 @@ index 2f114d1..7fa30e0 100644
  	} else {
  		base = per_cpu(tvec_bases, cpu);
 diff --git a/kernel/trace/trace_clock.c b/kernel/trace/trace_clock.c
-index 3947835..1bbb1b2 100644
+index 6302747..e5163ab 100644
 --- a/kernel/trace/trace_clock.c
 +++ b/kernel/trace/trace_clock.c
 @@ -44,6 +44,7 @@ u64 notrace trace_clock_local(void)
@@ -872,9 +870,9 @@ index 3947835..1bbb1b2 100644
  /*
   * trace_clock(): 'between' trace clock. Not completely serialized,
 diff --git a/localversion-rt b/localversion-rt
-index f36b5d4..f38a3cc 100644
+index 9788245..4e32122 100644
 --- a/localversion-rt
 +++ b/localversion-rt
 @@ -1 +1 @@
---rt70
-+-rt71
+--rt117
++-rt118
