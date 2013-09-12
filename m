@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757559Ab3ILBei (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 21:34:38 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:46513 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752029Ab3ILBeg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 21:34:36 -0400
+	id S1757573Ab3ILBfQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 21:35:16 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:38722 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751236Ab3ILBfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 21:35:14 -0400
 From: Milo Kim <milo.kim@ti.com>
 To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-pwm@vger.kernel.org>,
         Linus Walleij <linus.walleij@linaro.org>,
         Thierry Reding <thierry.reding@gmail.com>,
         <devicetree@vger.kernel.org>, Milo Kim <milo.kim@ti.com>
-Subject: [PATCH 4/4] Documentation: add LP3943 DT bindings and document
-Date: Thu, 12 Sep 2013 10:34:23 +0900
-Message-ID: <1378949663-6338-1-git-send-email-milo.kim@ti.com>
+Subject: [PATCH v3 4/4] Documentation: add LP3943 DT bindings and document
+Date: Thu, 12 Sep 2013 10:35:00 +0900
+Message-ID: <1378949700-6384-1-git-send-email-milo.kim@ti.com>
 X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
 Content-Type: text/plain
