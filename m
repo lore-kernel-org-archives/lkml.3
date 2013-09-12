@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832Ab3ILMFK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 08:05:10 -0400
-Received: from e24smtp05.br.ibm.com ([32.104.18.26]:47986 "EHLO
-	e24smtp05.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752982Ab3ILMFI (ORCPT
+	id S1753946Ab3ILMHZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 08:07:25 -0400
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:49892 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752312Ab3ILMHY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 08:05:08 -0400
-Date: Thu, 12 Sep 2013 09:05:00 -0300
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ehea: remove deprecated IRQF_DISABLED
-Message-ID: <20130912120500.GB28361@oc0268524204.ibm.com>
-References: <1378957571-3574-1-git-send-email-michael.opdenacker@free-electrons.com>
+	Thu, 12 Sep 2013 08:07:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378957571-3574-1-git-send-email-michael.opdenacker@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091212-2362-0000-0000-00000BC35B00
+In-Reply-To: <1378720815-23964-1-git-send-email-jean.pihet@linaro.org>
+References: <1378720815-23964-1-git-send-email-jean.pihet@linaro.org>
+Date: Thu, 12 Sep 2013 14:07:23 +0200
+Message-ID: <CAFrcx1mQ-P7byYfqP-0bYabUzTDeSWyHFx2FJQ6wQLYEcV_Pxw@mail.gmail.com>
+Subject: Re: [PATCH 0/3] perf: parse the dwarf backtrace info from
+ .debug_frame section
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Will Deacon <will.deacon@arm.com>, Jiri Olsa <jolsa@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        ".Peter Zijlstra" <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 05:46:11AM +0200, Michael Opdenacker wrote:
-> This patch proposes to remove the IRQF_DISABLED flag from
-> drivers/net/ethernet/ibm/ehea/ehea_main.c
-> 
-> It's a NOOP since 2.6.35 and it will be removed one day.
-> 
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-> ---
->  drivers/net/ethernet/ibm/ehea/ehea_main.c | 7 +++----
->  1 file changed, 3 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/ibm/ehea/ehea_main.c b/drivers/net/ethernet/ibm/ehea/ehea_main.c
-> index 35853b4..04e0ef1 100644
-> --- a/drivers/net/ethernet/ibm/ehea/ehea_main.c
-> +++ b/drivers/net/ethernet/ibm/ehea/ehea_main.c
-> @@ -1285,7 +1285,7 @@ static int ehea_reg_interrupts(struct net_device *dev)
-> 
->  	ret = ibmebus_request_irq(port->qp_eq->attr.ist1,
->  				  ehea_qp_aff_irq_handler,
-> -				  IRQF_DISABLED, port->int_aff_name, port);
-> +				  0, port->int_aff_name, port);
->  	if (ret) {
->  		netdev_err(dev, "failed registering irq for qp_aff_irq_handler:ist=%X\n",
->  			   port->qp_eq->attr.ist1);
-> @@ -1303,8 +1303,7 @@ static int ehea_reg_interrupts(struct net_device *dev)
->  			 "%s-queue%d", dev->name, i);
->  		ret = ibmebus_request_irq(pr->eq->attr.ist1,
->  					  ehea_recv_irq_handler,
-> -					  IRQF_DISABLED, pr->int_send_name,
-> -					  pr);
-> +					  0, pr->int_send_name, pr);
->  		if (ret) {
->  			netdev_err(dev, "failed registering irq for ehea_queue port_res_nr:%d, ist=%X\n",
->  				   i, pr->eq->attr.ist1);
-> @@ -3320,7 +3319,7 @@ static int ehea_probe_adapter(struct platform_device *dev)
->  	}
-> 
->  	ret = ibmebus_request_irq(adapter->neq->attr.ist1,
-> -				  ehea_interrupt_neq, IRQF_DISABLED,
-> +				  ehea_interrupt_neq, 0,
->  				  "ehea_neq", adapter);
->  	if (ret) {
->  		dev_err(&dev->dev, "requesting NEQ IRQ failed\n");
-> -- 
-> 1.8.1.2
-> 
+Hi,
 
-Acked-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+-- Adding more maintainers in the To: list --
 
+Ping about the patch set, is this one acceptable for mainline?
+
+Jean
+
+On 9 September 2013 12:00, Jean Pihet <jean.pihet@linaro.org> wrote:
+> On ARM the debug info is not present in the .eh_frame sections but
+> in .debug_frame instead, in dwarf format.
+>
+> This patch set uses libunwind to load and parse the dwarf debug info from
+> the .debug_frame section if no .eh_frame_hdr section is found; also it
+> sets the hooks in the perf_regs and libunwind code for ARMv7.
+>
+> Dependencies:
+>  . if present, libunwind >= 1.1 is needed to prevent a segfault when
+>    parsing the dwarf info,
+>  . libunwind needs to be configured with --enable-debug-frame
+>    to prevent a linkage error. Note: --enable-debug-frame is automatically
+>    selected on ARM).
+>
+> The generated perf has been tested on ARMv7/OMAP4 and x86_64, using the
+> following commands:
+>  perf record -g [dwarf] -- <binary>
+>  perf report --sort symbol --call-graph --stdio
+>
+>
+> Jean Pihet (1):
+>   perf: parse the .debug_frame section in case .eh_frame is not present
+>
+> Will Deacon (2):
+>   ARM: perf: add support for perf registers API
+>   ARM: perf: wire up perf_regs and unwind support for ARM
+>
+>  arch/arm/Kconfig                        |  2 +
+>  arch/arm/include/uapi/asm/Kbuild        |  1 +
+>  arch/arm/include/uapi/asm/perf_regs.h   | 23 +++++++++++
+>  arch/arm/kernel/Makefile                |  1 +
+>  arch/arm/kernel/perf_regs.c             | 30 ++++++++++++++
+>  tools/perf/arch/arm/Makefile            |  3 ++
+>  tools/perf/arch/arm/include/perf_regs.h | 54 +++++++++++++++++++++++++
+>  tools/perf/arch/arm/util/unwind.c       | 48 ++++++++++++++++++++++
+>  tools/perf/config/Makefile              |  9 +++--
+>  tools/perf/util/unwind.c                | 71 +++++++++++++++++++++++++--------
+>  10 files changed, 223 insertions(+), 19 deletions(-)
+>  create mode 100644 arch/arm/include/uapi/asm/perf_regs.h
+>  create mode 100644 arch/arm/kernel/perf_regs.c
+>  create mode 100644 tools/perf/arch/arm/include/perf_regs.h
+>  create mode 100644 tools/perf/arch/arm/util/unwind.c
+>
+> --
+> 1.7.11.7
+>
