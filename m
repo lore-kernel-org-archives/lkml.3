@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021Ab3ILR0n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 13:26:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56583 "EHLO
+	id S1755320Ab3ILR2R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 13:28:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56639 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754808Ab3ILR0h (ORCPT
+	with ESMTP id S1755019Ab3ILR0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 13:26:37 -0400
+	Thu, 12 Sep 2013 13:26:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Ding Tianhong <dingtianhong@huawei.com>,
-        George Kargiotakis <kargig@void.gr>, P J P <ppandit@redhat.com>,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 08/19] ipv6: remove max_addresses check from ipv6_create_tempaddr
-Date: Thu, 12 Sep 2013 10:26:17 -0700
-Message-Id: <20130912172525.076734923@linuxfoundation.org>
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 17/19] m32r: add memcpy() for CONFIG_KERNEL_GZIP=y
+Date: Thu, 12 Sep 2013 10:26:26 -0700
+Message-Id: <20130912172526.030593512@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130912172524.135620246@linuxfoundation.org>
 References: <20130912172524.135620246@linuxfoundation.org>
@@ -30,64 +30,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-[ Upstream commit 4b08a8f1bd8cb4541c93ec170027b4d0782dab52 ]
+commit a8abbca6617e1caa2344d2d38d0a35f3e5928b79 upstream.
 
-Because of the max_addresses check attackers were able to disable privacy
-extensions on an interface by creating enough autoconfigured addresses:
+Fix the m32r link error:
 
-<http://seclists.org/oss-sec/2012/q4/292>
+    LD      arch/m32r/boot/compressed/vmlinux
+  arch/m32r/boot/compressed/misc.o: In function `zlib_updatewindow':
+  misc.c:(.text+0x190): undefined reference to `memcpy'
+  misc.c:(.text+0x190): relocation truncated to fit: R_M32R_26_PLTREL against undefined symbol `memcpy'
+  make[5]: *** [arch/m32r/boot/compressed/vmlinux] Error 1
 
-But the check is not actually needed: max_addresses protects the
-kernel to install too many ipv6 addresses on an interface and guards
-addrconf_prefix_rcv to install further addresses as soon as this limit
-is reached. We only generate temporary addresses in direct response of
-a new address showing up. As soon as we filled up the maximum number of
-addresses of an interface, we stop installing more addresses and thus
-also stop generating more temp addresses.
+by adding our own implementation of memcpy().
 
-Even if the attacker tries to generate a lot of temporary addresses
-by announcing a prefix and removing it again (lifetime == 0) we won't
-install more temp addresses, because the temporary addresses do count
-to the maximum number of addresses, thus we would stop installing new
-autoconfigured addresses when the limit is reached.
-
-This patch fixes CVE-2013-0343 (but other layer-2 attacks are still
-possible).
-
-Thanks to Ding Tianhong to bring this topic up again.
-
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Ding Tianhong <dingtianhong@huawei.com>
-Cc: George Kargiotakis <kargig@void.gr>
-Cc: P J P <ppandit@redhat.com>
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Acked-by: Ding Tianhong <dingtianhong@huawei.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Hirokazu Takata <takata@linux-m32r.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/addrconf.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
 
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -912,12 +912,10 @@ retry:
- 	if (ifp->flags & IFA_F_OPTIMISTIC)
- 		addr_flags |= IFA_F_OPTIMISTIC;
+---
+ arch/m32r/boot/compressed/misc.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+--- a/arch/m32r/boot/compressed/misc.c
++++ b/arch/m32r/boot/compressed/misc.c
+@@ -39,6 +39,16 @@ static void *memset(void *s, int c, size
+ #endif
  
--	ift = !max_addresses ||
--	      ipv6_count_addresses(idev) < max_addresses ?
--		ipv6_add_addr(idev, &addr, tmp_plen,
--			      ipv6_addr_type(&addr)&IPV6_ADDR_SCOPE_MASK,
--			      addr_flags) : NULL;
--	if (!ift || IS_ERR(ift)) {
-+	ift = ipv6_add_addr(idev, &addr, tmp_plen,
-+			    ipv6_addr_type(&addr)&IPV6_ADDR_SCOPE_MASK,
-+			    addr_flags);
-+	if (IS_ERR(ift)) {
- 		in6_ifa_put(ifp);
- 		in6_dev_put(idev);
- 		printk(KERN_INFO
+ #ifdef CONFIG_KERNEL_GZIP
++void *memcpy(void *dest, const void *src, size_t n)
++{
++	char *d = dest;
++	const char *s = src;
++	while (n--)
++		*d++ = *s++;
++
++	return dest;
++}
++
+ #define BOOT_HEAP_SIZE             0x10000
+ #include "../../../../lib/decompress_inflate.c"
+ #endif
 
 
