@@ -1,91 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756262Ab3ILSIO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:08:14 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:59680 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753421Ab3ILSIK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 14:08:10 -0400
-Message-ID: <52320304.306@wwwdotorg.org>
-Date: Thu, 12 Sep 2013 12:08:04 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] cpufreq: use correct values of cpus in __cpufreq_remove_dev_finish()
-References: <cover.1378963070.git.viresh.kumar@linaro.org> <8f777cc6b41b2fed4bf71ce2adc36800353d5738.1378963070.git.viresh.kumar@linaro.org> <523161D1.9040005@linux.vnet.ibm.com> <CAKohpomz-EDbRNqv58zn6B+kC1jdjrxx68hoDrAj==+YbeTj=g@mail.gmail.com> <CAKohpomCXoO20cQyCrWtN0WgWnzvVmEqFxuwTU8V0GpXsQxgHw@mail.gmail.com> <52316A40.4050600@linux.vnet.ibm.com> <CAKohponzohnOL4Y81Q1W4Yg=paRO46c-gY=HMbkFUqgrjsT+xw@mail.gmail.com>
-In-Reply-To: <CAKohponzohnOL4Y81Q1W4Yg=paRO46c-gY=HMbkFUqgrjsT+xw@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756828Ab3ILSIb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:08:31 -0400
+Received: from mga14.intel.com ([143.182.124.37]:14134 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756064Ab3ILSI2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 14:08:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,892,1371106800"; 
+   d="scan'208";a="294146123"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH] perf tools: fix objdump line parsing offset validation
+Date: Thu, 12 Sep 2013 21:15:21 +0300
+Message-Id: <1379009721-27667-1-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2013 03:21 AM, Viresh Kumar wrote:
-> On 12 September 2013 12:46, Srivatsa S. Bhat
-> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->> That sounds good! Even the naming is much better, it conveys the intent
->> clearly.
-> 
-> Folded below change in my patch (attached):
-...
+When parsing lines from objdump a line containing source
+code starting with a numeric label is mistaken for a line
+of disassembly starting with a memory address.  Current
+validation fails to recognise that the "memory address" is
+out of range and calculates an invalid offset which later
+causes this segfault:
 
-For the record, the patch which was attached to Viresh's email solves
-the hangs I was getting in next-20130912 during (the second?) CPU
-hotplug and resume. So,
+Program received signal SIGSEGV, Segmentation fault.
+0x0000000000457315 in disasm__calc_percent (notes=0xc98970, evidx=0, offset=143705, end=2127526177, path=0x7fffffffbf50)
+    at util/annotate.c:631
+631				hits += h->addr[offset++];
+(gdb) bt
+ #0  0x0000000000457315 in disasm__calc_percent (notes=0xc98970, evidx=0, offset=143705, end=2127526177, path=0x7fffffffbf50)
+    at util/annotate.c:631
+ #1  0x00000000004d65e3 in annotate_browser__calc_percent (browser=0x7fffffffd130, evsel=0xa01da0) at ui/browsers/annotate.c:364
+ #2  0x00000000004d7433 in annotate_browser__run (browser=0x7fffffffd130, evsel=0xa01da0, hbt=0x0) at ui/browsers/annotate.c:672
+ #3  0x00000000004d80c9 in symbol__tui_annotate (sym=0xc989a0, map=0xa02660, evsel=0xa01da0, hbt=0x0) at ui/browsers/annotate.c:962
+ #4  0x00000000004d7aa0 in hist_entry__tui_annotate (he=0xdf73f0, evsel=0xa01da0, hbt=0x0) at ui/browsers/annotate.c:823
+ #5  0x00000000004dd648 in perf_evsel__hists_browse (evsel=0xa01da0, nr_events=1, helpline=
+    0x58b768 "For a higher level overview, try: perf report --sort comm,dso", ev_name=0xa02cd0 "cycles", left_exits=false, hbt=
+    0x0, min_pcnt=0, env=0xa011e0) at ui/browsers/hists.c:1659
+ #6  0x00000000004de372 in perf_evlist__tui_browse_hists (evlist=0xa01520, help=
+    0x58b768 "For a higher level overview, try: perf report --sort comm,dso", hbt=0x0, min_pcnt=0, env=0xa011e0)
+    at ui/browsers/hists.c:1950
+ #7  0x000000000042cf6b in __cmd_report (rep=0x7fffffffd6c0) at builtin-report.c:581
+ #8  0x000000000042e25d in cmd_report (argc=0, argv=0x7fffffffe4b0, prefix=0x0) at builtin-report.c:965
+ #9  0x000000000041a0e1 in run_builtin (p=0x801548, argc=1, argv=0x7fffffffe4b0) at perf.c:319
+ #10 0x000000000041a319 in handle_internal_command (argc=1, argv=0x7fffffffe4b0) at perf.c:376
+ #11 0x000000000041a465 in run_argv (argcp=0x7fffffffe38c, argv=0x7fffffffe380) at perf.c:420
+ #12 0x000000000041a707 in main (argc=1, argv=0x7fffffffe4b0) at perf.c:521
 
-Tested-by: Stephen Warren <swarren@nvidia.com>
+After the fix is applied the symbol can be annotated
+showing the problematic line "1:      rep"
 
-Without this, I saw:
+copy_user_generic_string  /usr/lib/debug/lib/modules/3.9.10-100.fc17.x86_64/vmlinux
+             */
+            ENTRY(copy_user_generic_string)
+                    CFI_STARTPROC
+                    ASM_STAC
+                    andl %edx,%edx
+              and    %edx,%edx
+                    jz 4f
+              je     37
+                    cmpl $8,%edx
+              cmp    $0x8,%edx
+                    jb 2f           /* less than 8 bytes, go to byte copy loop */
+              jb     33
+                    ALIGN_DESTINATION
+              mov    %edi,%ecx
+              and    $0x7,%ecx
+              je     28
+              sub    $0x8,%ecx
+              neg    %ecx
+              sub    %ecx,%edx
+        1a:   mov    (%rsi),%al
+              mov    %al,(%rdi)
+              inc    %rsi
+              inc    %rdi
+              dec    %ecx
+              jne    1a
+                    movl %edx,%ecx
+        28:   mov    %edx,%ecx
+                    shrl $3,%ecx
+              shr    $0x3,%ecx
+                    andl $7,%edx
+              and    $0x7,%edx
+            1:      rep
+100.00        rep    movsq %ds:(%rsi),%es:(%rdi)
+                    movsq
+            2:      movl %edx,%ecx
+        33:   mov    %edx,%ecx
+            3:      rep
+              rep    movsb %ds:(%rsi),%es:(%rdi)
+                    movsb
+            4:      xorl %eax,%eax
+        37:   xor    %eax,%eax
+              data32 xchg %ax,%ax
+                    ASM_CLAC
+                    ret
+              retq
 
-> root@localhost:~# ./cpuonline.py 
-> echo 0 > /sys/devices/system/cpu/cpu1/online
-> [   24.049729] CPU1: shutdown
-> echo 1 > /sys/devices/system/cpu/cpu1/online
-> [   26.090439] CPU1: Booted secondary processor
-> root@localhost:~# ./cpuonline.py 
-> echo 0 > /sys/devices/system/cpu/cpu1/online
-> [   29.003016] CPU1: shutdown
-> echo 1 > /sys/devices/system/cpu/cpu1/online
-> [   31.032562] CPU1: Booted secondary processor
-[hung]
-> [  240.300393] INFO: task ondemand:678 blocked for more than 120 seconds.
-> [  240.312842] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> [  240.326658] ondemand        D c050f6cc     0   678      1 0x00000000
-> [  240.339062] [<c050f6cc>] (__schedule+0x330/0x6d0) from [<c050fe50>] (schedule_preempt_disabled+0x24/0x34)
-> [  240.354904] [<c050fe50>] (schedule_preempt_disabled+0x24/0x34) from [<c050e810>] (__mutex_lock_slowpath+0x178/0x370)
-> [  240.371767] [<c050e810>] (__mutex_lock_slowpath+0x178/0x370) from [<c050ea14>] (mutex_lock+0xc/0x24)
-> [  240.387363] [<c050ea14>] (mutex_lock+0xc/0x24) from [<c00245e8>] (get_online_cpus+0x2c/0x48)
-> [  240.402273] [<c00245e8>] (get_online_cpus+0x2c/0x48) from [<c0342c0c>] (store+0x18/0xbc)
-> [  240.417688] [<c0342c0c>] (store+0x18/0xbc) from [<c011d598>] (sysfs_write_file+0x168/0x198)
-> [  240.432687] [<c011d598>] (sysfs_write_file+0x168/0x198) from [<c00cbf98>] (vfs_write+0xb0/0x188)
-> [  240.448185] [<c00cbf98>] (vfs_write+0xb0/0x188) from [<c00cc348>] (SyS_write+0x3c/0x70)
-> [  240.462964] [<c00cc348>] (SyS_write+0x3c/0x70) from [<c000e540>] (ret_fast_syscall+0x0/0x30)
-> [  240.478239] INFO: task sh:827 blocked for more than 120 seconds.
-> [  240.491027] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> [  240.505795] sh              D c050f6cc     0   827    825 0x00000001
-> [  240.519169] [<c050f6cc>] (__schedule+0x330/0x6d0) from [<c0510660>] (__down_write_nested+0x78/0xcc)
-> [  240.535666] [<c0510660>] (__down_write_nested+0x78/0xcc) from [<c0342ae0>] (lock_policy_rwsem_write+0x34/0x48)
-> [  240.552950] [<c0342ae0>] (lock_policy_rwsem_write+0x34/0x48) from [<c0343a04>] (cpufreq_update_policy+0x20/0xec)
-> [  240.570631] [<c0343a04>] (cpufreq_update_policy+0x20/0xec) from [<c0344410>] (cpufreq_cpu_callback+0x78/0x8c)
-> [  240.588051] [<c0344410>] (cpufreq_cpu_callback+0x78/0x8c) from [<c0042f44>] (notifier_call_chain+0x44/0x84)
-> [  240.605401] [<c0042f44>] (notifier_call_chain+0x44/0x84) from [<c0024594>] (__cpu_notify+0x28/0x44)
-> [  240.622085] [<c0024594>] (__cpu_notify+0x28/0x44) from [<c00247fc>] (_cpu_up+0x100/0x154)
-> [  240.638006] [<c00247fc>] (_cpu_up+0x100/0x154) from [<c00248c4>] (cpu_up+0x5c/0x84)
-> [  240.653405] [<c00248c4>] (cpu_up+0x5c/0x84) from [<c028a2a8>] (device_online+0x64/0x88)
-> [  240.669263] [<c028a2a8>] (device_online+0x64/0x88) from [<c028a328>] (store_online+0x5c/0x64)
-> [  240.685683] [<c028a328>] (store_online+0x5c/0x64) from [<c028816c>] (dev_attr_store+0x18/0x24)
-> [  240.702337] [<c028816c>] (dev_attr_store+0x18/0x24) from [<c011d598>] (sysfs_write_file+0x168/0x198)
-> [  240.719520] [<c011d598>] (sysfs_write_file+0x168/0x198) from [<c00cbf98>] (vfs_write+0xb0/0x188)
-> [  240.736614] [<c00cbf98>] (vfs_write+0xb0/0x188) from [<c00cc348>] (SyS_write+0x3c/0x70)
-> [  240.752799] [<c00cc348>] (SyS_write+0x3c/0x70) from [<c000e540>] (ret_fast_syscall+0x0/0x30)
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/util/annotate.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index bfc5a27..7eae548 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -809,7 +809,7 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
+ 		    end = map__rip_2objdump(map, sym->end);
+ 
+ 		offset = line_ip - start;
+-		if (offset < 0 || (u64)line_ip > end)
++		if ((u64)line_ip < start || (u64)line_ip > end)
+ 			offset = -1;
+ 		else
+ 			parsed_line = tmp2 + 1;
+-- 
+1.7.11.7
 
