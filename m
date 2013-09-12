@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913Ab3ILOZx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 10:25:53 -0400
-Received: from imap.thunk.org ([74.207.234.97]:58994 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751818Ab3ILOZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 10:25:52 -0400
-Date: Thu, 12 Sep 2013 10:25:46 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Stephan Mueller <smueller@chronox.de>, LKML <linux-kernel@vger.kernel.org>,
-        dave.taht@bufferbloat.net
-Subject: Re: [PATCH] /dev/random: Insufficient of entropy on many
- architectures
-Message-ID: <20130912142546.GE12918@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Geert Uytterhoeven <geert@linux-m68k.org>,
-	Stephan Mueller <smueller@chronox.de>,
-	LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net
-References: <10005394.BRCyBMYWy3@tauon>
- <CAMuHMdXcXGpgE5ArcjNU-RgAr52qB8ih_b48jwR=+OqK4RDhFA@mail.gmail.com>
- <20130910211454.GJ29237@thunk.org>
- <2947789.S63SVUbC3N@tauon>
- <CAMuHMdWMiD1kw34CUJ-KCbk4mKggjtMzxVPpkN=ddfaq_vs9sg@mail.gmail.com>
+	id S1753123Ab3ILO1L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 10:27:11 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:4326 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751551Ab3ILO1K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 10:27:10 -0400
+Message-ID: <5231CF30.8050500@hp.com>
+Date: Thu, 12 Sep 2013 10:26:56 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdWMiD1kw34CUJ-KCbk4mKggjtMzxVPpkN=ddfaq_vs9sg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+CC: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, andr345@gmail.com,
+        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        arthur.marsh@internode.on.net, tim.c.chen@linux.intel.com,
+        linux-crypto@vger.kernel.org
+Subject: Re: [3.12-rc1] Dependency on module-init-tools >= 3.11 ?
+References: <201307201456.JIC35412.VFOMFJOQLOtHFS@I-love.SAKURA.ne.jp> <201309112043.HBD04609.FOtLSOFVQHFOJM@I-love.SAKURA.ne.jp> <20130912042622.GA15181@gondor.apana.org.au> <201309121403.FIH09821.JtLOVOSFOFHFQM@I-love.SAKURA.ne.jp> <20130912052806.GA15737@gondor.apana.org.au> <201309121920.AHJ58678.OMVJFFSHOtOFQL@I-love.SAKURA.ne.jp> <20130912102953.GA18916@gondor.apana.org.au>
+In-Reply-To: <20130912102953.GA18916@gondor.apana.org.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 01:59:04PM +0200, Geert Uytterhoeven wrote:
-> 
-> BTW, I prefer a different name than "random_get_fast_cycles()", as it's better
-> to have something that returns different and unpredictable numbers than an
-> actual monotonic cycle counter.
+On 09/12/2013 06:29 AM, Herbert Xu wrote:
+> On Thu, Sep 12, 2013 at 07:20:23PM +0900, Tetsuo Handa wrote:
+>> Herbert Xu wrote:
+>>> The trouble is not all distros will include the softdep modules in
+>>> the initramfs.  So for now I think we will have to live with a fallback.
+>> I see.
+>>
+>> Herbert Xu wrote:
+>>> OK, can you please try this patch on top of the current tree?
+>>>
+>>> This way at least you'll have a working system until your initramfs
+>>> tool is fixed to do the right thing.
+>> I tested the patch and confirmed that the boot failure was solved.
+>>
+>> But arch/x86/crypto/crct10dif-pclmul.ko is not included into initramfs and
+>> therefore we cannot benefit from PCLMULQDQ version.
+> That is expected and is also the status quo.  So once the initrd
+> generation tool is fixed to include softdeps it will work properly.
+>
+> Thanks!
 
-I'm open to a different name; the point I was trying to make with that
-name proposal was to be clear that it had to be very low overhead, and
-that the intent of this interface was that it be time dependent in
-some fashion (since that is how we are trying to generate the entropy
-source).  The problem with "time" is that it implies that it is in
-units of seconds.  I was trying to come up with something that was
-more generic, which is why I suggested "randome_get_fast_cycles()".
+I would like to report that I also have the same boot problem on a 
+RHEL6.4 box with the crypto patch. My workaround is to force kernel 
+build to have the crc_t10dif code built-in by changing the config file:
 
-If the CPU has a source which is specified to be complately
-unpredictable, we have arch_get_random_long(), which the random driver
-uses as well.
+4889c4889
+< CONFIG_CRYPTO_CRCT10DIF=m
+---
+ > CONFIG_CRYPTO_CRCT10DIF=y
+5002c5002
+< CONFIG_CRC_T10DIF=m
+---
+ > CONFIG_CRC_T10DIF=y
 
-I get that there could be other things, such as some kind of dram
-refresh counter, or the raster scan line if you had an embedded video
-chip on something like an Apple II :-) and thse things would work too.
+This solved the boot problem without any additional patch.  Do you think 
+you should consider changing the configuration default to "y" instead of 
+"m" or doesn't allow the "m" option at all?
 
-But if someone can suggest a different name, sure, let's talk about
-it.  It may be, though, that the best we can do is to pick a name
-which is not too misleading, even if it is not 100% precise.  That can
-happen sometimes, alas.
-
-Regards,
-
-						- Ted
+Thanks!
