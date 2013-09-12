@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756809Ab3ILSRM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:17:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57313 "EHLO
+	id S1756852Ab3ILSRq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:17:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57301 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757265Ab3ILSPV (ORCPT
+	with ESMTP id S1756643Ab3ILSPT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 14:15:21 -0400
+	Thu, 12 Sep 2013 14:15:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 13/16] imx-drm: imx-drm-core: Export imx_drm_encoder_get_mux_id
-Date: Thu, 12 Sep 2013 11:15:05 -0700
-Message-Id: <20130912181157.635745076@linuxfoundation.org>
+        Mark Rusk <mark.rusk@hp.com>
+Subject: [ 11/16] drivers/misc/hpilo: Correct panic when an AUX iLO is detected
+Date: Thu, 12 Sep 2013 11:15:03 -0700
+Message-Id: <20130912181157.437896478@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130912181156.173326121@linuxfoundation.org>
 References: <20130912181156.173326121@linuxfoundation.org>
@@ -29,36 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+From: Mark Rusk <Mark.Rusk@hp.com>
 
-commit ea8d15832016b0d07a8121159904e6b1d21b5b8b upstream.
+commit eefbc594abbb1b7e6e7eeadb65ae7c7538474210 upstream.
 
-When building imx_v6_v7_defconfig with imx-drm drivers selected as modules, we
-get the following build error:
+ Using an uninitialized variable 'devnum' after 'goto out;' was causing
+ panic.  Just go ahead and return, we need to ignore AUX iLO devs.
 
-ERROR: "imx_drm_encoder_get_mux_id" [drivers/staging/imx-drm/imx-ldb.ko] undefined!
+ Oops: 0002 [#1] SMP
+   .
+   .
+   .
+ RIP  [<ffffffffa033e270>] ilo_probe+0xec/0xe7c [hpilo]
 
-Export the required function to avoid this problem.
-
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
-Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Mark Rusk <mark.rusk@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/imx-drm/imx-drm-core.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/misc/hpilo.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/staging/imx-drm/imx-drm-core.c
-+++ b/drivers/staging/imx-drm/imx-drm-core.c
-@@ -678,6 +678,7 @@ found:
+--- a/drivers/misc/hpilo.c
++++ b/drivers/misc/hpilo.c
+@@ -759,7 +759,7 @@ static int ilo_probe(struct pci_dev *pde
  
- 	return i;
+ 	/* Ignore subsystem_device = 0x1979 (set by BIOS)  */
+ 	if (pdev->subsystem_device == 0x1979)
+-		goto out;
++		return 0;
+ 
+ 	if (max_ccb > MAX_CCB)
+ 		max_ccb = MAX_CCB;
+@@ -899,7 +899,7 @@ static void __exit ilo_exit(void)
+ 	class_destroy(ilo_class);
  }
-+EXPORT_SYMBOL_GPL(imx_drm_encoder_get_mux_id);
  
- /*
-  * imx_drm_remove_encoder - remove an encoder
+-MODULE_VERSION("1.4");
++MODULE_VERSION("1.4.1");
+ MODULE_ALIAS(ILO_NAME);
+ MODULE_DESCRIPTION(ILO_NAME);
+ MODULE_AUTHOR("David Altobelli <david.altobelli@hp.com>");
 
 
