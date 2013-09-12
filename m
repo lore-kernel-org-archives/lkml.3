@@ -1,166 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176Ab3ILKgy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 06:36:54 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41284 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752344Ab3ILKgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 06:36:52 -0400
-Message-ID: <52319912.8030203@ti.com>
-Date: Thu, 12 Sep 2013 13:36:02 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: <balbi@ti.com>, <bcousson@baylibre.com>, <tony@atomide.com>,
-        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <linux@arm.linux.org.uk>,
-        <grant.likely@linaro.org>, <s.nawrocki@samsung.com>,
-        <galak@codeaurora.org>, <swarren@wwwdotorg.org>,
-        <ian.campbell@citrix.com>, <rob@landley.net>, <george.cherian@ti.com>,
-        <gregkh@linuxfoundation.org>, <linux-doc@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/7] usb: dwc3: get "usb_phy" only if the platform indicates
- the presence of PHY
-References: <1378136591-7463-1-git-send-email-kishon@ti.com> <1378136591-7463-2-git-send-email-kishon@ti.com>
-In-Reply-To: <1378136591-7463-2-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1752813Ab3ILKmE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 06:42:04 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:16221 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751495Ab3ILKmB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 06:42:01 -0400
+X-AuditID: cbfee691-b7f4a6d0000074fc-5d-52319a772278
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Michal Simek'" <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        monstr@monstr.eu
+Cc: "'Jean-Christophe Plagniol-Villard'" <plagnioj@jcrosoft.com>,
+        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
+        linux-fbdev@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
+References: <7016a90750626ba866dddc6f85cfdd71943f6891.1378965270.git.michal.simek@xilinx.com>
+ <f9868e54718ba467691085ff78061a447eef3635.1378965270.git.michal.simek@xilinx.com>
+In-reply-to: <f9868e54718ba467691085ff78061a447eef3635.1378965270.git.michal.simek@xilinx.com>
+Subject: Re: [PATCH 2/3] video: xilinxfb: Use devm_kzalloc instead of kzalloc
+Date: Thu, 12 Sep 2013 19:42:00 +0900
+Message-id: <000c01ceafa4$b6294b60$227be220$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac6vfNElQwIZa4AmRMGICEDWsAoR0QAJ3a6Q
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCIsWRmVeSWpSXmKPExsVy+t8zI92KWYZBBptELS4vvMRqcaLvA6vF
+	5V1z2CzevYywePLxNIvFuocvmCzWz7/F5sDu8erCHRaPv11TmD36tqxi9Dh+YzuTx+dNch57
+	P/9mCWCL4rJJSc3JLEst0rdL4MrYOPcja8ExpopL06awNzC2MXUxcnJICJhIzDjdwA5hi0lc
+	uLeerYuRi0NIYBmjxP6mW6xdjBxgRZM7ckFqhASmM0rMaDWEqPnFKNG68T0rSIJNQE3iy5fD
+	YINEBOIkeg/sZAQpYhZYyyixZP4WRoiOzYwSs5+dYwOZyimQINF4PhakQVjAV+LyhGUsIDaL
+	gKrEzhMrmUFsXgFbiQMTbrJB2IISPybfA6thFtCSWL/zOBOELS+xec1bZohD1SUe/dWFuMFI
+	4ld7O1SJiMS+F+/ATpAQ+MousfDTF2aIXQIS3yYfYoHolZXYdIAZEhCSEgdX3GCZwCgxC8nm
+	WUg2z0KyeRaSFQsYWVYxiqYWJBcUJ6UXmeoVJ+YWl+al6yXn525ihMTwxB2M9w9YH2JMBlo/
+	kVlKNDkfmALySuINjc2MLExNTI2NzC3NSBNWEudVb7EOFBJITyxJzU5NLUgtii8qzUktPsTI
+	xMEp1cCovlNpnR6XU8LckD7jjUZB3nuWiC/0rOV97DXXfMED5dkCRafkvx5vEJlyvpvV4aml
+	iFVPiMvks2Jr9r+c69yq8u1ET1JJUlrLIsHKhXXhlQFsRm4Tfi19ILJilWuJ48x24TPrl9So
+	sMxqysisMV23b83iw18PsVoVa1g52034oPrsU8butTOVWIozEg21mIuKEwHeuNj89wIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrEKsWRmVeSWpSXmKPExsVy+t9jQd3yWYZBBnenWFpcXniJ1eJE3wdW
+	i8u75rBZvHsZYfHk42kWi3UPXzBZrJ9/i82B3ePVhTssHn+7pjB79G1Zxehx/MZ2Jo/Pm+Q8
+	9n7+zRLAFtXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6Dr
+	lpkDdIuSQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMWPj3I+sBceYKi5N
+	m8LewNjG1MXIwSEhYCIxuSO3i5ETyBSTuHBvPRuILSQwnVFiRqthFyMXkP2LUaJ143tWkASb
+	gJrEly+H2UFsEYE4id4DOxlBipgF1jJKLJm/hRGiYzOjxOxn59hANnAKJEg0no8FaRAW8JW4
+	PGEZC4jNIqAqsfPESmYQm1fAVuLAhJtsELagxI/J98BqmAW0JNbvPM4EYctLbF7zlhniaHWJ
+	R391IW4wkvjV3g5VIiKx78U7xgmMQrOQTJqFZNIsJJNmIWlZwMiyilE0tSC5oDgpPddQrzgx
+	t7g0L10vOT93EyM4RTyT2sG4ssHiEKMAB6MSD2/HLIMgIdbEsuLK3EOMEhzMSiK8nycaBgnx
+	piRWVqUW5ccXleakFh9iTAZ6dCKzlGhyPjB95ZXEGxqbmBlZGplZGJmYm5MmrCTOe6DVOlBI
+	ID2xJDU7NbUgtQhmCxMHp1QDY8DW9XcDxFQWJE28/GnbW+WkSY7M13Te2B3b+lC8rPRJzMln
+	+3h2Hm5cxlC95uXUT0eYr7XfWD+n7rzo3U+r7+3hTrrW9CDXTPfd8h1He5ZV2sdYNSbbOk7b
+	m8BsbXOo+KqcS8+Twn8fU1ewHOY69Zov4D0z0EnXJlkE+TyZOy3vr/pBxezFN5VYijMSDbWY
+	i4oTARJtQCZVAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kishon,
-
-On 09/02/2013 06:43 PM, Kishon Vijay Abraham I wrote:
-> There can be systems which does not have a external usb_phy, so get
-> usb_phy only if usb-phy property is added in the case of dt boot or if
-> platform_data indicates the presence of PHY. Also remove checking if
-> return value is -ENXIO since it's now changed to always enable usb_phy layer.
+On Thursday, September 12, 2013 2:55 PM, Michal Simek wrote:
 > 
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> Simplify driver probe and release function.
+> 
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+
+Reviewed-by: Jingoo Han <jg1.han@samsung.com>
+
 > ---
->  drivers/usb/dwc3/Kconfig         |    1 +
->  drivers/usb/dwc3/core.c          |   60 +++++++++++++++++---------------------
->  drivers/usb/dwc3/platform_data.h |    1 +
->  3 files changed, 28 insertions(+), 34 deletions(-)
-> 
-> diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
-> index f969ea2..cfc16dd 100644
-> --- a/drivers/usb/dwc3/Kconfig
-> +++ b/drivers/usb/dwc3/Kconfig
-> @@ -2,6 +2,7 @@ config USB_DWC3
->  	tristate "DesignWare USB3 DRD Core Support"
->  	depends on (USB || USB_GADGET) && GENERIC_HARDIRQS && HAS_DMA
->  	depends on EXTCON
-> +	select USB_PHY
->  	select USB_XHCI_PLATFORM if USB_SUPPORT && USB_XHCI_HCD
->  	help
->  	  Say Y or M here if your system has a Dual Role SuperSpeed
-> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-> index 474162e..428c29e 100644
-> --- a/drivers/usb/dwc3/core.c
-> +++ b/drivers/usb/dwc3/core.c
-> @@ -387,16 +387,38 @@ static int dwc3_probe(struct platform_device *pdev)
->  	if (node) {
->  		dwc->maximum_speed = of_usb_get_maximum_speed(node);
->  
-> -		dwc->usb2_phy = devm_usb_get_phy_by_phandle(dev, "usb-phy", 0);
-> -		dwc->usb3_phy = devm_usb_get_phy_by_phandle(dev, "usb-phy", 1);
-> +		if (of_property_read_bool(node, "usb-phy")) {
-> +			dwc->usb2_phy = devm_usb_get_phy_by_phandle(dev,
-> +				"usb-phy", 0);
-> +			if (IS_ERR(dwc->usb2_phy))
-> +				return PTR_ERR(dwc->usb2_phy);
-> +			dwc->usb3_phy = devm_usb_get_phy_by_phandle(dev,
-> +				"usb-phy", 1);
-> +			if (IS_ERR(dwc->usb3_phy))
-> +				return PTR_ERR(dwc->usb3_phy);
+>  drivers/video/xilinxfb.c | 5 +----
+>  1 file changed, 1 insertion(+), 4 deletions(-)
 
-Some DWC3 instances use only usb2_phy. e.g. on DRA7 the 2nd dwc3 instance doesn't use usb3_phy.
-This needs to be a valid case and driver shouldn't error out.
 
-> +		} else {
-> +			dwc->usb2_phy = NULL;
-> +			dwc->usb3_phy = NULL;
-> +		}
->  
->  		dwc->needs_fifo_resize = of_property_read_bool(node, "tx-fifo-resize");
->  		dwc->dr_mode = of_usb_get_dr_mode(node);
->  	} else if (pdata) {
->  		dwc->maximum_speed = pdata->maximum_speed;
->  
-> -		dwc->usb2_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-> -		dwc->usb3_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB3);
-> +		if (pdata->has_phy) {
-> +			dwc->usb2_phy = devm_usb_get_phy(dev,
-> +				USB_PHY_TYPE_USB2);
-> +			if (IS_ERR(dwc->usb2_phy))
-> +				return PTR_ERR(dwc->usb2_phy);
-> +			dwc->usb3_phy = devm_usb_get_phy(dev,
-> +				USB_PHY_TYPE_USB3);
-> +			if (IS_ERR(dwc->usb3_phy))
-> +				return PTR_ERR(dwc->usb3_phy);
-
-same here?
-
-> +		} else {
-> +			dwc->usb2_phy = NULL;
-> +			dwc->usb3_phy = NULL;
-> +		}
->  
->  		dwc->needs_fifo_resize = pdata->tx_fifo_resize;
->  		dwc->dr_mode = pdata->dr_mode;
-> @@ -409,36 +431,6 @@ static int dwc3_probe(struct platform_device *pdev)
->  	if (dwc->maximum_speed == USB_SPEED_UNKNOWN)
->  		dwc->maximum_speed = USB_SPEED_SUPER;
->  
-> -	if (IS_ERR(dwc->usb2_phy)) {
-> -		ret = PTR_ERR(dwc->usb2_phy);
-> -
-> -		/*
-> -		 * if -ENXIO is returned, it means PHY layer wasn't
-> -		 * enabled, so it makes no sense to return -EPROBE_DEFER
-> -		 * in that case, since no PHY driver will ever probe.
-> -		 */
-> -		if (ret == -ENXIO)
-> -			return ret;
-> -
-> -		dev_err(dev, "no usb2 phy configured\n");
-> -		return -EPROBE_DEFER;
-> -	}
-> -
-> -	if (IS_ERR(dwc->usb3_phy)) {
-> -		ret = PTR_ERR(dwc->usb3_phy);
-> -
-> -		/*
-> -		 * if -ENXIO is returned, it means PHY layer wasn't
-> -		 * enabled, so it makes no sense to return -EPROBE_DEFER
-> -		 * in that case, since no PHY driver will ever probe.
-> -		 */
-> -		if (ret == -ENXIO)
-> -			return ret;
-> -
-> -		dev_err(dev, "no usb3 phy configured\n");
-> -		return -EPROBE_DEFER;
-> -	}
-> -
->  	dwc->xhci_resources[0].start = res->start;
->  	dwc->xhci_resources[0].end = dwc->xhci_resources[0].start +
->  					DWC3_XHCI_REGS_END;
-> diff --git a/drivers/usb/dwc3/platform_data.h b/drivers/usb/dwc3/platform_data.h
-> index 7db34f0..5a5e068 100644
-> --- a/drivers/usb/dwc3/platform_data.h
-> +++ b/drivers/usb/dwc3/platform_data.h
-> @@ -24,4 +24,5 @@ struct dwc3_platform_data {
->  	enum usb_device_speed maximum_speed;
->  	enum usb_dr_mode dr_mode;
->  	bool tx_fifo_resize;
-> +	bool has_phy;
->  };
-> 
-
-cheers,
--roger
