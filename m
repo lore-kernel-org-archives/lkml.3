@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946Ab3ILMHZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 08:07:25 -0400
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:49892 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752312Ab3ILMHY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 08:07:24 -0400
+	id S1754772Ab3ILMIk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 08:08:40 -0400
+Received: from mail.eperm.de ([89.247.134.16]:36439 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752670Ab3ILMIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 08:08:38 -0400
+From: Stephan Mueller <smueller@chronox.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
+        dave.taht@bufferbloat.net
+Subject: Re: [PATCH] /dev/random: Insufficient of entropy on many architectures
+Date: Thu, 12 Sep 2013 14:08:28 +0200
+Message-ID: <5896310.H6rEVunj63@tauon>
+User-Agent: KMail/4.10.5 (Linux/3.10.10-200.fc19.x86_64; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <CAMuHMdWMiD1kw34CUJ-KCbk4mKggjtMzxVPpkN=ddfaq_vs9sg@mail.gmail.com>
+References: <10005394.BRCyBMYWy3@tauon> <2947789.S63SVUbC3N@tauon> <CAMuHMdWMiD1kw34CUJ-KCbk4mKggjtMzxVPpkN=ddfaq_vs9sg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1378720815-23964-1-git-send-email-jean.pihet@linaro.org>
-References: <1378720815-23964-1-git-send-email-jean.pihet@linaro.org>
-Date: Thu, 12 Sep 2013 14:07:23 +0200
-Message-ID: <CAFrcx1mQ-P7byYfqP-0bYabUzTDeSWyHFx2FJQ6wQLYEcV_Pxw@mail.gmail.com>
-Subject: Re: [PATCH 0/3] perf: parse the dwarf backtrace info from
- .debug_frame section
-From: Jean Pihet <jean.pihet@linaro.org>
-To: Will Deacon <will.deacon@arm.com>, Jiri Olsa <jolsa@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        ".Peter Zijlstra" <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Am Donnerstag, 12. September 2013, 13:59:04 schrieb Geert Uytterhoeven:
 
--- Adding more maintainers in the To: list --
+Hi Geert,
 
-Ping about the patch set, is this one acceptable for mainline?
+>On Wed, Sep 11, 2013 at 8:49 AM, Stephan Mueller <smueller@chronox.de> 
+wrote:
+>> __u64 tmp = random_get_fast_cycles() - random_get_fast_cycles();
+>> if(0 == tmp)
+>> 
+>>         return fail;
+>> 
+>> return pass;
+>
+>That will fail if the cycle counter runs at less than say 4 times the
+>CPU clock...
 
-Jean
+Well...
+>
+>BTW, I prefer a different name than "random_get_fast_cycles()", as it's
+>better to have something that returns different and unpredictable
+>numbers than an actual monotonic cycle counter.
 
-On 9 September 2013 12:00, Jean Pihet <jean.pihet@linaro.org> wrote:
-> On ARM the debug info is not present in the .eh_frame sections but
-> in .debug_frame instead, in dwarf format.
+A monotonic counter is fully ok. Note, for /dev/random, the occurrence 
+of events delivers entropy. Thus, we have to be able to precisely 
+measure that occurrence. The timer itself does not need to deliver any 
+entropy as long as it is fast.
 >
-> This patch set uses libunwind to load and parse the dwarf debug info from
-> the .debug_frame section if no .eh_frame_hdr section is found; also it
-> sets the hooks in the perf_regs and libunwind code for ARMv7.
+>Gr{oetje,eeting}s,
 >
-> Dependencies:
->  . if present, libunwind >= 1.1 is needed to prevent a segfault when
->    parsing the dwarf info,
->  . libunwind needs to be configured with --enable-debug-frame
->    to prevent a linkage error. Note: --enable-debug-frame is automatically
->    selected on ARM).
+>                        Geert
 >
-> The generated perf has been tested on ARMv7/OMAP4 and x86_64, using the
-> following commands:
->  perf record -g [dwarf] -- <binary>
->  perf report --sort symbol --call-graph --stdio
+>--
+>Geert Uytterhoeven -- There's lots of Linux beyond ia32 --
+>geert@linux-m68k.org
 >
->
-> Jean Pihet (1):
->   perf: parse the .debug_frame section in case .eh_frame is not present
->
-> Will Deacon (2):
->   ARM: perf: add support for perf registers API
->   ARM: perf: wire up perf_regs and unwind support for ARM
->
->  arch/arm/Kconfig                        |  2 +
->  arch/arm/include/uapi/asm/Kbuild        |  1 +
->  arch/arm/include/uapi/asm/perf_regs.h   | 23 +++++++++++
->  arch/arm/kernel/Makefile                |  1 +
->  arch/arm/kernel/perf_regs.c             | 30 ++++++++++++++
->  tools/perf/arch/arm/Makefile            |  3 ++
->  tools/perf/arch/arm/include/perf_regs.h | 54 +++++++++++++++++++++++++
->  tools/perf/arch/arm/util/unwind.c       | 48 ++++++++++++++++++++++
->  tools/perf/config/Makefile              |  9 +++--
->  tools/perf/util/unwind.c                | 71 +++++++++++++++++++++++++--------
->  10 files changed, 223 insertions(+), 19 deletions(-)
->  create mode 100644 arch/arm/include/uapi/asm/perf_regs.h
->  create mode 100644 arch/arm/kernel/perf_regs.c
->  create mode 100644 tools/perf/arch/arm/include/perf_regs.h
->  create mode 100644 tools/perf/arch/arm/util/unwind.c
->
-> --
-> 1.7.11.7
->
+>In personal conversations with technical people, I call myself a
+>hacker. But when I'm talking to journalists I just say "programmer" or
+>something like that. -- Linus Torvalds
+
+
+Ciao
+Stephan
