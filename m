@@ -1,74 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754693Ab3ILQ5j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 12:57:39 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:33632 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754073Ab3ILQ5i (ORCPT
+	id S1754633Ab3ILRAe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 13:00:34 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:57172 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751787Ab3ILRAd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 12:57:38 -0400
-Date: Thu, 12 Sep 2013 18:57:33 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Vince Weaver <vince@deater.net>, Andi Kleen <ak@linux.intel.com>,
-        acme@infradead.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, torvalds@linux-foundation.org,
-        trinity@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>
-Subject: Re: [PATCH 1/2] tools, perf: Add a precise event qualifier v2
-Message-ID: <20130912165733.GA23698@gmail.com>
-References: <1374501138-13496-1-git-send-email-andi@firstfloor.org>
- <alpine.DEB.2.02.1307230137160.18617@pianoman.cluster.toy>
- <20130723060108.GA18396@tassilo.jf.intel.com>
- <alpine.DEB.2.02.1307231717580.27628@pianoman.cluster.toy>
- <20130723225150.GT6123@two.firstfloor.org>
+	Thu, 12 Sep 2013 13:00:33 -0400
+Date: Thu, 12 Sep 2013 10:00:29 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>
+Subject: Re: [RFC PATCH 4/6] extcon-gpio: Add devicetree support
+Message-ID: <20130912170029.GB12202@roeck-us.net>
+References: <1377836978-24082-1-git-send-email-linux@roeck-us.net>
+ <1377836978-24082-5-git-send-email-linux@roeck-us.net>
+ <20130912164545.GG22013@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130723225150.GT6123@two.firstfloor.org>
+In-Reply-To: <20130912164545.GG22013@e106331-lin.cambridge.arm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Andi Kleen <andi@firstfloor.org> wrote:
-
-> On Tue, Jul 23, 2013 at 05:27:43PM -0400, Vince Weaver wrote:
+On Thu, Sep 12, 2013 at 05:45:45PM +0100, Mark Rutland wrote:
+> On Fri, Aug 30, 2013 at 05:29:36AM +0100, Guenter Roeck wrote:
+> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> > ---
+> >  drivers/extcon/extcon-gpio.c |   59 ++++++++++++++++++++++++++++++++++++++++--
+> >  1 file changed, 57 insertions(+), 2 deletions(-)
 > > 
-> > I hate having to justify why breaking the ABI is unacceptable.
+> > diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
+> > index d4e3c89..16951fe 100644
+> > --- a/drivers/extcon/extcon-gpio.c
+> > +++ b/drivers/extcon/extcon-gpio.c
+> > @@ -30,6 +30,8 @@
+> >  #include <linux/gpio.h>
+> >  #include <linux/extcon.h>
+> >  #include <linux/extcon/extcon-gpio.h>
+> > +#include <linux/of_gpio.h>
+> > +#include <linux/err.h>
+> >  
+> >  struct gpio_extcon_data {
+> >  	struct extcon_dev edev;
+> > @@ -77,14 +79,66 @@ static ssize_t extcon_gpio_print_state(struct extcon_dev *edev, char *buf)
+> >  	return -EINVAL;
+> >  }
+> >  
+> > +#ifdef CONFIG_OF_GPIO
+> > +
+> > +static struct gpio_extcon_platform_data *
+> > +extcon_gpio_config_of(struct device *dev)
+> > +{
+> > +	struct gpio_extcon_platform_data *pdata;
+> > +	struct device_node *np = dev->of_node;
+> > +	enum of_gpio_flags flags;
+> > +	int gpio, ret;
+> > +	u32 debounce;
+> > +
+> > +	gpio = of_get_named_gpio_flags(np, "presence-detect-gpios", 0, &flags);
+> > +	if (gpio < 0)
+> > +		return ERR_PTR(gpio);
+> > +
+> > +	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+> > +	if (!pdata)
+> > +		return ERR_PTR(-ENOMEM);
+> > +
+> > +	pdata->gpio = gpio;
+> > +	pdata->gpio_active_low = flags & OF_GPIO_ACTIVE_LOW;
+> > +	pdata->irq_flags = IRQ_TYPE_EDGE_BOTH;
+> > +
+> > +	if (!of_property_read_u32(np, "debounce-interval", &debounce))
+> > +		pdata->debounce = debounce;
+> > +
+> > +	ret = of_property_read_string(np, "name", &pdata->name);
 > 
-> Well it's a testing ABI, so we can do changes to it.
+> This wasn't listed in the binding. What's this for?
 > 
-> I hope you're not suggesting that perf cannot be extended anymore.
+This returns the node name.
+For example, if the bindings are
 
-It obviously should remain extensible, limiting it to 'config' is rather 
-stupid. If a parser sees something it cannot parse it should ignore that 
-event.
+	my-connector {
+		...
+	};
 
-Your feature to export 'precise' requirements on events looks useful to 
-me. We could implement it not by special casing it implicitly but by 
-saying that if ../format/precise contains something like:
+it returns the string "my-connector".
 
-   attr:240-241
-
-then that's a natural extension of the config:X-Y format and should be 
-interpreted to mean mean 2 bits in the perf attr field. I.e. we could go 
-beyond the config bitfield.
-
-Basically the whole perf_event_attr can be thought of as a 'giant 
-bitfield', in which we can specify values to export an enumerated list of 
-events from the kernel to tooling.
-
-(Using attr:X-Y the config and config1 variants can be expressed as well, 
-as the config fields are inside the attr structure.)
-
-The positions within the perf_attr are an ABI, so this would work pretty 
-well.
+I can add a reference to the bindings document if that helps. It is typically
+not mentioned in bindings, though, so I didn't do it either.
 
 Thanks,
-
-	Ingo
+Guenter
