@@ -1,124 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753197Ab3ILLir (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 07:38:47 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:49634 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906Ab3ILLip (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 07:38:45 -0400
-Message-ID: <5231A791.9080600@ahsoftware.de>
-Date: Thu, 12 Sep 2013 13:37:53 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1753590Ab3ILLoM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 07:44:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58877 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751682Ab3ILLoK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 07:44:10 -0400
+Date: Thu, 12 Sep 2013 07:43:36 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        kexec@lists.infradead.org, akpm@linux-foundation.org,
+        zohar@linux.vnet.ibm.com, d.kasatkin@samsung.com,
+        ebiederm@xmission.com, hpa@zytor.com, matthew.garrett@nebula.com
+Subject: Re: [PATCH 00/16] [RFC PATCH] Signed kexec support
+Message-ID: <20130912114336.GA28500@redhat.com>
+References: <1378849471-10521-1-git-send-email-vgoyal@redhat.com>
+ <20130912034023.GA10877@kroah.com>
 MIME-Version: 1.0
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
-Subject: Re: [PATCH] RFC: interrupt consistency check for OF GPIO IRQs
-References: <1375101368-17645-1-git-send-email-linus.walleij@linaro.org> <CACxGe6uNJNMdZ1HYGgCtLM2t2TWGCR6btjOHVmP=vDXXvvFfRg@mail.gmail.com> <CACRpkdYjJL6FZwEbB7XLnb9QtjB=3LeE9Ny6KQ4PkM3zpdNqqg@mail.gmail.com> <344239800.bDEkDg48ZQ@avalon> <CACRpkdavR=fv+y1RCNfdgQypPuRbO6isOSwGsABDrYiGeMdyZw@mail.gmail.com> <52308C91.2000105@ahsoftware.de> <523096FE.8080901@collabora.co.uk> <5230AB6E.1070807@ahsoftware.de> <5231817F.8000901@ahsoftware.de> <5231934D.4060706@collabora.co.uk> <52319741.5050407@ahsoftware.de> <5231A0F8.1070505@ahsoftware.de> <5231A4FE.1070704@ahsoftware.de>
-In-Reply-To: <5231A4FE.1070704@ahsoftware.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130912034023.GA10877@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 12.09.2013 13:26, schrieb Alexander Holler:
-> Am 12.09.2013 13:09, schrieb Alexander Holler:
->> Am 12.09.2013 12:28, schrieb Alexander Holler:
->>> Am 12.09.2013 12:11, schrieb Javier Martinez Canillas:
->>>> On 09/12/2013 10:55 AM, Alexander Holler wrote:
->>>
-...
->>>
->>>> So, if I understood the code correctly the DT IRQ core doesn't expect
->>>> a device
->>>> node to have more than one "interrupt-parent" property.
->>>>
->>>> It *should* work though if you have multiple "interrupts" properties
->>>> defined and
->>>> all of them have the same "interrupt-parent":
->>>>
->>>>         interrupt-parent = <&gpio6>;
->>>>         interrupts = <1 IRQF_TRIGGER_HIGH>; /* GPIO6_1 */
->>>>         interrupts = <2 IRQF_TRIGGER_LOW>; /* GPIO6_2 */
->>>>
->>>> since of_irq_map_one() will be called for each "interrupts" and the
->>>> correct
->>>> "interrupt-parent" will get obtained by of_irq_find_parent().
->>>
->>> I assumed that answer. So to make such a scenario possible, something
->>> like this might be neccessary:
->>>
->>>           interrupts = <&gpio6 1 IRQF_TRIGGER_HIGH>; /* GPIO6_1 */
->>>           interrupts = <&gpio7 2 IRQF_TRIGGER_LOW>; /* GPIO7_2 */
->>>
->>> or, to be compatible
->>>
->>>           interrupts = <1 IRQF_TRIGGER_HIGH &gpio6>; /* GPIO6_1 */
->>>           interrupts = <1 IRQF_TRIGGER_LOW &gpio7>; /* GPIO7_1 */
->>>
->>> Another problem is the naming. In all the above cases, the driver would
->>> not know which IRQ he should use for what. Maybe the order defines it,
->>> but that wouldn't be very verbose. And I think just changing the name
->>> would make travelling the tree impossible, as only the driver itself
->>> would know the name and it's meaning.
->>
->> On a second look, travelling the tree is still possible if the solution
->> would be like above (without that interrupt-parent). So if a driver
->> requires two interrupts he could use
->>
->>        interrupt-foo = <1 IRQF_TRIGGER_HIGH &gpio6>; /* GPIO6_1 */
->>        interrupt-bar = <1 IRQF_TRIGGER_LOW &gpio7>; /* GPIO7_1 */
->>
->> And travelling the tree will still be possible because walking from the
->> interrupt-controllers (those gpio) downwards would end up at the
->> interrupt definitions, so the name of them isn't needed to find them in
->> the tree.
->
-> I've just seen how they solved it for dma:
->
->              dmas = <&edma0 16
->                  &edma0 17>;
->              dma-names = "rx", "tx";
->
-> so it would be like
->
->        interrupts = <1 IRQF_TRIGGER_HIGH &gpio6>; /* GPIO6_1 */
->        interrupts = <1 IRQF_TRIGGER_LOW &gpio7>; /* GPIO7_1 */
->        interrupt-names = "foo", "bar";
->
-> Or this would be possible:
->
->        interrupt-parent = <&gpio6 &gpio7>;
->        interrupts = <1 IRQF_TRIGGER_HIGH>; /* GPIO6_1 */
->        interrupts = <1 IRQF_TRIGGER_LOW>; /* GPIO7_1 */
->        interrupt-names = "foo", "bar";
->
+On Wed, Sep 11, 2013 at 08:40:23PM -0700, Greg KH wrote:
+> On Tue, Sep 10, 2013 at 05:44:15PM -0400, Vivek Goyal wrote:
+> > Hi,
+> > 
+> > Matthew has been posting patches to lock down kernel either due to
+> > secureboot requirements or because of signed modules with signing
+> > enforced. In kernel lock down mode, kexec will be disabled and that
+> > means kdump will not work either.
+> > 
+> > These patches sign /sbin/kexec and kernel verifies the signature
+> > and allows loading a kernel if signature verification is successful.
+> > IOW, trust is extended to validly signed user space.
+> > 
+> > Currently it works only for statically linked applications.
+> 
+> That's a really big restriction, pretty much making it not workable for
+> distros at the moment to use.
 
-And looking at how gpios are defined, I think it should be like that:
+It is a big restriction for general use case of signed user space but in
+this case I am planning to build /sbin/kexec statically and solve the
+kexec/kdump issue.
 
+I have posted kexec-tools patches here.
 
-           interrupts = <&gpio6 1 IRQF_TRIGGER_HIGH
-                         &gpio7 2 IRQF_TRIGGER_LOW
-           >;
-           interrupt-names = "foo", "bar";
+https://lists.fedoraproject.org/pipermail/kernel/2013-September/004469.html
 
-So without that interrupt-parent.
+Once kernel patches get in, I plan to upstream kexec-tools patches too
+and then distros should be able to build /sbin/kexec statically and
+this should work.
 
-Regards,
+Do you forsee a problem with that?
 
-Alexander
+> 
+> Any chance to change this in the future?
 
+It might but currently I don't have any plans. I see atleast two issues
+with that.
+
+- If we allow dynamic linking for signed binaries, then dynamic libraries
+  will have to be signed too. I suspect in that case pretty much whole of
+  the user space will have to be signed. I am not sure if distros are
+  willing to do that.
+
+- Currently a shared library can be written on disk (unlike executables)
+  while it is mapped. That means after signature verification a root just
+  has to open and write to shared library and modify code and defeat the
+  purpose of signature verfication.
+
+Probably these issues can be addressed if there is a need. Just that I
+have not looked into it.
+
+> Or just rely on the existing
+> "signed binaries" functionality we have in the kernel today for the
+> kexec binary as well?  Wouldn't that be simpler?
+
+Which signed binary mechanism are you referring to? Are you referring to
+using IMA for signature verification? If yes, there are some issues with
+that.
+
+- IMA does not lock down signed binaries in memory. That means after
+  signature verification files can potentially be swapped out and be
+  attacked there and modified code then can be swapped back in.
+
+- IMA caches the signature appraisal resutls and reappraises the things
+  based on if file has been modified or not. But this does not detect any
+  raw writes to disk. So after signature verification root should be able
+  to do some raw writes to disk and IMA will think file signature are
+  just fine.
+
+- IMA does not have mechanism to keep track of signed applications and
+  a mechanism to disallow ptrace() by unsigned applications. That means
+  after signature verification root can just ptrace() signed binary and
+  modify its code/data.
+
+- IMA provides mechanism for file based signature verificaiton.
+  kexec-tools also needs to verify signature of new kernel being loaded.
+  Using IMA on bzImage file has same pitfalls where a file can be modified
+  after signature verification.
+
+  That's why I have extended keyctl() so that signature verification can
+  be done on user space buffer. An application can first read a file in
+  buffer and then ask kernel to verify signature. And now root should not
+  be able to attack it.
+
+So existing IMA does not seem to have been written for an environment
+where all the user space is not signed we don't trust root and root can
+attack a signed binary. And my patches try to fill that gap. 
+
+Thanks
+Vivek
