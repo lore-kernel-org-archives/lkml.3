@@ -1,56 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753729Ab3ILPcX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 11:32:23 -0400
-Received: from a9-54.smtp-out.amazonses.com ([54.240.9.54]:48137 "EHLO
-	a9-54.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752841Ab3ILPcW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 11:32:22 -0400
-Date: Thu, 12 Sep 2013 15:32:20 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [RFC] Restrict kernel spawning of threads to a specified set of
- cpus.
-In-Reply-To: <20130912151102.GB23839@somewhere>
-Message-ID: <0000014112cd3565-3372fafc-390c-4d71-806a-348b4f4e5d71-000000@email.amazonses.com>
-References: <00000140efbcb701-c26320b3-f434-4538-bc80-8e92fed6f303-000000@email.amazonses.com> <20130911220228.GB15367@somewhere> <000001411282afa6-fe9c0543-0447-492b-991e-dc8214884b88-000000@email.amazonses.com> <20130912141625.GA23357@somewhere>
- <00000141128d759a-44dcacb6-8f48-4f9b-8381-d14003bd6da1-000000@email.amazonses.com> <20130912143137.GA23839@somewhere> <0000014112a921ae-51d171bf-e8d4-4569-bd20-94dabda2d5ba-000000@email.amazonses.com> <20130912151102.GB23839@somewhere>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754085Ab3ILPfK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 11:35:10 -0400
+Received: from 8bytes.org ([85.214.48.195]:60178 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751736Ab3ILPfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 11:35:08 -0400
+Date: Thu, 12 Sep 2013 17:35:03 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
+Subject: [git pull] IOMMU Updates for v3.12
+Message-ID: <20130912153502.GA28163@8bytes.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.09.12-54.240.9.54
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AqsLC8rIMeq19msA"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Thu Sep 12 17:35:06 2013
+X-DSPAM-Confidence: 0.9989
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 5231df2a20861148780270
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Sep 2013, Frederic Weisbecker wrote:
 
-> > Yea but the kernel option makes it easy. No extras needed. Kernel brings
-> > it up user space cleanly configured and ready to go.
->
-> Ok but really that's just two lines of bash. I really wish we don't complicate
-> core kernel code for that.
+--AqsLC8rIMeq19msA
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thread placement is an issue in general for the future. The more hardware
-threads we get the more aware of thread placement we need to become
-because caches become more important for performance. Disturbing the cache
-of another is significant. So it moving a thread away from its default
-thread because memory accesses will have to be done again.
+Hi Linus,
 
-> > This also allows us to cleanup kernel uses of cpumasks in such a way that
-> > proper thread placement for various other uses (reclaim f.e. kswpad) is
-> > possible.
->
-> Same here, a central tool should be able to solve that.
+The following changes since commit 6e4664525b1db28f8c4e1130957f70a94c19213e:
 
-I think this is something that belongs in the kernel under consideration
-of the developers. The user space scripts that I have seen are not
-that clean and they are strongly kernel version dependant.
+  Linux 3.11 (2013-09-02 13:46:10 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git tags/iommu-u=
+pdates-v3.12
+
+for you to fetch changes up to d6a60fc1a8187004792a01643d8af1d06a465026:
+
+  Merge branches 'arm/exynos', 'ppc/pamu', 'arm/smmu', 'x86/amd' and 'iommu=
+/fixes' into next (2013-09-12 16:46:34 +0200)
+
+----------------------------------------------------------------
+
+IOMMU Updates for Linux v3.12
+
+This round the updates contain:
+
+	* A new driver for the Freescale PAMU IOMMU from Varun Sethi.
+	  This driver has cooked for a while and required changes to the
+	  IOMMU-API and infrastructure that were already merged before.
+	* Updates for the ARM-SMMU driver from Will Deacon
+	* Various fixes, the most important one is probably a fix from
+	  Alex Williamson for a memory leak in the VT-d page-table
+	  freeing code
+
+In summary not all that much. The biggest part in the diffstat is the
+new PAMU driver.
+
+----------------------------------------------------------------
+Alex Williamson (1):
+      intel-iommu: Fix leaks in pagetable freeing
+
+Grant Grundler (1):
+      iommu/exynos: Remove dead code (set_prefbuf)
+
+Joerg Roedel (3):
+      iommu/fsl: Fix whitespace problems noticed by git-am
+      iommu/fsl: Remove unnecessary 'fsl-pamu' prefixes
+      Merge branches 'arm/exynos', 'ppc/pamu', 'arm/smmu', 'x86/amd' and 'i=
+ommu/fixes' into next
+
+Radmila Kompov=E1 (1):
+      iommu/amd: Fix resource leak in iommu_init_device()
+
+Varun Sethi (3):
+      powerpc: Add iommu domain pointer to device archdata
+      iommu/fsl: Add additional iommu attributes required by the PAMU drive=
+r.
+      iommu/fsl: Freescale PAMU driver and iommu implementation.
+
+Will Deacon (4):
+      iommu/arm-smmu: Remove broken big-endian check
+      iommu/arm-smmu: Tighten up global fault reporting
+      iommu/arm-smmu: Don't use VMIDs for stage-1 translations
+      iommu/arm-smmu: Simplify VMID and ASID allocation
+
+Yijing Wang (1):
+      iommu/amd: Clean up unnecessary MSI/MSI-X capability find
+
+ arch/powerpc/include/asm/device.h         |    3 +
+ arch/powerpc/include/asm/fsl_pamu_stash.h |   39 +
+ arch/powerpc/sysdev/fsl_pci.h             |    5 +
+ drivers/iommu/Kconfig                     |   10 +
+ drivers/iommu/Makefile                    |    1 +
+ drivers/iommu/amd_iommu.c                 |    4 +-
+ drivers/iommu/amd_iommu_init.c            |    2 +-
+ drivers/iommu/arm-smmu.c                  |   93 +-
+ drivers/iommu/exynos-iommu.c              |   44 -
+ drivers/iommu/fsl_pamu.c                  | 1309 +++++++++++++++++++++++++=
+++++
+ drivers/iommu/fsl_pamu.h                  |  410 +++++++++
+ drivers/iommu/fsl_pamu_domain.c           | 1172 ++++++++++++++++++++++++++
+ drivers/iommu/fsl_pamu_domain.h           |   85 ++
+ drivers/iommu/intel-iommu.c               |   72 +-
+ include/linux/iommu.h                     |   16 +
+ 15 files changed, 3145 insertions(+), 120 deletions(-)
+ create mode 100644 arch/powerpc/include/asm/fsl_pamu_stash.h
+ create mode 100644 drivers/iommu/fsl_pamu.c
+ create mode 100644 drivers/iommu/fsl_pamu.h
+ create mode 100644 drivers/iommu/fsl_pamu_domain.c
+ create mode 100644 drivers/iommu/fsl_pamu_domain.h
+
+Please pull.
+
+Thanks,
+
+	Joerg
+
+
+--AqsLC8rIMeq19msA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSMd8lAAoJECvwRC2XARrjnLYP/ieozuteXTzVKscSnKf0QnnJ
+PKCLDl9h4L4Rc2+7tWqS3ZemNPaot5ljuU9iV9WcSp2xzsZc+FuISHkm13/dEKw3
+al2VgEJjDvd372GMYvMnBJZv6YC2wv66FQKwZkEGgrjarsUu9iaVNJXNWtcXK7Ou
+H9tbvLiaKHOSszsRIBV6McuNZCe6CqUNmMXqGpN2kBHd1LwCAaxcCjN5/mO+Ru6W
+JnXUIXX+wiO4aAQNLFYP/bqJOUwSH9LBrkNfIE1+eAxiqKhiAuwPBCXwXuo/Ykrh
+Cyu5HR/NeoaOd7gAE8JfW4/BN5IpOBFA8VcvCGTQZAqhnD12oYxz2kez7G8sxuS+
+4G162seRTjgU69yBzkKFxYcoKhwlHXtfRH5YUhc0JNNf926EiGHUOa9yhJOaSDLN
+mneoaR8qktERUst3hMqi6kw6lCzg2mNoqy7UgdAo0sjMZ8So4TmlyjfVnIdODEeV
+lqkP4BFRkRSBFRPQHBMe9psJsPAS66IHhSI6+6RjpyN1YKccvhzJowNEJO7wCCVq
+FbN8RhSeep0whCyLvk7mNOt7vPY9gexCSQOAIO8SpvXpq4lOjsxDvwvTfDCKm4O3
+eVyLMsa4ZivKt85cljg4jHIOvL/kt2hZyRvgOrX4dmmHZTw7DMq95TsCFcx1HX7C
+QIiYjZJeddCL7Hz7E9yf
+=AY5k
+-----END PGP SIGNATURE-----
+
+--AqsLC8rIMeq19msA--
+
 
