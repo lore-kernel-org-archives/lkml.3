@@ -1,62 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086Ab3ILWMl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 18:12:41 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:54593 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755472Ab3ILWM2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 18:12:28 -0400
-X-Sasl-enc: pcSLluVwEC5Lni+wnPiUNmkiVRPz2LnIfTL4zMZRFLvf 1379023945
-Date: Thu, 12 Sep 2013 15:12:24 -0700
-From: Greg KH <greg@kroah.com>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, Minchan Kim <minchan@kernel.org>,
-        driverdev-devel@linuxdriverproject.org,
-        Jerome Marchand <jmarchan@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] staging: zram: fix handle_pending_slot_free() and
- zram_reset_device() race
-Message-ID: <20130912221224.GA11463@kroah.com>
-References: <20130906151255.GE2238@swordfish.minsk.epam.com>
- <20130909123329.GZ19256@mwanda>
- <20130909124942.GA2221@swordfish.minsk.epam.com>
- <20130909132124.GY6329@mwanda>
- <522DD125.1030607@redhat.com>
- <522DF2DF.5060407@redhat.com>
- <20130910143416.GC2270@swordfish>
- <20130910145802.GD19256@mwanda>
- <20130910231250.GA2450@swordfish>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130910231250.GA2450@swordfish>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756120Ab3ILWOi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 18:14:38 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:42927 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752223Ab3ILWOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 18:14:34 -0400
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS updates #2 for 3.12-rc1
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Message-Id: <20130912221433.A15A64266DC@whiskey.americas.sgi.com>
+Date: Thu, 12 Sep 2013 17:14:33 -0500 (CDT)
+From: bpm@sgi.com (Ben Myers)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 02:12:50AM +0300, Sergey Senozhatsky wrote:
-> Dan Carpenter noted that handle_pending_slot_free() is racy with
-> zram_reset_device(). Take write init_lock in zram_slot_free(), thus
-> preventing any concurrent zram_slot_free(), zram_bvec_rw() or
-> zram_reset_device(). This also allows to safely check zram->init_done
-> in handle_pending_slot_free().
-> 
-> Initial intention was to minimze number of handle_pending_slot_free()
-> call from zram_bvec_rw(), which were slowing down READ requests due to
-> slot_free_lock spin lock. Jerome Marchand suggested to remove
-> handle_pending_slot_free() from zram_bvec_rw().
-> 
-> Link: https://lkml.org/lkml/2013/9/9/172
-> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Hi Linus,
 
-I have multiple versions of this and the other zram patches from you,
-with no idea of which to accept.
+   Please pull these XFS updates for 3.12-rc1.  There is a feature to support
+   defrag on CRC enabled filesystems, some bugfixes, and cleanups.
 
-So, I'm going to drop them all, can you please resend what you wish to
-submit, and in the future, be a bit more obvious with your "vN"
-markings?
+Thanks,
+	Ben
 
-thanks,
+The following changes since commit 1d03c6fa88af35e55047a1f2ab116f0fdf2f55aa:
 
-greg k-h
+  xfs: XFS_MOUNT_QUOTA_ALL needed by userspace (2013-09-03 15:00:06 -0500)
+
+are available in the git repository at:
+
+  git://oss.sgi.com/xfs/xfs tags/xfs-for-linus-v3.12-rc1-2
+
+for you to fetch changes up to 08474ed639e971e9d5a877cf7aba7ef91d847ae9:
+
+  xfs: remove dead code from xlog_recover_inode_pass2 (2013-09-12 09:51:49 -0500)
+
+----------------------------------------------------------------
+xfs: update #2 for v3.12-rc1
+
+Here we have defrag support for v5 superblock, a number of bugfixes and
+a cleanup or two.
+
+- defrag support for CRC filesystems
+- fix endian worning in xlog_recover_get_buf_lsn
+- fixes for sparse warnings
+- fix for assert in xfs_dir3_leaf_hdr_from_disk
+- fix for log recovery of remote symlinks
+- fix for log recovery of btree root splits
+- fixes formemory allocation failures with ACLs
+- fix for assert in xfs_buf_item_relse
+- fix for assert in xfs_inode_buf_verify
+- fix an assignment in an assert that should be a test in
+  xfs_bmbt_change_owner
+- remove dead code in xlog_recover_inode_pass2
+
+----------------------------------------------------------------
+Dan Carpenter (1):
+      xfs: = vs == typo in ASSERT()
+
+Dave Chinner (11):
+      xfs: fix endian warning in xlog_recover_get_buf_lsn()
+      xfs: fix some minor sparse warnings
+      xfs: check magic numbers in dir3 leaf verifier first
+      xfs: swap extents operations for CRC filesystems
+      xfs: recovery of swap extents operations for CRC filesystems
+      xfs: set remote symlink buffer type for recovery
+      xfs: ensure we copy buffer type in da btree root splits
+      xfs: fix memory allocation failures with ACLs
+      xfs: factor all the kmalloc-or-vmalloc fallback allocations
+      xfs: aborted buf items can be in the AIL.
+      xfs: don't assert fail on bad inode numbers
+
+Mark Tinguely (1):
+      xfs: remove dead code from xlog_recover_inode_pass2
+
+ fs/xfs/kmem.c            |  15 ++++-
+ fs/xfs/kmem.h            |   9 +--
+ fs/xfs/xfs_acl.c         |  12 ++--
+ fs/xfs/xfs_bmap.c        |   2 +-
+ fs/xfs/xfs_bmap_btree.c  |  44 ++++++++++++
+ fs/xfs/xfs_bmap_btree.h  |   4 ++
+ fs/xfs/xfs_bmap_util.c   |  69 ++++++++++++-------
+ fs/xfs/xfs_btree.c       | 170 ++++++++++++++++++++++++++++++++++++++++++-----
+ fs/xfs/xfs_btree.h       |  19 ++++--
+ fs/xfs/xfs_buf_item.c    |  24 +++++--
+ fs/xfs/xfs_da_btree.c    |   1 +
+ fs/xfs/xfs_dir2_leaf.c   |  20 ++++--
+ fs/xfs/xfs_dquot_item.c  |   3 +-
+ fs/xfs/xfs_extent_busy.c |   3 +-
+ fs/xfs/xfs_icache.c      |   4 +-
+ fs/xfs/xfs_icache.h      |   4 ++
+ fs/xfs/xfs_inode_buf.c   |  10 ++-
+ fs/xfs/xfs_inode_buf.h   |  18 ++---
+ fs/xfs/xfs_ioctl.c       |  36 ++++------
+ fs/xfs/xfs_ioctl32.c     |  18 ++---
+ fs/xfs/xfs_itable.c      |   7 +-
+ fs/xfs/xfs_log.c         |   3 +-
+ fs/xfs/xfs_log_format.h  |   8 ++-
+ fs/xfs/xfs_log_recover.c | 122 +++++++++++++++++++++++++++-------
+ fs/xfs/xfs_symlink.c     |   2 +
+ 25 files changed, 461 insertions(+), 166 deletions(-)
