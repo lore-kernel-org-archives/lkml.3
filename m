@@ -1,67 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756712Ab3ILVm2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 17:42:28 -0400
-Received: from mo-p05-ob.rzone.de ([81.169.146.182]:56201 "EHLO
-	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752463Ab3ILVm0 convert rfc822-to-8bit (ORCPT
+	id S1754669Ab3ILVuQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 17:50:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59316 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753000Ab3ILVuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 17:42:26 -0400
-X-RZG-AUTH: :OmsBZ2C7d7IBoB6EHwegNiNxh/xpjMmBYR0YjlTttojRtSoTwvnNII3k
-X-RZG-CLASS-ID: mo05
-From: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
-To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-Subject: Re: [ 00/16] 3.11.1-stable review
-Date: Thu, 12 Sep 2013 21:41:59 +0000
-User-Agent: KMail/1.13.7 (Linux/3.11-0.slh.1-aptosid-686; KDE/4.8.4; i686; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>
-References: <20130912181156.173326121@linuxfoundation.org> <20130912182240.GA10404@kroah.com> <20130912182730.GA11890@kroah.com>
-In-Reply-To: <20130912182730.GA11890@kroah.com>
+	Thu, 12 Sep 2013 17:50:13 -0400
+Date: Thu, 12 Sep 2013 14:50:12 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Sean Williams <unixed@gmail.com>
+Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: comedi: ni_at_a2150: Remove a few superfluous
+ braces
+Message-ID: <20130912215012.GA6433@kroah.com>
+References: <1378594294-13653-1-git-send-email-unixed@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201309122142.06194.s.L-H@gmx.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378594294-13653-1-git-send-email-unixed@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Sat, Sep 07, 2013 at 03:51:34PM -0700, Sean Williams wrote:
+> Please don't flame me :) I'm getting my feet wet with kernel contribution.
 
-On Thursday 12 September 2013, Greg Kroah-Hartman wrote:
-> On Thu, Sep 12, 2013 at 11:22:40AM -0700, Greg Kroah-Hartman wrote:
-> > On Thu, Sep 12, 2013 at 11:18:40AM -0700, Linus Torvalds wrote:
-> > > On Thu, Sep 12, 2013 at 11:17 AM, Linus Torvalds
-> > > <torvalds@linux-foundation.org> wrote:
-> > > > Your script may be a bit buggered...
-> > > 
-> > > Or maybe I should take that as a sign that 3.11 is doing really well?
-> > > 
-> > > I'll be optimistic.
-> > 
-> > Hm, something went wrong here, let me track it down...
-> 
-> Ok, that was my fault, was working off of a 'master' branch in a repo
-> that expected it to be on the linux-3.11.y branch.  Here's the real
-> pseudo-shortlog below.
-[…]
+Why would we flame anyone for sending us patches?
 
-This unfortunately affects the linked patch files as well, which are as
-empty as the shortlog (compressed zero byte files); the sha256sum are 
-correct:
+It's as if we are bunch of scary people or something...
 
-$ wget -qO- kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.11.1-rc1.gz | gzip -d
-$
+Nice job with this, I'll queue it up after 3.12-rc1 is out.
 
-$ wget -qO- kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.11.1-rc1.bz2 | bzip2 -d
-$
+thanks,
 
-$ wget -qO- kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.11.1-rc1.xz | xz -d
-xz: (stdin): File format not recognized
-$
-
-Regards
-	Stefan Lippers-Hollmann
+greg k-h
