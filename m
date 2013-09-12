@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756999Ab3ILAsQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 20:48:16 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:43919 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751427Ab3ILAsP (ORCPT
+	id S1751466Ab3ILBGw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 21:06:52 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33057 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750728Ab3ILBGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 20:48:15 -0400
-Date: Wed, 11 Sep 2013 20:48:11 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org
-Subject: Re: [RFC PATCH] timekeeping: introduce timekeeping_is_busy()
-Message-ID: <20130912004811.GA6096@Krystal>
-References: <20130911150853.GA19800@Krystal> <52309D13.3020305@linaro.org> <20130911185441.GC23532@Krystal> <20130911203618.GH3966@linux.vnet.ibm.com>
+	Wed, 11 Sep 2013 21:06:51 -0400
+Message-ID: <523113A0.7090708@infradead.org>
+Date: Wed, 11 Sep 2013 18:06:40 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130911203618.GH3966@linux.vnet.ibm.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Regid Ichira <regid23@nt1.in>
+CC: "Steven \"Mr. Procrastinator\" Rostedt" <rostedt@goodmis.org>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] README: Alternative configuration commands does not mention
+ make listnewconfig
+References: <20130912003919.GG8821@nt1.in>
+In-Reply-To: <20130912003919.GG8821@nt1.in>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> On Wed, Sep 11, 2013 at 02:54:41PM -0400, Mathieu Desnoyers wrote:
-[...]
-> > If we can afford a synchronize_rcu_sched() wherever the write seqlock is
-> > needed, we could go with the following. Please note that I use
-> > synchronize_rcu_sched() rather than call_rcu_sched() here because I try
-> > to avoid having too many timekeeper structures hanging around, and I
-> > think it can be generally a good think to ensure timekeeping core does
-> > not depend on the memory allocator (but I could very well be wrong).
+On 09/11/13 17:39, Regid Ichira wrote:
+> Applied to the tip of linux.git,
+>                       VERSION = 3 PATCHLEVEL = 11 SUBLEVEL = 0
+> Signed-off-by: Regid Ichira <regid23@nt1.in>
+> ---
+>  README | 4 ++++
+>  1 file changed, 4 insertions(+)
 > 
-> The issue called out with this the last time I remember it being put
-> forward was that grace periods can be delayed for longer than is an
-> acceptable gap between timekeeping updates.  But maybe something has
-> changed since then -- that was a few years ago.
+> diff --git a/README b/README
+> index a24ec89..f10c16f 100644
+> --- a/README
+> +++ b/README
+> @@ -228,6 +228,10 @@ CONFIGURING the kernel:
+>       "make localyesconfig" Similar to localmodconfig, except it will convert
+>                             all module options to built in (=y) options.
+>  
+> +     "make listnewconfig"  Based on the contents of your existing ./.config
+> +                        file, print all the new config symbols.  One at a
+                                                                 , one per line.
 
-Assuming we have lockdep support for seqlock, and we ensure there is no
-deadlock between timekeeper seqlock and other locks. Also, given our
-intent is more or less to allow execution contexts nested over the write
-seqlock to read time (e.g. nmi handlers), I think we could do the
-following:
+Wow, that's going to be a ton of symbols to read.
 
-updates:
-- spinlock irq save
-- take a shadow copy of the old timekeeper structure.
-- store the CPU number that owns the lock into a variable.
-- barrier()     /* store cpu nr before seqlock from nested NMI POV */
-- write seqlock begin
-- perform timekeeper structure update
-- write seqlock end
-- barrier()     /* store seqlock before cpu nr from nested NMI POV */
-- store -1 into lock owner variable
-- spin unlock irqrestore
+And about ./.config, does using O=<build-directory> apply to this (these)
+commands?
 
-kernel read-side:
-- try read seqlock loop for fast path
-- if seqlock read fails, check if we are the CPU owning the lock
-  (variable stored by the update). If it is so, fall-back to the shadow
-  copy, else, retry seqlock.
 
-This approach would _only_ work if there is no deadlock involving a lock
-nested within the write seqlock. Hence the importance of adding lockdep
-support if we choose this locking design.
-
-Thoughts ?
-
-Thanks,
-
-Mathieu
+> +                        line.
+> +
+>     You can find more information on using the Linux kernel config tools
+>     in Documentation/kbuild/kconfig.txt.
+>  
+> 
 
 
 -- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+~Randy
