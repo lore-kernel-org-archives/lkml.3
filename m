@@ -1,103 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970Ab3ILK0E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 06:26:04 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:13938 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751044Ab3ILK0A (ORCPT
+	id S1752864Ab3ILK1d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 06:27:33 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:61061 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751862Ab3ILK1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 06:26:00 -0400
-X-AuditID: cbfee68d-b7fe86d0000077a5-5a-523196b69167
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Kishon Vijay Abraham I'" <kishon@ti.com>,
-        "'Pratyush Anand'" <pratyush.anand@st.com>
-Cc: "'Bjorn Helgaas'" <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Mohit KUMAR DCG'" <Mohit.KUMAR@st.com>,
-        "'Arnd Bergmann'" <arnd@arndb.de>, "'Sean Cross'" <xobs@kosagi.com>,
-        "'Thierry Reding'" <thierry.reding@gmail.com>,
-        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <002801ce8376$a807dbf0$f81793d0$@samsung.com>
- <51ED49D6.9050209@ti.com> <000701ce8741$fe47deb0$fad79c10$@samsung.com>
- <51EE22DF.6090902@ti.com> <001301ce8772$522dfc50$f689f4f0$@samsung.com>
- <5231607C.10702@ti.com> <003501ceaf87$cda45db0$68ed1910$%han@samsung.com>
- <20130912093018.GA2124@pratyush-vbox> <52318CCC.4040604@ti.com>
-In-reply-to: <52318CCC.4040604@ti.com>
-Subject: Re: [PATCH V3] pci: exynos: split into two parts such as Synopsys part
- and Exynos part
-Date: Thu, 12 Sep 2013 19:25:59 +0900
-Message-id: <000701ceafa2$792d7cb0$6b887610$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac6vnJpfAh61gdBCSsqRPVzYB7LbnwABbHuA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGKsWRmVeSWpSXmKPExsVy+t8zI91t0wyDDH7/0rD4O+kYu8WSpgyL
-	l4c0LeYfOcdqcXnhJVaL3gVX2SwuPO1hs7i8aw6bxdl5x9ksZpzfx2SxceovRov2S8oWP3fN
-	Y7FoPPqA1aL1yQNGB36P378mMXrsnHWX3WPBplKP7wvns3v0bVnF6PH0x15mj+M3tjN5fN4k
-	F8ARxWWTkpqTWZZapG+XwJXx5/dq1oJJnBX39i9naWBcyt7FyMkhIWAiMX3RYVYIW0ziwr31
-	bF2MXBxCAssYJVZsa2SGKbrw8BBUYjqjxNYrm5khnF+MEi8b5jOBVLEJqEl8+XIYbKyIQITE
-	ywuL2UGKmAWOMEvsffCGFaLjNpPE7tlLwOZyAnXMPHUYrFtYIFFi7usPYHEWAVWJpu2zgBo4
-	OHgFbCWevgcr4RUQlPgx+R4LiM0soCWxfudxJghbXmLzmrfMIOUSAuoSj/7qQtxgJHGu8RUj
-	RImIxL4X7xhBTpAQ2MMhseLIRVaIVQIS3yYfYoHolZXYdADqY0mJgytusExglJiFZPMsJJtn
-	Idk8C8mKBYwsqxhFUwuSC4qT0osM9YoTc4tL89L1kvNzNzFC0kTvDsbbB6wPMSYDrZ/ILCWa
-	nA9MM3kl8YbGZkYWpiamxkbmlmakCSuJ86q1WAcKCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRq
-	YDQ0KnBm5lSKuKD26NY0zQpulsk/c7Yc+FaicoPx6u2Lp5IzCln2iOX15l5u4QhY5G/eYxr4
-	jq/Am3OjfGLqu38f9YzO7T6qdTFl8lbW2Ikm4V8/HF7TFXU1Zpqn9ZFC7/KdM8VV9n08aMSk
-	LzHF3GuClR7/Lbv7hqrrbtwTtDUWj8s8K7ForRJLcUaioRZzUXEiANANUeApAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMKsWRmVeSWpSXmKPExsVy+t9jQd1t0wyDDBpnKFv8nXSM3WJJU4bF
-	y0OaFvOPnGO1uLzwEqtF74KrbBYXnvawWVzeNYfN4uy842wWM87vY7LYOPUXo0X7JWWLn7vm
-	sVg0Hn3AatH65AGjA7/H71+TGD12zrrL7rFgU6nH94Xz2T36tqxi9Hj6Yy+zx/Eb25k8Pm+S
-	C+CIamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAE6
-	XUmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeY8ef3ataCSZwV9/YvZ2lg
-	XMrexcjJISFgInHh4SE2CFtM4sK99UA2F4eQwHRGia1XNjNDOL8YJV42zGcCqWITUJP48uUw
-	WLeIQITEywuL2UGKmAWOMEvsffCGFaLjNpPE7tlLmEGqOIE6Zp46DNYtLJAoMff1B7A4i4Cq
-	RNP2WUANHBy8ArYST9+DlfAKCEr8mHyPBcRmFtCSWL/zOBOELS+xec1bZpByCQF1iUd/dSFu
-	MJI41/iKEaJERGLfi3eMExiFZiGZNAvJpFlIJs1C0rKAkWUVo2hqQXJBcVJ6rqFecWJucWle
-	ul5yfu4mRnASeia1g3Flg8UhRgEORiUe3o5ZBkFCrIllxZW5hxglOJiVRHg/TzQMEuJNSays
-	Si3Kjy8qzUktPsSYDPTnRGYp0eR8YILMK4k3NDYxM7I0MrMwMjE3J01YSZz3QKt1oJBAemJJ
-	anZqakFqEcwWJg5OqQbGaTwRlRO4FmlKT2Wu/3ztHs+DLnnZ4mzv98tyNj3N9c/Kvnzf4h1L
-	WnuKbqeodvZU5W2bGZ+v5JB9NnmLXrfxo6Sj2aWH956ZcPmmVYPa8Zmv2q2CNPtj7O3fJ/z6
-	Wr0iYo318bQDM2VubE39e13rXpl+yr0P8/bZJB/6qNvqu+nGjPO7N39gUGIpzkg01GIuKk4E
-	AHUqY/+GAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 12 Sep 2013 06:27:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <52319300.6040509@ti.com>
+References: <1378136591-7463-1-git-send-email-kishon@ti.com>
+	<1378136591-7463-3-git-send-email-kishon@ti.com>
+	<CAFp+6iH7AbiJrVg-8hhv+21OyLp0cPEH0RdMh5tzTT+W_ifPDQ@mail.gmail.com>
+	<52319300.6040509@ti.com>
+Date: Thu, 12 Sep 2013 15:57:29 +0530
+Message-ID: <CAFp+6iF0tK_+E-40QhTCyEOaoXt_6aXyT_B6NLo9h5Emd4mMCg@mail.gmail.com>
+Subject: Re: [PATCH 2/7] usb: dwc3: adapt dwc3 core to use Generic PHY Framework
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: rogerq@ti.com, Felipe Balbi <balbi@ti.com>, bcousson@baylibre.com,
+        Tony Lindgren <tony@atomide.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>, galak@codeaurora.org,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        george.cherian@ti.com, Greg KH <gregkh@linuxfoundation.org>,
+        linux-doc@vger.kernel.org, linux-omap@vger.kernel.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 12, 2013 6:44 PM, Kishon Vijay Abraham I wrote:
-> On Thursday 12 September 2013 03:00 PM, Pratyush Anand wrote:
-> >
-> > From this conversation, It seems that you
-> > have tested this driver and it works fine without inbound translation
-> > function. I am sure that you would have tested a PCIe card with DMA
-> > capability such as PCIe2USB or PCIe2Ethernet. Since it worked, it
-> > means that by default your controller is supporting one to one mapping
-> > in case of inbound transaction even when address translation is enabled.
-> 
-> btw, I'm testing Ethernet controller: Realtek Semiconductor Co., Ltd.
-> RTL8111/8168B PCI Express Gigabit Ethernet controller.
-> 
-> when I do ifconfig eth0 up, I get *r8169 0000:01:00.0 eth0: link up.*
-> But I dont receive any packets and ping also fails and the tx and rx packet
-> count is also 0. Could it be related to inbound translation?
-> 
+On Thu, Sep 12, 2013 at 3:40 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+> On Thursday 12 September 2013 02:57 PM, Vivek Gautam wrote:
+>> Hi Kishon,
+>>
+>>
+>> On Mon, Sep 2, 2013 at 9:13 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>>> Adapted dwc3 core to use the Generic PHY Framework. So for init, exit,
+>>> power_on and power_off the following APIs are used phy_init(), phy_exit(),
+>>> phy_power_on() and phy_power_off().
+>>>
+>>> However using the old USB phy library wont be removed till the PHYs of all
+>>> other SoC's using dwc3 core is adapted to the Generic PHY Framework.
+>>>
+>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>>> ---
+>>>  Documentation/devicetree/bindings/usb/dwc3.txt |    6 ++-
+>>>  drivers/usb/dwc3/Kconfig                       |    1 +
+>>>  drivers/usb/dwc3/core.c                        |   49 ++++++++++++++++++++++++
+>>>  drivers/usb/dwc3/core.h                        |    7 ++++
+>>>  4 files changed, 61 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Documentation/devicetree/bindings/usb/dwc3.txt
+>>> index e807635..471366d 100644
+>>> --- a/Documentation/devicetree/bindings/usb/dwc3.txt
+>>> +++ b/Documentation/devicetree/bindings/usb/dwc3.txt
+>>> @@ -6,11 +6,13 @@ Required properties:
+>>>   - compatible: must be "snps,dwc3"
+>>>   - reg : Address and length of the register set for the device
+>>>   - interrupts: Interrupts used by the dwc3 controller.
+>>> +
+>>> +Optional properties:
+>>>   - usb-phy : array of phandle for the PHY device.  The first element
+>>>     in the array is expected to be a handle to the USB2/HS PHY and
+>>>     the second element is expected to be a handle to the USB3/SS PHY
+>>> -
+>>> -Optional properties:
+>>> + - phys: from the *Generic PHY* bindings
+>>> + - phy-names: from the *Generic PHY* bindings
+>>>   - tx-fifo-resize: determines if the FIFO *has* to be reallocated.
+>>>
+>>>  This is usually a subnode to DWC3 glue to which it is connected.
+>>> diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
+>>> index cfc16dd..ad7ce83 100644
+>>> --- a/drivers/usb/dwc3/Kconfig
+>>> +++ b/drivers/usb/dwc3/Kconfig
+>>> @@ -3,6 +3,7 @@ config USB_DWC3
+>>>         depends on (USB || USB_GADGET) && GENERIC_HARDIRQS && HAS_DMA
+>>>         depends on EXTCON
+>>>         select USB_PHY
+>>> +       select GENERIC_PHY
+>>>         select USB_XHCI_PLATFORM if USB_SUPPORT && USB_XHCI_HCD
+>>>         help
+>>>           Say Y or M here if your system has a Dual Role SuperSpeed
+>>> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+>>> index 428c29e..485d365 100644
+>>> --- a/drivers/usb/dwc3/core.c
+>>> +++ b/drivers/usb/dwc3/core.c
+>>> @@ -82,6 +82,12 @@ static void dwc3_core_soft_reset(struct dwc3 *dwc)
+>>>
+>>>         usb_phy_init(dwc->usb2_phy);
+>>>         usb_phy_init(dwc->usb3_phy);
+>>> +
+>>> +       if (dwc->usb2_generic_phy)
+>>> +               phy_init(dwc->usb2_generic_phy);
+>>> +       if (dwc->usb3_generic_phy)
+>>> +               phy_init(dwc->usb3_generic_phy);
+>>> +
+>>>         mdelay(100);
+>>>
+>>>         /* Clear USB3 PHY reset */
+>>> @@ -343,6 +349,11 @@ static void dwc3_core_exit(struct dwc3 *dwc)
+>>>  {
+>>>         usb_phy_shutdown(dwc->usb2_phy);
+>>>         usb_phy_shutdown(dwc->usb3_phy);
+>>> +
+>>> +       if (dwc->usb2_generic_phy)
+>>> +               phy_power_off(dwc->usb2_generic_phy);
+>>> +       if (dwc->usb3_generic_phy)
+>>> +               phy_power_off(dwc->usb3_generic_phy);
+>>>  }
+>>>
+>>>  #define DWC3_ALIGN_MASK                (16 - 1)
+>>> @@ -427,6 +438,23 @@ static int dwc3_probe(struct platform_device *pdev)
+>>>                 dwc->usb3_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB3);
+>>>         }
+>>>
+>>> +       if (of_property_read_bool(node, "phys") || pdata->has_phy) {
+>>> +               dwc->usb2_generic_phy = devm_phy_get(dev, "usb2-phy");
+>>> +               if (IS_ERR(dwc->usb2_generic_phy)) {
+>>> +                       dev_err(dev, "no usb2 phy configured yet");
+>>> +                       return PTR_ERR(dwc->usb2_generic_phy);
+>>> +               }
+>>
+>> I have a doubt here.
+>> As i can see in the current phy drivers structuring, for OMAP there
+>> are two phy drivers :
+>> omap phy-omap-usb2 (talking to musb controller)
+>
+> It talks to dwc3 controller also ;-)
 
-Hi Kishon,
+Ok
 
-I have tested Ethernet controller: Intel Corporation 82574L PCI Express
-Gigabit Ethernet controller.
+>
+>> and phy-omap-usb3(talking to dwc3 controller).
+>>
+>> Now dwc3 controller requests both usb2-phy (supported by phy-omap-usb2
+>> ?) and usb3-phy (supported by phy-omap-usb3 ?).
+>> But phy-omap-usb2 is not the one designated to talk to DWC3
+>> controller, then why does still DWC3 want to request usb2-phy, which
+>> end of the day will be phy-omap-usb2.
+>> May be i am wrong here since i don't have knowledge about OMAP h/w architecture.
+>>
+>> Is it like phy-omap-usb2 includes UTMI phys for both musb controller
+>> as well as dwc3 controller ?
+>
+> right. It's needed for dwc3 too. The same USB2 PHY IP is used for both MUSB in
+> OMAP2+ platforms and DWC3 in OMAP5.
 
-Without inbound translation, it works properly with both legacy interrupt
-mode and MSI mode.
+Ok, but on Samsung's exynos5 series of SoCs, the USB2.0 controller has
+a separate USB-PHY interface talking to phy-samsung-usb2 driver;
+and DWC3 drd controller has separate USB-PHY interface (including both
+UTMI+ and PIPE3 control registers) talking to phy-samsung-usb3 driver.
+So in this case DWC3 doesn't need phy-samsung-usb2 at all. It's phy is
+configured by just phy-samsung-usb3 driver only.
+So don't you think DWC3 driver should have the flexibility to have
+either (mostly usb3-phy) _or_ both "usb2-phy" and "usb3-phy".
+Thereby,in case of Samsung driver, DWC3 will just have "usb3-phy" and
+that will be enough to get things working.
+Want your opinions about it.
 
-Best regards,
-Jingoo Han
 
-
+-- 
+Best Regards
+Vivek
