@@ -1,124 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757294Ab3ILSZW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:25:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57024 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755103Ab3ILR7K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 13:59:10 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pravin B Shelar <pshelar@nicira.com>, Jesse Gross <jesse@nicira.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 15/46] genl: Fix genl dumpit() locking.
-Date: Thu, 12 Sep 2013 10:58:26 -0700
-Message-Id: <20130912175722.697613353@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130912175721.001906199@linuxfoundation.org>
-References: <20130912175721.001906199@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S1757113Ab3ILS0D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:26:03 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:25263 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755596Ab3ILSZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 14:25:58 -0400
+Date: Thu, 12 Sep 2013 20:25:53 +0200
+Message-Id: <201309121825.r8CIPrkI005690@localhost.localdomain>
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, scottwood@freescale.com
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Subject: [PATCH v2] powerpc 8xx: Fixing issue with CONFIG_PIN_TLB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+This is a reorganisation of the setup of the TLB at kernel startup, in order
+to handle the CONFIG_PIN_TLB case in accordance with chapter 8.10.3 of MPC866
+and MPC885 reference manuals.
 
-------------------
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-From: Pravin B Shelar <pshelar@nicira.com>
-
-[ Upstream commit 9b96309c5b0b9e466773c07a5bc8b7b68fcf010a ]
-
-In case of genl-family with parallel ops off, dumpif() callback
-is expected to run under genl_lock, But commit def3117493eafd9df
-(genl: Allow concurrent genl callbacks.) changed this behaviour
-where only first dumpit() op was called under genl-lock.
-For subsequent dump, only nlk->cb_lock was taken.
-Following patch fixes it by defining locked dumpit() and done()
-callback which takes care of genl-locking.
-
-Signed-off-by: Pravin B Shelar <pshelar@nicira.com>
-CC: Jesse Gross <jesse@nicira.com>
-CC: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/netlink/genetlink.c |   51 +++++++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 46 insertions(+), 5 deletions(-)
-
---- a/net/netlink/genetlink.c
-+++ b/net/netlink/genetlink.c
-@@ -544,6 +544,30 @@ void *genlmsg_put(struct sk_buff *skb, u
- }
- EXPORT_SYMBOL(genlmsg_put);
+diff -ur linux-3.11.org/arch/powerpc/kernel/head_8xx.S linux-3.11/arch/powerpc/kernel/head_8xx.S
+--- linux-3.11.org/arch/powerpc/kernel/head_8xx.S	2013-09-02 22:46:10.000000000 +0200
++++ linux-3.11/arch/powerpc/kernel/head_8xx.S	2013-09-09 11:28:54.000000000 +0200
+@@ -785,27 +785,24 @@
+  * these mappings is mapped by page tables.
+  */
+ initial_mmu:
+-	tlbia			/* Invalidate all TLB entries */
+-/* Always pin the first 8 MB ITLB to prevent ITLB
+-   misses while mucking around with SRR0/SRR1 in asm
+-*/
+-	lis	r8, MI_RSV4I@h
+-	ori	r8, r8, 0x1c00
+-
++	lis	r8, MI_RESETVAL@h
+ 	mtspr	SPRN_MI_CTR, r8	/* Set instruction MMU control */
  
-+static int genl_lock_dumpit(struct sk_buff *skb, struct netlink_callback *cb)
-+{
-+	struct genl_ops *ops = cb->data;
-+	int rc;
-+
-+	genl_lock();
-+	rc = ops->dumpit(skb, cb);
-+	genl_unlock();
-+	return rc;
-+}
-+
-+static int genl_lock_done(struct netlink_callback *cb)
-+{
-+	struct genl_ops *ops = cb->data;
-+	int rc = 0;
-+
-+	if (ops->done) {
-+		genl_lock();
-+		rc = ops->done(cb);
-+		genl_unlock();
-+	}
-+	return rc;
-+}
-+
- static int genl_family_rcv_msg(struct genl_family *family,
- 			       struct sk_buff *skb,
- 			       struct nlmsghdr *nlh)
-@@ -572,15 +596,32 @@ static int genl_family_rcv_msg(struct ge
- 		return -EPERM;
+-#ifdef CONFIG_PIN_TLB
+-	lis	r10, (MD_RSV4I | MD_RESETVAL)@h
+-	ori	r10, r10, 0x1c00
+-	mr	r8, r10
+-#else
+ 	lis	r10, MD_RESETVAL@h
+-#endif
+ #ifndef CONFIG_8xx_COPYBACK
+ 	oris	r10, r10, MD_WTDEF@h
+ #endif
+ 	mtspr	SPRN_MD_CTR, r10	/* Set data TLB control */
  
- 	if (nlh->nlmsg_flags & NLM_F_DUMP) {
--		struct netlink_dump_control c = {
--			.dump = ops->dumpit,
--			.done = ops->done,
--		};
-+		int rc;
++	tlbia			/* Invalidate all TLB entries */
++
++	ori	r8, r8, 0x1c00
++	mtspr	SPRN_MI_CTR, r8	/* Set instruction MMU control */
++#ifdef CONFIG_PIN_TLB
++	ori	r10, r10, 0x1c00
++	mtspr	SPRN_MD_CTR, r10	/* Set data TLB control */
++#endif
++
+ 	/* Now map the lower 8 Meg into the TLBs.  For this quick hack,
+ 	 * we can load the instruction and data TLB registers with the
+ 	 * same values.
+@@ -825,6 +822,12 @@
+ 	mtspr	SPRN_MI_AP, r8
+ 	mtspr	SPRN_MD_AP, r8
  
- 		if (ops->dumpit == NULL)
- 			return -EOPNOTSUPP;
++	/* Always pin the first 8 MB ITLB to prevent ITLB
++	 * misses while mucking around with SRR0/SRR1 in asm
++	 */
++	lis	r8, (MI_RSV4I | MI_RESETVAL)@h
++	mtspr	SPRN_MI_CTR, r8	/* Set instruction MMU control */
++
+ 	/* Map another 8 MByte at the IMMR to get the processor
+ 	 * internal registers (among other things).
+ 	 */
+@@ -870,7 +873,15 @@
+ 	mtspr	SPRN_MD_TWC, r9
+ 	addis	r11, r11, 0x0080	/* Add 8M */
+ 	mtspr	SPRN_MD_RPN, r11
++
++	lis	r10, (MD_RSV4I | MD_RESETVAL)@h
++#else
++	lis	r10, MD_RESETVAL@h
+ #endif
++#ifndef CONFIG_8xx_COPYBACK
++	oris	r10, r10, MD_WTDEF@h
++#endif
++	mtspr	SPRN_MD_CTR, r10	/* Set data TLB control */
  
--		return netlink_dump_start(net->genl_sock, skb, nlh, &c);
-+		if (!family->parallel_ops) {
-+			struct netlink_dump_control c = {
-+				.data = ops,
-+				.dump = genl_lock_dumpit,
-+				.done = genl_lock_done,
-+			};
-+
-+			genl_unlock();
-+			rc = netlink_dump_start(net->genl_sock, skb, nlh, &c);
-+			genl_lock();
-+
-+		} else {
-+			struct netlink_dump_control c = {
-+				.dump = ops->dumpit,
-+				.done = ops->done,
-+			};
-+
-+			rc = netlink_dump_start(net->genl_sock, skb, nlh, &c);
-+		}
-+
-+		return rc;
- 	}
- 
- 	if (ops->doit == NULL)
-
-
+ 	/* Since the cache is enabled according to the information we
+ 	 * just loaded into the TLB, invalidate and enable the caches here.
