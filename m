@@ -1,40 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023Ab3ILXAq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 19:00:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59629 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753413Ab3ILXAo (ORCPT
+	id S1756289Ab3ILXGb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 19:06:31 -0400
+Received: from longford.logfs.org ([213.229.74.203]:60219 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753413Ab3ILXG3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 19:00:44 -0400
-Date: Thu, 12 Sep 2013 16:00:43 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Tom Gundersen <teg@jklm.no>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2][usbutils] drop dependency on usb.ids
-Message-ID: <20130912230043.GA5021@kroah.com>
-References: <1378298828-18560-1-git-send-email-teg@jklm.no>
- <1378298828-18560-2-git-send-email-teg@jklm.no>
+	Thu, 12 Sep 2013 19:06:29 -0400
+Date: Thu, 12 Sep 2013 17:31:48 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Stephan Mueller <smueller@chronox.de>,
+        LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] /dev/random: Insufficient of entropy on many
+ architectures
+Message-ID: <20130912213148.GE3809@logfs.org>
+References: <10005394.BRCyBMYWy3@tauon>
+ <CANcMJZAHuXNQ4eUx+qpVnfJTg625HkJU_9pgBP24ykkmBww3yw@mail.gmail.com>
+ <20130910203853.GG29237@thunk.org>
+ <522F851D.1040101@linaro.org>
+ <20130910211009.GI29237@thunk.org>
+ <522F984C.2070909@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1378298828-18560-2-git-send-email-teg@jklm.no>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <522F984C.2070909@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 04, 2013 at 02:47:08PM +0200, Tom Gundersen wrote:
-> Also remove usb.ids from the repository. [Note that these were probably
-> never used by distributions regarless, as most distros ship the usb.ids
-> directly from upstream.]
-> 
-> Hardcode the usb-spec information that used to be in usb.ids,
-> but which was not moved to hwdb.
-> 
-> Increase the size of tha hash table from 16 to 512, though using a
-> hash at all is probably overkill at this point.
+On Tue, 10 September 2013 15:08:12 -0700, John Stultz wrote:
+> Though
+> I probably should be hesitant with my suggestions, as I'm not well
+> versed in RNG theory.
 
-Applied, thanks.
+The basic principle of Ted's RNG is very simple and quite sane:
+- You collect as much data as possible, some of which is (hopefully)
+  unpredictable.
+- All the data gets dumped into a small buffer.
+- When reading from the buffer, you create a crypto-hash of the entire
+  buffer.  Even if most of the buffer is predictable, the few
+  unpredictable bits will randomly flip every output bit.
+- Half of the hash gets returned to the reader, the other half gets
+  added back into the pool.
 
-greg k-h
+It doesn't matter if you collect predictable data - it neither helps
+nor hurts.  But you should collect as much unpredictable data as
+possible and do it as cheaply as possible.  If you want to improve the
+RNG, you either collect more data, collect better (less predictable)
+data or make the collection cheaper.
+
+Jörn
+
+--
+People really ought to be forced to read their code aloud over the phone.
+That would rapidly improve the choice of identifiers.
+-- Al Viro
