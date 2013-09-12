@@ -1,93 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447Ab3ILLqF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 07:46:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59446 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752312Ab3ILLqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 07:46:03 -0400
-Date: Thu, 12 Sep 2013 13:46:00 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Anton Vorontsov <anton@enomsg.org>, Hugh Dickins <hughd@google.com>,
-        David Rientjes <rientjes@google.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] vmpressure: fix divide-by-0 in vmpressure_work_fn
-Message-ID: <20130912114600.GB4828@dhcp22.suse.cz>
-References: <alpine.LNX.2.00.1309062254470.11420@eggly.anvils>
- <20130909110847.GB18056@dhcp22.suse.cz>
- <20130911154057.GA16765@teo>
- <20130911160357.GA32273@dhcp22.suse.cz>
- <alpine.LNX.2.00.1309111233200.2912@eggly.anvils>
+	id S1753832Ab3ILLwK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 07:52:10 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:43319 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753061Ab3ILLwI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 07:52:08 -0400
+Date: Thu, 12 Sep 2013 12:51:06 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Wei Ni <wni@nvidia.com>
+Cc: khali@linux-fr.org, linux@roeck-us.net, swarren@wwwdotorg.org,
+        lm-sensors@lm-sensors.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20130912115106.GM29403@sirena.org.uk>
+References: <1378985061-28547-1-git-send-email-wni@nvidia.com>
+ <1378985061-28547-2-git-send-email-wni@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LAThOmUcSmfEsnm5"
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1309111233200.2912@eggly.anvils>
+In-Reply-To: <1378985061-28547-2-git-send-email-wni@nvidia.com>
+X-Cookie: Your present plans will be successful.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v4 1/3] hwmon: (lm90) Add power control
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 11-09-13 13:04:33, Hugh Dickins wrote:
-> On Wed, 11 Sep 2013, Michal Hocko wrote:
-[...]
-> > From 888745909da34f8aee8a208a82d467236b828d0d Mon Sep 17 00:00:00 2001
-> > From: Michal Hocko <mhocko@suse.cz>
-> > Date: Wed, 11 Sep 2013 17:48:10 +0200
-> > Subject: [PATCH] vmpressure: fix divide-by-0 in vmpressure_work_fn
-> > 
-> > Hugh Dickins has reported a division by 0 when a vmpressure event is
-> > processed. The reason for the exception is that a single vmpressure
-> > work item (which is per memcg) might be processed by multiple CPUs
-> > because it is enqueued on system_wq which is !WQ_NON_REENTRANT.
-> > This means that the out of lock vmpr->scanned check in
-> > vmpressure_work_fn is inherently racy and the racing workers will see
-> > already zeroed scanned value after they manage to take the spin lock.
-> > 
-> > The patch simply moves the vmp->scanned check inside the sr_lock to fix
-> > the race.
-> > 
-> > The issue was there since the very beginning but "vmpressure: change
-> > vmpressure::sr_lock to spinlock" might have made it more visible as the
-> > racing workers would sleep on the mutex and give it more time to see
-> > updated value. The issue was still there, though.
-> > 
-> > Reported-by: Hugh Dickins <hughd@google.com>
-> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > Cc: stable@vger.kernel.org
-> 
-> Nack!  But equally Nack to my original.
-> 
-> Many thanks for looking into how this might have happened, Michal,
-> and for mentioning the WQ_NON_REENTRANT flag: which I knew nothing
-> about, but have now followed up.
-> I owe you all an abject apology: what I didn't mention in my patch
-> was that actually I hit the problem on a v3.3-based kernel to which
-> vmpressure had been backported.
-> 
-> I have not yet seen the problem on v3.11 or v3.10, and now believe
-> that it cannot happen there - which would explain why I was the
-> first to hit it.
-> 
-> When I looked up WQ_NON_REENTRANT in the latest tree, I found
-> 	WQ_NON_REENTRANT	= 1 << 0, /* DEPRECATED */
-> and git blame on that line leads to Tejun explaining
->     
->     dbf2576e37 ("workqueue: make all workqueues non-reentrant") made
->     WQ_NON_REENTRANT no-op but the following patches didn't remove the
->     flag or update the documentation.  Let's mark the flag deprecated and
->     update the documentation accordingly.
 
-Goon point. I didn't check the code and relied on the documentation.
-Thanks for pointing this out.
+--LAThOmUcSmfEsnm5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> dbf2576e37 went into v3.7, so I now believe this divide-by-0 could
-> only happen on a backport of vmpressure to an earlier kernel than that.
+On Thu, Sep 12, 2013 at 07:24:19PM +0800, Wei Ni wrote:
 
-git grep WQ_NON_REENTRANT on kernel/workqueue.c really shows nothing so
-I guess you are right.
+> +#include <linux/delay.h>
 
-Andrew, please drop the patch.
--- 
-Michal Hocko
-SUSE Labs
+You don't need this any more, otherwise
+
+Reviewed-by: Mark Brown <broonie@linaro.org>
+
+--LAThOmUcSmfEsnm5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSMaqnAAoJELSic+t+oim9nmoQAIfb7z1IwpTynk3KqYsa52vo
+M1uKfF6uSoyVR4xc/9zRnr1ZtqXMGv/JElBDbSjTP2qmCq6cTh8yh/mIhcRjv9PB
+h8k0ZVVAxfZKGnzps+1FY/DdJn6uKVeb7IN1fk9EdfzkZXjj4V5ATMoDhZKyLREb
+is6fO6vs7hkei4sUwzYZuXuTkTEujnvFSVx/cxBYiHyuiRYtAezsCOpy2xvqmkey
+MC60Tx4cugHZt5ok3vcaW5n7Y4MAiPJ+yaS/jE9v7b9owABfERNK/+Uz2yItsOF7
+Z+rcbbpUXi5iN6rxxGcoV0HYnSiuqXpCheS4mY8xLJooHBf72XYyb/CMYgj2/0Pt
+kc+k1B/x5MWWJlOz2FfhzksoBlpbouF1Romri6YPJTsOyOIaNWMTf6t86oVXuD0o
+85CB+ZHiDt6A/Ob9pCkr3QSRQFT1powQ8bl3/E+kaNM3I9WmgvurT4Y8/noFN0Jm
+KcwJM5kwvwdm8EMy1z36mt99X6B8eIC4KY6875zPcr2YRjMvzMeF6pdKfYckWhp8
+NN/g5Wnan09bm8h+AigGIQOeFMcEe2emA/Ncy+WNiDmfjv51UF5fxeofhklCbi86
+4akVdzn954GMuIldhHpJ75RgI57RiWXdkcRjAazTrjYNfS8QRkgrhuKevYJUtvhI
+rDnodfnlnVX28n46Bpqr
+=lJNd
+-----END PGP SIGNATURE-----
+
+--LAThOmUcSmfEsnm5--
