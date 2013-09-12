@@ -1,151 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754864Ab3ILQxh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 12:53:37 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:23061 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754652Ab3ILQxg (ORCPT
+	id S1754921Ab3ILQxv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 12:53:51 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:56116 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754540Ab3ILQxt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 12:53:36 -0400
-Message-ID: <1379004807.10738.3.camel@concerto>
-Subject: [PATCH] SCSI: buslogic: Added check for DMA mapping errors (was Re:
- [BusLogic] DMA-API: device driver failed to check map error)
-From: Khalid Aziz <khalid.aziz@oracle.com>
-To: James Bottomley <jbottomley@parallels.com>
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Date: Thu, 12 Sep 2013 10:53:27 -0600
-In-Reply-To: <1378816604.6973.53.camel@dabdike.int.hansenpartnership.com>
-References: <201309101503.ECC18788.SOOVOJLFtQHMFF@I-love.SAKURA.ne.jp>
-	 <1378816604.6973.53.camel@dabdike.int.hansenpartnership.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Thu, 12 Sep 2013 12:53:49 -0400
+Subject: Re: [PATCH] ARM: msm: Move msm devicetrees under a Qualcomm dir
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=US-ASCII
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <CAOesGMisWLwYKotGDFPW6PyHJs=_+fohTdC08SGjsv2FXaa7Fg@mail.gmail.com>
+Date: Thu, 12 Sep 2013 11:53:47 -0500
+Cc: David Brown <davidb@codeaurora.org>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
+        Rohit Vaswani <rvaswani@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Transfer-Encoding: 7BIT
+Message-Id: <25E0B143-658E-4CCC-A88A-0AF70FFF33CE@codeaurora.org>
+References: <1379003839-16068-1-git-send-email-galak@codeaurora.org> <CAOesGMisWLwYKotGDFPW6PyHJs=_+fohTdC08SGjsv2FXaa7Fg@mail.gmail.com>
+To: Olof Johansson <olof@lixom.net>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added check for DMA mapping errors for request sense data
-buffer. Checking for mapping error can avoid potential wild
-writes. This patch was prompted by the warning from
-dma_unmap when kernel is compiled with CONFIG_DMA_API_DEBUG.
+
+On Sep 12, 2013, at 11:46 AM, Olof Johansson wrote:
+
+> On Thu, Sep 12, 2013 at 9:37 AM, Kumar Gala <galak@codeaurora.org> wrote:
+>> Use the Qualcomm vendor prefix (qcom) as the directory name for
+>> Qualcomm MSM devicetrees going forward.
+>> 
+>> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+> 
+> Let's not move just one platform like this. If we are to do this, we
+> should move everything, and that will be really painful and needs to
+> be done in a controlled manner, probably scripted and right before a
+> -rc1 or such.
 
 
-Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
----
- drivers/scsi/BusLogic.c |   32 +++++++++++++++++++++-----------
- 1 file changed, 21 insertions(+), 11 deletions(-)
+Than I suggest we deal with it when we pull the device trees out of the kernel tree.
 
-diff --git a/drivers/scsi/BusLogic.c b/drivers/scsi/BusLogic.c
-index feab3a5..90cf1aa 100644
---- a/drivers/scsi/BusLogic.c
-+++ b/drivers/scsi/BusLogic.c
-@@ -26,8 +26,8 @@
- 
- */
- 
--#define blogic_drvr_version		"2.1.16"
--#define blogic_drvr_date		"18 July 2002"
-+#define blogic_drvr_version		"2.1.17"
-+#define blogic_drvr_date		"12 September 2013"
- 
- #include <linux/module.h>
- #include <linux/init.h>
-@@ -311,12 +311,13 @@ static struct blogic_ccb *blogic_alloc_ccb(struct blogic_adapter *adapter)
-   caller.
- */
- 
--static void blogic_dealloc_ccb(struct blogic_ccb *ccb)
-+static void blogic_dealloc_ccb(struct blogic_ccb *ccb, int dma_unmap)
- {
- 	struct blogic_adapter *adapter = ccb->adapter;
- 
- 	scsi_dma_unmap(ccb->command);
--	pci_unmap_single(adapter->pci_device, ccb->sensedata,
-+	if (dma_unmap)
-+		pci_unmap_single(adapter->pci_device, ccb->sensedata,
- 			 ccb->sense_datalen, PCI_DMA_FROMDEVICE);
- 
- 	ccb->command = NULL;
-@@ -2762,8 +2763,8 @@ static void blogic_process_ccbs(struct blogic_adapter *adapter)
- 			/*
- 			   Place CCB back on the Host Adapter's free list.
- 			 */
--			blogic_dealloc_ccb(ccb);
--#if 0				/* this needs to be redone different for new EH */
-+			blogic_dealloc_ccb(ccb, 1);
-+#if 0			/* this needs to be redone different for new EH */
- 			/*
- 			   Bus Device Reset CCBs have the command field
- 			   non-NULL only when a Bus Device Reset was requested
-@@ -2791,7 +2792,7 @@ static void blogic_process_ccbs(struct blogic_adapter *adapter)
- 				if (ccb->status == BLOGIC_CCB_RESET &&
- 						ccb->tgt_id == tgt_id) {
- 					command = ccb->command;
--					blogic_dealloc_ccb(ccb);
-+					blogic_dealloc_ccb(ccb, 1);
- 					adapter->active_cmds[tgt_id]--;
- 					command->result = DID_RESET << 16;
- 					command->scsi_done(command);
-@@ -2862,7 +2863,7 @@ static void blogic_process_ccbs(struct blogic_adapter *adapter)
- 			/*
- 			   Place CCB back on the Host Adapter's free list.
- 			 */
--			blogic_dealloc_ccb(ccb);
-+			blogic_dealloc_ccb(ccb, 1);
- 			/*
- 			   Call the SCSI Command Completion Routine.
- 			 */
-@@ -3034,6 +3035,7 @@ static int blogic_qcmd_lck(struct scsi_cmnd *command,
- 	int buflen = scsi_bufflen(command);
- 	int count;
- 	struct blogic_ccb *ccb;
-+	dma_addr_t sense_buf;
- 
- 	/*
- 	   SCSI REQUEST_SENSE commands will be executed automatically by the
-@@ -3179,9 +3181,17 @@ static int blogic_qcmd_lck(struct scsi_cmnd *command,
- 	}
- 	memcpy(ccb->cdb, cdb, cdblen);
- 	ccb->sense_datalen = SCSI_SENSE_BUFFERSIZE;
--	ccb->sensedata = pci_map_single(adapter->pci_device,
-+	sense_buf = pci_map_single(adapter->pci_device,
- 				command->sense_buffer, ccb->sense_datalen,
- 				PCI_DMA_FROMDEVICE);
-+	if (dma_mapping_error(&adapter->pci_device->dev, sense_buf)) {
-+		blogic_err("DMA mapping for sense data buffer failed\n",
-+				adapter);
-+		scsi_dma_map(command);
-+		blogic_dealloc_ccb(ccb, 0);
-+		return SCSI_MLQUEUE_HOST_BUSY;
-+	}
-+	ccb->sensedata = sense_buf;
- 	ccb->command = command;
- 	command->scsi_done = comp_cb;
- 	if (blogic_multimaster_type(adapter)) {
-@@ -3203,7 +3213,7 @@ static int blogic_qcmd_lck(struct scsi_cmnd *command,
- 			if (!blogic_write_outbox(adapter, BLOGIC_MBOX_START,
- 						ccb)) {
- 				blogic_warn("Still unable to write Outgoing Mailbox - " "Host Adapter Dead?\n", adapter);
--				blogic_dealloc_ccb(ccb);
-+				blogic_dealloc_ccb(ccb, 1);
- 				command->result = DID_ERROR << 16;
- 				command->scsi_done(command);
- 			}
-@@ -3337,7 +3347,7 @@ static int blogic_resetadapter(struct blogic_adapter *adapter, bool hard_reset)
- 
- 	for (ccb = adapter->all_ccbs; ccb != NULL; ccb = ccb->next_all)
- 		if (ccb->status == BLOGIC_CCB_ACTIVE)
--			blogic_dealloc_ccb(ccb);
-+			blogic_dealloc_ccb(ccb, 1);
- 	/*
- 	 * Wait a few seconds between the Host Adapter Hard Reset which
- 	 * initiates a SCSI Bus Reset and issuing any SCSI Commands.  Some
+As such, I'd tell Rohit to go forward with the file being named apq8074-dragonboard.dtb for the time being.
+
+- k
+
 -- 
-1.7.10.4
-
-
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
