@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab3ILFPr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 01:15:47 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:43668 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752999Ab3ILFPo (ORCPT
+	id S1753447Ab3ILF0U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 01:26:20 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:53882 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753123Ab3ILF0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 01:15:44 -0400
-Message-ID: <52314F63.8040409@linux.vnet.ibm.com>
-Date: Thu, 12 Sep 2013 10:51:39 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-CC: Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, Rob Landley <rob@landley.net>,
-        mtosatti@redhat.com
-Subject: Re: [PATCH V2] Documentation/kvm: Update cpuid documentation for
- steal time and pv eoi
-References: <y> <1378284526-863-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-In-Reply-To: <1378284526-863-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091205-4790-0000-0000-00000A45FBA1
+	Thu, 12 Sep 2013 01:26:17 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl, swarren@wwwdotorg.org, srivatsa.bhat@linux.vnet.ibm.com
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 0/5] cpufreq: Last minute fixes for 3.12
+Date: Thu, 12 Sep 2013 10:55:43 +0530
+Message-Id: <cover.1378963070.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2013 02:18 PM, Raghavendra K T wrote:
-> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> ---
->   Changes in V2:
->    Correction in the description of steal time and added msr info (Michael S Tsirkin)
->
->   Documentation/virtual/kvm/cpuid.txt | 10 ++++++++++
->   1 file changed, 10 insertions(+)
->
-> diff --git a/Documentation/virtual/kvm/cpuid.txt b/Documentation/virtual/kvm/cpuid.txt
-> index 22ff659..6c4fb20 100644
-> --- a/Documentation/virtual/kvm/cpuid.txt
-> +++ b/Documentation/virtual/kvm/cpuid.txt
-> @@ -43,6 +43,16 @@ KVM_FEATURE_CLOCKSOURCE2           ||     3 || kvmclock available at msrs
->   KVM_FEATURE_ASYNC_PF               ||     4 || async pf can be enabled by
->                                      ||       || writing to msr 0x4b564d02
->   ------------------------------------------------------------------------------
-> +KVM_FEATURE_STEAL_TIME             ||     5 || Steal time available at msr
-> +                                   ||       || 0x4b564d03. The feature is enabled
-> +                                   ||       || by guest when host has schedstat
-> +                                   ||       || or task delay accounting support.
-> +------------------------------------------------------------------------------
-> +KVM_FEATURE_PV_EOI                 ||     6 || overrides the generic EOI
-> +                                   ||       || implementation with a
-> +                                   ||       || paravirtualized version. Available
-> +                                   ||       || at msr 0x4b564d04.
-> +------------------------------------------------------------------------------
->   KVM_FEATURE_PV_UNHALT              ||     7 || guest checks this feature bit
->                                      ||       || before enabling paravirtualized
->                                      ||       || spinlock support.
->
+Hi Rafael/Srivatsa,
 
-Michael,
+These are some last minute fixes for 3.12. I have found them while looking at
+the code to fix the latest suspend/resume crashes we see (Reported by Stephen)..
 
-Are you okay with the above patch. Please let me know.
+I believe at some place these are behind those crashes, otherwise people with a
+single cluster or single policy couldn't have faced it.. Like Stephen as he was
+working on Tegra.
+
+I thought you will wait for my conversation with Srivatsa to get over before
+actually applying his patches, but saw that just happened :)
+
+No issues, we can talk a bit more about the problems for now and then you can
+get whatever patches are required for 3.12-rc2
+
+First three of the patchset are minor cleanups (you may or may not take them for
+3.12), but last two are some real fixes.. I haven't faced any issue without them
+but simply found them in code review.
+
+@Stephen: Probably you can try my branch: cpufreq-suspend-fix, which has these
+patches without Srivatsa's patches (though some bits of those will also be
+required I believe for multicluster systems)..
+
+--
+viresh
+
+Viresh Kumar (5):
+  cpufreq: Remove extra blank line
+  cpufreq: don't break string in print statements
+  cpufreq: remove __cpufreq_remove_dev()
+  cpufreq: don't update policy->cpu while removing while removing other
+    CPUs
+  cpufreq: use correct values of cpus in __cpufreq_remove_dev_finish()
+
+ drivers/cpufreq/cpufreq.c | 50 +++++++++++++++++++----------------------------
+ 1 file changed, 20 insertions(+), 30 deletions(-)
+
+-- 
+1.7.12.rc2.18.g61b472e
 
