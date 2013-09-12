@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757589Ab3ILKOt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 06:14:49 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:38982 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752610Ab3ILKOs (ORCPT
+	id S1757945Ab3ILKPG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 06:15:06 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:7595 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757752Ab3ILKPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 06:14:48 -0400
-Message-ID: <52319416.5080305@free-electrons.com>
-Date: Thu, 12 Sep 2013 12:14:46 +0200
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Thu, 12 Sep 2013 06:15:03 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 12 Sep 2013 03:15:01 -0700
+Date: Thu, 12 Sep 2013 13:14:59 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Bill Huang <bilhuang@nvidia.com>
+CC: "rjw@sisk.pl" <rjw@sisk.pl>,
+        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 2/2] cpufreq: tegra: Re-model Tegra cpufreq driver
+Message-ID: <20130912101459.GG30013@tbergstrom-lnx.Nvidia.com>
+References: <1378898355-31290-1-git-send-email-bilhuang@nvidia.com>
+ <1378898355-31290-3-git-send-email-bilhuang@nvidia.com>
 MIME-Version: 1.0
-To: Steven Miao <realmz6@gmail.com>
-CC: Mike Frysinger <vapier@gentoo.org>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH][RESEND] blackfin: remove unused parameters in Kconfig
-References: <1378271336-25134-1-git-send-email-michael.opdenacker@free-electrons.com> <CAMk6uB=3gJvszwyvmcQExgQH_hQvQxEeTj3U+-PLozffNVDnZw@mail.gmail.com> <52306D7C.2020605@free-electrons.com> <CAMk6uBmAXNytUECB7+_eC+OxgCGn91RM+ea9_UkL7f2_PdyssA@mail.gmail.com> <52317A6D.1020902@free-electrons.com> <CAMk6uBnAgSceLeEHo5c+5JUquoFR=5ES88yh0ieU5qdMtz2U9A@mail.gmail.com>
-In-Reply-To: <CAMk6uBnAgSceLeEHo5c+5JUquoFR=5ES88yh0ieU5qdMtz2U9A@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1378898355-31290-3-git-send-email-bilhuang@nvidia.com>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2013 11:45 AM, Steven Miao wrote:
+On Wed, Sep 11, 2013 at 01:19:14PM +0200, Bill Huang wrote:
 
->
-> The blackfin code repository has been moved to sourceforge for some
-> commercial reasons now.
-> You can ref:
-> https://sourceforge.net/projects/adi-linux/ 
-Good to know, thanks!
+> +static inline int tegra_cpufreq_init(void)
+> +{
+> +       retrun EOPNOTSUPP;
 
-I've sent another patch to declare the corresponding repository in the
-MAINTAINERS file.
+This should be -EOPNOTSUPP at least. I think -EINVAL might be better.
 
 Cheers,
 
-Michael.
-
--- 
-Michael Opdenacker, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-+33 484 258 098
-
+Peter.
