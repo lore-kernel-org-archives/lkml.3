@@ -1,108 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757936Ab3ILGoW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 02:44:22 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:51674 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755685Ab3ILGoT (ORCPT
+	id S1757947Ab3ILGof (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 02:44:35 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:38668 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753558Ab3ILGoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 02:44:19 -0400
-Message-ID: <523161D1.9040005@linux.vnet.ibm.com>
-Date: Thu, 12 Sep 2013 12:10:17 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: rjw@sisk.pl, swarren@wwwdotorg.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] cpufreq: use correct values of cpus in __cpufreq_remove_dev_finish()
-References: <cover.1378963070.git.viresh.kumar@linaro.org> <8f777cc6b41b2fed4bf71ce2adc36800353d5738.1378963070.git.viresh.kumar@linaro.org>
-In-Reply-To: <8f777cc6b41b2fed4bf71ce2adc36800353d5738.1378963070.git.viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091206-2674-0000-0000-00000A9DD9B1
+	Thu, 12 Sep 2013 02:44:32 -0400
+X-AuditID: cbfee68f-b7f1e6d000004e8d-9c-523162cf6965
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Samuel Ortiz'" <sameo@linux.intel.com>,
+        "'Lee Jones'" <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
+References: <001501ceaf83$1e558220$5b008660$%han@samsung.com>
+In-reply-to: <001501ceaf83$1e558220$5b008660$%han@samsung.com>
+Subject: [PATCH 3/3] mfd: timberdale: remove unnecessary pci_set_drvdata()
+Date: Thu, 12 Sep 2013 15:44:31 +0900
+Message-id: <001701ceaf83$8921e6c0$9b65b440$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac6vgx4pjQNLnVsKTseFP8zkmoiH8wAADrqw
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJIsWRmVeSWpSXmKPExsVy+t8zY93zSYZBBgf/SVhcXniJ1eL+16OM
+	Fpd3zWGzON3N6sDicefaHjaPeScDPfq2rGL0+LxJLoAlissmJTUnsyy1SN8ugStjxcrHTAWL
+	2Cs2XG5hamD8xdrFyMkhIWAicWLKbWYIW0ziwr31bF2MXBxCAssYJfb9OsMEUzRxz3lmiMR0
+	RonVr5rZIZxfjBKLbz9nAaliE1CT+PLlMFCCg0NEwE+iYQWYySzgInF0mghIhZCArcTxFc1g
+	yzgF7CQeTlsJdoSwgJfEqtU9TCDlLAKqEn1HIkHCvEDlq04fZoawBSV+TL4HtohZQEti/c7j
+	TBC2vMTmNW+ZQVolBNQlHv3VBQmLCBhJvFg8jw2iRERi34t3jCAHSwicY5f42D0JrJdFQEDi
+	2+RDLBC9shKbDkCDQVLi4IobLBMYJWYh2TwLyeZZSDbPQrJiASPLKkbR1ILkguKk9CJjveLE
+	3OLSvHS95PzcTYyQaOzfwXj3gPUhxmSg9ROZpUST84HRnFcSb2hsZmRhamJqbGRuaUaasJI4
+	r1qLdaCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxjTuy5Kv1zkXu7S1zn1y5UCCbHLipwuK
+	33lTEo0VxMtXRN5XXeU69e7V/xE+cw68yXi3N6Uu7PP0jNjXHeZt06IEjASL2tzMn5S8fhl1
+	bjV3XE+s56c7e2X3W12fIssSurz+rG0Bg5S0aCVbn7vwBYMHdTw+kr7JXivvf4l6En786SqH
+	qSWnlFiKMxINtZiLihMBOvuqItwCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGKsWRmVeSWpSXmKPExsVy+t9jQd3zSYZBBmvWiFpcXniJ1eL+16OM
+	Fpd3zWGzON3N6sDicefaHjaPeScDPfq2rGL0+LxJLoAlqoHRJiM1MSW1SCE1Lzk/JTMv3VbJ
+	OzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdoo5JCWWJOKVAoILG4WEnfDtOE0BA3XQuY
+	xghd35AguB4jAzSQsI4xY8XKx0wFi9grNlxuYWpg/MXaxcjJISFgIjFxz3lmCFtM4sK99Wxd
+	jFwcQgLTGSVWv2pmh3B+MUosvv2cBaSKTUBN4suXw0AJDg4RAT+JhhVgJrOAi8TRaSIgFUIC
+	thLHVzSDzeQUsJN4OG0l2C5hAS+JVat7mEDKWQRUJfqORIKEeYHKV50+zAxhC0r8mHwPbBGz
+	gJbE+p3HmSBseYnNa94yg7RKCKhLPPqrCxIWETCSeLF4HhtEiYjEvhfvGCcwCs1CMmkWkkmz
+	kEyahaRlASPLKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgWH8mvYNxVYPFIUYBDkYlHt6O
+	WQZBQqyJZcWVuYcYJTiYlUR4480Ng4R4UxIrq1KL8uOLSnNSiw8xJgP9OZFZSjQ5H5iG8kri
+	DY1NzIwsjcwsjEzMzUkTVhLnPdhqHSgkkJ5YkpqdmlqQWgSzhYmDU6qBkXGaDzvTvmmPql2t
+	JRZ6fD7wubjlTOLtNcfzJ4S9iGtZYXaAQ3bh+0Mbv+3dusSfpUj3nYb/gbx5U6/85elQOZU6
+	gX//NftMl2mfwzrt+HYVBJx9Jf112b5Is4Py8bt3LFp9t17H9UxKyfUZpyL1uxTfnHzNpqDW
+	sWth0X2PmJDJ73qbP1k1NiixFGckGmoxFxUnAgBqcGU2OQMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2013 10:55 AM, Viresh Kumar wrote:
-> This broke after a recent change "cedb70a cpufreq: Split __cpufreq_remove_dev()
-> into two parts" from Srivatsa..
-> 
-> Consider a scenario where we have two CPUs in a policy (0 & 1) and we are
-> removing cpu 1. On the call to __cpufreq_remove_dev_prepare() we have cleared 1
-> from policy->cpus and now on a call to __cpufreq_remove_dev_finish() we read
-> cpumask_weight of policy->cpus, which will come as 1 and this code will behave
-> as if we are removing the last cpu from policy :)
-> 
-> Fix it by clearing cpu mask in __cpufreq_remove_dev_finish() instead of
-> __cpufreq_remove_dev_prepare().
->
+The driver core clears the driver data to NULL after device_release
+or on probe failure. Thus, it is not needed to manually clear the
+device driver data to NULL.
 
-Oops! Good catch!
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/mfd/timberdale.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
-That said, your fix doesn't look correct. See below.
+diff --git a/drivers/mfd/timberdale.c b/drivers/mfd/timberdale.c
+index a6755ec..084767b 100644
+--- a/drivers/mfd/timberdale.c
++++ b/drivers/mfd/timberdale.c
+@@ -829,12 +829,10 @@ err_config:
+ err_ioremap:
+ 	release_mem_region(priv->ctl_mapbase, CHIPCTLSIZE);
+ err_request:
+-	pci_set_drvdata(dev, NULL);
+ err_start:
+ 	pci_disable_device(dev);
+ err_enable:
+ 	kfree(priv);
+-	pci_set_drvdata(dev, NULL);
+ 	return -ENODEV;
+ }
  
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->  drivers/cpufreq/cpufreq.c | 14 +++++++-------
->  1 file changed, 7 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 0e11fcb..b556d46 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -1175,12 +1175,9 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
->  			policy->governor->name, CPUFREQ_NAME_LEN);
->  #endif
-> 
-> -	WARN_ON(lock_policy_rwsem_write(cpu));
-> +	lock_policy_rwsem_read(cpu);
->  	cpus = cpumask_weight(policy->cpus);
-> -
-> -	if (cpus > 1)
-> -		cpumask_clear_cpu(cpu, policy->cpus);
-> -	unlock_policy_rwsem_write(cpu);
-> +	unlock_policy_rwsem_read(cpu);
-> 
->  	if (cpu != policy->cpu) {
->  		if (!frozen)
-
-Around here, we call cpufreq_nominate_new_policy_cpu(), and if we haven't cleared
-the CPU by then, there is a chance that it will nominate the same CPU that we are
-taking offline. So its important to clear the CPU before that point.
-
-> @@ -1222,9 +1219,12 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
->  		return -EINVAL;
->  	}
-> 
-> -	lock_policy_rwsem_read(cpu);
-> +	WARN_ON(lock_policy_rwsem_write(cpu));
->  	cpus = cpumask_weight(policy->cpus);
-> -	unlock_policy_rwsem_read(cpu);
-> +
-> +	if (cpus > 1)
-> +		cpumask_clear_cpu(cpu, policy->cpus);
-> +	unlock_policy_rwsem_write(cpu);
->
-
-Perhaps we can retain the above as a read operation, ...
+@@ -851,7 +849,6 @@ static void timb_remove(struct pci_dev *dev)
  
->  	/* If cpu is last user of policy, free policy */
->  	if (cpus == 1) {
-> 
-... and change this suitably (from 1 to 0 etc..) ? To add to it, it will look more
-clear as well:
+ 	pci_disable_msix(dev);
+ 	pci_disable_device(dev);
+-	pci_set_drvdata(dev, NULL);
+ 	kfree(priv);
+ }
+ 
+-- 
+1.7.10.4
 
-if (cpus == 0) {
-	/* No cpus in policy, so free it */
-} else {
-	/* Restart governor */
-}
-
-Regards,
-Srivatsa S. Bhat
 
