@@ -1,76 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756507Ab3ILSEb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:04:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57127 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755643Ab3ILR7X (ORCPT
+	id S1756530Ab3ILSEj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:04:39 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37836 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756056Ab3ILSEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 13:59:23 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Erik Hugne <erik.hugne@ericsson.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 34/46] tipc: set sk_err correctly when connection fails
-Date: Thu, 12 Sep 2013 10:58:45 -0700
-Message-Id: <20130912175724.698023816@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130912175721.001906199@linuxfoundation.org>
-References: <20130912175721.001906199@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Thu, 12 Sep 2013 14:04:35 -0400
+Date: Thu, 12 Sep 2013 11:03:55 -0700
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-06c939c1f41b1c28bb17fae074ad610e22a01db8@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <20130909112636.GQ31370@twins.programming.kicks-ass.net>
+References: <20130909112636.GQ31370@twins.programming.kicks-ass.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf/x86/intel: Fix Silvermont offcore masks
+Git-Commit-ID: 06c939c1f41b1c28bb17fae074ad610e22a01db8
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 12 Sep 2013 11:04:01 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Commit-ID:  06c939c1f41b1c28bb17fae074ad610e22a01db8
+Gitweb:     http://git.kernel.org/tip/06c939c1f41b1c28bb17fae074ad610e22a01db8
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Mon, 9 Sep 2013 13:26:36 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 12 Sep 2013 19:12:27 +0200
 
-------------------
+perf/x86/intel: Fix Silvermont offcore masks
 
-From: Erik Hugne <erik.hugne@ericsson.com>
+Fengguang Wu reported:
 
-[ Upstream commit 2c8d85182348021fc0a1bed193a4be4161dc8364 ]
+> sparse warnings: (new ones prefixed by >>)
+>
+> >> arch/x86/kernel/cpu/perf_event_intel.c:901:9: sparse: constant 0x768005ffff is so big it is long
+> >> arch/x86/kernel/cpu/perf_event_intel.c:902:9: sparse: constant 0x768005ffff is so big it is long
+>
+> vim +901 arch/x86/kernel/cpu/perf_event_intel.c
+>
+>    895	 },
+>    896	};
+>    897
+>    898	static struct extra_reg intel_slm_extra_regs[] __read_mostly =
+>    899	{
+>    900		/* must define OFFCORE_RSP_X first, see intel_fixup_er() */
+>  > 901		INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0x768005ffff, RSP_0),
+>  > 902		INTEL_UEVENT_EXTRA_REG(0x02b7, MSR_OFFCORE_RSP_1, 0x768005ffff, RSP_1),
+>    903		EVENT_EXTRA_END
+>    904	};
+>    905
 
-Should a connect fail, if the publication/server is unavailable or
-due to some other error, a positive value will be returned and errno
-is never set. If the application code checks for an explicit zero
-return from connect (success) or a negative return (failure), it
-will not catch the error and subsequent send() calls will fail as
-shown from the strace snippet below.
+Extend those constants to 64 bits.
 
-socket(0x1e /* PF_??? */, SOCK_SEQPACKET, 0) = 3
-connect(3, {sa_family=0x1e /* AF_??? */, sa_data="\2\1\322\4\0\0\322\4\0\0\0\0\0\0"}, 16) = 111
-sendto(3, "test", 4, 0, NULL, 0)        = -1 EPIPE (Broken pipe)
-
-The reason for this behaviour is that TIPC wrongly inverts error
-codes set in sk_err.
-
-Signed-off-by: Erik Hugne <erik.hugne@ericsson.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reported-by: fengguang.wu@intel.com
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20130909112636.GQ31370@twins.programming.kicks-ass.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- net/tipc/socket.c |    4 ++--
+ arch/x86/kernel/cpu/perf_event_intel.c | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/tipc/socket.c
-+++ b/net/tipc/socket.c
-@@ -1179,7 +1179,7 @@ static u32 filter_connect(struct tipc_so
- 		/* Accept only ACK or NACK message */
- 		if (unlikely(msg_errcode(msg))) {
- 			sock->state = SS_DISCONNECTING;
--			sk->sk_err = -ECONNREFUSED;
-+			sk->sk_err = ECONNREFUSED;
- 			retval = TIPC_OK;
- 			break;
- 		}
-@@ -1190,7 +1190,7 @@ static u32 filter_connect(struct tipc_so
- 		res = auto_connect(sock, msg);
- 		if (res) {
- 			sock->state = SS_DISCONNECTING;
--			sk->sk_err = res;
-+			sk->sk_err = -res;
- 			retval = TIPC_OK;
- 			break;
- 		}
-
-
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index c62d883..9db76c3 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -899,8 +899,8 @@ static __initconst const u64 atom_hw_cache_event_ids
+ static struct extra_reg intel_slm_extra_regs[] __read_mostly =
+ {
+ 	/* must define OFFCORE_RSP_X first, see intel_fixup_er() */
+-	INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0x768005ffff, RSP_0),
+-	INTEL_UEVENT_EXTRA_REG(0x02b7, MSR_OFFCORE_RSP_1, 0x768005ffff, RSP_1),
++	INTEL_UEVENT_EXTRA_REG(0x01b7, MSR_OFFCORE_RSP_0, 0x768005ffffull, RSP_0),
++	INTEL_UEVENT_EXTRA_REG(0x02b7, MSR_OFFCORE_RSP_1, 0x768005ffffull, RSP_1),
+ 	EVENT_EXTRA_END
+ };
+ 
