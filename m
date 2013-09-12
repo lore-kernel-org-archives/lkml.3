@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753555Ab3ILHDf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 03:03:35 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:41323 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751475Ab3ILHDe convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:10:1>);
-	Thu, 12 Sep 2013 03:03:34 -0400
-Message-Id: <5231836102000078000F29AD@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Thu, 12 Sep 2013 08:03:29 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Kees Cook" <keescook@chromium.org>, "Joe Perches" <joe@perches.com>
-Cc: "David Miller" <davem@davemloft.net>, "Eldad Zack" <eldad@fogrefinery.com>,
-        "George Spelvin" <linux@horizon.com>,
-        "Randy Dunlap" <rdunlap@infradead.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Dan Carpenter" <dan.carpenter@oracle.com>,
-        "Jiri Kosina" <jkosina@suse.cz>, "LKML" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] vsprintf: drop comment claiming %n is ignored
-References: <20130911193040.GA16688@www.outflux.net>
- <1378929961.4714.21.camel@joe-AO722>
- <CAGXu5jKRmp_Ei=ty05W3SSqQ01agEMDVMGnZCFqQ_yYbZmMSmw@mail.gmail.com>
-In-Reply-To: <CAGXu5jKRmp_Ei=ty05W3SSqQ01agEMDVMGnZCFqQ_yYbZmMSmw@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1754663Ab3ILHEc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 03:04:32 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:45959 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753630Ab3ILHEb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 03:04:31 -0400
+Message-ID: <523168E3.10405@linux.vnet.ibm.com>
+Date: Thu, 12 Sep 2013 12:40:27 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, Rob Landley <rob@landley.net>,
+        mtosatti@redhat.com
+Subject: Re: [PATCH V2] Documentation/kvm: Update cpuid documentation for
+ steal  time and pv eoi
+References: <y> <1378284526-863-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <20130912054453.GA13116@redhat.com>
+In-Reply-To: <20130912054453.GA13116@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13091206-5564-0000-0000-000009AE9829
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 11.09.13 at 22:18, Kees Cook <keescook@chromium.org> wrote:
-> On Wed, Sep 11, 2013 at 1:06 PM, Joe Perches <joe@perches.com> wrote:
->> On Wed, 2013-09-11 at 12:30 -0700, Kees Cook wrote:
->>> The %n format is not ignored, so remove the incorrect comment about it.
->>
->> I think it may be better to reimplement the ignoring.
-> 
-> Yeah, just had a quick look, and scanf doesn't use this code at all.
-> I'd much rather remove %n again instead.
+On 09/12/2013 11:14 AM, Michael S. Tsirkin wrote:
+> On Wed, Sep 04, 2013 at 02:18:46PM +0530, Raghavendra K T wrote:
+[...]
+>>   ------------------------------------------------------------------------------
+>> +KVM_FEATURE_STEAL_TIME             ||     5 || Steal time available at msr
+>> +                                   ||       || 0x4b564d03. The feature is enabled
+>> +                                   ||       || by guest when host has schedstat
+>> +                                   ||       || or task delay accounting support.
+>
+> Well I think we really should be documenting the host/guest interface
+> here.
+> After all it starts out
+> 	A guest running on a kvm host, can check some of its features using
+> 	cpuid.
+> And guests really should not try to guess whether host
+> has schedstat or task delay accounting support based on this bit.
+> So I would just say:
+> 	"steal time can be enabled by writing to msr 0x4b564d02"
+> just like async pf.
+>
 
-Why would you want to artificially make the function diverge
-from the spec? People shouldn't be caught by surprises if at all
-possible, and one can certainly not expect people to go look at
-the comment before the function implementation to find out
-what basic (standard) features _do not_ work (one can expect
-so when trying to find out about _extensions_).
+It makes sense. will stick to the above line.
 
-Jan
+>
+>> +------------------------------------------------------------------------------
+>> +KVM_FEATURE_PV_EOI                 ||     6 || overrides the generic EOI
+>> +                                   ||       || implementation with a
+>> +                                   ||       || paravirtualized version. Available
+>> +                                   ||       || at msr 0x4b564d04.
+>
+> Actually there's no override: guest can still use the
+> standard EOI even if PV EOI MSR is enabled.
+>
+> There's a detailed explanation of PV EOI in
+> Documentation/virtual/kvm/msr.txt
+> I think the following would be enough:
+>
+> 	"paravirtualized end of interrupt handler can be enabled by writing to msr 0x4b564d04"
+>
+
+Okay.
+Thanks Michael.
 
