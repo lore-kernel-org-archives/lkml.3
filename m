@@ -1,104 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752312Ab3ILLEl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 07:04:41 -0400
-Received: from sauhun.de ([89.238.76.85]:37086 "EHLO pokefinder.org"
+	id S1752864Ab3ILLFi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 07:05:38 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:51424 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751044Ab3ILLEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 07:04:40 -0400
-Date: Thu, 12 Sep 2013 13:04:28 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Mark Brown <broonie@kernel.org>, linux-i2c@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lv Zheng <lv.zheng@intel.com>, Aaron Lu <aaron.lu@intel.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH v2 8/9] spi: prepare runtime PM support for SPI devices
-Message-ID: <20130912110322.GB3367@katana>
-References: <1378913560-2752-1-git-send-email-mika.westerberg@linux.intel.com>
- <20130912093145.GA29403@sirena.org.uk>
- <20130912094302.GM7393@intel.com>
- <14222641.vVF4lKBqCB@vostro.rjw.lan>
+	id S1751533Ab3ILLFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 07:05:35 -0400
+Message-ID: <52319FC4.8040703@ti.com>
+Date: Thu, 12 Sep 2013 14:04:36 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VV4b6MQE+OnNyhkM"
-Content-Disposition: inline
-In-Reply-To: <14222641.vVF4lKBqCB@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vivek Gautam <gautamvivek1987@gmail.com>
+CC: Kishon Vijay Abraham I <kishon@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        <george.cherian@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
+        <linux-doc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/7] usb: dwc3: get "usb_phy" only if the platform indicates
+ the presence of PHY
+References: <1378136591-7463-1-git-send-email-kishon@ti.com> <1378136591-7463-2-git-send-email-kishon@ti.com> <52319912.8030203@ti.com> <CAFp+6iE+xbSWWp2bNc5MRSUrA4Fi6qVU4vhR4+mtZHZGidkMGg@mail.gmail.com>
+In-Reply-To: <CAFp+6iE+xbSWWp2bNc5MRSUrA4Fi6qVU4vhR4+mtZHZGidkMGg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---VV4b6MQE+OnNyhkM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 09/12/2013 01:47 PM, Vivek Gautam wrote:
+> On Thu, Sep 12, 2013 at 4:06 PM, Roger Quadros <rogerq@ti.com> wrote:
+>> Hi Kishon,
+>>
+>> On 09/02/2013 06:43 PM, Kishon Vijay Abraham I wrote:
+>>> There can be systems which does not have a external usb_phy, so get
+>>> usb_phy only if usb-phy property is added in the case of dt boot or if
+>>> platform_data indicates the presence of PHY. Also remove checking if
+>>> return value is -ENXIO since it's now changed to always enable usb_phy layer.
+>>>
+>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>>> ---
+>>>  drivers/usb/dwc3/Kconfig         |    1 +
+>>>  drivers/usb/dwc3/core.c          |   60 +++++++++++++++++---------------------
+>>>  drivers/usb/dwc3/platform_data.h |    1 +
+>>>  3 files changed, 28 insertions(+), 34 deletions(-)
+>>>
+>>> diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
+>>> index f969ea2..cfc16dd 100644
+>>> --- a/drivers/usb/dwc3/Kconfig
+>>> +++ b/drivers/usb/dwc3/Kconfig
+>>> @@ -2,6 +2,7 @@ config USB_DWC3
+>>>       tristate "DesignWare USB3 DRD Core Support"
+>>>       depends on (USB || USB_GADGET) && GENERIC_HARDIRQS && HAS_DMA
+>>>       depends on EXTCON
+>>> +     select USB_PHY
+>>>       select USB_XHCI_PLATFORM if USB_SUPPORT && USB_XHCI_HCD
+>>>       help
+>>>         Say Y or M here if your system has a Dual Role SuperSpeed
+>>> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+>>> index 474162e..428c29e 100644
+>>> --- a/drivers/usb/dwc3/core.c
+>>> +++ b/drivers/usb/dwc3/core.c
+>>> @@ -387,16 +387,38 @@ static int dwc3_probe(struct platform_device *pdev)
+>>>       if (node) {
+>>>               dwc->maximum_speed = of_usb_get_maximum_speed(node);
+>>>
+>>> -             dwc->usb2_phy = devm_usb_get_phy_by_phandle(dev, "usb-phy", 0);
+>>> -             dwc->usb3_phy = devm_usb_get_phy_by_phandle(dev, "usb-phy", 1);
+>>> +             if (of_property_read_bool(node, "usb-phy")) {
+>>> +                     dwc->usb2_phy = devm_usb_get_phy_by_phandle(dev,
+>>> +                             "usb-phy", 0);
+>>> +                     if (IS_ERR(dwc->usb2_phy))
+>>> +                             return PTR_ERR(dwc->usb2_phy);
+>>> +                     dwc->usb3_phy = devm_usb_get_phy_by_phandle(dev,
+>>> +                             "usb-phy", 1);
+>>> +                     if (IS_ERR(dwc->usb3_phy))
+>>> +                             return PTR_ERR(dwc->usb3_phy);
+>>
+>> Some DWC3 instances use only usb2_phy. e.g. on DRA7 the 2nd dwc3 instance doesn't use usb3_phy.
+>> This needs to be a valid case and driver shouldn't error out.
+> 
+> So, i think adding flexibility to DWC3 to have either
+> usb2-phy/usb3-phy or both of them seems to be valid point.
+> Any suggestions ?
+> 
 
-On Thu, Sep 12, 2013 at 01:04:55PM +0200, Rafael J. Wysocki wrote:
-> On Thursday, September 12, 2013 12:43:02 PM Mika Westerberg wrote:
-> > On Thu, Sep 12, 2013 at 10:31:45AM +0100, Mark Brown wrote:
-> > > On Thu, Sep 12, 2013 at 12:27:43PM +0300, Mika Westerberg wrote:
-> > > > On Wed, Sep 11, 2013 at 04:51:20PM +0100, Mark Brown wrote:
-> > >=20
-> > > > > I would be able to have this and the other patch in the SPI tree =
-in case
-> > > > > it overlaps with other work - I'm not sure what the plan will be =
-for
-> > > > > merging this stuff but if there were a branch which I could merge=
- into
-> > > > > the SPI tree that'd be good.
-> > >=20
-> > > > I think these two can go via your SPI tree as they shouldn't have
-> > > > dependencies to the I2C tree.
-> > >=20
-> > > There's all the driver changes though - it seems best to push the who=
-le
-> > > series through one branch so there's fewer bisection problems.
-> >=20
-> > Ah, right. Then I suppose the right tree would be the I2C tree (as majo=
-rity
-> > of the patches are I2C related)?
-> >=20
-> > Wolfram, are you OK with this?
->=20
-> Alternatively, I can apply them too if everyone is OK with that.
->=20
-> They are PM+ACPI changes after all ...
+For high speed operation we need only usb2_phy but for super speed we need both usb2_phy
+and usb3_phy.
 
-I'd like to give at least an ACK. But I need to find some time for that.
-Is it urgent? Looks like 3.13 material to me...
+Why would a dwc3 controller use only usb3_phy? A USB3.0 interface has to be compatible with
+USB2.0 as well, no?
 
+cheers,
+-roger
 
---VV4b6MQE+OnNyhkM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSMZ+8AAoJEBQN5MwUoCm2ZqYQAKHielc0q92g+LBhYgF/srww
-Wy6QzUl3I9duFiNPY3wPEPN75OxoRjA3gqe0OoHDDecHW9S7sb6+rsdEjsonC5W3
-HZtkZfDg9qTfahOytnlA6/ebDgUC2AzUcDmRx5uBIjayiRK9bfrDU65IUKhmP+2z
-akFW/yJEYevHrbnDQBUsBa74hL9JxzyIKathh7tpX17rA/fd/xCyfvaiX6ld3gDK
-pXxCCjIBsjX7xJO4UdWwFaBDdmVts7YPakHXoxwCiFcvSA8iPqHJIS47404QGf6m
-phFtLdZVAoV/0dAxEy7hJlPDPe7NaqZmdt3gaadrK3Uj03PE/tA+o+ZN/umYYKlA
-w15KDDxWhbxAJqZP1xLtzUUZ5+Hl+AL2AWIaualtoBa28ftBOtfPI+2h/Fcoej0c
-AWiRHScZAvtD+T1f0YKBTsLbdWLt4sEaV1jqNLRAISQdDoYKGkfRwoYVN0jeRuBj
-fF/DoagocmLSdrlOSKbB72st2hUKL/uejcNJojNIguUXZXAnr3CF0oYNwj/GTOPJ
-/IVSkArGlJVdzYU57jBqCdNv9QbL2bKxCeFyVvjVwsQryak2TJ/XAyAJfIqMer9O
-6vbDwTnOih9Dhkv+kzglLWQXY66DwDIDnhq34dwwqr6vnmQwxLuiP+FECTfMeKL1
-SRZLnS/OvrKVsThtIDi4
-=AQau
------END PGP SIGNATURE-----
-
---VV4b6MQE+OnNyhkM--
