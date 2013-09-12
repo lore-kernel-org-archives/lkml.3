@@ -1,83 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754741Ab3ILT2y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 15:28:54 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:61321 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752753Ab3ILT2x (ORCPT
+	id S1754221Ab3ILTbU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 15:31:20 -0400
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:49379 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752387Ab3ILTbT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 15:28:53 -0400
-Date: Thu, 12 Sep 2013 15:35:52 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Ingo Molnar <mingo@kernel.org>
-cc: Andi Kleen <andi@firstfloor.org>, Andi Kleen <ak@linux.intel.com>,
-        acme@infradead.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, torvalds@linux-foundation.org,
-        trinity@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        =?ISO-8859-15?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 1/2] tools, perf: Add a precise event qualifier v2
-In-Reply-To: <20130912165733.GA23698@gmail.com>
-Message-ID: <alpine.DEB.2.10.1309121515440.10687@vincent-weaver-1.um.maine.edu>
-References: <1374501138-13496-1-git-send-email-andi@firstfloor.org> <alpine.DEB.2.02.1307230137160.18617@pianoman.cluster.toy> <20130723060108.GA18396@tassilo.jf.intel.com> <alpine.DEB.2.02.1307231717580.27628@pianoman.cluster.toy> <20130723225150.GT6123@two.firstfloor.org>
- <20130912165733.GA23698@gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 12 Sep 2013 15:31:19 -0400
+Message-ID: <1379014276.11313.9.camel@x220.thuisdomein>
+Subject: Re: [PATCH] mei: me: downgrade "suspend" message to debug level
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Tomas Winkler <tomas.winkler@intel.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Thu, 12 Sep 2013 21:31:16 +0200
+In-Reply-To: <1379013442.11313.5.camel@x220.thuisdomein>
+References: <1379013442.11313.5.camel@x220.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Sep 2013 19:31:17.0700 (UTC) FILETIME=[A6DE8040:01CEAFEE]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Sep 2013, Ingo Molnar wrote:
- 
-> * Andi Kleen <andi@firstfloor.org> wrote:
+On Thu, 2013-09-12 at 21:17 +0200, Paul Bolle wrote:
+> The mei_me driver prints "suspend" at error level at each suspend.
+> Downgrade that uninteresting message to debug level.
 > 
-> > On Tue, Jul 23, 2013 at 05:27:43PM -0400, Vince Weaver wrote:
-> > > 
-> > > I hate having to justify why breaking the ABI is unacceptable.
-> > 
-> > Well it's a testing ABI, so we can do changes to it.
-> > 
-> > I hope you're not suggesting that perf cannot be extended anymore.
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> Lightly tested (on top of v3.10.10, actually). Should apply cleanly to
+> v3.11 or current master.
 > 
-> It obviously should remain extensible, limiting it to 'config' is rather 
-> stupid. If a parser sees something it cannot parse it should ignore that 
-> event.
+> Perhaps a better fix is to remove this message entirely. 
 
-Well 
-
-     Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-
-implies that you won't find field names that aren't in a format file, and
-
-     Documentation/ABI/testing/sysfs-bus-event_source-devices-format
-
-specifies that only "config" fields will appear there.
-
-So if this will be changing you might want to update the documentation, or 
-just remove it altogether because it is getting increasingly inaccurate.
-
-I've tried getting this documentation updated
-  ( https://lkml.org/lkml/2013/7/25/2 ) 
-but the patches have been ignored.
+Rechecking my logs I noticed a "stop" error on module unload. That
+message could be downgraded to debug level too. But it could also be
+removed. If Tomas could say what is preferable I'll send a second
+version of this trivial patch.
 
 
+Paul Bolle
 
-In any case, I notice perf also uses the "open" syscall, so I look forward 
-to your eventual creation of
-  /sys/bus/open/file_permissions/*
-
-$ cat /sys/bus/open/file_permissions/write
-flags=0101,mode=0666
-
-Because what every system call needs is some sort of tree under sysfs
-exporting various common settings in unswappable kernel memory that 
-require a complex LEX/YACC parser to interpret.  
-
-That's much simpler than using a library, or having a user looking 
-things up in a manpage and placing a few comments in their code.
-
-Vince
