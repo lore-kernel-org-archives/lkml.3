@@ -1,101 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757579Ab3ILAlW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 20:41:22 -0400
-Received: from smtprelay0251.hostedemail.com ([216.40.44.251]:40306 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751427Ab3ILAlU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 20:41:20 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::::::::linux-sctp@vger
-X-HE-Tag: grain11_4507987d53e37
-X-Filterd-Recvd-Size: 3608
-Message-ID: <1378946472.4714.52.camel@joe-AO722>
-Subject: Re: [RFC PATCH] vsnprintf: Remove use of %n and convert existing
- uses
-From: Joe Perches <joe@perches.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        linux-kernel@vger.kernel.org, kosaki.motohiro@jp.fujitsu.com,
-        keescook@chromium.org, fweisbec@gmail.com, dan.carpenter@oracle.com,
-        devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
-        tushar.behera@linaro.org, lidza.louina@gmail.com, davem@davemloft.net,
-        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, courmisch@gmail.com, vyasevich@gmail.com,
-        nhorman@tuxdriver.com, netdev@vger.kernel.org,
-        linux-sctp@vger.kernel.org
-Date: Wed, 11 Sep 2013 17:41:12 -0700
-In-Reply-To: <20130912001911.GO13318@ZenIV.linux.org.uk>
-References: <1378926562.4714.11.camel@joe-AO722>
-	 <CAGXu5jLO6109fkejXqX=WhkQnfAUeWtTcow0v1BNqyi=8=Qa3Q@mail.gmail.com>
-	 <1378928700.4714.17.camel@joe-AO722>
-	 <CAGXu5jLTjrPr=GwOmMcu55Qp9K-_XS75xq9NJ0vBUEwy-i_YMw@mail.gmail.com>
-	 <1378941761.4714.37.camel@joe-AO722>
-	 <201309120840.HHE37542.OJMFFHSOQOtVFL@I-love.SAKURA.ne.jp>
-	 <1378944257.4714.45.camel@joe-AO722>
-	 <20130912001911.GO13318@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1757587Ab3ILAnF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 20:43:05 -0400
+Received: from mga11.intel.com ([192.55.52.93]:10475 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751464Ab3ILAnC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 20:43:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,887,1371106800"; 
+   d="scan'208";a="400276793"
+Message-ID: <52310EFA.6060509@linux.intel.com>
+Date: Wed, 11 Sep 2013 17:46:50 -0700
+From: David Cohen <david.a.cohen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130821 Icedove/17.0.8
+MIME-Version: 1.0
+To: balbi@ti.com
+CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: dwc3: gadget: avoid memory leak when failing to
+ allocate all eps
+References: <1378946310-28421-1-git-send-email-david.a.cohen@linux.intel.com>
+In-Reply-To: <1378946310-28421-1-git-send-email-david.a.cohen@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-09-12 at 01:19 +0100, Al Viro wrote:
-> On Wed, Sep 11, 2013 at 05:04:17PM -0700, Joe Perches wrote:
-> > On Thu, 2013-09-12 at 08:40 +0900, Tetsuo Handa wrote:
-> > > Joe Perches wrote:
-> > > > -	seq_printf(m, "%s%d%n", con->name, con->index, &len);
-> > > > +	len = seq_printf(m, "%s%d", con->name, con->index);
-> > > 
-> > > Isn't len always 0 or -1 ?
-> > 
-> > Right.  Well you're no fun...
-> > 
-> > These uses would seem broken anyway because the
-> > seq_printf isn't itself tested for correctness.
-> > 
-> > Hmm.
-> > 
-> > Also, there's a large amount of code that appears
-> > to do calculations with pos or len like:
-> > 
-> > 	pos += seq_printf(handle, fmt. ...)
-> 
-> ... and most of that code proceeds to ignore pos completely.
-> Note that ->show() is *NOT* supposed to return the number of
-> characters it has/would like to have produced.  Just return
-> 0 and be done with that; overflows are dealt with just fine.
-> The large amount, BTW, is below 100 lines, AFAICS, in rather
-> few files.
+Hi Mr. Balbi, :)
 
-Unfortunately, when you count the uses of
-	return seq_printf(...)
-it's rather higher and all the callers need
-to be chased down too.
+On 09/11/2013 05:38 PM, David Cohen wrote:
+> If dwc3_gadget_init_endpoint() fails after allocate some of the eps, we
+> need to free their memory to avoid leak.
+>
+> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+> ---
+>   drivers/usb/dwc3/gadget.c | 13 ++++++++-----
+>   1 file changed, 8 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
+> index f168eae..611bdba 100644
+> --- a/drivers/usb/dwc3/gadget.c
+> +++ b/drivers/usb/dwc3/gadget.c
+> @@ -1707,8 +1707,13 @@ static void dwc3_gadget_free_endpoints(struct dwc3 *dwc)
+>   
+>   	for (epnum = 0; epnum < DWC3_ENDPOINTS_NUM; epnum++) {
+>   		dep = dwc->eps[epnum];
+> +		/*
+> +		 * Because dwc was allocated by kzalloc() and eps are set
+> +		 * in ascending order, we can assume no extra one was
+> +		 * allocated after first dep == NULL.
+> +		 */
 
-$ grep -rP --include=*.[ch] "^[ \t]*(\S[ \t\S]*=|return[\s\(]*)\s*\bseq_[v]?printf\b" * | wc -l
-320
-$ grep -rPl --include=*.[ch] "^[ \t]*(\S[ \t\S]*=|return[\s\(]*)\s*\bseq_[v]?printf\b" *|wc -l
-81
+Wrong assumption here. Please consider patch v2 instead.
 
-> Just bury the cargo-culting crap.  All those += seq_printf() should
-> be simply calling it.
-
-Most likely.
-
-> The *only* reason to look at the return
-> value is "if we'd already overflown the buffer, I'd rather skipped
-> the costly generation of the rest of the record".  In that case
-> seq_printf() returning -1 means "skip it, nothing else will fit and
-> caller will be repeating with bigger buffer anyway".
-
-Perhaps changing the seq_vprintf return from 0 to len
-and testing for -1 would work.
-
-Still would need to change a few lines in netfilter
-and probably a few other places.
-
+BR, David Cohen
 
