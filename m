@@ -1,103 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176Ab3ILFwz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 01:52:55 -0400
-Received: from mail-qe0-f52.google.com ([209.85.128.52]:51923 "EHLO
-	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753327Ab3ILFwx (ORCPT
+	id S1755253Ab3ILFyk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 01:54:40 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:55618 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752935Ab3ILFyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 01:52:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAKohpo=DfmNSMnyVRK0gfx7QGr=jOTbFo6uuGhEOaa2UMkeQAQ@mail.gmail.com>
-References: <522E1FEF.6080803@wwwdotorg.org>
-	<1775778.MeiRhuYy7o@vostro.rjw.lan>
-	<522F86AD.6010603@wwwdotorg.org>
-	<2521560.SfeNbV74nj@vostro.rjw.lan>
-	<52304439.3030301@linux.vnet.ibm.com>
-	<CAKohpokTVzikxunqSdUYmLjTOkfhWFJ=N4TTa4rdbj2euCFY-g@mail.gmail.com>
-	<CAKohpomzQ8Yzk+OU0btQM6DGm4xsY1RR9uYFrZD3ZHO-bhrwKQ@mail.gmail.com>
-	<5230509D.6040205@linux.vnet.ibm.com>
-	<CAKohpo=DfmNSMnyVRK0gfx7QGr=jOTbFo6uuGhEOaa2UMkeQAQ@mail.gmail.com>
-Date: Thu, 12 Sep 2013 11:22:52 +0530
-Message-ID: <CAKohpo=8mqRmmk17D52yiR9w1V4Z+2UzZ2kzABtrxHbYR+sQzw@mail.gmail.com>
-Subject: Re: cpufreq_stats NULL deref on second system suspend
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cpufreq <cpufreq@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 12 Sep 2013 01:54:37 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org, monstr@monstr.eu
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-fbdev@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: [PATCH 1/3] video: xilinxfb: Use standard variable name convention
+Date: Thu, 12 Sep 2013 07:54:32 +0200
+Message-Id: <7016a90750626ba866dddc6f85cfdd71943f6891.1378965270.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-19560-1378965274-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let me fix my mail first.. I was running out of time yesterday and so couldn't
-frame things correctly :)
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-On 11 September 2013 17:29, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> Okay.. There are two different ways in which cpufreq_add_dev() work
-> currently..
->
-> Boot cluster (i.e. policy with boot CPU)
-> ---------------
->
-> Here cpufreq_remove_dev() is never called for boot cpu but all others.
-> And similarly cpufreq_add_dev() is never called for boot cpu but all others.
->
-> Now policy->cpu contains meaningful cpu at beginning of resume and
-> we don't need to modify that at all.. For all the remaining CPUs we
-> better call cpufreq_add_policy_cpu() rather..
+--=_mimegpg-monstr-desktop-19560-1378965274-0001
 
-And this should be done without your patch. Or actually we will simply
-return from this place. Atleast for systems with single cluster, like Tegra.
+s/op/pdev/ in xilinxfb_of_probe().
+No functional chagnes.
 
-policy->related_cpus is still valid after resume and we haven't removed
-policy from the cpufreq_policy_list (though there is a bug which I have
-fixed separately and sent it to you..).. So no change required for a single
-cluster system..
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
+ drivers/video/xilinxfb.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-> Non-boot Cluster
-> ---------------------
->
-> All CPUs here are removed and at the end policy->cpu contains the last
-> cpu removed.. So, for a cluster with cpu 2 and 3.... it will contain 3..
->
-> Now at resume we will add cpu2 first and so need to update policy->cpu
-> to 2..
+diff --git a/drivers/video/xilinxfb.c b/drivers/video/xilinxfb.c
+index 84c664e..123cd70 100644
+--- a/drivers/video/xilinxfb.c
++++ b/drivers/video/xilinxfb.c
+@@ -413,7 +413,7 @@ static int xilinxfb_release(struct device *dev)
+  * OF bus binding
+  */
 
-> But for all other CPUs in this cluster we return early from
-> cpufreq_add_dev() and call cpufreq_add_policy_cpu() as policy->cpus
-> was fixed by call to ->init() for the first cpu of this cluster..
+-static int xilinxfb_of_probe(struct platform_device *op)
++static int xilinxfb_of_probe(struct platform_device *pdev)
+ {
+ 	const u32 *prop;
+ 	u32 tft_access = 0;
+@@ -427,7 +427,7 @@ static int xilinxfb_of_probe(struct platform_device *op)
+ 	/* Allocate the driver data region */
+ 	drvdata = kzalloc(sizeof(*drvdata), GFP_KERNEL);
+ 	if (!drvdata) {
+-		dev_err(&op->dev, "Couldn't allocate device private record\n");
++		dev_err(&pdev->dev, "Couldn't allocate device private record\n");
+ 		return -ENOMEM;
+ 	}
 
-This was wrong, we need a valid policy->related_cpus field which is always
-valid and so we return early here too, but not for the first cpu of cluster.
+@@ -435,7 +435,7 @@ static int xilinxfb_of_probe(struct platform_device *op)
+ 	 * To check whether the core is connected directly to DCR or BUS
+ 	 * interface and initialize the tft_access accordingly.
+ 	 */
+-	of_property_read_u32(op->dev.of_node, "xlnx,dcr-splb-slave-if",
++	of_property_read_u32(pdev->dev.of_node, "xlnx,dcr-splb-slave-if",
+ 			     &tft_access);
 
-> And so we never reach the line: policy->cpu = cpu;
->
-> For the first cpu of non-boot cluster we need to call update_policy_cpu()
-> and not for others..
+ 	/*
+@@ -459,29 +459,29 @@ static int xilinxfb_of_probe(struct platform_device *op)
+ 	}
+ #endif
 
-that's correct, thought I have one more idea.. :)
+-	prop = of_get_property(op->dev.of_node, "phys-size", &size);
++	prop = of_get_property(pdev->dev.of_node, "phys-size", &size);
+ 	if ((prop) && (size >= sizeof(u32)*2)) {
+ 		pdata.screen_width_mm = prop[0];
+ 		pdata.screen_height_mm = prop[1];
+ 	}
 
-> But for the boot cluster if we can call ->init() somehow at resume time,
-> then things would be fairly similar in both cases..
+-	prop = of_get_property(op->dev.of_node, "resolution", &size);
++	prop = of_get_property(pdev->dev.of_node, "resolution", &size);
+ 	if ((prop) && (size >= sizeof(u32)*2)) {
+ 		pdata.xres = prop[0];
+ 		pdata.yres = prop[1];
+ 	}
 
-Not required.. its all working already.. and so Stephen shouldn't need your
-patch for Tegra, but rather my patches that fix other cpufreq bugs..
+-	prop = of_get_property(op->dev.of_node, "virtual-resolution", &size);
++	prop = of_get_property(pdev->dev.of_node, "virtual-resolution", &size);
+ 	if ((prop) && (size >= sizeof(u32)*2)) {
+ 		pdata.xvirt = prop[0];
+ 		pdata.yvirt = prop[1];
+ 	}
 
-Now coming back to the ideas I have...
-Same code will work if hotplug sequence is fixed a bit. Why aren't we doing
-exact opposite of suspend in resume?
+-	if (of_find_property(op->dev.of_node, "rotate-display", NULL))
++	if (of_find_property(pdev->dev.of_node, "rotate-display", NULL))
+ 		pdata.rotate_screen = 1;
 
-We are removing CPUs (leaving the boot cpu) in ascending order and then
-adding them back in same order.. Why?
+-	dev_set_drvdata(&op->dev, drvdata);
+-	return xilinxfb_assign(op, drvdata, &pdata);
++	dev_set_drvdata(&pdev->dev, drvdata);
++	return xilinxfb_assign(pdev, drvdata, &pdata);
+ }
 
-Why not remove CPUs in descending order and add in ascending order? Or
-remove in ascending order and add in descending order?
+ static int xilinxfb_of_remove(struct platform_device *op)
+--
+1.8.2.3
 
-That way policy->cpu will be updated with the right cpu and your patch wouldn't
-be required..
 
-I am not saying that this can't be hacked/fixed in cpufreq but suspend/resume
-may also be fixed and that looks logically more correct to me..
+--=_mimegpg-monstr-desktop-19560-1378965274-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlIxVxoACgkQykllyylKDCGdzwCfdxp9/Zoup/55nFaGT6bhYXNe
+adMAmwYy++wCUNYil+qCiFUgufrRocHN
+=I9A8
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-19560-1378965274-0001--
