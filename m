@@ -1,53 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757851Ab3ILDkR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 23:40:17 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:49209 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752710Ab3ILDkP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 23:40:15 -0400
-X-Sasl-enc: cQZpOFcgThbexb+xtzM+w3fxtUF+ZhFUhnAtQSUcpzOu 1378957214
-Date: Wed, 11 Sep 2013 20:40:23 -0700
-From: Greg KH <greg@kroah.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        kexec@lists.infradead.org, akpm@linux-foundation.org,
-        zohar@linux.vnet.ibm.com, d.kasatkin@samsung.com,
-        ebiederm@xmission.com, hpa@zytor.com, matthew.garrett@nebula.com
-Subject: Re: [PATCH 00/16] [RFC PATCH] Signed kexec support
-Message-ID: <20130912034023.GA10877@kroah.com>
-References: <1378849471-10521-1-git-send-email-vgoyal@redhat.com>
+	id S1752868Ab3ILDpQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 23:45:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25946 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751166Ab3ILDpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 23:45:13 -0400
+Message-ID: <52313827.80103@redhat.com>
+Date: Wed, 11 Sep 2013 22:42:31 -0500
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378849471-10521-1-git-send-email-vgoyal@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+CC: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger@dilger.ca>,
+        T Makphaibulchoke <tmac@hp.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-ext4@vger.kernel.org List" <linux-ext4@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org Devel" <linux-fsdevel@vger.kernel.org>,
+        aswin@hp.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        aswin_proj@lists.hp.com
+Subject: Re: [PATCH v3 0/2] ext4: increase mbcache scalability
+References: <52285395.1070508@hp.com> <0787C579-7E2C-4864-B8F4-98816E1E50A2@dilger.ca> <5229C939.8030108@hp.com> <62D71A85-C7EE-4F5F-B481-5329F0282044@dilger.ca> <20130910210250.GH29237@thunk.org> <522FDFCC.1070007@redhat.com> <20130911113001.GB13315@thunk.org> <52309F27.8060008@redhat.com> <alpine.DEB.2.02.1309111325270.5862@nftneq.ynat.uz> <5230D739.9010109@redhat.com> <20130911212523.GE13397@thunk.org> <5230D450.7000609@hp.com>
+In-Reply-To: <5230D450.7000609@hp.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 10, 2013 at 05:44:15PM -0400, Vivek Goyal wrote:
-> Hi,
+On 9/11/13 3:36 PM, Thavatchai Makphaibulchoke wrote:
+
+> I seem to be seeing the same thing as Eric is seeing.
+
+...
+> For both filesystems, the security xattr are about 32.17 and 34.87 bytes respectively.
+...
+
+Can you triple-check the inode size on your fs, for good measure?
+
+dumpe2fs -h /dev/whatever | grep "Inode size"
+
+> I also see a similar problem with filefrag.
+
+turns out it's not a problem, it's an undocumented & surprising "feature."  :(
+
+        /* For inline data all offsets should be in bytes, not blocks */
+        if (fm_extent->fe_flags & FIEMAP_EXTENT_DATA_INLINE)
+                blk_shift = 0;
+
+because ... ?  (the commit which added it didn't mention anything about it).
+
+But I guess it does mean for at least those files, the xattr data is actually inline.
+
+> At this point, I'm not sure why we get into the mbcache path when
+> SELinux is enabled. As mentioned in one my earlier replies to
+> Andreas, I did see actual calls into ext4_xattr_cache.
 > 
-> Matthew has been posting patches to lock down kernel either due to
-> secureboot requirements or because of signed modules with signing
-> enforced. In kernel lock down mode, kexec will be disabled and that
-> means kdump will not work either.
+> There seems to be one difference between 3.11 kernel and 2.6 kernel
+> in set_inode_init_security(). There is an additional attempt to
+> initialize evm xattr. But I do not seem to be seeing any evm xattr in
+> any file.
 > 
-> These patches sign /sbin/kexec and kernel verifies the signature
-> and allows loading a kernel if signature verification is successful.
-> IOW, trust is extended to validly signed user space.
+> I will continue to try to find out how we get into the mbcache path.
+> Please let me know if anyone has any suggestion.
+
+Sorry we got so far off the thread of the original patches.
+
+But it seems like a mystery worth solving.
+
+Perhaps in ext4_xattr_set_handle() you can instrument the case(s) where it
+gets into ext4_xattr_block_set().
+
+Or most simply, just printk inode number in ext4_xattr_block_set() so
+you can look at them later via debugfs.
+
+And in here,
+
+        } else {
+                error = ext4_xattr_ibody_set(handle, inode, &i, &is);
+                if (!error && !bs.s.not_found) {
+                        i.value = NULL;
+                        error = ext4_xattr_block_set(handle, inode, &i, &bs);
+                } else if (error == -ENOSPC) {
+                        if (EXT4_I(inode)->i_file_acl && !bs.s.base) {
+                                error = ext4_xattr_block_find(inode, &i, &bs);
+                                if (error)
+                                        goto cleanup;
+                        }
+                        error = ext4_xattr_block_set(handle, inode, &i, &bs);
+
+maybe print out in the ext4_xattr_ibody_set error case what the size of
+of the xattr is, and probably inode number again for good measure, to get
+an idea of what's causing it to fail to land in the inode?
+
+-Eric
+
 > 
-> Currently it works only for statically linked applications.
+> Thanks,
+> Mak.
 
-That's a really big restriction, pretty much making it not workable for
-distros at the moment to use.
 
-Any chance to change this in the future?  Or just rely on the existing
-"signed binaries" functionality we have in the kernel today for the
-kexec binary as well?  Wouldn't that be simpler?
-
-thanks,
-
-greg k-h
