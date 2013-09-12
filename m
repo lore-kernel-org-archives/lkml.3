@@ -1,110 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864Ab3ILLFi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 07:05:38 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:51424 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751533Ab3ILLFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 07:05:35 -0400
-Message-ID: <52319FC4.8040703@ti.com>
-Date: Thu, 12 Sep 2013 14:04:36 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1752813Ab3ILLKP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 07:10:15 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:44291 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751390Ab3ILLKN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 07:10:13 -0400
+Message-ID: <5231A0F8.1070505@ahsoftware.de>
+Date: Thu, 12 Sep 2013 13:09:44 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Vivek Gautam <gautamvivek1987@gmail.com>
-CC: Kishon Vijay Abraham I <kishon@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Grant Likely <grant.likely@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
-        <george.cherian@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
-        <linux-doc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/7] usb: dwc3: get "usb_phy" only if the platform indicates
- the presence of PHY
-References: <1378136591-7463-1-git-send-email-kishon@ti.com> <1378136591-7463-2-git-send-email-kishon@ti.com> <52319912.8030203@ti.com> <CAFp+6iE+xbSWWp2bNc5MRSUrA4Fi6qVU4vhR4+mtZHZGidkMGg@mail.gmail.com>
-In-Reply-To: <CAFp+6iE+xbSWWp2bNc5MRSUrA4Fi6qVU4vhR4+mtZHZGidkMGg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
+Subject: Re: [PATCH] RFC: interrupt consistency check for OF GPIO IRQs
+References: <1375101368-17645-1-git-send-email-linus.walleij@linaro.org> <CACxGe6uNJNMdZ1HYGgCtLM2t2TWGCR6btjOHVmP=vDXXvvFfRg@mail.gmail.com> <CACRpkdYjJL6FZwEbB7XLnb9QtjB=3LeE9Ny6KQ4PkM3zpdNqqg@mail.gmail.com> <344239800.bDEkDg48ZQ@avalon> <CACRpkdavR=fv+y1RCNfdgQypPuRbO6isOSwGsABDrYiGeMdyZw@mail.gmail.com> <52308C91.2000105@ahsoftware.de> <523096FE.8080901@collabora.co.uk> <5230AB6E.1070807@ahsoftware.de> <5231817F.8000901@ahsoftware.de> <5231934D.4060706@collabora.co.uk> <52319741.5050407@ahsoftware.de>
+In-Reply-To: <52319741.5050407@ahsoftware.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 09/12/2013 01:47 PM, Vivek Gautam wrote:
-> On Thu, Sep 12, 2013 at 4:06 PM, Roger Quadros <rogerq@ti.com> wrote:
->> Hi Kishon,
+Am 12.09.2013 12:28, schrieb Alexander Holler:
+> Am 12.09.2013 12:11, schrieb Javier Martinez Canillas:
+>> On 09/12/2013 10:55 AM, Alexander Holler wrote:
+>
+> ...
+>>>
+>>> By the way, how do you define two GPIOs/IRQs from different
+>>> gpio-banks/irq-controllers wuth that scheme?
+>>>
 >>
->> On 09/02/2013 06:43 PM, Kishon Vijay Abraham I wrote:
->>> There can be systems which does not have a external usb_phy, so get
->>> usb_phy only if usb-phy property is added in the case of dt boot or if
->>> platform_data indicates the presence of PHY. Also remove checking if
->>> return value is -ENXIO since it's now changed to always enable usb_phy layer.
->>>
->>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->>> ---
->>>  drivers/usb/dwc3/Kconfig         |    1 +
->>>  drivers/usb/dwc3/core.c          |   60 +++++++++++++++++---------------------
->>>  drivers/usb/dwc3/platform_data.h |    1 +
->>>  3 files changed, 28 insertions(+), 34 deletions(-)
->>>
->>> diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
->>> index f969ea2..cfc16dd 100644
->>> --- a/drivers/usb/dwc3/Kconfig
->>> +++ b/drivers/usb/dwc3/Kconfig
->>> @@ -2,6 +2,7 @@ config USB_DWC3
->>>       tristate "DesignWare USB3 DRD Core Support"
->>>       depends on (USB || USB_GADGET) && GENERIC_HARDIRQS && HAS_DMA
->>>       depends on EXTCON
->>> +     select USB_PHY
->>>       select USB_XHCI_PLATFORM if USB_SUPPORT && USB_XHCI_HCD
->>>       help
->>>         Say Y or M here if your system has a Dual Role SuperSpeed
->>> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
->>> index 474162e..428c29e 100644
->>> --- a/drivers/usb/dwc3/core.c
->>> +++ b/drivers/usb/dwc3/core.c
->>> @@ -387,16 +387,38 @@ static int dwc3_probe(struct platform_device *pdev)
->>>       if (node) {
->>>               dwc->maximum_speed = of_usb_get_maximum_speed(node);
->>>
->>> -             dwc->usb2_phy = devm_usb_get_phy_by_phandle(dev, "usb-phy", 0);
->>> -             dwc->usb3_phy = devm_usb_get_phy_by_phandle(dev, "usb-phy", 1);
->>> +             if (of_property_read_bool(node, "usb-phy")) {
->>> +                     dwc->usb2_phy = devm_usb_get_phy_by_phandle(dev,
->>> +                             "usb-phy", 0);
->>> +                     if (IS_ERR(dwc->usb2_phy))
->>> +                             return PTR_ERR(dwc->usb2_phy);
->>> +                     dwc->usb3_phy = devm_usb_get_phy_by_phandle(dev,
->>> +                             "usb-phy", 1);
->>> +                     if (IS_ERR(dwc->usb3_phy))
->>> +                             return PTR_ERR(dwc->usb3_phy);
+>> That is indeed a very good question and I don't have a definite answer.
 >>
->> Some DWC3 instances use only usb2_phy. e.g. on DRA7 the 2nd dwc3 instance doesn't use usb3_phy.
->> This needs to be a valid case and driver shouldn't error out.
-> 
-> So, i think adding flexibility to DWC3 to have either
-> usb2-phy/usb3-phy or both of them seems to be valid point.
-> Any suggestions ?
-> 
+>>> Would that be like below?
+>>>
+>>>   ethernet@5,0 {
+>>>            compatible = "smsc,lan9221", "smsc,lan9115";
+>>>            interrupt-parent = <&gpio6>;
+>>>            interrupts = <16 8>;
+>>>            interrupt-parent = <&gpio7>;
+>>>            interrupts = <1 IRQF_TRIGGER_FALLING>; /* GPIO7_1 */
+>>>   };
+>>>
+>
+> ...
+>
+>> So, if I understood the code correctly the DT IRQ core doesn't expect
+>> a device
+>> node to have more than one "interrupt-parent" property.
+>>
+>> It *should* work though if you have multiple "interrupts" properties
+>> defined and
+>> all of them have the same "interrupt-parent":
+>>
+>>         interrupt-parent = <&gpio6>;
+>>         interrupts = <1 IRQF_TRIGGER_HIGH>; /* GPIO6_1 */
+>>         interrupts = <2 IRQF_TRIGGER_LOW>; /* GPIO6_2 */
+>>
+>> since of_irq_map_one() will be called for each "interrupts" and the
+>> correct
+>> "interrupt-parent" will get obtained by of_irq_find_parent().
+>
+> I assumed that answer. So to make such a scenario possible, something
+> like this might be neccessary:
+>
+>           interrupts = <&gpio6 1 IRQF_TRIGGER_HIGH>; /* GPIO6_1 */
+>           interrupts = <&gpio7 2 IRQF_TRIGGER_LOW>; /* GPIO7_2 */
+>
+> or, to be compatible
+>
+>           interrupts = <1 IRQF_TRIGGER_HIGH &gpio6>; /* GPIO6_1 */
+>           interrupts = <1 IRQF_TRIGGER_LOW &gpio7>; /* GPIO7_1 */
+>
+> Another problem is the naming. In all the above cases, the driver would
+> not know which IRQ he should use for what. Maybe the order defines it,
+> but that wouldn't be very verbose. And I think just changing the name
+> would make travelling the tree impossible, as only the driver itself
+> would know the name and it's meaning.
 
-For high speed operation we need only usb2_phy but for super speed we need both usb2_phy
-and usb3_phy.
+On a second look, travelling the tree is still possible if the solution 
+would be like above (without that interrupt-parent). So if a driver 
+requires two interrupts he could use
 
-Why would a dwc3 controller use only usb3_phy? A USB3.0 interface has to be compatible with
-USB2.0 as well, no?
+       interrupt-foo = <1 IRQF_TRIGGER_HIGH &gpio6>; /* GPIO6_1 */
+       interrupt-bar = <1 IRQF_TRIGGER_LOW &gpio7>; /* GPIO7_1 */
 
-cheers,
--roger
+And travelling the tree will still be possible because walking from the 
+interrupt-controllers (those gpio) downwards would end up at the 
+interrupt definitions, so the name of them isn't needed to find them in 
+the tree.
+
+Regards,
+
+Alexander Holler
 
