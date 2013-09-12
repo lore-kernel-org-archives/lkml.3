@@ -1,93 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756623Ab3ILSEz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:04:55 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:35599 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756562Ab3ILSEr (ORCPT
+	id S1756670Ab3ILSFJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:05:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37853 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756622Ab3ILSEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 14:04:47 -0400
+	Thu, 12 Sep 2013 14:04:55 -0400
+Date: Thu, 12 Sep 2013 11:04:25 -0700
+From: tip-bot for Andi Kleen <tipbot@zytor.com>
+Message-ID: <tip-4b2c4f1f1b71fe18381f089c501ac21cd2167dfa@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, ak@linux.intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, ak@linux.intel.com, tglx@linutronix.de
+In-Reply-To: <1378438661-24765-4-git-send-email-andi@firstfloor.org>
+References: <1378438661-24765-4-git-send-email-andi@firstfloor.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf/x86/intel: Add Haswell TSX event aliases
+Git-Commit-ID: 4b2c4f1f1b71fe18381f089c501ac21cd2167dfa
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <3E38F48E-EE41-4564-84A1-36CF07B08811@codeaurora.org>
-References: <1379003839-16068-1-git-send-email-galak@codeaurora.org>
-	<CAOesGMisWLwYKotGDFPW6PyHJs=_+fohTdC08SGjsv2FXaa7Fg@mail.gmail.com>
-	<25E0B143-658E-4CCC-A88A-0AF70FFF33CE@codeaurora.org>
-	<CAOesGMhfdvyJ_2AA2e8iO_2e=q7KgpyNbcriPKFw-RLormG6bA@mail.gmail.com>
-	<3E38F48E-EE41-4564-84A1-36CF07B08811@codeaurora.org>
-Date: Thu, 12 Sep 2013 11:04:46 -0700
-Message-ID: <CAOesGMhN0jEx065cpf989P-JbuxPiOaPRsP4BD3VoW-n5ebP+w@mail.gmail.com>
-Subject: Re: [PATCH] ARM: msm: Move msm devicetrees under a Qualcomm dir
-From: Olof Johansson <olof@lixom.net>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: David Brown <davidb@codeaurora.org>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
-        Rohit Vaswani <rvaswani@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 12 Sep 2013 11:04:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 10:55 AM, Kumar Gala <galak@codeaurora.org> wrote:
->
-> On Sep 12, 2013, at 12:06 PM, Olof Johansson wrote:
->
->> On Thu, Sep 12, 2013 at 9:53 AM, Kumar Gala <galak@codeaurora.org> wrote:
->>>
->>> On Sep 12, 2013, at 11:46 AM, Olof Johansson wrote:
->>>
->>>> On Thu, Sep 12, 2013 at 9:37 AM, Kumar Gala <galak@codeaurora.org> wrote:
->>>>> Use the Qualcomm vendor prefix (qcom) as the directory name for
->>>>> Qualcomm MSM devicetrees going forward.
->>>>>
->>>>> Signed-off-by: Kumar Gala <galak@codeaurora.org>
->>>>
->>>> Let's not move just one platform like this. If we are to do this, we
->>>> should move everything, and that will be really painful and needs to
->>>> be done in a controlled manner, probably scripted and right before a
->>>> -rc1 or such.
->>>
->>>
->>> Than I suggest we deal with it when we pull the device trees out of the kernel tree.
->>>
->>> As such, I'd tell Rohit to go forward with the file being named apq8074-dragonboard.dtb for the time being.
->>
->> My original request to please use a common prefix for your product
->> families stands. Please prefix with msm-*, or if you have to, qcom-*
->> instead, since you guys can't seem to make your mind up on standard
->> prefixes (msm, apq, etc).
->
-> This is silly, I dont see the reason to go with qcom-apq<SOC>-<BOARD>.dts and than in the future drop qcom- when we mostly likely shift to a dir structure.
->
-> As engineers we are all too aware of the lack of sanity in marketing names, but its what we have so we have to live with it.
+Commit-ID:  4b2c4f1f1b71fe18381f089c501ac21cd2167dfa
+Gitweb:     http://git.kernel.org/tip/4b2c4f1f1b71fe18381f089c501ac21cd2167dfa
+Author:     Andi Kleen <ak@linux.intel.com>
+AuthorDate: Thu, 5 Sep 2013 20:37:40 -0700
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 12 Sep 2013 19:13:36 +0200
 
-And we all have a choice whether we let the marketing people's
-insanity spread into our engineering projects, or if we keep it as
-sane as possible in spite of them.
+perf/x86/intel: Add Haswell TSX event aliases
 
-I wouldn't have an objection here if there was some sort of rationale
-between what "apq" and "msm" means. But it seems like qualcomm rolls a
-dice and decides if a platform will have one name or the other.
-Dragonboard dmesg says msm<foo>. DTS file for the same board says apq.
-DTSI file says one thing, overridden by the dts to something else.
-Total chaos.
+Add TSX event aliases, and export them from the kernel to perf.
 
-I would be fine with adding two instead of one (after all, platforms
-like TI has this for AM* vs OMAP*, etc), but there _has_ to be some
-sort of consistency or you might just as well assign a random string
-as name.
+These are used by perf stat -T and to allow
+more user friendly access to events. The events are designed to
+be fairly generic and may also apply to other architectures
+implementing HTM.  They all cover common situations that
+happens during tuning of transactional code.
 
-So, if you can't come up with a reasonable, rational and consistent
-naming scheme (which, apparantly, you can't since your marketing guys
-are in control of this and they don't get it right), then at least
-prefix with a common string for the platform. That's all I'm asking.
+For Haswell we have to separate the HLE and RTM events,
+as they are separate in the PMU.
 
+This adds the following events:
 
--Olof
+ tx-start	Count start transaction (used by perf stat -T)
+ tx-commit	Count commit of transaction
+ tx-abort	Count all aborts
+ tx-conflict	Count aborts due to conflict with another CPU.
+ tx-capacity	Count capacity aborts (transaction too large)
+
+Then matching el-* events for HLE
+
+ cycles-t	Transactional cycles (used by perf stat -T)
+  * also exists on POWER8
+
+ cycles-ct	Transactional cycles commited (used by perf stat -T)
+  * according to Michael Ellerman POWER8 has a cycles-transactional-committed,
+  * perf stat -T handles both cases
+
+Note for useful abort profiling often precise has to be set,
+as Haswell can only report the point inside the transaction
+with precise=2.
+
+For some classes of aborts, like conflicts, this is not needed,
+as it makes more sense to look at the complete critical section.
+
+This gives a clean set of generalized events to examine transaction
+success and aborts. Haswell has additional events for TSX, but those
+are more specialized for very specific situations.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1378438661-24765-4-git-send-email-andi@firstfloor.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c | 27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 57d64b7..dd1d4f3 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -2222,7 +2222,34 @@ static __init void intel_nehalem_quirk(void)
+ EVENT_ATTR_STR(mem-loads,      mem_ld_hsw,     "event=0xcd,umask=0x1,ldlat=3");
+ EVENT_ATTR_STR(mem-stores,     mem_st_hsw,     "event=0xd0,umask=0x82")
+ 
++/* Haswell special events */
++EVENT_ATTR_STR(tx-start,        tx_start,       "event=0xc9,umask=0x1");
++EVENT_ATTR_STR(tx-commit,       tx_commit,      "event=0xc9,umask=0x2");
++EVENT_ATTR_STR(tx-abort,        tx_abort,	"event=0xc9,umask=0x4");
++EVENT_ATTR_STR(tx-capacity,     tx_capacity,	"event=0x54,umask=0x2");
++EVENT_ATTR_STR(tx-conflict,     tx_conflict,	"event=0x54,umask=0x1");
++EVENT_ATTR_STR(el-start,        el_start,       "event=0xc8,umask=0x1");
++EVENT_ATTR_STR(el-commit,       el_commit,      "event=0xc8,umask=0x2");
++EVENT_ATTR_STR(el-abort,        el_abort,	"event=0xc8,umask=0x4");
++EVENT_ATTR_STR(el-capacity,     el_capacity,    "event=0x54,umask=0x2");
++EVENT_ATTR_STR(el-conflict,     el_conflict,    "event=0x54,umask=0x1");
++EVENT_ATTR_STR(cycles-t,        cycles_t,       "event=0x3c,in_tx=1");
++EVENT_ATTR_STR(cycles-ct,       cycles_ct,
++					"event=0x3c,in_tx=1,in_tx_cp=1");
++
+ static struct attribute *hsw_events_attrs[] = {
++	EVENT_PTR(tx_start),
++	EVENT_PTR(tx_commit),
++	EVENT_PTR(tx_abort),
++	EVENT_PTR(tx_capacity),
++	EVENT_PTR(tx_conflict),
++	EVENT_PTR(el_start),
++	EVENT_PTR(el_commit),
++	EVENT_PTR(el_abort),
++	EVENT_PTR(el_capacity),
++	EVENT_PTR(el_conflict),
++	EVENT_PTR(cycles_t),
++	EVENT_PTR(cycles_ct),
+ 	EVENT_PTR(mem_ld_hsw),
+ 	EVENT_PTR(mem_st_hsw),
+ 	NULL
