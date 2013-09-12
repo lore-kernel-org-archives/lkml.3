@@ -1,57 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755741Ab3ILT05 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 15:26:57 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:38180 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753904Ab3ILT0z convert rfc822-to-8bit (ORCPT
+	id S1754741Ab3ILT2y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 15:28:54 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:61321 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752753Ab3ILT2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 15:26:55 -0400
-Subject: Re: [PATCH] ARM: msm: Move msm devicetrees under a Qualcomm dir
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=US-ASCII
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <CAOesGMhSZzpyT5XyECByLnvef0E+92y+uaXByiG0Vpm9f05AxQ@mail.gmail.com>
-Date: Thu, 12 Sep 2013 14:26:53 -0500
-Cc: Rob Herring <robherring2@gmail.com>, David Brown <davidb@codeaurora.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
-        Rohit Vaswani <rvaswani@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Transfer-Encoding: 7BIT
-Message-Id: <584008C3-983C-4423-A76E-38DD67C2F1D9@codeaurora.org>
-References: <1379003839-16068-1-git-send-email-galak@codeaurora.org> <CAOesGMisWLwYKotGDFPW6PyHJs=_+fohTdC08SGjsv2FXaa7Fg@mail.gmail.com> <25E0B143-658E-4CCC-A88A-0AF70FFF33CE@codeaurora.org> <CAOesGMhfdvyJ_2AA2e8iO_2e=q7KgpyNbcriPKFw-RLormG6bA@mail.gmail.com> <3E38F48E-EE41-4564-84A1-36CF07B08811@codeaurora.org> <CAOesGMhN0jEx065cpf989P-JbuxPiOaPRsP4BD3VoW-n5ebP+w@mail.gmail.com> <9DD9D9A7-ED55-412F-A18D-599D1E365003@codeaurora.org> <523205E1.2040704@gmail.com> <CAOesGMhSZzpyT5XyECByLnvef0E+92y+uaXByiG0Vpm9f05AxQ@mail.gmail.com>
-To: Olof Johansson <olof@lixom.net>
-X-Mailer: Apple Mail (2.1283)
+	Thu, 12 Sep 2013 15:28:53 -0400
+Date: Thu, 12 Sep 2013 15:35:52 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Ingo Molnar <mingo@kernel.org>
+cc: Andi Kleen <andi@firstfloor.org>, Andi Kleen <ak@linux.intel.com>,
+        acme@infradead.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, torvalds@linux-foundation.org,
+        trinity@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?ISO-8859-15?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 1/2] tools, perf: Add a precise event qualifier v2
+In-Reply-To: <20130912165733.GA23698@gmail.com>
+Message-ID: <alpine.DEB.2.10.1309121515440.10687@vincent-weaver-1.um.maine.edu>
+References: <1374501138-13496-1-git-send-email-andi@firstfloor.org> <alpine.DEB.2.02.1307230137160.18617@pianoman.cluster.toy> <20130723060108.GA18396@tassilo.jf.intel.com> <alpine.DEB.2.02.1307231717580.27628@pianoman.cluster.toy> <20130723225150.GT6123@two.firstfloor.org>
+ <20130912165733.GA23698@gmail.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Sep 12, 2013, at 1:46 PM, Olof Johansson wrote:
-
-> On Thu, Sep 12, 2013 at 11:20 AM, Rob Herring <robherring2@gmail.com> wrote:
+On Thu, 12 Sep 2013, Ingo Molnar wrote:
+ 
+> * Andi Kleen <andi@firstfloor.org> wrote:
 > 
->> As Stephen W has pointed out previously, the dtb filename itself is or
->> may be an ABI and the bootloader may be hardcoded to a name. So we
->> should avoid future renames.
+> > On Tue, Jul 23, 2013 at 05:27:43PM -0400, Vince Weaver wrote:
+> > > 
+> > > I hate having to justify why breaking the ABI is unacceptable.
+> > 
+> > Well it's a testing ABI, so we can do changes to it.
+> > 
+> > I hope you're not suggesting that perf cannot be extended anymore.
 > 
-> We still have the choice of producing the dtb files under
-> arch/arm/boot/dts even if we move dts/dtsi files one level deeper, as
-> long as we keep the filenames consistent. So we can do a move, just
-> not a rename.
+> It obviously should remain extensible, limiting it to 'config' is rather 
+> stupid. If a parser sees something it cannot parse it should ignore that 
+> event.
+
+Well 
+
+     Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+
+implies that you won't find field names that aren't in a format file, and
+
+     Documentation/ABI/testing/sysfs-bus-event_source-devices-format
+
+specifies that only "config" fields will appear there.
+
+So if this will be changing you might want to update the documentation, or 
+just remove it altogether because it is getting increasingly inaccurate.
+
+I've tried getting this documentation updated
+  ( https://lkml.org/lkml/2013/7/25/2 ) 
+but the patches have been ignored.
 
 
-Looking at arch/arm/boot/dts/ we are all over the place, so what's the naming convention we are going forward with?
 
-- k
+In any case, I notice perf also uses the "open" syscall, so I look forward 
+to your eventual creation of
+  /sys/bus/open/file_permissions/*
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+$ cat /sys/bus/open/file_permissions/write
+flags=0101,mode=0666
 
+Because what every system call needs is some sort of tree under sysfs
+exporting various common settings in unswappable kernel memory that 
+require a complex LEX/YACC parser to interpret.  
+
+That's much simpler than using a library, or having a user looking 
+things up in a manpage and placing a few comments in their code.
+
+Vince
