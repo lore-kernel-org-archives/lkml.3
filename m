@@ -1,41 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754289Ab3ILKav (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 06:30:51 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:33358 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754167Ab3ILKat (ORCPT
+	id S1754482Ab3ILKcL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 06:32:11 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41444 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905Ab3ILKcK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 06:30:49 -0400
+	Thu, 12 Sep 2013 06:32:10 -0400
+Date: Thu, 12 Sep 2013 12:31:50 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jason Low <jason.low2@hp.com>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        pjt@google.com, preeti@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        mgorman@suse.de, riel@redhat.com, aswin@hp.com, scott.norton@hp.com,
+        srikar@linux.vnet.ibm.com
+Subject: Re: [PATCH v4 0/3] sched: Limiting idle balance
+Message-ID: <20130912103150.GU31370@twins.programming.kicks-ass.net>
+References: <1377806736-3752-1-git-send-email-jason.low2@hp.com>
 MIME-Version: 1.0
-In-Reply-To: <2753290.JbKAdhJjui@vostro.rjw.lan>
-References: <20130911201239.7832.72612.stgit@srivatsabhat.in.ibm.com>
-	<CAKohpomsHSMWmGAACurpN1dYSsvHvH6w_SDpQ5c7CE_1R2MGMg@mail.gmail.com>
-	<5231695D.5070404@linux.vnet.ibm.com>
-	<2753290.JbKAdhJjui@vostro.rjw.lan>
-Date: Thu, 12 Sep 2013 16:00:48 +0530
-Message-ID: <CAKohpo=et2H-4fvy0psNVen-hs4A9sLz2y4ojAnmQBPKq6ew0g@mail.gmail.com>
-Subject: Re: [PATCH 3/3] cpufreq: Prevent problems in update_policy_cpu() if
- last_cpu == new_cpu
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1377806736-3752-1-git-send-email-jason.low2@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 September 2013 16:10, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> Can you please prepare a patch against Documentation/SubmittingPatches with the
-> above paragraph in it?  Seriously.
 
-+1
+Jason, could you repost all the 3 patches with the changes we talked
+about (Srikar's suggestion, changing the half-time etc..) with fresh
+perf numbers so I can apply them all?
 
-> There are people who don't really see a reason for writing good patch
-> changelogs.
-
-+1 for being one of those people :)
