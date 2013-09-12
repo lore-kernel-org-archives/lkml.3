@@ -1,81 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754289Ab3ILMgD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 08:36:03 -0400
-Received: from mail.eperm.de ([89.247.134.16]:44897 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752949Ab3ILMgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 08:36:01 -0400
-From: Stephan Mueller <smueller@chronox.de>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
-        dave.taht@bufferbloat.net
-Subject: Re: [PATCH] /dev/random: Insufficient of entropy on many architectures
-Date: Thu, 12 Sep 2013 14:35:53 +0200
-Message-ID: <2140053.ysf7239sM3@tauon>
-User-Agent: KMail/4.10.5 (Linux/3.10.10-200.fc19.x86_64; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAMuHMdX5-kSWVJ_QFXY+L2L6iY0Zo7GAL5uF-uPGJAXM=wZxgw@mail.gmail.com>
-References: <10005394.BRCyBMYWy3@tauon> <5896310.H6rEVunj63@tauon> <CAMuHMdX5-kSWVJ_QFXY+L2L6iY0Zo7GAL5uF-uPGJAXM=wZxgw@mail.gmail.com>
+	id S1754408Ab3ILMh3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 08:37:29 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:44878 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752864Ab3ILMh2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 08:37:28 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <20130909164623.GA12525@angband.pl>
+References: <E1VImxG-0002w1-UA@tartarus.angband.pl>
+	<CANq1E4Tv0Vb9KzWK0oa3P+-V66LqF312HZrwq_JLmHhH-v2k=Q@mail.gmail.com>
+	<20130909164623.GA12525@angband.pl>
+Date: Thu, 12 Sep 2013 14:37:26 +0200
+Message-ID: <CANq1E4QG9ab8DpicdLt_gk95WSO5GbgF_sSrTjf--_Mt3++HtA@mail.gmail.com>
+Subject: Re: [PATCH] vt: properly ignore xterm-256 colour codes
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Adam Borowski <kilobyte@angband.pl>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 12. September 2013, 14:15:35 schrieb Geert Uytterhoeven:
+Hi Adam
 
-Hi Geert,
-
->On Thu, Sep 12, 2013 at 2:08 PM, Stephan Mueller <smueller@chronox.de> 
-wrote:
->>>BTW, I prefer a different name than "random_get_fast_cycles()", as
->>>it's better to have something that returns different and
->>>unpredictable numbers than an actual monotonic cycle counter.
->>>
->> A monotonic counter is fully ok. Note, for /dev/random, the
->> occurrence
->> of events delivers entropy. Thus, we have to be able to precisely
->> measure that occurrence. The timer itself does not need to deliver
->> any
->> entropy as long as it is fast.
+On Mon, Sep 9, 2013 at 6:46 PM, Adam Borowski <kilobyte@angband.pl> wrote:
+> On Mon, Sep 09, 2013 at 05:53:19PM +0200, David Herrmann wrote:
+>> On Fri, Jul 12, 2013 at 10:23 PM, Adam Borowski <kilobyte@angband.pl> wrote:
+>> > +                               i++;
+>> > +                               if (i > vc->vc_npar)
+>>
+>> This should be ">=", but the for()-loop does allow your ">". So unless
+>> someone fixes the for-loop to use "<" (do a ++vc->vc_npar before it,
+>> if it's correct. But blindly doing "<=" is really irritating) I think
+>> this is ok.
 >
->Well, in my specific case (m68k/Amiga) I can use:
->  - a 24-bit counter running at only ca. 15 or 31 kHz (actual
->frequency may vary),
->  - a 16-bit counter running at ca. 700 kHz.
+> The loop this switch is in does:
+>         for (i = 0; i <= vc->vc_npar; i++)
+> which is obviously contrary to what we're used to, but I did not want to
+> rewrite nearby code to match my preferences.
 >
->That is, if they have to be monotonic cycle counters.
+> The change you suggest would deoptimize the code by a single unnecessary
+> dereference and increment, which is negligible, but since the whole cost
+> of speedier version is having <= instead of < in the loop, I'm not so
+> certain this is a good idea.
+
+This was just my comment on the weird for-loop. No need to touch it at
+all, I just wondered whether anyone knows why we use <= instead of
+just < here.
+
+> [...]
+>> Btw., you should put Greg Kroah-Hartman and Andrew Morton on CC. Both
+>> are the most likely to pick this up.
 >
->If not, I can mix the two (e.g. "a << 8 | (b & 0xff)") to get a 32-bit
->value. That result would be fine for /dev/random, I guess, but it's
->not really "get_cycles()".
-
-Note, get_cycles should return an u64.
-
-Not sure what a and b here is, but if a is the 24 bit value and b the 
-faster 16 bit value, wouldn't there be a gap?
-
-I.e. wouldn't it be better to use the full 16 bit counter as low value 
-and OR the 24 bit on bits 48 to 17?
-
-Yet, there is a break in that counter: the 16 low bits rotate several 
-times (around 10 times) before bit 17 is changed once.
-
-
+> Thanks for the suggestion.  I've sent the patch two days ago to Jiri Slaby
+> (listed as a maintainer besides Greg) together with a newbie question, but
+> he's apparently busy.
 >
->Gr{oetje,eeting}s,
->
->                        Geert
->
->--
->Geert Uytterhoeven -- There's lots of Linux beyond ia32 --
->geert@linux-m68k.org
->
->In personal conversations with technical people, I call myself a
->hacker. But when I'm talking to journalists I just say "programmer" or
->something like that. -- Linus Torvalds
+> I've got more changes for the vt, but there's no hurry, I wanted to test
+> the waters with a single minor one in 3.12 first.
 
+Jiri Slaby maintains the TTY subsystem (together with Greg). This does
+not include the VT layer, though. drivers/tty/vt/ and
+drivers/video/console/ are unmaintained. You need to get the attention
+of any maintainer who is willing to take it through their tree (hint:
+most maintainers don't dare touching the VT layer. Greg and Andrew
+were brave enough in the past.).
 
-Ciao
-Stephan
+I'm willing to review your patches, but history taught me touching the
+VT layer is a waste of time. Still, good luck.
+
+Regards
+David
