@@ -1,122 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757410Ab3ILAXh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 20:23:37 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:64069 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104Ab3ILAXg (ORCPT
+	id S1754725Ab3ILAZt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 20:25:49 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:37571 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741Ab3ILAZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 20:23:36 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <52310984.30809@roeck-us.net>
-Date: Wed, 11 Sep 2013 17:23:32 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Wed, 11 Sep 2013 20:25:48 -0400
 MIME-Version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>
-CC: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v2 3/6] extcon-gpio: Add support for active-low presence
- detect pins
-References: <1377836978-24082-1-git-send-email-linux@roeck-us.net> <1377836978-24082-4-git-send-email-linux@roeck-us.net> <522FD20C.6080404@samsung.com> <20130911022513.GA5251@roeck-us.net> <52310355.7060004@samsung.com>
-In-Reply-To: <52310355.7060004@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <7463564f181640d2ad9658ce0ef7a7b5@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <CAPgLHd-5dt70Tn+3SXXu9QudpwpHaO1FNf-LZWQmDq413KLbQg@mail.gmail.com>
+	<7463564f181640d2ad9658ce0ef7a7b5@SN2PR03MB061.namprd03.prod.outlook.com>
+Date: Thu, 12 Sep 2013 08:25:47 +0800
+Message-ID: <CAPgLHd_7MKG75y0NiXFVV-w8dtRWPdT8CtrMWyN_a1LM0MD9Lw@mail.gmail.com>
+Subject: Re: [PATCH] Drivers: hv: vmbus: fix error return code in vmbus_connect()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: kys@microsoft.com
+Cc: haiyangz@microsoft.com, yongjun_wei@trendmicro.com.cn,
+        devel@linuxdriverproject.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2013 04:57 PM, Chanwoo Choi wrote:
-> Hi Guenter,
+On 09/12/2013 04:03 AM, KY Srinivasan wrote:
 >
-> As I mentioned on previous reply, I modify patch name as following:
-> extcon-gpio: Add support for active-low presence detect pins
-> ->
-> extcon: gpio: Add support for active-low presence detect pins
->
-> I prefer you could add patch description. Also, you should test
-
-As mentioned before, I sent out v2 of this patch before I read your comments
-to the previous patch.
-
-> on extcon latest branch to protect merge conflict. This patch
-> has conflict issue on extcon-linus branch. I fix up and applied it.
->
-I'll make sure to so that in the future.
-
-> And I think you might use tab size is 4 characters. you should change tab size
-> from 4 characters to 8 characters. You can check linux kernel coding sytle on
-
-Thanks for the reminder, but the problem is a different one. See below.
-
-> "/kernel/Documentation/CodingStyle - chapter 1: Indentation".
->
-> On 09/11/2013 11:25 AM, Guenter Roeck wrote:
+>> -----Original Message-----
+>> From: Wei Yongjun [mailto:weiyj.lk@gmail.com]
+>> Sent: Wednesday, September 11, 2013 4:20 AM
+>> To: KY Srinivasan; Haiyang Zhang
+>> Cc: yongjun_wei@trendmicro.com.cn; devel@linuxdriverproject.org; linux-
+>> kernel@vger.kernel.org
+>> Subject: [PATCH] Drivers: hv: vmbus: fix error return code in vmbus_connect()
 >>
->> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->> ---
->> v2: Document gpio_active_low variable in gpio_extcon_platform_data
->>      Rewrite active-low logic to be easier to read.
+>> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 >>
->>   drivers/extcon/extcon-gpio.c       |    4 ++++
->>   include/linux/extcon/extcon-gpio.h |    5 +++++
->>   2 files changed, 9 insertions(+)
->>
->> diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
->> index 862743b..8491f86 100644
->> --- a/drivers/extcon/extcon-gpio.c
->> +++ b/drivers/extcon/extcon-gpio.c
->> @@ -34,6 +34,7 @@
->>   struct gpio_extcon_data {
->>   	struct extcon_dev edev;
->>   	unsigned gpio;
->> +	bool gpio_active_low;
->>   	const char *state_on;
->>   	const char *state_off;
->>   	int irq;
->> @@ -49,6 +50,8 @@ static void gpio_extcon_work(struct work_struct *work)
->>   			     work);
->>
->>   	state = gpio_get_value(data->gpio);
->> +	if (data->gpio_active_low)
->> +		state = !state;
->>   	extcon_set_state(&data->edev, state);
->>   }
->>
->> @@ -96,6 +99,7 @@ static int gpio_extcon_probe(struct platform_device *pdev)
->>
->>   	extcon_data->edev.name = pdata->name;
->>   	extcon_data->gpio = pdata->gpio;
->> +	extcon_data->gpio_active_low = pdata->gpio_active_low;
->>   	extcon_data->state_on = pdata->state_on;
->>   	extcon_data->state_off = pdata->state_off;
->>   	if (pdata->state_on && pdata->state_off)
->> diff --git a/include/linux/extcon/extcon-gpio.h b/include/linux/extcon/extcon-gpio.h
->> index 2d8307f..51ef15c 100644
->> --- a/include/linux/extcon/extcon-gpio.h
->> +++ b/include/linux/extcon/extcon-gpio.h
->> @@ -27,6 +27,10 @@
->>    * struct gpio_extcon_platform_data - A simple GPIO-controlled extcon device.
->>    * @name	The name of this GPIO extcon device.
->>    * @gpio	Corresponding GPIO.
->> + * @gpio_active_low:
->> + * 		Boolean describing whether gpio active state is 1 or 0
->> + * 		If true, low state of gpio means active.
->> + * 		If false, high state of gpio means active.
->
-> I think you may use tab size is 4 characters.
->
-No, that isn't it. When I cut-and-pasted your proposed text I was not careful enough
-and did not remove a space after the '*'. No idea how it got there, but it isn't the
-tab setting.
+>> Fix to return -EINVAL in the version check error handling
+>> case instead of 0, as done elsewhere in this function.
+> The return will not be zero in this case. If you look at the function 
+> vmbus_negotiate_version(), in case the host refuses the version, the
+> return value will be set to -ECONNREFUSED
 
-Usually I _do_ run my patches through checkpatch.pl to avoid problems like that.
-Sorry, my bad; looks like I was shooting too quickly last night and didn't do that.
+look at the code:
 
-Guenter
+ 196         do {
+ 197                 ret = vmbus_negotiate_version(msginfo, version);
+ 198                 if (ret)
+ 199                         goto cleanup;
+ 200 
+ 201                 if (vmbus_connection.conn_state == CONNECTED)
+ 202                         break;
+ 203 
+ 204                 version = vmbus_get_next_version(version);
+ 205         } while (version != VERSION_INVAL);
+ 206 
+ 207         if (version == VERSION_INVAL)
+ 208                 goto cleanup;
+
+if function vmbus_negotiate_version() return error, the code
+will goto cleanup. 
+
+If 'version == VERSION_INVAL' is true, I think we tried all
+of the VERSION_WS2008/VERSION_WIN7/VERSION_WIN8, but still
+can not get the connection.
+
+ 
+
+
 
