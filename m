@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754692Ab3ILPm2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 11:42:28 -0400
-Received: from b232-131.smtp-out.amazonses.com ([199.127.232.131]:24061 "EHLO
-	b232-131.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754657Ab3ILPmY (ORCPT
+	id S1754758Ab3ILPmw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 11:42:52 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:45002 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754662Ab3ILPm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 11:42:24 -0400
-Date: Thu, 12 Sep 2013 15:42:21 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [RFC] Restrict kernel spawning of threads to a specified set of
- cpus.
-In-Reply-To: <alpine.DEB.2.02.1309121030390.21473@gentwo.org>
-Message-ID: <0000014112d66287-d0abaeb1-71ff-48a0-8740-f984d47400a7-000000@email.amazonses.com>
-References: <00000140efbcb701-c26320b3-f434-4538-bc80-8e92fed6f303-000000@email.amazonses.com> <20130911220228.GB15367@somewhere> <000001411282afa6-fe9c0543-0447-492b-991e-dc8214884b88-000000@email.amazonses.com> <20130912141625.GA23357@somewhere>
- <00000141128d759a-44dcacb6-8f48-4f9b-8381-d14003bd6da1-000000@email.amazonses.com> <20130912143137.GA23839@somewhere> <0000014112a921ae-51d171bf-e8d4-4569-bd20-94dabda2d5ba-000000@email.amazonses.com> <20130912151102.GB23839@somewhere>
- <alpine.DEB.2.02.1309121030390.21473@gentwo.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.127.232.131
+	Thu, 12 Sep 2013 11:42:27 -0400
+From: Koen Kooi <koen@dominion.thruhere.net>
+To: linux-kernel@vger.kernel.org
+Cc: bcousson@baylibre.com, tony@atomide.com, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
+        ijc+devicetree@hellion.org.uk, linux@arm.linux.org.uk,
+        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Koen Kooi <koen@dominion.thruhere.net>
+Subject: [PATCH 4/4] ARM: dts: am335x-bone-common: add cpu0 and mmc1 triggers
+Date: Thu, 12 Sep 2013 17:42:12 +0200
+Message-Id: <1379000532-27376-5-git-send-email-koen@dominion.thruhere.net>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1379000532-27376-1-git-send-email-koen@dominion.thruhere.net>
+References: <1379000532-27376-1-git-send-email-koen@dominion.thruhere.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let me just say that the user space approach does not work because the
-kernel sets the cpumask to all and then spawns a thread f.e. for
-usermodehelper.
+This matches the vendor 3.8.x configuration that is shipping with the boards.
 
-This mean we would have to run a daemon that keeps scanning for errand
-threads and then move them. But at that point the damage would already
-have been done. Short term threads would never be caught.
+The LED layout is now:
 
-So I think the kernel based approach is unavoidable.
+USR0: heartbeat
+USR1: mmc0 (micro-SD slot)
+USR2: cpu0
+USR3: mmc1 (eMMC)
 
-Look at this in kernel/kmod.c:
+The cpu0 triggers was put inbetween the mmc triggers to make is easier to see
+where the disk activity is.
 
-static int ____call_usermodehelper(void *data)
-{
-        struct subprocess_info *sub_info = data;
-        struct cred *new;
-        int retval;
+Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
+---
+ arch/arm/boot/dts/am335x-bone-common.dtsi | 2 ++
+ 1 file changed, 2 insertions(+)
 
-        spin_lock_irq(&current->sighand->siglock);
-        flush_signal_handlers(current, 1);
-        spin_unlock_irq(&current->sighand->siglock);
-
-        /* We can run anywhere, unlike our parent keventd(). */
-        set_cpus_allowed_ptr(current, cpu_all_mask);
-
-
-!!!!! No chance to catch this from user space.
-
-
-
-	....
-
-        retval = do_execve(sub_info->path,
-                       (const char __user *const __user *)sub_info->argv,
-                           (const char __user *const __user *)sub_info->envp);
-        if (!retval)
-
-
-	....
+diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
+index 80407ff..3057f30 100644
+--- a/arch/arm/boot/dts/am335x-bone-common.dtsi
++++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
+@@ -203,12 +203,14 @@
+ 		led@4 {
+ 			label = "beaglebone:green:usr2";
+ 			gpios = <&gpio1 23 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "cpu0";
+ 			default-state = "off";
+ 		};
+ 
+ 		led@5 {
+ 			label = "beaglebone:green:usr3";
+ 			gpios = <&gpio1 24 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "mmc1";
+ 			default-state = "off";
+ 		};
+ 	};
+-- 
+1.8.2.1
 
