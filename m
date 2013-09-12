@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab3ILPJs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 11:09:48 -0400
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:38525 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752646Ab3ILPJr (ORCPT
+	id S1754127Ab3ILPKM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 11:10:12 -0400
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:45981 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753105Ab3ILPKK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 11:09:47 -0400
-Date: Thu, 12 Sep 2013 16:09:42 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "'Peter Tyser'" <ptyser@xes-inc.com>
-Subject: Re: [PATCH 1/3] mfd: lpc_ich: remove unnecessary pci_set_drvdata()
-Message-ID: <20130912150942.GK11227@lee--X1>
-References: <001501ceaf83$1e558220$5b008660$%han@samsung.com>
+	Thu, 12 Sep 2013 11:10:10 -0400
+Message-ID: <5231D949.8010408@colorfullife.com>
+Date: Thu, 12 Sep 2013 17:10:01 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <001501ceaf83$1e558220$5b008660$%han@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: davidlohr.bueso@hp.com
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sedat Dilek <sedat.dilek@gmail.com>
+Subject: Re: [PATCH] ipc,msg: shorten critical region in msgsnd
+References: <5231B181.7080705@colorfullife.com>
+In-Reply-To: <5231B181.7080705@colorfullife.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Sep 2013, Jingoo Han wrote:
+Hi all,
 
-> The driver core clears the driver data to NULL after device_release
-> or on probe failure. Thus, it is not needed to manually clear the
-> device driver data to NULL.
-> 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/mfd/lpc_ich.c |    2 --
->  1 file changed, 2 deletions(-)
-> 
-> diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
+On 09/12/2013 02:20 PM, Manfred Spraul wrote:
+>
+> And: What about the other users of obtain_object_check?
+> exit_sem() is also quite long, but I didn't spot any obvious problems.
+>
+a) I think semtimed(), msgsnd() and msgrcv() must be fixed:
+They either leak memory or tasks can sleep forever.
+I haven't checked the shm code, I would expect that there are similar 
+problems.
 
-Applied, thanks.
+b) There are additional races at least with selinux:
+security/selinux/hooks.c
+- selinux_sem_semop() accesses sma->sem_perm.security->sid.
+- selinux_sem_free_security() does kfree() q_perm.security.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Right now, both operations can happen in parallel -> use after free.
+
+I think the security_xx_yy() calls within ipc/*.c must only be called:
+     - after checking _perm.deleted
+     - with ipc_perm.lock acquired (to prevent parallel RMID calls).
+
+Davidlohr:
+What would be your proposal?
+
+--
+     Manfred
