@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757761Ab3ILGht (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 02:37:49 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:25345 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754947Ab3ILGhr (ORCPT
+	id S1757804Ab3ILGiq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 02:38:46 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:41487 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752870Ab3ILGio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 02:37:47 -0400
-X-AuditID: cbfee68f-b7f1e6d000004e8d-b5-5231613a117c
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Hans J. Koch'" <hjk@hansjkoch.de>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 1/5] uio: uio_aec: remove unnecessary pci_set_drvdata()
-Date: Thu, 12 Sep 2013 15:37:46 +0900
-Message-id: <001001ceaf82$978a36f0$c69ea4d0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac6vgpOjT534nRYfSDiuPQlOOHeZTQ==
-Content-language: ko
-x-cr-hashedpuzzle: BO+9 BmFQ FUUM IvqG I+0w Mux7 O6vl Qz+f Sywe Ucvp adWQ d/yE
- fRkx nytj qMJ0
- qotY;4;ZwByAGUAZwBrAGgAQABsAGkAbgB1AHgAZgBvAHUAbgBkAGEAdABpAG8AbgAuAG8AcgBnADsAaABqAGsAQABoAGEAbgBzAGoAawBvAGMAaAAuAGQAZQA7AGoAZwAxAC4AaABhAG4AQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnAA==;Sosha1_v1;7;{748AAEB8-C8E4-43AD-A89A-DC18493A3C09};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Thu,
- 12 Sep 2013 06:37:39
- GMT;WwBQAEEAVABDAEgAIAAxAC8ANQBdACAAdQBpAG8AOgAgAHUAaQBvAF8AYQBlAGMAOgAgAHIAZQBtAG8AdgBlACAAdQBuAG4AZQBjAGUAcwBzAGEAcgB5ACAAcABjAGkAXwBzAGUAdABfAGQAcgB2AGQAYQB0AGEAKAApAA==
-x-cr-puzzleid: {748AAEB8-C8E4-43AD-A89A-DC18493A3C09}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHIsWRmVeSWpSXmKPExsVy+t8zfV2rRMMgg7tNzBbNi9ezWRw9O53d
-	4vLCS6wWl3fNYXNg8Zj/0Mtj/9w17B59W1YxenzeJBfAEsVlk5Kak1mWWqRvl8CVMWHjJMaC
-	NawVE351MDUwbmHpYuTkkBAwkWjZ/I4ZwhaTuHBvPVsXIxeHkMAyRonXR9YwwRStmTOBHSIx
-	nVHi5eZzjBDOL0aJR2fugbWzCahJfPlymB3EFhEwldj4fgojiM0skC1x7PtfsHXCAu4Slw63
-	gk1lEVCVODNjCyuIzStgKzFz7m0oW1Dix+R7LBC9WhLrdx5ngrDlJTaveQu0iwPoInWJR391
-	IVbpScyf8RuqXERi34t3YLdJCExhlfh0+xnUm6YS72+dYYVInGKX+PJjNSPEEQIS3yYfYoEY
-	Kiux6QA0KCQlDq64wTKBUWIWkpNmITlpFpKTZiHZvYCRZRWjaGpBckFxUnqRsV5xYm5xaV66
-	XnJ+7iZGSFz272C8e8D6EGMy0PqJzFKiyfnAuM4riTc0NjOyMDUxNTYytzQjTVhJnFetxTpQ
-	SCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA+OaNOH4IrFTczw+TEitm3r99r495y+8T96cNV3y
-	sFPWyY3+tgVn5ScJPEj6e0X0o0bIq7KUKy4xUbENy87mp7v/idhh/fvBtDJzbcWJt78dqfl3
-	Kmrl6haWmx8v5mgFJkz0Ts7/7rztwKSw7Rwmz4TUTrjldc1480t604zE2WZW+icf1GiElrAr
-	sRRnJBpqMRcVJwIAmHg7A+ECAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNKsWRmVeSWpSXmKPExsVy+t9jQV3LRMMggynrbCyaF69nszh6djq7
-	xeWFl1gtLu+aw+bA4jH/oZfH/rlr2D36tqxi9Pi8SS6AJaqB0SYjNTEltUghNS85PyUzL91W
-	yTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaKWSQlliTilQKCCxuFhJ3w7ThNAQN10L
-	mMYIXd+QILgeIwM0kLCOMWPCxkmMBWtYKyb86mBqYNzC0sXIySEhYCKxZs4EdghbTOLCvfVs
-	XYxcHEIC0xklXm4+xwjh/GKUeHTmHjNIFZuAmsSXL4fBOkQETCU2vp/CCGIzC2RLHPv+F2yq
-	sIC7xKXDrUwgNouAqsSZGVtYQWxeAVuJmXNvQ9mCEj8m32OB6NWSWL/zOBOELS+xec1boF0c
-	QBepSzz6qwuxSk9i/ozfUOUiEvtevAO7TUJgCqvEp9vPoL4xlXh/6wzrBEahWUhWzEKyYhaS
-	FbOQzFrAyLKKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzjqn0nvYFzVYHGIUYCDUYmHt2OW
-	QZAQa2JZcWXuIUYJDmYlEd54c8MgId6UxMqq1KL8+KLSnNTiQ4zJwBCYyCwlmpwPTEh5JfGG
-	xiZmRpZGZhZGJubmpAkrifMebLUOFBJITyxJzU5NLUgtgtnCxMEp1cAY3HSAK1p80uUT3CXB
-	e7YIhIrpHDxdFK7/YMpRs4hWHxm1FfscbBl2Pm/bsO2UubZD66mVdz76TEo6srcxb/t+k4R3
-	NQzpz341HYz6e6LsfqbJwt//l3x+y1zL9nfrjm/+cVUrNi/tUROqvnmNQ11g28bPWafdU/4v
-	u7SIs/EK071ts0/Pu2f6TImlOCPRUIu5qDgRAP15vhA+AwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 12 Sep 2013 02:38:44 -0400
+Date: Thu, 12 Sep 2013 08:38:40 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, sbw@mit.edu
+Subject: Re: [PATCH] rcu: Is it safe to enter an RCU read-side critical
+ section?
+Message-ID: <20130912063840.GB11583@gmail.com>
+References: <20130906174117.GU3966@linux.vnet.ibm.com>
+ <20130906185927.GE2706@somewhere>
+ <20130909105347.GK31370@twins.programming.kicks-ass.net>
+ <20130909132343.GN3966@linux.vnet.ibm.com>
+ <20130909133604.GC31370@twins.programming.kicks-ass.net>
+ <000001410333127c-486c74ec-3209-4c5e-a92f-0c11e00fa141-000000@email.amazonses.com>
+ <20130909150854.GD26785@twins.programming.kicks-ass.net>
+ <0000014103534c88-48ee11a3-a581-4e52-b2df-3a1168047d96-000000@email.amazonses.com>
+ <20130909160024.GA25555@gmail.com>
+ <0000014109c67b51-d6daa58f-d05a-4306-ae51-3fcf46ce5550-000000@email.amazonses.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0000014109c67b51-d6daa58f-d05a-4306-ae51-3fcf46ce5550-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver core clears the driver data to NULL after device_release
-or on probe failure. Thus, it is not needed to manually clear the
-device driver data to NULL.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/uio/uio_aec.c |    1 -
- 1 file changed, 1 deletion(-)
+* Christoph Lameter <cl@linux.com> wrote:
 
-diff --git a/drivers/uio/uio_aec.c b/drivers/uio/uio_aec.c
-index f3611c2..1549fab 100644
---- a/drivers/uio/uio_aec.c
-+++ b/drivers/uio/uio_aec.c
-@@ -147,7 +147,6 @@ static void remove(struct pci_dev *pdev)
- 	uio_unregister_device(info);
- 	pci_release_regions(pdev);
- 	pci_disable_device(pdev);
--	pci_set_drvdata(pdev, NULL);
- 	iounmap(info->priv);
- 
- 	kfree(info);
--- 
-1.7.10.4
+> On Mon, 9 Sep 2013, Ingo Molnar wrote:
+> 
+> > So my NAK stands: you are still in denial, you should stop the silly 
+> > arguing and you should stop wasting maintainer time. You need to 
+> > address PeterZ's review feedback and fix the bugs in your patches, 
+> > ASAP.
+> 
+> You are NAKing my patches that add the preempt checks? Now I am 
+> confused. I thought you wanted those?
 
+My NAK of the original patches stands until the debug checks are working 
+and are put up for a merge. You were talking nonsense all around in this 
+thread and I simply don't trust your promise, but I'll obviously trust a 
+queued up fix.
 
+Thanks,
+
+	Ingo
