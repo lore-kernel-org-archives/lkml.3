@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756463Ab3ILGwF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 02:52:05 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:52927 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756061Ab3ILGwB (ORCPT
+	id S932187Ab3ILGww (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 02:52:52 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:33207 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755164Ab3ILGwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 02:52:01 -0400
-X-AuditID: 9c93017d-b7cdfae0000026c0-84-5231648f67a0
-Date: Thu, 12 Sep 2013 15:52:25 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [REPOST PATCH 3/4] slab: introduce byte sized index for the
- freelist of a slab
-Message-ID: <20130912065225.GB8055@lge.com>
-References: <1378447067-19832-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1378447067-19832-4-git-send-email-iamjoonsoo.kim@lge.com>
- <00000140f3fed229-f49b95d4-7087-476f-b2c9-37846749aad6-000000@email.amazonses.com>
- <20130909043217.GB22390@lge.com>
- <00000141032dea11-c5aa9c77-b2f2-4cab-b7a0-d37665a6cec8-000000@email.amazonses.com>
- <20130910054342.GB24602@lge.com>
- <0000014109c372c6-5f3c49d4-ce8b-4760-b80d-a32e042ec09b-000000@email.amazonses.com>
- <20130911010434.GB24671@lge.com>
- <000001410d66d62b-d6711e2e-31e4-49da-8d20-efba10fc6a54-000000@email.amazonses.com>
+	Thu, 12 Sep 2013 02:52:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000001410d66d62b-d6711e2e-31e4-49da-8d20-efba10fc6a54-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <52316334.6080603@linux.vnet.ibm.com>
+References: <522E1FEF.6080803@wwwdotorg.org>
+	<1775778.MeiRhuYy7o@vostro.rjw.lan>
+	<522F86AD.6010603@wwwdotorg.org>
+	<2521560.SfeNbV74nj@vostro.rjw.lan>
+	<52304439.3030301@linux.vnet.ibm.com>
+	<CAKohpokTVzikxunqSdUYmLjTOkfhWFJ=N4TTa4rdbj2euCFY-g@mail.gmail.com>
+	<CAKohpomzQ8Yzk+OU0btQM6DGm4xsY1RR9uYFrZD3ZHO-bhrwKQ@mail.gmail.com>
+	<5230509D.6040205@linux.vnet.ibm.com>
+	<CAKohpo=DfmNSMnyVRK0gfx7QGr=jOTbFo6uuGhEOaa2UMkeQAQ@mail.gmail.com>
+	<CAKohpo=8mqRmmk17D52yiR9w1V4Z+2UzZ2kzABtrxHbYR+sQzw@mail.gmail.com>
+	<52315E9A.3000607@linux.vnet.ibm.com>
+	<CAKohpo=LuoKTf+mX1oBt97K3sJVu0iN=whN7VGw6kuartnrr+w@mail.gmail.com>
+	<52316334.6080603@linux.vnet.ibm.com>
+Date: Thu, 12 Sep 2013 12:22:49 +0530
+Message-ID: <CAKohponrmV4CFqicEw7tf0g47VNcVY=4mmcH1CnGX388iFYb=g@mail.gmail.com>
+Subject: Re: cpufreq_stats NULL deref on second system suspend
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        cpufreq <cpufreq@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 11, 2013 at 02:22:25PM +0000, Christoph Lameter wrote:
-> On Wed, 11 Sep 2013, Joonsoo Kim wrote:
-> 
-> > Anyway, could you review my previous patchset, that is, 'overload struct slab
-> > over struct page to reduce memory usage'? I'm not sure whether your answer is
-> > ack or not.
-> 
-> I scanned over it before but I was not able to see if it was correct on
-> first glance. I will look at it again.
+On 12 September 2013 12:16, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> Of course, if we change the suspend/resume sequence and that fixes this, that
+> would be like getting it for free, nobody would say no to it ;-)
 
-Sounds good! Thanks :)
+Not really :)
+
+Policy with 4 CPUs, 0,1,2,3, policy->cpu currently set to 1, 2 or 3...
+
+We will remove CPUs in order 3,2,1 and add back in 1,2,3... Or Vice Versa
+
+policy->cpu after resume is 0 :)
