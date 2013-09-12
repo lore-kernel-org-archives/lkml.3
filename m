@@ -1,101 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991Ab3ILQkP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 12:40:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50967 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754957Ab3ILQkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 12:40:11 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: [PATCH 3/4] perf tools: Unify page_size usage
-Date: Thu, 12 Sep 2013 18:39:35 +0200
-Message-Id: <1379003976-5839-4-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1379003976-5839-1-git-send-email-jolsa@redhat.com>
-References: <1379003976-5839-1-git-send-email-jolsa@redhat.com>
+	id S1754874Ab3ILQjj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 12:39:39 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:49556 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753195Ab3ILQjh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 12:39:37 -0400
+Message-ID: <5231EE43.5090900@arm.com>
+Date: Thu, 12 Sep 2013 17:39:31 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: cinifr <cinifr@gmail.com>
+CC: Mark Rutland <Mark.Rutland@arm.com>, "coosty@163.com" <coosty@163.com>,
+        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "pawel.moll@arm.co" <pawel.moll@arm.co>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>
+Subject: Re: [PATCH 3/4] Add physical count arch timer support for clocksource
+ in ARMv7.
+References: <1378968687-8200-1-git-send-email-cinifr@gmail.com> <1378968687-8200-4-git-send-email-cinifr@gmail.com> <20130912112452.GA22013@e106331-lin.cambridge.arm.com> <CAK3cCBwu4somtfc9J1ZDVcC-iYD1qDJwSWzWeOomTqY9tQA2kg@mail.gmail.com>
+In-Reply-To: <CAK3cCBwu4somtfc9J1ZDVcC-iYD1qDJwSWzWeOomTqY9tQA2kg@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 12 Sep 2013 16:39:32.0723 (UTC) FILETIME=[A89FCC30:01CEAFD6]
+X-MC-Unique: 113091217393402101
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Making page_size global from the util object.
-Removing the not needed one.
+On 12/09/13 17:07, cinifr wrote:
+>> This cannot be a compile-time option as above in a multiplatform build.
+>> Other paltforms (e.g. KVM guests) *must* use the virtual counters to get
+>> any semblance of a consistent view of time.
+> Yes I accept compile-time option is not perfect  in my pre email,
+> But,Why Ohter paltforms *must* use the virtual counters? I think KVM
+> should not limit how to use arch timer in its guest OS. Of cause, if
+> KVM guest use vct can be more efficiency then that use pct. but KVM
+> should and must support guest OS to access pct.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>
----
- tools/perf/builtin-record.c | 5 +----
- tools/perf/perf.c           | 1 +
- tools/perf/util/python.c    | 1 +
- 3 files changed, 3 insertions(+), 4 deletions(-)
+The virtual counter is there for a good reason: it allows a virtual
+machine to:
+- see its time starting at zero
+- be migrated to another host without seeing time shifting one way or
+another.
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index a41ac415..ceea545 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -70,7 +70,6 @@ struct perf_record {
- 	struct perf_session	*session;
- 	const char		*progname;
- 	int			output;
--	unsigned int		page_size;
- 	int			realtime_prio;
- 	bool			no_buildid;
- 	bool			no_buildid_cache;
-@@ -119,7 +118,7 @@ static int perf_record__mmap_read(struct perf_record *rec,
- {
- 	unsigned int head = perf_mmap__read_head(md);
- 	unsigned int old = md->prev;
--	unsigned char *data = md->base + rec->page_size;
-+	unsigned char *data = md->base + page_size;
- 	unsigned long size;
- 	void *buf;
- 	int rc = 0;
-@@ -360,8 +359,6 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 
- 	rec->progname = argv[0];
- 
--	rec->page_size = sysconf(_SC_PAGE_SIZE);
--
- 	on_exit(perf_record__sig_exit, rec);
- 	signal(SIGCHLD, sig_handler);
- 	signal(SIGINT, sig_handler);
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 85e1aed..6f0a209 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -456,6 +456,7 @@ int main(int argc, const char **argv)
- {
- 	const char *cmd;
- 
-+	/* The page_size is placed in util object. */
- 	page_size = sysconf(_SC_PAGE_SIZE);
- 
- 	cmd = perf_extract_argv0_path(argv[0]);
-diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
-index 3eddf96..06efd02 100644
---- a/tools/perf/util/python.c
-+++ b/tools/perf/util/python.c
-@@ -1029,6 +1029,7 @@ PyMODINIT_FUNC initperf(void)
- 	    pyrf_cpu_map__setup_types() < 0)
- 		return;
- 
-+	/* The page_size is placed in util object. */
- 	page_size = sysconf(_SC_PAGE_SIZE);
- 
- 	Py_INCREF(&pyrf_evlist__type);
+So using the physical counter in a VM is a recipe for disaster if you're
+doing any kind of time tracking. The counter being used for
+sched_clock(), we cannot afford to see it being shifted one way or another.
+
+If you have issues with the use of the virtual counter, I suggest you
+fix your firmware to have a consistent CNTVOFF across CPUs. And/or even
+better, boot your kernel in HYP mode, as it will take care of setting
+CNTVOFF to zero.
+
+Cheers,
+
+	M.
 -- 
-1.7.11.7
+Jazz is not dead. It just smells funny...
 
