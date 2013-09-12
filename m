@@ -1,89 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758073Ab3ILKG0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 06:06:26 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:26287 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757882Ab3ILKDl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 06:03:41 -0400
-X-IronPort-AV: E=Sophos;i="4.90,890,1371052800"; 
-   d="scan'208";a="8503611"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: tj@kernel.org, rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de,
-        mingo@elte.hu, hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, toshi.kani@hp.com
-Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [RESEND PATCH v2 3/9] x86, dma: Support allocate memory from bottom upwards in dma_contiguous_reserve().
-Date: Thu, 12 Sep 2013 17:52:11 +0800
-Message-Id: <1378979537-21196-4-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1378979537-21196-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1378979537-21196-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/12 17:47:28,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/12 18:01:05,
-	Serialize complete at 2013/09/12 18:01:05
+	id S1757746Ab3ILKHk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 06:07:40 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:33047 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751594Ab3ILKHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 06:07:38 -0400
+Message-ID: <5231925B.3030104@ti.com>
+Date: Thu, 12 Sep 2013 15:37:23 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Pratyush Anand <pratyush.anand@st.com>
+CC: Jingoo Han <jg1.han@samsung.com>, "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        Mohit KUMAR DCG <Mohit.KUMAR@st.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>, "'Sean Cross'" <xobs@kosagi.com>,
+        "'Thierry Reding'" <thierry.reding@gmail.com>,
+        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH V3] pci: exynos: split into two parts such as Synopsys
+ part and Exynos part
+References: <002801ce8376$a807dbf0$f81793d0$@samsung.com> <51ED49D6.9050209@ti.com> <000701ce8741$fe47deb0$fad79c10$@samsung.com> <51EE22DF.6090902@ti.com> <001301ce8772$522dfc50$f689f4f0$@samsung.com> <5231607C.10702@ti.com> <003501ceaf87$cda45db0$68ed1910$%han@samsung.com> <20130912093018.GA2124@pratyush-vbox> <52318CCC.4040604@ti.com> <20130912095213.GA5995@pratyush-vbox>
+In-Reply-To: <20130912095213.GA5995@pratyush-vbox>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During early boot, if the bottom up mode is set, just
-try allocating bottom up from the end of kernel image,
-and if that fails, do normal top down allocation.
+Hi,
 
-So in function dma_contiguous_reserve(), we add the
-above logic.
+On Thursday 12 September 2013 03:22 PM, Pratyush Anand wrote:
+> Hi Kishon,
+> 
+> On Thu, Sep 12, 2013 at 05:43:40PM +0800, Kishon Vijay Abraham I wrote:
+>> Hi,
+>>
+>> On Thursday 12 September 2013 03:00 PM, Pratyush Anand wrote:
+>>> Hi Jingoo,
+>>>
+>>>
+>>> On Thu, Sep 12, 2013 at 03:15:04PM +0800, Jingoo Han wrote:
+>>>> On Tuesday 23 July 2013 12:30 PM, Kishon Vijay Abraham I wrote:
+>>>>>>> .
+>>>>>>> .
+>>>>>>>>>> +			of_pci_range_to_resource(&range, np, &pp->cfg);
+>>>>>>>>>> +			pp->config.cfg0_size = resource_size(&pp->cfg)/2;
+>>>>>>>>>> +			pp->config.cfg1_size = resource_size(&pp->cfg)/2;
+>>>>>>>>>> +		}
+>>>>>>>>>> +	}
+>>>>>>>>>> +
+>>>>>>>>>> +	pp->dbi_base = devm_ioremap(pp->dev, pp->cfg.start,
+>>>>>>>>>> +				resource_size(&pp->cfg));
+>>>>>>>>>
+>>>>>>>>> Why is configuraion space divided into two?
+>>>>>>>>
+>>>>>>>> Sorry, I don't know the exact reason. :(
+>>>>>>>> Pratyush Anand may know about this.
+>>>>>>>> Pratyush Anand, could you answer the question?
+>>>>>>>>
+>>>>>>>> Also, if you find some problems, please let me know.
+>>>>>
+>>>>> One more query..
+>>>>>
+>>>>> Where is inbound translation configuration done in your driver? how should it
+>>>>> be done?
+>>>>
+>>>
+>>> Yes, Kishon is right. Inbound translation configuration is missing in
+>>> your code and I think it should be implemented.
+>>>
+>>>> Hi Kishon,
+>>>>
+>>>> Sorry, I cannot understand your question exactly.
+>>>> However, the following thread would be helpful.
+>>>>
+>>>> http://www.spinics.net/lists/arm-kernel/msg252078.html
+>>>> https://lkml.org/lkml/2013/6/17/890
+>>>
+>>> From this conversation, It seems that you
+>>> have tested this driver and it works fine without inbound translation
+>>> function. I am sure that you would have tested a PCIe card with DMA
+>>> capability such as PCIe2USB or PCIe2Ethernet. Since it worked, it
+>>> means that by default your controller is supporting one to one mapping
+>>> in case of inbound transaction even when address translation is enabled.
+>>
+>> btw, I'm testing Ethernet controller: Realtek Semiconductor Co., Ltd.
+>> RTL8111/8168B PCI Express Gigabit Ethernet controller.
+>>
+>> when I do ifconfig eth0 up, I get *r8169 0000:01:00.0 eth0: link up.*
+>> But I dont receive any packets and ping also fails and the tx and rx packet
+>> count is also 0. Could it be related to inbound translation?
+> 
+> A PCIe analyser log would tell a definite cause. Most likely either
+> inbound translation is not working or INTx/MSI is not working.
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- drivers/base/dma-contiguous.c |   17 ++++++++++++++---
- 1 files changed, 14 insertions(+), 3 deletions(-)
+I have enabled only legacy interrupts. Whenever I connect or disconnect
+ethernet cable I get link up/link down message and also the interrupt count for
+eth0 increases. So I'm not doubting INTx interrupts as such.
 
-diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
-index 99802d6..aada945 100644
---- a/drivers/base/dma-contiguous.c
-+++ b/drivers/base/dma-contiguous.c
-@@ -228,17 +228,28 @@ int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
- 			goto err;
- 		}
- 	} else {
-+		phys_addr_t addr;
-+
-+		if (memblock_direction_bottom_up()) {
-+			addr = memblock_alloc_bottom_up(
-+						MEMBLOCK_ALLOC_ACCESSIBLE,
-+						limit, size, alignment);
-+			if (addr)
-+				goto success;
-+		}
-+
- 		/*
- 		 * Use __memblock_alloc_base() since
- 		 * memblock_alloc_base() panic()s.
- 		 */
--		phys_addr_t addr = __memblock_alloc_base(size, alignment, limit);
-+		addr = __memblock_alloc_base(size, alignment, limit);
- 		if (!addr) {
- 			ret = -ENOMEM;
- 			goto err;
--		} else {
--			base = addr;
- 		}
-+
-+success:
-+		base = addr;
- 	}
- 
- 	/*
--- 
-1.7.1
+btw configuring inbound translation once in dw_pcie_host_init enough is it? I
+mean we use the same registers for configuring outbound translation also no? So
+doesn't the inbound configuration gets lost?
 
+Thanks
+Kishon
