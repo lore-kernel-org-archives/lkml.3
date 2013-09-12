@@ -1,139 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755653Ab3ILR7T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 13:59:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57058 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755548Ab3ILR7Q (ORCPT
+	id S1757171Ab3ILSOD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:14:03 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54586 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757148Ab3ILSOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 13:59:16 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 24/46] bridge: Use the correct bit length for bitmap functions in the VLAN code
-Date: Thu, 12 Sep 2013 10:58:35 -0700
-Message-Id: <20130912175723.639507594@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130912175721.001906199@linuxfoundation.org>
-References: <20130912175721.001906199@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Thu, 12 Sep 2013 14:14:00 -0400
+Message-ID: <52320465.9000201@infradead.org>
+Date: Thu, 12 Sep 2013 11:13:57 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gordoni Waidhofer <gwaidhofer@stec-inc.com>,
+        Thomas Swann <tswann@stec-inc.com>,
+        Ramprasad Chinthekindi <rchinthekindi@stec-inc.com>,
+        Akhil Bhansali <abhansali@stec-inc.com>
+Subject: Re: linux-next: Tree for Sep 12 (block/skd_main.c)
+References: <20130912143402.73f77e0cef1e19576b77a6b5@canb.auug.org.au>
+In-Reply-To: <20130912143402.73f77e0cef1e19576b77a6b5@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
-
-[ Upstream commit ef40b7ef181b7b1a24df2ef2d1ef84956bffa635 ]
-
-The VLAN code needs to know the length of the per-port VLAN bitmap to
-perform its most basic operations (retrieving VLAN informations, removing
-VLANs, forwarding database manipulation, etc). Unfortunately, in the
-current implementation we are using a macro that indicates the bitmap
-size in longs in places where the size in bits is expected, which in
-some cases can cause what appear to be random failures.
-Use the correct macro.
-
-Signed-off-by: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/bridge/br_fdb.c     |   10 +++++-----
- net/bridge/br_netlink.c |    4 ++--
- net/bridge/br_vlan.c    |    4 ++--
- 3 files changed, 9 insertions(+), 9 deletions(-)
-
---- a/net/bridge/br_fdb.c
-+++ b/net/bridge/br_fdb.c
-@@ -161,7 +161,7 @@ void br_fdb_change_mac_address(struct ne
- 	if (!pv)
- 		return;
- 
--	for_each_set_bit_from(vid, pv->vlan_bitmap, BR_VLAN_BITMAP_LEN) {
-+	for_each_set_bit_from(vid, pv->vlan_bitmap, VLAN_N_VID) {
- 		f = __br_fdb_get(br, br->dev->dev_addr, vid);
- 		if (f && f->is_local && !f->dst)
- 			fdb_delete(br, f);
-@@ -725,7 +725,7 @@ int br_fdb_add(struct ndmsg *ndm, struct
- 		/* VID was specified, so use it. */
- 		err = __br_fdb_add(ndm, p, addr, nlh_flags, vid);
- 	} else {
--		if (!pv || bitmap_empty(pv->vlan_bitmap, BR_VLAN_BITMAP_LEN)) {
-+		if (!pv || bitmap_empty(pv->vlan_bitmap, VLAN_N_VID)) {
- 			err = __br_fdb_add(ndm, p, addr, nlh_flags, 0);
- 			goto out;
- 		}
-@@ -734,7 +734,7 @@ int br_fdb_add(struct ndmsg *ndm, struct
- 		 * specify a VLAN.  To be nice, add/update entry for every
- 		 * vlan on this port.
- 		 */
--		for_each_set_bit(vid, pv->vlan_bitmap, BR_VLAN_BITMAP_LEN) {
-+		for_each_set_bit(vid, pv->vlan_bitmap, VLAN_N_VID) {
- 			err = __br_fdb_add(ndm, p, addr, nlh_flags, vid);
- 			if (err)
- 				goto out;
-@@ -812,7 +812,7 @@ int br_fdb_delete(struct ndmsg *ndm, str
- 
- 		err = __br_fdb_delete(p, addr, vid);
- 	} else {
--		if (!pv || bitmap_empty(pv->vlan_bitmap, BR_VLAN_BITMAP_LEN)) {
-+		if (!pv || bitmap_empty(pv->vlan_bitmap, VLAN_N_VID)) {
- 			err = __br_fdb_delete(p, addr, 0);
- 			goto out;
- 		}
-@@ -822,7 +822,7 @@ int br_fdb_delete(struct ndmsg *ndm, str
- 		 * vlan on this port.
- 		 */
- 		err = -ENOENT;
--		for_each_set_bit(vid, pv->vlan_bitmap, BR_VLAN_BITMAP_LEN) {
-+		for_each_set_bit(vid, pv->vlan_bitmap, VLAN_N_VID) {
- 			err &= __br_fdb_delete(p, addr, vid);
- 		}
- 	}
---- a/net/bridge/br_netlink.c
-+++ b/net/bridge/br_netlink.c
-@@ -128,7 +128,7 @@ static int br_fill_ifinfo(struct sk_buff
- 		else
- 			pv = br_get_vlan_info(br);
- 
--		if (!pv || bitmap_empty(pv->vlan_bitmap, BR_VLAN_BITMAP_LEN))
-+		if (!pv || bitmap_empty(pv->vlan_bitmap, VLAN_N_VID))
- 			goto done;
- 
- 		af = nla_nest_start(skb, IFLA_AF_SPEC);
-@@ -136,7 +136,7 @@ static int br_fill_ifinfo(struct sk_buff
- 			goto nla_put_failure;
- 
- 		pvid = br_get_pvid(pv);
--		for_each_set_bit(vid, pv->vlan_bitmap, BR_VLAN_BITMAP_LEN) {
-+		for_each_set_bit(vid, pv->vlan_bitmap, VLAN_N_VID) {
- 			vinfo.vid = vid;
- 			vinfo.flags = 0;
- 			if (vid == pvid)
---- a/net/bridge/br_vlan.c
-+++ b/net/bridge/br_vlan.c
-@@ -108,7 +108,7 @@ static int __vlan_del(struct net_port_vl
- 
- 	clear_bit(vid, v->vlan_bitmap);
- 	v->num_vlans--;
--	if (bitmap_empty(v->vlan_bitmap, BR_VLAN_BITMAP_LEN)) {
-+	if (bitmap_empty(v->vlan_bitmap, VLAN_N_VID)) {
- 		if (v->port_idx)
- 			rcu_assign_pointer(v->parent.port->vlan_info, NULL);
- 		else
-@@ -122,7 +122,7 @@ static void __vlan_flush(struct net_port
- {
- 	smp_wmb();
- 	v->pvid = 0;
--	bitmap_zero(v->vlan_bitmap, BR_VLAN_BITMAP_LEN);
-+	bitmap_zero(v->vlan_bitmap, VLAN_N_VID);
- 	if (v->port_idx)
- 		rcu_assign_pointer(v->parent.port->vlan_info, NULL);
- 	else
+On 09/11/13 21:34, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Please do not add any code for v3.13 to your linux-next included branches
+> until after v3.12-rc1 is released.
+> 
+> Changes since 20130911:
+> 
 
 
+on i386 (32-bit):
+
+drivers/block/skd_main.c: In function 'skd_reg_write64':
+drivers/block/skd_main.c:439:3: error: implicit declaration of function 'writeq' [-Werror=implicit-function-declaration]
+drivers/block/skd_main.c:441:3: error: implicit declaration of function 'readq' [-Werror=implicit-function-declaration]
+drivers/block/skd_main.c: In function 'skd_preop_sg_list_blk':
+drivers/block/skd_main.c:1104:3: warning: format '%llx' expects argument of type 'long long unsigned int', but argument 7 has type 'dma_addr_t' [-Wformat]
+drivers/block/skd_main.c: In function 'skd_end_request_bio':
+drivers/block/skd_main.c:1155:7: warning: unused variable 'cpu' [-Wunused-variable]
+drivers/block/skd_main.c: In function 'skd_preop_sg_list_bio':
+drivers/block/skd_main.c:1240:3: warning: format '%llx' expects argument of type 'long long unsigned int', but argument 7 has type 'dma_addr_t' [-Wformat]
+drivers/block/skd_main.c: In function 'skd_skreq_prep_buffering':
+drivers/block/skd_main.c:1920:3: warning: format '%llx' expects argument of type 'long long unsigned int', but argument 7 has type 'dma_addr_t' [-Wformat]
+drivers/block/skd_main.c: In function 'skd_send_fitmsg':
+drivers/block/skd_main.c:2470:2: warning: format '%llx' expects argument of type 'long long unsigned int', but argument 5 has type 'dma_addr_t' [-Wformat]
+drivers/block/skd_main.c: In function 'skd_send_special_fitmsg':
+drivers/block/skd_main.c:2532:3: warning: format '%llx' expects argument of type 'long long unsigned int', but argument 8 has type 'dma_addr_t' [-Wformat]
+drivers/block/skd_main.c: In function 'skd_cons_skmsg':
+drivers/block/skd_main.c:4565:2: warning: format '%lu' expects argument of type 'long unsigned int', but argument 5 has type 'unsigned int' [-Wformat]
+drivers/block/skd_main.c:4595:25: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+drivers/block/skd_main.c:4598:27: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+drivers/block/skd_main.c:4598:20: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+drivers/block/skd_main.c: In function 'skd_cons_skreq':
+drivers/block/skd_main.c:4620:2: warning: format '%lu' expects argument of type 'long unsigned int', but argument 5 has type 'unsigned int' [-Wformat]
+drivers/block/skd_main.c:4620:2: warning: format '%lu' expects argument of type 'long unsigned int', but argument 7 has type 'unsigned int' [-Wformat]
+drivers/block/skd_main.c:4632:2: warning: format '%lu' expects argument of type 'long unsigned int', but argument 6 has type 'unsigned int' [-Wformat]
+drivers/block/skd_main.c:4632:2: warning: format '%lu' expects argument of type 'long unsigned int', but argument 7 has type 'unsigned int' [-Wformat]
+drivers/block/skd_main.c: In function 'skd_cons_skspcl':
+drivers/block/skd_main.c:4677:2: warning: format '%lu' expects argument of type 'long unsigned int', but argument 5 has type 'unsigned int' [-Wformat]
+drivers/block/skd_main.c:4677:2: warning: format '%lu' expects argument of type 'long unsigned int', but argument 7 has type 'unsigned int' [-Wformat]
+
+
+
+
+-- 
+~Randy
