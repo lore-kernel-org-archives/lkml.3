@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755362Ab3ILR7J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 13:59:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56976 "EHLO
+	id S1757440Ab3ILSZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:25:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57020 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755054Ab3ILR7D (ORCPT
+	with ESMTP id S1755358Ab3ILR7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 13:59:03 -0400
+	Thu, 12 Sep 2013 13:59:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        John Fastabend <john.r.fastabend@intel.com>
-Subject: [ 04/46] macvlan: validate flags
-Date: Thu, 12 Sep 2013 10:58:15 -0700
-Message-Id: <20130912175721.545555624@linuxfoundation.org>
+        Andrey Konovalov <andreyknvl@google.com>,
+        Eric Dumazet <edumazet@google.com>, Dmitry Vyukov <dvyukov@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 07/46] fib_trie: remove potential out of bound access
+Date: Thu, 12 Sep 2013 10:58:18 -0700
+Message-Id: <20130912175721.859539102@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130912175721.001906199@linuxfoundation.org>
 References: <20130912175721.001906199@linuxfoundation.org>
@@ -28,41 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 1512747820367c8b3b8b72035f0f78c62f2bf1e9 ]
+[ Upstream commit aab515d7c32a34300312416c50314e755ea6f765 ]
 
-commit df8ef8f3aaa6692970a436204c4429210addb23a
-    macvlan: add FDB bridge ops and macvlan flags
-added a flags field to macvlan, which can be
-controlled from userspace.
-The idea is to make the interface future-proof
-so we can add flags and not new fields.
+AddressSanitizer [1] dynamic checker pointed a potential
+out of bound access in leaf_walk_rcu()
 
-However, flags value isn't validated, as a result,
-userspace can't detect which flags are supported.
+We could allocate one more slot in tnode_new() to leave the prefetch()
+in-place but it looks not worth the pain.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: John Fastabend <john.r.fastabend@intel.com>
+Bug added in commit 82cfbb008572b ("[IPV4] fib_trie: iterator recode")
+
+[1] :
+https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel
+
+Reported-by: Andrey Konovalov <andreyknvl@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Dmitry Vyukov <dvyukov@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/macvlan.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/ipv4/fib_trie.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -727,6 +727,10 @@ static int macvlan_validate(struct nlatt
- 			return -EADDRNOTAVAIL;
- 	}
+--- a/net/ipv4/fib_trie.c
++++ b/net/ipv4/fib_trie.c
+@@ -71,7 +71,6 @@
+ #include <linux/init.h>
+ #include <linux/list.h>
+ #include <linux/slab.h>
+-#include <linux/prefetch.h>
+ #include <linux/export.h>
+ #include <net/net_namespace.h>
+ #include <net/ip.h>
+@@ -1761,10 +1760,8 @@ static struct leaf *leaf_walk_rcu(struct
+ 			if (!c)
+ 				continue;
  
-+	if (data && data[IFLA_MACVLAN_FLAGS] &&
-+	    nla_get_u16(data[IFLA_MACVLAN_FLAGS]) & ~MACVLAN_FLAG_NOPROMISC)
-+		return -EINVAL;
-+
- 	if (data && data[IFLA_MACVLAN_MODE]) {
- 		switch (nla_get_u32(data[IFLA_MACVLAN_MODE])) {
- 		case MACVLAN_MODE_PRIVATE:
+-			if (IS_LEAF(c)) {
+-				prefetch(rcu_dereference_rtnl(p->child[idx]));
++			if (IS_LEAF(c))
+ 				return (struct leaf *) c;
+-			}
+ 
+ 			/* Rescan start scanning in new node */
+ 			p = (struct tnode *) c;
 
 
