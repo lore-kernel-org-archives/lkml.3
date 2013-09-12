@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753Ab3ILO3n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 10:29:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39576 "EHLO mx2.suse.de"
+	id S1752855Ab3ILOaY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 10:30:24 -0400
+Received: from mga01.intel.com ([192.55.52.88]:47420 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751296Ab3ILO3m convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 10:29:42 -0400
-Subject: Re: [PATCH 0/2] powerpc: allow kvm to use kerel debug framework
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <21895.1373441122@ale.ozlabs.ibm.com>
-Date: Thu, 12 Sep 2013 09:29:31 -0500
-Cc: Bharat Bhushan <r65777@freescale.com>, linuxppc-dev@lists.ozlabs.org,
-        benh@kernel.crashing.org, linux-kernel@vger.kernel.org,
-        scottwood@freescale.com, Bharat Bhushan <bharat.bhushan@freescale.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <C8A64C06-3F4E-4369-A61D-9EA41C4B3C92@suse.de>
-References: <1372918546-15075-1-git-send-email-Bharat.Bhushan@freescale.com> <C4D71A1A-3D5B-4C9C-A26B-9EAFFD9D87C5@suse.de> <14504.1373343872@ale.ozlabs.ibm.com> <636D011A-6C50-4E74-B4B2-658EC4E53E9C@suse.de> <21895.1373441122@ale.ozlabs.ibm.com>
-To: Michael Neuling <mikey@neuling.org>
-X-Mailer: Apple Mail (2.1278)
+	id S1751770Ab3ILOaW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 10:30:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,891,1371106800"; 
+   d="asc'?scan'208";a="400633945"
+Date: Thu, 12 Sep 2013 19:12:09 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, monstr@monstr.eu,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: Re: [PATCH] dma: pl330: Simplify irq allocation
+Message-ID: <20130912134208.GE17188@intel.com>
+References: <7a8e72582d8f4262a70bb9b7050fb6cb3be15578.1378305608.git.michal.simek@xilinx.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="98e8jtXdkpgskNou"
+Content-Disposition: inline
+In-Reply-To: <7a8e72582d8f4262a70bb9b7050fb6cb3be15578.1378305608.git.michal.simek@xilinx.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 10.07.2013, at 02:25, Michael Neuling wrote:
+--98e8jtXdkpgskNou
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> Alexander Graf <agraf@suse.de> wrote:
-> 
->> 
->> On 09.07.2013, at 06:24, Michael Neuling wrote:
->> 
->>> Alexander Graf <agraf@suse.de> wrote:
->>> 
->>>> 
->>>> On 04.07.2013, at 08:15, Bharat Bhushan wrote:
->>>> 
->>>>> From: Bharat Bhushan <bharat.bhushan@freescale.com>
->>>>> 
->>>>> This patchset moves the debug registers in a structure, which allows
->>>>> kvm to use same structure for debug emulation.
->>>>> 
->>>>> Note: Earilier a patchset "https://lists.ozlabs.org/pipermail/linuxppc-dev/2013-June/108132.html"
->>>>> was sent which is a bunch of six patches. That patchset is divided into two parts:
->>>>> 	1) powerpc specific changes (These 2 patches are actually have those changes)
->>>>> 	2) KVM specific changes (will send separate patch on agraf repository)
->>>> 
->>>> Mikey, if you like those could you please apply the into a topic
->>>> branch and get that one merged with Ben? I'd also pull it into my tree
->>>> then.
->>> 
->>> benh would pull these directly.  
->>> 
->>> I'll have a chat with him to see if he wants my ACK before he does that.
->> 
->> I have a bunch of patches that I need to apply on top, so I need a topic branch.
-> 
-> I've acked the PPC specific bits of the v6 version of these patches.
-> 
-> benh said he'll open a topic branch for you sometime next week and he'll
-> stick them in there.  
+On Wed, Sep 04, 2013 at 04:40:17PM +0200, Michal Simek wrote:
+> Use devm_request_irq function.
 
-Did anything happen here?
+Applied, thanks
 
+~Vinod
 
-Alex
+--98e8jtXdkpgskNou
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSMcSwAAoJEHwUBw8lI4NH3T0QAMCHKvzae0fRLZlv/XiLB0bS
+G6BxiIi7pk67r3ohOeBE9QqPVVfn5zI5hLti33A7B+kQMs4MVwN18p6xZz8jhafh
+sEPALxZXfSVB5VAPRQ5y9etinPSGedbi7CeYXKn3OrQwsvqhFkty7SPbn/pFn5wl
+ur6zw0Z6LuRB4D+MoeAx6i83jWM3q/QVQYz7TT4eNGfhKYUbt4QFL6b8u4me8lBi
+Qxwmf8DlW1vbGPkRBPu1Vy77PxwmP7DoJuUzyaY8pURjPXzaULIKO26NxVe6MN+1
+khyFSnEzNTaKIDDoc5qmq2H7yCgIt+oPJt89AkkN8nj9+DbBBOw/c7Hvb1XNKKyv
+Mj70S45IewA7j5SagFVqDlujSjanx8ssNnqvAxoBPwpSmaDRFhm61Vv6w8Nso24f
+u6AnWHnIAKq2cHO2wpdyn3z36+26vDcWbMdKjjRXSbTWwLe+CbK7rE5lEA3EvhYg
+sByTNIuwt1atZfxs+WZtPOD/EV9ORYEUYVNVrwjEjvPX5+lJkkFN+qt/Ir/GXV+r
+xOTDqcdYplzmGqH2GOdgtnFkpJ4uk4aHYI7FZQEX8aGHUfMSUpXyz8x/PJLUfiYm
+rcNAY9dnJd6ZMyy87wulQvJ+2zVYU/WOq3Ctyjcz+EPhpILzli8+0kGclTN7u5aB
+R0xMShp+lTRQ6+/9YdEE
+=cSop
+-----END PGP SIGNATURE-----
+
+--98e8jtXdkpgskNou--
