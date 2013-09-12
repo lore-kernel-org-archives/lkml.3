@@ -1,89 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751893Ab3ILOEo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 10:04:44 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:43796 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751130Ab3ILOEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 10:04:42 -0400
-Message-ID: <1378994599.16481.4.camel@iivanov-dev.int.mm-sol.com>
-Subject: Re: [PATCH 1/2] ARM: msm: Add support for MSM8974 Dragonboard
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Rohit Vaswani <rvaswani@codeaurora.org>,
-        David Brown <davidb@codeaurora.org>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-arm-msm@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        linux-arm-kernel@lists.infradead.org
-Date: Thu, 12 Sep 2013 17:03:19 +0300
-In-Reply-To: <20130911181226.GU808@joshc.qualcomm.com>
-References: <1375743779-24993-1-git-send-email-rvaswani@codeaurora.org>
-	 <1375780486.2725.7.camel@iivanov-dev.int.mm-sol.com>
-	 <20130911181226.GU808@joshc.qualcomm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1752120Ab3ILOFA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 10:05:00 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:53603 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359Ab3ILOE6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 10:04:58 -0400
+Message-ID: <5231C9F3.4060208@gmail.com>
+Date: Thu, 12 Sep 2013 22:04:35 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Shaohua Li <shli@kernel.org>,
+        linux-arch@vger.kernel.org, Jiri Kosina <trivial@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Wang YanQing <udknight@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, linuxppc-dev@lists.ozlabs.org,
+        Jiang Liu <jiang.liu@huawei.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH v2 15/25] smp, ppc: kill SMP single function call
+ interrupt
+References: <1378915649-16395-1-git-send-email-liuj97@gmail.com> <1378915649-16395-16-git-send-email-liuj97@gmail.com> <5230CC84.1010503@linux.vnet.ibm.com>
+In-Reply-To: <5230CC84.1010503@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Hi, 
-
-On Wed, 2013-09-11 at 13:12 -0500, Josh Cartwright wrote: 
-> Hey Ivan-
+On 09/12/2013 04:03 AM, Srivatsa S. Bhat wrote:
+> On 09/11/2013 09:37 PM, Jiang Liu wrote:
+>> From: Jiang Liu <jiang.liu@huawei.com>
+>>
+>> Commit 9a46ad6d6df3b54 "smp: make smp_call_function_many() use logic
+>> similar to smp_call_function_single()" has unified the way to handle
+>> single and multiple cross-CPU function calls. Now only one interrupt
+>> is needed for architecture specific code to support generic SMP function
+>> call interfaces, so kill the redundant single function call interrupt.
+>>
+>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+>> Cc: Jiang Liu <liuj97@gmail.com>
+>> ---
 > 
-> On Tue, Aug 06, 2013 at 12:14:46PM +0300, Ivan T. Ivanov wrote:
-> [..]
-> > Enable low-level debug print routines to direct their
-> > output to the serial port on MSM 8974 devices.
-> > 
-> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> > ---
-> >  arch/arm/Kconfig.debug                     |    8 ++++++++
-> >  arch/arm/mach-msm/board-dt-8974.c          |    2 ++
-> >  arch/arm/mach-msm/include/mach/msm_iomap.h |    4 ++++
-> >  3 files changed, 14 insertions(+)
-> [..]
-> > diff --git a/arch/arm/mach-msm/board-dt-8974.c b/arch/arm/mach-msm/board-dt-8974.c
-> > index 697623e..0ce016a 100644
-> > --- a/arch/arm/mach-msm/board-dt-8974.c
-> > +++ b/arch/arm/mach-msm/board-dt-8974.c
-> > @@ -12,6 +12,7 @@
-> >  
-> >  #include <linux/of_platform.h>
-> >  #include <asm/mach/arch.h>
-> > +#include <asm/mach/map.h>
-> >  
-> >  static const char * const msm8974_dt_match[] __initconst = {
-> >  	"qcom,msm8974-db",
-> > @@ -20,4 +21,5 @@ static const char * const msm8974_dt_match[] __initconst = {
-> >  
-> >  DT_MACHINE_START(MSM8974_DT, "Qualcomm MSM (Flattened Device Tree)")
-> >  	.dt_compat = msm8974_dt_match,
-> > +	.map_io = debug_ll_io_init,
+> It turns out that freeing up the IPI slot in powerpc is very useful, since
+> we actually wanted a slot for some other use-case (and there are only 4 slots
+> available on powerpc).
 > 
-> If/when you get this patch cooked up ontop of Rohit's, changes to this
-> file (renamed to board-dt.c) should not be necessary.  As of bc37324
-> ("ARM: mmu: Call debug_ll_io_init if no map_io function is specified"),
-> the debug ll uart mapping is setup automatically.
-
-Thanks Josh. I am aware of this.
-
-Regards,
-Ivan
-
+> Here are the patches which achieve that:
+> http://marc.info/?l=linuxppc-embedded&m=137886807502898&w=2
+> http://marc.info/?l=linuxppc-embedded&m=137886811502909&w=2
+Hi Srivatsa,
+	That's great and I will drop this patch from my series.
+Could you please to kill call_function_single_action() instead of
+call_function_action()? Please refer to
+http://lkml.org/lkml/2013/9/11/579
+Regards!
+Gerry
 
 > 
-> Thanks,
->   Josh
+> So, can you kindly consider dropping the powerpc patch from your series,
+> if that is OK with you? Thanks!
 > 
-
+> BTW, after doing the powerpc cleanup, even I had thought about killing one
+> of the smp-function variants in various architectures, but never got around
+> to do it. But now that you have posted the series which does that, I'll try
+> to review them.
+> 
+> Thank you!
+> 
+> Regards,
+> Srivatsa S. Bhat
+> 
+>>  arch/powerpc/include/asm/smp.h |  3 +--
+>>  arch/powerpc/kernel/smp.c      | 12 +-----------
+>>  2 files changed, 2 insertions(+), 13 deletions(-)
+>>
+>> diff --git a/arch/powerpc/include/asm/smp.h b/arch/powerpc/include/asm/smp.h
+>> index 48cfc85..53faa03 100644
+>> --- a/arch/powerpc/include/asm/smp.h
+>> +++ b/arch/powerpc/include/asm/smp.h
+>> @@ -119,8 +119,7 @@ extern int cpu_to_core_id(int cpu);
+>>   * in /proc/interrupts will be wrong!!! --Troy */
+>>  #define PPC_MSG_CALL_FUNCTION   0
+>>  #define PPC_MSG_RESCHEDULE      1
+>> -#define PPC_MSG_CALL_FUNC_SINGLE	2
+>> -#define PPC_MSG_DEBUGGER_BREAK  3
+>> +#define PPC_MSG_DEBUGGER_BREAK  2
+>>
+>>  /* for irq controllers that have dedicated ipis per message (4) */
+>>  extern int smp_request_message_ipi(int virq, int message);
+>> diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
+>> index 38b0ba6..0c53b10 100644
+>> --- a/arch/powerpc/kernel/smp.c
+>> +++ b/arch/powerpc/kernel/smp.c
+>> @@ -123,12 +123,6 @@ static irqreturn_t reschedule_action(int irq, void *data)
+>>  	return IRQ_HANDLED;
+>>  }
+>>
+>> -static irqreturn_t call_function_single_action(int irq, void *data)
+>> -{
+>> -	generic_smp_call_function_single_interrupt();
+>> -	return IRQ_HANDLED;
+>> -}
+>> -
+>>  static irqreturn_t debug_ipi_action(int irq, void *data)
+>>  {
+>>  	if (crash_ipi_function_ptr) {
+>> @@ -146,14 +140,12 @@ static irqreturn_t debug_ipi_action(int irq, void *data)
+>>  static irq_handler_t smp_ipi_action[] = {
+>>  	[PPC_MSG_CALL_FUNCTION] =  call_function_action,
+>>  	[PPC_MSG_RESCHEDULE] = reschedule_action,
+>> -	[PPC_MSG_CALL_FUNC_SINGLE] = call_function_single_action,
+>>  	[PPC_MSG_DEBUGGER_BREAK] = debug_ipi_action,
+>>  };
+>>
+>>  const char *smp_ipi_name[] = {
+>>  	[PPC_MSG_CALL_FUNCTION] =  "ipi call function",
+>>  	[PPC_MSG_RESCHEDULE] = "ipi reschedule",
+>> -	[PPC_MSG_CALL_FUNC_SINGLE] = "ipi call function single",
+>>  	[PPC_MSG_DEBUGGER_BREAK] = "ipi debugger",
+>>  };
+>>
+>> @@ -225,8 +217,6 @@ irqreturn_t smp_ipi_demux(void)
+>>  			generic_smp_call_function_interrupt();
+>>  		if (all & (1 << (24 - 8 * PPC_MSG_RESCHEDULE)))
+>>  			scheduler_ipi();
+>> -		if (all & (1 << (24 - 8 * PPC_MSG_CALL_FUNC_SINGLE)))
+>> -			generic_smp_call_function_single_interrupt();
+>>  		if (all & (1 << (24 - 8 * PPC_MSG_DEBUGGER_BREAK)))
+>>  			debug_ipi_action(0, NULL);
+>>  #else
+>> @@ -257,7 +247,7 @@ EXPORT_SYMBOL_GPL(smp_send_reschedule);
+>>
+>>  void arch_send_call_function_single_ipi(int cpu)
+>>  {
+>> -	do_message_pass(cpu, PPC_MSG_CALL_FUNC_SINGLE);
+>> +	do_message_pass(cpu, PPC_MSG_CALL_FUNCTION);
+>>  }
+>>
+>>  void arch_send_call_function_ipi_mask(const struct cpumask *mask)
+>>
+> 
 
