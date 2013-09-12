@@ -1,38 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021Ab3ILG47 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 02:56:59 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:40245 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751869Ab3ILG44 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 02:56:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAKohpomz-EDbRNqv58zn6B+kC1jdjrxx68hoDrAj==+YbeTj=g@mail.gmail.com>
-References: <cover.1378963070.git.viresh.kumar@linaro.org>
-	<8f777cc6b41b2fed4bf71ce2adc36800353d5738.1378963070.git.viresh.kumar@linaro.org>
-	<523161D1.9040005@linux.vnet.ibm.com>
-	<CAKohpomz-EDbRNqv58zn6B+kC1jdjrxx68hoDrAj==+YbeTj=g@mail.gmail.com>
-Date: Thu, 12 Sep 2013 12:26:56 +0530
-Message-ID: <CAKohpomCXoO20cQyCrWtN0WgWnzvVmEqFxuwTU8V0GpXsQxgHw@mail.gmail.com>
-Subject: Re: [PATCH 5/5] cpufreq: use correct values of cpus in __cpufreq_remove_dev_finish()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Warren <swarren@wwwdotorg.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753555Ab3ILHDf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 03:03:35 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:41323 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751475Ab3ILHDe convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:10:1>);
+	Thu, 12 Sep 2013 03:03:34 -0400
+Message-Id: <5231836102000078000F29AD@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Thu, 12 Sep 2013 08:03:29 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Kees Cook" <keescook@chromium.org>, "Joe Perches" <joe@perches.com>
+Cc: "David Miller" <davem@davemloft.net>, "Eldad Zack" <eldad@fogrefinery.com>,
+        "George Spelvin" <linux@horizon.com>,
+        "Randy Dunlap" <rdunlap@infradead.org>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Dan Carpenter" <dan.carpenter@oracle.com>,
+        "Jiri Kosina" <jkosina@suse.cz>, "LKML" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] vsprintf: drop comment claiming %n is ignored
+References: <20130911193040.GA16688@www.outflux.net>
+ <1378929961.4714.21.camel@joe-AO722>
+ <CAGXu5jKRmp_Ei=ty05W3SSqQ01agEMDVMGnZCFqQ_yYbZmMSmw@mail.gmail.com>
+In-Reply-To: <CAGXu5jKRmp_Ei=ty05W3SSqQ01agEMDVMGnZCFqQ_yYbZmMSmw@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 September 2013 12:17, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> Currently cpus never become zero as we clear mask only while there are
-> more than one cpu in a policy... Wait let me see what's the cleanest way
-> to get this fixed..
+>>> On 11.09.13 at 22:18, Kees Cook <keescook@chromium.org> wrote:
+> On Wed, Sep 11, 2013 at 1:06 PM, Joe Perches <joe@perches.com> wrote:
+>> On Wed, 2013-09-11 at 12:30 -0700, Kees Cook wrote:
+>>> The %n format is not ignored, so remove the incorrect comment about it.
+>>
+>> I think it may be better to reimplement the ignoring.
+> 
+> Yeah, just had a quick look, and scanf doesn't use this code at all.
+> I'd much rather remove %n again instead.
 
-Okay, simply replace cpumask_first() with cpumask_any_but() in
-cpufreq_nominate_new_policy_cpu() :)
+Why would you want to artificially make the function diverge
+from the spec? People shouldn't be caught by surprises if at all
+possible, and one can certainly not expect people to go look at
+the comment before the function implementation to find out
+what basic (standard) features _do not_ work (one can expect
+so when trying to find out about _extensions_).
+
+Jan
+
