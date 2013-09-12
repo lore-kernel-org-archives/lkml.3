@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756281Ab3ILSQM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:16:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57329 "EHLO
+	id S1754025Ab3ILSPW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:15:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57295 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757290Ab3ILSPX (ORCPT
+	with ESMTP id S1754669Ab3ILSPS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 14:15:23 -0400
+	Thu, 12 Sep 2013 14:15:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei Hu <wei@aristanetworks.com>, Clemens Ladisch <clemens@ladisch.de>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 08/16] hwmon: (k10temp) Add support for Fam16h (Kabini)
-Date: Thu, 12 Sep 2013 11:15:00 -0700
-Message-Id: <20130912181157.116529673@linuxfoundation.org>
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [ 09/16] Drivers: hv: vmbus: Fix a bug in the handling of channel offers
+Date: Thu, 12 Sep 2013 11:15:01 -0700
+Message-Id: <20130912181157.228222145@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130912181156.173326121@linuxfoundation.org>
 References: <20130912181156.173326121@linuxfoundation.org>
@@ -27,65 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Hu <wei@aristanetworks.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit 30b146d1cb5e7560192057098eb705118bd5511f upstream.
+commit 42dceebe34600b2d02a38baa3e869009ba3d14c7 upstream.
 
-The temperature reporting interface stays the same, so we just
-add the PCI-ID to the list.
+The channel state should be correctly set before registering the device. In the current
+code the driver probe would fail for channels that have been rescinded and subsequently
+re-offered. Fix the bug.
 
-Verified on AMD Olive Hill.
-
-Signed-off-by: Wei Hu <wei@aristanetworks.com>
-Acked-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/hwmon/k10temp |    1 +
- drivers/hwmon/Kconfig       |    4 ++--
- drivers/hwmon/k10temp.c     |    3 ++-
- 3 files changed, 5 insertions(+), 3 deletions(-)
+ drivers/hv/channel_mgmt.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- a/Documentation/hwmon/k10temp
-+++ b/Documentation/hwmon/k10temp
-@@ -12,6 +12,7 @@ Supported chips:
- * AMD Family 12h processors: "Llano" (E2/A4/A6/A8-Series)
- * AMD Family 14h processors: "Brazos" (C/E/G/Z-Series)
- * AMD Family 15h processors: "Bulldozer" (FX-Series), "Trinity"
-+* AMD Family 16h processors: "Kabini"
+--- a/drivers/hv/channel_mgmt.c
++++ b/drivers/hv/channel_mgmt.c
+@@ -262,6 +262,13 @@ static void vmbus_process_offer(struct w
+ 	}
  
-   Prefix: 'k10temp'
-   Addresses scanned: PCI space
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -296,8 +296,8 @@ config SENSORS_K10TEMP
- 	  If you say yes here you get support for the temperature
- 	  sensor(s) inside your CPU. Supported are later revisions of
- 	  the AMD Family 10h and all revisions of the AMD Family 11h,
--	  12h (Llano), 14h (Brazos) and 15h (Bulldozer/Trinity)
--	  microarchitectures.
-+	  12h (Llano), 14h (Brazos), 15h (Bulldozer/Trinity) and
-+	  16h (Kabini) microarchitectures.
+ 	/*
++	 * This state is used to indicate a successful open
++	 * so that when we do close the channel normally, we
++	 * can cleanup properly
++	 */
++	newchannel->state = CHANNEL_OPEN_STATE;
++
++	/*
+ 	 * Start the process of binding this offer to the driver
+ 	 * We need to set the DeviceObject field before calling
+ 	 * vmbus_child_dev_add()
+@@ -287,13 +294,6 @@ static void vmbus_process_offer(struct w
+ 		kfree(newchannel->device_obj);
  
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called k10temp.
---- a/drivers/hwmon/k10temp.c
-+++ b/drivers/hwmon/k10temp.c
-@@ -1,5 +1,5 @@
- /*
-- * k10temp.c - AMD Family 10h/11h/12h/14h/15h processor hardware monitoring
-+ * k10temp.c - AMD Family 10h/11h/12h/14h/15h/16h processor hardware monitoring
-  *
-  * Copyright (c) 2009 Clemens Ladisch <clemens@ladisch.de>
-  *
-@@ -211,6 +211,7 @@ static DEFINE_PCI_DEVICE_TABLE(k10temp_i
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_CNB17H_F3) },
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F3) },
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M10H_F3) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F3) },
- 	{}
- };
- MODULE_DEVICE_TABLE(pci, k10temp_id_table);
+ 		free_channel(newchannel);
+-	} else {
+-		/*
+-		 * This state is used to indicate a successful open
+-		 * so that when we do close the channel normally, we
+-		 * can cleanup properly
+-		 */
+-		newchannel->state = CHANNEL_OPEN_STATE;
+ 	}
+ }
+ 
 
 
