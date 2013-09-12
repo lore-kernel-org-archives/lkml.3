@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756912Ab3ILSGU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:06:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37934 "EHLO
+	id S1756931Ab3ILSG0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:06:26 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37953 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756895Ab3ILSGH (ORCPT
+	with ESMTP id S1756895Ab3ILSGW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 14:06:07 -0400
-Date: Thu, 12 Sep 2013 11:05:35 -0700
+	Thu, 12 Sep 2013 14:06:22 -0400
+Date: Thu, 12 Sep 2013 11:05:45 -0700
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-mgezl354xgyhiyrte78fdkpd@git.kernel.org>
+Message-ID: <tip-db2pe0vxwunv37plc7onnugj@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, tglx@linutronix.de
+        peterz@infradead.org, tglx@linutronix.de, mikey@neuling.org
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de
+        peterz@infradead.org, tglx@linutronix.de, mikey@neuling.org
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/fair: Reduce local_group logic
-Git-Commit-ID: b72ff13ce6021b37459afacbccc0bc9b16989013
+Subject: [tip:sched/core] sched/fair: Fix group power_orig computation
+Git-Commit-ID: 863bffc80898b8df295ebac111af2335ec05f85d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -25,98 +25,88 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 12 Sep 2013 11:05:42 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 12 Sep 2013 11:05:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b72ff13ce6021b37459afacbccc0bc9b16989013
-Gitweb:     http://git.kernel.org/tip/b72ff13ce6021b37459afacbccc0bc9b16989013
+Commit-ID:  863bffc80898b8df295ebac111af2335ec05f85d
+Gitweb:     http://git.kernel.org/tip/863bffc80898b8df295ebac111af2335ec05f85d
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Wed, 28 Aug 2013 10:32:32 +0200
+AuthorDate: Wed, 28 Aug 2013 11:44:39 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
 CommitDate: Thu, 12 Sep 2013 19:14:43 +0200
 
-sched/fair: Reduce local_group logic
+sched/fair: Fix group power_orig computation
 
-Try and reduce the local_group logic by pulling most of it into
-update_sd_lb_stats.
+When looking at the code I noticed we don't actually compute
+sgp->power_orig correctly for groups, fix that.
 
+Currently the only consumer of that value is fix_small_capacity()
+which is only used on POWER7+ and that code excludes this case by
+being limited to SD_SHARE_CPUPOWER which is only ever set on the SMT
+domain which must be the lowest domain and this has singleton groups.
+
+So nothing should be affected by this change.
+
+Cc: Michael Neuling <mikey@neuling.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/n/tip-mgezl354xgyhiyrte78fdkpd@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-db2pe0vxwunv37plc7onnugj@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 29 +++++++++++++++++------------
- 1 file changed, 17 insertions(+), 12 deletions(-)
+ kernel/sched/fair.c | 16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 7325ca7..f9f4385 100644
+index f9f4385..baba313 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -4563,6 +4563,8 @@ static inline void update_sg_lb_stats(struct lb_env *env,
- 	unsigned long load;
- 	int i;
+@@ -4450,7 +4450,7 @@ void update_group_power(struct sched_domain *sd, int cpu)
+ {
+ 	struct sched_domain *child = sd->child;
+ 	struct sched_group *group, *sdg = sd->groups;
+-	unsigned long power;
++	unsigned long power, power_orig;
+ 	unsigned long interval;
  
-+	memset(sgs, 0, sizeof(*sgs));
-+
- 	for_each_cpu_and(i, sched_group_cpus(group), env->cpus) {
- 		struct rq *rq = cpu_rq(i);
- 
-@@ -4581,10 +4583,6 @@ static inline void update_sg_lb_stats(struct lb_env *env,
- 			sgs->idle_cpus++;
+ 	interval = msecs_to_jiffies(sd->balance_interval);
+@@ -4462,7 +4462,7 @@ void update_group_power(struct sched_domain *sd, int cpu)
+ 		return;
  	}
  
--	if (local_group && (env->idle != CPU_NEWLY_IDLE ||
--			time_after_eq(jiffies, group->sgp->next_update)))
--		update_group_power(env->sd, env->dst_cpu);
--
- 	/* Adjust by relative CPU power of the group */
- 	sgs->group_power = group->sgp->power;
- 	sgs->avg_load = (sgs->group_load*SCHED_POWER_SCALE) / sgs->group_power;
-@@ -4677,11 +4675,17 @@ static inline void update_sd_lb_stats(struct lb_env *env,
- 		if (local_group) {
- 			sds->local = sg;
- 			sgs = &sds->local_stat;
-+
-+			if (env->idle != CPU_NEWLY_IDLE ||
-+			    time_after_eq(jiffies, sg->sgp->next_update))
-+				update_group_power(env->sd, env->dst_cpu);
- 		}
+-	power = 0;
++	power_orig = power = 0;
  
--		memset(sgs, 0, sizeof(*sgs));
- 		update_sg_lb_stats(env, sg, load_idx, local_group, sgs);
- 
-+		if (local_group)
-+			goto next_group;
-+
+ 	if (child->flags & SD_OVERLAP) {
  		/*
- 		 * In case the child domain prefers tasks go to siblings
- 		 * first, lower the sg capacity to one so that we'll try
-@@ -4692,19 +4696,20 @@ static inline void update_sd_lb_stats(struct lb_env *env,
- 		 * heaviest group when it is already under-utilized (possible
- 		 * with a large weight task outweighs the tasks on the system).
+@@ -4470,8 +4470,12 @@ void update_group_power(struct sched_domain *sd, int cpu)
+ 		 * span the current group.
  		 */
--		if (prefer_sibling && !local_group &&
--				sds->local && sds->local_stat.group_has_capacity)
-+		if (prefer_sibling && sds->local &&
-+		    sds->local_stat.group_has_capacity)
- 			sgs->group_capacity = min(sgs->group_capacity, 1U);
  
--		/* Now, start updating sd_lb_stats */
--		sds->total_load += sgs->group_load;
--		sds->total_pwr += sgs->group_power;
--
--		if (!local_group && update_sd_pick_busiest(env, sds, sg, sgs)) {
-+		if (update_sd_pick_busiest(env, sds, sg, sgs)) {
- 			sds->busiest = sg;
- 			sds->busiest_stat = *sgs;
- 		}
- 
-+next_group:
-+		/* Now, start updating sd_lb_stats */
-+		sds->total_load += sgs->group_load;
-+		sds->total_pwr += sgs->group_power;
+-		for_each_cpu(cpu, sched_group_cpus(sdg))
+-			power += power_of(cpu);
++		for_each_cpu(cpu, sched_group_cpus(sdg)) {
++			struct sched_group *sg = cpu_rq(cpu)->sd->groups;
 +
- 		sg = sg->next;
- 	} while (sg != env->sd->groups);
++			power_orig += sg->sgp->power_orig;
++			power += sg->sgp->power;
++		}
+ 	} else  {
+ 		/*
+ 		 * !SD_OVERLAP domains can assume that child groups
+@@ -4480,12 +4484,14 @@ void update_group_power(struct sched_domain *sd, int cpu)
+ 
+ 		group = child->groups;
+ 		do {
++			power_orig += group->sgp->power_orig;
+ 			power += group->sgp->power;
+ 			group = group->next;
+ 		} while (group != child->groups);
+ 	}
+ 
+-	sdg->sgp->power_orig = sdg->sgp->power = power;
++	sdg->sgp->power_orig = power_orig;
++	sdg->sgp->power = power;
  }
+ 
+ /*
