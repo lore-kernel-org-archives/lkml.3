@@ -1,103 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754633Ab3ILRAe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 13:00:34 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:57172 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787Ab3ILRAd (ORCPT
+	id S1754641Ab3ILRCL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 13:02:11 -0400
+Received: from smtp.fireflyinternet.com ([109.228.6.236]:19503 "EHLO
+	fireflyinternet.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753195Ab3ILRCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 13:00:33 -0400
-Date: Thu, 12 Sep 2013 10:00:29 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Subject: Re: [RFC PATCH 4/6] extcon-gpio: Add devicetree support
-Message-ID: <20130912170029.GB12202@roeck-us.net>
-References: <1377836978-24082-1-git-send-email-linux@roeck-us.net>
- <1377836978-24082-5-git-send-email-linux@roeck-us.net>
- <20130912164545.GG22013@e106331-lin.cambridge.arm.com>
+	Thu, 12 Sep 2013 13:02:09 -0400
+X-Greylist: delayed 1575 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Sep 2013 13:02:08 EDT
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=87.106.93.118;
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
+Date: Thu, 12 Sep 2013 17:35:43 +0100
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Dave Airlie <airlied@linux.ie>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [BUG] completely bonkers use of set_need_resched +
+ VM_FAULT_NOPAGE
+Message-ID: <20130912163543.GB12961@nuc-i3427.alporthouse.com>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	Dave Airlie <airlied@linux.ie>,
+	Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+	Thomas Hellstrom <thellstrom@vmware.com>,
+	intel-gfx <intel-gfx@lists.freedesktop.org>,
+	dri-devel <dri-devel@lists.freedesktop.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Ingo Molnar <mingo@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>
+References: <20130912150645.GZ31370@twins.programming.kicks-ass.net>
+ <CAKMK7uFF2GkYapa2_DLv4WYAd0t+POaT+Vy9HG=HQhzMmtH9nA@mail.gmail.com>
+ <20130912154329.GB31370@twins.programming.kicks-ass.net>
+ <CAKMK7uFTYB-E5ksVNEBqGJusJ5TKJv5X4hiPv1mno9tJKuUAdA@mail.gmail.com>
+ <20130912162210.GE31370@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130912164545.GG22013@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20130912162210.GE31370@twins.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: 78.156.73.22
+X-To-Not-Matched: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 05:45:45PM +0100, Mark Rutland wrote:
-> On Fri, Aug 30, 2013 at 05:29:36AM +0100, Guenter Roeck wrote:
-> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> > ---
-> >  drivers/extcon/extcon-gpio.c |   59 ++++++++++++++++++++++++++++++++++++++++--
-> >  1 file changed, 57 insertions(+), 2 deletions(-)
+On Thu, Sep 12, 2013 at 06:22:10PM +0200, Peter Zijlstra wrote:
+> On Thu, Sep 12, 2013 at 05:58:49PM +0200, Daniel Vetter wrote:
+> > On Thu, Sep 12, 2013 at 5:43 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > >> The one in ttm is just bonghits to shut up lockdep: ttm can recurse
+> > >> into it's own pagefault handler and then deadlock, the trylock just
+> > >> keeps lockdep quiet. We've had that bug arise in drm/i915 due to some
+> > >> fun userspace did and now have testcases for them. The right solution
+> > >> to fix this is to use copy_to|from_user_atomic in ttm everywhere it
+> > >> holds locks and have slowpaths which drops locks, copies stuff into a
+> > >> temp allocation and then continues. At least that's how we've fixed
+> > >> all those inversions in i915-gem. I'm not volunteering to fix this ;-)
+> > >
+> > > Yikes.. so how common is it? If I simply rip the set_need_resched() out
+> > > it will 'spin' on the fault a little longer until a 'natural' preemption
+> > > point -- if such a thing is every going to happen.
 > > 
-> > diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
-> > index d4e3c89..16951fe 100644
-> > --- a/drivers/extcon/extcon-gpio.c
-> > +++ b/drivers/extcon/extcon-gpio.c
-> > @@ -30,6 +30,8 @@
-> >  #include <linux/gpio.h>
-> >  #include <linux/extcon.h>
-> >  #include <linux/extcon/extcon-gpio.h>
-> > +#include <linux/of_gpio.h>
-> > +#include <linux/err.h>
-> >  
-> >  struct gpio_extcon_data {
-> >  	struct extcon_dev edev;
-> > @@ -77,14 +79,66 @@ static ssize_t extcon_gpio_print_state(struct extcon_dev *edev, char *buf)
-> >  	return -EINVAL;
-> >  }
-> >  
-> > +#ifdef CONFIG_OF_GPIO
-> > +
-> > +static struct gpio_extcon_platform_data *
-> > +extcon_gpio_config_of(struct device *dev)
-> > +{
-> > +	struct gpio_extcon_platform_data *pdata;
-> > +	struct device_node *np = dev->of_node;
-> > +	enum of_gpio_flags flags;
-> > +	int gpio, ret;
-> > +	u32 debounce;
-> > +
-> > +	gpio = of_get_named_gpio_flags(np, "presence-detect-gpios", 0, &flags);
-> > +	if (gpio < 0)
-> > +		return ERR_PTR(gpio);
-> > +
-> > +	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-> > +	if (!pdata)
-> > +		return ERR_PTR(-ENOMEM);
-> > +
-> > +	pdata->gpio = gpio;
-> > +	pdata->gpio_active_low = flags & OF_GPIO_ACTIVE_LOW;
-> > +	pdata->irq_flags = IRQ_TYPE_EDGE_BOTH;
-> > +
-> > +	if (!of_property_read_u32(np, "debounce-interval", &debounce))
-> > +		pdata->debounce = debounce;
-> > +
-> > +	ret = of_property_read_string(np, "name", &pdata->name);
+> > It's a case of "our userspace doesn't do this", so as long as you're
+> > not evil and frob the drm device nodes of ttm drivers directly the
+> > deadlock will never happen. No idea how much contention actually
+> > happens on e.g. shared buffer objects - in i915 we have just one lock
+> > and so suffer quite a bit more from contention. So no idea how much
+> > removing the yield would hurt.
 > 
-> This wasn't listed in the binding. What's this for?
-> 
-This returns the node name.
-For example, if the bindings are
+> If 'sane' userspace is never supposed to do this, then only insane
+> userspace is going to hurt from this and that's a GOOD (tm) thing,
+> right? ;-)
 
-	my-connector {
-		...
-	};
+Not quite, as it would be possible for the evil userspace to trigger a
+GPU hang that would cause the sane userspace to spin indefinitely 
+waiting for the error recovery to kick in.
+-Chris
 
-it returns the string "my-connector".
-
-I can add a reference to the bindings document if that helps. It is typically
-not mentioned in bindings, though, so I didn't do it either.
-
-Thanks,
-Guenter
+-- 
+Chris Wilson, Intel Open Source Technology Centre
