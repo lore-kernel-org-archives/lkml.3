@@ -1,68 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479Ab3ILGD7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 02:03:59 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:64232 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753123Ab3ILGD5 (ORCPT
+	id S1756347Ab3ILGEM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 02:04:12 -0400
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:55259 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754974Ab3ILGEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 02:03:57 -0400
-Message-ID: <1378965701.10696.36.camel@marge.simpson.net>
-Subject: Re: [PATCH 2/7] sched: Add NEED_RESCHED to the preempt_count
-From: Mike Galbraith <bitbucket@online.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Peter Anvin <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Date: Thu, 12 Sep 2013 08:01:41 +0200
-In-Reply-To: <1378906497.5476.97.camel@marge.simpson.net>
-References: <20130910130811.507933095@infradead.org>
-	 <20130910132011.116593485@infradead.org> <522FCE9D.4010707@amacapital.net>
-	 <20130911082530.GN31370@twins.programming.kicks-ass.net>
-	 <20130911110635.GT26785@twins.programming.kicks-ass.net>
-	 <1378906497.5476.97.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:+t4FwQXyKfvtnBEz4x6sLziqHRDEkIQmMSIB8NO6u4C
- aclPcwZm3ENXhfbIhTlKoDwmxiS6/w2GAiU42hdEeozherqtw2
- KfQZSPMGRq/cmCJS6pxlK/u7yney/CQ/iAo1DeAoCRbJ17H7n1
- 8EY5yYSaDqYr4qa4ZomAqKfnf6zAmTrMo80g7IgLL8/mk8fhlT
- a3CvG7l46br92BDH9k8bM9HgLPymVtjtMB2I7bj18gg8VmWYLr
- 8cnslTn4FNcAQnP5vU59s4DZebF3Ca7qOvtRerK0ifshAp85yT
- tSXiN+Q4r3woNWtQnDWFqFoYHnedxLXklXtP8oB2CVwGxMB/Ci
- oeTO/pXrsjg8ivM/PEZ2/tIuLp6B/8IU5LSmlIlDzyz0+GhhKH
- jIcUjhVkDMxDA==
+	Thu, 12 Sep 2013 02:04:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <5230C89D.7010801@linux.vnet.ibm.com>
+References: <522E1FEF.6080803@wwwdotorg.org>
+	<1775778.MeiRhuYy7o@vostro.rjw.lan>
+	<522F86AD.6010603@wwwdotorg.org>
+	<2521560.SfeNbV74nj@vostro.rjw.lan>
+	<52304439.3030301@linux.vnet.ibm.com>
+	<523094CD.3000506@wwwdotorg.org>
+	<5230B078.3070306@linux.vnet.ibm.com>
+	<5230B991.3040702@linux.vnet.ibm.com>
+	<5230BE75.7040307@wwwdotorg.org>
+	<5230C89D.7010801@linux.vnet.ibm.com>
+Date: Thu, 12 Sep 2013 11:34:08 +0530
+Message-ID: <CAKohpondhWbzbedbvwfiBw+FbO+nanP9TjsV+53rQoMuVKUJqg@mail.gmail.com>
+Subject: Re: cpufreq_stats NULL deref on second system suspend
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        cpufreq <cpufreq@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-09-11 at 15:34 +0200, Mike Galbraith wrote: 
-> On Wed, 2013-09-11 at 13:06 +0200, Peter Zijlstra wrote: 
+On 12 September 2013 01:16, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Subject: [PATCH] cpufreq: Restructure if/else block to avoid unintended behavior
+>
+> In __cpufreq_remove_dev_prepare(), the code which decides whether to remove
+> the sysfs link or nominate a new policy cpu, is governed by an if/else block
+> with a rather complex set of conditionals. Worse, they harbor a subtlety
+> which leads to certain unintended behavior.
+>
+> The code looks like this:
+>
+>         if (cpu != policy->cpu && !frozen) {
+>                 sysfs_remove_link(&dev->kobj, "cpufreq");
+>         } else if (cpus > 1) {
+>                 new_cpu = cpufreq_nominate_new_policy_cpu(...);
+>                 ...
+>                 update_policy_cpu(..., new_cpu);
+>         }
+>
+> The original intention was:
+> If the CPU going offline is not policy->cpu, just remove the link.
+> On the other hand, if the CPU going offline is the policy->cpu itself,
+> handover the policy->cpu job to some other surviving CPU in that policy.
+>
+> But because the 'if' condition also includes the 'frozen' check, now there
+> are *two* possibilities by which we can enter the 'else' block:
+>
+> 1. cpu == policy->cpu (intended)
+> 2. cpu != policy->cpu && frozen (unintended)
+>
+> Due to the second (unintended) scenario, we end up spuriously nominating
+> a CPU as the policy->cpu, even when the existing policy->cpu is alive and
+> well. This can cause problems further down the line, especially when we end
+> up nominating the same policy->cpu as the new one (ie., old == new),
+> because it totally confuses update_policy_cpu().
+>
+> To avoid this mess, restructure the if/else block to only do what was
+> originally intended, and thus prevent any unwelcome surprises.
+>
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> ---
+>
+>  drivers/cpufreq/cpufreq.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 62bdb95..247842b 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -1193,8 +1193,9 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
+>                 cpumask_clear_cpu(cpu, policy->cpus);
+>         unlock_policy_rwsem_write(cpu);
+>
+> -       if (cpu != policy->cpu && !frozen) {
+> -               sysfs_remove_link(&dev->kobj, "cpufreq");
+> +       if (cpu != policy->cpu) {
+> +               if (!frozen)
+> +                       sysfs_remove_link(&dev->kobj, "cpufreq");
+>         } else if (cpus > 1) {
+>
+>                 new_cpu = cpufreq_nominate_new_policy_cpu(policy, cpu, frozen);
 
-> > Mike does it fix the funny you saw?
-> 
-> Yup, modulo test_need_resched() not existing in master.
+Ahh, I wrote exactly the same crap.. Rafael please take Srivatsa's patch
+here :)
 
-...
+> So can you see if patch 1 + this above fix solves your problem as well?
+> Then we can retain the original patch 2 as a cleanup, after these 2 patches.
 
-> while I haven't yet booted Q6600 box, core2
-> Toshiba Satellite lappy is using mwait_idle_with_hints() in master.
-
-Heh.  Core2 lappy uses mwait_idle_with_hints().. unless you boot
-processor.max_cstate=1 so it doesn't use piece of shite hpet.  Q6600
-always has idle woes, seemingly because box doesn't do deep enough
-cstate to make something (acpi?) happy, despite mwait_idle() having
-worked fine for years.
-
-Seems I need to find the cstate dependency spot, and rap it upside the
-head if I want my core2 boxen to regain happy campers status.
-
--Mike
-
+Why do we need 2 now? We should never hit that case I would say.. And If we
+do, there is some other bug in our code which we have hidden :)
