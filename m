@@ -1,266 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143Ab3ILPgi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 11:36:38 -0400
-Received: from dkim2.fusionio.com ([66.114.96.54]:38227 "EHLO
-	dkim2.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752053Ab3ILPgf convert rfc822-to-8bit (ORCPT
+	id S1754210Ab3ILPgp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 11:36:45 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:59304 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754148Ab3ILPgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 11:36:35 -0400
-X-ASG-Debug-ID: 1379000194-0421b502223a3680001-xx1T2L
-X-Barracuda-Envelope-From: clmason@fusionio.com
-Content-Type: text/plain; charset="utf-8"
+	Thu, 12 Sep 2013 11:36:43 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        <linux-btrfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Message-ID: <20130912153629.16487.88969@localhost.localdomain>
-From: Chris Mason <chris.mason@fusionio.com>
-User-Agent: alot/0.3.4
-Subject: [GIT PULL] Btrfs
-Date: Thu, 12 Sep 2013 11:36:29 -0400
-X-ASG-Orig-Subj: [GIT PULL] Btrfs
-X-Originating-IP: [10.101.1.160]
-X-Barracuda-Connect: cas2.int.fusionio.com[10.101.1.41]
-X-Barracuda-Start-Time: 1379000194
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.140551
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <20130912150645.GZ31370@twins.programming.kicks-ass.net>
+References: <20130912150645.GZ31370@twins.programming.kicks-ass.net>
+Date: Thu, 12 Sep 2013 17:36:43 +0200
+Message-ID: <CAKMK7uFF2GkYapa2_DLv4WYAd0t+POaT+Vy9HG=HQhzMmtH9nA@mail.gmail.com>
+Subject: Re: [BUG] completely bonkers use of set_need_resched + VM_FAULT_NOPAGE
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dave Airlie <airlied@linux.ie>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, Sep 12, 2013 at 5:06 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>
+> So I'm poking around the preemption code and stumbled upon:
+>
+> drivers/gpu/drm/i915/i915_gem.c:                set_need_resched();
+> drivers/gpu/drm/ttm/ttm_bo_vm.c:                        set_need_resched();
+> drivers/gpu/drm/ttm/ttm_bo_vm.c:                        set_need_resched();
+> drivers/gpu/drm/udl/udl_gem.c:          set_need_resched();
+>
+> All these sites basically do:
+>
+>   while (!trylock())
+>         yield();
+>
+> which is a horrible and broken locking pattern.
+>
+> Firstly its deadlock prone, suppose the faulting process is a FIFOn+1
+> task that preempted the lock holder at FIFOn.
+>
+> Secondly the implementation is worse than usual by abusing
+> VM_FAULT_NOPAGE, which is supposed to install a PTE so that the fault
+> doesn't retry, but you're using it as a get out of fault path. And
+> you're using set_need_resched() which is not something a driver should
+> _ever_ touch.
+>
+> Now I'm going to take away set_need_resched() -- and while you can
+> 'reimplement' it using set_thread_flag() you're not going to do that
+> because it will be broken due to changes to the preempt code.
+>
+> So please as to fix ASAP and don't allow anybody to trick you into
+> merging silly things like that again ;-)
 
-Please pull my for-linus branch:
+The set_need_resched in i915_gem.c:i915_gem_fault can actually be
+removed. It was there to give the error handler a chance to sneak in
+and reset the hw/sw tracking when the gpu is dead. That hack goes back
+to the days when the locking around our error handler was somewhere
+between nonexistent and totally broken, nowadays we keep things from
+live-locking by a bit of magic in i915_mutex_lock_interruptible. I'll
+whip up a patch to rip this out. I'll also check that our testsuite
+properly exercises this path (needs a bit of work on a quick look for
+better coverage).
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+The one in ttm is just bonghits to shut up lockdep: ttm can recurse
+into it's own pagefault handler and then deadlock, the trylock just
+keeps lockdep quiet. We've had that bug arise in drm/i915 due to some
+fun userspace did and now have testcases for them. The right solution
+to fix this is to use copy_to|from_user_atomic in ttm everywhere it
+holds locks and have slowpaths which drops locks, copies stuff into a
+temp allocation and then continues. At least that's how we've fixed
+all those inversions in i915-gem. I'm not volunteering to fix this ;-)
 
-This is against 3.11-rc7, but was pulled and tested against your tree as
-of yesterday.  We do have two small incrementals queued up, but I wanted
-to get this bunch out the door before I hop on an airplane.
+The one in udl just looks like copypasta from i915, without any
+justification (at least I don't see any) for why it's there. Probably
+can die, too, since there isn't any gpu to reset on usb display-link
+devices ...
 
-This is a fairly large batch of fixes, performance improvements, and
-cleanups from the usual Btrfs suspects.
-
-We've included Stefan Behren's work to index subvolume UUIDs, which is
-targeted at speeding up send/receive with many subvolumes or snapshots
-in place.  It closes a long standing performance issue that was built
-in to the disk format.
-
-Mark Fasheh's offline dedup work is also here.  In this case offline
-means the FS is mounted and active, but the dedup work is not done
-inline during file IO.   This is a building block where utilities  are
-able to ask the FS to dedup a series of extents.  The kernel takes
-care of verifying the data involved really is the same.  Today this
-involves reading both extents, but we'll continue to evolve the patches.
-
-Anand Jain (3):
-      btrfs: fix get set label blocking against balance
-      btrfs: use BTRFS_SUPER_INFO_SIZE macro at btrfs_read_dev_super()
-      btrfs: return btrfs error code for dev excl ops err
-
-Andy Shevchenko (1):
-      btrfs: reuse kbasename helper
-
-Carey Underwood (1):
-      Btrfs: Release uuid_mutex for shrink during device delete
-
-Dan Carpenter (1):
-      btrfs/raid56: fix and cleanup some error paths
-
-Dave Jones (1):
-      Fix leak in __btrfs_map_block error path
-
-David Sterba (2):
-      btrfs: make errors in btrfs_num_copies less noisy
-      btrfs: add mount option to set commit interval
-
-Filipe David Borba Manana (18):
-      Btrfs: optimize btrfs_lookup_extent_info()
-      Btrfs: add missing error checks to add_data_references
-      Btrfs: optimize function btrfs_read_chunk_tree
-      Btrfs: add missing error check to find_parent_nodes
-      Btrfs: add missing error handling to read_tree_block
-      Btrfs: fix inode leak on kmalloc failure in tree-log.c
-      Btrfs: don't ignore errors from btrfs_run_delayed_items
-      Btrfs: return ENOSPC when target space is full
-      Btrfs: add missing error code to BTRFS_IOC_INO_LOOKUP handler
-      Btrfs: don't miss inode ref items in BTRFS_IOC_INO_LOOKUP
-      Btrfs: reset force_compress on btrfs_file_defrag failure
-      Btrfs: fix memory leak of orphan block rsv
-      Btrfs: fix printing of non NULL terminated string
-      Btrfs: fix race between removing a dev and writing sbs
-      Btrfs: fix race conditions in BTRFS_IOC_FS_INFO ioctl
-      Btrfs: fix memory leak of uuid_root in free_fs_info
-      Btrfs: fix deadlock in uuid scan kthread
-      Btrfs: optimize key searches in btrfs_search_slot
-
-Geert Uytterhoeven (12):
-      Btrfs: Remove superfluous casts from u64 to unsigned long long
-      Btrfs: Make BTRFS_DEV_REPLACE_DEVID an unsigned long long constant
-      Btrfs: Format PAGE_SIZE as unsigned long
-      Btrfs: Format mirror_num as int
-      Btrfs: Make btrfs_device_uuid() return unsigned long
-      Btrfs: Make btrfs_device_fsid() return unsigned long
-      Btrfs: Make btrfs_dev_extent_chunk_tree_uuid() return unsigned long
-      Btrfs: Make btrfs_header_fsid() return unsigned long
-      Btrfs: Make btrfs_header_chunk_tree_uuid() return unsigned long
-      Btrfs: PAGE_CACHE_SIZE is already unsigned long
-      Btrfs: Do not truncate sector_t on 32-bit with CONFIG_LBDAF=y
-      Btrfs: Use %z to format size_t
-
-Ilya Dryomov (5):
-      Btrfs: find_next_devid: root -> fs_info
-      Btrfs: add btrfs_alloc_device and switch to it
-      Btrfs: add alloc_fs_devices and switch to it
-      Btrfs: rollback btrfs_device fields on umount
-      Btrfs: stop refusing the relocation of chunk 0
-
-Jeff Mahoney (1):
-      btrfs: fall back to global reservation when removing subvolumes
-
-Josef Bacik (30):
-      Btrfs: stop using GFP_ATOMIC for the tree mod log allocations
-      Btrfs: set lockdep class before locking new extent buffer
-      Btrfs: reset ret in record_one_backref
-      Btrfs: cleanup reloc roots properly on error
-      Btrfs: don't bother autodefragging if our root is going away
-      Btrfs: cleanup arguments to extent_clear_unlock_delalloc
-      Btrfs: fix what bits we clear when erroring out from delalloc
-      Btrfs: check to see if we have an inline item properly
-      Btrfs: change how we queue blocks for backref checking
-      Btrfs: don't bug_on when we fail when cleaning up transactions
-      Btrfs: handle errors when doing slow caching
-      Btrfs: check our parent dir when doing a compare send
-      Btrfs: deal with enomem in the rewind path
-      Btrfs: stop using GFP_ATOMIC when allocating rewind ebs
-      Btrfs: skip subvol entries when checking if we've created a dir already
-      Btrfs: don't allow a subvol to be deleted if it is the default subovl
-      Btrfs: fix the error handling wrt orphan items
-      Btrfs: fix heavy delalloc related deadlock
-      Btrfs: avoid starting a transaction in the write path
-      Btrfs: separate out tests into their own directory
-      Btrfs: fix send issues related to inode number reuse
-      Btrfs: fix send to deal with sparse files properly
-      Btrfs: do not clear our orphan item runtime flag on eexist
-      Btrfs: remove ourselves from the cluster list under lock
-      Btrfs: adjust the fs_devices->missing count on unmount
-      Btrfs: add support for asserts
-      Btrfs: convert all bug_ons in free-space-cache.c
-      Btrfs: allow partial ordered extent completion
-      Btrfs: only update disk_i_size as we remove extents
-      Btrfs: don't use an async starter for most of our workers
-
-Liu Bo (3):
-      Btrfs: make free space caching faster with many non-inline extent references
-      Btrfs/tracepoint: update delayed ref tracepoints
-      Btrfs: allow compressed extents to be merged during defragment
-
-Mark Fasheh (4):
-      btrfs: abtract out range locking in clone ioctl()
-      btrfs_ioctl_clone: Move clone code into it's own function
-      btrfs: Introduce extent_read_full_page_nolock()
-      btrfs: offline dedupe
-
-Miao Xie (7):
-      Btrfs, raid56: fix memory leak when allocating pages for p/q stripes failed
-      Btrfs: remove unnecessary argument of bio_readpage_error()
-      Btrfs: add branch prediction hints in the read page end IO function
-      Btrfs: don't cache the csum value into the extent state tree
-      Btrfs: batch the extent state operation in the end io handle of the read page
-      Btrfs: batch the extent state operation when reading pages
-      Btrfs: cache the extent map struct when reading several pages
-
-Mike Frysinger (1):
-      Btrfs: use __u64 in exported user headers
-
-Qu Wenruo (1):
-      btrfs: Cleanup for using BTRFS_SETGET_STACK instead of raw convert
-
-Sergei Trofimovich (1):
-      btrfs: mark some local function as 'static'
-
-Stefan Agner (1):
-      Btrfs: return -1 when lzo compression makes data bigger
-
-Stefan Behrens (14):
-      Btrfs: Print key type in decimal everywhere
-      Btrfs: get rid of sparse warnings
-      Btrfs: introduce a tree for items that map UUIDs to something
-      Btrfs: support printing UUID tree elements
-      Btrfs: create UUID tree if required
-      Btrfs: maintain subvolume items in the UUID tree
-      Btrfs: fill UUID tree initially
-      Btrfs: introduce uuid-tree-gen field
-      Btrfs: check UUID tree during mount if required
-      Btrfs: add mount option to force UUID tree checking
-      Btrfs: don't allow the replace procedure on read only filesystems
-      Btrfs: get rid of one BUG() in write_all_supers()
-      Btrfs: fix for patch "cleanup: don't check the same thing twice"
-      Btrf: cleanup: don't check for root_refs == 0 twice
-
-Wang Shilong (10):
-      Btrfs: set qgroup_ulist to be null after calling ulist_free()
-      Btrfs: add sanity checks regarding to parsing mount options
-      Btrfs: use u64 for subvolid when parsing mount options
-      Btrfs: add missing mounting options in btrfs_show_options()
-      Btrfs: fix possible memory leak in find_parent_nodes()
-      Btrfs: fix oops when writing dirty qgroups to disk
-      Btrfs: move btrfs_free_qgroup_config() out of spin_lock and fix comments
-      Btrfs: remove reduplicate check when disabling quota
-      Btrfs: pass gfp_t to __add_prelim_ref() to avoid always using GFP_ATOMIC
-      Btrfs: allocate prelim_ref with a slab allocater
-
-chandan (1):
-      btrfs_read_block_groups: Use enums to index
-
- fs/btrfs/Kconfig                  |    9 +
- fs/btrfs/Makefile                 |    5 +-
- fs/btrfs/backref.c                |   93 +++--
- fs/btrfs/backref.h                |    2 +
- fs/btrfs/btrfs_inode.h            |   21 ++
- fs/btrfs/check-integrity.c        |  422 ++++++++-------------
- fs/btrfs/compression.c            |   11 +-
- fs/btrfs/ctree.c                  |  289 +++++++-------
- fs/btrfs/ctree.h                  |  161 ++++++--
- fs/btrfs/delayed-inode.c          |   46 +--
- fs/btrfs/delayed-ref.c            |    8 +-
- fs/btrfs/dev-replace.c            |    4 +-
- fs/btrfs/disk-io.c                |  174 ++++++---
- fs/btrfs/extent-tree.c            |  184 ++++++---
- fs/btrfs/extent_io.c              |  664 +++++++++++++++++++--------------
- fs/btrfs/extent_io.h              |   35 +-
- fs/btrfs/file-item.c              |   85 +++--
- fs/btrfs/file.c                   |   11 +-
- fs/btrfs/free-space-cache.c       |  525 ++++----------------------
- fs/btrfs/free-space-cache.h       |   11 +-
- fs/btrfs/inode.c                  |  615 ++++++++++++++----------------
- fs/btrfs/ioctl.c                  |  745 ++++++++++++++++++++++++++++---------
- fs/btrfs/lzo.c                    |    4 +-
- fs/btrfs/ordered-data.c           |   28 +-
- fs/btrfs/ordered-data.h           |    7 +
- fs/btrfs/print-tree.c             |  107 +++---
- fs/btrfs/qgroup.c                 |   69 ++--
- fs/btrfs/raid56.c                 |   14 +-
- fs/btrfs/relocation.c             |   43 ++-
- fs/btrfs/root-tree.c              |   21 +-
- fs/btrfs/scrub.c                  |   42 +--
- fs/btrfs/send.c                   |  240 +++++++++---
- fs/btrfs/super.c                  |  145 ++++++--
- fs/btrfs/tests/btrfs-tests.h      |   34 ++
- fs/btrfs/tests/free-space-tests.c |  395 ++++++++++++++++++++
- fs/btrfs/transaction.c            |   34 +-
- fs/btrfs/transaction.h            |    2 -
- fs/btrfs/tree-log.c               |   19 +-
- fs/btrfs/uuid-tree.c              |  358 ++++++++++++++++++
- fs/btrfs/volumes.c                |  613 ++++++++++++++++++++++--------
- fs/btrfs/volumes.h                |   12 +
- include/trace/events/btrfs.h      |   60 ++-
- include/uapi/linux/btrfs.h        |   30 +-
- 43 files changed, 4045 insertions(+), 2352 deletions(-)
+Cheers, Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
