@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab3ILRrn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 13:47:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56764 "EHLO
+	id S1755964Ab3ILRsC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 13:48:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56759 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755453Ab3ILRpd (ORCPT
+	with ESMTP id S1755446Ab3ILRpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 13:45:33 -0400
+	Thu, 12 Sep 2013 13:45:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Eric Dumazet <edumazet@google.com>, Jiri Benc <jbenc@redhat.com>,
+        Jiri Bohac <jbohac@suse.cz>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 16/23] net: ipv6: tcp: fix potential use after free in tcp_v6_do_rcv
-Date: Thu, 12 Sep 2013 10:45:12 -0700
-Message-Id: <20130912174453.506907365@linuxfoundation.org>
+Subject: [ 15/23] ICMPv6: treat dest unreachable codes 5 and 6 as EACCES, not EPROTO
+Date: Thu, 12 Sep 2013 10:45:11 -0700
+Message-Id: <20130912174453.396621027@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130912174451.748805761@linuxfoundation.org>
 References: <20130912174451.748805761@linuxfoundation.org>
@@ -29,45 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Jiri Bohac <jbohac@suse.cz>
 
-[ Upstream commit 3a1c756590633c0e86df606e5c618c190926a0df ]
+[ Upstream commit 61e76b178dbe7145e8d6afa84bb4ccea71918994 ]
 
-In tcp_v6_do_rcv() code, when processing pkt options, we soley work
-on our skb clone opt_skb that we've created earlier before entering
-tcp_rcv_established() on our way. However, only in condition ...
+RFC 4443 has defined two additional codes for ICMPv6 type 1 (destination
+unreachable) messages:
+        5 - Source address failed ingress/egress policy
+	6 - Reject route to destination
 
-  if (np->rxopt.bits.rxtclass)
-    np->rcv_tclass = ipv6_get_dsfield(ipv6_hdr(skb));
+Now they are treated as protocol error and icmpv6_err_convert() converts them
+to EPROTO.
 
-... we work on skb itself. As we extract every other information out
-of opt_skb in ipv6_pktoptions path, this seems wrong, since skb can
-already be released by tcp_rcv_established() earlier on. When we try
-to access it in ipv6_hdr(), we will dereference freed skb.
+RFC 4443 says:
+	"Codes 5 and 6 are more informative subsets of code 1."
 
-[ Bug added by commit 4c507d2897bd9b ("net: implement IP_RECVTOS for
-  IP_PKTOPTIONS") ]
+Treat codes 5 and 6 as code 1 (EACCES)
 
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Jiri Benc <jbenc@redhat.com>
+Btw, connect() returning -EPROTO confuses firefox, so that fallback to
+other/IPv4 addresses does not work:
+https://bugzilla.mozilla.org/show_bug.cgi?id=910773
+
+Signed-off-by: Jiri Bohac <jbohac@suse.cz>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/tcp_ipv6.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/icmpv6.h |    2 ++
+ net/ipv6/icmp.c        |   10 +++++++++-
+ 2 files changed, 11 insertions(+), 1 deletion(-)
 
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -1571,7 +1571,7 @@ ipv6_pktoptions:
- 		if (np->rxopt.bits.rxhlim || np->rxopt.bits.rxohlim)
- 			np->mcast_hops = ipv6_hdr(opt_skb)->hop_limit;
- 		if (np->rxopt.bits.rxtclass)
--			np->rcv_tclass = ipv6_tclass(ipv6_hdr(skb));
-+			np->rcv_tclass = ipv6_tclass(ipv6_hdr(opt_skb));
- 		if (ipv6_opt_accepted(sk, opt_skb)) {
- 			skb_set_owner_r(opt_skb, sk);
- 			opt_skb = xchg(&np->pktoptions, opt_skb);
+--- a/include/linux/icmpv6.h
++++ b/include/linux/icmpv6.h
+@@ -123,6 +123,8 @@ static inline struct icmp6hdr *icmp6_hdr
+ #define ICMPV6_NOT_NEIGHBOUR		2
+ #define ICMPV6_ADDR_UNREACH		3
+ #define ICMPV6_PORT_UNREACH		4
++#define ICMPV6_POLICY_FAIL		5
++#define ICMPV6_REJECT_ROUTE		6
+ 
+ /*
+  *	Codes for Time Exceeded
+--- a/net/ipv6/icmp.c
++++ b/net/ipv6/icmp.c
+@@ -917,6 +917,14 @@ static const struct icmp6_err {
+ 		.err	= ECONNREFUSED,
+ 		.fatal	= 1,
+ 	},
++	{	/* POLICY_FAIL */
++		.err	= EACCES,
++		.fatal	= 1,
++	},
++	{	/* REJECT_ROUTE	*/
++		.err	= EACCES,
++		.fatal	= 1,
++	},
+ };
+ 
+ int icmpv6_err_convert(u8 type, u8 code, int *err)
+@@ -928,7 +936,7 @@ int icmpv6_err_convert(u8 type, u8 code,
+ 	switch (type) {
+ 	case ICMPV6_DEST_UNREACH:
+ 		fatal = 1;
+-		if (code <= ICMPV6_PORT_UNREACH) {
++		if (code < ARRAY_SIZE(tab_unreach)) {
+ 			*err  = tab_unreach[code].err;
+ 			fatal = tab_unreach[code].fatal;
+ 		}
 
 
