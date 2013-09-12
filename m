@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755448Ab3ILTCK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 15:02:10 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:10048 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754867Ab3ILTCJ (ORCPT
+	id S1755499Ab3ILTES (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 15:04:18 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:20185 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754963Ab3ILTEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 15:02:09 -0400
-Message-ID: <52320FA3.7000908@hp.com>
-Date: Thu, 12 Sep 2013 15:01:55 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Thu, 12 Sep 2013 15:04:16 -0400
+Message-ID: <52321022.6060907@tilera.com>
+Date: Thu, 12 Sep 2013 15:04:02 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH 0/2 v2] dcache: get/release read lock in read_seqbegin_or_lock()
- & friend
-References: <1378997735-22844-1-git-send-email-Waiman.Long@hp.com> <CA+55aFwsqHJE1D-z8_kU+1VEpUTB=EU57kqmKao580gYZVOjrw@mail.gmail.com> <CA+55aFy8Nq7yf9CJwFuyfSmkUzFKRHHOE6O8=4HjmaWpku3fhw@mail.gmail.com>
-In-Reply-To: <CA+55aFy8Nq7yf9CJwFuyfSmkUzFKRHHOE6O8=4HjmaWpku3fhw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Mark Salter <msalter@redhat.com>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <rth@twiddle.net>, <vgupta@synopsys.com>, <linux@arm.linux.org.uk>,
+        <tony.luck@intel.com>, <geert@linux-m68k.org>, <monstr@monstr.eu>,
+        <ralf@linux-mips.org>, <jejb@parisc-linux.org>,
+        <benh@kernel.crashing.org>, <lethal@linux-sh.org>,
+        <davem@davemloft.net>, <gxt@mprc.pku.edu.cn>, <tglx@linutronix.de>,
+        <mingo@redhat.com>, <hpa@zytor.com>
+Subject: Re: [PATCH] Kconfig cleanup (PARPORT_PC dependencies)
+References: <1379012038-31764-1-git-send-email-msalter@redhat.com>
+In-Reply-To: <1379012038-31764-1-git-send-email-msalter@redhat.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2013 01:30 PM, Linus Torvalds wrote:
-> On Thu, Sep 12, 2013 at 9:38 AM, Linus Torvalds
-> <torvalds@linux-foundation.org>  wrote:
->> On Thu, Sep 12, 2013 at 7:55 AM, Waiman Long<Waiman.Long@hp.com>  wrote:
->>> Change log
->>> ----------
->>> v1->v2:
->>>    - Rename the new seqlock primitives to read_seqexcl_lock* and
->>>      read_seqexcl_unlock*.
->> Applied.
-> Btw, when I tried to benchmark this, I failed miserably.
+On 9/12/2013 2:53 PM, Mark Salter wrote:
+> Remove messy dependencies from PARPORT_PC by having it depend on one
+> Kconfig symbol (ARCH_MAY_HAVE_PC_PARPORT) and having architectures
+> which need it declare ARCH_MAY_HAVE_PC_PARPORT in arch/*/Kconfig.
+> New architectures are unlikely to need PARPORT_PC, so this avoids
+> having an ever growing list of architectures to exclude. Those
+> architectures which do declare ARCH_MAY_HAVE_PC_PARPORT in this
+> patch are the ones which have an asm/parport.h.
 >
-> Why?
+> Signed-off-by: Mark Salter <msalter@redhat.com>
 
-This patch is just a safety guard to prevent occasional bad performance 
-because of some bad timing. It will not improve performance for many 
-cases because the seqbegin/seqretry sequence succeeds without actual retry.
+You can actually omit the arch/tile change, since as far as I know there's no way for tile to have PARPORT_PC.
 
-> If you do a threaded benchmark of "getcwd()", you end up spending all
-> your time in a spinlock anyway: get_fs_root_and_pwd() takes the
-> fs->lock to get the root/pwd.
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
-I am aware that there is another spinlock bottleneck in the fs struct 
-for getcwd().
-
-> Now, AIM7 probably uses processes, not threads, so you don't see this,
-> and maybe I shouldn't care. But looking at it, it annoys me
-> enormously, because the whole get_fs_root_and_pwd() is just stupid.
-
-AIM7 don't do much getcwd() calls, so it is not a real bottleneck for 
-the benchmark. The lockref patch boosts the short workload performance. 
-The  prepend_path patch was to fix the incorrect perf record data as 
-perf makes heavy use of d_path(). The change made to getcwd() was just a 
-side benefit. But then it still have other spinlock bottleneck.
-
-> Putting it all under the RCU lock and then changing it to use
-> get_fs_root_and_pwd_rcu() that just uses the fs->seq sequence
-> read-lock looks absolutely trivial.
-
-Yes, I think we can do something similar for this. I will take a look to 
-see how it can be fixed.
-
--Longman
