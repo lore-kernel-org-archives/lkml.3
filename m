@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757537Ab3ILGxc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 02:53:32 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:63378 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755397Ab3ILGx3 (ORCPT
+	id S1756234Ab3ILGz0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 02:55:26 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:63810 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268Ab3ILGzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 02:53:29 -0400
-From: Fan Rong <cinifr@gmail.com>
-To: coosty@163.com, maxime.ripard@free-electrons.com,
-        daniel.lezcano@linaro.org, linux@arm.linux.org.uk, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        mark.rutland@arm.com, pawel.moll@arm.co, rob.herring@calxeda.com,
-        linux-sunxi@googlegroups.com
-Cc: Fan Rong <cinifr@gmail.com>
-Subject: [PATCH 4/4] Add arch count timer node in dts for Allwinner A20(sunxi 7i).
-Date: Thu, 12 Sep 2013 14:51:27 +0800
-Message-Id: <1378968687-8200-5-git-send-email-cinifr@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1378968687-8200-1-git-send-email-cinifr@gmail.com>
-References: <1378968687-8200-1-git-send-email-cinifr@gmail.com>
+	Thu, 12 Sep 2013 02:55:25 -0400
+X-AuditID: 9c930197-b7b82ae000001256-95-5231655b0160
+Date: Thu, 12 Sep 2013 15:55:49 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 07/16] slab: overloading the RCU head over the LRU for
+ RCU free
+Message-ID: <20130912065549.GC8055@lge.com>
+References: <1377161065-30552-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1377161065-30552-8-git-send-email-iamjoonsoo.kim@lge.com>
+ <000001410d765d3a-0f3f8df2-dccb-455a-a929-f1fd018700d2-000000@email.amazonses.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000001410d765d3a-0f3f8df2-dccb-455a-a929-f1fd018700d2-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Fan Rong <cinifr@gmail.com>
----
- arch/arm/boot/dts/sun7i-a20.dtsi |    9 +++++++++
- 1 file changed, 9 insertions(+)
+On Wed, Sep 11, 2013 at 02:39:22PM +0000, Christoph Lameter wrote:
+> On Thu, 22 Aug 2013, Joonsoo Kim wrote:
+> 
+> > With build-time size checking, we can overload the RCU head over the LRU
+> > of struct page to free pages of a slab in rcu context. This really help to
+> > implement to overload the struct slab over the struct page and this
+> > eventually reduce memory usage and cache footprint of the SLAB.
+> 
+> Looks fine to me. Can you add the rcu_head to the struct page union? This
+> kind of overload is used frequently elsewhere as well. Then cleanup other
+> cases of such uses (such as in SLUB).
 
-diff --git a/arch/arm/boot/dts/sun7i-a20.dtsi b/arch/arm/boot/dts/sun7i-a20.dtsi
-index bfedcb2..ce138f7 100644
---- a/arch/arm/boot/dts/sun7i-a20.dtsi
-+++ b/arch/arm/boot/dts/sun7i-a20.dtsi
-@@ -312,5 +312,14 @@
- 			#interrupt-cells = <3>;
- 			interrupts = <1 9 0xf04>;
- 		};
-+
-+		timer {
-+			compatible ="arm,armv7-timer";
-+			interrupts = <1 13 0x308>,
-+				     <1 14 0x308>,
-+				     <1 11 0x308>,
-+				     <1 10 0x308>;
-+			clock-frequency = <24000000>;
-+		};
- 	};
- };
--- 
-1.7.9.5
+Okay. But I will implement it seprately because I don't know where the cases
+are now and some inverstigation would be needed.
 
+> 
+> Acked-by: Christoph Lameter <cl@linux.com>
+
+Thanks!
