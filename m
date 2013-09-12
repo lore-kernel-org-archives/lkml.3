@@ -1,123 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800Ab3ILMWa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 08:22:30 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45553 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752864Ab3ILMW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 08:22:28 -0400
-Date: Thu, 12 Sep 2013 07:21:35 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Alexey Pelykh <alexey.pelykh@gmail.com>
-CC: <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        <linux-serial@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: commit 5fe212364 causes division by zero with large bauds
-Message-ID: <20130912122135.GP10105@radagast>
-Reply-To: <balbi@ti.com>
-References: <20130910190901.GA10105@radagast>
- <CAOmKuSrbaLqaYiJFwonHzC-S003vgg2x0xUG4TGKDpMgvCCGHQ@mail.gmail.com>
- <20130911183825.GC10105@radagast>
- <CAOmKuSpJ4rX0p0a1gGvc3fVazTg=+43tDfTFiJSrxmAxXihf-A@mail.gmail.com>
- <20130911190033.GD10105@radagast>
- <CAOmKuSoZQ=uDAD7P94EPfKEp97to3DqwWk=GW7OZ-98+S6nTBA@mail.gmail.com>
- <20130911204714.GH10105@radagast>
- <CAOmKuSpgwGcTaQTEdtH+9g-6WwNwseVU6X+hhntK31EOTM=WRA@mail.gmail.com>
- <CAOmKuSpRpb0mRnORvK-q1MMV3BHZaY8_yTyQV-iE+=gj1hqK7Q@mail.gmail.com>
+	id S1754866Ab3ILMXu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 08:23:50 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:33535 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753093Ab3ILMXt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 08:23:49 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+gHRqQ1BTyNna/y8"
-Content-Disposition: inline
-In-Reply-To: <CAOmKuSpRpb0mRnORvK-q1MMV3BHZaY8_yTyQV-iE+=gj1hqK7Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOesGMi7zbGuBBaUToe7=PUJvUUT8FkdMAWzfCE0igpYiYTZSg@mail.gmail.com>
+References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
+	<1378817379-8238-2-git-send-email-lee.jones@linaro.org>
+	<CAOesGMgySNLKo_H0h4MCbAWvyW0h2bWa96drWBpnhAYYQwH9mw@mail.gmail.com>
+	<20130910153037.GA11227@lee--X1>
+	<CAOesGMiBN5SaEY26SxGaw9E4ViR3cC0PcwNMEd4cLJZMfomprQ@mail.gmail.com>
+	<CACRpkdY24uU=tXirJqrxLH-45ORFGybJOg-2tDOkpSmFUQUiiw@mail.gmail.com>
+	<20130911081911.GI11227@lee--X1>
+	<CACRpkdY6v+LMggLBdfKc3VUPmRZXTf1zBi4a93EPhQeo21wMeQ@mail.gmail.com>
+	<CAF2Aj3iPdqM-+FQ7R9MZ-6jV1Q1me9TG1P4cEGA7fSBBYH92zA@mail.gmail.com>
+	<CACRpkdYfeao6bvwjq7YJhBNCoC_JVxPTwYzPPiWM0tgUQreJKg@mail.gmail.com>
+	<CAOesGMi7zbGuBBaUToe7=PUJvUUT8FkdMAWzfCE0igpYiYTZSg@mail.gmail.com>
+Date: Thu, 12 Sep 2013 14:23:48 +0200
+Message-ID: <CACRpkdY-N_VJwdo4+y9-9==+iC_w4qSiiE2oY-hp_jgsJyxQbg@mail.gmail.com>
+Subject: Re: [PATCH 01/38] ARM: ux500: Remove PrimeCell IDs from Nomadik I2C
+ DT nodes
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---+gHRqQ1BTyNna/y8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-
-On Thu, Sep 12, 2013 at 07:37:07AM +0300, Alexey Pelykh wrote:
-> Actually, here it is, but not formatted properly
+On Wed, Sep 11, 2013 at 10:36 PM, Olof Johansson <olof@lixom.net> wrote:
+> [Me]
+>> I don't know what is the problem with Olof's machine :-/
 >
-> diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-s=
-erial.c
-> index 816d1a2..146e712 100644
-> --- a/drivers/tty/serial/omap-serial.c
-> +++ b/drivers/tty/serial/omap-serial.c
-> @@ -240,14 +240,14 @@ serial_omap_baud_is_mode16(struct uart_port
-> *port, unsigned int baud)
->  {
->   unsigned int n13 =3D port->uartclk / (13 * baud);
->   unsigned int n16 =3D port->uartclk / (16 * baud);
-> - int baudAbsDiff13 =3D baud - (port->uartclk / (13 * n13));
-> - int baudAbsDiff16 =3D baud - (port->uartclk / (16 * n16));
-> + int baudAbsDiff13 =3D n13 ? (baud - (port->uartclk / (13 * n13))) : INT=
-_MAX;
-> + int baudAbsDiff16 =3D n16 ? (baud - (port->uartclk / (16 * n16))) : INT=
-_MAX;
->   if(baudAbsDiff13 < 0)
->   baudAbsDiff13 =3D -baudAbsDiff13;
->   if(baudAbsDiff16 < 0)
->   baudAbsDiff16 =3D -baudAbsDiff16;
->=20
-> - return (baudAbsDiff13 > baudAbsDiff16);
-> + return (baudAbsDiff13 >=3D baudAbsDiff16);
->  }
->=20
->  /*
-> @@ -258,13 +258,13 @@ serial_omap_baud_is_mode16(struct uart_port
-> *port, unsigned int baud)
->  static unsigned int
->  serial_omap_get_divisor(struct uart_port *port, unsigned int baud)
->  {
-> - unsigned int divisor;
-> + unsigned int mode;
->=20
->   if (!serial_omap_baud_is_mode16(port, baud))
-> - divisor =3D 13;
-> + mode =3D 13;
->   else
-> - divisor =3D 16;
-> - return port->uartclk/(baud * divisor);
-> + mode =3D 16;
-> + return port->uartclk/(mode * baud);
->  }
->=20
->  static void serial_omap_enable_ms(struct uart_port *port)
+> Oh! Well, to start with apparantly u8500_defconfig doesn't have
+> APPENDED_DTB enabled, which explains some of the confusion here.
 
-looks good to me, but I'd split it as suggested as a reply to previous
-email.
+Oh. Well honestly I think we will never be able to rewrite the
+U8500 bootloaders, so maybe I should just send a patch adding
+this to the defconfig by default.
 
---=20
-balbi
+> With that fixed (and the appropriate options to get the bootargs from
+> the atags), I get as far as console probing where output stops, if I
+> have DEBUG_LL on. With it disabled I get all the way up.
 
---+gHRqQ1BTyNna/y8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Yeah somewhere the bit-banging from the LL-prints that just
+hammer the hardware start conflicting with the kernel control
+over the same port. I guess it's the same for all users of the
+PL011.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> Not sure what was going on earlier here. Maybe just as in your case it
+> was a matter of cleaning out and starting fresh.
 
-iQIcBAEBAgAGBQJSMbHPAAoJEIaOsuA1yqREvgcP/At1CuLnB+sdWrhZLMKY6FJK
-GXtRovh4J0tkVoPXfIp5X1nF54YjFAi94owB2xBgAfD4mgpgE+OlC/Gt/HvEwKoV
-hg4p0xLXlR8CcyRvBE/BD9kWrf8BW/7UjCpXnbwHItLzu4aWcr9NpaqAVaq8b+Dk
-fzW3v0WQaGI3c+306Z5Y7qTgQED4oR8ZxRyMDnBgOiqFcEX+Uo3kEXZYVR7XYird
-L8AkidZX1rVYcWFhVHQLqlALh5j4Xk+aD/ItGfSRoIcTmXluCPk2+iynbpSxWB7X
-OELLL7zBiTGINp/Ztpu3VNg2qlyjrxQiEc0OI0l545pXz+2DwYxdxUaK3gJflQGk
-FxAQET27HPrPH2acgD8y54bZ85lmHZTiiN9qKpgBgGXIedBe3TlNE4xO1+ND8ro8
-7yDa7LfhnUgD3KJ51g3T7KpyrDIicWA7zXttVLP/xUncIVhTEMcIFiMfWuknqCDf
-o1zssgh/1u64C9nHwwHFO1izASUpt6c9XJw3hpQxdrXQYgIdlQEpyv86ZA5PlSZ0
-A9v6Vk4z9VUEyiAiJ88vHgeLX2zVAwsMmNTSLIcUkd09nnzKMmFGN87FEBo6TwO+
-Ph3cV5RlXJ7Dvgx9stvusTqsJlRnzAOE6Gevjr9qrfQTuOe6AJTyeQgPe23zsgel
-KjNlPES0vRFH3VdIgVsP
-=9Gv7
------END PGP SIGNATURE-----
+Yeah, it's scary :-/
 
---+gHRqQ1BTyNna/y8--
+> multi_v7_defconfig still doesn't boot though, but the failure seems to
+> be lower level than any of the others, no output with DEBUG_LL on.
+
+Probably the usual case where one system is screwing up for
+another system. We'll need to look into this.
+
+Yours,
+Linus Walleij
