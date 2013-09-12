@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757014Ab3ILSG5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:06:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37987 "EHLO
+	id S1756867Ab3ILSF4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:05:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37898 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756959Ab3ILSGl (ORCPT
+	with ESMTP id S1756845Ab3ILSFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 14:06:41 -0400
-Date: Thu, 12 Sep 2013 11:06:06 -0700
+	Thu, 12 Sep 2013 14:05:47 -0400
+Date: Thu, 12 Sep 2013 11:05:05 -0700
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-dczmbi8tfgixacg1ji2av1un@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, vincent.guitto@linaro.org, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, vincent.guitto@linaro.org,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de
+Message-ID: <tip-fc840914e9b07ab4685c195e1e54e58de4f84c03@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, emmanuel.deloget@efixo.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, emmanuel.deloget@efixo.com
+In-Reply-To: <20130909110141.GM31370@twins.programming.kicks-ass.net>
+References: <20130909110141.GM31370@twins.programming.kicks-ass.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/fair: Fix the group_capacity computation
-Git-Commit-ID: c61037e905a5cb74c7d786c35ee2cdbab9ed63af
+Subject: [tip:sched/core] sched/debug: Take PID namespace into account
+Git-Commit-ID: fc840914e9b07ab4685c195e1e54e58de4f84c03
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -25,71 +27,59 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 12 Sep 2013 11:06:13 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 12 Sep 2013 11:05:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c61037e905a5cb74c7d786c35ee2cdbab9ed63af
-Gitweb:     http://git.kernel.org/tip/c61037e905a5cb74c7d786c35ee2cdbab9ed63af
+Commit-ID:  fc840914e9b07ab4685c195e1e54e58de4f84c03
+Gitweb:     http://git.kernel.org/tip/fc840914e9b07ab4685c195e1e54e58de4f84c03
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Wed, 28 Aug 2013 12:40:38 +0200
+AuthorDate: Mon, 9 Sep 2013 13:01:41 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 12 Sep 2013 19:14:45 +0200
+CommitDate: Thu, 12 Sep 2013 19:14:16 +0200
 
-sched/fair: Fix the group_capacity computation
+sched/debug: Take PID namespace into account
 
-Do away with 'phantom' cores due to N*frac(smt_power) >= 1 by limiting
-the capacity to the actual number of cores.
+Emmanuel reported that /proc/sched_debug didn't report the right PIDs
+when using namespaces, cure this.
 
-The assumption of 1 < smt_power < 2 is an actual requirement because
-of what SMT is so this should work regardless of the SMT
-implementation.
-
-It can still be defeated by creative use of cpu hotplug, but if you're
-one of those freaks, you get to live with it.
-
+Reported-by: Emmanuel Deloget <emmanuel.deloget@efixo.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Acked-by: Vincent Guittot <vincent.guitto@linaro.org>
-Link: http://lkml.kernel.org/n/tip-dczmbi8tfgixacg1ji2av1un@git.kernel.org
+Link: http://lkml.kernel.org/r/20130909110141.GM31370@twins.programming.kicks-ass.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 20 +++++++++++++-------
- 1 file changed, 13 insertions(+), 7 deletions(-)
+ kernel/sched/debug.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 218f9c5..51c5c3e 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4556,18 +4556,24 @@ static inline int sg_imbalanced(struct sched_group *group)
- /*
-  * Compute the group capacity.
-  *
-- * For now the capacity is simply the number of power units in the group_power.
-- * A power unit represents a full core.
-- *
-- * This has an issue where N*frac(smt_power) >= 1, in that case we'll see extra
-- * 'cores' that aren't actually there.
-+ * Avoid the issue where N*frac(smt_power) >= 1 creates 'phantom' cores by
-+ * first dividing out the smt factor and computing the actual number of cores
-+ * and limit power unit capacity with that.
-  */
- static inline int sg_capacity(struct lb_env *env, struct sched_group *group)
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index e076bdd..1965599 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -124,7 +124,7 @@ print_task(struct seq_file *m, struct rq *rq, struct task_struct *p)
+ 		SEQ_printf(m, " ");
+ 
+ 	SEQ_printf(m, "%15s %5d %9Ld.%06ld %9Ld %5d ",
+-		p->comm, p->pid,
++		p->comm, task_pid_nr(p),
+ 		SPLIT_NS(p->se.vruntime),
+ 		(long long)(p->nvcsw + p->nivcsw),
+ 		p->prio);
+@@ -289,7 +289,7 @@ do {									\
+ 	P(nr_load_updates);
+ 	P(nr_uninterruptible);
+ 	PN(next_balance);
+-	P(curr->pid);
++	SEQ_printf(m, "  .%-30s: %ld\n", "curr->pid", (long)(task_pid_nr(rq->curr)));
+ 	PN(clock);
+ 	P(cpu_load[0]);
+ 	P(cpu_load[1]);
+@@ -492,7 +492,7 @@ void proc_sched_show_task(struct task_struct *p, struct seq_file *m)
  {
-+	unsigned int capacity, smt, cpus;
-+	unsigned int power, power_orig;
-+
-+	power = group->sgp->power;
-+	power_orig = group->sgp->power_orig;
-+	cpus = group->group_weight;
+ 	unsigned long nr_switches;
  
--	unsigned int power = group->sgp->power;
--	unsigned int capacity = DIV_ROUND_CLOSEST(power, SCHED_POWER_SCALE);
-+	/* smt := ceil(cpus / power), assumes: 1 < smt_power < 2 */
-+	smt = DIV_ROUND_UP(SCHED_POWER_SCALE * cpus, power_orig);
-+	capacity = cpus / smt; /* cores */
- 
-+	capacity = min_t(unsigned, capacity, DIV_ROUND_CLOSEST(power, SCHED_POWER_SCALE));
- 	if (!capacity)
- 		capacity = fix_small_capacity(env->sd, group);
- 
+-	SEQ_printf(m, "%s (%d, #threads: %d)\n", p->comm, p->pid,
++	SEQ_printf(m, "%s (%d, #threads: %d)\n", p->comm, task_pid_nr(p),
+ 						get_nr_threads(p));
+ 	SEQ_printf(m,
+ 		"---------------------------------------------------------"
