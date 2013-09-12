@@ -1,88 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755770Ab3ILWGL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 18:06:11 -0400
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:55468 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751229Ab3ILWGG (ORCPT
+	id S1755591Ab3ILWKs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 18:10:48 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:63855 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754523Ab3ILWKr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 18:06:06 -0400
-Message-ID: <52323AC8.30403@gmail.com>
-Date: Fri, 13 Sep 2013 00:06:00 +0200
-From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+	Thu, 12 Sep 2013 18:10:47 -0400
+Message-ID: <52323BE4.5080100@gmail.com>
+Date: Thu, 12 Sep 2013 15:10:44 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-CC: linux-i2c@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lv Zheng <lv.zheng@intel.com>, Aaron Lu <aaron.lu@intel.com>,
-        linux-arm-kernel@lists.infradead.org, Mark Brown <broonie@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH v2 1/9] i2c: prepare runtime PM support for I2C client
- devices
-References: <1378913560-2752-1-git-send-email-mika.westerberg@linux.intel.com> <1378913560-2752-2-git-send-email-mika.westerberg@linux.intel.com>
-In-Reply-To: <1378913560-2752-2-git-send-email-mika.westerberg@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] perf fixes
+References: <20130912133855.GA23780@gmail.com> <CA+55aFwgyjqRHxLaWGxxsg_v07FrxbVTeLdHTGp7MfeSRjrKsQ@mail.gmail.com> <CA+55aFyCeXXr=57em8CC_Uzfk5PvOw0RHyA309wuOP-oDL7VxA@mail.gmail.com> <20130912184341.GA11400@ghostprotocols.net> <52321CE4.1080804@gmail.com> <20130912201855.GC32644@gmail.com> <20130912203831.GD11400@ghostprotocols.net> <20130912204618.GA3262@gmail.com> <52322D81.5090708@gmail.com> <20130912211846.GA7890@gmail.com>
+In-Reply-To: <20130912211846.GA7890@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2013 05:32 PM, Mika Westerberg wrote:
-> From: Aaron Lu<aaron.lu@intel.com>
+On 9/12/13 2:18 PM, Ingo Molnar wrote:
+>> kconf approach of course:
+>>    https://lkml.org/lkml/2013/4/1/600
+>> (minus the manual steps in that RFC).
 >
-> This patch adds runtime PM support for the I2C bus in a similar way that
-> has been done for PCI bus already. This means that the I2C bus core
-> prepares runtime PM for a client device just before a driver is about to be
-> bound to it. Devices that are not bound to any driver are not prepared for
-> runtime PM.
->
-> In order to take advantage of this runtime PM support, the client device
-> driver needs drop the device runtime PM reference count by calling
-> pm_runtime_put() in its ->probe() callback and possibly implement rest of
-> the runtime PM callbacks.
->
-> If the driver doesn't support runtime PM (like most of the existing I2C
-> client drivers), the device in question is regarded as being runtime PM
-> active and powered on.
->
-> The patch adds also runtime PM support for the adapter device because it is
-> needed to be able to runtime power manage the I2C controller device. The
-> adapter device is handled along with the I2C controller device (it uses
-> pm_runtime_no_callbacks()).
->
-> Signed-off-by: Aaron Lu<aaron.lu@intel.com>
-> Signed-off-by: Mika Westerberg<mika.westerberg@linux.intel.com>
-> ---
->   drivers/i2c/i2c-core.c | 44 +++++++++++++++++++++++++++++++++++++++++++-
->   1 file changed, 43 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> index f32ca29..44374b4 100644
-> --- a/drivers/i2c/i2c-core.c
-> +++ b/drivers/i2c/i2c-core.c
-> @@ -248,11 +248,30 @@ static int i2c_device_probe(struct device *dev)
->   					client->flags&  I2C_CLIENT_WAKE);
->   	dev_dbg(dev, "probe\n");
->
-> +	/* Make sure the adapter is active */
-> +	pm_runtime_get_sync(&client->adapter->dev);
+> I'm not sure what the end stage is where you'd like to arrive, but I don't
+> think that forcing a separate configuration pass is an improvement :-/
 
-So there is currently no way to avoid this behaviour, i.e. to have the 
-adapter
-not activated before any of its client devices is probed, but only later on,
-after explicit call to pm_runtime_get*(&client->dev) in the client driver ?
+once I have a working config -- say one for a target (minimal build) and 
+one for analysis (more but not all features -- eg., no gtk) I never see 
+auto-probing again. At best some new feature (config) comes along and 
+the config has to be updated again, but kconf only inquires about new 
+features.
 
---
-Thanks,
-Sylwester
+>
+> By default a simple 'make' should build perf to the maximum extent
+> possible, with no other input required from the user - with warnings
+> displayed as package install suggestions.
 
+By default there is no config. Autoprobing generates a first one or a 
+user can specify a defconfig.
 
-
+David
