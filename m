@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab3ILR0e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 13:26:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56550 "EHLO
+	id S1754932Ab3ILR0j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 13:26:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56570 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753736Ab3ILR0c (ORCPT
+	with ESMTP id S1753736Ab3ILR0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 13:26:32 -0400
+	Thu, 12 Sep 2013 13:26:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Hemminger <stephen@networkplumber.org>,
         Eric Dumazet <edumazet@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
+        Yuchung Cheng <ycheng@google.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 01/19] htb: fix sign extension bug
-Date: Thu, 12 Sep 2013 10:26:10 -0700
-Message-Id: <20130912172524.329560363@linuxfoundation.org>
+Subject: [ 04/19] tcp: cubic: fix overflow error in bictcp_update()
+Date: Thu, 12 Sep 2013 10:26:13 -0700
+Message-Id: <20130912172524.646274753@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130912172524.135620246@linuxfoundation.org>
 References: <20130912172524.135620246@linuxfoundation.org>
@@ -28,39 +30,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: stephen hemminger <stephen@networkplumber.org>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit cbd375567f7e4811b1c721f75ec519828ac6583f ]
+[ Upstream commit 2ed0edf9090bf4afa2c6fc4f38575a85a80d4b20 ]
 
-When userspace passes a large priority value
-the assignment of the unsigned value hopt->prio
-to  signed int cl->prio causes cl->prio to become negative and the
-comparison is with TC_HTB_NUMPRIO is always false.
+commit 17a6e9f1aa9 ("tcp_cubic: fix clock dependency") added an
+overflow error in bictcp_update() in following code :
 
-The result is that HTB crashes by referencing outside
-the array when processing packets. With this patch the large value
-wraps around like other values outside the normal range.
+/* change the unit from HZ to bictcp_HZ */
+t = ((tcp_time_stamp + msecs_to_jiffies(ca->delay_min>>3) -
+      ca->epoch_start) << BICTCP_HZ) / HZ;
 
-See: https://bugzilla.kernel.org/show_bug.cgi?id=60669
+Because msecs_to_jiffies() being unsigned long, compiler does
+implicit type promotion.
 
-Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
-Acked-by: Eric Dumazet <edumazet@google.com>
+We really want to constrain (tcp_time_stamp - ca->epoch_start)
+to a signed 32bit value, or else 't' has unexpected high values.
+
+This bugs triggers an increase of retransmit rates ~24 days after
+boot [1], as the high order bit of tcp_time_stamp flips.
+
+[1] for hosts with HZ=1000
+
+Big thanks to Van Jacobson for spotting this problem.
+
+Diagnosed-by: Van Jacobson <vanj@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Neal Cardwell <ncardwell@google.com>
+Cc: Yuchung Cheng <ycheng@google.com>
+Cc: Stephen Hemminger <stephen@networkplumber.org>
+Acked-by: Neal Cardwell <ncardwell@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sched/sch_htb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/tcp_cubic.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/net/sched/sch_htb.c
-+++ b/net/sched/sch_htb.c
-@@ -86,7 +86,7 @@ struct htb_class {
- 	unsigned int children;
- 	struct htb_class *parent;	/* parent class */
+--- a/net/ipv4/tcp_cubic.c
++++ b/net/ipv4/tcp_cubic.c
+@@ -204,8 +204,8 @@ static u32 cubic_root(u64 a)
+  */
+ static inline void bictcp_update(struct bictcp *ca, u32 cwnd)
+ {
+-	u64 offs;
+-	u32 delta, t, bic_target, max_cnt;
++	u32 delta, bic_target, max_cnt;
++	u64 offs, t;
  
--	int prio;		/* these two are used only by leaves... */
-+	u32 prio;		/* these two are used only by leaves... */
- 	int quantum;		/* but stored for parent-to-leaf return */
+ 	ca->ack_cnt++;	/* count the number of ACKs */
  
- 	union {
+@@ -248,9 +248,11 @@ static inline void bictcp_update(struct
+ 	 * if the cwnd < 1 million packets !!!
+ 	 */
+ 
++	t = (s32)(tcp_time_stamp - ca->epoch_start);
++	t += msecs_to_jiffies(ca->delay_min >> 3);
+ 	/* change the unit from HZ to bictcp_HZ */
+-	t = ((tcp_time_stamp + msecs_to_jiffies(ca->delay_min>>3)
+-	      - ca->epoch_start) << BICTCP_HZ) / HZ;
++	t <<= BICTCP_HZ;
++	do_div(t, HZ);
+ 
+ 	if (t < ca->bic_K)		/* t - K */
+ 		offs = ca->bic_K - t;
 
 
