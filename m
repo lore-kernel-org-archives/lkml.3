@@ -1,73 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756403Ab3ILSnt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:43:49 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:59180 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755182Ab3ILSnr (ORCPT
+	id S1756576Ab3ILSom (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:44:42 -0400
+Received: from mail-db9lp0253.outbound.messaging.microsoft.com ([213.199.154.253]:21206
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754497Ab3ILSok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 14:43:47 -0400
-Date: Thu, 12 Sep 2013 15:43:41 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] perf fixes
-Message-ID: <20130912184341.GA11400@ghostprotocols.net>
-References: <20130912133855.GA23780@gmail.com>
- <CA+55aFwgyjqRHxLaWGxxsg_v07FrxbVTeLdHTGp7MfeSRjrKsQ@mail.gmail.com>
- <CA+55aFyCeXXr=57em8CC_Uzfk5PvOw0RHyA309wuOP-oDL7VxA@mail.gmail.com>
+	Thu, 12 Sep 2013 14:44:40 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dI936eI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275dhz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
+Message-ID: <1379011469.2536.45.camel@snotra.buserror.net>
+Subject: Re: [PATCH v2] powerpc 8xx: Fixing issue with CONFIG_PIN_TLB
+From: Scott Wood <scottwood@freescale.com>
+To: Christophe Leroy <christophe.leroy@c-s.fr>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Date: Thu, 12 Sep 2013 13:44:29 -0500
+In-Reply-To: <201309121825.r8CIPrkI005690@localhost.localdomain>
+References: <201309121825.r8CIPrkI005690@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyCeXXr=57em8CC_Uzfk5PvOw0RHyA309wuOP-oDL7VxA@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Sep 12, 2013 at 11:10:37AM -0700, Linus Torvalds escreveu:
-> On Thu, Sep 12, 2013 at 11:03 AM, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> > When I compiled "perf" at the same time as doing a big kernel compile,
-> > the kernel compile failed
- 
-> Oops. That may actually have been me being a bit *too* eager with a
-> "make allmodconfig" build. I can't reproduce it, and I'm starting to
-> suspect that I instead had two kernel compiles going, not one kernel
-> compile and a tools/perf/ compile.
- 
->   "Yo Dawg, I heard you like kernel compiles, so I put a kernel
-> compile in your kernel compile so that you can compile the kernel
-> while you compile the kernel".
+On Thu, 2013-09-12 at 20:25 +0200, Christophe Leroy wrote:
+> This is a reorganisation of the setup of the TLB at kernel startup, in order
+> to handle the CONFIG_PIN_TLB case in accordance with chapter 8.10.3 of MPC866
+> and MPC885 reference manuals.
+>
+> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+> 
+> diff -ur linux-3.11.org/arch/powerpc/kernel/head_8xx.S linux-3.11/arch/powerpc/kernel/head_8xx.S
+> --- linux-3.11.org/arch/powerpc/kernel/head_8xx.S	2013-09-02 22:46:10.000000000 +0200
+> +++ linux-3.11/arch/powerpc/kernel/head_8xx.S	2013-09-09 11:28:54.000000000 +0200
+> @@ -785,27 +785,24 @@
+>   * these mappings is mapped by page tables.
+>   */
+>  initial_mmu:
+> -	tlbia			/* Invalidate all TLB entries */
+> -/* Always pin the first 8 MB ITLB to prevent ITLB
+> -   misses while mucking around with SRR0/SRR1 in asm
+> -*/
+> -	lis	r8, MI_RSV4I@h
+> -	ori	r8, r8, 0x1c00
+> -
+> +	lis	r8, MI_RESETVAL@h
+>  	mtspr	SPRN_MI_CTR, r8	/* Set instruction MMU control */
+>  
+> -#ifdef CONFIG_PIN_TLB
+> -	lis	r10, (MD_RSV4I | MD_RESETVAL)@h
+> -	ori	r10, r10, 0x1c00
+> -	mr	r8, r10
+> -#else
+>  	lis	r10, MD_RESETVAL@h
+> -#endif
+>  #ifndef CONFIG_8xx_COPYBACK
+>  	oris	r10, r10, MD_WTDEF@h
+>  #endif
+>  	mtspr	SPRN_MD_CTR, r10	/* Set data TLB control */
+>  
+> +	tlbia			/* Invalidate all TLB entries */
 
-:-)
- 
-> But at least the "make install" problem is repeatable, though.
+Is this change to make sure we invalidate everything even if the
+bootloader set RSV4I?
 
-Well, I just tried it, and the only thing that gets rebuilt are the CHK
-environment tests that try to figure out what can be built into perf,
-i.e. perl, python, libaudit, etc.
+> +	ori	r8, r8, 0x1c00
+> +	mtspr	SPRN_MI_CTR, r8	/* Set instruction MMU control */
+> +#ifdef CONFIG_PIN_TLB
+> +	ori	r10, r10, 0x1c00
+> +	mtspr	SPRN_MD_CTR, r10	/* Set data TLB control */
+> +#endif
 
-Its something that annoys me as well, but not so much as to make me
-figure out how to make those be done only if some source file changed.
+Still 0x1c00?
 
-But then, if you remove, say, libelf from your system so that you get a
-perf tool that uses just /proc/kallsyms, it wouldn't detect it...
+>  	/* Now map the lower 8 Meg into the TLBs.  For this quick hack,
+>  	 * we can load the instruction and data TLB registers with the
+>  	 * same values.
+> @@ -825,6 +822,12 @@
+>  	mtspr	SPRN_MI_AP, r8
+>  	mtspr	SPRN_MD_AP, r8
+>  
+> +	/* Always pin the first 8 MB ITLB to prevent ITLB
+> +	 * misses while mucking around with SRR0/SRR1 in asm
+> +	 */
+> +	lis	r8, (MI_RSV4I | MI_RESETVAL)@h
+> +	mtspr	SPRN_MI_CTR, r8	/* Set instruction MMU control */
 
-Perhaps in that case we should say: want a new build with a different
-environment? Do a 'make clean' first.
+Entry 0 is not pinnable.
 
-But if I do it as a normal user and then try installing as root... it
-behaves like you described, duh :-\
+-Scott
 
-Because of this:
 
-    * new build flags or prefix
 
-Will check...
-
-- Arnaldo
