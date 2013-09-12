@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755160Ab3ILR07 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 13:26:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56653 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754785Ab3ILR0p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755053Ab3ILR0p (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 12 Sep 2013 13:26:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56574 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754785Ab3ILR0g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 13:26:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 14/19] PARISC: include <linux/prefetch.h> in drivers/parisc/iommu-helpers.h
-Date: Thu, 12 Sep 2013 10:26:23 -0700
-Message-Id: <20130912172525.722049646@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>,
+        Neal Cardwell <ncardwell@google.com>,
+        Yuchung Cheng <ycheng@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 05/19] tcp: cubic: fix bug in bictcp_acked()
+Date: Thu, 12 Sep 2013 10:26:14 -0700
+Message-Id: <20130912172524.755689263@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130912172524.135620246@linuxfoundation.org>
 References: <20130912172524.135620246@linuxfoundation.org>
@@ -28,32 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cong Wang <xiyou.wangcong@gmail.com>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 650275dbfb2f4c12bc91420ad5a99f955eabec98 upstream.
+[ Upstream commit cd6b423afd3c08b27e1fed52db828ade0addbc6b ]
 
-drivers/parisc/iommu-helpers.h:62: error: implicit declaration of function 'prefetchw'
-make[3]: *** [drivers/parisc/sba_iommu.o] Error 1
+While investigating about strange increase of retransmit rates
+on hosts ~24 days after boot, Van found hystart was disabled
+if ca->epoch_start was 0, as following condition is true
+when tcp_time_stamp high order bit is set.
 
-drivers/parisc/iommu-helpers.h needs to #include <linux/prefetch.h>
-where prefetchw is declared.
+(s32)(tcp_time_stamp - ca->epoch_start) < HZ
 
-Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+Quoting Van :
+
+ At initialization & after every loss ca->epoch_start is set to zero so
+ I believe that the above line will turn off hystart as soon as the 2^31
+ bit is set in tcp_time_stamp & hystart will stay off for 24 days.
+ I think we've observed that cubic's restart is too aggressive without
+ hystart so this might account for the higher drop rate we observe.
+
+Diagnosed-by: Van Jacobson <vanj@google.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Neal Cardwell <ncardwell@google.com>
+Cc: Yuchung Cheng <ycheng@google.com>
+Acked-by: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/parisc/iommu-helpers.h |    2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv4/tcp_cubic.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/parisc/iommu-helpers.h
-+++ b/drivers/parisc/iommu-helpers.h
-@@ -1,3 +1,5 @@
-+#include <linux/prefetch.h>
-+
- /**
-  * iommu_fill_pdir - Insert coalesced scatter/gather chunks into the I/O Pdir.
-  * @ioc: The I/O Controller.
+--- a/net/ipv4/tcp_cubic.c
++++ b/net/ipv4/tcp_cubic.c
+@@ -414,7 +414,7 @@ static void bictcp_acked(struct sock *sk
+ 		return;
+ 
+ 	/* Discard delay samples right after fast recovery */
+-	if ((s32)(tcp_time_stamp - ca->epoch_start) < HZ)
++	if (ca->epoch_start && (s32)(tcp_time_stamp - ca->epoch_start) < HZ)
+ 		return;
+ 
+ 	delay = (rtt_us << 3) / USEC_PER_MSEC;
 
 
