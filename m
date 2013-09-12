@@ -1,103 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120Ab3ILWOi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 18:14:38 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:42927 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752223Ab3ILWOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 18:14:34 -0400
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS updates #2 for 3.12-rc1
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Message-Id: <20130912221433.A15A64266DC@whiskey.americas.sgi.com>
-Date: Thu, 12 Sep 2013 17:14:33 -0500 (CDT)
-From: bpm@sgi.com (Ben Myers)
+	id S1755820Ab3ILWWh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 18:22:37 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33106 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753793Ab3ILWWf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 18:22:35 -0400
+Date: Fri, 13 Sep 2013 00:22:33 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+cc: Sricharan R <r.sricharan@ti.com>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linus.walleij@linaro.org, linux@arm.linux.org.uk, tony@atomide.com,
+        rnayak@ti.com
+Subject: Re: [RFC PATCH 1/4] DRIVERS: IRQCHIP: Add crossbar irqchip driver
+In-Reply-To: <523228B5.5070507@ti.com>
+Message-ID: <alpine.DEB.2.02.1309122335440.4089@ionos.tec.linutronix.de>
+References: <1379000351-15672-1-git-send-email-r.sricharan@ti.com> <1379000351-15672-2-git-send-email-r.sricharan@ti.com> <alpine.DEB.2.02.1309122201530.4089@ionos.tec.linutronix.de> <523228B5.5070507@ti.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, 12 Sep 2013, Santosh Shilimkar wrote:
+> Specifically for the IRQ case addressed here, the cross-bar IP
+> sits between the interrupt controller and peripheral interrupts.
+> 
+> CPU <-- GIC  <----- CROSSBAR <----- PERIPHERAL IRQs
+> 
+> Just to expand it better, cross-bar input IRQ lines are more than
+> what a GIC IRQ controller can support.
+> e.q Total 250 peripheral IRQ lines out of which GIC support
+> only 160 IRQ lines.
+> 
+> So the idea here is to dynamically map the IRQ lines at
+> cross-bar level to pick based on request_irq() so that one
+> can optimize the use of limited IRQ lines at the GIC level.
+> Strictly speaking the need is just establish the IRQ
+> connection from peripheral to GIC and thats achieved
+> at the request_irq() level.
+> 
+> Earlier approach was to statically build this connections
+> using the DT information in a separate driver probe but
+> it had limitations of fixing the IRQ map and taking away
+> flexibility what this IP provide. 
+>  
+> Hope this gives better picture to you behind the patch
+> series.
 
-   Please pull these XFS updates for 3.12-rc1.  There is a feature to support
-   defrag on CRC enabled filesystems, some bugfixes, and cleanups.
+Yes. I halfways understand what you are trying to achieve.
+
+So CROSSBAR is a routing block between the peripheral and the GIC in
+order to expand the number of possible interrupts.
+
+Now the real question is, how that expansion mechanism is supposed to
+work. There are two possible scenarios:
+
+1) Expand the number of handled interrupts beyond the GIC capacity:
+
+   That requires a mechanism in CROSSBAR to map several CROSSBAR
+   interrupts to a particular GIC interrupt and provide a demux
+   mechanism to invoke the shared handlers.
+
+2) Provide a mapping mechanism between possibly 250 interrupt numbers
+   and a limitation of a total 160 active interrupts by the underlying
+   GIC.
+
+What are you trying to achieve?
 
 Thanks,
-	Ben
 
-The following changes since commit 1d03c6fa88af35e55047a1f2ab116f0fdf2f55aa:
-
-  xfs: XFS_MOUNT_QUOTA_ALL needed by userspace (2013-09-03 15:00:06 -0500)
-
-are available in the git repository at:
-
-  git://oss.sgi.com/xfs/xfs tags/xfs-for-linus-v3.12-rc1-2
-
-for you to fetch changes up to 08474ed639e971e9d5a877cf7aba7ef91d847ae9:
-
-  xfs: remove dead code from xlog_recover_inode_pass2 (2013-09-12 09:51:49 -0500)
-
-----------------------------------------------------------------
-xfs: update #2 for v3.12-rc1
-
-Here we have defrag support for v5 superblock, a number of bugfixes and
-a cleanup or two.
-
-- defrag support for CRC filesystems
-- fix endian worning in xlog_recover_get_buf_lsn
-- fixes for sparse warnings
-- fix for assert in xfs_dir3_leaf_hdr_from_disk
-- fix for log recovery of remote symlinks
-- fix for log recovery of btree root splits
-- fixes formemory allocation failures with ACLs
-- fix for assert in xfs_buf_item_relse
-- fix for assert in xfs_inode_buf_verify
-- fix an assignment in an assert that should be a test in
-  xfs_bmbt_change_owner
-- remove dead code in xlog_recover_inode_pass2
-
-----------------------------------------------------------------
-Dan Carpenter (1):
-      xfs: = vs == typo in ASSERT()
-
-Dave Chinner (11):
-      xfs: fix endian warning in xlog_recover_get_buf_lsn()
-      xfs: fix some minor sparse warnings
-      xfs: check magic numbers in dir3 leaf verifier first
-      xfs: swap extents operations for CRC filesystems
-      xfs: recovery of swap extents operations for CRC filesystems
-      xfs: set remote symlink buffer type for recovery
-      xfs: ensure we copy buffer type in da btree root splits
-      xfs: fix memory allocation failures with ACLs
-      xfs: factor all the kmalloc-or-vmalloc fallback allocations
-      xfs: aborted buf items can be in the AIL.
-      xfs: don't assert fail on bad inode numbers
-
-Mark Tinguely (1):
-      xfs: remove dead code from xlog_recover_inode_pass2
-
- fs/xfs/kmem.c            |  15 ++++-
- fs/xfs/kmem.h            |   9 +--
- fs/xfs/xfs_acl.c         |  12 ++--
- fs/xfs/xfs_bmap.c        |   2 +-
- fs/xfs/xfs_bmap_btree.c  |  44 ++++++++++++
- fs/xfs/xfs_bmap_btree.h  |   4 ++
- fs/xfs/xfs_bmap_util.c   |  69 ++++++++++++-------
- fs/xfs/xfs_btree.c       | 170 ++++++++++++++++++++++++++++++++++++++++++-----
- fs/xfs/xfs_btree.h       |  19 ++++--
- fs/xfs/xfs_buf_item.c    |  24 +++++--
- fs/xfs/xfs_da_btree.c    |   1 +
- fs/xfs/xfs_dir2_leaf.c   |  20 ++++--
- fs/xfs/xfs_dquot_item.c  |   3 +-
- fs/xfs/xfs_extent_busy.c |   3 +-
- fs/xfs/xfs_icache.c      |   4 +-
- fs/xfs/xfs_icache.h      |   4 ++
- fs/xfs/xfs_inode_buf.c   |  10 ++-
- fs/xfs/xfs_inode_buf.h   |  18 ++---
- fs/xfs/xfs_ioctl.c       |  36 ++++------
- fs/xfs/xfs_ioctl32.c     |  18 ++---
- fs/xfs/xfs_itable.c      |   7 +-
- fs/xfs/xfs_log.c         |   3 +-
- fs/xfs/xfs_log_format.h  |   8 ++-
- fs/xfs/xfs_log_recover.c | 122 +++++++++++++++++++++++++++-------
- fs/xfs/xfs_symlink.c     |   2 +
- 25 files changed, 461 insertions(+), 166 deletions(-)
+	tglx
