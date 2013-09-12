@@ -1,114 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754389Ab3ILMlG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 08:41:06 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:64363 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752380Ab3ILMlD convert rfc822-to-8bit (ORCPT
+	id S1754187Ab3ILMmV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 08:42:21 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:50323 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752864Ab3ILMmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 08:41:03 -0400
+	Thu, 12 Sep 2013 08:42:20 -0400
 MIME-Version: 1.0
-Date: Thu, 12 Sep 2013 14:41:00 +0200
-X-Google-Sender-Auth: 2zld1NsyykTlvoee5pU-s8NOkL8
-Message-ID: <CAMuHMdVVjkZBZyJe2qnUxHeRVo+8WD_Vx1ZKin_pA7XLRCW8uw@mail.gmail.com>
-Subject: Uninitialized rx_req/tx_req (was: Re: [PATCH v2 2/3] mmc: omap_hsmmc:
- Skip platform_get_resource_byname() for dt case)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Matt Porter <matt.porter@linaro.org>
-Cc: Balaji T K <balajitk@ti.com>, Chris Ball <cjb@laptop.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>, Tony Lindgren <tony@atomide.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
-        Jon Hunter <jon-hunter@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1378805550-29949-42-git-send-email-mgorman@suse.de>
+References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
+	<1378805550-29949-42-git-send-email-mgorman@suse.de>
+Date: Thu, 12 Sep 2013 20:42:18 +0800
+Message-ID: <CAJd=RBBOHXT=7NGAkLtcOCMna5g2GvaQG-Xc0mzrbp_mOQ4xyw@mail.gmail.com>
+Subject: Re: [PATCH 41/50] sched: numa: Use {cpu, pid} to create task groups
+ for shared faults
+From: Hillf Danton <dhillf@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 5, 2013 at 10:13 PM, Matt Porter <mporter@ti.com> wrote:
-> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
->
-> MMC driver probe will abort for DT case because of failed
-> platform_get_resource_byname() lookup. Fix it by skipping resource
-> byname lookup for device tree build.
->
-> Issue is hidden because hwmod popullates the IO resources which
-> helps to succeed platform_get_resource_byname() and probe.
->
-> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> ---
->  drivers/mmc/host/omap_hsmmc.c |   28 +++++++++++++++-------------
->  1 file changed, 15 insertions(+), 13 deletions(-)
->
-> diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-> index e79b12d..8ae1225 100644
-> --- a/drivers/mmc/host/omap_hsmmc.c
-> +++ b/drivers/mmc/host/omap_hsmmc.c
-> @@ -1896,21 +1896,23 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
->
->         omap_hsmmc_conf_bus_power(host);
->
-> -       res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "tx");
-> -       if (!res) {
-> -               dev_err(mmc_dev(host->mmc), "cannot get DMA TX channel\n");
-> -               ret = -ENXIO;
-> -               goto err_irq;
-> -       }
-> -       tx_req = res->start;
-> +       if (!pdev->dev.of_node) {
-> +               res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "tx");
-> +               if (!res) {
-> +                       dev_err(mmc_dev(host->mmc), "cannot get DMA TX channel\n");
-> +                       ret = -ENXIO;
-> +                       goto err_irq;
-> +               }
-> +               tx_req = res->start;
->
-> -       res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "rx");
-> -       if (!res) {
-> -               dev_err(mmc_dev(host->mmc), "cannot get DMA RX channel\n");
-> -               ret = -ENXIO;
-> -               goto err_irq;
-> +               res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "rx");
-> +               if (!res) {
-> +                       dev_err(mmc_dev(host->mmc), "cannot get DMA RX channel\n");
-> +                       ret = -ENXIO;
-> +                       goto err_irq;
-> +               }
-> +               rx_req = res->start;
->         }
-> -       rx_req = res->start;
->
->         dma_cap_zero(mask);
->         dma_cap_set(DMA_SLAVE, mask);
+Hello Mel
 
-Now this is in mainline, I get (gcc 4.1.2):
+On Tue, Sep 10, 2013 at 5:32 PM, Mel Gorman <mgorman@suse.de> wrote:
+>
+> +void task_numa_free(struct task_struct *p)
+> +{
+> +       struct numa_group *grp = p->numa_group;
+> +       int i;
+> +
+> +       kfree(p->numa_faults);
+> +
+> +       if (grp) {
+> +               for (i = 0; i < 2*nr_node_ids; i++)
+> +                       atomic_long_sub(p->numa_faults[i], &grp->faults[i]);
+> +
+use after free, numa_faults ;/
 
-drivers/mmc/host/omap_hsmmc.c: In function ‘omap_hsmmc_probe’:
-drivers/mmc/host/omap_hsmmc.c:1779: warning: ‘rx_req’ may be used
-uninitialized in this function
-drivers/mmc/host/omap_hsmmc.c:1779: warning: ‘tx_req’ may be used
-uninitialized in this function
-
-Indeed, rx_req and tx_req are not initialized in the DT case.
-
-Initializing them to zero is probably not the right fix. Where are the values
-supposed to come from in the DT case?
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> +               spin_lock(&grp->lock);
+> +               list_del(&p->numa_entry);
+> +               grp->nr_tasks--;
+> +               spin_unlock(&grp->lock);
+> +               rcu_assign_pointer(p->numa_group, NULL);
+> +               put_numa_group(grp);
+> +       }
+> +}
+> +
