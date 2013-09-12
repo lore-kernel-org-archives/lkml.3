@@ -1,118 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab3ILPKf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 11:10:35 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54699 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703Ab3ILPKe (ORCPT
+	id S1754216Ab3ILPKl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 11:10:41 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:63547 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752703Ab3ILPKj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 11:10:34 -0400
-Message-ID: <5231D953.4070908@ti.com>
-Date: Thu, 12 Sep 2013 20:40:11 +0530
-From: Balaji T K <balajitk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Thu, 12 Sep 2013 11:10:39 -0400
+Date: Thu, 12 Sep 2013 16:10:35 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Samuel Ortiz'" <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] mfd: timberdale: remove unnecessary pci_set_drvdata()
+Message-ID: <20130912151035.GL11227@lee--X1>
+References: <001501ceaf83$1e558220$5b008660$%han@samsung.com>
+ <001701ceaf83$8921e6c0$9b65b440$%han@samsung.com>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Matt Porter <matt.porter@linaro.org>, Chris Ball <cjb@laptop.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>, Tony Lindgren <tony@atomide.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: Uninitialized rx_req/tx_req (was: Re: [PATCH v2 2/3] mmc: omap_hsmmc:
- Skip platform_get_resource_byname() for dt case)
-References: <CAMuHMdVVjkZBZyJe2qnUxHeRVo+8WD_Vx1ZKin_pA7XLRCW8uw@mail.gmail.com>
-In-Reply-To: <CAMuHMdVVjkZBZyJe2qnUxHeRVo+8WD_Vx1ZKin_pA7XLRCW8uw@mail.gmail.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <001701ceaf83$8921e6c0$9b65b440$%han@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 12 September 2013 06:11 PM, Geert Uytterhoeven wrote:
-> On Tue, Mar 5, 2013 at 10:13 PM, Matt Porter <mporter@ti.com> wrote:
->> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>
->> MMC driver probe will abort for DT case because of failed
->> platform_get_resource_byname() lookup. Fix it by skipping resource
->> byname lookup for device tree build.
->>
->> Issue is hidden because hwmod popullates the IO resources which
->> helps to succeed platform_get_resource_byname() and probe.
->>
->> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->> ---
->>   drivers/mmc/host/omap_hsmmc.c |   28 +++++++++++++++-------------
->>   1 file changed, 15 insertions(+), 13 deletions(-)
->>
->> diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
->> index e79b12d..8ae1225 100644
->> --- a/drivers/mmc/host/omap_hsmmc.c
->> +++ b/drivers/mmc/host/omap_hsmmc.c
->> @@ -1896,21 +1896,23 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
->>
->>          omap_hsmmc_conf_bus_power(host);
->>
->> -       res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "tx");
->> -       if (!res) {
->> -               dev_err(mmc_dev(host->mmc), "cannot get DMA TX channel\n");
->> -               ret = -ENXIO;
->> -               goto err_irq;
->> -       }
->> -       tx_req = res->start;
->> +       if (!pdev->dev.of_node) {
->> +               res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "tx");
->> +               if (!res) {
->> +                       dev_err(mmc_dev(host->mmc), "cannot get DMA TX channel\n");
->> +                       ret = -ENXIO;
->> +                       goto err_irq;
->> +               }
->> +               tx_req = res->start;
->>
->> -       res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "rx");
->> -       if (!res) {
->> -               dev_err(mmc_dev(host->mmc), "cannot get DMA RX channel\n");
->> -               ret = -ENXIO;
->> -               goto err_irq;
->> +               res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "rx");
->> +               if (!res) {
->> +                       dev_err(mmc_dev(host->mmc), "cannot get DMA RX channel\n");
->> +                       ret = -ENXIO;
->> +                       goto err_irq;
->> +               }
->> +               rx_req = res->start;
->>          }
->> -       rx_req = res->start;
->>
->>          dma_cap_zero(mask);
->>          dma_cap_set(DMA_SLAVE, mask);
->
-> Now this is in mainline, I get (gcc 4.1.2):
->
-> drivers/mmc/host/omap_hsmmc.c: In function ‘omap_hsmmc_probe’:
-> drivers/mmc/host/omap_hsmmc.c:1779: warning: ‘rx_req’ may be used
-> uninitialized in this function
-> drivers/mmc/host/omap_hsmmc.c:1779: warning: ‘tx_req’ may be used
-> uninitialized in this function
->
-> Indeed, rx_req and tx_req are not initialized in the DT case.
->
-> Initializing them to zero is probably not the right fix. Where are the values
-> supposed to come from in the DT case?
->
-> Gr{oetje,eeting}s,
->
->                          Geert
->
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
->
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                  -- Linus Torvalds
->
+On Thu, 12 Sep 2013, Jingoo Han wrote:
 
+> The driver core clears the driver data to NULL after device_release
+> or on probe failure. Thus, it is not needed to manually clear the
+> device driver data to NULL.
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+>  drivers/mfd/timberdale.c |    3 ---
+>  1 file changed, 3 deletions(-)
+> 
+> diff --git a/drivers/mfd/timberdale.c b/drivers/mfd/timberdale.c
+> index a6755ec..084767b 100644
+> --- a/drivers/mfd/timberdale.c
+> +++ b/drivers/mfd/timberdale.c
+> @@ -829,12 +829,10 @@ err_config:
+>  err_ioremap:
+>  	release_mem_region(priv->ctl_mapbase, CHIPCTLSIZE);
+>  err_request:
+> -	pci_set_drvdata(dev, NULL);
+
+So now err_request is redundant.
+
+Can you clean that up in this patch also please?
+
+>  err_start:
+>  	pci_disable_device(dev);
+>  err_enable:
+>  	kfree(priv);
+> -	pci_set_drvdata(dev, NULL);
+>  	return -ENODEV;
+>  }
+>  
+> @@ -851,7 +849,6 @@ static void timb_remove(struct pci_dev *dev)
+>  
+>  	pci_disable_msix(dev);
+>  	pci_disable_device(dev);
+> -	pci_set_drvdata(dev, NULL);
+>  	kfree(priv);
+>  }
+>  
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org â”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
