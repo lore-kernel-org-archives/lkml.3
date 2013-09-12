@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756581Ab3ILTsY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 15:48:24 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:34976 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756558Ab3ILTsW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 15:48:22 -0400
+	id S1756631Ab3ILTsl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 15:48:41 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:35227 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756600Ab3ILTsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 15:48:36 -0400
+Date: Thu, 12 Sep 2013 20:48:33 +0100
+From: Hedi Berriche <hedi@sgi.com>
+To: Mike Travis <travis@sgi.com>
+Cc: paulmck@linux.vnet.ibm.com, Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dimitri Sivanich <sivanich@sgi.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 9/9] x86/UV: Add ability to disable UV NMI handler
+Message-ID: <20130912194833.GW8742@dangermouse.emea.sgi.com>
+Mail-Followup-To: Mike Travis <travis@sgi.com>, paulmck@linux.vnet.ibm.com,
+	Peter Zijlstra <peterz@infradead.org>,
+	Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+	Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+	Jason Wessel <jason.wessel@windriver.com>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Dimitri Sivanich <sivanich@sgi.com>, x86@kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20130905225032.879120272@asylum.americas.sgi.com>
+ <20130905225034.343366161@asylum.americas.sgi.com>
+ <20130909124349.GY31370@twins.programming.kicks-ass.net>
+ <522E0037.3090107@sgi.com>
+ <20130910090349.GN26785@twins.programming.kicks-ass.net>
+ <20130912172731.GR3966@linux.vnet.ibm.com>
+ <52320F18.4040407@sgi.com>
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <5231EF5A.7010901@vmware.com>
-References: <20130912150645.GZ31370@twins.programming.kicks-ass.net>
-	<CAKMK7uFF2GkYapa2_DLv4WYAd0t+POaT+Vy9HG=HQhzMmtH9nA@mail.gmail.com>
-	<5231E18D.7070306@canonical.com>
-	<5231EF5A.7010901@vmware.com>
-Date: Thu, 12 Sep 2013 21:48:22 +0200
-Message-ID: <CAKMK7uHLLseg_Aqiq9PoBNdnL_aC7A6sJYK6xYddi1FdQfKNsw@mail.gmail.com>
-Subject: Re: [BUG] completely bonkers use of set_need_resched + VM_FAULT_NOPAGE
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Thomas Hellstrom <thellstrom@vmware.com>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Peter Zijlstra <peterz@infradead.org>, Dave Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <52320F18.4040407@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 6:44 PM, Thomas Hellstrom <thellstrom@vmware.com> wrote:
->
-> I think a possible fix would be if fault() were allowed to return an error
-> and drop the mmap_sem() before returning.
->
-> Otherwise we need to track down all copy_to_user / copy_from_user which
-> happen with bo::reserve held.
+On Thu, Sep 12, 2013 at 19:59 Mike Travis wrote:
+| On 9/12/2013 10:27 AM, Paul E. McKenney wrote:
+|
+| > But what is it that you are looking for?  If you want to silence it
+| > completely, the rcu_cpu_stall_suppress boot/sysfs parameter is what
+| > you want to use.
+| 
+| We have by default rcutree.rcu_cpu_stall_suppress=1 on the kernel
+| cmdline.  I'll double check if it was set during my testing.
 
-For maximal evilness submit the relocation list (or whatever data
-execbuf slurps in with copy_from_user while holding bo::reserve) of a
-bo in the execbuf list. At least that's the testcase we have for
-drm/i915. Then make sure that the execbuf wants the bo somewhere it
-can't be mmaped from userspace, so needs to be moved both in the fault
-handler and then back for the execbuf to continue ;-)
--Daniel
+FWIW, for recent enough kernels the correct boot parameter is
+rcupdate.rcu_cpu_stall_suppress.
+
+It used to be rcutree.rcu_cpu_stall_suppress, but that has changed after
+commit 6bfc09e.
+
+Cheers,
+Hedi.
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Be careful of reading health books, you might die of a misprint.
+	-- Mark Twain
