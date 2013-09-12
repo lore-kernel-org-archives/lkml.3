@@ -1,100 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754389Ab3ILMZk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 08:25:40 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:41793 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753530Ab3ILMZi (ORCPT
+	id S1755152Ab3ILM2p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 08:28:45 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:56834 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753447Ab3ILM2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 08:25:38 -0400
-Date: Thu, 12 Sep 2013 14:25:34 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH 0/7] preempt_count rework -v2
-Message-ID: <20130912122534.GA18794@gmail.com>
-References: <CA+55aFz7WtcdkwKEGoqCzmC9HsY0LPK-oVK_oATYhRnbGq=2GA@mail.gmail.com>
- <20130910212509.GA18147@laptop.programming.kicks-ass.net>
- <CA+55aFxsEYQPXnoxNXAeSPEkk3uT8iq-_KJVe2M2qZZbtL=cbA@mail.gmail.com>
- <20130911131323.GQ31370@twins.programming.kicks-ass.net>
- <CA+55aFyxcHvQUe_h8cyQrNbGJ6-G_NQnK9pVenABLjCF-7WMXg@mail.gmail.com>
- <20130911185944.GA1798@laptop.programming.kicks-ass.net>
- <CA+55aFxDbqeFumkVApf-L2pi+FQn06GQqQf4rWkzOC4LF=fn=A@mail.gmail.com>
- <20130912022040.GT31370@twins.programming.kicks-ass.net>
- <CA+55aFwdS5-U8UtjZ8qsKyn7ap05MPXMFeU-GXgU2PE5KrCrHg@mail.gmail.com>
- <20130912115155.GV31370@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130912115155.GV31370@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 12 Sep 2013 08:28:43 -0400
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+To: linux-kernel@vger.kernel.org
+Cc: Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>, devicetree@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+Subject: [PATCH v2 0/2] regulator: da9210: support Device Tree initialisation
+Date: Thu, 12 Sep 2013 14:28:33 +0200
+Message-Id: <1378988915-10539-1-git-send-email-g.liakhovetski@gmx.de>
+X-Mailer: git-send-email 1.7.2.5
+X-Provags-ID: V02:K0:u/tTNaJknHCd677tF3JXPppLT15866a2shyJ8lipmHe
+ H35+IfRTKy1354xqysXGvFSslIo+0BEjZTaYlLlUlZ6pPISToD
+ NsWeTOuK63ZN8qY7Wl72qJLl9GZY/+QoAAdtR5io3S4poDwprF
+ zYwOuvFH2dZNyRX/sVUuLkHG/YDlksAZe+yQitI8EmHzz0lvEt
+ K6tcYFxo77DIQjt7tVVkm+D4TSPt2fVS+zjSc3zzoj0oqoGRVD
+ 05OipN88oMPLNghNKH22TdglEoJA4m46yPvFIkeJcFE55jalsI
+ +2/vR9tHJRAjeYU8wbti53sHnB0zsAOnK+cM2D/Y6BS+c60a8p
+ 1tfZHavWtWHG16uYyk/n5QFEzh+2IbB7hnYztnT16dMRb3hTEU
+ VAWgCAyvwbOSQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The first patch just adds a vendor prefix for Dialog Semiconductor PLC, the
+second one actually implements DT support in da9210.
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+Cc: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
 
-> So the increase is there too, doing a objdump -D on them the first 
-> difference is:
-> 
-> 0000000000000660 <do_page_add_anon_rmap>:
->      660:	55                   	push   %rbp
->      661:	48 89 e5             	mov    %rsp,%rbp
->      664:	48 83 ec 20          	sub    $0x20,%rsp
->      668:	48 89 5d f0          	mov    %rbx,-0x10(%rbp)
->      66c:	4c 89 65 f8          	mov    %r12,-0x8(%rbp)
->      670:	48 89 fb             	mov    %rdi,%rbx
->      673:	f0 ff 47 18          	lock incl 0x18(%rdi)
->      677:	0f 94 c0             	sete   %al
->      67a:	84 c0                	test   %al,%al
->      67c:	75 12                	jne    690 <do_page_add_anon_rmap+0x30>
->      67e:	48 8b 5d f0          	mov    -0x10(%rbp),%rbx
->      682:	4c 8b 65 f8          	mov    -0x8(%rbp),%r12
->      686:	c9                   	leaveq 
-> 
-> vs.:
-> 
-> 0000000000000660 <do_page_add_anon_rmap>:
->      660:	55                   	push   %rbp
->      661:	48 89 e5             	mov    %rsp,%rbp
->      664:	48 83 ec 20          	sub    $0x20,%rsp
->      668:	48 89 5d e0          	mov    %rbx,-0x20(%rbp)
->      66c:	4c 89 65 e8          	mov    %r12,-0x18(%rbp)
->      670:	48 89 fb             	mov    %rdi,%rbx
->      673:	4c 89 6d f0          	mov    %r13,-0x10(%rbp)
->      677:	4c 89 75 f8          	mov    %r14,-0x8(%rbp)
->      67b:	f0 ff 47 18          	lock incl 0x18(%rdi)
->      67f:	74 17                	je     698 <do_page_add_anon_rmap+0x38>
->      681:	48 8b 5d e0          	mov    -0x20(%rbp),%rbx
->      685:	4c 8b 65 e8          	mov    -0x18(%rbp),%r12
->      689:	4c 8b 6d f0          	mov    -0x10(%rbp),%r13
->      68d:	4c 8b 75 f8          	mov    -0x8(%rbp),%r14
->      691:	c9                   	leaveq 
-> 
-> For some obscure (to me) reason the new fangled asm goto construct 
-> generates a bunch of extra MOVs.
+v2: add DT documentation
 
-It adds two pairs of MOVs that shows that R13 and R14 got clobbered, but 
-the change also got rid of of a SETE and a TEST here:
+Guennadi Liakhovetski (2):
+  DT: add a vendor prefix for Dialog Semiconductor
+  regulator: da9210: add Device Tree support
 
->      673:	f0 ff 47 18          	lock incl 0x18(%rdi)
->      677:	0f 94 c0             	sete   %al
->      67a:	84 c0                	test   %al,%al
->      67c:	75 12                	jne    690 <do_page_add_anon_rmap+0x30>
+ .../devicetree/bindings/regulator/da9210.txt       |   21 ++++++++++++++++++++
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+ drivers/regulator/da9210-regulator.c               |    9 +++++--
+ 3 files changed, 28 insertions(+), 3 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/regulator/da9210.txt
 
-so there's a slight increase in size, but the extra instructions look 
-rather lightweight and it could all go away if asm goto is improved ...
+-- 
+1.7.2.5
 
-It would all be very sweet if all those clobbers went away.
-
-Thanks,
-
-	Ingo
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
