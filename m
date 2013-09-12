@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167Ab3ILSBR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:01:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57192 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755944Ab3ILR7b (ORCPT
+	id S1756192Ab3ILSB2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:01:28 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:38679 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756172Ab3ILSBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 13:59:31 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-Subject: [ 46/46] ARM: at91: dt: sam9260: add i2c gpio pinctrl
-Date: Thu, 12 Sep 2013 10:58:57 -0700
-Message-Id: <20130912175725.946900261@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130912175721.001906199@linuxfoundation.org>
-References: <20130912175721.001906199@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Thu, 12 Sep 2013 14:01:24 -0400
+Date: Thu, 12 Sep 2013 20:01:20 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Patch v5 0/9] liblockdep: userspace lockdep
+Message-ID: <20130912180120.GB32511@gmail.com>
+References: <1371163284-6346-1-git-send-email-sasha.levin@oracle.com>
+ <20130626122408.GJ28407@twins.programming.kicks-ass.net>
+ <20130626155325.GB7399@gmail.com>
+ <51CB4328.7010006@oracle.com>
+ <20130627090722.GC4398@gmail.com>
+ <51CC4461.50207@oracle.com>
+ <51DA127E.3040706@oracle.com>
+ <20130708083914.GB3948@gmail.com>
+ <5231FCA1.4090803@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5231FCA1.4090803@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+* Sasha Levin <sasha.levin@oracle.com> wrote:
 
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> On 07/08/2013 04:39 AM, Ingo Molnar wrote:
+> >
+> >* Sasha Levin <sasha.levin@oracle.com> wrote:
+> >
+> >>>>The other issue is that with lock classes disabled you have to hit an
+> >>>>actual deadlock to trigger any output.
+> >>>>
+> >>>>I.e. much of the power of lockdep is diminished :-/ When actual
+> >>>>deadlocks are triggered then it's not particularly complex to debug
+> >>>>user-space apps: gdb the hung task(s) and look at the backtraces.
+> >>>
+> >>>Lock classes are disabled only if you're using the LD_PRELOAD method
+> >>>of testing. If you actually re-compile your code with the library (by
+> >>>just including the header and setting a #define to enable it) you will
+> >>>have lock classes.
+> >>
+> >>Hi Ingo,
+> >>
+> >>Just wondering if you're planning on pushing it over to Linus from your
+> >>tree, or should I go ahead and do it on my own?
+> >
+> >PeterZ is in favor as well so I'll apply them after the merge window, for
+> >v3.12.
+> 
+> Hi Ingo,
+> 
+> Do you intend to send liblockdep in this merge window as planned?
 
-commit f89ae61bd74ae195c464bdd97a134e30908884d5 upstream.
+If Peter agrees with them and picks them up then the next merge window 
+would be fine I guess.
 
-Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Boris BREZILLON <b.brezillon@overkiz.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Thanks,
 
----
- arch/arm/boot/dts/at91sam9260.dtsi |   10 ++++++++++
- 1 file changed, 10 insertions(+)
-
---- a/arch/arm/boot/dts/at91sam9260.dtsi
-+++ b/arch/arm/boot/dts/at91sam9260.dtsi
-@@ -340,6 +340,14 @@
- 					};
- 				};
- 
-+				i2c_gpio0 {
-+					pinctrl_i2c_gpio0: i2c_gpio0-0 {
-+						atmel,pins =
-+							<0 23 0x0 0x3   /* PA23 gpio I2C_SDA pin */
-+							 0 24 0x0 0x3>; /* PA24 gpio I2C_SCL pin */
-+					};
-+				};
-+
- 				pioA: gpio@fffff400 {
- 					compatible = "atmel,at91rm9200-gpio";
- 					reg = <0xfffff400 0x200>;
-@@ -592,6 +600,8 @@
- 		i2c-gpio,delay-us = <2>;	/* ~100 kHz */
- 		#address-cells = <1>;
- 		#size-cells = <0>;
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&pinctrl_i2c_gpio0>;
- 		status = "disabled";
- 	};
- };
-
-
+	Ingo
