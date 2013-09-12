@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756060Ab3ILW06 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 18:26:58 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:39008 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752855Ab3ILW04 (ORCPT
+	id S1756184Ab3ILW1s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 18:27:48 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:62466 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752855Ab3ILW1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 18:26:56 -0400
+	Thu, 12 Sep 2013 18:27:46 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Koen Kooi <koen@dominion.thruhere.net>
+Cc: linux-kernel@vger.kernel.org, bcousson@baylibre.com, tony@atomide.com,
+        rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk,
+        linux@arm.linux.org.uk, linux-omap@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 0/2] ARM: dts: Beaglebone MMC fixes
+References: <1379010935-25943-1-git-send-email-koen@dominion.thruhere.net>
+Date: Thu, 12 Sep 2013 15:27:43 -0700
+In-Reply-To: <1379010935-25943-1-git-send-email-koen@dominion.thruhere.net>
+	(Koen Kooi's message of "Thu, 12 Sep 2013 20:35:31 +0200")
+Message-ID: <87y571r7z4.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo6pLsDTOPRgV0Qb3W9OSGZXkNOeBk+i47RyoFjK-xPEJw@mail.gmail.com>
-References: <CAErSpo53L3-feEw0qZvBTmRrY+SXpGrGU6oxZg3wVjH1M8JDXg@mail.gmail.com>
- <F6FB0E698C9B3143BDF729DF222866466FD41225@ORSMSX110.amr.corp.intel.com>
- <CAErSpo5AiRw7HvGQMq-n596ZkHJs_KJNn346yf+jc7yti-xpUw@mail.gmail.com>
- <CAErSpo4E9LNrfqTq1_WUoAx68_krw23BjSYbPpJPOr=zbq98xA@mail.gmail.com>
- <CAErSpo6Ky1FQeRjjbhja2KC7EYGJ2nR1ZNuYjYi89DoqLse2cw@mail.gmail.com>
- <CAErSpo7m=YB=1cHSBTwufTHAiAd+k9Re2s-ro509BELOgK8j7Q@mail.gmail.com>
- <F6FB0E698C9B3143BDF729DF222866466FD4418D@ORSMSX110.amr.corp.intel.com>
- <20130823185240.GA1507@google.com> <F6FB0E698C9B3143BDF729DF222866466FD4421F@ORSMSX110.amr.corp.intel.com>
- <CAErSpo4VLBon21cSzaigVqy6dS7=qfVRuPTTGuWAz+GLJWmNog@mail.gmail.com>
- <F6FB0E698C9B3143BDF729DF222866466FD44279@ORSMSX110.amr.corp.intel.com> <CAErSpo6pLsDTOPRgV0Qb3W9OSGZXkNOeBk+i47RyoFjK-xPEJw@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 12 Sep 2013 16:26:34 -0600
-Message-ID: <CAErSpo4LKRHyq=o5PC70heoiDiHOTvqzcML9F_OVwg+EtvUw6A@mail.gmail.com>
-Subject: Re: [E1000-devel] 3.11-rc4 ixgbevf: endless "Last Request of type 00
- to PF Nacked" messages
-To: "Skidmore, Donald C" <donald.c.skidmore@intel.com>
-Cc: "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Don Dutile <ddutile@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 27, 2013 at 5:01 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+Koen Kooi <koen@dominion.thruhere.net> writes:
 
-> I haven't been able to reproduce the problem with the 2.10.3 ixgbevf
-> driver from http://sourceforge.net/projects/e1000/files/ixgbevf%20stable/
-> ...
-> Sorry for wasting so much time on something that appears to be already fixed.
+> Here are two patches to fix MMC on beaglebone, one fixes card detect on BBW,
+> the other adds the eMMC entry for BBB and its fixed regulator. After that mmc1
+> gets a nice speed boost by moving to 4-bit mode and LED triggers get assigned.
+>
+> This series depends on:
+>
+> http://comments.gmane.org/gmane.linux.kernel.stable/63648
+> https://lkml.org/lkml/2013/9/10/454
+> http://comments.gmane.org/gmane.linux.kernel.mmc/22381
+>
+> Or as git-cherry would put it:
+>
+> [koen@rrMBP patches]$ git cherry -v
+> + 564fc88cc64387af5312e2abd8019c75a13223b2 ARM: OMAP2+: am335x-bone*: add DT for BeagleBone Black
+> + e5133ed98acc1c3e01c370b851041a8ca629cd15 ARM: EDMA: Fix clearing of unused list for DT DMA resources
+> + ac71bb58605d3bdd5d14af770a639fb3ff11c612 ARM: dts: add AM33XX EDMA support
+> + 31a8270a299c57c7de7510f44d9dc36fd1787243 ARM: dts: add AM33XX SPI DMA support
+> + 4fa0a4cb9ea17da30cf43085c03e5ec1361a4fc2 ARM: dts: add AM33XX MMC support and documentation
+> + 0553f50bd45f019a0cc11050e2f20bddbf07dfe0 ARM: dts: am335x-bone: add CD for mmc1
+> + 7d64f765630a2921a63b82f93f9959a6de37f29d ARM: dts: am335x-boneblack: add eMMC DT entry
+> + dc96cd4003e2668d8ec7e7fe19e402e97a198f81 ARM: dts: am335x-bone-common: switch mmc1 to 4-bit mode
+> + f8262e78830cda56c936724549ba9f04dddde312 ARM: dts: am335x-bone-common: add cpu0 and mmc1 triggers
+>
+> Also available as a git branch at https://github.com/koenkooi/linux/commits/mainline
 
-I just tried the brand-new v3.11, and the usual, trivial:
+FWIW, tested this branch on BB black/white with MMC rootfs.
 
-  # echo -n 8 > /sys/bus/pci/devices/0000:04:00.0/sriov_numvfs
+Tested-by: Kevin Hilman <khilman@linaro.org>
 
-was enough to blow up my box the same old boring way (infinite string
-of "ixgbevf 0000:04:11.0: Last Request of type 03 to PF Nacked"
-messages.
+Koen, Thanks for your persistence getting this stuff merged.
 
-I guess this is because v3.11 still includes the 2.7.12-k ixgbevf
-driver, not the apparently-fixed 2.10.3 version from your sourceforge
-page.
-
-According to sourceforge, 2.7.12 was released almost a YEAR ago, on
-2012-10-18, and 2.10.3 was released 2013-07-26.  Why isn't 2.10.3 in
-v3.11?
-
-Don't you guys care that it is so easy to blow up your driver with the
-mainline kernel?  I'm quite frustrated by how much time I've wasted on
-this issue.
-
-I do not think that defending yourself with "please try the latest
-driver from sourceforge" is a reasonable or friendly way to work in
-the Linux community.
-
-Bjorn
+Kevin
