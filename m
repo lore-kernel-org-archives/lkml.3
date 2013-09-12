@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751859Ab3ILBHY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 21:07:24 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7969 "EHLO
+	id S1752690Ab3ILBHo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 21:07:44 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23560 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500Ab3ILBHF (ORCPT
+	with ESMTP id S1751577Ab3ILBHl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 21:07:05 -0400
-X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=_4FCbG-fbZxghAKZcmoA:9 a=CjuIK1q_8ugA:10 a=sAUb61P50ZWkquYE:21 a=vGOYkVCrHYIJl-Wd:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Wed, 11 Sep 2013 21:07:41 -0400
+X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=eIhxMilvRf8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=tmnziQNd6eFHTMwYZPUA:9 a=QEXdDO2ut3YA:10 a=KgFM-o-LZnbcZ8gU:21 a=tNN3N6rGPjxISAFA:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Date: Wed, 11 Sep 2013 21:07:02 -0400
+Date: Wed, 11 Sep 2013 21:07:38 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: LKML <linux-kernel@vger.kernel.org>,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         John Kacur <jkacur@redhat.com>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [ANNOUNCE] 3.8.13-rt16
-Message-ID: <20130911210702.4c3aed7b@gandalf.local.home>
+Subject: [ANNOUNCE] 3.6.11.8-rt41
+Message-ID: <20130911210738.063ddae6@gandalf.local.home>
 X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,30 +31,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Dear RT Folks,
 
-I'm pleased to announce the 3.8.13-rt16 stable release.
+I'm pleased to announce the 3.6.11.8-rt41 stable release.
 
 
 You can get this release via the git tree at:
 
   git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
 
-  branch: v3.8-rt
-  Head SHA1: 983a26769301b0e19ce787baf37a58ee73cd34f7
+  branch: v3.6-rt
+  Head SHA1: 70c67d3efde6ef4fa2fae0ba7fac3aaf011a1385
 
 
-Or to build 3.8.13-rt16 directly, the following patches should be applied:
+Or to build 3.6.11.8-rt41 directly, the following patches should be applied:
 
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.8.tar.xz
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.6.tar.xz
 
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.8.13.xz
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.6.11.xz
 
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.8/patch-3.8.13-rt16.patch.xz
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/stable/patch-3.6.11.8.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patch-3.6.11.8-rt41.patch.xz
 
 
 
-You can also build from 3.8.13-rt15 by applying the incremental patch:
+You can also build from 3.6.11.8-rt40 by applying the incremental patch:
 
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.8/incr/patch-3.8.13-rt15-rt16.patch.xz
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/incr/patch-3.6.11.8-rt40-rt41.patch.xz
 
 
 
@@ -63,18 +65,31 @@ Enjoy,
 -- Steve
 
 
-Changes from v3.8.13-rt15:
+Changes from v3.6.11.8-rt40:
 
 ---
+
+Ivo Sieben (1):
+      genirq: Set irq thread to RT priority on creation
 
 John Kacur (1):
       hpsa: fix warning with smp_processor_id() in preemptible section
 
-Sebastian Andrzej Siewior (2):
-      powerpc: 52xx: provide a default in mpc52xx_irqhost_map()
+Mike Galbraith (1):
+      x86/mce: fix mce timer interval
+
+Paul Gortmaker (1):
+      list_bl.h: make list head locking RT safe
+
+Sebastian Andrzej Siewior (5):
+      kernel/cpu: fix cpu down problem if kthread's cpu is going down
+      kernel/hotplug: restore original cpu mask oncpu/down
+      gpu: i915: allow the user not to do the wbinvd
+      drm/i915: drop trace_i915_gem_ring_dispatch on rt
       genirq: do not invoke the affinity callback via a workqueue
 
-Steven Rostedt (4):
+Steven Rostedt (5):
+      sched/workqueue: Only wake up idle workers if not blocked on sleeping spin lock
       rt,ntp: Move call to schedule_delayed_work() to helper thread
       hwlat-detector: Update hwlat_detector to add outer loop detection
       hwlat-detector: Use trace_clock_local if available
@@ -82,40 +97,105 @@ Steven Rostedt (4):
 
 Steven Rostedt (Red Hat) (2):
       hwlat-detect/trace: Export trace_clock_local for hwlat-detector
-      Linux 3.8.13-rt16
+      Linux 3.6.11.8-rt41
 
 Thomas Gleixner (1):
       sched: Distangle worker accounting from rqlock
 
+Uwe Kleine-König (1):
+      list_bl.h: fix it for for !SMP && !DEBUG_SPINLOCK
+
+Zhao Hongjiang (1):
+      timers: prepare for full preemption improve
+
 ----
- arch/powerpc/platforms/52xx/mpc52xx_pic.c |    3 +-
- drivers/misc/hwlat_detector.c             |  117 ++++++++++++++++++-----------
- drivers/scsi/hpsa.c                       |    2 +-
- include/linux/interrupt.h                 |    1 +
- kernel/irq/manage.c                       |   79 ++++++++++++++++++-
- kernel/sched/core.c                       |   70 ++++-------------
- kernel/time/ntp.c                         |   40 ++++++++++
- kernel/trace/trace_clock.c                |    1 +
- kernel/workqueue.c                        |   63 +++++++---------
- kernel/workqueue_sched.h                  |    5 +-
- localversion-rt                           |    2 +-
- 11 files changed, 240 insertions(+), 143 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce.c           |    2 +-
+ drivers/gpu/drm/i915/i915_gem.c            |   17 +++-
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |    2 +
+ drivers/misc/hwlat_detector.c              |  117 +++++++++++++++++-----------
+ drivers/scsi/hpsa.c                        |    2 +-
+ include/linux/interrupt.h                  |    1 +
+ include/linux/list_bl.h                    |   28 ++++++-
+ kernel/cpu.c                               |   29 ++++++-
+ kernel/irq/manage.c                        |   90 +++++++++++++++++++--
+ kernel/sched/core.c                        |   68 ++++------------
+ kernel/time/ntp.c                          |   40 ++++++++++
+ kernel/timer.c                             |    8 +-
+ kernel/trace/trace_clock.c                 |    1 +
+ kernel/workqueue.c                         |   59 +++++++-------
+ kernel/workqueue_sched.h                   |    5 +-
+ localversion-rt                            |    2 +-
+ 16 files changed, 319 insertions(+), 152 deletions(-)
 ---------------------------
-diff --git a/arch/powerpc/platforms/52xx/mpc52xx_pic.c b/arch/powerpc/platforms/52xx/mpc52xx_pic.c
-index b89ef65..b69221b 100644
---- a/arch/powerpc/platforms/52xx/mpc52xx_pic.c
-+++ b/arch/powerpc/platforms/52xx/mpc52xx_pic.c
-@@ -373,8 +373,9 @@ static int mpc52xx_irqhost_map(struct irq_domain *h, unsigned int virq,
- 	case MPC52xx_IRQ_L1_PERP: irqchip = &mpc52xx_periph_irqchip; break;
- 	case MPC52xx_IRQ_L1_SDMA: irqchip = &mpc52xx_sdma_irqchip; break;
- 	case MPC52xx_IRQ_L1_CRIT:
-+	default:
- 		pr_warn("%s: Critical IRQ #%d is unsupported! Nopping it.\n",
--			__func__, l2irq);
-+			__func__, l1irq);
- 		irq_set_chip(virq, &no_irq_chip);
- 		return 0;
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index e31ea90..339bb4d0 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -1649,7 +1649,7 @@ static void __mcheck_cpu_init_timer(void)
+ 	__this_cpu_write(mce_next_interval, iv);
+ 	if (!iv)
+ 		return;
+-	hrtimer_start_range_ns(t, ns_to_ktime(jiffies_to_usecs(iv) * 1000),
++	hrtimer_start_range_ns(t, ns_to_ktime(jiffies_to_usecs(iv) * 1000ULL),
+ 			       0, HRTIMER_MODE_REL_PINNED);
+ }
+ 
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index 18da42c..a3f72cb 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -36,6 +36,7 @@
+ #include <linux/swap.h>
+ #include <linux/pci.h>
+ #include <linux/dma-buf.h>
++#include <linux/module.h>
+ 
+ static __must_check int i915_gem_object_flush_gpu_write_domain(struct drm_i915_gem_object *obj);
+ static void i915_gem_object_flush_gtt_write_domain(struct drm_i915_gem_object *obj);
+@@ -2525,6 +2526,10 @@ static inline int fence_number(struct drm_i915_private *dev_priv,
+ 	return fence - dev_priv->fence_regs;
+ }
+ 
++static bool do_wbinvd = true;
++module_param(do_wbinvd, bool, 0644);
++MODULE_PARM_DESC(do_wbinvd, "Do expensive synchronization. Say no after you pin each GPU process to the same CPU in order to lower the latency.");
++
+ static void i915_gem_write_fence__ipi(void *data)
+ {
+ 	wbinvd();
+@@ -2548,8 +2553,16 @@ static void i915_gem_object_update_fence(struct drm_i915_gem_object *obj,
+ 	 * on each processor in order to manually flush all memory
+ 	 * transactions before updating the fence register.
+ 	 */
+-	if (HAS_LLC(obj->base.dev))
+-		on_each_cpu(i915_gem_write_fence__ipi, NULL, 1);
++	if (HAS_LLC(obj->base.dev)) {
++		if (do_wbinvd) {
++#ifdef CONFIG_PREEMPT_RT_FULL
++			pr_err_once("WARNING! The i915 invalidates all caches which increases the latency.");
++			pr_err_once("As a workaround use 'i915.do_wbinvd=no' and PIN each process doing ");
++			pr_err_once("any kind of GPU activity to the same CPU to avoid problems.");
++#endif
++			on_each_cpu(i915_gem_write_fence__ipi, NULL, 1);
++		}
++	}
+ 	i915_gem_write_fence(dev, fence_reg, enable ? obj : NULL);
+ 
+ 	if (enable) {
+diff --git a/drivers/gpu/drm/i915/i915_gem_execbuffer.c b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+index c26a8f8a..14df3f6 100644
+--- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
++++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+@@ -1259,7 +1259,9 @@ i915_gem_do_execbuffer(struct drm_device *dev, void *data,
+ 			goto err;
  	}
+ 
++#ifndef CONFIG_PREEMPT_RT_BASE
+ 	trace_i915_gem_ring_dispatch(ring, seqno);
++#endif
+ 
+ 	exec_start = batch_obj->gtt_offset + args->batch_start_offset;
+ 	exec_len = args->batch_len;
 diff --git a/drivers/misc/hwlat_detector.c b/drivers/misc/hwlat_detector.c
 index b7b7c90..6f61d5f 100644
 --- a/drivers/misc/hwlat_detector.c
@@ -366,10 +446,10 @@ index b7b7c90..6f61d5f 100644
  
  	/* handling partial reads is more trouble than it's worth */
 diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index 4f33806..80a44b1 100644
+index f9823f2..be83a15 100644
 --- a/drivers/scsi/hpsa.c
 +++ b/drivers/scsi/hpsa.c
-@@ -583,7 +583,7 @@ static void set_performant_mode(struct ctlr_info *h, struct CommandList *c)
+@@ -565,7 +565,7 @@ static void set_performant_mode(struct ctlr_info *h, struct CommandList *c)
  		c->busaddr |= 1 | (h->blockFetchTable[c->Header.SGList] << 1);
  		if (likely(h->msix_vector))
  			c->Header.ReplyQueue =
@@ -379,7 +459,7 @@ index 4f33806..80a44b1 100644
  }
  
 diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index 11bdb1e..838d4bd 100644
+index fb81baa..16fbe2b 100644
 --- a/include/linux/interrupt.h
 +++ b/include/linux/interrupt.h
 @@ -263,6 +263,7 @@ struct irq_affinity_notify {
@@ -390,8 +470,175 @@ index 11bdb1e..838d4bd 100644
  	void (*notify)(struct irq_affinity_notify *, const cpumask_t *mask);
  	void (*release)(struct kref *ref);
  };
+diff --git a/include/linux/list_bl.h b/include/linux/list_bl.h
+index 31f9d75..becd7a6 100644
+--- a/include/linux/list_bl.h
++++ b/include/linux/list_bl.h
+@@ -2,6 +2,7 @@
+ #define _LINUX_LIST_BL_H
+ 
+ #include <linux/list.h>
++#include <linux/spinlock.h>
+ #include <linux/bit_spinlock.h>
+ 
+ /*
+@@ -32,13 +33,22 @@
+ 
+ struct hlist_bl_head {
+ 	struct hlist_bl_node *first;
++#ifdef CONFIG_PREEMPT_RT_BASE
++	raw_spinlock_t lock;
++#endif
+ };
+ 
+ struct hlist_bl_node {
+ 	struct hlist_bl_node *next, **pprev;
+ };
+-#define INIT_HLIST_BL_HEAD(ptr) \
+-	((ptr)->first = NULL)
++
++static inline void INIT_HLIST_BL_HEAD(struct hlist_bl_head *h)
++{
++	h->first = NULL;
++#ifdef CONFIG_PREEMPT_RT_BASE
++	raw_spin_lock_init(&h->lock);
++#endif
++}
+ 
+ static inline void INIT_HLIST_BL_NODE(struct hlist_bl_node *h)
+ {
+@@ -117,12 +127,26 @@ static inline void hlist_bl_del_init(struct hlist_bl_node *n)
+ 
+ static inline void hlist_bl_lock(struct hlist_bl_head *b)
+ {
++#ifndef CONFIG_PREEMPT_RT_BASE
+ 	bit_spin_lock(0, (unsigned long *)b);
++#else
++	raw_spin_lock(&b->lock);
++#if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_SPINLOCK)
++	__set_bit(0, (unsigned long *)b);
++#endif
++#endif
+ }
+ 
+ static inline void hlist_bl_unlock(struct hlist_bl_head *b)
+ {
++#ifndef CONFIG_PREEMPT_RT_BASE
+ 	__bit_spin_unlock(0, (unsigned long *)b);
++#else
++#if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_SPINLOCK)
++	__clear_bit(0, (unsigned long *)b);
++#endif
++	raw_spin_unlock(&b->lock);
++#endif
+ }
+ 
+ /**
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 295bf9d..16ec791 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -83,6 +83,7 @@ struct hotplug_pcp {
+ 	int refcount;
+ 	int grab_lock;
+ 	struct completion synced;
++	struct completion unplug_wait;
+ #ifdef CONFIG_PREEMPT_RT_FULL
+ 	spinlock_t lock;
+ #else
+@@ -180,6 +181,7 @@ static int sync_unplug_thread(void *data)
+ {
+ 	struct hotplug_pcp *hp = data;
+ 
++	wait_for_completion(&hp->unplug_wait);
+ 	preempt_disable();
+ 	hp->unplug = current;
+ 	wait_for_pinned_cpus(hp);
+@@ -245,6 +247,14 @@ static void __cpu_unplug_sync(struct hotplug_pcp *hp)
+ 	wait_for_completion(&hp->synced);
+ }
+ 
++static void __cpu_unplug_wait(unsigned int cpu)
++{
++	struct hotplug_pcp *hp = &per_cpu(hotplug_pcp, cpu);
++
++	complete(&hp->unplug_wait);
++	wait_for_completion(&hp->synced);
++}
++
+ /*
+  * Start the sync_unplug_thread on the target cpu and wait for it to
+  * complete.
+@@ -268,6 +278,7 @@ static int cpu_unplug_begin(unsigned int cpu)
+ 	tell_sched_cpu_down_begin(cpu);
+ 
+ 	init_completion(&hp->synced);
++	init_completion(&hp->unplug_wait);
+ 
+ 	hp->sync_tsk = kthread_create(sync_unplug_thread, hp, "sync_unplug/%d", cpu);
+ 	if (IS_ERR(hp->sync_tsk)) {
+@@ -283,8 +294,7 @@ static int cpu_unplug_begin(unsigned int cpu)
+ 	 * wait for tasks that are going to enter these sections and
+ 	 * we must not have them block.
+ 	 */
+-	__cpu_unplug_sync(hp);
+-
++	wake_up_process(hp->sync_tsk);
+ 	return 0;
+ }
+ 
+@@ -553,6 +563,7 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 		.hcpu = hcpu,
+ 	};
+ 	cpumask_var_t cpumask;
++	cpumask_var_t cpumask_org;
+ 
+ 	if (num_online_cpus() == 1)
+ 		return -EBUSY;
+@@ -563,6 +574,12 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 	/* Move the downtaker off the unplug cpu */
+ 	if (!alloc_cpumask_var(&cpumask, GFP_KERNEL))
+ 		return -ENOMEM;
++	if (!alloc_cpumask_var(&cpumask_org, GFP_KERNEL))  {
++		free_cpumask_var(cpumask);
++		return -ENOMEM;
++	}
++
++	cpumask_copy(cpumask_org, tsk_cpus_allowed(current));
+ 	cpumask_andnot(cpumask, cpu_online_mask, cpumask_of(cpu));
+ 	set_cpus_allowed_ptr(current, cpumask);
+ 	free_cpumask_var(cpumask);
+@@ -571,7 +588,8 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 	if (mycpu == cpu) {
+ 		printk(KERN_ERR "Yuck! Still on unplug CPU\n!");
+ 		migrate_enable();
+-		return -EBUSY;
++		err = -EBUSY;
++		goto restore_cpus;
+ 	}
+ 
+ 	cpu_hotplug_begin();
+@@ -590,6 +608,8 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 		goto out_release;
+ 	}
+ 
++	__cpu_unplug_wait(cpu);
++
+ 	/* Notifiers are done. Don't let any more tasks pin this CPU. */
+ 	cpu_unplug_sync(cpu);
+ 
+@@ -627,6 +647,9 @@ out_cancel:
+ 	cpu_hotplug_done();
+ 	if (!err)
+ 		cpu_notify_nofail(CPU_POST_DEAD | mod, hcpu);
++restore_cpus:
++	set_cpus_allowed_ptr(current, cpumask_org);
++	free_cpumask_var(cpumask_org);
+ 	return err;
+ }
+ 
 diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 81a28dd..cf5b5f7 100644
+index 478ade0..0fe99a4 100644
 --- a/kernel/irq/manage.c
 +++ b/kernel/irq/manage.c
 @@ -163,6 +163,62 @@ int irq_do_set_affinity(struct irq_data *data, const struct cpumask *mask,
@@ -510,11 +757,50 @@ index 81a28dd..cf5b5f7 100644
  	}
  
  	raw_spin_lock_irqsave(&desc->lock, flags);
+@@ -824,9 +897,6 @@ static void irq_thread_dtor(struct callback_head *unused)
+ static int irq_thread(void *data)
+ {
+ 	struct callback_head on_exit_work;
+-	static const struct sched_param param = {
+-		.sched_priority = MAX_USER_RT_PRIO/2,
+-	};
+ 	struct irqaction *action = data;
+ 	struct irq_desc *desc = irq_to_desc(action->irq);
+ 	irqreturn_t (*handler_fn)(struct irq_desc *desc,
+@@ -838,8 +908,6 @@ static int irq_thread(void *data)
+ 	else
+ 		handler_fn = irq_thread_fn;
+ 
+-	sched_setscheduler(current, SCHED_FIFO, &param);
+-
+ 	init_task_work(&on_exit_work, irq_thread_dtor);
+ 	task_work_add(current, &on_exit_work, false);
+ 
+@@ -938,6 +1006,9 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+ 	 */
+ 	if (new->thread_fn && !nested) {
+ 		struct task_struct *t;
++		static const struct sched_param param = {
++			.sched_priority = MAX_USER_RT_PRIO/2,
++		};
+ 
+ 		t = kthread_create(irq_thread, new, "irq/%d-%s", irq,
+ 				   new->name);
+@@ -945,6 +1016,9 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+ 			ret = PTR_ERR(t);
+ 			goto out_mput;
+ 		}
++
++		sched_setscheduler(t, SCHED_FIFO, &param);
++
+ 		/*
+ 		 * We keep the reference to the task struct even if
+ 		 * the thread dies to avoid that the interrupt code
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 505e08f..d7c1471 100644
+index 5051ca6..1493f43 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -1321,10 +1321,6 @@ static void ttwu_activate(struct rq *rq, struct task_struct *p, int en_flags)
+@@ -1452,10 +1452,6 @@ static void ttwu_activate(struct rq *rq, struct task_struct *p, int en_flags)
  {
  	activate_task(rq, p, en_flags);
  	p->on_rq = 1;
@@ -525,7 +811,7 @@ index 505e08f..d7c1471 100644
  }
  
  /*
-@@ -1551,42 +1547,6 @@ out:
+@@ -1714,42 +1710,6 @@ out:
  }
  
  /**
@@ -568,7 +854,7 @@ index 505e08f..d7c1471 100644
   * wake_up_process - Wake up a specific process
   * @p: The process to be woken up.
   *
-@@ -3139,21 +3099,6 @@ need_resched:
+@@ -3627,19 +3587,6 @@ need_resched:
  		} else {
  			deactivate_task(rq, prev, DEQUEUE_SLEEP);
  			prev->on_rq = 0;
@@ -577,10 +863,8 @@ index 505e08f..d7c1471 100644
 -			 * If a worker went to sleep, notify and ask workqueue
 -			 * whether it wants to wake up a task to maintain
 -			 * concurrency.
--			 * Only call wake up if prev isn't blocked on a sleeping
--			 * spin lock.
 -			 */
--			if (prev->flags & PF_WQ_WORKER && !prev->saved_state) {
+-			if (prev->flags & PF_WQ_WORKER) {
 -				struct task_struct *to_wakeup;
 -
 -				to_wakeup = wq_worker_sleeping(prev, cpu);
@@ -590,7 +874,7 @@ index 505e08f..d7c1471 100644
  		}
  		switch_count = &prev->nvcsw;
  	}
-@@ -3197,6 +3142,14 @@ static inline void sched_submit_work(struct task_struct *tsk)
+@@ -3683,6 +3630,14 @@ static inline void sched_submit_work(struct task_struct *tsk)
  {
  	if (!tsk->state || tsk_is_pi_blocked(tsk))
  		return;
@@ -605,7 +889,7 @@ index 505e08f..d7c1471 100644
  	/*
  	 * If we are going to sleep and we have plugged IO queued,
  	 * make sure to submit it to avoid deadlocks.
-@@ -3205,12 +3158,19 @@ static inline void sched_submit_work(struct task_struct *tsk)
+@@ -3691,12 +3646,19 @@ static inline void sched_submit_work(struct task_struct *tsk)
  		blk_schedule_flush_plug(tsk);
  }
  
@@ -687,6 +971,48 @@ index bb1edfa..3e93516 100644
  
  #else
  static inline void notify_cmos_timer(void) { }
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 027ce4e..61b57c1 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -76,7 +76,9 @@ struct tvec_root {
+ struct tvec_base {
+ 	spinlock_t lock;
+ 	struct timer_list *running_timer;
++#ifdef CONFIG_PREEMPT_RT_FULL
+ 	wait_queue_head_t wait_for_running_timer;
++#endif
+ 	unsigned long timer_jiffies;
+ 	unsigned long next_timer;
+ 	unsigned long active_timers;
+@@ -1006,7 +1008,7 @@ static void wait_for_running_timer(struct timer_list *timer)
+ 			   base->running_timer != timer);
+ }
+ 
+-# define wakeup_timer_waiters(b)	wake_up(&(b)->wait_for_tunning_timer)
++# define wakeup_timer_waiters(b)	wake_up(&(b)->wait_for_running_timer)
+ #else
+ static inline void wait_for_running_timer(struct timer_list *timer)
+ {
+@@ -1251,7 +1253,7 @@ static inline void __run_timers(struct tvec_base *base)
+ 			spin_lock_irq(&base->lock);
+ 		}
+ 	}
+-	wake_up(&base->wait_for_running_timer);
++	wakeup_timer_waiters(base);
+ 	spin_unlock_irq(&base->lock);
+ }
+ 
+@@ -1765,7 +1767,9 @@ static int __cpuinit init_timers_cpu(int cpu)
+ 			base = &boot_tvec_bases;
+ 		}
+ 		spin_lock_init(&base->lock);
++#ifdef CONFIG_PREEMPT_RT_FULL
+ 		init_waitqueue_head(&base->wait_for_running_timer);
++#endif
+ 		tvec_base_done[cpu] = 1;
+ 	} else {
+ 		base = per_cpu(tvec_bases, cpu);
 diff --git a/kernel/trace/trace_clock.c b/kernel/trace/trace_clock.c
 index 3947835..1bbb1b2 100644
 --- a/kernel/trace/trace_clock.c
@@ -700,18 +1026,18 @@ index 3947835..1bbb1b2 100644
  /*
   * trace_clock(): 'between' trace clock. Not completely serialized,
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 99855b3..788b017 100644
+index b973d66..6308d9b 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -149,6 +149,7 @@ struct worker {
+@@ -148,6 +148,7 @@ struct worker {
  	unsigned long		last_active;	/* L: last active timestamp */
  	unsigned int		flags;		/* X: flags */
  	int			id;		/* I: worker id */
 +	int			sleeping;	/* None */
  
  	/* for rebinding worker to CPU */
- 	struct work_struct	rebind_work;	/* L: for busy worker */
-@@ -730,54 +731,45 @@ static void wake_up_worker(struct worker_pool *pool)
+ 	struct idle_rebind	*idle_rebind;	/* L: for idle worker */
+@@ -691,52 +692,45 @@ static void wake_up_worker(struct worker_pool *pool)
  }
  
  /**
@@ -733,13 +1059,10 @@ index 99855b3..788b017 100644
  {
  	struct worker *worker = kthread_data(task);
  
--	if (!(worker->flags & WORKER_NOT_RUNNING)) {
--		WARN_ON_ONCE(worker->pool->gcwq->cpu != cpu);
 +	if (!worker->sleeping)
 +		return;
-+	if (!(worker->flags & WORKER_NOT_RUNNING))
+ 	if (!(worker->flags & WORKER_NOT_RUNNING))
  		atomic_inc(get_pool_nr_running(worker->pool));
--	}
 +	worker->sleeping = 0;
  }
  
@@ -788,7 +1111,7 @@ index 99855b3..788b017 100644
  	/*
  	 * The counterpart of the following dec_and_test, implied mb,
  	 * worklist not empty test sequence is in insert_work().
-@@ -789,9 +781,12 @@ struct task_struct *wq_worker_sleeping(struct task_struct *task,
+@@ -748,9 +742,12 @@ struct task_struct *wq_worker_sleeping(struct task_struct *task,
  	 * manipulating idle_list, so dereferencing idle_list without gcwq
  	 * lock is safe.
  	 */
@@ -818,9 +1141,9 @@ index 2d10fc9..3bf73e2 100644
 +void wq_worker_running(struct task_struct *task);
 +void wq_worker_sleeping(struct task_struct *task);
 diff --git a/localversion-rt b/localversion-rt
-index 18777ec..1199eba 100644
+index 2af6c89..629e0b4 100644
 --- a/localversion-rt
 +++ b/localversion-rt
 @@ -1 +1 @@
---rt15
-+-rt16
+--rt40
++-rt41
