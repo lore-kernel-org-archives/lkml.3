@@ -1,135 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143Ab3ILNRH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 09:17:07 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:46930 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753811Ab3ILNRF (ORCPT
+	id S1752738Ab3ILNUs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 09:20:48 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:48790 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901Ab3ILNUp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 09:17:05 -0400
-Date: Thu, 12 Sep 2013 09:16:55 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] firmware: Be a bit more verbose about direct firmware
- loading failure
-Message-ID: <20130912131655.GA8619@hmsreliant.think-freely.org>
-References: <1378496168-3684-1-git-send-email-nhorman@tuxdriver.com>
- <CACVXFVPRWEXMHyGhfZVGX2HrL3cguqVBUjTS51r2p8EGt=EPdg@mail.gmail.com>
- <20130911141943.GA3181@neilslaptop.think-freely.org>
- <CACVXFVNfkfsSJJUK_BWHLnddk=NAWDJoERmg_qycYa11G_X2RA@mail.gmail.com>
+	Thu, 12 Sep 2013 09:20:45 -0400
+Message-ID: <5231BF7A.3080104@ti.com>
+Date: Thu, 12 Sep 2013 16:19:54 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACVXFVNfkfsSJJUK_BWHLnddk=NAWDJoERmg_qycYa11G_X2RA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: <balbi@ti.com>, <bcousson@baylibre.com>, <tony@atomide.com>,
+        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <linux@arm.linux.org.uk>,
+        <grant.likely@linaro.org>, <s.nawrocki@samsung.com>,
+        <galak@codeaurora.org>, <swarren@wwwdotorg.org>,
+        <ian.campbell@citrix.com>, <rob@landley.net>, <george.cherian@ti.com>,
+        <gregkh@linuxfoundation.org>, <linux-doc@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/7] usb: dwc3: adapt dwc3 core to use Generic PHY Framework
+References: <1378136591-7463-1-git-send-email-kishon@ti.com> <1378136591-7463-3-git-send-email-kishon@ti.com>
+In-Reply-To: <1378136591-7463-3-git-send-email-kishon@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 10:25:58AM +0800, Ming Lei wrote:
-> On Wed, Sep 11, 2013 at 10:19 PM, Neil Horman <nhorman@tuxdriver.com> wrote:
-> > On Wed, Sep 11, 2013 at 07:54:28PM +0800, Ming Lei wrote:
-> >> On Sat, Sep 7, 2013 at 3:36 AM, Neil Horman <nhorman@tuxdriver.com> wrote:
-> >> > The direct firmware loading interface is a bit quiet about failures.  Failures
-> >>
-> >> Because there are several pre-defined search paths, and generally the
-> >> requested firmware only exists in one of these paths.
-> >>
-> > This is true, but you'll note this patch doesn't make any noise in the event
-> > that a firmware isn't found until all the search paths are exhausted.  I didn't
-> > consider this "unexpected".
+On 09/02/2013 06:43 PM, Kishon Vijay Abraham I wrote:
+> Adapted dwc3 core to use the Generic PHY Framework. So for init, exit,
+> power_on and power_off the following APIs are used phy_init(), phy_exit(),
+> phy_power_on() and phy_power_off().
 > 
-> Yes, it will cause noise, suppose the firmware is in the last search path, and
-> we may always get the warning during the first three searches, and it
-> is certainly
-> annoying, isn't it?
+> However using the old USB phy library wont be removed till the PHYs of all
+> other SoC's using dwc3 core is adapted to the Generic PHY Framework.
 > 
-Please re-read the patch, then point out to me which printk the above action
-will trigger, because its not happening in my testing. If you'll take a look at
-fw_get_filesystem_firmware, you'll see that if the filp_open on a firmware file
-fails, we continue the for loop through the list of available search paths.  No
-error is generated in the case you describe above.
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> ---
+>  Documentation/devicetree/bindings/usb/dwc3.txt |    6 ++-
+>  drivers/usb/dwc3/Kconfig                       |    1 +
+>  drivers/usb/dwc3/core.c                        |   49 ++++++++++++++++++++++++
+>  drivers/usb/dwc3/core.h                        |    7 ++++
+>  4 files changed, 61 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Documentation/devicetree/bindings/usb/dwc3.txt
+> index e807635..471366d 100644
+> --- a/Documentation/devicetree/bindings/usb/dwc3.txt
+> +++ b/Documentation/devicetree/bindings/usb/dwc3.txt
+> @@ -6,11 +6,13 @@ Required properties:
+>   - compatible: must be "snps,dwc3"
+>   - reg : Address and length of the register set for the device
+>   - interrupts: Interrupts used by the dwc3 controller.
+> +
+> +Optional properties:
+>   - usb-phy : array of phandle for the PHY device.  The first element
+>     in the array is expected to be a handle to the USB2/HS PHY and
+>     the second element is expected to be a handle to the USB3/SS PHY
+> -
+> -Optional properties:
+> + - phys: from the *Generic PHY* bindings
+> + - phy-names: from the *Generic PHY* bindings
+>   - tx-fifo-resize: determines if the FIFO *has* to be reallocated.
+>  
+>  This is usually a subnode to DWC3 glue to which it is connected.
+> diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
+> index cfc16dd..ad7ce83 100644
+> --- a/drivers/usb/dwc3/Kconfig
+> +++ b/drivers/usb/dwc3/Kconfig
+> @@ -3,6 +3,7 @@ config USB_DWC3
+>  	depends on (USB || USB_GADGET) && GENERIC_HARDIRQS && HAS_DMA
+>  	depends on EXTCON
+>  	select USB_PHY
+> +	select GENERIC_PHY
+>  	select USB_XHCI_PLATFORM if USB_SUPPORT && USB_XHCI_HCD
+>  	help
+>  	  Say Y or M here if your system has a Dual Role SuperSpeed
+> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+> index 428c29e..485d365 100644
+> --- a/drivers/usb/dwc3/core.c
+> +++ b/drivers/usb/dwc3/core.c
+> @@ -82,6 +82,12 @@ static void dwc3_core_soft_reset(struct dwc3 *dwc)
+>  
+>  	usb_phy_init(dwc->usb2_phy);
+>  	usb_phy_init(dwc->usb3_phy);
+> +
+> +	if (dwc->usb2_generic_phy)
+> +		phy_init(dwc->usb2_generic_phy);
+> +	if (dwc->usb3_generic_phy)
+> +		phy_init(dwc->usb3_generic_phy);
+> +
+>  	mdelay(100);
+>  
+>  	/* Clear USB3 PHY reset */
+> @@ -343,6 +349,11 @@ static void dwc3_core_exit(struct dwc3 *dwc)
+>  {
+>  	usb_phy_shutdown(dwc->usb2_phy);
+>  	usb_phy_shutdown(dwc->usb3_phy);
+> +
+> +	if (dwc->usb2_generic_phy)
+> +		phy_power_off(dwc->usb2_generic_phy);
+> +	if (dwc->usb3_generic_phy)
+> +		phy_power_off(dwc->usb3_generic_phy);
+>  }
+>  
+>  #define DWC3_ALIGN_MASK		(16 - 1)
+> @@ -427,6 +438,23 @@ static int dwc3_probe(struct platform_device *pdev)
+>  		dwc->usb3_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB3);
+>  	}
+>  
+> +	if (of_property_read_bool(node, "phys") || pdata->has_phy) {
+> +		dwc->usb2_generic_phy = devm_phy_get(dev, "usb2-phy");
+> +		if (IS_ERR(dwc->usb2_generic_phy)) {
+> +			dev_err(dev, "no usb2 phy configured yet");
+> +			return PTR_ERR(dwc->usb2_generic_phy);
+> +		}
+> +
+> +		dwc->usb3_generic_phy = devm_phy_get(dev, "usb3-phy");
+> +		if (IS_ERR(dwc->usb3_generic_phy)) {
+> +			dev_err(dev, "no usb3 phy configured yet");
+> +			return PTR_ERR(dwc->usb3_generic_phy);
+> +		}
+> +	} else {
+> +		dwc->usb2_generic_phy = NULL;
+> +		dwc->usb3_generic_phy = NULL;
+> +	}
+> +
+>  	/* default to superspeed if no maximum_speed passed */
+>  	if (dwc->maximum_speed == USB_SPEED_UNKNOWN)
+>  		dwc->maximum_speed = USB_SPEED_SUPER;
+> @@ -450,6 +478,11 @@ static int dwc3_probe(struct platform_device *pdev)
+>  	usb_phy_set_suspend(dwc->usb2_phy, 0);
+>  	usb_phy_set_suspend(dwc->usb3_phy, 0);
+>  
+> +	if (dwc->usb2_generic_phy)
+> +		phy_power_on(dwc->usb2_generic_phy);
+> +	if (dwc->usb3_generic_phy)
+> +		phy_power_on(dwc->usb3_generic_phy);
+> +
+>  	spin_lock_init(&dwc->lock);
+>  	platform_set_drvdata(pdev, dwc);
+>  
+> @@ -576,6 +609,11 @@ static int dwc3_remove(struct platform_device *pdev)
+>  	usb_phy_set_suspend(dwc->usb2_phy, 1);
+>  	usb_phy_set_suspend(dwc->usb3_phy, 1);
+>  
+> +	if (dwc->usb2_generic_phy)
 
-The exceptions to that rule are:
+if (IS_ERR())
 
-1) If no file is found in _any_ of the search paths, in which case
-fw_get_filesystem_firmware will return -ENOENT, causing _request_firmware to
-print "Direct firmware load failed with error -ENOENT.  Falling back to user
-helper".
+> +		phy_power_off(dwc->usb2_generic_phy);
+> +	if (dwc->usb3_generic_phy)
 
-2) If a file is successfully opened by fw_get_filesystem_firmware, but something
-goes wrong during the read in fw_read_file_contents, we print "firmware
-attempted to load <file>, but failed with error <X>", followed by the printk
-from (1) indicating that we are falling back to the user mode helper path.
+if (IS_ERR())
 
-Both of these execptions should be rare, and are something the administrator
-will want to know about, so as not to confuse the real error with the mystery
--ENOENT you would get if you fell back to the user mode helepr and it wansn't
-configured on in the running kernel.
+here and everywhere else in this patch.
 
-> >
-> >> > that occur during loading are masked if firmware exists in multiple locations,
-> >> > and may be masked entirely in the event that we fall back to the user mode
-> >>
-> >> You still can figure out the request falls back to user mode loading since we
-> >> have the "firmware: direct-loading firmware %s" log.
-> >>
-> > Yes, but you're looking at it backwards, that only prints out if the direct load
-> > works.  If it doesn't, you get silence, which is bad.
-> 
-> OK, you can change to only log the failure.
-> 
-That is exactly what this patch does.
+> +		phy_power_off(dwc->usb3_generic_phy);
+> +
+>  	pm_runtime_put(&pdev->dev);
+>  	pm_runtime_disable(&pdev->dev);
+>  
+> @@ -673,6 +711,11 @@ static int dwc3_suspend(struct device *dev)
+>  	usb_phy_shutdown(dwc->usb3_phy);
+>  	usb_phy_shutdown(dwc->usb2_phy);
+>  
+> +	if (dwc->usb2_generic_phy)
+> +		phy_exit(dwc->usb2_generic_phy);
+> +	if (dwc->usb3_generic_phy)
+> +		phy_exit(dwc->usb3_generic_phy);
+> +
+>  	return 0;
+>  }
+>  
+> @@ -683,6 +726,12 @@ static int dwc3_resume(struct device *dev)
+>  
+>  	usb_phy_init(dwc->usb3_phy);
+>  	usb_phy_init(dwc->usb2_phy);
+> +
+> +	if (dwc->usb2_generic_phy)
+> +		phy_init(dwc->usb2_generic_phy);
+> +	if (dwc->usb3_generic_phy)
+> +		phy_init(dwc->usb3_generic_phy);
+> +
+>  	msleep(100);
+>  
+>  	spin_lock_irqsave(&dwc->lock, flags);
+> diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
+> index f8af8d4..01ec7d7 100644
+> --- a/drivers/usb/dwc3/core.h
+> +++ b/drivers/usb/dwc3/core.h
+> @@ -31,6 +31,8 @@
+>  #include <linux/usb/gadget.h>
+>  #include <linux/usb/otg.h>
+>  
+> +#include <linux/phy/phy.h>
+> +
+>  /* Global constants */
+>  #define DWC3_EP0_BOUNCE_SIZE	512
+>  #define DWC3_ENDPOINTS_NUM	32
+> @@ -613,6 +615,8 @@ struct dwc3_scratchpad_array {
+>   * @dr_mode: requested mode of operation
+>   * @usb2_phy: pointer to USB2 PHY
+>   * @usb3_phy: pointer to USB3 PHY
+> + * @usb2_generic_phy: pointer to USB2 PHY
+> + * @usb3_generic_phy: pointer to USB3 PHY
 
-> >
-> >> > helper code.  It would be nice to see some of the more unexpected errors get
-> >>
-> >> What are the unexpected errors?
-> >>
-> > If you get a short read in the direct load path for example, or if someone
-> > mounts an nfs share over the firmware search path and you get an ESTALE.
-> 
-> That is easy to find, and no one should mount one fs on firmware path.
-> 
-Thats really rather the problem isn't it? this patch is an assertion that its
-not that easy to find the root cause of a firmware load problem currently, even
-if you haven't done something dumb, like mount a network FS on your firmware
-path.  And I agree you shouldn't do such things, but that doesnt' mean that
-people won't or have good reason to try (I can certainly see mounting the
-firmware path on an NFS mount for embedded system development with limited
-storage).  Regardless, when people do do something silly, we should tell them
-so, not mask the problem behind a mystery -ENOENT error.
+Why duplicate usbX_phy and usbX_generic_phy? Can't we just have one
+for each type and call it usbX_phy?
 
-> > Alternatively, if the vmalloc fails during the direct load path, these would be
-> > "unexpected" errors
+>   * @dcfg: saved contents of DCFG register
+>   * @gctl: saved contents of GCTL register
+>   * @is_selfpowered: true when we are selfpowered
+> @@ -665,6 +669,9 @@ struct dwc3 {
+>  	struct usb_phy		*usb2_phy;
+>  	struct usb_phy		*usb3_phy;
+>  
+> +	struct phy		*usb2_generic_phy;
+> +	struct phy		*usb3_generic_phy;
+> +
+>  	void __iomem		*regs;
+>  	size_t			regs_size;
+>  
 > 
-> This one might make sense since size of some firmwares may be several mega
-> bytes, and vmalloc space is a bit limited on 32bit arch, so how about just log
-> this failure in fw_read_file_contents()?
-> 
-It does exactly that, and a 
-little more.  Why just catch the vmalloc error?  What if kernel_read fails for
-some reason?  I see no reason to catch the vmalloc error specifcally, when we
-can catch any error generated by direct read path (that doesn't include simple
-file not found errors for any single entry in the search path).
 
-> >
-> >> > logged, so in the event that you expect the direct firmware loader to work (like
-> >> > if CONFIG_FW_LOADER_USER_HELPER is enabled), and something goes wrong, you can
-> >> > figure out what happened.
-> >>
-> >> Looks we didn't meet this case, do you have real examples?
-> >>
-> > Yeah, we had a vmalloc failure in the direct load path, and unknowingly had
-> > forgot to configure CONFIG_FW_LOADER_USER_HELPER, so the module load failed with
-> > an ENOENT, even though the firmware was clearly present on the filesystem.  This
-> > patch helped us track that down.
-> 
-> Fair enough, looks it is helpful to add some log, :-)
-> 
-Thanks :)
-Neil
+cheers,
+-roger
 
