@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab3ILQoS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 12:44:18 -0400
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:56096 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753871Ab3ILQoR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 12:44:17 -0400
-Message-ID: <5231EF5A.7010901@vmware.com>
-Date: Thu, 12 Sep 2013 18:44:10 +0200
-From: Thomas Hellstrom <thellstrom@vmware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-CC: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Peter Zijlstra <peterz@infradead.org>, Dave Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [BUG] completely bonkers use of set_need_resched + VM_FAULT_NOPAGE
-References: <20130912150645.GZ31370@twins.programming.kicks-ass.net> <CAKMK7uFF2GkYapa2_DLv4WYAd0t+POaT+Vy9HG=HQhzMmtH9nA@mail.gmail.com> <5231E18D.7070306@canonical.com>
-In-Reply-To: <5231E18D.7070306@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1754763Ab3ILQph (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 12:45:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53324 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753636Ab3ILQpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 12:45:36 -0400
+Date: Thu, 12 Sep 2013 12:45:32 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Dave Jones <davej@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: lock held returning to user space (i_mutex_dir_key)
+Message-ID: <20130912124532.308675fd@tlielax.poochiereds.net>
+In-Reply-To: <20130910210425.GB15371@redhat.com>
+References: <20130910210237.GA15371@redhat.com>
+	<20130910210425.GB15371@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2013 05:45 PM, Maarten Lankhorst wrote:
-> Op 12-09-13 17:36, Daniel Vetter schreef:
->> On Thu, Sep 12, 2013 at 5:06 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->>> So I'm poking around the preemption code and stumbled upon:
->>>
->>> drivers/gpu/drm/i915/i915_gem.c:                set_need_resched();
->>> drivers/gpu/drm/ttm/ttm_bo_vm.c:                        set_need_resched();
->>> drivers/gpu/drm/ttm/ttm_bo_vm.c:                        set_need_resched();
->>> drivers/gpu/drm/udl/udl_gem.c:          set_need_resched();
->>>
->>> All these sites basically do:
->>>
->>>    while (!trylock())
->>>          yield();
->>>
->>> which is a horrible and broken locking pattern.
->>>
->>> Firstly its deadlock prone, suppose the faulting process is a FIFOn+1
->>> task that preempted the lock holder at FIFOn.
->>>
->>> Secondly the implementation is worse than usual by abusing
->>> VM_FAULT_NOPAGE, which is supposed to install a PTE so that the fault
->>> doesn't retry, but you're using it as a get out of fault path. And
->>> you're using set_need_resched() which is not something a driver should
->>> _ever_ touch.
->>>
->>> Now I'm going to take away set_need_resched() -- and while you can
->>> 'reimplement' it using set_thread_flag() you're not going to do that
->>> because it will be broken due to changes to the preempt code.
->>>
->>> So please as to fix ASAP and don't allow anybody to trick you into
->>> merging silly things like that again ;-)
->> The set_need_resched in i915_gem.c:i915_gem_fault can actually be
->> removed. It was there to give the error handler a chance to sneak in
->> and reset the hw/sw tracking when the gpu is dead. That hack goes back
->> to the days when the locking around our error handler was somewhere
->> between nonexistent and totally broken, nowadays we keep things from
->> live-locking by a bit of magic in i915_mutex_lock_interruptible. I'll
->> whip up a patch to rip this out. I'll also check that our testsuite
->> properly exercises this path (needs a bit of work on a quick look for
->> better coverage).
->>
->> The one in ttm is just bonghits to shut up lockdep: ttm can recurse
->> into it's own pagefault handler and then deadlock, the trylock just
->> keeps lockdep quiet. We've had that bug arise in drm/i915 due to some
->> fun userspace did and now have testcases for them. The right solution
->> to fix this is to use copy_to|from_user_atomic in ttm everywhere it
->> holds locks and have slowpaths which drops locks, copies stuff into a
->> temp allocation and then continues. At least that's how we've fixed
->> all those inversions in i915-gem. I'm not volunteering to fix this ;-)
-> Ah the case where a mmap'd address is passed to the execbuf ioctl? :P
->
-> Fine I'll look into it a bit, hopefully before tuesday. Else it might take a bit longer since I'll be on my way to plumbers..
+On Tue, 10 Sep 2013 17:04:25 -0400
+Dave Jones <davej@redhat.com> wrote:
 
-I think a possible fix would be if fault() were allowed to return an 
-error and drop the mmap_sem() before returning.
+> On Tue, Sep 10, 2013 at 05:02:37PM -0400, Dave Jones wrote:
+>  > ================================================
+>  > [ BUG: lock held when returning to user space! ]
+>  > 3.11.0+ #64 Not tainted
+>  > ------------------------------------------------
+>  > trinity-child2/8333 is leaving the kernel with locks still held!
+>  > 1 lock held by trinity-child2/8333:
+>  >  #0:  (&type->i_mutex_dir_key#3){+.+.+.}, at: [<ffffffff811c7fce>] mountpoint_last+0x4e/0x1a0  
+> 
+> This perhaps ?
+> 
+> 
+> -- 
+> 
+> Add missing unlocks to error paths of mountpoint_last.
+> 
+> Signed-off-by: Dave Jones <davej@fedoraproject.org>
+> 
+> diff --git a/fs/namei.c b/fs/namei.c
+> index 409a441..5a91474 100644
+> --- a/fs/namei.c
+> +++ b/fs/namei.c
+> @@ -2271,12 +2271,15 @@ mountpoint_last(struct nameidata *nd, struct path *path)
+>  		dentry = d_alloc(dir, &nd->last);
+>  		if (!dentry) {
+>  			error = -ENOMEM;
+> +			mutex_unlock(&dir->d_inode->i_mutex);
+>  			goto out;
+>  		}
+>  		dentry = lookup_real(dir->d_inode, dentry, nd->flags);
+>  		error = PTR_ERR(dentry);
+> -		if (IS_ERR(dentry))
+> +		if (IS_ERR(dentry)) {
+> +			mutex_unlock(&dir->d_inode->i_mutex);
+>  			goto out;
+> +		}
+>  	}
+>  	mutex_unlock(&dir->d_inode->i_mutex);
+>  
 
-Otherwise we need to track down all copy_to_user / copy_from_user which 
-happen with bo::reserve held.
+Well spotted.
 
-/Thomas
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
