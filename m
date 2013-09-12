@@ -1,64 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917Ab3ILOgy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 10:36:54 -0400
-Received: from [207.46.163.235] ([207.46.163.235]:29384 "EHLO
-	na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752489Ab3ILOgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 10:36:52 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: Borislav Petkov <bp@alien8.de>
-CC: Dave Young <dyoung@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "zohar@linux.vnet.ibm.com" <zohar@linux.vnet.ibm.com>,
-        "d.kasatkin@samsung.com" <d.kasatkin@samsung.com>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>
-Subject: Re: [PATCH 15/16] bootparam: Pass acpi_rsdp pointer in bootparam
-Thread-Topic: [PATCH 15/16] bootparam: Pass acpi_rsdp pointer in bootparam
-Thread-Index: AQHOrm8Iv5zR2iaV9k2899UcNK3725m/k/YAgADXq4CAACHhAIAADQwAgAEdioCAAFlLAIAAHEEA
-Date: Thu, 12 Sep 2013 14:34:58 +0000
-Message-ID: <1378996498.945.4.camel@x230.lan>
-References: <1378849471-10521-1-git-send-email-vgoyal@redhat.com>
-	 <1378849471-10521-16-git-send-email-vgoyal@redhat.com>
-	 <522FA2A8.8080703@zytor.com> <20130911114419.GB31551@x1.alien8.de>
-	 <20130911134534.GB15364@redhat.com> <20130911143216.GA933@x1.alien8.de>
-	 <20130912064930.GA5288@dhcp-16-126.nay.redhat.com>
-	 <20130912125350.GB9280@x1.alien8.de>
-In-Reply-To: <20130912125350.GB9280@x1.alien8.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [64.134.240.212]
-x-forefront-prvs: 0967749BC1
-x-forefront-antispam-report: SFV:NSPM;SFS:(377424004)(24454002)(199002)(189002)(19580405001)(83322001)(63696002)(79102001)(46102001)(80022001)(81816001)(51856001)(81686001)(81342001)(69226001)(36756003)(19580395003)(74876001)(33646001)(66066001)(65816001)(49866001)(47736001)(4396001)(81542001)(76796001)(80976001)(47976001)(50986001)(76786001)(54356001)(53806001)(74366001)(31966008)(76482001)(83072001)(77096001)(59766001)(77982001)(74502001)(54316002)(74662001)(74706001)(56776001)(47446002)(56816003);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB221;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:64.134.240.212;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <3A76A262E8F59E4B9A638565CAA71CF3@namprd05.prod.outlook.com>
+	id S1752990Ab3ILOid (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 10:38:33 -0400
+Received: from mail-de.keymile.com ([195.8.104.250]:59911 "EHLO
+	mail-de.keymile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034Ab3ILOib (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 10:38:31 -0400
+Message-ID: <5231D1E0.9000800@keymile.com>
+Date: Thu, 12 Sep 2013 16:38:24 +0200
+From: Gerlando Falauto <gerlando.falauto@keymile.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130807 Thunderbird/17.0.8
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+To: John Stultz <john.stultz@linaro.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [PATCH] timekeeping: Fix HRTICK related deadlock from ntp lock
+ changes
+References: <1378943457-27314-1-git-send-email-john.stultz@linaro.org>
+In-Reply-To: <1378943457-27314-1-git-send-email-john.stultz@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8CEb1ui013085
 
-On Thu, 2013-09-12 at 14:53 +0200, Borislav Petkov wrote:
+Hi,
 
-> Why userspace part - I'm thinking the kexec'ed kernel would simply add
-> the mappings made by SetVirtualAddressMap without calling it. And it
-> will know which mappings go to which virtual addresses because we start
-> at the -4G virtual address and go downwards and the mappings will have
-> the same addresses per UEFI implementation.
+On 09/12/2013 01:50 AM, John Stultz wrote:
+[...]
+>
+> The deadlock was introduced by 06c017fdd4dc48451a (timekeeping:
+> Hold timekeepering locks in do_adjtimex and hardpps) in 3.10
+>
+> This patch avoids this deadlock, by moving the call to
+> schedule_delayed_work() outside of the timekeeper lock
+> critical section.
+>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Gerlando Falauto <gerlando.falauto@keymile.com>
+> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> Cc: stable <stable@vger.kernel.org> #3.11, 3.10
+> Reported-by: Gerlando Falauto <gerlando.falauto@keymile.com>
+> Tested-by: Lin Ming <minggr@gmail.com>
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
 
-The second kernel still needs to be passed a pointer to the EFI tables
-and memory map.
+For what it's worth (I guess it's a bit late now):
 
--- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Tested-by: Gerlando Falauto <gerlando.falauto@keymile.com>
+
+Thanks!
+Gerlando
+
+> ---
+>   include/linux/timex.h     | 1 +
+>   kernel/time/ntp.c         | 6 ++----
+>   kernel/time/timekeeping.c | 2 ++
+>   3 files changed, 5 insertions(+), 4 deletions(-)
+>
+> diff --git a/include/linux/timex.h b/include/linux/timex.h
+> index b3726e6..dd3edd7 100644
+> --- a/include/linux/timex.h
+> +++ b/include/linux/timex.h
+> @@ -141,6 +141,7 @@ extern int do_adjtimex(struct timex *);
+>   extern void hardpps(const struct timespec *, const struct timespec *);
+>
+>   int read_current_timer(unsigned long *timer_val);
+> +void ntp_notify_cmos_timer(void);
+>
+>   /* The clock frequency of the i8253/i8254 PIT */
+>   #define PIT_TICK_RATE 1193182ul
+> diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
+> index 8f5b3b9..bb22151 100644
+> --- a/kernel/time/ntp.c
+> +++ b/kernel/time/ntp.c
+> @@ -516,13 +516,13 @@ static void sync_cmos_clock(struct work_struct *work)
+>   	schedule_delayed_work(&sync_cmos_work, timespec_to_jiffies(&next));
+>   }
+>
+> -static void notify_cmos_timer(void)
+> +void ntp_notify_cmos_timer(void)
+>   {
+>   	schedule_delayed_work(&sync_cmos_work, 0);
+>   }
+>
+>   #else
+> -static inline void notify_cmos_timer(void) { }
+> +void ntp_notify_cmos_timer(void) { }
+>   #endif
+>
+>
+> @@ -687,8 +687,6 @@ int __do_adjtimex(struct timex *txc, struct timespec *ts, s32 *time_tai)
+>   	if (!(time_status & STA_NANO))
+>   		txc->time.tv_usec /= NSEC_PER_USEC;
+>
+> -	notify_cmos_timer();
+> -
+>   	return result;
+>   }
+>
+> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> index 48b9fff..947ba25 100644
+> --- a/kernel/time/timekeeping.c
+> +++ b/kernel/time/timekeeping.c
+> @@ -1703,6 +1703,8 @@ int do_adjtimex(struct timex *txc)
+>   	write_seqcount_end(&timekeeper_seq);
+>   	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
+>
+> +	ntp_notify_cmos_timer();
+> +
+>   	return ret;
+>   }
+>
+>
+
