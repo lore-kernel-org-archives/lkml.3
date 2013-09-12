@@ -1,114 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756482Ab3ILXVG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 19:21:06 -0400
-Received: from ozlabs.org ([203.10.76.45]:56404 "EHLO ozlabs.org"
+	id S1756338Ab3ILXcM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 19:32:12 -0400
+Received: from imap.thunk.org ([74.207.234.97]:59306 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755450Ab3ILXVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 19:21:04 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de,
-        tip-bot for Peter Zijlstra <tipbot@zytor.com>
-cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/core] sched/fair: Fix group power_orig computation
-In-reply-to: <tip-db2pe0vxwunv37plc7onnugj@git.kernel.org>
-References: <tip-db2pe0vxwunv37plc7onnugj@git.kernel.org>
-Comments: In-reply-to tip-bot for Peter Zijlstra <tipbot@zytor.com>
-   message dated "Thu, 12 Sep 2013 11:05:45 -0700."
-X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
-Date: Fri, 13 Sep 2013 09:21:03 +1000
-Message-ID: <18117.1379028063@ale.ozlabs.ibm.com>
+	id S1755688Ab3ILXcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 19:32:07 -0400
+Date: Thu, 12 Sep 2013 19:31:55 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Stephan Mueller <smueller@chronox.de>,
+        LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] /dev/random: Insufficient of entropy on many
+ architectures
+Message-ID: <20130912233155.GB5279@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	=?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
+	John Stultz <john.stultz@linaro.org>,
+	Stephan Mueller <smueller@chronox.de>,
+	LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Thomas Gleixner <tglx@linutronix.de>
+References: <10005394.BRCyBMYWy3@tauon>
+ <CANcMJZAHuXNQ4eUx+qpVnfJTg625HkJU_9pgBP24ykkmBww3yw@mail.gmail.com>
+ <20130910203853.GG29237@thunk.org>
+ <522F851D.1040101@linaro.org>
+ <20130910211009.GI29237@thunk.org>
+ <522F984C.2070909@linaro.org>
+ <20130910223326.GD11063@thunk.org>
+ <522FB9F1.3070905@linaro.org>
+ <20130911005047.GA13315@thunk.org>
+ <20130912210717.GC3809@logfs.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130912210717.GC3809@logfs.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tip-bot for Peter Zijlstra <tipbot@zytor.com> wrote:
+On Thu, Sep 12, 2013 at 05:07:17PM -0400, Jörn Engel wrote:
+> 
+> I happen to have a real-world system with >100k interrupts per second
+> and - surprise - add_interrupt_randomness() showed up prominently in
+> the profiles.  I was also told twice to just remove that call.  I
+> resisted both times and have done far more work to reduce overhead
+> while still collecting entropy.  Some others would have caved in.
 
-> Commit-ID:  863bffc80898b8df295ebac111af2335ec05f85d
-> Gitweb:     http://git.kernel.org/tip/863bffc80898b8df295ebac111af2335ec05f85d
-> Author:     Peter Zijlstra <peterz@infradead.org>
-> AuthorDate: Wed, 28 Aug 2013 11:44:39 +0200
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Thu, 12 Sep 2013 19:14:43 +0200
-> 
-> sched/fair: Fix group power_orig computation
-> 
-> When looking at the code I noticed we don't actually compute
-> sgp->power_orig correctly for groups, fix that.
-> 
-> Currently the only consumer of that value is fix_small_capacity()
-> which is only used on POWER7+ and that code excludes this case by
-> being limited to SD_SHARE_CPUPOWER which is only ever set on the SMT
-> domain which must be the lowest domain and this has singleton groups.
-> 
-> So nothing should be affected by this change.
-> 
-> Cc: Michael Neuling <mikey@neuling.org>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Link: http://lkml.kernel.org/n/tip-db2pe0vxwunv37plc7onnugj@git.kernel.org
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Would it be possible for you to send me the perf numbers that you saw?
 
-FWIW, this doesn't seem to break POWER7.  
+What platform is this?  x86?   Some embedded processor?
 
-Thanks!
-Mikey
+> One option is to add the "input_pool.entropy_count > trickle_thresh"
+> condition that all other entropy sources currently have.  But instead
+> I would rather rename fast_mix() to not_too_fast_mix() and implement a
+> real fast_mix().  Essentially just xor the collected numbers into a
+> pool and schedule something to shuffle the bits at a later point.
 
-> ---
->  kernel/sched/fair.c | 16 +++++++++++-----
->  1 file changed, 11 insertions(+), 5 deletions(-)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index f9f4385..baba313 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -4450,7 +4450,7 @@ void update_group_power(struct sched_domain *sd, int cpu)
->  {
->  	struct sched_domain *child = sd->child;
->  	struct sched_group *group, *sdg = sd->groups;
-> -	unsigned long power;
-> +	unsigned long power, power_orig;
->  	unsigned long interval;
->  
->  	interval = msecs_to_jiffies(sd->balance_interval);
-> @@ -4462,7 +4462,7 @@ void update_group_power(struct sched_domain *sd, int cpu)
->  		return;
->  	}
->  
-> -	power = 0;
-> +	power_orig = power = 0;
->  
->  	if (child->flags & SD_OVERLAP) {
->  		/*
-> @@ -4470,8 +4470,12 @@ void update_group_power(struct sched_domain *sd, int cpu)
->  		 * span the current group.
->  		 */
->  
-> -		for_each_cpu(cpu, sched_group_cpus(sdg))
-> -			power += power_of(cpu);
-> +		for_each_cpu(cpu, sched_group_cpus(sdg)) {
-> +			struct sched_group *sg = cpu_rq(cpu)->sd->groups;
-> +
-> +			power_orig += sg->sgp->power_orig;
-> +			power += sg->sgp->power;
-> +		}
->  	} else  {
->  		/*
->  		 * !SD_OVERLAP domains can assume that child groups
-> @@ -4480,12 +4484,14 @@ void update_group_power(struct sched_domain *sd, int cpu)
->  
->  		group = child->groups;
->  		do {
-> +			power_orig += group->sgp->power_orig;
->  			power += group->sgp->power;
->  			group = group->next;
->  		} while (group != child->groups);
->  	}
->  
-> -	sdg->sgp->power_orig = sdg->sgp->power = power;
-> +	sdg->sgp->power_orig = power_orig;
-> +	sdg->sgp->power = power;
->  }
->  
->  /*
-> 
+We can try some different things to make fast_mix() faster, but it
+would be good to get some hard numbers before we start deciding we
+need to do something more complicated.
+
+One thing that comes to mind is that fast_mix() is only called in
+exactly one place, and we always pass in a long.  So there are
+certainly ways that we could optimize fast_mix even keeping the
+current mixing algorithm.
+
+Cheers,
+
+						- Ted
