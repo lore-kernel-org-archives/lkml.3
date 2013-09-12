@@ -1,119 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752990Ab3ILOid (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 10:38:33 -0400
-Received: from mail-de.keymile.com ([195.8.104.250]:59911 "EHLO
-	mail-de.keymile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034Ab3ILOib (ORCPT
+	id S1753204Ab3ILOiz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 10:38:55 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:47028 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848Ab3ILOix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 10:38:31 -0400
-Message-ID: <5231D1E0.9000800@keymile.com>
-Date: Thu, 12 Sep 2013 16:38:24 +0200
-From: Gerlando Falauto <gerlando.falauto@keymile.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130807 Thunderbird/17.0.8
+	Thu, 12 Sep 2013 10:38:53 -0400
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [PATCH] timekeeping: Fix HRTICK related deadlock from ntp lock
- changes
-References: <1378943457-27314-1-git-send-email-john.stultz@linaro.org>
-In-Reply-To: <1378943457-27314-1-git-send-email-john.stultz@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130912122135.GP10105@radagast>
+References: <20130910190901.GA10105@radagast> <CAOmKuSrbaLqaYiJFwonHzC-S003vgg2x0xUG4TGKDpMgvCCGHQ@mail.gmail.com>
+ <20130911183825.GC10105@radagast> <CAOmKuSpJ4rX0p0a1gGvc3fVazTg=+43tDfTFiJSrxmAxXihf-A@mail.gmail.com>
+ <20130911190033.GD10105@radagast> <CAOmKuSoZQ=uDAD7P94EPfKEp97to3DqwWk=GW7OZ-98+S6nTBA@mail.gmail.com>
+ <20130911204714.GH10105@radagast> <CAOmKuSpgwGcTaQTEdtH+9g-6WwNwseVU6X+hhntK31EOTM=WRA@mail.gmail.com>
+ <CAOmKuSpRpb0mRnORvK-q1MMV3BHZaY8_yTyQV-iE+=gj1hqK7Q@mail.gmail.com> <20130912122135.GP10105@radagast>
+From: Alexey Pelykh <alexey.pelykh@gmail.com>
+Date: Thu, 12 Sep 2013 17:38:32 +0300
+Message-ID: <CAOmKuSqh0w8GS-rokCsyF5gBHKWuiy+GvV7P5R8YK264UEG7EA@mail.gmail.com>
+Subject: Re: commit 5fe212364 causes division by zero with large bauds
+To: balbi@ti.com
+Cc: Tony Lindgren <tony@atomide.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        linux-serial@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Sep 12, 2013 at 3:21 PM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> On Thu, Sep 12, 2013 at 07:37:07AM +0300, Alexey Pelykh wrote:
+>> Actually, here it is, but not formatted properly
+>>
+>> diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
+>> index 816d1a2..146e712 100644
+>> --- a/drivers/tty/serial/omap-serial.c
+>> +++ b/drivers/tty/serial/omap-serial.c
+>> @@ -240,14 +240,14 @@ serial_omap_baud_is_mode16(struct uart_port
+>> *port, unsigned int baud)
+>>  {
+>>   unsigned int n13 = port->uartclk / (13 * baud);
+>>   unsigned int n16 = port->uartclk / (16 * baud);
+>> - int baudAbsDiff13 = baud - (port->uartclk / (13 * n13));
+>> - int baudAbsDiff16 = baud - (port->uartclk / (16 * n16));
+>> + int baudAbsDiff13 = n13 ? (baud - (port->uartclk / (13 * n13))) : INT_MAX;
+>> + int baudAbsDiff16 = n16 ? (baud - (port->uartclk / (16 * n16))) : INT_MAX;
+>>   if(baudAbsDiff13 < 0)
+>>   baudAbsDiff13 = -baudAbsDiff13;
+>>   if(baudAbsDiff16 < 0)
+>>   baudAbsDiff16 = -baudAbsDiff16;
+>>
+>> - return (baudAbsDiff13 > baudAbsDiff16);
+>> + return (baudAbsDiff13 >= baudAbsDiff16);
+>>  }
+>>
+>>  /*
+>> @@ -258,13 +258,13 @@ serial_omap_baud_is_mode16(struct uart_port
+>> *port, unsigned int baud)
+>>  static unsigned int
+>>  serial_omap_get_divisor(struct uart_port *port, unsigned int baud)
+>>  {
+>> - unsigned int divisor;
+>> + unsigned int mode;
+>>
+>>   if (!serial_omap_baud_is_mode16(port, baud))
+>> - divisor = 13;
+>> + mode = 13;
+>>   else
+>> - divisor = 16;
+>> - return port->uartclk/(baud * divisor);
+>> + mode = 16;
+>> + return port->uartclk/(mode * baud);
+>>  }
+>>
+>>  static void serial_omap_enable_ms(struct uart_port *port)
+>
+> looks good to me, but I'd split it as suggested as a reply to previous
+> email.
 
-On 09/12/2013 01:50 AM, John Stultz wrote:
-[...]
->
-> The deadlock was introduced by 06c017fdd4dc48451a (timekeeping:
-> Hold timekeepering locks in do_adjtimex and hardpps) in 3.10
->
-> This patch avoids this deadlock, by moving the call to
-> schedule_delayed_work() outside of the timekeeper lock
-> critical section.
->
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Gerlando Falauto <gerlando.falauto@keymile.com>
-> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> Cc: stable <stable@vger.kernel.org> #3.11, 3.10
-> Reported-by: Gerlando Falauto <gerlando.falauto@keymile.com>
-> Tested-by: Lin Ming <minggr@gmail.com>
-> Signed-off-by: John Stultz <john.stultz@linaro.org>
+Well, the fix of baud rate calculation (giving mode-16 priority) is a
+simple >= instead of >.
+But indeed, probably commits should be different in terms of their subject.
 
-For what it's worth (I guess it's a bit late now):
-
-Tested-by: Gerlando Falauto <gerlando.falauto@keymile.com>
-
-Thanks!
-Gerlando
-
-> ---
->   include/linux/timex.h     | 1 +
->   kernel/time/ntp.c         | 6 ++----
->   kernel/time/timekeeping.c | 2 ++
->   3 files changed, 5 insertions(+), 4 deletions(-)
 >
-> diff --git a/include/linux/timex.h b/include/linux/timex.h
-> index b3726e6..dd3edd7 100644
-> --- a/include/linux/timex.h
-> +++ b/include/linux/timex.h
-> @@ -141,6 +141,7 @@ extern int do_adjtimex(struct timex *);
->   extern void hardpps(const struct timespec *, const struct timespec *);
->
->   int read_current_timer(unsigned long *timer_val);
-> +void ntp_notify_cmos_timer(void);
->
->   /* The clock frequency of the i8253/i8254 PIT */
->   #define PIT_TICK_RATE 1193182ul
-> diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-> index 8f5b3b9..bb22151 100644
-> --- a/kernel/time/ntp.c
-> +++ b/kernel/time/ntp.c
-> @@ -516,13 +516,13 @@ static void sync_cmos_clock(struct work_struct *work)
->   	schedule_delayed_work(&sync_cmos_work, timespec_to_jiffies(&next));
->   }
->
-> -static void notify_cmos_timer(void)
-> +void ntp_notify_cmos_timer(void)
->   {
->   	schedule_delayed_work(&sync_cmos_work, 0);
->   }
->
->   #else
-> -static inline void notify_cmos_timer(void) { }
-> +void ntp_notify_cmos_timer(void) { }
->   #endif
->
->
-> @@ -687,8 +687,6 @@ int __do_adjtimex(struct timex *txc, struct timespec *ts, s32 *time_tai)
->   	if (!(time_status & STA_NANO))
->   		txc->time.tv_usec /= NSEC_PER_USEC;
->
-> -	notify_cmos_timer();
-> -
->   	return result;
->   }
->
-> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-> index 48b9fff..947ba25 100644
-> --- a/kernel/time/timekeeping.c
-> +++ b/kernel/time/timekeeping.c
-> @@ -1703,6 +1703,8 @@ int do_adjtimex(struct timex *txc)
->   	write_seqcount_end(&timekeeper_seq);
->   	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
->
-> +	ntp_notify_cmos_timer();
-> +
->   	return ret;
->   }
->
->
-
+> --
+> balbi
