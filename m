@@ -1,50 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754867Ab3ILMjX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 08:39:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55587 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753460Ab3ILMjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 08:39:21 -0400
-Date: Thu, 12 Sep 2013 14:38:47 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Jean Pihet <jean.pihet@linaro.org>
-Cc: Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
-        patches@linaro.org
-Subject: Re: [PATCH 3/3] perf: parse the .debug_frame section in case
- .eh_frame is not present
-Message-ID: <20130912123847.GB15187@krava.brq.redhat.com>
-References: <1378720815-23964-1-git-send-email-jean.pihet@linaro.org>
- <1378720815-23964-4-git-send-email-jean.pihet@linaro.org>
+	id S1754389Ab3ILMlG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 08:41:06 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:64363 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752380Ab3ILMlD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 08:41:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378720815-23964-4-git-send-email-jean.pihet@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Thu, 12 Sep 2013 14:41:00 +0200
+X-Google-Sender-Auth: 2zld1NsyykTlvoee5pU-s8NOkL8
+Message-ID: <CAMuHMdVVjkZBZyJe2qnUxHeRVo+8WD_Vx1ZKin_pA7XLRCW8uw@mail.gmail.com>
+Subject: Uninitialized rx_req/tx_req (was: Re: [PATCH v2 2/3] mmc: omap_hsmmc:
+ Skip platform_get_resource_byname() for dt case)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Matt Porter <matt.porter@linaro.org>
+Cc: Balaji T K <balajitk@ti.com>, Chris Ball <cjb@laptop.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>, Tony Lindgren <tony@atomide.com>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
+        Jon Hunter <jon-hunter@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 12:00:15PM +0200, Jean Pihet wrote:
-> On ARM the debug info is not present in the .eh_frame sections but
-> in .debug_frame instead, in the dwarf format.
-> Use libunwind to load and parse the debug info.
-> 
-> Dependencies:
->  . if present, libunwind >= 1.1 is needed to prevent a segfault when
->    parsing the dwarf info,
->  . libunwind needs to be configured with --enable-debug-frame
->    to prevent a linkage error. Note: --enable-debug-frame is automatically
->    selected on ARM).
-> 
-> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+On Tue, Mar 5, 2013 at 10:13 PM, Matt Porter <mporter@ti.com> wrote:
+> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>
+> MMC driver probe will abort for DT case because of failed
+> platform_get_resource_byname() lookup. Fix it by skipping resource
+> byname lookup for device tree build.
+>
+> Issue is hidden because hwmod popullates the IO resources which
+> helps to succeed platform_get_resource_byname() and probe.
+>
+> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> ---
+>  drivers/mmc/host/omap_hsmmc.c |   28 +++++++++++++++-------------
+>  1 file changed, 15 insertions(+), 13 deletions(-)
+>
+> diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+> index e79b12d..8ae1225 100644
+> --- a/drivers/mmc/host/omap_hsmmc.c
+> +++ b/drivers/mmc/host/omap_hsmmc.c
+> @@ -1896,21 +1896,23 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
+>
+>         omap_hsmmc_conf_bus_power(host);
+>
+> -       res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "tx");
+> -       if (!res) {
+> -               dev_err(mmc_dev(host->mmc), "cannot get DMA TX channel\n");
+> -               ret = -ENXIO;
+> -               goto err_irq;
+> -       }
+> -       tx_req = res->start;
+> +       if (!pdev->dev.of_node) {
+> +               res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "tx");
+> +               if (!res) {
+> +                       dev_err(mmc_dev(host->mmc), "cannot get DMA TX channel\n");
+> +                       ret = -ENXIO;
+> +                       goto err_irq;
+> +               }
+> +               tx_req = res->start;
+>
+> -       res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "rx");
+> -       if (!res) {
+> -               dev_err(mmc_dev(host->mmc), "cannot get DMA RX channel\n");
+> -               ret = -ENXIO;
+> -               goto err_irq;
+> +               res = platform_get_resource_byname(pdev, IORESOURCE_DMA, "rx");
+> +               if (!res) {
+> +                       dev_err(mmc_dev(host->mmc), "cannot get DMA RX channel\n");
+> +                       ret = -ENXIO;
+> +                       goto err_irq;
+> +               }
+> +               rx_req = res->start;
+>         }
+> -       rx_req = res->start;
+>
+>         dma_cap_zero(mask);
+>         dma_cap_set(DMA_SLAVE, mask);
 
-I tested the .eh_frame code is still functional, but
-haven't tested the .debug_frame functionality itself
+Now this is in mainline, I get (gcc 4.1.2):
 
-otherwise it looks ok:
-Rewieved-by: Jiri Olsa <jolsa@redhat.com>
+drivers/mmc/host/omap_hsmmc.c: In function ‘omap_hsmmc_probe’:
+drivers/mmc/host/omap_hsmmc.c:1779: warning: ‘rx_req’ may be used
+uninitialized in this function
+drivers/mmc/host/omap_hsmmc.c:1779: warning: ‘tx_req’ may be used
+uninitialized in this function
 
-thanks,
-jirka
+Indeed, rx_req and tx_req are not initialized in the DT case.
+
+Initializing them to zero is probably not the right fix. Where are the values
+supposed to come from in the DT case?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
