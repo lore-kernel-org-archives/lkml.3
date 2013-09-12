@@ -1,86 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754347Ab3ILNY6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 09:24:58 -0400
-Received: from tartarus.angband.pl ([89.206.35.136]:38912 "EHLO
-	tartarus.angband.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751025Ab3ILNY4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 09:24:56 -0400
-Date: Thu, 12 Sep 2013 15:24:54 +0200
-From: Adam Borowski <kilobyte@angband.pl>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] vt: properly ignore xterm-256 colour codes
-Message-ID: <20130912132454.GA22329@angband.pl>
-References: <E1VImxG-0002w1-UA@tartarus.angband.pl>
- <CANq1E4Tv0Vb9KzWK0oa3P+-V66LqF312HZrwq_JLmHhH-v2k=Q@mail.gmail.com>
- <20130909164623.GA12525@angband.pl>
- <CANq1E4QG9ab8DpicdLt_gk95WSO5GbgF_sSrTjf--_Mt3++HtA@mail.gmail.com>
+	id S1751728Ab3ILNZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 09:25:56 -0400
+Received: from hibox-130.abo.fi ([130.232.216.130]:46645 "EHLO centre.hibox.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751316Ab3ILNZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 09:25:55 -0400
+X-Greylist: delayed 1689 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Sep 2013 09:25:55 EDT
+Message-ID: <5231BA3C.2090704@hibox.fi>
+Date: Thu, 12 Sep 2013 15:57:32 +0300
+From: Marcus Sundman <marcus@hibox.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CANq1E4QG9ab8DpicdLt_gk95WSO5GbgF_sSrTjf--_Mt3++HtA@mail.gmail.com>
-X-Junkbait: adolf@angband.pl, zareba@angband.pl
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: kilobyte@tartarus.angband.pl
-X-SA-Exim-Scanned: No (on tartarus.angband.pl); SAEximRunCond expanded to false
+To: Jan Kara <jack@suse.cz>
+CC: "Theodore Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Debugging system freezes on filesystem writes
+References: <20121121233021.GA8730@quack.suse.cz> <50B4E6F2.6010000@hibox.fi> <20121205153216.GF5706@quack.suse.cz> <51248C5F.4040606@hibox.fi> <5124B613.6040400@hibox.fi> <20130222205144.GA30600@quack.suse.cz> <5127FEEA.60207@hibox.fi> <20130224001222.GB5551@dastard> <20130224012052.GC1196@thunk.org> <512D01E0.7010009@hibox.fi> <20130226231703.GA22674@quack.suse.cz>
+In-Reply-To: <20130226231703.GA22674@quack.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Spam_score: -2.7
+X-Spam_bar: --
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 02:37:26PM +0200, David Herrmann wrote: 
-> On Mon, Sep 9, 2013 at 6:46 PM, Adam Borowski <kilobyte@angband.pl> wrote:
-> > On Mon, Sep 09, 2013 at 05:53:19PM +0200, David Herrmann wrote:
-> > [...]
-> >> Btw., you should put Greg Kroah-Hartman and Andrew Morton on CC. Both
-> >> are the most likely to pick this up.
-> >
-> > Thanks for the suggestion.  I've sent the patch two days ago to Jiri Slaby
-> > (listed as a maintainer besides Greg) together with a newbie question, but
-> > he's apparently busy.
-> 
-> Jiri Slaby maintains the TTY subsystem (together with Greg). This does
-> not include the VT layer, though. drivers/tty/vt/ and
-> drivers/video/console/ are unmaintained. You need to get the attention
-> of any maintainer who is willing to take it through their tree (hint:
-> most maintainers don't dare touching the VT layer. Greg and Andrew
-> were brave enough in the past.).
-> 
-> I'm willing to review your patches
+On 27.02.2013 01:17, Jan Kara wrote:
+> On Tue 26-02-13 20:41:36, Marcus Sundman wrote:
+>> On 24.02.2013 03:20, Theodore Ts'o wrote:
+>>> On Sun, Feb 24, 2013 at 11:12:22AM +1100, Dave Chinner wrote:
+>>>>>> /dev/sda6 /home ext4 rw,noatime,discard 0 0
+>>>>                                     ^^^^^^^
+>>>> I'd say that's your problem....
+>>> Looks like the Sandisk U100 is a good SSD for me to put on my personal
+>>> "avoid" list:
+>>>
+>>> http://thessdreview.com/our-reviews/asus-zenbook-ssd-review-not-necessarily-sandforce-driven-shows-significant-speed-bump/
+>>>
+>>> There are a number of SSD's which do not implement "trim" efficiently,
+>>> so these days, the recommended way to use trim is to run the "fstrim"
+>>> command out of crontab.
+>> OK. Removing 'discard' made it much better (the 60-600 second
+>> freezes are now 1-50 second freezes), but it's still at least an
+>> order of magnitude worse than a normal HD. When writing, that is --
+>> reading is very fast (when there's no writing going on).
+>>
+>> So, after reading up a bit on this trimming I'm thinking maybe my
+>> filesystem's block sizes don't match up with my SSD's blocks (or
+>> whatever its write unit is called). Then writing a FS block would
+>> always write to multiple SSD blocks, causing multiple
+>> read-erase-write sequences, right? So how can I check this, and how
+>> can I make the FS blocks match the SSD blocks?
+>    As Ted wrote, alignment isn't usually a problem with SSDs. And even if it
+> was, it would be at most a factor 2 slow down and we don't seem to be at
+> that fine grained level :)
+>
+> At this point you might try mounting the fs with nobarrier mount option (I
+> know you tried that before but without discard the difference could be more
+> visible), switching IO scheduler to CFQ (for crappy SSDs it actually isn't
+> a bad choice), and we'll see how much we can squeeze out of your drive...
 
-Thanks.  So I shouldn't bother anyone else for now to get My First Kernel
-Patch(tm) into 3.12 (or, if it's too late, into something included in 3.13),
-right?
+I repartitioned the drive and reinstalled ubuntu and after that it 
+gladly wrote over 100 MB/s to the SSD without any hangs. However, after 
+a couple of months I noticed it had degraded considerably, and it keeps 
+degrading. Now it's slowly becoming completely unusable again, with 
+write speeds of the magnitude 1 MB/s and dropping.
 
-> > I've got more changes for the vt, but there's no hurry, I wanted to test
-> > the waters with a single minor one in 3.12 first.
+As far as I can tell I have not made any relevant changes. Also, the 
+amount of free space hasn't changed considerably, but it seems that the 
+longer it's been since I reformatted the drive the more free space is 
+required for it to perform well.
 
-> drivers/tty/vt/ and drivers/video/console/ are unmaintained.
+So, maybe the cause is fragmentation? I tried running e4defrag and then 
+fstrim, but it didn't really help (well, maybe a little bit, but after a 
+couple of days it was back in unusable-land). Also, "e4defrag -c" gives 
+a fragmenation score of less than 5, so...
 
-> [...] but history taught me touching the VT layer is a waste of time.
-
-Could you tell me why?  The console is an important tool when something
-fails.  Of course, fancy schmancy stuff like combining characters, etc,
-could be better done in that legendary userspace alternate console layer,
-but the built-in VT must remain at least functional.  And getting corrupted
-text is not nice; the VT has fallen woefully behind what works on any other
-modern terminal.
-
-Back by ~2000, I'd say it worked better than rxvt, xterm, or, Cthulhu help
-us, Solaris' terminal.  It just needs some maintenance.
-
-I had a bunch of other improvements planned; if you say that's a waste of
-time perhaps I should scale that back.  But I'd still want to at least
-make sure programs that don't use terminfo (terminfo is a bad joke) won't
-spew ANSI codes to the screen; at least more popular ones like "set window
-title", etc.
-
-You might know of other clean-up and fixes that need to be done here,
-though.
+Any ideas?
 
 
--- 
-ᛊᚨᚾᛁᛏᚣ᛫ᛁᛊ᛫ᚠᛟᚱ᛫ᚦᛖ᛫ᚹᛖᚨᚲ
+Best regards,
+Marcus
