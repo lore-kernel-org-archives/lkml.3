@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710Ab3ILUCq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 16:02:46 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:36872 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755242Ab3ILUCm (ORCPT
+	id S1756645Ab3ILUEJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 16:04:09 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:54855 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755450Ab3ILUEG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 16:02:42 -0400
-Date: Thu, 12 Sep 2013 17:02:36 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] perf fixes
-Message-ID: <20130912200236.GC11400@ghostprotocols.net>
-References: <20130912133855.GA23780@gmail.com>
- <CA+55aFwgyjqRHxLaWGxxsg_v07FrxbVTeLdHTGp7MfeSRjrKsQ@mail.gmail.com>
- <CA+55aFyCeXXr=57em8CC_Uzfk5PvOw0RHyA309wuOP-oDL7VxA@mail.gmail.com>
- <20130912184341.GA11400@ghostprotocols.net>
- <52321CE4.1080804@gmail.com>
+	Thu, 12 Sep 2013 16:04:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52321CE4.1080804@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <alpine.DEB.2.02.1309122157300.4089@ionos.tec.linutronix.de>
+References: <20130912150645.GZ31370@twins.programming.kicks-ass.net>
+	<CAKMK7uFF2GkYapa2_DLv4WYAd0t+POaT+Vy9HG=HQhzMmtH9nA@mail.gmail.com>
+	<20130912154329.GB31370@twins.programming.kicks-ass.net>
+	<CAKMK7uFTYB-E5ksVNEBqGJusJ5TKJv5X4hiPv1mno9tJKuUAdA@mail.gmail.com>
+	<20130912162210.GE31370@twins.programming.kicks-ass.net>
+	<CAKMK7uGsgYOtKQrCoq26RV9a_8na14sbpanUxM2_3EBwz-3vVw@mail.gmail.com>
+	<alpine.DEB.2.02.1309122157300.4089@ionos.tec.linutronix.de>
+Date: Thu, 12 Sep 2013 22:04:03 +0200
+Message-ID: <CAKMK7uHJansZzKxrr8p0c2X5pEeb-BSxLa6=tnsDmwo-k__Xcg@mail.gmail.com>
+Subject: Re: [BUG] completely bonkers use of set_need_resched + VM_FAULT_NOPAGE
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>, Dave Airlie <airlied@linux.ie>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Sep 12, 2013 at 12:58:28PM -0700, David Ahern escreveu:
-> On 9/12/13 11:43 AM, Arnaldo Carvalho de Melo wrote:
-> >Its something that annoys me as well, but not so much as to make me
-> >figure out how to make those be done only if some source file changed.
-> 
-> Jiri and I have both taken stabs at a config-based build rather than
-> probing. Just need to finish it.
+On Thu, Sep 12, 2013 at 9:58 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>
+>> On Thu, Sep 12, 2013 at 6:22 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > If 'sane' userspace is never supposed to do this, then only insane
+>> > userspace is going to hurt from this and that's a GOOD (tm) thing,
+>> > right? ;-)
+>>
+>> Afaik sane userspace doesn't hit the _deadlock_ (or lifelock if we
+>> have the set_need_resched in there). drm/i915 is a bit different since
+>> we have just one lock, and so the same design would actually deadlock
+>> even for sane userspace. But hitting contention there and yielding is
+>> somewhat expected. Obviously shouldn't happen too often since it'll
+>> hurt performance, with either blocking or the yield spinning loop.
+>
+> So this is actually a non priviledged DoS interface, right?
 
-But even then it would be nice to have a:
-
-make autoconfig
-
-That is what we have now, but only then we would try to do all that
-probing. Caching it somehow, as Ingo suggested, would get the best of
-both worlds.
-
-- Arnaldo
+I think for ttm drivers it's just execbuf being exploitable. But on
+drm/i915 we've
+had the same issue with the pwrite/pread ioctls, so a simple
+glBufferData(glMap) kind of recursion from gl clients blew the kernel
+to pieces ...
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
