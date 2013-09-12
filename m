@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab3ILR0j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 13:26:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56570 "EHLO
+	id S1755093Ab3ILR0q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 13:26:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56577 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753736Ab3ILR0f (ORCPT
+	with ESMTP id S1754804Ab3ILR0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 13:26:35 -0400
+	Thu, 12 Sep 2013 13:26:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
-        Yuchung Cheng <ycheng@google.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 04/19] tcp: cubic: fix overflow error in bictcp_update()
-Date: Thu, 12 Sep 2013 10:26:13 -0700
-Message-Id: <20130912172524.646274753@linuxfoundation.org>
+Subject: [ 07/19] tun: signedness bug in tun_get_user()
+Date: Thu, 12 Sep 2013 10:26:16 -0700
+Message-Id: <20130912172524.964860171@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130912172524.135620246@linuxfoundation.org>
 References: <20130912172524.135620246@linuxfoundation.org>
@@ -30,68 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit 2ed0edf9090bf4afa2c6fc4f38575a85a80d4b20 ]
+[ Upstream commit 15718ea0d844e4816dbd95d57a8a0e3e264ba90e ]
 
-commit 17a6e9f1aa9 ("tcp_cubic: fix clock dependency") added an
-overflow error in bictcp_update() in following code :
+The recent fix d9bf5f1309 "tun: compare with 0 instead of total_len" is
+not totally correct.  Because "len" and "sizeof()" are size_t type, that
+means they are never less than zero.
 
-/* change the unit from HZ to bictcp_HZ */
-t = ((tcp_time_stamp + msecs_to_jiffies(ca->delay_min>>3) -
-      ca->epoch_start) << BICTCP_HZ) / HZ;
-
-Because msecs_to_jiffies() being unsigned long, compiler does
-implicit type promotion.
-
-We really want to constrain (tcp_time_stamp - ca->epoch_start)
-to a signed 32bit value, or else 't' has unexpected high values.
-
-This bugs triggers an increase of retransmit rates ~24 days after
-boot [1], as the high order bit of tcp_time_stamp flips.
-
-[1] for hosts with HZ=1000
-
-Big thanks to Van Jacobson for spotting this problem.
-
-Diagnosed-by: Van Jacobson <vanj@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Neal Cardwell <ncardwell@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Cc: Stephen Hemminger <stephen@networkplumber.org>
-Acked-by: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_cubic.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/net/tun.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/net/ipv4/tcp_cubic.c
-+++ b/net/ipv4/tcp_cubic.c
-@@ -204,8 +204,8 @@ static u32 cubic_root(u64 a)
-  */
- static inline void bictcp_update(struct bictcp *ca, u32 cwnd)
- {
--	u64 offs;
--	u32 delta, t, bic_target, max_cnt;
-+	u32 delta, bic_target, max_cnt;
-+	u64 offs, t;
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -614,8 +614,9 @@ static __inline__ ssize_t tun_get_user(s
+ 	int offset = 0;
  
- 	ca->ack_cnt++;	/* count the number of ACKs */
+ 	if (!(tun->flags & TUN_NO_PI)) {
+-		if ((len -= sizeof(pi)) > count)
++		if (len < sizeof(pi))
+ 			return -EINVAL;
++		len -= sizeof(pi);
  
-@@ -248,9 +248,11 @@ static inline void bictcp_update(struct
- 	 * if the cwnd < 1 million packets !!!
- 	 */
+ 		if (memcpy_fromiovecend((void *)&pi, iv, 0, sizeof(pi)))
+ 			return -EFAULT;
+@@ -623,8 +624,9 @@ static __inline__ ssize_t tun_get_user(s
+ 	}
  
-+	t = (s32)(tcp_time_stamp - ca->epoch_start);
-+	t += msecs_to_jiffies(ca->delay_min >> 3);
- 	/* change the unit from HZ to bictcp_HZ */
--	t = ((tcp_time_stamp + msecs_to_jiffies(ca->delay_min>>3)
--	      - ca->epoch_start) << BICTCP_HZ) / HZ;
-+	t <<= BICTCP_HZ;
-+	do_div(t, HZ);
+ 	if (tun->flags & TUN_VNET_HDR) {
+-		if ((len -= tun->vnet_hdr_sz) > count)
++		if (len < tun->vnet_hdr_sz)
+ 			return -EINVAL;
++		len -= tun->vnet_hdr_sz;
  
- 	if (t < ca->bic_K)		/* t - K */
- 		offs = ca->bic_K - t;
+ 		if (memcpy_fromiovecend((void *)&gso, iv, offset, sizeof(gso)))
+ 			return -EFAULT;
 
 
