@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757648Ab3ILCaA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 22:30:00 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:36037 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757624Ab3ILC32 (ORCPT
+	id S1757622Ab3ILC31 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 22:29:27 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:51281 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752613Ab3ILC3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 22:29:28 -0400
+	Wed, 11 Sep 2013 22:29:24 -0400
 From: Tejun Heo <tj@kernel.org>
 To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, kay@vrfy.org, ebiederm@xmission.com,
         netdev@vger.kernel.org, lizefan@huawei.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 6/7] sysfs: clean up sysfs_get_dirent()
-Date: Wed, 11 Sep 2013 22:29:08 -0400
-Message-Id: <1378952949-7900-7-git-send-email-tj@kernel.org>
+Subject: [PATCH 3/7] sysfs: remove ktype->namespace() invocations in directory code
+Date: Wed, 11 Sep 2013 22:29:05 -0400
+Message-Id: <1378952949-7900-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1378952949-7900-1-git-send-email-tj@kernel.org>
 References: <1378952949-7900-1-git-send-email-tj@kernel.org>
@@ -21,264 +21,232 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pre-existing sysfs interfaces which take explicit namespace
-argument are weird in that they place the optional @ns in front of
-@name which is contrary to the established convention.  For example,
-we end up forcing vast majority of sysfs_get_dirent() users to do
-sysfs_get_dirent(parent, NULL, name), which is silly and error-prone
-especially as @ns and @name may be interchanged without causing
-compilation warning.
+For some unrecognizable reason, namespace information is communicated
+to sysfs through ktype->namespace() callback when there's *nothing*
+which needs the use of a callback.  The whole sequence of operations
+is completely synchronous and sysfs operations simply end up calling
+back into the layer which just invoked it in order to find out the
+namespace information, which is completely backwards, obfuscates
+what's going on and unnecessarily tangles two separate layers.
 
-This renames sysfs_get_dirent() to sysfs_get_dirent_ns() and swap the
-positions of @name and @ns, and sysfs_get_dirent() is now a wrapper
-around sysfs_get_dirent_ns().  This makes confusions a lot less
-likely.
+This patch doesn't remove ktype->namespace() but shifts its handling
+to kobject layer.  We probably want to get rid of the callback in the
+long term.
 
-There are other interfaces which take @ns before @name.  They'll be
-updated by following patches.
+This patch adds an explicit param to sysfs_{create|rename|move}_dir()
+and renames them to sysfs_{create|rename|move}_dir_ns(), respectively.
+ktype->namespace() invocations are moved to the calling sites of the
+above functions.  A new helper kboject_namespace() is introduced which
+directly tests kobj_ns_type_operations->type which should give the
+same result as testing sysfs_fs_type(parent_sd) and returns @kobj's
+namespace tag as necessary.  kobject_namespace() is extern as it will
+be used from another file in the following patches.
 
-This patch doesn't introduce any functional changes.
+This patch should be an equivalent conversion without any functional
+difference.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Eric W. Biederman <ebiederm@xmission.com>
 Cc: Kay Sievers <kay@vrfy.org>
 ---
- drivers/gpio/gpiolib.c |  2 +-
- drivers/md/bitmap.c    |  4 ++--
- drivers/md/md.c        |  2 +-
- drivers/md/md.h        |  2 +-
- fs/sysfs/dir.c         |  9 +++++----
- fs/sysfs/file.c        |  4 ++--
- fs/sysfs/group.c       | 10 +++++-----
- fs/sysfs/symlink.c     |  2 +-
- fs/sysfs/sysfs.h       |  3 ---
- include/linux/sysfs.h  | 19 ++++++++++++-------
- 10 files changed, 30 insertions(+), 27 deletions(-)
+ fs/sysfs/dir.c          | 23 ++++++++---------------
+ include/linux/kobject.h |  1 +
+ include/linux/sysfs.h   | 20 ++++++++++++--------
+ lib/kobject.c           | 28 ++++++++++++++++++++++++----
+ 4 files changed, 45 insertions(+), 27 deletions(-)
 
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 86ef346..a094356 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -408,7 +408,7 @@ static int gpio_setup_irq(struct gpio_desc *desc, struct device *dev,
- 			IRQF_TRIGGER_FALLING : IRQF_TRIGGER_RISING;
- 
- 	if (!value_sd) {
--		value_sd = sysfs_get_dirent(dev->kobj.sd, NULL, "value");
-+		value_sd = sysfs_get_dirent(dev->kobj.sd, "value");
- 		if (!value_sd) {
- 			ret = -ENODEV;
- 			goto err_out;
-diff --git a/drivers/md/bitmap.c b/drivers/md/bitmap.c
-index a7fd821..12dc29b 100644
---- a/drivers/md/bitmap.c
-+++ b/drivers/md/bitmap.c
-@@ -1654,9 +1654,9 @@ int bitmap_create(struct mddev *mddev)
- 	bitmap->mddev = mddev;
- 
- 	if (mddev->kobj.sd)
--		bm = sysfs_get_dirent(mddev->kobj.sd, NULL, "bitmap");
-+		bm = sysfs_get_dirent(mddev->kobj.sd, "bitmap");
- 	if (bm) {
--		bitmap->sysfs_can_clear = sysfs_get_dirent(bm, NULL, "can_clear");
-+		bitmap->sysfs_can_clear = sysfs_get_dirent(bm, "can_clear");
- 		sysfs_put(bm);
- 	} else
- 		bitmap->sysfs_can_clear = NULL;
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index adf4d7e..8a0d762 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -3555,7 +3555,7 @@ level_store(struct mddev *mddev, const char *buf, size_t len)
- 			printk(KERN_WARNING
- 			       "md: cannot register extra attributes for %s\n",
- 			       mdname(mddev));
--		mddev->sysfs_action = sysfs_get_dirent(mddev->kobj.sd, NULL, "sync_action");
-+		mddev->sysfs_action = sysfs_get_dirent(mddev->kobj.sd, "sync_action");
- 	}		
- 	if (mddev->pers->sync_request != NULL &&
- 	    pers->sync_request == NULL) {
-diff --git a/drivers/md/md.h b/drivers/md/md.h
-index 608050c..b0051f2 100644
---- a/drivers/md/md.h
-+++ b/drivers/md/md.h
-@@ -501,7 +501,7 @@ extern struct attribute_group md_bitmap_group;
- static inline struct sysfs_dirent *sysfs_get_dirent_safe(struct sysfs_dirent *sd, char *name)
- {
- 	if (sd)
--		return sysfs_get_dirent(sd, NULL, name);
-+		return sysfs_get_dirent(sd, name);
- 	return sd;
- }
- static inline void sysfs_notify_dirent_safe(struct sysfs_dirent *sd)
 diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index 1dfb4aa..3dacce0 100644
+index 834c64c..878ac3a 100644
 --- a/fs/sysfs/dir.c
 +++ b/fs/sysfs/dir.c
-@@ -630,9 +630,10 @@ struct sysfs_dirent *sysfs_find_dirent(struct sysfs_dirent *parent_sd,
+@@ -730,14 +730,14 @@ static enum kobj_ns_type sysfs_read_ns_type(struct kobject *kobj)
  }
  
  /**
-- *	sysfs_get_dirent - find and get sysfs_dirent with the given name
-+ *	sysfs_get_dirent_ns - find and get sysfs_dirent with the given name
-  *	@parent_sd: sysfs_dirent to search under
-  *	@name: name to look for
-+ *	@ns: the namespace tag to use
-  *
-  *	Look for sysfs_dirent with name @name under @parent_sd and get
-  *	it if found.
-@@ -643,9 +644,9 @@ struct sysfs_dirent *sysfs_find_dirent(struct sysfs_dirent *parent_sd,
-  *	RETURNS:
-  *	Pointer to sysfs_dirent if found, NULL if not.
+- *	sysfs_create_dir - create a directory for an object.
+- *	@kobj:		object we're creating directory for.
++ * sysfs_create_dir_ns - create a directory for an object with a namespace tag
++ * @kobj: object we're creating directory for
++ * @ns: the namespace tag to use
   */
--struct sysfs_dirent *sysfs_get_dirent(struct sysfs_dirent *parent_sd,
--				      const void *ns,
--				      const unsigned char *name)
-+struct sysfs_dirent *sysfs_get_dirent_ns(struct sysfs_dirent *parent_sd,
-+					 const unsigned char *name,
-+					 const void *ns)
+-int sysfs_create_dir(struct kobject *kobj)
++int sysfs_create_dir_ns(struct kobject *kobj, const void *ns)
  {
- 	struct sysfs_dirent *sd;
- 
-diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index e784340..0f3214a 100644
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -563,7 +563,7 @@ int sysfs_add_file_to_group(struct kobject *kobj,
- 	int error;
- 
- 	if (group)
--		dir_sd = sysfs_get_dirent(kobj->sd, NULL, group);
-+		dir_sd = sysfs_get_dirent(kobj->sd, group);
- 	else
- 		dir_sd = sysfs_get(kobj->sd);
- 
-@@ -645,7 +645,7 @@ void sysfs_remove_file_from_group(struct kobject *kobj,
- 	struct sysfs_dirent *dir_sd;
- 
- 	if (group)
--		dir_sd = sysfs_get_dirent(kobj->sd, NULL, group);
-+		dir_sd = sysfs_get_dirent(kobj->sd, group);
- 	else
- 		dir_sd = sysfs_get(kobj->sd);
- 	if (dir_sd) {
-diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
-index 25c78f2..2110215 100644
---- a/fs/sysfs/group.c
-+++ b/fs/sysfs/group.c
-@@ -207,7 +207,7 @@ void sysfs_remove_group(struct kobject *kobj,
- 	struct sysfs_dirent *sd;
- 
- 	if (grp->name) {
--		sd = sysfs_get_dirent(dir_sd, NULL, grp->name);
-+		sd = sysfs_get_dirent(dir_sd, grp->name);
- 		if (!sd) {
- 			WARN(!sd, KERN_WARNING
- 			     "sysfs group %p not found for kobject '%s'\n",
-@@ -262,7 +262,7 @@ int sysfs_merge_group(struct kobject *kobj,
- 	struct attribute *const *attr;
- 	int i;
- 
--	dir_sd = sysfs_get_dirent(kobj->sd, NULL, grp->name);
-+	dir_sd = sysfs_get_dirent(kobj->sd, grp->name);
- 	if (!dir_sd)
- 		return -ENOENT;
- 
-@@ -289,7 +289,7 @@ void sysfs_unmerge_group(struct kobject *kobj,
- 	struct sysfs_dirent *dir_sd;
- 	struct attribute *const *attr;
- 
--	dir_sd = sysfs_get_dirent(kobj->sd, NULL, grp->name);
-+	dir_sd = sysfs_get_dirent(kobj->sd, grp->name);
- 	if (dir_sd) {
- 		for (attr = grp->attrs; *attr; ++attr)
- 			sysfs_hash_and_remove(dir_sd, NULL, (*attr)->name);
-@@ -311,7 +311,7 @@ int sysfs_add_link_to_group(struct kobject *kobj, const char *group_name,
- 	struct sysfs_dirent *dir_sd;
+ 	enum kobj_ns_type type;
+ 	struct sysfs_dirent *parent_sd, *sd;
+-	const void *ns = NULL;
  	int error = 0;
  
--	dir_sd = sysfs_get_dirent(kobj->sd, NULL, group_name);
-+	dir_sd = sysfs_get_dirent(kobj->sd, group_name);
- 	if (!dir_sd)
+ 	BUG_ON(!kobj);
+@@ -750,8 +750,6 @@ int sysfs_create_dir(struct kobject *kobj)
+ 	if (!parent_sd)
  		return -ENOENT;
  
-@@ -333,7 +333,7 @@ void sysfs_remove_link_from_group(struct kobject *kobj, const char *group_name,
+-	if (sysfs_ns_type(parent_sd))
+-		ns = kobj->ktype->namespace(kobj);
+ 	type = sysfs_read_ns_type(kobj);
+ 
+ 	error = create_dir(kobj, parent_sd, type, ns, kobject_name(kobj), &sd);
+@@ -909,26 +907,21 @@ int sysfs_rename(struct sysfs_dirent *sd,
+ 	return error;
+ }
+ 
+-int sysfs_rename_dir(struct kobject *kobj, const char *new_name)
++int sysfs_rename_dir_ns(struct kobject *kobj, const char *new_name,
++			const void *new_ns)
  {
- 	struct sysfs_dirent *dir_sd;
+ 	struct sysfs_dirent *parent_sd = kobj->sd->s_parent;
+-	const void *new_ns = NULL;
+-
+-	if (sysfs_ns_type(parent_sd))
+-		new_ns = kobj->ktype->namespace(kobj);
  
--	dir_sd = sysfs_get_dirent(kobj->sd, NULL, group_name);
-+	dir_sd = sysfs_get_dirent(kobj->sd, group_name);
- 	if (dir_sd) {
- 		sysfs_hash_and_remove(dir_sd, NULL, link_name);
- 		sysfs_put(dir_sd);
-diff --git a/fs/sysfs/symlink.c b/fs/sysfs/symlink.c
-index 7d981ce..c96b31a 100644
---- a/fs/sysfs/symlink.c
-+++ b/fs/sysfs/symlink.c
-@@ -191,7 +191,7 @@ int sysfs_rename_link_ns(struct kobject *kobj, struct kobject *targ,
- 		old_ns = targ->sd->s_ns;
+ 	return sysfs_rename(kobj->sd, parent_sd, new_ns, new_name);
+ }
  
- 	result = -ENOENT;
--	sd = sysfs_get_dirent(parent_sd, old_ns, old);
-+	sd = sysfs_get_dirent_ns(parent_sd, old, old_ns);
- 	if (!sd)
- 		goto out;
+-int sysfs_move_dir(struct kobject *kobj, struct kobject *new_parent_kobj)
++int sysfs_move_dir_ns(struct kobject *kobj, struct kobject *new_parent_kobj,
++		      const void *new_ns)
+ {
+ 	struct sysfs_dirent *sd = kobj->sd;
+ 	struct sysfs_dirent *new_parent_sd;
+-	const void *new_ns = NULL;
  
-diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
-index 7664d1b..6faacaf 100644
---- a/fs/sysfs/sysfs.h
-+++ b/fs/sysfs/sysfs.h
-@@ -164,9 +164,6 @@ void sysfs_addrm_finish(struct sysfs_addrm_cxt *acxt);
- struct sysfs_dirent *sysfs_find_dirent(struct sysfs_dirent *parent_sd,
- 				       const void *ns,
- 				       const unsigned char *name);
--struct sysfs_dirent *sysfs_get_dirent(struct sysfs_dirent *parent_sd,
--				      const void *ns,
--				      const unsigned char *name);
- struct sysfs_dirent *sysfs_new_dirent(const char *name, umode_t mode, int type);
+ 	BUG_ON(!sd->s_parent);
+-	if (sysfs_ns_type(sd->s_parent))
+-		new_ns = kobj->ktype->namespace(kobj);
+ 	new_parent_sd = new_parent_kobj && new_parent_kobj->sd ?
+ 		new_parent_kobj->sd : &sysfs_root;
  
- void release_sysfs_dirent(struct sysfs_dirent *sd);
+diff --git a/include/linux/kobject.h b/include/linux/kobject.h
+index de6dcbcc..e7ba650 100644
+--- a/include/linux/kobject.h
++++ b/include/linux/kobject.h
+@@ -107,6 +107,7 @@ extern int __must_check kobject_move(struct kobject *, struct kobject *);
+ extern struct kobject *kobject_get(struct kobject *kobj);
+ extern void kobject_put(struct kobject *kobj);
+ 
++extern const void *kobject_namespace(struct kobject *kobj);
+ extern char *kobject_get_path(struct kobject *kobj, gfp_t flag);
+ 
+ struct kobj_type {
 diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
-index c792f73..6695040 100644
+index 82f7fac..7f56bad 100644
 --- a/include/linux/sysfs.h
 +++ b/include/linux/sysfs.h
-@@ -245,9 +245,9 @@ void sysfs_remove_link_from_group(struct kobject *kobj, const char *group_name,
+@@ -182,11 +182,13 @@ struct sysfs_dirent;
+ int sysfs_schedule_callback(struct kobject *kobj, void (*func)(void *),
+ 			    void *data, struct module *owner);
  
- void sysfs_notify(struct kobject *kobj, const char *dir, const char *attr);
- void sysfs_notify_dirent(struct sysfs_dirent *sd);
--struct sysfs_dirent *sysfs_get_dirent(struct sysfs_dirent *parent_sd,
--				      const void *ns,
--				      const unsigned char *name);
-+struct sysfs_dirent *sysfs_get_dirent_ns(struct sysfs_dirent *parent_sd,
-+					 const unsigned char *name,
-+					 const void *ns);
- struct sysfs_dirent *sysfs_get(struct sysfs_dirent *sd);
- void sysfs_put(struct sysfs_dirent *sd);
+-int __must_check sysfs_create_dir(struct kobject *kobj);
++int __must_check sysfs_create_dir_ns(struct kobject *kobj, const void *ns);
+ void sysfs_remove_dir(struct kobject *kobj);
+-int __must_check sysfs_rename_dir(struct kobject *kobj, const char *new_name);
+-int __must_check sysfs_move_dir(struct kobject *kobj,
+-				struct kobject *new_parent_kobj);
++int __must_check sysfs_rename_dir_ns(struct kobject *kobj, const char *new_name,
++				     const void *new_ns);
++int __must_check sysfs_move_dir_ns(struct kobject *kobj,
++				   struct kobject *new_parent_kobj,
++				   const void *new_ns);
  
-@@ -422,10 +422,9 @@ static inline void sysfs_notify(struct kobject *kobj, const char *dir,
- static inline void sysfs_notify_dirent(struct sysfs_dirent *sd)
+ int __must_check sysfs_create_file_ns(struct kobject *kobj,
+ 				      const struct attribute *attr,
+@@ -258,7 +260,7 @@ static inline int sysfs_schedule_callback(struct kobject *kobj,
+ 	return -ENOSYS;
+ }
+ 
+-static inline int sysfs_create_dir(struct kobject *kobj)
++static inline int sysfs_create_dir_ns(struct kobject *kobj, const void *ns)
+ {
+ 	return 0;
+ }
+@@ -267,13 +269,15 @@ static inline void sysfs_remove_dir(struct kobject *kobj)
  {
  }
--static inline
--struct sysfs_dirent *sysfs_get_dirent(struct sysfs_dirent *parent_sd,
--				      const void *ns,
--				      const unsigned char *name)
-+static inline struct sysfs_dirent *
-+sysfs_get_dirent_ns(struct sysfs_dirent *parent_sd, const unsigned char *name,
-+		    const void *ns)
+ 
+-static inline int sysfs_rename_dir(struct kobject *kobj, const char *new_name)
++static inline int sysfs_rename_dir_ns(struct kobject *kobj,
++				      const char *new_name, const void *new_ns)
  {
- 	return NULL;
- }
-@@ -462,4 +461,10 @@ static inline int sysfs_rename_link(struct kobject *kobj, struct kobject *target
- 	return sysfs_rename_link_ns(kobj, target, old_name, new_name, NULL);
+ 	return 0;
  }
  
-+static inline struct sysfs_dirent *
-+sysfs_get_dirent(struct sysfs_dirent *parent_sd, const unsigned char *name)
+-static inline int sysfs_move_dir(struct kobject *kobj,
+-				 struct kobject *new_parent_kobj)
++static inline int sysfs_move_dir_ns(struct kobject *kobj,
++				    struct kobject *new_parent_kobj,
++				    const void *new_ns)
+ {
+ 	return 0;
+ }
+diff --git a/lib/kobject.c b/lib/kobject.c
+index 9621751..85fb3a1 100644
+--- a/lib/kobject.c
++++ b/lib/kobject.c
+@@ -18,6 +18,24 @@
+ #include <linux/stat.h>
+ #include <linux/slab.h>
+ 
++/**
++ * kobject_namespace - return @kobj's namespace tag
++ * @kobj: kobject in question
++ *
++ * Returns namespace tag of @kobj if its parent has namespace ops enabled
++ * and thus @kobj should have a namespace tag associated with it.  Returns
++ * %NULL otherwise.
++ */
++const void *kobject_namespace(struct kobject *kobj)
 +{
-+	return sysfs_get_dirent_ns(parent_sd, name, NULL);
++	const struct kobj_ns_type_operations *ns_ops = kobj_ns_ops(kobj);
++
++	if (!ns_ops || ns_ops->type == KOBJ_NS_TYPE_NONE)
++		return NULL;
++
++	return kobj->ktype->namespace(kobj);
 +}
 +
- #endif /* _SYSFS_H_ */
+ /*
+  * populate_dir - populate directory with attributes.
+  * @kobj: object we're working on.
+@@ -46,8 +64,9 @@ static int populate_dir(struct kobject *kobj)
+ 
+ static int create_dir(struct kobject *kobj)
+ {
+-	int error = 0;
+-	error = sysfs_create_dir(kobj);
++	int error;
++
++	error = sysfs_create_dir_ns(kobj, kobject_namespace(kobj));
+ 	if (!error) {
+ 		error = populate_dir(kobj);
+ 		if (error)
+@@ -428,7 +447,7 @@ int kobject_rename(struct kobject *kobj, const char *new_name)
+ 		goto out;
+ 	}
+ 
+-	error = sysfs_rename_dir(kobj, new_name);
++	error = sysfs_rename_dir_ns(kobj, new_name, kobject_namespace(kobj));
+ 	if (error)
+ 		goto out;
+ 
+@@ -472,6 +491,7 @@ int kobject_move(struct kobject *kobj, struct kobject *new_parent)
+ 		if (kobj->kset)
+ 			new_parent = kobject_get(&kobj->kset->kobj);
+ 	}
++
+ 	/* old object path */
+ 	devpath = kobject_get_path(kobj, GFP_KERNEL);
+ 	if (!devpath) {
+@@ -486,7 +506,7 @@ int kobject_move(struct kobject *kobj, struct kobject *new_parent)
+ 	sprintf(devpath_string, "DEVPATH_OLD=%s", devpath);
+ 	envp[0] = devpath_string;
+ 	envp[1] = NULL;
+-	error = sysfs_move_dir(kobj, new_parent);
++	error = sysfs_move_dir_ns(kobj, new_parent, kobject_namespace(kobj));
+ 	if (error)
+ 		goto out;
+ 	old_parent = kobj->parent;
 -- 
 1.8.3.1
 
