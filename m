@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785Ab3ILEqC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 00:46:02 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:57338 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753322Ab3ILEqA (ORCPT
+	id S1753595Ab3ILEto (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 00:49:44 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:40064 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758Ab3ILEtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 00:46:00 -0400
-Message-ID: <523146F1.7060905@in.ibm.com>
-Date: Thu, 12 Sep 2013 10:15:37 +0530
-From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Thu, 12 Sep 2013 00:49:43 -0400
+Message-ID: <523147DB.9010500@linux.vnet.ibm.com>
+Date: Thu, 12 Sep 2013 10:19:31 +0530
+From: Hemant <hkshaw@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: Janani Venkataraman <jananive@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Daisuke HATAYAMA <d.hatayama@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Amerigo Wang <amwang@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Masami Hiramatsu <mhiramat@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>, xemul@parallels.com,
-        Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-        avagin@openvz.org, gorcunov@openvz.org,
-        James Hogan <james.hogan@imgtec.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        "Randy.Dunlap" <rdunlap@xenotime.net>, Eric Paris <eparis@redhat.com>,
-        ananth@in.ibm.com, aravinda@linux.vnet.ibm.com,
-        tarundeep.singh@in.ibm.com
-Subject: Re: RFD: Non-Disruptive Core Dump Infrastructure
-References: <522472DA.4000702@linux.vnet.ibm.com> <5225A02B.6080901@linux.vnet.ibm.com> <5230C405.8040108@gmail.com>
-In-Reply-To: <5230C405.8040108@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org,
+        Mikhail.Kulemin@ru.ibm.com, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, mingo@redhat.com, systemtap@sourceware.org,
+        masami.hiramatsu.pt@hitachi.com
+Subject: Re: [PATCH] uprobes: Fix limiting un-nested return probes
+References: <20130903060959.1351.16587.stgit@hemant-fedora> <20130908163232.GA32685@redhat.com> <20130909083635.GA3270@bandura.laptop> <20130909145515.GA5855@redhat.com>
+In-Reply-To: <20130909145515.GA5855@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091204-9332-0000-0000-00000163D914
+x-cbid: 13091204-1396-0000-0000-0000038B42F8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2013 12:57 AM, KOSAKI Motohiro wrote:
-> (9/3/13 4:39 AM), Janani Venkataraman wrote:
->> Hello,
->>
->> We are working on an infrastructure to create a system core file of a
->> specific
->> process at run-time, non-disruptively. It can also be extended to a
->> case where
->> a process is able to take a self-core dump.
->>
->> gcore, an existing utility creates a core image of the specified
->> process. It
->> attaches to the process using gdb and runs the gdb gcore command and then
->> detaches. In gcore the dump cannot be issued from a signal handler
->> context as
->> fork() is not signal safe and moreover it is disruptive in nature as
->> the gdb
->> attaches using ptrace which sends a SIGSTOP signal. Hence the gcore
->> method
->> cannot be used if the process wants to initiate a self dump.
-> 
-> Maybe I'm missing something. But why gcore uses c-level fork()? gcore
-> need to
-> call pthread-at-fork handler? No. gcore need to flush stdio buffer? No.
-> 
-Let me clarify. If an application wants to dump itself, it has to do a
-fork() and then exec the gcore with the pid of the appication to
-generate the dump.
+Hi Oleg,
 
-So, if the application wants to initiate the dump from a signal handler
-context, it may lead to trouble.
+On 09/09/2013 08:25 PM, Oleg Nesterov wrote:
+> On 09/09, Anton Arapov wrote:
+>> On Sun, Sep 08, 2013 at 06:32:32PM +0200, Oleg Nesterov wrote:
+>>> Not sure, but I can be easily wrong... afaics we need something like below, no?
+>>> Anton?
+>> Oleg, your guess is correct.
+>>
+>> My original intention was to limit by depth the chained only probes. But later,
+>> after your review, we've decided /based on safety concerns/ to limit it hard.
+> Chained or not, we allocate return_instance every time, so we certainly
+> need to account to limit the depth unconditionally. Unless we reuse the
+> same return_instance if chained, but this is another story.
 
+Hmm, agreed. Thanks for the description.
+
+>
+>> The decrement 'utask->depth--;' in my own tree is above the 'if (!chained)'
+>> check. I think it got mangled somehow when I rebased the code before I sent it
+>> to lkml.
+> OK, thanks, I'll write the changelog and re-send the patch below.
+>
+>> Anton.
+>>
+>>
+>>> Oleg.
+>>>
+>>> --- x/kernel/events/uprobes.c
+>>> +++ x/kernel/events/uprobes.c
+>>> @@ -1682,12 +1682,10 @@ static bool handle_trampoline(struct pt_
+>>>   		tmp = ri;
+>>>   		ri = ri->next;
+>>>   		kfree(tmp);
+>>> +		utask->depth--;
+>>>
+>>>   		if (!chained)
+>>>   			break;
+>>> -
+>>> -		utask->depth--;
+>>> -
+>>>   		BUG_ON(!ri);
+>>>   	}
+
+
+-- 
 Thanks
-Suzuki
+Hemant
 
