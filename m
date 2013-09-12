@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755357Ab3ILR2k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 13:28:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56632 "EHLO
+	id S1755445Ab3ILR25 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 13:28:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56619 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754992Ab3ILR0m (ORCPT
+	with ESMTP id S1754971Ab3ILR0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 13:26:42 -0400
+	Thu, 12 Sep 2013 13:26:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 16/19] m32r: consistently use "suffix-$(...)"
-Date: Thu, 12 Sep 2013 10:26:25 -0700
-Message-Id: <20130912172525.925215518@linuxfoundation.org>
+        Teco Boot <teco@inf-net.nl>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        David Lamparter <equinox@diac24.net>,
+        boutier@pps.univ-paris-diderot.fr,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 06/19] ipv6: dont stop backtracking in fib6_lookup_1 if subtree does not match
+Date: Thu, 12 Sep 2013 10:26:15 -0700
+Message-Id: <20130912172524.859702744@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130912172524.135620246@linuxfoundation.org>
 References: <20130912172524.135620246@linuxfoundation.org>
@@ -30,45 +31,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-commit df12aef6a19bb2d69859a94936bda0e6ccaf3327 upstream.
+[ Upstream commit 3e3be275851bc6fc90bfdcd732cd95563acd982b ]
 
-Commit a556bec9955c ("m32r: fix arch/m32r/boot/compressed/Makefile")
-changed "$(suffix_y)" to "$(suffix-y)", but didn't update any location
-where "suffix_y" is set, causing:
+In case a subtree did not match we currently stop backtracking and return
+NULL (root table from fib_lookup). This could yield in invalid routing
+table lookups when using subtrees.
 
-  make[5]: *** No rule to make target `arch/m32r/boot/compressed/vmlinux.bin.', needed by `arch/m32r/boot/compressed/piggy.o'.  Stop.
-  make[4]: *** [arch/m32r/boot/compressed/vmlinux] Error 2
-  make[3]: *** [zImage] Error 2
+Instead continue to backtrack until a valid subtree or node is found
+and return this match.
 
-Correct the other locations to fix this.
+Also remove unneeded NULL check.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Hirokazu Takata <takata@linux-m32r.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+Reported-by: Teco Boot <teco@inf-net.nl>
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Cc: David Lamparter <equinox@diac24.net>
+Cc: <boutier@pps.univ-paris-diderot.fr>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/m32r/boot/compressed/Makefile |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ net/ipv6/ip6_fib.c |   16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
---- a/arch/m32r/boot/compressed/Makefile
-+++ b/arch/m32r/boot/compressed/Makefile
-@@ -43,9 +43,9 @@ endif
+--- a/net/ipv6/ip6_fib.c
++++ b/net/ipv6/ip6_fib.c
+@@ -866,14 +866,22 @@ static struct fib6_node * fib6_lookup_1(
  
- OBJCOPYFLAGS += -R .empty_zero_page
+ 			if (ipv6_prefix_equal(&key->addr, args->addr, key->plen)) {
+ #ifdef CONFIG_IPV6_SUBTREES
+-				if (fn->subtree)
+-					fn = fib6_lookup_1(fn->subtree, args + 1);
++				if (fn->subtree) {
++					struct fib6_node *sfn;
++					sfn = fib6_lookup_1(fn->subtree,
++							    args + 1);
++					if (!sfn)
++						goto backtrack;
++					fn = sfn;
++				}
+ #endif
+-				if (!fn || fn->fn_flags & RTN_RTINFO)
++				if (fn->fn_flags & RTN_RTINFO)
+ 					return fn;
+ 			}
+ 		}
+-
++#ifdef CONFIG_IPV6_SUBTREES
++backtrack:
++#endif
+ 		if (fn->fn_flags & RTN_ROOT)
+ 			break;
  
--suffix_$(CONFIG_KERNEL_GZIP)	= gz
--suffix_$(CONFIG_KERNEL_BZIP2)	= bz2
--suffix_$(CONFIG_KERNEL_LZMA)	= lzma
-+suffix-$(CONFIG_KERNEL_GZIP)	= gz
-+suffix-$(CONFIG_KERNEL_BZIP2)	= bz2
-+suffix-$(CONFIG_KERNEL_LZMA)	= lzma
- 
- $(obj)/piggy.o: $(obj)/vmlinux.scr $(obj)/vmlinux.bin.$(suffix-y) FORCE
- 	$(call if_changed,ld)
 
 
