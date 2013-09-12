@@ -1,70 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756852Ab3ILSRq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:17:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57301 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756643Ab3ILSPT (ORCPT
+	id S1756960Ab3ILSSD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:18:03 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:34946 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755347Ab3ILSSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 14:15:19 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Rusk <mark.rusk@hp.com>
-Subject: [ 11/16] drivers/misc/hpilo: Correct panic when an AUX iLO is detected
-Date: Thu, 12 Sep 2013 11:15:03 -0700
-Message-Id: <20130912181157.437896478@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
+	Thu, 12 Sep 2013 14:18:00 -0400
+MIME-Version: 1.0
 In-Reply-To: <20130912181156.173326121@linuxfoundation.org>
 References: <20130912181156.173326121@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+Date: Thu, 12 Sep 2013 11:17:59 -0700
+X-Google-Sender-Auth: QW7hhtoXuNV3q-9WIzIgLMZwCZA
+Message-ID: <CA+55aFwN78n92A_mnOve0RsBgHh+o_1KOBvn9d+a2gorXEP6QQ@mail.gmail.com>
+Subject: Re: [ 00/16] 3.11.1-stable review
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11-stable review patch.  If anyone has any objections, please let me know.
+Your script may be a bit buggered...
 
-------------------
+          Linus
 
-From: Mark Rusk <Mark.Rusk@hp.com>
-
-commit eefbc594abbb1b7e6e7eeadb65ae7c7538474210 upstream.
-
- Using an uninitialized variable 'devnum' after 'goto out;' was causing
- panic.  Just go ahead and return, we need to ignore AUX iLO devs.
-
- Oops: 0002 [#1] SMP
-   .
-   .
-   .
- RIP  [<ffffffffa033e270>] ilo_probe+0xec/0xe7c [hpilo]
-
-Signed-off-by: Mark Rusk <mark.rusk@hp.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/misc/hpilo.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/drivers/misc/hpilo.c
-+++ b/drivers/misc/hpilo.c
-@@ -759,7 +759,7 @@ static int ilo_probe(struct pci_dev *pde
- 
- 	/* Ignore subsystem_device = 0x1979 (set by BIOS)  */
- 	if (pdev->subsystem_device == 0x1979)
--		goto out;
-+		return 0;
- 
- 	if (max_ccb > MAX_CCB)
- 		max_ccb = MAX_CCB;
-@@ -899,7 +899,7 @@ static void __exit ilo_exit(void)
- 	class_destroy(ilo_class);
- }
- 
--MODULE_VERSION("1.4");
-+MODULE_VERSION("1.4.1");
- MODULE_ALIAS(ILO_NAME);
- MODULE_DESCRIPTION(ILO_NAME);
- MODULE_AUTHOR("David Altobelli <david.altobelli@hp.com>");
-
-
+On Thu, Sep 12, 2013 at 11:14 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+>
+> -------------
+> Pseudo-Shortlog of commits:
+>
+>
+> -------------
+>
+> Diffstat:
+>
+>
