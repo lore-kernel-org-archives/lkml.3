@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707Ab3ILRFn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 13:05:43 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52806 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753906Ab3ILRFm (ORCPT
+	id S1754735Ab3ILRGg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 13:06:36 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:38109 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752176Ab3ILRGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 13:05:42 -0400
-Message-ID: <5231F45C.3020500@infradead.org>
-Date: Thu, 12 Sep 2013 10:05:32 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Thu, 12 Sep 2013 13:06:34 -0400
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
-        Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] dma: use %pa to print dma_addr_t
-References: <1378960710-15648-1-git-send-email-olof@lixom.net>
-In-Reply-To: <1378960710-15648-1-git-send-email-olof@lixom.net>
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <25E0B143-658E-4CCC-A88A-0AF70FFF33CE@codeaurora.org>
+References: <1379003839-16068-1-git-send-email-galak@codeaurora.org>
+	<CAOesGMisWLwYKotGDFPW6PyHJs=_+fohTdC08SGjsv2FXaa7Fg@mail.gmail.com>
+	<25E0B143-658E-4CCC-A88A-0AF70FFF33CE@codeaurora.org>
+Date: Thu, 12 Sep 2013 10:06:33 -0700
+Message-ID: <CAOesGMhfdvyJ_2AA2e8iO_2e=q7KgpyNbcriPKFw-RLormG6bA@mail.gmail.com>
+Subject: Re: [PATCH] ARM: msm: Move msm devicetrees under a Qualcomm dir
+From: Olof Johansson <olof@lixom.net>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: David Brown <davidb@codeaurora.org>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
+        Rohit Vaswani <rvaswani@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/13 21:38, Olof Johansson wrote:
-> This resolves some warnings seen when building with CONFIG_ARM_LPAE=y, since
-> dma_addr_t might then be 64-bit:
-> 
->   drivers/dma/imx-sdma.c:1092:3: warning: format '%x' expects argument of type 'unsigned int', but argument 6 has type 'dma_addr_t' [-Wformat=]
->   drivers/dma/imx-sdma.c:1166:3: warning: format '%x' expects argument of type 'unsigned int', but argument 6 has type 'dma_addr_t' [-Wformat=]
->   drivers/dma/imx-dma.c:579:3: warning: format '%x' expects argument of type 'unsigned int', but argument 6 has type 'dma_addr_t' [-Wformat=]
->   drivers/dma/imx-dma.c:579:3: warning: format '%x' expects argument of type 'unsigned int', but argument 7 has type 'dma_addr_t' [-Wformat=]
->   drivers/dma/imx-dma.c:593:4: warning: format '%x' expects argument of type 'unsigned int', but argument 9 has type 'dma_addr_t' [-Wformat=]
->   drivers/dma/imx-dma.c:603:4: warning: format '%x' expects argument of type 'unsigned int', but argument 9 has type 'dma_addr_t' [-Wformat=]
->   drivers/dma/imx-dma.c:930:2: warning: format '%x' expects argument of type 'unsigned int', but argument 6 has type 'dma_addr_t' [-Wformat=]
->   drivers/dma/imx-dma.c:930:2: warning: format '%x' expects argument of type 'unsigned int', but argument 7 has type 'dma_addr_t' [-Wformat=]
->   drivers/dma/imx-dma.c:960:2: warning: format '%x' expects argument of type 'unsigned int', but argument 6 has type 'dma_addr_t' [-Wformat=]
->   drivers/dma/imx-dma.c:960:2: warning: format '%x' expects argument of type 'unsigned int', but argument 7 has type 'dma_addr_t' [-Wformat=]
->   drivers/dma/ipu/ipu_idmac.c:1235:2: warning: format '%x' expects argument of type 'unsigned int', but argument 5 has type 'dma_addr_t' [-Wformat=]
+On Thu, Sep 12, 2013 at 9:53 AM, Kumar Gala <galak@codeaurora.org> wrote:
+>
+> On Sep 12, 2013, at 11:46 AM, Olof Johansson wrote:
+>
+>> On Thu, Sep 12, 2013 at 9:37 AM, Kumar Gala <galak@codeaurora.org> wrote:
+>>> Use the Qualcomm vendor prefix (qcom) as the directory name for
+>>> Qualcomm MSM devicetrees going forward.
+>>>
+>>> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+>>
+>> Let's not move just one platform like this. If we are to do this, we
+>> should move everything, and that will be really painful and needs to
+>> be done in a controlled manner, probably scripted and right before a
+>> -rc1 or such.
+>
+>
+> Than I suggest we deal with it when we pull the device trees out of the kernel tree.
+>
+> As such, I'd tell Rohit to go forward with the file being named apq8074-dragonboard.dtb for the time being.
+
+My original request to please use a common prefix for your product
+families stands. Please prefix with msm-*, or if you have to, qcom-*
+instead, since you guys can't seem to make your mind up on standard
+prefixes (msm, apq, etc).
 
 
-I've been tempted to make similar patches, but CONFIG_PHYS_ADDR_T_64BIT
-and CONFIG_ARCH_DMA_ADDR_T_64BIT are independent AFAICT,
-and %pa is for physical addresses, not necessarily DMA addresses.
-
-Am I confused?
-
-
--- 
-~Randy
+-Olof
