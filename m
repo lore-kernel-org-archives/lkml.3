@@ -1,202 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486Ab3ILR3h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 13:29:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56612 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754938Ab3ILR0k (ORCPT
+	id S1755528Ab3ILR3x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 13:29:53 -0400
+Received: from smtprelay0009.hostedemail.com ([216.40.44.9]:58083 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755490Ab3ILR3v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 13:26:40 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ying Xue <ying.xue@windriver.com>, Jon Maloy <jon.maloy@ericsson.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 13/19] tipc: fix lockdep warning during bearer initialization
-Date: Thu, 12 Sep 2013 10:26:22 -0700
-Message-Id: <20130912172525.619274662@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130912172524.135620246@linuxfoundation.org>
-References: <20130912172524.135620246@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Thu, 12 Sep 2013 13:29:51 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:2:41:146:355:379:541:599:967:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1535:1593:1594:1605:1606:1730:1747:1777:1792:2198:2199:2393:2525:2560:2563:2682:2685:2689:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:3870:3871:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4117:4250:4321:4605:5007:6119:7652:7903:7904:8985:9025:10004:10848:11026:11232:11473:11658:11914:12043:12291:12296:12438:12517:12519:12555:12683:12740,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,C
+X-HE-Tag: heart83_8fd7fb50f270b
+X-Filterd-Recvd-Size: 6332
+Message-ID: <1379006986.1944.3.camel@joe-AO722>
+Subject: Re: [PATCH] dma: use %pa to print dma_addr_t
+From: Joe Perches <joe@perches.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Olof Johansson <olof@lixom.net>, Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, Shawn Guo <shawn.guo@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Date: Thu, 12 Sep 2013 10:29:46 -0700
+In-Reply-To: <5231F45C.3020500@infradead.org>
+References: <1378960710-15648-1-git-send-email-olof@lixom.net>
+	 <5231F45C.3020500@infradead.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Thu, 2013-09-12 at 10:05 -0700, Randy Dunlap wrote:
+> On 09/11/13 21:38, Olof Johansson wrote:
+> > This resolves some warnings seen when building with CONFIG_ARM_LPAE=y, since
+> > dma_addr_t might then be 64-bit:
+> > 
+> >   drivers/dma/imx-sdma.c:1092:3: warning: format '%x' expects argument of type 'unsigned int', but argument 6 has type 'dma_addr_t' [-Wformat=]
+> >   drivers/dma/imx-sdma.c:1166:3: warning: format '%x' expects argument of type 'unsigned int', but argument 6 has type 'dma_addr_t' [-Wformat=]
+> >   drivers/dma/imx-dma.c:579:3: warning: format '%x' expects argument of type 'unsigned int', but argument 6 has type 'dma_addr_t' [-Wformat=]
+> >   drivers/dma/imx-dma.c:579:3: warning: format '%x' expects argument of type 'unsigned int', but argument 7 has type 'dma_addr_t' [-Wformat=]
+> >   drivers/dma/imx-dma.c:593:4: warning: format '%x' expects argument of type 'unsigned int', but argument 9 has type 'dma_addr_t' [-Wformat=]
+> >   drivers/dma/imx-dma.c:603:4: warning: format '%x' expects argument of type 'unsigned int', but argument 9 has type 'dma_addr_t' [-Wformat=]
+> >   drivers/dma/imx-dma.c:930:2: warning: format '%x' expects argument of type 'unsigned int', but argument 6 has type 'dma_addr_t' [-Wformat=]
+> >   drivers/dma/imx-dma.c:930:2: warning: format '%x' expects argument of type 'unsigned int', but argument 7 has type 'dma_addr_t' [-Wformat=]
+> >   drivers/dma/imx-dma.c:960:2: warning: format '%x' expects argument of type 'unsigned int', but argument 6 has type 'dma_addr_t' [-Wformat=]
+> >   drivers/dma/imx-dma.c:960:2: warning: format '%x' expects argument of type 'unsigned int', but argument 7 has type 'dma_addr_t' [-Wformat=]
+> >   drivers/dma/ipu/ipu_idmac.c:1235:2: warning: format '%x' expects argument of type 'unsigned int', but argument 5 has type 'dma_addr_t' [-Wformat=]
+> 
+> 
+> I've been tempted to make similar patches, but CONFIG_PHYS_ADDR_T_64BIT
+> and CONFIG_ARCH_DMA_ADDR_T_64BIT are independent AFAICT,
+> and %pa is for physical addresses, not necessarily DMA addresses.
+> 
+> Am I confused?
 
-------------------
+No.
 
-From: Ying Xue <ying.xue@windriver.com>
+https://lkml.org/lkml/2013/6/1/202
 
-[ Upstream commit 4225a398c1352a7a5c14dc07277cb5cc4473983b ]
+No.  If a dma_addr_t is really needed, then maybe
+something like this:
 
-When the lockdep validator is enabled, it will report the below
-warning when we enable a TIPC bearer:
-
-[ INFO: possible irq lock inversion dependency detected ]
----------------------------------------------------------
-Possible interrupt unsafe locking scenario:
-
-        CPU0                    CPU1
-        ----                    ----
-   lock(ptype_lock);
-                                local_irq_disable();
-                                lock(tipc_net_lock);
-                                lock(ptype_lock);
-   <Interrupt>
-   lock(tipc_net_lock);
-
-  *** DEADLOCK ***
-
-the shortest dependencies between 2nd lock and 1st lock:
-  -> (ptype_lock){+.+...} ops: 10 {
-[...]
-SOFTIRQ-ON-W at:
-                      [<c1089418>] __lock_acquire+0x528/0x13e0
-                      [<c108a360>] lock_acquire+0x90/0x100
-                      [<c1553c38>] _raw_spin_lock+0x38/0x50
-                      [<c14651ca>] dev_add_pack+0x3a/0x60
-                      [<c182da75>] arp_init+0x1a/0x48
-                      [<c182dce5>] inet_init+0x181/0x27e
-                      [<c1001114>] do_one_initcall+0x34/0x170
-                      [<c17f7329>] kernel_init+0x110/0x1b2
-                      [<c155b6a2>] kernel_thread_helper+0x6/0x10
-[...]
-   ... key      at: [<c17e4b10>] ptype_lock+0x10/0x20
-   ... acquired at:
-    [<c108a360>] lock_acquire+0x90/0x100
-    [<c1553c38>] _raw_spin_lock+0x38/0x50
-    [<c14651ca>] dev_add_pack+0x3a/0x60
-    [<c8bc18d2>] enable_bearer+0xf2/0x140 [tipc]
-    [<c8bb283a>] tipc_enable_bearer+0x1ba/0x450 [tipc]
-    [<c8bb3a04>] tipc_cfg_do_cmd+0x5c4/0x830 [tipc]
-    [<c8bbc032>] handle_cmd+0x42/0xd0 [tipc]
-    [<c148e802>] genl_rcv_msg+0x232/0x280
-    [<c148d3f6>] netlink_rcv_skb+0x86/0xb0
-    [<c148e5bc>] genl_rcv+0x1c/0x30
-    [<c148d144>] netlink_unicast+0x174/0x1f0
-    [<c148ddab>] netlink_sendmsg+0x1eb/0x2d0
-    [<c1456bc1>] sock_aio_write+0x161/0x170
-    [<c1135a7c>] do_sync_write+0xac/0xf0
-    [<c11360f6>] vfs_write+0x156/0x170
-    [<c11361e2>] sys_write+0x42/0x70
-    [<c155b0df>] sysenter_do_call+0x12/0x38
-[...]
-}
-  -> (tipc_net_lock){+..-..} ops: 4 {
-[...]
-    IN-SOFTIRQ-R at:
-                     [<c108953a>] __lock_acquire+0x64a/0x13e0
-                     [<c108a360>] lock_acquire+0x90/0x100
-                     [<c15541cd>] _raw_read_lock_bh+0x3d/0x50
-                     [<c8bb874d>] tipc_recv_msg+0x1d/0x830 [tipc]
-                     [<c8bc195f>] recv_msg+0x3f/0x50 [tipc]
-                     [<c146a5fa>] __netif_receive_skb+0x22a/0x590
-                     [<c146ab0b>] netif_receive_skb+0x2b/0xf0
-                     [<c13c43d2>] pcnet32_poll+0x292/0x780
-                     [<c146b00a>] net_rx_action+0xfa/0x1e0
-                     [<c103a4be>] __do_softirq+0xae/0x1e0
-[...]
-}
-
->From the log, we can see three different call chains between
-CPU0 and CPU1:
-
-Time 0 on CPU0:
-
-  kernel_init()->inet_init()->dev_add_pack()
-
-At time 0, the ptype_lock is held by CPU0 in dev_add_pack();
-
-Time 1 on CPU1:
-
-  tipc_enable_bearer()->enable_bearer()->dev_add_pack()
-
-At time 1, tipc_enable_bearer() first holds tipc_net_lock, and then
-wants to take ptype_lock to register TIPC protocol handler into the
-networking stack.  But the ptype_lock has been taken by dev_add_pack()
-on CPU0, so at this time the dev_add_pack() running on CPU1 has to be
-busy looping.
-
-Time 2 on CPU0:
-
-  netif_receive_skb()->recv_msg()->tipc_recv_msg()
-
-At time 2, an incoming TIPC packet arrives at CPU0, hence
-tipc_recv_msg() will be invoked. In tipc_recv_msg(), it first wants
-to hold tipc_net_lock.  At the moment, below scenario happens:
-
-On CPU0, below is our sequence of taking locks:
-
-  lock(ptype_lock)->lock(tipc_net_lock)
-
-On CPU1, our sequence of taking locks looks like:
-
-  lock(tipc_net_lock)->lock(ptype_lock)
-
-Obviously deadlock may happen in this case.
-
-But please note the deadlock possibly doesn't occur at all when the
-first TIPC bearer is enabled.  Before enable_bearer() -- running on
-CPU1 does not hold ptype_lock, so the TIPC receive handler (i.e.
-recv_msg()) is not registered successfully via dev_add_pack(), so
-the tipc_recv_msg() cannot be called by recv_msg() even if a TIPC
-message comes to CPU0. But when the second TIPC bearer is
-registered, the deadlock can perhaps really happen.
-
-To fix it, we will push the work of registering TIPC protocol
-handler into workqueue context. After the change, both paths taking
-ptype_lock are always in process contexts, thus, the deadlock should
-never occur.
-
-Signed-off-by: Ying Xue <ying.xue@windriver.com>
-Signed-off-by: Jon Maloy <jon.maloy@ericsson.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/tipc/eth_media.c |   15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
 
---- a/net/tipc/eth_media.c
-+++ b/net/tipc/eth_media.c
-@@ -53,6 +53,7 @@ struct eth_bearer {
- 	struct tipc_bearer *bearer;
- 	struct net_device *dev;
- 	struct packet_type tipc_packet_type;
-+	struct work_struct setup;
- };
+ Documentation/printk-formats.txt | 11 +++++++++--
+ lib/vsprintf.c                   | 33 +++++++++++++++++++++++++++------
+ 2 files changed, 36 insertions(+), 8 deletions(-)
+
+diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
+index 445ad74..6f4eb32 100644
+--- a/Documentation/printk-formats.txt
++++ b/Documentation/printk-formats.txt
+@@ -55,14 +55,21 @@ Struct Resources:
+ 	For printing struct resources. The 'R' and 'r' specifiers result in a
+ 	printed resource with ('R') or without ('r') a decoded flags member.
  
- static struct eth_bearer eth_bearers[MAX_ETH_BEARERS];
-@@ -121,6 +122,17 @@ static int recv_msg(struct sk_buff *buf,
+-Physical addresses:
++Physical addresses types phys_addr_t:
+ 
+-	%pa	0x01234567 or 0x0123456789abcdef
++	%pa[p]	0x01234567 or 0x0123456789abcdef
+ 
+ 	For printing a phys_addr_t type (and its derivatives, such as
+ 	resource_size_t) which can vary based on build options, regardless of
+ 	the width of the CPU data path. Passed by reference.
+ 
++DMA addresses types dma_addr_t:
++
++	%pad	0x01234567 or 0x0123456789abcdef
++
++	For printing a dma_addr_t type which can vary based on build options,
++	regardless of the width of the CPU data path. Passed by reference.
++
+ Raw buffer as a hex string:
+ 	%*ph	00 01 02  ...  3f
+ 	%*phC	00:01:02: ... :3f
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index 43c2ea0..4df18bc 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -1154,6 +1154,30 @@ char *netdev_feature_string(char *buf, char *end, const u8 *addr,
+ 	return number(buf, end, *(const netdev_features_t *)addr, spec);
  }
  
- /**
-+ * setup_bearer - setup association between Ethernet bearer and interface
-+ */
-+static void setup_bearer(struct work_struct *work)
++static noinline_for_stack
++char *address_val(char *buf, char *end, const void *addr,
++		  struct printf_spec spec, const char *fmt)
 +{
-+	struct eth_bearer *eb_ptr =
-+		container_of(work, struct eth_bearer, setup);
++	unsigned long long num;
 +
-+	dev_add_pack(&eb_ptr->tipc_packet_type);
++	spec.flags |= SPECIAL | SMALL | ZEROPAD;
++	spec.base = 16;
++
++	switch (fmt[1]) {
++	case 'd':
++		num = *(const dma_addr_t *)addr;
++		spec.field_width = sizeof(dma_addr_t) * 2 + 2;
++		break;
++	case 'p':
++	default:
++		num = *(const phys_addr_t *)addr;
++		spec.field_width = sizeof(phys_addr_t) * 2 + 2;
++		break;
++	}
++
++	return number(buf, end, num, spec);
 +}
 +
-+/**
-  * enable_bearer - attach TIPC bearer to an Ethernet interface
-  */
+ int kptr_restrict __read_mostly;
  
-@@ -167,7 +179,8 @@ static int enable_bearer(struct tipc_bea
- 		eb_ptr->tipc_packet_type.af_packet_priv = eb_ptr;
- 		INIT_LIST_HEAD(&(eb_ptr->tipc_packet_type.list));
- 		dev_hold(dev);
--		dev_add_pack(&eb_ptr->tipc_packet_type);
-+		INIT_WORK(&eb_ptr->setup, setup_bearer);
-+		schedule_work(&eb_ptr->setup);
- 	}
- 
- 	/* Associate TIPC bearer with Ethernet bearer */
+ /*
+@@ -1217,7 +1241,8 @@ int kptr_restrict __read_mostly;
+  *              N no separator
+  *            The maximum supported length is 64 bytes of the input. Consider
+  *            to use print_hex_dump() for the larger input.
+- * - 'a' For a phys_addr_t type and its derivative types (passed by reference)
++ * - 'a[pd]' For address types phys_addr_t, dma_addr_t and derivatives
++ *           (default assumed to be phys_addr_t, passed by reference)
+  *
+  * Note: The difference between 'S' and 'F' is that on ia64 and ppc64
+  * function pointers are really function descriptors, which contain a
+@@ -1324,11 +1349,7 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+ 		}
+ 		break;
+ 	case 'a':
+-		spec.flags |= SPECIAL | SMALL | ZEROPAD;
+-		spec.field_width = sizeof(phys_addr_t) * 2 + 2;
+-		spec.base = 16;
+-		return number(buf, end,
+-			      (unsigned long long) *((phys_addr_t *)ptr), spec);
++		return address_val(buf, end, ptr, spec, fmt);
+ 	case 'd':
+ 		return dentry_name(buf, end, ptr, spec, fmt);
+ 	case 'D':
 
 
