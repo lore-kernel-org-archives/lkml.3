@@ -1,90 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757569Ab3ILAjm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 20:39:42 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:40248 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751406Ab3ILAjj (ORCPT
+	id S1757579Ab3ILAlW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 20:41:22 -0400
+Received: from smtprelay0251.hostedemail.com ([216.40.44.251]:40306 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751427Ab3ILAlU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 20:39:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <2013615.oHjWkmedue@vostro.rjw.lan>
-References: <Pine.LNX.4.64.1309091656200.6602@axis700.grange>
-	<2703632.ul5ekQh5oq@vostro.rjw.lan>
-	<CAKohpo=RKB-_EO=cjaOorAfN=y_cMgJg-j6=xtX71a-TwujgsA@mail.gmail.com>
-	<2013615.oHjWkmedue@vostro.rjw.lan>
-Date: Thu, 12 Sep 2013 06:09:38 +0530
-Message-ID: <CAKohpokEZcwF-zL6rTXYyC_x=SJzGFvdvxqvmvyhJHa8nPXogQ@mail.gmail.com>
-Subject: Re: "cpufreq: fix serialization issues with freq change notifiers"
- breaks cpufreq too
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>, Greg KH <greg@kroah.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 11 Sep 2013 20:41:20 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::::::::linux-sctp@vger
+X-HE-Tag: grain11_4507987d53e37
+X-Filterd-Recvd-Size: 3608
+Message-ID: <1378946472.4714.52.camel@joe-AO722>
+Subject: Re: [RFC PATCH] vsnprintf: Remove use of %n and convert existing
+ uses
+From: Joe Perches <joe@perches.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        linux-kernel@vger.kernel.org, kosaki.motohiro@jp.fujitsu.com,
+        keescook@chromium.org, fweisbec@gmail.com, dan.carpenter@oracle.com,
+        devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        tushar.behera@linaro.org, lidza.louina@gmail.com, davem@davemloft.net,
+        kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, courmisch@gmail.com, vyasevich@gmail.com,
+        nhorman@tuxdriver.com, netdev@vger.kernel.org,
+        linux-sctp@vger.kernel.org
+Date: Wed, 11 Sep 2013 17:41:12 -0700
+In-Reply-To: <20130912001911.GO13318@ZenIV.linux.org.uk>
+References: <1378926562.4714.11.camel@joe-AO722>
+	 <CAGXu5jLO6109fkejXqX=WhkQnfAUeWtTcow0v1BNqyi=8=Qa3Q@mail.gmail.com>
+	 <1378928700.4714.17.camel@joe-AO722>
+	 <CAGXu5jLTjrPr=GwOmMcu55Qp9K-_XS75xq9NJ0vBUEwy-i_YMw@mail.gmail.com>
+	 <1378941761.4714.37.camel@joe-AO722>
+	 <201309120840.HHE37542.OJMFFHSOQOtVFL@I-love.SAKURA.ne.jp>
+	 <1378944257.4714.45.camel@joe-AO722>
+	 <20130912001911.GO13318@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 September 2013 18:48, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Wednesday, September 11, 2013 02:08:44 PM Viresh Kumar wrote:
+On Thu, 2013-09-12 at 01:19 +0100, Al Viro wrote:
+> On Wed, Sep 11, 2013 at 05:04:17PM -0700, Joe Perches wrote:
+> > On Thu, 2013-09-12 at 08:40 +0900, Tetsuo Handa wrote:
+> > > Joe Perches wrote:
+> > > > -	seq_printf(m, "%s%d%n", con->name, con->index, &len);
+> > > > +	len = seq_printf(m, "%s%d", con->name, con->index);
+> > > 
+> > > Isn't len always 0 or -1 ?
+> > 
+> > Right.  Well you're no fun...
+> > 
+> > These uses would seem broken anyway because the
+> > seq_printf isn't itself tested for correctness.
+> > 
+> > Hmm.
+> > 
+> > Also, there's a large amount of code that appears
+> > to do calculations with pos or len like:
+> > 
+> > 	pos += seq_printf(handle, fmt. ...)
+> 
+> ... and most of that code proceeds to ignore pos completely.
+> Note that ->show() is *NOT* supposed to return the number of
+> characters it has/would like to have produced.  Just return
+> 0 and be done with that; overflows are dealt with just fine.
+> The large amount, BTW, is below 100 lines, AFAICS, in rather
+> few files.
 
->> That looked like a straight forward issue/bug to me and so I haven't
->> gotten deep into it..
->
-> Which you should always do when you're going to deal with concurrency issues.
-> Even if they appear to be obvious, they often are far from that, like in this
-> case.
+Unfortunately, when you count the uses of
+	return seq_printf(...)
+it's rather higher and all the callers need
+to be chased down too.
 
-/me Nods
+$ grep -rP --include=*.[ch] "^[ \t]*(\S[ \t\S]*=|return[\s\(]*)\s*\bseq_[v]?printf\b" * | wc -l
+320
+$ grep -rPl --include=*.[ch] "^[ \t]*(\S[ \t\S]*=|return[\s\(]*)\s*\bseq_[v]?printf\b" *|wc -l
+81
 
->> Scenario 2:
->> --------------
->> Governor is changing freq and has called __cpufreq_driver_target().
->> At the same time we are changing scaling_{min|max}_freq from
->> sysfs, which would eventually end up calling governors:
->> CPUFREQ_GOV_LIMITS notification, that will also call:
->> __cpufreq_driver_target()..
->>
->> So, we eventually have two concurrent calls to ->target() and we
->> don't really know how hardware will behave in this case.. Most of
->> the implementations of ->target() routines just go and change
->> freq/voltage without checking if we are already in progress of doing
->> that (i.e. based on expectation that this call is not re entrant)..
->>
->> Now anything can happen at hardware level, which I don't have
->> all insight of :(
->
-> That is more theoretical, however.
+> Just bury the cargo-culting crap.  All those += seq_printf() should
+> be simply calling it.
 
-Maybe we can get more deeper into it then :)
-Platform have something like this in their target()
+Most likely.
 
-A. If new freq is more than old: Increase voltage
-B. Change freq
-C. If new freq is less than old: decrease voltage
+> The *only* reason to look at the return
+> value is "if we'd already overflown the buffer, I'd rather skipped
+> the costly generation of the rest of the record".  In that case
+> seq_printf() returning -1 means "skip it, nothing else will fit and
+> caller will be repeating with bigger buffer anyway".
 
-Now, two concurrent calls to target are X and Y, where X is trying to increase
-freq and Y is trying to decrease it..
+Perhaps changing the seq_vprintf return from 0 to len
+and testing for -1 would work.
 
-And this is the sequence that followed due to races..
+Still would need to change a few lines in netfilter
+and probably a few other places.
 
-X.A: voltage increased for larger freq
-Y.A: nothing happened here
-Y.B: freq decreased
-Y.C: voltage decreased
-X.B: freq increased
-X.C: nothing happened..
 
-We ended up setting a freq which is not supported by the voltage we have
-set.. That will probably make clock to CPU unstable and system wouldn't
-be workable anymore...
-
-And so I think even this case must also get some space in the changelog :)
