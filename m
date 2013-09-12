@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484Ab3ILJhz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 05:37:55 -0400
-Received: from mga14.intel.com ([143.182.124.37]:51504 "EHLO mga14.intel.com"
+	id S1756634Ab3ILJj4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 05:39:56 -0400
+Received: from verein.lst.de ([213.95.11.211]:55326 "EHLO newverein.lst.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751510Ab3ILJhx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 05:37:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,890,1371106800"; 
-   d="scan'208";a="293945436"
-Date: Thu, 12 Sep 2013 12:43:02 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-i2c@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lv Zheng <lv.zheng@intel.com>, Aaron Lu <aaron.lu@intel.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH v2 8/9] spi: prepare runtime PM support for SPI devices
-Message-ID: <20130912094302.GM7393@intel.com>
-References: <1378913560-2752-1-git-send-email-mika.westerberg@linux.intel.com>
- <1378913560-2752-9-git-send-email-mika.westerberg@linux.intel.com>
- <20130911155120.GW29403@sirena.org.uk>
- <20130912092743.GK7393@intel.com>
- <20130912093145.GA29403@sirena.org.uk>
+	id S1751380Ab3ILJjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 05:39:55 -0400
+Date: Thu, 12 Sep 2013 11:38:56 +0200 (CEST)
+From: Torsten Duwe <duwe@lst.de>
+Reply-To: Torsten Duwe <duwe@lst.de>
+To: tytso@mit.edu, ingo.tuchscherer@de.ibm.com
+cc: linux-kernel@vger.kernel.org, Hans-Georg Markgraf <MGRF@de.ibm.com>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Joe Perches <joe@perches.com>
+Subject: [Resend PATCH 1/2] add direct interface for true hardware RNGs
+Message-ID: <alpine.LNX.2.00.1309121137140.3818@linux.site>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+Organization: LST e.V.
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130912093145.GA29403@sirena.org.uk>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 10:31:45AM +0100, Mark Brown wrote:
-> On Thu, Sep 12, 2013 at 12:27:43PM +0300, Mika Westerberg wrote:
-> > On Wed, Sep 11, 2013 at 04:51:20PM +0100, Mark Brown wrote:
-> 
-> > > I would be able to have this and the other patch in the SPI tree in case
-> > > it overlaps with other work - I'm not sure what the plan will be for
-> > > merging this stuff but if there were a branch which I could merge into
-> > > the SPI tree that'd be good.
-> 
-> > I think these two can go via your SPI tree as they shouldn't have
-> > dependencies to the I2C tree.
-> 
-> There's all the driver changes though - it seems best to push the whole
-> series through one branch so there's fewer bisection problems.
 
-Ah, right. Then I suppose the right tree would be the I2C tree (as majority
-of the patches are I2C related)?
+This patch adds an interface to the random pool for feeding entropy in-kernel.
+It might be dangerous when some driver writers think they have "good"
+randomness when really they haven't.
 
-Wolfram, are you OK with this?
+Signed-off-by: Torsten Duwe <duwe@lst.de>
+
+---
+ include/linux/hw_random.h |    2 ++
+ drivers/char/random.c     |   20 ++++++++++++++++++++
+ 2 files changed, 22 insertions(+)
+--- a/include/linux/hw_random.h
++++ b/include/linux/hw_random.h
+@@ -47,5 +47,7 @@ struct hwrng {
+ extern int hwrng_register(struct hwrng *rng);
+ /** Unregister a Hardware Random Number Generator driver. */
+ extern void hwrng_unregister(struct hwrng *rng);
++/** Feed random bits into the pool. */
++extern void add_hwgenerator_randomness(const char *buffer, size_t count);
+ 
+ #endif /* LINUX_HWRANDOM_H_ */
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -250,6 +250,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/mm.h>
+ #include <linux/spinlock.h>
++#include <linux/kthread.h>
+ #include <linux/percpu.h>
+ #include <linux/cryptohash.h>
+ #include <linux/fips.h>
+@@ -796,6 +797,25 @@ add_disk_randomness(
+ }
+ #endif
+ 
++/* Interface for in-kernel drivers of true hardware RNGs.
++ * Those devices may produce endless random bits and will be throttled
++ * when our pool is full.
++ */
++void add_hwgenerator_randomness(const char *buffer, size_t count)
++{
++	struct entropy_store *poolp = &input_pool;
++
++	/* Suspend writing if we're above the trickle threshold.
++	 * We'll be woken up again once below random_write_wakeup_thresh,
++	 * or when the calling thread is about to terminate.
++	 */
++	wait_event_interruptible(random_write_wait, kthread_should_stop() ||
++				 input_pool.entropy_count <= trickle_thresh);
++	mix_pool_bytes(poolp, buffer, count, NULL);
++	credit_entropy_bits(poolp, count*8);
++}
++EXPORT_SYMBOL_GPL(add_hwgenerator_randomness);
++
+ /*********************************************************************
+  *
+  * Entropy extraction routines
