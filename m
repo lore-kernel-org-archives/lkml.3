@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756792Ab3ILSJO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:09:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37887 "EHLO
+	id S1756777Ab3ILSJm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:09:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37883 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755005Ab3ILSFa (ORCPT
+	with ESMTP id S1756734Ab3ILSFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 14:05:30 -0400
-Date: Thu, 12 Sep 2013 11:04:54 -0700
-From: tip-bot for Daisuke Nishimura <tipbot@zytor.com>
-Message-ID: <tip-6c9a27f5da9609fca46cb2b183724531b48f71ad@git.kernel.org>
+	Thu, 12 Sep 2013 14:05:24 -0400
+Date: Thu, 12 Sep 2013 11:04:34 -0700
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-dvb4q0rydkfp00kqat4p5bah@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, stable@vger.kernel.org, tglx@linutronix.de,
-        nishimura@mxp.nes.nec.co.jp
+        andi@firstfloor.org, peterz@infradead.org, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, stable@vger.kernel.org,
-        nishimura@mxp.nes.nec.co.jp
-In-Reply-To: <039601ceae06$733d3130$59b79390$@mxp.nes.nec.co.jp>
-References: <039601ceae06$733d3130$59b79390$@mxp.nes.nec.co.jp>
+        andi@firstfloor.org, peterz@infradead.org, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/fair: Fix small race where child->
- se.parent,cfs_rq might point to invalid ones
-Git-Commit-ID: 6c9a27f5da9609fca46cb2b183724531b48f71ad
+Subject: [tip:perf/core] perf/x86/intel:
+  Clean up checkpoint-interrupt bits
+Git-Commit-ID: 2b9e344df384e595db24ac61ae5f780e9b024878
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,99 +26,110 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 12 Sep 2013 11:05:01 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 12 Sep 2013 11:04:41 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6c9a27f5da9609fca46cb2b183724531b48f71ad
-Gitweb:     http://git.kernel.org/tip/6c9a27f5da9609fca46cb2b183724531b48f71ad
-Author:     Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-AuthorDate: Tue, 10 Sep 2013 18:16:36 +0900
+Commit-ID:  2b9e344df384e595db24ac61ae5f780e9b024878
+Gitweb:     http://git.kernel.org/tip/2b9e344df384e595db24ac61ae5f780e9b024878
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Thu, 12 Sep 2013 12:53:44 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 12 Sep 2013 19:14:14 +0200
+CommitDate: Thu, 12 Sep 2013 19:13:37 +0200
 
-sched/fair: Fix small race where child->se.parent,cfs_rq might point to invalid ones
+perf/x86/intel: Clean up checkpoint-interrupt bits
 
-There is a small race between copy_process() and cgroup_attach_task()
-where child->se.parent,cfs_rq points to invalid (old) ones.
+Clean up the weird CP interrupt exception code by keeping a CP mask.
 
-        parent doing fork()      | someone moving the parent to another cgroup
-  -------------------------------+---------------------------------------------
-    copy_process()
-      + dup_task_struct()
-        -> parent->se is copied to child->se.
-           se.parent,cfs_rq of them point to old ones.
+Andi suggested this implementation but weirdly didn't actually
+implement it himself, do so now because it removes the conditional in
+the interrupt handler and avoids the assumption its only on cnt2.
 
-                                     cgroup_attach_task()
-                                       + cgroup_task_migrate()
-                                         -> parent->cgroup is updated.
-                                       + cpu_cgroup_attach()
-                                         + sched_move_task()
-                                           + task_move_group_fair()
-                                             +- set_task_rq()
-                                                -> se.parent,cfs_rq of parent
-                                                   are updated.
-
-      + cgroup_fork()
-        -> parent->cgroup is copied to child->cgroup. (*1)
-      + sched_fork()
-        + task_fork_fair()
-          -> se.parent,cfs_rq of child are accessed
-             while they point to old ones. (*2)
-
-In the worst case, this bug can lead to "use-after-free" and cause a panic,
-because it's new cgroup's refcount that is incremented at (*1),
-so the old cgroup(and related data) can be freed before (*2).
-
-In fact, a panic caused by this bug was originally caught in RHEL6.4.
-
-    BUG: unable to handle kernel NULL pointer dereference at (null)
-    IP: [<ffffffff81051e3e>] sched_slice+0x6e/0xa0
-    [...]
-    Call Trace:
-     [<ffffffff81051f25>] place_entity+0x75/0xa0
-     [<ffffffff81056a3a>] task_fork_fair+0xaa/0x160
-     [<ffffffff81063c0b>] sched_fork+0x6b/0x140
-     [<ffffffff8106c3c2>] copy_process+0x5b2/0x1450
-     [<ffffffff81063b49>] ? wake_up_new_task+0xd9/0x130
-     [<ffffffff8106d2f4>] do_fork+0x94/0x460
-     [<ffffffff81072a9e>] ? sys_wait4+0xae/0x100
-     [<ffffffff81009598>] sys_clone+0x28/0x30
-     [<ffffffff8100b393>] stub_clone+0x13/0x20
-     [<ffffffff8100b072>] ? system_call_fastpath+0x16/0x1b
-
-Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Suggested-by: Andi Kleen <andi@firstfloor.org>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: <stable@vger.kernel.org>
-Link: http://lkml.kernel.org/r/039601ceae06$733d3130$59b79390$@mxp.nes.nec.co.jp
+Link: http://lkml.kernel.org/n/tip-dvb4q0rydkfp00kqat4p5bah@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+ arch/x86/kernel/cpu/perf_event.h       |  5 +++++
+ arch/x86/kernel/cpu/perf_event_intel.c | 22 +++++++++++++---------
+ 2 files changed, 18 insertions(+), 9 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 9b3fe1c..11cd136 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5928,11 +5928,15 @@ static void task_fork_fair(struct task_struct *p)
- 	cfs_rq = task_cfs_rq(current);
- 	curr = cfs_rq->curr;
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index cc16faa..ce84ede 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -164,6 +164,11 @@ struct cpu_hw_events {
+ 	struct perf_guest_switch_msr	guest_switch_msrs[X86_PMC_IDX_MAX];
  
--	if (unlikely(task_cpu(p) != this_cpu)) {
--		rcu_read_lock();
--		__set_task_cpu(p, this_cpu);
--		rcu_read_unlock();
--	}
-+	/*
-+	 * Not only the cpu but also the task_group of the parent might have
-+	 * been changed after parent->se.parent,cfs_rq were copied to
-+	 * child->se.parent,cfs_rq. So call __set_task_cpu() to make those
-+	 * of child point to valid ones.
+ 	/*
++	 * Intel checkpoint mask
 +	 */
-+	rcu_read_lock();
-+	__set_task_cpu(p, this_cpu);
-+	rcu_read_unlock();
++	u64				intel_cp_status;
++
++	/*
+ 	 * manage shared (per-core, per-cpu) registers
+ 	 * used on Intel NHM/WSM/SNB
+ 	 */
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index dd1d4f3..ec70d0c 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1184,6 +1184,11 @@ static void intel_pmu_disable_fixed(struct hw_perf_event *hwc)
+ 	wrmsrl(hwc->config_base, ctrl_val);
+ }
  
- 	update_curr(cfs_rq);
++static inline bool event_is_checkpointed(struct perf_event *event)
++{
++	return (event->hw.config & HSW_IN_TX_CHECKPOINTED) != 0;
++}
++
+ static void intel_pmu_disable_event(struct perf_event *event)
+ {
+ 	struct hw_perf_event *hwc = &event->hw;
+@@ -1197,6 +1202,7 @@ static void intel_pmu_disable_event(struct perf_event *event)
  
+ 	cpuc->intel_ctrl_guest_mask &= ~(1ull << hwc->idx);
+ 	cpuc->intel_ctrl_host_mask &= ~(1ull << hwc->idx);
++	cpuc->intel_cp_status &= ~(1ull << hwc->idx);
+ 
+ 	/*
+ 	 * must disable before any actual event
+@@ -1271,6 +1277,9 @@ static void intel_pmu_enable_event(struct perf_event *event)
+ 	if (event->attr.exclude_guest)
+ 		cpuc->intel_ctrl_host_mask |= (1ull << hwc->idx);
+ 
++	if (unlikely(event_is_checkpointed(event)))
++		cpuc->intel_cp_status |= (1ull << hwc->idx);
++
+ 	if (unlikely(hwc->config_base == MSR_ARCH_PERFMON_FIXED_CTR_CTRL)) {
+ 		intel_pmu_enable_fixed(hwc);
+ 		return;
+@@ -1282,11 +1291,6 @@ static void intel_pmu_enable_event(struct perf_event *event)
+ 	__x86_pmu_enable_event(hwc, ARCH_PERFMON_EVENTSEL_ENABLE);
+ }
+ 
+-static inline bool event_is_checkpointed(struct perf_event *event)
+-{
+-	return (event->hw.config & HSW_IN_TX_CHECKPOINTED) != 0;
+-}
+-
+ /*
+  * Save and restart an expired event. Called by NMI contexts,
+  * so it has to be careful about preempting normal event ops:
+@@ -1389,11 +1393,11 @@ again:
+ 	}
+ 
+ 	/*
+-	 * To avoid spurious interrupts with perf stat always reset checkpointed
+-	 * counters.
++	 * Checkpointed counters can lead to 'spurious' PMIs because the
++	 * rollback caused by the PMI will have cleared the overflow status
++	 * bit. Therefore always force probe these counters.
+ 	 */
+-	if (cpuc->events[2] && event_is_checkpointed(cpuc->events[2]))
+-		status |= (1ULL << 2);
++	status |= cpuc->intel_cp_status;
+ 
+ 	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
+ 		struct perf_event *event = cpuc->events[bit];
