@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757483Ab3ILS2A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:28:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56964 "EHLO
+	id S1757462Ab3ILS17 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:27:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56970 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754971Ab3ILR7C (ORCPT
+	with ESMTP id S1755002Ab3ILR7C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Sep 2013 13:59:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>, Jiri Pirko <jiri@resnulli.us>,
+        Roman Gushchin <klamm@yandex-team.ru>, Changli Gao <xiaosuo@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 02/46] net: rtm_to_ifaddr: free ifa if ifa_cacheinfo processing fails
-Date: Thu, 12 Sep 2013 10:58:13 -0700
-Message-Id: <20130912175721.335357755@linuxfoundation.org>
+Subject: [ 03/46] net: check net.core.somaxconn sysctl values
+Date: Thu, 12 Sep 2013 10:58:14 -0700
+Message-Id: <20130912175721.446741211@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130912175721.001906199@linuxfoundation.org>
 References: <20130912175721.001906199@linuxfoundation.org>
@@ -27,41 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Roman Gushchin <klamm@yandex-team.ru>
 
-[ Upstream commit 446266b0c742a2c9ee8f0dce759a0117bce58a86 ]
+[ Upstream commit 5f671d6b4ec3e6d66c2a868738af2cdea09e7509 ]
 
-Commit 5c766d642 ("ipv4: introduce address lifetime") leaves the ifa
-resource that was allocated via inet_alloc_ifa() unfreed when returning
-the function with -EINVAL. Thus, free it first via inet_free_ifa().
+It's possible to assign an invalid value to the net.core.somaxconn
+sysctl variable, because there is no checks at all.
 
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Reviewed-by: Jiri Pirko <jiri@resnulli.us>
+The sk_max_ack_backlog field of the sock structure is defined as
+unsigned short. Therefore, the backlog argument in inet_listen()
+shouldn't exceed USHRT_MAX. The backlog argument in the listen() syscall
+is truncated to the somaxconn value. So, the somaxconn value shouldn't
+exceed 65535 (USHRT_MAX).
+Also, negative values of somaxconn are meaningless.
+
+before:
+$ sysctl -w net.core.somaxconn=256
+net.core.somaxconn = 256
+$ sysctl -w net.core.somaxconn=65536
+net.core.somaxconn = 65536
+$ sysctl -w net.core.somaxconn=-100
+net.core.somaxconn = -100
+
+after:
+$ sysctl -w net.core.somaxconn=256
+net.core.somaxconn = 256
+$ sysctl -w net.core.somaxconn=65536
+error: "Invalid argument" setting key "net.core.somaxconn"
+$ sysctl -w net.core.somaxconn=-100
+error: "Invalid argument" setting key "net.core.somaxconn"
+
+Based on a prior patch from Changli Gao.
+
+Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
+Reported-by: Changli Gao <xiaosuo@gmail.com>
+Suggested-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/devinet.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ net/core/sysctl_net_core.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/net/ipv4/devinet.c
-+++ b/net/ipv4/devinet.c
-@@ -771,7 +771,7 @@ static struct in_ifaddr *rtm_to_ifaddr(s
- 		ci = nla_data(tb[IFA_CACHEINFO]);
- 		if (!ci->ifa_valid || ci->ifa_prefered > ci->ifa_valid) {
- 			err = -EINVAL;
--			goto errout;
-+			goto errout_free;
- 		}
- 		*pvalid_lft = ci->ifa_valid;
- 		*pprefered_lft = ci->ifa_prefered;
-@@ -779,6 +779,8 @@ static struct in_ifaddr *rtm_to_ifaddr(s
+--- a/net/core/sysctl_net_core.c
++++ b/net/core/sysctl_net_core.c
+@@ -20,7 +20,9 @@
+ #include <net/sock.h>
+ #include <net/net_ratelimit.h>
  
- 	return ifa;
++static int zero = 0;
+ static int one = 1;
++static int ushort_max = USHRT_MAX;
  
-+errout_free:
-+	inet_free_ifa(ifa);
- errout:
- 	return ERR_PTR(err);
- }
+ #ifdef CONFIG_RPS
+ static int rps_sock_flow_sysctl(ctl_table *table, int write,
+@@ -204,7 +206,9 @@ static struct ctl_table netns_core_table
+ 		.data		= &init_net.core.sysctl_somaxconn,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
++		.extra1		= &zero,
++		.extra2		= &ushort_max,
++		.proc_handler	= proc_dointvec_minmax
+ 	},
+ 	{ }
+ };
 
 
