@@ -1,33 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345Ab3ILOdv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 10:33:51 -0400
-Received: from mga14.intel.com ([143.182.124.37]:28149 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751631Ab3ILOdu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 10:33:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,891,1371106800"; 
-   d="scan'208";a="394769630"
-Date: Thu, 12 Sep 2013 19:15:08 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Matt Porter <matt.porter@linaro.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] edma: Update author email address
-Message-ID: <20130912134508.GF17188@intel.com>
-References: <20130904143250.GE12834@hansolo.jdub.homelinux.org>
+	id S1752223Ab3ILOgl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 10:36:41 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47672 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751029Ab3ILOgk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 10:36:40 -0400
+Message-ID: <5231D166.1060905@kernel.dk>
+Date: Thu, 12 Sep 2013 08:36:22 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130904143250.GE12834@hansolo.jdub.homelinux.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Alexander Gordeev <agordeev@redhat.com>
+CC: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Mike Christie <michaelc@cs.wisc.edu>, Shaohua Li <shli@fusionio.com>
+Subject: Re: [PATCH 0/3] blk-mq: Avoid effects of a weird queue depth
+References: <cover.1375451955.git.agordeev@redhat.com> <20130912074202.GA8041@dhcp-26-207.brq.redhat.com>
+In-Reply-To: <20130912074202.GA8041@dhcp-26-207.brq.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 04, 2013 at 10:32:50AM -0400, Josh Boyer wrote:
-> Matt's @ti.com address bounces.  Update the MODULE_AUTHOR information in
-> edma.c to his Linaro address.
-Applied, thanks
+On 09/12/2013 01:42 AM, Alexander Gordeev wrote:
+> Hi Jens,
+> 
+> Could you consider patches 4 and 5, please?
 
-~Vinod
+Added. Really should be re-folded since the previous patches were
+broken, but I'll do that some time anyway for parts of the series again.
+
+-- 
+Jens Axboe
+
