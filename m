@@ -1,174 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757405Ab3ILSXo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 14:23:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57033 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755446Ab3ILR7L (ORCPT
+	id S932089Ab3ILSYV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 14:24:21 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:48060 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755448Ab3ILSYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 13:59:11 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pravin B Shelar <pshelar@nicira.com>, Jesse Gross <jesse@nicira.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 16/46] genl: Hold reference on correct module while netlink-dump.
-Date: Thu, 12 Sep 2013 10:58:27 -0700
-Message-Id: <20130912175722.808067311@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130912175721.001906199@linuxfoundation.org>
-References: <20130912175721.001906199@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Thu, 12 Sep 2013 14:24:19 -0400
+Message-ID: <1379010250.9796.118.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH 00/16] [RFC PATCH] Signed kexec support
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Greg KH <greg@kroah.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, kexec@lists.infradead.org,
+        akpm@linux-foundation.org, d.kasatkin@samsung.com,
+        ebiederm@xmission.com, hpa@zytor.com, matthew.garrett@nebula.com
+Date: Thu, 12 Sep 2013 14:24:10 -0400
+In-Reply-To: <20130912161705.GA2650@kroah.com>
+References: <1378849471-10521-1-git-send-email-vgoyal@redhat.com>
+	 <20130912034023.GA10877@kroah.com> <20130912114336.GA28500@redhat.com>
+	 <20130912161705.GA2650@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13091218-0928-0000-0000-0000018A048C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Thu, 2013-09-12 at 09:17 -0700, Greg KH wrote:
+> On Thu, Sep 12, 2013 at 07:43:36AM -0400, Vivek Goyal wrote:
+> > On Wed, Sep 11, 2013 at 08:40:23PM -0700, Greg KH wrote:
+> > > On Tue, Sep 10, 2013 at 05:44:15PM -0400, Vivek Goyal wrote:
+> > > > Hi,
+> > > > 
+> > > > Matthew has been posting patches to lock down kernel either due to
+> > > > secureboot requirements or because of signed modules with signing
+> > > > enforced. In kernel lock down mode, kexec will be disabled and that
+> > > > means kdump will not work either.
+> > > > 
+> > > > These patches sign /sbin/kexec and kernel verifies the signature
+> > > > and allows loading a kernel if signature verification is successful.
+> > > > IOW, trust is extended to validly signed user space.
+> > > > 
+> > > > Currently it works only for statically linked applications.
+> > > 
+> > > That's a really big restriction, pretty much making it not workable for
+> > > distros at the moment to use.
 
-------------------
+> > It is a big restriction for general use case of signed user space but in
+> > this case I am planning to build /sbin/kexec statically and solve the
+> > kexec/kdump issue.
+> > 
+> > I have posted kexec-tools patches here.
+> > 
+> > https://lists.fedoraproject.org/pipermail/kernel/2013-September/004469.html
+> > 
+> > Once kernel patches get in, I plan to upstream kexec-tools patches too
+> > and then distros should be able to build /sbin/kexec statically and
+> > this should work.
+> > 
+> > Do you forsee a problem with that?
+> 
+> Your paranoia is admirable in these patches.  If they are accepted, that
+> is a good first step, but what about the other kexec variants out there?
+> 
+> > > Any chance to change this in the future?
+> > 
+> > It might but currently I don't have any plans. I see atleast two issues
+> > with that.
+> > 
+> > - If we allow dynamic linking for signed binaries, then dynamic libraries
+> >   will have to be signed too. I suspect in that case pretty much whole of
+> >   the user space will have to be signed. I am not sure if distros are
+> >   willing to do that.
+> > 
+> > - Currently a shared library can be written on disk (unlike executables)
+> >   while it is mapped. That means after signature verification a root just
+> >   has to open and write to shared library and modify code and defeat the
+> >   purpose of signature verfication.
+> 
+> Then the existing signature verification logic is broken if this is
+> possible.
+> 
+> > Probably these issues can be addressed if there is a need. Just that I
+> > have not looked into it.
+> > 
+> > > Or just rely on the existing
+> > > "signed binaries" functionality we have in the kernel today for the
+> > > kexec binary as well?  Wouldn't that be simpler?
+> > 
+> > Which signed binary mechanism are you referring to? Are you referring to
+> > using IMA for signature verification? If yes, there are some issues with
+> > that.
+> 
+> Yes, IMA.
+> 
+> > - IMA does not lock down signed binaries in memory. That means after
+> >   signature verification files can potentially be swapped out and be
+> >   attacked there and modified code then can be swapped back in.
+> 
+> How can you do that?  If this is the case, then IMA is pointless and
+> should be fixed.
+> 
+> > - IMA caches the signature appraisal resutls and reappraises the things
+> >   based on if file has been modified or not. But this does not detect any
+> >   raw writes to disk. So after signature verification root should be able
+> >   to do some raw writes to disk and IMA will think file signature are
+> >   just fine.
+> 
+> IMA should be fixed for this problem.
+> 
+> > - IMA does not have mechanism to keep track of signed applications and
+> >   a mechanism to disallow ptrace() by unsigned applications. That means
+> >   after signature verification root can just ptrace() signed binary and
+> >   modify its code/data.
+> 
+> Then IMA should be fixed.
+> 
+> > - IMA provides mechanism for file based signature verificaiton.
+> >   kexec-tools also needs to verify signature of new kernel being loaded.
+> >   Using IMA on bzImage file has same pitfalls where a file can be modified
+> >   after signature verification.
+> > 
+> >   That's why I have extended keyctl() so that signature verification can
+> >   be done on user space buffer. An application can first read a file in
+> >   buffer and then ask kernel to verify signature. And now root should not
+> >   be able to attack it.
+> > 
+> > So existing IMA does not seem to have been written for an environment
+> > where all the user space is not signed we don't trust root and root can
+> > attack a signed binary. And my patches try to fill that gap. 
+> 
+> It sounds like your changes should go into the IMA core code to resolve
+> the issues there, as I'm sure they want to also protect from the issues
+> you have pointed out here.  Have you talked to those developers about
+> this?
 
-From: Pravin B Shelar <pshelar@nicira.com>
+IMA assumes a different threat model and performance tradeoffs.  The
+solutions suggested for the kexec, single userspace application threat
+model, presumably wouldn't scale very well.
+ 
+Unlike the syscalls to load kernel modules, which either pass a buffer,
+containing the file data and appended signature, or a file descriptor,
+kexec doesn't pass either.  To get around this problem, Vivek's patches
+extend the keyctl syscall to verify the userspace buffer containing the
+filedata and signature.
 
-[ Upstream commit 33c6b1f6b154894321f5734e50c66621e9134e7e ]
+Separating the file data signature verification from the existing kexec
+syscall, even if the signature verification is done by the kernel,
+results in needing to trust the application actually verified the
+signature.  For this reason, Vivek's patches need to verify the
+integrity of a single userspace application.
 
-netlink dump operations take module as parameter to hold
-reference for entire netlink dump duration.
-Currently it holds ref only on genl module which is not correct
-when we use ops registered to genl from another module.
-Following patch adds module pointer to genl_ops so that netlink
-can hold ref count on it.
-
-Signed-off-by: Pravin B Shelar <pshelar@nicira.com>
-CC: Jesse Gross <jesse@nicira.com>
-CC: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/net/genetlink.h |   20 ++++++++++++++++++--
- net/netlink/genetlink.c |   20 +++++++++++---------
- 2 files changed, 29 insertions(+), 11 deletions(-)
-
---- a/include/net/genetlink.h
-+++ b/include/net/genetlink.h
-@@ -61,6 +61,7 @@ struct genl_family {
- 	struct list_head	ops_list;	/* private */
- 	struct list_head	family_list;	/* private */
- 	struct list_head	mcast_groups;	/* private */
-+	struct module		*module;
- };
- 
- /**
-@@ -121,9 +122,24 @@ struct genl_ops {
- 	struct list_head	ops_list;
- };
- 
--extern int genl_register_family(struct genl_family *family);
--extern int genl_register_family_with_ops(struct genl_family *family,
-+extern int __genl_register_family(struct genl_family *family);
-+
-+static inline int genl_register_family(struct genl_family *family)
-+{
-+	family->module = THIS_MODULE;
-+	return __genl_register_family(family);
-+}
-+
-+extern int __genl_register_family_with_ops(struct genl_family *family,
- 	struct genl_ops *ops, size_t n_ops);
-+
-+static inline int genl_register_family_with_ops(struct genl_family *family,
-+	struct genl_ops *ops, size_t n_ops)
-+{
-+	family->module = THIS_MODULE;
-+	return __genl_register_family_with_ops(family, ops, n_ops);
-+}
-+
- extern int genl_unregister_family(struct genl_family *family);
- extern int genl_register_ops(struct genl_family *, struct genl_ops *ops);
- extern int genl_unregister_ops(struct genl_family *, struct genl_ops *ops);
---- a/net/netlink/genetlink.c
-+++ b/net/netlink/genetlink.c
-@@ -364,7 +364,7 @@ int genl_unregister_ops(struct genl_fami
- EXPORT_SYMBOL(genl_unregister_ops);
- 
- /**
-- * genl_register_family - register a generic netlink family
-+ * __genl_register_family - register a generic netlink family
-  * @family: generic netlink family
-  *
-  * Registers the specified family after validating it first. Only one
-@@ -374,7 +374,7 @@ EXPORT_SYMBOL(genl_unregister_ops);
-  *
-  * Return 0 on success or a negative error code.
-  */
--int genl_register_family(struct genl_family *family)
-+int __genl_register_family(struct genl_family *family)
- {
- 	int err = -EINVAL;
- 
-@@ -430,10 +430,10 @@ errout_locked:
- errout:
- 	return err;
- }
--EXPORT_SYMBOL(genl_register_family);
-+EXPORT_SYMBOL(__genl_register_family);
- 
- /**
-- * genl_register_family_with_ops - register a generic netlink family
-+ * __genl_register_family_with_ops - register a generic netlink family
-  * @family: generic netlink family
-  * @ops: operations to be registered
-  * @n_ops: number of elements to register
-@@ -457,12 +457,12 @@ EXPORT_SYMBOL(genl_register_family);
-  *
-  * Return 0 on success or a negative error code.
-  */
--int genl_register_family_with_ops(struct genl_family *family,
-+int __genl_register_family_with_ops(struct genl_family *family,
- 	struct genl_ops *ops, size_t n_ops)
- {
- 	int err, i;
- 
--	err = genl_register_family(family);
-+	err = __genl_register_family(family);
- 	if (err)
- 		return err;
- 
-@@ -476,7 +476,7 @@ err_out:
- 	genl_unregister_family(family);
- 	return err;
- }
--EXPORT_SYMBOL(genl_register_family_with_ops);
-+EXPORT_SYMBOL(__genl_register_family_with_ops);
- 
- /**
-  * genl_unregister_family - unregister generic netlink family
-@@ -603,22 +603,24 @@ static int genl_family_rcv_msg(struct ge
- 
- 		if (!family->parallel_ops) {
- 			struct netlink_dump_control c = {
-+				.module = family->module,
- 				.data = ops,
- 				.dump = genl_lock_dumpit,
- 				.done = genl_lock_done,
- 			};
- 
- 			genl_unlock();
--			rc = netlink_dump_start(net->genl_sock, skb, nlh, &c);
-+			rc = __netlink_dump_start(net->genl_sock, skb, nlh, &c);
- 			genl_lock();
- 
- 		} else {
- 			struct netlink_dump_control c = {
-+				.module = family->module,
- 				.dump = ops->dumpit,
- 				.done = ops->done,
- 			};
- 
--			rc = netlink_dump_start(net->genl_sock, skb, nlh, &c);
-+			rc = __netlink_dump_start(net->genl_sock, skb, nlh, &c);
- 		}
- 
- 		return rc;
+Mimi
 
 
