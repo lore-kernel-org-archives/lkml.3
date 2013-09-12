@@ -1,153 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754085Ab3ILPfK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 11:35:10 -0400
-Received: from 8bytes.org ([85.214.48.195]:60178 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751736Ab3ILPfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 11:35:08 -0400
-Date: Thu, 12 Sep 2013 17:35:03 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
-Subject: [git pull] IOMMU Updates for v3.12
-Message-ID: <20130912153502.GA28163@8bytes.org>
+	id S1754143Ab3ILPgi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 11:36:38 -0400
+Received: from dkim2.fusionio.com ([66.114.96.54]:38227 "EHLO
+	dkim2.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752053Ab3ILPgf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 11:36:35 -0400
+X-ASG-Debug-ID: 1379000194-0421b502223a3680001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AqsLC8rIMeq19msA"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Thu Sep 12 17:35:06 2013
-X-DSPAM-Confidence: 0.9989
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 5231df2a20861148780270
+Content-Transfer-Encoding: 8BIT
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        <linux-btrfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Message-ID: <20130912153629.16487.88969@localhost.localdomain>
+From: Chris Mason <chris.mason@fusionio.com>
+User-Agent: alot/0.3.4
+Subject: [GIT PULL] Btrfs
+Date: Thu, 12 Sep 2013 11:36:29 -0400
+X-ASG-Orig-Subj: [GIT PULL] Btrfs
+X-Originating-IP: [10.101.1.160]
+X-Barracuda-Connect: cas2.int.fusionio.com[10.101.1.41]
+X-Barracuda-Start-Time: 1379000194
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.140551
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---AqsLC8rIMeq19msA
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
 Hi Linus,
 
-The following changes since commit 6e4664525b1db28f8c4e1130957f70a94c19213e:
+Please pull my for-linus branch:
 
-  Linux 3.11 (2013-09-02 13:46:10 -0700)
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
 
-are available in the git repository at:
+This is against 3.11-rc7, but was pulled and tested against your tree as
+of yesterday.  We do have two small incrementals queued up, but I wanted
+to get this bunch out the door before I hop on an airplane.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git tags/iommu-u=
-pdates-v3.12
+This is a fairly large batch of fixes, performance improvements, and
+cleanups from the usual Btrfs suspects.
 
-for you to fetch changes up to d6a60fc1a8187004792a01643d8af1d06a465026:
+We've included Stefan Behren's work to index subvolume UUIDs, which is
+targeted at speeding up send/receive with many subvolumes or snapshots
+in place.  It closes a long standing performance issue that was built
+in to the disk format.
 
-  Merge branches 'arm/exynos', 'ppc/pamu', 'arm/smmu', 'x86/amd' and 'iommu=
-/fixes' into next (2013-09-12 16:46:34 +0200)
+Mark Fasheh's offline dedup work is also here.  In this case offline
+means the FS is mounted and active, but the dedup work is not done
+inline during file IO.   This is a building block where utilities  are
+able to ask the FS to dedup a series of extents.  The kernel takes
+care of verifying the data involved really is the same.  Today this
+involves reading both extents, but we'll continue to evolve the patches.
 
-----------------------------------------------------------------
+Anand Jain (3):
+      btrfs: fix get set label blocking against balance
+      btrfs: use BTRFS_SUPER_INFO_SIZE macro at btrfs_read_dev_super()
+      btrfs: return btrfs error code for dev excl ops err
 
-IOMMU Updates for Linux v3.12
+Andy Shevchenko (1):
+      btrfs: reuse kbasename helper
 
-This round the updates contain:
+Carey Underwood (1):
+      Btrfs: Release uuid_mutex for shrink during device delete
 
-	* A new driver for the Freescale PAMU IOMMU from Varun Sethi.
-	  This driver has cooked for a while and required changes to the
-	  IOMMU-API and infrastructure that were already merged before.
-	* Updates for the ARM-SMMU driver from Will Deacon
-	* Various fixes, the most important one is probably a fix from
-	  Alex Williamson for a memory leak in the VT-d page-table
-	  freeing code
+Dan Carpenter (1):
+      btrfs/raid56: fix and cleanup some error paths
 
-In summary not all that much. The biggest part in the diffstat is the
-new PAMU driver.
+Dave Jones (1):
+      Fix leak in __btrfs_map_block error path
 
-----------------------------------------------------------------
-Alex Williamson (1):
-      intel-iommu: Fix leaks in pagetable freeing
+David Sterba (2):
+      btrfs: make errors in btrfs_num_copies less noisy
+      btrfs: add mount option to set commit interval
 
-Grant Grundler (1):
-      iommu/exynos: Remove dead code (set_prefbuf)
+Filipe David Borba Manana (18):
+      Btrfs: optimize btrfs_lookup_extent_info()
+      Btrfs: add missing error checks to add_data_references
+      Btrfs: optimize function btrfs_read_chunk_tree
+      Btrfs: add missing error check to find_parent_nodes
+      Btrfs: add missing error handling to read_tree_block
+      Btrfs: fix inode leak on kmalloc failure in tree-log.c
+      Btrfs: don't ignore errors from btrfs_run_delayed_items
+      Btrfs: return ENOSPC when target space is full
+      Btrfs: add missing error code to BTRFS_IOC_INO_LOOKUP handler
+      Btrfs: don't miss inode ref items in BTRFS_IOC_INO_LOOKUP
+      Btrfs: reset force_compress on btrfs_file_defrag failure
+      Btrfs: fix memory leak of orphan block rsv
+      Btrfs: fix printing of non NULL terminated string
+      Btrfs: fix race between removing a dev and writing sbs
+      Btrfs: fix race conditions in BTRFS_IOC_FS_INFO ioctl
+      Btrfs: fix memory leak of uuid_root in free_fs_info
+      Btrfs: fix deadlock in uuid scan kthread
+      Btrfs: optimize key searches in btrfs_search_slot
 
-Joerg Roedel (3):
-      iommu/fsl: Fix whitespace problems noticed by git-am
-      iommu/fsl: Remove unnecessary 'fsl-pamu' prefixes
-      Merge branches 'arm/exynos', 'ppc/pamu', 'arm/smmu', 'x86/amd' and 'i=
-ommu/fixes' into next
+Geert Uytterhoeven (12):
+      Btrfs: Remove superfluous casts from u64 to unsigned long long
+      Btrfs: Make BTRFS_DEV_REPLACE_DEVID an unsigned long long constant
+      Btrfs: Format PAGE_SIZE as unsigned long
+      Btrfs: Format mirror_num as int
+      Btrfs: Make btrfs_device_uuid() return unsigned long
+      Btrfs: Make btrfs_device_fsid() return unsigned long
+      Btrfs: Make btrfs_dev_extent_chunk_tree_uuid() return unsigned long
+      Btrfs: Make btrfs_header_fsid() return unsigned long
+      Btrfs: Make btrfs_header_chunk_tree_uuid() return unsigned long
+      Btrfs: PAGE_CACHE_SIZE is already unsigned long
+      Btrfs: Do not truncate sector_t on 32-bit with CONFIG_LBDAF=y
+      Btrfs: Use %z to format size_t
 
-Radmila Kompov=E1 (1):
-      iommu/amd: Fix resource leak in iommu_init_device()
+Ilya Dryomov (5):
+      Btrfs: find_next_devid: root -> fs_info
+      Btrfs: add btrfs_alloc_device and switch to it
+      Btrfs: add alloc_fs_devices and switch to it
+      Btrfs: rollback btrfs_device fields on umount
+      Btrfs: stop refusing the relocation of chunk 0
 
-Varun Sethi (3):
-      powerpc: Add iommu domain pointer to device archdata
-      iommu/fsl: Add additional iommu attributes required by the PAMU drive=
-r.
-      iommu/fsl: Freescale PAMU driver and iommu implementation.
+Jeff Mahoney (1):
+      btrfs: fall back to global reservation when removing subvolumes
 
-Will Deacon (4):
-      iommu/arm-smmu: Remove broken big-endian check
-      iommu/arm-smmu: Tighten up global fault reporting
-      iommu/arm-smmu: Don't use VMIDs for stage-1 translations
-      iommu/arm-smmu: Simplify VMID and ASID allocation
+Josef Bacik (30):
+      Btrfs: stop using GFP_ATOMIC for the tree mod log allocations
+      Btrfs: set lockdep class before locking new extent buffer
+      Btrfs: reset ret in record_one_backref
+      Btrfs: cleanup reloc roots properly on error
+      Btrfs: don't bother autodefragging if our root is going away
+      Btrfs: cleanup arguments to extent_clear_unlock_delalloc
+      Btrfs: fix what bits we clear when erroring out from delalloc
+      Btrfs: check to see if we have an inline item properly
+      Btrfs: change how we queue blocks for backref checking
+      Btrfs: don't bug_on when we fail when cleaning up transactions
+      Btrfs: handle errors when doing slow caching
+      Btrfs: check our parent dir when doing a compare send
+      Btrfs: deal with enomem in the rewind path
+      Btrfs: stop using GFP_ATOMIC when allocating rewind ebs
+      Btrfs: skip subvol entries when checking if we've created a dir already
+      Btrfs: don't allow a subvol to be deleted if it is the default subovl
+      Btrfs: fix the error handling wrt orphan items
+      Btrfs: fix heavy delalloc related deadlock
+      Btrfs: avoid starting a transaction in the write path
+      Btrfs: separate out tests into their own directory
+      Btrfs: fix send issues related to inode number reuse
+      Btrfs: fix send to deal with sparse files properly
+      Btrfs: do not clear our orphan item runtime flag on eexist
+      Btrfs: remove ourselves from the cluster list under lock
+      Btrfs: adjust the fs_devices->missing count on unmount
+      Btrfs: add support for asserts
+      Btrfs: convert all bug_ons in free-space-cache.c
+      Btrfs: allow partial ordered extent completion
+      Btrfs: only update disk_i_size as we remove extents
+      Btrfs: don't use an async starter for most of our workers
 
-Yijing Wang (1):
-      iommu/amd: Clean up unnecessary MSI/MSI-X capability find
+Liu Bo (3):
+      Btrfs: make free space caching faster with many non-inline extent references
+      Btrfs/tracepoint: update delayed ref tracepoints
+      Btrfs: allow compressed extents to be merged during defragment
 
- arch/powerpc/include/asm/device.h         |    3 +
- arch/powerpc/include/asm/fsl_pamu_stash.h |   39 +
- arch/powerpc/sysdev/fsl_pci.h             |    5 +
- drivers/iommu/Kconfig                     |   10 +
- drivers/iommu/Makefile                    |    1 +
- drivers/iommu/amd_iommu.c                 |    4 +-
- drivers/iommu/amd_iommu_init.c            |    2 +-
- drivers/iommu/arm-smmu.c                  |   93 +-
- drivers/iommu/exynos-iommu.c              |   44 -
- drivers/iommu/fsl_pamu.c                  | 1309 +++++++++++++++++++++++++=
-++++
- drivers/iommu/fsl_pamu.h                  |  410 +++++++++
- drivers/iommu/fsl_pamu_domain.c           | 1172 ++++++++++++++++++++++++++
- drivers/iommu/fsl_pamu_domain.h           |   85 ++
- drivers/iommu/intel-iommu.c               |   72 +-
- include/linux/iommu.h                     |   16 +
- 15 files changed, 3145 insertions(+), 120 deletions(-)
- create mode 100644 arch/powerpc/include/asm/fsl_pamu_stash.h
- create mode 100644 drivers/iommu/fsl_pamu.c
- create mode 100644 drivers/iommu/fsl_pamu.h
- create mode 100644 drivers/iommu/fsl_pamu_domain.c
- create mode 100644 drivers/iommu/fsl_pamu_domain.h
+Mark Fasheh (4):
+      btrfs: abtract out range locking in clone ioctl()
+      btrfs_ioctl_clone: Move clone code into it's own function
+      btrfs: Introduce extent_read_full_page_nolock()
+      btrfs: offline dedupe
 
-Please pull.
+Miao Xie (7):
+      Btrfs, raid56: fix memory leak when allocating pages for p/q stripes failed
+      Btrfs: remove unnecessary argument of bio_readpage_error()
+      Btrfs: add branch prediction hints in the read page end IO function
+      Btrfs: don't cache the csum value into the extent state tree
+      Btrfs: batch the extent state operation in the end io handle of the read page
+      Btrfs: batch the extent state operation when reading pages
+      Btrfs: cache the extent map struct when reading several pages
 
-Thanks,
+Mike Frysinger (1):
+      Btrfs: use __u64 in exported user headers
 
-	Joerg
+Qu Wenruo (1):
+      btrfs: Cleanup for using BTRFS_SETGET_STACK instead of raw convert
 
+Sergei Trofimovich (1):
+      btrfs: mark some local function as 'static'
 
---AqsLC8rIMeq19msA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Stefan Agner (1):
+      Btrfs: return -1 when lzo compression makes data bigger
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Stefan Behrens (14):
+      Btrfs: Print key type in decimal everywhere
+      Btrfs: get rid of sparse warnings
+      Btrfs: introduce a tree for items that map UUIDs to something
+      Btrfs: support printing UUID tree elements
+      Btrfs: create UUID tree if required
+      Btrfs: maintain subvolume items in the UUID tree
+      Btrfs: fill UUID tree initially
+      Btrfs: introduce uuid-tree-gen field
+      Btrfs: check UUID tree during mount if required
+      Btrfs: add mount option to force UUID tree checking
+      Btrfs: don't allow the replace procedure on read only filesystems
+      Btrfs: get rid of one BUG() in write_all_supers()
+      Btrfs: fix for patch "cleanup: don't check the same thing twice"
+      Btrf: cleanup: don't check for root_refs == 0 twice
 
-iQIcBAEBAgAGBQJSMd8lAAoJECvwRC2XARrjnLYP/ieozuteXTzVKscSnKf0QnnJ
-PKCLDl9h4L4Rc2+7tWqS3ZemNPaot5ljuU9iV9WcSp2xzsZc+FuISHkm13/dEKw3
-al2VgEJjDvd372GMYvMnBJZv6YC2wv66FQKwZkEGgrjarsUu9iaVNJXNWtcXK7Ou
-H9tbvLiaKHOSszsRIBV6McuNZCe6CqUNmMXqGpN2kBHd1LwCAaxcCjN5/mO+Ru6W
-JnXUIXX+wiO4aAQNLFYP/bqJOUwSH9LBrkNfIE1+eAxiqKhiAuwPBCXwXuo/Ykrh
-Cyu5HR/NeoaOd7gAE8JfW4/BN5IpOBFA8VcvCGTQZAqhnD12oYxz2kez7G8sxuS+
-4G162seRTjgU69yBzkKFxYcoKhwlHXtfRH5YUhc0JNNf926EiGHUOa9yhJOaSDLN
-mneoaR8qktERUst3hMqi6kw6lCzg2mNoqy7UgdAo0sjMZ8So4TmlyjfVnIdODEeV
-lqkP4BFRkRSBFRPQHBMe9psJsPAS66IHhSI6+6RjpyN1YKccvhzJowNEJO7wCCVq
-FbN8RhSeep0whCyLvk7mNOt7vPY9gexCSQOAIO8SpvXpq4lOjsxDvwvTfDCKm4O3
-eVyLMsa4ZivKt85cljg4jHIOvL/kt2hZyRvgOrX4dmmHZTw7DMq95TsCFcx1HX7C
-QIiYjZJeddCL7Hz7E9yf
-=AY5k
------END PGP SIGNATURE-----
+Wang Shilong (10):
+      Btrfs: set qgroup_ulist to be null after calling ulist_free()
+      Btrfs: add sanity checks regarding to parsing mount options
+      Btrfs: use u64 for subvolid when parsing mount options
+      Btrfs: add missing mounting options in btrfs_show_options()
+      Btrfs: fix possible memory leak in find_parent_nodes()
+      Btrfs: fix oops when writing dirty qgroups to disk
+      Btrfs: move btrfs_free_qgroup_config() out of spin_lock and fix comments
+      Btrfs: remove reduplicate check when disabling quota
+      Btrfs: pass gfp_t to __add_prelim_ref() to avoid always using GFP_ATOMIC
+      Btrfs: allocate prelim_ref with a slab allocater
 
---AqsLC8rIMeq19msA--
+chandan (1):
+      btrfs_read_block_groups: Use enums to index
 
-
+ fs/btrfs/Kconfig                  |    9 +
+ fs/btrfs/Makefile                 |    5 +-
+ fs/btrfs/backref.c                |   93 +++--
+ fs/btrfs/backref.h                |    2 +
+ fs/btrfs/btrfs_inode.h            |   21 ++
+ fs/btrfs/check-integrity.c        |  422 ++++++++-------------
+ fs/btrfs/compression.c            |   11 +-
+ fs/btrfs/ctree.c                  |  289 +++++++-------
+ fs/btrfs/ctree.h                  |  161 ++++++--
+ fs/btrfs/delayed-inode.c          |   46 +--
+ fs/btrfs/delayed-ref.c            |    8 +-
+ fs/btrfs/dev-replace.c            |    4 +-
+ fs/btrfs/disk-io.c                |  174 ++++++---
+ fs/btrfs/extent-tree.c            |  184 ++++++---
+ fs/btrfs/extent_io.c              |  664 +++++++++++++++++++--------------
+ fs/btrfs/extent_io.h              |   35 +-
+ fs/btrfs/file-item.c              |   85 +++--
+ fs/btrfs/file.c                   |   11 +-
+ fs/btrfs/free-space-cache.c       |  525 ++++----------------------
+ fs/btrfs/free-space-cache.h       |   11 +-
+ fs/btrfs/inode.c                  |  615 ++++++++++++++----------------
+ fs/btrfs/ioctl.c                  |  745 ++++++++++++++++++++++++++++---------
+ fs/btrfs/lzo.c                    |    4 +-
+ fs/btrfs/ordered-data.c           |   28 +-
+ fs/btrfs/ordered-data.h           |    7 +
+ fs/btrfs/print-tree.c             |  107 +++---
+ fs/btrfs/qgroup.c                 |   69 ++--
+ fs/btrfs/raid56.c                 |   14 +-
+ fs/btrfs/relocation.c             |   43 ++-
+ fs/btrfs/root-tree.c              |   21 +-
+ fs/btrfs/scrub.c                  |   42 +--
+ fs/btrfs/send.c                   |  240 +++++++++---
+ fs/btrfs/super.c                  |  145 ++++++--
+ fs/btrfs/tests/btrfs-tests.h      |   34 ++
+ fs/btrfs/tests/free-space-tests.c |  395 ++++++++++++++++++++
+ fs/btrfs/transaction.c            |   34 +-
+ fs/btrfs/transaction.h            |    2 -
+ fs/btrfs/tree-log.c               |   19 +-
+ fs/btrfs/uuid-tree.c              |  358 ++++++++++++++++++
+ fs/btrfs/volumes.c                |  613 ++++++++++++++++++++++--------
+ fs/btrfs/volumes.h                |   12 +
+ include/trace/events/btrfs.h      |   60 ++-
+ include/uapi/linux/btrfs.h        |   30 +-
+ 43 files changed, 4045 insertions(+), 2352 deletions(-)
