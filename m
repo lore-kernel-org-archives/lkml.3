@@ -1,46 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225Ab3ILTTu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 15:19:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2137 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753638Ab3ILTTs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 15:19:48 -0400
-Message-ID: <1379013584.14495.4.camel@deneb.redhat.com>
-Subject: Re: [PATCH] Kconfig cleanup (PARPORT_PC dependencies)
-From: Mark Salter <msalter@redhat.com>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 12 Sep 2013 15:19:44 -0400
-In-Reply-To: <52321022.6060907@tilera.com>
-References: <1379012038-31764-1-git-send-email-msalter@redhat.com>
-	 <52321022.6060907@tilera.com>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754938Ab3ILTUT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 15:20:19 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:38528 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754085Ab3ILTUQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 15:20:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <1378995227.3117.9.camel@leira.trondhjem.org>
+References: <CAMuHMdViO7yNJ5rxvRkv5NhmW6PQY1N+HW75NwokFnGQp+nxxw@mail.gmail.com>
+	<1378995227.3117.9.camel@leira.trondhjem.org>
+Date: Thu, 12 Sep 2013 21:20:15 +0200
+X-Google-Sender-Auth: HWuByrTzm_tblBYFufTRPaLF408
+Message-ID: <CAMuHMdV+gVwKbk=RS0CNdiMuom-1j-8FAu+aVMLMDeOm3EXb1A@mail.gmail.com>
+Subject: Re: Kernel size increase of +256 KiB (was: Re: RPCSEC_GSS: Share all
+ credential caches on a per-transport basis)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: "Linux/m68k" <linux-m68k@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-09-12 at 15:04 -0400, Chris Metcalf wrote:
-> On 9/12/2013 2:53 PM, Mark Salter wrote:
-> > Remove messy dependencies from PARPORT_PC by having it depend on one
-> > Kconfig symbol (ARCH_MAY_HAVE_PC_PARPORT) and having architectures
-> > which need it declare ARCH_MAY_HAVE_PC_PARPORT in arch/*/Kconfig.
-> > New architectures are unlikely to need PARPORT_PC, so this avoids
-> > having an ever growing list of architectures to exclude. Those
-> > architectures which do declare ARCH_MAY_HAVE_PC_PARPORT in this
-> > patch are the ones which have an asm/parport.h.
-> >
-> > Signed-off-by: Mark Salter <msalter@redhat.com>
-> 
-> You can actually omit the arch/tile change, since as far as I know there's no way for tile to have PARPORT_PC.
-> 
+On Thu, Sep 12, 2013 at 4:13 PM, Myklebust, Trond
+<Trond.Myklebust@netapp.com> wrote:
+>> > --- a/net/sunrpc/auth_gss/auth_gss.c
+>> > +++ b/net/sunrpc/auth_gss/auth_gss.c
+>> > @@ -51,6 +51,7 @@
+>> >  #include <linux/sunrpc/rpc_pipe_fs.h>
+>> >  #include <linux/sunrpc/gss_api.h>
+>> >  #include <asm/uaccess.h>
+>> > +#include <linux/hashtable.h>
+>> >
+>> >  #include "../netns.h"
+>> >
+>> > @@ -71,6 +72,9 @@ static unsigned int gss_expired_cred_retry_delay = GSS_RETRY_EXPIRED;
+>> >   * using integrity (two 4-byte integers): */
+>> >  #define GSS_VERF_SLACK         100
+>> >
+>> > +static DEFINE_HASHTABLE(gss_auth_hash_table, 16);
+>> > +static DEFINE_SPINLOCK(gss_auth_hash_lock);
+>>
+>> Today's m68k/atari-defconfig kernel no longer boots, as it became larger than
+>> 4 MiB.
+>>
+>> bloat-o-meter tells me:
+>>
+>> function                                     old     new   delta
+>> gss_auth_hash_table                            -  262144 +262144
+>>
+>> Woops...
+>
+> Whoops indeed. The above should have declared 16 buckets, and not 1<<16.
+> I fell for Sasha's subtle trap...
+>
+>> Are you trying to game Tim's survey? ;-)
+>> (question 13 at http://www.embeddedlinuxconference.com/cgi-bin/survey.cgi)
+>>
+>> Can this memory be allocated dynamically / only when it's used?
+>
+> :-) It's declared inside a module, so that should already be the case,
 
-Yeah, I thought that the list of architectures in the patch would end up
-being a superset of what was really needed. Especially for those which
-used the generic parport.h. I can drop tile from this patch but you may
-want to get rid of the parport.h from arch/tile/include/asm/Kbuild.
+Only for the modular case. What about builtin, e.g. for nfsroot?
 
+Or is it better to not build in NFS_V4 support in that case?
 
+config NFS_V4
+          If unsure, say Y.
+
+config NFSD_V4
+          If unsure, say N.
+
+So that's why my defconfig has NFS_V4 but not NFSD_V4.
+
+> however I'll send in a patch to change the above to the intended:
+>
+> DEFINE_HASHTABLE(gss_auth_hash_table, 4);
+
+Thanks, that's better! Booting again ;-)
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
