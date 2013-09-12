@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583Ab3ILQiT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 12:38:19 -0400
-Received: from mail-vb0-f50.google.com ([209.85.212.50]:46505 "EHLO
-	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753358Ab3ILQiS (ORCPT
+	id S1754683Ab3ILQj2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 12:39:28 -0400
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:36295 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753871Ab3ILQj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 12:38:18 -0400
+	Thu, 12 Sep 2013 12:39:26 -0400
+X-Greylist: delayed 346 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Sep 2013 12:39:26 EDT
+Message-ID: <5231ECDD.2050108@vmware.com>
+Date: Thu, 12 Sep 2013 18:33:33 +0200
+From: Thomas Hellstrom <thellstrom@vmware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <1378997735-22844-1-git-send-email-Waiman.Long@hp.com>
-References: <1378997735-22844-1-git-send-email-Waiman.Long@hp.com>
-Date: Thu, 12 Sep 2013 09:38:17 -0700
-X-Google-Sender-Auth: 18O6osqxpQKBBNUSLG_0putqFqY
-Message-ID: <CA+55aFwsqHJE1D-z8_kU+1VEpUTB=EU57kqmKao580gYZVOjrw@mail.gmail.com>
-Subject: Re: [PATCH 0/2 v2] dcache: get/release read lock in
- read_seqbegin_or_lock() & friend
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+CC: Peter Zijlstra <peterz@infradead.org>, Dave Airlie <airlied@linux.ie>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Content-Type: text/plain; charset=UTF-8
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [BUG] completely bonkers use of set_need_resched + VM_FAULT_NOPAGE
+References: <20130912150645.GZ31370@twins.programming.kicks-ass.net> <CAKMK7uFF2GkYapa2_DLv4WYAd0t+POaT+Vy9HG=HQhzMmtH9nA@mail.gmail.com> <20130912154329.GB31370@twins.programming.kicks-ass.net> <CAKMK7uFTYB-E5ksVNEBqGJusJ5TKJv5X4hiPv1mno9tJKuUAdA@mail.gmail.com>
+In-Reply-To: <CAKMK7uFTYB-E5ksVNEBqGJusJ5TKJv5X4hiPv1mno9tJKuUAdA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 7:55 AM, Waiman Long <Waiman.Long@hp.com> wrote:
-> Change log
-> ----------
-> v1->v2:
->   - Rename the new seqlock primitives to read_seqexcl_lock* and
->     read_seqexcl_unlock*.
+On 09/12/2013 05:58 PM, Daniel Vetter wrote:
+> On Thu, Sep 12, 2013 at 5:43 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>> The one in ttm is just bonghits to shut up lockdep: ttm can recurse
+>>> into it's own pagefault handler and then deadlock, the trylock just
+>>> keeps lockdep quiet.
 
-Applied. Except I peed in the snow and renamed the functions
-again.That whole "seqexcl" looked too odd to me. It not only looks a
-bit too much like random noise, but it makes it seem a whole different
-lock from the "seqlock" thing.
+Could you describe how it could recurse into it's own pagefault handler?
+IIRC the VM flags of the TTM VMAs makes get_user_pages() refrain from 
+touching these VMAs,
+hence I don't think this code can deadlock, but admittedly it's far from 
+the optimal solution.
 
-I wanted to pattern the name after "write_seq[un]lock()", since it
-most resembles that (not just in implementation, but in usage: the
-traditional read-sequence isn't a lock, it's a begin/retry sequence,
-so the usage pattern is totally different too, and the naming is
-different).
+Never mind, more on the set_need_resched() below.
 
-I ended up picking "read_seq[un]lock_excl()". I could have gone with
-"excl_" as a prefix too, I guess. Whatever. Now the "_excl" thing
-looks a bit like the "_bh"/"_irqX" context modifier, and I think it
-matches our normal lock naming pattern better.
 
-            Linus
+>>>   We've had that bug arise in drm/i915 due to some
+>>> fun userspace did and now have testcases for them. The right solution
+>>> to fix this is to use copy_to|from_user_atomic in ttm everywhere it
+>>> holds locks and have slowpaths which drops locks, copies stuff into a
+>>> temp allocation and then continues. At least that's how we've fixed
+>>> all those inversions in i915-gem. I'm not volunteering to fix this ;-)
+>> Yikes.. so how common is it? If I simply rip the set_need_resched() out
+>> it will 'spin' on the fault a little longer until a 'natural' preemption
+>> point -- if such a thing is every going to happen.
+
+A typical case is if a process is throwing out a buffer from the GPU or 
+system memory while another
+process pagefaults while writing to it. It's not a common situation, and 
+it's by no means a fastpath situation.
+For correctness purposes, I think set_need_resched() can be safely removed.
+
+> It's a case of "our userspace doesn't do this", so as long as you're
+> not evil and frob the drm device nodes of ttm drivers directly the
+> deadlock will never happen. No idea how much contention actually
+> happens on e.g. shared buffer objects - in i915 we have just one lock
+> and so suffer quite a bit more from contention. So no idea how much
+> removing the yield would hurt.
+> -Daniel
+
+/Thomas
