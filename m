@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755904Ab3ILRrK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 13:47:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56788 "EHLO
+	id S1755475Ab3ILRpe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 13:45:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56683 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755529Ab3ILRpl (ORCPT
+	with ESMTP id S1754621Ab3ILRpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 13:45:41 -0400
+	Thu, 12 Sep 2013 13:45:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 21/23] m32r: add memcpy() for CONFIG_KERNEL_GZIP=y
-Date: Thu, 12 Sep 2013 10:45:17 -0700
-Message-Id: <20130912174454.037622248@linuxfoundation.org>
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 01/23] htb: fix sign extension bug
+Date: Thu, 12 Sep 2013 10:44:57 -0700
+Message-Id: <20130912174451.948344919@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <20130912174451.748805761@linuxfoundation.org>
 References: <20130912174451.748805761@linuxfoundation.org>
@@ -30,49 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+From: stephen hemminger <stephen@networkplumber.org>
 
-commit a8abbca6617e1caa2344d2d38d0a35f3e5928b79 upstream.
+[ Upstream commit cbd375567f7e4811b1c721f75ec519828ac6583f ]
 
-Fix the m32r link error:
+When userspace passes a large priority value
+the assignment of the unsigned value hopt->prio
+to  signed int cl->prio causes cl->prio to become negative and the
+comparison is with TC_HTB_NUMPRIO is always false.
 
-    LD      arch/m32r/boot/compressed/vmlinux
-  arch/m32r/boot/compressed/misc.o: In function `zlib_updatewindow':
-  misc.c:(.text+0x190): undefined reference to `memcpy'
-  misc.c:(.text+0x190): relocation truncated to fit: R_M32R_26_PLTREL against undefined symbol `memcpy'
-  make[5]: *** [arch/m32r/boot/compressed/vmlinux] Error 1
+The result is that HTB crashes by referencing outside
+the array when processing packets. With this patch the large value
+wraps around like other values outside the normal range.
 
-by adding our own implementation of memcpy().
+See: https://bugzilla.kernel.org/show_bug.cgi?id=60669
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Hirokazu Takata <takata@linux-m32r.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/m32r/boot/compressed/misc.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ net/sched/sch_htb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/m32r/boot/compressed/misc.c
-+++ b/arch/m32r/boot/compressed/misc.c
-@@ -39,6 +39,16 @@ static void *memset(void *s, int c, size
- #endif
+--- a/net/sched/sch_htb.c
++++ b/net/sched/sch_htb.c
+@@ -86,7 +86,7 @@ struct htb_class {
+ 	unsigned int children;
+ 	struct htb_class *parent;	/* parent class */
  
- #ifdef CONFIG_KERNEL_GZIP
-+void *memcpy(void *dest, const void *src, size_t n)
-+{
-+	char *d = dest;
-+	const char *s = src;
-+	while (n--)
-+		*d++ = *s++;
-+
-+	return dest;
-+}
-+
- #define BOOT_HEAP_SIZE             0x10000
- #include "../../../../lib/decompress_inflate.c"
- #endif
+-	int prio;		/* these two are used only by leaves... */
++	u32 prio;		/* these two are used only by leaves... */
+ 	int quantum;		/* but stored for parent-to-leaf return */
+ 
+ 	union {
 
 
