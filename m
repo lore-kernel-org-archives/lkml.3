@@ -1,107 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710Ab3ILPm3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 11:42:29 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:45758 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754650Ab3ILPmX (ORCPT
+	id S1754692Ab3ILPm2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 11:42:28 -0400
+Received: from b232-131.smtp-out.amazonses.com ([199.127.232.131]:24061 "EHLO
+	b232-131.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754657Ab3ILPmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 11:42:23 -0400
-From: Koen Kooi <koen@dominion.thruhere.net>
-To: linux-kernel@vger.kernel.org
-Cc: bcousson@baylibre.com, tony@atomide.com, rob.herring@calxeda.com,
-        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
-        ijc+devicetree@hellion.org.uk, linux@arm.linux.org.uk,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Koen Kooi <koen@dominion.thruhere.net>
-Subject: [PATCH 2/4] am335x-boneblack: add eMMC DT entry
-Date: Thu, 12 Sep 2013 17:42:10 +0200
-Message-Id: <1379000532-27376-3-git-send-email-koen@dominion.thruhere.net>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1379000532-27376-1-git-send-email-koen@dominion.thruhere.net>
-References: <1379000532-27376-1-git-send-email-koen@dominion.thruhere.net>
+	Thu, 12 Sep 2013 11:42:24 -0400
+Date: Thu, 12 Sep 2013 15:42:21 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [RFC] Restrict kernel spawning of threads to a specified set of
+ cpus.
+In-Reply-To: <alpine.DEB.2.02.1309121030390.21473@gentwo.org>
+Message-ID: <0000014112d66287-d0abaeb1-71ff-48a0-8740-f984d47400a7-000000@email.amazonses.com>
+References: <00000140efbcb701-c26320b3-f434-4538-bc80-8e92fed6f303-000000@email.amazonses.com> <20130911220228.GB15367@somewhere> <000001411282afa6-fe9c0543-0447-492b-991e-dc8214884b88-000000@email.amazonses.com> <20130912141625.GA23357@somewhere>
+ <00000141128d759a-44dcacb6-8f48-4f9b-8381-d14003bd6da1-000000@email.amazonses.com> <20130912143137.GA23839@somewhere> <0000014112a921ae-51d171bf-e8d4-4569-bd20-94dabda2d5ba-000000@email.amazonses.com> <20130912151102.GB23839@somewhere>
+ <alpine.DEB.2.02.1309121030390.21473@gentwo.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.127.232.131
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pinmux is specified in am335x-bone-common.dtsi to be reused by the eMMC cape.
+Let me just say that the user space approach does not work because the
+kernel sets the cpumask to all and then spawns a thread f.e. for
+usermodehelper.
 
-Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
----
+This mean we would have to run a daemon that keeps scanning for errand
+threads and then move them. But at that point the damage would already
+have been done. Short term threads would never be caught.
 
-Changes since v2:
-	add missing pinmux entries
+So I think the kernel based approach is unavoidable.
 
-Changes since v1:
-	dropped the ti,non-removable entry per Sekhars request
+Look at this in kernel/kmod.c:
 
- arch/arm/boot/dts/am335x-bone-common.dtsi | 22 ++++++++++++++++++++++
- arch/arm/boot/dts/am335x-boneblack.dts    | 14 ++++++++++++++
- 2 files changed, 36 insertions(+)
+static int ____call_usermodehelper(void *data)
+{
+        struct subprocess_info *sub_info = data;
+        struct cred *new;
+        int retval;
 
-diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
-index ced256c..cfec441 100644
---- a/arch/arm/boot/dts/am335x-bone-common.dtsi
-+++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
-@@ -112,6 +112,21 @@
- 				0x160 (PIN_INPUT | MUX_MODE7) /* GPIO0_6 */
- 			>;
- 		};
-+
-+		emmc_pins: pinmux_emmc_pins {
-+			pinctrl-single,pins = <
-+				0x80 (PIN_INPUT_PULLUP | MUX_MODE2) /* gpmc_csn1.mmc1_clk, INPUT_PULLUP | MODE2 */
-+				0x84 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_csn2.mmc1_cmd, INPUT_PULLUP | MODE2 */
-+				0x00 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad0.mmc1_dat0, INPUT_PULLUP | MODE1 */
-+				0x04 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad1.mmc1_dat1, INPUT_PULLUP | MODE1 */
-+				0x08 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad2.mmc1_dat2, INPUT_PULLUP | MODE1 */
-+				0x0c (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad3.mmc1_dat3, INPUT_PULLUP | MODE1 */
-+				0x10 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad4.mmc1_dat4, INPUT_PULLUP | MODE1 */
-+				0x14 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad5.mmc1_dat5, INPUT_PULLUP | MODE1 */
-+				0x18 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad6.mmc1_dat6, INPUT_PULLUP | MODE1 */
-+				0x1c (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad7.mmc1_dat7, INPUT_PULLUP | MODE1 */
-+			>;
-+		};
- 	};
- 
- 	ocp {
-@@ -241,6 +256,13 @@
- 			regulator-always-on;
- 		};
- 	};
-+
-+	vmmcsd_fixed: fixedregulator@0 {
-+		compatible = "regulator-fixed";
-+		regulator-name = "vmmcsd_fixed";
-+		regulator-min-microvolt = <3300000>;
-+		regulator-max-microvolt = <3300000>;
-+	};
- };
- 
- &cpsw_emac0 {
-diff --git a/arch/arm/boot/dts/am335x-boneblack.dts b/arch/arm/boot/dts/am335x-boneblack.dts
-index 197cadf..f4703cf 100644
---- a/arch/arm/boot/dts/am335x-boneblack.dts
-+++ b/arch/arm/boot/dts/am335x-boneblack.dts
-@@ -15,3 +15,17 @@
- 	regulator-max-microvolt = <1800000>;
- 	regulator-always-on;
- };
-+
-+&mmc1 { 
-+	vmmc-supply = <&vmmcsd_fixed>;
-+};
-+
-+&mmc2 { 
-+	vmmc-supply = <&vmmcsd_fixed>;
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&emmc_pins>;
-+	bus-width = <8>;
-+	status = "okay";
-+	ti,vcc-aux-disable-is-sleep;
-+};
-+
--- 
-1.8.2.1
+        spin_lock_irq(&current->sighand->siglock);
+        flush_signal_handlers(current, 1);
+        spin_unlock_irq(&current->sighand->siglock);
+
+        /* We can run anywhere, unlike our parent keventd(). */
+        set_cpus_allowed_ptr(current, cpu_all_mask);
+
+
+!!!!! No chance to catch this from user space.
+
+
+
+	....
+
+        retval = do_execve(sub_info->path,
+                       (const char __user *const __user *)sub_info->argv,
+                           (const char __user *const __user *)sub_info->envp);
+        if (!retval)
+
+
+	....
 
