@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229Ab3ILKwe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 06:52:34 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:33316 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752868Ab3ILKwb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 06:52:31 -0400
+	id S1753213Ab3ILKxz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 06:53:55 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:48978 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750901Ab3ILKxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 06:53:54 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Mark Brown <broonie@kernel.org>, linux-i2c@vger.kernel.org,
+        Wolfram Sang <wsa@the-dreams.de>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lv Zheng <lv.zheng@intel.com>, Aaron Lu <aaron.lu@intel.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH v2 8/9] spi: prepare runtime PM support for SPI devices
+Date: Thu, 12 Sep 2013 13:04:55 +0200
+Message-ID: <14222641.vVF4lKBqCB@vostro.rjw.lan>
+User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20130912094302.GM7393@intel.com>
+References: <1378913560-2752-1-git-send-email-mika.westerberg@linux.intel.com> <20130912093145.GA29403@sirena.org.uk> <20130912094302.GM7393@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <3488595.xbBYlylYai@vostro.rjw.lan>
-References: <Pine.LNX.4.64.1309091656200.6602@axis700.grange>
-	<52310E43.1090808@intel.com>
-	<CAKohpomuJNQmk5fg5en5usPgipj7hzXUVNMhz1MjAS-47X4Ggg@mail.gmail.com>
-	<3488595.xbBYlylYai@vostro.rjw.lan>
-Date: Thu, 12 Sep 2013 16:22:30 +0530
-Message-ID: <CAKohpo=gF7pVYXrDxBxMOvpu96VOB2V00Y6HACCEz=X-7jWj4A@mail.gmail.com>
-Subject: Re: "cpufreq: fix serialization issues with freq change notifiers"
- breaks cpufreq too
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Greg KH <greg@kroah.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 September 2013 16:31, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> Well, if there's more than one it's even simpler.  You can just pick one. :-)
->
-> Like, "for example, <driver name> does the following ... which may cause the
-> hardware to misbehave, because ...".
+On Thursday, September 12, 2013 12:43:02 PM Mika Westerberg wrote:
+> On Thu, Sep 12, 2013 at 10:31:45AM +0100, Mark Brown wrote:
+> > On Thu, Sep 12, 2013 at 12:27:43PM +0300, Mika Westerberg wrote:
+> > > On Wed, Sep 11, 2013 at 04:51:20PM +0100, Mark Brown wrote:
+> > 
+> > > > I would be able to have this and the other patch in the SPI tree in case
+> > > > it overlaps with other work - I'm not sure what the plan will be for
+> > > > merging this stuff but if there were a branch which I could merge into
+> > > > the SPI tree that'd be good.
+> > 
+> > > I think these two can go via your SPI tree as they shouldn't have
+> > > dependencies to the I2C tree.
+> > 
+> > There's all the driver changes though - it seems best to push the whole
+> > series through one branch so there's fewer bisection problems.
+> 
+> Ah, right. Then I suppose the right tree would be the I2C tree (as majority
+> of the patches are I2C related)?
+> 
+> Wolfram, are you OK with this?
 
-:)
+Alternatively, I can apply them too if everyone is OK with that.
 
-I have written one of my longest changelog ever on the resent of this patch..
-Hope that doesn't have any unanswered stuff left :)
+They are PM+ACPI changes after all ...
+
+Thanks,
+Rafael
+
