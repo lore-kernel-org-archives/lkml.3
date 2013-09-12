@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756708Ab3ILUSz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 16:18:55 -0400
-Received: from www.linutronix.de ([62.245.132.108]:60901 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753403Ab3ILUSx (ORCPT
+	id S1756764Ab3ILUTE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 16:19:04 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:57294 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756729Ab3ILUS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 16:18:53 -0400
-Date: Thu, 12 Sep 2013 22:18:50 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sricharan R <r.sricharan@ti.com>
-cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linus.walleij@linaro.org,
-        santosh.shilimkar@ti.com, linux@arm.linux.org.uk, tony@atomide.com,
-        rnayak@ti.com
-Subject: Re: [RFC PATCH 1/4] DRIVERS: IRQCHIP: Add crossbar irqchip driver
-In-Reply-To: <1379000351-15672-2-git-send-email-r.sricharan@ti.com>
-Message-ID: <alpine.DEB.2.02.1309122201530.4089@ionos.tec.linutronix.de>
-References: <1379000351-15672-1-git-send-email-r.sricharan@ti.com> <1379000351-15672-2-git-send-email-r.sricharan@ti.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 12 Sep 2013 16:18:58 -0400
+Date: Thu, 12 Sep 2013 22:18:55 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] perf fixes
+Message-ID: <20130912201855.GC32644@gmail.com>
+References: <20130912133855.GA23780@gmail.com>
+ <CA+55aFwgyjqRHxLaWGxxsg_v07FrxbVTeLdHTGp7MfeSRjrKsQ@mail.gmail.com>
+ <CA+55aFyCeXXr=57em8CC_Uzfk5PvOw0RHyA309wuOP-oDL7VxA@mail.gmail.com>
+ <20130912184341.GA11400@ghostprotocols.net>
+ <52321CE4.1080804@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52321CE4.1080804@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Sep 2013, Sricharan R wrote:
-> Signed-off-by: Sricharan R <r.sricharan@ti.com>
-> ---
-> There is lockdep warning during the boot. This is because we try to
-> do one request_irq with in another and that results in kmalloc being
-> called from an atomic context, which generates the warning.
-> Any suggestions to overcome this will help.
 
-You can't be serious about that. You post a patch series with a
-serious bug in it instead of asking in the first place how to solve
-the problem at hand.
+* David Ahern <dsahern@gmail.com> wrote:
 
-So why do you actually need to call request_irq() from inside
-request_irq() and how do you actually manage to do that at all?
+> On 9/12/13 11:43 AM, Arnaldo Carvalho de Melo wrote:
 
-I have a hard time to figure out how request_irq() might call itself
-recursive. And I have no intention to look at your patch to figure out
-that you abuse an irq chip callback to do so, simply because that
-would force me to use abusive language which is frowned upon nowadays.
+> > Its something that annoys me as well, but not so much as to make me 
+> > figure out how to make those be done only if some source file changed.
+> 
+> Jiri and I have both taken stabs at a config-based build rather than 
+> probing. Just need to finish it.
 
-Can you please explain what you are trying to solve without referring
-to your existing broken implementation.
+Mind outlining the approach you are thinking about?
+
+Firstly, please don't even think about autotools. (Just forget it exists.)
+
+Secondly, the way perf tries to build by auto-detecting the build 
+environment and auto-disabling bits it cannot build just yet is pretty 
+powerful. The core bits will build on just about any system, and our 
+fallbacks are really good.
+
+The result is that perf will build on just about any random system, 
+without the user having to install any dependency. It would be really sad 
+to lose that aspect.
+
+What I think would work best is what I outlined in the previous mail: to 
+cache successful feature test results and only re-do unsuccessful tests: 
+those are the ones that are expected to turn into successful tests in the 
+future, once the missing dependencies are installed.
+
+Since most tests succeed even on a sparsely installed system, this trick 
+alone will speed up the checks big time.
+
+Furthermore, this method would encourage people to install the 
+dependencies - and perf developers, who do many repeat builds after 
+trivial one-file changes, will typically have all dependencies installed 
+anyway, so for them such a caching feature would result in totally cached 
+feature tests and very fast build times.
 
 Thanks,
 
-	tglx
-
-
-
-
+	Ingo
