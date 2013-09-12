@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757844Ab3ILGiv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 02:38:51 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:60121 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755191Ab3ILGit (ORCPT
+	id S1757886Ab3ILGjN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 02:39:13 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:37335 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757865Ab3ILGjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 02:38:49 -0400
-X-AuditID: cbfee691-b7f4a6d0000074fc-e2-52316174830e
+	Thu, 12 Sep 2013 02:39:09 -0400
+X-AuditID: cbfee691-b7f4a6d0000074fc-30-5231618cbf9c
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Hans J. Koch'" <hjk@hansjkoch.de>,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <001001ceaf82$978a36f0$c69ea4d0$%han@samsung.com>
 In-reply-to: <001001ceaf82$978a36f0$c69ea4d0$%han@samsung.com>
-Subject: [PATCH 2/5] uio: uio_cif: remove unnecessary pci_set_drvdata()
-Date: Thu, 12 Sep 2013 15:38:44 +0900
-Message-id: <001101ceaf82$ba4e3560$2eeaa020$%han@samsung.com>
+Subject: [PATCH 3/5] uio: uio_mf624: remove unnecessary pci_set_drvdata()
+Date: Thu, 12 Sep 2013 15:39:08 +0900
+Message-id: <001201ceaf82$c89dd800$59d98800$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac6vgpOjT534nRYfSDiuPQlOOHeZTQAABDhg
+Thread-index: Ac6vgpOjT534nRYfSDiuPQlOOHeZTQAACewA
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJIsWRmVeSWpSXmKPExsVy+t8zI92SRMMggw2ThS2aF69nszh6djq7
-	xeWFl1gtLu+aw+bA4jH/oZfH/rlr2D36tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoEr4/O8DywF
-	x1grdlzibmA8y9LFyMkhIWAisXPeXGYIW0ziwr31bF2MXBxCAssYJdavvsIIU7T09FFWiMR0
-	RoneI++ZQBJCAr8YJS40J4LYbAJqEl++HGYHsUUETCU2vp8C1swskC1x7PtfFoh6W4n3X5eA
-	9XIK2ElMWXUCaDMHh7CAu8Seh0EgYRYBVYnZf7eygYR5gcrn7uQHCfMKCEr8mHyPBWKilsT6
-	nceZIGx5ic1r3oJNkRBQl3j0VxfiACOJw127oUpEJPa9eMcIcr2EwCl2iV3LVrNCrBKQ+Db5
-	EAtEr6zEpgPQYJCUOLjiBssERolZSDbPQrJ5FpLNs5CsWMDIsopRNLUguaA4Kb3IVK84Mbe4
-	NC9dLzk/dxMjJBon7mC8f8D6EGMy0PqJzFKiyfnAaM4riTc0NjOyMDUxNTYytzQjTVhJnFe9
-	xTpQSCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA6PH4ysK6nzzp5xLXZi/48sXY4dLpfwf56+r
-	Lgn4eni71K/eS/sOpNyfseqKVES+9jaeFlmbH2qn/nq11XQcqannZ2zfLPCnm2UWv+Ry8/l3
-	Vy2fGHcktkl7gcpX2VVNH3R4Th812fHR9vOeXuZgkwXhwt99n5p/yIrd9q9NRH5Lx+LOKK91
-	6kFKLMUZiYZazEXFiQBTUhi63AIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGKsWRmVeSWpSXmKPExsVy+t9jQd2SRMMgg98v+C2aF69nszh6djq7
+x-cr-hashedpuzzle: AGvV AO02 C4an EX9M HBXM KV8A RBsT REeL S32H UojZ hLEc jSJJ
+ jpJX mage pWwn
+ rgaY;4;ZwByAGUAZwBrAGgAQABsAGkAbgB1AHgAZgBvAHUAbgBkAGEAdABpAG8AbgAuAG8AcgBnADsAaABqAGsAQABoAGEAbgBzAGoAawBvAGMAaAAuAGQAZQA7AGoAZwAxAC4AaABhAG4AQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnAA==;Sosha1_v1;7;{6C4C8B40-3D2E-4206-9E82-A292EB9046F9};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Thu,
+ 12 Sep 2013 06:39:02
+ GMT;WwBQAEEAVABDAEgAIAAzAC8ANQBdACAAdQBpAG8AOgAgAHUAaQBvAF8AbQBmADYAMgA0ADoAIAByAGUAbQBvAHYAZQAgAHUAbgBuAGUAYwBlAHMAcwBhAHIAeQAgAHAAYwBpAF8AcwBlAHQAXwBkAHIAdgBkAGEAdABhACgAKQA=
+x-cr-puzzleid: {6C4C8B40-3D2E-4206-9E82-A292EB9046F9}
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsVy+t8zI92eRMMgg7mTRCyaF69nszh6djq7
+	xeWFl1gtLu+aw+bA4jH/oZfH/rlr2D36tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoEr4/pBkYIn
+	rBVvts5mbGB8w9LFyMkhIWAicXfeF0YIW0ziwr31bF2MHBxCAssYJZ4mw5QcfrMcrFxIYBGj
+	RNeMiC5GLiD7F6PElo+T2EESbAJqEl++HAazRQRMJTa+nwI2k1kgW+LY979QzbYS778uYQKx
+	OQXsJKasOsEMYgsLeEpMfHcTLM4ioCqx6NB5NhCbF6j+ZuMEVghbUOLH5HssEDO1JNbvPM4E
+	YctLbF7zlhnkZgkBdYlHf3UhTjCS2H27nxWiRERi34t3jCA3SwjMYJVY1NDIDvGYqcTZfT1Q
+	iUfsEhcOQyxmERCQ+Db5EAvEUFmJTQeYIeolJQ6uuMEygVFqFpKTZiE5aRaSk2Yh2b2AkWUV
+	o2hqQXJBcVJ6kalecWJucWleul5yfu4mRkj8TtzBeP+A9SHGZKD1E5mlRJPzgfGfVxJvaGxm
+	ZGFqYmpsZG5pRpqwkjiveot1oJBAemJJanZqakFqUXxRaU5q8SFGJg5OqQZGxr6VFUWHooq/
+	mppJPjhj5Jy6JsuEV+301KT2Xfv6rh5Jcl84NdBh8iRh49rYc1mf55zZlV0YerNkZt0yXsmv
+	p3S7zh3IvfTUx5vHUXv51fh7Jx9bVmUYdr57pMhSm7vluDW7o0exfPPpKMGr3A99Zia9FS89
+	Ui58Wnv2C43bi8yWfDWKX2ytxFKckWioxVxUnAgASnFB4/UCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIKsWRmVeSWpSXmKPExsVy+t9jAd2eRMMgg/sbBSyaF69nszh6djq7
 	xeWFl1gtLu+aw+bA4jH/oZfH/rlr2D36tqxi9Pi8SS6AJaqB0SYjNTEltUghNS85PyUzL91W
 	yTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaKWSQlliTilQKCCxuFhJ3w7ThNAQN10L
-	mMYIXd+QILgeIwM0kLCOMePzvA8sBcdYK3Zc4m5gPMvSxcjJISFgIrH09FFWCFtM4sK99Wxd
-	jFwcQgLTGSV6j7xnAkkICfxilLjQnAhiswmoSXz5cpgdxBYRMJXY+H4KI4jNLJAtcez7XxaI
-	eluJ91+XgPVyCthJTFl1grmLkYNDWMBdYs/DIJAwi4CqxOy/W9lAwrxA5XN38oOEeQUEJX5M
-	vscCMVFLYv3O40wQtrzE5jVvwaZICKhLPPqrC3GAkcThrt1QJSIS+168Y5zAKDQLyaRZSCbN
-	QjJpFpKWBYwsqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCY/2Z1A7GlQ0WhxgFOBiVeHg7
-	ZhkECbEmlhVX5h5ilOBgVhLhjTc3DBLiTUmsrEotyo8vKs1JLT7EmAz050RmKdHkfGAayiuJ
-	NzQ2MTOyNDKzMDIxNydNWEmc90CrdaCQQHpiSWp2ampBahHMFiYOTqkGRv+3/yweVqVOUNTP
-	+t1v6s3ZY9vvusF3dccHWSclk2/Omg9FIy9t3+37f3bKv1cPqhbwif3PUf0RL3JnT6DiLgmf
-	sJznlzL3lE35ODHW4Oi78JV7Ow7M5Vi/qKvxRMHeCUwvfV+0/Do2tfzkNqOpqcH/i72FnWz7
-	CyeI7E2a5aQeXMajpSEbrcRSnJFoqMVcVJwIAKMyoEE5AwAA
+	mMYIXd+QILgeIwM0kLCOMeP6QZGCJ6wVb7bOZmxgfMPSxcjJISFgInH4zXIoW0ziwr31bCC2
+	kMAiRomuGRFdjFxA9i9GiS0fJ7GDJNgE1CS+fDkMZosImEpsfD+FEcRmFsiWOPb9LwtEs63E
+	+69LmEBsTgE7iSmrTjCD2MICnhIT390Ei7MIqEosOnQebBkvUP3NxgmsELagxI/J91ggZmpJ
+	rN95nAnClpfYvOYt0BwOoEPVJR791YU4wUhi9+1+VogSEYl9L94xgtwsITCDVWJRQyM7xGOm
+	Emf39TBOYBSZhWTFLCQrZiFZMQvJrAWMLKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxghPE
+	M+kdjKsaLA4xCnAwKvHwdswyCBJiTSwrrsw9xCjBwawkwhtvbhgkxJuSWFmVWpQfX1Sak1p8
+	iDEZGAITmaVEk/OBySuvJN7Q2MTMyNLIzMLIxNycNGElcd6DrdaBQgLpiSWp2ampBalFMFuY
+	ODilGhintL/+rV9mcSTunHfFc7tZkqJ9xzPvvQgvSP5lkvJmevSW14pbRPzu75jO5Tv5k7a6
+	0fQPkj9Tbi9R7jdbftv3hLujYPuytDUFr2KMi+x/8F/l8D2/+3OMd8iUpg0CX5YvFpuq9u/I
+	/PKXrF3VLGkW5kwhf1+bZu6Z3PyP6br1Bp/DNw2mv1ysxFKckWioxVxUnAgAzjEyUFQDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,21 +67,21 @@ device driver data to NULL.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/uio/uio_cif.c |    1 -
+ drivers/uio/uio_mf624.c |    1 -
  1 file changed, 1 deletion(-)
 
-diff --git a/drivers/uio/uio_cif.c b/drivers/uio/uio_cif.c
-index 22cdf38..30f533c 100644
---- a/drivers/uio/uio_cif.c
-+++ b/drivers/uio/uio_cif.c
-@@ -106,7 +106,6 @@ static void hilscher_pci_remove(struct pci_dev *dev)
+diff --git a/drivers/uio/uio_mf624.c b/drivers/uio/uio_mf624.c
+index a1768b2..832afa2 100644
+--- a/drivers/uio/uio_mf624.c
++++ b/drivers/uio/uio_mf624.c
+@@ -220,7 +220,6 @@ static void mf624_pci_remove(struct pci_dev *dev)
  	uio_unregister_device(info);
  	pci_release_regions(dev);
  	pci_disable_device(dev);
 -	pci_set_drvdata(dev, NULL);
- 	iounmap(info->mem[0].internal_addr);
  
- 	kfree (info);
+ 	iounmap(info->mem[0].internal_addr);
+ 	iounmap(info->mem[1].internal_addr);
 -- 
 1.7.10.4
 
