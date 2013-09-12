@@ -1,106 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754252Ab3ILNK4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 09:10:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36026 "EHLO mx2.suse.de"
+	id S1754375Ab3ILNM6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 09:12:58 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:41661 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751327Ab3ILNKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 09:10:54 -0400
-Date: Thu, 12 Sep 2013 15:10:51 +0200
-From: Jan Kara <jack@suse.cz>
-To: Marcus Sundman <marcus@hibox.fi>
-Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
-        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org
-Subject: Re: Debugging system freezes on filesystem writes
-Message-ID: <20130912131051.GA14664@quack.suse.cz>
-References: <20121205153216.GF5706@quack.suse.cz>
- <51248C5F.4040606@hibox.fi>
- <5124B613.6040400@hibox.fi>
- <20130222205144.GA30600@quack.suse.cz>
- <5127FEEA.60207@hibox.fi>
- <20130224001222.GB5551@dastard>
- <20130224012052.GC1196@thunk.org>
- <512D01E0.7010009@hibox.fi>
- <20130226231703.GA22674@quack.suse.cz>
- <5231BA3C.2090704@hibox.fi>
+	id S1752208Ab3ILNMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 09:12:55 -0400
+Message-ID: <5231BD9F.4020105@ti.com>
+Date: Thu, 12 Sep 2013 16:11:59 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5231BA3C.2090704@hibox.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vivek Gautam <gautamvivek1987@gmail.com>
+CC: Kishon Vijay Abraham I <kishon@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kumar Gala <galak@codeaurora.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        <george.cherian@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
+        <linux-doc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/7] usb: dwc3: get "usb_phy" only if the platform indicates
+ the presence of PHY
+References: <1378136591-7463-1-git-send-email-kishon@ti.com> <1378136591-7463-2-git-send-email-kishon@ti.com> <52319912.8030203@ti.com> <CAFp+6iE+xbSWWp2bNc5MRSUrA4Fi6qVU4vhR4+mtZHZGidkMGg@mail.gmail.com> <52319FC4.8040703@ti.com> <CAFp+6iGzV4auP0AeySen2Qk6wEJM-xsTnQmfwMQDtp2tg1FMkQ@mail.gmail.com>
+In-Reply-To: <CAFp+6iGzV4auP0AeySen2Qk6wEJM-xsTnQmfwMQDtp2tg1FMkQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 12-09-13 15:57:32, Marcus Sundman wrote:
-> On 27.02.2013 01:17, Jan Kara wrote:
-> >On Tue 26-02-13 20:41:36, Marcus Sundman wrote:
-> >>On 24.02.2013 03:20, Theodore Ts'o wrote:
-> >>>On Sun, Feb 24, 2013 at 11:12:22AM +1100, Dave Chinner wrote:
-> >>>>>>/dev/sda6 /home ext4 rw,noatime,discard 0 0
-> >>>>                                    ^^^^^^^
-> >>>>I'd say that's your problem....
-> >>>Looks like the Sandisk U100 is a good SSD for me to put on my personal
-> >>>"avoid" list:
-> >>>
-> >>>http://thessdreview.com/our-reviews/asus-zenbook-ssd-review-not-necessarily-sandforce-driven-shows-significant-speed-bump/
-> >>>
-> >>>There are a number of SSD's which do not implement "trim" efficiently,
-> >>>so these days, the recommended way to use trim is to run the "fstrim"
-> >>>command out of crontab.
-> >>OK. Removing 'discard' made it much better (the 60-600 second
-> >>freezes are now 1-50 second freezes), but it's still at least an
-> >>order of magnitude worse than a normal HD. When writing, that is --
-> >>reading is very fast (when there's no writing going on).
-> >>
-> >>So, after reading up a bit on this trimming I'm thinking maybe my
-> >>filesystem's block sizes don't match up with my SSD's blocks (or
-> >>whatever its write unit is called). Then writing a FS block would
-> >>always write to multiple SSD blocks, causing multiple
-> >>read-erase-write sequences, right? So how can I check this, and how
-> >>can I make the FS blocks match the SSD blocks?
-> >   As Ted wrote, alignment isn't usually a problem with SSDs. And even if it
-> >was, it would be at most a factor 2 slow down and we don't seem to be at
-> >that fine grained level :)
-> >
-> >At this point you might try mounting the fs with nobarrier mount option (I
-> >know you tried that before but without discard the difference could be more
-> >visible), switching IO scheduler to CFQ (for crappy SSDs it actually isn't
-> >a bad choice), and we'll see how much we can squeeze out of your drive...
+On 09/12/2013 02:26 PM, Vivek Gautam wrote:
+> Hi,
 > 
-> I repartitioned the drive and reinstalled ubuntu and after that it
-> gladly wrote over 100 MB/s to the SSD without any hangs. However,
-> after a couple of months I noticed it had degraded considerably, and
-> it keeps degrading. Now it's slowly becoming completely unusable
-> again, with write speeds of the magnitude 1 MB/s and dropping.
 > 
-> As far as I can tell I have not made any relevant changes. Also, the
-> amount of free space hasn't changed considerably, but it seems that
-> the longer it's been since I reformatted the drive the more free
-> space is required for it to perform well.
+> On Thu, Sep 12, 2013 at 4:34 PM, Roger Quadros <rogerq@ti.com> wrote:
+>> Hi,
+>>
+>> On 09/12/2013 01:47 PM, Vivek Gautam wrote:
+>>> On Thu, Sep 12, 2013 at 4:06 PM, Roger Quadros <rogerq@ti.com> wrote:
+>>>> Hi Kishon,
+>>>>
+>>>> On 09/02/2013 06:43 PM, Kishon Vijay Abraham I wrote:
+>>>>> There can be systems which does not have a external usb_phy, so get
+>>>>> usb_phy only if usb-phy property is added in the case of dt boot or if
+>>>>> platform_data indicates the presence of PHY. Also remove checking if
+>>>>> return value is -ENXIO since it's now changed to always enable usb_phy layer.
+>>>>>
+>>>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>>>>> ---
+>>>>>  drivers/usb/dwc3/Kconfig         |    1 +
+>>>>>  drivers/usb/dwc3/core.c          |   60 +++++++++++++++++---------------------
+>>>>>  drivers/usb/dwc3/platform_data.h |    1 +
+>>>>>  3 files changed, 28 insertions(+), 34 deletions(-)
+>>>>>
+>>>>> diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
+>>>>> index f969ea2..cfc16dd 100644
+>>>>> --- a/drivers/usb/dwc3/Kconfig
+>>>>> +++ b/drivers/usb/dwc3/Kconfig
+>>>>> @@ -2,6 +2,7 @@ config USB_DWC3
+>>>>>       tristate "DesignWare USB3 DRD Core Support"
+>>>>>       depends on (USB || USB_GADGET) && GENERIC_HARDIRQS && HAS_DMA
+>>>>>       depends on EXTCON
+>>>>> +     select USB_PHY
+>>>>>       select USB_XHCI_PLATFORM if USB_SUPPORT && USB_XHCI_HCD
+>>>>>       help
+>>>>>         Say Y or M here if your system has a Dual Role SuperSpeed
+>>>>> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+>>>>> index 474162e..428c29e 100644
+>>>>> --- a/drivers/usb/dwc3/core.c
+>>>>> +++ b/drivers/usb/dwc3/core.c
+>>>>> @@ -387,16 +387,38 @@ static int dwc3_probe(struct platform_device *pdev)
+>>>>>       if (node) {
+>>>>>               dwc->maximum_speed = of_usb_get_maximum_speed(node);
+>>>>>
+>>>>> -             dwc->usb2_phy = devm_usb_get_phy_by_phandle(dev, "usb-phy", 0);
+>>>>> -             dwc->usb3_phy = devm_usb_get_phy_by_phandle(dev, "usb-phy", 1);
+>>>>> +             if (of_property_read_bool(node, "usb-phy")) {
+>>>>> +                     dwc->usb2_phy = devm_usb_get_phy_by_phandle(dev,
+>>>>> +                             "usb-phy", 0);
+>>>>> +                     if (IS_ERR(dwc->usb2_phy))
+>>>>> +                             return PTR_ERR(dwc->usb2_phy);
+>>>>> +                     dwc->usb3_phy = devm_usb_get_phy_by_phandle(dev,
+>>>>> +                             "usb-phy", 1);
+>>>>> +                     if (IS_ERR(dwc->usb3_phy))
+>>>>> +                             return PTR_ERR(dwc->usb3_phy);
+>>>>
+>>>> Some DWC3 instances use only usb2_phy. e.g. on DRA7 the 2nd dwc3 instance doesn't use usb3_phy.
+>>>> This needs to be a valid case and driver shouldn't error out.
+>>>
+>>> So, i think adding flexibility to DWC3 to have either
+>>> usb2-phy/usb3-phy or both of them seems to be valid point.
+>>> Any suggestions ?
+>>>
+>>
+>> For high speed operation we need only usb2_phy but for super speed we need both usb2_phy
+>> and usb3_phy.
+>>
+>> Why would a dwc3 controller use only usb3_phy? A USB3.0 interface has to be compatible with
+>> USB2.0 as well, no?
 > 
-> So, maybe the cause is fragmentation? I tried running e4defrag and
-> then fstrim, but it didn't really help (well, maybe a little bit,
-> but after a couple of days it was back in unusable-land). Also,
-> "e4defrag -c" gives a fragmenation score of less than 5, so...
+> True and for that reason we need both UTMI+ interface as well as PIPE3
+> interface, right ?
+> But as also mentioned in the thread:
+> https://lkml.org/lkml/2013/9/12/181, on Samsung exynos5
+> architecturally same block is managing UTMI+ and PIPE3 interfaces,
+> which is handled by phy-samsung-usb3 driver and denoted by "usb3_phy:
+> usbphy@12100000" node in "arch/arm/boot/dts/exynos5250.dtsi".
 > 
-> Any ideas?
-  So now you run without 'discard' mount option, right? My guess then would
-be that the FTL layer on your SSD is just crappy and as the erase blocks
-get more fragmented as the filesystem is used it cannot keep up. But it's
-easy to put blame on someone else :)
+> So on exynos5250, DWC3 really needs just usb3-phy, which is compatible
+> for USB 2.0 as well.
 
-You can check whether this is a problem of Linux or your SSD by writing a
-large file (few GB or more) like 'dd if=/dev/zero of=testfile bs=1M
-count=4096 oflag=direct'. What is the throughput? If it is bad, check output
-of 'filefrag -v testfile'. If the extents are reasonably large (1 MB and
-more), then the problem is in your SSD firmware. Not much we can do about
-it in that case...
+I'm not familiar with exynos5250 dwc3, but looking at the dts file I can see both usb3_phy
+and usb2_phy nodes and both are referenced in the dwc3 node.
 
-If it really is SSD's firmware, maybe you could try f2fs or similar flash
-oriented filesystem which should put lower load on the disk's FTL.
+The ehci and ohci controllers don't reference any PHY.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+cheers,
+-roger
