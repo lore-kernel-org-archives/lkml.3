@@ -1,97 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755802Ab3ILRca (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 13:32:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56560 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754601Ab3ILR0d (ORCPT
+	id S1755876Ab3ILRc7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 13:32:59 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:35294 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755272Ab3ILRc6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 13:26:33 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roman Gushchin <klamm@yandex-team.ru>, Changli Gao <xiaosuo@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 02/19] net: check net.core.somaxconn sysctl values
-Date: Thu, 12 Sep 2013 10:26:11 -0700
-Message-Id: <20130912172524.437243748@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <20130912172524.135620246@linuxfoundation.org>
-References: <20130912172524.135620246@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Thu, 12 Sep 2013 13:32:58 -0400
+Date: Thu, 12 Sep 2013 13:32:52 -0400 (EDT)
+Message-Id: <20130912.133252.425268707009916773.davem@davemloft.net>
+To: tglx@linutronix.de
+Cc: herbert@gondor.hengli.com.au, fan.du@windriver.com,
+        steffen.klassert@secunet.com, dborkman@redhat.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCHv3 linux-next] hrtimer: Add notifier when clock_was_set
+ was called
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.DEB.2.02.1309121636010.4089@ionos.tec.linutronix.de>
+References: <alpine.DEB.2.02.1309121441420.4089@ionos.tec.linutronix.de>
+	<20130912134409.GB21212@gondor.apana.org.au>
+	<alpine.DEB.2.02.1309121636010.4089@ionos.tec.linutronix.de>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 12 Sep 2013 10:32:57 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Thu, 12 Sep 2013 16:43:37 +0200 (CEST)
 
-------------------
+> So what about going back to timer_list timers and simply utilize
+> register_pm_notifier(), which will tell you that the system resumed?
 
-From: Roman Gushchin <klamm@yandex-team.ru>
+The thing to understand is that there are two timeouts for an IPSEC
+rule, a soft and a hard timeout.
 
-[ Upstream commit 5f671d6b4ec3e6d66c2a868738af2cdea09e7509 ]
+There is a gap between these two exactly so that we can negotiate a
+new encapsulation with the IPSEC gateway before communication ceases
+to be possible over the IPSEC protected path.
 
-It's possible to assign an invalid value to the net.core.somaxconn
-sysctl variable, because there is no checks at all.
+So the idea is that the soft timeout triggers the re-negotiation,
+and after a hard timeout the IPSEC path is no longer usable and
+all communication will fail.
 
-The sk_max_ack_backlog field of the sock structure is defined as
-unsigned short. Therefore, the backlog argument in inet_listen()
-shouldn't exceed USHRT_MAX. The backlog argument in the listen() syscall
-is truncated to the somaxconn value. So, the somaxconn value shouldn't
-exceed 65535 (USHRT_MAX).
-Also, negative values of somaxconn are meaningless.
+Simply triggering a re-negoation after every suspend/resume makes
+no sense at all.  Spurious re-negotiations are undesirable.
 
-before:
-$ sysctl -w net.core.somaxconn=256
-net.core.somaxconn = 256
-$ sysctl -w net.core.somaxconn=65536
-net.core.somaxconn = 65536
-$ sysctl -w net.core.somaxconn=-100
-net.core.somaxconn = -100
-
-after:
-$ sysctl -w net.core.somaxconn=256
-net.core.somaxconn = 256
-$ sysctl -w net.core.somaxconn=65536
-error: "Invalid argument" setting key "net.core.somaxconn"
-$ sysctl -w net.core.somaxconn=-100
-error: "Invalid argument" setting key "net.core.somaxconn"
-
-Based on a prior patch from Changli Gao.
-
-Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
-Reported-by: Changli Gao <xiaosuo@gmail.com>
-Suggested-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/core/sysctl_net_core.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
---- a/net/core/sysctl_net_core.c
-+++ b/net/core/sysctl_net_core.c
-@@ -19,6 +19,9 @@
- #include <net/sock.h>
- #include <net/net_ratelimit.h>
- 
-+static int zero = 0;
-+static int ushort_max = USHRT_MAX;
-+
- #ifdef CONFIG_RPS
- static int rps_sock_flow_sysctl(ctl_table *table, int write,
- 				void __user *buffer, size_t *lenp, loff_t *ppos)
-@@ -192,7 +195,9 @@ static struct ctl_table netns_core_table
- 		.data		= &init_net.core.sysctl_somaxconn,
- 		.maxlen		= sizeof(int),
- 		.mode		= 0644,
--		.proc_handler	= proc_dointvec
-+		.extra1		= &zero,
-+		.extra2		= &ushort_max,
-+		.proc_handler	= proc_dointvec_minmax
- 	},
- 	{ }
- };
-
-
+What we want are real timers.  We want that rather than a "we
+suspended so just assume all timers expired" event which is not very
+useful for this kind of application.
