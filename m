@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756732Ab3ILUaJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 16:30:09 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:65429 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752753Ab3ILU34 (ORCPT
+	id S1756832Ab3ILUab (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 16:30:31 -0400
+Received: from www.linutronix.de ([62.245.132.108]:60974 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754216Ab3ILUa1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 16:29:56 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 4/4] perf tools: Compare hists comm by addresses
-Date: Thu, 12 Sep 2013 22:29:43 +0200
-Message-Id: <1379017783-27032-5-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1379017783-27032-1-git-send-email-fweisbec@gmail.com>
-References: <1379017783-27032-1-git-send-email-fweisbec@gmail.com>
+	Thu, 12 Sep 2013 16:30:27 -0400
+Date: Thu, 12 Sep 2013 22:30:15 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] tick: broadcast: Deny per-cpu clockevents from being
+ broadcast sources
+In-Reply-To: <1379004640-15117-2-git-send-email-soren.brinkmann@xilinx.com>
+Message-ID: <alpine.DEB.2.02.1309122224420.4089@ionos.tec.linutronix.de>
+References: <1379004640-15117-1-git-send-email-soren.brinkmann@xilinx.com> <1379004640-15117-2-git-send-email-soren.brinkmann@xilinx.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that comm strings are allocated only once and refcounted to be shared
-among threads, these can now be safely compared by addresses. This
-should remove most hists collapses on post processing.
+On Thu, 12 Sep 2013, Soren Brinkmann wrote:
+> From: Stephen Boyd <sboyd@codeaurora.org>
+> 
+> On most ARM systems the per-cpu clockevents are truly per-cpu in
+> the sense that they can't be controlled on any other CPU besides
+> the CPU that they interrupt. If one of these clockevents were to
+> become a broadcast source we will run into a lot of trouble
+> because the broadcast source is enabled on the first CPU to go
+> into deep idle (if that CPU suffers from FEAT_C3_STOP) and that
+> could be a different CPU than what the clockevent is interrupting
+> (or even worse the CPU that the clockevent interrupts could be
+> offline).
+> 
+> Theoretically it's possible to support per-cpu clockevents as the
+> broadcast source but so far we haven't needed this and supporting
+> it is rather complicated. Let's just deny the possibility for now
+> until this becomes a reality (let's hope it never does!).
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>
----
- tools/perf/util/sort.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+Well, we can't do it this way. There are globally accessible clock
+event devices which deliver only to cpu0. So the mask check might be
+causing failure here.
 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 26d8f11..3b307e7 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -79,7 +79,8 @@ struct sort_entry sort_thread = {
- static int64_t
- sort__comm_cmp(struct hist_entry *left, struct hist_entry *right)
- {
--	return right->thread->tid - left->thread->tid;
-+	/* Compare the addr that should be unique among comm */
-+	return thread__comm_curr(right->thread) - thread__comm_curr(left->thread);
- }
- 
- static int64_t
--- 
-1.7.5.4
+Just add a feature flag CLOCK_EVT_FEAT_PERCPU to the clock event
+device and check for it.
+
+Thanks,
+
+	tglx
 
