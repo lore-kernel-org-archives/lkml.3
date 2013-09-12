@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756352Ab3ILIRl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 04:17:41 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:50956 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276Ab3ILIRi (ORCPT
+	id S1757852Ab3ILISH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 04:18:07 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:38586 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757796Ab3ILISD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 04:17:38 -0400
-Message-ID: <523177B5.2050007@linux.vnet.ibm.com>
-Date: Thu, 12 Sep 2013 13:43:41 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Thu, 12 Sep 2013 04:18:03 -0400
+Date: Thu, 12 Sep 2013 03:18:00 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH] README: Alternative configuration commands does not
+ mention make listnewconfig
+To: Regid Ichira <regid23@nt1.in>
+Cc: "Steven Mr. Procrastinator Rostedt" <rostedt@goodmis.org>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
+References: <20130912003919.GG8821@nt1.in>
+In-Reply-To: <20130912003919.GG8821@nt1.in> (from regid23@nt1.in on Wed Sep
+	11 19:39:19 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1378973880.1974.11@driftwood>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: rjw@sisk.pl, swarren@wwwdotorg.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] cpufreq: don't update policy->cpu while removing
- while removing other CPUs
-References: <cover.1378963070.git.viresh.kumar@linaro.org> <0475c234b6ca2849c8a69dad0446d82b065b4161.1378963070.git.viresh.kumar@linaro.org>
-In-Reply-To: <0475c234b6ca2849c8a69dad0446d82b065b4161.1378963070.git.viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091208-4790-0000-0000-00000A46AFC8
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2013 10:55 AM, Viresh Kumar wrote:
-> With a recent change the logic here is changed a bit and I just figured out it
-> is something we don't want.
-> 
-> Consider we have four CPUs (0,1,2,3) managed by a policy and policy->cpu is set
-> to 0. Now we are suspending and hence we call __cpufreq_remove_dev_prepare() for
-> cpu 1, 2 & 3..
-> 
-> With the current code we always call cpufreq_nominate_new_policy_cpu() for cpu
-> 1, 2 & 3 whereas we should skipped most of __cpufreq_remove_dev_prepare()
-> routine.
-> 
-> Lets fix it by moving the check for !frozen inside the first if block.
-> 
-
-As you noted in the other thread, Rafael already applied my patch[1] which does
-the same thing. So I guess you'll drop this patch from your series.
-
-[1].http://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=bleeding-edge&id=61173f256
-
-Regards,
-Srivatsa S. Bhat
-
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+On 09/11/2013 07:39:19 PM, Regid Ichira wrote:
+> Applied to the tip of linux.git,
+>                       VERSION = 3 PATCHLEVEL = 11 SUBLEVEL = 0
+> Signed-off-by: Regid Ichira <regid23@nt1.in>
 > ---
->  drivers/cpufreq/cpufreq.c | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
+>  README | 4 ++++
+>  1 file changed, 4 insertions(+)
 > 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 5e0a82e..0e11fcb 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -1182,8 +1182,9 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
->  		cpumask_clear_cpu(cpu, policy->cpus);
->  	unlock_policy_rwsem_write(cpu);
+> diff --git a/README b/README
+> index a24ec89..f10c16f 100644
+> --- a/README
+> +++ b/README
+> @@ -228,6 +228,10 @@ CONFIGURING the kernel:
+>       "make localyesconfig" Similar to localmodconfig, except it will  
+> convert
+>                             all module options to built in (=y)  
+> options.
 > 
-> -	if (cpu != policy->cpu && !frozen) {
-> -		sysfs_remove_link(&dev->kobj, "cpufreq");
-> +	if (cpu != policy->cpu) {
-> +		if (!frozen)
-> +			sysfs_remove_link(&dev->kobj, "cpufreq");
->  	} else if (cpus > 1) {
->  		new_cpu = cpufreq_nominate_new_policy_cpu(policy, cpu, frozen);
->  		if (new_cpu >= 0) {
-> 
+> +     "make listnewconfig"  Based on the contents of your existing  
+> ./.config
+> +                        file, print all the new config symbols.  One  
+> at a
+> +                        line.
+> +
+>     You can find more information on using the Linux kernel config  
+> tools
+>     in Documentation/kbuild/kconfig.txt.
 
+"make help" does, though. Possibly the README should point people at  
+that instead of trying to keep a (third?) copy of this info in sync?
 
+Rob
