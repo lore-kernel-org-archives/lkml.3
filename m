@@ -1,288 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754421Ab3ILBlR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Sep 2013 21:41:17 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:38967 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751551Ab3ILBlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Sep 2013 21:41:16 -0400
-Message-ID: <52311BB6.4030809@ti.com>
-Date: Thu, 12 Sep 2013 10:41:10 +0900
-From: Milo Kim <milo.kim@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-pwm@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 4/4] Documentation: add LP3943 DT bindings and document
-References: <1378949663-6338-1-git-send-email-milo.kim@ti.com>
-In-Reply-To: <1378949663-6338-1-git-send-email-milo.kim@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752124Ab3ILCDu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Sep 2013 22:03:50 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:54785 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751566Ab3ILCDt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Sep 2013 22:03:49 -0400
+X-AuditID: cbfee61a-b7f7a6d00000235f-4c-52312102769b
+From: =?gb2312?B?0+GzrA==?= <chao2.yu@samsung.com>
+To: "'Kim Jaegeuk'" <jaegeuk.kim@gmail.com>
+Cc: "'???'" <jaegeuk.kim@samsung.com>,
+        =?gb2312?B?J8y35q0n?= <shu.tan@samsung.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+References: <7684984.194071378867007969.JavaMail.weblogic@epml15>
+ <CAOtxgyd3iDL6PHA4gFkuG6=Rw1Xr8HKnm5vNAfuyu9b-nvfe2g@mail.gmail.com>
+In-reply-to: <CAOtxgyd3iDL6PHA4gFkuG6=Rw1Xr8HKnm5vNAfuyu9b-nvfe2g@mail.gmail.com>
+Subject: Re: Re: [f2fs-dev][PATCH] f2fs: optimize fs_lock for better performance
+Date: Thu, 12 Sep 2013 10:02:49 +0800
+Message-id: <000f01ceaf5c$4fd452d0$ef7cf870$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=gb2312
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQIbL7QS6YInfiIedjRqSM1rDCKsTwIxA6R1mRbD4TA=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKLMWRmVeSWpSXmKPExsVy+t9jAV0mRcMgg7t3rC1uX5nEYnF9118m
+	i0uL3C327D3JYnF51xw2i9aF55kd2Dx2zrrL7rF7wWcmj74tqxg9Pm+SC2CJ4rJJSc3JLEst
+	0rdL4Mr4cf86Y8F/04qVT46zNzB+Vuti5OSQEDCROLhrAyuELSZx4d56ti5GLg4hgUWMEmt+
+	3IZyfgA5G24CORwcbAJGEhsbykAaRAQ0JX72nmUFqWEW2MkosfXrREaIhg5GiQmXDzCCNHAK
+	BEts7ecDaRAWCJDoaP7LBmKzCKhKTL7fxghi8wpYSpx7dJ0ZwhaU+DH5HguIzSygIdG/aAMb
+	hK0t8eTdBahLFSR2nH3NCHGElcTD5/OYIGrEJTYeucUygVFoFpJRs5CMmoVk1CwkLQsYWVYx
+	iqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBEfGM6kdjCsbLA4xCnAwKvHwdswyCBJiTSwrrsw9
+	xCjBwawkwnvrH1CINyWxsiq1KD++qDQntfgQozQHi5I474FW60AhgfTEktTs1NSC1CKYLBMH
+	p1QD4965j5n7mvN2/Z1cqh3qUc295N2XtWGKpVfqhRe7/pnKfVhmZz3f+Z977jrUbFlYXF6b
+	s/rH30erLNVeFL53KH/P7qpwQ3KrcydXWHX1xZnn1yg8tRc87CRxIKXG3Mqj4fy0KR8La/gS
+	O4xjt2yde7I/cd3tF0F7Ew5uyTy669qduG3PnS73ZSmxFGckGmoxFxUnAgAUKaJ7iAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Everyone,
+Hi Kim
 
-Please ignore this mail. Version information, 'v3' is missing in the 
-subject.
-Fixed mail has just sent. Please find '[PATCH v3 4/4]' in your mailbox.
-Sorry for the inconvenience.
+> -----Original Message-----
+> From: Kim Jaegeuk [mailto:jaegeuk.kim@gmail.com]
+> Sent: Wednesday, September 11, 2013 9:15 PM
+> To: chao2.yu@samsung.com
+> Cc: ???; Ì·æ­; linux-fsdevel@vger.kernel.org;
+linux-kernel@vger.kernel.org;
+> linux-f2fs-devel@lists.sourceforge.net
+> Subject: Re: Re: [f2fs-dev][PATCH] f2fs: optimize fs_lock for better
+performance
+> 
+> Hi,
+> 
+> 2013/9/11 Chao Yu <chao2.yu@samsung.com>
+> >
+> > Hi Kim,
+> >
+> > I did some tests as you mention of using random instead of spin_lock.
+> > The test model is as following:
+> > eight threads race to grab one of eight locks for one thousand times,
+> > and I used four methods to generate lock num:
+> >
+> > 1.atomic_add_return(1, &sbi->next_lock_num) % NR_GLOBAL_LOCKS;
+> > 2.spin_lock(); next_lock_num++ % NR_GLOBAL_LOCKS; spin_unlock();
+> > 3.ktime_get().tv64 % NR_GLOBAL_LOCKS;
+> > 4.get_random_bytes(&next_lock, sizeof(unsigned int));
+> >
+> > the result indicate that:
+> > max count of collide continuously: 4 > 3 > 2 = 1 max-min count of lock
+> > is grabbed: 4 > 3 > 2 = 1 elapsed time of generating: 3 > 2 > 4 > 1
+> >
+> > So I think it's better to use atomic_add_return in round-robin method
+> > to cost less time and reduce collide.
+> > What's your opinion?
+> 
+> Could you test with sbi->next_lock_num++ only instead of using
+> atomic_add_return?
+> IMO, this is just an integer value and still I don't think this value
+should be
+> covered by any kind of locks.
+> Thanks,
 
-Best regards,
-Milo
+Thanks for the advice, I have tested sbi->next_lock_num++.
+The time cost of it is a little bit lower than the atomic one's.
+for running 8 thread for 1000000 times test.
+the performance of it's balance and collide play quit well than I expected.
 
-On 09/12/2013 10:34 AM, Milo Kim wrote:
-> Bindings for LP3943 MFD, GPIO and PWM controller are added.
-> And LP3943 driver document is added also.
->
-> Cc: devicetree@vger.kernel.org
-> Cc: Lee Jones <lee.jones@linaro.org>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: Thierry Reding <thierry.reding@gmail.com>
-> Signed-off-by: Milo Kim <milo.kim@ti.com>
-> ---
->   Documentation/00-INDEX                             |    2 +
->   .../devicetree/bindings/gpio/gpio-lp3943.txt       |   37 ++++++++++++
->   Documentation/devicetree/bindings/mfd/lp3943.txt   |   33 +++++++++++
->   .../devicetree/bindings/pwm/pwm-lp3943.txt         |   58 ++++++++++++++++++
->   Documentation/lp3943.txt                           |   62 ++++++++++++++++++++
->   5 files changed, 192 insertions(+)
->   create mode 100644 Documentation/devicetree/bindings/gpio/gpio-lp3943.txt
->   create mode 100644 Documentation/devicetree/bindings/mfd/lp3943.txt
->   create mode 100644 Documentation/devicetree/bindings/pwm/pwm-lp3943.txt
->   create mode 100644 Documentation/lp3943.txt
->
-> diff --git a/Documentation/00-INDEX b/Documentation/00-INDEX
-> index 0c4cc68..5dd921f 100644
-> --- a/Documentation/00-INDEX
-> +++ b/Documentation/00-INDEX
-> @@ -285,6 +285,8 @@ logo.gif
->   	- full colour GIF image of Linux logo (penguin - Tux).
->   logo.txt
->   	- info on creator of above logo & site to get additional images from.
-> +lp3943.txt
-> +	- info on LP3943 MFD driver structure.
->   m68k/
->   	- directory with info about Linux on Motorola 68k architecture.
->   magic-number.txt
-> diff --git a/Documentation/devicetree/bindings/gpio/gpio-lp3943.txt b/Documentation/devicetree/bindings/gpio/gpio-lp3943.txt
-> new file mode 100644
-> index 0000000..80fcb7d
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/gpio/gpio-lp3943.txt
-> @@ -0,0 +1,37 @@
-> +TI/National Semiconductor LP3943 GPIO controller
-> +
-> +Required properties:
-> +  - compatible: "ti,lp3943-gpio"
-> +  - gpio-controller: Marks the device node as a GPIO controller.
-> +  - #gpio-cells: Should be 2. See gpio.txt in this directory for a
-> +                 description of the cells format.
-> +
-> +Example:
-> +Simple LED controls with LP3943 GPIO controller
-> +
-> +&i2c4 {
-> +	lp3943@60 {
-> +		compatible = "ti,lp3943";
-> +		reg = <0x60>;
-> +
-> +		gpioex: gpio {
-> +			compatible = "ti,lp3943-gpio";
-> +			gpio-controller;
-> +			#gpio-cells = <2>;
-> +		};
-> +	};
-> +};
-> +
-> +leds {
-> +	compatible = "gpio-leds";
-> +	indicator1 {
-> +		label = "indi1";
-> +		gpios = <&gpioex 9 GPIO_ACTIVE_LOW>;
-> +	};
-> +
-> +	indicator2 {
-> +		label = "indi2";
-> +		gpios = <&gpioex 10 GPIO_ACTIVE_LOW>;
-> +		default-state = "off";
-> +	};
-> +};
-> diff --git a/Documentation/devicetree/bindings/mfd/lp3943.txt b/Documentation/devicetree/bindings/mfd/lp3943.txt
-> new file mode 100644
-> index 0000000..e8591d6
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mfd/lp3943.txt
-> @@ -0,0 +1,33 @@
-> +TI/National Semiconductor LP3943 MFD driver
-> +
-> +Required properties:
-> +  - compatible: "ti,lp3943"
-> +  - reg: I2C slave address. From 0x60 to 0x67.
-> +
-> +LP3943 consists of two sub-devices, lp3943-gpio and lp3943-pwm.
-> +
-> +For the LP3943 GPIO properties please refer to:
-> +Documentation/devicetree/bindings/gpio/gpio-lp3943.txt
-> +
-> +For the LP3943 PWM properties please refer to:
-> +Documentation/devicetree/bindings/pwm/pwm-lp3943.txt
-> +
-> +Example:
-> +
-> +lp3943@60 {
-> +	compatible = "ti,lp3943";
-> +	reg = <0x60>;
-> +
-> +	gpioex: gpio {
-> +		compatible = "ti,lp3943-gpio";
-> +		gpio-controller;
-> +		#gpio-cells = <2>;
-> +	};
-> +
-> +	pwm3943: pwm {
-> +		compatible = "ti,lp3943-pwm";
-> +		#pwm-cells = <2>;
-> +		ti,pwm0 = <8 9 10>;
-> +		ti,pwm1 = <15>;
-> +	};
-> +};
-> diff --git a/Documentation/devicetree/bindings/pwm/pwm-lp3943.txt b/Documentation/devicetree/bindings/pwm/pwm-lp3943.txt
-> new file mode 100644
-> index 0000000..7bd9d3b
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/pwm/pwm-lp3943.txt
-> @@ -0,0 +1,58 @@
-> +TI/National Semiconductor LP3943 PWM controller
-> +
-> +Required properties:
-> +  - compatible: "ti,lp3943-pwm"
-> +  - #pwm-cells: Should be 2. See pwm.txt in this directory for a
-> +                description of the cells format.
-> +                Note that this hardware limits the period length to the
-> +                range 6250~1600000.
-> +  - ti,pwm0 or ti,pwm1: Output pin number(s) for PWM channel 0 or 1.
-> +    0 = output 0
-> +    1 = output 1
-> +    .
-> +    .
-> +    15 = output 15
-> +
-> +Example:
-> +PWM 0 is for RGB LED brightness control
-> +PWM 1 is for brightness control of LP8557 backlight device
-> +
-> +&i2c3 {
-> +	lp3943@60 {
-> +		compatible = "ti,lp3943";
-> +		reg = <0x60>;
-> +
-> +		/*
-> +		 * PWM 0 : output 8, 9 and 10
-> +		 * PWM 1 : output 15
-> +		 */
-> +		pwm3943: pwm {
-> +			compatible = "ti,lp3943-pwm";
-> +			#pwm-cells = <2>;
-> +			ti,pwm0 = <8 9 10>;
-> +			ti,pwm1 = <15>;
-> +		};
-> +	};
-> +
-> +};
-> +
-> +/* LEDs control with PWM 0 of LP3943 */
-> +pwmleds {
-> +	compatible = "pwm-leds";
-> +	rgb {
-> +		label = "indi::rgb";
-> +		pwms = <&pwm3943 0 10000>;
-> +		max-brightness = <255>;
-> +	};
-> +};
-> +
-> +&i2c4 {
-> +	/* Backlight control with PWM 1 of LP3943 */
-> +	backlight@2c {
-> +		compatible = "ti,lp8557";
-> +		reg = <0x2c>;
-> +
-> +		pwms = <&pwm3943 1 10000>;
-> +		pwm-names = "lp8557";
-> +	};
-> +};
-> diff --git a/Documentation/lp3943.txt b/Documentation/lp3943.txt
-> new file mode 100644
-> index 0000000..576ebd0
-> --- /dev/null
-> +++ b/Documentation/lp3943.txt
-> @@ -0,0 +1,62 @@
-> +TI/National Semiconductor LP3943 MFD driver
-> +===========================================
-> +
-> +LP3943 is an integrated device capable of driving 16 output channels.
-> +It can be used for GPIO expander and PWM generators.
-> +LP3493 registers are controlled via the I2C interface.
-> +
-> +Driver structure
-> +----------------
-> +                                  LED control    General usage for a device
-> +                                  ___________   ____________________________
-> +
-> +  LP3943 MFD ---- GPIO expander    leds-gpio        eg) HW enable pin
-> +              |
-> +              --- PWM generator    leds-pwm         eg) PWM input
-> +
-> +
-> +Why do we need GPIO and PWM drivers instead of LED driver?
-> +To support LED control and general usage, GPIO and PWM drivers are necessary.
-> +
-> +According to the datasheet(1), it's just a LED driver which has 16 channels.
-> +But here is another application, a GPIO expander.(2)
-> +
-> +  (1) http://www.ti.com/lit/ds/snvs256b/snvs256b.pdf
-> +  (2) http://www.ti.com/lit/an/snva287a/snva287a.pdf
-> +
-> +Internal two PWM channels are used for LED dimming effect.
-> +And each output pin can be used as a GPIO as well.
-> +LED functionality can work with GPIOs or PWMs.
-> +LEDs can be controlled with legacy leds-gpio(static brightness) or
-> +leds-pwm drivers(dynamic brightness control).
-> +Additionally, it can be used for generic GPIO and PWM controller.
-> +For example, a GPIO is HW enable pin of a device.
-> +PWM is input pin of a backlight device.
-> +
-> +
-> +LP3943 PWM port map
-> +-------------------
-> +Each PWM channel can be mapped to one or multiple output pins.
-> +
-> +For example, PWM 0 is used for a backlight device.
-> +PWM 1 is for RGB LEDs.
-> +
-> +  PWM channel    Output pins    PWM consumer
-> +  ___________    ___________    ____________
-> +  PWM 0          pin 1          backlight
-> +  PWM 1          pin 7, 8, 9    RGB LEDs
-> +
-> +Then, PWM port map is as below.
-> +PWM 0: num_outputs = 1, output = pin 1
-> +PWM 1: num_outputs = 3, output = pin 7, 8, 9
-> +
-> +The 'lp3943_pwm_map' structure is used for this feature.
-> +
-> +
-> +Device tree supported
-> +---------------------
-> +Please refer to the documents below.
-> +
-> +Documentation/devicetree/bindings/mfd/lp3943.txt
-> +Documentation/devicetree/bindings/gpio/gpio-lp3943.txt
-> +Documentation/devicetree/bindings/pwm/pwm-lp3943.txt
->
+Can we modify this patch as following?
+
+root@virtaulmachine:/home/yuchao/git/linux-next/fs/f2fs# git diff --stat
+ fs/f2fs/f2fs.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+root@virtaulmachine:/home/yuchao/git/linux-next/fs/f2fs# git diff
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index 608f0df..7fd99d8 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -544,15 +544,15 @@ static inline void mutex_unlock_all(struct
+f2fs_sb_info *sbi)
+ 
+ static inline int mutex_lock_op(struct f2fs_sb_info *sbi)
+ {
+-       unsigned char next_lock = sbi->next_lock_num % NR_GLOBAL_LOCKS;
++       unsigned char next_lock;
+        int i = 0;
+ 
+        for (; i < NR_GLOBAL_LOCKS; i++)
+                if (mutex_trylock(&sbi->fs_lock[i]))
+                        return i;
+ 
++       next_lock = sbi->next_lock_num++ % NR_GLOBAL_LOCKS;
+        mutex_lock(&sbi->fs_lock[next_lock]);
+-       sbi->next_lock_num++;
+        return next_lock;
+ }
+
+> 
+> >
+> > thanks
+> >
+> > ------- Original Message -------
+> > Sender : ???<jaegeuk.kim@samsung.com> S5(??)/??/?????????(???)/????
+> > Date : ¾ÅÔÂ 10, 2013 09:52 (GMT+09:00)
+> > Title : Re: [f2fs-dev][PATCH] f2fs: optimize fs_lock for better
+> > performance
+> >
+> > Hi,
+> >
+> > At first, thank you for the report and please follow the email writing
+> > rules. :)
+> >
+> > Anyway, I agree to the below issue.
+> > One thing that I can think of is that we don't need to use the
+> > spin_lock, since we don't care about the exact lock number, but just
+> > need to get any not-collided number.
+> >
+> > So, how about removing the spin_lock?
+> > And how about using a random number?
+> > Thanks,
+> >
+> > 2013-09-06 (?), 09:48 +0000, Chao Yu:
+> > > Hi Kim:
+> > >
+> > >      I think there is a performance problem: when all sbi->fs_lock
+> > > is holded,
+> > >
+> > > then all other threads may get the same next_lock value from
+> > > sbi->next_lock_num in function mutex_lock_op,
+> > >
+> > > and wait to get the same lock at position fs_lock[next_lock], it
+> > > unbalance the fs_lock usage.
+> > >
+> > > It may lost performance when we do the multithread test.
+> > >
+> > >
+> > >
+> > > Here is the patch to fix this problem:
+> > >
+> > >
+> > >
+> > > Signed-off-by: Yu Chao
+> > >
+> > > diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> > >
+> > > old mode 100644
+> > >
+> > > new mode 100755
+> > >
+> > > index 467d42d..983bb45
+> > >
+> > > --- a/fs/f2fs/f2fs.h
+> > >
+> > > +++ b/fs/f2fs/f2fs.h
+> > >
+> > > @@ -371,6 +371,7 @@ struct f2fs_sb_info {
+> > >
+> > >         struct mutex fs_lock[NR_GLOBAL_LOCKS];  /* blocking FS
+> > > operations */
+> > >
+> > >         struct mutex node_write;                /* locking node
+> writes
+> > > */
+> > >
+> > >         struct mutex writepages;                /* mutex for
+> > > writepages() */
+> > >
+> > > +       spinlock_t spin_lock;                   /* lock for
+> > > next_lock_num */
+> > >
+> > >         unsigned char next_lock_num;            /* round-robin
+> global
+> > > locks */
+> > >
+> > >         int por_doing;                          /* recovery is
+> doing
+> > > or not */
+> > >
+> > >         int on_build_free_nids;                 /* build_free_nids is
+> > > doing */
+> > >
+> > > @@ -533,15 +534,19 @@ static inline void mutex_unlock_all(struct
+> > > f2fs_sb_info *sbi)
+> > >
+> > >
+> > >
+> > >  static inline int mutex_lock_op(struct f2fs_sb_info *sbi)
+> > >
+> > >  {
+> > >
+> > > -       unsigned char next_lock = sbi->next_lock_num %
+> > > NR_GLOBAL_LOCKS;
+> > >
+> > > +       unsigned char next_lock;
+> > >
+> > >         int i = 0;
+> > >
+> > >
+> > >
+> > >         for (; i < NR_GLOBAL_LOCKS; i++)
+> > >
+> > >                 if (mutex_trylock(&sbi->fs_lock[i]))
+> > >
+> > >                         return i;
+> > >
+> > >
+> > >
+> > > -       mutex_lock(&sbi->fs_lock[next_lock]);
+> > >
+> > > +       spin_lock(&sbi->spin_lock);
+> > >
+> > > +       next_lock = sbi->next_lock_num % NR_GLOBAL_LOCKS;
+> > >
+> > >         sbi->next_lock_num++;
+> > >
+> > > +       spin_unlock(&sbi->spin_lock);
+> > >
+> > > +
+> > >
+> > > +       mutex_lock(&sbi->fs_lock[next_lock]);
+> > >
+> > >         return next_lock;
+> > >
+> > >  }
+> > >
+> > >
+> > >
+> > > diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+> > >
+> > > old mode 100644
+> > >
+> > > new mode 100755
+> > >
+> > > index 75c7dc3..4f27596
+> > >
+> > > --- a/fs/f2fs/super.c
+> > >
+> > > +++ b/fs/f2fs/super.c
+> > >
+> > > @@ -657,6 +657,7 @@ static int f2fs_fill_super(struct super_block
+> > > *sb, void *data, int silent)
+> > >
+> > >         mutex_init(&sbi->cp_mutex);
+> > >
+> > >         for (i = 0; i < NR_GLOBAL_LOCKS; i++)
+> > >
+> > >                 mutex_init(&sbi->fs_lock[i]);
+> > >
+> > > +       spin_lock_init(&sbi->spin_lock);
+> > >
+> > >         mutex_init(&sbi->node_write);
+> > >
+> > >         sbi->por_doing = 0;
+> > >
+> > >         spin_lock_init(&sbi->stat_lock);
+> > >
+> > > (END)
+> > >
+> > >
+> > >
+> > >
+> > >
+> > >
+> >
+> > --
+> > Jaegeuk Kim
+> > Samsung
 
