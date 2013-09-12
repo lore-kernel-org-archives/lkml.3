@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596Ab3ILQvI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 12:51:08 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:38115 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753682Ab3ILQvG (ORCPT
+	id S1754685Ab3ILQvS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 12:51:18 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:43664 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754603Ab3ILQvL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 12:51:06 -0400
+	Thu, 12 Sep 2013 12:51:11 -0400
 From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -18,12 +18,13 @@ To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         Daniel Lezcano <daniel.lezcano@linaro.org>,
         Stephen Boyd <sboyd@codeaurora.org>
 Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH 0/2] arm: zynq: Enable global timer
-Date: Thu, 12 Sep 2013 09:50:38 -0700
-Message-Id: <1379004640-15117-1-git-send-email-soren.brinkmann@xilinx.com>
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 1/2] tick: broadcast: Deny per-cpu clockevents from being broadcast sources
+Date: Thu, 12 Sep 2013 09:50:39 -0700
+Message-Id: <1379004640-15117-2-git-send-email-soren.brinkmann@xilinx.com>
 X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1379004640-15117-1-git-send-email-soren.brinkmann@xilinx.com>
+References: <1379004640-15117-1-git-send-email-soren.brinkmann@xilinx.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -31,26 +32,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-I'm sitting on this for a while and was waiting for Stephen's patch to
-get merged somewhere. Unfortunately that didn't happen yet.
-The patch to enable the global timer is pretty straight forward.
-Stephen's patch is the result of this thread: https://lkml.org/lkml/2013/7/22/649
-and required to prevent the global_timer from becoming the broadcast
-device, since the system will hang otherwise.
+On most ARM systems the per-cpu clockevents are truly per-cpu in
+the sense that they can't be controlled on any other CPU besides
+the CPU that they interrupt. If one of these clockevents were to
+become a broadcast source we will run into a lot of trouble
+because the broadcast source is enabled on the first CPU to go
+into deep idle (if that CPU suffers from FEAT_C3_STOP) and that
+could be a different CPU than what the clockevent is interrupting
+(or even worse the CPU that the clockevent interrupts could be
+offline).
 
-Soren Brinkmann (1):
-  arm: zynq: Enable arm_global_timer
+Theoretically it's possible to support per-cpu clockevents as the
+broadcast source but so far we haven't needed this and supporting
+it is rather complicated. Let's just deny the possibility for now
+until this becomes a reality (let's hope it never does!).
 
-Stephen Boyd (1):
-  tick: broadcast: Deny per-cpu clockevents from being broadcast sources
+Reported-by: Sören Brinkmann <soren.brinkmann@xilinx.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ kernel/time/tick-broadcast.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
- arch/arm/boot/dts/zynq-7000.dtsi | 8 ++++++++
- arch/arm/mach-zynq/Kconfig       | 1 +
- kernel/time/tick-broadcast.c     | 3 +++
- 3 files changed, 12 insertions(+)
-
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index 218bcb5..d3539e5 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -77,6 +77,9 @@ static bool tick_check_broadcast_device(struct clock_event_device *curdev,
+ 	    !(newdev->features & CLOCK_EVT_FEAT_ONESHOT))
+ 		return false;
+ 
++	if (cpumask_equal(newdev->cpumask, cpumask_of(smp_processor_id())))
++		return false;
++
+ 	return !curdev || newdev->rating > curdev->rating;
+ }
+ 
 -- 
 1.8.4
 
