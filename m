@@ -1,44 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab3IMTtX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 15:49:23 -0400
-Received: from science.horizon.com ([71.41.210.146]:63018 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752534Ab3IMTtV (ORCPT
+	id S1754827Ab3IMTvR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 15:51:17 -0400
+Received: from qmta12.emeryville.ca.mail.comcast.net ([76.96.27.227]:35589
+	"EHLO qmta12.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753952Ab3IMTvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 15:49:21 -0400
-Date: 13 Sep 2013 15:49:15 -0400
-Message-ID: <20130913194915.13780.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: JBeulich@suse.com, joe@perches.com, keescook@chromium.org
-Subject: Re: [PATCH] vsprintf: drop comment claiming %n is ignored
-Cc: akpm@linux-foundation.org, dan.carpenter@oracle.com, davem@davemloft.net,
-        eldad@fogrefinery.com, linux-kernel@vger.kernel.org, linux@horizon.com,
-        rdunlap@infradead.org
-In-Reply-To: <5231836102000078000F29AD@nat28.tlf.novell.com>
+	Fri, 13 Sep 2013 15:51:15 -0400
+Message-ID: <1379101446.8358.4.camel@concerto>
+Subject: [PATCH v2] SCSI: buslogic: Added check for DMA mapping errors (was
+ Re:[BusLogic] DMA-API: device driver failed to check map error)
+From: Khalid Aziz <khalid.aziz@oracle.com>
+Reply-To: khalid.aziz@oracle.com
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: jbottomley@parallels.com, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Date: Fri, 13 Sep 2013 13:44:06 -0600
+In-Reply-To: <52333560.50209@oracle.com>
+References: <201309101503.ECC18788.SOOVOJLFtQHMFF@I-love.SAKURA.ne.jp>
+	 <1378816604.6973.53.camel@dabdike.int.hansenpartnership.com>
+	 <1379004807.10738.3.camel@concerto>
+	 <201309140042.GEI73439.QHSJtOFFVFOLOM@I-love.SAKURA.ne.jp>
+	 <52333560.50209@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Why would you want to artificially make the function diverge
-> from the spec?
+Added check for DMA mapping errors for request sense data
+buffer. Checking for mapping error can avoid potential wild
+writes. This patch was prompted by the warning from
+dma_unmap when kernel is compiled with CONFIG_DMA_API_DEBUG.
 
-Because %n make it easy to convert a not-uncommon format string bug into
-a code injection.  Thus, poses a significant security vulnerability.
 
-Since it's an obscure and  rarely-used feature, it is straightforward
-to eliminate all users in the Linux kernel, making removing it possible.
+Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
+---
+Changelog:
+ v1 - Fixed a typo and addressed a potential NULL pointer 
+	dereference issue
 
-I agree that if it were harmless, it would be useful to leave it
-implemented just for simplicity (it's a trivial amount of code), but
-it's not harmless.
+ drivers/scsi/BusLogic.c |   36 +++++++++++++++++++++++-------------
+ 1 file changed, 23 insertions(+), 13 deletions(-)
 
-> People shouldn't be caught by surprises if at all
-> possible, and one can certainly not expect people to go look at
-> the comment before the function implementation to find out
-> what basic (standard) features _do not_ work (one can expect
-> so when trying to find out about _extensions_).
+diff --git a/drivers/scsi/BusLogic.c b/drivers/scsi/BusLogic.c
+index feab3a5..e63b788 100644
+--- a/drivers/scsi/BusLogic.c
++++ b/drivers/scsi/BusLogic.c
+@@ -26,8 +26,8 @@
+ 
+ */
+ 
+-#define blogic_drvr_version		"2.1.16"
+-#define blogic_drvr_date		"18 July 2002"
++#define blogic_drvr_version		"2.1.17"
++#define blogic_drvr_date		"12 September 2013"
+ 
+ #include <linux/module.h>
+ #include <linux/init.h>
+@@ -311,12 +311,14 @@ static struct blogic_ccb *blogic_alloc_ccb(struct blogic_adapter *adapter)
+   caller.
+ */
+ 
+-static void blogic_dealloc_ccb(struct blogic_ccb *ccb)
++static void blogic_dealloc_ccb(struct blogic_ccb *ccb, int dma_unmap)
+ {
+ 	struct blogic_adapter *adapter = ccb->adapter;
+ 
+-	scsi_dma_unmap(ccb->command);
+-	pci_unmap_single(adapter->pci_device, ccb->sensedata,
++	if (ccb->command != NULL)
++		scsi_dma_unmap(ccb->command);
++	if (dma_unmap)
++		pci_unmap_single(adapter->pci_device, ccb->sensedata,
+ 			 ccb->sense_datalen, PCI_DMA_FROMDEVICE);
+ 
+ 	ccb->command = NULL;
+@@ -2762,8 +2764,8 @@ static void blogic_process_ccbs(struct blogic_adapter *adapter)
+ 			/*
+ 			   Place CCB back on the Host Adapter's free list.
+ 			 */
+-			blogic_dealloc_ccb(ccb);
+-#if 0				/* this needs to be redone different for new EH */
++			blogic_dealloc_ccb(ccb, 1);
++#if 0			/* this needs to be redone different for new EH */
+ 			/*
+ 			   Bus Device Reset CCBs have the command field
+ 			   non-NULL only when a Bus Device Reset was requested
+@@ -2791,7 +2793,7 @@ static void blogic_process_ccbs(struct blogic_adapter *adapter)
+ 				if (ccb->status == BLOGIC_CCB_RESET &&
+ 						ccb->tgt_id == tgt_id) {
+ 					command = ccb->command;
+-					blogic_dealloc_ccb(ccb);
++					blogic_dealloc_ccb(ccb, 1);
+ 					adapter->active_cmds[tgt_id]--;
+ 					command->result = DID_RESET << 16;
+ 					command->scsi_done(command);
+@@ -2862,7 +2864,7 @@ static void blogic_process_ccbs(struct blogic_adapter *adapter)
+ 			/*
+ 			   Place CCB back on the Host Adapter's free list.
+ 			 */
+-			blogic_dealloc_ccb(ccb);
++			blogic_dealloc_ccb(ccb, 1);
+ 			/*
+ 			   Call the SCSI Command Completion Routine.
+ 			 */
+@@ -3034,6 +3036,7 @@ static int blogic_qcmd_lck(struct scsi_cmnd *command,
+ 	int buflen = scsi_bufflen(command);
+ 	int count;
+ 	struct blogic_ccb *ccb;
++	dma_addr_t sense_buf;
+ 
+ 	/*
+ 	   SCSI REQUEST_SENSE commands will be executed automatically by the
+@@ -3179,10 +3182,17 @@ static int blogic_qcmd_lck(struct scsi_cmnd *command,
+ 	}
+ 	memcpy(ccb->cdb, cdb, cdblen);
+ 	ccb->sense_datalen = SCSI_SENSE_BUFFERSIZE;
+-	ccb->sensedata = pci_map_single(adapter->pci_device,
++	ccb->command = command;
++	sense_buf = pci_map_single(adapter->pci_device,
+ 				command->sense_buffer, ccb->sense_datalen,
+ 				PCI_DMA_FROMDEVICE);
+-	ccb->command = command;
++	if (dma_mapping_error(&adapter->pci_device->dev, sense_buf)) {
++		blogic_err("DMA mapping for sense data buffer failed\n",
++				adapter);
++		blogic_dealloc_ccb(ccb, 0);
++		return SCSI_MLQUEUE_HOST_BUSY;
++	}
++	ccb->sensedata = sense_buf;
+ 	command->scsi_done = comp_cb;
+ 	if (blogic_multimaster_type(adapter)) {
+ 		/*
+@@ -3203,7 +3213,7 @@ static int blogic_qcmd_lck(struct scsi_cmnd *command,
+ 			if (!blogic_write_outbox(adapter, BLOGIC_MBOX_START,
+ 						ccb)) {
+ 				blogic_warn("Still unable to write Outgoing Mailbox - " "Host Adapter Dead?\n", adapter);
+-				blogic_dealloc_ccb(ccb);
++				blogic_dealloc_ccb(ccb, 1);
+ 				command->result = DID_ERROR << 16;
+ 				command->scsi_done(command);
+ 			}
+@@ -3337,7 +3347,7 @@ static int blogic_resetadapter(struct blogic_adapter *adapter, bool hard_reset)
+ 
+ 	for (ccb = adapter->all_ccbs; ccb != NULL; ccb = ccb->next_all)
+ 		if (ccb->status == BLOGIC_CCB_ACTIVE)
+-			blogic_dealloc_ccb(ccb);
++			blogic_dealloc_ccb(ccb, 1);
+ 	/*
+ 	 * Wait a few seconds between the Host Adapter Hard Reset which
+ 	 * initiates a SCSI Bus Reset and issuing any SCSI Commands.  Some
+-- 
+1.7.10.4
 
-This is why people propose implementing it as a kernel warning.
 
-Strongly support this change.
+
