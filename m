@@ -1,109 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752973Ab3IMGC2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 02:02:28 -0400
-Received: from mga02.intel.com ([134.134.136.20]:39812 "EHLO mga02.intel.com"
+	id S1755438Ab3IMGfZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 02:35:25 -0400
+Received: from hibox-130.abo.fi ([130.232.216.130]:51346 "EHLO centre.hibox.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751467Ab3IMGC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 02:02:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,896,1371106800"; 
-   d="scan'208";a="377558883"
-Subject: Re: [PATCH] Inet-hashtable: Change the range of sk->hash lock to
- avoid the race condition.
-From: Jun Chen <jun.d.chen@intel.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: edumazet@google.com, davem@davemloft.net, netdev@vger.kernel.org,
+	id S1752319Ab3IMGfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 02:35:24 -0400
+Message-ID: <5232B219.5020603@hibox.fi>
+Date: Fri, 13 Sep 2013 09:35:05 +0300
+From: Marcus Sundman <marcus@hibox.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Jan Kara <jack@suse.cz>
+CC: "Theodore Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
         linux-kernel@vger.kernel.org
-In-Reply-To: <1379050801.24408.29.camel@edumazet-glaptop>
-References: <1379003549.12328.6.camel@chenjun-workstation>
-	 <1378987204.24408.1.camel@edumazet-glaptop>
-	 <1379065643.3390.3.camel@chenjun-workstation>
-	 <1379050801.24408.29.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 13 Sep 2013 10:01:40 -0400
-Message-ID: <1379080900.23597.18.camel@chenjun-workstation>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Subject: Re: Debugging system freezes on filesystem writes
+References: <20130224012052.GC1196@thunk.org> <512D01E0.7010009@hibox.fi> <20130226231703.GA22674@quack.suse.cz> <5231BA3C.2090704@hibox.fi> <20130912131051.GA14664@quack.suse.cz> <5231C5FF.3060504@hibox.fi> <20130912143941.GB14664@quack.suse.cz> <5231D8DD.5010703@hibox.fi> <20130912163530.GD14664@quack.suse.cz> <523200EB.7000202@hibox.fi> <20130912204647.GA6826@quack.suse.cz>
+In-Reply-To: <20130912204647.GA6826@quack.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Spam_score: -2.7
+X-Spam_bar: --
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-09-12 at 22:40 -0700, Eric Dumazet wrote:
-> On Fri, 2013-09-13 at 05:47 -0400, Jun Chen wrote:
-> > On Thu, 2013-09-12 at 05:00 -0700, Eric Dumazet wrote:
-> > > On Thu, 2013-09-12 at 12:32 -0400, Jun Chen wrote:
-> > > > When try to add node to list in __inet_hash_nolisten function, first get the
-> > > > list and then to lock for using, but in extremeness case, others can del this
-> > > > node before locking it, then the node should be null.So this patch try to lock
-> > > > firstly and then get the list for using to avoid this race condition.
-> > > 
-> > > I suspect another bug. This should not happen.
-> > > 
-> > > Care to describe the problem you got ?
-> > > 
-> > > Thanks
-> > > 
-> > > 
-> > 
-> > Ok, I just got this call stack and no more info, pls help to look it.
-> > thanks!
-> > 
-> > <1>[ 88.548263] BUG: unable to handle kernel NULL pointer dereference at
-> > 00000004
-> > <1>[ 88.548490] IP: [] __inet_hash_nolisten+0xc1/0x140
-> > <4>[ 88.548617] *pde = 00000000
-> > <4>[ 88.549927] EIP is at __inet_hash_nolisten+0xc1/0x140
-> > <4>[ 88.550008] EAX: 00000000 EBX: e08c0000 ECX: edf846e0 EDX: e08c0020
-> > <4>[ 88.550055] ESI: c20213c0 EDI: edc12dc0 EBP: ce4bfdfc ESP: ce4bfde8
-> > <4>[ 88.550137] DS: 007b ES: 007b FS: 00d8 GS: 003b SS: 0068
-> > <4>[ 88.550184] CR0: 80050033 CR2: 00000004 CR3: 2b4ff000 CR4: 001007d0
-> > <4>[ 88.550266] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-> > <4>[ 88.550346] DR6: ffff0ff0 DR7: 00000400
-> > <0>[ 88.550392] Process WebViewCoreThre (pid: 2137, ti=ce4be000
-> > task=eb193c80 task.ti=ce4be000)
-> > <0>[ 88.551746] Call Trace:
-> > <4>[ 88.551797] [] __inet_hash_connect+0x295/0x2d0
-> > <4>[ 88.551883] [] inet_hash_connect+0x40/0x50
-> > <4>[ 88.551932] [] ? inet_unhash+0x90/0x90
-> > <4>[ 88.551981] [] ? __inet_lookup_listener+0x1b0/0x1b0
-> > <4>[ 88.552067] [] tcp_v4_connect+0x247/0x4a0
-> > <4>[ 88.552117] [] ? lock_sock_nested+0x3e/0x50
-> > <4>[ 88.552205] [] inet_stream_connect+0xe2/0x290
-> > <4>[ 88.552254] [] ? _copy_from_user+0x35/0x50
-> > <4>[ 88.552342] [] sys_connect+0xb2/0xd0
-> > <4>[ 88.552393] [] ? alloc_file+0x20/0xa0
-> > <4>[ 88.552441] [] ? tcp_setsockopt+0x50/0x60
-> > <4>[ 88.552525] [] ? fget_light+0x44/0xe0
-> > <4>[ 88.552574] [] ? sock_common_setsockopt+0x27/0x40
-> > <4>[ 88.552659] [] ? _copy_from_user+0x35/0x50
-> > <4>[ 88.552708] [] sys_socketcall+0xab/0x2b0
-> > <4>[ 88.552790] [] ? trace_hardirqs_on_thunk+0xc/0x10
-> > <4>[ 88.552840] [] syscall_call+0x7/0xb
-> > <4>[ 88.552923] [] ? mutex_trylock+0x30/0x140
-> > 
-> 
-> This makes no sense to me. This could be a random memory corruption.
-> 
-> Do you have disassembly of __inet_hash_nolisten ?
-> 
-> 
-I had disassembled the __inet_hash_nolisten+0xc1, 
-the corruption is located on the:  
+On 12.09.2013 23:46, Jan Kara wrote:
+> On Thu 12-09-13 20:59:07, Marcus Sundman wrote:
+>> On 12.09.2013 19:35, Jan Kara wrote:
+>>> On Thu 12-09-13 18:08:13, Marcus Sundman wrote:
+>>>> And can I somehow "reset" whatever it is that is making it worse so
+>>>> that it becomes good again? That way I could spend maybe 1 hour once
+>>>> every few months to get it back to top speed.
+>>>> Any other ideas how I could make this (very expensive and fairly new
+>>>> ZenBook) laptop usable?
+>>>    Well, I believe if you used like 70% or less of the disk and regularly
+>>> (like once in a few days) run fstrim command, I belive the disk performance
+>>> should stay at a usable level.
+>> At 128 GB it is extremely small as it is, and I'm really struggling
+>> to fit all on it. Most of my stuff is on my NAS (which has almost 10
+>> TB space), but still I need several code repositories and the
+>> development environment and a virtual machine etc on this tiny 128
+>> GB thing.
+>    I see. I have like 70 GB disk and 50% of it are free :) But I have test
+> machines with much larger drives where I have VMs etc. This one is just
+> for email and coding.
+>
+>> So, if I used some other filesystem, might that allow me to use a
+>> larger portion of the SSD without this degradation? Or with a much
+>> slower rate of degradation?
+>    You might try f2fs. That is designed for low end flash storage so it
+> might work better than ext4. But it is a new filesystem so backup often.
+>
+>> And at some point it will become unusable again, so what can I do
+>> then? If I move everything to my NAS (and maybe even re-create the
+>> filesystem?) and move everything back, might that get rid of the FTL
+>> fragmentation?
+>    Yes, that should get rid of it. But since you have only a few GB free,
+> I'm afraid the fragmentation will reappear pretty quickly. But I guess it's
+> worth a try.
+>
+>> Or could I somehow defragment the FTL without moving away everything?
+>    I don't know about such way.
 
-__inet_hash_nolisten -->
-__sk_nulls_add_node_rcu(sk, list); -->
-__sk_nulls_add_node_rcu -->
-static inline void hlist_nulls_add_head_rcu(struct hlist_nulls_node *n,
-                                        struct hlist_nulls_head *h)
-{
-... 
-    if (!is_a_nulls(first))
-        first->pprev = &n->next;  (this line trigger corruption)
-...
-}
+How about triggering the garbage collection on the drive, is that possible?
 
-Thanks!
 
+- Marcus
 
