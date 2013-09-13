@@ -1,79 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154Ab3IMFKU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 01:10:20 -0400
-Received: from [216.32.181.182] ([216.32.181.182]:10182 "EHLO
-	ch1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1752010Ab3IMFKR (ORCPT
+	id S1755562Ab3IMHQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 03:16:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51316 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752157Ab3IMHQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 01:10:17 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
-X-SpamScore: 2
-X-BigFish: VS2(zz936eIzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzz17326ah1de097h186068h8275dhz2dh87h2a8h839hd24he5bh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h13eah1441h14ddh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-From: Steven Miao <realmz6@kernel.org>
-To: <torvalds@linux-foundation.org>
-CC: <adi-buildroot-devel@lists.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>
-Subject: [uclinux-dist-devel] [GIT PULL] Blackfin updates for 3.12
-Date: Fri, 13 Sep 2013 13:12:25 +0800
-Message-ID: <1379049145-16017-1-git-send-email-realmz6@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 13 Sep 2013 03:16:58 -0400
+Message-ID: <5232BBE1.5030509@canonical.com>
+Date: Fri, 13 Sep 2013 09:16:49 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Thomas Hellstrom <thellstrom@vmware.com>
+CC: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Peter Zijlstra <peterz@infradead.org>, Dave Airlie <airlied@linux.ie>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [BUG] completely bonkers use of set_need_resched + VM_FAULT_NOPAGE
+References: <20130912150645.GZ31370@twins.programming.kicks-ass.net> <CAKMK7uFF2GkYapa2_DLv4WYAd0t+POaT+Vy9HG=HQhzMmtH9nA@mail.gmail.com> <5231E18D.7070306@canonical.com> <5231EF5A.7010901@vmware.com> <52323734.4070908@canonical.com> <5232B44C.9010408@vmware.com>
+In-Reply-To: <5232B44C.9010408@vmware.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Op 13-09-13 08:44, Thomas Hellstrom schreef:
+> On 09/12/2013 11:50 PM, Maarten Lankhorst wrote:
+>> Op 12-09-13 18:44, Thomas Hellstrom schreef:
+>>> On 09/12/2013 05:45 PM, Maarten Lankhorst wrote:
+>>>> Op 12-09-13 17:36, Daniel Vetter schreef:
+>>>>> On Thu, Sep 12, 2013 at 5:06 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>>>>> So I'm poking around the preemption code and stumbled upon:
+>>>>>>
+>>>>>> drivers/gpu/drm/i915/i915_gem.c:                set_need_resched();
+>>>>>> drivers/gpu/drm/ttm/ttm_bo_vm.c:                        set_need_resched();
+>>>>>> drivers/gpu/drm/ttm/ttm_bo_vm.c:                        set_need_resched();
+>>>>>> drivers/gpu/drm/udl/udl_gem.c:          set_need_resched();
+>>>>>>
+>>>>>> All these sites basically do:
+>>>>>>
+>>>>>>     while (!trylock())
+>>>>>>           yield();
+>>>>>>
+>>>>>> which is a horrible and broken locking pattern.
+>>>>>>
+>>>>>> Firstly its deadlock prone, suppose the faulting process is a FIFOn+1
+>>>>>> task that preempted the lock holder at FIFOn.
+>>>>>>
+>>>>>> Secondly the implementation is worse than usual by abusing
+>>>>>> VM_FAULT_NOPAGE, which is supposed to install a PTE so that the fault
+>>>>>> doesn't retry, but you're using it as a get out of fault path. And
+>>>>>> you're using set_need_resched() which is not something a driver should
+>>>>>> _ever_ touch.
+>>>>>>
+>>>>>> Now I'm going to take away set_need_resched() -- and while you can
+>>>>>> 'reimplement' it using set_thread_flag() you're not going to do that
+>>>>>> because it will be broken due to changes to the preempt code.
+>>>>>>
+>>>>>> So please as to fix ASAP and don't allow anybody to trick you into
+>>>>>> merging silly things like that again ;-)
+>>>>> The set_need_resched in i915_gem.c:i915_gem_fault can actually be
+>>>>> removed. It was there to give the error handler a chance to sneak in
+>>>>> and reset the hw/sw tracking when the gpu is dead. That hack goes back
+>>>>> to the days when the locking around our error handler was somewhere
+>>>>> between nonexistent and totally broken, nowadays we keep things from
+>>>>> live-locking by a bit of magic in i915_mutex_lock_interruptible. I'll
+>>>>> whip up a patch to rip this out. I'll also check that our testsuite
+>>>>> properly exercises this path (needs a bit of work on a quick look for
+>>>>> better coverage).
+>>>>>
+>>>>> The one in ttm is just bonghits to shut up lockdep: ttm can recurse
+>>>>> into it's own pagefault handler and then deadlock, the trylock just
+>>>>> keeps lockdep quiet. We've had that bug arise in drm/i915 due to some
+>>>>> fun userspace did and now have testcases for them. The right solution
+>>>>> to fix this is to use copy_to|from_user_atomic in ttm everywhere it
+>>>>> holds locks and have slowpaths which drops locks, copies stuff into a
+>>>>> temp allocation and then continues. At least that's how we've fixed
+>>>>> all those inversions in i915-gem. I'm not volunteering to fix this ;-)
+>>>> Ah the case where a mmap'd address is passed to the execbuf ioctl? :P
+>>>>
+>>>> Fine I'll look into it a bit, hopefully before tuesday. Else it might take a bit longer since I'll be on my way to plumbers..
+>>> I think a possible fix would be if fault() were allowed to return an error and drop the mmap_sem() before returning.
+>>>
+>>> Otherwise we need to track down all copy_to_user / copy_from_user which happen with bo::reserve held.
+>
+> Actually, from looking at the mm code, it seems OK to do the following:
+>
+> if (!bo_tryreserve()) {
+>     up_read mmap_sem(); // Release the mmap_sem to avoid deadlocks.
+>     bo_reserve();               // Wait for the BO to become available (interruptible)
+>     bo_unreserve();           // Where is bo_wait_unreserved() when we need it, Maarten :P
+>     return VM_FAULT_RETRY; // Go ahead and retry the VMA walk, after regrabbing
+> }
+Is this meant as a jab at me? You're doing locking wrong here! Again!
 
-please pull blackfin updates for Linux 3.12, some minor bug fixes.
+> Somebody conveniently added a VM_FAULT_RETRY, but for a different purpose.
+>
+> If possible, I suggest to take this route for now to avoid the mess of changing locking order in all TTM drivers, with
+> all give-up-locking slowpaths that comes with it. IIRC it took some time for i915 to get that right, and completely get rid of all lockdep warnings.
+Sorry, but it's still the right thing to do. I can convert nouveau and take a look at radeon. Locking
+slowpaths are easy to test too with CONFIG_DEBUG_WW_MUTEX_SLOWPATH.
+Just because it's harder, doesn't mean we have to avoid doing it.
 
-The following changes since commit 6e4664525b1db28f8c4e1130957f70a94c19213e:
+The might_fault function will verify the usage of mmap_sem with lockdep automatically when PROVE_LOCKING=y.
+This means that any copy_from_user / copy_to_user will always check mmap_sem.
 
-  Linux 3.11 (2013-09-02 13:46:10 -0700)
+> This will keep the official locking order
+> bo::reserve
+> mmap_sem
+Disagree, fix the order and the trylock and 'wait for unreserved' half assed locking will disappear.
 
-are available in the git repository at:
-
-  http://git.kernel.org/pub/scm/linux/kernel/git/realmz6/blackfin-linux.git tags/blackfin-for-linus
-
-for you to fetch changes up to 08b67faa23fdd4df3f3f7bb06f0ad67b7366d11c:
-
-  blackfin: Ignore generated uImages (2013-09-13 10:42:39 +0800)
-
-----------------------------------------------------------------
-blackfin updates for Linux 3.12
-
-----------------------------------------------------------------
-Mark Brown (1):
-      blackfin: Ignore generated uImages
-
-Scott Jiang (2):
-      bf609: add adv7343 video encoder support
-      bf609: adv7343: add S-Video and Component output support
-
-Sonic Zhang (2):
-      blackfin: scb: Add SCB1 to SCB9 config options and data.
-      blackfin: Add STMMAC platform data to enable dwmac1000 driver on BF60x.
-
-Steven Miao (2):
-      blackfin: scb: Add system crossbar init code.
-      clock: add stmmac clock for ethernet driver
-
- arch/blackfin/boot/.gitignore                      |    1 +
- arch/blackfin/include/asm/scb.h                    |   21 +
- arch/blackfin/kernel/setup.c                       |    6 +
- arch/blackfin/mach-bf609/Kconfig                   | 1655 ++++++++++++++++++++
- arch/blackfin/mach-bf609/Makefile                  |    1 +
- arch/blackfin/mach-bf609/boards/ezkit.c            |   91 ++
- arch/blackfin/mach-bf609/clock.c                   |   17 +
- .../mach-bf609/include/mach/defBF60x_base.h        |   10 +
- arch/blackfin/mach-bf609/scb.c                     |  363 +++++
- arch/blackfin/mach-common/Makefile                 |    1 +
- arch/blackfin/mach-common/scb-init.c               |   53 +
- 11 files changed, 2219 insertions(+)
- create mode 100644 arch/blackfin/include/asm/scb.h
- create mode 100644 arch/blackfin/mach-bf609/scb.c
- create mode 100644 arch/blackfin/mach-common/scb-init.c
-
+~Maarten
