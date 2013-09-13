@@ -1,55 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933347Ab3IMNjR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:39:17 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50652 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934140Ab3IMNYt (ORCPT
+	id S1758240Ab3IMNje (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:39:34 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:34671 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934128Ab3IMNYs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:24:49 -0400
-Date: Fri, 13 Sep 2013 15:24:35 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Alex Thorlton <athorlton@sgi.com>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        "Eric W . Biederman" <ebiederm@xmission.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>, Dave Jones <davej@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Robin Holt <robinmholt@gmail.com>, Sedat Dilek <sedat.dilek@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 8/9] mm: implement split page table lock for PMD level
-Message-ID: <20130913132435.GD21832@twins.programming.kicks-ass.net>
-References: <20130910074748.GA2971@gmail.com>
- <1379077576-2472-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1379077576-2472-9-git-send-email-kirill.shutemov@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1379077576-2472-9-git-send-email-kirill.shutemov@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 13 Sep 2013 09:24:48 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 183/228] cpufreq: arm_big_little: remove calls to cpufreq_notify_transition()
+Date: Fri, 13 Sep 2013 18:32:09 +0530
+Message-Id: <68221a3bb993b064dea65cdaed1ff42f905d4879.1379063063.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
+References: <cover.1379063063.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
+References: <cover.1379063063.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 13, 2013 at 04:06:15PM +0300, Kirill A. Shutemov wrote:
-> The basic idea is the same as with PTE level: the lock is embedded into
-> struct page of table's page.
-> 
-> Split pmd page table lock only makes sense on big machines.
-> Let's say >= 32 CPUs for now.
+Most of the drivers do following in their ->target_index() routines:
 
-Why is this? Couldn't I generate the same amount of contention on PMD
-level as I can on PTE level in the THP case?
+	struct cpufreq_freqs freqs;
+	freqs.old = old freq...
+	freqs.new = new freq...
 
+	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
+
+	/* Change rate here */
+
+	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
+
+This is replicated over all cpufreq drivers today and there doesn't exists a
+good enough reason why this shouldn't be moved to cpufreq core instead.
+
+Earlier patches have added support in cpufreq core to do cpufreq notification on
+frequency change, this one removes it from this driver.
+
+Some related minor cleanups are also done along with it.
+
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/arm_big_little.c | 25 +++----------------------
+ 1 file changed, 3 insertions(+), 22 deletions(-)
+
+diff --git a/drivers/cpufreq/arm_big_little.c b/drivers/cpufreq/arm_big_little.c
+index c3936ef..69cae42 100644
+--- a/drivers/cpufreq/arm_big_little.c
++++ b/drivers/cpufreq/arm_big_little.c
+@@ -51,30 +51,11 @@ static unsigned int bL_cpufreq_get(unsigned int cpu)
+ static int bL_cpufreq_set_target(struct cpufreq_policy *policy,
+ 		unsigned int index)
+ {
+-	struct cpufreq_freqs freqs;
+-	u32 cpu = policy->cpu, cur_cluster;
+-	int ret = 0;
++	u32 cur_cluster;
+ 
+ 	cur_cluster = cpu_to_cluster(policy->cpu);
+-
+-	freqs.old = bL_cpufreq_get(policy->cpu);
+-	freqs.new = freq_table[cur_cluster][index].frequency;
+-
+-	pr_debug("%s: cpu: %d, cluster: %d, oldfreq: %d, target freq: %d, new freq: %d\n",
+-			__func__, cpu, cur_cluster, freqs.old, freqs.new,
+-			freqs.new);
+-
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
+-
+-	ret = clk_set_rate(clk[cur_cluster], freqs.new * 1000);
+-	if (ret) {
+-		pr_err("clk_set_rate failed: %d\n", ret);
+-		freqs.new = freqs.old;
+-	}
+-
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
+-
+-	return ret;
++	return clk_set_rate(clk[cur_cluster],
++			freq_table[cur_cluster][index].frequency * 1000);
+ }
+ 
+ static void put_cluster_clk_and_freq_table(struct device *cpu_dev)
+-- 
+1.7.12.rc2.18.g61b472e
 
