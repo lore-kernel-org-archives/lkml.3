@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753648Ab3IMR6G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 13:58:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38285 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751529Ab3IMR6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 13:58:04 -0400
-Date: Fri, 13 Sep 2013 10:58:01 -0700
-From: Mark Fasheh <mfasheh@suse.de>
-To: Chris Mason <chris.mason@fusionio.com>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>, Zach Brown <zab@redhat.com>
-Subject: Re: Build failures due to commit 416161db (btrfs: offline dedupe)
-Message-ID: <20130913175801.GL31381@wotan.suse.de>
-Reply-To: Mark Fasheh <mfasheh@suse.de>
-References: <20130913133314.GA20461@roeck-us.net> <CAMuHMdWoNo9U0DCRoXt8V2d1SiSxX5Sku9rNvg+9MiX++XjVRg@mail.gmail.com> <20130913163535.GA5681@roeck-us.net> <20130913170022.18785.82013@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130913170022.18785.82013@localhost.localdomain>
-Organization: SUSE Labs
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1753612Ab3IMSHb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 14:07:31 -0400
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:22895 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752046Ab3IMSHb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 14:07:31 -0400
+Message-ID: <1379095648.2197.27.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: GPT detection regression in efi.c from commit 27a7c64
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Matt Porter <matt.porter@linaro.org>
+Cc: Karel Zak <kzak@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        torvalds@linux-foundation.org
+Date: Fri, 13 Sep 2013 11:07:28 -0700
+In-Reply-To: <52334506.9030802@linaro.org>
+References: <20130913145033.GA8502@ohporter.com>
+	 <1379089736.2197.14.camel@buesod1.americas.hpqcorp.net>
+	 <52334506.9030802@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 13, 2013 at 01:00:22PM -0400, Chris Mason wrote:
-> Quoting Guenter Roeck (2013-09-13 12:35:35)
-> > On Fri, Sep 13, 2013 at 03:52:43PM +0200, Geert Uytterhoeven wrote:
-> > > On Fri, Sep 13, 2013 at 3:33 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> > > > fs/btrfs/ioctl.c: In function 'btrfs_ioctl_file_extent_same':
-> > > > fs/btrfs/ioctl.c:2802:3: error: implicit declaration of function '__put_user_unaligned' [-Werror=implicit-function-declaration]
-> > > > cc1: some warnings being treated as errors
-> > > > make[2]: *** [fs/btrfs/ioctl.o] Error 1
-> > > > make[2]: *** Waiting for unfinished jobs....
-> > > >
-> > > > Seen with alpha:allmodconfig, arm:allmodconfig, m68k:allmodconfig, and
-> > > > xtensa:allmodconfig.
-> > > 
-> > > Known issue, cfr. my early warning 10 days ago:
-> > > 
-> > > "Btrfs is the first user of __put_user_unaligned() outside the compat code,
-> > > hence now all 32-bit architectures should make sure to implement this, too."
-> > > 
-> > > http://marc.info/?l=linux-arch&m=137820065929216&w=2
-> > > 
-> > > and today's thread https://lkml.org/lkml/2013/9/12/814
-> > > 
-> > 
-> > It doesn't seem right that a patch breaks the build for several platforms, and
-> > the problem is then blamed on the platform code instead of the code that is
-> > introducing the problem.
-> > 
-> > Maybe we should add BROKEN to the btrfs dependencies for the affected platforms.
-> > After all, it _is_ broken.
+On Fri, 2013-09-13 at 13:01 -0400, Matt Porter wrote:
+> On 09/13/2013 12:28 PM, Davidlohr Bueso wrote:
+> > Cc'ing Linus.
+> >
+> > On Fri, 2013-09-13 at 10:50 -0400, Matt Porter wrote:
+> >> The commit, "27a7c64 partitions/efi: account for pmbr size in lba", that
+> >> was just merged in 3.12-rc caused a regression on my system with a GPT
+> >> formatted eMMC device. In 3.11, the GPT partition table was detected
+> >> fine but now a partition table is not detected.
+> >>
+> >> Not being a GPT expert, I did some research and found that the tool used
+> >> to create the PMBR on my system shares characteristics with what is
+> >> mentioned in an explanation of Microsoft created PMBRs [1]. In short,
+> >> the size_in_lba field incorrectly has 0xffffffff even though I have a
+> >> <2TiB drive (16GiB eMMC).
+> >
+> > *sigh*. So Microsoft decided to do its own version of the GPT specs.
 > 
-> I'm happy to fix this with a bigger put of the info struct, just
-> let me know the preferred arch-happy solution.
+> Don't sound so surprised. :)
+> 
+> > Up until now, Linux was incorrectly enforcing pMBR checks: not
+> > recognizing valid labels and vice versa, as with the case you are
+> > mentioning now. The changes that went in the 3.12 merge window attempt
+> > to address those concerns, enforcing the correct checks - which is also
+> > how Linux partitioning tools do it (fdisk, parted).
+> 
+> Understood, and we are fixing our own manufacturing tool that was used 
+> to prepopulate the eMMC. I definitely prefer to have this correct for my 
+> case.
 
-In fact old versions of the patch were putting the whole struct but during
-review I was asked to change it. This should be very straight forward to fix
-so long as we all stay calm ;)
-	--Mark
+Come to think of it, we do have a long existing workaround: the
+force_gpt option. Setting it will bypass any MBR checking
+(is_pmbr_valid(), specifically).
 
---
-Mark Fasheh
+Thanks,
+Davidlohr
+
