@@ -1,132 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756112Ab3IMMLg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 08:11:36 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:59692 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754244Ab3IMMLb convert rfc822-to-8bit (ORCPT
+	id S1756001Ab3IMMLe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 08:11:34 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50052 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754065Ab3IMMLa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 08:11:31 -0400
-X-AuditID: cbfee61b-b7f776d0000016c8-ba-523300f18d6b
-From: Chao Yu <chao2.yu@samsung.com>
-To: "'Jin Xu'" <linuxclimber@gmail.com>
-Cc: "'???'" <jaegeuk.kim@samsung.com>, linux-f2fs-devel@lists.sourceforge.net,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?gb2312?B?J8y35q0n?= <shu.tan@samsung.com>
-References: <000001ceb069$318a87a0$949f96e0$@samsung.com>
- <5232FBC0.2030509@gmail.com>
-In-reply-to: <5232FBC0.2030509@gmail.com>
-Subject: RE: [f2fs-dev][PATCH] f2fs: limit nr_iovecs in bio_alloc
-Date: Fri, 13 Sep 2013 20:10:37 +0800
-Message-id: <000201ceb07a$60980fc0$21c82f40$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=gb2312
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQLDNobmU2T910Ps1JKvh5e+dL2n3AFrBgCLl88rviA=
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKLMWRmVeSWpSXmKPExsVy+t9jAd2PDMZBBpdPmltc3/WXyeLSIneL
-	PXtPslhc3jWHzeLUyTOsFq0LzzM7sHnsnHWX3WP3gs9MHn1bVjF6fN4kF8ASxWWTkpqTWZZa
-	pG+XwJXx7+wa1oJHEhWHmh+xNDAeFepi5OSQEDCRePfpOhuELSZx4d56IJuLQ0hgEaPEy+/r
-	WCCcH4wSW3dPBqtiE1CRWN7xnwnEFhFQleg63g5mMwvsZJTYdSQTxBYSiJCY/+cVWJxTQFPi
-	04JGRhBbWMBRYt2DtWBzWIB6ny3sZgWxeQUsJab+3c4OYQtK/Jh8jwVipoZE/6INbBC2tsST
-	dxdYIS5VkNhx9jUjxA1WEku+LGCEqBGX2HjkFssERqFZSEbNQjJqFpJRs5C0LGBkWcUomlqQ
-	XFCclJ5rpFecmFtcmpeul5yfu4kRHBnPpHcwrmqwOMQowMGoxMPbEWMUJMSaWFZcmXuIUYKD
-	WUmEd9ZdoBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeg63WgUIC6YklqdmpqQWpRTBZJg5OqQbG
-	fkbtR57aLVF32PsW3+2z7+79YBCso7X77tVt/Qv3iqyduGjl/8Pxh+dk94iyWQepbpBmXnxP
-	Lrh73fdNdrffLvTQfzvbJPOU5btkJ6eb25O4S6fcTzI0fLPz2QGG/xxbqx68nykZUBT2q8hJ
-	uWvBlj13bkuqc0RMnr/UV7uJcWu8LFt9fuRNJZbijERDLeai4kQA7XFN0IgCAAA=
+	Fri, 13 Sep 2013 08:11:30 -0400
+Date: Fri, 13 Sep 2013 13:10:59 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Kevin Hilman <khilman@linaro.org>, linux-i2c@vger.kernel.org,
+        Wolfram Sang <wsa@the-dreams.de>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lv Zheng <lv.zheng@intel.com>, Aaron Lu <aaron.lu@intel.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Message-ID: <20130913121059.GL29403@sirena.org.uk>
+References: <1378913560-2752-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1378913560-2752-2-git-send-email-mika.westerberg@linux.intel.com>
+ <87vc25pvvm.fsf@linaro.org>
+ <20130913065434.GZ7393@intel.com>
+ <20130913095950.GA29403@sirena.org.uk>
+ <20130913101611.GA7393@intel.com>
+ <20130913103152.GE29403@sirena.org.uk>
+ <20130913115035.GB7393@intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="27NCtaTw21bcrDcq"
+Content-Disposition: inline
+In-Reply-To: <20130913115035.GB7393@intel.com>
+X-Cookie: Your present plans will be successful.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 1/9] i2c: prepare runtime PM support for I2C client
+ devices
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Jin Xu [mailto:linuxclimber@gmail.com]
-> Sent: Friday, September 13, 2013 7:49 PM
-> To: Chao Yu
-> Cc: ???; linux-f2fs-devel@lists.sourceforge.net;
-linux-fsdevel@vger.kernel.org;
-> linux-kernel@vger.kernel.org; Ì·æ­
-> Subject: Re: [f2fs-dev][PATCH] f2fs: limit nr_iovecs in bio_alloc
-> 
-> Did this patch pass the basic build? There seems have a typo regarding
-> MAX_BIO_BLOCK.
-> 
 
-I am so sorry about that.I miss the 'S' when merging the code by handwriting
-from build path to git branch path.
-I will check the patch carefully and resubmit it.
+--27NCtaTw21bcrDcq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks for reminding!
+On Fri, Sep 13, 2013 at 02:50:35PM +0300, Mika Westerberg wrote:
+> On Fri, Sep 13, 2013 at 11:31:52AM +0100, Mark Brown wrote:
 
-> --
-> Jin
-> 
-> On 13/09/2013 18:07, Chao Yu wrote:
-> > This patch add macro MAX_BIO_BLOCKS to limit value of npages in
-> > f2fs_bio_alloc, it can avoid to return NULL in bio_alloc caused by
-> > npages is larger than UIO_MAXIOV.
-> >
-> > Signed-off-by: Yu Chao <chao2.yu@samsung.com>
-> >  ---
-> >  fs/f2fs/segment.c |    4 +++-
-> >  fs/f2fs/segment.h |    3 +++
-> >  2 files changed, 6 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c index
-> > 09af9c7..bd79bbe 100644
-> > --- a/fs/f2fs/segment.c
-> > +++ b/fs/f2fs/segment.c
-> > @@ -657,6 +657,7 @@ static void submit_write_page(struct f2fs_sb_info
-> > *sbi, struct page *page,
-> >                                 block_t blk_addr, enum page_type
-> type)
-> > {
-> >         struct block_device *bdev = sbi->sb->s_bdev;
-> > +       int bio_blocks;
-> >
-> >         verify_block_addr(sbi, blk_addr);
-> >
-> > @@ -676,7 +677,8 @@ retry:
-> >                         goto retry;
-> >                 }
-> >
-> > -               sbi->bio[type] = f2fs_bio_alloc(bdev,
-max_hw_blocks(sbi));
-> > +               bio_blocks = MAX_BIO_BLOCKS(max_hw_blocks(sbi));
-> > +               sbi->bio[type] = f2fs_bio_alloc(bdev, bio_blocks);
-> >                 sbi->bio[type]->bi_sector = SECTOR_FROM_BLOCK(sbi,
-> > blk_addr);
-> >                 sbi->bio[type]->bi_private = priv;
-> >                 /*
-> > diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h index
-> > bdd10ea..9cc95eb 100644
-> > --- a/fs/f2fs/segment.h
-> > +++ b/fs/f2fs/segment.h
-> > @@ -9,6 +9,7 @@
-> >   * published by the Free Software Foundation.
-> >   */
-> >  #include <linux/blkdev.h>
-> > +#include <linux/uio.h>
-> >
-> >  /* constant macro */
-> >  #define NULL_SEGNO                     ((unsigned int)(~0))
-> > @@ -90,6 +91,8 @@
-> >         (blk_addr << ((sbi)->log_blocksize - F2FS_LOG_SECTOR_SIZE))
-> >  #define SECTOR_TO_BLOCK(sbi, sectors)
-> \
-> >         (sectors >> ((sbi)->log_blocksize - F2FS_LOG_SECTOR_SIZE))
-> > +#define MAX_BIO_BLOCK(max_hw_blocks)
-> \
-> > +       (min((int)max_hw_blocks, UIO_MAXIOV))
-> >
-> >  /* during checkpoint, bio_private is used to synchronize the last bio
-> > */  struct bio_private {
-> > ---
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe
-> > linux-kernel" in the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+> > Right, but this probably needs to be highlighted more since it's a very
+> > surprising thing for I2C and is causing confusion.
 
+> By highlighted more, do you mean something like adding a comment in the
+> code about this or?
+
+Perhaps, yes.  Or possibly the commit log is going to be enough going
+forwards.
+
+--27NCtaTw21bcrDcq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSMwDPAAoJELSic+t+oim9KGgP/2LD68umUpEP+9jo0+S+6JeB
+ZXaQamFK1V+u5dBPrfr55gnm3cgg9AJqUCE2iURJpl9JHhFK1GaBTNFG4VV9VVA2
+2oH0du0z66UY5tg2m41e1DE7AtZbPb5vVe1PB3NlRArwU0k7/MIZY5uXz++3DwP4
+PYv8rBbx8XKWmACPNKh8rtY9k3woVRm5fDwUeiJUru6OX8QILBrfFDVZoEy3TSz5
+D3PE9lK6jqJCA0SHipn61qWQuuMLnkuYmnvhcK2B2/nUvPLKF/HuNhJMyFMkKzfW
+Huz6uC8am5EQF+MinDpsNwd21C3TS81oN/86LKJ5LwJYznwSoR0FAVseKYUg59eJ
+CUaTBqmTkVsw9R9CyEE3PRlUFAFA10fZ3E5yADEp2EY1KHluCWS1k0Z3u+TqP3Lc
+/7FY1ITcthLOAolO5bHsm5egbXxqb4KI0XRLxaze2ztrLuGebwlPFpOsWjCiRDud
+7T/pxb/86xrVLnLK7bRriVBQrlob/lFgyey7vTCKhqj3GdjJ92x/o4eKvOdDzaWB
+p3O1WYPh5di3p0nWkYSM/LAU3dUx+Ot565VGxCDx6SKBW64torbFV4wZkLfrIggf
+tQmSAE8YLQuqrYm95IT4FXZlsZOPpHOMDuzJrI6p3/YYwXUrgYvPplkm8VqWyyBF
+E25+zh/+e7ZKcgGyhFRP
+=U4cS
+-----END PGP SIGNATURE-----
+
+--27NCtaTw21bcrDcq--
