@@ -1,105 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536Ab3IMJa5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 05:30:57 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:33863 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754135Ab3IMJay convert rfc822-to-8bit (ORCPT
+	id S1755610Ab3IMJcW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 05:32:22 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:62298 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753123Ab3IMJcU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 05:30:54 -0400
-Message-ID: <5232DB49.4050701@arm.com>
-Date: Fri, 13 Sep 2013 10:30:49 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Fri, 13 Sep 2013 05:32:20 -0400
 MIME-Version: 1.0
-To: cinifr <cinifr@gmail.com>
-CC: Mark Rutland <Mark.Rutland@arm.com>, "coosty@163.com" <coosty@163.com>,
-        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pawel.moll@arm.co" <pawel.moll@arm.co>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>
-Subject: Re: [PATCH 3/4] Add physical count arch timer support for clocksource
- in ARMv7.
-References: <1378968687-8200-1-git-send-email-cinifr@gmail.com> <1378968687-8200-4-git-send-email-cinifr@gmail.com> <20130912112452.GA22013@e106331-lin.cambridge.arm.com> <CAK3cCBwu4somtfc9J1ZDVcC-iYD1qDJwSWzWeOomTqY9tQA2kg@mail.gmail.com> <5231EE43.5090900@arm.com> <CAK3cCBzr8_LTYarZDgPYZY7_-5Qco_Qw+ACi=c2uOrn7MqwkBg@mail.gmail.com>
-In-Reply-To: <CAK3cCBzr8_LTYarZDgPYZY7_-5Qco_Qw+ACi=c2uOrn7MqwkBg@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-X-OriginalArrivalTime: 13 Sep 2013 09:30:48.0370 (UTC) FILETIME=[EE20C920:01CEB063]
-X-MC-Unique: 113091310305101701
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20130913050927.GA8634@gmail.com>
+References: <CA+55aFwgyjqRHxLaWGxxsg_v07FrxbVTeLdHTGp7MfeSRjrKsQ@mail.gmail.com>
+	<CA+55aFyCeXXr=57em8CC_Uzfk5PvOw0RHyA309wuOP-oDL7VxA@mail.gmail.com>
+	<20130912184341.GA11400@ghostprotocols.net>
+	<52321CE4.1080804@gmail.com>
+	<20130912201855.GC32644@gmail.com>
+	<20130912203831.GD11400@ghostprotocols.net>
+	<20130912204618.GA3262@gmail.com>
+	<52322D81.5090708@gmail.com>
+	<20130912211846.GA7890@gmail.com>
+	<52323BE4.5080100@gmail.com>
+	<20130913050927.GA8634@gmail.com>
+Date: Fri, 13 Sep 2013 11:32:19 +0200
+Message-ID: <CAFrcx1=7Crxms8GBaen451JuYPO_WpC_SbcTuti5y3MfeQMCZA@mail.gmail.com>
+Subject: Re: [GIT PULL] perf fixes
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/09/13 09:49, cinifr wrote:
-> On 13 September 2013 00:39, Marc Zyngier <marc.zyngier@arm.com> wrote:
->> On 12/09/13 17:07, cinifr wrote:
->>>> This cannot be a compile-time option as above in a multiplatform build.
->>>> Other paltforms (e.g. KVM guests) *must* use the virtual counters to get
->>>> any semblance of a consistent view of time.
->>> Yes I accept compile-time option is not perfect  in my pre email,
->>> But,Why Ohter paltforms *must* use the virtual counters? I think KVM
->>> should not limit how to use arch timer in its guest OS. Of cause, if
->>> KVM guest use vct can be more efficiency then that use pct. but KVM
->>> should and must support guest OS to access pct.
+Hi,
+
+On 13 September 2013 07:09, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * David Ahern <dsahern@gmail.com> wrote:
+>
+>> > By default a simple 'make' should build perf to the maximum extent
+>> > possible, with no other input required from the user - with warnings
+>> > displayed as package install suggestions.
 >>
->> The virtual counter is there for a good reason: it allows a virtual
->> machine to:
->> - see its time starting at zero
->> - be migrated to another host without seeing time shifting one way or
->> another.
->>
->> So using the physical counter in a VM is a recipe for disaster if you're
->> doing any kind of time tracking. The counter being used for
->> sched_clock(), we cannot afford to see it being shifted one way or another.
-> I accept that virtual count is better in VM than physical counter
-> because hypversion can modify VM timer by set   CNTVOFF. But I think
-> hypversior should support that VM should can access physical counter,
-> When VM use physical count.  hypversior could trap accessing physical
-> count from guest OS, and return a value that guest OS want liking
-> hypervisor set CNTVOFF  for virtual counter. On this way, VM could too
-> see its timer at zero and VM could  too be migrated to another host
-> without seeing time shifting.
+>> By default there is no config. Autoprobing generates a first one or a
+>> user can specify a defconfig.
+>
+> This could work if there's not two but three states for individual
+> features:
+>
+>   - autoprobe
+>   - on
+>   - off
+>
+> and if autoprobe, if a system feature has been probed successfully,
+> automatically turned 'autoprobe' entries into 'on'.
+>
+> That would give us the best of all worlds - autodetection, configurability
+> and caching:
+>
+>  - initial user types 'make' and gets a .config that has almost all
+>    entries 'on', a few 'autoprobe'.
+>
+>  - once the user installs a dependency, the corresponding .config entry
+>    turns into 'on'.
+>
+>  - the regular user or developers would have libraries that turn all
+>    entries in the .config to 'on'.
+>
+>  - if a user is genuinely uninterested in a feature, he can mark it 'off',
+>    which would then stay off permanently. This could also be used by
+>    embedded/specialized builds.
+>
+>  - other specialized users, like distro builds, could use a .config with
+>    all entries 'on' and could enforce the presence of all dependencies for
+>    a successful build. [We could add 'make allyesconfig' to help that.]
 
-I urge you to read the ARM ARM, and specifically the section dedicated
-to trapping access to CP15 operations. If you do, you'll quickly notice
-that you *cannot* trap accesses to the timer subsystem.
+Is there a way to detect the presence of a dependency and _also_ check
+its version? Some new features are depending on a recent version of a
+library, e.g. dwarf unwinding depends on libunwind >= 1.1 (cf.
+http://www.spinics.net/lists/kernel/msg1598951.html).
 
-All you can do is disable access to the physical timer/counter,
-resulting in an UNDEF in the *guest*.
+Thanks,
+Jean
 
-Additionally, please realise the overhead of trapping is enormous, and
-that we do try very hard to minimise it. Why do you think we went out of
-our way to ensure that host and guest would use different timers, always?
-
->> If you have issues with the use of the virtual counter, I suggest you
->> fix your firmware to have a consistent CNTVOFF across CPUs. And/or even
->> better, boot your kernel in HYP mode, as it will take care of setting
->> CNTVOFF to zero.
->>
-> I am   wondering   what is the principle between kernel and bootload?
-> What should be done in bootloader and what should be done in kernel?
-> As you said, If kernel boot from hyp,  Kernel can set  CNTVOFF to zero
-> directly, does we add the code to set CNTVOFF in kernel?  But, if
-> kernel boot from PL1 NS=0,  Does kernel  need to switch hyp mode to
-> set  CNTVOFF and return  PL1 NS=0 mode? Or,kernel dont care it because
-> kernel   believe bootloader have set CNTVOFF  before?
-
-In an ideal world, the bootloader should set CNTVOFF to zero. The fact
-that the kernel does it too when booted in HYP mode is to preserve
-itself from from broken bootloaders.
-
-CNTVOFF can only be setup from either HYP or Secure Monitor mode with
-SCR.NS == 1, so if you run your kernel in secure mode, it is always best
-to do it in the bootloader.
-
-	M.
--- 
-Jazz is not dead. It just smells funny...
-
+>
+> Thanks,
+>
+>         Ingo
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
