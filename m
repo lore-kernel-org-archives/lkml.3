@@ -1,85 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755063Ab3IMU7U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 16:59:20 -0400
-Received: from mail-db9lp0252.outbound.messaging.microsoft.com ([213.199.154.252]:20131
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751907Ab3IMU7R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 16:59:17 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zzbb2dI98dI9371I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275dhz2dh2a8h839h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h1155h)
-From: "Getz, Robin" <Robin.Getz@analog.com>
-To: Lee Jones <lee.jones@linaro.org>, Lars-Peter Clausen <lars@metafoo.de>
-CC: Jonathan Cameron <jic23@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jic23@cam.ac.uk" <jic23@cam.ac.uk>, "arnd@arndb.de" <arnd@arndb.de>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "denis.ciocca@st.com" <denis.ciocca@st.com>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Subject: RE: [PATCH 27/38] iio: pressure-core: st: Give some indication if
- device probing was successful
-Thread-Topic: [PATCH 27/38] iio: pressure-core: st: Give some indication if
- device probing was successful
-Thread-Index: AQHOriUGKo/jKeEJhE6aM/vRwwNapZm/a4eAgAD3V4CAAAJDgIAAAw+AgAO/oHA=
-Date: Fri, 13 Sep 2013 20:57:51 +0000
-Message-ID: <FEAE1C531EE4684EBDD22603EC8BE59931CAB11B@NWD2MBX7.ad.analog.com>
-References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
- <1378817379-8238-28-git-send-email-lee.jones@linaro.org>
- <43055af7-991f-4122-b308-a3dcddbbb72a@email.android.com>
- <20130911071053.GD11227@lee--X1> <52301963.5030006@metafoo.de>
- <20130911072955.GG11227@lee--X1>
-In-Reply-To: <20130911072955.GG11227@lee--X1>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.64.113.65]
-Content-Type: text/plain; charset="utf-8"
+	id S1754981Ab3IMVGP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 17:06:15 -0400
+Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:25198
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751907Ab3IMVGM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 17:06:12 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VPS-1(zzdb82h98dIc89bh1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275ch1de098h1de097h8275bhz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh906i1155h192ch)
+Date: Fri, 13 Sep 2013 14:05:49 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Mike Turquette <mturquette@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, Hyun Kwon <hyunk@xilinx.com>
+Subject: Re: [PATCH] clk: si570: Add a driver for SI570 oscillators
+References: <1379033737-30015-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1379033737-30015-2-git-send-email-soren.brinkmann@xilinx.com>
+ <20130913170005.GB5681@roeck-us.net>
+ <c6755ff6-104d-40fe-a753-0e165cff1e10@AM1EHSMHS004.ehs.local>
+ <20130913194822.GA12117@roeck-us.net>
 MIME-Version: 1.0
-X-OriginatorOrg: analog.com
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <20130913194822.GA12117@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <4b7029c7-8617-4c3d-9544-4245293b77f1@CO9EHSMHS014.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
 X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8DKxe2w025078
 
-On Wednesday, September 11, 2013 3:30 AM Lee Jones wrote:
-> On Wed, 11 Sep 2013, Lars-Peter Clausen wrote:
-> > On 09/11/2013 09:10 AM, Lee Jones wrote:
-> > >On Tue, 10 Sep 2013, Jonathan Cameron wrote:
-> > >>Lee Jones <lee.jones@linaro.org> wrote:
-> > Silence means everything is good, a message means there is an error.
-> > If every device that gets probed would spit out a message the log
-> > would be scrolling forever and you wouldn't be able to see the error
-> > messages.
+On Fri, Sep 13, 2013 at 12:48:22PM -0700, Guenter Roeck wrote:
+> On Fri, Sep 13, 2013 at 10:26:04AM -0700, S√∂ren Brinkmann wrote:
+> > On Fri, Sep 13, 2013 at 10:00:05AM -0700, Guenter Roeck wrote:
+> > > On Thu, Sep 12, 2013 at 05:55:37PM -0700, Soren Brinkmann wrote:
+> > > > Add a driver for SILabs 570, 571, 598, 599 programmable oscillators.
+> > > > The devices generate low-jitter clock signals and are reprogrammable via
+> > > > an I2C interface.
+> > > > 
+> > > > Cc: Guenter Roeck <linux@roeck-us.net>
+> > > > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> > > > ---
+> [ ... ]
 > 
-> Only if you print out every regulator, clock, GPIO pin and things of this nature.
-> Key hardware blocks such as; SD, Flash, USB, Eth, HDMI, Audio, UART, GPIO and
-> I2C controllers and Sensors I think deserve a one line "I'm here and working"
-> message.
+> > > > +	/* Applying a new frequency can take up to 10ms */
+> > > > +	usleep_range(10000, 10001);
+> > > 
+> > > One microsecond range doesn't really buy anything besides forcing the compiler
+> > > to generate extra code. Why not just use 10000 ?
+> > That's due to checkpatch. I originally had 'msleep(10)' and checkpatch
+> > suggested to use 'usleep_range()'. Then I put
+> > 'usleep_range(10000, 10000)' and checkpatch suggested to not use the
+> > same values for MIN and MAX, so I added the 1 to the MAX value.
+> > If it is considered to be safe and okay to put in MIN=MAX=10000, I'll
+> > change it accordingly.
+> > 
+> Guess what checkpatch means is to put in something resonable,
+> such as maybe (10000, 12000). (10000, 10001) just defeats checkpatch
+> which doesn't really provide any value. So either provide a reasonable
+> and acceptable range or use a single value.
+All right. I'll make it 10000 then, for MIN and MAX.
 
-In many embedded systems -- there are lots and lots of IIO devices, and I'm not sure 
-I would consider very many "key". It really depends on the board.
+> 
+> [ ... ]
+> 
+> > > > +	match = of_match_node(clk_si570_of_match, client->dev.of_node);
+> > > > +	if (!match)
+> > > > +		return -EINVAL;
+> > > 
+> > > Seems unusual. Is this really needed ? It precludes the driver from being used
+> > > in a non-devicetree environment, for example. I would guess that there is a match
+> > > if client->dev.of_node is set. Otherwise, this code would be needed in every
+> > > driver supporting devicetree, and I don't recall seeing that.
+> > > 
+> > > > +	ddata = match->data;
+> > > > +
+> > > You should be able to get this information (ie the pointer to si570_device_data)
+> > > from id->driver_data. That would be more consistent with other i2c devices.
+> > I think I copied this approach from the other clk-si... driver. I'll
+> > do some research on your suggestion and change it. Could you point me to
+> > an example for your proposal?
+> > 
+> drivers/hwmon/lm90.c or drivers/hwmon/max6697.c.
+Thanks.
 
-To me it's a matter of boot time. Even memcpy to msgbuf takes time.
-Sometimes unnecessary time.
+> 
+> > > > +
+> > > > +	if (of_property_read_u32(client->dev.of_node, "factory-fout",
+> > > > +				&factory_fout)) {
+> > > > +		dev_warn(&client->dev,
+> > > > +			"DTS does not contain factory-fout, using default\n");
+> > > 
+> > > Is that really worth a warning ?
+> > My understanding is, that the default output frequency is part-specific
+> > and required to calculate the frequency of the internal crystal. Hence,
+> > if you do not provide the correct default output frequency for your part, all
+> > frequencies generated by this driver will be off, unless the here used
+> > default matches your part. Please correct me if I'm wrong, otherwise, I
+> > think it's worth a warning.
+> > 
+> Maybe the property should be mandatory ?
+It's actually listed as required property in the documentation. I'll
+make it mandatory in the code as well and let probe() fail if it's not
+provided.
 
-> I'll not fight this for too long. This is based my experience as a user. I tried to
-> look at the bootlog for the sensors I'd just enabled and there was nothing. Some
-> of them had probed, some hadn't and there was no clear way to distinguish
-> between them without digging into sysfs.
+	S√∂ren
 
-echo "working:"
-cat /sys/bus/iio/devices/*/name
 
-isn't too much digging. If you really want to do that on your machine - do so in rc.local
-
-for many other subsystems, it's just not that easy, and printing from the driver is necessary.
-
--Robin
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
