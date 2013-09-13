@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438Ab3IMGfZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 02:35:25 -0400
-Received: from hibox-130.abo.fi ([130.232.216.130]:51346 "EHLO centre.hibox.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752319Ab3IMGfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 02:35:24 -0400
-Message-ID: <5232B219.5020603@hibox.fi>
-Date: Fri, 13 Sep 2013 09:35:05 +0300
-From: Marcus Sundman <marcus@hibox.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: "Theodore Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Debugging system freezes on filesystem writes
-References: <20130224012052.GC1196@thunk.org> <512D01E0.7010009@hibox.fi> <20130226231703.GA22674@quack.suse.cz> <5231BA3C.2090704@hibox.fi> <20130912131051.GA14664@quack.suse.cz> <5231C5FF.3060504@hibox.fi> <20130912143941.GB14664@quack.suse.cz> <5231D8DD.5010703@hibox.fi> <20130912163530.GD14664@quack.suse.cz> <523200EB.7000202@hibox.fi> <20130912204647.GA6826@quack.suse.cz>
-In-Reply-To: <20130912204647.GA6826@quack.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Spam_score: -2.7
-X-Spam_bar: --
+	id S1755380Ab3IMGjP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 02:39:15 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:36792 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752049Ab3IMGjO convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:10:1>);
+	Fri, 13 Sep 2013 02:39:14 -0400
+Message-Id: <5232CF2C02000078000F2ED9@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Fri, 13 Sep 2013 07:39:08 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "KY Srinivasan" <kys@microsoft.com>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: "olaf@aepfle.de" <olaf@aepfle.de>, "bp@alien8.de" <bp@alien8.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer
+ frequency from the hypervisor
+References: <1378233023-4512-1-git-send-email-kys@microsoft.com>
+ <dd29077371564a14b2d317d2291db8a9@SN2PR03MB061.namprd03.prod.outlook.com>
+ <52325C1E.90101@zytor.com>
+ <50f92d9c16a54e5bb6fa14ef72e5fdfb@SN2PR03MB061.namprd03.prod.outlook.com>
+In-Reply-To: <50f92d9c16a54e5bb6fa14ef72e5fdfb@SN2PR03MB061.namprd03.prod.outlook.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.09.2013 23:46, Jan Kara wrote:
-> On Thu 12-09-13 20:59:07, Marcus Sundman wrote:
->> On 12.09.2013 19:35, Jan Kara wrote:
->>> On Thu 12-09-13 18:08:13, Marcus Sundman wrote:
->>>> And can I somehow "reset" whatever it is that is making it worse so
->>>> that it becomes good again? That way I could spend maybe 1 hour once
->>>> every few months to get it back to top speed.
->>>> Any other ideas how I could make this (very expensive and fairly new
->>>> ZenBook) laptop usable?
->>>    Well, I believe if you used like 70% or less of the disk and regularly
->>> (like once in a few days) run fstrim command, I belive the disk performance
->>> should stay at a usable level.
->> At 128 GB it is extremely small as it is, and I'm really struggling
->> to fit all on it. Most of my stuff is on my NAS (which has almost 10
->> TB space), but still I need several code repositories and the
->> development environment and a virtual machine etc on this tiny 128
->> GB thing.
->    I see. I have like 70 GB disk and 50% of it are free :) But I have test
-> machines with much larger drives where I have VMs etc. This one is just
-> for email and coding.
->
->> So, if I used some other filesystem, might that allow me to use a
->> larger portion of the SSD without this degradation? Or with a much
->> slower rate of degradation?
->    You might try f2fs. That is designed for low end flash storage so it
-> might work better than ext4. But it is a new filesystem so backup often.
->
->> And at some point it will become unusable again, so what can I do
->> then? If I move everything to my NAS (and maybe even re-create the
->> filesystem?) and move everything back, might that get rid of the FTL
->> fragmentation?
->    Yes, that should get rid of it. But since you have only a few GB free,
-> I'm afraid the fragmentation will reappear pretty quickly. But I guess it's
-> worth a try.
->
->> Or could I somehow defragment the FTL without moving away everything?
->    I don't know about such way.
+>>> On 13.09.13 at 03:43, KY Srinivasan <kys@microsoft.com> wrote:
 
-How about triggering the garbage collection on the drive, is that possible?
+> 
+>> -----Original Message-----
+>> From: H. Peter Anvin [mailto:hpa@zytor.com]
+>> Sent: Thursday, September 12, 2013 5:28 PM
+>> To: KY Srinivasan
+>> Cc: x86@kernel.org; gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+>> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+>> jasowang@redhat.com; tglx@linutronix.de; JBeulich@suse.com; bp@alien8.de 
+>> Subject: Re: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer frequency
+>> from the hypervisor
+>> 
+>> On 09/12/2013 05:06 PM, KY Srinivasan wrote:
+>> >
+>> > Peter,
+>> >
+>> > Let me know if you want me to address any additional issues in this patch.
+>> >
+>> 
+>> Please address Jan and Gleb's feedback.
+> 
+> Gleb's feedback was a question and I answered that as I did Jan's feedback 
+> as well.
+> Gleb, Jan, please let me know if there is something else you want addressed 
+> here.
 
+Indeed, apart from the question whether to change that one
+message's level from KERN_INFO to KERN_DEBUG, there was
+nothing really left unexplained (the aspect of the artificial tying
+together of distinct features is really something KY has to
+decide - I merely tried to point out that this is odd).
 
-- Marcus
+Jan
 
