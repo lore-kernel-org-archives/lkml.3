@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754982Ab3IMJ3J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 05:29:09 -0400
+	id S1755428Ab3IMJ3k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 05:29:40 -0400
 Received: from cn.fujitsu.com ([222.73.24.84]:8115 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754269Ab3IMJ2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 05:28:45 -0400
+	id S1751901Ab3IMJ2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 05:28:43 -0400
 X-IronPort-AV: E=Sophos;i="4.90,897,1371052800"; 
-   d="scan'208";a="8515196"
+   d="scan'208";a="8515192"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
         hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org,
@@ -21,188 +21,188 @@ To: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
         prarit@redhat.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH v3 4/5] x86, mem-hotplug: Support initialize page tables from low to high.
-Date: Fri, 13 Sep 2013 17:30:54 +0800
-Message-Id: <1379064655-20874-5-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v3 2/5] memblock: Improve memblock to support allocation from lower address.
+Date: Fri, 13 Sep 2013 17:30:52 +0800
+Message-Id: <1379064655-20874-3-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1379064655-20874-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1379064655-20874-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/13 17:26:08,
+ 2013/09/13 17:26:07,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/13 17:26:18,
-	Serialize complete at 2013/09/13 17:26:18
+ 2013/09/13 17:26:15,
+	Serialize complete at 2013/09/13 17:26:15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-init_mem_mapping() is called before SRAT is parsed. And memblock will allocate
-memory for page tables. To prevent page tables being allocated within hotpluggable
-memory, we will allocate page tables from the end of kernel image to the higher
+This patch modifies the memblock_find_in_range_node() to support two
+different allocation directions. After this patch, memblock will check
+memblock.current_direction, and decide in which direction to allocate
 memory.
+
+Now it supports two allocation directions: bottom up and top down.
+When direction is top down, it acts as before.
+When direction is bottom up, the start address should be greater than
+the end of the kernel image. Otherwise, it will be trimmed to kernel
+image end address.
 
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 ---
- arch/x86/mm/init.c |  121 +++++++++++++++++++++++++++++++++++++++------------
- 1 files changed, 92 insertions(+), 29 deletions(-)
+ mm/memblock.c |  107 ++++++++++++++++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 95 insertions(+), 12 deletions(-)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 04664cd..bf7b732 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -401,13 +401,79 @@ static unsigned long __init init_range_memory_mapping(
+diff --git a/mm/memblock.c b/mm/memblock.c
+index f24ca2e..87a7f04 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -20,6 +20,8 @@
+ #include <linux/seq_file.h>
+ #include <linux/memblock.h>
  
- /* (PUD_SHIFT-PMD_SHIFT)/2 */
- #define STEP_SIZE_SHIFT 5
--void __init init_mem_mapping(void)
++#include <asm-generic/sections.h>
 +
-+#ifdef CONFIG_MOVABLE_NODE
-+/**
-+ * memory_map_from_low - Map [start, end) from low to high
-+ * @start: start address of the target memory range
-+ * @end: end address of the target memory range
+ static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS] __initdata_memblock;
+ static struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS] __initdata_memblock;
+ 
+@@ -84,8 +86,81 @@ static long __init_memblock memblock_overlaps_region(struct memblock_type *type,
+ }
+ 
+ /**
++ * __memblock_find_range - find free area utility
++ * @start: start of candidate range, can be %MEMBLOCK_ALLOC_ACCESSIBLE
++ * @end: end of candidate range, can be %MEMBLOCK_ALLOC_{ANYWHERE|ACCESSIBLE}
++ * @size: size of free area to find
++ * @align: alignment of free area to find
++ * @nid: nid of the free area to find, %MAX_NUMNODES for any node
 + *
-+ * This function will setup direct mapping for memory range [start, end) in a
-+ * heuristic way. In the beginning, step_size is small. The more memory we map
-+ * memory in the next loop.
++ * Utility called from memblock_find_in_range_node(), find free area from
++ * lower address to higher address.
++ *
++ * RETURNS:
++ * Found address on success, %0 on failure.
 + */
-+static void __init memory_map_from_low(unsigned long start, unsigned long end)
++static phys_addr_t __init_memblock
++__memblock_find_range(phys_addr_t start, phys_addr_t end,
++		      phys_addr_t size, phys_addr_t align, int nid)
 +{
-+	unsigned long next, new_mapped_ram_size;
-+	unsigned long mapped_ram_size = 0;
-+	/* step_size need to be small so pgt_buf from BRK could cover it */
-+	unsigned long step_size = PMD_SIZE;
++	phys_addr_t this_start, this_end, cand;
++	u64 i;
 +
-+	while (start < end) {
-+		if (end - start > step_size) {
-+			next = round_up(start + 1, step_size);
-+			if (next > end)
-+				next = end;
-+		} else
-+			next = end;
++	for_each_free_mem_range(i, nid, &this_start, &this_end, NULL) {
++		this_start = clamp(this_start, start, end);
++		this_end = clamp(this_end, start, end);
 +
-+		new_mapped_ram_size = init_range_memory_mapping(start, next);
-+		min_pfn_mapped = start >> PAGE_SHIFT;
-+		start = next;
-+
-+		if (new_mapped_ram_size > mapped_ram_size)
-+			step_size <<= STEP_SIZE_SHIFT;
-+		mapped_ram_size += new_mapped_ram_size;
++		cand = round_up(this_start, align);
++		if (cand < this_end && this_end - cand >= size)
++			return cand;
 +	}
++
++	return 0;
 +}
-+#endif /* CONFIG_MOVABLE_NODE */
 +
 +/**
-+ * memory_map_from_high - Map [start, end) from high to low
-+ * @start: start address of the target memory range
-+ * @end: end address of the target memory range
++ * __memblock_find_range_rev - find free area utility, in reverse order
++ * @start: start of candidate range, can be %MEMBLOCK_ALLOC_ACCESSIBLE
++ * @end: end of candidate range, can be %MEMBLOCK_ALLOC_{ANYWHERE|ACCESSIBLE}
++ * @size: size of free area to find
++ * @align: alignment of free area to find
++ * @nid: nid of the free area to find, %MAX_NUMNODES for any node
 + *
-+ * This function is similar to memory_map_from_low() except it maps memory
-+ * from high to low.
++ * Utility called from memblock_find_in_range_node(), find free area from
++ * higher address to lower address.
++ *
++ * RETURNS:
++ * Found address on success, %0 on failure.
 + */
-+static void __init memory_map_from_high(unsigned long start, unsigned long end)
++static phys_addr_t __init_memblock
++__memblock_find_range_rev(phys_addr_t start, phys_addr_t end,
++			  phys_addr_t size, phys_addr_t align, int nid)
++{
++	phys_addr_t this_start, this_end, cand;
++	u64 i;
++
++	for_each_free_mem_range_reverse(i, nid, &this_start, &this_end, NULL) {
++		this_start = clamp(this_start, start, end);
++		this_end = clamp(this_end, start, end);
++
++		/*
++		 * Just in case that (this_end - size) underflows and cause
++		 * (cand >= this_start) to be true incorrectly.
++		 */
++		if (this_end < size)
++			break;
++
++		cand = round_down(this_end - size, align);
++		if (cand >= this_start)
++			return cand;
++	}
++
++	return 0;
++}
++
++/**
+  * memblock_find_in_range_node - find free area in given range and node
+- * @start: start of candidate range
++ * @start: start of candidate range, can be %MEMBLOCK_ALLOC_ACCESSIBLE
+  * @end: end of candidate range, can be %MEMBLOCK_ALLOC_{ANYWHERE|ACCESSIBLE}
+  * @size: size of free area to find
+  * @align: alignment of free area to find
+@@ -93,6 +168,11 @@ static long __init_memblock memblock_overlaps_region(struct memblock_type *type,
+  *
+  * Find @size free area aligned to @align in the specified range and node.
+  *
++ * When allocation direction is from low to high, the @start should be greater
++ * than the end of the kernel image. Otherwise, it will be trimmed. And also,
++ * if allocation from low to high failed, will try to allocate memory from high
++ * to low again.
++ *
+  * RETURNS:
+  * Found address on success, %0 on failure.
+  */
+@@ -100,8 +180,7 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+ 					phys_addr_t end, phys_addr_t size,
+ 					phys_addr_t align, int nid)
  {
--	unsigned long end, real_end, start, last_start;
--	unsigned long step_size;
--	unsigned long addr;
-+	unsigned long prev, new_mapped_ram_size;
- 	unsigned long mapped_ram_size = 0;
--	unsigned long new_mapped_ram_size;
-+	/* step_size need to be small so pgt_buf from BRK could cover it */
-+	unsigned long step_size = PMD_SIZE;
-+
-+	while (start < end) {
-+		if (end > step_size) {
-+			prev = round_down(end - 1, step_size);
-+			if (prev < start)
-+				prev = start;
-+		} else
-+			prev = start;
-+
-+		new_mapped_ram_size = init_range_memory_mapping(prev, end);
-+		min_pfn_mapped = prev >> PAGE_SHIFT;
-+		end = prev;
-+
-+		if (new_mapped_ram_size > mapped_ram_size)
-+			step_size <<= STEP_SIZE_SHIFT;
-+		mapped_ram_size += new_mapped_ram_size;
-+	}
-+}
-+
-+void __init init_mem_mapping(void)
-+{
-+	unsigned long end;
+-	phys_addr_t this_start, this_end, cand;
+-	u64 i;
++	phys_addr_t ret;
  
- 	probe_page_size_mask();
+ 	/* pump up @end */
+ 	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
+@@ -111,18 +190,22 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+ 	start = max_t(phys_addr_t, start, PAGE_SIZE);
+ 	end = max(start, end);
  
-@@ -417,45 +483,42 @@ void __init init_mem_mapping(void)
- 	end = max_low_pfn << PAGE_SHIFT;
- #endif
- 
--	/* the ISA range is always mapped regardless of memory holes */
--	init_memory_mapping(0, ISA_END_ADDRESS);
-+	max_pfn_mapped = 0; /* will get exact value next */
-+	min_pfn_mapped = end >> PAGE_SHIFT;
-+
-+#ifdef CONFIG_MOVABLE_NODE
-+	unsigned long kernel_end;
-+
+-	for_each_free_mem_range_reverse(i, nid, &this_start, &this_end, NULL) {
+-		this_start = clamp(this_start, start, end);
+-		this_end = clamp(this_end, start, end);
 +	if (memblock_direction_bottom_up()) {
-+		kernel_end = round_up(__pa_symbol(_end), PMD_SIZE);
++		/*
++		 * MEMBLOCK_ALLOC_ACCESSIBLE is 0, which is less than the end
++		 * of kernel image. So callers specify MEMBLOCK_ALLOC_ACCESSIBLE
++		 * as @start is OK.
++		 */
++		start =	max(start, __pa_symbol(_end)); /* End of kernel image. */
+ 
+-		if (this_end < size)
+-			continue;
++		ret = __memblock_find_range(start, end, size, align, nid);
++		if (ret)
++			return ret;
+ 
+-		cand = round_down(this_end - size, align);
+-		if (cand >= this_start)
+-			return cand;
++		pr_warn("memblock: Failed to allocate memory in bottom up direction. Now try top down direction.\n");
+ 	}
+-	return 0;
 +
-+		memory_map_from_low(kernel_end, end);
-+		memory_map_from_low(ISA_END_ADDRESS, kernel_end);
-+		goto out;
-+	}
-+#endif /* CONFIG_MOVABLE_NODE */
-+
-+	unsigned long addr, real_end;
++	return __memblock_find_range_rev(start, end, size, align, nid);
+ }
  
- 	/* xen has big range in reserved near end of ram, skip it at first.*/
- 	addr = memblock_find_in_range(ISA_END_ADDRESS, end, PMD_SIZE, PMD_SIZE);
- 	real_end = addr + PMD_SIZE;
- 
--	/* step_size need to be small so pgt_buf from BRK could cover it */
--	step_size = PMD_SIZE;
--	max_pfn_mapped = 0; /* will get exact value next */
--	min_pfn_mapped = real_end >> PAGE_SHIFT;
--	last_start = start = real_end;
--
- 	/*
- 	 * We start from the top (end of memory) and go to the bottom.
- 	 * The memblock_find_in_range() gets us a block of RAM from the
- 	 * end of RAM in [min_pfn_mapped, max_pfn_mapped) used as new pages
- 	 * for page table.
- 	 */
--	while (last_start > ISA_END_ADDRESS) {
--		if (last_start > step_size) {
--			start = round_down(last_start - 1, step_size);
--			if (start < ISA_END_ADDRESS)
--				start = ISA_END_ADDRESS;
--		} else
--			start = ISA_END_ADDRESS;
--		new_mapped_ram_size = init_range_memory_mapping(start,
--							last_start);
--		last_start = start;
--		min_pfn_mapped = last_start >> PAGE_SHIFT;
--		/* only increase step_size after big range get mapped */
--		if (new_mapped_ram_size > mapped_ram_size)
--			step_size <<= STEP_SIZE_SHIFT;
--		mapped_ram_size += new_mapped_ram_size;
--	}
-+	memory_map_from_high(ISA_END_ADDRESS, real_end);
- 
- 	if (real_end < end)
- 		init_range_memory_mapping(real_end, end);
- 
-+out:
-+	/* the ISA range is always mapped regardless of memory holes */
-+	init_memory_mapping(0, ISA_END_ADDRESS);
-+
- #ifdef CONFIG_X86_64
- 	if (max_pfn > max_low_pfn) {
- 		/* can we preseve max_low_pfn ?*/
+ /**
 -- 
 1.7.1
 
