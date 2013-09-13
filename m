@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154Ab3IMQSO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 12:18:14 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:64931 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751848Ab3IMQSN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 12:18:13 -0400
-Message-ID: <201309131617.r8DGHu7H000791@farm-0013.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Fri, 13 Sep 2013 12:14:09 -0400
-Subject: [PATCH] ath9k: mark wmi_event_swba as __packed
-To: "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
-        Jouni Malinen <jouni@qca.qualcomm.com>,
-        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
-        Senthil Balasubramanian <senthilb@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        <linux-wireless@vger.kernel.org>, <ath9k-devel@venema.h4ckr.net>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+	id S1754173Ab3IMQV1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 12:21:27 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:53178 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752715Ab3IMQV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 12:21:26 -0400
+Date: Fri, 13 Sep 2013 18:18:20 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: rjw@sisk.pl, linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Andrew Lunn <andrew@lunn.ch>
+Subject: Re: [PATCH 195/228] cpufreq: kirkwood: remove calls to
+ cpufreq_notify_transition()
+Message-ID: <20130913161820.GM19363@lunn.ch>
+References: <cover.1379063063.git.viresh.kumar@linaro.org>
+ <0a512914fd48b2d6db685446f88b9a096eff79a1.1379063063.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0a512914fd48b2d6db685446f88b9a096eff79a1.1379063063.git.viresh.kumar@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The other structures in wmi.h are already marked this way.
-Without this marking, we get an unaliged access panic in the tilegx kernel:
+On Fri, Sep 13, 2013 at 06:32:21PM +0530, Viresh Kumar wrote:
 
-Starting stack dump of tid 0, pid 0 (swapper) on cpu 35 at cycle 198675113844
-  frame 0: 0xfffffff7103ada90 ath9k_htc_swba+0x120/0x618 [ath9k_htc]
-  frame 1: 0xfffffff7103a4b10 ath9k_wmi_event_tasklet+0x1b0/0x270 [ath9k_htc]
-  frame 2: 0xfffffff700326570 tasklet_action+0x148/0x298
-  [...]
+> -	if (freqs.old != freqs.new) {
+> -		local_irq_disable();
+> -
+> -		/* Disable interrupts to the CPU */
+> -		reg = readl_relaxed(priv.base);
+> -		reg |= CPU_SW_INT_BLK;
+> -		writel_relaxed(reg, priv.base);
+> -
+> -		switch (state) {
+> -		case STATE_CPU_FREQ:
+> -			clk_disable(priv.powersave_clk);
+> -			break;
+> -		case STATE_DDR_FREQ:
+> -			clk_enable(priv.powersave_clk);
+> -			break;
+> -		}
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- drivers/net/wireless/ath/ath9k/wmi.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Hi Viresh
 
-diff --git a/drivers/net/wireless/ath/ath9k/wmi.h b/drivers/net/wireless/ath/ath9k/wmi.h
-index fde6da6..0db37f2 100644
---- a/drivers/net/wireless/ath/ath9k/wmi.h
-+++ b/drivers/net/wireless/ath/ath9k/wmi.h
-@@ -39,7 +39,7 @@ struct wmi_fw_version {
- struct wmi_event_swba {
- 	__be64 tsf;
- 	u8 beacon_pending;
--};
-+} __packed;
- 
- /*
-  * 64 - HTC header - WMI header - 1 / txstatus
--- 
-1.8.3.1
+I see you removed the test that the old and the new frequency are
+different. Is this guaranteed by the core? Because if not, you can
+lockup the CPU. The call to cpu_do_idle() will never return.
 
+	Thanks
+		Andrew
