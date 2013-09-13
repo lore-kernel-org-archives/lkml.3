@@ -1,94 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311Ab3IMLIe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 07:08:34 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:54709 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751418Ab3IMLIc (ORCPT
+	id S1755142Ab3IMLPA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 07:15:00 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45093 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751964Ab3IMLO4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 07:08:32 -0400
+	Fri, 13 Sep 2013 07:14:56 -0400
+Date: Fri, 13 Sep 2013 13:14:47 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: trinity finds ftrace/perf bug. Film at 11.
+Message-ID: <20130913111447.GN31370@twins.programming.kicks-ass.net>
+References: <20130911135434.GA678@redhat.com>
+ <20130912141913.2ffc7077@gandalf.local.home>
 MIME-Version: 1.0
-X-Originating-IP: [89.2.206.189]
-In-Reply-To: <CAG-2HqWcnZ-z7EbDd0aAj6y_Ho6szfRZUiK0psEnmoz17Kw-xA@mail.gmail.com>
-References: <1378302428-19758-1-git-send-email-teg@jklm.no>
- <mj+md-20130904.134928.12262.nikam@ucw.cz> <CAG-2HqWcnZ-z7EbDd0aAj6y_Ho6szfRZUiK0psEnmoz17Kw-xA@mail.gmail.com>
-From: Tom Gundersen <teg@jklm.no>
-Date: Fri, 13 Sep 2013 13:08:09 +0200
-Message-ID: <CAG-2HqVex23K1Omck6rhBsW9dUZTvsORcZF9xFO9jpfhdPO0CQ@mail.gmail.com>
-Subject: Re: [PATCH RESEND][pciutils] libpci: pci_id_lookup - add udev/hwdb support
-To: Martin Mares <mj@ucw.cz>
-Cc: linux-pci@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130912141913.2ffc7077@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 4, 2013 at 4:59 PM, Tom Gundersen <teg@jklm.no> wrote:
-> On Wed, Sep 4, 2013 at 3:57 PM, Martin Mares <mj@ucw.cz> wrote:
->> Hello!
->>
->> First of all: Sorry for not replying to the first mail. I do not follow
->> linux-pci too much these days (or, I do that in big batches).
->
-> No problem, I guessed as much.
->
->>> This lets you select hwdb support at compile time.
->>>
->>> hwdb is an efficient hardware database shipped with recent versions of udev.
->>> It contains among other sources pci.ids so querying hwdb rather than reading
->>> pci.ids directly should give the same result.
->>>
->>> Ideally Linux distros using udev could stop shipping pci.ids, but use hwdb
->>> as the only source of this information, which this patch allows.
->>
->> Generally, I will be glad to include hwdb support in libpci.
->
-> Great.
->
->>> +     if [ -f /usr/include/libudev.h -o -f /usr/local/include/libudev.h ] ; then
->>> +             HWDB=yes
->>> +     else
->>> +             HWDB=no
->>> +     fi
->>
->> Does this make sense? Does every version of libudev support hwdb?
->
-> Good point. I'll replace it with a pkg-config call, is that acceptable?
->
->>> @@ -86,8 +91,58 @@ char
->>>  *pci_id_lookup(struct pci_access *a, int flags, int cat, int id1, int id2, int id3, int id4)
->>>  {
->>>    struct id_entry *n, *best;
->>> -  u32 id12 = id_pair(id1, id2);
->>> -  u32 id34 = id_pair(id3, id4);
->>> +  u32 id12, id34;
->>> +
->>> +#ifdef PCI_HAVE_HWDB
->>> +  if (!(flags & PCI_LOOKUP_SKIP_LOCAL))
->>> +    {
->>
->> As you wrote it, hwdb has always priority over pci.ids (unless local lookup is
->> disabled). As a user, I would expect that pci.ids (being a part of the pciutils)
->> is the primary source of data and other sources (network lookups, hwdb) are
->> used only if pci.ids do not match or if explicitly requested.
->
-> Hm, this was actually intentional. The reason being that I'd like to
-> avoid reading in the pci.ids db in the common case, as using the hwdb
-> should be much more efficient (it is most likely already in memory and
-> lookup is constant time), and also we (at the distro level) want to
-> move away from the {usb,pci}.ids and rather default to hwdb
-> everywhere.
->
-> My original intention was to make hwdb a replacement for pci.ids, but
-> I ended up going the less invasive route, would making it a
-> replacement be more acceptable?
->
-> If not, I'll just swap around the priority, not a problem.
+On Thu, Sep 12, 2013 at 02:19:13PM -0400, Steven Rostedt wrote:
+> > WARNING: CPU: 3 PID: 861 at kernel/events/core.c:5566 perf_swevent_add+0x18d/0x1a0()
+> > Modules linked in: ipt_ULOG nfnetlink can_bcm can scsi_transport_iscsi ax25 nfc rfkill af_802154 irda crc_ccitt rds x25 atm appletalk ipx p8023 psnap p8022 llc snd_hda_codec_realtek snd_hda_codec_hdmi xfs snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_page_alloc libcrc32c snd_timer snd e1000e pcspkr ptp pps_core soundcore usb_debug
+> > CPU: 3 PID: 861 Comm: trinity-child31 Not tainted 3.11.0+ #67 
+> >  ffffffff81a2aa43 ffff8801e6c65ae8 ffffffff8171d5cb 0000000000000000
+> >  ffff8801e6c65b20 ffffffff81053e5d ffff8801e66a2e68 ffff880245dcf3e0
+> >  0000000000000004 0000000000000001 0000000004392ac6 ffff8801e6c65b30
+> > Call Trace:
+> >  [<ffffffff8171d5cb>] dump_stack+0x54/0x74
+> >  [<ffffffff81053e5d>] warn_slowpath_common+0x7d/0xa0
+> >  [<ffffffff81053f3a>] warn_slowpath_null+0x1a/0x20
+> >  [<ffffffff8114302d>] perf_swevent_add+0x18d/0x1a0
+> >  [<ffffffff81143ba7>] event_sched_in.isra.78+0x87/0x1c0
+> >  [<ffffffff81144a9a>] group_sched_in+0x6a/0x1c0
+> >  [<ffffffff8114580c>] ctx_sched_in+0x17c/0x290
+> >  [<ffffffff8114595a>] perf_event_sched_in+0x3a/0x90
+> >  [<ffffffff8114940b>] perf_event_context_sched_in+0x7b/0xc0
+> >  [<ffffffff81149f67>] __perf_event_task_sched_in+0x477/0x490
 
-Hi Martin,
+So I've got an idea how this can happen. If we have a per-cpu swevent
+and group it with an uncore counter which lives on another cpu we'll
+migrate the swevent using perf_pmu_migrate_context() but it doesn't
+migrate the swhash.
 
-Any comments on the above before I resubmit?
+The below should be able to confirm that theory if one can reproduce the
+issue.
 
-Cheers,
+---
+ kernel/events/core.c | 8 --------
+ 1 file changed, 8 deletions(-)
 
-Tom
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 2207efc..e1441f5 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -5621,11 +5621,6 @@ static void swevent_hlist_put(struct perf_event *event)
+ {
+ 	int cpu;
+ 
+-	if (event->cpu != -1) {
+-		swevent_hlist_put_cpu(event, event->cpu);
+-		return;
+-	}
+-
+ 	for_each_possible_cpu(cpu)
+ 		swevent_hlist_put_cpu(event, cpu);
+ }
+@@ -5659,9 +5654,6 @@ static int swevent_hlist_get(struct perf_event *event)
+ 	int err;
+ 	int cpu, failed_cpu;
+ 
+-	if (event->cpu != -1)
+-		return swevent_hlist_get_cpu(event, event->cpu);
+-
+ 	get_online_cpus();
+ 	for_each_possible_cpu(cpu) {
+ 		err = swevent_hlist_get_cpu(event, cpu);
