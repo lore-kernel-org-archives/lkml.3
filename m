@@ -1,80 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639Ab3IMFge (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 01:36:34 -0400
-Received: from mail.eperm.de ([89.247.134.16]:39199 "EHLO mail.eperm.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752495Ab3IMFgc convert rfc822-to-8bit (ORCPT
+	id S1755921Ab3IMHcU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 03:32:20 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39844 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754278Ab3IMHcT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 01:36:32 -0400
-From: Stephan Mueller <smueller@chronox.de>
-To: =?ISO-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
-Cc: John Stultz <john.stultz@linaro.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] /dev/random: Insufficient of entropy on many architectures
-Date: Fri, 13 Sep 2013 07:36:20 +0200
-Message-ID: <1974157.PE35U8AyTG@tauon>
-User-Agent: KMail/4.10.5 (Linux/3.10.10-200.fc19.x86_64; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20130912213148.GE3809@logfs.org>
-References: <10005394.BRCyBMYWy3@tauon> <522F984C.2070909@linaro.org> <20130912213148.GE3809@logfs.org>
+	Fri, 13 Sep 2013 03:32:19 -0400
+Date: Fri, 13 Sep 2013 09:31:56 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org
+Subject: Re: [RFC PATCH] Introduce timekeeper latch synchronization
+Message-ID: <20130913073156.GF31370@twins.programming.kicks-ass.net>
+References: <20130913025253.GA17218@Krystal>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130913025253.GA17218@Krystal>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 12. September 2013, 17:31:48 schrieb Jörn Engel:
+On Thu, Sep 12, 2013 at 10:52:53PM -0400, Mathieu Desnoyers wrote:
+> OK! Here is the full implementation of the idea against Linux
+> timekeeper, ntp, and PPS. It appears that ntp and PPS were relying on
+> the timekeeper seqlock too. And guess what, after booting my laptop with
+> this kernel there still no smoke coming out of it after a good 5 minutes
+> of testing. ;-)
+> 
+> Comments are welcome.
 
-Hi Jörn,
+I think that moving stuff into structures is a worthwhile change on its
+own, but I'll leave John and Thomas to decide on all that.
 
->On Tue, 10 September 2013 15:08:12 -0700, John Stultz wrote:
->> Though
->> I probably should be hesitant with my suggestions, as I'm not well
->> versed in RNG theory.
->
->The basic principle of Ted's RNG is very simple and quite sane:
->- You collect as much data as possible, some of which is (hopefully)
->  unpredictable.
->- All the data gets dumped into a small buffer.
->- When reading from the buffer, you create a crypto-hash of the entire
->  buffer.  Even if most of the buffer is predictable, the few
->  unpredictable bits will randomly flip every output bit.
-
-And here the RNG theory breaks: a whitening function (crypto function) 
-like the used SHA1 does not add entropy. Thus, the SHA1 just spreads out 
-the entropy evenly over the output buffer. As entropy can be considered 
-as a kind of percentage value, if you have, say, 10% of your input 
-buffer holding entropy, applying a whitening function, you output buffer 
-still holds 10% of entropy only.
-
-That said, simply using a whitening function on a buffer with poor 
-entropy is NOT going to cut it.
-
->- Half of the hash gets returned to the reader, the other half gets
->  added back into the pool.
->
->It doesn't matter if you collect predictable data - it neither helps
-
-Oh yes, it hurts, if you update the entropy estimator on those 
-predictable bits. Because then you get a deterministic RNG like 
-/dev/urandom in the worst case. Thus you degrade the quality of 
-/dev/random which relies on the blocking nature.
-
->nor hurts.  But you should collect as much unpredictable data as
->possible and do it as cheaply as possible.  If you want to improve the
->RNG, you either collect more data, collect better (less predictable)
->data or make the collection cheaper.
->
->Jörn
->
->--
->People really ought to be forced to read their code aloud over the
->phone. That would rapidly improve the choice of identifiers.
->-- Al Viro
-
-
-Ciao
-Stephan
+The latch thing does make the update side slightly more expensive due to
+having to do that copy every time, but ideally that wouldn't happen all
+that often.
