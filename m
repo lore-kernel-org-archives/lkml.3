@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933947Ab3IMNWM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:22:12 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:37405 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933934Ab3IMNWH (ORCPT
+	id S1757417Ab3IMNWW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:22:22 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:64430 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756704Ab3IMNWO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:22:07 -0400
+	Fri, 13 Sep 2013 09:22:14 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 162/228] cpufreq: longhaul: Convert to light weight ->target_index() routine
-Date: Fri, 13 Sep 2013 18:31:48 +0530
-Message-Id: <a618768d1399bbf05f00b5d95a9511577db40432.1379063063.git.viresh.kumar@linaro.org>
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        John Crispin <blogic@openwrt.org>
+Subject: [PATCH 163/228] cpufreq: loongson2: Convert to light weight ->target_index() routine
+Date: Fri, 13 Sep 2013 18:31:49 +0530
+Message-Id: <4e9bf466c8056c7f024ed1eacb7579d612bcf53a.1379063063.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
 References: <cover.1379063063.git.viresh.kumar@linaro.org>
@@ -31,47 +32,68 @@ This patch converts existing .target() to newly defined light weight
 CPUFreq core will call cpufreq_frequency_table_target() before calling this
 routine and will pass index to it.
 
+Cc: John Crispin <blogic@openwrt.org>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/longhaul.c | 13 ++-----------
- 1 file changed, 2 insertions(+), 11 deletions(-)
+ drivers/cpufreq/loongson2_cpufreq.c | 21 +++++----------------
+ 1 file changed, 5 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/cpufreq/longhaul.c b/drivers/cpufreq/longhaul.c
-index 14df497..45bafdd 100644
---- a/drivers/cpufreq/longhaul.c
-+++ b/drivers/cpufreq/longhaul.c
-@@ -626,21 +626,12 @@ static void longhaul_setup_voltagescaling(void)
- 
- 
- static int longhaul_target(struct cpufreq_policy *policy,
--			    unsigned int target_freq, unsigned int relation)
-+			    unsigned int table_index)
+diff --git a/drivers/cpufreq/loongson2_cpufreq.c b/drivers/cpufreq/loongson2_cpufreq.c
+index 2c8ec8e..41a8e2c 100644
+--- a/drivers/cpufreq/loongson2_cpufreq.c
++++ b/drivers/cpufreq/loongson2_cpufreq.c
+@@ -53,11 +53,9 @@ static unsigned int loongson2_cpufreq_get(unsigned int cpu)
+  * Here we notify other drivers of the proposed change and the final change.
+  */
+ static int loongson2_cpufreq_target(struct cpufreq_policy *policy,
+-				     unsigned int target_freq,
+-				     unsigned int relation)
++				     unsigned int index)
  {
--	unsigned int table_index = 0;
- 	unsigned int i;
- 	unsigned int dir = 0;
- 	u8 vid, current_vid;
+ 	unsigned int cpu = policy->cpu;
+-	unsigned int newstate = 0;
+ 	cpumask_t cpus_allowed;
+ 	struct cpufreq_freqs freqs;
+ 	unsigned int freq;
+@@ -65,26 +63,17 @@ static int loongson2_cpufreq_target(struct cpufreq_policy *policy,
+ 	cpus_allowed = current->cpus_allowed;
+ 	set_cpus_allowed_ptr(current, cpumask_of(cpu));
  
--	if (cpufreq_frequency_table_target(policy, longhaul_table, target_freq,
--				relation, &table_index))
+-	if (cpufreq_frequency_table_target
+-	    (policy, &loongson2_clockmod_table[0], target_freq, relation,
+-	     &newstate))
 -		return -EINVAL;
 -
--	/* Don't set same frequency again */
--	if (longhaul_index == table_index)
+ 	freq =
+ 	    ((cpu_clock_freq / 1000) *
+-	     loongson2_clockmod_table[newstate].driver_data) / 8;
+-	if (freq < policy->min || freq > policy->max)
+-		return -EINVAL;
++	     loongson2_clockmod_table[index].driver_data) / 8;
+ 
+-	pr_debug("cpufreq: requested frequency %u Hz\n", target_freq * 1000);
++	pr_debug("cpufreq: requested frequency %u Hz\n",
++			loongson2_clockmod_table[index].frequency * 1000);
+ 
+ 	freqs.old = loongson2_cpufreq_get(cpu);
+ 	freqs.new = freq;
+ 	freqs.flags = 0;
+ 
+-	if (freqs.new == freqs.old)
 -		return 0;
 -
- 	if (!can_scale_voltage)
- 		longhaul_setstate(policy, table_index);
- 	else {
-@@ -919,7 +910,7 @@ static int longhaul_cpu_init(struct cpufreq_policy *policy)
+ 	/* notifiers */
+ 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
  
- static struct cpufreq_driver longhaul_driver = {
- 	.verify	= cpufreq_generic_frequency_table_verify,
--	.target	= longhaul_target,
-+	.target_index = longhaul_target,
- 	.get	= longhaul_get,
- 	.init	= longhaul_cpu_init,
- 	.exit	= cpufreq_generic_exit,
+@@ -145,7 +134,7 @@ static struct cpufreq_driver loongson2_cpufreq_driver = {
+ 	.name = "loongson2",
+ 	.init = loongson2_cpufreq_cpu_init,
+ 	.verify = cpufreq_generic_frequency_table_verify,
+-	.target = loongson2_cpufreq_target,
++	.target_index = loongson2_cpufreq_target,
+ 	.get = loongson2_cpufreq_get,
+ 	.exit = loongson2_cpufreq_exit,
+ 	.attr = cpufreq_generic_attr,
 -- 
 1.7.12.rc2.18.g61b472e
 
