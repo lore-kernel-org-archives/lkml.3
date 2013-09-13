@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757149Ab3IMNEi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:04:38 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:50461 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757114Ab3IMNEd (ORCPT
+	id S1757294Ab3IMNE5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:04:57 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:38576 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757228Ab3IMNEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:04:33 -0400
+	Fri, 13 Sep 2013 09:04:47 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 013/228] cpufreq: acpi-cpufreq: use cpufreq_table_validate_and_show()
-Date: Fri, 13 Sep 2013 18:29:19 +0530
-Message-Id: <a8124810563dfe47afcd334a0c33ae824ce695f6.1379063063.git.viresh.kumar@linaro.org>
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Steven Miao <realmz6@gmail.com>
+Subject: [PATCH 015/228] cpufreq: blackfin: use cpufreq_table_validate_and_show()
+Date: Fri, 13 Sep 2013 18:29:21 +0530
+Message-Id: <66cd8db433adb66e71f1628d8af6c6e3be1323cd.1379063063.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
 References: <cover.1379063063.git.viresh.kumar@linaro.org>
@@ -28,33 +29,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Lets use cpufreq_table_validate_and_show() instead of calling
 cpufreq_frequency_table_cpuinfo() and cpufreq_frequency_table_get_attr().
 
+Cc: Steven Miao <realmz6@gmail.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/acpi-cpufreq.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/cpufreq/blackfin-cpufreq.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
-index a1260b4..71f8e15 100644
---- a/drivers/cpufreq/acpi-cpufreq.c
-+++ b/drivers/cpufreq/acpi-cpufreq.c
-@@ -837,7 +837,7 @@ static int acpi_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 	data->freq_table[valid_states].frequency = CPUFREQ_TABLE_END;
- 	perf->state = 0;
+diff --git a/drivers/cpufreq/blackfin-cpufreq.c b/drivers/cpufreq/blackfin-cpufreq.c
+index ef05978..54c0a0c 100644
+--- a/drivers/cpufreq/blackfin-cpufreq.c
++++ b/drivers/cpufreq/blackfin-cpufreq.c
+@@ -210,8 +210,7 @@ static int __bfin_cpu_init(struct cpufreq_policy *policy)
+ 	policy->cpuinfo.transition_latency = 50000; /* 50us assumed */
  
--	result = cpufreq_frequency_table_cpuinfo(policy, data->freq_table);
-+	result = cpufreq_table_validate_and_show(policy, data->freq_table);
- 	if (result)
- 		goto err_freqfree;
+ 	policy->cur = cclk;
+-	cpufreq_frequency_table_get_attr(bfin_freq_table, policy->cpu);
+-	return cpufreq_frequency_table_cpuinfo(policy, bfin_freq_table);
++	return cpufreq_table_validate_and_show(policy, bfin_freq_table);
+ }
  
-@@ -868,8 +868,6 @@ static int acpi_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 			(u32) perf->states[i].power,
- 			(u32) perf->states[i].transition_latency);
- 
--	cpufreq_frequency_table_get_attr(data->freq_table, policy->cpu);
--
- 	/*
- 	 * the first call to ->target() should result in us actually
- 	 * writing something to the appropriate registers.
+ static struct freq_attr *bfin_freq_attr[] = {
 -- 
 1.7.12.rc2.18.g61b472e
 
