@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933073Ab3IMNUh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:20:37 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:64951 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933757Ab3IMNU3 (ORCPT
+	id S932692Ab3IMNUp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:20:45 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:48555 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933801Ab3IMNUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:20:29 -0400
+	Fri, 13 Sep 2013 09:20:36 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 148/228] cpufreq: acpi: Convert to light weight ->target_index() routine
-Date: Fri, 13 Sep 2013 18:31:34 +0530
-Message-Id: <40776b7be5e8ec5300b83298e0bf967bc3bf61a0.1379063063.git.viresh.kumar@linaro.org>
+Subject: [PATCH 149/228] cpufreq: arm_big_little: Convert to light weight ->target_index() routine
+Date: Fri, 13 Sep 2013 18:31:35 +0530
+Message-Id: <d8d4ea46426066dc5e962b08aebe6543a29d4ca5.1379063063.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
 References: <cover.1379063063.git.viresh.kumar@linaro.org>
@@ -33,70 +33,55 @@ routine and will pass index to it.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/acpi-cpufreq.c | 21 ++++++---------------
- 1 file changed, 6 insertions(+), 15 deletions(-)
+ drivers/cpufreq/arm_big_little.c | 17 +++++------------
+ 1 file changed, 5 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
-index 372febf..7536e7d 100644
---- a/drivers/cpufreq/acpi-cpufreq.c
-+++ b/drivers/cpufreq/acpi-cpufreq.c
-@@ -424,17 +424,17 @@ static unsigned int check_freqs(const struct cpumask *mask, unsigned int freq,
- }
+diff --git a/drivers/cpufreq/arm_big_little.c b/drivers/cpufreq/arm_big_little.c
+index f7717ef..c3936ef 100644
+--- a/drivers/cpufreq/arm_big_little.c
++++ b/drivers/cpufreq/arm_big_little.c
+@@ -49,28 +49,21 @@ static unsigned int bL_cpufreq_get(unsigned int cpu)
  
- static int acpi_cpufreq_target(struct cpufreq_policy *policy,
--			       unsigned int target_freq, unsigned int relation)
-+			       unsigned int index)
+ /* Set clock frequency */
+ static int bL_cpufreq_set_target(struct cpufreq_policy *policy,
+-		unsigned int target_freq, unsigned int relation)
++		unsigned int index)
  {
- 	struct acpi_cpufreq_data *data = per_cpu(acfreq_data, policy->cpu);
- 	struct acpi_processor_performance *perf;
  	struct cpufreq_freqs freqs;
- 	struct drv_cmd cmd;
--	unsigned int next_state = 0; /* Index into freq_table */
- 	unsigned int next_perf_state = 0; /* Index into perf table */
- 	int result = 0;
+-	u32 cpu = policy->cpu, freq_tab_idx, cur_cluster;
++	u32 cpu = policy->cpu, cur_cluster;
+ 	int ret = 0;
  
--	pr_debug("acpi_cpufreq_target %d (%d)\n", target_freq, policy->cpu);
-+	pr_debug("acpi_cpufreq_target %d (%d)\n",
-+			data->freq_table[index].frequency, policy->cpu);
+ 	cur_cluster = cpu_to_cluster(policy->cpu);
  
- 	if (unlikely(data == NULL ||
- 	     data->acpi_data == NULL || data->freq_table == NULL)) {
-@@ -442,16 +442,7 @@ static int acpi_cpufreq_target(struct cpufreq_policy *policy,
- 	}
- 
- 	perf = data->acpi_data;
--	result = cpufreq_frequency_table_target(policy,
--						data->freq_table,
--						target_freq,
--						relation, &next_state);
--	if (unlikely(result)) {
--		result = -ENODEV;
--		goto out;
--	}
+ 	freqs.old = bL_cpufreq_get(policy->cpu);
 -
--	next_perf_state = data->freq_table[next_state].driver_data;
-+	next_perf_state = data->freq_table[index].driver_data;
- 	if (perf->state == next_perf_state) {
- 		if (unlikely(data->resume)) {
- 			pr_debug("Called after resume, resetting to P%d\n",
-@@ -493,7 +484,7 @@ static int acpi_cpufreq_target(struct cpufreq_policy *policy,
- 		cmd.mask = cpumask_of(policy->cpu);
+-	/* Determine valid target frequency using freq_table */
+-	cpufreq_frequency_table_target(policy, freq_table[cur_cluster],
+-			target_freq, relation, &freq_tab_idx);
+-	freqs.new = freq_table[cur_cluster][freq_tab_idx].frequency;
++	freqs.new = freq_table[cur_cluster][index].frequency;
  
- 	freqs.old = perf->states[perf->state].core_frequency * 1000;
--	freqs.new = data->freq_table[next_state].frequency;
-+	freqs.new = data->freq_table[index].frequency;
+ 	pr_debug("%s: cpu: %d, cluster: %d, oldfreq: %d, target freq: %d, new freq: %d\n",
+-			__func__, cpu, cur_cluster, freqs.old, target_freq,
++			__func__, cpu, cur_cluster, freqs.old, freqs.new,
+ 			freqs.new);
+ 
+-	if (freqs.old == freqs.new)
+-		return 0;
+-
  	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
  
- 	drv_write(&cmd);
-@@ -918,7 +909,7 @@ static struct freq_attr *acpi_cpufreq_attr[] = {
- 
- static struct cpufreq_driver acpi_cpufreq_driver = {
- 	.verify		= cpufreq_generic_frequency_table_verify,
--	.target		= acpi_cpufreq_target,
-+	.target_index	= acpi_cpufreq_target,
- 	.bios_limit	= acpi_processor_get_bios_limit,
- 	.init		= acpi_cpufreq_cpu_init,
- 	.exit		= acpi_cpufreq_cpu_exit,
+ 	ret = clk_set_rate(clk[cur_cluster], freqs.new * 1000);
+@@ -200,7 +193,7 @@ static struct cpufreq_driver bL_cpufreq_driver = {
+ 	.flags			= CPUFREQ_STICKY |
+ 					CPUFREQ_HAVE_GOVERNOR_PER_POLICY,
+ 	.verify			= cpufreq_generic_frequency_table_verify,
+-	.target			= bL_cpufreq_set_target,
++	.target_index		= bL_cpufreq_set_target,
+ 	.get			= bL_cpufreq_get,
+ 	.init			= bL_cpufreq_init,
+ 	.exit			= bL_cpufreq_exit,
 -- 
 1.7.12.rc2.18.g61b472e
 
