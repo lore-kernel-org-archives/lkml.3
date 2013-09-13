@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933671Ab3IMNTf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:19:35 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:40117 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933613Ab3IMNTN (ORCPT
+	id S933698Ab3IMNTn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:19:43 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:37600 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933669Ab3IMNTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:19:13 -0400
+	Fri, 13 Sep 2013 09:19:35 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 137/228] cpufreq: maple: use cpufreq_generic_init() routine
-Date: Fri, 13 Sep 2013 18:31:23 +0530
-Message-Id: <72a62d6c0deb04eb0262ebc9bc52b6a3735d7466.1379063063.git.viresh.kumar@linaro.org>
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 140/228] cpufreq: pmac32: use cpufreq_generic_init() routine
+Date: Fri, 13 Sep 2013 18:31:26 +0530
+Message-Id: <6c271510b5635b33d09b34211ca6e2265932f45c.1379063063.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
 References: <cover.1379063063.git.viresh.kumar@linaro.org>
@@ -28,33 +29,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Use generic cpufreq_generic_init() routine instead of replicating the same code
 here.
 
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/maple-cpufreq.c | 9 +--------
- 1 file changed, 1 insertion(+), 8 deletions(-)
+ drivers/cpufreq/pmac32-cpufreq.c | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-diff --git a/drivers/cpufreq/maple-cpufreq.c b/drivers/cpufreq/maple-cpufreq.c
-index 1c0cec1..eb1e176 100644
---- a/drivers/cpufreq/maple-cpufreq.c
-+++ b/drivers/cpufreq/maple-cpufreq.c
-@@ -165,16 +165,9 @@ static unsigned int maple_cpufreq_get_speed(unsigned int cpu)
+diff --git a/drivers/cpufreq/pmac32-cpufreq.c b/drivers/cpufreq/pmac32-cpufreq.c
+index 672b7f4..6eac1e2 100644
+--- a/drivers/cpufreq/pmac32-cpufreq.c
++++ b/drivers/cpufreq/pmac32-cpufreq.c
+@@ -392,12 +392,7 @@ static int pmac_cpufreq_target(	struct cpufreq_policy *policy,
  
- static int maple_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ static int pmac_cpufreq_cpu_init(struct cpufreq_policy *policy)
  {
--	policy->cpuinfo.transition_latency = 12000;
--	/* secondary CPUs are tied to the primary one by the
--	 * cpufreq core if in the secondary policy we tell it that
--	 * it actually must be one policy together with all others. */
--	cpumask_setall(policy->cpus);
+-	if (policy->cpu != 0)
+-		return -ENODEV;
 -
--	return cpufreq_table_validate_and_show(policy, maple_cpu_freqs);
-+	return cpufreq_generic_init(policy, maple_cpu_freqs, 12000);
+-	policy->cpuinfo.transition_latency	= transition_latency;
+-
+-	return cpufreq_table_validate_and_show(policy, pmac_cpu_freqs);
++	return cpufreq_generic_init(policy, pmac_cpu_freqs, transition_latency);
  }
  
--
- static struct cpufreq_driver maple_cpufreq_driver = {
- 	.name		= "maple",
- 	.flags		= CPUFREQ_CONST_LOOPS,
+ static u32 read_gpio(struct device_node *np)
 -- 
 1.7.12.rc2.18.g61b472e
 
