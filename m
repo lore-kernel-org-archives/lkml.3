@@ -1,97 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757929Ab3IMN2L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:28:11 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:9910 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757876Ab3IMN2F (ORCPT
+	id S1757891Ab3IMNeD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:34:03 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:40646 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757893Ab3IMN2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:28:05 -0400
-X-AuditID: cbfee61a-b7f7a6d00000235f-4a-523312e32741
-From: Chao Yu <chao2.yu@samsung.com>
-To: Kim Jaegeuk <jaegeuk.kim@gmail.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        =?gb2312?B?zLfmrQ==?= <shu.tan@samsung.com>
-Subject: [f2fs-dev][PATCH RESEND] f2fs: avoid allocating failure in bio_alloc
-Date: Fri, 13 Sep 2013 21:27:22 +0800
-Message-id: <000301ceb085$13189480$3949bd80$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=gb2312
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac6wg0wxnNTqEcG4SXSCx+iC8kLuVg==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJLMWRmVeSWpSXmKPExsVy+t9jAd3HQsZBBuub9SxuX5nEYnFpkbvF
-	nr0nWSwu75rDZtG68DyzA6vHzll32T12L/jM5NG3ZRWjx+dNcgEsUVw2Kak5mWWpRfp2CVwZ
-	t++cYSr4wF9x+HU/SwPjJu4uRk4OCQETiQ1PdjFC2GISF+6tZ+ti5OIQEljEKHHl62ko5wej
-	xLXdF9hAqtgEVCSWd/xnArFFBNQlvv2ZwwJSxCwwjVFi/pLvYEXCAr4SX148ArNZBFQlft1a
-	zgJi8wpYSizf/4kZwhaU+DH5HlicWUBDon/RBjYIW15i85q3zBAnKUjsOPuaEWKZnsTC6VMY
-	IWrEJTYeucUygVFgFpJRs5CMmoVk1CwkLQsYWVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525i
-	BAf4M6kdjCsbLA4xCnAwKvHwdsQYBQmxJpYVV+YeYpTgYFYS4Z11FyjEm5JYWZValB9fVJqT
-	WnyIUZqDRUmc90CrdaCQQHpiSWp2ampBahFMlomDU6qBUXSJcHaxIOtG7u9nFgl9yGDsj72b
-	trXEILM1vZ1l6XbziSw7C8sstoQ0zPXLvPrf/vV0+5aFX68uTH77arI70yFGj0flZu8+1n5M
-	2OWzNLkyZNHuN3uZGqLmia3wS4tJ/3B1UedW8Qu2LybwVU2Ldn93+8kRK678nZUqlsucu8Jz
-	5USnTV7WocRSnJFoqMVcVJwIAHEeXsBsAgAA
+	Fri, 13 Sep 2013 09:28:02 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 210/228] cpufreq: speedstep: remove calls to cpufreq_notify_transition()
+Date: Fri, 13 Sep 2013 18:32:36 +0530
+Message-Id: <6b616db1b7d44daa866c5dafc82f88de92f381bd.1379063063.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
+References: <cover.1379063063.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
+References: <cover.1379063063.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add macro MAX_BIO_BLOCKS to limit value of npages in
-f2fs_bio_alloc,
-it can avoid allocating failure in bio_alloc caused by npages is larger than
-UIO_MAXIOV.
+Most of the drivers do following in their ->target_index() routines:
 
-Signed-off-by: Yu Chao <chao2.yu@samsung.com>
- ---
- fs/f2fs/segment.c |    4 +++-
- fs/f2fs/segment.h |    3 +++
- 2 files changed, 6 insertions(+), 1 deletion(-)
+	struct cpufreq_freqs freqs;
+	freqs.old = old freq...
+	freqs.new = new freq...
 
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index 09af9c7..bd79bbe 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -657,6 +657,7 @@ static void submit_write_page(struct f2fs_sb_info *sbi,
-struct page *page,
-                                block_t blk_addr, enum page_type type)
- {
-        struct block_device *bdev = sbi->sb->s_bdev;
-+       int bio_blocks;
- 
-        verify_block_addr(sbi, blk_addr);
- 
-@@ -676,7 +677,8 @@ retry:
-                        goto retry;
-                }
- 
--               sbi->bio[type] = f2fs_bio_alloc(bdev, max_hw_blocks(sbi));
-+               bio_blocks = MAX_BIO_BLOCKS(max_hw_blocks(sbi));
-+               sbi->bio[type] = f2fs_bio_alloc(bdev, bio_blocks);
-                sbi->bio[type]->bi_sector = SECTOR_FROM_BLOCK(sbi,
-blk_addr);
-                sbi->bio[type]->bi_private = priv;
-                /*
-diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
-index bdd10ea..6352af1 100644
---- a/fs/f2fs/segment.h
-+++ b/fs/f2fs/segment.h
-@@ -9,6 +9,7 @@
-  * published by the Free Software Foundation.
-  */
- #include <linux/blkdev.h>
-+#include <linux/uio.h>
- 
- /* constant macro */
- #define NULL_SEGNO                     ((unsigned int)(~0))
-@@ -90,6 +91,8 @@
-        (blk_addr << ((sbi)->log_blocksize - F2FS_LOG_SECTOR_SIZE))
- #define SECTOR_TO_BLOCK(sbi, sectors)                                  \
-        (sectors >> ((sbi)->log_blocksize - F2FS_LOG_SECTOR_SIZE))
-+#define MAX_BIO_BLOCKS(max_hw_blocks)                                  \
-+       (min((int)max_hw_blocks, UIO_MAXIOV))
- 
- /* during checkpoint, bio_private is used to synchronize the last bio */
- struct bio_private {
+	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
+
+	/* Change rate here */
+
+	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
+
+This is replicated over all cpufreq drivers today and there doesn't exists a
+good enough reason why this shouldn't be moved to cpufreq core instead.
+
+Earlier patches have added support in cpufreq core to do cpufreq notification on
+frequency change, this one removes it from this driver.
+
+Some related minor cleanups are also done along with it.
+
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
+ drivers/cpufreq/speedstep-centrino.c | 20 +-------------------
+ drivers/cpufreq/speedstep-ich.c      |  9 ---------
+ drivers/cpufreq/speedstep-smi.c      |  7 -------
+ 3 files changed, 1 insertion(+), 35 deletions(-)
+
+diff --git a/drivers/cpufreq/speedstep-centrino.c b/drivers/cpufreq/speedstep-centrino.c
+index b7a2f8d..90b4581 100644
+--- a/drivers/cpufreq/speedstep-centrino.c
++++ b/drivers/cpufreq/speedstep-centrino.c
+@@ -424,9 +424,8 @@ static int centrino_cpu_exit(struct cpufreq_policy *policy)
+ static int centrino_target(struct cpufreq_policy *policy, unsigned int index)
+ {
+ 	unsigned int	msr, oldmsr = 0, h = 0, cpu = policy->cpu;
+-	struct cpufreq_freqs	freqs;
+ 	int			retval = 0;
+-	unsigned int		j, first_cpu, tmp;
++	unsigned int		j, first_cpu;
+ 	struct cpufreq_frequency_table *op_points;
+ 	cpumask_var_t covered_cpus;
+ 
+@@ -474,15 +473,6 @@ static int centrino_target(struct cpufreq_policy *policy, unsigned int index)
+ 				goto out;
+ 			}
+ 
+-			freqs.old = extract_clock(oldmsr, cpu, 0);
+-			freqs.new = extract_clock(msr, cpu, 0);
+-
+-			pr_debug("target=%dkHz old=%d new=%d msr=%04x\n",
+-				op_points->frequency, freqs.old, freqs.new, msr);
+-
+-			cpufreq_notify_transition(policy, &freqs,
+-					CPUFREQ_PRECHANGE);
+-
+ 			first_cpu = 0;
+ 			/* all but 16 LSB are reserved, treat them with care */
+ 			oldmsr &= ~0xffff;
+@@ -497,8 +487,6 @@ static int centrino_target(struct cpufreq_policy *policy, unsigned int index)
+ 		cpumask_set_cpu(j, covered_cpus);
+ 	}
+ 
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
+-
+ 	if (unlikely(retval)) {
+ 		/*
+ 		 * We have failed halfway through the frequency change.
+@@ -509,12 +497,6 @@ static int centrino_target(struct cpufreq_policy *policy, unsigned int index)
+ 
+ 		for_each_cpu(j, covered_cpus)
+ 			wrmsr_on_cpu(j, MSR_IA32_PERF_CTL, oldmsr, h);
+-
+-		tmp = freqs.new;
+-		freqs.new = freqs.old;
+-		freqs.old = tmp;
+-		cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
+-		cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
+ 	}
+ 	retval = 0;
+ 
+diff --git a/drivers/cpufreq/speedstep-ich.c b/drivers/cpufreq/speedstep-ich.c
+index 707721e..7639b2b 100644
+--- a/drivers/cpufreq/speedstep-ich.c
++++ b/drivers/cpufreq/speedstep-ich.c
+@@ -258,21 +258,12 @@ static unsigned int speedstep_get(unsigned int cpu)
+ static int speedstep_target(struct cpufreq_policy *policy, unsigned int index)
+ {
+ 	unsigned int policy_cpu;
+-	struct cpufreq_freqs freqs;
+ 
+ 	policy_cpu = cpumask_any_and(policy->cpus, cpu_online_mask);
+-	freqs.old = speedstep_get(policy_cpu);
+-	freqs.new = speedstep_freqs[index].frequency;
+-
+-	pr_debug("transiting from %u to %u kHz\n", freqs.old, freqs.new);
+-
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
+ 
+ 	smp_call_function_single(policy_cpu, _speedstep_set_state, &index,
+ 				 true);
+ 
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
+-
+ 	return 0;
+ }
+ 
+diff --git a/drivers/cpufreq/speedstep-smi.c b/drivers/cpufreq/speedstep-smi.c
+index 19446e4..0f5326d 100644
+--- a/drivers/cpufreq/speedstep-smi.c
++++ b/drivers/cpufreq/speedstep-smi.c
+@@ -241,14 +241,7 @@ static void speedstep_set_state(unsigned int state)
+  */
+ static int speedstep_target(struct cpufreq_policy *policy, unsigned int index)
+ {
+-	struct cpufreq_freqs freqs;
+-
+-	freqs.old = speedstep_freqs[speedstep_get_state()].frequency;
+-	freqs.new = speedstep_freqs[index].frequency;
+-
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
+ 	speedstep_set_state(index);
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
+ 
+ 	return 0;
+ }
+-- 
+1.7.12.rc2.18.g61b472e
 
