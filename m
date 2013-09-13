@@ -1,35 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932206Ab3IMO66 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 10:58:58 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54981 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932128Ab3IMO64 (ORCPT
+	id S932211Ab3IMPBA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 11:01:00 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:35600 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755762Ab3IMPA7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 10:58:56 -0400
-Date: Fri, 13 Sep 2013 16:58:50 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: trinity finds ftrace/perf bug. Film at 11.
-Message-ID: <20130913145850.GI21832@twins.programming.kicks-ass.net>
-References: <20130911135434.GA678@redhat.com>
- <20130912141913.2ffc7077@gandalf.local.home>
- <20130913105637.GM31370@twins.programming.kicks-ass.net>
- <20130913103238.2a88c3e3@gandalf.local.home>
+	Fri, 13 Sep 2013 11:00:59 -0400
+Date: Fri, 13 Sep 2013 11:00:38 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Ming Lei <ming.lei@canonical.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] firmware: Be a bit more verbose about direct firmware
+ loading failure
+Message-ID: <20130913150038.GB31185@hmsreliant.think-freely.org>
+References: <1378496168-3684-1-git-send-email-nhorman@tuxdriver.com>
+ <CACVXFVPRWEXMHyGhfZVGX2HrL3cguqVBUjTS51r2p8EGt=EPdg@mail.gmail.com>
+ <20130911141943.GA3181@neilslaptop.think-freely.org>
+ <CACVXFVNfkfsSJJUK_BWHLnddk=NAWDJoERmg_qycYa11G_X2RA@mail.gmail.com>
+ <20130912131655.GA8619@hmsreliant.think-freely.org>
+ <20130912184630.GA15948@khazad-dum.debian.net>
+ <20130912203633.GC8619@hmsreliant.think-freely.org>
+ <20130913135639.GA17010@khazad-dum.debian.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130913103238.2a88c3e3@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20130913135639.GA17010@khazad-dum.debian.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 13, 2013 at 10:32:38AM -0400, Steven Rostedt wrote:
-> "These are not the pasties you are looking for"
+On Fri, Sep 13, 2013 at 10:56:39AM -0300, Henrique de Moraes Holschuh wrote:
+> On Thu, 12 Sep 2013, Neil Horman wrote:
+> > On Thu, Sep 12, 2013 at 03:46:30PM -0300, Henrique de Moraes Holschuh wrote:
+> > > On Thu, 12 Sep 2013, Neil Horman wrote:
+> > > > Both of these execptions should be rare, and are something the administrator
+> > > > will want to know about, so as not to confuse the real error with the mystery
+> > > > -ENOENT you would get if you fell back to the user mode helepr and it wansn't
+> > > > configured on in the running kernel.
+> > > 
+> > > Except, of course, for Intel processor microcode updates, which are going to
+> > > cause ENOENT on a large number of systems.
+> > > 
+> > > This will generate a large number of questions by users on the distro MLs.
+> > > 
+> > > However, IMHO this is *not* a reason to refuse this patch series.  If
+> > > anything, at least for Debian I will use it as an opportunity to educate
+> > > people about the existence of microcode update packages in "non-free".
+> > > 
+> > I agree. If people are running with downlevel microcode, they shold know about
+> > it.  You can't expect request_firmware to fail silently.  If people complain, I
+> > think the right solution would be to add a test to the microcode_request_fw
+> > function to check for the existence of the file before requesting it.
+> 
+> Make it a firmware loader API for "optional" firmware (i.e. which doesn't
+> complain on ENOENT), leaving for the caller the detail of whether a
+> firmware-not-there failure should be logged or not.
+> 
+That makes sense, I'll subit that in a separate patch this afternoon
+Thanks!
+Neil
 
-I was so reading pastries there.. and I'd be sooo looking for pastries
-yumm! :-)
+> -- 
+>   "One disk to rule them all, One disk to find them. One disk to bring
+>   them all and in the darkness grind them. In the Land of Redmond
+>   where the shadows lie." -- The Silicon Valley Tarot
+>   Henrique Holschuh
+> 
