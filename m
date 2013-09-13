@@ -1,103 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756073Ab3IMLzK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 07:55:10 -0400
-Received: from plane.gmane.org ([80.91.229.3]:58181 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755160Ab3IMLzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 07:55:08 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Thorsten Glaser <tg@mirbsd.de>
-Subject: Re: [PATCH] /dev/random: Insufficient of entropy on many architectures
-Date: Fri, 13 Sep 2013 11:54:40 +0000 (UTC)
-Message-ID: <loom.20130913T134347-937@post.gmane.org>
-References: <10005394.BRCyBMYWy3@tauon> <522F984C.2070909@linaro.org> <20130912213148.GE3809@logfs.org> <1974157.PE35U8AyTG@tauon>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 94.198.62.204 (Mozilla/5.0 (X11; Linux 3.10-2-amd64 i686) KHTML/4.10.5 (like Gecko) Konqueror/4.10)
+	id S1755675Ab3IMMD2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 08:03:28 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:55388 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842Ab3IMMDY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 08:03:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130913080539.GG19211@elgon.mountain>
+References: <20130913080539.GG19211@elgon.mountain>
+Date: Fri, 13 Sep 2013 14:03:23 +0200
+X-Google-Sender-Auth: SbRZMduZcUu8y85RgMdJ9ZSt1u4
+Message-ID: <CAMuHMdX88cUEu2dmamEttK=9Lv0TKiZauCtPDLbgKUde+8ufyQ@mail.gmail.com>
+Subject: Re: [patch 3/4] skd: use strncpy() as a cleanup
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>,
+        Ramprasad Chinthekindi <rchinthekindi@stec-inc.com>,
+        Akhil Bhansali <abhansali@stec-inc.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephan Mueller <smueller <at> chronox.de> writes:
+On Fri, Sep 13, 2013 at 10:05 AM, Dan Carpenter
+<dan.carpenter@oracle.com> wrote:
+> The code here is copying the version to inq.driver_version but we don't
+> want it to be NUL terminated.  Instead we pad the rest of the array with
+> spaces.  It's fewer lines to use strncpy() and maybe a little nicer.
+>
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+>
+> diff --git a/drivers/block/skd_main.c b/drivers/block/skd_main.c
+> index f892d95..20ad843 100644
+> --- a/drivers/block/skd_main.c
+> +++ b/drivers/block/skd_main.c
+> @@ -2899,9 +2899,7 @@ static void skd_do_inq_page_da(struct skd_device *skdev,
+>                                volatile struct fit_comp_error_info *skerr,
+>                                uint8_t *cdb, uint8_t *buf)
+>  {
+> -       unsigned ver_byte;
+>         unsigned max_bytes;
+> -       char *ver = DRV_VER_COMPL;
+>         struct driver_inquiry_data inq;
+>         u16 val;
+>
+> @@ -2945,12 +2943,8 @@ static void skd_do_inq_page_da(struct skd_device *skdev,
+>         /* Driver version, fixed lenth, padded with spaces on the right */
+>         inq.driver_version_length = sizeof(inq.driver_version);
+>         memset(&inq.driver_version, ' ', sizeof(inq.driver_version));
+> -       for (ver_byte = 0; ver_byte < sizeof(inq.driver_version); ver_byte++) {
+> -               if (ver[ver_byte] != 0)
+> -                       inq.driver_version[ver_byte] = ver[ver_byte];
+> -               else
+> -                       break;
+> -       }
+> +       strncpy(inq.driver_version, DRV_VER_COMPL,
+> +               min(sizeof(inq.driver_version), strlen(DRV_VER_COMPL)));
 
-> And here the RNG theory breaks: a whitening function (crypto function) 
-> like the used SHA1 does not add entropy. Thus, the SHA1 just spreads out 
-> the entropy evenly over the output buffer. As entropy can be considered 
+This does the exact same thing as memcpy(), right? So why not use that?
+memcpy() has much simpler semantics than strncpy().
 
-That’s why you also use a (faster, less powerful) mixing function
-on input.
+>         inq.page_length = cpu_to_be16((sizeof(inq) - 4));
 
-I was wondering: why not use Jenkins’ one-at-a-time hash there?
-I’ve worked with it a bit, and it has good avalanche behaviour;
-I didn’t measure any cycles though.
+Gr{oetje,eeting}s,
 
-Basically, h be an uint32_t register (usually loaded from a
-memory location and stored to one afterwards), then you do:
+                        Geert
 
-    (h) += (uint8_t)(b);
-#ifdef with_mirabilos_changes
-    ++(h);
-#endif
-    (h) += (h) << 10;
-    (h) ^= (h) >> 6;
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-I’m adding 1 after the first step (adding the byte) in order
-to make even NUL bytes make up a difference.
-
-I’m toying with code that has 32 such uint32_t values, making
-for a total of 128 Bytes of state, and when asked to add some
-memory content into that pool, just distribute the bytes over
-the values array, incrementing a counter.
-
-(One could probably do something with cmpxchg to make that
-lockless, but I’m not doing any parallel programming myself.)
-
-Then, every once in a while, you’d run the finish function
-on every value, which is:
-
-#ifdef with_mirabilos_changes
-    (h) += (h) << 10;
-    (h) ^= (h) >> 6;
-#endif
-    (h) += (h) << 3;
-    (h) ^= (h) >> 11;
-    (h) += (h) << 15;
-
-My change here is because Jenkins’ OAAT has good avalanche
-except for the last input byte, so I just fake adding NUL
-(which doesn’t get avalanched so well, but doesn’t matter)
-to get the last actual data byte avalanched.
-
-Then I write those finialised hash values back to the
-128-Byte-buffer then I add that into the main pool using
-a cryptographic (hash, or stream cipher rekey) function.
-(In my case, arc4random, if someone wonders.)
-
-> >It doesn't matter if you collect predictable data - it neither helps
-> 
-> Oh yes, it hurts, if you update the entropy estimator on those 
-> predictable bits. Because then you get a deterministic RNG like 
-
-I’ve seen Theodore apply exponential backoff to any estimation,
-which is probably a good thing. But yes, you probably will want
-to guess the entropy of the bytes added and not count things
-where you’re not too sure of. (In the interrupt case, we have
-jiffies, cycles and num, so we’d probably best estimate how
-often interrupts are called, base a number of “timing” bits
-on that, and account for num; this may very well be less than
-8 bit “credited” for a long and two u_int added to the pool,
-but as long as you get that right and don’t blindly credit
-a byte as 8 bit, you’re safe. To quote the author of RANDOM.SYS
-for DOS: “Every bit counts.” It adds uncertainty to the pool,
-at least by stirring around the already-existing entropy without
-adding any new (creditable) entropy.)
-
-bye,
-//mirabilos
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
