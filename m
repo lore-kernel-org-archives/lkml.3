@@ -1,114 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932922Ab3IMNiv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:38:51 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:39869 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934157Ab3IMNZC (ORCPT
+	id S933347Ab3IMNjR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:39:17 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50652 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934140Ab3IMNYt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:25:02 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Steven Miao <realmz6@gmail.com>
-Subject: [PATCH 185/228] cpufreq: blackfin: remove calls to cpufreq_notify_transition()
-Date: Fri, 13 Sep 2013 18:32:11 +0530
-Message-Id: <3e6166073c8fe16f07440600ae70ec24f6cd27e1.1379063063.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
-References: <cover.1379063063.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
-References: <cover.1379063063.git.viresh.kumar@linaro.org>
+	Fri, 13 Sep 2013 09:24:49 -0400
+Date: Fri, 13 Sep 2013 15:24:35 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Alex Thorlton <athorlton@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Eric W . Biederman" <ebiederm@xmission.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Dave Jones <davej@redhat.com>,
+        David Howells <dhowells@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Robin Holt <robinmholt@gmail.com>, Sedat Dilek <sedat.dilek@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 8/9] mm: implement split page table lock for PMD level
+Message-ID: <20130913132435.GD21832@twins.programming.kicks-ass.net>
+References: <20130910074748.GA2971@gmail.com>
+ <1379077576-2472-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1379077576-2472-9-git-send-email-kirill.shutemov@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379077576-2472-9-git-send-email-kirill.shutemov@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most of the drivers do following in their ->target_index() routines:
+On Fri, Sep 13, 2013 at 04:06:15PM +0300, Kirill A. Shutemov wrote:
+> The basic idea is the same as with PTE level: the lock is embedded into
+> struct page of table's page.
+> 
+> Split pmd page table lock only makes sense on big machines.
+> Let's say >= 32 CPUs for now.
 
-	struct cpufreq_freqs freqs;
-	freqs.old = old freq...
-	freqs.new = new freq...
+Why is this? Couldn't I generate the same amount of contention on PMD
+level as I can on PTE level in the THP case?
 
-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
-
-	/* Change rate here */
-
-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
-
-This is replicated over all cpufreq drivers today and there doesn't exists a
-good enough reason why this shouldn't be moved to cpufreq core instead.
-
-Earlier patches have added support in cpufreq core to do cpufreq notification on
-frequency change, this one removes it from this driver.
-
-Some related minor cleanups are also done along with it.
-
-Cc: Steven Miao <realmz6@gmail.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/blackfin-cpufreq.c | 22 +++++++---------------
- 1 file changed, 7 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/cpufreq/blackfin-cpufreq.c b/drivers/cpufreq/blackfin-cpufreq.c
-index 12528b2..e9e63fc 100644
---- a/drivers/cpufreq/blackfin-cpufreq.c
-+++ b/drivers/cpufreq/blackfin-cpufreq.c
-@@ -132,27 +132,23 @@ static int bfin_target(struct cpufreq_policy *policy, unsigned int index)
- #ifndef CONFIG_BF60x
- 	unsigned int plldiv;
- #endif
--	struct cpufreq_freqs freqs;
- 	static unsigned long lpj_ref;
- 	static unsigned int  lpj_ref_freq;
-+	unsigned int old_freq, new_freq;
- 	int ret = 0;
- 
- #if defined(CONFIG_CYCLES_CLOCKSOURCE)
- 	cycles_t cycles;
- #endif
- 
--	freqs.old = bfin_getfreq_khz(0);
--	freqs.new = bfin_freq_table[index].frequency;
-+	old_freq = bfin_getfreq_khz(0);
-+	new_freq = bfin_freq_table[index].frequency;
- 
--	pr_debug("cpufreq: changing cclk to %lu; target = %u, oldfreq = %u\n",
--			freqs.new, freqs.new, freqs.old);
--
--	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
- #ifndef CONFIG_BF60x
- 	plldiv = (bfin_read_PLL_DIV() & SSEL) | dpm_state_table[index].csel;
- 	bfin_write_PLL_DIV(plldiv);
- #else
--	ret = cpu_set_cclk(policy->cpu, freqs.new * 1000);
-+	ret = cpu_set_cclk(policy->cpu, new_freq * 1000);
- 	if (ret != 0) {
- 		WARN_ONCE(ret, "cpufreq set freq failed %d\n", ret);
- 		return ret;
-@@ -168,17 +164,13 @@ static int bfin_target(struct cpufreq_policy *policy, unsigned int index)
- #endif
- 	if (!lpj_ref_freq) {
- 		lpj_ref = loops_per_jiffy;
--		lpj_ref_freq = freqs.old;
-+		lpj_ref_freq = old_freq;
- 	}
--	if (freqs.new != freqs.old) {
-+	if (new_freq != old_freq) {
- 		loops_per_jiffy = cpufreq_scale(lpj_ref,
--				lpj_ref_freq, freqs.new);
-+				lpj_ref_freq, new_freq);
- 	}
- 
--	/* TODO: just test case for cycles clock source, remove later */
--	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
--
--	pr_debug("cpufreq: done\n");
- 	return ret;
- }
- 
--- 
-1.7.12.rc2.18.g61b472e
 
