@@ -1,36 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab3IMDvN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 23:51:13 -0400
-Received: from mta.bozok.edu.tr ([194.27.210.17]:53064 "EHLO mta.bozok.edu.tr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751020Ab3IMDvD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 23:51:03 -0400
-X-Spam-Flag: NO
-X-Spam-Score: 3.125
-Date: Fri, 13 Sep 2013 06:43:15 +0300 (EEST)
-From: NAUKRI ADMINISTRATOR <mehmet.saglam@bozok.edu.tr>
-Message-ID: <1034110851.18989.1379043795604.JavaMail.zimbra@bozok.edu.tr>
-Subject: Dear ID Owner
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [180.215.144.169]
-X-Mailer: Zimbra 8.0.4_GA_5737 (zclient/8.0.4_GA_5737)
-Thread-Topic: Dear ID Owner
-Thread-Index: aMNjMpOW3o3hRVG26ofZXh0toR4x2Q==
-To: unlisted-recipients:; (no To-header on input)
+	id S1755321Ab3IMDvh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 23:51:37 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:42878 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754182Ab3IMDvc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 23:51:32 -0400
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: perex@perex.cz
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] net: hp100: remove deprecated IRQF_DISABLED
+Date: Fri, 13 Sep 2013 05:51:24 +0200
+Message-Id: <1379044284-6448-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message is from Naukri.com to all Employers registered With Naukri.com. we  are currently carrying out maintainance exercise to improve our quality service and reduce the rate of spam in our job portal.
+This patch proposes to remove the IRQF_DISABLED flag from
+drivers/net/ethernet/hp/hp100.c
 
-Please confirm and upgrade your employers account click the link blow
+It's a NOOP since 2.6.35 and it will be removed one day.
 
-http://indianaukriresdexadministrator.webs.com/ 
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+---
+ drivers/net/ethernet/hp/hp100.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Employer that refuses to confirm his /her Naukri.com account will lose his/her account permanently
+diff --git a/drivers/net/ethernet/hp/hp100.c b/drivers/net/ethernet/hp/hp100.c
+index e3c7c69..91227d0 100644
+--- a/drivers/net/ethernet/hp/hp100.c
++++ b/drivers/net/ethernet/hp/hp100.c
+@@ -1097,7 +1097,7 @@ static int hp100_open(struct net_device *dev)
+ 	/* New: if bus is PCI or EISA, interrupts might be shared interrupts */
+ 	if (request_irq(dev->irq, hp100_interrupt,
+ 			lp->bus == HP100_BUS_PCI || lp->bus ==
+-			HP100_BUS_EISA ? IRQF_SHARED : IRQF_DISABLED,
++			HP100_BUS_EISA ? IRQF_SHARED : 0,
+ 			"hp100", dev)) {
+ 		printk("hp100: %s: unable to get IRQ %d\n", dev->name, dev->irq);
+ 		return -EAGAIN;
+-- 
+1.8.1.2
 
-Warn Regards
-Naukri Team
