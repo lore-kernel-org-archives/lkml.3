@@ -1,65 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758242Ab3IMNki (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:40:38 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:45800 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757514Ab3IMNkg convert rfc822-to-8bit (ORCPT
+	id S932978Ab3IMNlk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:41:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52934 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757689Ab3IMNXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:40:36 -0400
-Message-ID: <523315CD.8010704@arm.com>
-Date: Fri, 13 Sep 2013 14:40:29 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: cinifr <cinifr@gmail.com>
-CC: Mark Rutland <Mark.Rutland@arm.com>, "coosty@163.com" <coosty@163.com>,
-        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>
-Subject: Re: [PATCH 3/4] Add physical count arch timer support for clocksource
- in ARMv7.
-References: <1378968687-8200-1-git-send-email-cinifr@gmail.com> <1378968687-8200-4-git-send-email-cinifr@gmail.com> <20130912112452.GA22013@e106331-lin.cambridge.arm.com> <CAK3cCBwu4somtfc9J1ZDVcC-iYD1qDJwSWzWeOomTqY9tQA2kg@mail.gmail.com> <5231EE43.5090900@arm.com> <CAK3cCBzr8_LTYarZDgPYZY7_-5Qco_Qw+ACi=c2uOrn7MqwkBg@mail.gmail.com> <5232DB49.4050701@arm.com> <CAK3cCBw4EKypLmhf4L5_P3d27QzsrB+ZxUTgF58YhmUhBa00xQ@mail.gmail.com>
-In-Reply-To: <CAK3cCBw4EKypLmhf4L5_P3d27QzsrB+ZxUTgF58YhmUhBa00xQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-X-OriginalArrivalTime: 13 Sep 2013 13:40:28.0128 (UTC) FILETIME=[CEC27600:01CEB086]
-X-MC-Unique: 113091314403304801
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+	Fri, 13 Sep 2013 09:23:21 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Eric Miao <eric.y.miao@gmail.com>
+Subject: [PATCH 171/228] cpufreq: pxa: Convert to light weight ->target_index() routine
+Date: Fri, 13 Sep 2013 18:31:57 +0530
+Message-Id: <90a04e89554fc0e07e9354f1bc165c52aaeef2be.1379063063.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
+References: <cover.1379063063.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
+References: <cover.1379063063.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/09/13 14:09, cinifr wrote:
->> I urge you to read the ARM ARM, and specifically the section dedicated
->> to trapping access to CP15 operations. If you do, you'll quickly notice
->> that you *cannot* trap accesses to the timer subsystem.
->>
-> I read it again. The ARMv7 manual said "Is accessible from Non-secure
-> PL1 modes only when CNTHCTL.PL1PCTEN is set to 1. When
-> CNTHCTL.PL1PCTEN is set to 0, any attempt to access CNTPCT from a
-> Non-secure PL1 mode ***generates a Hyp Trap exception***, see Hyp Trap
-> exception on page B1-1206" in B8.1.2. but I dont find  a  special hyp
-> trap control  for accessing CNTPCT in manual. As you said HSTR cannot
-> trap accessing of CP15 c14. What happer when OS access CNTPCT from PL1
-> NS=1 mode with CNTHCTL.PL1PCTEN=0 ???  AmI  wrong for understanding
-> the manual?
+This patch converts existing .target() to newly defined light weight
+.target_index() routine for this driver.
 
-That's interesting, as I never noticed this particular line in the ARM
-ARM. I'll investigate this, thanks for bringing it up.
+CPUFreq core will call cpufreq_frequency_table_target() before calling this
+routine and will pass index to it.
 
-This doesn't change the fact that using the physical timer/counter in a
-VM is (or can be) horribly expensive, and should be avoided at all cost.
+Cc: Eric Miao <eric.y.miao@gmail.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/pxa2xx-cpufreq.c | 13 ++-----------
+ drivers/cpufreq/pxa3xx-cpufreq.c | 17 +++--------------
+ 2 files changed, 5 insertions(+), 25 deletions(-)
 
-Thanks,
-
-	M.
+diff --git a/drivers/cpufreq/pxa2xx-cpufreq.c b/drivers/cpufreq/pxa2xx-cpufreq.c
+index 29aca57..183bc13 100644
+--- a/drivers/cpufreq/pxa2xx-cpufreq.c
++++ b/drivers/cpufreq/pxa2xx-cpufreq.c
+@@ -267,14 +267,11 @@ static unsigned int pxa_cpufreq_get(unsigned int cpu)
+ 	return get_clk_frequency_khz(0);
+ }
+ 
+-static int pxa_set_target(struct cpufreq_policy *policy,
+-			  unsigned int target_freq,
+-			  unsigned int relation)
++static int pxa_set_target(struct cpufreq_policy *policy, unsigned int idx)
+ {
+ 	struct cpufreq_frequency_table *pxa_freqs_table;
+ 	pxa_freqs_t *pxa_freq_settings;
+ 	struct cpufreq_freqs freqs;
+-	unsigned int idx;
+ 	unsigned long flags;
+ 	unsigned int new_freq_cpu, new_freq_mem;
+ 	unsigned int unused, preset_mdrefr, postset_mdrefr, cclkcfg;
+@@ -283,12 +280,6 @@ static int pxa_set_target(struct cpufreq_policy *policy,
+ 	/* Get the current policy */
+ 	find_freq_tables(&pxa_freqs_table, &pxa_freq_settings);
+ 
+-	/* Lookup the next frequency */
+-	if (cpufreq_frequency_table_target(policy, pxa_freqs_table,
+-					   target_freq, relation, &idx)) {
+-		return -EINVAL;
+-	}
+-
+ 	new_freq_cpu = pxa_freq_settings[idx].khz;
+ 	new_freq_mem = pxa_freq_settings[idx].membus;
+ 	freqs.old = policy->cur;
+@@ -448,7 +439,7 @@ static int pxa_cpufreq_init(struct cpufreq_policy *policy)
+ 
+ static struct cpufreq_driver pxa_cpufreq_driver = {
+ 	.verify	= cpufreq_generic_frequency_table_verify,
+-	.target	= pxa_set_target,
++	.target_index = pxa_set_target,
+ 	.init	= pxa_cpufreq_init,
+ 	.exit	= cpufreq_generic_exit,
+ 	.get	= pxa_cpufreq_get,
+diff --git a/drivers/cpufreq/pxa3xx-cpufreq.c b/drivers/cpufreq/pxa3xx-cpufreq.c
+index 47fbee4..132e37d 100644
+--- a/drivers/cpufreq/pxa3xx-cpufreq.c
++++ b/drivers/cpufreq/pxa3xx-cpufreq.c
+@@ -155,24 +155,16 @@ static unsigned int pxa3xx_cpufreq_get(unsigned int cpu)
+ 	return pxa3xx_get_clk_frequency_khz(0);
+ }
+ 
+-static int pxa3xx_cpufreq_set(struct cpufreq_policy *policy,
+-			      unsigned int target_freq,
+-			      unsigned int relation)
++static int pxa3xx_cpufreq_set(struct cpufreq_policy *policy, unsigned int index)
+ {
+ 	struct pxa3xx_freq_info *next;
+ 	struct cpufreq_freqs freqs;
+ 	unsigned long flags;
+-	int idx;
+ 
+ 	if (policy->cpu != 0)
+ 		return -EINVAL;
+ 
+-	/* Lookup the next frequency */
+-	if (cpufreq_frequency_table_target(policy, pxa3xx_freqs_table,
+-				target_freq, relation, &idx))
+-		return -EINVAL;
+-
+-	next = &pxa3xx_freqs[idx];
++	next = &pxa3xx_freqs[index];
+ 
+ 	freqs.old = policy->cur;
+ 	freqs.new = next->cpufreq_mhz * 1000;
+@@ -181,9 +173,6 @@ static int pxa3xx_cpufreq_set(struct cpufreq_policy *policy,
+ 			freqs.old / 1000, freqs.new / 1000,
+ 			(freqs.old == freqs.new) ? " (skipped)" : "");
+ 
+-	if (freqs.old == target_freq)
+-		return 0;
+-
+ 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
+ 
+ 	local_irq_save(flags);
+@@ -225,7 +214,7 @@ static int pxa3xx_cpufreq_init(struct cpufreq_policy *policy)
+ 
+ static struct cpufreq_driver pxa3xx_cpufreq_driver = {
+ 	.verify		= cpufreq_generic_frequency_table_verify,
+-	.target		= pxa3xx_cpufreq_set,
++	.target_index	= pxa3xx_cpufreq_set,
+ 	.init		= pxa3xx_cpufreq_init,
+ 	.exit		= cpufreq_generic_exit,
+ 	.get		= pxa3xx_cpufreq_get,
 -- 
-Jazz is not dead. It just smells funny...
+1.7.12.rc2.18.g61b472e
 
