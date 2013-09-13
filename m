@@ -1,81 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754204Ab3IMRCF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 13:02:05 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:53461 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754136Ab3IMRCD (ORCPT
+	id S1753791Ab3IMRGI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 13:06:08 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:46062 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751624Ab3IMRGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 13:02:03 -0400
-Message-ID: <52334506.9030802@linaro.org>
-Date: Fri, 13 Sep 2013 13:01:58 -0400
-From: Matt Porter <matt.porter@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	Fri, 13 Sep 2013 13:06:07 -0400
+Message-ID: <523345EC.8070206@efficios.com>
+Date: Fri, 13 Sep 2013 10:05:48 -0700
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Davidlohr Bueso <davidlohr@hp.com>
-CC: Karel Zak <kzak@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        torvalds@linux-foundation.org
-Subject: Re: GPT detection regression in efi.c from commit 27a7c64
-References: <20130913145033.GA8502@ohporter.com> <1379089736.2197.14.camel@buesod1.americas.hpqcorp.net>
-In-Reply-To: <1379089736.2197.14.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org
+Subject: Re: [RFC PATCH] Introduce timekeeper latch synchronization
+References: <20130913025253.GA17218@Krystal> <alpine.DEB.2.02.1309131803360.4089@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1309131803360.4089@ionos.tec.linutronix.de>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/2013 12:28 PM, Davidlohr Bueso wrote:
-> Cc'ing Linus.
->
-> On Fri, 2013-09-13 at 10:50 -0400, Matt Porter wrote:
->> The commit, "27a7c64 partitions/efi: account for pmbr size in lba", that
->> was just merged in 3.12-rc caused a regression on my system with a GPT
->> formatted eMMC device. In 3.11, the GPT partition table was detected
->> fine but now a partition table is not detected.
+On 13/09/13 09:13 AM, Thomas Gleixner wrote:
+> On Thu, 12 Sep 2013, Mathieu Desnoyers wrote:
+>> * Peter Zijlstra (peterz@infradead.org) wrote:
+>> [...]
+>>> Yep, that's good. I suppose if there's multiple use sites we can jump
+>>> through another few hoops to get rid of the specific struct foo
+>>> assumptions by storing sizeof() whatever we do use and playing pointer
+>>> math games.
+>>>
+>>> But for now with the time stuff as only user this looks ok.
+>> OK! Here is the full implementation of the idea against Linux
+>> timekeeper, ntp, and PPS. It appears that ntp and PPS were relying on
+>> the timekeeper seqlock too. And guess what, after booting my laptop with
+>> this kernel there still no smoke coming out of it after a good 5 minutes
+>> of testing. ;-)
 >>
->> Not being a GPT expert, I did some research and found that the tool used
->> to create the PMBR on my system shares characteristics with what is
->> mentioned in an explanation of Microsoft created PMBRs [1]. In short,
->> the size_in_lba field incorrectly has 0xffffffff even though I have a
->> <2TiB drive (16GiB eMMC).
+>> Comments are welcome.
+> First of all this needs to be split into several patches.
+How about:
+- three patches refactoring data structures into objects (no
+synchronization changes whatsoever). timekeeper, ntp and pps each done
+in separate patches,
+- one patch to introduce the new synchronization scheme along with the
+usage site changes. This patch would include the removal of the
+shadow_timekeeper variable, which is made pointless by the introduction
+of this mixed-rcu-seqcount synchronization scheme.
+
+is that enough, or you see a more fine-grained breakdown ?
+
+
 >
-> *sigh*. So Microsoft decided to do its own version of the GPT specs.
+>>  static void update_wall_time(void)
+>  ...
+>> -	write_seqcount_begin(&timekeeper_seq);
+>>  	/* Update clock->cycle_last with the new value */
+>>  	clock->cycle_last = tk->cycle_last;
+>> -	/*
+>> -	 * Update the real timekeeper.
+>> -	 *
+>> -	 * We could avoid this memcpy by switching pointers, but that
+>> -	 * requires changes to all other timekeeper usage sites as
+>> -	 * well, i.e. move the timekeeper pointer getter into the
+>> -	 * spinlocked/seqcount protected sections. And we trade this
+>> -	 * memcpy under the timekeeper_seq against one before we start
+>> -	 * updating.
+>> -	 */
+>> -	memcpy(real_tk, tk, sizeof(*tk));
+>> -	timekeeping_update(real_tk, action);
+> So you're dropping the timekeeping_update() call here. I wonder how
+> this works.
 
-Don't sound so surprised. :)
+It doesn't :-)
 
-> Up until now, Linux was incorrectly enforcing pMBR checks: not
-> recognizing valid labels and vice versa, as with the case you are
-> mentioning now. The changes that went in the 3.12 merge window attempt
-> to address those concerns, enforcing the correct checks - which is also
-> how Linux partitioning tools do it (fdisk, parted).
+There appears to be a couple of side-effects related to removal of the
+call to timekeeping_update(). On the positive side, I now have much more
+free time on my hands. However, people seem to complain that I arrive
+late to meetings for some reasons ;-)
 
-Understood, and we are fixing our own manufacturing tool that was used 
-to prepopulate the eMMC. I definitely prefer to have this correct for my 
-case.
-
->> I get that this is not compliant with UEFI. I bring this up because
->> before this commit the is_pmbr_valid() check was less pedantic. In 3.11
->> a PMBR formatted this way did not fail the check. For my particular
->> case, I simply dded out LBA 1 and whacked the SizeInLBA field to comply
->> with the spec and this patch and I'm back in business. We're updating
->> the tools that we inherited to prepopulate our boards with a GPT to be
->> compliant. However, I wondered if this would be a problem for all the
->> people with Windows-generated GPTs as noted in [1].
 >
-> I guess this comes down to choosing whether or not we want Linux to be
-> more UEFI compliant or not. Should we care if Microsoft decides to go do
-> things out of the official spec? I don't know the policy here. The fact
-> is that *they* should update their partitioning tools and create valid
-> pMBRs. Any way, I'm ok with reverting this commit if deemed necessary.
+>> +	timekeeper_write_begin(&latch_timekeeper, &prev, &tk);
+>> +	*tk = *prev;
+> Do we really need to do the copy on all call sites, instead of doing
+> it in timekeeper_write_begin() ?
 
-I can't say first-hand that Windows 7/8 does what is claimed in this 
-description as I simply don't have access to any Windows machines here. 
-If it's true, I would have to agree with Linus that meeting reality if 
-more important than meeting the spec.
+Since we're indeed doing the copy on all call sites, I think it would be
+good to move it into timekeeper_write_begin() as you suggest.
 
-Hopefully somebody can confirm that Windows does indeed produce these 
-special PMBRs that need to be handled as an exception to the spec.
+Initially, I kept the copy in the caller in case we could do without the
+copy in some cases (in case the caller would overwrite the entire
+structure without caring about prior content). But since we need to copy
+timekeeper, ntp and pps structures, I doubt this is realistic. So let's
+move this copy into timekeeper_write_begin().
 
--Matt
+Thanks !
+
+Mathieu
+
+
+>
+> Thanks,
+>
+> 	tglx
 
