@@ -1,102 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263Ab3IMRGr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 13:06:47 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:49180 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751848Ab3IMRGq (ORCPT
+	id S1752939Ab3IMRJI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 13:09:08 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:58017 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751839Ab3IMRJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 13:06:46 -0400
-Date: Fri, 13 Sep 2013 10:06:44 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon fixes for 3.12-rc1
-Message-ID: <20130913170644.GA7009@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rwEMma7ioTxnRzrJ"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 13 Sep 2013 13:09:06 -0400
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Will Deacon <will.deacon@arm.com>, Jiri Olsa <jolsa@redhat.com>,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        linux-arm-kernel@lists.infradead.org, Ingo Molnar <mingo@kernel.org>
+Cc: patches@linaro.org, Jean Pihet <jean.pihet@linaro.org>
+Subject: [PATCH] perf tools: Check libunwind for availability of dwarf parsing feature
+Date: Fri, 13 Sep 2013 19:08:41 +0200
+Message-Id: <1379092121-5981-1-git-send-email-jean.pihet@linaro.org>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The newly added dwarf unwinding feature [1] requires:
+. a recent version (>= 1.1) of libunwind,
+. libunwind to be configured with --enable-debug-frame.
 
---rwEMma7ioTxnRzrJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+[1] http://www.spinics.net/lists/kernel/msg1598951.html
 
-Subject: [GIT PULL] hwmon fixes for 3.12-rc1
+Add the corresponding API test in the feature check list.
 
-Hi Linus,
+Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+---
+ tools/perf/config/feature-tests.mak | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-Please pull hwmon fixes for Linux 3.12-rc1 from signed tag:
+diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
+index 708fb8e..87124d0 100644
+--- a/tools/perf/config/feature-tests.mak
++++ b/tools/perf/config/feature-tests.mak
+@@ -176,14 +176,23 @@ extern int UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
+                                       unw_proc_info_t *pi,
+                                       int need_unwind_info, void *arg);
+ 
+-
+ #define dwarf_search_unwind_table UNW_OBJ(dwarf_search_unwind_table)
+ 
++extern int
++UNW_OBJ(dwarf_find_debug_frame) (int found, unw_dyn_info_t *di_debug,
++				 unw_word_t ip,
++				 unw_word_t segbase,
++				 const char *obj_name, unw_word_t start,
++				 unw_word_t end);
++
++#define dwarf_find_debug_frame UNW_OBJ(dwarf_find_debug_frame)
++
+ int main(void)
+ {
+ 	unw_addr_space_t addr_space;
+ 	addr_space = unw_create_addr_space(NULL, 0);
+ 	unw_init_remote(NULL, addr_space, NULL);
++	dwarf_find_debug_frame(0, NULL, 0, 0, NULL, 0, 0);
+ 	dwarf_search_unwind_table(addr_space, 0, NULL, NULL, 0, NULL);
+ 	return 0;
+ }
+-- 
+1.8.1.2
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
-
-Thanks,
-Guenter
-------
-
-The following changes since commit a22a0fdba4191473581f86c9dd5361cf581521d3:
-
-  Merge tag 'for-v3.12' of git://git.infradead.org/battery-2.6 (2013-09-10 22:58:14 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
-
-for you to fetch changes up to 0b77f766f3ef9875e2bb0035c9b89b4f9469b78d:
-
-  hwmon: (k10temp) remove unnecessary pci_set_drvdata() (2013-09-12 08:17:40 -0700)
-
-----------------------------------------------------------------
-Some more low risk cleanup patches:
-
-Remove unnecessary pci_set_drvdata in k10temp driver from Jingoo Han
-Fix return values in several drivers from Sachin Kamat
-Remove redundant break in amc6821 driver from Sachin Kamat
-
-----------------------------------------------------------------
-Jingoo Han (1):
-      hwmon: (k10temp) remove unnecessary pci_set_drvdata()
-
-Sachin Kamat (5):
-      hwmon: (emc2103) Fix return value
-      hwmon: (ibmaem) Fix return value
-      hwmon: (amc6821) Fix return value
-      hwmon: (amc6821) Remove redundant break
-      hwmon: (tmp421) Fix return value
-
- drivers/hwmon/amc6821.c |    7 ++-----
- drivers/hwmon/emc2103.c |   10 +++++-----
- drivers/hwmon/ibmaem.c  |    2 +-
- drivers/hwmon/k10temp.c |    1 -
- drivers/hwmon/tmp421.c  |    2 +-
- 5 files changed, 9 insertions(+), 13 deletions(-)
-
---rwEMma7ioTxnRzrJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSM0YkAAoJEMsfJm/On5mBD5gP/3byCh2+wWgJrhax8dP2DGps
-IWZk8UsHxus/OvVnyD8jpzQ0soQ1zbpbUYU6TX2bmPf4lUnHHUqnXI25Tt7lEHZd
-YfYMAzljZTgxX2FJhFlVL1raiP+twMQuimY+dRVu9l9jZkkIA24I2o67qIF/TbHP
-YHGX6XbUR0qT19oUTOFIkpKVkrN3+yy+/LDxV5WCVBlunyoGv7apva+UesCxz5vn
-5zVBfFgKoapbmVuax56xhdPbkK0z/McpxXm2WkKRVAleIQfOE/ItvjD79tRxlKka
-uYpw2BASplIBV8GhtFL4dUfDHdO3LX7AD6NrXwmnLso7hza/NBLD9IIbOrZp5d+F
-UjDJFyzX63QSk+3rhKnzUBio0c/3eR7dLVHE1jj4PNBcRGmDX4EtftdnnkRPfDTH
-c99qiOYV60pFzA7KOIqbYX2kULe7HlhU7yXXdp+jLRxLbo1YQYCfA4p97qx8D5IE
-tSLAYp233qVkeYEyACptEnLh9JCTujaS9pGuH+dymqoLahG6IYc7Fzp5qAztskO8
-EWU6/iVeVzHnVZVjz2wqZxIe7byeOtuBdgRqYlpdKJaZFopQBoG6tFqYQm1cbOjK
-INWT+t/JvWMx6iLN/mBeuGjrWJLeNxxtuB15FCSrl8XVMu9DV6HsAhoglfQ6ffTr
-Imxr1pnFVwZCcMEdeW3M
-=aPwo
------END PGP SIGNATURE-----
-
---rwEMma7ioTxnRzrJ--
