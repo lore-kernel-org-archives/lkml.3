@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934045Ab3IMNed (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:34:33 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:42006 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757871Ab3IMN1y (ORCPT
+	id S1758165Ab3IMNf7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:35:59 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:38187 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933568Ab3IMN0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:27:54 -0400
+	Fri, 13 Sep 2013 09:26:50 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>, spear-devel@list.st.com
-Subject: [PATCH 209/228] cpufreq: SPEAr: remove calls to cpufreq_notify_transition()
-Date: Fri, 13 Sep 2013 18:32:35 +0530
-Message-Id: <b534df7a33f95a347fb064f41ae3080b2d400933.1379063063.git.viresh.kumar@linaro.org>
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 200/228] cpufreq: pasemi: remove calls to cpufreq_notify_transition()
+Date: Fri, 13 Sep 2013 18:32:26 +0530
+Message-Id: <e123108bcae9ac51871b6830c7a812163fc2e6a6.1379063063.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
 References: <cover.1379063063.git.viresh.kumar@linaro.org>
@@ -45,52 +45,50 @@ frequency change, this one removes it from this driver.
 
 Some related minor cleanups are also done along with it.
 
-Cc: spear-devel@list.st.com
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/spear-cpufreq.c | 13 +------------
- 1 file changed, 1 insertion(+), 12 deletions(-)
+ drivers/cpufreq/pasemi-cpufreq.c | 14 +-------------
+ 1 file changed, 1 insertion(+), 13 deletions(-)
 
-diff --git a/drivers/cpufreq/spear-cpufreq.c b/drivers/cpufreq/spear-cpufreq.c
-index 0326040..658cfe7 100644
---- a/drivers/cpufreq/spear-cpufreq.c
-+++ b/drivers/cpufreq/spear-cpufreq.c
-@@ -107,12 +107,10 @@ static int spear1340_set_cpu_rate(struct clk *sys_pclk, unsigned long newfreq)
- static int spear_cpufreq_target(struct cpufreq_policy *policy,
- 		unsigned int index)
+diff --git a/drivers/cpufreq/pasemi-cpufreq.c b/drivers/cpufreq/pasemi-cpufreq.c
+index 17424dd..1c33136 100644
+--- a/drivers/cpufreq/pasemi-cpufreq.c
++++ b/drivers/cpufreq/pasemi-cpufreq.c
+@@ -51,8 +51,6 @@
+ static void __iomem *sdcpwr_mapbase;
+ static void __iomem *sdcasr_mapbase;
+ 
+-static DEFINE_MUTEX(pas_switch_mutex);
+-
+ /* Current astate, is used when waking up from power savings on
+  * one core, in case the other core has switched states during
+  * the idle time.
+@@ -242,15 +240,8 @@ static int pas_cpufreq_cpu_exit(struct cpufreq_policy *policy)
+ static int pas_cpufreq_target(struct cpufreq_policy *policy,
+ 			      unsigned int pas_astate_new)
  {
 -	struct cpufreq_freqs freqs;
- 	unsigned long newfreq;
- 	struct clk *srcclk;
- 	int ret, mult = 1;
+ 	int i;
  
--	freqs.old = spear_cpufreq_get(0);
- 	newfreq = spear_cpufreq.freq_tbl[index].frequency * 1000;
- 
- 	if (of_machine_is_compatible("st,spear1340")) {
-@@ -145,23 +143,14 @@ static int spear_cpufreq_target(struct cpufreq_policy *policy,
- 		return newfreq;
- 	}
- 
--	freqs.new = newfreq / 1000;
--	freqs.new /= mult;
+-	freqs.old = policy->cur;
+-	freqs.new = pas_freqs[pas_astate_new].frequency;
 -
+-	mutex_lock(&pas_switch_mutex);
 -	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
 -
- 	if (mult == 2)
- 		ret = spear1340_set_cpu_rate(srcclk, newfreq);
- 	else
- 		ret = clk_set_rate(spear_cpufreq.clk, newfreq);
- 
--	/* Get current rate after clk_set_rate, in case of failure */
--	if (ret) {
-+	if (ret)
- 		pr_err("CPU Freq: cpu clk_set_rate failed: %d\n", ret);
--		freqs.new = clk_get_rate(spear_cpufreq.clk) / 1000;
--	}
+ 	pr_debug("setting frequency for cpu %d to %d kHz, 1/%d of max frequency\n",
+ 		 policy->cpu,
+ 		 pas_freqs[pas_astate_new].frequency,
+@@ -261,10 +252,7 @@ static int pas_cpufreq_target(struct cpufreq_policy *policy,
+ 	for_each_online_cpu(i)
+ 		set_astate(i, pas_astate_new);
  
 -	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
- 	return ret;
+-	mutex_unlock(&pas_switch_mutex);
+-
+-	ppc_proc_freq = freqs.new * 1000ul;
++	ppc_proc_freq = pas_freqs[pas_astate_new].frequency * 1000ul;
+ 	return 0;
  }
  
 -- 
