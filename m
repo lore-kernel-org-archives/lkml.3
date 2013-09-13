@@ -1,35 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933213Ab3IMNPl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:15:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55935 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933189Ab3IMNPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:15:33 -0400
-Date: Fri, 13 Sep 2013 15:15:29 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Kees Cook <keescook@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 00/10] HID: validate report details
-In-Reply-To: <1378929419-6269-1-git-send-email-benjamin.tissoires@redhat.com>
-Message-ID: <alpine.LNX.2.00.1309131515150.22174@pobox.suse.cz>
-References: <1378929419-6269-1-git-send-email-benjamin.tissoires@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757781Ab3IMNwn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:52:43 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:52033 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933216Ab3IMNPm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 09:15:42 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>, Andrew Lunn <andrew@lunn.ch>
+Subject: [PATCH 107/228] cpufreq: kirkwood: don't initialize part of policy that is set by core too
+Date: Fri, 13 Sep 2013 18:30:53 +0530
+Message-Id: <11be927bd288b276d364991b9a75fa8998de1cc4.1379063063.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
+References: <cover.1379063063.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
+References: <cover.1379063063.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Sep 2013, Benjamin Tissoires wrote:
+Many common initializations of struct policy are moved to core now and hence
+this driver doesn't need to do it. This patch removes such code.
 
-> here is the v3 of the CVE fixes.
+Most recent of those changes is to call ->get() in the core after calling
+->init().
 
-Now applied, will be pushing to Linus for 3.12. Thanks everybody,
+Cc: Andrew Lunn <andrew@lunn.ch>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/kirkwood-cpufreq.c | 1 -
+ 1 file changed, 1 deletion(-)
 
+diff --git a/drivers/cpufreq/kirkwood-cpufreq.c b/drivers/cpufreq/kirkwood-cpufreq.c
+index 1a4e4f4..dc434c4 100644
+--- a/drivers/cpufreq/kirkwood-cpufreq.c
++++ b/drivers/cpufreq/kirkwood-cpufreq.c
+@@ -122,7 +122,6 @@ static int kirkwood_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ {
+ 	/* cpuinfo and default policy values */
+ 	policy->cpuinfo.transition_latency = 5000; /* 5uS */
+-	policy->cur = kirkwood_cpufreq_get_cpu_frequency(0);
+ 
+ 	return cpufreq_table_validate_and_show(policy, kirkwood_freq_table);
+ }
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.12.rc2.18.g61b472e
+
