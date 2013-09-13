@@ -1,193 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657Ab3IMTB3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 15:01:29 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:49532 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753862Ab3IMTB2 (ORCPT
+	id S1753441Ab3IMTHi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 15:07:38 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:38033 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751726Ab3IMTHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 15:01:28 -0400
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Wang Shilong <wangshilong1991@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 2/4 v2] regulator: add STw481x VMMC driver
-Date: Fri, 13 Sep 2013 21:01:15 +0200
-Message-Id: <1379098875-9959-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.8.1.4
+	Fri, 13 Sep 2013 15:07:36 -0400
+MIME-Version: 1.0
+Date: Fri, 13 Sep 2013 15:07:34 -0400
+X-Google-Sender-Auth: ulV9XvCgCdavVloqBfFt3dX3AR0
+Message-ID: <CA+5PVA7Y-r67u7K5R5XJOEcyCmyTe9Q8fJNQr=6-i1n6QitrPA@mail.gmail.com>
+Subject: Fedora Kernel Patch Report
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Kernel Fedora <kernel@lists.fedoraproject.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ST Microelectronics STw481x PMIC used for the Nomadik
-has one single software-controlled regulator for VMMC.
-This driver registers directly to the compatible string
-as there is just one regulator.
+Hi All,
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
-ChangeLog v1->v2:
-- Use core regmap regulator helpers cutting half of the
-  code.
-- Fix checkpatch moanings.
-- Move default-disable of the external regulator to probe()
-- Cut the pointless sysfs debug node.
-- Use module_platform_driver() macro.
----
- drivers/regulator/Kconfig        |   8 +++
- drivers/regulator/Makefile       |   1 +
- drivers/regulator/stw481x-vmmc.c | 110 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 119 insertions(+)
- create mode 100644 drivers/regulator/stw481x-vmmc.c
+Below is a patch report of the various patches Fedora is carrying on
+top of the listed upstream kernel, and why we're carrying it.  Greg
+said he'd like to see such a report, so I plan on sending one a month
+or so.  Feel free to ping me with any questions you have.  Also, if
+there's additional info you'd like to see, just let me know.
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index dfe5809..d957010 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -429,6 +429,14 @@ config REGULATOR_TI_ABB
- 	  on TI SoCs may be unstable without enabling this as it provides
- 	  device specific optimized bias to allow/optimize functionality.
- 
-+config REGULATOR_STW481X_VMMC
-+	bool "ST Microelectronics STW481X VMMC regulator"
-+	depends on MFD_STW481X
-+	default y if MFD_STW481X
-+	help
-+	  This driver supports the internal VMMC regulator in the STw481x
-+	  PMIC chips.
-+
- config REGULATOR_TPS51632
- 	tristate "TI TPS51632 Power Regulator"
- 	depends on I2C
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index 185cce2..f2cfc45 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -56,6 +56,7 @@ obj-$(CONFIG_REGULATOR_PCF50633) += pcf50633-regulator.o
- obj-$(CONFIG_REGULATOR_RC5T583)  += rc5t583-regulator.o
- obj-$(CONFIG_REGULATOR_S2MPS11) += s2mps11.o
- obj-$(CONFIG_REGULATOR_S5M8767) += s5m8767.o
-+obj-$(CONFIG_REGULATOR_STW481X_VMMC) += stw481x-vmmc.o
- obj-$(CONFIG_REGULATOR_TI_ABB) += ti-abb-regulator.o
- obj-$(CONFIG_REGULATOR_TPS6105X) += tps6105x-regulator.o
- obj-$(CONFIG_REGULATOR_TPS62360) += tps62360-regulator.o
-diff --git a/drivers/regulator/stw481x-vmmc.c b/drivers/regulator/stw481x-vmmc.c
-new file mode 100644
-index 0000000..5ae72a8
---- /dev/null
-+++ b/drivers/regulator/stw481x-vmmc.c
-@@ -0,0 +1,110 @@
-+/*
-+ * Regulator driver for STw4810/STw4811 VMMC regulator.
-+ *
-+ * Copyright (C) 2013 ST-Ericsson SA
-+ * Written on behalf of Linaro for ST-Ericsson
-+ *
-+ * Author: Linus Walleij <linus.walleij@linaro.org>
-+ *
-+ * License terms: GNU General Public License (GPL) version 2
-+ */
-+
-+#include <linux/err.h>
-+#include <linux/init.h>
-+#include <linux/mfd/stw481x.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/regulator/driver.h>
-+#include <linux/regulator/of_regulator.h>
-+
-+static const unsigned int stw481x_vmmc_voltages[] = {
-+	1800000,
-+	1800000,
-+	2850000,
-+	3000000,
-+	1850000,
-+	2600000,
-+	2700000,
-+	3300000,
-+};
-+
-+static struct regulator_ops stw481x_vmmc_ops = {
-+	.list_voltage = regulator_list_voltage_table,
-+	.enable      = regulator_enable_regmap,
-+	.disable     = regulator_disable_regmap,
-+	.is_enabled  = regulator_is_enabled_regmap,
-+	.get_voltage_sel = regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel = regulator_set_voltage_sel_regmap,
-+};
-+
-+static struct regulator_desc vmmc_regulator = {
-+	.name = "VMMC",
-+	.id   = 0,
-+	.ops  = &stw481x_vmmc_ops,
-+	.type = REGULATOR_VOLTAGE,
-+	.owner = THIS_MODULE,
-+	.n_voltages = ARRAY_SIZE(stw481x_vmmc_voltages),
-+	.volt_table = stw481x_vmmc_voltages,
-+	.enable_time = 200, /* FIXME: look this up */
-+	.enable_reg = STW_CONF1,
-+	.enable_mask = STW_CONF1_PDN_VMMC,
-+	.vsel_reg = STW_CONF1,
-+	.vsel_mask = STW_CONF1_VMMC_MASK,
-+};
-+
-+static int stw481x_vmmc_regulator_probe(struct platform_device *pdev)
-+{
-+	struct stw481x *stw481x = dev_get_platdata(&pdev->dev);
-+	struct regulator_config config = { };
-+	int ret;
-+
-+	/* First disable the external VMMC if it's active */
-+	ret = regmap_update_bits(stw481x->map, STW_CONF2,
-+				 STW_CONF2_VMMC_EXT, 0);
-+	if (ret) {
-+		dev_err(&pdev->dev, "could not disable external VMMC\n");
-+		return ret;
-+	}
-+
-+	/* Register VMMC regulator */
-+	config.dev = &pdev->dev;
-+	config.driver_data = stw481x;
-+	config.regmap = stw481x->map;
-+	config.of_node = pdev->dev.of_node;
-+	config.init_data = of_get_regulator_init_data(&pdev->dev,
-+						      pdev->dev.of_node);
-+
-+	stw481x->vmmc_regulator = regulator_register(&vmmc_regulator, &config);
-+	if (IS_ERR(stw481x->vmmc_regulator)) {
-+		dev_err(&pdev->dev,
-+			"error initializing STw481x VMMC regulator\n");
-+		return PTR_ERR(stw481x->vmmc_regulator);
-+	}
-+
-+	dev_info(&pdev->dev, "initialized STw481x VMMC regulator\n");
-+	return 0;
-+}
-+
-+static int stw481x_vmmc_regulator_remove(struct platform_device *pdev)
-+{
-+	struct stw481x *stw481x = dev_get_platdata(&pdev->dev);
-+
-+	regulator_unregister(stw481x->vmmc_regulator);
-+	return 0;
-+}
-+
-+static const struct of_device_id stw481x_vmmc_match[] = {
-+	{ .compatible = "st,stw481x-vmmc", },
-+	{},
-+};
-+
-+static struct platform_driver stw481x_vmmc_regulator_driver = {
-+	.driver = {
-+		.name  = "stw481x-vmmc-regulator",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = stw481x_vmmc_regulator_probe,
-+	.remove = stw481x_vmmc_regulator_remove,
-+};
-+
-+module_platform_driver(stw481x_vmmc_regulator_driver);
--- 
-1.8.1.4
 
+3.11 based (F19/F20 (this also basically applied to rawhide as well,
+which is 3.12 merge window):
+
+net-sctp-fix-ipv6-ipsec-encryption-bug-in-sctp_v6_xmit.patch (rhbz 1007903)
+ - Backport of upstream commit
+95ee62083cb6453e056562d91f597552021e6ae7 for security reasons.
+
+tuntap-correctly-handle-error-in-tun_set_iff.patch (rhbz 1007741)
+  - Backport of upstream commit
+662ca437e714caaab855b12415d6ffd815985bc0 for security reasons.
+
+crypto-fix-race-in-larval-lookup.patch (rhbz 1002351)
+  - Backport of upstream commit 77dbd7a95e4a4f15264c333a9e9ab97ee27dc2aa
+
+acpi-pcie-hotplug-conflict.patch (rhbz 963991)
+  - Backport of upstream commit 3dc48af310709b85d07c8b0d3aa8f1ead02829d3
+
+rt2800-rearrange-bbp-rfcsr-initialization.patch (rhbz 1000679)
+  - http://marc.info/?l=linux-wireless&m=137872301718879&w=2
+
+HID-CVE-fixes-3.11.patch
+  - This is a backport of all of the HID CVE fixes Kees and Benjamin
+did.  I believe all of them are now in Jiri's tree and on their way to
+Linus and stable.
+
+mei-me-fix-hardware-reset-flow.patch
+  - Fixes MEI reset issues for a number of machines.  Queued for stable.
+
+media-cx23885-Fix-TeVii-S471-regression-since-introduction-of-ts2020.patch
+(rhbz 963715)
+  - Backport of upstream b43ea8068d2090cb1e44632c8a938ab40d2c7419
+
+iwl3945-better-skb-management-in-rx-path.patch
+iwl4965-better-skb-management-in-rx-path.patch (rhbz 977040)
+  - Backport of commits 45fe142cefa864b685615bcb930159f6749c3667 and
+c1de4a9557d9e25e41fc4ba034b9659152205539
+
+drm-radeon-Disable-writeback-by-default-on-ppc.patch
+  - This is something the Fedora ppc secondary team wanted I think.
+Posted here:
+http://lists.freedesktop.org/archives/dri-devel/2013-June/040059.html
+
+cve-2013-2147-ciss-info-leak.patch (rhbz 971249)
+  - Patch from security people.
+
+fix-child-thread-introspection.patch (rhbz 927469)
+  - Fixed upstream with commit 73af963f9f3036dffed55c3a2898598186db1045
+
+ath9k_rx_dma_stop_check.patch (rhbz 892811)
+  - Fixes some DMA issue on specific hardware.  Taken from
+https://dev.openwrt.org/browser/trunk/package/mac80211/patches/552-ath9k_rx_dma_stop_check.patch?rev=34910
+
+vt-Drop-K_OFF-for-VC_MUTE.patch (rhbz 859485)
+  - Fixes to vt K_OFF.  This was posted upstream but needs poking.
+
+selinux-apply-different-permission-to-ptrace-child.patch
+  - Allow e.g. gdb to only ptrace it's children and not random things.
+ Upstream asked Fedora to carry this for a while.  Needs poking.
+
+nowatchdog-on-virt.patch
+  - We keep seeing soft lockup detector reports on virt guests where
+the host was busy and didn't schedule the guest in time.  We disable
+the detector on guests now.
+
+efi-dont-map-boot-services-on-32bit.patch
+  - I believe this is queued up in Matt Flemming's tree now.
+
+disable-i8042-check-on-apple-mac.patch
+  - Bastien added this to fix intermittent hangs on a Macbook Air 1,1.
+ Should probably poke at it.
+
+secure-modules.patch
+modsign-uefi.patch
+sb-hibernate.patch
+sysrq-secure-boot.patch
+  - Fedora secure boot support.
+
+keys-expand-keyring.patch
+ - Patches from David Howells to expand keyrings.  Can be found in his git tree.
+
+keys-krb-support.patch
+  - Patches from David Howells to support KRB usecases with keyrings.
+Can be found in his git tree.
+
+keys-x509-improv.patch
+  - Patches from David Howells to improve x509 cert support, including
+introducing a system_trusted_keyring.  Can be found in his git tree.
+
+crash-driver.patch
+  - The patch to add /dev/crash.  Dave Anderson keeps making this work (mostly).
+
+taint-vbox.patch
+  - We rebase the kernel often.  Virtual Box breaks when we do it.  We
+don't support Virtual Box, so we taint it with the C flag.  We could
+likely drop this as it is automatically tainted with O now.
+
+There are a crapton of ARM patches.  I'm not going to go over those
+because I honestly have no idea what they're for, where a lot of them
+come from, or what their upstream status is.
+
+We have a small number of debug or "silence stupid messages" patches
+that have been there for years.  They're minor.
+
+josh
