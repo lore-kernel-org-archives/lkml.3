@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757018Ab3IMP0y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 11:26:54 -0400
-Received: from ra.se.axis.com ([195.60.68.13]:49600 "EHLO ra.se.axis.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756010Ab3IMP0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 11:26:51 -0400
-Date: Fri, 13 Sep 2013 17:26:49 +0200
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "rjw@sisk.pl" <rjw@sisk.pl>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jesper Nilsson <jespern@axis.com>, Mikael Starvik <starvik@axis.com>,
-        linux-cris-kernel <linux-cris-kernel@axis.com>
-Subject: Re: [PATCH 187/228] cpufreq: cris: remove calls to
- cpufreq_notify_transition()
-Message-ID: <20130913152649.GI32443@axis.com>
-References: <cover.1379063063.git.viresh.kumar@linaro.org>
- <c8374403df5f41c355e2e3c33de384382e0a746a.1379063063.git.viresh.kumar@linaro.org>
+	id S1757384Ab3IMP1O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 11:27:14 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:22088 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755610Ab3IMP1L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 11:27:11 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19ySadzymIK1Cid2uQhBnj7
+Date: Fri, 13 Sep 2013 08:27:06 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Koen Kooi <koen@dominion.thruhere.net>
+Cc: linux-kernel@vger.kernel.org, bcousson@baylibre.com,
+        rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        swarren@wwwdotorg.org, ijc+devicetree@hellion.org.uk,
+        linux@arm.linux.org.uk, linux-omap@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 2/4] ARM: dts: am335x-boneblack: add eMMC DT entry
+Message-ID: <20130913152705.GN7189@atomide.com>
+References: <1379010935-25943-1-git-send-email-koen@dominion.thruhere.net>
+ <1379010935-25943-3-git-send-email-koen@dominion.thruhere.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <c8374403df5f41c355e2e3c33de384382e0a746a.1379063063.git.viresh.kumar@linaro.org>
+In-Reply-To: <1379010935-25943-3-git-send-email-koen@dominion.thruhere.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 13, 2013 at 03:02:13PM +0200, Viresh Kumar wrote:
-> Most of the drivers do following in their ->target_index() routines:
+* Koen Kooi <koen@dominion.thruhere.net> [130912 11:43]:
+> The pinmux is specified in am335x-bone-common.dtsi to be reused by the eMMC cape.
 > 
-> 	struct cpufreq_freqs freqs;
-> 	freqs.old = old freq...
-> 	freqs.new = new freq...
+> Signed-off-by: Koen Kooi <koen@dominion.thruhere.net>
+> ---
+>  arch/arm/boot/dts/am335x-bone-common.dtsi | 22 ++++++++++++++++++++++
+>  arch/arm/boot/dts/am335x-boneblack.dts    | 14 ++++++++++++++
+>  2 files changed, 36 insertions(+)
 > 
-> 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
-> 
-> 	/* Change rate here */
-> 
-> 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
-> 
-> This is replicated over all cpufreq drivers today and there doesn't exists a
-> good enough reason why this shouldn't be moved to cpufreq core instead.
-> 
-> Earlier patches have added support in cpufreq core to do cpufreq notification on
-> frequency change, this one removes it from this driver.
-> 
-> Some related minor cleanups are also done along with it.
+> diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
+> index 0d95d54..bc8d1a2 100644
+> --- a/arch/arm/boot/dts/am335x-bone-common.dtsi
+> +++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
+> @@ -113,6 +113,21 @@
+>  				0x160 (PIN_INPUT | MUX_MODE7) /* GPIO0_6 */
+>  			>;
+>  		};
+> +
+> +		emmc_pins: pinmux_emmc_pins {
+> +			pinctrl-single,pins = <
+> +				0x80 (PIN_INPUT_PULLUP | MUX_MODE2) /* gpmc_csn1.mmc1_clk, INPUT_PULLUP | MODE2 */
+> +				0x84 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_csn2.mmc1_cmd, INPUT_PULLUP | MODE2 */
+> +				0x00 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad0.mmc1_dat0, INPUT_PULLUP | MODE1 */
+> +				0x04 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad1.mmc1_dat1, INPUT_PULLUP | MODE1 */
+> +				0x08 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad2.mmc1_dat2, INPUT_PULLUP | MODE1 */
+> +				0x0c (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad3.mmc1_dat3, INPUT_PULLUP | MODE1 */
+> +				0x10 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad4.mmc1_dat4, INPUT_PULLUP | MODE1 */
+> +				0x14 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad5.mmc1_dat5, INPUT_PULLUP | MODE1 */
+> +				0x18 (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad6.mmc1_dat6, INPUT_PULLUP | MODE1 */
+> +				0x1c (PIN_INPUT_PULLUP | MUX_MODE1) /* gpmc_ad7.mmc1_dat7, INPUT_PULLUP | MODE1 */
+> +			>;
+> +		};
+>  	};
+>  
+>  	ocp {
 
-Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+Here you can now use just the defines to make it a bit shorter:
 
-> Cc: Mikael Starvik <starvik@axis.com>
-> Cc: linux-cris-kernel@axis.com
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+0x80 (PIN_INPUT_PULLUP | MUX_MODE2) /* gpmc_csn1.mmc1_clk */
 
-/^JN - Jesper Nilsson
--- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+Regards,
+
+Tony
