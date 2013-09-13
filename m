@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933153Ab3IMNPN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:15:13 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:59626 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933138Ab3IMNPH (ORCPT
+	id S933171Ab3IMNPW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:15:22 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:33825 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933155Ab3IMNPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:15:07 -0400
+	Fri, 13 Sep 2013 09:15:14 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 102/228] cpufreq: exynos: don't initialize part of policy that is set by core too
-Date: Fri, 13 Sep 2013 18:30:48 +0530
-Message-Id: <f2f6bbf251d75a4b4df347720efed59753ab4805.1379063063.git.viresh.kumar@linaro.org>
+Subject: [PATCH 103/228] cpufreq: gx: don't initialize part of policy that is set by core too
+Date: Fri, 13 Sep 2013 18:30:49 +0530
+Message-Id: <54dc020643b2b2a691736003e0284e02b0c22982.1379063063.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
 References: <cover.1379063063.git.viresh.kumar@linaro.org>
@@ -31,39 +31,43 @@ this driver doesn't need to do it. This patch removes such code.
 Most recent of those changes is to call ->get() in the core after calling
 ->init().
 
-Acked-By: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/exynos-cpufreq.c     | 2 --
- drivers/cpufreq/exynos5440-cpufreq.c | 1 -
- 2 files changed, 3 deletions(-)
+ drivers/cpufreq/gx-suspmod.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
-index 08338d4..5244086 100644
---- a/drivers/cpufreq/exynos-cpufreq.c
-+++ b/drivers/cpufreq/exynos-cpufreq.c
-@@ -241,8 +241,6 @@ static struct notifier_block exynos_cpufreq_nb = {
+diff --git a/drivers/cpufreq/gx-suspmod.c b/drivers/cpufreq/gx-suspmod.c
+index 70442c7..d83e826 100644
+--- a/drivers/cpufreq/gx-suspmod.c
++++ b/drivers/cpufreq/gx-suspmod.c
+@@ -401,7 +401,7 @@ static int cpufreq_gx_target(struct cpufreq_policy *policy,
  
- static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ static int cpufreq_gx_cpu_init(struct cpufreq_policy *policy)
  {
--	policy->cur = policy->min = policy->max = exynos_getspeed(policy->cpu);
--
- 	/* set the transition latency value */
- 	policy->cpuinfo.transition_latency = 100000;
+-	unsigned int maxfreq, curfreq;
++	unsigned int maxfreq;
  
-diff --git a/drivers/cpufreq/exynos5440-cpufreq.c b/drivers/cpufreq/exynos5440-cpufreq.c
-index e33896f..a7d272b 100644
---- a/drivers/cpufreq/exynos5440-cpufreq.c
-+++ b/drivers/cpufreq/exynos5440-cpufreq.c
-@@ -329,7 +329,6 @@ static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 		return ret;
- 	}
+ 	if (!policy || policy->cpu != 0)
+ 		return -ENODEV;
+@@ -415,10 +415,8 @@ static int cpufreq_gx_cpu_init(struct cpufreq_policy *policy)
+ 		maxfreq = 30000 * gx_freq_mult[getCx86(CX86_DIR1) & 0x0f];
  
--	policy->cur = dvfs_info->cur_frequency;
- 	policy->cpuinfo.transition_latency = dvfs_info->latency;
- 	cpumask_setall(policy->cpus);
+ 	stock_freq = maxfreq;
+-	curfreq = gx_get_cpuspeed(0);
  
+ 	pr_debug("cpu max frequency is %d.\n", maxfreq);
+-	pr_debug("cpu current frequency is %dkHz.\n", curfreq);
+ 
+ 	/* setup basic struct for cpufreq API */
+ 	policy->cpu = 0;
+@@ -428,7 +426,6 @@ static int cpufreq_gx_cpu_init(struct cpufreq_policy *policy)
+ 	else
+ 		policy->min = maxfreq / POLICY_MIN_DIV;
+ 	policy->max = maxfreq;
+-	policy->cur = curfreq;
+ 	policy->cpuinfo.min_freq = maxfreq / max_duration;
+ 	policy->cpuinfo.max_freq = maxfreq;
+ 	policy->cpuinfo.transition_latency = CPUFREQ_ETERNAL;
 -- 
 1.7.12.rc2.18.g61b472e
 
