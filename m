@@ -1,142 +1,665 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995Ab3IMR02 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 13:26:28 -0400
-Received: from mga09.intel.com ([134.134.136.24]:7754 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752253Ab3IMR00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 13:26:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,899,1371106800"; 
-   d="scan'208";a="395360764"
-Date: Fri, 13 Sep 2013 20:31:49 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: linux-i2c@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lv Zheng <lv.zheng@intel.com>, Aaron Lu <aaron.lu@intel.com>,
-        linux-arm-kernel@lists.infradead.org, Mark Brown <broonie@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH v2 1/9] i2c: prepare runtime PM support for I2C client
- devices
-Message-ID: <20130913173149.GE7393@intel.com>
-References: <1378913560-2752-1-git-send-email-mika.westerberg@linux.intel.com>
- <1378913560-2752-2-git-send-email-mika.westerberg@linux.intel.com>
- <87vc25pvvm.fsf@linaro.org>
- <20130913065434.GZ7393@intel.com>
- <87bo3whjz4.fsf@linaro.org>
- <20130913145022.GC7393@intel.com>
+	id S1753530Ab3IMR2N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 13:28:13 -0400
+Received: from [213.199.154.208] ([213.199.154.208]:59058 "EHLO
+	am1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751079Ab3IMR2L convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 13:28:11 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VPS-1(zzdb82h98dIc89bh1432Ic8kzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275ch1de098h17326ah1de097h186068h84d07h5eeeK8275bhz2fh95h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh906i1155h192ch)
+Date: Fri, 13 Sep 2013 10:26:04 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Mike Turquette <mturquette@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, Hyun Kwon <hyunk@xilinx.com>
+Subject: Re: [PATCH] clk: si570: Add a driver for SI570 oscillators
+References: <1379033737-30015-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1379033737-30015-2-git-send-email-soren.brinkmann@xilinx.com>
+ <20130913170005.GB5681@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <20130913145022.GC7393@intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+In-Reply-To: <20130913170005.GB5681@roeck-us.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <c6755ff6-104d-40fe-a753-0e165cff1e10@AM1EHSMHS004.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 13, 2013 at 05:50:22PM +0300, Mika Westerberg wrote:
-> On Fri, Sep 13, 2013 at 07:30:55AM -0700, Kevin Hilman wrote:
-> > Mika Westerberg <mika.westerberg@linux.intel.com> writes:
+On Fri, Sep 13, 2013 at 10:00:05AM -0700, Guenter Roeck wrote:
+> On Thu, Sep 12, 2013 at 05:55:37PM -0700, Soren Brinkmann wrote:
+> > Add a driver for SILabs 570, 571, 598, 599 programmable oscillators.
+> > The devices generate low-jitter clock signals and are reprogrammable via
+> > an I2C interface.
 > > 
-> > > On Thu, Sep 12, 2013 at 02:34:21PM -0700, Kevin Hilman wrote:
-> > >> > diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> > >> > index f32ca29..44374b4 100644
-> > >> > --- a/drivers/i2c/i2c-core.c
-> > >> > +++ b/drivers/i2c/i2c-core.c
-> > >> > @@ -248,11 +248,30 @@ static int i2c_device_probe(struct device *dev)
-> > >> >  					client->flags & I2C_CLIENT_WAKE);
-> > >> >  	dev_dbg(dev, "probe\n");
-> > >> >  
-> > >> > +	/* Make sure the adapter is active */
-> > >> > +	pm_runtime_get_sync(&client->adapter->dev);
-> > >> > +
-> > >> > +	/*
-> > >> > +	 * Enable runtime PM for the client device. If the client wants to
-> > >> > +	 * participate on runtime PM it should call pm_runtime_put() in its
-> > >> > +	 * probe() callback.
-> > >> > +	 */
-> > >> > +	pm_runtime_get_noresume(&client->dev);
-> > >> > +	pm_runtime_set_active(&client->dev);
-> > >> 
-> > >> Why the set_active here?
-> > >> 
-> > >> For hardware that is disabled/powered-off on startup, there will now be
-> > >> a mismatch between the hardware state an the RPM core state.
-> > >
-> > > The call to pm_runtime_get_noresume() should make sure that the device is
-> > > in active state (at least in state where it can access the bus) if I'm
-> > > understanding this right.
+> > Cc: Guenter Roeck <linux@roeck-us.net>
+> > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> > ---
+> >  .../devicetree/bindings/clock/silabs,si570.txt     |  31 ++
+> >  drivers/clk/Kconfig                                |  10 +
+> >  drivers/clk/Makefile                               |   1 +
+> >  drivers/clk/clk-si570.c                            | 546 +++++++++++++++++++++
+> >  4 files changed, 588 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/clock/silabs,si570.txt
+> >  create mode 100644 drivers/clk/clk-si570.c
 > > 
-> > No, after _get_noresume(), nothing happens to the hardware.  It simply
-> > increments the usecount.  From pm_runtime.h:
-> > 
-> > static inline void pm_runtime_get_noresume(struct device *dev)
-> > {
-> > 	atomic_inc(&dev->power.usage_count);
-> > }
-> > 
-> > So after the _get_noresume() and _set_active() you're very likely to
-> > have a disconnect between the hardware state and what state RPM thinks
-> > the hardware is in.
+> > diff --git a/Documentation/devicetree/bindings/clock/silabs,si570.txt b/Documentation/devicetree/bindings/clock/silabs,si570.txt
+> > new file mode 100644
+> > index 0000000..099f0ee
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/clock/silabs,si570.txt
+> > @@ -0,0 +1,31 @@
+> > +Binding for Silicon Labs 570, 571, 598 and 599  programmable
+> > +I2C clock generators.
+> > +
+> > +Reference
+> > +This binding uses the common clock binding[1]. Details about the devices can be
+> > +found in the data sheets[2][3].
+> > +
+> > +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
+> > +[2] Si57x Data Sheet
+> > +    http://www.silabs.com/Support%20Documents/TechnicalDocs/si570.pdf
+> > +[3] Si59x Data Sheet
+> > +    http://www.silabs.com/Support%20Documents/TechnicalDocs/si598-99.pdf
+> > +
+> > +Required properties:
+> > + - compatible: Shall be one of "silabs,si57x", "silabs,si59x".
 > 
-> Good point.
+> This should probably explicitly list all supported devices, not "x".
+> After all, there might at some point be an incompatible device which
+> still matches the "x".
+Okay, I'll make it explicitly list 570, 571, 598 and 599.
+
 > 
-> I suppose calling pm_runtime_get() here would work (and make the state
-> active in all case)? I used _noresume() here because at this point the
-> driver itself hasn't had change to install it's RPM hooks.
+> > + - reg: I2C device address.
+> > + - #clock-cells: From common clock bindings: Shall be 0.
+> > + - factory-fout: Factory set default frequency
+> > +
+> > +Optional properties:
+> > + - initial-fout: Initial output frequency to set during probe
+> > + - temperature-stability-7ppm: Indicate a device with a temperature stability
+> > +			       of 7ppm
+> > +
+> > +Example:
+> > +	si570: clock-generator@5d {
+> > +		#clock-cells = <0>;
+> > +		compatible = "silabs,si570";
+> > +		reg = <0x5d>;
+> > +		factory-fout = <156250000>;
+> > +	};
+> > diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+> > index 279407a..f5afabc 100644
+> > --- a/drivers/clk/Kconfig
+> > +++ b/drivers/clk/Kconfig
+> > @@ -64,6 +64,16 @@ config COMMON_CLK_SI5351
+> >  	  This driver supports Silicon Labs 5351A/B/C programmable clock
+> >  	  generators.
+> >  
+> > +config COMMON_CLK_SI570
+> > +	tristate "Clock driver for SiLabs 57x/59x"
+> 
+> Better state something like "SiLabs Si570 and compatible chips"
+Sounds good to me. I'll change this.
 
-I take that back.
+> 
+> > +	depends on I2C
+> > +	depends on OF
+> > +	select REGMAP_I2C
+> > +	help
+> > +	---help---
+> > +	  This driver supports Silicon Labs 570/571/598/599 programmable
+> > +	  clock generators.
+> > +
+> >  config COMMON_CLK_S2MPS11
+> >  	tristate "Clock driver for S2MPS11 MFD"
+> >  	depends on MFD_SEC_CORE
+> > diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+> > index 7b11106..c0e94b3 100644
+> > --- a/drivers/clk/Makefile
+> > +++ b/drivers/clk/Makefile
+> > @@ -40,6 +40,7 @@ obj-$(CONFIG_COMMON_CLK_AXI_CLKGEN) += clk-axi-clkgen.o
+> >  obj-$(CONFIG_COMMON_CLK_WM831X) += clk-wm831x.o
+> >  obj-$(CONFIG_COMMON_CLK_MAX77686) += clk-max77686.o
+> >  obj-$(CONFIG_COMMON_CLK_SI5351) += clk-si5351.o
+> > +obj-$(CONFIG_COMMON_CLK_SI570) += clk-si570.o
+> >  obj-$(CONFIG_COMMON_CLK_S2MPS11) += clk-s2mps11.o
+> >  obj-$(CONFIG_CLK_TWL6040)	+= clk-twl6040.o
+> >  obj-$(CONFIG_CLK_PPC_CORENET)	+= clk-ppc-corenet.o
+> > diff --git a/drivers/clk/clk-si570.c b/drivers/clk/clk-si570.c
+> > new file mode 100644
+> > index 0000000..960d689
+> > --- /dev/null
+> > +++ b/drivers/clk/clk-si570.c
+> > @@ -0,0 +1,546 @@
+> > +/*
+> > + * Driver for Silicon Labs Si570/Si571 Programmable XO/VCXO
+> > + *
+> > + * Copyright (C) 2010, 2011 Ericsson AB.
+> > + * Copyright (C) 2011 Guenter Roeck.
+> > + * Copyright (C) 2011 - 2013 Xilinx Inc.
+> > + *
+> > + * Author: Guenter Roeck <guenter.roeck@ericsson.com>
+> > + *	   Sören Brinkmann <soren.brinkmann@xilinx.com>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License as published by
+> > + * the Free Software Foundation; either version 2 of the License, or
+> > + * (at your option) any later version.
+> > + *
+> > + * This program is distributed in the hope that it will be useful,
+> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > + * GNU General Public License for more details.
+> > + */
+> > +
+> > +#include <linux/clk-provider.h>
+> > +#include <linux/delay.h>
+> > +#include <linux/module.h>
+> > +#include <linux/i2c.h>
+> > +#include <linux/regmap.h>
+> > +#include <linux/slab.h>
+> > +
+> > +/* Si570 registers */
+> > +#define SI570_REG_HS_N1		7
+> > +#define SI570_REG_N1_RFREQ0	8
+> > +#define SI570_REG_RFREQ1	9
+> > +#define SI570_REG_RFREQ2	10
+> > +#define SI570_REG_RFREQ3	11
+> > +#define SI570_REG_RFREQ4	12
+> > +#define SI570_REG_CONTROL	135
+> > +#define SI570_REG_FREEZE_DCO	137
+> > +#define SI570_DIV_OFFSET_7PPM	6
+> > +
+> > +#define HS_DIV_SHIFT		5
+> > +#define HS_DIV_MASK		0xe0
+> > +#define HS_DIV_OFFSET		4
+> > +#define N1_6_2_MASK		0x1f
+> > +#define N1_1_0_MASK		0xc0
+> > +#define RFREQ_37_32_MASK	0x3f
+> > +
+> > +#define SI570_FOUT_FACTORY_DFLT	156250000LL
+> > +#define SI598_FOUT_FACTORY_DFLT	10000000LL
+> > +
+> > +#define SI570_MIN_FREQ		10000000L
+> > +#define SI570_MAX_FREQ		1417500000L
+> > +#define SI598_MAX_FREQ		525000000L
+> > +
+> > +#define FDCO_MIN		4850000000LL
+> > +#define FDCO_MAX		5670000000LL
+> > +
+> > +#define SI570_CNTRL_RECALL	(1 << 0)
+> > +#define SI570_CNTRL_FREEZE_M	(1 << 5)
+> > +#define SI570_CNTRL_NEWFREQ	(1 << 6)
+> > +
+> > +#define SI570_FREEZE_DCO	(1 << 4)
+> > +
+> > +/**
+> > + * struct clk_si570:
+> > + * @hw:	Clock hw struct
+> > + * @regmap:	Device's regmap
+> > + * @div_offset:	Rgister offset for dividers
+> > + * @max_freq:	Maximum frequency for this device
+> > + * @fxtal:	Factory xtal frequency
+> > + * @n1:		Clock divider N1
+> > + * @hs_div:	Clock divider HSDIV
+> > + * @rfreq:	Clock multiplier RFREQ
+> > + * @frequency:	Current output frequency
+> > + * @i2c_client:	I2C client pointer
+> > + */
+> > +struct clk_si570 {
+> > +	struct clk_hw hw;
+> > +	struct regmap *regmap;
+> > +	unsigned int div_offset;
+> > +	u64 max_freq;
+> > +	u64 fxtal;
+> > +	unsigned int n1;
+> > +	unsigned int hs_div;
+> > +	u64 rfreq;
+> > +	u64 frequency;
+> > +	struct i2c_client *i2c_client;
+> > +};
+> > +#define to_clk_si570(_hw)	container_of(_hw, struct clk_si570, hw)
+> > +
+> > +/**
+> > + * struct si570_device_data:
+> > + * @max_freq:	Maximum output frequency
+> > + * @default_fout:	Default factory output frequency value
+> > + */
+> > +struct si570_device_data {
+> > +	u64 max_freq;
+> > +	u32 default_fout;
+> > +};
+> > +
+> > +static const struct si570_device_data si57x_ddata = {
+> > +	.max_freq = SI570_MAX_FREQ,
+> > +	.default_fout = SI570_FOUT_FACTORY_DFLT
+> > +};
+> > +
+> > +static const struct si570_device_data si59x_ddata = {
+> > +	.max_freq = SI598_MAX_FREQ,
+> > +	.default_fout = SI598_FOUT_FACTORY_DFLT
+> > +};
+> > +
+> > +/**
+> > + * si570_get_divs() - Read clock dividers from HW
+> > + * @data:	Pointer to struct clk_si570
+> > + * @rfreq:	Fractional multiplier (output)
+> > + * @n1:		Divider N1 (output)
+> > + * @hs_div:	Divider HSDIV (output)
+> > + * Returns 0 on success, negative errno otherwise.
+> > + *
+> > + * Retrieve clock dividers and multipliers from the HW.
+> > + */
+> > +static int si570_get_divs(struct clk_si570 *data, u64 *rfreq,
+> > +		unsigned int *n1, unsigned int *hs_div)
+> 
+> I would suggest to align continuation lines with the opening (,
+> though that is really up to you (and the maintainer).
+Hmm, I don't really like that since it is high maintenance and is easily
+messed up by search and replace operations and similar. Therefore I rely
+on vim's smart indent.
 
-[ It has been some time since this code was originally written so I can't
-remember all the details :-/ ]
+> 
+> > +{
+> > +	int err;
+> > +	u8 reg[6];
+> > +	u64 tmp;
+> > +
+> > +	err = regmap_bulk_read(data->regmap, SI570_REG_HS_N1 + data->div_offset,
+> > +			reg, ARRAY_SIZE(reg));
+> > +	if (err)
+> > +		return err;
+> > +
+> > +	*hs_div = ((reg[0] & HS_DIV_MASK) >> HS_DIV_SHIFT) + HS_DIV_OFFSET;
+> > +	*n1 = ((reg[0] & N1_6_2_MASK) << 2) + ((reg[1] & N1_1_0_MASK) >> 6) + 1;
+> > +	/* Handle invalid cases */
+> > +	if (*n1 > 1)
+> > +		*n1 &= ~1;
+> > +
+> > +	tmp = reg[1] & RFREQ_37_32_MASK;
+> > +	tmp = (tmp << 8) + reg[2];
+> > +	tmp = (tmp << 8) + reg[3];
+> > +	tmp = (tmp << 8) + reg[4];
+> > +	tmp = (tmp << 8) + reg[5];
+> > +	*rfreq = tmp;
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +/**
+> > + * si570_get_defaults() - Get default values
+> > + * @data:	Driver data structure
+> > + * @fout:	Factory frequency output
+> > + * Returns 0 on success, negative errno otherwise.
+> > + */
+> > +static int si570_get_defaults(struct clk_si570 *data, u64 fout)
+> > +{
+> > +	int err;
+> > +	u64 fdco;
+> > +
+> > +	regmap_write(data->regmap, SI570_REG_CONTROL, SI570_CNTRL_RECALL);
+> > +
+> > +	err = si570_get_divs(data, &data->rfreq, &data->n1, &data->hs_div);
+> > +	if (err)
+> > +		return err;
+> > +
+> > +	/*
+> > +	 * Accept optional precision loss to avoid arithmetic overflows.
+> > +	 * Acceptable per Silicon Labs Application Note AN334.
+> > +	 */
+> > +	fdco = fout * data->n1 * data->hs_div;
+> > +	if (fdco >= (1LL << 36))
+> > +		data->fxtal = div64_u64(fdco << 24, data->rfreq >> 4);
+> > +	else
+> > +		data->fxtal = div64_u64(fdco << 28, data->rfreq);
+> > +
+> > +	data->frequency = fout;
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +/**
+> > + * si570_update_rfreq() - Update clock multiplier
+> > + * @data:	Driver data structure
+> > + * Passes on regmap_bulk_write() return value.
+> > + */
+> > +static int si570_update_rfreq(struct clk_si570 *data)
+> > +{
+> > +	u8 reg[5];
+> > +
+> > +	reg[0] = ((data->n1 - 1) << 6) |
+> > +		((data->rfreq >> 32) & RFREQ_37_32_MASK);
+> > +	reg[1] = (data->rfreq >> 24) & 0xff;
+> > +	reg[2] = (data->rfreq >> 16) & 0xff;
+> > +	reg[3] = (data->rfreq >> 8) & 0xff;
+> > +	reg[4] = data->rfreq & 0xff;
+> > +
+> > +	return regmap_bulk_write(data->regmap, SI570_REG_N1_RFREQ0 +
+> > +			data->div_offset, reg, ARRAY_SIZE(reg));
+> > +}
+> > +
+> > +/**
+> > + * si570_calc_divs() - Caluclate clock dividers
+> > + * @frequency:	Target frequency
+> > + * @data:	Driver data structure
+> > + * @out_rfreq:	RFREG fractional multiplier (output)
+> > + * @out_n1:	Clock divider N1 (output)
+> > + * @out_hs_div:	Clock divider HSDIV (output)
+> > + * Returns 0 on success, negative errno otherwise.
+> > + *
+> > + * Calculate the clock dividers (@out_hs_div, @out_n1) and clock multiplier
+> > + * (@out_rfreq) for a given target @frequency.
+> > + */
+> > +static int si570_calc_divs(unsigned long frequency, struct clk_si570 *data,
+> > +		u64 *out_rfreq, unsigned int *out_n1, unsigned int *out_hs_div)
+> > +{
+> > +	int i;
+> > +	unsigned int n1, hs_div;
+> > +	u64 fdco, best_fdco = ULLONG_MAX;
+> > +	static const uint8_t si570_hs_div_values[] = { 11, 9, 7, 6, 5, 4 };
+> > +
+> > +	for (i = 0; i < ARRAY_SIZE(si570_hs_div_values); i++) {
+> > +		hs_div = si570_hs_div_values[i];
+> > +		/* Calculate lowest possible value for n1 */
+> > +		n1 = div_u64(div_u64(FDCO_MIN, hs_div), frequency);
+> > +		if (!n1 || (n1 & 1))
+> > +			n1++;
+> > +		while (n1 <= 128) {
+> > +			fdco = (u64)frequency * (u64)hs_div * (u64)n1;
+> > +			if (fdco > FDCO_MAX)
+> > +				break;
+> > +			if (fdco >= FDCO_MIN && fdco < best_fdco) {
+> > +				*out_n1 = n1;
+> > +				*out_hs_div = hs_div;
+> > +				*out_rfreq = div64_u64(fdco << 28, data->fxtal);
+> > +				best_fdco = fdco;
+> > +			}
+> > +			n1 += (n1 == 1 ? 1 : 2);
+> > +		}
+> > +	}
+> > +
+> > +	if (best_fdco == ULLONG_MAX)
+> > +		return -EINVAL;
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static unsigned long si570_recalc_rate(struct clk_hw *hw,
+> > +		unsigned long parent_rate)
+> > +{
+> > +	int err;
+> > +	u64 rfreq, rate;
+> > +	unsigned int n1, hs_div;
+> > +	struct clk_si570 *data = to_clk_si570(hw);
+> > +
+> > +	err = si570_get_divs(data, &rfreq, &n1, &hs_div);
+> > +	if (err) {
+> > +		dev_err(&data->i2c_client->dev, "unable to recalc rate\n");
+> > +		return data->frequency;
+> > +	}
+> > +
+> > +	rfreq = div_u64(rfreq, hs_div * n1);
+> > +	rate = (data->fxtal * rfreq) >> 28;
+> > +
+> > +	return rate;
+> > +}
+> > +
+> > +static long si570_round_rate(struct clk_hw *hw, unsigned long rate,
+> > +		unsigned long *parent_rate)
+> > +{
+> > +	int err;
+> > +	u64 rfreq;
+> > +	unsigned int n1, hs_div;
+> > +	struct clk_si570 *data = to_clk_si570(hw);
+> > +
+> > +	if (!rate)
+> > +		return 0;
+> > +
+> > +	if (div64_u64(abs(rate - data->frequency) * 10000LL,
+> > +				data->frequency) < 35) {
+> > +		rfreq = div64_u64((data->rfreq * rate) +
+> > +				div64_u64(data->frequency, 2), data->frequency);
+> > +		n1 = data->n1;
+> > +		hs_div = data->hs_div;
+> > +
+> > +	} else {
+> > +		err = si570_calc_divs(rate, data, &rfreq, &n1, &hs_div);
+> > +		if (err) {
+> > +			dev_err(&data->i2c_client->dev,
+> > +					"unable to round rate\n");
+> > +			return 0;
+> > +		}
+> > +	}
+> > +
+> > +	return rate;
+> > +}
+> > +
+> > +/**
+> > + * si570_set_frequency() - Adjust output frequency
+> > + * @data:	Driver data structure
+> > + * @frequency:	Target frequency
+> > + * Returns 0 on success.
+> > + *
+> > + * Update output frequency for big frequency changes (> 3,500 ppm).
+> > + */
+> > +static int si570_set_frequency(struct clk_si570 *data, unsigned long frequency)
+> > +{
+> > +	int err;
+> > +
+> > +	err = si570_calc_divs(frequency, data, &data->rfreq, &data->n1,
+> > +			&data->hs_div);
+> > +	if (err)
+> > +		return err;
+> > +
+> > +	/*
+> > +	 * The DCO reg should be accessed with a read-modify-write operation
+> > +	 * per AN334
+> > +	 */
+> > +	regmap_write(data->regmap, SI570_REG_FREEZE_DCO, SI570_FREEZE_DCO);
+> > +	regmap_write(data->regmap, SI570_REG_HS_N1 + data->div_offset,
+> > +				  ((data->hs_div - HS_DIV_OFFSET) <<
+> > +				   HS_DIV_SHIFT)
+> > +				  | (((data->n1 - 1) >> 2) & N1_6_2_MASK));
+> 
+> This is an example where the alignment to ( would really help.
+> 
+> 	regmap_write(data->regmap, SI570_REG_HS_N1 + data->div_offset,
+> 		     ((data->hs_div - HS_DIV_OFFSET) << HS_DIV_SHIFT)
+> 		     | (((data->n1 - 1) >> 2) & N1_6_2_MASK));
+I agree on this one. I'll look into making this look a little prettier :)
 
-The pm_runtime_get_noresume() is there just to increment the refcount. It
-has nothing to do to "activate" the device in question. Sorry about the
-confusion from my part.
+> 
+> > +	si570_update_rfreq(data);
+> > +	regmap_write(data->regmap, SI570_REG_FREEZE_DCO, 0);
+> > +	regmap_write(data->regmap, SI570_REG_CONTROL, SI570_CNTRL_NEWFREQ);
+> > +
+> > +	/* Applying a new frequency can take up to 10ms */
+> > +	usleep_range(10000, 10001);
+> 
+> One microsecond range doesn't really buy anything besides forcing the compiler
+> to generate extra code. Why not just use 10000 ?
+That's due to checkpatch. I originally had 'msleep(10)' and checkpatch
+suggested to use 'usleep_range()'. Then I put
+'usleep_range(10000, 10000)' and checkpatch suggested to not use the
+same values for MIN and MAX, so I added the 1 to the MAX value.
+If it is considered to be safe and okay to put in MIN=MAX=10000, I'll
+change it accordingly.
 
-This is what happens in case the device is enumerated from ACPI:
+> 
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +/**
+> > + * si570_set_frequency_small() - Adjust output frequency
+> > + * @data:	Driver data structure
+> > + * @frequency:	Target frequency
+> > + * Returns 0 on success.
+> > + *
+> > + * Update output frequency for small frequency changes (< 3,500 ppm).
+> > + */
+> > +static int si570_set_frequency_small(struct clk_si570 *data,
+> > +				     unsigned long frequency)
+> > +{
+> > +	/*
+> > +	 * This is a re-implementation of DIV_ROUND_CLOSEST
+> > +	 * using the div64_u64 function lieu of letting the compiler
+> > +	 * insert EABI calls
+> > +	 */
+> > +	data->rfreq = div64_u64((data->rfreq * frequency) +
+> > +			div_u64(data->frequency, 2), data->frequency);
+> > +	regmap_write(data->regmap, SI570_REG_CONTROL, SI570_CNTRL_FREEZE_M);
+> > +	si570_update_rfreq(data);
+> > +	regmap_write(data->regmap, SI570_REG_CONTROL, 0);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int si570_set_rate(struct clk_hw *hw, unsigned long rate,
+> > +		unsigned long parent_rate)
+> > +{
+> > +	struct clk_si570 *data = to_clk_si570(hw);
+> > +	struct i2c_client *client = data->i2c_client;
+> > +	int err;
+> > +
+> > +	if (rate < SI570_MIN_FREQ || rate > data->max_freq) {
+> > +		dev_warn(&client->dev,
+> > +			"requested frequency %lu Hz is out of range\n", rate);
+> > +		return -EINVAL;
+> > +	}
+> > +
+> > +	if (div64_u64(abs(rate - data->frequency) * 10000LL,
+> > +				data->frequency) < 35)
+> > +		err = si570_set_frequency_small(data, rate);
+> > +	else
+> > +		err = si570_set_frequency(data, rate);
+> > +
+> > +	if (err)
+> > +		return err;
+> > +
+> > +	data->frequency = rate;
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static const struct clk_ops si570_clk_ops = {
+> > +	.recalc_rate = si570_recalc_rate,
+> > +	.round_rate = si570_round_rate,
+> > +	.set_rate = si570_set_rate,
+> > +};
+> > +
+> > +static const struct of_device_id clk_si570_of_match[] = {
+> > +	{ .compatible = "silabs,si57x", .data = &si57x_ddata },
+> > +	{ .compatible = "silabs,si59x", .data = &si59x_ddata },
+> > +	{ },
+> > +};
+> > +MODULE_DEVICE_TABLE(of, clk_si570_of_match);
+> > +
+> > +static bool si570_regmap_is_volatile(struct device *dev, unsigned int reg)
+> > +{
+> > +	switch (reg) {
+> > +	case 135:
+> > +		return true;
+> > +	default:
+> > +		return false;
+> > +	}
+> > +}
+> > +
+> > +static bool si570_regmap_is_writeable(struct device *dev, unsigned int reg)
+> > +{
+> > +	switch (reg) {
+> > +	case 7 ... 18:
+> > +	case 135:
+> > +	case 137:
+> > +		return true;
+> > +	default:
+> > +		return false;
+> > +	}
+> > +}
+> > +
+> > +static struct regmap_config si570_regmap_config = {
+> > +	.reg_bits = 8,
+> > +	.val_bits = 8,
+> > +	.cache_type = REGCACHE_RBTREE,
+> > +	.max_register = 137,
+> > +	.writeable_reg = si570_regmap_is_writeable,
+> > +	.volatile_reg = si570_regmap_is_volatile,
+> > +};
+> > +
+> > +static int si570_probe(struct i2c_client *client,
+> > +		const struct i2c_device_id *id)
+> > +{
+> > +	struct clk_si570 *data;
+> > +	struct clk_init_data init;
+> > +	struct clk *clk;
+> > +	u32 initial_fout, factory_fout;
+> > +	int err;
+> > +	const struct of_device_id *match;
+> > +	const struct si570_device_data *ddata;
+> > +
+> > +	data = devm_kzalloc(&client->dev, sizeof(*data), GFP_KERNEL);
+> > +	if (!data)
+> > +		return -ENOMEM;
+> > +
+> > +	match = of_match_node(clk_si570_of_match, client->dev.of_node);
+> > +	if (!match)
+> > +		return -EINVAL;
+> 
+> Seems unusual. Is this really needed ? It precludes the driver from being used
+> in a non-devicetree environment, for example. I would guess that there is a match
+> if client->dev.of_node is set. Otherwise, this code would be needed in every
+> driver supporting devicetree, and I don't recall seeing that.
+> 
+> > +	ddata = match->data;
+> > +
+> You should be able to get this information (ie the pointer to si570_device_data)
+> from id->driver_data. That would be more consistent with other i2c devices.
+I think I copied this approach from the other clk-si... driver. I'll
+do some research on your suggestion and change it. Could you point me to
+an example for your proposal?
 
-	// This makes sure that the controller itself is powered on
-	// (adapter device follows its parent which is the controller). The
-	// controller is attached to the ACPI power domain so it is
-	// brought to D0 now.
-	pm_runtime_get_sync(&client->adapter->dev);
+> 
+> > +	init.ops = &si570_clk_ops;
+> > +	init.flags = CLK_IS_ROOT;
+> > +	init.num_parents = 0;
+> > +	data->hw.init = &init;
+> > +	data->max_freq = ddata->max_freq;
+> > +	data->i2c_client = client;
+> > +
+> > +	if (of_property_read_bool(client->dev.of_node,
+> > +				"temperature-stability-7ppm"))
+> > +		data->div_offset = SI570_DIV_OFFSET_7PPM;
+> > +
+> > +	if (of_property_read_string(client->dev.of_node, "clock-output-names",
+> > +			&init.name))
+> > +		init.name = client->dev.of_node->name;
+> > +
+> > +	if (of_property_read_u32(client->dev.of_node, "factory-fout",
+> > +				&factory_fout)) {
+> > +		dev_warn(&client->dev,
+> > +			"DTS does not contain factory-fout, using default\n");
+> 
+> Is that really worth a warning ?
+My understanding is, that the default output frequency is part-specific
+and required to calculate the frequency of the internal crystal. Hence,
+if you do not provide the correct default output frequency for your part, all
+frequencies generated by this driver will be off, unless the here used
+default matches your part. Please correct me if I'm wrong, otherwise, I
+think it's worth a warning.
 
-	// This binds the client device to the ACPI power domain, and in
-	// addition to that brings the client device to D0.
-	if (ACPI_HANDLE(&client->dev))
-		acpi_dev_pm_attach(&client->dev, true);
+	Sören
 
-	// Increase the refcount so that client can start runtime PM
-	// transitions when it calls _put().
-	pm_runtime_get_noresume(&client->dev);
 
-	// Mark the device being active as
-	//  1) In ACPI case we know that is true as we just powered the
-	//     device on.
-	//  2) We treat the device by default to be runtime PM active and
-	//     powered on (that's in the changelog and should follow what
-	//     the PCI bus did).
-	pm_runtime_set_active(&client->dev);
-
-	// Enable runtime PM but nothing happens yet as long as the client
-	// driver doesn't call _put().
-	pm_runtime_enable(&client->dev);
-
-So, yes there might be a disconnect between the runtime PM state and the
-device HW state now (same is with default to suspended).
-
-When the driver ->probe() is called, it needs to power on the device (which
-it probably needs to do anyway to be able to talk to the device and probe
-its registers, etc.). Once the driver calls _put() the device is eventually
-moved to suspended state (and its RPM hooks are called). I might be missing
-something but is there a case where this is not beneficial?
