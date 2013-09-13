@@ -1,94 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932599Ab3IMOYe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 10:24:34 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36747 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932249Ab3IMOYc (ORCPT
+	id S932693Ab3IMOY7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 10:24:59 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:40105 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932249Ab3IMOY5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 10:24:32 -0400
-Date: Fri, 13 Sep 2013 16:24:29 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-cc: Sricharan R <r.sricharan@ti.com>, LKML <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        LAK <linux-arm-kernel@lists.infradead.org>, linux-omap@vger.kernel.org,
-        linus.walleij@linaro.org, Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>, rnayak@ti.com
-Subject: Re: [RFC PATCH 1/4] DRIVERS: IRQCHIP: Add crossbar irqchip driver
-In-Reply-To: <52326D6B.2010003@ti.com>
-Message-ID: <alpine.DEB.2.02.1309131142540.4089@ionos.tec.linutronix.de>
-References: <1379000351-15672-1-git-send-email-r.sricharan@ti.com> <1379000351-15672-2-git-send-email-r.sricharan@ti.com> <alpine.DEB.2.02.1309122201530.4089@ionos.tec.linutronix.de> <523228B5.5070507@ti.com> <alpine.DEB.2.02.1309122335440.4089@ionos.tec.linutronix.de>
- <5232457A.8080709@ti.com> <alpine.DEB.2.02.1309130138550.4089@ionos.tec.linutronix.de> <52326D6B.2010003@ti.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 13 Sep 2013 10:24:57 -0400
+Date: Fri, 13 Sep 2013 10:31:59 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Ingo Molnar <mingo@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Vince Weaver <vince@deater.net>, Andi Kleen <ak@linux.intel.com>,
+        acme@infradead.org, linux-kernel@vger.kernel.org,
+        Stephane Eranian <eranian@google.com>, torvalds@linux-foundation.org,
+        trinity@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        =?ISO-8859-15?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>
+Subject: Re: [PATCH 1/2] tools, perf: Add a precise event qualifier v2
+In-Reply-To: <20130913112956.GA21832@twins.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.10.1309131021540.31072@vincent-weaver-1.um.maine.edu>
+References: <1374501138-13496-1-git-send-email-andi@firstfloor.org> <alpine.DEB.2.02.1307230137160.18617@pianoman.cluster.toy> <20130723060108.GA18396@tassilo.jf.intel.com> <alpine.DEB.2.02.1307231717580.27628@pianoman.cluster.toy> <20130723225150.GT6123@two.firstfloor.org>
+ <20130912165733.GA23698@gmail.com> <20130912173617.GI18242@two.firstfloor.org> <20130913085654.GI31370@twins.programming.kicks-ass.net> <20130913095057.GB11611@gmail.com> <20130913112956.GA21832@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Sep 2013, Santosh Shilimkar wrote:
-> On Thursday 12 September 2013 08:26 PM, Thomas Gleixner wrote:
-> > Let me summarize:
-> > 
-> >    - GIC supports up to 160 interrupts
-> > 
-> >    - CROSSBAR supports up to 250 interrupts 
-> > 
-> >    - CROSSBAR routes up to 160 out of 250 interrupts to the GIC ones
-> > 
-> >    - Drivers request a CROSSBAR interrupt number which must be mapped
-> >      to some arbitrary available GIC irq number
-> > 
-> Correct.
+On Fri, 13 Sep 2013, Peter Zijlstra wrote:
+
+> On Fri, Sep 13, 2013 at 11:50:57AM +0200, Ingo Molnar wrote:
+> > For example if we added 'type' as well we could expose the generic, 
+> > hardware-independent events via sysfs as well.
 > 
-> > So basically the CROSSBAR mechanism is pretty much the same as MSI[X]
-> > just in a different flavour and with a different set of semantics and
-> > limitations, i.e. poor mans MSI[X] with a new level of bogosity.
-> > 
-> > So if CROSSBAR is going to be the new fangled SoC MSI[X] long term
-> > equivalent then you better provide some infrastructure for that and
-> > make the drivers ready to use it. Maybe check with the PCI/MSI folks
-> > to share some of the interfaces.
-> >
-> > If that whole thing is another onetime HW designers wet dream, then
-> > please go back to the limited but completely functional (Who is going
-> > to use more than 160 peripheral interrupts????) device tree model. I
-> > really have no interest to support hardware designer brain farts.
-> > 
-> Thanks for clear NAK for irqchip approach. I should have looped you
-> in the discussion where I was also suggesting against the irqchip
-> approach. We will try to look at MSI stuff but if its get too
-> complicated am going to fall-back to the initial probe based
-> approach to achieve the functionality.
+> Type is already fully implied by where you'll find the event in sysfs:
+> 
+>   /sys/bus/event_sources/devices/$PMU/events/
+> 
+> needs
+> 
+>   perf_event_attr::type := /sys/bus/event_sources/devices/$PMU/type
 
-Before you dig into MSI, lets talk about irq domains first.
 
-GIC implements a legacy irq domain, i.e. a linear domain of all
-possible GIC interrupts with a 1:1 mapping.
+OK, fine, another question then.
 
-So why can't you make use of irq domains and have the whole routing
-business implemented sanely?
+Is there any reason these values have to be human-readable?
 
-What's needed is in gic_init_bases():
+The only reason you are using this crazy format I can see is because it 
+makes maintaining your personal userspace implementation (perf) easier at 
+the expense of everyone else who want to use this interface.
 
-       if (of_property_read(node, "routable_irqs", &nr_routable_irqs) {
-       	  irq_domain_add_legacy(nr_gic_irqs);
-       } else {
-       	  irq_domain_add_legacy(nr_per_cpu_irqs);
-	  irq_domain_add_linear(nr_routable_irqs);
-       }
+Honestly, an interface like
+cat   /sys/bus/event_sources/devices/$PMU/events/new_event
 
-Now that separate domain has an xlate function which grabs a free GIC
-irq from a bitmap and returns the hardware irq number in the gic
-space. The map/unmap callbacks take care of setting up / tearing down
-the route in the crossbar.
+   size=320,0xdeadbeef,0xcafef00d,....,0x000000
 
-Thoughts?
+when you just set up an array, copy in the values, then memcpy() it into
+place on top of a struct attr is a million times easier than what you are 
+propsing:
+   1. A huge complicated LEX/YACC parser
+   2. The parser has to read in many different files under ../format/..
+      and build up a tree of names and shift/masks
+   3. The event is read in and then text has to be parsed, values read,
+      and then shifting-masking to get a value for each register
+   4. A mapping has to be in the code of the various (of the over 40+)
+      fields in the struct perf_attr field, and each value has to
+      be put at the proper offset
+   5. If ever a new field is added to struct perf_attr, then any event
+      using it breaks until your parser is updated with all the info
+      about this field.
 
-Thanks,
+It's huge, takes up non-swappable kernel mem with lots of individual sysfs
+files, requires a complex parser for what should be just a simple
+config setup, and is fragile when new fields are added.
 
-	tglx
+But of course since perf is tightly coupled into the kernel source tree 
+you can get away with it.  I guess I should just be glad you aren't 
+exporting it as XML or something.
+
+Vince
+
