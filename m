@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756612Ab3IMM7Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 08:59:24 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:46375 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756140Ab3IMM6k (ORCPT
+	id S1756656Ab3IMM7v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 08:59:51 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:52454 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755342Ab3IMM7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 08:58:40 -0400
-From: Andy Whitcroft <apw@canonical.com>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Cc: Andy Whitcroft <apw@canonical.com>, Ben Howard <ben.howard@canonical.com>,
-        linux-scsi@vger.kernel.org, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] scsi: hyper-v storage -- mark as VPD capable at SPC-2
-Date: Fri, 13 Sep 2013 13:58:28 +0100
-Message-Id: <1379077109-29606-4-git-send-email-apw@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1379077109-29606-1-git-send-email-apw@canonical.com>
-References: <1379077109-29606-1-git-send-email-apw@canonical.com>
+	Fri, 13 Sep 2013 08:59:48 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 0/2] cpufreq: fix transition_ongoing count for powernow-k8
+Date: Fri, 13 Sep 2013 18:29:37 +0530
+Message-Id: <cover.1379062834.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BugLink: http://bugs.launchpad.net/bugs/1223499
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
----
- drivers/scsi/storvsc_drv.c | 1 +
- 1 file changed, 1 insertion(+)
+This has been running in my mind since few days... That we have fixed cpufreq
+core and all other drivers for transition serialization but what about
+powernow-k8? It is somewhat special (even more than exynos5440).. It queues a
+work from ->target() and may or maynot send notifications at all..
 
-diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-index 1a28f56..14ba8fd 100644
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -1437,6 +1437,7 @@ static int storvsc_device_configure(struct scsi_device *sdevice)
- 	blk_queue_rq_timeout(sdevice->request_queue, (storvsc_timeout * HZ));
- 
- 	sdevice->no_write_same = 1;
-+	sdevice->use_vpd_spc2 = 1;
- 
- 	return 0;
- }
+Finally I have got a solution now (detailed logs in the patch)..
+These must go with following patchset:
+
+https://lkml.org/lkml/2013/9/12/173
+
+Compile tested only..
+
+Viresh Kumar (2):
+  cpufreq: Create cpufreq_transition_complete()
+  cpufreq: powernow-k8: mark freq transition complete on error cases
+
+ drivers/cpufreq/cpufreq.c     | 25 ++++++++++++-----------
+ drivers/cpufreq/powernow-k8.c | 47 +++++++++++++++++++++++++++++++------------
+ include/linux/cpufreq.h       |  7 +++++++
+ 3 files changed, 54 insertions(+), 25 deletions(-)
+
 -- 
-1.8.1.2
+1.7.12.rc2.18.g61b472e
 
