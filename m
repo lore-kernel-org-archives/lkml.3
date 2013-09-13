@@ -1,66 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497Ab3IMRhm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 13:37:42 -0400
-Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:44495 "EHLO
-	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754406Ab3IMRhl (ORCPT
+	id S1754632Ab3IMRiA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 13:38:00 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:64851 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754241Ab3IMRh2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 13:37:41 -0400
-Message-ID: <1379093858.2197.24.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: GPT detection regression in efi.c from commit 27a7c64
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Matt Porter <matt.porter@linaro.org>
-Cc: Karel Zak <kzak@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        torvalds@linux-foundation.org
-Date: Fri, 13 Sep 2013 10:37:38 -0700
-In-Reply-To: <52334506.9030802@linaro.org>
-References: <20130913145033.GA8502@ohporter.com>
-	 <1379089736.2197.14.camel@buesod1.americas.hpqcorp.net>
-	 <52334506.9030802@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 13 Sep 2013 13:37:28 -0400
+From: Andre Naujoks <nautsch2@gmail.com>
+To: davem@davemloft.net, Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH net 3/3] slcan: rewrite of slc_bump and slc_encaps
+Date: Fri, 13 Sep 2013 19:37:13 +0200
+Message-Id: <1379093833-4949-4-git-send-email-nautsch2@gmail.com>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1379093833-4949-1-git-send-email-nautsch2@gmail.com>
+References: <1379093833-4949-1-git-send-email-nautsch2@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-09-13 at 13:01 -0400, Matt Porter wrote:
-> On 09/13/2013 12:28 PM, Davidlohr Bueso wrote:
-[...]
-> 
-> >> I get that this is not compliant with UEFI. I bring this up because
-> >> before this commit the is_pmbr_valid() check was less pedantic. In 3.11
-> >> a PMBR formatted this way did not fail the check. For my particular
-> >> case, I simply dded out LBA 1 and whacked the SizeInLBA field to comply
-> >> with the spec and this patch and I'm back in business. We're updating
-> >> the tools that we inherited to prepopulate our boards with a GPT to be
-> >> compliant. However, I wondered if this would be a problem for all the
-> >> people with Windows-generated GPTs as noted in [1].
-> >
-> > I guess this comes down to choosing whether or not we want Linux to be
-> > more UEFI compliant or not. Should we care if Microsoft decides to go do
-> > things out of the official spec? I don't know the policy here. The fact
-> > is that *they* should update their partitioning tools and create valid
-> > pMBRs. Any way, I'm ok with reverting this commit if deemed necessary.
-> 
-> I can't say first-hand that Windows 7/8 does what is claimed in this 
-> description as I simply don't have access to any Windows machines here. 
-> If it's true, I would have to agree with Linus that meeting reality if 
-> more important than meeting the spec.
+The old implementation was heavy on str* functions and sprintf calls.
+This version is more manual, but faster.
 
-Yep, me too.
+Profiling just the printing of a 3 char CAN-id resulted in 60 instructions
+for the manual method and over 2000 for the sprintf method. Bear in
+mind the profiling was done against libc and not the kernel sprintf.
 
-> 
-> Hopefully somebody can confirm that Windows does indeed produce these 
-> special PMBRs that need to be handled as an exception to the spec.
+Together with this rewrite an issue with sending and receiving of RTR frames
+has been fixed by Oliver for the cases that the DLC is not zero.
 
-I've got a partition with Windows 7 and I can take a look during the
-weekend. Do you know exactly what tool was used for creating the
-partition?
+Signed-off-by: Andre Naujoks <nautsch2@gmail.com>
+Tested-by: Oliver Hartkopp <socketcan@hartkopp.net>
+---
+ drivers/net/can/slcan.c | 136 +++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 87 insertions(+), 49 deletions(-)
 
-Thanks,
-Davidlohr
+diff --git a/drivers/net/can/slcan.c b/drivers/net/can/slcan.c
+index d571e2e..25377e5 100644
+--- a/drivers/net/can/slcan.c
++++ b/drivers/net/can/slcan.c
+@@ -76,6 +76,10 @@ MODULE_PARM_DESC(maxdev, "Maximum number of slcan interfaces");
+ /* maximum rx buffer len: extended CAN frame with timestamp */
+ #define SLC_MTU (sizeof("T1111222281122334455667788EA5F\r")+1)
+ 
++#define SLC_CMD_LEN 1
++#define SLC_SFF_ID_LEN 3
++#define SLC_EFF_ID_LEN 8
++
+ struct slcan {
+ 	int			magic;
+ 
+@@ -142,47 +146,63 @@ static void slc_bump(struct slcan *sl)
+ {
+ 	struct sk_buff *skb;
+ 	struct can_frame cf;
+-	int i, dlc_pos, tmp;
+-	unsigned long ultmp;
+-	char cmd = sl->rbuff[0];
+-
+-	if ((cmd != 't') && (cmd != 'T') && (cmd != 'r') && (cmd != 'R'))
++	int i, tmp;
++	u32 tmpid;
++	char *cmd = sl->rbuff;
++
++	cf.can_id = 0;
++
++	switch (*cmd) {
++	case 'r':
++		cf.can_id = CAN_RTR_FLAG;
++		/* fallthrough */
++	case 't':
++		/* store dlc ASCII value and terminate SFF CAN ID string */
++		cf.can_dlc = sl->rbuff[SLC_CMD_LEN + SLC_SFF_ID_LEN];
++		sl->rbuff[SLC_CMD_LEN + SLC_SFF_ID_LEN] = 0;
++		/* point to payload data behind the dlc */
++		cmd += SLC_CMD_LEN + SLC_SFF_ID_LEN + 1;
++		break;
++	case 'R':
++		cf.can_id = CAN_RTR_FLAG;
++		/* fallthrough */
++	case 'T':
++		cf.can_id |= CAN_EFF_FLAG;
++		/* store dlc ASCII value and terminate EFF CAN ID string */
++		cf.can_dlc = sl->rbuff[SLC_CMD_LEN + SLC_EFF_ID_LEN];
++		sl->rbuff[SLC_CMD_LEN + SLC_EFF_ID_LEN] = 0;
++		/* point to payload data behind the dlc */
++		cmd += SLC_CMD_LEN + SLC_EFF_ID_LEN + 1;
++		break;
++	default:
+ 		return;
++	}
+ 
+-	if (cmd & 0x20) /* tiny chars 'r' 't' => standard frame format */
+-		dlc_pos = 4; /* dlc position tiiid */
+-	else
+-		dlc_pos = 9; /* dlc position Tiiiiiiiid */
+-
+-	if (!((sl->rbuff[dlc_pos] >= '0') && (sl->rbuff[dlc_pos] < '9')))
++	if (kstrtou32(sl->rbuff + SLC_CMD_LEN, 16, &tmpid))
+ 		return;
+ 
+-	cf.can_dlc = sl->rbuff[dlc_pos] - '0'; /* get can_dlc from ASCII val */
++	cf.can_id |= tmpid;
+ 
+-	sl->rbuff[dlc_pos] = 0; /* terminate can_id string */
+-
+-	if (kstrtoul(sl->rbuff+1, 16, &ultmp))
++	/* get can_dlc from sanitized ASCII value */
++	if (cf.can_dlc >= '0' && cf.can_dlc < '9')
++		cf.can_dlc -= '0';
++	else
+ 		return;
+ 
+-	cf.can_id = ultmp;
+-
+-	if (!(cmd & 0x20)) /* NO tiny chars => extended frame format */
+-		cf.can_id |= CAN_EFF_FLAG;
+-
+-	if ((cmd | 0x20) == 'r') /* RTR frame */
+-		cf.can_id |= CAN_RTR_FLAG;
+-
+ 	*(u64 *) (&cf.data) = 0; /* clear payload */
+ 
+-	for (i = 0, dlc_pos++; i < cf.can_dlc; i++) {
+-		tmp = hex_to_bin(sl->rbuff[dlc_pos++]);
+-		if (tmp < 0)
+-			return;
+-		cf.data[i] = (tmp << 4);
+-		tmp = hex_to_bin(sl->rbuff[dlc_pos++]);
+-		if (tmp < 0)
+-			return;
+-		cf.data[i] |= tmp;
++	/* RTR frames may have a dlc > 0 but they never have any data bytes */
++	if (!(cf.can_id & CAN_RTR_FLAG)) {
++		for (i = 0; i < cf.can_dlc; i++) {
++			tmp = hex_to_bin(*cmd++);
++			if (tmp < 0)
++				return;
++			cf.data[i] = (tmp << 4);
++			tmp = hex_to_bin(*cmd++);
++			if (tmp < 0)
++				return;
++			cf.data[i] |= tmp;
++		}
+ 	}
+ 
+ 	skb = dev_alloc_skb(sizeof(struct can_frame) +
+@@ -209,7 +229,6 @@ static void slc_bump(struct slcan *sl)
+ /* parse tty input stream */
+ static void slcan_unesc(struct slcan *sl, unsigned char s)
+ {
+-
+ 	if ((s == '\r') || (s == '\a')) { /* CR or BEL ends the pdu */
+ 		if (!test_and_clear_bit(SLF_ERROR, &sl->flags) &&
+ 		    (sl->rcount > 4))  {
+@@ -236,27 +255,46 @@ static void slcan_unesc(struct slcan *sl, unsigned char s)
+ /* Encapsulate one can_frame and stuff into a TTY queue. */
+ static void slc_encaps(struct slcan *sl, struct can_frame *cf)
+ {
+-	int actual, idx, i;
+-	char cmd;
++	int actual, i;
++	unsigned char *pos;
++	unsigned char *endpos;
++	canid_t id = cf->can_id;
++
++	pos = sl->xbuff;
+ 
+ 	if (cf->can_id & CAN_RTR_FLAG)
+-		cmd = 'R'; /* becomes 'r' in standard frame format */
++		*pos = 'R'; /* becomes 'r' in standard frame format (SFF) */
+ 	else
+-		cmd = 'T'; /* becomes 't' in standard frame format */
++		*pos = 'T'; /* becomes 't' in standard frame format (SSF) */
+ 
+-	if (cf->can_id & CAN_EFF_FLAG)
+-		sprintf(sl->xbuff, "%c%08X%d", cmd,
+-			cf->can_id & CAN_EFF_MASK, cf->can_dlc);
+-	else
+-		sprintf(sl->xbuff, "%c%03X%d", cmd | 0x20,
+-			cf->can_id & CAN_SFF_MASK, cf->can_dlc);
++	/* determine number of chars for the CAN-identifier */
++	if (cf->can_id & CAN_EFF_FLAG) {
++		id &= CAN_EFF_MASK;
++		endpos = pos + SLC_EFF_ID_LEN;
++	} else {
++		*pos |= 0x20; /* convert R/T to lower case for SFF */
++		id &= CAN_SFF_MASK;
++		endpos = pos + SLC_SFF_ID_LEN;
++	}
++
++	/* build 3 (SFF) or 8 (EFF) digit CAN identifier */
++	pos++;
++	while (endpos >= pos) {
++		*endpos-- = hex_asc_upper[id & 0xf];
++		id >>= 4;
++	}
++
++	pos += (cf->can_id & CAN_EFF_FLAG) ? SLC_EFF_ID_LEN : SLC_SFF_ID_LEN;
+ 
+-	idx = strlen(sl->xbuff);
++	*pos++ = cf->can_dlc + '0';
+ 
+-	for (i = 0; i < cf->can_dlc; i++)
+-		sprintf(&sl->xbuff[idx + 2*i], "%02X", cf->data[i]);
++	/* RTR frames may have a dlc > 0 but they never have any data bytes */
++	if (!(cf->can_id & CAN_RTR_FLAG)) {
++		for (i = 0; i < cf->can_dlc; i++)
++			pos = hex_byte_pack_upper(pos, cf->data[i]);
++	}
+ 
+-	strcat(sl->xbuff, "\r"); /* add terminating character */
++	*pos++ = '\r';
+ 
+ 	/* Order of next two lines is *very* important.
+ 	 * When we are sending a little amount of data,
+@@ -267,8 +305,8 @@ static void slc_encaps(struct slcan *sl, struct can_frame *cf)
+ 	 *       14 Oct 1994  Dmitry Gorodchanin.
+ 	 */
+ 	set_bit(TTY_DO_WRITE_WAKEUP, &sl->tty->flags);
+-	actual = sl->tty->ops->write(sl->tty, sl->xbuff, strlen(sl->xbuff));
+-	sl->xleft = strlen(sl->xbuff) - actual;
++	actual = sl->tty->ops->write(sl->tty, sl->xbuff, pos - sl->xbuff);
++	sl->xleft = (pos - sl->xbuff) - actual;
+ 	sl->xhead = sl->xbuff + actual;
+ 	sl->dev->stats.tx_bytes += cf->can_dlc;
+ }
+-- 
+1.8.4.rc3
 
