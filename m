@@ -1,116 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753791Ab3IMRGI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 13:06:08 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:46062 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751624Ab3IMRGH (ORCPT
+	id S1754263Ab3IMRGr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 13:06:47 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:49180 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848Ab3IMRGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 13:06:07 -0400
-Message-ID: <523345EC.8070206@efficios.com>
-Date: Fri, 13 Sep 2013 10:05:48 -0700
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 13 Sep 2013 13:06:46 -0400
+Date: Fri, 13 Sep 2013 10:06:44 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon fixes for 3.12-rc1
+Message-ID: <20130913170644.GA7009@roeck-us.net>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org
-Subject: Re: [RFC PATCH] Introduce timekeeper latch synchronization
-References: <20130913025253.GA17218@Krystal> <alpine.DEB.2.02.1309131803360.4089@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1309131803360.4089@ionos.tec.linutronix.de>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rwEMma7ioTxnRzrJ"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/09/13 09:13 AM, Thomas Gleixner wrote:
-> On Thu, 12 Sep 2013, Mathieu Desnoyers wrote:
->> * Peter Zijlstra (peterz@infradead.org) wrote:
->> [...]
->>> Yep, that's good. I suppose if there's multiple use sites we can jump
->>> through another few hoops to get rid of the specific struct foo
->>> assumptions by storing sizeof() whatever we do use and playing pointer
->>> math games.
->>>
->>> But for now with the time stuff as only user this looks ok.
->> OK! Here is the full implementation of the idea against Linux
->> timekeeper, ntp, and PPS. It appears that ntp and PPS were relying on
->> the timekeeper seqlock too. And guess what, after booting my laptop with
->> this kernel there still no smoke coming out of it after a good 5 minutes
->> of testing. ;-)
->>
->> Comments are welcome.
-> First of all this needs to be split into several patches.
-How about:
-- three patches refactoring data structures into objects (no
-synchronization changes whatsoever). timekeeper, ntp and pps each done
-in separate patches,
-- one patch to introduce the new synchronization scheme along with the
-usage site changes. This patch would include the removal of the
-shadow_timekeeper variable, which is made pointless by the introduction
-of this mixed-rcu-seqcount synchronization scheme.
 
-is that enough, or you see a more fine-grained breakdown ?
+--rwEMma7ioTxnRzrJ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+Subject: [GIT PULL] hwmon fixes for 3.12-rc1
+
+Hi Linus,
+
+Please pull hwmon fixes for Linux 3.12-rc1 from signed tag:
+
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+
+Thanks,
+Guenter
+------
+
+The following changes since commit a22a0fdba4191473581f86c9dd5361cf581521d3:
+
+  Merge tag 'for-v3.12' of git://git.infradead.org/battery-2.6 (2013-09-10 22:58:14 -0700)
+
+are available in the git repository at:
 
 
->
->>  static void update_wall_time(void)
->  ...
->> -	write_seqcount_begin(&timekeeper_seq);
->>  	/* Update clock->cycle_last with the new value */
->>  	clock->cycle_last = tk->cycle_last;
->> -	/*
->> -	 * Update the real timekeeper.
->> -	 *
->> -	 * We could avoid this memcpy by switching pointers, but that
->> -	 * requires changes to all other timekeeper usage sites as
->> -	 * well, i.e. move the timekeeper pointer getter into the
->> -	 * spinlocked/seqcount protected sections. And we trade this
->> -	 * memcpy under the timekeeper_seq against one before we start
->> -	 * updating.
->> -	 */
->> -	memcpy(real_tk, tk, sizeof(*tk));
->> -	timekeeping_update(real_tk, action);
-> So you're dropping the timekeeping_update() call here. I wonder how
-> this works.
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
 
-It doesn't :-)
+for you to fetch changes up to 0b77f766f3ef9875e2bb0035c9b89b4f9469b78d:
 
-There appears to be a couple of side-effects related to removal of the
-call to timekeeping_update(). On the positive side, I now have much more
-free time on my hands. However, people seem to complain that I arrive
-late to meetings for some reasons ;-)
+  hwmon: (k10temp) remove unnecessary pci_set_drvdata() (2013-09-12 08:17:40 -0700)
 
->
->> +	timekeeper_write_begin(&latch_timekeeper, &prev, &tk);
->> +	*tk = *prev;
-> Do we really need to do the copy on all call sites, instead of doing
-> it in timekeeper_write_begin() ?
+----------------------------------------------------------------
+Some more low risk cleanup patches:
 
-Since we're indeed doing the copy on all call sites, I think it would be
-good to move it into timekeeper_write_begin() as you suggest.
+Remove unnecessary pci_set_drvdata in k10temp driver from Jingoo Han
+Fix return values in several drivers from Sachin Kamat
+Remove redundant break in amc6821 driver from Sachin Kamat
 
-Initially, I kept the copy in the caller in case we could do without the
-copy in some cases (in case the caller would overwrite the entire
-structure without caring about prior content). But since we need to copy
-timekeeper, ntp and pps structures, I doubt this is realistic. So let's
-move this copy into timekeeper_write_begin().
+----------------------------------------------------------------
+Jingoo Han (1):
+      hwmon: (k10temp) remove unnecessary pci_set_drvdata()
 
-Thanks !
+Sachin Kamat (5):
+      hwmon: (emc2103) Fix return value
+      hwmon: (ibmaem) Fix return value
+      hwmon: (amc6821) Fix return value
+      hwmon: (amc6821) Remove redundant break
+      hwmon: (tmp421) Fix return value
 
-Mathieu
+ drivers/hwmon/amc6821.c |    7 ++-----
+ drivers/hwmon/emc2103.c |   10 +++++-----
+ drivers/hwmon/ibmaem.c  |    2 +-
+ drivers/hwmon/k10temp.c |    1 -
+ drivers/hwmon/tmp421.c  |    2 +-
+ 5 files changed, 9 insertions(+), 13 deletions(-)
 
+--rwEMma7ioTxnRzrJ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
->
-> Thanks,
->
-> 	tglx
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJSM0YkAAoJEMsfJm/On5mBD5gP/3byCh2+wWgJrhax8dP2DGps
+IWZk8UsHxus/OvVnyD8jpzQ0soQ1zbpbUYU6TX2bmPf4lUnHHUqnXI25Tt7lEHZd
+YfYMAzljZTgxX2FJhFlVL1raiP+twMQuimY+dRVu9l9jZkkIA24I2o67qIF/TbHP
+YHGX6XbUR0qT19oUTOFIkpKVkrN3+yy+/LDxV5WCVBlunyoGv7apva+UesCxz5vn
+5zVBfFgKoapbmVuax56xhdPbkK0z/McpxXm2WkKRVAleIQfOE/ItvjD79tRxlKka
+uYpw2BASplIBV8GhtFL4dUfDHdO3LX7AD6NrXwmnLso7hza/NBLD9IIbOrZp5d+F
+UjDJFyzX63QSk+3rhKnzUBio0c/3eR7dLVHE1jj4PNBcRGmDX4EtftdnnkRPfDTH
+c99qiOYV60pFzA7KOIqbYX2kULe7HlhU7yXXdp+jLRxLbo1YQYCfA4p97qx8D5IE
+tSLAYp233qVkeYEyACptEnLh9JCTujaS9pGuH+dymqoLahG6IYc7Fzp5qAztskO8
+EWU6/iVeVzHnVZVjz2wqZxIe7byeOtuBdgRqYlpdKJaZFopQBoG6tFqYQm1cbOjK
+INWT+t/JvWMx6iLN/mBeuGjrWJLeNxxtuB15FCSrl8XVMu9DV6HsAhoglfQ6ffTr
+Imxr1pnFVwZCcMEdeW3M
+=aPwo
+-----END PGP SIGNATURE-----
+
+--rwEMma7ioTxnRzrJ--
