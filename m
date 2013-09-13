@@ -1,104 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755028Ab3IMJqE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 05:46:04 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:43733 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753772Ab3IMJp7 (ORCPT
+	id S1754840Ab3IMJqB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 05:46:01 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:41631 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753160Ab3IMJp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 13 Sep 2013 05:45:59 -0400
-Date: Fri, 13 Sep 2013 11:45:55 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Jean Pihet <jean.pihet@linaro.org>
-Cc: David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] perf fixes
-Message-ID: <20130913094555.GA11611@gmail.com>
-References: <20130912184341.GA11400@ghostprotocols.net>
- <52321CE4.1080804@gmail.com>
- <20130912201855.GC32644@gmail.com>
- <20130912203831.GD11400@ghostprotocols.net>
- <20130912204618.GA3262@gmail.com>
- <52322D81.5090708@gmail.com>
- <20130912211846.GA7890@gmail.com>
- <52323BE4.5080100@gmail.com>
- <20130913050927.GA8634@gmail.com>
- <CAFrcx1=7Crxms8GBaen451JuYPO_WpC_SbcTuti5y3MfeQMCZA@mail.gmail.com>
+X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r8D9jjBN027745, This message is accepted by code: ctloc85258
+From: <wei_wang@realsil.com.cn>
+To: <sameo@linux.intel.com>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
+        <micky_ching@realsil.com.cn>, Wei WANG <wei_wang@realsil.com.cn>
+Subject: [PATCH v4] mfd: rtsx: Modify rts5249_optimize_phy
+Date: Fri, 13 Sep 2013 17:45:43 +0800
+Message-ID: <1379065543-30421-1-git-send-email-wei_wang@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFrcx1=7Crxms8GBaen451JuYPO_WpC_SbcTuti5y3MfeQMCZA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [172.29.41.8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Wei WANG <wei_wang@realsil.com.cn>
 
-* Jean Pihet <jean.pihet@linaro.org> wrote:
+In some platforms, specially Thinkpad series, rts5249 won't be
+initialized properly. So we need adjust some phy parameters to
+improve the compatibility issue.
 
-> Hi,
-> 
-> On 13 September 2013 07:09, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> > * David Ahern <dsahern@gmail.com> wrote:
-> >
-> >> > By default a simple 'make' should build perf to the maximum extent
-> >> > possible, with no other input required from the user - with warnings
-> >> > displayed as package install suggestions.
-> >>
-> >> By default there is no config. Autoprobing generates a first one or a
-> >> user can specify a defconfig.
-> >
-> > This could work if there's not two but three states for individual
-> > features:
-> >
-> >   - autoprobe
-> >   - on
-> >   - off
-> >
-> > and if autoprobe, if a system feature has been probed successfully,
-> > automatically turned 'autoprobe' entries into 'on'.
-> >
-> > That would give us the best of all worlds - autodetection, configurability
-> > and caching:
-> >
-> >  - initial user types 'make' and gets a .config that has almost all
-> >    entries 'on', a few 'autoprobe'.
-> >
-> >  - once the user installs a dependency, the corresponding .config entry
-> >    turns into 'on'.
-> >
-> >  - the regular user or developers would have libraries that turn all
-> >    entries in the .config to 'on'.
-> >
-> >  - if a user is genuinely uninterested in a feature, he can mark it 'off',
-> >    which would then stay off permanently. This could also be used by
-> >    embedded/specialized builds.
-> >
-> >  - other specialized users, like distro builds, could use a .config with
-> >    all entries 'on' and could enforce the presence of all dependencies for
-> >    a successful build. [We could add 'make allyesconfig' to help that.]
-> 
-> Is there a way to detect the presence of a dependency and _also_ check 
-> its version? Some new features are depending on a recent version of a 
-> library, e.g. dwarf unwinding depends on libunwind >= 1.1 (cf. 
-> http://www.spinics.net/lists/kernel/msg1598951.html).
+It is a little different between simulation and real chip. We have
+no idea about which configuration is better before tape-out. We set
+default settings according to simulation, but need to tune these
+parameters after getting the real chip.
 
-Yeah, see the testcases in tools/perf/config/feature-tests.mak, they 
-typically include the latest library API usages, which will fail on older 
-versions.
+I can't explain every change in detail here. The below information is
+just a rough description:
 
-That kind of 'does it actually work?' test is a lot more robust than 
-explicit version checks, and combined with caching it should be fast and 
-parallelizable as well. (One of the problems of the current simple 
-implementation of the feature tests is that they are 20 serial tests with 
-no parallelization.)
+PHY_REG_REV: Disable internal clkreq_tx, enable rx_pwst
+PHY_BPCR: No change, just turn the magic number to macro definitions
+PHY_PCR: Change OOBS sensitivity, from 60mV to 90mV
+PHY_RCR2: Control charge-pump current automatically
+PHY_FLD4: Use TX cmu reference clock
+PHY_RDR: Change RXDSEL from 30nF to 1.9nF
+PHY_RCR1: Change the duration between adp_st and asserting cp_en from
+0.32 us to 0.64us
+PHY_FLD3: Adjust internal timers
+PHY_TUNE: Fine tune the regulator12 output voltage
 
-Thanks,
+Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
+---
+ drivers/mfd/rts5249.c        |   48 ++++++++++++++++++++++++++++++++++++--
+ include/linux/mfd/rtsx_pci.h |   53 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 99 insertions(+), 2 deletions(-)
 
-	Ingo
+diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
+index 3b835f5..573de7b 100644
+--- a/drivers/mfd/rts5249.c
++++ b/drivers/mfd/rts5249.c
+@@ -130,13 +130,57 @@ static int rts5249_optimize_phy(struct rtsx_pcr *pcr)
+ {
+ 	int err;
+ 
+-	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV, 0xFE46);
++	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV,
++			PHY_REG_REV_RESV | PHY_REG_REV_RXIDLE_LATCHED |
++			PHY_REG_REV_P1_EN | PHY_REG_REV_RXIDLE_EN |
++			PHY_REG_REV_RX_PWST | PHY_REG_REV_CLKREQ_DLY_TIMER_1_0 |
++			PHY_REG_REV_STOP_CLKRD | PHY_REG_REV_STOP_CLKWR);
+ 	if (err < 0)
+ 		return err;
+ 
+ 	msleep(1);
+ 
+-	return rtsx_pci_write_phy_register(pcr, PHY_BPCR, 0x05C0);
++	err = rtsx_pci_write_phy_register(pcr, PHY_BPCR,
++			PHY_BPCR_IBRXSEL | PHY_BPCR_IBTXSEL |
++			PHY_BPCR_IB_FILTER | PHY_BPCR_CMIRROR_EN);
++	if (err < 0)
++		return err;
++	err = rtsx_pci_write_phy_register(pcr, PHY_PCR,
++			PHY_PCR_FORCE_CODE | PHY_PCR_OOBS_CALI_50 |
++			PHY_PCR_OOBS_VCM_08 | PHY_PCR_OOBS_SEN_90 |
++			PHY_PCR_RSSI_EN);
++	if (err < 0)
++		return err;
++	err = rtsx_pci_write_phy_register(pcr, PHY_RCR2,
++			PHY_RCR2_EMPHASE_EN | PHY_RCR2_NADJR |
++			PHY_RCR2_CDR_CP_10 | PHY_RCR2_CDR_SR_2 |
++			PHY_RCR2_FREQSEL_12 | PHY_RCR2_CPADJEN |
++			PHY_RCR2_CDR_SC_8 | PHY_RCR2_CALIB_LATE);
++	if (err < 0)
++		return err;
++	err = rtsx_pci_write_phy_register(pcr, PHY_FLD4,
++			PHY_FLD4_FLDEN_SEL | PHY_FLD4_REQ_REF |
++			PHY_FLD4_RXAMP_OFF | PHY_FLD4_REQ_ADDA |
++			PHY_FLD4_BER_COUNT | PHY_FLD4_BER_TIMER |
++			PHY_FLD4_BER_CHK_EN);
++	if (err < 0)
++		return err;
++	err = rtsx_pci_write_phy_register(pcr, PHY_RDR, PHY_RDR_RXDSEL_1_9);
++	if (err < 0)
++		return err;
++	err = rtsx_pci_write_phy_register(pcr, PHY_RCR1,
++			PHY_RCR1_ADP_TIME | PHY_RCR1_VCO_COARSE);
++	if (err < 0)
++		return err;
++	err = rtsx_pci_write_phy_register(pcr, PHY_FLD3,
++			PHY_FLD3_TIMER_4 | PHY_FLD3_TIMER_6 |
++			PHY_FLD3_RXDELINK);
++	if (err < 0)
++		return err;
++	return rtsx_pci_write_phy_register(pcr, PHY_TUNE,
++			PHY_TUNE_TUNEREF_1_0 | PHY_TUNE_VBGSEL_1252 |
++			PHY_TUNE_SDBUS_33 | PHY_TUNE_TUNED18 |
++			PHY_TUNE_TUNED12);
+ }
+ 
+ static int rts5249_turn_on_led(struct rtsx_pcr *pcr)
+diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+index d1382df..0ce7721 100644
+--- a/include/linux/mfd/rtsx_pci.h
++++ b/include/linux/mfd/rtsx_pci.h
+@@ -756,6 +756,59 @@
+ #define PCR_SETTING_REG2		0x814
+ #define PCR_SETTING_REG3		0x747
+ 
++/* Phy bits */
++#define PHY_PCR_FORCE_CODE			0xB000
++#define PHY_PCR_OOBS_CALI_50			0x0800
++#define PHY_PCR_OOBS_VCM_08			0x0200
++#define PHY_PCR_OOBS_SEN_90			0x0040
++#define PHY_PCR_RSSI_EN				0x0002
++
++#define PHY_RCR1_ADP_TIME			0x0100
++#define PHY_RCR1_VCO_COARSE			0x001F
++
++#define PHY_RCR2_EMPHASE_EN			0x8000
++#define PHY_RCR2_NADJR				0x4000
++#define PHY_RCR2_CDR_CP_10			0x0400
++#define PHY_RCR2_CDR_SR_2			0x0100
++#define PHY_RCR2_FREQSEL_12			0x0040
++#define PHY_RCR2_CPADJEN			0x0020
++#define PHY_RCR2_CDR_SC_8			0x0008
++#define PHY_RCR2_CALIB_LATE			0x0002
++
++#define PHY_RDR_RXDSEL_1_9			0x4000
++
++#define PHY_TUNE_TUNEREF_1_0			0x4000
++#define PHY_TUNE_VBGSEL_1252			0x0C00
++#define PHY_TUNE_SDBUS_33			0x0200
++#define PHY_TUNE_TUNED18			0x01C0
++#define PHY_TUNE_TUNED12			0X0020
++
++#define PHY_BPCR_IBRXSEL			0x0400
++#define PHY_BPCR_IBTXSEL			0x0100
++#define PHY_BPCR_IB_FILTER			0x0080
++#define PHY_BPCR_CMIRROR_EN			0x0040
++
++#define PHY_REG_REV_RESV			0xE000
++#define PHY_REG_REV_RXIDLE_LATCHED		0x1000
++#define PHY_REG_REV_P1_EN			0x0800
++#define PHY_REG_REV_RXIDLE_EN			0x0400
++#define PHY_REG_REV_CLKREQ_DLY_TIMER_1_0	0x0040
++#define PHY_REG_REV_STOP_CLKRD			0x0020
++#define PHY_REG_REV_RX_PWST			0x0008
++#define PHY_REG_REV_STOP_CLKWR			0x0004
++
++#define PHY_FLD3_TIMER_4			0x7800
++#define PHY_FLD3_TIMER_6			0x00E0
++#define PHY_FLD3_RXDELINK			0x0004
++
++#define PHY_FLD4_FLDEN_SEL			0x4000
++#define PHY_FLD4_REQ_REF			0x2000
++#define PHY_FLD4_RXAMP_OFF			0x1000
++#define PHY_FLD4_REQ_ADDA			0x0800
++#define PHY_FLD4_BER_COUNT			0x00E0
++#define PHY_FLD4_BER_TIMER			0x000A
++#define PHY_FLD4_BER_CHK_EN			0x0001
++
+ #define rtsx_pci_init_cmd(pcr)		((pcr)->ci = 0)
+ 
+ struct rtsx_pcr;
+-- 
+1.7.9.5
+
