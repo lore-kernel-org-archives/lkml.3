@@ -1,225 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754819Ab3IMSKm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 14:10:42 -0400
-Received: from mga02.intel.com ([134.134.136.20]:32883 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752534Ab3IMSIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 14:08:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,899,1371106800"; 
-   d="scan'208";a="402962297"
-From: Andi Kleen <andi@firstfloor.org>
-To: mingo@kernel.org
-Cc: peterz@infradead.org, acme@infradead.org, linux-kernel@vger.kernel.org,
-        eranian@google.com, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 3/6] perf, tools: Support sorting by in_tx, abort branch flags v3
-Date: Fri, 13 Sep 2013 11:08:33 -0700
-Message-Id: <1379095716-4705-4-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1379095716-4705-1-git-send-email-andi@firstfloor.org>
-References: <1379095716-4705-1-git-send-email-andi@firstfloor.org>
+	id S1753365Ab3IMSRH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 14:17:07 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:42639 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316Ab3IMSRF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 14:17:05 -0400
+Message-ID: <5233569D.6020505@linaro.org>
+Date: Fri, 13 Sep 2013 14:17:01 -0400
+From: Matt Porter <matt.porter@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Davidlohr Bueso <davidlohr@hp.com>
+CC: Karel Zak <kzak@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        torvalds@linux-foundation.org
+Subject: Re: GPT detection regression in efi.c from commit 27a7c64
+References: <20130913145033.GA8502@ohporter.com>  <1379089736.2197.14.camel@buesod1.americas.hpqcorp.net>  <52334506.9030802@linaro.org> <1379093858.2197.24.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1379093858.2197.24.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On 09/13/2013 01:37 PM, Davidlohr Bueso wrote:
+> On Fri, 2013-09-13 at 13:01 -0400, Matt Porter wrote:
+>> On 09/13/2013 12:28 PM, Davidlohr Bueso wrote:
+> [...]
+>>
+>>>> I get that this is not compliant with UEFI. I bring this up because
+>>>> before this commit the is_pmbr_valid() check was less pedantic. In 3.11
+>>>> a PMBR formatted this way did not fail the check. For my particular
+>>>> case, I simply dded out LBA 1 and whacked the SizeInLBA field to comply
+>>>> with the spec and this patch and I'm back in business. We're updating
+>>>> the tools that we inherited to prepopulate our boards with a GPT to be
+>>>> compliant. However, I wondered if this would be a problem for all the
+>>>> people with Windows-generated GPTs as noted in [1].
+>>>
+>>> I guess this comes down to choosing whether or not we want Linux to be
+>>> more UEFI compliant or not. Should we care if Microsoft decides to go do
+>>> things out of the official spec? I don't know the policy here. The fact
+>>> is that *they* should update their partitioning tools and create valid
+>>> pMBRs. Any way, I'm ok with reverting this commit if deemed necessary.
+>>
+>> I can't say first-hand that Windows 7/8 does what is claimed in this
+>> description as I simply don't have access to any Windows machines here.
+>> If it's true, I would have to agree with Linus that meeting reality if
+>> more important than meeting the spec.
+>
+> Yep, me too.
+>
+>>
+>> Hopefully somebody can confirm that Windows does indeed produce these
+>> special PMBRs that need to be handled as an exception to the spec.
+>
+> I've got a partition with Windows 7 and I can take a look during the
+> weekend. Do you know exactly what tool was used for creating the
+> partition?
 
-Extend the perf branch sorting code to support sorting by in_tx
-or abort_tx qualifiers. Also print out those qualifiers.
+Just to be clear, we used an internal Broadcom tool that did this 
+Windows-like behavior on our bcm281xx reference board.
 
-This also fixes up some of the existing sort key documentation.
+In the Windows situation, I really have no idea what tool Windows 7/8 
+use to partition disks. Based on that article, I'm assuming it's 
+whatever today's version of "FDISK", as shipped on Windows 7/8, is.
 
-We do not support no_tx here, because it's simply not showing
-the in_tx flag.
+Ok, Google claims it is "The Windows 7 Disk Management" tool. I might 
+try to stop at somebody's house this weekend, boot Linux from USB and 
+extract the PMBR from their drive just as another data point.
 
-v2: Readd flags to man pages
-v3: Rename intx
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/Documentation/perf-report.txt |  4 ++-
- tools/perf/Documentation/perf-top.txt    |  3 +-
- tools/perf/builtin-report.c              |  2 +-
- tools/perf/builtin-top.c                 |  3 +-
- tools/perf/perf.h                        |  4 ++-
- tools/perf/util/hist.h                   |  2 ++
- tools/perf/util/sort.c                   | 51 ++++++++++++++++++++++++++++++++
- tools/perf/util/sort.h                   |  2 ++
- 8 files changed, 66 insertions(+), 5 deletions(-)
-
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 2b8097e..ae337e3 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -71,7 +71,7 @@ OPTIONS
- 	entries are displayed as "[other]".
- 	- cpu: cpu number the task ran at the time of sample
- 	- srcline: filename and line number executed at the time of sample.  The
--	DWARF debuggin info must be provided.
-+	DWARF debugging info must be provided.
- 
- 	By default, comm, dso and symbol keys are used.
- 	(i.e. --sort comm,dso,symbol)
-@@ -85,6 +85,8 @@ OPTIONS
- 	- symbol_from: name of function branched from
- 	- symbol_to: name of function branched to
- 	- mispredict: "N" for predicted branch, "Y" for mispredicted branch
-+	- in_tx: branch in TSX transaction
-+	- abort: TSX transaction abort.
- 
- 	And default sort keys are changed to comm, dso_from, symbol_from, dso_to
- 	and symbol_to, see '--branch-stack'.
-diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
-index 58d6598..f852eb5 100644
---- a/tools/perf/Documentation/perf-top.txt
-+++ b/tools/perf/Documentation/perf-top.txt
-@@ -112,7 +112,8 @@ Default is to monitor all CPUS.
- 
- -s::
- --sort::
--	Sort by key(s): pid, comm, dso, symbol, parent, srcline, weight, local_weight.
-+	Sort by key(s): pid, comm, dso, symbol, parent, srcline, weight,
-+	local_weight, abort, in_tx
- 
- -n::
- --show-nr-samples::
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 8e50d8d..1e84103 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -786,7 +786,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline,"
- 		   " dso_to, dso_from, symbol_to, symbol_from, mispredict,"
- 		   " weight, local_weight, mem, symbol_daddr, dso_daddr, tlb, "
--		   "snoop, locked"),
-+		   "snoop, locked, abort, in_tx"),
- 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
- 		    "Show sample percentage for different cpu modes"),
- 	OPT_STRING('p', "parent", &parent_pattern, "regex",
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 2122141..6534a37 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1103,7 +1103,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_INCR('v', "verbose", &verbose,
- 		    "be more verbose (show counter open errors, etc)"),
- 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
--		   "sort by key(s): pid, comm, dso, symbol, parent, weight, local_weight"),
-+		   "sort by key(s): pid, comm, dso, symbol, parent, weight, local_weight,"
-+		   " abort, in_tx"),
- 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
- 		    "Show a column with the number of samples"),
- 	OPT_CALLBACK_DEFAULT('G', "call-graph", &top.record_opts,
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index cf20187..acf3d66 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -182,7 +182,9 @@ struct ip_callchain {
- struct branch_flags {
- 	u64 mispred:1;
- 	u64 predicted:1;
--	u64 reserved:62;
-+	u64 in_tx:1;
-+	u64 abort:1;
-+	u64 reserved:60;
- };
- 
- struct branch_entry {
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 1329b6b..f743e96 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -45,6 +45,8 @@ enum hist_column {
- 	HISTC_CPU,
- 	HISTC_SRCLINE,
- 	HISTC_MISPREDICT,
-+	HISTC_IN_TX,
-+	HISTC_ABORT,
- 	HISTC_SYMBOL_FROM,
- 	HISTC_SYMBOL_TO,
- 	HISTC_DSO_FROM,
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 5f118a0..1771566 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -858,6 +858,55 @@ struct sort_entry sort_mem_snoop = {
- 	.se_width_idx	= HISTC_MEM_SNOOP,
- };
- 
-+static int64_t
-+sort__abort_cmp(struct hist_entry *left, struct hist_entry *right)
-+{
-+	return left->branch_info->flags.abort !=
-+		right->branch_info->flags.abort;
-+}
-+
-+static int hist_entry__abort_snprintf(struct hist_entry *self, char *bf,
-+				    size_t size, unsigned int width)
-+{
-+	static const char *out = ".";
-+
-+	if (self->branch_info->flags.abort)
-+		out = "A";
-+	return repsep_snprintf(bf, size, "%-*s", width, out);
-+}
-+
-+struct sort_entry sort_abort = {
-+	.se_header	= "Transaction abort",
-+	.se_cmp		= sort__abort_cmp,
-+	.se_snprintf	= hist_entry__abort_snprintf,
-+	.se_width_idx	= HISTC_ABORT,
-+};
-+
-+static int64_t
-+sort__in_tx_cmp(struct hist_entry *left, struct hist_entry *right)
-+{
-+	return left->branch_info->flags.in_tx !=
-+		right->branch_info->flags.in_tx;
-+}
-+
-+static int hist_entry__in_tx_snprintf(struct hist_entry *self, char *bf,
-+				    size_t size, unsigned int width)
-+{
-+	static const char *out = ".";
-+
-+	if (self->branch_info->flags.in_tx)
-+		out = "T";
-+
-+	return repsep_snprintf(bf, size, "%-*s", width, out);
-+}
-+
-+struct sort_entry sort_in_tx = {
-+	.se_header	= "Branch in transaction",
-+	.se_cmp		= sort__in_tx_cmp,
-+	.se_snprintf	= hist_entry__in_tx_snprintf,
-+	.se_width_idx	= HISTC_IN_TX,
-+};
-+
- struct sort_dimension {
- 	const char		*name;
- 	struct sort_entry	*entry;
-@@ -888,6 +937,8 @@ static struct sort_dimension bstack_sort_dimensions[] = {
- 	DIM(SORT_SYM_FROM, "symbol_from", sort_sym_from),
- 	DIM(SORT_SYM_TO, "symbol_to", sort_sym_to),
- 	DIM(SORT_MISPREDICT, "mispredict", sort_mispredict),
-+	DIM(SORT_IN_TX, "in_tx", sort_in_tx),
-+	DIM(SORT_ABORT, "abort", sort_abort),
- };
- 
- #undef DIM
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 4e80dbd..9dad3a0 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -153,6 +153,8 @@ enum sort_type {
- 	SORT_SYM_FROM,
- 	SORT_SYM_TO,
- 	SORT_MISPREDICT,
-+	SORT_ABORT,
-+	SORT_IN_TX,
- 
- 	/* memory mode specific sort keys */
- 	__SORT_MEMORY_MODE,
--- 
-1.8.3.1
+-Matt
 
