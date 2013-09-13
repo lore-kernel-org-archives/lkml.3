@@ -1,102 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933859Ab3IMOAv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 10:00:51 -0400
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:56546 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933306Ab3IMOAs convert rfc822-to-8bit (ORCPT
+	id S1757635Ab3IMOBz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 10:01:55 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:40708 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932527Ab3IMNKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 10:00:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <52326ADC.8040703@elopez.com.ar>
-References: <1378863781-4235-1-git-send-email-emilio@elopez.com.ar>
-	<1379032225-6425-1-git-send-email-emilio@elopez.com.ar>
-	<CAOesGMiUMniKRLRgGPsimR0bXWQFbx+SL5dUJXOb8t0JfEcHsg@mail.gmail.com>
-	<52326ADC.8040703@elopez.com.ar>
-Date: Fri, 13 Sep 2013 09:00:48 -0500
-Message-ID: <CAL_JsqJACEtSRaDg0TcYODzhpsHFGa4mFSYa_R3qspypEKH+hQ@mail.gmail.com>
-Subject: Re: [PATCH] memory: add a basic OF-based memory driver
-From: Rob Herring <robherring2@gmail.com>
-To: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
-Cc: Olof Johansson <olof@lixom.net>, Mike Turquette <mturquette@linaro.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        =?ISO-8859-1?Q?David_Lanzend=F6rfer?= <david.lanzendoerfer@o2s.ch>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 13 Sep 2013 09:10:00 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Steven Miao <realmz6@gmail.com>
+Subject: [PATCH 059/228] cpufreq: blackfin: Use generic cpufreq routines
+Date: Fri, 13 Sep 2013 18:30:05 +0530
+Message-Id: <47d7b682a43f352686a9a927642cb84fc74e8399.1379063063.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
+References: <cover.1379063063.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
+References: <cover.1379063063.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 8:31 PM, Emilio López <emilio@elopez.com.ar> wrote:
-> Hi Olof,
->
-> El 12/09/13 21:57, Olof Johansson escribió:
->
->> On Thu, Sep 12, 2013 at 5:30 PM, Emilio López <emilio@elopez.com.ar>
->> wrote:
->>>
->>> This driver's only job is to claim and ensure the necessary clock
->>> for memory operation on a DT-powered machine remains enabled.
->>>
->>> Signed-off-by: Emilio López <emilio@elopez.com.ar>
->>> ---
->>>
->>> I believe this new patch should resolve all the concerns raised; as
->>> always, all feedback is welcome :)
->>
->>
->> I think you're going about this the wrong way.
->>
->> If you have a problem with a clock not staying on, shouldn't you just
->> marking it appropriately in the clock table instead, making sure it's
->> initialized with at least one reference to it?
->
->
-> If by "the clock table" you mean the tree as handled by the common clock
-> framework, there is no such flag available as of today; see Mike's reply for
-> more information.
->
-> Personally I feel that if the general case can solve our problems (in this
-> case, having a consumer who prepares and enables the clock), we should avoid
-> adding special cases to the framework.
->
->
->> I believe that is how
->> some of the other platforms handle this, and it's a lot cleaner than
->> adding a fake binding and a fake driver just to grab a single clock.
->
->
-> The binding doesn't have to be fake; it is actually describing the memory
-> controller hardware:
->
-> mc: mc@0123000 {
->         compatible = "simple-memory-controller";
->         reg = <0x0123000 0x400>;
->         clocks = <&pll5 1>;
-> };
->
-> If one day we get docs and/or have any special features we may need from the
-> controller, we can use something like
->
-> mc: mc@0123000 {
->         compatible = "vendor,awesome-mc", "simple-memory-controller";
->         reg = <0x0123000 0x400>;
->         clocks = <&pll5 1>;
-> };
+Most of the CPUFreq drivers do similar things in .exit() and .verify() routines
+and .attr. So its better if we have generic routines for them which can be used
+by cpufreq drivers then.
 
-Better, but this is still wrong. DT describes the hardware. There is
-no such h/w as a simple-memory-controller. The fact that you have a
-simple-memory-ctrlr kernel driver is a kernel
-feature/artifact/limitation. Describe the h/w with a meaningful
-compatible string and put that string in the simple memory controller
-driver match table. If someday we have a real driver for said memory
-controller, then it is only a kernel change to use a different driver.
+This patch uses these generic routines for this driver.
 
-Rob
+Cc: Steven Miao <realmz6@gmail.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/blackfin-cpufreq.c | 22 +++-------------------
+ 1 file changed, 3 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/cpufreq/blackfin-cpufreq.c b/drivers/cpufreq/blackfin-cpufreq.c
+index 84d446a..48888cf 100644
+--- a/drivers/cpufreq/blackfin-cpufreq.c
++++ b/drivers/cpufreq/blackfin-cpufreq.c
+@@ -191,11 +191,6 @@ static int bfin_target(struct cpufreq_policy *policy,
+ 	return ret;
+ }
+ 
+-static int bfin_verify_speed(struct cpufreq_policy *policy)
+-{
+-	return cpufreq_frequency_table_verify(policy, bfin_freq_table);
+-}
+-
+ static int __bfin_cpu_init(struct cpufreq_policy *policy)
+ {
+ 
+@@ -213,25 +208,14 @@ static int __bfin_cpu_init(struct cpufreq_policy *policy)
+ 	return cpufreq_table_validate_and_show(policy, bfin_freq_table);
+ }
+ 
+-static int __bfin_cpu_exit(struct cpufreq_policy *policy)
+-{
+-
+-	cpufreq_frequency_table_put_attr(policy->cpu);
+-}
+-
+-static struct freq_attr *bfin_freq_attr[] = {
+-	&cpufreq_freq_attr_scaling_available_freqs,
+-	NULL,
+-};
+-
+ static struct cpufreq_driver bfin_driver = {
+-	.verify = bfin_verify_speed,
++	.verify = cpufreq_generic_frequency_table_verify,
+ 	.target = bfin_target,
+ 	.get = bfin_getfreq_khz,
+ 	.init = __bfin_cpu_init,
+-	.exit = __bfin_cpu_exit,
++	.exit = cpufreq_generic_exit,
+ 	.name = "bfin cpufreq",
+-	.attr = bfin_freq_attr,
++	.attr = cpufreq_generic_attr,
+ };
+ 
+ static int __init bfin_cpu_init(void)
+-- 
+1.7.12.rc2.18.g61b472e
+
