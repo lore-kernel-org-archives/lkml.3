@@ -1,229 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146Ab3IMMdt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 08:33:49 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:40998 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752190Ab3IMMdq (ORCPT
+	id S1755464Ab3IMMdz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 08:33:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35410 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755248Ab3IMMdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 08:33:46 -0400
-From: Manjunath Goudar <manjunath.goudar@linaro.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: patches@linaro.org, arnd@linaro.org, dsaxena@linaro.org,
-        manjunath.goudar@linaro.org, linaro-kernel@lists.linaro.org,
-        Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH V2] USB: EHCI: make ehci-w90X900 a separate driver
-Date: Fri, 13 Sep 2013 18:03:27 +0530
-Message-Id: <1379075608-5515-1-git-send-email-manjunath.goudar@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1372347109-5563-1-git-send-email-manjunath.goudar@linaro.org>
-References: <1372347109-5563-1-git-send-email-manjunath.goudar@linaro.org>
+	Fri, 13 Sep 2013 08:33:51 -0400
+Date: Fri, 13 Sep 2013 05:34:05 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        lkp@01.org, Tejun Heo <tj@kernel.org>
+Subject: Re: increased vmap_area_lock contentions on "n_tty: Move buffers
+ into n_tty_data"
+Message-ID: <20130913123405.GB29683@kroah.com>
+References: <20130913005133.GA32479@localhost>
+ <20130913031700.GB23757@kroah.com>
+ <20130913033803.GB8704@localhost>
+ <20130913034413.GA26166@kroah.com>
+ <5232E123.9090909@hurleysoftware.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5232E123.9090909@hurleysoftware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separate the W90X900(W90P910) on-chip host controller driver from
-ehci-hcd host code so that it can be built as a separate driver module.
-This work is part of enabling multi-platform kernels on ARM;
-however, note that other changes are still needed before W90X900(W90P910)
-can be booted with a multi-platform kernel
+On Fri, Sep 13, 2013 at 05:55:47AM -0400, Peter Hurley wrote:
+> On 09/12/2013 11:44 PM, Greg KH wrote:
+> > On Fri, Sep 13, 2013 at 11:38:04AM +0800, Fengguang Wu wrote:
+> >> On Thu, Sep 12, 2013 at 08:17:00PM -0700, Greg KH wrote:
+> >>> On Fri, Sep 13, 2013 at 08:51:33AM +0800, Fengguang Wu wrote:
+> >>>> Hi Peter,
+> >>>>
+> >>>> FYI, we noticed much increased vmap_area_lock contentions since this
+> >>>> commit:
+> >>>
+> >>> What does that mean?  What is happening, are we allocating/removing more
+> >>> memory now?
+> 
+> No. Same amount of memory, allocated and freed with the same frequency as
+> before.
 
-and an ehci driver that only works on one of them.
+Ok, I thought so.
 
-With the infrastructure added by Alan Stern in patch 3e0232039
-"USB: EHCI: prepare to make ehci-hcd a library module", we can
-avoid this problem by turning a bus glue into a separate
-module, as we do here for the w90X900 bus glue.
+> >>> What type of load were you running that showed this problem?
+> >>
+> >> The increased contentions and lock hold/wait time showed up in a
+> >> number of test cases.
+> 
+> [...]
+> 
+> > That's a lot of slowdowns, especially for such a simple patch.
+> >
+> > Peter, any ideas?
+> 
+> Looks like this patch incidentally triggers some worst-case behavior in
+> the memory manager. I'm not sure how this is possible with two 4k buffers,
+> but the evidence is substantial.
+> 
+> This patch isn't critical so I suggest we back out this patch for mainline
+> but use the patch to find out what's wrong in the vmap area.
+> 
+> Unfortunately, I'm on my way out the door and won't be back til Sunday pm (EST)
+> so I'll get a revert to you then. Sorry 'bout that.
 
-Signed-off-by: Manjunath Goudar <manjunath.goudar@linaro.org>
-Signed-off-by: Deepak Saxena <dsaxena@linaro.org>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Wan ZongShun <mcuos.com@gmail.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg KH <greg@kroah.com>
-Cc: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
+No rush, we have plenty of time.
 
-V1->V2:
--Arranged  #include's in alphabetical order.
--Replaced "w90p910" by "w90x900" because it is supports
- all series of w90x900.
----
- drivers/usb/host/Kconfig        |    2 +-
- drivers/usb/host/Makefile       |    1 +
- drivers/usb/host/ehci-hcd.c     |    5 ---
- drivers/usb/host/ehci-w90x900.c |   89 ++++++++++++++++-----------------------
- 4 files changed, 39 insertions(+), 58 deletions(-)
+I think it would be good to track down the real root cause of this, so
+that the allocators don't run into this problem again with some other
+innocuous change.
 
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 8ea1afc..4e298a4 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -224,7 +224,7 @@ config USB_EHCI_MV
- 	  on-chip EHCI USB controller" for those.
- 
- config USB_W90X900_EHCI
--	bool "W90X900(W90P910) EHCI support"
-+	tristate "W90X900(W90P910) EHCI support"
- 	depends on ARCH_W90X900
- 	---help---
- 		Enables support for the W90X900 USB controller
-diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
-index 8fcb8da..0b9fdee 100644
---- a/drivers/usb/host/Makefile
-+++ b/drivers/usb/host/Makefile
-@@ -38,6 +38,7 @@ obj-$(CONFIG_USB_EHCI_S5P)	+= ehci-s5p.o
- obj-$(CONFIG_USB_EHCI_HCD_AT91) += ehci-atmel.o
- obj-$(CONFIG_USB_EHCI_MSM)	+= ehci-msm.o
- obj-$(CONFIG_USB_EHCI_TEGRA)	+= ehci-tegra.o
-+obj-$(CONFIG_USB_W90X900_EHCI)	+= ehci-w90x900.o
- 
- obj-$(CONFIG_USB_OXU210HP_HCD)	+= oxu210hp-hcd.o
- obj-$(CONFIG_USB_ISP116X_HCD)	+= isp116x-hcd.o
-diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index 5d6022f..3e3ca83 100644
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -1238,11 +1238,6 @@ MODULE_LICENSE ("GPL");
- #define XILINX_OF_PLATFORM_DRIVER	ehci_hcd_xilinx_of_driver
- #endif
- 
--#ifdef CONFIG_USB_W90X900_EHCI
--#include "ehci-w90x900.c"
--#define	PLATFORM_DRIVER		ehci_hcd_w90x900_driver
--#endif
--
- #ifdef CONFIG_USB_OCTEON_EHCI
- #include "ehci-octeon.c"
- #define PLATFORM_DRIVER		ehci_octeon_driver
-diff --git a/drivers/usb/host/ehci-w90x900.c b/drivers/usb/host/ehci-w90x900.c
-index 1c370df..cdad843 100644
---- a/drivers/usb/host/ehci-w90x900.c
-+++ b/drivers/usb/host/ehci-w90x900.c
-@@ -11,13 +11,28 @@
-  *
-  */
- 
-+#include <linux/dma-mapping.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
- #include <linux/platform_device.h>
-+#include <linux/usb.h>
-+#include <linux/usb/hcd.h>
-+
-+#include "ehci.h"
- 
- /* enable phy0 and phy1 for w90p910 */
- #define	ENPHY		(0x01<<8)
- #define PHY0_CTR	(0xA4)
- #define PHY1_CTR	(0xA8)
- 
-+#define DRIVER_DESC "EHCI w90x900 driver"
-+
-+static const char hcd_name[] = "ehci-w90x900 ";
-+
-+static struct hc_driver __read_mostly ehci_w90x900_hc_driver;
-+
- static int usb_w90x900_probe(const struct hc_driver *driver,
- 		      struct platform_device *pdev)
- {
-@@ -90,8 +105,8 @@ err1:
- 	return retval;
- }
- 
--static
--void usb_w90x900_remove(struct usb_hcd *hcd, struct platform_device *pdev)
-+static void usb_w90x900_remove(struct usb_hcd *hcd,
-+			struct platform_device *pdev)
- {
- 	usb_remove_hcd(hcd);
- 	iounmap(hcd->regs);
-@@ -99,54 +114,6 @@ void usb_w90x900_remove(struct usb_hcd *hcd, struct platform_device *pdev)
- 	usb_put_hcd(hcd);
- }
- 
--static const struct hc_driver ehci_w90x900_hc_driver = {
--	.description = hcd_name,
--	.product_desc = "Nuvoton w90x900 EHCI Host Controller",
--	.hcd_priv_size = sizeof(struct ehci_hcd),
--
--	/*
--	 * generic hardware linkage
--	 */
--	.irq = ehci_irq,
--	.flags = HCD_USB2|HCD_MEMORY|HCD_BH,
--
--	/*
--	 * basic lifecycle operations
--	 */
--	.reset = ehci_setup,
--	.start = ehci_run,
--
--	.stop = ehci_stop,
--	.shutdown = ehci_shutdown,
--
--	/*
--	 * managing i/o requests and associated device resources
--	 */
--	.urb_enqueue = ehci_urb_enqueue,
--	.urb_dequeue = ehci_urb_dequeue,
--	.endpoint_disable = ehci_endpoint_disable,
--	.endpoint_reset = ehci_endpoint_reset,
--
--	/*
--	 * scheduling support
--	 */
--	.get_frame_number = ehci_get_frame,
--
--	/*
--	 * root hub support
--	 */
--	.hub_status_data = ehci_hub_status_data,
--	.hub_control = ehci_hub_control,
--#ifdef	CONFIG_PM
--	.bus_suspend = ehci_bus_suspend,
--	.bus_resume = ehci_bus_resume,
--#endif
--	.relinquish_port	= ehci_relinquish_port,
--	.port_handed_over	= ehci_port_handed_over,
--
--	.clear_tt_buffer_complete = ehci_clear_tt_buffer_complete,
--};
--
- static int ehci_w90x900_probe(struct platform_device *pdev)
- {
- 	if (usb_disabled())
-@@ -173,7 +140,25 @@ static struct platform_driver ehci_hcd_w90x900_driver = {
- 	},
- };
- 
-+static int __init ehci_w90X900_init(void)
-+{
-+	if (usb_disabled())
-+		return -ENODEV;
-+
-+	pr_info("%s: " DRIVER_DESC "\n", hcd_name);
-+
-+	ehci_init_driver(&ehci_w90x900_hc_driver, NULL);
-+	return platform_driver_register(&ehci_hcd_w90x900_driver);
-+}
-+module_init(ehci_w90X900_init);
-+
-+static void __exit ehci_w90X900_cleanup(void)
-+{
-+	platform_driver_unregister(&ehci_hcd_w90x900_driver);
-+}
-+module_exit(ehci_w90X900_cleanup);
-+
-+MODULE_DESCRIPTION(DRIVER_DESC);
- MODULE_AUTHOR("Wan ZongShun <mcuos.com@gmail.com>");
--MODULE_DESCRIPTION("w90p910 usb ehci driver!");
--MODULE_LICENSE("GPL");
- MODULE_ALIAS("platform:w90p910-ehci");
-+MODULE_LICENSE("GPL v2");
--- 
-1.7.9.5
+thanks,
 
+greg k-h
+
+> 
+> Regards,
+> Peter Hurley
