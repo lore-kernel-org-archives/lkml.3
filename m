@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757573Ab3IMNHN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:07:13 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:64401 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932270Ab3IMNHF (ORCPT
+	id S932267Ab3IMNHE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:07:04 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:46242 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932251Ab3IMNG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:07:05 -0400
+	Fri, 13 Sep 2013 09:06:58 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 034/228] cpufreq: ppc: use cpufreq_table_validate_and_show()
-Date: Fri, 13 Sep 2013 18:29:40 +0530
-Message-Id: <b631c32eb59062e56c908e907f02c8a0fe2588fb.1379063063.git.viresh.kumar@linaro.org>
+Subject: [PATCH 033/228] cpufreq: powernow: use cpufreq_table_validate_and_show()
+Date: Fri, 13 Sep 2013 18:29:39 +0530
+Message-Id: <12636ab6db630cb8306181a0b8d3bb14c9af6039.1379063063.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
 References: <cover.1379063063.git.viresh.kumar@linaro.org>
@@ -30,48 +30,75 @@ cpufreq_frequency_table_cpuinfo() and cpufreq_frequency_table_get_attr().
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/ppc-corenet-cpufreq.c | 3 +--
- drivers/cpufreq/ppc_cbe_cpufreq.c     | 4 +---
- 2 files changed, 2 insertions(+), 5 deletions(-)
+ drivers/cpufreq/powernow-k6.c | 9 +--------
+ drivers/cpufreq/powernow-k7.c | 4 +---
+ drivers/cpufreq/powernow-k8.c | 4 +---
+ 3 files changed, 3 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/cpufreq/ppc-corenet-cpufreq.c b/drivers/cpufreq/ppc-corenet-cpufreq.c
-index 60e81d5..5716b44 100644
---- a/drivers/cpufreq/ppc-corenet-cpufreq.c
-+++ b/drivers/cpufreq/ppc-corenet-cpufreq.c
-@@ -202,7 +202,7 @@ static int corenet_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 	table[i].frequency = CPUFREQ_TABLE_END;
+diff --git a/drivers/cpufreq/powernow-k6.c b/drivers/cpufreq/powernow-k6.c
+index 85f1c8c..ab1de0d 100644
+--- a/drivers/cpufreq/powernow-k6.c
++++ b/drivers/cpufreq/powernow-k6.c
+@@ -145,7 +145,6 @@ static int powernow_k6_target(struct cpufreq_policy *policy,
+ static int powernow_k6_cpu_init(struct cpufreq_policy *policy)
+ {
+ 	unsigned int i, f;
+-	int result;
  
- 	/* set the min and max frequency properly */
--	ret = cpufreq_frequency_table_cpuinfo(policy, table);
-+	ret = cpufreq_table_validate_and_show(policy, table);
- 	if (ret) {
- 		pr_err("invalid frequency table: %d\n", ret);
- 		goto err_nomem1;
-@@ -219,7 +219,6 @@ static int corenet_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 	policy->cpuinfo.transition_latency = CPUFREQ_ETERNAL;
- 	policy->cur = corenet_cpufreq_get_speed(policy->cpu);
+ 	if (policy->cpu != 0)
+ 		return -ENODEV;
+@@ -167,13 +166,7 @@ static int powernow_k6_cpu_init(struct cpufreq_policy *policy)
+ 	policy->cpuinfo.transition_latency = 200000;
+ 	policy->cur = busfreq * max_multiplier;
  
--	cpufreq_frequency_table_get_attr(table, cpu);
- 	of_node_put(np);
- 
- 	return 0;
-diff --git a/drivers/cpufreq/ppc_cbe_cpufreq.c b/drivers/cpufreq/ppc_cbe_cpufreq.c
-index 2e448f0..6c5be63 100644
---- a/drivers/cpufreq/ppc_cbe_cpufreq.c
-+++ b/drivers/cpufreq/ppc_cbe_cpufreq.c
-@@ -123,11 +123,9 @@ static int cbe_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 	cpumask_copy(policy->cpus, cpu_sibling_mask(policy->cpu));
- #endif
- 
--	cpufreq_frequency_table_get_attr(cbe_freqs, policy->cpu);
+-	result = cpufreq_frequency_table_cpuinfo(policy, clock_ratio);
+-	if (result)
+-		return result;
 -
- 	/* this ensures that policy->cpuinfo_min
- 	 * and policy->cpuinfo_max are set correctly */
--	return cpufreq_frequency_table_cpuinfo(policy, cbe_freqs);
-+	return cpufreq_table_validate_and_show(policy, cbe_freqs);
+-	cpufreq_frequency_table_get_attr(clock_ratio, policy->cpu);
+-
+-	return 0;
++	return cpufreq_table_validate_and_show(policy, clock_ratio);
  }
  
- static int cbe_cpufreq_cpu_exit(struct cpufreq_policy *policy)
+ 
+diff --git a/drivers/cpufreq/powernow-k7.c b/drivers/cpufreq/powernow-k7.c
+index 14ce480..c863c13 100644
+--- a/drivers/cpufreq/powernow-k7.c
++++ b/drivers/cpufreq/powernow-k7.c
+@@ -680,9 +680,7 @@ static int powernow_cpu_init(struct cpufreq_policy *policy)
+ 
+ 	policy->cur = powernow_get(0);
+ 
+-	cpufreq_frequency_table_get_attr(powernow_table, policy->cpu);
+-
+-	return cpufreq_frequency_table_cpuinfo(policy, powernow_table);
++	return cpufreq_table_validate_and_show(policy, powernow_table);
+ }
+ 
+ static int powernow_cpu_exit(struct cpufreq_policy *policy)
+diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
+index 8215bbc..8bd8cdb 100644
+--- a/drivers/cpufreq/powernow-k8.c
++++ b/drivers/cpufreq/powernow-k8.c
+@@ -1176,7 +1176,7 @@ static int powernowk8_cpu_init(struct cpufreq_policy *pol)
+ 	pr_debug("policy current frequency %d kHz\n", pol->cur);
+ 
+ 	/* min/max the cpu is capable of */
+-	if (cpufreq_frequency_table_cpuinfo(pol, data->powernow_table)) {
++	if (cpufreq_table_validate_and_show(pol, data->powernow_table)) {
+ 		printk(KERN_ERR FW_BUG PFX "invalid powernow_table\n");
+ 		powernow_k8_cpu_exit_acpi(data);
+ 		kfree(data->powernow_table);
+@@ -1184,8 +1184,6 @@ static int powernowk8_cpu_init(struct cpufreq_policy *pol)
+ 		return -EINVAL;
+ 	}
+ 
+-	cpufreq_frequency_table_get_attr(data->powernow_table, pol->cpu);
+-
+ 	pr_debug("cpu_init done, current fid 0x%x, vid 0x%x\n",
+ 		 data->currfid, data->currvid);
+ 
 -- 
 1.7.12.rc2.18.g61b472e
 
