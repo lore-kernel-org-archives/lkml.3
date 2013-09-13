@@ -1,148 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486Ab3IMWCZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 18:02:25 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:38745 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754852Ab3IMWCY (ORCPT
+	id S1755546Ab3IMW0U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 18:26:20 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:51864 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754990Ab3IMW0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 18:02:24 -0400
-Message-ID: <1379109742.2197.67.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: GPT detection regression in efi.c from commit 27a7c64
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Matt Porter <matt.porter@linaro.org>
-Cc: Karel Zak <kzak@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        torvalds@linux-foundation.org
-Date: Fri, 13 Sep 2013 15:02:22 -0700
-In-Reply-To: <20130913213607.GB8502@ohporter.com>
-References: <20130913145033.GA8502@ohporter.com>
-	 <1379089736.2197.14.camel@buesod1.americas.hpqcorp.net>
-	 <52334506.9030802@linaro.org>
-	 <1379095648.2197.27.camel@buesod1.americas.hpqcorp.net>
-	 <523354F3.70001@linaro.org> <20130913181720.GA1614@x2.net.home>
-	 <1379096972.2197.31.camel@buesod1.americas.hpqcorp.net>
-	 <52335A7A.6000406@linaro.org>
-	 <1379100399.2197.34.camel@buesod1.americas.hpqcorp.net>
-	 <20130913213607.GB8502@ohporter.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Fri, 13 Sep 2013 18:26:18 -0400
+Message-ID: <52339106.4020601@wwwdotorg.org>
+Date: Fri, 13 Sep 2013 16:26:14 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Bill Huang <bilhuang@nvidia.com>
+CC: rjw@sisk.pl, viresh.kumar@linaro.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH v2 3/4] cpufreq: tegra: Re-model Tegra cpufreq driver
+References: <1378985091-9447-1-git-send-email-bilhuang@nvidia.com> <1378985091-9447-4-git-send-email-bilhuang@nvidia.com>
+In-Reply-To: <1378985091-9447-4-git-send-email-bilhuang@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-09-13 at 17:36 -0400, Matt Porter wrote:
-[...]
-> > 
-> > diff --git a/block/partitions/efi.c b/block/partitions/efi.c
-> > index 1a5ec9a..9bae49c 100644
-> > --- a/block/partitions/efi.c
-> > +++ b/block/partitions/efi.c
-> > @@ -186,6 +186,7 @@ invalid:
-> >   */
-> >  static int is_pmbr_valid(legacy_mbr *mbr, sector_t total_sectors)
-> >  {
-> > +	uint32_t sz = 0;
-> >  	int i, part = 0, ret = 0; /* invalid by default */
-> >  
-> >  	if (!mbr || le16_to_cpu(mbr->signature) != MSDOS_MBR_SIGNATURE)
-> > @@ -216,12 +217,15 @@ check_hybrid:
-> >  	/*
-> >  	 * Protective MBRs take up the lesser of the whole disk
-> >  	 * or 2 TiB (32bit LBA), ignoring the rest of the disk.
-> > +	 * Some partitioning programs, nonetheless, choose to set
-> > +	 * the size to the maximum 32-bit limitation, disregarding
-> > +	 * the disk size.
-> >  	 *
-> >  	 * Hybrid MBRs do not necessarily comply with this.
-> >  	 */
-> >  	if (ret == GPT_MBR_PROTECTIVE) {
-> > -		if (le32_to_cpu(mbr->partition_record[part].size_in_lba) !=
-> > -		    min((uint32_t) total_sectors - 1, 0xFFFFFFFF))
-> > +		sz = le32_to_cpu(mbr->partition_record[part].size_in_lba);
-> > +		if (sz != (uint32_t) total_sectors - 1 || sz != 0xFFFFFFFF)
+On 09/12/2013 05:24 AM, Bill Huang wrote:
+> Re-model Tegra cpufreq driver to support all Tegra series of SoCs.
 > 
-> Almost! You'll want to get that brown paper bag out cause I've worn it
-> for this same type of bug before. Add this fix in and you can have my
-> 
-> Tested-by: Matt Porter <matt.porter@linaro.org>
-> 
-> diff --git a/block/partitions/efi.c b/block/partitions/efi.c
-> index 9bae49c..1eb09ee 100644
-> --- a/block/partitions/efi.c
-> +++ b/block/partitions/efi.c
-> @@ -225,7 +225,7 @@ check_hybrid:
->          */
->         if (ret == GPT_MBR_PROTECTIVE) {
->                 sz = le32_to_cpu(mbr->partition_record[part].size_in_lba);
-> -               if (sz != (uint32_t) total_sectors - 1 || sz != 0xFFFFFFFF)
-> +               if (sz != (uint32_t) total_sectors - 1 && sz != 0xFFFFFFFF)
-> 			ret = 0;
+> * Make tegra-cpufreq.c a generic Tegra cpufreq driver.
+> * Move Tegra20 specific codes into tegra20-cpufreq.c.
+> * Bind Tegra cpufreq dirver with a fake device so defer probe would work
+>   when we're going to get regulator in the driver to support voltage
+>   scaling (DVFS).
 
-Oh my, yes, sorry about that. I obviously only built-tested this patch.
-Linus, if you're ok with it, please go ahead and pick this up.
+> diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
 
-Thanks,
-Davidlohr
+> @@ -232,6 +232,12 @@ config ARM_TEGRA_CPUFREQ
+>  	bool "TEGRA CPUFreq support"
+>  	depends on ARCH_TEGRA
+>  	select CPU_FREQ_TABLE
+> +
+> +config ARM_TEGRA20_CPUFREQ
+> +	bool "NVIDIA TEGRA20"
+> +	depends on ARM_TEGRA_CPUFREQ && ARCH_TEGRA_2x_SOC
+>  	default y
+>  	help
+> -	  This adds the CPUFreq driver support for TEGRA SOCs.
+> +	  This adds the CPUFreq driver for NVIDIA TEGRA20 SoC.
+> +
+> +	  If in doubt, say N.
 
-8<-------------------------------------------------
+This patch removes the following from "config ARM_TEGRA_CPUFREQ":
 
-From: Davidlohr Bueso <davidlohr@hp.com>
-Subject: [PATCH] partitions/efi: loosen pmbr size in lba check
+	default y
+	help
+	  This adds the CPUFreq driver support for TEGRA SOCs.
 
-Matt found that commit 27a7c64 (partitions/efi: account for pmbr size in lba)
-caused his GPT formatted eMMC device not to boot. The reason is that this commit
-enforced Linux to always check the lesser of the whole disk or 2Tib for the
-pMBR size in LBA. While most disk partitioning tools out there create a pMBR with
-these characteristics, Microsoft does not, as it always sets the entry to the
-maximum 32-bit limitation - even though a drive may be smaller than that[1].
+I think that option should be left unchanged, such that this patch
+*just* adds the new option without changing the existing one. If you do
+that, then you can completely drop patch 4/4.
 
-Loosen this check and only verify that the size is either the whole disk or
-0xFFFFFFFF. No tool in its right mind would set it to any value other than these.
-
-[1] http://thestarman.pcministry.com/asm/mbr/GPT.htm#GPTPT
-
-Reported-and-tested-by: Matt Porter <matt.porter@linaro.org>
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
----
- block/partitions/efi.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/block/partitions/efi.c b/block/partitions/efi.c
-index 1a5ec9a..1eb09ee 100644
---- a/block/partitions/efi.c
-+++ b/block/partitions/efi.c
-@@ -186,6 +186,7 @@ invalid:
-  */
- static int is_pmbr_valid(legacy_mbr *mbr, sector_t total_sectors)
- {
-+	uint32_t sz = 0;
- 	int i, part = 0, ret = 0; /* invalid by default */
- 
- 	if (!mbr || le16_to_cpu(mbr->signature) != MSDOS_MBR_SIGNATURE)
-@@ -216,12 +217,15 @@ check_hybrid:
- 	/*
- 	 * Protective MBRs take up the lesser of the whole disk
- 	 * or 2 TiB (32bit LBA), ignoring the rest of the disk.
-+	 * Some partitioning programs, nonetheless, choose to set
-+	 * the size to the maximum 32-bit limitation, disregarding
-+	 * the disk size.
- 	 *
- 	 * Hybrid MBRs do not necessarily comply with this.
- 	 */
- 	if (ret == GPT_MBR_PROTECTIVE) {
--		if (le32_to_cpu(mbr->partition_record[part].size_in_lba) !=
--		    min((uint32_t) total_sectors - 1, 0xFFFFFFFF))
-+		sz = le32_to_cpu(mbr->partition_record[part].size_in_lba);
-+		if (sz != (uint32_t) total_sectors - 1 && sz != 0xFFFFFFFF)
- 			ret = 0;
- 	}
- done:
--- 
-1.7.11.7
-
-
-
-
+Other than that, this series looks fine.
