@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932978Ab3IMNNT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:13:19 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:52261 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932962Ab3IMNNM (ORCPT
+	id S932995Ab3IMNNY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:13:24 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:38053 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932981Ab3IMNNT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:13:12 -0400
+	Fri, 13 Sep 2013 09:13:19 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: [PATCH 086/228] cpufreq: sparc: Use generic cpufreq routines
-Date: Fri, 13 Sep 2013 18:30:32 +0530
-Message-Id: <5cf8e2c2fb92577ef065fa85abeef68fa52a9b59.1379063063.git.viresh.kumar@linaro.org>
+        Viresh Kumar <viresh.kumar@linaro.org>, spear-devel@list.st.com
+Subject: [PATCH 087/228] cpufreq: spear: Use generic cpufreq routines
+Date: Fri, 13 Sep 2013 18:30:33 +0530
+Message-Id: <443bcfbf8c55779c45a3f4a9a1c05d7a7a0296bf.1379063063.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
 References: <cover.1379063063.git.viresh.kumar@linaro.org>
@@ -32,66 +31,58 @@ by cpufreq drivers then.
 
 This patch uses these generic routines for this driver.
 
-Cc: David S. Miller <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org
+Cc: spear-devel@list.st.com
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/sparc-us2e-cpufreq.c | 8 +-------
- drivers/cpufreq/sparc-us3-cpufreq.c  | 8 +-------
- 2 files changed, 2 insertions(+), 14 deletions(-)
+ drivers/cpufreq/spear-cpufreq.c | 22 +++-------------------
+ 1 file changed, 3 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/cpufreq/sparc-us2e-cpufreq.c b/drivers/cpufreq/sparc-us2e-cpufreq.c
-index 8db0c18..291688c 100644
---- a/drivers/cpufreq/sparc-us2e-cpufreq.c
-+++ b/drivers/cpufreq/sparc-us2e-cpufreq.c
-@@ -295,12 +295,6 @@ static int us2e_freq_target(struct cpufreq_policy *policy,
+diff --git a/drivers/cpufreq/spear-cpufreq.c b/drivers/cpufreq/spear-cpufreq.c
+index b86be6b..e9657e3 100644
+--- a/drivers/cpufreq/spear-cpufreq.c
++++ b/drivers/cpufreq/spear-cpufreq.c
+@@ -30,11 +30,6 @@ static struct {
+ 	u32 cnt;
+ } spear_cpufreq;
+ 
+-static int spear_cpufreq_verify(struct cpufreq_policy *policy)
+-{
+-	return cpufreq_frequency_table_verify(policy, spear_cpufreq.freq_tbl);
+-}
+-
+ static unsigned int spear_cpufreq_get(unsigned int cpu)
+ {
+ 	return clk_get_rate(spear_cpufreq.clk) / 1000;
+@@ -192,26 +187,15 @@ static int spear_cpufreq_init(struct cpufreq_policy *policy)
  	return 0;
  }
  
--static int us2e_freq_verify(struct cpufreq_policy *policy)
+-static int spear_cpufreq_exit(struct cpufreq_policy *policy)
 -{
--	return cpufreq_frequency_table_verify(policy,
--					      &us2e_freq_table[policy->cpu].table[0]);
+-	cpufreq_frequency_table_put_attr(policy->cpu);
+-	return 0;
 -}
 -
- static int __init us2e_freq_cpu_init(struct cpufreq_policy *policy)
- {
- 	unsigned int cpu = policy->cpu;
-@@ -363,7 +357,7 @@ static int __init us2e_freq_init(void)
- 			goto err_out;
- 
- 		driver->init = us2e_freq_cpu_init;
--		driver->verify = us2e_freq_verify;
-+		driver->verify = cpufreq_generic_frequency_table_verify;
- 		driver->target = us2e_freq_target;
- 		driver->get = us2e_freq_get;
- 		driver->exit = us2e_freq_cpu_exit;
-diff --git a/drivers/cpufreq/sparc-us3-cpufreq.c b/drivers/cpufreq/sparc-us3-cpufreq.c
-index 120a2df..9b3dbd3 100644
---- a/drivers/cpufreq/sparc-us3-cpufreq.c
-+++ b/drivers/cpufreq/sparc-us3-cpufreq.c
-@@ -156,12 +156,6 @@ static int us3_freq_target(struct cpufreq_policy *policy,
- 	return 0;
- }
- 
--static int us3_freq_verify(struct cpufreq_policy *policy)
--{
--	return cpufreq_frequency_table_verify(policy,
--					      &us3_freq_table[policy->cpu].table[0]);
--}
+-static struct freq_attr *spear_cpufreq_attr[] = {
+-	 &cpufreq_freq_attr_scaling_available_freqs,
+-	 NULL,
+-};
 -
- static int __init us3_freq_cpu_init(struct cpufreq_policy *policy)
- {
- 	unsigned int cpu = policy->cpu;
-@@ -224,7 +218,7 @@ static int __init us3_freq_init(void)
- 			goto err_out;
+ static struct cpufreq_driver spear_cpufreq_driver = {
+ 	.name		= "cpufreq-spear",
+ 	.flags		= CPUFREQ_STICKY,
+-	.verify		= spear_cpufreq_verify,
++	.verify		= cpufreq_generic_frequency_table_verify,
+ 	.target		= spear_cpufreq_target,
+ 	.get		= spear_cpufreq_get,
+ 	.init		= spear_cpufreq_init,
+-	.exit		= spear_cpufreq_exit,
+-	.attr		= spear_cpufreq_attr,
++	.exit		= cpufreq_generic_exit,
++	.attr		= cpufreq_generic_attr,
+ };
  
- 		driver->init = us3_freq_cpu_init;
--		driver->verify = us3_freq_verify;
-+		driver->verify = cpufreq_generic_frequency_table_verify;
- 		driver->target = us3_freq_target;
- 		driver->get = us3_freq_get;
- 		driver->exit = us3_freq_cpu_exit;
+ static int spear_cpufreq_driver_init(void)
 -- 
 1.7.12.rc2.18.g61b472e
 
