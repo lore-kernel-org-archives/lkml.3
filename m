@@ -1,103 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754909Ab3IMQ3P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 12:29:15 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:39024 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753923Ab3IMQ3L (ORCPT
+	id S1751883Ab3IMQfl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 12:35:41 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:35302 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751201Ab3IMQfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 12:29:11 -0400
+	Fri, 13 Sep 2013 12:35:39 -0400
+Date: Fri, 13 Sep 2013 09:35:35 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        Chris Mason <chris.mason@fusionio.com>, Mark Fasheh <mfasheh@suse.de>,
+        Zach Brown <zab@redhat.com>
+Subject: Re: Build failures due to commit 416161db (btrfs: offline dedupe)
+Message-ID: <20130913163535.GA5681@roeck-us.net>
+References: <20130913133314.GA20461@roeck-us.net>
+ <CAMuHMdWoNo9U0DCRoXt8V2d1SiSxX5Sku9rNvg+9MiX++XjVRg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130913161059.GD12758@n2100.arm.linux.org.uk>
-References: <cover.1379063063.git.viresh.kumar@linaro.org>
-	<6d8d406ebca886e5147191cc8c333d926ef9eb30.1379063063.git.viresh.kumar@linaro.org>
-	<20130913161059.GD12758@n2100.arm.linux.org.uk>
-Date: Fri, 13 Sep 2013 21:59:10 +0530
-Message-ID: <CAKohponAWXXCVtDL1=C5sQv0QB03P4jtkyE7N+=DDdGPLZpW_w@mail.gmail.com>
-Subject: Re: [PATCH 106/228] cpufreq: integrator: don't initialize part of
- policy that is set by core too
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: multipart/mixed; boundary=e89a8fb1ef64b397a904e6465aae
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdWoNo9U0DCRoXt8V2d1SiSxX5Sku9rNvg+9MiX++XjVRg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---e89a8fb1ef64b397a904e6465aae
-Content-Type: text/plain; charset=ISO-8859-1
+On Fri, Sep 13, 2013 at 03:52:43PM +0200, Geert Uytterhoeven wrote:
+> On Fri, Sep 13, 2013 at 3:33 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> > fs/btrfs/ioctl.c: In function 'btrfs_ioctl_file_extent_same':
+> > fs/btrfs/ioctl.c:2802:3: error: implicit declaration of function '__put_user_unaligned' [-Werror=implicit-function-declaration]
+> > cc1: some warnings being treated as errors
+> > make[2]: *** [fs/btrfs/ioctl.o] Error 1
+> > make[2]: *** Waiting for unfinished jobs....
+> >
+> > Seen with alpha:allmodconfig, arm:allmodconfig, m68k:allmodconfig, and
+> > xtensa:allmodconfig.
+> 
+> Known issue, cfr. my early warning 10 days ago:
+> 
+> "Btrfs is the first user of __put_user_unaligned() outside the compat code,
+> hence now all 32-bit architectures should make sure to implement this, too."
+> 
+> http://marc.info/?l=linux-arch&m=137820065929216&w=2
+> 
+> and today's thread https://lkml.org/lkml/2013/9/12/814
+> 
 
-On 13 September 2013 21:40, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> This patch actually changes things - the description is misleading.
-> Please explain why this change - which results in different values for
-> policy->min and policy->max doesn't cause any functional difference.
+It doesn't seem right that a patch breaks the build for several platforms, and
+the problem is then blamed on the platform code instead of the code that is
+introducing the problem.
 
-Yeah, see if below log looks correct (patch attached):
+Maybe we should add BROKEN to the btrfs dependencies for the affected platforms.
+After all, it _is_ broken.
 
-Subject: [PATCH 106/228] cpufreq: integrator: don't initialize part of policy
- that is set by core too
-
-Many common initializations of struct policy are moved to core now and hence
-this driver doesn't need to do it. This patch removes such code.
-
-Most recent of those changes is to call ->get() in the core after calling
-->init(). And so we don't need to set policy->cur from driver anymore.
-
-Over that it sets policy->min and max correctly. They were earlier set to
-current frequency of CPU but they should be set to max and min freq of cpu.
-
-Cc: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/integrator-cpufreq.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
---e89a8fb1ef64b397a904e6465aae
-Content-Type: application/octet-stream; 
-	name="0106-cpufreq-integrator-don-t-initialize-part-of-policy-t.patch"
-Content-Disposition: attachment; 
-	filename="0106-cpufreq-integrator-don-t-initialize-part-of-policy-t.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hljmfdxg0
-
-RnJvbSA2ZDhkNDA2ZWJjYTg4NmU1MTQ3MTkxY2M4YzMzM2Q5MjZlZjllYjMwIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpNZXNzYWdlLUlkOiA8NmQ4ZDQwNmViY2E4ODZlNTE0NzE5MWNjOGMzMzNk
-OTI2ZWY5ZWIzMC4xMzc5MDYzMDYzLmdpdC52aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KSW4tUmVw
-bHktVG86IDxjb3Zlci4xMzc5MDYzMDYzLmdpdC52aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KUmVm
-ZXJlbmNlczogPGNvdmVyLjEzNzkwNjMwNjMuZ2l0LnZpcmVzaC5rdW1hckBsaW5hcm8ub3JnPgpG
-cm9tOiBWaXJlc2ggS3VtYXIgPHZpcmVzaC5rdW1hckBsaW5hcm8ub3JnPgpEYXRlOiBXZWQsIDE0
-IEF1ZyAyMDEzIDE2OjAyOjQ3ICswNTMwClN1YmplY3Q6IFtQQVRDSCAxMDYvMjI4XSBjcHVmcmVx
-OiBpbnRlZ3JhdG9yOiBkb24ndCBpbml0aWFsaXplIHBhcnQgb2YgcG9saWN5CiB0aGF0IGlzIHNl
-dCBieSBjb3JlIHRvbwoKTWFueSBjb21tb24gaW5pdGlhbGl6YXRpb25zIG9mIHN0cnVjdCBwb2xp
-Y3kgYXJlIG1vdmVkIHRvIGNvcmUgbm93IGFuZCBoZW5jZQp0aGlzIGRyaXZlciBkb2Vzbid0IG5l
-ZWQgdG8gZG8gaXQuIFRoaXMgcGF0Y2ggcmVtb3ZlcyBzdWNoIGNvZGUuCgpNb3N0IHJlY2VudCBv
-ZiB0aG9zZSBjaGFuZ2VzIGlzIHRvIGNhbGwgLT5nZXQoKSBpbiB0aGUgY29yZSBhZnRlciBjYWxs
-aW5nCi0+aW5pdCgpLiBBbmQgc28gd2UgZG9uJ3QgbmVlZCB0byBzZXQgcG9saWN5LT5jdXIgZnJv
-bSBkcml2ZXIgYW55bW9yZS4KCk92ZXIgdGhhdCBpdCBzZXRzIHBvbGljeS0+bWluIGFuZCBtYXgg
-Y29ycmVjdGx5LiBUaGV5IHdlcmUgZWFybGllciBzZXQgdG8KY3VycmVudCBmcmVxdWVuY3kgb2Yg
-Q1BVIGJ1dCB0aGV5IHNob3VsZCBiZSBzZXQgdG8gbWF4IGFuZCBtaW4gZnJlcSBvZiBjcHUuCgpD
-YzogUnVzc2VsbCBLaW5nIDxsaW51eEBhcm0ubGludXgub3JnLnVrPgpTaWduZWQtb2ZmLWJ5OiBW
-aXJlc2ggS3VtYXIgPHZpcmVzaC5rdW1hckBsaW5hcm8ub3JnPgotLS0KIGRyaXZlcnMvY3B1ZnJl
-cS9pbnRlZ3JhdG9yLWNwdWZyZXEuYyB8IDUgKystLS0KIDEgZmlsZSBjaGFuZ2VkLCAyIGluc2Vy
-dGlvbnMoKyksIDMgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZHJpdmVycy9jcHVmcmVxL2lu
-dGVncmF0b3ItY3B1ZnJlcS5jIGIvZHJpdmVycy9jcHVmcmVxL2ludGVncmF0b3ItY3B1ZnJlcS5j
-CmluZGV4IDgxNTJhOWIuLmJhYmYzZTQgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvY3B1ZnJlcS9pbnRl
-Z3JhdG9yLWNwdWZyZXEuYworKysgYi9kcml2ZXJzL2NwdWZyZXEvaW50ZWdyYXRvci1jcHVmcmVx
-LmMKQEAgLTE4MSwxMCArMTgxLDkgQEAgc3RhdGljIGludCBpbnRlZ3JhdG9yX2NwdWZyZXFfaW5p
-dChzdHJ1Y3QgY3B1ZnJlcV9wb2xpY3kgKnBvbGljeSkKIHsKIAogCS8qIHNldCBkZWZhdWx0IHBv
-bGljeSBhbmQgY3B1aW5mbyAqLwotCXBvbGljeS0+Y3B1aW5mby5tYXhfZnJlcSA9IDE2MDAwMDsK
-LQlwb2xpY3ktPmNwdWluZm8ubWluX2ZyZXEgPSAxMjAwMDsKKwlwb2xpY3ktPm1heCA9IHBvbGlj
-eS0+Y3B1aW5mby5tYXhfZnJlcSA9IDE2MDAwMDsKKwlwb2xpY3ktPm1pbiA9IHBvbGljeS0+Y3B1
-aW5mby5taW5fZnJlcSA9IDEyMDAwOwogCXBvbGljeS0+Y3B1aW5mby50cmFuc2l0aW9uX2xhdGVu
-Y3kgPSAxMDAwMDAwOyAvKiAxIG1zLCBhc3N1bWVkICovCi0JcG9saWN5LT5jdXIgPSBwb2xpY3kt
-Pm1pbiA9IHBvbGljeS0+bWF4ID0gaW50ZWdyYXRvcl9nZXQocG9saWN5LT5jcHUpOwogCiAJcmV0
-dXJuIDA7CiB9Ci0tIAoxLjcuMTIucmMyLjE4Lmc2MWI0NzJlCgo=
---e89a8fb1ef64b397a904e6465aae--
+Guenter
