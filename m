@@ -1,188 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab3IMJqB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 05:46:01 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:41631 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753160Ab3IMJp7 (ORCPT
+	id S1755220Ab3IMJrp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 05:47:45 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51466 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754212Ab3IMJro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 05:45:59 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r8D9jjBN027745, This message is accepted by code: ctloc85258
-From: <wei_wang@realsil.com.cn>
-To: <sameo@linux.intel.com>
-CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
-        <micky_ching@realsil.com.cn>, Wei WANG <wei_wang@realsil.com.cn>
-Subject: [PATCH v4] mfd: rtsx: Modify rts5249_optimize_phy
-Date: Fri, 13 Sep 2013 17:45:43 +0800
-Message-ID: <1379065543-30421-1-git-send-email-wei_wang@realsil.com.cn>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 13 Sep 2013 05:47:44 -0400
+Date: Fri, 13 Sep 2013 10:47:12 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Andrew Pinski <pinskia@gmail.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Pinski <apinski@cavium.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 5/5] ARM64: Add support for ILP32 ABI.
+Message-ID: <20130913094712.GA21859@mudshark.cambridge.arm.com>
+References: <1378762380-13152-1-git-send-email-apinski@cavium.com>
+ <1378762380-13152-5-git-send-email-apinski@cavium.com>
+ <20130911143102.GA8825@darko.cambridge.arm.com>
+ <CA+=Sn1nd3Ym8so_=SP4NC1fjKWn4dNPYvz4OZMo0tLZptF8KVw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.29.41.8]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+=Sn1nd3Ym8so_=SP4NC1fjKWn4dNPYvz4OZMo0tLZptF8KVw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei WANG <wei_wang@realsil.com.cn>
+On Fri, Sep 13, 2013 at 07:18:48AM +0100, Andrew Pinski wrote:
+> On Wed, Sep 11, 2013 at 7:32 AM, Catalin Marinas
+> <catalin.marinas@arm.com> wrote:
+> > On Mon, Sep 09, 2013 at 10:32:59PM +0100, Andrew Pinski wrote:
+> >> This patch adds full support of the ABI to the ARM64 target.
+> >
+> > This description is too short. Please describe what the ABI is, what are
+> > the commonalities with AArch64 and AArch32, what other non-obvious
+> > things had to be done (like __kernel_long_t being long long). Split this
+> > patch into multiple patches like base syscall handling, signal handling,
+> > pselect6/ppoll, vdso etc. It's too much to review at once.
+> 
+> Ok. I will do so after my vacation next week.
+> 
+> >
+> > On top of these, I would really like to see
+> > Documentation/arm64/ilp32.txt describing the ABI.
+> 
+> No other target does not, not even x86_64 for x32.
 
-In some platforms, specially Thinkpad series, rts5249 won't be
-initialized properly. So we need adjust some phy parameters to
-improve the compatibility issue.
+Well, I'm sure they wouldn't mind if you submitted documentation for them
+too.
 
-It is a little different between simulation and real chip. We have
-no idea about which configuration is better before tape-out. We set
-default settings according to simulation, but need to tune these
-parameters after getting the real chip.
+> > I would also like to know (you can state this in the cover letter) the
+> > level of testing for all 3 types of ABI. I'm worried that at least this
+> > patch breaks the current compat ABI (has LTP reported anything?).
+> 
+> We did test LTP on an earlier version of this patch for all three
+> ABIs, I will make sure that the next version I send out is tested on
+> all three ABIs also.  We also tested ILP32/LP64 on big-endian at the
+> same time which we will continue to do (I should push for our team
+> here to push out the big-endian patches).
 
-I can't explain every change in detail here. The below information is
-just a rough description:
+We also have some BE patches internally, but obviously they just target LP64
+and AArch32 compat. I'd hope to get these out shortly (the current issue is
+extensive testing, since we don't have much of a BE userspace).
 
-PHY_REG_REV: Disable internal clkreq_tx, enable rx_pwst
-PHY_BPCR: No change, just turn the magic number to macro definitions
-PHY_PCR: Change OOBS sensitivity, from 60mV to 90mV
-PHY_RCR2: Control charge-pump current automatically
-PHY_FLD4: Use TX cmu reference clock
-PHY_RDR: Change RXDSEL from 30nF to 1.9nF
-PHY_RCR1: Change the duration between adp_st and asserting cp_en from
-0.32 us to 0.64us
-PHY_FLD3: Adjust internal timers
-PHY_TUNE: Fine tune the regulator12 output voltage
+> >> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+> >> index cc64df5..7fdc994 100644
+> >> --- a/arch/arm64/Kconfig
+> >> +++ b/arch/arm64/Kconfig
+> >> @@ -248,7 +248,7 @@ source "fs/Kconfig.binfmt"
+> >>
+> >>  config COMPAT
+> >>         def_bool y
+> >> -       depends on ARM64_AARCH32
+> >> +       depends on ARM64_AARCH32 || ARM64_ILP32
+> >>         select COMPAT_BINFMT_ELF
+> >>
+> >>  config ARM64_AARCH32
 
-Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
----
- drivers/mfd/rts5249.c        |   48 ++++++++++++++++++++++++++++++++++++--
- include/linux/mfd/rtsx_pci.h |   53 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 99 insertions(+), 2 deletions(-)
+(nitpick) We used to have an option like this, called
+CONFIG_AARCH32_EMULATION, which I think is clearer than CONFIG_ARM64_AARCH32.
 
-diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
-index 3b835f5..573de7b 100644
---- a/drivers/mfd/rts5249.c
-+++ b/drivers/mfd/rts5249.c
-@@ -130,13 +130,57 @@ static int rts5249_optimize_phy(struct rtsx_pcr *pcr)
- {
- 	int err;
- 
--	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV, 0xFE46);
-+	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV,
-+			PHY_REG_REV_RESV | PHY_REG_REV_RXIDLE_LATCHED |
-+			PHY_REG_REV_P1_EN | PHY_REG_REV_RXIDLE_EN |
-+			PHY_REG_REV_RX_PWST | PHY_REG_REV_CLKREQ_DLY_TIMER_1_0 |
-+			PHY_REG_REV_STOP_CLKRD | PHY_REG_REV_STOP_CLKWR);
- 	if (err < 0)
- 		return err;
- 
- 	msleep(1);
- 
--	return rtsx_pci_write_phy_register(pcr, PHY_BPCR, 0x05C0);
-+	err = rtsx_pci_write_phy_register(pcr, PHY_BPCR,
-+			PHY_BPCR_IBRXSEL | PHY_BPCR_IBTXSEL |
-+			PHY_BPCR_IB_FILTER | PHY_BPCR_CMIRROR_EN);
-+	if (err < 0)
-+		return err;
-+	err = rtsx_pci_write_phy_register(pcr, PHY_PCR,
-+			PHY_PCR_FORCE_CODE | PHY_PCR_OOBS_CALI_50 |
-+			PHY_PCR_OOBS_VCM_08 | PHY_PCR_OOBS_SEN_90 |
-+			PHY_PCR_RSSI_EN);
-+	if (err < 0)
-+		return err;
-+	err = rtsx_pci_write_phy_register(pcr, PHY_RCR2,
-+			PHY_RCR2_EMPHASE_EN | PHY_RCR2_NADJR |
-+			PHY_RCR2_CDR_CP_10 | PHY_RCR2_CDR_SR_2 |
-+			PHY_RCR2_FREQSEL_12 | PHY_RCR2_CPADJEN |
-+			PHY_RCR2_CDR_SC_8 | PHY_RCR2_CALIB_LATE);
-+	if (err < 0)
-+		return err;
-+	err = rtsx_pci_write_phy_register(pcr, PHY_FLD4,
-+			PHY_FLD4_FLDEN_SEL | PHY_FLD4_REQ_REF |
-+			PHY_FLD4_RXAMP_OFF | PHY_FLD4_REQ_ADDA |
-+			PHY_FLD4_BER_COUNT | PHY_FLD4_BER_TIMER |
-+			PHY_FLD4_BER_CHK_EN);
-+	if (err < 0)
-+		return err;
-+	err = rtsx_pci_write_phy_register(pcr, PHY_RDR, PHY_RDR_RXDSEL_1_9);
-+	if (err < 0)
-+		return err;
-+	err = rtsx_pci_write_phy_register(pcr, PHY_RCR1,
-+			PHY_RCR1_ADP_TIME | PHY_RCR1_VCO_COARSE);
-+	if (err < 0)
-+		return err;
-+	err = rtsx_pci_write_phy_register(pcr, PHY_FLD3,
-+			PHY_FLD3_TIMER_4 | PHY_FLD3_TIMER_6 |
-+			PHY_FLD3_RXDELINK);
-+	if (err < 0)
-+		return err;
-+	return rtsx_pci_write_phy_register(pcr, PHY_TUNE,
-+			PHY_TUNE_TUNEREF_1_0 | PHY_TUNE_VBGSEL_1252 |
-+			PHY_TUNE_SDBUS_33 | PHY_TUNE_TUNED18 |
-+			PHY_TUNE_TUNED12);
- }
- 
- static int rts5249_turn_on_led(struct rtsx_pcr *pcr)
-diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
-index d1382df..0ce7721 100644
---- a/include/linux/mfd/rtsx_pci.h
-+++ b/include/linux/mfd/rtsx_pci.h
-@@ -756,6 +756,59 @@
- #define PCR_SETTING_REG2		0x814
- #define PCR_SETTING_REG3		0x747
- 
-+/* Phy bits */
-+#define PHY_PCR_FORCE_CODE			0xB000
-+#define PHY_PCR_OOBS_CALI_50			0x0800
-+#define PHY_PCR_OOBS_VCM_08			0x0200
-+#define PHY_PCR_OOBS_SEN_90			0x0040
-+#define PHY_PCR_RSSI_EN				0x0002
-+
-+#define PHY_RCR1_ADP_TIME			0x0100
-+#define PHY_RCR1_VCO_COARSE			0x001F
-+
-+#define PHY_RCR2_EMPHASE_EN			0x8000
-+#define PHY_RCR2_NADJR				0x4000
-+#define PHY_RCR2_CDR_CP_10			0x0400
-+#define PHY_RCR2_CDR_SR_2			0x0100
-+#define PHY_RCR2_FREQSEL_12			0x0040
-+#define PHY_RCR2_CPADJEN			0x0020
-+#define PHY_RCR2_CDR_SC_8			0x0008
-+#define PHY_RCR2_CALIB_LATE			0x0002
-+
-+#define PHY_RDR_RXDSEL_1_9			0x4000
-+
-+#define PHY_TUNE_TUNEREF_1_0			0x4000
-+#define PHY_TUNE_VBGSEL_1252			0x0C00
-+#define PHY_TUNE_SDBUS_33			0x0200
-+#define PHY_TUNE_TUNED18			0x01C0
-+#define PHY_TUNE_TUNED12			0X0020
-+
-+#define PHY_BPCR_IBRXSEL			0x0400
-+#define PHY_BPCR_IBTXSEL			0x0100
-+#define PHY_BPCR_IB_FILTER			0x0080
-+#define PHY_BPCR_CMIRROR_EN			0x0040
-+
-+#define PHY_REG_REV_RESV			0xE000
-+#define PHY_REG_REV_RXIDLE_LATCHED		0x1000
-+#define PHY_REG_REV_P1_EN			0x0800
-+#define PHY_REG_REV_RXIDLE_EN			0x0400
-+#define PHY_REG_REV_CLKREQ_DLY_TIMER_1_0	0x0040
-+#define PHY_REG_REV_STOP_CLKRD			0x0020
-+#define PHY_REG_REV_RX_PWST			0x0008
-+#define PHY_REG_REV_STOP_CLKWR			0x0004
-+
-+#define PHY_FLD3_TIMER_4			0x7800
-+#define PHY_FLD3_TIMER_6			0x00E0
-+#define PHY_FLD3_RXDELINK			0x0004
-+
-+#define PHY_FLD4_FLDEN_SEL			0x4000
-+#define PHY_FLD4_REQ_REF			0x2000
-+#define PHY_FLD4_RXAMP_OFF			0x1000
-+#define PHY_FLD4_REQ_ADDA			0x0800
-+#define PHY_FLD4_BER_COUNT			0x00E0
-+#define PHY_FLD4_BER_TIMER			0x000A
-+#define PHY_FLD4_BER_CHK_EN			0x0001
-+
- #define rtsx_pci_init_cmd(pcr)		((pcr)->ci = 0)
- 
- struct rtsx_pcr;
--- 
-1.7.9.5
+> >> diff --git a/arch/arm64/kernel/vdsoilp32/Makefile b/arch/arm64/kernel/vdsoilp32/Makefile
+> >> new file mode 100644
+> >> index 0000000..ec93f3f
+> >> --- /dev/null
+> >> +++ b/arch/arm64/kernel/vdsoilp32/Makefile
+> >
+> > Could we not keep vdso in the same directory?
+> 
+> I started out that way but "make clean ARCH=arm64" did not clean the
+> vdso files all the time.
 
+Can you elaborate please? I'd much rather we fix broken make rules instead
+of botching around the issue by creating new directories.
+
+Will
