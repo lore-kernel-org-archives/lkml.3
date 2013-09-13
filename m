@@ -1,80 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754338Ab3IMSzJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 14:55:09 -0400
-Received: from mail-1.atlantis.sk ([80.94.52.57]:36520 "EHLO
-	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754125Ab3IMSzF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 14:55:05 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: linux-ide@vger.kernel.org
-Subject: Re: [PATCH] pata_isapnp: Don't use invalid I/O ports
-Date: Fri, 13 Sep 2013 20:54:37 +0200
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: linux-kernel@vger.kernel.org
-References: <1379019689-21467-1-git-send-email-linux@rainbow-software.org>
-In-Reply-To: <1379019689-21467-1-git-send-email-linux@rainbow-software.org>
-X-KMail-QuotePrefix: > 
+	id S1752893Ab3IMS7p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 14:59:45 -0400
+Received: from imap.thunk.org ([74.207.234.97]:59794 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751726Ab3IMS7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 14:59:44 -0400
+Date: Fri, 13 Sep 2013 14:59:31 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Stephan Mueller <smueller@chronox.de>
+Cc: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
+        John Stultz <john.stultz@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] /dev/random: Insufficient of entropy on many
+ architectures
+Message-ID: <20130913185931.GB15366@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Stephan Mueller <smueller@chronox.de>,
+	=?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
+	John Stultz <john.stultz@linaro.org>,
+	LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Thomas Gleixner <tglx@linutronix.de>
+References: <10005394.BRCyBMYWy3@tauon>
+ <522F984C.2070909@linaro.org>
+ <20130912213148.GE3809@logfs.org>
+ <1974157.PE35U8AyTG@tauon>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201309132054.38278.linux@rainbow-software.org>
+In-Reply-To: <1974157.PE35U8AyTG@tauon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 12 September 2013 23:01:29 Ondrej Zary wrote:
-> The test for 2nd I/O port validity is broken (reversed):
-> On devices with no control port, the driver attempts to use invalid port 0,
-> resulting in logs full of bad_io_access errors.
-> On devices with control port, the driver does not use it.
->
-> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-> ---
->  drivers/ata/pata_isapnp.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/ata/pata_isapnp.c b/drivers/ata/pata_isapnp.c
-> index 4bceb88..b33d1f9 100644
-> --- a/drivers/ata/pata_isapnp.c
-> +++ b/drivers/ata/pata_isapnp.c
-> @@ -78,7 +78,7 @@ static int isapnp_init_one(struct pnp_dev *idev, const
-> struct pnp_device_id *dev
->
->  	ap->ioaddr.cmd_addr = cmd_addr;
->
-> -	if (pnp_port_valid(idev, 1) == 0) {
-> +	if (pnp_port_valid(idev, 1)) {
->  		ctl_addr = devm_ioport_map(&idev->dev,
->  					   pnp_port_start(idev, 1), 1);
->  		ap->ioaddr.altstatus_addr = ctl_addr;
+On Fri, Sep 13, 2013 at 07:36:20AM +0200, Stephan Mueller wrote:
+> 
+> And here the RNG theory breaks: a whitening function (crypto function) 
+> like the used SHA1 does not add entropy. Thus, the SHA1 just spreads out 
+> the entropy evenly over the output buffer. As entropy can be considered 
+> as a kind of percentage value, if you have, say, 10% of your input 
+> buffer holding entropy, applying a whitening function, you output buffer 
+> still holds 10% of entropy only.
 
-With this patch, the ATA port works fine if there is a device connected to it. 
-However, it takes ages to boot if there are no devices connected. Looks like 
-the driver retries IDENTIFY command for both slave and master drives in a 
-hope that the devices are there.
+Well..... it's a little bit more complicated than that.  What you're
+saying is aboslutely true for normal entropy that we might gather.
+For example, if a disk read might take 11, 12, or 13 milliseconds
+depending on the chaotic air currents affecting how much times it
+takes to do a read, you have at best 1.5 bits of entropy.  So if the
+NSA knows that during a standard boot sequences, you will be doing a
+certain precise set of reads, it can try all of the different
+possibilities of 11/12/13 ms and try to brute force what might be
+generated by the RNG.
 
-log:
+This is the source of my recommendation that embedded devices should
+wait as long as possible before generating things like ssh host keys.
+The longer you wait, more uncertainty will be added to the entropy
+pool, and the harder it will be for an attacker to try to brute-force
+attack the /dev/random output.
 
-[    7.692344] pata_isapnp 01:01.02: [io  0x01e8-0x01ef]
-[    7.692474] pata_isapnp 01:01.02: [io  0x0168-0x016f]
-[    7.692644] pata_isapnp 01:01.02: [irq 10]
-[    7.695012] pata_isapnp 01:01.02: activated
-[    7.751153] scsi2 : pata_isapnp
-[    7.751781] ata3: PATA max PIO0 cmd 0x168 ctl 0x0 irq 10
-[   12.751446] ata3.01: qc timeout (cmd 0xec)
-[   12.751571] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   22.752270] ata3.01: qc timeout (cmd 0xec)
-[   22.752396] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   52.754737] ata3.01: qc timeout (cmd 0xec)
-[   52.754861] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   57.755149] ata3.00: qc timeout (cmd 0xec)
-[   57.755275] ata3.00: failed to IDENTIFY (I/O error, err_mask=0x5)
-[   67.755974] ata3.00: qc timeout (cmd 0xec)
-[   67.756099] ata3.00: failed to IDENTIFY (I/O error, err_mask=0x5)
+However, if you are worried about a malicious entropy source, things
+are a little bit different.  Suppose RDRAND == AES(i++, NSA_KEY),
+where the NSA doesn't know the starting value of i.  But if it get can
+get a raw RDRAND value (say, someone uses it without doing any
+whitening as a session key or as a D-H parameter), it can decrypt the
+output using the NSA_KEY, and then now that it knows i, it can brute
+force break the RDRAND output, even if it's not entirely sure how many
+times RDRAND has been called between that cleanb RDRAND value and the
+RDRAND output it is trying to break.
 
--- 
-Ondrej Zary
+In *this* case, smearing out the value of RDRAND across the entropy
+pool does help, becuase it makes it significantly harder to get a
+clean RDRAND value to decrypt.
+
+
+That being said, the much bigger problem that I'm worried about is not
+necessarily a trojan'ed RDRAND, but rather on embedded ARM and MIPS
+devices where we have unsufficient entropy, and on the first boot out
+of the box, there is no random seed file that can be fixed in at boot
+time.  Mixing in personalization information (serial numbers, MAC
+addresses) which *hopefully* the NSA wouldn't know in the case of
+pervasive, bulk surveillance, is a bit of a help.  But it's certainly
+no help against a direct, targetted attack.
+
+Regards,
+
+						- Ted
