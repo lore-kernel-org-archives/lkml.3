@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757101Ab3IMAOS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 20:14:18 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:52022 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754096Ab3IMAOP (ORCPT
+	id S1757263Ab3IMAPk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 20:15:40 -0400
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:58289 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757133Ab3IMAPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 20:14:15 -0400
+	Thu, 12 Sep 2013 20:15:37 -0400
 MIME-Version: 1.0
-X-Originating-IP: [89.2.206.189]
-In-Reply-To: <20130912224719.GA1154@kroah.com>
-References: <1378298828-18560-1-git-send-email-teg@jklm.no> <20130912224719.GA1154@kroah.com>
-From: Tom Gundersen <teg@jklm.no>
-Date: Fri, 13 Sep 2013 02:13:53 +0200
-Message-ID: <CAG-2HqWs3=i2G0UYoq00Wr2Kpo=7wDU5eGbPhzYVj4ayAfDiKQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2][usbutils] lsusb: port to hwdb
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 12 Sep 2013 17:15:37 -0700
+X-Google-Sender-Auth: TLg-mSgrCJhZU4pG0K52qZarv7o
+Message-ID: <CA+55aFwNdeww5jX2+oKG5emB59nazzV5YpvZt8qULVqwCeNdxg@mail.gmail.com>
+Subject: Heads up about 3.12 merge window..
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 13, 2013 at 12:47 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Wed, Sep 04, 2013 at 02:47:07PM +0200, Tom Gundersen wrote:
->> Most of the information in usb.ids is now contained in udev's hwdb. Read the
->> information from the hwdb instead of usb.ids.
->>
->> This would allow distributions to no longer ship (most of) usb.ids by default,
->> but rather keep all the usb device information in the hwdb.
->>
->> This patch introduces a dependency on libusb >= 196.
->
-> You mean 'libudev' here, right?  I don't think libusb has that version
-> number quite yet :)
+So this is just a heads-up that while I haven't actually closed the
+merge window yet, I was really close to deciding to just make this one
+a short one. I'm going to be on the road for the next few days and
+then at LinuxCon US later next week, and I've tried very hard to merge
+everything I had pending in time for that (despite my machine
+mishaps).
 
-Hehe, precisely :-)
+And I have indeed merged everything that's come in, as far as I can
+tell from the current state of my mailbox.
 
--t
+Now, what that means is that if you are a maintainer that hasn't
+already sent in your pull request for 3.12, you had better have a good
+excuse for why you left it until the last few days. On the other hand,
+if you _have_ sent me a pull reqeust, and it hasn't shown up, ping me
+separately, we've had those things caught in spam boxes etc, and I
+might just have missed it.
+
+Because if you don't have a good excuse and it's a big pull with lots
+of development that you just left until very late in the merge window
+to make it inconvenient for me, it's going to wait until 3.13.
+
+Here's to hoping everybody just goes "Whew, good that I sent my pull
+request early".
+
+And in fact there really shouldn't be anything pending afaik. I've
+already merged more commits than was in linux-next.
+
+                  Linus
