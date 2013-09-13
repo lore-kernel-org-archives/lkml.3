@@ -1,117 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561Ab3IMVOs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 17:14:48 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:58265 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754864Ab3IMVOq (ORCPT
+	id S1755373Ab3IMVaI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 17:30:08 -0400
+Received: from smtpauth03h.mfg.siteprotect.com ([64.26.60.134]:55527 "EHLO
+	smtpauth03.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753708Ab3IMVaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 17:14:46 -0400
-Date: Fri, 13 Sep 2013 14:14:43 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Mike Turquette <mturquette@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Hyun Kwon <hyunk@xilinx.com>
-Subject: Re: [PATCH] clk: si570: Add a driver for SI570 oscillators
-Message-ID: <20130913211443.GA9511@roeck-us.net>
-References: <1379033737-30015-1-git-send-email-soren.brinkmann@xilinx.com>
- <1379033737-30015-2-git-send-email-soren.brinkmann@xilinx.com>
- <20130913170005.GB5681@roeck-us.net>
- <c6755ff6-104d-40fe-a753-0e165cff1e10@AM1EHSMHS004.ehs.local>
- <20130913194822.GA12117@roeck-us.net>
- <4b7029c7-8617-4c3d-9544-4245293b77f1@CO9EHSMHS014.ehs.local>
+	Fri, 13 Sep 2013 17:30:07 -0400
+Date: Fri, 13 Sep 2013 17:31:26 -0400 (EDT)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, adrian.hunter@intel.com, tglx@linutronix.de
+cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf: Update perf_event_type documentation
+In-Reply-To: <tip-a5cdd40c9877e9aba704c020fd65d26b5cfecf18@git.kernel.org>
+Message-ID: <alpine.DEB.2.02.1309131728260.4174@pianoman.cluster.toy>
+References: <20130716150907.GL23818@dyad.programming.kicks-ass.net> <tip-a5cdd40c9877e9aba704c020fd65d26b5cfecf18@git.kernel.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4b7029c7-8617-4c3d-9544-4245293b77f1@CO9EHSMHS014.ehs.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020206.523383DD.0084,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 13, 2013 at 02:05:49PM -0700, Sören Brinkmann wrote:
-> On Fri, Sep 13, 2013 at 12:48:22PM -0700, Guenter Roeck wrote:
-> > On Fri, Sep 13, 2013 at 10:26:04AM -0700, Sören Brinkmann wrote:
-> > > On Fri, Sep 13, 2013 at 10:00:05AM -0700, Guenter Roeck wrote:
-> > > > On Thu, Sep 12, 2013 at 05:55:37PM -0700, Soren Brinkmann wrote:
-> > > > > Add a driver for SILabs 570, 571, 598, 599 programmable oscillators.
-> > > > > The devices generate low-jitter clock signals and are reprogrammable via
-> > > > > an I2C interface.
-> > > > > 
-> > > > > Cc: Guenter Roeck <linux@roeck-us.net>
-> > > > > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> > > > > ---
-> > [ ... ]
-> > 
-> > > > > +	/* Applying a new frequency can take up to 10ms */
-> > > > > +	usleep_range(10000, 10001);
-> > > > 
-> > > > One microsecond range doesn't really buy anything besides forcing the compiler
-> > > > to generate extra code. Why not just use 10000 ?
-> > > That's due to checkpatch. I originally had 'msleep(10)' and checkpatch
-> > > suggested to use 'usleep_range()'. Then I put
-> > > 'usleep_range(10000, 10000)' and checkpatch suggested to not use the
-> > > same values for MIN and MAX, so I added the 1 to the MAX value.
-> > > If it is considered to be safe and okay to put in MIN=MAX=10000, I'll
-> > > change it accordingly.
-> > > 
-> > Guess what checkpatch means is to put in something resonable,
-> > such as maybe (10000, 12000). (10000, 10001) just defeats checkpatch
-> > which doesn't really provide any value. So either provide a reasonable
-> > and acceptable range or use a single value.
-> All right. I'll make it 10000 then, for MIN and MAX.
-> 
-> > 
-> > [ ... ]
-> > 
-> > > > > +	match = of_match_node(clk_si570_of_match, client->dev.of_node);
-> > > > > +	if (!match)
-> > > > > +		return -EINVAL;
-> > > > 
-> > > > Seems unusual. Is this really needed ? It precludes the driver from being used
-> > > > in a non-devicetree environment, for example. I would guess that there is a match
-> > > > if client->dev.of_node is set. Otherwise, this code would be needed in every
-> > > > driver supporting devicetree, and I don't recall seeing that.
-> > > > 
-> > > > > +	ddata = match->data;
-> > > > > +
-> > > > You should be able to get this information (ie the pointer to si570_device_data)
-> > > > from id->driver_data. That would be more consistent with other i2c devices.
-> > > I think I copied this approach from the other clk-si... driver. I'll
-> > > do some research on your suggestion and change it. Could you point me to
-> > > an example for your proposal?
-> > > 
-> > drivers/hwmon/lm90.c or drivers/hwmon/max6697.c.
-> Thanks.
-> 
-> > 
-> > > > > +
-> > > > > +	if (of_property_read_u32(client->dev.of_node, "factory-fout",
-> > > > > +				&factory_fout)) {
-> > > > > +		dev_warn(&client->dev,
-> > > > > +			"DTS does not contain factory-fout, using default\n");
-> > > > 
-> > > > Is that really worth a warning ?
-> > > My understanding is, that the default output frequency is part-specific
-> > > and required to calculate the frequency of the internal crystal. Hence,
-> > > if you do not provide the correct default output frequency for your part, all
-> > > frequencies generated by this driver will be off, unless the here used
-> > > default matches your part. Please correct me if I'm wrong, otherwise, I
-> > > think it's worth a warning.
-> > > 
-> > Maybe the property should be mandatory ?
-> It's actually listed as required property in the documentation. I'll
-> make it mandatory in the code as well and let probe() fail if it's not
-> provided.
-> 
-Ok.
+On Tue, 23 Jul 2013, tip-bot for Peter Zijlstra wrote:
 
-Thanks,
-Guenter
+> Commit-ID:  a5cdd40c9877e9aba704c020fd65d26b5cfecf18
+> Gitweb:     http://git.kernel.org/tip/a5cdd40c9877e9aba704c020fd65d26b5cfecf18
+> Author:     Peter Zijlstra <peterz@infradead.org>
+> AuthorDate: Tue, 16 Jul 2013 17:09:07 +0200
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Tue, 23 Jul 2013 12:17:08 +0200
+> 
+> perf: Update perf_event_type documentation
+> 
+> Due to a discussion with Adrian I had a good look at the perf_event_type record
+> layout and found the documentation to be somewhat unclear.
+> 
+> Cc: Adrian Hunter <adrian.hunter@intel.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Link: http://lkml.kernel.org/r/20130716150907.GL23818@dyad.programming.kicks-ass.net
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> ---
+>  include/uapi/linux/perf_event.h | 18 +++++++++++++++++-
+>  kernel/events/core.c            | 31 ++++++++++++++++---------------
+>  2 files changed, 33 insertions(+), 16 deletions(-)
+> 
+> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+> index 0b1df41..00d8274 100644
+> --- a/include/uapi/linux/perf_event.h
+> +++ b/include/uapi/linux/perf_event.h
+> @@ -478,6 +478,16 @@ enum perf_event_type {
+>  	 * file will be supported by older perf tools, with these new optional
+>  	 * fields being ignored.
+>  	 *
+> +	 * struct sample_id {
+> +	 * 	{ u32			pid, tid; } && PERF_SAMPLE_TID
+> +	 * 	{ u64			time;     } && PERF_SAMPLE_TIME
+> +	 * 	{ u64			id;       } && PERF_SAMPLE_ID
+> +	 * 	{ u64			stream_id;} && PERF_SAMPLE_STREAM_ID
+> +	 * 	{ u32			cpu, res; } && PERF_SAMPLE_CPU
+> +	 * } && perf_event_attr::sample_id_all
+> +	 */
+> +
+> +	/*
+>  	 * The MMAP events record the PROT_EXEC mappings so that we can
+>  	 * correlate userspace IPs to code. They have the following structure:
+>  	 *
+> @@ -498,6 +508,7 @@ enum perf_event_type {
+>  	 *	struct perf_event_header	header;
+>  	 *	u64				id;
+>  	 *	u64				lost;
+> +	 * 	struct sample_id		sample_id;
+>  	 * };
+>  	 */
+>  	PERF_RECORD_LOST			= 2,
+
+So in Adrian Hunter's posted patches the PERF_RECORD_MMAP documentation
+is also patched like all the others, with 
+
+    struct sample_id                sample_id;
+
+But in this tip message (and in the current linus-git kernel) somehow the
+PERF_RECORD_MMAP line of the patch was dropped.
+
+Was that intentional?
+
+I'm trying to document this mess in the manpage, not fun.
+
+Vince
