@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933171Ab3IMNPW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:15:22 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:33825 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933155Ab3IMNPO (ORCPT
+	id S933188Ab3IMNPd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:15:33 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:63427 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933174Ab3IMNP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:15:14 -0400
+	Fri, 13 Sep 2013 09:15:28 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 103/228] cpufreq: gx: don't initialize part of policy that is set by core too
-Date: Fri, 13 Sep 2013 18:30:49 +0530
-Message-Id: <54dc020643b2b2a691736003e0284e02b0c22982.1379063063.git.viresh.kumar@linaro.org>
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: [PATCH 105/228] cpufreq: imx6q: don't initialize part of policy that is set by core too
+Date: Fri, 13 Sep 2013 18:30:51 +0530
+Message-Id: <ee404bd44ef9e3f86300b0f1dd4a9deb9a00e395.1379063063.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
 References: <cover.1379063063.git.viresh.kumar@linaro.org>
@@ -31,43 +32,24 @@ this driver doesn't need to do it. This patch removes such code.
 Most recent of those changes is to call ->get() in the core after calling
 ->init().
 
+Cc: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/gx-suspmod.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ drivers/cpufreq/imx6q-cpufreq.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/cpufreq/gx-suspmod.c b/drivers/cpufreq/gx-suspmod.c
-index 70442c7..d83e826 100644
---- a/drivers/cpufreq/gx-suspmod.c
-+++ b/drivers/cpufreq/gx-suspmod.c
-@@ -401,7 +401,7 @@ static int cpufreq_gx_target(struct cpufreq_policy *policy,
+diff --git a/drivers/cpufreq/imx6q-cpufreq.c b/drivers/cpufreq/imx6q-cpufreq.c
+index 29767bb..649547f 100644
+--- a/drivers/cpufreq/imx6q-cpufreq.c
++++ b/drivers/cpufreq/imx6q-cpufreq.c
+@@ -162,7 +162,6 @@ static int imx6q_cpufreq_init(struct cpufreq_policy *policy)
+ 	}
  
- static int cpufreq_gx_cpu_init(struct cpufreq_policy *policy)
- {
--	unsigned int maxfreq, curfreq;
-+	unsigned int maxfreq;
+ 	policy->cpuinfo.transition_latency = transition_latency;
+-	policy->cur = clk_get_rate(arm_clk) / 1000;
+ 	cpumask_setall(policy->cpus);
  
- 	if (!policy || policy->cpu != 0)
- 		return -ENODEV;
-@@ -415,10 +415,8 @@ static int cpufreq_gx_cpu_init(struct cpufreq_policy *policy)
- 		maxfreq = 30000 * gx_freq_mult[getCx86(CX86_DIR1) & 0x0f];
- 
- 	stock_freq = maxfreq;
--	curfreq = gx_get_cpuspeed(0);
- 
- 	pr_debug("cpu max frequency is %d.\n", maxfreq);
--	pr_debug("cpu current frequency is %dkHz.\n", curfreq);
- 
- 	/* setup basic struct for cpufreq API */
- 	policy->cpu = 0;
-@@ -428,7 +426,6 @@ static int cpufreq_gx_cpu_init(struct cpufreq_policy *policy)
- 	else
- 		policy->min = maxfreq / POLICY_MIN_DIV;
- 	policy->max = maxfreq;
--	policy->cur = curfreq;
- 	policy->cpuinfo.min_freq = maxfreq / max_duration;
- 	policy->cpuinfo.max_freq = maxfreq;
- 	policy->cpuinfo.transition_latency = CPUFREQ_ETERNAL;
+ 	return 0;
 -- 
 1.7.12.rc2.18.g61b472e
 
