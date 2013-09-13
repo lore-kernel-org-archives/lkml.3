@@ -1,94 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756789Ab3IMId7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 04:33:59 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39462 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755778Ab3IMId4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 04:33:56 -0400
-Message-ID: <5232CDBB.6040202@ti.com>
-Date: Fri, 13 Sep 2013 14:02:59 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	id S1756563Ab3IMIis (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 04:38:48 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:62149 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755753Ab3IMIio convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 04:38:44 -0400
 MIME-Version: 1.0
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linus.walleij@linaro.org>, <linux@arm.linux.org.uk>,
-        <tony@atomide.com>, <rnayak@ti.com>
-Subject: Re: [RFC PATCH 1/4] DRIVERS: IRQCHIP: Add crossbar irqchip driver
-References: <1379000351-15672-1-git-send-email-r.sricharan@ti.com> <1379000351-15672-2-git-send-email-r.sricharan@ti.com> <alpine.DEB.2.02.1309122201530.4089@ionos.tec.linutronix.de> <523228B5.5070507@ti.com> <alpine.DEB.2.02.1309122335440.4089@ionos.tec.linutronix.de> <5232457A.8080709@ti.com> <alpine.DEB.2.02.1309130138550.4089@ionos.tec.linutronix.de> <52326D6B.2010003@ti.com>
-In-Reply-To: <52326D6B.2010003@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CACRpkdYjzGwaV0Eg5KZ7W_9YYkyiAXDc-9oagU49XWJUooVKdQ@mail.gmail.com>
+References: <cover.1376600922.git.yann.morin.1998@free.fr>
+	<83e8b90e1d2cc5ff5d2443f2486c2d786a4997ce.1376600922.git.yann.morin.1998@free.fr>
+	<CACRpkdYjzGwaV0Eg5KZ7W_9YYkyiAXDc-9oagU49XWJUooVKdQ@mail.gmail.com>
+Date: Fri, 13 Sep 2013 10:38:43 +0200
+Message-ID: <CACW0xKXOKJXW+5m7JirKbsj4Em4SbVV0NeyK2x88x46dfJ4akw@mail.gmail.com>
+Subject: Re: [PATCH 2/4] scripts/config: use sed's POSIX interface
+From: =?ISO-8859-1?Q?Cl=E9ment_Chauplannaz?= <chauplac@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>, linux-kbuild@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 13 September 2013 07:12 AM, Santosh Shilimkar wrote:
-> On Thursday 12 September 2013 08:26 PM, Thomas Gleixner wrote:
->> On Thu, 12 Sep 2013, Santosh Shilimkar wrote:
->>> On Thursday 12 September 2013 06:22 PM, Thomas Gleixner wrote:
->>>> Now the real question is, how that expansion mechanism is supposed to
->>>> work. There are two possible scenarios:
->>>>
->>>> 1) Expand the number of handled interrupts beyond the GIC capacity:
->>>>
->>>>    That requires a mechanism in CROSSBAR to map several CROSSBAR
->>>>    interrupts to a particular GIC interrupt and provide a demux
->>>>    mechanism to invoke the shared handlers.
->>>>
->>> This is not possible in hardware and not supported. Hardware has
->>> no notion of muxing multiple IRQ's to generate 1 IRQ or ack etc
->>> functionality. Its a simple MUX to tie knots between input and output
->>> wires.
->> It's not a MUX. It's a ROUTING mechanism. That's similar to the
->> mechanisms which are used by MSI[X]. We assign arbitrary interrupt
->> numbers to a device and route them to some underlying limited hardware
->> interrupt controller.
->>
->>>> 2) Provide a mapping mechanism between possibly 250 interrupt numbers
->>>>    and a limitation of a total 160 active interrupts by the underlying
->>>>    GIC.
->>>>
->>> This is the need and problem we are trying to solve.
->> Let me summarize:
->>
->>    - GIC supports up to 160 interrupts
->>
->>    - CROSSBAR supports up to 250 interrupts 
->>
->>    - CROSSBAR routes up to 160 out of 250 interrupts to the GIC ones
->>
->>    - Drivers request a CROSSBAR interrupt number which must be mapped
->>      to some arbitrary available GIC irq number
->>
-> Correct.
+2013/9/12 Linus Walleij <linus.walleij@linaro.org>:
+> On Thu, Aug 15, 2013 at 11:17 PM, Yann E. MORIN <yann.morin.1998@free.fr> wrote:
 >
->> So basically the CROSSBAR mechanism is pretty much the same as MSI[X]
->> just in a different flavour and with a different set of semantics and
->> limitations, i.e. poor mans MSI[X] with a new level of bogosity.
+>> From: Clement Chauplannaz <chauplac@gmail.com>
 >>
->> So if CROSSBAR is going to be the new fangled SoC MSI[X] long term
->> equivalent then you better provide some infrastructure for that and
->> make the drivers ready to use it. Maybe check with the PCI/MSI folks
->> to share some of the interfaces.
+>> Script `config' relies on extensions of `GNU sed', and is thus not
+>> working on all Unixes:
+>>   - in-place edition of files (-i), which can be replaced with
+>>     a temporary file;
+>>   - extended-regexps (-r), which can be split into basic regexps;
+>>   - single-line calls to `a' command, while some implementations
+>>     require a leading newline before the parameter.
 >>
->> If that whole thing is another onetime HW designers wet dream, then
->> please go back to the limited but completely functional (Who is going
->> to use more than 160 peripheral interrupts????) device tree model. I
->> really have no interest to support hardware designer brain farts.
+>> Rewrite calls to `sed' to comply with POSIX interface, and move them
+>> to helper functions.
 >>
-> Thanks for clear NAK for irqchip approach. I should have looped you
-> in the discussion where I was also suggesting against the irqchip
-> approach. We will try to look at MSI stuff but if its get too
-> complicated am going to fall-back to the initial probe based
-> approach to achieve the functionality.
+>> Signed-off-by: Clement Chauplannaz <chauplac@gmail.com>
+>> Tested-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+>> Reviewed-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+>> Signed-off-by: Yann E. MORIN <yann.morin.1998@free.fr>
 >
-> Thanks again for clear direction and useful discussion.
- Thanks for the feedback. I will look in to the MSI driver and
- see if how that would work.
+> This patch totally breaks my usage of the --set-str
+> argument to "config".
+>
+> Reverting this patch solves the problem.
+>
+> Reproduce:
+> make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi-
+> KBUILD_OUTPUT=build-nomadik nhk8815_defconfig
+> scripts/config --file build-nomadik/.config --set-str CMDLINE
+> "root=/dev/ram0 console=ttyAMA1,115200n8 earlyprintk"
+> sed: -e uttryck #1, tecken 44: flaggan okänd för "s"
+> sed: -e uttryck #1, tecken 54: flaggan okänd för "s"
+>
+> Swedish messages meaning "unknown flag for "s""
+>
+> After reverting the patch these messages no longer appear.
+>
+> At failure my config file is scratched :-O
+>
+> Yours,
+> Linus Walleij
 
-Regards,
- Sricharan
+Hello Linus,
+
+Thank you for this report. I was able to reproduce this bug and fix it.
+
+My previous commit changed the separator between sed's substitute
+command and its parameters, from ':' to '/'. The latter conflicted
+with the slashes found in the value of variable CMDLINE, as provided
+in your email.
+
+I'm sending a patch right now to revert to previous behavior.
+
+Best regards,
+Clement Chauplannaz
