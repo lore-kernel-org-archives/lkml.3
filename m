@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751883Ab3IMQfl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 12:35:41 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:35302 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751201Ab3IMQfj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 12:35:39 -0400
-Date: Fri, 13 Sep 2013 09:35:35 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        Chris Mason <chris.mason@fusionio.com>, Mark Fasheh <mfasheh@suse.de>,
-        Zach Brown <zab@redhat.com>
-Subject: Re: Build failures due to commit 416161db (btrfs: offline dedupe)
-Message-ID: <20130913163535.GA5681@roeck-us.net>
-References: <20130913133314.GA20461@roeck-us.net>
- <CAMuHMdWoNo9U0DCRoXt8V2d1SiSxX5Sku9rNvg+9MiX++XjVRg@mail.gmail.com>
+	id S1752359Ab3IMQjj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 12:39:39 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:1672 "EHLO mms3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750951Ab3IMQji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 12:39:38 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+Message-ID: <52333FBE.2080206@broadcom.com>
+Date: Fri, 13 Sep 2013 18:39:26 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
+ Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdWoNo9U0DCRoXt8V2d1SiSxX5Sku9rNvg+9MiX++XjVRg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Matt Fleming" <matt.fleming@intel.com>
+cc: linux-efi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: access efi variables
+References: <52333139.6020203@broadcom.com>
+In-Reply-To: <52333139.6020203@broadcom.com>
+X-WSS-ID: 7E2DE2C02L884432311-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 13, 2013 at 03:52:43PM +0200, Geert Uytterhoeven wrote:
-> On Fri, Sep 13, 2013 at 3:33 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> > fs/btrfs/ioctl.c: In function 'btrfs_ioctl_file_extent_same':
-> > fs/btrfs/ioctl.c:2802:3: error: implicit declaration of function '__put_user_unaligned' [-Werror=implicit-function-declaration]
-> > cc1: some warnings being treated as errors
-> > make[2]: *** [fs/btrfs/ioctl.o] Error 1
-> > make[2]: *** Waiting for unfinished jobs....
-> >
-> > Seen with alpha:allmodconfig, arm:allmodconfig, m68k:allmodconfig, and
-> > xtensa:allmodconfig.
-> 
-> Known issue, cfr. my early warning 10 days ago:
-> 
-> "Btrfs is the first user of __put_user_unaligned() outside the compat code,
-> hence now all 32-bit architectures should make sure to implement this, too."
-> 
-> http://marc.info/?l=linux-arch&m=137820065929216&w=2
-> 
-> and today's thread https://lkml.org/lkml/2013/9/12/814
-> 
+On 09/13/2013 05:37 PM, Arend van Spriel wrote:
+> I need to obtain a uefi variable so I went looking at the API in
+> include/linux/efi.h. I found the following definition:
+>
+> /*
+>   * The maximum size of VariableName + Data = 1024
+>   * Therefore, it's reasonable to save that much
+>   * space in each part of the structure,
+>   * and we use a page for reading/writing.
+>   */
+>
+> struct efi_variable {
+>      efi_char16_t  VariableName[1024/sizeof(efi_char16_t)];
+>      efi_guid_t    VendorGuid;
+>      unsigned long DataSize;
+>      __u8          Data[1024];
+>      efi_status_t  Status;
+>      __u32         Attributes;
+> } __attribute__((packed));
+>
+> But according to the specs the variable I need to obtain is 2k bytes.
 
-It doesn't seem right that a patch breaks the build for several platforms, and
-the problem is then blamed on the platform code instead of the code that is
-introducing the problem.
+Maybe clarify that "the specs" is basically the feature information I 
+received internally here.
 
-Maybe we should add BROKEN to the btrfs dependencies for the affected platforms.
-After all, it _is_ broken.
+> Should I expect trouble :-p
+>
+> Regards,
+> Arend
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-Guenter
+
