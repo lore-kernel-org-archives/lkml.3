@@ -1,184 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755048Ab3IMUZv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 16:25:51 -0400
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:58621 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753777Ab3IMUZt (ORCPT
+	id S1755179Ab3IMU13 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 16:27:29 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:38502 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753354Ab3IMU11 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 16:25:49 -0400
+	Fri, 13 Sep 2013 16:27:27 -0400
+From: Antonio Alecrim Jr <antonio.alecrim@gmail.com>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Antonio Alecrim Jr <antonio.alecrim@gmail.com>
+Subject: [PATCH 1/1] scsi:aic7xxx_old: fix: add missing enum ahc_chip entries
+Date: Fri, 13 Sep 2013 14:27:29 -0300
+Message-Id: <1379093249-5493-1-git-send-email-antonio.alecrim@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 MIME-Version: 1.0
-In-Reply-To: <20130913200000.GT13318@ZenIV.linux.org.uk>
-References: <20130910222924.GB13318@ZenIV.linux.org.uk>
-	<20130910153520.14e49cd32feb16d45eb8abac@linux-foundation.org>
-	<20130910223624.GC13318@ZenIV.linux.org.uk>
-	<20130910154116.cc4afe048213a779040ea3cc@linux-foundation.org>
-	<20130910224823.GE13318@ZenIV.linux.org.uk>
-	<20130910225934.GF13318@ZenIV.linux.org.uk>
-	<CA+55aFwXXsk47WrAqF6yuVXOQHuNpxT7x-=MmLsNBptyzjH1zQ@mail.gmail.com>
-	<CA+55aFxz2r3voP=W0oCns5MzMqBaeYxMLxp5AxRxjY23K3nvuA@mail.gmail.com>
-	<CA+55aFxnq2hjx1Aw7+iFuGnZp4sRK3HYK0Kfipz1gEYubOdnYQ@mail.gmail.com>
-	<CA+55aFyaRsk-KkjppTnqDxy8+y5z9Yvi3TpMZwgGJ7ad7kwM4g@mail.gmail.com>
-	<20130913200000.GT13318@ZenIV.linux.org.uk>
-Date: Fri, 13 Sep 2013 16:25:48 -0400
-X-Google-Sender-Auth: Ok-RagxGyCPZMNBmgaAFO8O2cIk
-Message-ID: <CA+55aFxizbVmQE2Y94BRj3kDFdf6hzNHuy-O0qBFw3jnT_mMLw@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the akpm tree with Linus' tree
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Chinner <dchinner@redhat.com>, Glauber Costa <glommer@openvz.org>
-Content-Type: multipart/mixed; boundary=047d7bacb98ef2481704e649a8dc
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7bacb98ef2481704e649a8dc
-Content-Type: text/plain; charset=UTF-8
+Due to this missing enum entries some switch cases have
+unreached conditions:
+drivers/scsi/aic7xxx_old.c: In function ‘aic7xxx_register’:
+drivers/scsi/aic7xxx_old.c:7901:5: warning: case value ‘257’ not in enumerated type ‘ahc_chip’ [-Wswitch]
 
-On Fri, Sep 13, 2013 at 4:00 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-\>
-> It is right - for one thing, we are holding the lock on that LRU list,
-> so list_lru_del() would deadlock right there.  For another, the same
-> list_lru_walk (OK, list_lru_walk_node()) will do ->nr_items decrement
-> when we return LRU_REMOVED to it, so we don't want to do it twice.
-> Plain list_del_init() is correct here.
+Signed-off-by: Antonio Alecrim Jr <antonio.alecrim@gmail.com>
+---
+ drivers/scsi/aic7xxx_old.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Yes. And I found the opposite bug in one place: when we are collecting
-dentries by walking the parents etc, we do *not* hold the global RCU
-lock, so we cannot use the "d_lru_shrink_list()" thing after all. It's
-correct as far as the internal logic of fs/dcache.c goes, but it
-violates the global LRU list rules. So I replaced that with a
-dentry_lru_del() followed by a d_shrink_add() instead.
+diff --git a/drivers/scsi/aic7xxx_old.c b/drivers/scsi/aic7xxx_old.c
+index 33ec9c6..643e214 100644
+--- a/drivers/scsi/aic7xxx_old.c
++++ b/drivers/scsi/aic7xxx_old.c
+@@ -728,6 +728,8 @@ typedef enum {
+   AHC_VL               = 0x0100,
+   AHC_EISA             = 0x0200,
+   AHC_PCI              = 0x0400,
++  AHC_AIC7770_EISA     = AHC_AIC7770|AHC_EISA,
++  AHC_AIC7770_VL       = AHC_AIC7770|AHC_VL,
+ } ahc_chip;
+ 
+ typedef enum {
+-- 
+1.8.3.1
 
-Updated patch attached.
-
-                        Linus
-
---047d7bacb98ef2481704e649a8dc
-Content-Type: application/octet-stream; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hljuvn5l0
-
-IGZzL2RjYWNoZS5jIHwgMTI5ICsrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysr
-KysrKysrKysrLS0tLS0tLS0tLS0tLQogMSBmaWxlIGNoYW5nZWQsIDEwMiBpbnNlcnRpb25zKCsp
-LCAyNyBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9mcy9kY2FjaGUuYyBiL2ZzL2RjYWNoZS5j
-CmluZGV4IDFiZDQ2MTRjZTkzYi4uNDM1Yjk3NTYwNjc0IDEwMDY0NAotLS0gYS9mcy9kY2FjaGUu
-YworKysgYi9mcy9kY2FjaGUuYwpAQCAtMzU3LDE1ICszNTcsODAgQEAgc3RhdGljIHZvaWQgZGVu
-dHJ5X3VubGlua19pbm9kZShzdHJ1Y3QgZGVudHJ5ICogZGVudHJ5KQogfQogCiAvKgorICogVGhl
-IERDQUNIRV9MUlVfTElTVCBiaXQgaXMgc2V0IHdoZW5ldmVyIHRoZSAnZF9scnUnIGVudHJ5Cisg
-KiBpcyBpbiB1c2UgLSB3aGljaCBpbmNsdWRlcyBib3RoIHRoZSAicmVhbCIgcGVyLXN1cGVyYmxv
-Y2sKKyAqIExSVSBsaXN0IF9hbmRfIHRoZSBEQ0FDSEVfU0hSSU5LX0xJU1QgdXNlLgorICoKKyAq
-IFRoZSBEQ0FDSEVfU0hSSU5LX0xJU1QgYml0IGlzIHNldCB3aGVuZXZlciB0aGUgZGVudHJ5IGlz
-CisgKiBvbiB0aGUgc2hyaW5rIGxpc3QgKGllIG5vdCBvbiB0aGUgc3VwZXJibG9jayBMUlUgbGlz
-dCkuCisgKgorICogVGhlIHBlci1jcHUgIm5yX2RlbnRyeV91bnVzZWQiIGNvdW50ZXJzIGFyZSB1
-cGRhdGVkIHdpdGgKKyAqIHRoZSBEQ0FDSEVfTFJVX0xJU1QgYml0LgorICoKKyAqIFRoZXNlIGhl
-bHBlciBmdW5jdGlvbnMgbWFrZSBzdXJlIHdlIGFsd2F5cyBmb2xsb3cgdGhlCisgKiBydWxlcy4g
-ZF9sb2NrIG11c3QgYmUgaGVsZCBieSB0aGUgY2FsbGVyLgorICovCisjZGVmaW5lIERfRkxBR19W
-RVJJRlkoZGVudHJ5LHgpIFdBUk5fT05fT05DRSgoKGRlbnRyeSktPmRfZmxhZ3MgJiAoRENBQ0hF
-X0xSVV9MSVNUIHwgRENBQ0hFX1NIUklOS19MSVNUKSkgIT0gKHgpKQorc3RhdGljIHZvaWQgZF9s
-cnVfYWRkKHN0cnVjdCBkZW50cnkgKmRlbnRyeSkKK3sKKwlEX0ZMQUdfVkVSSUZZKGRlbnRyeSwg
-MCk7CisJZGVudHJ5LT5kX2ZsYWdzIHw9IERDQUNIRV9MUlVfTElTVDsKKwl0aGlzX2NwdV9pbmMo
-bnJfZGVudHJ5X3VudXNlZCk7CisJV0FSTl9PTl9PTkNFKCFsaXN0X2xydV9hZGQoJmRlbnRyeS0+
-ZF9zYi0+c19kZW50cnlfbHJ1LCAmZGVudHJ5LT5kX2xydSkpOworfQorCitzdGF0aWMgdm9pZCBk
-X2xydV9kZWwoc3RydWN0IGRlbnRyeSAqZGVudHJ5KQoreworCURfRkxBR19WRVJJRlkoZGVudHJ5
-LCBEQ0FDSEVfTFJVX0xJU1QpOworCWRlbnRyeS0+ZF9mbGFncyAmPSB+RENBQ0hFX0xSVV9MSVNU
-OworCXRoaXNfY3B1X2RlYyhucl9kZW50cnlfdW51c2VkKTsKKwlXQVJOX09OX09OQ0UoIWxpc3Rf
-bHJ1X2RlbCgmZGVudHJ5LT5kX3NiLT5zX2RlbnRyeV9scnUsICZkZW50cnktPmRfbHJ1KSk7Cit9
-CisKK3N0YXRpYyB2b2lkIGRfc2hyaW5rX2RlbChzdHJ1Y3QgZGVudHJ5ICpkZW50cnkpCit7CisJ
-RF9GTEFHX1ZFUklGWShkZW50cnksIERDQUNIRV9TSFJJTktfTElTVCB8IERDQUNIRV9MUlVfTElT
-VCk7CisJbGlzdF9kZWxfaW5pdCgmZGVudHJ5LT5kX2xydSk7CisJZGVudHJ5LT5kX2ZsYWdzICY9
-IH4oRENBQ0hFX1NIUklOS19MSVNUIHwgRENBQ0hFX0xSVV9MSVNUKTsKKwl0aGlzX2NwdV9kZWMo
-bnJfZGVudHJ5X3VudXNlZCk7Cit9CisKK3N0YXRpYyB2b2lkIGRfc2hyaW5rX2FkZChzdHJ1Y3Qg
-ZGVudHJ5ICpkZW50cnksIHN0cnVjdCBsaXN0X2hlYWQgKmxpc3QpCit7CisJRF9GTEFHX1ZFUklG
-WShkZW50cnksIDApOworCWxpc3RfYWRkKCZkZW50cnktPmRfbHJ1LCBsaXN0KTsKKwlkZW50cnkt
-PmRfZmxhZ3MgfD0gRENBQ0hFX1NIUklOS19MSVNUIHwgRENBQ0hFX0xSVV9MSVNUOworCXRoaXNf
-Y3B1X2luYyhucl9kZW50cnlfdW51c2VkKTsKK30KKworLyoKKyAqIFRoZXNlIGNhbiBvbmx5IGJl
-IGNhbGxlZCB1bmRlciB0aGUgZ2xvYmFsIExSVSBsb2NrLCBpZSBkdXJpbmcgdGhlCisgKiBjYWxs
-YmFjayBmb3IgZnJlZWluZyB0aGUgTFJVIGxpc3QuICJpc29sYXRlIiByZW1vdmVzIGl0IGZyb20g
-dGhlCisgKiBMUlUgbGlzdHMgZW50aXJlbHksIHdoaWxlIHNocmlua19tb3ZlIG1vdmVzIGl0IHRv
-IHRoZSBpbmRpY2F0ZWQKKyAqIHByaXZhdGUgbGlzdC4KKyAqLworc3RhdGljIHZvaWQgZF9scnVf
-aXNvbGF0ZShzdHJ1Y3QgZGVudHJ5ICpkZW50cnkpCit7CisJRF9GTEFHX1ZFUklGWShkZW50cnks
-IERDQUNIRV9MUlVfTElTVCk7CisJZGVudHJ5LT5kX2ZsYWdzICY9IH5EQ0FDSEVfTFJVX0xJU1Q7
-CisJdGhpc19jcHVfZGVjKG5yX2RlbnRyeV91bnVzZWQpOworCWxpc3RfZGVsX2luaXQoJmRlbnRy
-eS0+ZF9scnUpOworfQorCitzdGF0aWMgdm9pZCBkX2xydV9zaHJpbmtfbW92ZShzdHJ1Y3QgZGVu
-dHJ5ICpkZW50cnksIHN0cnVjdCBsaXN0X2hlYWQgKmxpc3QpCit7CisJRF9GTEFHX1ZFUklGWShk
-ZW50cnksIERDQUNIRV9MUlVfTElTVCk7CisJZGVudHJ5LT5kX2ZsYWdzIHw9IERDQUNIRV9TSFJJ
-TktfTElTVDsKKwlsaXN0X21vdmVfdGFpbCgmZGVudHJ5LT5kX2xydSwgbGlzdCk7Cit9CisKKy8q
-CiAgKiBkZW50cnlfbHJ1XyhhZGR8ZGVsKV9saXN0KSBtdXN0IGJlIGNhbGxlZCB3aXRoIGRfbG9j
-ayBoZWxkLgogICovCiBzdGF0aWMgdm9pZCBkZW50cnlfbHJ1X2FkZChzdHJ1Y3QgZGVudHJ5ICpk
-ZW50cnkpCiB7Ci0JaWYgKHVubGlrZWx5KCEoZGVudHJ5LT5kX2ZsYWdzICYgRENBQ0hFX0xSVV9M
-SVNUKSkpIHsKLQkJaWYgKGxpc3RfbHJ1X2FkZCgmZGVudHJ5LT5kX3NiLT5zX2RlbnRyeV9scnUs
-ICZkZW50cnktPmRfbHJ1KSkKLQkJCXRoaXNfY3B1X2luYyhucl9kZW50cnlfdW51c2VkKTsKLQkJ
-ZGVudHJ5LT5kX2ZsYWdzIHw9IERDQUNIRV9MUlVfTElTVDsKLQl9CisJaWYgKHVubGlrZWx5KCEo
-ZGVudHJ5LT5kX2ZsYWdzICYgRENBQ0hFX0xSVV9MSVNUKSkpCisJCWRfbHJ1X2FkZChkZW50cnkp
-OwogfQogCiAvKgpAQCAtMzc3LDE1ICs0NDIsMTEgQEAgc3RhdGljIHZvaWQgZGVudHJ5X2xydV9h
-ZGQoc3RydWN0IGRlbnRyeSAqZGVudHJ5KQogICovCiBzdGF0aWMgdm9pZCBkZW50cnlfbHJ1X2Rl
-bChzdHJ1Y3QgZGVudHJ5ICpkZW50cnkpCiB7Ci0JaWYgKGRlbnRyeS0+ZF9mbGFncyAmIERDQUNI
-RV9TSFJJTktfTElTVCkgewotCQlsaXN0X2RlbF9pbml0KCZkZW50cnktPmRfbHJ1KTsKLQkJZGVu
-dHJ5LT5kX2ZsYWdzICY9IH5EQ0FDSEVfU0hSSU5LX0xJU1Q7Ci0JCXJldHVybjsKKwlpZiAoZGVu
-dHJ5LT5kX2ZsYWdzICYgRENBQ0hFX0xSVV9MSVNUKSB7CisJCWlmIChkZW50cnktPmRfZmxhZ3Mg
-JiBEQ0FDSEVfU0hSSU5LX0xJU1QpCisJCQlyZXR1cm4gZF9zaHJpbmtfZGVsKGRlbnRyeSk7CisJ
-CWRfbHJ1X2RlbChkZW50cnkpOwogCX0KLQotCWlmIChsaXN0X2xydV9kZWwoJmRlbnRyeS0+ZF9z
-Yi0+c19kZW50cnlfbHJ1LCAmZGVudHJ5LT5kX2xydSkpCi0JCXRoaXNfY3B1X2RlYyhucl9kZW50
-cnlfdW51c2VkKTsKLQlkZW50cnktPmRfZmxhZ3MgJj0gfkRDQUNIRV9MUlVfTElTVDsKIH0KIAog
-LyoqCkBAIC04MzcsNiArODk4LDEzIEBAIHN0YXRpYyB2b2lkIHNocmlua19kZW50cnlfbGlzdChz
-dHJ1Y3QgbGlzdF9oZWFkICpsaXN0KQogCQlkZW50cnkgPSBsaXN0X2VudHJ5X3JjdShsaXN0LT5w
-cmV2LCBzdHJ1Y3QgZGVudHJ5LCBkX2xydSk7CiAJCWlmICgmZGVudHJ5LT5kX2xydSA9PSBsaXN0
-KQogCQkJYnJlYWs7IC8qIGVtcHR5ICovCisKKworCQkvKgorCQkgKiBHZXQgdGhlIGRlbnRyeSBs
-b2NrLCBhbmQgcmUtdmVyaWZ5IHRoYXQgdGhlIGRlbnRyeSBpcworCQkgKiB0aGlzIG9uIHRoZSBz
-aHJpbmtpbmcgbGlzdC4gSWYgaXQgaXMsIHdlIGtub3cgdGhhdAorCQkgKiBEQ0FDSEVfU0hSSU5L
-X0xJU1QgYW5kIERDQUNIRV9MUlVfTElTVCBhcmUgc2V0LgorCQkgKi8KIAkJc3Bpbl9sb2NrKCZk
-ZW50cnktPmRfbG9jayk7CiAJCWlmIChkZW50cnkgIT0gbGlzdF9lbnRyeShsaXN0LT5wcmV2LCBz
-dHJ1Y3QgZGVudHJ5LCBkX2xydSkpIHsKIAkJCXNwaW5fdW5sb2NrKCZkZW50cnktPmRfbG9jayk7
-CkBAIC04NDgsOCArOTE2LDcgQEAgc3RhdGljIHZvaWQgc2hyaW5rX2RlbnRyeV9saXN0KHN0cnVj
-dCBsaXN0X2hlYWQgKmxpc3QpCiAJCSAqIHRvIHRoZSBMUlUgaGVyZSwgc28gd2UgY2FuIHNpbXBs
-eSByZW1vdmUgaXQgZnJvbSB0aGUgbGlzdAogCQkgKiBoZXJlIHJlZ2FyZGxlc3Mgb2Ygd2hldGhl
-ciBpdCBpcyByZWZlcmVuY2VkIG9yIG5vdC4KIAkJICovCi0JCWxpc3RfZGVsX2luaXQoJmRlbnRy
-eS0+ZF9scnUpOwotCQlkZW50cnktPmRfZmxhZ3MgJj0gfkRDQUNIRV9TSFJJTktfTElTVDsKKwkJ
-ZF9zaHJpbmtfZGVsKGRlbnRyeSk7CiAKIAkJLyoKIAkJICogV2UgZm91bmQgYW4gaW51c2UgZGVu
-dHJ5IHdoaWNoIHdhcyBub3QgcmVtb3ZlZCBmcm9tCkBAIC04NjEsMTIgKzkyOCwyMCBAQCBzdGF0
-aWMgdm9pZCBzaHJpbmtfZGVudHJ5X2xpc3Qoc3RydWN0IGxpc3RfaGVhZCAqbGlzdCkKIAkJfQog
-CQlyY3VfcmVhZF91bmxvY2soKTsKIAorCQkvKgorCQkgKiBJZiAndHJ5X3RvX3BydW5lKCknIHJl
-dHVybnMgYSBkZW50cnksIGl0IHdpbGwKKwkJICogYmUgdGhlIHNhbWUgb25lIHdlIHBhc3NlZCBp
-biwgYW5kIGRfbG9jayB3aWxsCisJCSAqIGhhdmUgYmVlbiBoZWxkIHRoZSB3aG9sZSB0aW1lLCBz
-byBpdCB3aWxsIG5vdAorCQkgKiBoYXZlIGJlZW4gYWRkZWQgdG8gYW55IG90aGVyIGxpc3RzLiBX
-ZSBmYWlsZWQKKwkJICogdG8gZ2V0IHRoZSBpbm9kZSBsb2NrLgorCQkgKgorCQkgKiBXZSBqdXN0
-IGFkZCBpdCBiYWNrIHRvIHRoZSBzaHJpbmsgbGlzdC4KKwkJICovCiAJCWRlbnRyeSA9IHRyeV9w
-cnVuZV9vbmVfZGVudHJ5KGRlbnRyeSk7CiAKIAkJcmN1X3JlYWRfbG9jaygpOwogCQlpZiAoZGVu
-dHJ5KSB7Ci0JCQlkZW50cnktPmRfZmxhZ3MgfD0gRENBQ0hFX1NIUklOS19MSVNUOwotCQkJbGlz
-dF9hZGQoJmRlbnRyeS0+ZF9scnUsIGxpc3QpOworCQkJZF9zaHJpbmtfYWRkKGRlbnRyeSwgbGlz
-dCk7CiAJCQlzcGluX3VubG9jaygmZGVudHJ5LT5kX2xvY2spOwogCQl9CiAJfQpAQCAtODk0LDcg
-Kzk2OSw3IEBAIGRlbnRyeV9scnVfaXNvbGF0ZShzdHJ1Y3QgbGlzdF9oZWFkICppdGVtLCBzcGlu
-bG9ja190ICpscnVfbG9jaywgdm9pZCAqYXJnKQogCSAqIGFub3RoZXIgcGFzcyB0aHJvdWdoIHRo
-ZSBMUlUuCiAJICovCiAJaWYgKGRlbnRyeS0+ZF9sb2NrcmVmLmNvdW50KSB7Ci0JCWxpc3RfZGVs
-X2luaXQoJmRlbnRyeS0+ZF9scnUpOworCQlkX2xydV9pc29sYXRlKGRlbnRyeSk7CiAJCXNwaW5f
-dW5sb2NrKCZkZW50cnktPmRfbG9jayk7CiAJCXJldHVybiBMUlVfUkVNT1ZFRDsKIAl9CkBAIC05
-MjUsOSArMTAwMCw3IEBAIGRlbnRyeV9scnVfaXNvbGF0ZShzdHJ1Y3QgbGlzdF9oZWFkICppdGVt
-LCBzcGlubG9ja190ICpscnVfbG9jaywgdm9pZCAqYXJnKQogCQlyZXR1cm4gTFJVX1JPVEFURTsK
-IAl9CiAKLQlkZW50cnktPmRfZmxhZ3MgfD0gRENBQ0hFX1NIUklOS19MSVNUOwotCWxpc3RfbW92
-ZV90YWlsKCZkZW50cnktPmRfbHJ1LCBmcmVlYWJsZSk7Ci0JdGhpc19jcHVfZGVjKG5yX2RlbnRy
-eV91bnVzZWQpOworCWRfbHJ1X3Nocmlua19tb3ZlKGRlbnRyeSwgZnJlZWFibGUpOwogCXNwaW5f
-dW5sb2NrKCZkZW50cnktPmRfbG9jayk7CiAKIAlyZXR1cm4gTFJVX1JFTU9WRUQ7CkBAIC05NzIs
-OSArMTA0NSw3IEBAIHN0YXRpYyBlbnVtIGxydV9zdGF0dXMgZGVudHJ5X2xydV9pc29sYXRlX3No
-cmluayhzdHJ1Y3QgbGlzdF9oZWFkICppdGVtLAogCWlmICghc3Bpbl90cnlsb2NrKCZkZW50cnkt
-PmRfbG9jaykpCiAJCXJldHVybiBMUlVfU0tJUDsKIAotCWRlbnRyeS0+ZF9mbGFncyB8PSBEQ0FD
-SEVfU0hSSU5LX0xJU1Q7Ci0JbGlzdF9tb3ZlX3RhaWwoJmRlbnRyeS0+ZF9scnUsIGZyZWVhYmxl
-KTsKLQl0aGlzX2NwdV9kZWMobnJfZGVudHJ5X3VudXNlZCk7CisJZF9scnVfc2hyaW5rX21vdmUo
-ZGVudHJ5LCBmcmVlYWJsZSk7CiAJc3Bpbl91bmxvY2soJmRlbnRyeS0+ZF9sb2NrKTsKIAogCXJl
-dHVybiBMUlVfUkVNT1ZFRDsKQEAgLTEzNjIsOSArMTQzMywxMyBAQCBzdGF0aWMgZW51bSBkX3dh
-bGtfcmV0IHNlbGVjdF9jb2xsZWN0KHZvaWQgKl9kYXRhLCBzdHJ1Y3QgZGVudHJ5ICpkZW50cnkp
-CiAJaWYgKGRlbnRyeS0+ZF9sb2NrcmVmLmNvdW50KSB7CiAJCWRlbnRyeV9scnVfZGVsKGRlbnRy
-eSk7CiAJfSBlbHNlIGlmICghKGRlbnRyeS0+ZF9mbGFncyAmIERDQUNIRV9TSFJJTktfTElTVCkp
-IHsKLQkJZGVudHJ5X2xydV9kZWwoZGVudHJ5KTsKLQkJbGlzdF9hZGRfdGFpbCgmZGVudHJ5LT5k
-X2xydSwgJmRhdGEtPmRpc3Bvc2UpOwotCQlkZW50cnktPmRfZmxhZ3MgfD0gRENBQ0hFX1NIUklO
-S19MSVNUOworCQkvKgorCQkgKiBXZSBjYW4ndCB1c2UgZF9scnVfc2hyaW5rX21vdmUoKSBiZWNh
-dXNlIHdlCisJCSAqIG5lZWQgdG8gZ2V0IHRoZSBnbG9iYWwgTFJVIGxvY2sgYW5kIGRvIHRoZQor
-CQkgKiBSTFUgYWNjb3VudGluZy4KKwkJICovCisJCWRfbHJ1X2RlbChkZW50cnkpOworCQlkX3No
-cmlua19hZGQoZGVudHJ5LCAmZGF0YS0+ZGlzcG9zZSk7CiAJCWRhdGEtPmZvdW5kKys7CiAJCXJl
-dCA9IERfV0FMS19OT1JFVFJZOwogCX0K
---047d7bacb98ef2481704e649a8dc--
