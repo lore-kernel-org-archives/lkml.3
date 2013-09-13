@@ -1,78 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755675Ab3IMMD2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 08:03:28 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:55388 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750842Ab3IMMDY (ORCPT
+	id S1756112Ab3IMMLg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 08:11:36 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:59692 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754244Ab3IMMLb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 08:03:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130913080539.GG19211@elgon.mountain>
-References: <20130913080539.GG19211@elgon.mountain>
-Date: Fri, 13 Sep 2013 14:03:23 +0200
-X-Google-Sender-Auth: SbRZMduZcUu8y85RgMdJ9ZSt1u4
-Message-ID: <CAMuHMdX88cUEu2dmamEttK=9Lv0TKiZauCtPDLbgKUde+8ufyQ@mail.gmail.com>
-Subject: Re: [patch 3/4] skd: use strncpy() as a cleanup
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>,
-        Ramprasad Chinthekindi <rchinthekindi@stec-inc.com>,
-        Akhil Bhansali <abhansali@stec-inc.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 13 Sep 2013 08:11:31 -0400
+X-AuditID: cbfee61b-b7f776d0000016c8-ba-523300f18d6b
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Jin Xu'" <linuxclimber@gmail.com>
+Cc: "'???'" <jaegeuk.kim@samsung.com>, linux-f2fs-devel@lists.sourceforge.net,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?gb2312?B?J8y35q0n?= <shu.tan@samsung.com>
+References: <000001ceb069$318a87a0$949f96e0$@samsung.com>
+ <5232FBC0.2030509@gmail.com>
+In-reply-to: <5232FBC0.2030509@gmail.com>
+Subject: RE: [f2fs-dev][PATCH] f2fs: limit nr_iovecs in bio_alloc
+Date: Fri, 13 Sep 2013 20:10:37 +0800
+Message-id: <000201ceb07a$60980fc0$21c82f40$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=gb2312
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQLDNobmU2T910Ps1JKvh5e+dL2n3AFrBgCLl88rviA=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKLMWRmVeSWpSXmKPExsVy+t9jAd2PDMZBBpdPmltc3/WXyeLSIneL
+	PXtPslhc3jWHzeLUyTOsFq0LzzM7sHnsnHWX3WP3gs9MHn1bVjF6fN4kF8ASxWWTkpqTWZZa
+	pG+XwJXx7+wa1oJHEhWHmh+xNDAeFepi5OSQEDCRePfpOhuELSZx4d56IJuLQ0hgEaPEy+/r
+	WCCcH4wSW3dPBqtiE1CRWN7xnwnEFhFQleg63g5mMwvsZJTYdSQTxBYSiJCY/+cVWJxTQFPi
+	04JGRhBbWMBRYt2DtWBzWIB6ny3sZgWxeQUsJab+3c4OYQtK/Jh8jwVipoZE/6INbBC2tsST
+	dxdYIS5VkNhx9jUjxA1WEku+LGCEqBGX2HjkFssERqFZSEbNQjJqFpJRs5C0LGBkWcUomlqQ
+	XFCclJ5rpFecmFtcmpeul5yfu4kRHBnPpHcwrmqwOMQowMGoxMPbEWMUJMSaWFZcmXuIUYKD
+	WUmEd9ZdoBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeg63WgUIC6YklqdmpqQWpRTBZJg5OqQbG
+	fkbtR57aLVF32PsW3+2z7+79YBCso7X77tVt/Qv3iqyduGjl/8Pxh+dk94iyWQepbpBmXnxP
+	Lrh73fdNdrffLvTQfzvbJPOU5btkJ6eb25O4S6fcTzI0fLPz2QGG/xxbqx68nykZUBT2q8hJ
+	uWvBlj13bkuqc0RMnr/UV7uJcWu8LFt9fuRNJZbijERDLeai4kQA7XFN0IgCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 13, 2013 at 10:05 AM, Dan Carpenter
-<dan.carpenter@oracle.com> wrote:
-> The code here is copying the version to inq.driver_version but we don't
-> want it to be NUL terminated.  Instead we pad the rest of the array with
-> spaces.  It's fewer lines to use strncpy() and maybe a little nicer.
->
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
->
-> diff --git a/drivers/block/skd_main.c b/drivers/block/skd_main.c
-> index f892d95..20ad843 100644
-> --- a/drivers/block/skd_main.c
-> +++ b/drivers/block/skd_main.c
-> @@ -2899,9 +2899,7 @@ static void skd_do_inq_page_da(struct skd_device *skdev,
->                                volatile struct fit_comp_error_info *skerr,
->                                uint8_t *cdb, uint8_t *buf)
->  {
-> -       unsigned ver_byte;
->         unsigned max_bytes;
-> -       char *ver = DRV_VER_COMPL;
->         struct driver_inquiry_data inq;
->         u16 val;
->
-> @@ -2945,12 +2943,8 @@ static void skd_do_inq_page_da(struct skd_device *skdev,
->         /* Driver version, fixed lenth, padded with spaces on the right */
->         inq.driver_version_length = sizeof(inq.driver_version);
->         memset(&inq.driver_version, ' ', sizeof(inq.driver_version));
-> -       for (ver_byte = 0; ver_byte < sizeof(inq.driver_version); ver_byte++) {
-> -               if (ver[ver_byte] != 0)
-> -                       inq.driver_version[ver_byte] = ver[ver_byte];
-> -               else
-> -                       break;
-> -       }
-> +       strncpy(inq.driver_version, DRV_VER_COMPL,
-> +               min(sizeof(inq.driver_version), strlen(DRV_VER_COMPL)));
+> -----Original Message-----
+> From: Jin Xu [mailto:linuxclimber@gmail.com]
+> Sent: Friday, September 13, 2013 7:49 PM
+> To: Chao Yu
+> Cc: ???; linux-f2fs-devel@lists.sourceforge.net;
+linux-fsdevel@vger.kernel.org;
+> linux-kernel@vger.kernel.org; Ì·æ­
+> Subject: Re: [f2fs-dev][PATCH] f2fs: limit nr_iovecs in bio_alloc
+> 
+> Did this patch pass the basic build? There seems have a typo regarding
+> MAX_BIO_BLOCK.
+> 
 
-This does the exact same thing as memcpy(), right? So why not use that?
-memcpy() has much simpler semantics than strncpy().
+I am so sorry about that.I miss the 'S' when merging the code by handwriting
+from build path to git branch path.
+I will check the patch carefully and resubmit it.
 
->         inq.page_length = cpu_to_be16((sizeof(inq) - 4));
+Thanks for reminding!
 
-Gr{oetje,eeting}s,
+> --
+> Jin
+> 
+> On 13/09/2013 18:07, Chao Yu wrote:
+> > This patch add macro MAX_BIO_BLOCKS to limit value of npages in
+> > f2fs_bio_alloc, it can avoid to return NULL in bio_alloc caused by
+> > npages is larger than UIO_MAXIOV.
+> >
+> > Signed-off-by: Yu Chao <chao2.yu@samsung.com>
+> >  ---
+> >  fs/f2fs/segment.c |    4 +++-
+> >  fs/f2fs/segment.h |    3 +++
+> >  2 files changed, 6 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c index
+> > 09af9c7..bd79bbe 100644
+> > --- a/fs/f2fs/segment.c
+> > +++ b/fs/f2fs/segment.c
+> > @@ -657,6 +657,7 @@ static void submit_write_page(struct f2fs_sb_info
+> > *sbi, struct page *page,
+> >                                 block_t blk_addr, enum page_type
+> type)
+> > {
+> >         struct block_device *bdev = sbi->sb->s_bdev;
+> > +       int bio_blocks;
+> >
+> >         verify_block_addr(sbi, blk_addr);
+> >
+> > @@ -676,7 +677,8 @@ retry:
+> >                         goto retry;
+> >                 }
+> >
+> > -               sbi->bio[type] = f2fs_bio_alloc(bdev,
+max_hw_blocks(sbi));
+> > +               bio_blocks = MAX_BIO_BLOCKS(max_hw_blocks(sbi));
+> > +               sbi->bio[type] = f2fs_bio_alloc(bdev, bio_blocks);
+> >                 sbi->bio[type]->bi_sector = SECTOR_FROM_BLOCK(sbi,
+> > blk_addr);
+> >                 sbi->bio[type]->bi_private = priv;
+> >                 /*
+> > diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h index
+> > bdd10ea..9cc95eb 100644
+> > --- a/fs/f2fs/segment.h
+> > +++ b/fs/f2fs/segment.h
+> > @@ -9,6 +9,7 @@
+> >   * published by the Free Software Foundation.
+> >   */
+> >  #include <linux/blkdev.h>
+> > +#include <linux/uio.h>
+> >
+> >  /* constant macro */
+> >  #define NULL_SEGNO                     ((unsigned int)(~0))
+> > @@ -90,6 +91,8 @@
+> >         (blk_addr << ((sbi)->log_blocksize - F2FS_LOG_SECTOR_SIZE))
+> >  #define SECTOR_TO_BLOCK(sbi, sectors)
+> \
+> >         (sectors >> ((sbi)->log_blocksize - F2FS_LOG_SECTOR_SIZE))
+> > +#define MAX_BIO_BLOCK(max_hw_blocks)
+> \
+> > +       (min((int)max_hw_blocks, UIO_MAXIOV))
+> >
+> >  /* during checkpoint, bio_private is used to synchronize the last bio
+> > */  struct bio_private {
+> > ---
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe
+> > linux-kernel" in the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
