@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438Ab3IMSed (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 14:34:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37237 "EHLO
+	id S1754662Ab3IMSdS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 14:33:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37207 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754944Ab3IMSdW (ORCPT
+	with ESMTP id S1754209Ab3IMSdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 14:33:22 -0400
+	Fri, 13 Sep 2013 14:33:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: kys@microsoft.com, haiyangz@microsoft.com
 Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 11/13] hv: delete vmbus_get_debug_info()
-Date: Fri, 13 Sep 2013 11:32:59 -0700
-Message-Id: <1379097181-23407-12-git-send-email-gregkh@linuxfoundation.org>
+Subject: [PATCH 01/13] hv: use dev_groups for device attributes
+Date: Fri, 13 Sep 2013 11:32:49 -0700
+Message-Id: <1379097181-23407-2-git-send-email-gregkh@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <1379097181-23407-1-git-send-email-gregkh@linuxfoundation.org>
 References: <1379097181-23407-1-git-send-email-gregkh@linuxfoundation.org>
@@ -21,116 +21,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's only used once, only contains 2 function calls, so just make those
-calls directly, deleting the function, and the now unneeded structure
-entirely.
+This patch is the first in a series that moves the hv bus code to use the
+dev_groups field instead of dev_attrs, as dev_attrs is going away in future
+kernel releases.
+
+It moves the id sysfs file to the dev_groups structure, and creates the needed
+show/store functions, instead of relying on one "universal" function for this.
+By doing this, it removes the need for this to be in a temporary structure.
 
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
 Cc: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/hv/channel.c   | 10 ----------
- drivers/hv/vmbus_drv.c | 35 ++++++++++++++++-------------------
- include/linux/hyperv.h |  8 --------
- 3 files changed, 16 insertions(+), 37 deletions(-)
+ drivers/hv/channel.c   |  1 -
+ drivers/hv/vmbus_drv.c | 23 ++++++++++++++++++-----
+ include/linux/hyperv.h |  1 -
+ 3 files changed, 18 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/hv/channel.c b/drivers/hv/channel.c
-index 75c26da3..94d54591 100644
+index 6de6c98c..b58a1785 100644
 --- a/drivers/hv/channel.c
 +++ b/drivers/hv/channel.c
-@@ -60,16 +60,6 @@ static void vmbus_setevent(struct vmbus_channel *channel)
- }
+@@ -69,7 +69,6 @@ void vmbus_get_debug_info(struct vmbus_channel *channel,
+ 	u8 monitor_group = (u8)channel->offermsg.monitorid / 32;
+ 	u8 monitor_offset = (u8)channel->offermsg.monitorid % 32;
  
- /*
-- * vmbus_get_debug_info -Retrieve various channel debug info
-- */
--void vmbus_get_debug_info(struct vmbus_channel *channel,
--			      struct vmbus_channel_debug_info *debuginfo)
--{
--	hv_ringbuffer_get_debuginfo(&channel->inbound, &debuginfo->inbound);
--	hv_ringbuffer_get_debuginfo(&channel->outbound, &debuginfo->outbound);
--}
--
--/*
-  * vmbus_open - Open the specified channel.
-  */
- int vmbus_open(struct vmbus_channel *newchannel, u32 send_ringbuffer_size,
+-	debuginfo->relid = channel->offermsg.child_relid;
+ 	debuginfo->state = channel->state;
+ 	memcpy(&debuginfo->interfacetype,
+ 	       &channel->offermsg.offer.if_type, sizeof(uuid_le));
 diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
-index 73cb456e..62d9311b 100644
+index f9fe46f5..5c21b228 100644
 --- a/drivers/hv/vmbus_drv.c
 +++ b/drivers/hv/vmbus_drv.c
-@@ -63,29 +63,26 @@ static int vmbus_exists(void)
- static void get_channel_info(struct hv_device *device,
- 			     struct hv_device_info *info)
- {
--	struct vmbus_channel_debug_info debug_info;
-+	struct hv_ring_buffer_debug_info inbound;
-+	struct hv_ring_buffer_debug_info outbound;
+@@ -47,7 +47,6 @@ static struct completion probe_event;
+ static int irq;
  
- 	if (!device->channel)
- 		return;
+ struct hv_device_info {
+-	u32 chn_id;
+ 	u32 chn_state;
+ 	uuid_le chn_type;
+ 	uuid_le chn_instance;
+@@ -83,7 +82,6 @@ static void get_channel_info(struct hv_device *device,
  
--	vmbus_get_debug_info(device->channel, &debug_info);
--
--	info->inbound.int_mask = debug_info.inbound.current_interrupt_mask;
--	info->inbound.read_idx = debug_info.inbound.current_read_index;
--	info->inbound.write_idx = debug_info.inbound.current_write_index;
--	info->inbound.bytes_avail_toread =
--		debug_info.inbound.bytes_avail_toread;
--	info->inbound.bytes_avail_towrite =
--		debug_info.inbound.bytes_avail_towrite;
--
--	info->outbound.int_mask =
--		debug_info.outbound.current_interrupt_mask;
--	info->outbound.read_idx = debug_info.outbound.current_read_index;
--	info->outbound.write_idx = debug_info.outbound.current_write_index;
--	info->outbound.bytes_avail_toread =
--		debug_info.outbound.bytes_avail_toread;
--	info->outbound.bytes_avail_towrite =
--		debug_info.outbound.bytes_avail_towrite;
-+	hv_ringbuffer_get_debuginfo(&device->channel->inbound, &inbound);
-+	hv_ringbuffer_get_debuginfo(&device->channel->outbound, &outbound);
-+
-+	info->inbound.int_mask = inbound.current_interrupt_mask;
-+	info->inbound.read_idx = inbound.current_read_index;
-+	info->inbound.write_idx = inbound.current_write_index;
-+	info->inbound.bytes_avail_toread = inbound.bytes_avail_toread;
-+	info->inbound.bytes_avail_towrite = inbound.bytes_avail_towrite;
-+
-+	info->outbound.int_mask = outbound.current_interrupt_mask;
-+	info->outbound.read_idx = outbound.current_read_index;
-+	info->outbound.write_idx = outbound.current_write_index;
-+	info->outbound.bytes_avail_toread = outbound.bytes_avail_toread;
-+	info->outbound.bytes_avail_towrite = outbound.bytes_avail_towrite;
+ 	vmbus_get_debug_info(device->channel, &debug_info);
+ 
+-	info->chn_id = debug_info.relid;
+ 	info->chn_state = debug_info.state;
+ 	memcpy(&info->chn_type, &debug_info.interfacetype,
+ 	       sizeof(uuid_le));
+@@ -156,8 +154,6 @@ static ssize_t vmbus_show_device_attr(struct device *dev,
+ 		ret = sprintf(buf, "vmbus:%s\n", alias_name);
+ 	} else if (!strcmp(dev_attr->attr.name, "state")) {
+ 		ret = sprintf(buf, "%d\n", device_info->chn_state);
+-	} else if (!strcmp(dev_attr->attr.name, "id")) {
+-		ret = sprintf(buf, "%d\n", device_info->chn_id);
+ 	} else if (!strcmp(dev_attr->attr.name, "out_intr_mask")) {
+ 		ret = sprintf(buf, "%d\n", device_info->outbound.int_mask);
+ 	} else if (!strcmp(dev_attr->attr.name, "out_read_index")) {
+@@ -204,9 +200,25 @@ static ssize_t vmbus_show_device_attr(struct device *dev,
+ 	return ret;
  }
  
- #define VMBUS_ALIAS_LEN ((sizeof((struct hv_vmbus_device_id *)0)->guid) * 2)
-diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
-index 332e80ce..c0e8faf4 100644
---- a/include/linux/hyperv.h
-+++ b/include/linux/hyperv.h
-@@ -899,11 +899,6 @@ enum vmbus_channel_state {
- 	CHANNEL_OPENED_STATE,
++static ssize_t id_show(struct device *dev, struct device_attribute *dev_attr,
++		       char *buf)
++{
++	struct hv_device *hv_dev = device_to_hv_device(dev);
++
++	if (!hv_dev->channel)
++		return -ENODEV;
++	return sprintf(buf, "%d\n", hv_dev->channel->offermsg.child_relid);
++}
++static DEVICE_ATTR_RO(id);
++
++static struct attribute *vmbus_attrs[] = {
++	&dev_attr_id.attr,
++	NULL,
++};
++ATTRIBUTE_GROUPS(vmbus);
++
+ /* Set up per device attributes in /sys/bus/vmbus/devices/<bus device> */
+ static struct device_attribute vmbus_device_attrs[] = {
+-	__ATTR(id, S_IRUGO, vmbus_show_device_attr, NULL),
+ 	__ATTR(state, S_IRUGO, vmbus_show_device_attr, NULL),
+ 	__ATTR(class_id, S_IRUGO, vmbus_show_device_attr, NULL),
+ 	__ATTR(device_id, S_IRUGO, vmbus_show_device_attr, NULL),
+@@ -384,6 +396,7 @@ static struct bus_type  hv_bus = {
+ 	.probe =		vmbus_probe,
+ 	.uevent =		vmbus_uevent,
+ 	.dev_attrs =	vmbus_device_attrs,
++	.dev_groups =		vmbus_groups,
  };
  
--struct vmbus_channel_debug_info {
--	struct hv_ring_buffer_debug_info inbound;
--	struct hv_ring_buffer_debug_info outbound;
--};
--
- /*
-  * Represents each channel msg on the vmbus connection This is a
-  * variable-size data structure depending on the msg type itself
-@@ -1169,9 +1164,6 @@ extern int vmbus_recvpacket_raw(struct vmbus_channel *channel,
- 				     u64 *requestid);
+ static const char *driver_name = "hyperv";
+diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
+index a3b8b2e2..45e9b65e 100644
+--- a/include/linux/hyperv.h
++++ b/include/linux/hyperv.h
+@@ -900,7 +900,6 @@ enum vmbus_channel_state {
+ };
  
- 
--extern void vmbus_get_debug_info(struct vmbus_channel *channel,
--				     struct vmbus_channel_debug_info *debug);
--
- extern void vmbus_ontimer(unsigned long data);
- 
- struct hv_dev_port_info {
+ struct vmbus_channel_debug_info {
+-	u32 relid;
+ 	enum vmbus_channel_state state;
+ 	uuid_le interfacetype;
+ 	uuid_le interface_instance;
 -- 
 1.8.4.3.gca3854a
 
