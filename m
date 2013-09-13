@@ -1,117 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab3IMHQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 03:16:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51316 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752157Ab3IMHQ6 (ORCPT
+	id S1755361Ab3IMHUH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 03:20:07 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:60164 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751932Ab3IMHUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 03:16:58 -0400
-Message-ID: <5232BBE1.5030509@canonical.com>
-Date: Fri, 13 Sep 2013 09:16:49 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	Fri, 13 Sep 2013 03:20:03 -0400
 MIME-Version: 1.0
-To: Thomas Hellstrom <thellstrom@vmware.com>
-CC: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Peter Zijlstra <peterz@infradead.org>, Dave Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [BUG] completely bonkers use of set_need_resched + VM_FAULT_NOPAGE
-References: <20130912150645.GZ31370@twins.programming.kicks-ass.net> <CAKMK7uFF2GkYapa2_DLv4WYAd0t+POaT+Vy9HG=HQhzMmtH9nA@mail.gmail.com> <5231E18D.7070306@canonical.com> <5231EF5A.7010901@vmware.com> <52323734.4070908@canonical.com> <5232B44C.9010408@vmware.com>
-In-Reply-To: <5232B44C.9010408@vmware.com>
+In-Reply-To: <20130912145651.GJ11227@lee--X1>
+References: <1370521041-32318-1-git-send-email-lee.jones@linaro.org>
+	<1370521041-32318-22-git-send-email-lee.jones@linaro.org>
+	<CACRpkdY2KOxX=oA7i9GUnzpwRKiK2rXqTBPVpg+zW082f2TJdg@mail.gmail.com>
+	<20130821101448.GJ29850@lee--X1>
+	<CACRpkdYjvFTJAUL6xKxjkVd_v=DHHRkswoB_eq0Npqj5Sw23KQ@mail.gmail.com>
+	<20130822092130.GB22023@lee--X1>
+	<CACRpkdYLJdmhCqXpQ0s5nbxRoFdZ3bLn+hxAhkoGHYfvugc=7A@mail.gmail.com>
+	<20130827082326.GE6152@lee--X1>
+	<CACRpkdYvAfEh6UGa7qR_e9ynj3TkPSM2RKtr7Scw7L3p10AgXA@mail.gmail.com>
+	<20130912145651.GJ11227@lee--X1>
+Date: Fri, 13 Sep 2013 09:20:02 +0200
+Message-ID: <CACRpkdbr-Cuz14ZL_AGs4_SgDGQYgbpxQ_NjOakWrpX7gqzssA@mail.gmail.com>
+Subject: Re: [PATCH 21/33] clk: ux500: Add Device Tree support for the PRCC
+ Kernel clock
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 13-09-13 08:44, Thomas Hellstrom schreef:
-> On 09/12/2013 11:50 PM, Maarten Lankhorst wrote:
->> Op 12-09-13 18:44, Thomas Hellstrom schreef:
->>> On 09/12/2013 05:45 PM, Maarten Lankhorst wrote:
->>>> Op 12-09-13 17:36, Daniel Vetter schreef:
->>>>> On Thu, Sep 12, 2013 at 5:06 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->>>>>> So I'm poking around the preemption code and stumbled upon:
->>>>>>
->>>>>> drivers/gpu/drm/i915/i915_gem.c:                set_need_resched();
->>>>>> drivers/gpu/drm/ttm/ttm_bo_vm.c:                        set_need_resched();
->>>>>> drivers/gpu/drm/ttm/ttm_bo_vm.c:                        set_need_resched();
->>>>>> drivers/gpu/drm/udl/udl_gem.c:          set_need_resched();
->>>>>>
->>>>>> All these sites basically do:
->>>>>>
->>>>>>     while (!trylock())
->>>>>>           yield();
->>>>>>
->>>>>> which is a horrible and broken locking pattern.
->>>>>>
->>>>>> Firstly its deadlock prone, suppose the faulting process is a FIFOn+1
->>>>>> task that preempted the lock holder at FIFOn.
->>>>>>
->>>>>> Secondly the implementation is worse than usual by abusing
->>>>>> VM_FAULT_NOPAGE, which is supposed to install a PTE so that the fault
->>>>>> doesn't retry, but you're using it as a get out of fault path. And
->>>>>> you're using set_need_resched() which is not something a driver should
->>>>>> _ever_ touch.
->>>>>>
->>>>>> Now I'm going to take away set_need_resched() -- and while you can
->>>>>> 'reimplement' it using set_thread_flag() you're not going to do that
->>>>>> because it will be broken due to changes to the preempt code.
->>>>>>
->>>>>> So please as to fix ASAP and don't allow anybody to trick you into
->>>>>> merging silly things like that again ;-)
->>>>> The set_need_resched in i915_gem.c:i915_gem_fault can actually be
->>>>> removed. It was there to give the error handler a chance to sneak in
->>>>> and reset the hw/sw tracking when the gpu is dead. That hack goes back
->>>>> to the days when the locking around our error handler was somewhere
->>>>> between nonexistent and totally broken, nowadays we keep things from
->>>>> live-locking by a bit of magic in i915_mutex_lock_interruptible. I'll
->>>>> whip up a patch to rip this out. I'll also check that our testsuite
->>>>> properly exercises this path (needs a bit of work on a quick look for
->>>>> better coverage).
->>>>>
->>>>> The one in ttm is just bonghits to shut up lockdep: ttm can recurse
->>>>> into it's own pagefault handler and then deadlock, the trylock just
->>>>> keeps lockdep quiet. We've had that bug arise in drm/i915 due to some
->>>>> fun userspace did and now have testcases for them. The right solution
->>>>> to fix this is to use copy_to|from_user_atomic in ttm everywhere it
->>>>> holds locks and have slowpaths which drops locks, copies stuff into a
->>>>> temp allocation and then continues. At least that's how we've fixed
->>>>> all those inversions in i915-gem. I'm not volunteering to fix this ;-)
->>>> Ah the case where a mmap'd address is passed to the execbuf ioctl? :P
->>>>
->>>> Fine I'll look into it a bit, hopefully before tuesday. Else it might take a bit longer since I'll be on my way to plumbers..
->>> I think a possible fix would be if fault() were allowed to return an error and drop the mmap_sem() before returning.
->>>
->>> Otherwise we need to track down all copy_to_user / copy_from_user which happen with bo::reserve held.
+On Thu, Sep 12, 2013 at 4:56 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Thu, 12 Sep 2013, Linus Walleij wrote:
+
+>> But if you still don't like this, let me cook a counter-patch so
+>> I can realized on my own how terribly wrong I am...
 >
-> Actually, from looking at the mm code, it seems OK to do the following:
->
-> if (!bo_tryreserve()) {
->     up_read mmap_sem(); // Release the mmap_sem to avoid deadlocks.
->     bo_reserve();               // Wait for the BO to become available (interruptible)
->     bo_unreserve();           // Where is bo_wait_unreserved() when we need it, Maarten :P
->     return VM_FAULT_RETRY; // Go ahead and retry the VMA walk, after regrabbing
-> }
-Is this meant as a jab at me? You're doing locking wrong here! Again!
+> I'm going to yank all of the clk_register_clkdev() calls out
+> imminently anyway, so all those these hiding bugs will soon become
+> apparent in any case. Why don't I place my 'remove ATAGs' patch-set
+> on top of this one and then finally remove the clk_register_clkdev()s
+> and watch the carnage ensue?
 
-> Somebody conveniently added a VM_FAULT_RETRY, but for a different purpose.
->
-> If possible, I suggest to take this route for now to avoid the mess of changing locking order in all TTM drivers, with
-> all give-up-locking slowpaths that comes with it. IIRC it took some time for i915 to get that right, and completely get rid of all lockdep warnings.
-Sorry, but it's still the right thing to do. I can convert nouveau and take a look at radeon. Locking
-slowpaths are easy to test too with CONFIG_DEBUG_WW_MUTEX_SLOWPATH.
-Just because it's harder, doesn't mean we have to avoid doing it.
+So that creates problem for me as maintainer if I need to
+pull or revert some of the patches on top of the stack, all of
+a sudden the file looks horrible. That is why I want every step
+to be as clean a cut as possible.
 
-The might_fault function will verify the usage of mmap_sem with lockdep automatically when PROVE_LOCKING=y.
-This means that any copy_from_user / copy_to_user will always check mmap_sem.
-
-> This will keep the official locking order
-> bo::reserve
-> mmap_sem
-Disagree, fix the order and the trylock and 'wait for unreserved' half assed locking will disappear.
-
-~Maarten
+Yours,
+Linus Walleij
