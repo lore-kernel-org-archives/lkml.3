@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755650Ab3IMWlG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 18:41:06 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:48608 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753932Ab3IMWlD (ORCPT
+	id S1755630Ab3IMWtG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 18:49:06 -0400
+Received: from smtprelay0099.hostedemail.com ([216.40.44.99]:60914 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754990Ab3IMWtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 18:41:03 -0400
-Message-ID: <52339479.6030402@wwwdotorg.org>
-Date: Fri, 13 Sep 2013 16:40:57 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Boris BREZILLON <b.brezillon@overkiz.com>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Richard Genoud <richard.genoud@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH alt 4/4] pinctrl: at91: rework debounce configuration
-References: <1379058213-3245-1-git-send-email-b.brezillon@overkiz.com> <1379058813-3489-1-git-send-email-b.brezillon@overkiz.com>
-In-Reply-To: <1379058813-3489-1-git-send-email-b.brezillon@overkiz.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 13 Sep 2013 18:49:04 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3653:3865:3867:3868:3874:5007:6119:7652:10004:10400:10848:11232:11473:11658:11914:12043:12296:12517:12519:12555:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: salt23_4edd886e62f57
+X-Filterd-Recvd-Size: 2026
+Message-ID: <1379112540.2066.27.camel@joe-AO722>
+Subject: [PATCH] checkpatch: Update seq_<foo> tests
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>, LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 13 Sep 2013 15:49:00 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/2013 01:53 AM, Boris BREZILLON wrote:
-> AT91 SoCs do not support per pin debounce time configuration.
-> Instead you have to configure a debounce time which will be used for all
-> pins of a given bank (PIOA, PIOB, ...).
+seq_vprintf, seq_printf and seq_puts are logging functions
+and should be allowed to exceed the maximium line length.
 
-> diff --git a/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
+Add maximum line length exceptions for these functions.
 
-> +Optional properties for iomux controller:
-> +- atmel,default-debounce-div: array of debounce divisors (one divisor per bank)
-> +  which describes the debounce timing in use for all pins of a given bank
-> +  configured with the DEBOUNCE option (see the following description).
-> +  Debounce timing is obtained with this formula:
-> +  Tdebounce = 2 * (debouncediv + 1) / Fslowclk
-> +  with Fslowclk = 32KHz
-> +
->  Required properties for pin configuration node:
->  - atmel,pins: 4 integers array, represents a group of pins mux and config
->    setting. The format is atmel,pins = <PIN_BANK PIN_BANK_NUM PERIPH CONFIG>.
-> @@ -91,7 +99,6 @@ DEGLITCH	(1 << 2): indicate this pin need deglitch.
->  PULL_DOWN	(1 << 3): indicate this pin need a pull down.
->  DIS_SCHMIT	(1 << 4): indicate this pin need to disable schmit trigger.
->  DEBOUNCE	(1 << 16): indicate this pin need debounce.
-> -DEBOUNCE_VAL	(0x3fff << 17): debounce val.
+Also, suggesting seq_printf conversions to seq_puts
+should be tested for arguments after the format.
 
-This change would break the DT ABI since it removes a feature that's
-already present.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-I suppose it's still up to the Atmel maintainers to decide whether this
-is appropriate, or whether the impact to out-of-tree DT files would be
-problematic.
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 47016c3..c71ba8e 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -323,7 +323,8 @@ our $logFunctions = qr{(?x:
+ 	(?:[a-z0-9]+_){1,2}(?:printk|emerg|alert|crit|err|warning|warn|notice|info|debug|dbg|vdbg|devel|cont|WARN)(?:_ratelimited|_once|)|
+ 	WARN(?:_RATELIMIT|_ONCE|)|
+ 	panic|
+-	MODULE_[A-Z_]+
++	MODULE_[A-Z_]+|
++	seq_vprintf|seq_printf|seq_puts
+ )};
+ 
+ our $signature_tags = qr{(?xi:
+@@ -3903,9 +3904,9 @@ sub string_find_replace {
+ 		}
+ 
+ # check for seq_printf uses that could be seq_puts
+-		if ($line =~ /\bseq_printf\s*\(/) {
++		if ($sline =~ /\bseq_printf\s*\(.*"\s*\)\s*;\s*$/) {
+ 			my $fmt = get_quoted_string($line, $rawline);
+-			if ($fmt !~ /[^\\]\%/) {
++			if ($fmt ne "" && $fmt !~ /[^\\]\%/) {
+ 				if (WARN("PREFER_SEQ_PUTS",
+ 					 "Prefer seq_puts to seq_printf\n" . $herecurr) &&
+ 				    $fix) {
 
-Assuming the DT ABI can be broken, I think I'd prefer to do so, rather
-than take "non-alt" patch 4/4, since a per-pin DEBOUNCE_VAL clearly
-doesn't correctly model the HW, assuming the patch description is
-correct. I don't think arguments re: the generic pinconf debounce
-property hold; if the Linux-specific/internal generic property doesn't
-apply, the DT binding should not be bent to adjust to it, but should
-rather still represent the HW itself.
+
