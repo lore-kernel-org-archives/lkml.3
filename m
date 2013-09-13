@@ -1,72 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754864Ab3IMS3h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 14:29:37 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:44703 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753384Ab3IMS3g (ORCPT
+	id S1754190Ab3IMSdM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 14:33:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37205 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529Ab3IMSdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 14:29:36 -0400
-Message-ID: <1379096972.2197.31.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: GPT detection regression in efi.c from commit 27a7c64
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Karel Zak <kzak@redhat.com>
-Cc: Matt Porter <matt.porter@linaro.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        torvalds@linux-foundation.org
-Date: Fri, 13 Sep 2013 11:29:32 -0700
-In-Reply-To: <20130913181720.GA1614@x2.net.home>
-References: <20130913145033.GA8502@ohporter.com>
-	 <1379089736.2197.14.camel@buesod1.americas.hpqcorp.net>
-	 <52334506.9030802@linaro.org>
-	 <1379095648.2197.27.camel@buesod1.americas.hpqcorp.net>
-	 <523354F3.70001@linaro.org> <20130913181720.GA1614@x2.net.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 13 Sep 2013 14:33:11 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: kys@microsoft.com, haiyangz@microsoft.com
+Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 00/13] hv: clean up dev_attr usage
+Date: Fri, 13 Sep 2013 11:32:48 -0700
+Message-Id: <1379097181-23407-1-git-send-email-gregkh@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.4.3.gca3854a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-09-13 at 20:17 +0200, Karel Zak wrote:
-> On Fri, Sep 13, 2013 at 02:09:55PM -0400, Matt Porter wrote:
-> > >Come to think of it, we do have a long existing workaround: the
-> > >force_gpt option. Setting it will bypass any MBR checking
-> > >(is_pmbr_valid(), specifically).
-> > 
-> > Yes, that's what I used at first after seeing what the problem was. But then
-> > I opted to fix my PMBR.
-> > 
-> > I felt like it was a regression since it required a new option passed on the
-> > cmdline.
-> 
->  Yep, it is *regression* and I guess Davidlohr is going to fix it asap :-)
+Hi,
 
-I was doing a git revert, but what would you guys think of keeping the
-check but making it more flexible? Instead of enforcing the minimum,
-just make sure that the size_in_lba is either the whole disk or 2 TiB,
-that should take care of Matt's issue.
+Here's a set of 13 patches to get rid of the dev_attrs use in the hv bus
+code, as it will be going away soon.  It's _way_ bigger than all other
+conversions I've had to do so far in the kernel, as you were using a
+"multiplexor" function for all of these files.
 
-diff --git a/block/partitions/efi.c b/block/partitions/efi.c
-index 1a5ec9a..df2fca1 100644
---- a/block/partitions/efi.c
-+++ b/block/partitions/efi.c
-@@ -220,8 +220,8 @@ check_hybrid:
-         * Hybrid MBRs do not necessarily comply with this.
-         */
-        if (ret == GPT_MBR_PROTECTIVE) {
--               if (le32_to_cpu(mbr->partition_record[part].size_in_lba) !=
--                   min((uint32_t) total_sectors - 1, 0xFFFFFFFF))
-+               if (le32_to_cpu(mbr->partition_record[part].size_in_lba) != (uint32_t) total_sectors - 1 ||
-+                   le32_to_cpu(mbr->partition_record[part].size_in_lba) != 0xFFFFFFFF)
-                        ret = 0;
-        }
- done:
+So, I've broken it up into individual show/store sysfs functions, and
+cleaned up a bunch of debug structures that aren't needed and shouldn't
+be exported to the rest of the kernel.
 
-Karel, I guess any changes that we do here should apply to fdisk :)
+I've also fixed up some void * usage in the hv core, in patch 07, to
+make things simpler and not so "magic" when dealing with these pages.
+If you could review that one closely to ensure I didn't mess anything
+up, I would appreciate it.
 
-Thanks,
-Davidlohr
+Also, are all of these files really needed for sysfs?  They seem to be
+all debugging stuff, shouldn't they go into debugfs if you really
+need/use them anymore?
+
+KY, could you test these out?  I don't have access to a hv system at the
+moment.  I'll wait for your ack before applying them to any of my trees.
+
+thanks,
+
+greg k-h
 
