@@ -1,108 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757616Ab3IMPmo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 11:42:44 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:59094 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756618Ab3IMPml (ORCPT
+	id S1757459Ab3IMPoy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 11:44:54 -0400
+Received: from a9-66.smtp-out.amazonses.com ([54.240.9.66]:51001 "EHLO
+	a9-66.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755753Ab3IMPow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 11:42:41 -0400
-X-Nat-Received: from [202.181.97.72]:55883 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1379086952.2164
-To: khalid.aziz@oracle.com
-Cc: jbottomley@parallels.com, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: [PATCH] SCSI: buslogic: Added check for DMA mapping errors (was Re:[BusLogic] DMA-API: device driver failed to check map error)
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201309101503.ECC18788.SOOVOJLFtQHMFF@I-love.SAKURA.ne.jp>
-	<1378816604.6973.53.camel@dabdike.int.hansenpartnership.com>
-	<1379004807.10738.3.camel@concerto>
-In-Reply-To: <1379004807.10738.3.camel@concerto>
-Message-Id: <201309140042.GEI73439.QHSJtOFFVFOLOM@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Sat, 14 Sep 2013 00:42:19 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 13092013 #11048058, status: clean
+	Fri, 13 Sep 2013 11:44:52 -0400
+Date: Fri, 13 Sep 2013 15:15:59 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [RFC] Restrict kernel spawning of threads to a specified set of
+ cpus.
+In-Reply-To: <20130913144008.GF21832@twins.programming.kicks-ass.net>
+Message-ID: <0000014117e497c1-6b04f29f-c4f8-4178-b69b-aa2233ba343b-000000@email.amazonses.com>
+References: <20130912141625.GA23357@somewhere> <00000141128d759a-44dcacb6-8f48-4f9b-8381-d14003bd6da1-000000@email.amazonses.com> <20130912143137.GA23839@somewhere> <0000014112a921ae-51d171bf-e8d4-4569-bd20-94dabda2d5ba-000000@email.amazonses.com>
+ <20130912151102.GB23839@somewhere> <alpine.DEB.2.02.1309121030390.21473@gentwo.org> <0000014112d66287-d0abaeb1-71ff-48a0-8740-f984d47400a7-000000@email.amazonses.com> <20130912183023.GA25386@somewhere> <20130913092553.GL31370@twins.programming.kicks-ass.net>
+ <00000141179a5b1f-b94a8394-9e98-400c-ae7f-59cdcfce60a6-000000@email.amazonses.com> <20130913144008.GF21832@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.09.13-54.240.9.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Khalid Aziz wrote:
-> Added check for DMA mapping errors for request sense data
-> buffer. Checking for mapping error can avoid potential wild
-> writes. This patch was prompted by the warning from
-> dma_unmap when kernel is compiled with CONFIG_DMA_API_DEBUG.
+On Fri, 13 Sep 2013, Peter Zijlstra wrote:
 
-This patch fixes CONFIG_DMA_API_DEBUG warning.
-But excuse me, is this error path correct?
+> No, creating a parent for them closes the race. It should also makes it
+> lots easier to find the kids by using ppid.
 
-> @@ -309,16 +309,17 @@ static struct blogic_ccb *blogic_alloc_ccb(struct blogic_adapter *adapter)
->    blogic_dealloc_ccb deallocates a CCB, returning it to the Host Adapter's
->    free list.  The Host Adapter's Lock should already have been acquired by the
->    caller.
->  */
-> 
-> -static void blogic_dealloc_ccb(struct blogic_ccb *ccb)
-> +static void blogic_dealloc_ccb(struct blogic_ccb *ccb, int dma_unmap)
->  {
->         struct blogic_adapter *adapter = ccb->adapter;
-> 
->         scsi_dma_unmap(ccb->command);
+Ok if all spawning is done from kthreadd then that works.
 
-blogic_dealloc_ccb() uses "ccb->command". But
+> > A kernel parameter would allow a clean bootup with threads
+> > starting out on the specific processors we want them to.
+>
+> Blergh, no. A kernel should boot, a kernel should allow you to configure
+> things, a kernel should not be limited to boot time settings.
 
-> -       pci_unmap_single(adapter->pci_device, ccb->sensedata,
-> +       if (dma_unmap)
-> +               pci_unmap_single(adapter->pci_device, ccb->sensedata,
->                          ccb->sense_datalen, PCI_DMA_FROMDEVICE);
-> 
->         ccb->command = NULL;
->         ccb->status = BLOGIC_CCB_FREE;
->         ccb->next = adapter->free_ccbs;
-> @@ -3177,13 +3179,21 @@ static int blogic_qcmd_lck(struct scsi_cmnd *command,
->                         ccb->legacy_tag = queuetag;
->                 }
->         }
->         memcpy(ccb->cdb, cdb, cdblen);
->         ccb->sense_datalen = SCSI_SENSE_BUFFERSIZE;
-> -       ccb->sensedata = pci_map_single(adapter->pci_device,
-> +       sense_buf = pci_map_single(adapter->pci_device,
->                                 command->sense_buffer, ccb->sense_datalen,
->                                 PCI_DMA_FROMDEVICE);
-> +       if (dma_mapping_error(&adapter->pci_device->dev, sense_buf)) {
-> +               blogic_err("DMA mapping for sense data buffer failed\n",
-> +                               adapter);
-> +               scsi_dma_map(command);
-> +               blogic_dealloc_ccb(ccb, 0);
+The kernel is not limited but can decide where to place threads. The
+threads spawned for general user space services are limited to a set of
+cpus unless there is an explict override. The intend is to keep as much
+processing as possible away from the notick processors.
 
-when was "ccb->command = command;" called before calling blogic_dealloc_ccb()?
 
-> +               return SCSI_MLQUEUE_HOST_BUSY;
-> +       }
-> +       ccb->sensedata = sense_buf;
->         ccb->command = command;
->         command->scsi_done = comp_cb;
->         if (blogic_multimaster_type(adapter)) {
->                 /*
->                    Place the CCB in an Outgoing Mailbox. The higher levels
 
-Also, what happens if "scsi_dma_map(command);" returned -ENOMEM ?
-If you are calling scsi_dma_map() because blogic_dealloc_ccb() calls
-scsi_dma_unmap(), why can't we do like
 
-  {
-          struct blogic_adapter *adapter = ccb->adapter;
-          ccb->command = NULL;
-          ccb->status = BLOGIC_CCB_FREE;
-          ccb->next = adapter->free_ccbs;
-          adapter->free_ccbs = ccb;
-  }
-
-instead of
-
-  scsi_dma_map(command);
-  blogic_dealloc_ccb(ccb);
-
-?
