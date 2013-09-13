@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108Ab3IMJMu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 05:12:50 -0400
-Received: from mga09.intel.com ([134.134.136.24]:43022 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751487Ab3IMJMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 05:12:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,897,1371106800"; 
-   d="scan'208";a="377626404"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] mei: me: downgrade "suspend" message to debug level
-Thread-Topic: [PATCH] mei: me: downgrade "suspend" message to debug level
-Thread-Index: AQHOr+zMZDFpNkqohU+J51+VgPGZDJnCSycAgAEXrMA=
-Date: Fri, 13 Sep 2013 09:12:44 +0000
-Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AEC3CE1@HASMSX106.ger.corp.intel.com>
-References: <1379013442.11313.5.camel@x220.thuisdomein>
- <1379014276.11313.9.camel@x220.thuisdomein>
-In-Reply-To: <1379014276.11313.9.camel@x220.thuisdomein>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.13]
-Content-Type: text/plain; charset="utf-8"
+	id S1753035Ab3IMJSh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 05:18:37 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:39064 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678Ab3IMJSg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 05:18:36 -0400
+Date: Fri, 13 Sep 2013 12:17:11 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, Minchan Kim <minchan@kernel.org>,
+        driverdev-devel@linuxdriverproject.org,
+        Jerome Marchand <jmarchan@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] staging: zram: fix handle_pending_slot_free() and
+ zram_reset_device() race
+Message-ID: <20130913091710.GA2225@swordfish>
+References: <20130906151255.GE2238@swordfish.minsk.epam.com>
+ <20130909123329.GZ19256@mwanda>
+ <20130909124942.GA2221@swordfish.minsk.epam.com>
+ <20130909132124.GY6329@mwanda>
+ <522DD125.1030607@redhat.com>
+ <522DF2DF.5060407@redhat.com>
+ <20130910143416.GC2270@swordfish>
+ <20130910145802.GD19256@mwanda>
+ <20130910231250.GA2450@swordfish>
+ <20130912221224.GA11463@kroah.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130912221224.GA11463@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8D9DKvS019188
 
-
-> >
-> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> > ---
-> > Lightly tested (on top of v3.10.10, actually). Should apply cleanly to
-> > v3.11 or current master.
-> >
-> > Perhaps a better fix is to remove this message entirely.
+On (09/12/13 15:12), Greg KH wrote:
+> On Wed, Sep 11, 2013 at 02:12:50AM +0300, Sergey Senozhatsky wrote:
+> > Dan Carpenter noted that handle_pending_slot_free() is racy with
+> > zram_reset_device(). Take write init_lock in zram_slot_free(), thus
+> > preventing any concurrent zram_slot_free(), zram_bvec_rw() or
+> > zram_reset_device(). This also allows to safely check zram->init_done
+> > in handle_pending_slot_free().
+> > 
+> > Initial intention was to minimze number of handle_pending_slot_free()
+> > call from zram_bvec_rw(), which were slowing down READ requests due to
+> > slot_free_lock spin lock. Jerome Marchand suggested to remove
+> > handle_pending_slot_free() from zram_bvec_rw().
+> > 
+> > Link: https://lkml.org/lkml/2013/9/9/172
+> > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 > 
-> Rechecking my logs I noticed a "stop" error on module unload. That
-> message could be downgraded to debug level too. But it could also be
-> removed. If Tomas could say what is preferable I'll send a second
-> version of this trivial patch.
+> I have multiple versions of this and the other zram patches from you,
+> with no idea of which to accept.
 
-I prefer to have it on debug level. 
-Thanks
-Tomas
- 
+yes, please, drop all patches. I did not Cc you in these two
+patches to stop spamming your inbox with multiply versions.
+I will send them back to you as soon as I get positive feedback.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+> So, I'm going to drop them all, can you please resend what you wish to
+> submit, and in the future, be a bit more obvious with your "vN"
+> markings?
+>
+
+sorry for that.
+
+	-ss
+
+> thanks,
+> 
+> greg k-h
+> 
