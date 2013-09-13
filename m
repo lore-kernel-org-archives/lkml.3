@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839Ab3IMSyg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 14:54:36 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:58853 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753471Ab3IMSyd (ORCPT
+	id S1754338Ab3IMSzJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 14:55:09 -0400
+Received: from mail-1.atlantis.sk ([80.94.52.57]:36520 "EHLO
+	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754125Ab3IMSzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 14:54:33 -0400
-From: Mark Brown <broonie@kernel.org>
-To: Liam Girdwood <lgirdwood@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        Mark Brown <broonie@linaro.org>
-Date: Fri, 13 Sep 2013 19:54:05 +0100
-Message-Id: <1379098445-22163-2-git-send-email-broonie@kernel.org>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1379098445-22163-1-git-send-email-broonie@kernel.org>
-References: <1379098445-22163-1-git-send-email-broonie@kernel.org>
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH 2/2] regulator: core: Remove unused regulator_use_dummy_regulator()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Fri, 13 Sep 2013 14:55:05 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: linux-ide@vger.kernel.org
+Subject: Re: [PATCH] pata_isapnp: Don't use invalid I/O ports
+Date: Fri, 13 Sep 2013 20:54:37 +0200
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: linux-kernel@vger.kernel.org
+References: <1379019689-21467-1-git-send-email-linux@rainbow-software.org>
+In-Reply-To: <1379019689-21467-1-git-send-email-linux@rainbow-software.org>
+X-KMail-QuotePrefix: > 
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201309132054.38278.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@linaro.org>
+On Thursday 12 September 2013 23:01:29 Ondrej Zary wrote:
+> The test for 2nd I/O port validity is broken (reversed):
+> On devices with no control port, the driver attempts to use invalid port 0,
+> resulting in logs full of bad_io_access errors.
+> On devices with control port, the driver does not use it.
+>
+> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> ---
+>  drivers/ata/pata_isapnp.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/ata/pata_isapnp.c b/drivers/ata/pata_isapnp.c
+> index 4bceb88..b33d1f9 100644
+> --- a/drivers/ata/pata_isapnp.c
+> +++ b/drivers/ata/pata_isapnp.c
+> @@ -78,7 +78,7 @@ static int isapnp_init_one(struct pnp_dev *idev, const
+> struct pnp_device_id *dev
+>
+>  	ap->ioaddr.cmd_addr = cmd_addr;
+>
+> -	if (pnp_port_valid(idev, 1) == 0) {
+> +	if (pnp_port_valid(idev, 1)) {
+>  		ctl_addr = devm_ioport_map(&idev->dev,
+>  					   pnp_port_start(idev, 1), 1);
+>  		ap->ioaddr.altstatus_addr = ctl_addr;
 
-No boards have used this functionality and the new default of providing
-dummy regulators by default provides a better solution to the problem it
-was trying to solve.
+With this patch, the ATA port works fine if there is a device connected to it. 
+However, it takes ages to boot if there are no devices connected. Looks like 
+the driver retries IDENTIFY command for both slave and master drives in a 
+hope that the devices are there.
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
----
- drivers/regulator/core.c          | 17 -----------------
- include/linux/regulator/machine.h |  5 -----
- 2 files changed, 22 deletions(-)
+log:
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index c9740b5..b698e2b 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -54,7 +54,6 @@ static LIST_HEAD(regulator_list);
- static LIST_HEAD(regulator_map_list);
- static LIST_HEAD(regulator_ena_gpio_list);
- static bool has_full_constraints;
--static bool board_wants_dummy_regulator;
- 
- static struct dentry *debugfs_root;
- 
-@@ -3432,22 +3431,6 @@ void regulator_has_full_constraints(void)
- EXPORT_SYMBOL_GPL(regulator_has_full_constraints);
- 
- /**
-- * regulator_use_dummy_regulator - Provide a dummy regulator when none is found
-- *
-- * Calling this function will cause the regulator API to provide a
-- * dummy regulator to consumers if no physical regulator is found,
-- * allowing most consumers to proceed as though a regulator were
-- * configured.  This allows systems such as those with software
-- * controllable regulators for the CPU core only to be brought up more
-- * readily.
-- */
--void regulator_use_dummy_regulator(void)
--{
--	board_wants_dummy_regulator = true;
--}
--EXPORT_SYMBOL_GPL(regulator_use_dummy_regulator);
--
--/**
-  * rdev_get_drvdata - get rdev regulator driver data
-  * @rdev: regulator
-  *
-diff --git a/include/linux/regulator/machine.h b/include/linux/regulator/machine.h
-index 999b20c..a9f7c55 100644
---- a/include/linux/regulator/machine.h
-+++ b/include/linux/regulator/machine.h
-@@ -193,15 +193,10 @@ int regulator_suspend_finish(void);
- 
- #ifdef CONFIG_REGULATOR
- void regulator_has_full_constraints(void);
--void regulator_use_dummy_regulator(void);
- #else
- static inline void regulator_has_full_constraints(void)
- {
- }
--
--static inline void regulator_use_dummy_regulator(void)
--{
--}
- #endif
- 
- #endif
+[    7.692344] pata_isapnp 01:01.02: [io  0x01e8-0x01ef]
+[    7.692474] pata_isapnp 01:01.02: [io  0x0168-0x016f]
+[    7.692644] pata_isapnp 01:01.02: [irq 10]
+[    7.695012] pata_isapnp 01:01.02: activated
+[    7.751153] scsi2 : pata_isapnp
+[    7.751781] ata3: PATA max PIO0 cmd 0x168 ctl 0x0 irq 10
+[   12.751446] ata3.01: qc timeout (cmd 0xec)
+[   12.751571] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   22.752270] ata3.01: qc timeout (cmd 0xec)
+[   22.752396] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   52.754737] ata3.01: qc timeout (cmd 0xec)
+[   52.754861] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   57.755149] ata3.00: qc timeout (cmd 0xec)
+[   57.755275] ata3.00: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   67.755974] ata3.00: qc timeout (cmd 0xec)
+[   67.756099] ata3.00: failed to IDENTIFY (I/O error, err_mask=0x5)
+
 -- 
-1.8.4.rc3
-
+Ondrej Zary
