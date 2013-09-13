@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933818Ab3IMOJa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 10:09:30 -0400
-Received: from mga01.intel.com ([192.55.52.88]:22867 "EHLO mga01.intel.com"
+	id S933864Ab3IMOJc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 10:09:32 -0400
+Received: from mga03.intel.com ([143.182.124.21]:47774 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932155Ab3IMNGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932153Ab3IMNGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 13 Sep 2013 09:06:30 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,898,1371106800"; 
-   d="scan'208";a="401163462"
+   d="scan'208";a="360021151"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Alex Thorlton <athorlton@sgi.com>, Ingo Molnar <mingo@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -30,50 +30,118 @@ Cc: "Eric W . Biederman" <ebiederm@xmission.com>,
         Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 3/9] mm: introduce api for split page table lock for PMD level
-Date: Fri, 13 Sep 2013 16:06:10 +0300
-Message-Id: <1379077576-2472-4-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCH 0/9] split page table lock for PMD tables
+Date: Fri, 13 Sep 2013 16:06:07 +0300
+Message-Id: <1379077576-2472-1-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1379077576-2472-1-git-send-email-kirill.shutemov@linux.intel.com>
+In-Reply-To: <20130910074748.GA2971@gmail.com>
 References: <20130910074748.GA2971@gmail.com>
- <1379077576-2472-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Basic api, backed by mm->page_table_lock for now. Actual implementation
-will be added later.
+Alex Thorlton noticed that some massivly threaded workloads work poorly,
+if THP enabled. This patchset fixes this by introducing split page table
+lock for PMD tables. hugetlbfs is not covered yet.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- include/linux/mm.h | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+This patchset is based on work by Naoya Horiguchi.
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 6cf8ddb..d4361e7 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1294,6 +1294,19 @@ static inline void pgtable_page_dtor(struct page *page)
- 	((unlikely(pmd_none(*(pmd))) && __pte_alloc_kernel(pmd, address))? \
- 		NULL: pte_offset_kernel(pmd, address))
- 
-+static inline spinlock_t *huge_pmd_lockptr(struct mm_struct *mm, pmd_t *pmd)
-+{
-+	return &mm->page_table_lock;
-+}
-+
-+
-+static inline spinlock_t *huge_pmd_lock(struct mm_struct *mm, pmd_t *pmd)
-+{
-+	spinlock_t *ptl = huge_pmd_lockptr(mm, pmd);
-+	spin_lock(ptl);
-+	return ptl;
-+}
-+
- extern void free_area_init(unsigned long * zones_size);
- extern void free_area_init_node(int nid, unsigned long * zones_size,
- 		unsigned long zone_start_pfn, unsigned long *zholes_size);
+Benchmark (from Alex): ftp://shell.sgi.com/collect/appsx_test/pthread_test.tar.gz
+
+THP off:
+--------
+
+ Performance counter stats for './thp_pthread -C 0 -m 0 -c 80 -b 100g' (5 runs):
+
+    1738259.808012 task-clock                #   47.571 CPUs utilized            ( +-  9.49% )
+           147,359 context-switches          #    0.085 K/sec                    ( +-  9.67% )
+                14 cpu-migrations            #    0.000 K/sec                    ( +- 13.25% )
+        24,410,139 page-faults               #    0.014 M/sec                    ( +-  0.00% )
+ 4,149,037,526,252 cycles                    #    2.387 GHz                      ( +-  9.50% )
+ 3,649,839,735,027 stalled-cycles-frontend   #   87.97% frontend cycles idle     ( +-  6.60% )
+ 2,455,558,969,567 stalled-cycles-backend    #   59.18% backend  cycles idle     ( +- 22.92% )
+ 1,434,961,518,604 instructions              #    0.35  insns per cycle
+                                             #    2.54  stalled cycles per insn  ( +- 92.86% )
+   241,472,020,951 branches                  #  138.916 M/sec                    ( +- 91.72% )
+        84,022,172 branch-misses             #    0.03% of all branches          ( +-  3.16% )
+
+      36.540185552 seconds time elapsed                                          ( +- 18.36% )
+
+THP on, no patchset:
+--------------------
+ Performance counter stats for './thp_pthread -C 0 -m 0 -c 80 -b 100g' (5 runs):
+
+    2528378.966949 task-clock                #   50.715 CPUs utilized            ( +- 11.86% )
+           214,063 context-switches          #    0.085 K/sec                    ( +- 11.94% )
+                19 cpu-migrations            #    0.000 K/sec                    ( +- 22.72% )
+            49,226 page-faults               #    0.019 K/sec                    ( +-  0.33% )
+ 6,034,640,598,498 cycles                    #    2.387 GHz                      ( +- 11.91% )
+ 5,685,933,794,081 stalled-cycles-frontend   #   94.22% frontend cycles idle     ( +-  7.67% )
+ 4,414,381,393,353 stalled-cycles-backend    #   73.15% backend  cycles idle     ( +-  2.09% )
+   952,086,804,776 instructions              #    0.16  insns per cycle
+                                             #    5.97  stalled cycles per insn  ( +- 89.59% )
+   166,191,211,974 branches                  #   65.730 M/sec                    ( +- 85.52% )
+        33,341,022 branch-misses             #    0.02% of all branches          ( +-  3.90% )
+
+      49.854741504 seconds time elapsed                                          ( +- 14.76% )
+
+THP on, with patchset:
+----------------------
+
+echo always > /sys/kernel/mm/transparent_hugepage/enabled
+ Performance counter stats for './thp_pthread -C 0 -m 0 -c 80 -b 100g' (5 runs):
+
+    1538763.343568 task-clock                #   45.386 CPUs utilized            ( +-  7.21% )
+           130,469 context-switches          #    0.085 K/sec                    ( +-  7.32% )
+                14 cpu-migrations            #    0.000 K/sec                    ( +- 23.58% )
+            49,299 page-faults               #    0.032 K/sec                    ( +-  0.15% )
+ 3,666,748,502,650 cycles                    #    2.383 GHz                      ( +-  7.25% )
+ 3,330,488,035,212 stalled-cycles-frontend   #   90.83% frontend cycles idle     ( +-  4.70% )
+ 2,383,357,073,990 stalled-cycles-backend    #   65.00% backend  cycles idle     ( +- 16.06% )
+   935,504,610,528 instructions              #    0.26  insns per cycle
+                                             #    3.56  stalled cycles per insn  ( +- 91.16% )
+   161,466,689,532 branches                  #  104.933 M/sec                    ( +- 87.67% )
+        22,602,225 branch-misses             #    0.01% of all branches          ( +-  6.43% )
+
+      33.903917543 seconds time elapsed                                          ( +- 12.57% )
+
+Kirill A. Shutemov (9):
+  mm: rename SPLIT_PTLOCKS to SPLIT_PTE_PTLOCKS
+  mm: convert mm->nr_ptes to atomic_t
+  mm: introduce api for split page table lock for PMD level
+  mm, thp: change pmd_trans_huge_lock() to return taken lock
+  mm, thp: move ptl taking inside page_check_address_pmd()
+  mm, thp: do not access mm->pmd_huge_pte directly
+  mm: convent the rest to new page table lock api
+  mm: implement split page table lock for PMD level
+  x86, mm: enable split page table lock for PMD level
+
+ arch/arm/mm/fault-armv.c            |   6 +-
+ arch/s390/mm/pgtable.c              |  12 +--
+ arch/sparc/mm/tlb.c                 |  12 +--
+ arch/um/defconfig                   |   2 +-
+ arch/x86/Kconfig                    |   4 +
+ arch/x86/include/asm/pgalloc.h      |   8 +-
+ arch/x86/xen/mmu.c                  |   6 +-
+ arch/xtensa/configs/iss_defconfig   |   2 +-
+ arch/xtensa/configs/s6105_defconfig |   2 +-
+ fs/proc/task_mmu.c                  |  15 +--
+ include/linux/huge_mm.h             |  17 +--
+ include/linux/mm.h                  |  51 ++++++++-
+ include/linux/mm_types.h            |  15 ++-
+ kernel/fork.c                       |   6 +-
+ mm/Kconfig                          |  12 ++-
+ mm/huge_memory.c                    | 201 +++++++++++++++++++++---------------
+ mm/memcontrol.c                     |  10 +-
+ mm/memory.c                         |  21 ++--
+ mm/migrate.c                        |   7 +-
+ mm/mmap.c                           |   3 +-
+ mm/mprotect.c                       |   4 +-
+ mm/oom_kill.c                       |   6 +-
+ mm/pgtable-generic.c                |  16 +--
+ mm/rmap.c                           |  13 +--
+ 24 files changed, 280 insertions(+), 171 deletions(-)
+
 -- 
 1.8.4.rc3
 
