@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752939Ab3IMQLR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 12:11:17 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54677 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871Ab3IMQLQ (ORCPT
+	id S1753441Ab3IMQLf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 12:11:35 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:49012 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753037Ab3IMQLe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 12:11:16 -0400
-Date: Fri, 13 Sep 2013 17:10:59 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: rjw@sisk.pl, linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 106/228] cpufreq: integrator: don't initialize part of
-	policy that is set by core too
-Message-ID: <20130913161059.GD12758@n2100.arm.linux.org.uk>
-References: <cover.1379063063.git.viresh.kumar@linaro.org> <6d8d406ebca886e5147191cc8c333d926ef9eb30.1379063063.git.viresh.kumar@linaro.org>
+	Fri, 13 Sep 2013 12:11:34 -0400
+Message-ID: <1379088687.2438.13.camel@bwh-desktop.uk.level5networks.com>
+Subject: Re: [PATCH] [Trivial] remove unnecessary header file inclusion
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: ZHAO Gang <gamerh2o@gmail.com>
+CC: <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Date: Fri, 13 Sep 2013 17:11:27 +0100
+In-Reply-To: <20130913145718.GA2536@will>
+References: <20130913145718.GA2536@will>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6d8d406ebca886e5147191cc8c333d926ef9eb30.1379063063.git.viresh.kumar@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20144.005
+X-TM-AS-Result: No--4.908800-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 13, 2013 at 06:30:52PM +0530, Viresh Kumar wrote:
-> Many common initializations of struct policy are moved to core now and hence
-> this driver doesn't need to do it. This patch removes such code.
-> 
-> Most recent of those changes is to call ->get() in the core after calling
-> ->init().
-> 
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+On Fri, 2013-09-13 at 22:57 +0800, ZHAO Gang wrote:
+> file linux/fib_rules.h doesn't exist, so remove it.
+
+Do you think people wouldn't notice #include of a nonexistent file?  gcc
+is quite good at complaining about them...
+
+It's now called include/uapi/linux/fib_rules.h.
+
+Ben.
+
+> Signed-off-by: ZHAO Gang <gamerh2o@gmail.com>
 > ---
->  drivers/cpufreq/integrator-cpufreq.c | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
+>  include/net/fib_rules.h | 1 -
+>  1 file changed, 1 deletion(-)
 > 
-> diff --git a/drivers/cpufreq/integrator-cpufreq.c b/drivers/cpufreq/integrator-cpufreq.c
-> index 8152a9b..babf3e4 100644
-> --- a/drivers/cpufreq/integrator-cpufreq.c
-> +++ b/drivers/cpufreq/integrator-cpufreq.c
-> @@ -181,10 +181,9 @@ static int integrator_cpufreq_init(struct cpufreq_policy *policy)
->  {
+> diff --git a/include/net/fib_rules.h b/include/net/fib_rules.h
+> index 4b2b557..c816f91 100644
+> --- a/include/net/fib_rules.h
+> +++ b/include/net/fib_rules.h
+> @@ -4,7 +4,6 @@
+>  #include <linux/types.h>
+>  #include <linux/slab.h>
+>  #include <linux/netdevice.h>
+> -#include <linux/fib_rules.h>
+>  #include <net/flow.h>
+>  #include <net/rtnetlink.h>
 >  
->  	/* set default policy and cpuinfo */
-> -	policy->cpuinfo.max_freq = 160000;
-> -	policy->cpuinfo.min_freq = 12000;
-> +	policy->max = policy->cpuinfo.max_freq = 160000;
-> +	policy->min = policy->cpuinfo.min_freq = 12000;
->  	policy->cpuinfo.transition_latency = 1000000; /* 1 ms, assumed */
-> -	policy->cur = policy->min = policy->max = integrator_get(policy->cpu);
 
-This patch actually changes things - the description is misleading.
-Please explain why this change - which results in different values for
-policy->min and policy->max doesn't cause any functional difference.
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
-Thanks.
+
