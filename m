@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820Ab3IMXCF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 19:02:05 -0400
-Received: from mailout3.w2.samsung.com ([211.189.100.13]:14806 "EHLO
+	id S1755951Ab3IMXC6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 19:02:58 -0400
+Received: from mailout3.w2.samsung.com ([211.189.100.13]:14825 "EHLO
 	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755063Ab3IMXCC (ORCPT
+	with ESMTP id S1754990Ab3IMXC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 19:02:02 -0400
-X-AuditID: cbfec37c-b7fd86d00000670b-a7-523399693aa0
-Message-id: <52339968.1020907@samsung.com>
-Date: Fri, 13 Sep 2013 17:02:00 -0600
+	Fri, 13 Sep 2013 19:02:56 -0400
+X-AuditID: cbfec37b-b7fa96d00000716e-f7-5233999fa4b5
+Message-id: <5233999D.9060402@samsung.com>
+Date: Fri, 13 Sep 2013 17:02:53 -0600
 From: Shuah Khan <shuah.kh@samsung.com>
 Reply-to: shuah.kh@samsung.com
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
@@ -20,46 +20,46 @@ Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, stable@vger.kernel.org,
         Shuah Khan <shuah.kh@samsung.com>,
         "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [ 00/46] 3.10.12-stable review
-References: <20130912175721.001906199@linuxfoundation.org>
-In-reply-to: <20130912175721.001906199@linuxfoundation.org>
-Content-type: text/plain; charset=UTF-8; format=flowed
+Subject: Re: [ 00/23] 3.4.62-stable review
+References: <20130912174451.748805761@linuxfoundation.org>
+In-reply-to: <20130912174451.748805761@linuxfoundation.org>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
 Content-transfer-encoding: 7bit
 X-Originating-IP: [105.144.21.63]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsVy+t9hX92smcZBBvc2MlvMWb+GzaJ58Xo2
-	i8u75rBZfP3pYLFg4yNGi0d9b9kd2Dx2zrrL7nFixm8Wj/1z17B7fN4kF8ASxWWTkpqTWZZa
-	pG+XwJWxdMEb1oJ33BXHu26yNTCe5Oxi5OSQEDCRODL5AxOELSZx4d56ti5GLg4hgWWMEt8u
-	r4ByepkkZm88zQzhbGKUmPdjAStIC6+AlsTKGefBbBYBVYkDtyHibALqEp9f72AHsYUE5CSa
-	lqxmBrFFBSIkVi55ANUrKPFj8j0WEFtEwFii/+wssHpmgWOMEgubTUBsYQFtiaUb/jNCzLGS
-	OHr9EZjNKWAtMf/wLah6M4lHLeuYIWx5ic1r3jJD1CtL/Ll8Cug1DqDXFCW2r7aawCgyC8nm
-	WUi6ZyHpXsDIvIpRrLQ4uaA4KT21wlivODG3uDQvXS85P3cTIyRmanYw3vtqc4hRgINRiYf3
-	g69xkBBrYllxZe4hRgkOZiUR3ll3jYKEeFMSK6tSi/Lji0pzUosPMTJxcEo1ME6qCogq/Pw9
-	4dhH97yp7Dbn5bPj9k+1LDgv/s4/i6vpXuxLpytRO08FBm788ixLoUo9STaO9WCJSkjf8sSr
-	BR9qpLnK+H/KGSycLfHI49ma4g23oi6q+ra8V9rL6OOeICzGs3eN7ML3fOYvGT0CD+oqz10k
-	/1/koRXDDzsHa3k2ztpFkvXySizFGYmGWsxFxYkAHiiGqncCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsVy+t9hP90FM42DDKb8YLKYs34Nm0Xz4vVs
+	Fpd3zWGz+PrTwWLBxkeMFo/63rI7sHnsnHWX3ePEjN8sHvvnrmH3+LxJLoAlissmJTUnsyy1
+	SN8ugSvj26+9jAX9PBVTNv1nb2B8wtnFyMkhIWAisXjGe2YIW0ziwr31bF2MXBxCAssYJZYs
+	W8wE4fQySZxtusQM4WxilNj2Yy0bSAuvgJbErT+XwNpZBFQlPrb+BrPZBNQlPr/ewQ5iCwnI
+	STQtWQ0WFxWIkFi55AErRK+gxI/J91hAbBEBY4n+s7PA6pkFjjFKLGw2AbGFgeZvfzULqIYD
+	aI6VxMeeFBCTU8BaYv95I4hqa4mVk7YxQtjyEpvXvGWG2Kos8efyKSaQcgkBRYntq60mMIrM
+	QrJ3FpLuWUi6FzAyr2IUKy1OLihOSk+tMNIrTswtLs1L10vOz93ECImX6h2Md7/aHGIU4GBU
+	4uGd4W0cJMSaWFZcmXuIUYKDWUmEd9ZdoyAh3pTEyqrUovz4otKc1OJDjEwcnFINjClbi6UF
+	Z7QU7lWVSlt2dM0nzZlBexoO+L5edCe99La+zP8NlaXMl/YbiNdkyAnsOHz06Cmh7/y6jqk7
+	7XRFKzdnKeboPDl6Vj3rjlRO/4H2nFvPfB3/alU+m9WddOKPcIjDmk42rerafO9nF13lD9po
+	ZXPsy17R2BEvetZpdvyJ+FQWxWWsSizFGYmGWsxFxYkAi1Oc8XUCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2013 11:58 AM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.10.12 release.
-> There are 46 patches in this series, all will be posted as a response
+On 09/12/2013 11:44 AM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.4.62 release.
+> There are 23 patches in this series, all will be posted as a response
 > to this one.  If anyone has any issues with these being applied, please
 > let me know.
 >
-> Responses should be made by Sat Sep 14 17:56:26 UTC 2013.
+> Responses should be made by Sat Sep 14 17:44:08 UTC 2013.
 > Anything received after that time might be too late.
 >
 > The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.12-rc1.gz
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.62-rc1.gz
 > and the diffstat can be found below.
 >
 > thanks,
 >
 > greg k-h
+>
 
-
-3.10.12-rc1 applied cleanly to 3.10.11
+3.4.62-rc1 applied cleanly to 3.4.61
 
 Compiled and booted on the following systems:
 
@@ -76,9 +76,9 @@ Cross-compile tests results:
 
 alpha: defconfig passed
 arm: defconfig passed
-arm64: defconfig passed
+arm64: not applicable
 blackfin: defconfig passed
-c6x: defconfig passed
+c6x: dsk6455_defconfig passed - defconfig isn't supported
 mips: defconfig passed
 mipsel: defconfig passed
 powerpc: wii_defconfig passed
@@ -87,6 +87,7 @@ sparc: defconfig passed
 tile: tilegx_defconfig passed
 
 -- Shuah
+
 
 -- 
 Shuah Khan
