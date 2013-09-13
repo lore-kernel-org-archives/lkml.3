@@ -1,93 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758177Ab3IMNg2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:36:28 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:54499 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934296Ab3IMN03 (ORCPT
+	id S1758188Ab3IMNgk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:36:40 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52167 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757719Ab3IMNgh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:26:29 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Subject: [PATCH 197/228] cpufreq: maple: remove calls to cpufreq_notify_transition()
-Date: Fri, 13 Sep 2013 18:32:23 +0530
-Message-Id: <72995afe8bf102bd36581fa4c59e14df2a119511.1379063063.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
-References: <cover.1379063063.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
-References: <cover.1379063063.git.viresh.kumar@linaro.org>
+	Fri, 13 Sep 2013 09:36:37 -0400
+Date: Fri, 13 Sep 2013 15:36:20 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Alex Thorlton <athorlton@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Eric W . Biederman" <ebiederm@xmission.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Dave Jones <davej@redhat.com>,
+        David Howells <dhowells@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Robin Holt <robinmholt@gmail.com>, Sedat Dilek <sedat.dilek@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 8/9] mm: implement split page table lock for PMD level
+Message-ID: <20130913133620.GE21832@twins.programming.kicks-ass.net>
+References: <20130910074748.GA2971@gmail.com>
+ <1379077576-2472-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1379077576-2472-9-git-send-email-kirill.shutemov@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379077576-2472-9-git-send-email-kirill.shutemov@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most of the drivers do following in their ->target_index() routines:
+On Fri, Sep 13, 2013 at 04:06:15PM +0300, Kirill A. Shutemov wrote:
+> +#if USE_SPLIT_PMD_PTLOCKS
+> +
+> +static inline void pgtable_pmd_page_ctor(struct page *page)
+> +{
+> +	spin_lock_init(&page->ptl);
+> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> +	page->pmd_huge_pte = NULL;
+> +#endif
+> +}
+> +
+> +static inline void pgtable_pmd_page_dtor(struct page *page)
+> +{
+> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> +	VM_BUG_ON(page->pmd_huge_pte);
+> +#endif
+> +}
+> +
+> +#define pmd_huge_pte(mm, pmd) (virt_to_page(pmd)->pmd_huge_pte)
+> +
+> +#else
 
-	struct cpufreq_freqs freqs;
-	freqs.old = old freq...
-	freqs.new = new freq...
+So on -rt we have the problem that spinlock_t is rather huge (its a
+rtmutex) so instead of blowing up the pageframe like that we treat
+page->pte as a pointer and allocate the spinlock.
 
-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
+Since allocations could fail the above ctor path gets 'interesting'.
 
-	/* Change rate here */
+It would be good if new code could assume the ctor could fail so we
+don't have to replicate that horror-show.
 
-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
 
-This is replicated over all cpufreq drivers today and there doesn't exists a
-good enough reason why this shouldn't be moved to cpufreq core instead.
-
-Earlier patches have added support in cpufreq core to do cpufreq notification on
-frequency change, this one removes it from this driver.
-
-Some related minor cleanups are also done along with it.
-
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/maple-cpufreq.c | 18 +-----------------
- 1 file changed, 1 insertion(+), 17 deletions(-)
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Fri, 3 Jul 2009 08:44:54 -0500
+Subject: mm: shrink the page frame to !-rt size
 
-diff --git a/drivers/cpufreq/maple-cpufreq.c b/drivers/cpufreq/maple-cpufreq.c
-index 4e2da08..c4dfa42 100644
---- a/drivers/cpufreq/maple-cpufreq.c
-+++ b/drivers/cpufreq/maple-cpufreq.c
-@@ -69,8 +69,6 @@ static struct cpufreq_frequency_table maple_cpu_freqs[] = {
+He below is a boot-tested hack to shrink the page frame size back to
+normal.
+
+Should be a net win since there should be many less PTE-pages than
+page-frames.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/mm.h       |   46 +++++++++++++++++++++++++++++++++++++++-------
+ include/linux/mm_types.h |    4 ++++
+ mm/memory.c              |   32 ++++++++++++++++++++++++++++++++
+ 3 files changed, 75 insertions(+), 7 deletions(-)
+
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1241,27 +1241,59 @@ static inline pmd_t *pmd_alloc(struct mm
+  * overflow into the next struct page (as it might with DEBUG_SPINLOCK).
+  * When freeing, reset page->mapping so free_pages_check won't complain.
   */
- static int maple_pmode_cur;
++#ifndef CONFIG_PREEMPT_RT_FULL
++
+ #define __pte_lockptr(page)	&((page)->ptl)
+-#define pte_lock_init(_page)	do {					\
+-	spin_lock_init(__pte_lockptr(_page));				\
+-} while (0)
++
++static inline struct page *pte_lock_init(struct page *page)
++{
++	spin_lock_init(__pte_lockptr(page));
++	return page;
++}
++
+ #define pte_lock_deinit(page)	((page)->mapping = NULL)
++
++#else /* !PREEMPT_RT_FULL */
++
++/*
++ * On PREEMPT_RT_FULL the spinlock_t's are too large to embed in the
++ * page frame, hence it only has a pointer and we need to dynamically
++ * allocate the lock when we allocate PTE-pages.
++ *
++ * This is an overall win, since only a small fraction of the pages
++ * will be PTE pages under normal circumstances.
++ */
++
++#define __pte_lockptr(page)	((page)->ptl)
++
++extern struct page *pte_lock_init(struct page *page);
++extern void pte_lock_deinit(struct page *page);
++
++#endif /* PREEMPT_RT_FULL */
++
+ #define pte_lockptr(mm, pmd)	({(void)(mm); __pte_lockptr(pmd_page(*(pmd)));})
+ #else	/* !USE_SPLIT_PTLOCKS */
+ /*
+  * We use mm->page_table_lock to guard all pagetable pages of the mm.
+  */
+-#define pte_lock_init(page)	do {} while (0)
++static inline struct page *pte_lock_init(struct page *page) { return page; }
+ #define pte_lock_deinit(page)	do {} while (0)
+ #define pte_lockptr(mm, pmd)	({(void)(pmd); &(mm)->page_table_lock;})
+ #endif /* USE_SPLIT_PTLOCKS */
  
--static DEFINE_MUTEX(maple_switch_mutex);
--
- static const u32 *maple_pmode_data;
- static int maple_pmode_max;
- 
-@@ -133,21 +131,7 @@ static int maple_scom_query_freq(void)
- static int maple_cpufreq_target(struct cpufreq_policy *policy,
- 	unsigned int index)
+-static inline void pgtable_page_ctor(struct page *page)
++static inline struct page *__pgtable_page_ctor(struct page *page)
  {
--	struct cpufreq_freqs freqs;
--	int rc;
--
--	mutex_lock(&maple_switch_mutex);
--
--	freqs.old = maple_cpu_freqs[maple_pmode_cur].frequency;
--	freqs.new = maple_cpu_freqs[index].frequency;
--
--	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
--	rc = maple_scom_switch_freq(index);
--	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
--
--	mutex_unlock(&maple_switch_mutex);
--
--	return rc;
-+	return maple_scom_switch_freq(index);
+-	pte_lock_init(page);
+-	inc_zone_page_state(page, NR_PAGETABLE);
++	page = pte_lock_init(page);
++	if (page)
++		inc_zone_page_state(page, NR_PAGETABLE);
++	return page;
  }
  
- static unsigned int maple_cpufreq_get_speed(unsigned int cpu)
--- 
-1.7.12.rc2.18.g61b472e
-
++#define pgtable_page_ctor(page)				\
++do {							\
++	page = __pgtable_page_ctor(page);		\
++} while (0)
++
+ static inline void pgtable_page_dtor(struct page *page)
+ {
+ 	pte_lock_deinit(page);
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -142,7 +142,11 @@ struct page {
+ 						 * system if PG_buddy is set.
+ 						 */
+ #if USE_SPLIT_PTLOCKS
++# ifndef CONFIG_PREEMPT_RT_FULL
+ 		spinlock_t ptl;
++# else
++		spinlock_t *ptl;
++# endif
+ #endif
+ 		struct kmem_cache *slab_cache;	/* SL[AU]B: Pointer to slab */
+ 		struct page *first_page;	/* Compound tail pages */
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -4328,3 +4328,35 @@ void copy_user_huge_page(struct page *ds
+ 	}
+ }
+ #endif /* CONFIG_TRANSPARENT_HUGEPAGE || CONFIG_HUGETLBFS */
++
++#if defined(CONFIG_PREEMPT_RT_FULL) && (USE_SPLIT_PTLOCKS > 0)
++/*
++ * Heinous hack, relies on the caller doing something like:
++ *
++ *   pte = alloc_pages(PGALLOC_GFP, 0);
++ *   if (pte)
++ *     pgtable_page_ctor(pte);
++ *   return pte;
++ *
++ * This ensures we release the page and return NULL when the
++ * lock allocation fails.
++ */
++struct page *pte_lock_init(struct page *page)
++{
++	page->ptl = kmalloc(sizeof(spinlock_t), GFP_KERNEL);
++	if (page->ptl) {
++		spin_lock_init(__pte_lockptr(page));
++	} else {
++		__free_page(page);
++		page = NULL;
++	}
++	return page;
++}
++
++void pte_lock_deinit(struct page *page)
++{
++	kfree(page->ptl);
++	page->mapping = NULL;
++}
++
++#endif
