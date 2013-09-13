@@ -1,108 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756967Ab3IMPPK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 11:15:10 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:22341 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756789Ab3IMPPA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 11:15:00 -0400
-X-AuditID: cbfec7f4-b7f0a6d000007b1b-a1-52332bf12cce
-Message-id: <52332BF0.4060605@samsung.com>
-Date: Fri, 13 Sep 2013 17:14:56 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-version: 1.0
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Kevin Hilman <khilman@linaro.org>, linux-i2c@vger.kernel.org,
-        Wolfram Sang <wsa@the-dreams.de>,
+	id S1756872Ab3IMPPG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 11:15:06 -0400
+Received: from mga03.intel.com ([143.182.124.21]:43631 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755908Ab3IMPOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 11:14:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,898,1371106800"; 
+   d="scan'208";a="294519574"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@linaro.org>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lv Zheng <lv.zheng@intel.com>, Aaron Lu <aaron.lu@intel.com>,
-        linux-arm-kernel@lists.infradead.org, Mark Brown <broonie@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH v2 1/9] i2c: prepare runtime PM support for I2C client
- devices
-References: <1378913560-2752-1-git-send-email-mika.westerberg@linux.intel.com>
- <1378913560-2752-2-git-send-email-mika.westerberg@linux.intel.com>
- <87vc25pvvm.fsf@linaro.org> <20130913065434.GZ7393@intel.com>
-In-reply-to: <20130913065434.GZ7393@intel.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCIsWRmVeSWpSXmKPExsVy+t/xK7qftI2DDBYeZ7TY1PebzeLvpGPs
-	FlMfPmGzOLzoBaNF8+L1bBZfD69gtDjb9Ibd4v7Xo4wW3650MFks39cP1PH4GqtFx98vjBaX
-	d81hs/i4dAOrxcV18hZTth9ht3i84i27xeluVouVJ2YxOwh7/P41idFj56y77B6L97xk8ti0
-	qpPN4861PWwe804Geuyfu4bdY/OSeo++LasYPU6eesLi8XmTXAB3FJdNSmpOZllqkb5dAldG
-	69Q1TAULhCtm3jjD0sB4mr+LkZNDQsBE4srdOWwQtpjEhXvrgWwuDiGBpYwSR09fYoRwPjFK
-	HJ59naWLkYODV0BLYlafLUgDi4CqxPF7E5lAbDYBQ4neo32MILaoQIDE4iXn2EFsXgFBiR+T
-	77GA2CICphJvX8xmApnJLLCKVeJ4725mkISwQIjE8mddzBDLLjNKXNz+ih1kGaeAnsSCzXYg
-	NcwCOhL7W6exQdjyEpvXvGWewCgwC8mOWUjKZiEpW8DIvIpRNLU0uaA4KT3XUK84Mbe4NC9d
-	Lzk/dxMjJCa/7GBcfMzqEKMAB6MSD++EZKMgIdbEsuLK3EOMEhzMSiK8s+4ChXhTEiurUovy
-	44tKc1KLDzEycXBKNTAKfTcPKl4Yxt1953+gdJeo6Y1dQmr3lJZeP/vg6G95XT1pboat2ucU
-	LwbfyZB6ZZ3z5JncPv7cdfx7WaM9Dx+42c7watstE3b3M6+WmciG852uyFnHukknPyzhk0CW
-	RPjLLSGCJjvXrt60wOtN2GTG2ys97xU0T8wtO8BfYl6wYrp6f8aTkDYlluKMREMt5qLiRAAF
-	eIoPpwIAAA==
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-acpi@vger.kernel.org
+Subject: [PATCH 1/2] gpio / ACPI: register to ACPI events automatically
+Date: Fri, 13 Sep 2013 18:14:39 +0300
+Message-Id: <1379085280-2211-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/2013 08:54 AM, Mika Westerberg wrote:
-> On Thu, Sep 12, 2013 at 02:34:21PM -0700, Kevin Hilman wrote:
->>> > > diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
->>> > > index f32ca29..44374b4 100644
->>> > > --- a/drivers/i2c/i2c-core.c
->>> > > +++ b/drivers/i2c/i2c-core.c
->>> > > @@ -248,11 +248,30 @@ static int i2c_device_probe(struct device *dev)
->>> > >  					client->flags & I2C_CLIENT_WAKE);
->>> > >  	dev_dbg(dev, "probe\n");
->>> > >  
->>> > > +	/* Make sure the adapter is active */
->>> > > +	pm_runtime_get_sync(&client->adapter->dev);
->>> > > +
->>> > > +	/*
->>> > > +	 * Enable runtime PM for the client device. If the client wants to
->>> > > +	 * participate on runtime PM it should call pm_runtime_put() in its
->>> > > +	 * probe() callback.
->>> > > +	 */
->>> > > +	pm_runtime_get_noresume(&client->dev);
->>> > > +	pm_runtime_set_active(&client->dev);
->> > 
->> > Why the set_active here?
->> > 
->> > For hardware that is disabled/powered-off on startup, there will now be
->> > a mismatch between the hardware state an the RPM core state.
->
-> The call to pm_runtime_get_noresume() should make sure that the device is
-> in active state (at least in state where it can access the bus) if I'm
-> understanding this right.
+Instead of asking each driver to register to the ACPI events we can just
+call acpi_gpiochip_register_interrupts() for each chip that has ACPI
+handle. It checks chip->to_irq and if it is set to NULL (a GPIO driver that
+doesn't do interrupts) the function does nothing.
 
-I can't see how this would happen. How runtime_resume/runtime_suspend
-callbacks would get invoked with this code, if, e.g. originally driver called 
-pm_runtime_enable(), pm_runtime_get_sync(), pm_runtime_put_sync() in probe() ? 
+Also make the event interface to be private to gpiolib-acpi and remove call
+to the API from the one existing user (pinctrl-baytrail.c).
 
-pm_runtime_get_noresume() merely increments usage counter of a device. 
-It seems that these changes will break the s5p-tv driver. I might be missing 
-something though.
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ drivers/gpio/gpiolib-acpi.c        | 18 ++++++++++++++----
+ drivers/gpio/gpiolib.c             |  3 +++
+ drivers/pinctrl/pinctrl-baytrail.c |  4 ----
+ include/linux/acpi_gpio.h          |  8 ++++----
+ 4 files changed, 21 insertions(+), 12 deletions(-)
 
-As Mark pointed out this is currently unwanted behaviour to runtime PM
-activate a bus controller device manually in the core for when the client's
-probe() is executed, since i2c core will activate the bus controller for when 
-transfer is being carried out.  
-But I can understand this is needed for ACPI and it shouldn't break existing
-drivers, that do runtime PM activate the client device in probe().
+diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
+index 5c1ef2b..e12a08e 100644
+--- a/drivers/gpio/gpiolib-acpi.c
++++ b/drivers/gpio/gpiolib-acpi.c
+@@ -101,7 +101,7 @@ static void acpi_gpio_evt_dh(acpi_handle handle, void *data)
+  * gpio pins have acpi event methods and assigns interrupt handlers that calls
+  * the acpi event methods for those pins.
+  */
+-void acpi_gpiochip_request_interrupts(struct gpio_chip *chip)
++static void acpi_gpiochip_request_interrupts(struct gpio_chip *chip)
+ {
+ 	struct acpi_buffer buf = {ACPI_ALLOCATE_BUFFER, NULL};
+ 	struct acpi_resource *res;
+@@ -199,7 +199,6 @@ void acpi_gpiochip_request_interrupts(struct gpio_chip *chip)
+ 				irq);
+ 	}
+ }
+-EXPORT_SYMBOL(acpi_gpiochip_request_interrupts);
+ 
+ struct acpi_gpio_lookup {
+ 	struct acpi_gpio_info info;
+@@ -288,7 +287,7 @@ EXPORT_SYMBOL_GPL(acpi_get_gpio_by_index);
+  * The remaining ACPI event interrupts associated with the chip are freed
+  * automatically.
+  */
+-void acpi_gpiochip_free_interrupts(struct gpio_chip *chip)
++static void acpi_gpiochip_free_interrupts(struct gpio_chip *chip)
+ {
+ 	acpi_handle handle;
+ 	acpi_status status;
+@@ -315,4 +314,15 @@ void acpi_gpiochip_free_interrupts(struct gpio_chip *chip)
+ 	acpi_detach_data(handle, acpi_gpio_evt_dh);
+ 	kfree(evt_pins);
+ }
+-EXPORT_SYMBOL(acpi_gpiochip_free_interrupts);
++
++void acpi_gpiochip_add(struct gpio_chip *chip)
++{
++	acpi_gpiochip_request_interrupts(chip);
++}
++EXPORT_SYMBOL_GPL(acpi_gpiochip_add);
++
++void acpi_gpiochip_remove(struct gpio_chip *chip)
++{
++	acpi_gpiochip_free_interrupts(chip);
++}
++EXPORT_SYMBOL_GPL(acpi_gpiochip_remove);
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index ff0fd65..5c83657 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -10,6 +10,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/gpio.h>
+ #include <linux/of_gpio.h>
++#include <linux/acpi_gpio.h>
+ #include <linux/idr.h>
+ #include <linux/slab.h>
+ 
+@@ -1221,6 +1222,7 @@ int gpiochip_add(struct gpio_chip *chip)
+ #endif
+ 
+ 	of_gpiochip_add(chip);
++	acpi_gpiochip_add(chip);
+ 
+ 	if (status)
+ 		goto fail;
+@@ -1262,6 +1264,7 @@ int gpiochip_remove(struct gpio_chip *chip)
+ 
+ 	gpiochip_remove_pin_ranges(chip);
+ 	of_gpiochip_remove(chip);
++	acpi_gpiochip_remove(chip);
+ 
+ 	for (id = 0; id < chip->ngpio; id++) {
+ 		if (test_bit(FLAG_REQUESTED, &chip->desc[id].flags)) {
+diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
+index e9d735d..a49a070 100644
+--- a/drivers/pinctrl/pinctrl-baytrail.c
++++ b/drivers/pinctrl/pinctrl-baytrail.c
+@@ -29,7 +29,6 @@
+ #include <linux/gpio.h>
+ #include <linux/irqdomain.h>
+ #include <linux/acpi.h>
+-#include <linux/acpi_gpio.h>
+ #include <linux/platform_device.h>
+ #include <linux/seq_file.h>
+ #include <linux/io.h>
+@@ -481,9 +480,6 @@ static int byt_gpio_probe(struct platform_device *pdev)
+ 
+ 		irq_set_handler_data(hwirq, vg);
+ 		irq_set_chained_handler(hwirq, byt_gpio_irq_handler);
+-
+-		/* Register interrupt handlers for gpio signaled acpi events */
+-		acpi_gpiochip_request_interrupts(gc);
+ 	}
+ 
+ 	pm_runtime_enable(dev);
+diff --git a/include/linux/acpi_gpio.h b/include/linux/acpi_gpio.h
+index 4c120a1..e38af63 100644
+--- a/include/linux/acpi_gpio.h
++++ b/include/linux/acpi_gpio.h
+@@ -18,8 +18,8 @@ struct acpi_gpio_info {
+ int acpi_get_gpio(char *path, int pin);
+ int acpi_get_gpio_by_index(struct device *dev, int index,
+ 			   struct acpi_gpio_info *info);
+-void acpi_gpiochip_request_interrupts(struct gpio_chip *chip);
+-void acpi_gpiochip_free_interrupts(struct gpio_chip *chip);
++void acpi_gpiochip_add(struct gpio_chip *chip);
++void acpi_gpiochip_remove(struct gpio_chip *chip);
+ 
+ #else /* CONFIG_GPIO_ACPI */
+ 
+@@ -34,8 +34,8 @@ static inline int acpi_get_gpio_by_index(struct device *dev, int index,
+ 	return -ENODEV;
+ }
+ 
+-static inline void acpi_gpiochip_request_interrupts(struct gpio_chip *chip) { }
+-static inline void acpi_gpiochip_free_interrupts(struct gpio_chip *chip) { }
++static inline void acpi_gpiochip_add(struct gpio_chip *chip) {}
++static inline void acpi_gpiochip_remove(struct gpio_chip *chip) {}
+ 
+ #endif /* CONFIG_GPIO_ACPI */
+ 
+-- 
+1.8.4.rc3
 
-Now I'm sure this will break power management of the drivers/media/exynos4-is
-driver, due to incorrect power sequence (power domain and clocks handling).
-I'll try to take care of it in separate patch, as I have some patches pending,
-that move most of code from drivers/media/exynos4-is/fimc-is-sensor.c to 
-drivers/media/i2c/s5k6a3.c.
-
---
-Regards,
-Sylwester
