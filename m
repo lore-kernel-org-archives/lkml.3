@@ -1,60 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab3IMI4U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 04:56:20 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50559 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751487Ab3IMI4R (ORCPT
+	id S1754693Ab3IMI5V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 04:57:21 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41731 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487Ab3IMI5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 04:56:17 -0400
-Date: Fri, 13 Sep 2013 09:56:07 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: "steve.glendinning@shawell.net" <steve.glendinning@shawell.net>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        davidb@quicinc.com
-Subject: Re: [PATCH] net: smsc: remove deprecated IRQF_DISABLED
-Message-ID: <20130913085607.GA20681@mudshark.cambridge.arm.com>
-References: <1379046467-6900-1-git-send-email-michael.opdenacker@free-electrons.com>
+	Fri, 13 Sep 2013 04:57:16 -0400
+Date: Fri, 13 Sep 2013 10:56:54 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Vince Weaver <vince@deater.net>,
+        Andi Kleen <ak@linux.intel.com>, acme@infradead.org,
+        linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+        torvalds@linux-foundation.org, trinity@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>
+Subject: Re: [PATCH 1/2] tools, perf: Add a precise event qualifier v2
+Message-ID: <20130913085654.GI31370@twins.programming.kicks-ass.net>
+References: <1374501138-13496-1-git-send-email-andi@firstfloor.org>
+ <alpine.DEB.2.02.1307230137160.18617@pianoman.cluster.toy>
+ <20130723060108.GA18396@tassilo.jf.intel.com>
+ <alpine.DEB.2.02.1307231717580.27628@pianoman.cluster.toy>
+ <20130723225150.GT6123@two.firstfloor.org>
+ <20130912165733.GA23698@gmail.com>
+ <20130912173617.GI18242@two.firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1379046467-6900-1-git-send-email-michael.opdenacker@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130912173617.GI18242@two.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[adding David Brown]
+On Thu, Sep 12, 2013 at 07:36:17PM +0200, Andi Kleen wrote:
+> > Your feature to export 'precise' requirements on events looks useful to 
+> > me. We could implement it not by special casing it implicitly but by 
+> > saying that if ../format/precise contains something like:
+> > 
+> >    attr:240-241
 
-On Fri, Sep 13, 2013 at 05:27:47AM +0100, Michael Opdenacker wrote:
-> This patch proposes to remove the IRQF_DISABLED flag from
-> code in drivers/net/ethernet/smsc/
-> 
-> It's a NOOP since 2.6.35 and it will be removed one day.
-> 
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-> ---
->  drivers/net/ethernet/smsc/smc91x.h   | 2 +-
->  drivers/net/ethernet/smsc/smsc9420.c | 3 +--
->  2 files changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/smsc/smc91x.h b/drivers/net/ethernet/smsc/smc91x.h
-> index 370e13d..5730fe2 100644
-> --- a/drivers/net/ethernet/smsc/smc91x.h
-> +++ b/drivers/net/ethernet/smsc/smc91x.h
-> @@ -271,7 +271,7 @@ static inline void mcf_outsw(void *a, unsigned char *p, int l)
->  #define SMC_insw(a, r, p, l)	mcf_insw(a + r, p, l)
->  #define SMC_outsw(a, r, p, l)	mcf_outsw(a + r, p, l)
->  
-> -#define SMC_IRQ_FLAGS		(IRQF_DISABLED)
-> +#define SMC_IRQ_FLAGS		0
+Since we currently have the pattern $name:bits to mean
+perf_event_attr::$name the above would imply and create a possible
+collision with perf_event_attr::attr.
 
-After this change, the only machine that defines the flags to anything other
-than IRQF_TRIGGER_RISING is MSM, which uses IRQF_TRIGGER_HIGH. David: do
-you actually need this? The irq_chip code under mach-msm doesn't seem to
-distinguish between the two.
+If we're going to do this I'd propose using something like _:240-241,
+for while '_' is a valid name in C its not something we're ever going to
+allow in perf_event_attr.
 
-Will
+> > then that's a natural extension of the config:X-Y format and should be 
+> > interpreted to mean mean 2 bits in the perf attr field. I.e. we could go 
+> > beyond the config bitfield.
+> > 
+> > Basically the whole perf_event_attr can be thought of as a 'giant 
+> > bitfield', in which we can specify values to export an enumerated list of 
+> > events from the kernel to tooling.
+> > 
+> > (Using attr:X-Y the config and config1 variants can be expressed as well, 
+> > as the config fields are inside the attr structure.)
+> > 
+> > The positions within the perf_attr are an ABI, so this would work pretty 
+> > well.
+> 
+> Wouldn't we need different bits for each architecture then?
+> 32bit/64bit, some archs with weird alignment rules, maybe different for
+> BE/LE too?
+
+Typically PMU drivers are per arch and all the format stuff is per pmu
+driver so I'd not worry about that just yet.
+
+But yes, while the perf_event_attr thing is ABI its not identical across
+archs.
+
+> Ok I suppose it could be somehow auto generated in asm-offsets.c,
+> although I'm not sure how to get a bitfield offset there.
+
+Yes, that is an unfortunate situation. I (and either Acme or Jolsa)
+tried wrapping the bitfield in an anonymous union to create a named
+variable for the entire u64 but older GCC completely fails with that.
+
