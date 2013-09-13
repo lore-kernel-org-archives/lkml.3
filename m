@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996Ab3IMTII (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 15:08:08 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:43518 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753471Ab3IMTIG (ORCPT
+	id S1754415Ab3IMTKg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 15:10:36 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:36760 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754193Ab3IMTKf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 15:08:06 -0400
-Message-ID: <52336299.6070508@cogentembedded.com>
-Date: Fri, 13 Sep 2013 23:08:09 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Paul Chavent <Paul.Chavent@onera.fr>
-CC: linux-usb@vger.kernel.org, gregkh@linuxfoundation.org, jhovold@gmail.com,
-        fschaefer.oss@googlemail.com, jslaby@suse.cz, max@suse.de,
-        giometti@enneenne.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] USB : serial : call handle_dcd_change in ftdi driver.
-References: <1379086513-2434-1-git-send-email-paul.chavent@onera.fr> <1379086513-2434-2-git-send-email-paul.chavent@onera.fr>
-In-Reply-To: <1379086513-2434-2-git-send-email-paul.chavent@onera.fr>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 13 Sep 2013 15:10:35 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: iommu@lists.linux-foundation.org, David Woodhouse <dwmw2@infradead.org>,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH] MAINTAINERS: add overall IOMMU section
+Date: Fri, 13 Sep 2013 13:10:27 -0600
+Message-Id: <1379099427-29362-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+From: Stephen Warren <swarren@nvidia.com>
 
-On 09/13/2013 07:35 PM, Paul Chavent wrote:
+I believe that Joerg Roedel is at least the path through which
+drivers/iommu changes should be merged. Add a MAINTAINERS entry to
+make this clear, so that he's Cd'd on all relevant patches. This is
+relevant for non-AMD/Intel IOMMUs, where get_maintainers.pl doesn't
+currently remind anyone to Cc Joerg on patches.
 
-> Signed-off-by: Paul Chavent <paul.chavent@onera.fr>
-> ---
->   drivers/usb/serial/ftdi_sio.c | 8 +++++++-
->   1 file changed, 7 insertions(+), 1 deletion(-)
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+ MAINTAINERS | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-> diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-> index c45f9c0..df66495 100644
-> --- a/drivers/usb/serial/ftdi_sio.c
-> +++ b/drivers/usb/serial/ftdi_sio.c
-> @@ -1966,8 +1966,14 @@ static int ftdi_process_packet(struct usb_serial_port *port,
->   			port->icount.dsr++;
->   		if (diff_status & FTDI_RS0_RI)
->   			port->icount.rng++;
-> -		if (diff_status & FTDI_RS0_RLSD)
-> +		if (diff_status & FTDI_RS0_RLSD) {
->   			port->icount.dcd++;
-> +			struct tty_struct *tty = tty_port_tty_get(&port->port);
-
-    Don't mix declaration and code. And add an empty line between them please.
-
-> +			if (tty)
-> +				usb_serial_handle_dcd_change(port, tty,
-> +						status & FTDI_RS0_RLSD);
-> +			tty_kref_put(tty);
-> +		}
-
-WBR, Sergei
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 6d0dabe..81415f6 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4457,6 +4457,13 @@ L:	linux-serial@vger.kernel.org
+ S:	Maintained
+ F:	drivers/tty/serial/ioc3_serial.c
+ 
++IOMMU DRIVERS
++M:	Joerg Roedel <joro@8bytes.org>
++L:	iommu@lists.linux-foundation.org
++T:	git git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git
++S:	Maintained
++F:	drivers/iommu/
++
+ IP MASQUERADING
+ M:	Juanjo Ciarlante <jjciarla@raiz.uncu.edu.ar>
+ S:	Maintained
+-- 
+1.8.1.5
 
