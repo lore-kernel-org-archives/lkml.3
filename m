@@ -1,37 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755220Ab3IMMX1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 08:23:27 -0400
-Received: from ringil.hengli.com.au ([178.18.16.133]:45265 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751846Ab3IMMX0 (ORCPT
+	id S1755538Ab3IMMYV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 08:24:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35399 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751707Ab3IMMYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 08:23:26 -0400
-Date: Fri, 13 Sep 2013 22:23:09 +1000
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Matt Mackall <mpm@selenic.com>, kbuild test robot <fengguang.wu@intel.com>,
-        kbuild-all@01.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] hwrng: via-rng: Mark device ID table as __maybe_unused
-Message-ID: <20130913122309.GC8579@gondor.apana.org.au>
-References: <1378338372.27597.4.camel@deadeye.wl.decadent.org.uk>
+	Fri, 13 Sep 2013 08:24:17 -0400
+Date: Fri, 13 Sep 2013 05:24:31 -0700
+From: greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: Fwd: ARC Fix for 3.12-rc1
+Message-ID: <20130913122431.GA29590@kroah.com>
+References: <523177B0.30203@synopsys.com>
+ <5232C37E.2090800@synopsys.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1378338372.27597.4.camel@deadeye.wl.decadent.org.uk>
+In-Reply-To: <5232C37E.2090800@synopsys.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 05, 2013 at 12:46:12AM +0100, Ben Hutchings wrote:
-> It is only used in modular builds.
+On Fri, Sep 13, 2013 at 01:19:18PM +0530, Vineet Gupta wrote:
+> Hi Greg,
 > 
-> Reported-by: kbuild test robot <fengguang.wu@intel.com>
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> Please consider for stable 3.11.x.
+> Mainline commit c3567f8a359b7917dcffa442301f88ed0a75211f
 
-Patch applied.  Thanks.
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Thanks, will do after 3.11.1 is out.
+
+greg k-h
