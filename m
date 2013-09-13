@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612Ab3IMSHb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 14:07:31 -0400
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:22895 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752046Ab3IMSHb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 14:07:31 -0400
-Message-ID: <1379095648.2197.27.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: GPT detection regression in efi.c from commit 27a7c64
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Matt Porter <matt.porter@linaro.org>
-Cc: Karel Zak <kzak@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        torvalds@linux-foundation.org
-Date: Fri, 13 Sep 2013 11:07:28 -0700
-In-Reply-To: <52334506.9030802@linaro.org>
-References: <20130913145033.GA8502@ohporter.com>
-	 <1379089736.2197.14.camel@buesod1.americas.hpqcorp.net>
-	 <52334506.9030802@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753923Ab3IMSIs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 14:08:48 -0400
+Received: from mga02.intel.com ([134.134.136.20]:32883 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751830Ab3IMSIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 14:08:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,899,1371106800"; 
+   d="scan'208";a="402962298"
+From: Andi Kleen <andi@firstfloor.org>
+To: mingo@kernel.org
+Cc: peterz@infradead.org, acme@infradead.org, linux-kernel@vger.kernel.org,
+        eranian@google.com, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 4/6] perf, tools: Add abort_tx,no_tx,in_tx branch filter options to perf record -j v3
+Date: Fri, 13 Sep 2013 11:08:34 -0700
+Message-Id: <1379095716-4705-5-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1379095716-4705-1-git-send-email-andi@firstfloor.org>
+References: <1379095716-4705-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-09-13 at 13:01 -0400, Matt Porter wrote:
-> On 09/13/2013 12:28 PM, Davidlohr Bueso wrote:
-> > Cc'ing Linus.
-> >
-> > On Fri, 2013-09-13 at 10:50 -0400, Matt Porter wrote:
-> >> The commit, "27a7c64 partitions/efi: account for pmbr size in lba", that
-> >> was just merged in 3.12-rc caused a regression on my system with a GPT
-> >> formatted eMMC device. In 3.11, the GPT partition table was detected
-> >> fine but now a partition table is not detected.
-> >>
-> >> Not being a GPT expert, I did some research and found that the tool used
-> >> to create the PMBR on my system shares characteristics with what is
-> >> mentioned in an explanation of Microsoft created PMBRs [1]. In short,
-> >> the size_in_lba field incorrectly has 0xffffffff even though I have a
-> >> <2TiB drive (16GiB eMMC).
-> >
-> > *sigh*. So Microsoft decided to do its own version of the GPT specs.
-> 
-> Don't sound so surprised. :)
-> 
-> > Up until now, Linux was incorrectly enforcing pMBR checks: not
-> > recognizing valid labels and vice versa, as with the case you are
-> > mentioning now. The changes that went in the 3.12 merge window attempt
-> > to address those concerns, enforcing the correct checks - which is also
-> > how Linux partitioning tools do it (fdisk, parted).
-> 
-> Understood, and we are fixing our own manufacturing tool that was used 
-> to prepopulate the eMMC. I definitely prefer to have this correct for my 
-> case.
+From: Andi Kleen <ak@linux.intel.com>
 
-Come to think of it, we do have a long existing workaround: the
-force_gpt option. Setting it will bypass any MBR checking
-(is_pmbr_valid(), specifically).
+Make perf record -j aware of the new in_tx,no_tx,abort_tx branch qualifiers.
 
-Thanks,
-Davidlohr
+v2: ABORT -> ABORTTX
+v3: Add more _
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/Documentation/perf-record.txt | 3 +++
+ tools/perf/builtin-record.c              | 3 +++
+ 2 files changed, 6 insertions(+)
+
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index e297b74..6bec1c9 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -166,6 +166,9 @@ following filters are defined:
+         - u:  only when the branch target is at the user level
+         - k: only when the branch target is in the kernel
+         - hv: only when the target is at the hypervisor level
++	- in_tx: only when the target is in a hardware transaction
++	- no_tx: only when the target is not in a hardware transaction
++	- abort_tx: only when the target is a hardware transaction abort
+ 
+ +
+ The option requires at least one branch type among any, any_call, any_ret, ind_call.
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index a41ac415..8384b54 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -618,6 +618,9 @@ static const struct branch_mode branch_modes[] = {
+ 	BRANCH_OPT("any_call", PERF_SAMPLE_BRANCH_ANY_CALL),
+ 	BRANCH_OPT("any_ret", PERF_SAMPLE_BRANCH_ANY_RETURN),
+ 	BRANCH_OPT("ind_call", PERF_SAMPLE_BRANCH_IND_CALL),
++	BRANCH_OPT("abort_tx", PERF_SAMPLE_BRANCH_ABORT_TX),
++	BRANCH_OPT("in_tx", PERF_SAMPLE_BRANCH_IN_TX),
++	BRANCH_OPT("no_tx", PERF_SAMPLE_BRANCH_NO_TX),
+ 	BRANCH_END
+ };
+ 
+-- 
+1.8.3.1
 
