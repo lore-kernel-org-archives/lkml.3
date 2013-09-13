@@ -1,85 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758073Ab3IMOXN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 10:23:13 -0400
-Received: from mga03.intel.com ([143.182.124.21]:13494 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758046Ab3IMOXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 10:23:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,898,1371106800"; 
-   d="scan'208";a="294503875"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Alex Thorlton <athorlton@sgi.com>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        "Eric W . Biederman" <ebiederm@xmission.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>, Dave Jones <davej@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Robin Holt <robinmholt@gmail.com>, Sedat Dilek <sedat.dilek@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-In-Reply-To: <20130913131907.GC21832@twins.programming.kicks-ass.net>
-References: <20130910074748.GA2971@gmail.com>
- <1379077576-2472-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1379077576-2472-4-git-send-email-kirill.shutemov@linux.intel.com>
- <20130913131907.GC21832@twins.programming.kicks-ass.net>
-Subject: Re: [PATCH 3/9] mm: introduce api for split page table lock for PMD
- level
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130913142253.11FCFE0090@blue.fi.intel.com>
-Date: Fri, 13 Sep 2013 17:22:52 +0300 (EEST)
+	id S932599Ab3IMOYe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 10:24:34 -0400
+Received: from www.linutronix.de ([62.245.132.108]:36747 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932249Ab3IMOYc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 10:24:32 -0400
+Date: Fri, 13 Sep 2013 16:24:29 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+cc: Sricharan R <r.sricharan@ti.com>, LKML <linux-kernel@vger.kernel.org>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        LAK <linux-arm-kernel@lists.infradead.org>, linux-omap@vger.kernel.org,
+        linus.walleij@linaro.org, Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, rnayak@ti.com
+Subject: Re: [RFC PATCH 1/4] DRIVERS: IRQCHIP: Add crossbar irqchip driver
+In-Reply-To: <52326D6B.2010003@ti.com>
+Message-ID: <alpine.DEB.2.02.1309131142540.4089@ionos.tec.linutronix.de>
+References: <1379000351-15672-1-git-send-email-r.sricharan@ti.com> <1379000351-15672-2-git-send-email-r.sricharan@ti.com> <alpine.DEB.2.02.1309122201530.4089@ionos.tec.linutronix.de> <523228B5.5070507@ti.com> <alpine.DEB.2.02.1309122335440.4089@ionos.tec.linutronix.de>
+ <5232457A.8080709@ti.com> <alpine.DEB.2.02.1309130138550.4089@ionos.tec.linutronix.de> <52326D6B.2010003@ti.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra wrote:
-> On Fri, Sep 13, 2013 at 04:06:10PM +0300, Kirill A. Shutemov wrote:
-> > Basic api, backed by mm->page_table_lock for now. Actual implementation
-> > will be added later.
+On Thu, 12 Sep 2013, Santosh Shilimkar wrote:
+> On Thursday 12 September 2013 08:26 PM, Thomas Gleixner wrote:
+> > Let me summarize:
 > > 
-> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> > ---
-> >  include/linux/mm.h | 13 +++++++++++++
-> >  1 file changed, 13 insertions(+)
+> >    - GIC supports up to 160 interrupts
 > > 
-> > diff --git a/include/linux/mm.h b/include/linux/mm.h
-> > index 6cf8ddb..d4361e7 100644
-> > --- a/include/linux/mm.h
-> > +++ b/include/linux/mm.h
-> > @@ -1294,6 +1294,19 @@ static inline void pgtable_page_dtor(struct page *page)
-> >  	((unlikely(pmd_none(*(pmd))) && __pte_alloc_kernel(pmd, address))? \
-> >  		NULL: pte_offset_kernel(pmd, address))
-> >  
-> > +static inline spinlock_t *huge_pmd_lockptr(struct mm_struct *mm, pmd_t *pmd)
-> > +{
-> > +	return &mm->page_table_lock;
-> > +}
-> > +
-> > +
-> > +static inline spinlock_t *huge_pmd_lock(struct mm_struct *mm, pmd_t *pmd)
-> > +{
-> > +	spinlock_t *ptl = huge_pmd_lockptr(mm, pmd);
-> > +	spin_lock(ptl);
-> > +	return ptl;
-> > +}
+> >    - CROSSBAR supports up to 250 interrupts 
+> > 
+> >    - CROSSBAR routes up to 160 out of 250 interrupts to the GIC ones
+> > 
+> >    - Drivers request a CROSSBAR interrupt number which must be mapped
+> >      to some arbitrary available GIC irq number
+> > 
+> Correct.
 > 
-> Why not call the thing pmd_lock()? The pmd bit differentiates it from
-> pte_lock() enough IMIO.
+> > So basically the CROSSBAR mechanism is pretty much the same as MSI[X]
+> > just in a different flavour and with a different set of semantics and
+> > limitations, i.e. poor mans MSI[X] with a new level of bogosity.
+> > 
+> > So if CROSSBAR is going to be the new fangled SoC MSI[X] long term
+> > equivalent then you better provide some infrastructure for that and
+> > make the drivers ready to use it. Maybe check with the PCI/MSI folks
+> > to share some of the interfaces.
+> >
+> > If that whole thing is another onetime HW designers wet dream, then
+> > please go back to the limited but completely functional (Who is going
+> > to use more than 160 peripheral interrupts????) device tree model. I
+> > really have no interest to support hardware designer brain farts.
+> > 
+> Thanks for clear NAK for irqchip approach. I should have looped you
+> in the discussion where I was also suggesting against the irqchip
+> approach. We will try to look at MSI stuff but if its get too
+> complicated am going to fall-back to the initial probe based
+> approach to achieve the functionality.
 
-Okay, will rename it.
+Before you dig into MSI, lets talk about irq domains first.
 
--- 
- Kirill A. Shutemov
+GIC implements a legacy irq domain, i.e. a linear domain of all
+possible GIC interrupts with a 1:1 mapping.
+
+So why can't you make use of irq domains and have the whole routing
+business implemented sanely?
+
+What's needed is in gic_init_bases():
+
+       if (of_property_read(node, "routable_irqs", &nr_routable_irqs) {
+       	  irq_domain_add_legacy(nr_gic_irqs);
+       } else {
+       	  irq_domain_add_legacy(nr_per_cpu_irqs);
+	  irq_domain_add_linear(nr_routable_irqs);
+       }
+
+Now that separate domain has an xlate function which grabs a free GIC
+irq from a bitmap and returns the hardware irq number in the gic
+space. The map/unmap callbacks take care of setting up / tearing down
+the route in the crossbar.
+
+Thoughts?
+
+Thanks,
+
+	tglx
