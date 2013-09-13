@@ -1,57 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757906Ab3IMN2E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:28:04 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:53411 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757876Ab3IMN1z (ORCPT
+	id S1757942Ab3IMN2P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:28:15 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:44827 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757908Ab3IMN2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:27:55 -0400
-X-Nat-Received: from [202.181.97.72]:50583 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1379078848.28724
-To: waiman.long@hp.com
-Cc: herbert@gondor.hengli.com.au, andr345@gmail.com, rusty@rustcorp.com.au,
-        linux-kernel@vger.kernel.org, arthur.marsh@internode.on.net,
-        tim.c.chen@linux.intel.com, linux-crypto@vger.kernel.org
-Subject: Re: [3.12-rc1] Dependency on module-init-tools >= 3.11 ?
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201309121403.FIH09821.JtLOVOSFOFHFQM@I-love.SAKURA.ne.jp>
-	<20130912052806.GA15737@gondor.apana.org.au>
-	<201309121920.AHJ58678.OMVJFFSHOtOFQL@I-love.SAKURA.ne.jp>
-	<20130912102953.GA18916@gondor.apana.org.au>
-	<5231CF30.8050500@hp.com>
-In-Reply-To: <5231CF30.8050500@hp.com>
-Message-Id: <201309132227.JEB13098.SOLFHFOOVFJMQt@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Fri, 13 Sep 2013 22:27:15 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 13092013 #11047731, status: clean
+	Fri, 13 Sep 2013 09:28:09 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH 211/228] cpufreq: tegra: remove calls to cpufreq_notify_transition()
+Date: Fri, 13 Sep 2013 18:32:37 +0530
+Message-Id: <69073c98beae28a6a75103dd202ec2a6b8b1a674.1379063063.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
+References: <cover.1379063063.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
+References: <cover.1379063063.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Waiman Long wrote:
-> I would like to report that I also have the same boot problem on a 
-> RHEL6.4 box with the crypto patch. My workaround is to force kernel 
-> build to have the crc_t10dif code built-in by changing the config file:
-> 
-> 4889c4889
-> < CONFIG_CRYPTO_CRCT10DIF=m
-> ---
->  > CONFIG_CRYPTO_CRCT10DIF=y
-> 5002c5002
-> < CONFIG_CRC_T10DIF=m
-> ---
->  > CONFIG_CRC_T10DIF=y
-> 
-> This solved the boot problem without any additional patch.  Do you think 
-> you should consider changing the configuration default to "y" instead of 
-> "m" or doesn't allow the "m" option at all?
+Most of the drivers do following in their ->target_index() routines:
 
-That was proposed but not accepted.
-https://lkml.org/lkml/2013/7/17/543
+	struct cpufreq_freqs freqs;
+	freqs.old = old freq...
+	freqs.new = new freq...
 
-You should choose CONFIG_CRYPTO_CRCT10DIF_PCLMUL=y in your kernel config
-if your CPU supports PCLMULQDQ.
+	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
+
+	/* Change rate here */
+
+	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
+
+This is replicated over all cpufreq drivers today and there doesn't exists a
+good enough reason why this shouldn't be moved to cpufreq core instead.
+
+Earlier patches have added support in cpufreq core to do cpufreq notification on
+frequency change, this one removes it from this driver.
+
+Some related minor cleanups are also done along with it.
+
+Cc: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/tegra-cpufreq.c | 25 +++++--------------------
+ 1 file changed, 5 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra-cpufreq.c
+index bd7d89c..f42df7e 100644
+--- a/drivers/cpufreq/tegra-cpufreq.c
++++ b/drivers/cpufreq/tegra-cpufreq.c
+@@ -102,12 +102,8 @@ static int tegra_update_cpu_speed(struct cpufreq_policy *policy,
+ 		unsigned long rate)
+ {
+ 	int ret = 0;
+-	struct cpufreq_freqs freqs;
+ 
+-	freqs.old = tegra_getspeed(0);
+-	freqs.new = rate;
+-
+-	if (freqs.old == freqs.new)
++	if (tegra_getspeed(0) == rate)
+ 		return ret;
+ 
+ 	/*
+@@ -121,21 +117,10 @@ static int tegra_update_cpu_speed(struct cpufreq_policy *policy,
+ 	else
+ 		clk_set_rate(emc_clk, 100000000);  /* emc 50Mhz */
+ 
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
+-
+-#ifdef CONFIG_CPU_FREQ_DEBUG
+-	printk(KERN_DEBUG "cpufreq-tegra: transition: %u --> %u\n",
+-	       freqs.old, freqs.new);
+-#endif
+-
+-	ret = tegra_cpu_clk_set_rate(freqs.new * 1000);
+-	if (ret) {
+-		pr_err("cpu-tegra: Failed to set cpu frequency to %d kHz\n",
+-			freqs.new);
+-		freqs.new = freqs.old;
+-	}
+-
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
++	ret = tegra_cpu_clk_set_rate(rate * 1000);
++	if (ret)
++		pr_err("cpu-tegra: Failed to set cpu frequency to %lu kHz\n",
++			rate);
+ 
+ 	return ret;
+ }
+-- 
+1.7.12.rc2.18.g61b472e
+
