@@ -1,87 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757209Ab3IMAZQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 20:25:16 -0400
-Received: from asmtp.lnxw.com ([207.21.185.2]:46854 "EHLO stitch.lnxw.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754562Ab3IMAZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 20:25:12 -0400
-X-Greylist: delayed 354 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Sep 2013 20:25:12 EDT
-From: Alexey Neyman <stilor@att.net>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] Fix coalescing of host bridge windows in arch/x86/pci/acpi.c
-Date: Thu, 12 Sep 2013 17:19:16 -0700
-User-Agent: KMail/1.13.5 (Linux/2.6.34-020634-generic; KDE/4.4.5; i686; ; )
+	id S1757316Ab3IMA0J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 20:26:09 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33283 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751687Ab3IMA0G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 20:26:06 -0400
+Date: Fri, 13 Sep 2013 02:26:03 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+cc: Sricharan R <r.sricharan@ti.com>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linus.walleij@linaro.org, linux@arm.linux.org.uk, tony@atomide.com,
+        rnayak@ti.com
+Subject: Re: [RFC PATCH 1/4] DRIVERS: IRQCHIP: Add crossbar irqchip driver
+In-Reply-To: <5232457A.8080709@ti.com>
+Message-ID: <alpine.DEB.2.02.1309130138550.4089@ionos.tec.linutronix.de>
+References: <1379000351-15672-1-git-send-email-r.sricharan@ti.com> <1379000351-15672-2-git-send-email-r.sricharan@ti.com> <alpine.DEB.2.02.1309122201530.4089@ionos.tec.linutronix.de> <523228B5.5070507@ti.com> <alpine.DEB.2.02.1309122335440.4089@ionos.tec.linutronix.de>
+ <5232457A.8080709@ti.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Multipart/Mixed;
-  boundary="Boundary-00=_FolMSkFDWOWq0aE"
-Message-Id: <201309121719.17447.stilor@att.net>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Boundary-00=_FolMSkFDWOWq0aE
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+On Thu, 12 Sep 2013, Santosh Shilimkar wrote:
+> On Thursday 12 September 2013 06:22 PM, Thomas Gleixner wrote:
+> > Now the real question is, how that expansion mechanism is supposed to
+> > work. There are two possible scenarios:
+> > 
+> > 1) Expand the number of handled interrupts beyond the GIC capacity:
+> > 
+> >    That requires a mechanism in CROSSBAR to map several CROSSBAR
+> >    interrupts to a particular GIC interrupt and provide a demux
+> >    mechanism to invoke the shared handlers.
+> > 
+> This is not possible in hardware and not supported. Hardware has
+> no notion of muxing multiple IRQ's to generate 1 IRQ or ack etc
+> functionality. Its a simple MUX to tie knots between input and output
+> wires.
 
-Hi all,
+It's not a MUX. It's a ROUTING mechanism. That's similar to the
+mechanisms which are used by MSI[X]. We assign arbitrary interrupt
+numbers to a device and route them to some underlying limited hardware
+interrupt controller.
 
-I have a board with a BIOS bug that reports the following I/O port regions in 
-_CRS on one of the host bridges:
+> > 2) Provide a mapping mechanism between possibly 250 interrupt numbers
+> >    and a limitation of a total 160 active interrupts by the underlying
+> >    GIC.
+> > 
+> This is the need and problem we are trying to solve.
 
-0x0000-0x03af // #0
-0x03e0-0x0cf7 // #1
-0x03b0-0x03bb // #2
-0x03c0-0x03df // #3
-0x0000-0xdfff // #4
-0xf000-0xffff // #5
+Let me summarize:
 
-Obviously, region number #4 is erroneous as it overlaps with regions #0..3. 
-However, code in coalesce_windows() in arch/x86/pci/acpi.c attempts to recover 
-from such kind of BIOS bugs by merging the overlapping regions. Current code 
-expands region #0 to 0x0000-0xdffff and makes region #4 ignored. As a result, 
-overlap of the expanded region #0 with regions #1..3 remains undetected. As a 
-result, regions #1..3 are inserted into the resource tree as if they were 
-consumers of the 0x0000-0xdfff regions, and devices that have resources in one 
-of these regions (e.g. 0x3f6 for legacy IDE) have a resource conflict - the 
-kernel does not initialize them.
+   - GIC supports up to 160 interrupts
 
-The attached patch makes the code in coalesce_windows() instead ignore res1 
-(which is already dealt with), possibly expanding res2 instead. As res2 has 
-not been reached in the outer loop in coalesce_windows(), the code will then 
-check for overlaps of the just-expanded resource with the rest of the 
-resources.
+   - CROSSBAR supports up to 250 interrupts 
 
-Regards,
-Alexey.
+   - CROSSBAR routes up to 160 out of 250 interrupts to the GIC ones
 
---Boundary-00=_FolMSkFDWOWq0aE
-Content-Type: text/x-patch;
-  charset="UTF-8";
-  name="acpi.c.diff"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename="acpi.c.diff"
+   - Drivers request a CROSSBAR interrupt number which must be mapped
+     to some arbitrary available GIC irq number
 
---- arch/x86/pci/acpi.c.orig	2013-09-12 16:23:06.113813150 -0700
-+++ arch/x86/pci/acpi.c	2013-09-12 16:23:56.605813117 -0700
-@@ -357,12 +357,12 @@
- 			 * the kernel resource tree doesn't allow overlaps.
- 			 */
- 			if (resource_overlaps(res1, res2)) {
--				res1->start = min(res1->start, res2->start);
--				res1->end = max(res1->end, res2->end);
-+				res2->start = min(res1->start, res2->start);
-+				res2->end = max(res1->end, res2->end);
- 				dev_info(&info->bridge->dev,
- 					 "host bridge window expanded to %pR; %pR ignored\n",
--					 res1, res2);
--				res2->flags = 0;
-+					 res2, res1);
-+				res1->flags = 0;
- 			}
- 		}
- 	}
+So basically the CROSSBAR mechanism is pretty much the same as MSI[X]
+just in a different flavour and with a different set of semantics and
+limitations, i.e. poor mans MSI[X] with a new level of bogosity.
 
---Boundary-00=_FolMSkFDWOWq0aE--
+So if CROSSBAR is going to be the new fangled SoC MSI[X] long term
+equivalent then you better provide some infrastructure for that and
+make the drivers ready to use it. Maybe check with the PCI/MSI folks
+to share some of the interfaces.
+
+If that whole thing is another onetime HW designers wet dream, then
+please go back to the limited but completely functional (Who is going
+to use more than 160 peripheral interrupts????) device tree model. I
+really have no interest to support hardware designer brain farts.
+
+Thanks,
+
+	tglx
+
+
