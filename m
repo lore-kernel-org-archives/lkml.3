@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758238Ab3IMNid (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:38:33 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:44306 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933602Ab3IMNZR (ORCPT
+	id S932922Ab3IMNiv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:38:51 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:39869 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934157Ab3IMNZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:25:17 -0400
+	Fri, 13 Sep 2013 09:25:02 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Viresh Kumar <viresh.kumar@linaro.org>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Mikael Starvik <starvik@axis.com>, linux-cris-kernel@axis.com
-Subject: [PATCH 187/228] cpufreq: cris: remove calls to cpufreq_notify_transition()
-Date: Fri, 13 Sep 2013 18:32:13 +0530
-Message-Id: <c8374403df5f41c355e2e3c33de384382e0a746a.1379063063.git.viresh.kumar@linaro.org>
+        Steven Miao <realmz6@gmail.com>
+Subject: [PATCH 185/228] cpufreq: blackfin: remove calls to cpufreq_notify_transition()
+Date: Fri, 13 Sep 2013 18:32:11 +0530
+Message-Id: <3e6166073c8fe16f07440600ae70ec24f6cd27e1.1379063063.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
 References: <cover.1379063063.git.viresh.kumar@linaro.org>
@@ -47,71 +46,67 @@ frequency change, this one removes it from this driver.
 
 Some related minor cleanups are also done along with it.
 
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: Mikael Starvik <starvik@axis.com>
-Cc: linux-cris-kernel@axis.com
+Cc: Steven Miao <realmz6@gmail.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/cris-artpec3-cpufreq.c | 8 --------
- drivers/cpufreq/cris-etraxfs-cpufreq.c | 8 --------
- 2 files changed, 16 deletions(-)
+ drivers/cpufreq/blackfin-cpufreq.c | 22 +++++++---------------
+ 1 file changed, 7 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/cpufreq/cris-artpec3-cpufreq.c b/drivers/cpufreq/cris-artpec3-cpufreq.c
-index 841857c..8655904 100644
---- a/drivers/cpufreq/cris-artpec3-cpufreq.c
-+++ b/drivers/cpufreq/cris-artpec3-cpufreq.c
-@@ -29,15 +29,9 @@ static unsigned int cris_freq_get_cpu_frequency(unsigned int cpu)
- 
- static int cris_freq_target(struct cpufreq_policy *policy, unsigned int state)
- {
+diff --git a/drivers/cpufreq/blackfin-cpufreq.c b/drivers/cpufreq/blackfin-cpufreq.c
+index 12528b2..e9e63fc 100644
+--- a/drivers/cpufreq/blackfin-cpufreq.c
++++ b/drivers/cpufreq/blackfin-cpufreq.c
+@@ -132,27 +132,23 @@ static int bfin_target(struct cpufreq_policy *policy, unsigned int index)
+ #ifndef CONFIG_BF60x
+ 	unsigned int plldiv;
+ #endif
 -	struct cpufreq_freqs freqs;
- 	reg_clkgen_rw_clk_ctrl clk_ctrl;
- 	clk_ctrl = REG_RD(clkgen, regi_clkgen, rw_clk_ctrl);
+ 	static unsigned long lpj_ref;
+ 	static unsigned int  lpj_ref_freq;
++	unsigned int old_freq, new_freq;
+ 	int ret = 0;
  
--	freqs.old = cris_freq_get_cpu_frequency(policy->cpu);
--	freqs.new = cris_freq_table[state].frequency;
+ #if defined(CONFIG_CYCLES_CLOCKSOURCE)
+ 	cycles_t cycles;
+ #endif
+ 
+-	freqs.old = bfin_getfreq_khz(0);
+-	freqs.new = bfin_freq_table[index].frequency;
++	old_freq = bfin_getfreq_khz(0);
++	new_freq = bfin_freq_table[index].frequency;
+ 
+-	pr_debug("cpufreq: changing cclk to %lu; target = %u, oldfreq = %u\n",
+-			freqs.new, freqs.new, freqs.old);
 -
 -	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
--
- 	local_irq_disable();
+ #ifndef CONFIG_BF60x
+ 	plldiv = (bfin_read_PLL_DIV() & SSEL) | dpm_state_table[index].csel;
+ 	bfin_write_PLL_DIV(plldiv);
+ #else
+-	ret = cpu_set_cclk(policy->cpu, freqs.new * 1000);
++	ret = cpu_set_cclk(policy->cpu, new_freq * 1000);
+ 	if (ret != 0) {
+ 		WARN_ONCE(ret, "cpufreq set freq failed %d\n", ret);
+ 		return ret;
+@@ -168,17 +164,13 @@ static int bfin_target(struct cpufreq_policy *policy, unsigned int index)
+ #endif
+ 	if (!lpj_ref_freq) {
+ 		lpj_ref = loops_per_jiffy;
+-		lpj_ref_freq = freqs.old;
++		lpj_ref_freq = old_freq;
+ 	}
+-	if (freqs.new != freqs.old) {
++	if (new_freq != old_freq) {
+ 		loops_per_jiffy = cpufreq_scale(lpj_ref,
+-				lpj_ref_freq, freqs.new);
++				lpj_ref_freq, new_freq);
+ 	}
  
- 	/* Even though we may be SMP they will share the same clock
-@@ -50,8 +44,6 @@ static int cris_freq_target(struct cpufreq_policy *policy, unsigned int state)
- 
- 	local_irq_enable();
- 
+-	/* TODO: just test case for cycles clock source, remove later */
 -	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
 -
- 	return 0;
- }
- 
-diff --git a/drivers/cpufreq/cris-etraxfs-cpufreq.c b/drivers/cpufreq/cris-etraxfs-cpufreq.c
-index c58811a..26d940d 100644
---- a/drivers/cpufreq/cris-etraxfs-cpufreq.c
-+++ b/drivers/cpufreq/cris-etraxfs-cpufreq.c
-@@ -29,15 +29,9 @@ static unsigned int cris_freq_get_cpu_frequency(unsigned int cpu)
- 
- static int cris_freq_target(struct cpufreq_policy *policy, unsigned int state)
- {
--	struct cpufreq_freqs freqs;
- 	reg_config_rw_clk_ctrl clk_ctrl;
- 	clk_ctrl = REG_RD(config, regi_config, rw_clk_ctrl);
- 
--	freqs.old = cris_freq_get_cpu_frequency(policy->cpu);
--	freqs.new = cris_freq_table[state].frequency;
--
--	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
--
- 	local_irq_disable();
- 
- 	/* Even though we may be SMP they will share the same clock
-@@ -50,8 +44,6 @@ static int cris_freq_target(struct cpufreq_policy *policy, unsigned int state)
- 
- 	local_irq_enable();
- 
--	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
--
- 	return 0;
+-	pr_debug("cpufreq: done\n");
+ 	return ret;
  }
  
 -- 
