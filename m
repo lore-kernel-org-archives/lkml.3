@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757006Ab3IMPiU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 11:38:20 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:62454 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756176Ab3IMPiQ (ORCPT
+	id S1757158Ab3IMPkn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 11:40:43 -0400
+Received: from a194-81.smtp-out.amazonses.com ([199.255.194.81]:8593 "EHLO
+	a194-81.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755592Ab3IMPkm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 11:38:16 -0400
+	Fri, 13 Sep 2013 11:40:42 -0400
+Date: Fri, 13 Sep 2013 15:40:40 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [RFC] Restrict kernel spawning of threads to a specified set of
+ cpus.
+In-Reply-To: <alpine.DEB.2.02.1309131010480.26487@gentwo.org>
+Message-ID: <0000014117fb2ea3-ec97f4c4-344b-42c5-b27c-be876f723942-000000@email.amazonses.com>
+References: <20130912141625.GA23357@somewhere> <00000141128d759a-44dcacb6-8f48-4f9b-8381-d14003bd6da1-000000@email.amazonses.com> <20130912143137.GA23839@somewhere> <0000014112a921ae-51d171bf-e8d4-4569-bd20-94dabda2d5ba-000000@email.amazonses.com>
+ <20130912151102.GB23839@somewhere> <alpine.DEB.2.02.1309121030390.21473@gentwo.org> <0000014112d66287-d0abaeb1-71ff-48a0-8740-f984d47400a7-000000@email.amazonses.com> <20130912183023.GA25386@somewhere> <20130913092553.GL31370@twins.programming.kicks-ass.net>
+ <00000141179a5b1f-b94a8394-9e98-400c-ae7f-59cdcfce60a6-000000@email.amazonses.com> <20130913144008.GF21832@twins.programming.kicks-ass.net> <alpine.DEB.2.02.1309131010480.26487@gentwo.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CA+5PVA6Qon0cskv5wDyiCxSZzc2WjUFmzYmGE0zoNJC5ms1-XQ@mail.gmail.com>
-References: <20130912153629.16487.88969@localhost.localdomain>
-	<CA+5PVA5GogJnewWvdmVo03oZRZDerE=H7BR49Xi1DZQyE_CG4Q@mail.gmail.com>
-	<CAMuHMdWgzQvKkASycHSzpTwi2c3qG+wn52YSr-=c8cDtro7NyQ@mail.gmail.com>
-	<CA+5PVA6Hm6XLdJa=x9TmZnjSH160337i-CM2HGHBpQMf06Bv9w@mail.gmail.com>
-	<20130913121529.GA1437@flint.arm.linux.org.uk>
-	<CA+5PVA6Qon0cskv5wDyiCxSZzc2WjUFmzYmGE0zoNJC5ms1-XQ@mail.gmail.com>
-Date: Fri, 13 Sep 2013 11:38:15 -0400
-X-Google-Sender-Auth: BBu8S_l2z303GaQlPtGkwRPiPCU
-Message-ID: <CA+5PVA4NAmFnc3s6CaaDow9P3xLXOiEngHjQ_P5+TEG--LZ9ZQ@mail.gmail.com>
-Subject: Re: [GIT PULL] Btrfs
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Chris Mason <chris.mason@fusionio.com>, Mark Fasheh <mfasheh@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Russell King <rmk@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.194.81
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 13, 2013 at 11:06 AM, Josh Boyer <jwboyer@gmail.com> wrote:
-> On Fri, Sep 13, 2013 at 8:15 AM, Russell King <rmk@arm.linux.org.uk> wrote:
->> On Fri, Sep 13, 2013 at 07:53:21AM -0400, Josh Boyer wrote:
->>> I'm not an ARM expert, so I don't know if ARM should use the
->>> asm-generic implementations, or just use __get_user/__put_user in all
->>> cases.  I've CC'd rmk.
->>
->> Why do we have uaccess-unaligned.h ?  Normally, these kinds of things
->> are spawned by architectures which have problems with unaligned accesses,
->> ARM being one of them, but afaik we've never need this.
->>
->> With the kernel-side trapping of unaligned accesses on older hardware,
->> we've always dealt with the normal accessor faulting.
->>
->> From what I can tell in the git history, these unaligned put_user and
->> get_user have existed all the way back to the dawn of git use.
->>
->> Can someone enlighten me why we have them?
+Hmmm... usermodehelper is based on workqueues. I guess this will
+ultimately come down to modify the workqueue behavior for
+WORK_CPU_UNBOUND?
 
-I somehow fail at email and dropped Russell from CC on accident.  Sigh.
+If WORK_CPU_UNBOUND could mean to limit process execution to the affinity
+of kthreadd then we are fine.
 
-> So while that gets sorted out, would it be safe to just do as Geert
-> did on m68k and put:
->
-> #define __put_user_unaligned(x, ptr) __put_user((x), (ptr))
->
-> in arch/arm/include/asm/uaccess.h, and let the normal accessors and
-> kernel-side trapping deal with things?  I'm thinking that's a local
-> fix until something gets sorted upstream, but I don't want to do it if
-> it's going to break things.
->
-> josh
+That would also benefit many other workqueue events that may otherwise
+disturb tickless cpus.
+
+
+
