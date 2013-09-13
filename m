@@ -1,166 +1,475 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700Ab3IMOuA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 10:50:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59848 "EHLO mx2.suse.de"
+	id S1757569Ab3IMOuE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 10:50:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16382 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755102Ab3IMOt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 10:49:57 -0400
-Date: Fri, 13 Sep 2013 16:49:53 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Balbir Singh <bsingharora@gmail.com>,
-        Glauber Costa <glommer@gmail.com>
-Subject: Re: [PATCH v5] Soft limit rework
-Message-ID: <20130913144953.GA23857@dhcp22.suse.cz>
-References: <1371557387-22434-1-git-send-email-mhocko@suse.cz>
- <20130819163512.GB712@cmpxchg.org>
- <20130820091414.GC31552@dhcp22.suse.cz>
- <20130820141339.GA31419@cmpxchg.org>
- <20130822105856.GA21529@dhcp22.suse.cz>
- <20130903161550.GA856@cmpxchg.org>
- <20130904163823.GA30851@dhcp22.suse.cz>
- <20130906192311.GE856@cmpxchg.org>
+	id S1756712Ab3IMOuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 10:50:00 -0400
+Date: Fri, 13 Sep 2013 17:52:04 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: kvm@vger.kernel.org, gleb@redhat.com, aik@ozlabs.ru,
+        benh@kernel.crashing.org, bsd@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 3/3] kvm: Add VFIO device for handling IOMMU cache
+ coherency
+Message-ID: <20130913145204.GA30091@redhat.com>
+References: <20130912211401.8542.82932.stgit@bling.home>
+ <20130912212314.8542.9692.stgit@bling.home>
+ <20130913123947.GA29661@redhat.com>
+ <1379081620.19727.21.camel@ul30vt.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130906192311.GE856@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1379081620.19727.21.camel@ul30vt.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 06-09-13 15:23:11, Johannes Weiner wrote:
-> On Wed, Sep 04, 2013 at 06:38:23PM +0200, Michal Hocko wrote:
-[...]
-> > To handle overcommit situations more gracefully. As the documentation
-> > states:
-> > "
-> > 7. Soft limits
+On Fri, Sep 13, 2013 at 08:13:40AM -0600, Alex Williamson wrote:
+> On Fri, 2013-09-13 at 15:39 +0300, Michael S. Tsirkin wrote:
+> > On Thu, Sep 12, 2013 at 03:23:15PM -0600, Alex Williamson wrote:
+> > > So far we've succeeded at making KVM and VFIO mostly unaware of each
+> > > other, but there's any important point where that breaks down.  Intel
+> > > VT-d hardware may or may not support snoop control.  When snoop
+> > > control is available, intel-iommu promotes No-Snoop transactions on
+> > > PCIe to be cache coherent.  That allows KVM to handle things like the
+> > > x86 WBINVD opcode as a nop.  When the hardware does not support this,
+> > > KVM must implement a hardware visible WBINVD for the guest.
+> > > 
+> > > We could simply let userspace tell KVM how to handle WBINVD, but it's
+> > > privileged for a reason.  Allowing an arbitrary user to enable
+> > > physical WBINVD gives them a more access to the hardware.  Previously,
+> > > this has only been enabled for guests supporting legacy PCI device
+> > > assignment.  In such cases it's necessary for proper guest execution.
+> > > We therefore create a new KVM-VFIO virtual device.  The user can add
+> > > and remove VFIO groups to this device via file descriptors.  KVM
+> > > makes use of the VFIO external user interface to validate that the
+> > > user has access to physical hardware and gets the coherency state of
+> > > the IOMMU from VFIO.  This provides equivalent functionality to
+> > > legacy KVM assignment, while keeping (nearly) all the bits isolated.
 > > 
-> > Soft limits allow for greater sharing of memory. The idea behind soft limits
-> > is to allow control groups to use as much of the memory as needed, provided
 > > 
-> > a. There is no memory contention
-> > b. They do not exceed their hard limit
-> > 
-> > When the system detects memory contention or low memory, control groups
-> > are pushed back to their soft limits. If the soft limit of each control
-> > group is very high, they are pushed back as much as possible to make
-> > sure that one control group does not starve the others of memory.
-> > 
-> > Please note that soft limits is a best-effort feature; it comes with
-> > no guarantees, but it does its best to make sure that when memory is
-> > heavily contended for, memory is allocated based on the soft limit
-> > hints/setup. Currently soft limit based reclaim is set up such that
-> > it gets invoked from balance_pgdat (kswapd).
-> > "
-> > 
-> > Except for the last sentence the same holds for the integrated
-> > implementation as well. With the patchset we are doing the soft reclaim
-> > also for the targeted reclaim which was simply not possible previously
-> > because of the data structures limitations. And doing soft reclaim from
-> > target reclaim makes a lot of sense to me because whether we have a
-> > global or hierarchical memory pressure doesn't make any difference that
-> > some groups are set up to sacrifice their memory to help to release the
-> > pressure.
+> > So how is the isolation handled then?
 > 
-> The issue I have with this is that the semantics of the soft limit are
-> so backwards that we should strive to get this stuff right
-> conceptually before integrating this better into the VM.
+> By isolation above, I'm only talking about the intrusive-ness of the
+> code and "leaking" vfio knowledge into KVM.  Nothing to do with device
+> isolation.
 > 
-> We have a big user that asks for guarantees, which are comparable but
-> the invert opposite of this.  Instead of specifying what is optional
-> in one group, you specify what is essential in the other group.  And
-> the default is to guarantee nothing instead of everything like soft
-> limits are currently defined.
+> > How is this better than a ioctl to grant WBINVD to guest?
+> > kvm char device can be opened by any user,
+> > so any user can grant itself these priveledges.
+> > What did I miss?
 > 
-> We even tried to invert the default soft limit setting in the past,
-> which went nowhere because we can't do these subtle semantic changes
-> on an existing interface.
+> With this interface the caller must have physical access to one or more
+> devices via vfio groups and each of those groups must be configured into
+> one or more IOMMU domains.  Furthermore, at least one of the IOMMU
+> domains must not include the IOMMU_CAP_CACHE_COHERENCY capability.  So
+> it's actually quite a significantly higher hurdle than an ioctl open to
+> anyone and the number of VMs on a given host capable of doing this is
+> bound by the number of IOMMU groups.  We do not however verify that a
+> vfio device is actually in use by the VM, but I don't think there's a
+> way to do that from KVM and I'm not sure that it's important to do so.
+> I believe having access to physical hardware is already a sufficient
+> granting of privilege to enable things like WBINVD.  Thanks,
 > 
-> I would really like to deprecate soft limits and introduce something
-> new that has the proper semantics we want from the get-go.  Its
-> implementation could very much look like your code, so we can easily
-> reuse that.  But the interface and its semantics should come first.
+> Alex
 
-I am open to discussin such a change I just do not see any reason to
-have a crippled soft reclaim implementation for the mean time.
-Especially when it doesn't look like such a new interface is easy to
-agree on.
+Fair enough, but how about revoking the priveledge?
+For example, device can be removed by hotplug - does
+priveledge remain?
+Is this important at all?
 
-[...]
-> > > You have not shown that prio-0 scans are a problem. 
-> > 
-> > OK, I thought this was self evident but let me be more specific.
-> > 
-> > The scan the world is almost always a problem. We are no longer doing
-> > proportional anon/file reclaim (swappiness is ignored). This is wrong
-> > from at least two points of view. Firstly it makes the reclaim decisions
-> > different a lot for groups that are under the soft limit and those
-> > that are over. Secondly, and more importantly, this might lead to a
-> > pre-mature swapping, especially when there is a lot of IO going on.
-> > 
-> > The global reclaim suffers from the very same problem and that is why
-> > we try to prevent from prio-0 reclaim as much as possible and use it
-> > only as a last resort.
+
+> > > The one intrusion is the resulting flag indicating the coherency
+> > > state.  For this RFC it's placed on the x86 kvm_arch struct, however
+> > > I know POWER has interest in using the VFIO external user interface,
+> > > and I'm hoping we can share a common KVM-VFIO device.  Perhaps they
+> > > care about No-Snoop handling as well or the code can be #ifdef'd.
+> > > 
+> > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > > ---
+> > >  Documentation/virtual/kvm/devices/vfio.txt |   22 +++
+> > >  arch/x86/include/asm/kvm_host.h            |    1 
+> > >  arch/x86/kvm/Makefile                      |    2 
+> > >  arch/x86/kvm/vmx.c                         |    5 -
+> > >  arch/x86/kvm/x86.c                         |    5 -
+> > >  include/linux/kvm_host.h                   |    1 
+> > >  include/uapi/linux/kvm.h                   |    4 
+> > >  virt/kvm/kvm_main.c                        |    3 
+> > >  virt/kvm/vfio.c                            |  237 ++++++++++++++++++++++++++++
+> > >  9 files changed, 275 insertions(+), 5 deletions(-)
+> > >  create mode 100644 Documentation/virtual/kvm/devices/vfio.txt
+> > >  create mode 100644 virt/kvm/vfio.c
+> > > 
+> > > diff --git a/Documentation/virtual/kvm/devices/vfio.txt b/Documentation/virtual/kvm/devices/vfio.txt
+> > > new file mode 100644
+> > > index 0000000..831e6a6
+> > > --- /dev/null
+> > > +++ b/Documentation/virtual/kvm/devices/vfio.txt
+> > > @@ -0,0 +1,22 @@
+> > > +VFIO virtual device
+> > > +===================
+> > > +
+> > > +Device types supported:
+> > > +  KVM_DEV_TYPE_VFIO
+> > > +
+> > > +Only one VFIO instance may be created per VM.  The created device
+> > > +tracks VFIO groups in use by the VM and features of those groups
+> > > +important to the correctness and acceleration of the VM.  As groups
+> > > +are enabled and disabled for use by the VM, KVM should be updated
+> > > +about their presence.  When registered with KVM, a reference to the
+> > > +VFIO-group is held by KVM.
+> > > +
+> > > +Groups:
+> > > +  KVM_DEV_VFIO_ADD_GROUP
+> > > +  KVM_DEV_VFIO_DEL_GROUP
+> > > +
+> > > +Each takes a int32_t file descriptor for kvm_device_attr.addr and
+> > > +does not support any group device kvm_device_attr.attr.
+> > > +
+> > > +RFC - Should we use Group KVM_DEV_VFIO_GROUP with Attributes
+> > > +      KVM_DEV_VFIO_GROUP_ADD & DEL?
+> > > diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> > > index c76ff74..5b9350d 100644
+> > > --- a/arch/x86/include/asm/kvm_host.h
+> > > +++ b/arch/x86/include/asm/kvm_host.h
+> > > @@ -588,6 +588,7 @@ struct kvm_arch {
+> > >  
+> > >  	spinlock_t pvclock_gtod_sync_lock;
+> > >  	bool use_master_clock;
+> > > +	bool vfio_noncoherent;
+> > >  	u64 master_kernel_ns;
+> > >  	cycle_t master_cycle_now;
+> > >  
+> > > diff --git a/arch/x86/kvm/Makefile b/arch/x86/kvm/Makefile
+> > > index bf4fb04..25d22b2 100644
+> > > --- a/arch/x86/kvm/Makefile
+> > > +++ b/arch/x86/kvm/Makefile
+> > > @@ -9,7 +9,7 @@ KVM := ../../../virt/kvm
+> > >  
+> > >  kvm-y			+= $(KVM)/kvm_main.o $(KVM)/ioapic.o \
+> > >  				$(KVM)/coalesced_mmio.o $(KVM)/irq_comm.o \
+> > > -				$(KVM)/eventfd.o $(KVM)/irqchip.o
+> > > +				$(KVM)/eventfd.o $(KVM)/irqchip.o $(KVM)/vfio.o
+> > >  kvm-$(CONFIG_KVM_DEVICE_ASSIGNMENT)	+= $(KVM)/assigned-dev.o $(KVM)/iommu.o
+> > >  kvm-$(CONFIG_KVM_ASYNC_PF)	+= $(KVM)/async_pf.o
+> > >  
+> > > diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> > > index 1f1da43..94f7786 100644
+> > > --- a/arch/x86/kvm/vmx.c
+> > > +++ b/arch/x86/kvm/vmx.c
+> > > @@ -7395,8 +7395,9 @@ static u64 vmx_get_mt_mask(struct kvm_vcpu *vcpu, gfn_t gfn, bool is_mmio)
+> > >  	 */
+> > >  	if (is_mmio)
+> > >  		ret = MTRR_TYPE_UNCACHABLE << VMX_EPT_MT_EPTE_SHIFT;
+> > > -	else if (vcpu->kvm->arch.iommu_domain &&
+> > > -		!(vcpu->kvm->arch.iommu_flags & KVM_IOMMU_CACHE_COHERENCY))
+> > > +	else if (vcpu->kvm->arch.vfio_noncoherent ||
+> > > +		 vcpu->kvm->arch.iommu_domain &&
+> > > +		 !(vcpu->kvm->arch.iommu_flags & KVM_IOMMU_CACHE_COHERENCY))
+> > >  		ret = kvm_get_guest_memory_type(vcpu, gfn) <<
+> > >  		      VMX_EPT_MT_EPTE_SHIFT;
+> > >  	else
+> > > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> > > index e5ca72a..406ba6f 100644
+> > > --- a/arch/x86/kvm/x86.c
+> > > +++ b/arch/x86/kvm/x86.c
+> > > @@ -2715,8 +2715,9 @@ static void wbinvd_ipi(void *garbage)
+> > >  
+> > >  static bool need_emulate_wbinvd(struct kvm_vcpu *vcpu)
+> > >  {
+> > > -	return vcpu->kvm->arch.iommu_domain &&
+> > > -		!(vcpu->kvm->arch.iommu_flags & KVM_IOMMU_CACHE_COHERENCY);
+> > > +	return vcpu->kvm->arch.vfio_noncoherent ||
+> > > +	       (vcpu->kvm->arch.iommu_domain &&
+> > > +		!(vcpu->kvm->arch.iommu_flags & KVM_IOMMU_CACHE_COHERENCY));
+> > >  }
+> > >  
+> > >  void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+> > > diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> > > index ca645a0..615f0c3 100644
+> > > --- a/include/linux/kvm_host.h
+> > > +++ b/include/linux/kvm_host.h
+> > > @@ -1065,6 +1065,7 @@ struct kvm_device *kvm_device_from_filp(struct file *filp);
+> > >  
+> > >  extern struct kvm_device_ops kvm_mpic_ops;
+> > >  extern struct kvm_device_ops kvm_xics_ops;
+> > > +extern struct kvm_device_ops kvm_vfio_ops;
+> > >  
+> > >  #ifdef CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT
+> > >  
+> > > diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
+> > > index 99c2533..8869616 100644
+> > > --- a/include/uapi/linux/kvm.h
+> > > +++ b/include/uapi/linux/kvm.h
+> > > @@ -843,6 +843,10 @@ struct kvm_device_attr {
+> > >  #define KVM_DEV_TYPE_FSL_MPIC_20	1
+> > >  #define KVM_DEV_TYPE_FSL_MPIC_42	2
+> > >  #define KVM_DEV_TYPE_XICS		3
+> > > +#define KVM_DEV_TYPE_VFIO		4
+> > > +
+> > > +#define KVM_DEV_VFIO_ADD_GROUP		1
+> > > +#define KVM_DEV_VFIO_DEL_GROUP		2
+> > >  
+> > >  /*
+> > >   * ioctls for VM fds
+> > > diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> > > index d9cad4d..1a20425 100644
+> > > --- a/virt/kvm/kvm_main.c
+> > > +++ b/virt/kvm/kvm_main.c
+> > > @@ -2269,6 +2269,9 @@ static int kvm_ioctl_create_device(struct kvm *kvm,
+> > >  		ops = &kvm_xics_ops;
+> > >  		break;
+> > >  #endif
+> > > +	case KVM_DEV_TYPE_VFIO:
+> > > +		ops = &kvm_vfio_ops;
+> > > +		break;
+> > >  	default:
+> > >  		return -ENODEV;
+> > >  	}
+> > > diff --git a/virt/kvm/vfio.c b/virt/kvm/vfio.c
+> > > new file mode 100644
+> > > index 0000000..9a2faff
+> > > --- /dev/null
+> > > +++ b/virt/kvm/vfio.c
+> > > @@ -0,0 +1,237 @@
+> > > +/*
+> > > + * VFIO bridge
+> > > + *
+> > > + * Copyright (C) 2013 Red Hat, Inc.  All rights reserved.
+> > > + *     Author: Alex Williamson <alex.williamson@redhat.com>
+> > > + *
+> > > + * This program is free software; you can redistribute it and/or modify
+> > > + * it under the terms of the GNU General Public License version 2 as
+> > > + * published by the Free Software Foundation.
+> > > + */
+> > > +
+> > > +#include <linux/errno.h>
+> > > +#include <linux/file.h>
+> > > +#include <linux/kvm_host.h>
+> > > +#include <linux/list.h>
+> > > +#include <linux/module.h>
+> > > +#include <linux/mutex.h>
+> > > +#include <linux/slab.h>
+> > > +#include <linux/vfio.h>
+> > > +
+> > > +struct kvm_vfio_group {
+> > > +	struct list_head node;
+> > > +	struct vfio_group *vfio_group;
+> > > +};
+> > > +
+> > > +struct kvm_vfio {
+> > > +	struct list_head group_list;
+> > > +	struct mutex lock;
+> > > +};
+> > > +
+> > > +static struct vfio_group *kvm_vfio_group_get_external_user(struct file *filep)
+> > > +{
+> > > +	struct vfio_group *vfio_group;
+> > > +	struct vfio_group *(*fn)(struct file *);
+> > > +
+> > > +	fn = symbol_get(vfio_group_get_external_user);
+> > > +	if (!fn)
+> > > +		return ERR_PTR(-EINVAL);
+> > > +
+> > > +	vfio_group = fn(filep);
+> > > +
+> > > +	symbol_put(vfio_group_get_external_user);
+> > > +
+> > > +	return vfio_group;
+> > > +}
+> > > +
+> > > +static void kvm_vfio_group_put_external_user(struct vfio_group *vfio_group)
+> > > +{
+> > > +	void (*fn)(struct vfio_group *);
+> > > +
+> > > +	fn = symbol_get(vfio_group_put_external_user);
+> > > +	if (!fn)
+> > > +		return;
+> > > +
+> > > +	fn(vfio_group);
+> > > +
+> > > +	symbol_put(vfio_group_put_external_user);
+> > > +}
+> > > +
+> > > +static int kvm_vfio_external_user_check_extension(struct vfio_group *vfio_group,
+> > > +						  unsigned long arg)
+> > > +{
+> > > +	int (*fn)(struct vfio_group *, unsigned long);
+> > > +	int ret;
+> > > +
+> > > +	fn = symbol_get(vfio_external_user_check_extension);
+> > > +	if (!fn)
+> > > +		return -EINVAL;
+> > > +
+> > > +	ret = fn(vfio_group, arg);
+> > > +
+> > > +	symbol_put(vfio_group_put_external_user);
+> > > +
+> > > +	return ret;
+> > > +}
+> > > +
+> > > +static void kvm_vfio_update_iommu_coherency(struct kvm_device *dev)
+> > > +{
+> > > +	struct kvm_vfio *kv = dev->private;
+> > > +	bool coherent = true;
+> > > +	struct kvm_vfio_group *kvg;
+> > > +
+> > > +	mutex_lock(&kv->lock);
+> > > +
+> > > +	list_for_each_entry(kvg, &kv->group_list, node) {
+> > > +		if (!kvm_vfio_external_user_check_extension(kvg->vfio_group,
+> > > +					VFIO_IOMMU_CAP_CACHE_COHERENCY)) {
+> > > +			coherent = false;
+> > > +			break;
+> > > +		}
+> > > +	}
+> > > +
+> > > +	mutex_unlock(&kv->lock);
+> > > +
+> > > +	dev->kvm->arch.vfio_noncoherent = !coherent;
+> > > +}
+> > > +
+> > > +static int kvm_vfio_set_attr(struct kvm_device *dev,
+> > > +			     struct kvm_device_attr *attr)
+> > > +{
+> > > +	struct kvm_vfio *kv = dev->private;
+> > > +	struct fd f;
+> > > +	struct vfio_group *vfio_group;
+> > > +	struct kvm_vfio_group *kvg;
+> > > +	int ret;
+> > > +
+> > > +	switch (attr->group) {
+> > > +	case KVM_DEV_VFIO_ADD_GROUP:
+> > > +		f = fdget(attr->addr);
+> > > +		if (!f.file)
+> > > +			return -EBADF;
+> > > +
+> > > +		vfio_group = kvm_vfio_group_get_external_user(f.file);
+> > > +		fdput(f);
+> > > +
+> > > +		if (IS_ERR(vfio_group))
+> > > +			return PTR_ERR(vfio_group);
+> > > +
+> > > +		mutex_lock(&kv->lock);
+> > > +
+> > > +		list_for_each_entry(kvg, &kv->group_list, node) {
+> > > +			if (kvg->vfio_group == vfio_group) {
+> > > +				mutex_unlock(&kv->lock);
+> > > +				kvm_vfio_group_put_external_user(vfio_group);
+> > > +				return -EEXIST;
+> > > +			}
+> > > +		}
+> > > +
+> > > +		kvg = kzalloc(sizeof(*kvg), GFP_KERNEL);
+> > > +		if (!kvg) {
+> > > +			mutex_unlock(&kv->lock);
+> > > +			kvm_vfio_group_put_external_user(vfio_group);
+> > > +			return -ENOMEM;
+> > > +		}
+> > > +
+> > > +		list_add_tail(&kvg->node, &kv->group_list);
+> > > +		kvg->vfio_group = vfio_group;
+> > > +
+> > > +		mutex_unlock(&kv->lock);
+> > > +
+> > > +		kvm_vfio_update_iommu_coherency(dev);
+> > > +
+> > > +		return 0;
+> > > +
+> > > +	case KVM_DEV_VFIO_DEL_GROUP:
+> > > +		f = fdget(attr->addr);
+> > > +		if (!f.file)
+> > > +			return -EBADF;
+> > > +
+> > > +		vfio_group = kvm_vfio_group_get_external_user(f.file);
+> > > +		fdput(f);
+> > > +
+> > > +		if (IS_ERR(vfio_group))
+> > > +			return PTR_ERR(vfio_group);
+> > > +
+> > > +		ret = -ENOENT;
+> > > +
+> > > +		mutex_lock(&kv->lock);
+> > > +
+> > > +		list_for_each_entry(kvg, &kv->group_list, node) {
+> > > +			if (kvg->vfio_group != vfio_group)
+> > > +				continue;
+> > > +
+> > > +			list_del(&kvg->node);
+> > > +			kvm_vfio_group_put_external_user(kvg->vfio_group);
+> > > +			kfree(kvg);
+> > > +			ret = 0;
+> > > +			break;
+> > > +		}
+> > > +
+> > > +		mutex_unlock(&kv->lock);
+> > > +		kvm_vfio_group_put_external_user(vfio_group);
+> > > +
+> > > +		kvm_vfio_update_iommu_coherency(dev);
+> > > +
+> > > +		return ret;
+> > > +	}
+> > > +
+> > > +	return -ENXIO;
+> > > +}
+> > > +
+> > > +static int kvm_vfio_has_attr(struct kvm_device *dev,
+> > > +				   struct kvm_device_attr *attr)
+> > > +{
+> > > +	switch (attr->group) {
+> > > +	case KVM_DEV_VFIO_ADD_GROUP:
+> > > +	case KVM_DEV_VFIO_DEL_GROUP:
+> > > +		return 0;
+> > > +	}
+> > > +
+> > > +	return -ENXIO;
+> > > +}
+> > > +
+> > > +static void kvm_vfio_destroy(struct kvm_device *dev)
+> > > +{
+> > > +	struct kvm_vfio *kv = dev->private;
+> > > +	struct kvm_vfio_group *kvg, *tmp;
+> > > +
+> > > +	list_for_each_entry_safe(kvg, tmp, &kv->group_list, node) {
+> > > +		kvm_vfio_group_put_external_user(kvg->vfio_group);
+> > > +		list_del(&kvg->node);
+> > > +		kfree(kvg);
+> > > +	}
+> > > +
+> > > +	dev->kvm->arch.vfio_noncoherent = false;
+> > > +	kfree(kv);
+> > > +}
+> > > +
+> > > +static int kvm_vfio_create(struct kvm_device *dev, u32 type)
+> > > +{
+> > > +	struct kvm_device *tmp;
+> > > +	struct kvm_vfio *kv;
+> > > +
+> > > +	/* Only one VFIO "device" per VM */
+> > > +	list_for_each_entry(tmp, &dev->kvm->devices, vm_node)
+> > > +		if (tmp->ops == &kvm_vfio_ops)
+> > > +			return -EBUSY;
+> > > +
+> > > +	kv = kzalloc(sizeof(*kv), GFP_KERNEL);
+> > > +	if (!kv)
+> > > +		return -ENOMEM;
+> > > +
+> > > +	INIT_LIST_HEAD(&kv->group_list);
+> > > +	mutex_init(&kv->lock);
+> > > +
+> > > +	dev->private = kv;
+> > > +
+> > > +	return 0;
+> > > +}
+> > > +
+> > > +struct kvm_device_ops kvm_vfio_ops = {
+> > > +	.name = "kvm-vfio",
+> > > +	.create = kvm_vfio_create,
+> > > +	.destroy = kvm_vfio_destroy,
+> > > +	.set_attr = kvm_vfio_set_attr,
+> > > +	.has_attr = kvm_vfio_has_attr,
+> > > +};
 > 
-> I know that and I can see that this should probably be fixed, but
-> there is no quantification for this.  We have no per-memcg reclaim
-> statistics
-
-Not having statistic is a separate issue. It makes the situation worse
-but that is not a new thing. The old implementation is even worse
-because the soft reclaim activity is basically hidden from global
-reclaim counters. So a lot of pages might get scanned and we will have
-no way to find out. That part is inherently fixed by the series because
-of the integration.
-
-> and your test cases were not useful in determining what's going on
-> reclaim-wise.
-
-I will instrument the kernel for the next round of tests which would be
-hopefully more descriptive.
-
-[...]
-> > That simple call from kswapd is not that simple at all in fact. It hides
-> > a lot of memcg specific code which is far from being trivial. Even worse
-> > that memcg specific code gets back to the reclaim code with different
-> > reclaim parameters than those used from the context it has been called
-> > from.
 > 
-> It does not matter to understanding generic reclaim code, though, and
-> acts more like the shrinkers.  We send it off to get memory and it
-> comes back with results.
-
-Shrinker interface is just too bad. It might work for dentries and
-inodes but it failed in many other subsystems where it ended up in
-do-something mode. Soft reclaim is yet another example where we are
-doing an artificial scan-the-world reclaim to hammer somebody. Fairness
-is basically impossible to guarantee and there are corner cases which
-are just waiting to explode.
-
-[...]
-> Soft limit is about balancing reclaim pressure and I already pointed
-> out that your control group has so much limit slack that you can't
-> tell if the main group is performing better because of reclaim
-> aggressiveness (good) or because the memory is just taken from your
-> control group (bad).
-> 
-> Please either say why I'm wrong or stop asserting points that have
-> been refuted.
-
-I will work on improving my testing setup. I will come back with results
-early next week hopefully.
-
-[...] 
--- 
-Michal Hocko
-SUSE Labs
