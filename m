@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933463Ab3IMNRv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:17:51 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:63121 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933451Ab3IMNRm (ORCPT
+	id S933492Ab3IMNSI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:18:08 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:57412 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933479Ab3IMNSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:17:42 -0400
+	Fri, 13 Sep 2013 09:18:03 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 124/228] cpufreq: speedstep: don't initialize part of policy that is set by core too
-Date: Fri, 13 Sep 2013 18:31:10 +0530
-Message-Id: <3ea9c6cfddb691784394460150aced29ea6783f5.1379063063.git.viresh.kumar@linaro.org>
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 127/228] cpufreq: create cpufreq_generic_init() routine
+Date: Fri, 13 Sep 2013 18:31:13 +0530
+Message-Id: <ed142d4ec15206f4249e2cd851dbe8da7bfc06d4.1379063063.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
 References: <cover.1379063063.git.viresh.kumar@linaro.org>
@@ -26,110 +25,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many common initializations of struct policy are moved to core now and hence
-this driver doesn't need to do it. This patch removes such code.
+Many CPUFreq drivers for SMP system (where all cores share same clock lines), do
+similar stuff in their ->init() part.
 
-Most recent of those changes is to call ->get() in the core after calling
-->init().
+This patch creates a generic routine in cpufreq core which can be used by these
+so that we can remove some redundant code.
 
-Cc: David S. Miller <davem@davemloft.net>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/speedstep-centrino.c |  5 -----
- drivers/cpufreq/speedstep-ich.c      | 15 +--------------
- drivers/cpufreq/speedstep-smi.c      | 13 -------------
- 3 files changed, 1 insertion(+), 32 deletions(-)
+ drivers/cpufreq/Kconfig   |  1 +
+ drivers/cpufreq/cpufreq.c | 31 +++++++++++++++++++++++++++++++
+ include/linux/cpufreq.h   |  3 +++
+ 3 files changed, 35 insertions(+)
 
-diff --git a/drivers/cpufreq/speedstep-centrino.c b/drivers/cpufreq/speedstep-centrino.c
-index c7c14ae..6b882c7 100644
---- a/drivers/cpufreq/speedstep-centrino.c
-+++ b/drivers/cpufreq/speedstep-centrino.c
-@@ -343,7 +343,6 @@ static unsigned int get_cur_freq(unsigned int cpu)
- static int centrino_cpu_init(struct cpufreq_policy *policy)
- {
- 	struct cpuinfo_x86 *cpu = &cpu_data(policy->cpu);
--	unsigned freq;
- 	unsigned l, h;
- 	int i;
+diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
+index 534fcb8..2d06754 100644
+--- a/drivers/cpufreq/Kconfig
++++ b/drivers/cpufreq/Kconfig
+@@ -2,6 +2,7 @@ menu "CPU Frequency scaling"
  
-@@ -394,12 +393,8 @@ static int centrino_cpu_init(struct cpufreq_policy *policy)
- 		}
- 	}
- 
--	freq = get_cur_freq(policy->cpu);
- 	policy->cpuinfo.transition_latency = 10000;
- 						/* 10uS transition latency */
--	policy->cur = freq;
--
--	pr_debug("centrino_cpu_init: cur=%dkHz\n", policy->cur);
- 
- 	return cpufreq_table_validate_and_show(policy,
- 		per_cpu(centrino_model, policy->cpu)->op_points);
-diff --git a/drivers/cpufreq/speedstep-ich.c b/drivers/cpufreq/speedstep-ich.c
-index 929a4f0..1a8b01b 100644
---- a/drivers/cpufreq/speedstep-ich.c
-+++ b/drivers/cpufreq/speedstep-ich.c
-@@ -308,7 +308,7 @@ static void get_freqs_on_cpu(void *_get_freqs)
- 
- static int speedstep_cpu_init(struct cpufreq_policy *policy)
- {
--	unsigned int policy_cpu, speed;
-+	unsigned int policy_cpu;
- 	struct get_freqs gf;
- 
- 	/* only run on CPU to be set, or on its sibling */
-@@ -323,19 +323,6 @@ static int speedstep_cpu_init(struct cpufreq_policy *policy)
- 	if (gf.ret)
- 		return gf.ret;
- 
--	/* get current speed setting */
--	speed = speedstep_get(policy_cpu);
--	if (!speed)
--		return -EIO;
--
--	pr_debug("currently at %s speed setting - %i MHz\n",
--		(speed == speedstep_freqs[SPEEDSTEP_LOW].frequency)
--		? "low" : "high",
--		(speed / 1000));
--
--	/* cpuinfo and default policy values */
--	policy->cur = speed;
--
- 	return cpufreq_table_validate_and_show(policy, speedstep_freqs);
+ config CPU_FREQ
+ 	bool "CPU Frequency scaling"
++	select CPU_FREQ_TABLE
+ 	help
+ 	  CPU Frequency scaling allows you to change the clock speed of 
+ 	  CPUs on the fly. This is a nice method to save power, because 
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 1e6b602..c4d89c5 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -183,6 +183,37 @@ u64 get_cpu_idle_time(unsigned int cpu, u64 *wall, int io_busy)
  }
+ EXPORT_SYMBOL_GPL(get_cpu_idle_time);
  
-diff --git a/drivers/cpufreq/speedstep-smi.c b/drivers/cpufreq/speedstep-smi.c
-index b3dfba0..a02b649 100644
---- a/drivers/cpufreq/speedstep-smi.c
-+++ b/drivers/cpufreq/speedstep-smi.c
-@@ -267,7 +267,6 @@ static int speedstep_target(struct cpufreq_policy *policy,
- static int speedstep_cpu_init(struct cpufreq_policy *policy)
++/*
++ * This is a generic cpufreq init() routine which can be used by cpufreq
++ * drivers of SMP systems. It will do following:
++ * - validate & show freq table passed
++ * - set policies transition latency
++ * - policy->cpus with all possible CPUs
++ */
++int cpufreq_generic_init(struct cpufreq_policy *policy,
++		struct cpufreq_frequency_table *table,
++		unsigned int transition_latency)
++{
++	int ret;
++
++	ret = cpufreq_table_validate_and_show(policy, table);
++	if (ret) {
++		pr_err("%s: invalid frequency table: %d\n", __func__, ret);
++		return ret;
++	}
++
++	policy->cpuinfo.transition_latency = transition_latency;
++
++	/*
++	 * The driver only supports the SMP configuartion where all processors
++	 * share the clock and voltage and clock.
++	 */
++	cpumask_setall(policy->cpus);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(cpufreq_generic_init);
++
+ struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
  {
- 	int result;
--	unsigned int speed, state;
- 	unsigned int *low, *high;
+ 	struct cpufreq_policy *policy = NULL;
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index 57d2907..c2184c6 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -438,6 +438,9 @@ void cpufreq_frequency_table_put_attr(unsigned int cpu);
+ int cpufreq_table_validate_and_show(struct cpufreq_policy *policy,
+ 				      struct cpufreq_frequency_table *table);
  
- 	/* capability check */
-@@ -303,19 +302,7 @@ static int speedstep_cpu_init(struct cpufreq_policy *policy)
- 			pr_debug("workaround worked.\n");
- 	}
- 
--	/* get current speed setting */
--	state = speedstep_get_state();
--	speed = speedstep_freqs[state].frequency;
--
--	pr_debug("currently at %s speed setting - %i MHz\n",
--		(speed == speedstep_freqs[SPEEDSTEP_LOW].frequency)
--		? "low" : "high",
--		(speed / 1000));
--
--	/* cpuinfo and default policy values */
- 	policy->cpuinfo.transition_latency = CPUFREQ_ETERNAL;
--	policy->cur = speed;
--
- 	return cpufreq_table_validate_and_show(policy, speedstep_freqs);
- }
- 
++int cpufreq_generic_init(struct cpufreq_policy *policy,
++		struct cpufreq_frequency_table *table,
++		unsigned int transition_latency);
+ static inline int cpufreq_generic_exit(struct cpufreq_policy *policy)
+ {
+ 	cpufreq_frequency_table_put_attr(policy->cpu);
 -- 
 1.7.12.rc2.18.g61b472e
 
