@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754915Ab3IMItU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 04:49:20 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:38514 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779Ab3IMItR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 04:49:17 -0400
-Message-ID: <5232D186.6090701@ozlabs.ru>
-Date: Fri, 13 Sep 2013 18:49:10 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	id S1755949Ab3IMIL1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 04:11:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43421 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754845Ab3IMILU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 04:11:20 -0400
+Date: Fri, 13 Sep 2013 09:11:11 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/50] sched: monolithic code dump of what is being
+ pushed upstream
+Message-ID: <20130913081111.GV22421@suse.de>
+References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
+ <1378805550-29949-2-git-send-email-mgorman@suse.de>
+ <CAJd=RBDBoJ42OkrqsD787O2ZYt9iPvwJo6DubDcVuS0tKRv9ng@mail.gmail.com>
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: kvm@vger.kernel.org, gleb@redhat.com, benh@kernel.crashing.org,
-        bsd@redhat.com, linux-kernel@vger.kernel.org, mst@redhat.com
-Subject: Re: [RFC PATCH 3/3] kvm: Add VFIO device for handling IOMMU cache
- coherency
-References: <20130912211401.8542.82932.stgit@bling.home> <20130912212314.8542.9692.stgit@bling.home>
-In-Reply-To: <20130912212314.8542.9692.stgit@bling.home>
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <CAJd=RBDBoJ42OkrqsD787O2ZYt9iPvwJo6DubDcVuS0tKRv9ng@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/2013 07:23 AM, Alex Williamson wrote:
-> So far we've succeeded at making KVM and VFIO mostly unaware of each
-> other, but there's any important point where that breaks down.  Intel
-> VT-d hardware may or may not support snoop control.  When snoop
-> control is available, intel-iommu promotes No-Snoop transactions on
-> PCIe to be cache coherent.  That allows KVM to handle things like the
-> x86 WBINVD opcode as a nop.  When the hardware does not support this,
-> KVM must implement a hardware visible WBINVD for the guest.
+On Wed, Sep 11, 2013 at 11:11:03AM +0800, Hillf Danton wrote:
+> On Tue, Sep 10, 2013 at 5:31 PM, Mel Gorman <mgorman@suse.de> wrote:
+> > @@ -5045,15 +5038,50 @@ static int need_active_balance(struct lb_env *env)
+> >
+> >  static int active_load_balance_cpu_stop(void *data);
+> >
+> > +static int should_we_balance(struct lb_env *env)
+> > +{
+> > +       struct sched_group *sg = env->sd->groups;
+> > +       struct cpumask *sg_cpus, *sg_mask;
+> > +       int cpu, balance_cpu = -1;
+> > +
+> > +       /*
+> > +        * In the newly idle case, we will allow all the cpu's
+> > +        * to do the newly idle load balance.
+> > +        */
+> > +       if (env->idle == CPU_NEWLY_IDLE)
+> > +               return 1;
+> > +
+> > +       sg_cpus = sched_group_cpus(sg);
+> > +       sg_mask = sched_group_mask(sg);
+> > +       /* Try to find first idle cpu */
+> > +       for_each_cpu_and(cpu, sg_cpus, env->cpus) {
+> > +               if (!cpumask_test_cpu(cpu, sg_mask) || !idle_cpu(cpu))
+> > +                       continue;
+> > +
+> > +               balance_cpu = cpu;
+> > +               break;
+> > +       }
+> > +
+> > +       if (balance_cpu == -1)
+> > +               balance_cpu = group_balance_cpu(sg);
+> > +
+> > +       /*
+> > +        * First idle cpu or the first cpu(busiest) in this sched group
+> > +        * is eligible for doing load balancing at this and above domains.
+> > +        */
+> > +       return balance_cpu != env->dst_cpu;
 > 
-> We could simply let userspace tell KVM how to handle WBINVD, but it's
-> privileged for a reason.  Allowing an arbitrary user to enable
-> physical WBINVD gives them a more access to the hardware.  Previously,
-> this has only been enabled for guests supporting legacy PCI device
-> assignment.  In such cases it's necessary for proper guest execution.
-> We therefore create a new KVM-VFIO virtual device.  The user can add
-> and remove VFIO groups to this device via file descriptors.  KVM
-> makes use of the VFIO external user interface to validate that the
-> user has access to physical hardware and gets the coherency state of
-> the IOMMU from VFIO.  This provides equivalent functionality to
-> legacy KVM assignment, while keeping (nearly) all the bits isolated.
+> FYI: Here is a bug reported by Dave Chinner.
+> https://lkml.org/lkml/2013/9/10/1
 > 
-> The one intrusion is the resulting flag indicating the coherency
-> state.  For this RFC it's placed on the x86 kvm_arch struct, however
-> I know POWER has interest in using the VFIO external user interface,
-> and I'm hoping we can share a common KVM-VFIO device.  Perhaps they
-> care about No-Snoop handling as well or the code can be #ifdef'd.
+> And lets see if any changes in your SpecJBB results without it.
+> 
 
-
-POWER does not support (at least boos3s - "server", not sure about others)
-this cache-non-coherent stuff at all.
-
-Regarding reusing this device with external API for POWER - I posted a
-patch which introduces KVM device to link KVM with IOMMU but besides the
-list of groups registered in KVM, it also provides the way to find a group
-by LIOBN (logical bus number) which is used in DMA map/unmap hypercalls. So
-in my case kvm_vfio_group struct needs LIOBN and it would be nice to have
-there window_size too (for a quick boundary check). I am not sure we want
-to mix everything here.
-
-It is in "[PATCH v10 12/13] KVM: PPC: Add support for IOMMU in-kernel
-handling" if you are interested (kvmppc_spapr_tce_iommu_device).
-
-
+Thanks for pointing that out. I've picked up the one-liner fix.
 
 -- 
-Alexey
+Mel Gorman
+SUSE Labs
