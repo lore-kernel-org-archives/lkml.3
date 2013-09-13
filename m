@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab3IML1s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 07:27:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3359 "EHLO mx1.redhat.com"
+	id S1756563Ab3IML2y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 07:28:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24157 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755964Ab3IML13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 07:27:29 -0400
+	id S1755675Ab3IML11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 07:27:27 -0400
 From: Gerd Hoffmann <kraxel@redhat.com>
 To: linux-usb@vger.kernel.org
 Cc: Gerd Hoffmann <kraxel@redhat.com>, Matthew Wilcox <willy@linux.intel.com>,
@@ -15,9 +15,9 @@ Cc: Gerd Hoffmann <kraxel@redhat.com>, Matthew Wilcox <willy@linux.intel.com>,
         linux-scsi@vger.kernel.org (open list:USB ATTACHED SCSI),
         usb-storage@lists.one-eyed-alien.net (open list:USB MASS STORAGE...),
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v3 5/6] uas: replace BUG_ON() + WARN_ON() with WARN_ON_ONCE()
-Date: Fri, 13 Sep 2013 13:27:14 +0200
-Message-Id: <1379071635-30701-6-git-send-email-kraxel@redhat.com>
+Subject: [PATCH v3 2/6] uas: properly reinitialize in uas_eh_bus_reset_handler
+Date: Fri, 13 Sep 2013 13:27:11 +0200
+Message-Id: <1379071635-30701-3-git-send-email-kraxel@redhat.com>
 In-Reply-To: <1379071635-30701-1-git-send-email-kraxel@redhat.com>
 References: <1379071635-30701-1-git-send-email-kraxel@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,86 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
 ---
- drivers/usb/storage/uas.c | 19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+ drivers/usb/storage/uas.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
 diff --git a/drivers/usb/storage/uas.c b/drivers/usb/storage/uas.c
-index f049038..046eedf 100644
+index d966b59..fc08ee9 100644
 --- a/drivers/usb/storage/uas.c
 +++ b/drivers/usb/storage/uas.c
-@@ -154,7 +154,7 @@ static void uas_abort_work(struct uas_dev_info *devinfo)
- 		struct scsi_cmnd *cmnd = container_of(scp, struct scsi_cmnd,
- 						      SCp);
- 		uas_log_cmd_state(cmnd, __func__);
--		WARN_ON(cmdinfo->state & COMMAND_ABORTED);
-+		WARN_ON_ONCE(cmdinfo->state & COMMAND_ABORTED);
- 		cmdinfo->state |= COMMAND_ABORTED;
- 		cmdinfo->state &= ~IS_IN_WORK_LIST;
- 		list_del(&cmdinfo->work);
-@@ -169,7 +169,7 @@ static void uas_add_work(struct uas_cmd_info *cmdinfo)
- 	struct scsi_cmnd *cmnd = container_of(scp, struct scsi_cmnd, SCp);
- 	struct uas_dev_info *devinfo = cmnd->device->hostdata;
+@@ -85,6 +85,8 @@ static int uas_submit_urbs(struct scsi_cmnd *cmnd,
+ 				struct uas_dev_info *devinfo, gfp_t gfp);
+ static void uas_do_work(struct work_struct *work);
+ static int uas_try_complete(struct scsi_cmnd *cmnd, const char *caller);
++static void uas_configure_endpoints(struct uas_dev_info *devinfo);
++static void uas_free_streams(struct uas_dev_info *devinfo);
  
--	WARN_ON(!spin_is_locked(&devinfo->lock));
-+	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
- 	list_add_tail(&cmdinfo->work, &devinfo->work_list);
- 	cmdinfo->state |= IS_IN_WORK_LIST;
- 	schedule_work(&devinfo->work);
-@@ -187,7 +187,7 @@ static void uas_zap_dead(struct uas_dev_info *devinfo)
- 		struct scsi_cmnd *cmnd = container_of(scp, struct scsi_cmnd,
- 						      SCp);
- 		uas_log_cmd_state(cmnd, __func__);
--		WARN_ON(!(cmdinfo->state & COMMAND_ABORTED));
-+		WARN_ON_ONCE(!(cmdinfo->state & COMMAND_ABORTED));
- 		/* all urbs are killed, clear inflight bits */
- 		cmdinfo->state &= ~(COMMAND_INFLIGHT |
- 				    DATA_IN_URB_INFLIGHT |
-@@ -271,13 +271,13 @@ static int uas_try_complete(struct scsi_cmnd *cmnd, const char *caller)
- 	struct uas_cmd_info *cmdinfo = (void *)&cmnd->SCp;
- 	struct uas_dev_info *devinfo = (void *)cmnd->device->hostdata;
+ static DECLARE_WORK(uas_work, uas_do_work);
+ static DEFINE_SPINLOCK(uas_work_lock);
+@@ -800,7 +802,10 @@ static int uas_eh_bus_reset_handler(struct scsi_cmnd *cmnd)
+ 	usb_kill_anchored_urbs(&devinfo->cmd_urbs);
+ 	usb_kill_anchored_urbs(&devinfo->sense_urbs);
+ 	usb_kill_anchored_urbs(&devinfo->data_urbs);
++	uas_free_streams(devinfo);
+ 	err = usb_reset_device(udev);
++	if (!err)
++		uas_configure_endpoints(devinfo);
+ 	devinfo->resetting = 0;
  
--	WARN_ON(!spin_is_locked(&devinfo->lock));
-+	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
- 	if (cmdinfo->state & (COMMAND_INFLIGHT |
- 			      DATA_IN_URB_INFLIGHT |
- 			      DATA_OUT_URB_INFLIGHT |
- 			      UNLINK_DATA_URBS))
- 		return -EBUSY;
--	BUG_ON(cmdinfo->state & COMMAND_COMPLETED);
-+	WARN_ON_ONCE(cmdinfo->state & COMMAND_COMPLETED);
- 	cmdinfo->state |= COMMAND_COMPLETED;
- 	usb_free_urb(cmdinfo->data_in_urb);
- 	usb_free_urb(cmdinfo->data_out_urb);
-@@ -398,8 +398,9 @@ static void uas_data_cmplt(struct urb *urb)
- 		sdb = scsi_out(cmnd);
- 		cmdinfo->state &= ~DATA_OUT_URB_INFLIGHT;
- 	}
--	BUG_ON(sdb == NULL);
--	if (urb->status) {
-+	if (sdb == NULL) {
-+		WARN_ON_ONCE(1);
-+	} else if (urb->status) {
- 		/* error: no data transfered */
- 		sdb->resid = sdb->length;
- 	} else {
-@@ -573,7 +574,7 @@ static int uas_submit_urbs(struct scsi_cmnd *cmnd,
- 	struct uas_cmd_info *cmdinfo = (void *)&cmnd->SCp;
- 	int err;
- 
--	WARN_ON(!spin_is_locked(&devinfo->lock));
-+	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
- 	if (cmdinfo->state & SUBMIT_STATUS_URB) {
- 		err = uas_submit_sense_urb(cmnd->device->host, gfp,
- 					   cmdinfo->stream);
-@@ -771,7 +772,7 @@ static int uas_eh_abort_handler(struct scsi_cmnd *cmnd)
- 
- 	uas_log_cmd_state(cmnd, __func__);
- 	spin_lock_irqsave(&devinfo->lock, flags);
--	WARN_ON(cmdinfo->state & COMMAND_ABORTED);
-+	WARN_ON_ONCE(cmdinfo->state & COMMAND_ABORTED);
- 	cmdinfo->state |= COMMAND_ABORTED;
- 	list_add_tail(&cmdinfo->dead, &devinfo->dead_list);
- 	if (cmdinfo->state & IS_IN_WORK_LIST) {
+ 	if (err) {
 -- 
 1.8.3.1
 
