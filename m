@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932951Ab3IMN3Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:29:16 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:63355 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758038Ab3IMN3M (ORCPT
+	id S933620Ab3IMN3Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:29:25 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:58788 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933022Ab3IMN3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:29:12 -0400
+	Fri, 13 Sep 2013 09:29:19 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 220/228] cpufreq: imx6q: use cpufreq_generic_get() routine
-Date: Fri, 13 Sep 2013 18:32:46 +0530
-Message-Id: <f5cad684acf2949d3cbb70db56c935d3659c1eb7.1379063063.git.viresh.kumar@linaro.org>
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        John Crispin <blogic@openwrt.org>
+Subject: [PATCH 221/228] cpufreq: loongson2: use cpufreq_generic_get() routine
+Date: Fri, 13 Sep 2013 18:32:47 +0530
+Message-Id: <f5aaff9b7623faf69b6b38884d866619a75ef15f.1379063063.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
 References: <cover.1379063063.git.viresh.kumar@linaro.org>
@@ -28,44 +29,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 We have common infrastructure available with us for getting a CPUs clk rate.
 Lets use it for this driver.
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
+We don't need a global variable to hold clock anymore.
+
+Cc: John Crispin <blogic@openwrt.org>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/imx6q-cpufreq.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ drivers/cpufreq/loongson2_cpufreq.c | 15 +++++----------
+ 1 file changed, 5 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/cpufreq/imx6q-cpufreq.c b/drivers/cpufreq/imx6q-cpufreq.c
-index a3829a0..6993f0d 100644
---- a/drivers/cpufreq/imx6q-cpufreq.c
-+++ b/drivers/cpufreq/imx6q-cpufreq.c
-@@ -34,11 +34,6 @@ static struct device *cpu_dev;
- static struct cpufreq_frequency_table *freq_table;
- static unsigned int transition_latency;
+diff --git a/drivers/cpufreq/loongson2_cpufreq.c b/drivers/cpufreq/loongson2_cpufreq.c
+index a436092..b6581ab 100644
+--- a/drivers/cpufreq/loongson2_cpufreq.c
++++ b/drivers/cpufreq/loongson2_cpufreq.c
+@@ -24,8 +24,6 @@
  
--static unsigned int imx6q_get_speed(unsigned int cpu)
--{
--	return clk_get_rate(arm_clk) / 1000;
--}
+ static uint nowait;
+ 
+-static struct clk *cpuclk;
 -
- static int imx6q_set_target(struct cpufreq_policy *policy, unsigned int index)
- {
- 	struct opp *opp;
-@@ -133,13 +128,14 @@ static int imx6q_set_target(struct cpufreq_policy *policy, unsigned int index)
+ static void (*saved_cpu_wait) (void);
  
- static int imx6q_cpufreq_init(struct cpufreq_policy *policy)
- {
-+	policy->clk = arm_clk;
- 	return cpufreq_generic_init(policy, freq_table, transition_latency);
+ static int loongson2_cpu_freq_notifier(struct notifier_block *nb,
+@@ -44,11 +42,6 @@ static int loongson2_cpu_freq_notifier(struct notifier_block *nb,
+ 	return 0;
  }
  
- static struct cpufreq_driver imx6q_cpufreq_driver = {
+-static unsigned int loongson2_cpufreq_get(unsigned int cpu)
+-{
+-	return clk_get_rate(cpuclk);
+-}
+-
+ /*
+  * Here we notify other drivers of the proposed change and the final change.
+  */
+@@ -69,13 +62,14 @@ static int loongson2_cpufreq_target(struct cpufreq_policy *policy,
+ 	set_cpus_allowed_ptr(current, &cpus_allowed);
+ 
+ 	/* setting the cpu frequency */
+-	clk_set_rate(cpuclk, freq);
++	clk_set_rate(policy->clk, freq);
+ 
+ 	return 0;
+ }
+ 
+ static int loongson2_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ {
++	static struct clk *cpuclk;
+ 	int i;
+ 	unsigned long rate;
+ 	int ret;
+@@ -104,13 +98,14 @@ static int loongson2_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ 		return ret;
+ 	}
+ 
++	policy->clk = cpuclk;
+ 	return cpufreq_generic_init(policy, &loongson2_clockmod_table[0], 0);
+ }
+ 
+ static int loongson2_cpufreq_exit(struct cpufreq_policy *policy)
+ {
+ 	cpufreq_frequency_table_put_attr(policy->cpu);
+-	clk_put(cpuclk);
++	clk_put(policy->clk);
+ 	return 0;
+ }
+ 
+@@ -119,7 +114,7 @@ static struct cpufreq_driver loongson2_cpufreq_driver = {
+ 	.init = loongson2_cpufreq_cpu_init,
  	.verify = cpufreq_generic_frequency_table_verify,
- 	.target_index = imx6q_set_target,
--	.get = imx6q_get_speed,
+ 	.target_index = loongson2_cpufreq_target,
+-	.get = loongson2_cpufreq_get,
 +	.get = cpufreq_generic_get,
- 	.init = imx6q_cpufreq_init,
- 	.exit = cpufreq_generic_exit,
- 	.name = "imx6q-cpufreq",
+ 	.exit = loongson2_cpufreq_exit,
+ 	.attr = cpufreq_generic_attr,
+ };
 -- 
 1.7.12.rc2.18.g61b472e
 
