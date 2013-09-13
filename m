@@ -1,183 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757567Ab3IMNGp (ORCPT <rfc822;w@1wt.eu>);
+	id S932249Ab3IMNGz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:06:55 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:39177 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757569Ab3IMNGp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 13 Sep 2013 09:06:45 -0400
-Received: from mga01.intel.com ([192.55.52.88]:22867 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932184Ab3IMNGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:06:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,898,1371106800"; 
-   d="scan'208";a="401163512"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Alex Thorlton <athorlton@sgi.com>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: "Eric W . Biederman" <ebiederm@xmission.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>, Dave Jones <davej@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Rik van Riel <riel@redhat.com>, Robin Holt <robinmholt@gmail.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 8/9] mm: implement split page table lock for PMD level
-Date: Fri, 13 Sep 2013 16:06:15 +0300
-Message-Id: <1379077576-2472-9-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1379077576-2472-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <20130910074748.GA2971@gmail.com>
- <1379077576-2472-1-git-send-email-kirill.shutemov@linux.intel.com>
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 031/228] cpufreq: pasemi: use cpufreq_table_validate_and_show()
+Date: Fri, 13 Sep 2013 18:29:37 +0530
+Message-Id: <a922e1f02dfb0d5eba81a457036189b2a2f15fc8.1379063063.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
+References: <cover.1379063063.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
+References: <cover.1379063063.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The basic idea is the same as with PTE level: the lock is embedded into
-struct page of table's page.
+Lets use cpufreq_table_validate_and_show() instead of calling
+cpufreq_frequency_table_cpuinfo() and cpufreq_frequency_table_get_attr().
 
-Split pmd page table lock only makes sense on big machines.
-Let's say >= 32 CPUs for now.
-
-We can't use mm->pmd_huge_pte to store pgtables for THP, since we don't
-take mm->page_table_lock anymore. Let's reuse page->lru of table's page
-for that.
-
-hugetlbfs hasn't converted to split locking: disable split locking if
-hugetlbfs enabled.
-
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- include/linux/mm.h       | 31 +++++++++++++++++++++++++++++++
- include/linux/mm_types.h |  5 +++++
- kernel/fork.c            |  4 ++--
- mm/Kconfig               | 10 ++++++++++
- 4 files changed, 48 insertions(+), 2 deletions(-)
+ drivers/cpufreq/pasemi-cpufreq.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index d2f8a50..5b3922d 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1294,13 +1294,44 @@ static inline void pgtable_page_dtor(struct page *page)
- 	((unlikely(pmd_none(*(pmd))) && __pte_alloc_kernel(pmd, address))? \
- 		NULL: pte_offset_kernel(pmd, address))
+diff --git a/drivers/cpufreq/pasemi-cpufreq.c b/drivers/cpufreq/pasemi-cpufreq.c
+index 534e43a..23bc8a82 100644
+--- a/drivers/cpufreq/pasemi-cpufreq.c
++++ b/drivers/cpufreq/pasemi-cpufreq.c
+@@ -219,12 +219,10 @@ static int pas_cpufreq_cpu_init(struct cpufreq_policy *policy)
  
-+#if USE_SPLIT_PMD_PTLOCKS
-+
-+static inline spinlock_t *huge_pmd_lockptr(struct mm_struct *mm, pmd_t *pmd)
-+{
-+	return &virt_to_page(pmd)->ptl;
-+}
-+
-+static inline void pgtable_pmd_page_ctor(struct page *page)
-+{
-+	spin_lock_init(&page->ptl);
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+	page->pmd_huge_pte = NULL;
-+#endif
-+}
-+
-+static inline void pgtable_pmd_page_dtor(struct page *page)
-+{
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+	VM_BUG_ON(page->pmd_huge_pte);
-+#endif
-+}
-+
-+#define pmd_huge_pte(mm, pmd) (virt_to_page(pmd)->pmd_huge_pte)
-+
-+#else
-+
- static inline spinlock_t *huge_pmd_lockptr(struct mm_struct *mm, pmd_t *pmd)
- {
- 	return &mm->page_table_lock;
- }
+ 	ppc_proc_freq = policy->cur * 1000ul;
  
-+static inline void pgtable_pmd_page_ctor(struct page *page) {}
-+static inline void pgtable_pmd_page_dtor(struct page *page) {}
-+
- #define pmd_huge_pte(mm, pmd) ((mm)->pmd_huge_pte)
+-	cpufreq_frequency_table_get_attr(pas_freqs, policy->cpu);
+-
+ 	/* this ensures that policy->cpuinfo_min and policy->cpuinfo_max
+ 	 * are set correctly
+ 	 */
+-	return cpufreq_frequency_table_cpuinfo(policy, pas_freqs);
++	return cpufreq_table_validate_and_show(policy, pas_freqs);
  
-+#endif
-+
- static inline spinlock_t *huge_pmd_lock(struct mm_struct *mm, pmd_t *pmd)
- {
- 	spinlock_t *ptl = huge_pmd_lockptr(mm, pmd);
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index 1c64730..5706ddf 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -24,6 +24,8 @@
- struct address_space;
- 
- #define USE_SPLIT_PTE_PTLOCKS	(NR_CPUS >= CONFIG_SPLIT_PTE_PTLOCK_CPUS)
-+#define USE_SPLIT_PMD_PTLOCKS	(USE_SPLIT_PTE_PTLOCKS && \
-+		NR_CPUS >= CONFIG_SPLIT_PMD_PTLOCK_CPUS)
- 
- /*
-  * Each physical page in the system has a struct page associated with
-@@ -130,6 +132,9 @@ struct page {
- 
- 		struct list_head list;	/* slobs list of pages */
- 		struct slab *slab_page; /* slab fields */
-+#if defined(CONFIG_TRANSPARENT_HUGEPAGE) && USE_SPLIT_PMD_PTLOCKS
-+		pgtable_t pmd_huge_pte; /* protected by page->ptl */
-+#endif
- 	};
- 
- 	/* Remainder is not double word aligned */
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 4c8b986..1670af7 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -560,7 +560,7 @@ static void check_mm(struct mm_struct *mm)
- 					  "mm:%p idx:%d val:%ld\n", mm, i, x);
- 	}
- 
--#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+#if defined(CONFIG_TRANSPARENT_HUGEPAGE) && !USE_SPLIT_PMD_PTLOCKS
- 	VM_BUG_ON(mm->pmd_huge_pte);
- #endif
- }
-@@ -814,7 +814,7 @@ struct mm_struct *dup_mm(struct task_struct *tsk)
- 	memcpy(mm, oldmm, sizeof(*mm));
- 	mm_init_cpumask(mm);
- 
--#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+#if defined(CONFIG_TRANSPARENT_HUGEPAGE) && !USE_SPLIT_PMD_PTLOCKS
- 	mm->pmd_huge_pte = NULL;
- #endif
- #ifdef CONFIG_NUMA_BALANCING
-diff --git a/mm/Kconfig b/mm/Kconfig
-index 1977a33..ab32eda 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -214,6 +214,16 @@ config SPLIT_PTE_PTLOCK_CPUS
- 	default "999999" if DEBUG_SPINLOCK || DEBUG_LOCK_ALLOC
- 	default "4"
- 
-+config ARCH_ENABLE_SPLIT_PMD_PTLOCK
-+	boolean
-+
-+config SPLIT_PMD_PTLOCK_CPUS
-+	int
-+	# hugetlb hasn't converted to split locking yet
-+	default "999999" if HUGETLB_PAGE
-+	default "32" if ARCH_ENABLE_SPLIT_PMD_PTLOCK
-+	default "999999"
-+
- #
- # support for memory balloon compaction
- config BALLOON_COMPACTION
+ out_unmap_sdcpwr:
+ 	iounmap(sdcpwr_mapbase);
 -- 
-1.8.4.rc3
+1.7.12.rc2.18.g61b472e
 
