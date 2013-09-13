@@ -1,85 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755045Ab3IMLo3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 07:44:29 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:38634 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750842Ab3IMLo0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 07:44:26 -0400
+	id S1755792Ab3IMLpP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 07:45:15 -0400
+Received: from mga11.intel.com ([192.55.52.93]:63010 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752346Ab3IMLpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 07:45:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,897,1371106800"; 
+   d="scan'208";a="395231367"
+Date: Fri, 13 Sep 2013 14:50:35 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Kevin Hilman <khilman@linaro.org>, linux-i2c@vger.kernel.org,
+        Wolfram Sang <wsa@the-dreams.de>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lv Zheng <lv.zheng@intel.com>, Aaron Lu <aaron.lu@intel.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH v2 1/9] i2c: prepare runtime PM support for I2C client
+ devices
+Message-ID: <20130913115035.GB7393@intel.com>
+References: <1378913560-2752-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1378913560-2752-2-git-send-email-mika.westerberg@linux.intel.com>
+ <87vc25pvvm.fsf@linaro.org>
+ <20130913065434.GZ7393@intel.com>
+ <20130913095950.GA29403@sirena.org.uk>
+ <20130913101611.GA7393@intel.com>
+ <20130913103152.GE29403@sirena.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <5197493.kSPF7VUWqc@vostro.rjw.lan>
-References: <085013f4e584e3fef97187bcb349c3fa76942e19.1378012620.git.viresh.kumar@linaro.org>
-	<80c4bd8c577e5da0aa63342671773be5cdc26a9a.1378012620.git.viresh.kumar@linaro.org>
-	<5225E205.7080008@linux.vnet.ibm.com>
-	<5197493.kSPF7VUWqc@vostro.rjw.lan>
-Date: Fri, 13 Sep 2013 17:14:26 +0530
-Message-ID: <CAKohpom8d89OtJOs-_eCu+RiVA+B0bt7rtgNcJn=D=y95+jdQg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] cpufreq: serialize calls to __cpufreq_governor()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130913103152.GE29403@sirena.org.uk>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 September 2013 01:10, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Tuesday, September 03, 2013 06:50:05 PM Srivatsa S. Bhat wrote:
+On Fri, Sep 13, 2013 at 11:31:52AM +0100, Mark Brown wrote:
+> On Fri, Sep 13, 2013 at 01:16:11PM +0300, Mika Westerberg wrote:
+> > On Fri, Sep 13, 2013 at 10:59:50AM +0100, Mark Brown wrote:
+> 
+> > > Accessing the bus isn't an issue for I2C outside of ACPI, the power
+> > > management of the device is totally disassociated from the bus and the
+> > > controller is responsible for ensuring it is available during transfers.
+> 
+> > Yes, but since we want to support ACPI as well, we must make sure that the
+> > adapter (and the associated controller) is available when client ->probe()
+> > is called.
+> 
+> Right, but this probably needs to be highlighted more since it's a very
+> surprising thing for I2C and is causing confusion.
 
->> This doesn't solve the problem completely: it prevents the store_*() task
->> from continuing *only* when it concurrently executes the __cpufreq_governor()
->> function along with the CPU offline task. But if the two calls don't overlap,
->> we will still have the possibility where the store_*() task tries to acquire
->> the timer mutex after the CPU offline task has just finished destroying it.
->
-> Yeah, I overlooked that.
-
-As a background, I had a IRC chat with Srivatsa on this mail.. (I have marked
-this unread as there were other important topics to close)..
-
-And he had some other code in mind and these synchronization problems
-aren't there with my patch at all (as per him too)..
-
-Rafael, probably both me and Srivatsa are missing something that you
-understood, can you please share what problem you see here with my patch?
-
-And yes, even with Srivatsa's patchset I found a problem:
-Two threads, one changing governor from ondemand->conservative and other
-one changing min/max freq..
-
-First one will try to STOP governor and other one will try to change
-limits of gov.
-Suppose 2nd one gets to ->governor() and after this first one stops
-the governor.
-Now the first one tries to access lock and crashes..
-
-On IRC, Srivatsa agreed about the problem..
-
-So, probably the first thing to do is to get this patch back, i.e.
-revert of Srivatsa's
-patch:
-
-commit 56d07db274b7b15ca38b60ea4a762d40de093000
-Author: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Date:   Sat Sep 7 01:23:55 2013 +0530
-
-    cpufreq: Remove temporary fix for race between CPU hotplug and sysfs-writes
-
-
-Srivatsa also asked if we can get a big lock around call to ->governor()
-which would create recursive locks on a call to EXIT event (as we have seen it
-earlier..)..
-
-But he believes he can pull it off and will try this later.. So, for
-now we can revert
-the above patch :)
-
---
-viresh
+By highlighted more, do you mean something like adding a comment in the
+code about this or?
