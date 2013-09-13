@@ -1,90 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932986Ab3IMO3f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 10:29:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44365 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756384Ab3IMO3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 10:29:33 -0400
-Date: Fri, 13 Sep 2013 10:28:56 -0400
-From: Dave Jones <davej@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: trinity finds ftrace/perf bug. Film at 11.
-Message-ID: <20130913142856.GB6799@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	Ingo Molnar <mingo@kernel.org>
-References: <20130911135434.GA678@redhat.com>
- <20130912141913.2ffc7077@gandalf.local.home>
- <20130913111447.GN31370@twins.programming.kicks-ass.net>
+	id S933040Ab3IMO3p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 10:29:45 -0400
+Received: from [207.46.163.235] ([207.46.163.235]:4440 "EHLO
+	na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932900Ab3IMO3m convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 10:29:42 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Gleb Natapov <gleb@redhat.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "JBeulich@suse.com" <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>
+Subject: RE: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer frequency
+ from the hypervisor
+Thread-Topic: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer
+ frequency from the hypervisor
+Thread-Index: AQHOqM30I+mkPB2b1kKq/5YqjRysqJnC17CggAAG+ACAABQ5UIAAikAAgABK5hA=
+Date: Fri, 13 Sep 2013 14:28:35 +0000
+Message-ID: <7737cb643a664b6fb39021b4d364b5cf@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1378233023-4512-1-git-send-email-kys@microsoft.com>
+ <dd29077371564a14b2d317d2291db8a9@SN2PR03MB061.namprd03.prod.outlook.com>
+ <52325C1E.90101@zytor.com>
+ <50f92d9c16a54e5bb6fa14ef72e5fdfb@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130913095526.GE18381@redhat.com>
+In-Reply-To: <20130913095526.GE18381@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [174.61.203.63]
+x-forefront-prvs: 0968D37274
+x-forefront-antispam-report: SFV:NSPM;SFS:(377454003)(479174003)(24454002)(13464003)(51704005)(31014004)(189002)(199002)(65816001)(77982001)(59766001)(76786001)(80976001)(76796001)(77096001)(81686001)(56816003)(63696002)(81816001)(50986001)(54356001)(76576001)(74316001)(79102001)(74366001)(15202345003)(74502001)(74662001)(31966008)(47446002)(46102001)(19580395003)(83322001)(19580405001)(74706001)(83072001)(51856001)(56776001)(15975445006)(76482001)(4396001)(54316002)(33646001)(49866001)(47976001)(47736001)(80022001)(69226001)(81342001)(81542001)(74876001)(66066001)(53806001)(15583001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB062;H:SN2PR03MB061.namprd03.prod.outlook.com;CLIP:174.61.203.63;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130913111447.GN31370@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: DuplicateDomain-a84fc36a-4ed7-4e57-ab1c-3e967bcbad48.microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 13, 2013 at 01:14:47PM +0200, Peter Zijlstra wrote:
- > On Thu, Sep 12, 2013 at 02:19:13PM -0400, Steven Rostedt wrote:
- > > > WARNING: CPU: 3 PID: 861 at kernel/events/core.c:5566 perf_swevent_add+0x18d/0x1a0()
- > > > Modules linked in: ipt_ULOG nfnetlink can_bcm can scsi_transport_iscsi ax25 nfc rfkill af_802154 irda crc_ccitt rds x25 atm appletalk ipx p8023 psnap p8022 llc snd_hda_codec_realtek snd_hda_codec_hdmi xfs snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_page_alloc libcrc32c snd_timer snd e1000e pcspkr ptp pps_core soundcore usb_debug
- > > > CPU: 3 PID: 861 Comm: trinity-child31 Not tainted 3.11.0+ #67 
- > > >  ffffffff81a2aa43 ffff8801e6c65ae8 ffffffff8171d5cb 0000000000000000
- > > >  ffff8801e6c65b20 ffffffff81053e5d ffff8801e66a2e68 ffff880245dcf3e0
- > > >  0000000000000004 0000000000000001 0000000004392ac6 ffff8801e6c65b30
- > > > Call Trace:
- > > >  [<ffffffff8171d5cb>] dump_stack+0x54/0x74
- > > >  [<ffffffff81053e5d>] warn_slowpath_common+0x7d/0xa0
- > > >  [<ffffffff81053f3a>] warn_slowpath_null+0x1a/0x20
- > > >  [<ffffffff8114302d>] perf_swevent_add+0x18d/0x1a0
- > > >  [<ffffffff81143ba7>] event_sched_in.isra.78+0x87/0x1c0
- > > >  [<ffffffff81144a9a>] group_sched_in+0x6a/0x1c0
- > > >  [<ffffffff8114580c>] ctx_sched_in+0x17c/0x290
- > > >  [<ffffffff8114595a>] perf_event_sched_in+0x3a/0x90
- > > >  [<ffffffff8114940b>] perf_event_context_sched_in+0x7b/0xc0
- > > >  [<ffffffff81149f67>] __perf_event_task_sched_in+0x477/0x490
- > 
- > So I've got an idea how this can happen. If we have a per-cpu swevent
- > and group it with an uncore counter which lives on another cpu we'll
- > migrate the swevent using perf_pmu_migrate_context() but it doesn't
- > migrate the swhash.
- > 
- > The below should be able to confirm that theory if one can reproduce the
- > issue.
 
-With that, I now get a different bug... yay?
 
-[  212.012514] WARNING: CPU: 1 PID: 575 at kernel/events/core.c:1109 add_event_to_ctx+0x1fd/0x210()
-[  212.016034] Modules linked in: pppoe pppox ppp_generic slhc ipt_ULOG can_raw can scsi_transport_iscsi nfnetlink af_802154 nfc rfkill irda crc_ccitt rds x25 atm appletalk ipx p8023 psnap p8022 llc ax25 xfs libcrc32c snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_page_alloc snd_timer snd e1000e usb_debug soundcore ptp pps_core pcspkr
-[  212.026484] CPU: 1 PID: 575 Comm: trinity-child11 Not tainted 3.11.0+ #75 
-[  212.031121]  ffffffff81a2b40e ffff88023087dcc0 ffffffff81720482 0000000000000000
-[  212.033279]  ffff88023087dcf8 ffffffff810540bd ffff88024197e418 ffff88023976ae68
-[  212.035471]  ffff88024197e418 000000007b016bc1 ffff8802419a9530 ffff88023087dd08
-[  212.037549] Call Trace:
-[  212.038277]  [<ffffffff81720482>] dump_stack+0x54/0x74
-[  212.039604]  [<ffffffff810540bd>] warn_slowpath_common+0x7d/0xa0
-[  212.040946]  [<ffffffff8105419a>] warn_slowpath_null+0x1a/0x20
-[  212.042296]  [<ffffffff8114383d>] add_event_to_ctx+0x1fd/0x210
-[  212.043650]  [<ffffffff81149a36>] __perf_install_in_context+0x136/0x260
-[  212.045147]  [<ffffffff811434a0>] ? rcu_read_lock_held+0x50/0x50
-[  212.046523]  [<ffffffff811434e0>] remote_function+0x40/0x50
-[  212.047759]  [<ffffffff810cc670>] smp_call_function_single+0x190/0x1e0
-[  212.048337]  [<ffffffff8107d969>] ? wait_rcu_gp+0x79/0xa0
-[  212.048374]  [<ffffffff810cc4e5>] ? smp_call_function_single+0x5/0x1e0
-[  212.048418]  [<ffffffff811423c4>] task_function_call+0x44/0x50
-[  212.048458]  [<ffffffff81149900>] ? perf_cpu_hrtimer_handler+0x1f0/0x1f0
-[  212.048502]  [<ffffffff811438d7>] perf_install_in_context+0x87/0x100
-[  212.048546]  [<ffffffff8114eebc>] SYSC_perf_event_open+0xcec/0xea0
-[  212.048590]  [<ffffffff8114f449>] SyS_perf_event_open+0x9/0x10
-[  212.048629]  [<ffffffff81733d54>] tracesys+0xdd/0xe2
+> -----Original Message-----
+> From: Gleb Natapov [mailto:gleb@redhat.com]
+> Sent: Friday, September 13, 2013 2:55 AM
+> To: KY Srinivasan
+> Cc: H. Peter Anvin; x86@kernel.org; gregkh@linuxfoundation.org; linux-
+> kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
+> apw@canonical.com; jasowang@redhat.com; tglx@linutronix.de;
+> JBeulich@suse.com; bp@alien8.de
+> Subject: Re: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer frequency
+> from the hypervisor
+> 
+> On Fri, Sep 13, 2013 at 01:43:09AM +0000, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: H. Peter Anvin [mailto:hpa@zytor.com]
+> > > Sent: Thursday, September 12, 2013 5:28 PM
+> > > To: KY Srinivasan
+> > > Cc: x86@kernel.org; gregkh@linuxfoundation.org; linux-
+> kernel@vger.kernel.org;
+> > > devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> > > jasowang@redhat.com; tglx@linutronix.de; JBeulich@suse.com;
+> bp@alien8.de
+> > > Subject: Re: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer frequency
+> > > from the hypervisor
+> > >
+> > > On 09/12/2013 05:06 PM, KY Srinivasan wrote:
+> > > >
+> > > > Peter,
+> > > >
+> > > > Let me know if you want me to address any additional issues in this patch.
+> > > >
+> > >
+> > > Please address Jan and Gleb's feedback.
+> >
+> > Gleb's feedback was a question and I answered that as I did Jan's feedback as
+> well.
+> > Gleb, Jan, please let me know if there is something else you want addressed
+> here.
+> >
+> No, I am just interesting to know some details about the interface since
+> I cannot find it documented in Hyper-V spec.
 
- 
+Thanks Gleb. Here is the link for the latest Hyper-V specification:
+http://www.microsoft.com/en-us/download/details.aspx?id=39289
+
+This spec talks about how migration is handled with regards to TSC.
+
+Peter, if you are ok with the message level, there is no other current issue
+that is left unaddressed.
+
+Regards,
+
+K. Y 
+> 
+> --
+> 			Gleb.
