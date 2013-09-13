@@ -1,84 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818Ab3IMQ3B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 12:29:01 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:47040 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754190Ab3IMQ27 (ORCPT
+	id S1754909Ab3IMQ3P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 12:29:15 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:39024 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753923Ab3IMQ3L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 12:28:59 -0400
-Message-ID: <1379089736.2197.14.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: GPT detection regression in efi.c from commit 27a7c64
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Matt Porter <matt.porter@linaro.org>
-Cc: Karel Zak <kzak@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
+	Fri, 13 Sep 2013 12:29:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130913161059.GD12758@n2100.arm.linux.org.uk>
+References: <cover.1379063063.git.viresh.kumar@linaro.org>
+	<6d8d406ebca886e5147191cc8c333d926ef9eb30.1379063063.git.viresh.kumar@linaro.org>
+	<20130913161059.GD12758@n2100.arm.linux.org.uk>
+Date: Fri, 13 Sep 2013 21:59:10 +0530
+Message-ID: <CAKohponAWXXCVtDL1=C5sQv0QB03P4jtkyE7N+=DDdGPLZpW_w@mail.gmail.com>
+Subject: Re: [PATCH 106/228] cpufreq: integrator: don't initialize part of
+ policy that is set by core too
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        torvalds@linux-foundation.org
-Date: Fri, 13 Sep 2013 09:28:56 -0700
-In-Reply-To: <20130913145033.GA8502@ohporter.com>
-References: <20130913145033.GA8502@ohporter.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: multipart/mixed; boundary=e89a8fb1ef64b397a904e6465aae
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc'ing Linus.
+--e89a8fb1ef64b397a904e6465aae
+Content-Type: text/plain; charset=ISO-8859-1
 
-On Fri, 2013-09-13 at 10:50 -0400, Matt Porter wrote:
-> The commit, "27a7c64 partitions/efi: account for pmbr size in lba", that
-> was just merged in 3.12-rc caused a regression on my system with a GPT
-> formatted eMMC device. In 3.11, the GPT partition table was detected
-> fine but now a partition table is not detected.
-> 
-> Not being a GPT expert, I did some research and found that the tool used
-> to create the PMBR on my system shares characteristics with what is
-> mentioned in an explanation of Microsoft created PMBRs [1]. In short,
-> the size_in_lba field incorrectly has 0xffffffff even though I have a
-> <2TiB drive (16GiB eMMC).
+On 13 September 2013 21:40, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> This patch actually changes things - the description is misleading.
+> Please explain why this change - which results in different values for
+> policy->min and policy->max doesn't cause any functional difference.
 
-*sigh*. So Microsoft decided to do its own version of the GPT specs. 
+Yeah, see if below log looks correct (patch attached):
 
-Up until now, Linux was incorrectly enforcing pMBR checks: not
-recognizing valid labels and vice versa, as with the case you are
-mentioning now. The changes that went in the 3.12 merge window attempt
-to address those concerns, enforcing the correct checks - which is also
-how Linux partitioning tools do it (fdisk, parted).
+Subject: [PATCH 106/228] cpufreq: integrator: don't initialize part of policy
+ that is set by core too
 
-> 
-> I get that this is not compliant with UEFI. I bring this up because
-> before this commit the is_pmbr_valid() check was less pedantic. In 3.11
-> a PMBR formatted this way did not fail the check. For my particular
-> case, I simply dded out LBA 1 and whacked the SizeInLBA field to comply
-> with the spec and this patch and I'm back in business. We're updating
-> the tools that we inherited to prepopulate our boards with a GPT to be
-> compliant. However, I wondered if this would be a problem for all the
-> people with Windows-generated GPTs as noted in [1].
+Many common initializations of struct policy are moved to core now and hence
+this driver doesn't need to do it. This patch removes such code.
 
-I guess this comes down to choosing whether or not we want Linux to be
-more UEFI compliant or not. Should we care if Microsoft decides to go do
-things out of the official spec? I don't know the policy here. The fact
-is that *they* should update their partitioning tools and create valid
-pMBRs. Any way, I'm ok with reverting this commit if deemed necessary.
+Most recent of those changes is to call ->get() in the core after calling
+->init(). And so we don't need to set policy->cur from driver anymore.
 
-Thanks,
-Davidlohr
+Over that it sets policy->min and max correctly. They were earlier set to
+current frequency of CPU but they should be set to max and min freq of cpu.
 
-> 
-> -Matt
-> 
-> [1] http://thestarman.pcministry.com/asm/mbr/GPT.htm#GPTPT
-> 
-> "The partition table contains only a single "GPT Protective" entry which
-> in all cases is set to the maximum 32-bit limitation (even though a
-> drive may have far less than a 2.2 TB capacity). The "GPT Protective MBR
-> Sector" has exactly the same contents for all GPT disk drives created by
-> the Windows 7 (or 8) OS. But, note: This does not follow the UEFI
-> Specification, which states that the "SizeInLBA" should be "set to the
-> size of the disk minus one" if it's not too large to be represented.[1]
-> (GPT drives partitioned under various Linux and Apple® Mac OS systems do
-> follow the UEFI Specification in this regard.)"
+Cc: Russell King <linux@arm.linux.org.uk>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/integrator-cpufreq.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
+--e89a8fb1ef64b397a904e6465aae
+Content-Type: application/octet-stream; 
+	name="0106-cpufreq-integrator-don-t-initialize-part-of-policy-t.patch"
+Content-Disposition: attachment; 
+	filename="0106-cpufreq-integrator-don-t-initialize-part-of-policy-t.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hljmfdxg0
 
+RnJvbSA2ZDhkNDA2ZWJjYTg4NmU1MTQ3MTkxY2M4YzMzM2Q5MjZlZjllYjMwIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpNZXNzYWdlLUlkOiA8NmQ4ZDQwNmViY2E4ODZlNTE0NzE5MWNjOGMzMzNk
+OTI2ZWY5ZWIzMC4xMzc5MDYzMDYzLmdpdC52aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KSW4tUmVw
+bHktVG86IDxjb3Zlci4xMzc5MDYzMDYzLmdpdC52aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KUmVm
+ZXJlbmNlczogPGNvdmVyLjEzNzkwNjMwNjMuZ2l0LnZpcmVzaC5rdW1hckBsaW5hcm8ub3JnPgpG
+cm9tOiBWaXJlc2ggS3VtYXIgPHZpcmVzaC5rdW1hckBsaW5hcm8ub3JnPgpEYXRlOiBXZWQsIDE0
+IEF1ZyAyMDEzIDE2OjAyOjQ3ICswNTMwClN1YmplY3Q6IFtQQVRDSCAxMDYvMjI4XSBjcHVmcmVx
+OiBpbnRlZ3JhdG9yOiBkb24ndCBpbml0aWFsaXplIHBhcnQgb2YgcG9saWN5CiB0aGF0IGlzIHNl
+dCBieSBjb3JlIHRvbwoKTWFueSBjb21tb24gaW5pdGlhbGl6YXRpb25zIG9mIHN0cnVjdCBwb2xp
+Y3kgYXJlIG1vdmVkIHRvIGNvcmUgbm93IGFuZCBoZW5jZQp0aGlzIGRyaXZlciBkb2Vzbid0IG5l
+ZWQgdG8gZG8gaXQuIFRoaXMgcGF0Y2ggcmVtb3ZlcyBzdWNoIGNvZGUuCgpNb3N0IHJlY2VudCBv
+ZiB0aG9zZSBjaGFuZ2VzIGlzIHRvIGNhbGwgLT5nZXQoKSBpbiB0aGUgY29yZSBhZnRlciBjYWxs
+aW5nCi0+aW5pdCgpLiBBbmQgc28gd2UgZG9uJ3QgbmVlZCB0byBzZXQgcG9saWN5LT5jdXIgZnJv
+bSBkcml2ZXIgYW55bW9yZS4KCk92ZXIgdGhhdCBpdCBzZXRzIHBvbGljeS0+bWluIGFuZCBtYXgg
+Y29ycmVjdGx5LiBUaGV5IHdlcmUgZWFybGllciBzZXQgdG8KY3VycmVudCBmcmVxdWVuY3kgb2Yg
+Q1BVIGJ1dCB0aGV5IHNob3VsZCBiZSBzZXQgdG8gbWF4IGFuZCBtaW4gZnJlcSBvZiBjcHUuCgpD
+YzogUnVzc2VsbCBLaW5nIDxsaW51eEBhcm0ubGludXgub3JnLnVrPgpTaWduZWQtb2ZmLWJ5OiBW
+aXJlc2ggS3VtYXIgPHZpcmVzaC5rdW1hckBsaW5hcm8ub3JnPgotLS0KIGRyaXZlcnMvY3B1ZnJl
+cS9pbnRlZ3JhdG9yLWNwdWZyZXEuYyB8IDUgKystLS0KIDEgZmlsZSBjaGFuZ2VkLCAyIGluc2Vy
+dGlvbnMoKyksIDMgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZHJpdmVycy9jcHVmcmVxL2lu
+dGVncmF0b3ItY3B1ZnJlcS5jIGIvZHJpdmVycy9jcHVmcmVxL2ludGVncmF0b3ItY3B1ZnJlcS5j
+CmluZGV4IDgxNTJhOWIuLmJhYmYzZTQgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvY3B1ZnJlcS9pbnRl
+Z3JhdG9yLWNwdWZyZXEuYworKysgYi9kcml2ZXJzL2NwdWZyZXEvaW50ZWdyYXRvci1jcHVmcmVx
+LmMKQEAgLTE4MSwxMCArMTgxLDkgQEAgc3RhdGljIGludCBpbnRlZ3JhdG9yX2NwdWZyZXFfaW5p
+dChzdHJ1Y3QgY3B1ZnJlcV9wb2xpY3kgKnBvbGljeSkKIHsKIAogCS8qIHNldCBkZWZhdWx0IHBv
+bGljeSBhbmQgY3B1aW5mbyAqLwotCXBvbGljeS0+Y3B1aW5mby5tYXhfZnJlcSA9IDE2MDAwMDsK
+LQlwb2xpY3ktPmNwdWluZm8ubWluX2ZyZXEgPSAxMjAwMDsKKwlwb2xpY3ktPm1heCA9IHBvbGlj
+eS0+Y3B1aW5mby5tYXhfZnJlcSA9IDE2MDAwMDsKKwlwb2xpY3ktPm1pbiA9IHBvbGljeS0+Y3B1
+aW5mby5taW5fZnJlcSA9IDEyMDAwOwogCXBvbGljeS0+Y3B1aW5mby50cmFuc2l0aW9uX2xhdGVu
+Y3kgPSAxMDAwMDAwOyAvKiAxIG1zLCBhc3N1bWVkICovCi0JcG9saWN5LT5jdXIgPSBwb2xpY3kt
+Pm1pbiA9IHBvbGljeS0+bWF4ID0gaW50ZWdyYXRvcl9nZXQocG9saWN5LT5jcHUpOwogCiAJcmV0
+dXJuIDA7CiB9Ci0tIAoxLjcuMTIucmMyLjE4Lmc2MWI0NzJlCgo=
+--e89a8fb1ef64b397a904e6465aae--
