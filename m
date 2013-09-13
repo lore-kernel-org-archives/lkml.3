@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309Ab3IMSd6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 14:33:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37244 "EHLO
+	id S1755354Ab3IMSeP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 14:34:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37241 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754981Ab3IMSdY (ORCPT
+	with ESMTP id S1754972Ab3IMSdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 14:33:24 -0400
+	Fri, 13 Sep 2013 14:33:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: kys@microsoft.com, haiyangz@microsoft.com
 Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 13/13] hv: move ringbuffer bus attributes to dev_groups
-Date: Fri, 13 Sep 2013 11:33:01 -0700
-Message-Id: <1379097181-23407-14-git-send-email-gregkh@linuxfoundation.org>
+Subject: [PATCH 12/13] hv: delete struct hv_dev_port_info
+Date: Fri, 13 Sep 2013 11:33:00 -0700
+Message-Id: <1379097181-23407-13-git-send-email-gregkh@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.4.3.gca3854a
 In-Reply-To: <1379097181-23407-1-git-send-email-gregkh@linuxfoundation.org>
 References: <1379097181-23407-1-git-send-email-gregkh@linuxfoundation.org>
@@ -21,298 +21,146 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This moves the ringbuffer bus attributes to the dev_groups structure,
-deletes the now unneeded struct hv_device_info, and removes some now
-unused functions, and variables as everything is now moved to the
-dev_groups structure, dev_attrs is no longer needed.
+It's no longer needed, and the struct hv_ring_buffer_debug_info
+structure shouldn't be "global" so move it to the local .h file instead.
+
 
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
 Cc: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/hv/vmbus_drv.c | 230 +++++++++++++++++++++++++++++++------------------
- 1 file changed, 146 insertions(+), 84 deletions(-)
+ drivers/hv/hyperv_vmbus.h |  7 +++++++
+ drivers/hv/vmbus_drv.c    | 35 ++++++++++-------------------------
+ include/linux/hyperv.h    | 17 -----------------
+ 3 files changed, 17 insertions(+), 42 deletions(-)
 
+diff --git a/drivers/hv/hyperv_vmbus.h b/drivers/hv/hyperv_vmbus.h
+index d58c22ff..e0551761 100644
+--- a/drivers/hv/hyperv_vmbus.h
++++ b/drivers/hv/hyperv_vmbus.h
+@@ -514,6 +514,13 @@ struct hv_context {
+ 
+ extern struct hv_context hv_context;
+ 
++struct hv_ring_buffer_debug_info {
++	u32 current_interrupt_mask;
++	u32 current_read_index;
++	u32 current_write_index;
++	u32 bytes_avail_toread;
++	u32 bytes_avail_towrite;
++};
+ 
+ /* Hv Interface */
+ 
 diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
-index cf3220e8..48aad4fa 100644
+index 62d9311b..cf3220e8 100644
 --- a/drivers/hv/vmbus_drv.c
 +++ b/drivers/hv/vmbus_drv.c
-@@ -46,11 +46,6 @@ static struct tasklet_struct msg_dpc;
- static struct completion probe_event;
+@@ -47,8 +47,8 @@ static struct completion probe_event;
  static int irq;
  
--struct hv_device_info {
+ struct hv_device_info {
+-	struct hv_dev_port_info inbound;
+-	struct hv_dev_port_info outbound;
++	struct hv_ring_buffer_debug_info inbound;
++	struct hv_ring_buffer_debug_info outbound;
+ };
+ 
+ static int vmbus_exists(void)
+@@ -63,26 +63,11 @@ static int vmbus_exists(void)
+ static void get_channel_info(struct hv_device *device,
+ 			     struct hv_device_info *info)
+ {
 -	struct hv_ring_buffer_debug_info inbound;
 -	struct hv_ring_buffer_debug_info outbound;
--};
 -
- static int vmbus_exists(void)
- {
- 	if (hv_acpi_dev == NULL)
-@@ -59,17 +54,6 @@ static int vmbus_exists(void)
- 	return 0;
+ 	if (!device->channel)
+ 		return;
+ 
+-	hv_ringbuffer_get_debuginfo(&device->channel->inbound, &inbound);
+-	hv_ringbuffer_get_debuginfo(&device->channel->outbound, &outbound);
+-
+-	info->inbound.int_mask = inbound.current_interrupt_mask;
+-	info->inbound.read_idx = inbound.current_read_index;
+-	info->inbound.write_idx = inbound.current_write_index;
+-	info->inbound.bytes_avail_toread = inbound.bytes_avail_toread;
+-	info->inbound.bytes_avail_towrite = inbound.bytes_avail_towrite;
+-
+-	info->outbound.int_mask = outbound.current_interrupt_mask;
+-	info->outbound.read_idx = outbound.current_read_index;
+-	info->outbound.write_idx = outbound.current_write_index;
+-	info->outbound.bytes_avail_toread = outbound.bytes_avail_toread;
+-	info->outbound.bytes_avail_towrite = outbound.bytes_avail_towrite;
++	hv_ringbuffer_get_debuginfo(&device->channel->inbound, &info->inbound);
++	hv_ringbuffer_get_debuginfo(&device->channel->outbound, &info->outbound);
  }
  
--
--static void get_channel_info(struct hv_device *device,
--			     struct hv_device_info *info)
--{
--	if (!device->channel)
--		return;
--
--	hv_ringbuffer_get_debuginfo(&device->channel->inbound, &info->inbound);
--	hv_ringbuffer_get_debuginfo(&device->channel->outbound, &info->outbound);
--}
--
  #define VMBUS_ALIAS_LEN ((sizeof((struct hv_vmbus_device_id *)0)->guid) * 2)
- static void print_alias_name(struct hv_device *hv_dev, char *alias_name)
- {
-@@ -78,56 +62,6 @@ static void print_alias_name(struct hv_device *hv_dev, char *alias_name)
- 		sprintf(&alias_name[i], "%02x", hv_dev->dev_type.b[i/2]);
- }
+@@ -114,11 +99,11 @@ static ssize_t vmbus_show_device_attr(struct device *dev,
+ 	get_channel_info(hv_dev, device_info);
  
--/*
-- * vmbus_show_device_attr - Show the device attribute in sysfs.
-- *
-- * This is invoked when user does a
-- * "cat /sys/bus/vmbus/devices/<busdevice>/<attr name>"
-- */
--static ssize_t vmbus_show_device_attr(struct device *dev,
--				      struct device_attribute *dev_attr,
--				      char *buf)
--{
--	struct hv_device *hv_dev = device_to_hv_device(dev);
--	struct hv_device_info *device_info;
--	int ret = 0;
--
--	device_info = kzalloc(sizeof(struct hv_device_info), GFP_KERNEL);
--	if (!device_info)
--		return ret;
--
--	get_channel_info(hv_dev, device_info);
--
--	if (!strcmp(dev_attr->attr.name, "out_intr_mask")) {
--		ret = sprintf(buf, "%d\n", device_info->outbound.current_interrupt_mask);
--	} else if (!strcmp(dev_attr->attr.name, "out_read_index")) {
--		ret = sprintf(buf, "%d\n", device_info->outbound.current_read_index);
--	} else if (!strcmp(dev_attr->attr.name, "out_write_index")) {
--		ret = sprintf(buf, "%d\n", device_info->outbound.current_write_index);
--	} else if (!strcmp(dev_attr->attr.name, "out_read_bytes_avail")) {
--		ret = sprintf(buf, "%d\n",
--			       device_info->outbound.bytes_avail_toread);
--	} else if (!strcmp(dev_attr->attr.name, "out_write_bytes_avail")) {
--		ret = sprintf(buf, "%d\n",
--			       device_info->outbound.bytes_avail_towrite);
--	} else if (!strcmp(dev_attr->attr.name, "in_intr_mask")) {
--		ret = sprintf(buf, "%d\n", device_info->inbound.current_interrupt_mask);
--	} else if (!strcmp(dev_attr->attr.name, "in_read_index")) {
--		ret = sprintf(buf, "%d\n", device_info->inbound.current_read_index);
--	} else if (!strcmp(dev_attr->attr.name, "in_write_index")) {
--		ret = sprintf(buf, "%d\n", device_info->inbound.current_write_index);
--	} else if (!strcmp(dev_attr->attr.name, "in_read_bytes_avail")) {
--		ret = sprintf(buf, "%d\n",
--			       device_info->inbound.bytes_avail_toread);
--	} else if (!strcmp(dev_attr->attr.name, "in_write_bytes_avail")) {
--		ret = sprintf(buf, "%d\n",
--			       device_info->inbound.bytes_avail_towrite);
--	}
--
--	kfree(device_info);
--	return ret;
--}
--
- static u8 channel_monitor_group(struct vmbus_channel *channel)
- {
- 	return (u8)channel->offermsg.monitorid / 32;
-@@ -313,6 +247,142 @@ static ssize_t client_monitor_conn_id_show(struct device *dev,
- }
- static DEVICE_ATTR_RO(client_monitor_conn_id);
- 
-+static ssize_t out_intr_mask_show(struct device *dev,
-+				  struct device_attribute *dev_attr, char *buf)
-+{
-+	struct hv_device *hv_dev = device_to_hv_device(dev);
-+	struct hv_ring_buffer_debug_info outbound;
-+
-+	if (!hv_dev->channel)
-+		return -ENODEV;
-+	hv_ringbuffer_get_debuginfo(&hv_dev->channel->outbound, &outbound);
-+	return sprintf(buf, "%d\n", outbound.current_interrupt_mask);
-+}
-+static DEVICE_ATTR_RO(out_intr_mask);
-+
-+static ssize_t out_read_index_show(struct device *dev,
-+				   struct device_attribute *dev_attr, char *buf)
-+{
-+	struct hv_device *hv_dev = device_to_hv_device(dev);
-+	struct hv_ring_buffer_debug_info outbound;
-+
-+	if (!hv_dev->channel)
-+		return -ENODEV;
-+	hv_ringbuffer_get_debuginfo(&hv_dev->channel->outbound, &outbound);
-+	return sprintf(buf, "%d\n", outbound.current_read_index);
-+}
-+static DEVICE_ATTR_RO(out_read_index);
-+
-+static ssize_t out_write_index_show(struct device *dev,
-+				    struct device_attribute *dev_attr,
-+				    char *buf)
-+{
-+	struct hv_device *hv_dev = device_to_hv_device(dev);
-+	struct hv_ring_buffer_debug_info outbound;
-+
-+	if (!hv_dev->channel)
-+		return -ENODEV;
-+	hv_ringbuffer_get_debuginfo(&hv_dev->channel->outbound, &outbound);
-+	return sprintf(buf, "%d\n", outbound.current_write_index);
-+}
-+static DEVICE_ATTR_RO(out_write_index);
-+
-+static ssize_t out_read_bytes_avail_show(struct device *dev,
-+					 struct device_attribute *dev_attr,
-+					 char *buf)
-+{
-+	struct hv_device *hv_dev = device_to_hv_device(dev);
-+	struct hv_ring_buffer_debug_info outbound;
-+
-+	if (!hv_dev->channel)
-+		return -ENODEV;
-+	hv_ringbuffer_get_debuginfo(&hv_dev->channel->outbound, &outbound);
-+	return sprintf(buf, "%d\n", outbound.bytes_avail_toread);
-+}
-+static DEVICE_ATTR_RO(out_read_bytes_avail);
-+
-+static ssize_t out_write_bytes_avail_show(struct device *dev,
-+					  struct device_attribute *dev_attr,
-+					  char *buf)
-+{
-+	struct hv_device *hv_dev = device_to_hv_device(dev);
-+	struct hv_ring_buffer_debug_info outbound;
-+
-+	if (!hv_dev->channel)
-+		return -ENODEV;
-+	hv_ringbuffer_get_debuginfo(&hv_dev->channel->outbound, &outbound);
-+	return sprintf(buf, "%d\n", outbound.bytes_avail_towrite);
-+}
-+static DEVICE_ATTR_RO(out_write_bytes_avail);
-+
-+static ssize_t in_intr_mask_show(struct device *dev,
-+				 struct device_attribute *dev_attr, char *buf)
-+{
-+	struct hv_device *hv_dev = device_to_hv_device(dev);
-+	struct hv_ring_buffer_debug_info inbound;
-+
-+	if (!hv_dev->channel)
-+		return -ENODEV;
-+	hv_ringbuffer_get_debuginfo(&hv_dev->channel->inbound, &inbound);
-+	return sprintf(buf, "%d\n", inbound.current_interrupt_mask);
-+}
-+static DEVICE_ATTR_RO(in_intr_mask);
-+
-+static ssize_t in_read_index_show(struct device *dev,
-+				  struct device_attribute *dev_attr, char *buf)
-+{
-+	struct hv_device *hv_dev = device_to_hv_device(dev);
-+	struct hv_ring_buffer_debug_info inbound;
-+
-+	if (!hv_dev->channel)
-+		return -ENODEV;
-+	hv_ringbuffer_get_debuginfo(&hv_dev->channel->inbound, &inbound);
-+	return sprintf(buf, "%d\n", inbound.current_read_index);
-+}
-+static DEVICE_ATTR_RO(in_read_index);
-+
-+static ssize_t in_write_index_show(struct device *dev,
-+				   struct device_attribute *dev_attr, char *buf)
-+{
-+	struct hv_device *hv_dev = device_to_hv_device(dev);
-+	struct hv_ring_buffer_debug_info inbound;
-+
-+	if (!hv_dev->channel)
-+		return -ENODEV;
-+	hv_ringbuffer_get_debuginfo(&hv_dev->channel->inbound, &inbound);
-+	return sprintf(buf, "%d\n", inbound.current_write_index);
-+}
-+static DEVICE_ATTR_RO(in_write_index);
-+
-+static ssize_t in_read_bytes_avail_show(struct device *dev,
-+					struct device_attribute *dev_attr,
-+					char *buf)
-+{
-+	struct hv_device *hv_dev = device_to_hv_device(dev);
-+	struct hv_ring_buffer_debug_info inbound;
-+
-+	if (!hv_dev->channel)
-+		return -ENODEV;
-+	hv_ringbuffer_get_debuginfo(&hv_dev->channel->inbound, &inbound);
-+	return sprintf(buf, "%d\n", inbound.bytes_avail_toread);
-+}
-+static DEVICE_ATTR_RO(in_read_bytes_avail);
-+
-+static ssize_t in_write_bytes_avail_show(struct device *dev,
-+					 struct device_attribute *dev_attr,
-+					 char *buf)
-+{
-+	struct hv_device *hv_dev = device_to_hv_device(dev);
-+	struct hv_ring_buffer_debug_info inbound;
-+
-+	if (!hv_dev->channel)
-+		return -ENODEV;
-+	hv_ringbuffer_get_debuginfo(&hv_dev->channel->inbound, &inbound);
-+	return sprintf(buf, "%d\n", inbound.bytes_avail_towrite);
-+}
-+static DEVICE_ATTR_RO(in_write_bytes_avail);
-+
-+/* Set up per device attributes in /sys/bus/vmbus/devices/<bus device> */
- static struct attribute *vmbus_attrs[] = {
- 	&dev_attr_id.attr,
- 	&dev_attr_state.attr,
-@@ -326,27 +396,20 @@ static struct attribute *vmbus_attrs[] = {
- 	&dev_attr_client_monitor_latency.attr,
- 	&dev_attr_server_monitor_conn_id.attr,
- 	&dev_attr_client_monitor_conn_id.attr,
-+	&dev_attr_out_intr_mask.attr,
-+	&dev_attr_out_read_index.attr,
-+	&dev_attr_out_write_index.attr,
-+	&dev_attr_out_read_bytes_avail.attr,
-+	&dev_attr_out_write_bytes_avail.attr,
-+	&dev_attr_in_intr_mask.attr,
-+	&dev_attr_in_read_index.attr,
-+	&dev_attr_in_write_index.attr,
-+	&dev_attr_in_read_bytes_avail.attr,
-+	&dev_attr_in_write_bytes_avail.attr,
- 	NULL,
+ 	if (!strcmp(dev_attr->attr.name, "out_intr_mask")) {
+-		ret = sprintf(buf, "%d\n", device_info->outbound.int_mask);
++		ret = sprintf(buf, "%d\n", device_info->outbound.current_interrupt_mask);
+ 	} else if (!strcmp(dev_attr->attr.name, "out_read_index")) {
+-		ret = sprintf(buf, "%d\n", device_info->outbound.read_idx);
++		ret = sprintf(buf, "%d\n", device_info->outbound.current_read_index);
+ 	} else if (!strcmp(dev_attr->attr.name, "out_write_index")) {
+-		ret = sprintf(buf, "%d\n", device_info->outbound.write_idx);
++		ret = sprintf(buf, "%d\n", device_info->outbound.current_write_index);
+ 	} else if (!strcmp(dev_attr->attr.name, "out_read_bytes_avail")) {
+ 		ret = sprintf(buf, "%d\n",
+ 			       device_info->outbound.bytes_avail_toread);
+@@ -126,11 +111,11 @@ static ssize_t vmbus_show_device_attr(struct device *dev,
+ 		ret = sprintf(buf, "%d\n",
+ 			       device_info->outbound.bytes_avail_towrite);
+ 	} else if (!strcmp(dev_attr->attr.name, "in_intr_mask")) {
+-		ret = sprintf(buf, "%d\n", device_info->inbound.int_mask);
++		ret = sprintf(buf, "%d\n", device_info->inbound.current_interrupt_mask);
+ 	} else if (!strcmp(dev_attr->attr.name, "in_read_index")) {
+-		ret = sprintf(buf, "%d\n", device_info->inbound.read_idx);
++		ret = sprintf(buf, "%d\n", device_info->inbound.current_read_index);
+ 	} else if (!strcmp(dev_attr->attr.name, "in_write_index")) {
+-		ret = sprintf(buf, "%d\n", device_info->inbound.write_idx);
++		ret = sprintf(buf, "%d\n", device_info->inbound.current_write_index);
+ 	} else if (!strcmp(dev_attr->attr.name, "in_read_bytes_avail")) {
+ 		ret = sprintf(buf, "%d\n",
+ 			       device_info->inbound.bytes_avail_toread);
+diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
+index c0e8faf4..c68ecfe2 100644
+--- a/include/linux/hyperv.h
++++ b/include/linux/hyperv.h
+@@ -429,15 +429,6 @@ struct hv_ring_buffer_info {
+ 	u32 ring_data_startoffset;
  };
- ATTRIBUTE_GROUPS(vmbus);
  
--/* Set up per device attributes in /sys/bus/vmbus/devices/<bus device> */
--static struct device_attribute vmbus_device_attrs[] = {
--	__ATTR(out_intr_mask, S_IRUGO, vmbus_show_device_attr, NULL),
--	__ATTR(out_read_index, S_IRUGO, vmbus_show_device_attr, NULL),
--	__ATTR(out_write_index, S_IRUGO, vmbus_show_device_attr, NULL),
--	__ATTR(out_read_bytes_avail, S_IRUGO, vmbus_show_device_attr, NULL),
--	__ATTR(out_write_bytes_avail, S_IRUGO, vmbus_show_device_attr, NULL),
--
--	__ATTR(in_intr_mask, S_IRUGO, vmbus_show_device_attr, NULL),
--	__ATTR(in_read_index, S_IRUGO, vmbus_show_device_attr, NULL),
--	__ATTR(in_write_index, S_IRUGO, vmbus_show_device_attr, NULL),
--	__ATTR(in_read_bytes_avail, S_IRUGO, vmbus_show_device_attr, NULL),
--	__ATTR(in_write_bytes_avail, S_IRUGO, vmbus_show_device_attr, NULL),
--	__ATTR_NULL
+-struct hv_ring_buffer_debug_info {
+-	u32 current_interrupt_mask;
+-	u32 current_read_index;
+-	u32 current_write_index;
+-	u32 bytes_avail_toread;
+-	u32 bytes_avail_towrite;
 -};
 -
 -
  /*
-  * vmbus_uevent - add uevent for our device
   *
-@@ -494,7 +557,6 @@ static struct bus_type  hv_bus = {
- 	.remove =		vmbus_remove,
- 	.probe =		vmbus_probe,
- 	.uevent =		vmbus_uevent,
--	.dev_attrs =	vmbus_device_attrs,
- 	.dev_groups =		vmbus_groups,
- };
+  * hv_get_ringbuffer_availbytes()
+@@ -1166,14 +1157,6 @@ extern int vmbus_recvpacket_raw(struct vmbus_channel *channel,
  
+ extern void vmbus_ontimer(unsigned long data);
+ 
+-struct hv_dev_port_info {
+-	u32 int_mask;
+-	u32 read_idx;
+-	u32 write_idx;
+-	u32 bytes_avail_toread;
+-	u32 bytes_avail_towrite;
+-};
+-
+ /* Base driver object */
+ struct hv_driver {
+ 	const char *name;
 -- 
 1.8.4.3.gca3854a
 
