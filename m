@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464Ab3IMJyN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 05:54:13 -0400
-Received: from mx-rz-3.rrze.uni-erlangen.de ([131.188.11.22]:33485 "EHLO
-	mx-rz-3.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751965Ab3IMJyG (ORCPT
+	id S1755640Ab3IMJyT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 05:54:19 -0400
+Received: from mx-rz-1.rrze.uni-erlangen.de ([131.188.11.20]:36255 "EHLO
+	mx-rz-1.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754540Ab3IMJyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 13 Sep 2013 05:54:06 -0400
 X-RRZE-Submit-IP: 131.188.42.159
 From: Dominik Paulus <dominik.paulus@fau.de>
 To: linux-kernel@vger.kernel.org
 Cc: Dominik Paulus <dominik.paulus@fau.de>,
+        Kurt Kanzenbach <ly80toro@cip.cs.fau.de>,
         Tobias Polzer <tobias.polzer@fau.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ilija Hadzic <ihadzic@research.bell-labs.com>,
         Anthony Foiani <anthony.foiani@gmail.com>,
         Masanari Iida <standby24x7@gmail.com>, linux-kernel@i4.cs.fau.de,
         devel@driverdev.osuosl.org
-Subject: [PATCHv2 04/11] staging: usbip: Add CIDR matching helper functions
-Date: Fri, 13 Sep 2013 11:55:54 +0200
-Message-Id: <1379066161-8278-5-git-send-email-dominik.paulus@fau.de>
+Subject: [PATCHv2 03/11] staging: usbip: Add kernel support for client ACLs
+Date: Fri, 13 Sep 2013 11:55:53 +0200
+Message-Id: <1379066161-8278-4-git-send-email-dominik.paulus@fau.de>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1379066161-8278-1-git-send-email-dominik.paulus@fau.de>
 References: <1379066161-8278-1-git-send-email-dominik.paulus@fau.de>
@@ -27,135 +28,150 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a few utility functions to match IP addresses against
-CIDR masks.
+This patch adds the possibility to stored ACLs for allowed clients for
+each stub device in sysfs. It adds a new sysfs entry called "usbip_acl"
+for each stub device, containing a list of CIDR masks of allowed
+clients. This file will be used by usbip and usbipd to store the ACL.
 
+Signed-off-by: Kurt Kanzenbach <ly80toro@cip.cs.fau.de>
 Signed-off-by: Dominik Paulus <dominik.paulus@fau.de>
 Signed-off-by: Tobias Polzer <tobias.polzer@fau.de>
 ---
- drivers/staging/usbip/userspace/src/utils.c | 84 +++++++++++++++++++++++++++++
- drivers/staging/usbip/userspace/src/utils.h | 15 ++++++
- 2 files changed, 99 insertions(+)
+ drivers/staging/usbip/stub.h     |  5 +++
+ drivers/staging/usbip/stub_dev.c | 68 +++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 72 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/staging/usbip/userspace/src/utils.c b/drivers/staging/usbip/userspace/src/utils.c
-index 2d4966e..df40817 100644
---- a/drivers/staging/usbip/userspace/src/utils.c
-+++ b/drivers/staging/usbip/userspace/src/utils.c
-@@ -74,3 +74,87 @@ int modify_match_busid(char *busid, int add)
+diff --git a/drivers/staging/usbip/stub.h b/drivers/staging/usbip/stub.h
+index a73e437..cfe75d1 100644
+--- a/drivers/staging/usbip/stub.h
++++ b/drivers/staging/usbip/stub.h
+@@ -60,6 +60,11 @@ struct stub_device {
+ 	struct list_head unlink_free;
  
- 	return ret;
+ 	wait_queue_head_t tx_waitq;
++
++	/* list of allowed IP addrs */
++	char *acls;
++	/* for locking list operations */
++	spinlock_t ip_lock;
+ };
+ 
+ /* private data into urb->priv */
+diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
+index d8957a5..c44d5f2 100644
+--- a/drivers/staging/usbip/stub_dev.c
++++ b/drivers/staging/usbip/stub_dev.c
+@@ -142,6 +142,62 @@ err:
  }
-+
+ static DEVICE_ATTR(usbip_sockfd, S_IWUSR, NULL, store_sockfd);
+ 
 +/*
-+ * Parses a string of form "ip/prefix" into a subnet mask to dest.
-+ * Returns -1 on error, 0 on success
++ * This function replaces the current ACL list
 + */
-+int parse_cidr(const char *src, struct subnet *dest)
++static ssize_t store_acl(struct device *dev, struct device_attribute *attr,
++			const char *buf, size_t count)
 +{
-+	char *ip, *prefix, *saveptr;
-+	char *endptr;
-+	struct in6_addr ip6;
-+	struct in_addr ip4;
-+	int bits;
-+	long int tmp;
-+	char buf[128]; /* For strtok */
++	struct stub_device *sdev = dev_get_drvdata(dev);
++	int retval = 0;
 +
-+	strncpy(buf, src, sizeof(buf));
-+	buf[sizeof(buf)-1] = 0;
++	if (!sdev)
++		return -ENODEV;
 +
-+	ip = strtok_r(buf, "/", &saveptr);
-+	prefix = strtok_r(NULL, "/", &saveptr);
-+	if (strtok_r(NULL, "/", &saveptr) || !ip ||
-+			strlen(src) > sizeof(buf) - 1)
-+		return -1;
++	if (count >= PAGE_SIZE)
++		/* Prevent storing oversized ACLs in kernel memory */
++		return -EINVAL;
 +
-+	if (inet_pton(AF_INET6, ip, &ip6) == 1) {
-+		dest->ai_family = AF_INET6;
-+		bits = 128;
-+		dest->address.ip6 = ip6;
-+	} else if (inet_pton(AF_INET, ip, &ip4) == 1) {
-+		dest->ai_family = AF_INET;
-+		bits = 32;
-+		dest->address.ip4 = ip4;
++	/* Store ACL */
++	spin_lock_irq(&sdev->ip_lock);
++	kfree(sdev->acls);
++	sdev->acls = kstrdup(buf, GFP_KERNEL);
++	if (IS_ERR(sdev->acls)) {
++		retval = PTR_ERR(sdev->acls);
++		sdev->acls = NULL;
 +	} else {
-+		return -1;
++		retval = strlen(sdev->acls);
 +	}
++	spin_unlock_irq(&sdev->ip_lock);
 +
-+	/*
-+	 * We also accept single IPs without an explicitely
-+	 * specified prefix
-+	 */
-+	if (prefix) {
-+		tmp = strtol(prefix, &endptr, 10);
-+		if (tmp < 0 || tmp > bits || *endptr != '\0')
-+			return -1;
-+		dest->prefix = tmp;
-+	} else {
-+		dest->prefix = bits;
-+	}
-+
-+	return 0;
++	return retval;
 +}
 +
 +/*
-+ * Checks if addr is in range. Expects addr to be a struct in6_addr* if
-+ * ai_family == AF_INET6, else struct in_addr*.
-+ * Returns 1 if in range, 0 otherwise.
++ * This functions prints all allowed IP addrs for this dev
 + */
-+int in_range(struct sockaddr_storage *addr, struct subnet range)
++static ssize_t show_acl(struct device *dev, struct device_attribute *attr,
++		       char *buf)
 +{
-+	if (addr->ss_family != range.ai_family)
-+		return 0;
-+	if (addr->ss_family == AF_INET6) {
-+		int i;
-+		struct sockaddr_in6 *in6addr = (struct sockaddr_in6 *) addr;
-+		unsigned char *ip = in6addr->sin6_addr.s6_addr;
-+		for (i = 0; i < range.prefix; ++i) {
-+			int idx = i/8, mask = 1 << (7 - i%8);
-+			if ((ip[idx] & mask) != (range.address.ip6.s6_addr[idx]
-+			  & mask))
-+				return 0;
-+		}
++	struct stub_device *sdev = dev_get_drvdata(dev);
++	int retval = 0;
++
++	if (!sdev)
++		return -ENODEV;
++
++	spin_lock_irq(&sdev->ip_lock);
++	if (sdev->acls == NULL) {
++		retval = 0;
 +	} else {
-+		int i;
-+		struct sockaddr_in *inaddr = (struct sockaddr_in *) addr;
-+		uint32_t ip = ntohl(inaddr->sin_addr.s_addr);
-+		uint32_t comp = ntohl(range.address.ip4.s_addr);
-+		for (i = 0; i < range.prefix; ++i) {
-+			int mask = 1 << (31-i);
-+			if ((ip & mask) != (comp & mask))
-+				return 0;
-+		}
++		strcpy(buf, sdev->acls);
++		retval = strlen(buf);
 +	}
-+	return 1;
++	spin_unlock_irq(&sdev->ip_lock);
++
++	return retval;
 +}
-diff --git a/drivers/staging/usbip/userspace/src/utils.h b/drivers/staging/usbip/userspace/src/utils.h
-index 5916fd3..a3704ef 100644
---- a/drivers/staging/usbip/userspace/src/utils.h
-+++ b/drivers/staging/usbip/userspace/src/utils.h
-@@ -19,7 +19,22 @@
- #ifndef __UTILS_H
- #define __UTILS_H
- 
-+#include <arpa/inet.h>
-+#include <sys/socket.h>
-+#include <netinet/ip.h>
++static DEVICE_ATTR(usbip_acl, S_IWUSR | S_IRUGO, show_acl, store_acl);
 +
-+struct subnet {
-+	int ai_family;
-+	int prefix;
-+	union {
-+		struct in6_addr ip6;
-+		struct in_addr ip4;
-+	} address;
-+};
+ static int stub_add_files(struct device *dev)
+ {
+ 	int err = 0;
+@@ -157,9 +213,13 @@ static int stub_add_files(struct device *dev)
+ 	err = device_create_file(dev, &dev_attr_usbip_debug);
+ 	if (err)
+ 		goto err_debug;
++	err = device_create_file(dev, &dev_attr_usbip_acl);
++	if (err)
++		goto err_ip;
+ 
+ 	return 0;
+-
++err_ip:
++	device_remove_file(dev, &dev_attr_usbip_debug);
+ err_debug:
+ 	device_remove_file(dev, &dev_attr_usbip_sockfd);
+ err_sockfd:
+@@ -173,6 +233,7 @@ static void stub_remove_files(struct device *dev)
+ 	device_remove_file(dev, &dev_attr_usbip_status);
+ 	device_remove_file(dev, &dev_attr_usbip_sockfd);
+ 	device_remove_file(dev, &dev_attr_usbip_debug);
++	device_remove_file(dev, &dev_attr_usbip_acl);
+ }
+ 
+ static void stub_shutdown_connection(struct usbip_device *ud)
+@@ -306,12 +367,14 @@ static struct stub_device *stub_device_alloc(struct usb_device *udev,
+ 	sdev->ud.status		= SDEV_ST_AVAILABLE;
+ 	spin_lock_init(&sdev->ud.lock);
+ 	sdev->ud.tcp_socket	= NULL;
++	sdev->acls = NULL;
+ 
+ 	INIT_LIST_HEAD(&sdev->priv_init);
+ 	INIT_LIST_HEAD(&sdev->priv_tx);
+ 	INIT_LIST_HEAD(&sdev->priv_free);
+ 	INIT_LIST_HEAD(&sdev->unlink_free);
+ 	INIT_LIST_HEAD(&sdev->unlink_tx);
++	spin_lock_init(&sdev->ip_lock);
+ 	spin_lock_init(&sdev->priv_lock);
+ 
+ 	init_waitqueue_head(&sdev->tx_waitq);
+@@ -507,6 +570,9 @@ static void stub_disconnect(struct usb_interface *interface)
+ 	usb_put_dev(sdev->udev);
+ 	usb_put_intf(interface);
+ 
++	/* free ACL list */
++	kfree(sdev->acls);
 +
- int modify_match_busid(char *busid, int add);
-+int parse_cidr(const char *src, struct subnet *dest);
-+int in_range(struct sockaddr_storage *addr, struct subnet range);
- 
- #endif /* __UTILS_H */
- 
+ 	/* free sdev */
+ 	busid_priv->sdev = NULL;
+ 	stub_device_free(sdev);
 -- 
 1.8.4
 
