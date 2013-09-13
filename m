@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757595Ab3IMNHs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:07:48 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:63773 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932336Ab3IMNHk (ORCPT
+	id S1757576Ab3IMNHp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:07:45 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:48437 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932329Ab3IMNHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:07:40 -0400
+	Fri, 13 Sep 2013 09:07:33 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 039/228] cpufreq: sa11x0: let cpufreq core initialize struct policy fields
-Date: Fri, 13 Sep 2013 18:29:45 +0530
-Message-Id: <8a36f8e32d7a9e9f4aa74db0525dbdc74fc023dd.1379063063.git.viresh.kumar@linaro.org>
+Subject: [PATCH 038/228] cpufreq: sa11x0: Expose frequency table
+Date: Fri, 13 Sep 2013 18:29:44 +0530
+Message-Id: <e689bd437918e56ae50541a90a4b9c606bfb8bf4.1379063063.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
 References: <cover.1379063063.git.viresh.kumar@linaro.org>
@@ -25,46 +25,144 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many fields of struct policy are filled by cpufreq core when we call
-cpufreq_table_validate_and_show() and so cpufreq driver doesn't need to set them
-anymore.
+This patch exposes sa11x0's frequency table to cpufreq core. It always existed
+but not as an array frequencies and not in the format cpufreq core wants it to.
+Also it was present in the unit of 100kHz earlier which is made consistent with
+cpufreq core now, i.e. kHz.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/sa1100-cpufreq.c | 4 +---
- drivers/cpufreq/sa1110-cpufreq.c | 4 +---
- 2 files changed, 2 insertions(+), 6 deletions(-)
+ arch/arm/mach-sa1100/generic.c   | 45 ++++++++++++++++++++--------------------
+ arch/arm/mach-sa1100/generic.h   |  1 +
+ drivers/cpufreq/sa1100-cpufreq.c |  3 ++-
+ drivers/cpufreq/sa1110-cpufreq.c |  3 ++-
+ 4 files changed, 27 insertions(+), 25 deletions(-)
 
+diff --git a/arch/arm/mach-sa1100/generic.c b/arch/arm/mach-sa1100/generic.c
+index f25b611..5c8167b 100644
+--- a/arch/arm/mach-sa1100/generic.c
++++ b/arch/arm/mach-sa1100/generic.c
+@@ -42,23 +42,24 @@ EXPORT_SYMBOL(reset_status);
+ /*
+  * This table is setup for a 3.6864MHz Crystal.
+  */
+-static const unsigned short cclk_frequency_100khz[NR_FREQS] = {
+-	 590,	/*  59.0 MHz */
+-	 737,	/*  73.7 MHz */
+-	 885,	/*  88.5 MHz */
+-	1032,	/* 103.2 MHz */
+-	1180,	/* 118.0 MHz */
+-	1327,	/* 132.7 MHz */
+-	1475,	/* 147.5 MHz */
+-	1622,	/* 162.2 MHz */
+-	1769,	/* 176.9 MHz */
+-	1917,	/* 191.7 MHz */
+-	2064,	/* 206.4 MHz */
+-	2212,	/* 221.2 MHz */
+-	2359,	/* 235.9 MHz */
+-	2507,	/* 250.7 MHz */
+-	2654,	/* 265.4 MHz */
+-	2802	/* 280.2 MHz */
++struct cpufreq_frequency_table sa11x0_freq_table[NR_FREQS+1] = {
++	{ .frequency = 59000,	/*  59.0 MHz */},
++	{ .frequency = 73700,	/*  73.7 MHz */},
++	{ .frequency = 88500,	/*  88.5 MHz */},
++	{ .frequency = 103200,	/* 103.2 MHz */},
++	{ .frequency = 118000,	/* 118.0 MHz */},
++	{ .frequency = 132700,	/* 132.7 MHz */},
++	{ .frequency = 147500,	/* 147.5 MHz */},
++	{ .frequency = 162200,	/* 162.2 MHz */},
++	{ .frequency = 176900,	/* 176.9 MHz */},
++	{ .frequency = 191700,	/* 191.7 MHz */},
++	{ .frequency = 206400,	/* 206.4 MHz */},
++	{ .frequency = 221200,	/* 221.2 MHz */},
++	{ .frequency = 235900,	/* 235.9 MHz */},
++	{ .frequency = 250700,	/* 250.7 MHz */},
++	{ .frequency = 265400,	/* 265.4 MHz */},
++	{ .frequency = 280200,	/* 280.2 MHz */},
++	{ .frequency = CPUFREQ_TABLE_END, },
+ };
+ 
+ /* rounds up(!)  */
+@@ -66,10 +67,8 @@ unsigned int sa11x0_freq_to_ppcr(unsigned int khz)
+ {
+ 	int i;
+ 
+-	khz /= 100;
+-
+ 	for (i = 0; i < NR_FREQS; i++)
+-		if (cclk_frequency_100khz[i] >= khz)
++		if (sa11x0_freq_table[i].frequency >= khz)
+ 			break;
+ 
+ 	return i;
+@@ -79,7 +78,7 @@ unsigned int sa11x0_ppcr_to_freq(unsigned int idx)
+ {
+ 	unsigned int freq = 0;
+ 	if (idx < NR_FREQS)
+-		freq = cclk_frequency_100khz[idx] * 100;
++		freq = sa11x0_freq_table[idx].frequency;
+ 	return freq;
+ }
+ 
+@@ -96,7 +95,7 @@ int sa11x0_verify_speed(struct cpufreq_policy *policy)
+ 	cpufreq_verify_within_limits(policy, policy->cpuinfo.min_freq, policy->cpuinfo.max_freq);
+ 
+ 	/* make sure that at least one frequency is within the policy */
+-	tmp = cclk_frequency_100khz[sa11x0_freq_to_ppcr(policy->min)] * 100;
++	tmp = sa11x0_freq_table[sa11x0_freq_to_ppcr(policy->min)].frequency;
+ 	if (tmp > policy->max)
+ 		policy->max = tmp;
+ 
+@@ -109,7 +108,7 @@ unsigned int sa11x0_getspeed(unsigned int cpu)
+ {
+ 	if (cpu)
+ 		return 0;
+-	return cclk_frequency_100khz[PPCR & 0xf] * 100;
++	return sa11x0_freq_table[PPCR & 0xf].frequency;
+ }
+ 
+ /*
+diff --git a/arch/arm/mach-sa1100/generic.h b/arch/arm/mach-sa1100/generic.h
+index 9a33695..f5214ce 100644
+--- a/arch/arm/mach-sa1100/generic.h
++++ b/arch/arm/mach-sa1100/generic.h
+@@ -21,6 +21,7 @@ extern void sa1110_mb_disable(void);
+ 
+ struct cpufreq_policy;
+ 
++extern struct cpufreq_frequency_table sa11x0_freq_table[];
+ extern unsigned int sa11x0_freq_to_ppcr(unsigned int khz);
+ extern int sa11x0_verify_speed(struct cpufreq_policy *policy);
+ extern unsigned int sa11x0_getspeed(unsigned int cpu);
 diff --git a/drivers/cpufreq/sa1100-cpufreq.c b/drivers/cpufreq/sa1100-cpufreq.c
-index 1323a69..37fce2f 100644
+index cff18e8..1323a69 100644
 --- a/drivers/cpufreq/sa1100-cpufreq.c
 +++ b/drivers/cpufreq/sa1100-cpufreq.c
-@@ -220,9 +220,7 @@ static int __init sa1100_cpu_init(struct cpufreq_policy *policy)
- {
- 	if (policy->cpu != 0)
- 		return -EINVAL;
--	policy->cur = policy->min = policy->max = sa11x0_getspeed(0);
--	policy->cpuinfo.min_freq = 59000;
--	policy->cpuinfo.max_freq = 287000;
-+	policy->cur = sa11x0_getspeed(0);
+@@ -224,7 +224,8 @@ static int __init sa1100_cpu_init(struct cpufreq_policy *policy)
+ 	policy->cpuinfo.min_freq = 59000;
+ 	policy->cpuinfo.max_freq = 287000;
  	policy->cpuinfo.transition_latency = CPUFREQ_ETERNAL;
+-	return 0;
++
++	return cpufreq_table_validate_and_show(policy, sa11x0_freq_table);
+ }
  
- 	return cpufreq_table_validate_and_show(policy, sa11x0_freq_table);
+ static struct cpufreq_driver sa1100_driver __refdata = {
 diff --git a/drivers/cpufreq/sa1110-cpufreq.c b/drivers/cpufreq/sa1110-cpufreq.c
-index adb0524..13760fc 100644
+index 39c90b6..adb0524 100644
 --- a/drivers/cpufreq/sa1110-cpufreq.c
 +++ b/drivers/cpufreq/sa1110-cpufreq.c
-@@ -334,9 +334,7 @@ static int __init sa1110_cpu_init(struct cpufreq_policy *policy)
- {
- 	if (policy->cpu != 0)
- 		return -EINVAL;
--	policy->cur = policy->min = policy->max = sa11x0_getspeed(0);
--	policy->cpuinfo.min_freq = 59000;
--	policy->cpuinfo.max_freq = 287000;
-+	policy->cur = sa11x0_getspeed(0);
+@@ -338,7 +338,8 @@ static int __init sa1110_cpu_init(struct cpufreq_policy *policy)
+ 	policy->cpuinfo.min_freq = 59000;
+ 	policy->cpuinfo.max_freq = 287000;
  	policy->cpuinfo.transition_latency = CPUFREQ_ETERNAL;
+-	return 0;
++
++	return cpufreq_table_validate_and_show(policy, sa11x0_freq_table);
+ }
  
- 	return cpufreq_table_validate_and_show(policy, sa11x0_freq_table);
+ /* sa1110_driver needs __refdata because it must remain after init registers
 -- 
 1.7.12.rc2.18.g61b472e
 
