@@ -1,109 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978Ab3IMHqO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 03:46:14 -0400
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:40342 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754978Ab3IMHqN (ORCPT
+	id S1751915Ab3IMFJd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 01:09:33 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:43271 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751582Ab3IMFJb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 03:46:13 -0400
-Message-ID: <5232C2BB.9070303@vmware.com>
-Date: Fri, 13 Sep 2013 09:46:03 +0200
-From: Thomas Hellstrom <thellstrom@vmware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-CC: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Peter Zijlstra <peterz@infradead.org>, Dave Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
+	Fri, 13 Sep 2013 01:09:31 -0400
+Date: Fri, 13 Sep 2013 07:09:28 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [BUG] completely bonkers use of set_need_resched + VM_FAULT_NOPAGE
-References: <20130912150645.GZ31370@twins.programming.kicks-ass.net> <CAKMK7uFF2GkYapa2_DLv4WYAd0t+POaT+Vy9HG=HQhzMmtH9nA@mail.gmail.com> <5231E18D.7070306@canonical.com> <5231EF5A.7010901@vmware.com> <52323734.4070908@canonical.com> <5232B44C.9010408@vmware.com> <5232BBE1.5030509@canonical.com>
-In-Reply-To: <5232BBE1.5030509@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] perf fixes
+Message-ID: <20130913050927.GA8634@gmail.com>
+References: <CA+55aFwgyjqRHxLaWGxxsg_v07FrxbVTeLdHTGp7MfeSRjrKsQ@mail.gmail.com>
+ <CA+55aFyCeXXr=57em8CC_Uzfk5PvOw0RHyA309wuOP-oDL7VxA@mail.gmail.com>
+ <20130912184341.GA11400@ghostprotocols.net>
+ <52321CE4.1080804@gmail.com>
+ <20130912201855.GC32644@gmail.com>
+ <20130912203831.GD11400@ghostprotocols.net>
+ <20130912204618.GA3262@gmail.com>
+ <52322D81.5090708@gmail.com>
+ <20130912211846.GA7890@gmail.com>
+ <52323BE4.5080100@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52323BE4.5080100@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/2013 09:16 AM, Maarten Lankhorst wrote:
-> Op 13-09-13 08:44, Thomas Hellstrom schreef:
->> On 09/12/2013 11:50 PM, Maarten Lankhorst wrote:
->>> Op 12-09-13 18:44, Thomas Hellstrom schreef:
->>>> On 09/12/2013 05:45 PM, Maarten Lankhorst wrote:
->>>>> Op 12-09-13 17:36, Daniel Vetter schreef:
->>>>>> On Thu, Sep 12, 2013 at 5:06 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->>>>>>> So I'm poking around the preemption code and stumbled upon:
->>>>>>>
->>>>>>> drivers/gpu/drm/i915/i915_gem.c:                set_need_resched();
->>>>>>> drivers/gpu/drm/ttm/ttm_bo_vm.c:                        set_need_resched();
->>>>>>> drivers/gpu/drm/ttm/ttm_bo_vm.c:                        set_need_resched();
->>>>>>> drivers/gpu/drm/udl/udl_gem.c:          set_need_resched();
->>>>>>>
->>>>>>> All these sites basically do:
->>>>>>>
->>>>>>>      while (!trylock())
->>>>>>>            yield();
->>>>>>>
->>>>>>> which is a horrible and broken locking pattern.
->>>>>>>
->>>>>>> Firstly its deadlock prone, suppose the faulting process is a FIFOn+1
->>>>>>> task that preempted the lock holder at FIFOn.
->>>>>>>
->>>>>>> Secondly the implementation is worse than usual by abusing
->>>>>>> VM_FAULT_NOPAGE, which is supposed to install a PTE so that the fault
->>>>>>> doesn't retry, but you're using it as a get out of fault path. And
->>>>>>> you're using set_need_resched() which is not something a driver should
->>>>>>> _ever_ touch.
->>>>>>>
->>>>>>> Now I'm going to take away set_need_resched() -- and while you can
->>>>>>> 'reimplement' it using set_thread_flag() you're not going to do that
->>>>>>> because it will be broken due to changes to the preempt code.
->>>>>>>
->>>>>>> So please as to fix ASAP and don't allow anybody to trick you into
->>>>>>> merging silly things like that again ;-)
->>>>>> The set_need_resched in i915_gem.c:i915_gem_fault can actually be
->>>>>> removed. It was there to give the error handler a chance to sneak in
->>>>>> and reset the hw/sw tracking when the gpu is dead. That hack goes back
->>>>>> to the days when the locking around our error handler was somewhere
->>>>>> between nonexistent and totally broken, nowadays we keep things from
->>>>>> live-locking by a bit of magic in i915_mutex_lock_interruptible. I'll
->>>>>> whip up a patch to rip this out. I'll also check that our testsuite
->>>>>> properly exercises this path (needs a bit of work on a quick look for
->>>>>> better coverage).
->>>>>>
->>>>>> The one in ttm is just bonghits to shut up lockdep: ttm can recurse
->>>>>> into it's own pagefault handler and then deadlock, the trylock just
->>>>>> keeps lockdep quiet. We've had that bug arise in drm/i915 due to some
->>>>>> fun userspace did and now have testcases for them. The right solution
->>>>>> to fix this is to use copy_to|from_user_atomic in ttm everywhere it
->>>>>> holds locks and have slowpaths which drops locks, copies stuff into a
->>>>>> temp allocation and then continues. At least that's how we've fixed
->>>>>> all those inversions in i915-gem. I'm not volunteering to fix this ;-)
->>>>> Ah the case where a mmap'd address is passed to the execbuf ioctl? :P
->>>>>
->>>>> Fine I'll look into it a bit, hopefully before tuesday. Else it might take a bit longer since I'll be on my way to plumbers..
->>>> I think a possible fix would be if fault() were allowed to return an error and drop the mmap_sem() before returning.
->>>>
->>>> Otherwise we need to track down all copy_to_user / copy_from_user which happen with bo::reserve held.
->> Actually, from looking at the mm code, it seems OK to do the following:
->>
->> if (!bo_tryreserve()) {
->>      up_read mmap_sem(); // Release the mmap_sem to avoid deadlocks.
->>      bo_reserve();               // Wait for the BO to become available (interruptible)
->>      bo_unreserve();           // Where is bo_wait_unreserved() when we need it, Maarten :P
->>      return VM_FAULT_RETRY; // Go ahead and retry the VMA walk, after regrabbing
->> }
-> Is this meant as a jab at me? You're doing locking wrong here! Again!
 
-It's not meant as a jab at you.  I'm sorry if it came out that way. It 
-was meant as a joke. I wasn't aware the topic was sensitive.
+* David Ahern <dsahern@gmail.com> wrote:
 
-Anyway, could you describe what is wrong, with the above solution, 
-because it seems perfectly legal to me.
-There is no substantial overhead, and there is no risc of deadlocks. Or 
-do you mean it's bad because it confuses lockdep?
+> > By default a simple 'make' should build perf to the maximum extent 
+> > possible, with no other input required from the user - with warnings 
+> > displayed as package install suggestions.
+> 
+> By default there is no config. Autoprobing generates a first one or a 
+> user can specify a defconfig.
 
-/Thomas
+This could work if there's not two but three states for individual 
+features:
+
+  - autoprobe
+  - on
+  - off
+
+and if autoprobe, if a system feature has been probed successfully, 
+automatically turned 'autoprobe' entries into 'on'.
+
+That would give us the best of all worlds - autodetection, configurability 
+and caching:
+
+ - initial user types 'make' and gets a .config that has almost all
+   entries 'on', a few 'autoprobe'.
+
+ - once the user installs a dependency, the corresponding .config entry
+   turns into 'on'.
+
+ - the regular user or developers would have libraries that turn all
+   entries in the .config to 'on'.
+
+ - if a user is genuinely uninterested in a feature, he can mark it 'off', 
+   which would then stay off permanently. This could also be used by
+   embedded/specialized builds.
+
+ - other specialized users, like distro builds, could use a .config with
+   all entries 'on' and could enforce the presence of all dependencies for 
+   a successful build. [We could add 'make allyesconfig' to help that.]
+
+Thanks,
+
+	Ingo
