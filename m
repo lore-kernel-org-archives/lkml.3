@@ -1,44 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755676Ab3IMM4U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 08:56:20 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:36557 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750842Ab3IMM4S (ORCPT
+	id S1756128Ab3IMM6f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 08:58:35 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:64800 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755987Ab3IMM6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 08:56:18 -0400
-Date: Fri, 13 Sep 2013 15:56:05 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>,
-        Ramprasad Chinthekindi <rchinthekindi@stec-inc.com>,
-        Akhil Bhansali <abhansali@stec-inc.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-Subject: Re: [patch 3/4] skd: use strncpy() as a cleanup
-Message-ID: <20130913125605.GL25896@mwanda>
-References: <20130913080539.GG19211@elgon.mountain>
- <CAMuHMdX88cUEu2dmamEttK=9Lv0TKiZauCtPDLbgKUde+8ufyQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdX88cUEu2dmamEttK=9Lv0TKiZauCtPDLbgKUde+8ufyQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Fri, 13 Sep 2013 08:58:33 -0400
+From: Andy Whitcroft <apw@canonical.com>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Cc: Andy Whitcroft <apw@canonical.com>, Ben Howard <ben.howard@canonical.com>,
+        linux-scsi@vger.kernel.org, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] Hyper-V TRIM support
+Date: Fri, 13 Sep 2013 13:58:25 +0100
+Message-Id: <1379077109-29606-1-git-send-email-apw@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 13, 2013 at 02:03:23PM +0200, Geert Uytterhoeven wrote:
-> On Fri, Sep 13, 2013 at 10:05 AM, Dan Carpenter
-> > +       strncpy(inq.driver_version, DRV_VER_COMPL,
-> > +               min(sizeof(inq.driver_version), strlen(DRV_VER_COMPL)));
-> 
-> This does the exact same thing as memcpy(), right? So why not use that?
-> memcpy() has much simpler semantics than strncpy().
+tl;dr -- enable TRIM support for Hyper-V emulated disks.
 
-You're right.  I've redone this.
+The Hyper-V hypervisor can support TRIM for its devices, advertising this
+via the appropriate VPD pages.  However the emulated disks only claim
+to be SPC-2 devices.  According to the specs VPD pages (in general) did
+exist at SPC-2 but the specific pages we interogate for the TRIM support
+did not until SPC-3 therefore the kernel avoids reading the relevant pages
+for SPC-2 devices and prevents TRIM from being offered for these devices.
+Additionally at SPC-2 we prefer ReadCapacity10 over ReadCapacity16 and
+unless we use RC16 we will not identify the device as TRIM capable also
+preventing TRIM being offered.
 
-regards,
-dan carpenter
+As the VPD page zero does list which pages are valid for each device, it
+could be argued that we could simply attempt to use these pages for all
+devices which claim to be SPC-2 and above.  While this seems valid the
+code documents a number of devices which take badly to having even VPD
+page 0 interogated even when supposedly supported.  Therefore it seems
+appropriate to add a scsi device flag to allow a device to request SPC-3
+VPD pages be used when only at SPC-2.
+
+Similarly for the ReadCapacity selection it seems dangerous to invert
+the order for all SPC-2 devices.  So it seems appropriate to add a scsi
+device flag to request we try RC16 before RC10 (mirroring the existing
+flag for the opposite).
+
+The following four patches add the two scsi device flags and select those
+flags for the Hyper-V emulated disks.
+
+Patches against v3.11.
+
+Comments?
+
+-apw
+
+Andy Whitcroft (4):
+  scsi: add scsi device flag to request VPD pages be used at SPC-2
+  scsi: add scsi device flag to request READ CAPACITY (16) be preferred
+  scsi: hyper-v storage -- mark as VPD capable at SPC-2
+  scsi: hyper-v storage -- mark as preferring READ CAPACITY (16) at
+    SPC-2
+
+ drivers/scsi/sd.c          | 8 +++++++-
+ drivers/scsi/storvsc_drv.c | 2 ++
+ include/scsi/scsi_device.h | 2 ++
+ 3 files changed, 11 insertions(+), 1 deletion(-)
+
+-- 
+1.8.1.2
 
