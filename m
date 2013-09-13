@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756625Ab3ILX6J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 19:58:09 -0400
-Received: from longford.logfs.org ([213.229.74.203]:60257 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753590Ab3ILX6E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 19:58:04 -0400
-Date: Thu, 12 Sep 2013 18:23:09 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Jeff Garzik <jgarzik@pobox.com>, David Safford <safford@us.ibm.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Leonidas Da Silva Barbosa <leosilva@linux.vnet.ibm.com>,
-        Ashley Lai <ashley@ashleylai.com>, Rajiv Andrade <mail@srajiv.net>,
-        Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Ted Ts'o" <tytso@mit.edu>, Kent Yoder <key@linux.vnet.ibm.com>,
-        David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>,
-        "Johnston, DJ" <dj.johnston@intel.com>
-Subject: Re: TPMs and random numbers
-Message-ID: <20130912222309.GH3809@logfs.org>
-References: <1378920168.26698.64.camel@localhost>
- <CALCETrVgiJuw9vj+BhchgzAH06gqEO4TYJyt8wd+2CCy33RQ3Q@mail.gmail.com>
- <1378925224.26698.90.camel@localhost>
- <20130912215718.GF3809@logfs.org>
- <CAFtxgO5dzJJvFR2tz2Cztvp9rkkyFevfsPxnnOF-q731W8JDxA@mail.gmail.com>
- <20130912221340.GG3809@logfs.org>
- <CALCETrWp_QSstE1NB_bB6uWLEJNcT5NmcuK9MRRQjmGFpy6b=w@mail.gmail.com>
+	id S1756974Ab3IMABK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 20:01:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29174 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750780Ab3IMABG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Sep 2013 20:01:06 -0400
+Message-ID: <523255BB.7050109@redhat.com>
+Date: Thu, 12 Sep 2013 20:00:59 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CALCETrWp_QSstE1NB_bB6uWLEJNcT5NmcuK9MRRQjmGFpy6b=w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Matt Wilson <msw@amazon.com>
+CC: linux-kernel@vger.kernel.org, Clemens Ladisch <clemens@ladisch.de>
+Subject: Re: [PATCH] hpet, allow user controlled mmap for user processes
+References: <51487B59.6010607@ladisch.de> <1363959174-28999-1-git-send-email-prarit@redhat.com> <20130829060151.GA7439@u109add4315675089e695.ant.amazon.com>
+In-Reply-To: <20130829060151.GA7439@u109add4315675089e695.ant.amazon.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 September 2013 16:51:15 -0700, Andy Lutomirski wrote:
+
+
+On 08/29/2013 02:01 AM, Matt Wilson wrote:
+> On Fri, Mar 22, 2013 at 09:32:54AM -0400, Prarit Bhargava wrote:
+>> The CONFIG_HPET_MMAP Kconfig option exposes the memory map of the HPET
+>> registers to userspace.  The Kconfig help points out that in some cases this
+>> can be a security risk as some systems may erroneously configure the map such
+>> that additional data is exposed to userspace.
+>>
+>> This is a problem for distributions -- some users want the MMAP functionality
+>> but it comes with a significant security risk.  In an effort to mitigate this
+>> risk, and due to the low number of users of the MMAP functionality, I've
+>> introduced a kernel parameter, hpet_mmap_enable, that is required in order
+>> to actually have the HPET MMAP exposed.
+>>
+>> [v2]: Clemens suggested modifying the Kconfig help text and making the
+>> default setting configurable.
+>> [v3]: Fixed up Documentation and Kconfig entries, default now "Y"
+>> [v4]: After testing, found that I need to modify CONFIG_HPET_MMAP_DEFAULT usage
+>>
+>> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+>> Cc: Clemens Ladisch <clemens@ladisch.de>
+>> ---
+>>  Documentation/kernel-parameters.txt |    4 ++++
+>>  drivers/char/Kconfig                |    9 +++++++--
+>>  drivers/char/hpet.c                 |   25 +++++++++++++++++++++++--
+>>  3 files changed, 34 insertions(+), 4 deletions(-)
 > 
-> Supposedly, the Linux entropy pool has the property that mixing in
-> even actively malicious data is no worse than not mixing in anything
-> at all.
+> It doesn't seem like this patch got picked up and seems like a good
+> idea to me. Clemens, what do you think?
+> 
+> Acked-by: Matt Wilson <msw@amazon.com>
+> 
 
-It is worse in three ways:
-- it costs performance,
-- it may create a false sense of safety and
-- it actively does harm if we credit it as entropy.
+Clemens?  I didn't see a reply...
 
-How much weight you assign to each of those is up to you.  So long as
-we don't credit any of it as entropy, I am not too adverse to mixing
-it in.  But I can equally see benefit in burning the bridges.
-
-Jörn
-
---
-There are two ways of constructing a software design: one way is to make
-it so simple that there are obviously no deficiencies, and the other is
-to make it so complicated that there are no obvious deficiencies.
--- C. A. R. Hoare
+P.
