@@ -1,112 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab3IMGMS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 02:12:18 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:45563 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752151Ab3IMGMP (ORCPT
+	id S1755048Ab3IMFir (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 01:38:47 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:31898 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902Ab3IMFiq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 02:12:15 -0400
-Message-ID: <1379052734.24408.33.camel@edumazet-glaptop>
-Subject: Re: [PATCH] Inet-hashtable: Change the range of sk->hash lock to
- avoid the race condition.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jun Chen <jun.d.chen@intel.com>
-Cc: edumazet@google.com, davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 12 Sep 2013 23:12:14 -0700
-In-Reply-To: <1379080900.23597.18.camel@chenjun-workstation>
-References: <1379003549.12328.6.camel@chenjun-workstation>
-	 <1378987204.24408.1.camel@edumazet-glaptop>
-	 <1379065643.3390.3.camel@chenjun-workstation>
-	 <1379050801.24408.29.camel@edumazet-glaptop>
-	 <1379080900.23597.18.camel@chenjun-workstation>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 13 Sep 2013 01:38:46 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH] perf: fix core dump for "perf bench all"
+Date: Thu, 12 Sep 2013 22:37:47 -0700
+Message-Id: <1379050667-4357-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-09-13 at 10:01 -0400, Jun Chen wrote:
-> On Thu, 2013-09-12 at 22:40 -0700, Eric Dumazet wrote:
-> > On Fri, 2013-09-13 at 05:47 -0400, Jun Chen wrote:
-> > > On Thu, 2013-09-12 at 05:00 -0700, Eric Dumazet wrote:
-> > > > On Thu, 2013-09-12 at 12:32 -0400, Jun Chen wrote:
-> > > > > When try to add node to list in __inet_hash_nolisten function, first get the
-> > > > > list and then to lock for using, but in extremeness case, others can del this
-> > > > > node before locking it, then the node should be null.So this patch try to lock
-> > > > > firstly and then get the list for using to avoid this race condition.
-> > > > 
-> > > > I suspect another bug. This should not happen.
-> > > > 
-> > > > Care to describe the problem you got ?
-> > > > 
-> > > > Thanks
-> > > > 
-> > > > 
-> > > 
-> > > Ok, I just got this call stack and no more info, pls help to look it.
-> > > thanks!
-> > > 
-> > > <1>[ 88.548263] BUG: unable to handle kernel NULL pointer dereference at
-> > > 00000004
-> > > <1>[ 88.548490] IP: [] __inet_hash_nolisten+0xc1/0x140
-> > > <4>[ 88.548617] *pde = 00000000
-> > > <4>[ 88.549927] EIP is at __inet_hash_nolisten+0xc1/0x140
-> > > <4>[ 88.550008] EAX: 00000000 EBX: e08c0000 ECX: edf846e0 EDX: e08c0020
-> > > <4>[ 88.550055] ESI: c20213c0 EDI: edc12dc0 EBP: ce4bfdfc ESP: ce4bfde8
-> > > <4>[ 88.550137] DS: 007b ES: 007b FS: 00d8 GS: 003b SS: 0068
-> > > <4>[ 88.550184] CR0: 80050033 CR2: 00000004 CR3: 2b4ff000 CR4: 001007d0
-> > > <4>[ 88.550266] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-> > > <4>[ 88.550346] DR6: ffff0ff0 DR7: 00000400
-> > > <0>[ 88.550392] Process WebViewCoreThre (pid: 2137, ti=ce4be000
-> > > task=eb193c80 task.ti=ce4be000)
-> > > <0>[ 88.551746] Call Trace:
-> > > <4>[ 88.551797] [] __inet_hash_connect+0x295/0x2d0
-> > > <4>[ 88.551883] [] inet_hash_connect+0x40/0x50
-> > > <4>[ 88.551932] [] ? inet_unhash+0x90/0x90
-> > > <4>[ 88.551981] [] ? __inet_lookup_listener+0x1b0/0x1b0
-> > > <4>[ 88.552067] [] tcp_v4_connect+0x247/0x4a0
-> > > <4>[ 88.552117] [] ? lock_sock_nested+0x3e/0x50
-> > > <4>[ 88.552205] [] inet_stream_connect+0xe2/0x290
-> > > <4>[ 88.552254] [] ? _copy_from_user+0x35/0x50
-> > > <4>[ 88.552342] [] sys_connect+0xb2/0xd0
-> > > <4>[ 88.552393] [] ? alloc_file+0x20/0xa0
-> > > <4>[ 88.552441] [] ? tcp_setsockopt+0x50/0x60
-> > > <4>[ 88.552525] [] ? fget_light+0x44/0xe0
-> > > <4>[ 88.552574] [] ? sock_common_setsockopt+0x27/0x40
-> > > <4>[ 88.552659] [] ? _copy_from_user+0x35/0x50
-> > > <4>[ 88.552708] [] sys_socketcall+0xab/0x2b0
-> > > <4>[ 88.552790] [] ? trace_hardirqs_on_thunk+0xc/0x10
-> > > <4>[ 88.552840] [] syscall_call+0x7/0xb
-> > > <4>[ 88.552923] [] ? mutex_trylock+0x30/0x140
-> > > 
-> > 
-> > This makes no sense to me. This could be a random memory corruption.
-> > 
-> > Do you have disassembly of __inet_hash_nolisten ?
-> > 
-> > 
-> I had disassembled the __inet_hash_nolisten+0xc1, 
-> the corruption is located on the:  
-> 
-> __inet_hash_nolisten -->
-> __sk_nulls_add_node_rcu(sk, list); -->
-> __sk_nulls_add_node_rcu -->
-> static inline void hlist_nulls_add_head_rcu(struct hlist_nulls_node *n,
->                                         struct hlist_nulls_head *h)
-> {
-> ... 
->     if (!is_a_nulls(first))
->         first->pprev = &n->next;  (this line trigger corruption)
-> ...
-> }
+When numa for perf bench is compiled will have core dump.
 
-first is NULL, which is absolutely not possible.
+| #./perf bench numa all
+| # Running numa/mem benchmark...
+|
+| Segmentation fault (core dumped)
+| # ./perf bench all
+| # Running numa/mem benchmark...
+|
+| Segmentation fault (core dumped)
 
-You had a memory corruption on some sort.
+Fix it by adding own handler for numa bench. all_suite()
+will search and find handler call it first, if can not
+find it, will fallback the old way.
 
+Also fix argv setting in that function, we should use [0]
+as argc is 1.
 
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
+---
+ tools/perf/bench/bench.h   |    1 +
+ tools/perf/bench/numa.c    |    5 +++--
+ tools/perf/builtin-bench.c |   19 +++++++++++++++++--
+ 3 files changed, 21 insertions(+), 4 deletions(-)
+
+Index: linux-2.6/tools/perf/bench/bench.h
+===================================================================
+--- linux-2.6.orig/tools/perf/bench/bench.h
++++ linux-2.6/tools/perf/bench/bench.h
+@@ -26,6 +26,7 @@
+ #endif
+ 
+ extern int bench_numa(int argc, const char **argv, const char *prefix);
++int bench_numa_all(int argc, const char **argv, const char *prefix);
+ extern int bench_sched_messaging(int argc, const char **argv, const char *prefix);
+ extern int bench_sched_pipe(int argc, const char **argv, const char *prefix);
+ extern int bench_mem_memcpy(int argc, const char **argv,
+Index: linux-2.6/tools/perf/bench/numa.c
+===================================================================
+--- linux-2.6.orig/tools/perf/bench/numa.c
++++ linux-2.6/tools/perf/bench/numa.c
+@@ -1691,7 +1691,8 @@ static const char *tests[][MAX_ARGS] = {
+ 			  "mem",  "-p",  "2", "-t", "16", "-T",  "192", OPT_BW_NOTHP },
+ };
+ 
+-static int bench_all(void)
++int bench_numa_all(int argc __maybe_unused, const char **argv __maybe_unused,
++			 const char *prefix __maybe_unused)
+ {
+ 	int nr = ARRAY_SIZE(tests);
+ 	int ret;
+@@ -1718,7 +1719,7 @@ int bench_numa(int argc, const char **ar
+ 		goto err;
+ 
+ 	if (p0.run_all)
+-		return bench_all();
++		return bench_numa_all(argc, argv, prefix);
+ 
+ 	if (__bench_numa(NULL))
+ 		goto err;
+Index: linux-2.6/tools/perf/builtin-bench.c
+===================================================================
+--- linux-2.6.orig/tools/perf/builtin-bench.c
++++ linux-2.6/tools/perf/builtin-bench.c
+@@ -40,7 +40,7 @@ static struct bench_suite numa_suites[]
+ 	{ "mem",
+ 	  "Benchmark for NUMA workloads",
+ 	  bench_numa },
+-	suite_all,
++	{ "all", "Test all benchmark suites", bench_numa_all },
+ 	{ NULL,
+ 	  NULL,
+ 	  NULL                  }
+@@ -166,6 +166,21 @@ static void all_suite(struct bench_subsy
+ 	struct bench_suite *suites = subsys->suites;
+ 
+ 	argv[1] = NULL;
++
++	/* own all handling ? */
++	for (i = 0; suites[i].fn; i++) {
++		if (!strcmp("all", suites[i].name)) {
++			printf("# Running %s/%s benchmark...\n",
++			       subsys->name,
++			       suites[i].name);
++			fflush(stdout);
++
++			argv[0] = suites[i].name;
++			suites[i].fn(1, argv, NULL);
++			return;
++		}
++	}
++
+ 	/*
+ 	 * TODO:
+ 	 * preparing preset parameters for
+@@ -178,7 +193,7 @@ static void all_suite(struct bench_subsy
+ 		       suites[i].name);
+ 		fflush(stdout);
+ 
+-		argv[1] = suites[i].name;
++		argv[0] = suites[i].name;
+ 		suites[i].fn(1, argv, NULL);
+ 		printf("\n");
+ 	}
