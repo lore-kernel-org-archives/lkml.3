@@ -1,93 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756667Ab3IMNGm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:06:42 -0400
-Received: from mga03.intel.com ([143.182.124.21]:47774 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932189Ab3IMNGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:06:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,898,1371106800"; 
-   d="scan'208";a="294477868"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Alex Thorlton <athorlton@sgi.com>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: "Eric W . Biederman" <ebiederm@xmission.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>, Dave Jones <davej@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Rik van Riel <riel@redhat.com>, Robin Holt <robinmholt@gmail.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH 9/9] x86, mm: enable split page table lock for PMD level
-Date: Fri, 13 Sep 2013 16:06:16 +0300
-Message-Id: <1379077576-2472-10-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.8.4.rc3
-In-Reply-To: <1379077576-2472-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <20130910074748.GA2971@gmail.com>
- <1379077576-2472-1-git-send-email-kirill.shutemov@linux.intel.com>
+	id S933709Ab3IMOIp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 10:08:45 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:48277 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932193Ab3IMNGi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 09:06:38 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 030/228] cpufreq: p4-clockmod: use cpufreq_table_validate_and_show()
+Date: Fri, 13 Sep 2013 18:29:36 +0530
+Message-Id: <1476114c469dd7b3b3a4e793c7c04441021fd315.1379063063.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
+References: <cover.1379063063.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
+References: <cover.1379063063.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable PMD split page table lock for X86_64 and PAE.
+Lets use cpufreq_table_validate_and_show() instead of calling
+cpufreq_frequency_table_cpuinfo() and cpufreq_frequency_table_get_attr().
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- arch/x86/Kconfig               | 4 ++++
- arch/x86/include/asm/pgalloc.h | 8 +++++++-
- 2 files changed, 11 insertions(+), 1 deletion(-)
+ drivers/cpufreq/p4-clockmod.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 30c40f0..6a5cf6a 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1880,6 +1880,10 @@ config USE_PERCPU_NUMA_NODE_ID
- 	def_bool y
- 	depends on NUMA
+diff --git a/drivers/cpufreq/p4-clockmod.c b/drivers/cpufreq/p4-clockmod.c
+index 2f0a2a6..03478bf 100644
+--- a/drivers/cpufreq/p4-clockmod.c
++++ b/drivers/cpufreq/p4-clockmod.c
+@@ -230,7 +230,6 @@ static int cpufreq_p4_cpu_init(struct cpufreq_policy *policy)
+ 		else
+ 			p4clockmod_table[i].frequency = (stock_freq * i)/8;
+ 	}
+-	cpufreq_frequency_table_get_attr(p4clockmod_table, policy->cpu);
  
-+config ARCH_ENABLE_SPLIT_PMD_PTLOCK
-+	def_bool y
-+	depends on X86_64 || X86_PAE
-+
- menu "Power management and ACPI options"
+ 	/* cpuinfo and default policy values */
  
- config ARCH_HIBERNATION_HEADER
-diff --git a/arch/x86/include/asm/pgalloc.h b/arch/x86/include/asm/pgalloc.h
-index b4389a4..f2daea1 100644
---- a/arch/x86/include/asm/pgalloc.h
-+++ b/arch/x86/include/asm/pgalloc.h
-@@ -80,12 +80,18 @@ static inline void pmd_populate(struct mm_struct *mm, pmd_t *pmd,
- #if PAGETABLE_LEVELS > 2
- static inline pmd_t *pmd_alloc_one(struct mm_struct *mm, unsigned long addr)
- {
--	return (pmd_t *)get_zeroed_page(GFP_KERNEL|__GFP_REPEAT);
-+	struct page *page;
-+	page = alloc_pages(GFP_KERNEL | __GFP_REPEAT| __GFP_ZERO, 0);
-+	if (!page)
-+		return NULL;
-+	pgtable_pmd_page_ctor(page);
-+	return (pmd_t *)page_address(page);
+@@ -239,7 +238,7 @@ static int cpufreq_p4_cpu_init(struct cpufreq_policy *policy)
+ 	policy->cpuinfo.transition_latency = 10000001;
+ 	policy->cur = stock_freq;
+ 
+-	return cpufreq_frequency_table_cpuinfo(policy, &p4clockmod_table[0]);
++	return cpufreq_table_validate_and_show(policy, &p4clockmod_table[0]);
  }
  
- static inline void pmd_free(struct mm_struct *mm, pmd_t *pmd)
- {
- 	BUG_ON((unsigned long)pmd & (PAGE_SIZE-1));
-+	pgtable_pmd_page_dtor(virt_to_page(pmd));
- 	free_page((unsigned long)pmd);
- }
  
 -- 
-1.8.4.rc3
+1.7.12.rc2.18.g61b472e
 
