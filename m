@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932693Ab3IMOY7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 10:24:59 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:40105 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932249Ab3IMOY5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 10:24:57 -0400
-Date: Fri, 13 Sep 2013 10:31:59 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
+	id S932812Ab3IMOZZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 10:25:25 -0400
+Received: from mga09.intel.com ([134.134.136.24]:45707 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932247Ab3IMOZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 10:25:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,898,1371106800"; 
+   d="scan'208";a="402870701"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Peter Zijlstra <peterz@infradead.org>
-cc: Ingo Molnar <mingo@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Vince Weaver <vince@deater.net>, Andi Kleen <ak@linux.intel.com>,
-        acme@infradead.org, linux-kernel@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>, torvalds@linux-foundation.org,
-        trinity@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        =?ISO-8859-15?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>
-Subject: Re: [PATCH 1/2] tools, perf: Add a precise event qualifier v2
-In-Reply-To: <20130913112956.GA21832@twins.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.10.1309131021540.31072@vincent-weaver-1.um.maine.edu>
-References: <1374501138-13496-1-git-send-email-andi@firstfloor.org> <alpine.DEB.2.02.1307230137160.18617@pianoman.cluster.toy> <20130723060108.GA18396@tassilo.jf.intel.com> <alpine.DEB.2.02.1307231717580.27628@pianoman.cluster.toy> <20130723225150.GT6123@two.firstfloor.org>
- <20130912165733.GA23698@gmail.com> <20130912173617.GI18242@two.firstfloor.org> <20130913085654.GI31370@twins.programming.kicks-ass.net> <20130913095057.GB11611@gmail.com> <20130913112956.GA21832@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Alex Thorlton <athorlton@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Eric W . Biederman" <ebiederm@xmission.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Dave Jones <davej@redhat.com>,
+        David Howells <dhowells@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Robin Holt <robinmholt@gmail.com>, Sedat Dilek <sedat.dilek@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+In-Reply-To: <20130913132435.GD21832@twins.programming.kicks-ass.net>
+References: <20130910074748.GA2971@gmail.com>
+ <1379077576-2472-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1379077576-2472-9-git-send-email-kirill.shutemov@linux.intel.com>
+ <20130913132435.GD21832@twins.programming.kicks-ass.net>
+Subject: Re: [PATCH 8/9] mm: implement split page table lock for PMD level
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130913142513.A62ABE0090@blue.fi.intel.com>
+Date: Fri, 13 Sep 2013 17:25:13 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Sep 2013, Peter Zijlstra wrote:
-
-> On Fri, Sep 13, 2013 at 11:50:57AM +0200, Ingo Molnar wrote:
-> > For example if we added 'type' as well we could expose the generic, 
-> > hardware-independent events via sysfs as well.
+Peter Zijlstra wrote:
+> On Fri, Sep 13, 2013 at 04:06:15PM +0300, Kirill A. Shutemov wrote:
+> > The basic idea is the same as with PTE level: the lock is embedded into
+> > struct page of table's page.
+> > 
+> > Split pmd page table lock only makes sense on big machines.
+> > Let's say >= 32 CPUs for now.
 > 
-> Type is already fully implied by where you'll find the event in sysfs:
-> 
->   /sys/bus/event_sources/devices/$PMU/events/
-> 
-> needs
-> 
->   perf_event_attr::type := /sys/bus/event_sources/devices/$PMU/type
+> Why is this? Couldn't I generate the same amount of contention on PMD
+> level as I can on PTE level in the THP case?
 
+Hm. You are right. You just need more memory for that.
+Do you want it to be "4" too?
 
-OK, fine, another question then.
-
-Is there any reason these values have to be human-readable?
-
-The only reason you are using this crazy format I can see is because it 
-makes maintaining your personal userspace implementation (perf) easier at 
-the expense of everyone else who want to use this interface.
-
-Honestly, an interface like
-cat   /sys/bus/event_sources/devices/$PMU/events/new_event
-
-   size=320,0xdeadbeef,0xcafef00d,....,0x000000
-
-when you just set up an array, copy in the values, then memcpy() it into
-place on top of a struct attr is a million times easier than what you are 
-propsing:
-   1. A huge complicated LEX/YACC parser
-   2. The parser has to read in many different files under ../format/..
-      and build up a tree of names and shift/masks
-   3. The event is read in and then text has to be parsed, values read,
-      and then shifting-masking to get a value for each register
-   4. A mapping has to be in the code of the various (of the over 40+)
-      fields in the struct perf_attr field, and each value has to
-      be put at the proper offset
-   5. If ever a new field is added to struct perf_attr, then any event
-      using it breaks until your parser is updated with all the info
-      about this field.
-
-It's huge, takes up non-swappable kernel mem with lots of individual sysfs
-files, requires a complex parser for what should be just a simple
-config setup, and is fragile when new fields are added.
-
-But of course since perf is tightly coupled into the kernel source tree 
-you can get away with it.  I guess I should just be glad you aren't 
-exporting it as XML or something.
-
-Vince
-
+-- 
+ Kirill A. Shutemov
