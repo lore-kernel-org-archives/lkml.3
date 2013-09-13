@@ -1,185 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755017Ab3IMSdZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 14:33:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37234 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754209Ab3IMSdW (ORCPT
+	id S1755179Ab3IMSdh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 14:33:37 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:58004 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755114Ab3IMSde (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 14:33:22 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: kys@microsoft.com, haiyangz@microsoft.com
-Cc: devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 10/13] hv: move "client/server_monitor_conn_id" bus attributes to dev_groups
-Date: Fri, 13 Sep 2013 11:32:58 -0700
-Message-Id: <1379097181-23407-11-git-send-email-gregkh@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.4.3.gca3854a
-In-Reply-To: <1379097181-23407-1-git-send-email-gregkh@linuxfoundation.org>
-References: <1379097181-23407-1-git-send-email-gregkh@linuxfoundation.org>
+	Fri, 13 Sep 2013 14:33:34 -0400
+Message-ID: <52335A7A.6000406@linaro.org>
+Date: Fri, 13 Sep 2013 14:33:30 -0400
+From: Matt Porter <matt.porter@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Davidlohr Bueso <davidlohr@hp.com>
+CC: Karel Zak <kzak@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        torvalds@linux-foundation.org
+Subject: Re: GPT detection regression in efi.c from commit 27a7c64
+References: <20130913145033.GA8502@ohporter.com>  <1379089736.2197.14.camel@buesod1.americas.hpqcorp.net>  <52334506.9030802@linaro.org>  <1379095648.2197.27.camel@buesod1.americas.hpqcorp.net>  <523354F3.70001@linaro.org> <20130913181720.GA1614@x2.net.home> <1379096972.2197.31.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1379096972.2197.31.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This moves the "client_monitor_conn_id" and "server_monitor_conn_id" bus
-attributes to the dev_groups structure, removing the need for it to be
-in a temporary structure.
+On 09/13/2013 02:29 PM, Davidlohr Bueso wrote:
+> On Fri, 2013-09-13 at 20:17 +0200, Karel Zak wrote:
+>> On Fri, Sep 13, 2013 at 02:09:55PM -0400, Matt Porter wrote:
+>>>> Come to think of it, we do have a long existing workaround: the
+>>>> force_gpt option. Setting it will bypass any MBR checking
+>>>> (is_pmbr_valid(), specifically).
+>>>
+>>> Yes, that's what I used at first after seeing what the problem was. But then
+>>> I opted to fix my PMBR.
+>>>
+>>> I felt like it was a regression since it required a new option passed on the
+>>> cmdline.
+>>
+>>   Yep, it is *regression* and I guess Davidlohr is going to fix it asap :-)
+>
+> I was doing a git revert, but what would you guys think of keeping the
+> check but making it more flexible? Instead of enforcing the minimum,
+> just make sure that the size_in_lba is either the whole disk or 2 TiB,
+> that should take care of Matt's issue.
 
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/hv/channel.c   | 14 -------------
- drivers/hv/vmbus_drv.c | 55 ++++++++++++++++++++++++++++++++++----------------
- include/linux/hyperv.h |  3 ---
- 3 files changed, 38 insertions(+), 34 deletions(-)
+That seems to be the way to go given the departure from the spec.
 
-diff --git a/drivers/hv/channel.c b/drivers/hv/channel.c
-index ff61464f..75c26da3 100644
---- a/drivers/hv/channel.c
-+++ b/drivers/hv/channel.c
-@@ -65,20 +65,6 @@ static void vmbus_setevent(struct vmbus_channel *channel)
- void vmbus_get_debug_info(struct vmbus_channel *channel,
- 			      struct vmbus_channel_debug_info *debuginfo)
- {
--	struct hv_monitor_page *monitorpage;
--	u8 monitor_group = (u8)channel->offermsg.monitorid / 32;
--	u8 monitor_offset = (u8)channel->offermsg.monitorid % 32;
--
--	monitorpage = vmbus_connection.monitor_pages[0];
--	debuginfo->servermonitor_connectionid =
--			monitorpage->parameter[monitor_group]
--					[monitor_offset].connectionid.u.id;
--
--	monitorpage = vmbus_connection.monitor_pages[1];
--	debuginfo->clientmonitor_connectionid =
--			monitorpage->parameter[monitor_group]
--					[monitor_offset].connectionid.u.id;
--
- 	hv_ringbuffer_get_debuginfo(&channel->inbound, &debuginfo->inbound);
- 	hv_ringbuffer_get_debuginfo(&channel->outbound, &debuginfo->outbound);
- }
-diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
-index 461b9898..73cb456e 100644
---- a/drivers/hv/vmbus_drv.c
-+++ b/drivers/hv/vmbus_drv.c
-@@ -47,9 +47,6 @@ static struct completion probe_event;
- static int irq;
- 
- struct hv_device_info {
--	u32 server_monitor_conn_id;
--	u32 client_monitor_conn_id;
--
- 	struct hv_dev_port_info inbound;
- 	struct hv_dev_port_info outbound;
- };
-@@ -73,10 +70,6 @@ static void get_channel_info(struct hv_device *device,
- 
- 	vmbus_get_debug_info(device->channel, &debug_info);
- 
--	info->server_monitor_conn_id = debug_info.servermonitor_connectionid;
--
--	info->client_monitor_conn_id = debug_info.clientmonitor_connectionid;
--
- 	info->inbound.int_mask = debug_info.inbound.current_interrupt_mask;
- 	info->inbound.read_idx = debug_info.inbound.current_read_index;
- 	info->inbound.write_idx = debug_info.inbound.current_write_index;
-@@ -147,12 +140,6 @@ static ssize_t vmbus_show_device_attr(struct device *dev,
- 	} else if (!strcmp(dev_attr->attr.name, "in_write_bytes_avail")) {
- 		ret = sprintf(buf, "%d\n",
- 			       device_info->inbound.bytes_avail_towrite);
--	} else if (!strcmp(dev_attr->attr.name, "server_monitor_conn_id")) {
--		ret = sprintf(buf, "%d\n",
--			       device_info->server_monitor_conn_id);
--	} else if (!strcmp(dev_attr->attr.name, "client_monitor_conn_id")) {
--		ret = sprintf(buf, "%d\n",
--			       device_info->client_monitor_conn_id);
- 	}
- 
- 	kfree(device_info);
-@@ -184,6 +171,14 @@ static u32 channel_latency(struct vmbus_channel *channel,
- 	return monitor_page->latency[monitor_group][monitor_offset];
- }
- 
-+static u32 channel_conn_id(struct vmbus_channel *channel,
-+			   struct hv_monitor_page *monitor_page)
-+{
-+	u8 monitor_group = channel_monitor_group(channel);
-+	u8 monitor_offset = channel_monitor_offset(channel);
-+	return monitor_page->parameter[monitor_group][monitor_offset].connectionid.u.id;
-+}
-+
- static ssize_t id_show(struct device *dev, struct device_attribute *dev_attr,
- 		       char *buf)
- {
-@@ -308,6 +303,34 @@ static ssize_t client_monitor_latency_show(struct device *dev,
- }
- static DEVICE_ATTR_RO(client_monitor_latency);
- 
-+static ssize_t server_monitor_conn_id_show(struct device *dev,
-+					   struct device_attribute *dev_attr,
-+					   char *buf)
-+{
-+	struct hv_device *hv_dev = device_to_hv_device(dev);
-+
-+	if (!hv_dev->channel)
-+		return -ENODEV;
-+	return sprintf(buf, "%d\n",
-+		       channel_conn_id(hv_dev->channel,
-+				       vmbus_connection.monitor_pages[0]));
-+}
-+static DEVICE_ATTR_RO(server_monitor_conn_id);
-+
-+static ssize_t client_monitor_conn_id_show(struct device *dev,
-+					   struct device_attribute *dev_attr,
-+					   char *buf)
-+{
-+	struct hv_device *hv_dev = device_to_hv_device(dev);
-+
-+	if (!hv_dev->channel)
-+		return -ENODEV;
-+	return sprintf(buf, "%d\n",
-+		       channel_conn_id(hv_dev->channel,
-+				       vmbus_connection.monitor_pages[1]));
-+}
-+static DEVICE_ATTR_RO(client_monitor_conn_id);
-+
- static struct attribute *vmbus_attrs[] = {
- 	&dev_attr_id.attr,
- 	&dev_attr_state.attr,
-@@ -319,16 +342,14 @@ static struct attribute *vmbus_attrs[] = {
- 	&dev_attr_client_monitor_pending.attr,
- 	&dev_attr_server_monitor_latency.attr,
- 	&dev_attr_client_monitor_latency.attr,
-+	&dev_attr_server_monitor_conn_id.attr,
-+	&dev_attr_client_monitor_conn_id.attr,
- 	NULL,
- };
- ATTRIBUTE_GROUPS(vmbus);
- 
- /* Set up per device attributes in /sys/bus/vmbus/devices/<bus device> */
- static struct device_attribute vmbus_device_attrs[] = {
--	__ATTR(server_monitor_conn_id, S_IRUGO, vmbus_show_device_attr, NULL),
--
--	__ATTR(client_monitor_conn_id, S_IRUGO, vmbus_show_device_attr, NULL),
--
- 	__ATTR(out_intr_mask, S_IRUGO, vmbus_show_device_attr, NULL),
- 	__ATTR(out_read_index, S_IRUGO, vmbus_show_device_attr, NULL),
- 	__ATTR(out_write_index, S_IRUGO, vmbus_show_device_attr, NULL),
-diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
-index ec1e5033..332e80ce 100644
---- a/include/linux/hyperv.h
-+++ b/include/linux/hyperv.h
-@@ -900,9 +900,6 @@ enum vmbus_channel_state {
- };
- 
- struct vmbus_channel_debug_info {
--	u32 servermonitor_connectionid;
--	u32 clientmonitor_connectionid;
--
- 	struct hv_ring_buffer_debug_info inbound;
- 	struct hv_ring_buffer_debug_info outbound;
- };
--- 
-1.8.4.3.gca3854a
+> diff --git a/block/partitions/efi.c b/block/partitions/efi.c
+> index 1a5ec9a..df2fca1 100644
+> --- a/block/partitions/efi.c
+> +++ b/block/partitions/efi.c
+> @@ -220,8 +220,8 @@ check_hybrid:
+>           * Hybrid MBRs do not necessarily comply with this.
+>           */
+>          if (ret == GPT_MBR_PROTECTIVE) {
+> -               if (le32_to_cpu(mbr->partition_record[part].size_in_lba) !=
+> -                   min((uint32_t) total_sectors - 1, 0xFFFFFFFF))
+> +               if (le32_to_cpu(mbr->partition_record[part].size_in_lba) != (uint32_t) total_sectors - 1 ||
+> +                   le32_to_cpu(mbr->partition_record[part].size_in_lba) != 0xFFFFFFFF)
+>                          ret = 0;
+>          }
+>   done:
+>
+> Karel, I guess any changes that we do here should apply to fdisk :)
+>
+> Thanks,
+> Davidlohr
+>
 
