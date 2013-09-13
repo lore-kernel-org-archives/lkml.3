@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756380Ab3IML1z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 07:27:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28611 "EHLO mx1.redhat.com"
+	id S1756140Ab3IML1s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 07:27:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3359 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755888Ab3IML12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 07:27:28 -0400
+	id S1755964Ab3IML13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 07:27:29 -0400
 From: Gerd Hoffmann <kraxel@redhat.com>
 To: linux-usb@vger.kernel.org
 Cc: Gerd Hoffmann <kraxel@redhat.com>, Matthew Wilcox <willy@linux.intel.com>,
@@ -15,168 +15,97 @@ Cc: Gerd Hoffmann <kraxel@redhat.com>, Matthew Wilcox <willy@linux.intel.com>,
         linux-scsi@vger.kernel.org (open list:USB ATTACHED SCSI),
         usb-storage@lists.one-eyed-alien.net (open list:USB MASS STORAGE...),
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v3 4/6] uas: add dead request list
-Date: Fri, 13 Sep 2013 13:27:13 +0200
-Message-Id: <1379071635-30701-5-git-send-email-kraxel@redhat.com>
+Subject: [PATCH v3 5/6] uas: replace BUG_ON() + WARN_ON() with WARN_ON_ONCE()
+Date: Fri, 13 Sep 2013 13:27:14 +0200
+Message-Id: <1379071635-30701-6-git-send-email-kraxel@redhat.com>
 In-Reply-To: <1379071635-30701-1-git-send-email-kraxel@redhat.com>
 References: <1379071635-30701-1-git-send-email-kraxel@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new list where all requests which are canceled are
-added to, so we don't loose them.  Then, after killing all inflight
-urbs on bus reset (and disconnect) we'll walk over the list and clean
-them up.
-
-Without this we can end up with aborted requests lingering around in
-case of status pipe transfer errors.
-
 Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
 ---
- drivers/usb/storage/uas.c | 50 +++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 42 insertions(+), 8 deletions(-)
+ drivers/usb/storage/uas.c | 19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/usb/storage/uas.c b/drivers/usb/storage/uas.c
-index 3cf5a5f..f049038 100644
+index f049038..046eedf 100644
 --- a/drivers/usb/storage/uas.c
 +++ b/drivers/usb/storage/uas.c
-@@ -53,6 +53,7 @@ struct uas_dev_info {
- 	spinlock_t lock;
- 	struct work_struct work;
- 	struct list_head work_list;
-+	struct list_head dead_list;
- };
- 
- enum {
-@@ -80,6 +81,7 @@ struct uas_cmd_info {
- 	struct urb *data_in_urb;
- 	struct urb *data_out_urb;
- 	struct list_head work;
-+	struct list_head dead;
- };
- 
- /* I hate forward declarations, but I actually have a loop */
-@@ -89,6 +91,7 @@ static void uas_do_work(struct work_struct *work);
- static int uas_try_complete(struct scsi_cmnd *cmnd, const char *caller);
- static void uas_configure_endpoints(struct uas_dev_info *devinfo);
- static void uas_free_streams(struct uas_dev_info *devinfo);
-+static void uas_log_cmd_state(struct scsi_cmnd *cmnd, const char *caller);
- 
- static void uas_unlink_data_urbs(struct uas_dev_info *devinfo,
- 				 struct uas_cmd_info *cmdinfo)
-@@ -150,16 +153,12 @@ static void uas_abort_work(struct uas_dev_info *devinfo)
- 		struct scsi_pointer *scp = (void *)cmdinfo;
+@@ -154,7 +154,7 @@ static void uas_abort_work(struct uas_dev_info *devinfo)
  		struct scsi_cmnd *cmnd = container_of(scp, struct scsi_cmnd,
  						      SCp);
-+		uas_log_cmd_state(cmnd, __func__);
-+		WARN_ON(cmdinfo->state & COMMAND_ABORTED);
+ 		uas_log_cmd_state(cmnd, __func__);
+-		WARN_ON(cmdinfo->state & COMMAND_ABORTED);
++		WARN_ON_ONCE(cmdinfo->state & COMMAND_ABORTED);
  		cmdinfo->state |= COMMAND_ABORTED;
  		cmdinfo->state &= ~IS_IN_WORK_LIST;
--		if (devinfo->resetting) {
--			/* uas_stat_cmplt() will not do that
--			 * when a device reset is in
--			 * progress */
--			cmdinfo->state &= ~COMMAND_INFLIGHT;
--		}
--		uas_try_complete(cmnd, __func__);
  		list_del(&cmdinfo->work);
-+		list_add_tail(&cmdinfo->dead, &devinfo->dead_list);
- 	}
- 	spin_unlock_irqrestore(&devinfo->lock, flags);
- }
-@@ -176,6 +175,28 @@ static void uas_add_work(struct uas_cmd_info *cmdinfo)
+@@ -169,7 +169,7 @@ static void uas_add_work(struct uas_cmd_info *cmdinfo)
+ 	struct scsi_cmnd *cmnd = container_of(scp, struct scsi_cmnd, SCp);
+ 	struct uas_dev_info *devinfo = cmnd->device->hostdata;
+ 
+-	WARN_ON(!spin_is_locked(&devinfo->lock));
++	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
+ 	list_add_tail(&cmdinfo->work, &devinfo->work_list);
+ 	cmdinfo->state |= IS_IN_WORK_LIST;
  	schedule_work(&devinfo->work);
- }
+@@ -187,7 +187,7 @@ static void uas_zap_dead(struct uas_dev_info *devinfo)
+ 		struct scsi_cmnd *cmnd = container_of(scp, struct scsi_cmnd,
+ 						      SCp);
+ 		uas_log_cmd_state(cmnd, __func__);
+-		WARN_ON(!(cmdinfo->state & COMMAND_ABORTED));
++		WARN_ON_ONCE(!(cmdinfo->state & COMMAND_ABORTED));
+ 		/* all urbs are killed, clear inflight bits */
+ 		cmdinfo->state &= ~(COMMAND_INFLIGHT |
+ 				    DATA_IN_URB_INFLIGHT |
+@@ -271,13 +271,13 @@ static int uas_try_complete(struct scsi_cmnd *cmnd, const char *caller)
+ 	struct uas_cmd_info *cmdinfo = (void *)&cmnd->SCp;
+ 	struct uas_dev_info *devinfo = (void *)cmnd->device->hostdata;
  
-+static void uas_zap_dead(struct uas_dev_info *devinfo)
-+{
-+	struct uas_cmd_info *cmdinfo;
-+	struct uas_cmd_info *temp;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&devinfo->lock, flags);
-+	list_for_each_entry_safe(cmdinfo, temp, &devinfo->dead_list, dead) {
-+		struct scsi_pointer *scp = (void *)cmdinfo;
-+		struct scsi_cmnd *cmnd = container_of(scp, struct scsi_cmnd,
-+						      SCp);
-+		uas_log_cmd_state(cmnd, __func__);
-+		WARN_ON(!(cmdinfo->state & COMMAND_ABORTED));
-+		/* all urbs are killed, clear inflight bits */
-+		cmdinfo->state &= ~(COMMAND_INFLIGHT |
-+				    DATA_IN_URB_INFLIGHT |
-+				    DATA_OUT_URB_INFLIGHT);
-+		uas_try_complete(cmnd, __func__);
-+	}
-+	spin_unlock_irqrestore(&devinfo->lock, flags);
-+}
-+
- static void uas_sense(struct urb *urb, struct scsi_cmnd *cmnd)
- {
- 	struct sense_iu *sense_iu = urb->transfer_buffer;
-@@ -263,6 +284,7 @@ static int uas_try_complete(struct scsi_cmnd *cmnd, const char *caller)
- 	if (cmdinfo->state & COMMAND_ABORTED) {
- 		scmd_printk(KERN_INFO, cmnd, "abort completed\n");
- 		cmnd->result = DID_ABORT << 16;
-+		list_del(&cmdinfo->dead);
+-	WARN_ON(!spin_is_locked(&devinfo->lock));
++	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
+ 	if (cmdinfo->state & (COMMAND_INFLIGHT |
+ 			      DATA_IN_URB_INFLIGHT |
+ 			      DATA_OUT_URB_INFLIGHT |
+ 			      UNLINK_DATA_URBS))
+ 		return -EBUSY;
+-	BUG_ON(cmdinfo->state & COMMAND_COMPLETED);
++	WARN_ON_ONCE(cmdinfo->state & COMMAND_COMPLETED);
+ 	cmdinfo->state |= COMMAND_COMPLETED;
+ 	usb_free_urb(cmdinfo->data_in_urb);
+ 	usb_free_urb(cmdinfo->data_out_urb);
+@@ -398,8 +398,9 @@ static void uas_data_cmplt(struct urb *urb)
+ 		sdb = scsi_out(cmnd);
+ 		cmdinfo->state &= ~DATA_OUT_URB_INFLIGHT;
  	}
- 	cmnd->scsi_done(cmnd);
- 	return 0;
-@@ -292,7 +314,13 @@ static void uas_stat_cmplt(struct urb *urb)
- 	u16 tag;
+-	BUG_ON(sdb == NULL);
+-	if (urb->status) {
++	if (sdb == NULL) {
++		WARN_ON_ONCE(1);
++	} else if (urb->status) {
+ 		/* error: no data transfered */
+ 		sdb->resid = sdb->length;
+ 	} else {
+@@ -573,7 +574,7 @@ static int uas_submit_urbs(struct scsi_cmnd *cmnd,
+ 	struct uas_cmd_info *cmdinfo = (void *)&cmnd->SCp;
+ 	int err;
  
- 	if (urb->status) {
--		dev_err(&urb->dev->dev, "URB BAD STATUS %d\n", urb->status);
-+		if (urb->status == -ENOENT) {
-+			dev_err(&urb->dev->dev, "stat urb: killed, stream %d\n",
-+				urb->stream_id);
-+		} else {
-+			dev_err(&urb->dev->dev, "stat urb: status %d\n",
-+				urb->status);
-+		}
- 		usb_free_urb(urb);
- 		return;
- 	}
-@@ -743,7 +771,9 @@ static int uas_eh_abort_handler(struct scsi_cmnd *cmnd)
+-	WARN_ON(!spin_is_locked(&devinfo->lock));
++	WARN_ON_ONCE(!spin_is_locked(&devinfo->lock));
+ 	if (cmdinfo->state & SUBMIT_STATUS_URB) {
+ 		err = uas_submit_sense_urb(cmnd->device->host, gfp,
+ 					   cmdinfo->stream);
+@@ -771,7 +772,7 @@ static int uas_eh_abort_handler(struct scsi_cmnd *cmnd)
  
  	uas_log_cmd_state(cmnd, __func__);
  	spin_lock_irqsave(&devinfo->lock, flags);
-+	WARN_ON(cmdinfo->state & COMMAND_ABORTED);
+-	WARN_ON(cmdinfo->state & COMMAND_ABORTED);
++	WARN_ON_ONCE(cmdinfo->state & COMMAND_ABORTED);
  	cmdinfo->state |= COMMAND_ABORTED;
-+	list_add_tail(&cmdinfo->dead, &devinfo->dead_list);
+ 	list_add_tail(&cmdinfo->dead, &devinfo->dead_list);
  	if (cmdinfo->state & IS_IN_WORK_LIST) {
- 		list_del(&cmdinfo->work);
- 		cmdinfo->state &= ~IS_IN_WORK_LIST;
-@@ -776,11 +806,13 @@ static int uas_eh_bus_reset_handler(struct scsi_cmnd *cmnd)
- 	struct usb_device *udev = devinfo->udev;
- 	int err;
- 
-+	shost_printk(KERN_INFO, sdev->host, "%s start\n", __func__);
- 	devinfo->resetting = 1;
- 	uas_abort_work(devinfo);
- 	usb_kill_anchored_urbs(&devinfo->cmd_urbs);
- 	usb_kill_anchored_urbs(&devinfo->sense_urbs);
- 	usb_kill_anchored_urbs(&devinfo->data_urbs);
-+	uas_zap_dead(devinfo);
- 	uas_free_streams(devinfo);
- 	err = usb_reset_device(udev);
- 	if (!err)
-@@ -988,6 +1020,7 @@ static int uas_probe(struct usb_interface *intf, const struct usb_device_id *id)
- 	spin_lock_init(&devinfo->lock);
- 	INIT_WORK(&devinfo->work, uas_do_work);
- 	INIT_LIST_HEAD(&devinfo->work_list);
-+	INIT_LIST_HEAD(&devinfo->dead_list);
- 	uas_configure_endpoints(devinfo);
- 
- 	result = scsi_init_shared_tag_map(shost, devinfo->qdepth - 3);
-@@ -1036,6 +1069,7 @@ static void uas_disconnect(struct usb_interface *intf)
- 	usb_kill_anchored_urbs(&devinfo->cmd_urbs);
- 	usb_kill_anchored_urbs(&devinfo->sense_urbs);
- 	usb_kill_anchored_urbs(&devinfo->data_urbs);
-+	uas_zap_dead(devinfo);
- 	scsi_remove_host(shost);
- 	uas_free_streams(devinfo);
- 	kfree(devinfo);
 -- 
 1.8.3.1
 
