@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932763Ab3IMNLl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:11:41 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:33694 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932750Ab3IMNLe (ORCPT
+	id S932778Ab3IMNLq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:11:46 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:41764 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932756Ab3IMNLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:11:34 -0400
+	Fri, 13 Sep 2013 09:11:41 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Viresh Kumar <viresh.kumar@linaro.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Subject: [PATCH 072/228] cpufreq: maple: Use generic cpufreq routines
-Date: Fri, 13 Sep 2013 18:30:18 +0530
-Message-Id: <5de7061f2f4c1038a288a24d86054cbb56ef5fa9.1379063063.git.viresh.kumar@linaro.org>
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: [PATCH 073/228] cpufreq: omap: Use generic cpufreq routines
+Date: Fri, 13 Sep 2013 18:30:19 +0530
+Message-Id: <783c4e4fe9ce482205ad3ba1152f977c695ac01c.1379063063.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
 References: <cover.1379063063.git.viresh.kumar@linaro.org>
@@ -32,53 +32,53 @@ by cpufreq drivers then.
 
 This patch uses these generic routines for this driver.
 
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/maple-cpufreq.c | 14 ++------------
- 1 file changed, 2 insertions(+), 12 deletions(-)
+ drivers/cpufreq/omap-cpufreq.c | 16 ++--------------
+ 1 file changed, 2 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/cpufreq/maple-cpufreq.c b/drivers/cpufreq/maple-cpufreq.c
-index b3fb661..b23d1d8 100644
---- a/drivers/cpufreq/maple-cpufreq.c
-+++ b/drivers/cpufreq/maple-cpufreq.c
-@@ -64,11 +64,6 @@ static struct cpufreq_frequency_table maple_cpu_freqs[] = {
- 	{0,			CPUFREQ_TABLE_END},
- };
+diff --git a/drivers/cpufreq/omap-cpufreq.c b/drivers/cpufreq/omap-cpufreq.c
+index 091f233..48020b5 100644
+--- a/drivers/cpufreq/omap-cpufreq.c
++++ b/drivers/cpufreq/omap-cpufreq.c
+@@ -40,13 +40,6 @@ static struct clk *mpu_clk;
+ static struct device *mpu_dev;
+ static struct regulator *mpu_reg;
  
--static struct freq_attr *maple_cpu_freqs_attr[] = {
+-static int omap_verify_speed(struct cpufreq_policy *policy)
+-{
+-	if (!freq_table)
+-		return -EINVAL;
+-	return cpufreq_frequency_table_verify(policy, freq_table);
+-}
+-
+ static unsigned int omap_getspeed(unsigned int cpu)
+ {
+ 	unsigned long rate;
+@@ -227,20 +220,15 @@ static int omap_cpu_exit(struct cpufreq_policy *policy)
+ 	return 0;
+ }
+ 
+-static struct freq_attr *omap_cpufreq_attr[] = {
 -	&cpufreq_freq_attr_scaling_available_freqs,
 -	NULL,
 -};
 -
- /* Power mode data is an array of the 32 bits PCR values to use for
-  * the various frequencies, retrieved from the device-tree
-  */
-@@ -135,11 +130,6 @@ static int maple_scom_query_freq(void)
-  * Common interface to the cpufreq core
-  */
- 
--static int maple_cpufreq_verify(struct cpufreq_policy *policy)
--{
--	return cpufreq_frequency_table_verify(policy, maple_cpu_freqs);
--}
--
- static int maple_cpufreq_target(struct cpufreq_policy *policy,
- 	unsigned int target_freq, unsigned int relation)
- {
-@@ -190,10 +180,10 @@ static struct cpufreq_driver maple_cpufreq_driver = {
- 	.name		= "maple",
- 	.flags		= CPUFREQ_CONST_LOOPS,
- 	.init		= maple_cpufreq_cpu_init,
--	.verify		= maple_cpufreq_verify,
+ static struct cpufreq_driver omap_driver = {
+ 	.flags		= CPUFREQ_STICKY,
+-	.verify		= omap_verify_speed,
 +	.verify		= cpufreq_generic_frequency_table_verify,
- 	.target		= maple_cpufreq_target,
- 	.get		= maple_cpufreq_get_speed,
--	.attr		= maple_cpu_freqs_attr,
+ 	.target		= omap_target,
+ 	.get		= omap_getspeed,
+ 	.init		= omap_cpu_init,
+ 	.exit		= omap_cpu_exit,
+ 	.name		= "omap",
+-	.attr		= omap_cpufreq_attr,
 +	.attr		= cpufreq_generic_attr,
  };
  
- static int __init maple_cpufreq_init(void)
+ static int omap_cpufreq_probe(struct platform_device *pdev)
 -- 
 1.7.12.rc2.18.g61b472e
 
