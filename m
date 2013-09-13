@@ -1,129 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932681Ab3IMNKz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:10:55 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:58721 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932658Ab3IMNKv (ORCPT
+	id S932564Ab3IMNKE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:10:04 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:58852 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932073Ab3IMNJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:10:51 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 066/228] cpufreq: exynos: Use generic cpufreq routines
-Date: Fri, 13 Sep 2013 18:30:12 +0530
-Message-Id: <887030b562a276d7674cc381f4bbd979c23910b9.1379063063.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
-References: <cover.1379063063.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
-References: <cover.1379063063.git.viresh.kumar@linaro.org>
+	Fri, 13 Sep 2013 09:09:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <5232DB49.4050701@arm.com>
+References: <1378968687-8200-1-git-send-email-cinifr@gmail.com>
+	<1378968687-8200-4-git-send-email-cinifr@gmail.com>
+	<20130912112452.GA22013@e106331-lin.cambridge.arm.com>
+	<CAK3cCBwu4somtfc9J1ZDVcC-iYD1qDJwSWzWeOomTqY9tQA2kg@mail.gmail.com>
+	<5231EE43.5090900@arm.com>
+	<CAK3cCBzr8_LTYarZDgPYZY7_-5Qco_Qw+ACi=c2uOrn7MqwkBg@mail.gmail.com>
+	<5232DB49.4050701@arm.com>
+Date: Fri, 13 Sep 2013 21:09:55 +0800
+Message-ID: <CAK3cCBw4EKypLmhf4L5_P3d27QzsrB+ZxUTgF58YhmUhBa00xQ@mail.gmail.com>
+Subject: Re: [PATCH 3/4] Add physical count arch timer support for clocksource
+ in ARMv7.
+From: cinifr <cinifr@gmail.com>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: Mark Rutland <Mark.Rutland@arm.com>, "coosty@163.com" <coosty@163.com>,
+        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "pawel.moll@arm.co" <pawel.moll@arm.co>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most of the CPUFreq drivers do similar things in .exit() and .verify() routines
-and .attr. So its better if we have generic routines for them which can be used
-by cpufreq drivers then.
+> I urge you to read the ARM ARM, and specifically the section dedicated
+> to trapping access to CP15 operations. If you do, you'll quickly notice
+> that you *cannot* trap accesses to the timer subsystem.
+>
+I read it again. The ARMv7 manual said "Is accessible from Non-secure
+PL1 modes only when CNTHCTL.PL1PCTEN is set to 1. When
+CNTHCTL.PL1PCTEN is set to 0, any attempt to access CNTPCT from a
+Non-secure PL1 mode ***generates a Hyp Trap exception***, see Hyp Trap
+exception on page B1-1206" in B8.1.2. but I dont find  a  special hyp
+trap control  for accessing CNTPCT in manual. As you said HSTR cannot
+trap accessing of CP15 c14. What happer when OS access CNTPCT from PL1
+NS=1 mode with CNTHCTL.PL1PCTEN=0 ???  AmI  wrong for understanding
+the manual?
+Thanks.
+BTW: And I fond xen have support to trap accessing   CNTPCT by this
+patch on http://lists.xen.org/archives/html/xen-devel/2012-08/msg00452.html.
 
-This patch uses these generic routines for this driver.
+> All you can do is disable access to the physical timer/counter,
+> resulting in an UNDEF in the *guest*.
+>
+> Additionally, please realise the overhead of trapping is enormous, and
+> that we do try very hard to minimise it. Why do you think we went out of
+> our way to ensure that host and guest would use different timers, always?
 
-Acked-By: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/exynos-cpufreq.c     | 23 +++--------------------
- drivers/cpufreq/exynos5440-cpufreq.c | 15 ++-------------
- 2 files changed, 5 insertions(+), 33 deletions(-)
+>
+> CNTVOFF can only be setup from either HYP or Secure Monitor mode with
+> SCR.NS == 1, so if you run your kernel in secure mode, it is always best
+> to do it in the bootloader.
+I agree it, Bootloader do  it better.
 
-diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
-index 954baed..08338d4 100644
---- a/drivers/cpufreq/exynos-cpufreq.c
-+++ b/drivers/cpufreq/exynos-cpufreq.c
-@@ -31,12 +31,6 @@ static unsigned int locking_frequency;
- static bool frequency_locked;
- static DEFINE_MUTEX(cpufreq_lock);
- 
--static int exynos_verify_speed(struct cpufreq_policy *policy)
--{
--	return cpufreq_frequency_table_verify(policy,
--					      exynos_info->freq_table);
--}
--
- static unsigned int exynos_getspeed(unsigned int cpu)
- {
- 	return clk_get_rate(exynos_info->cpu_clk) / 1000;
-@@ -257,26 +251,15 @@ static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 	return cpufreq_table_validate_and_show(policy, exynos_info->freq_table);
- }
- 
--static int exynos_cpufreq_cpu_exit(struct cpufreq_policy *policy)
--{
--	cpufreq_frequency_table_put_attr(policy->cpu);
--	return 0;
--}
--
--static struct freq_attr *exynos_cpufreq_attr[] = {
--	&cpufreq_freq_attr_scaling_available_freqs,
--	NULL,
--};
--
- static struct cpufreq_driver exynos_driver = {
- 	.flags		= CPUFREQ_STICKY,
--	.verify		= exynos_verify_speed,
-+	.verify		= cpufreq_generic_frequency_table_verify,
- 	.target		= exynos_target,
- 	.get		= exynos_getspeed,
- 	.init		= exynos_cpufreq_cpu_init,
--	.exit		= exynos_cpufreq_cpu_exit,
-+	.exit		= cpufreq_generic_exit,
- 	.name		= "exynos_cpufreq",
--	.attr		= exynos_cpufreq_attr,
-+	.attr		= cpufreq_generic_attr,
- #ifdef CONFIG_PM
- 	.suspend	= exynos_cpufreq_suspend,
- 	.resume		= exynos_cpufreq_resume,
-diff --git a/drivers/cpufreq/exynos5440-cpufreq.c b/drivers/cpufreq/exynos5440-cpufreq.c
-index e041f5e..e33896f 100644
---- a/drivers/cpufreq/exynos5440-cpufreq.c
-+++ b/drivers/cpufreq/exynos5440-cpufreq.c
-@@ -209,12 +209,6 @@ static void exynos_enable_dvfs(void)
- 				dvfs_info->base + XMU_DVFS_CTRL);
- }
- 
--static int exynos_verify_speed(struct cpufreq_policy *policy)
--{
--	return cpufreq_frequency_table_verify(policy,
--					      dvfs_info->freq_table);
--}
--
- static unsigned int exynos_getspeed(unsigned int cpu)
- {
- 	return dvfs_info->cur_frequency;
-@@ -342,18 +336,13 @@ static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 	return 0;
- }
- 
--static int exynos_cpufreq_cpu_exit(struct cpufreq_policy *policy)
--{
--	cpufreq_frequency_table_put_attr(policy->cpu);
--}
--
- static struct cpufreq_driver exynos_driver = {
- 	.flags		= CPUFREQ_STICKY | CPUFREQ_ASYNC_NOTIFICATION,
--	.verify		= exynos_verify_speed,
-+	.verify		= cpufreq_generic_frequency_table_verify,
- 	.target		= exynos_target,
- 	.get		= exynos_getspeed,
- 	.init		= exynos_cpufreq_cpu_init,
--	.exit		= exynos_cpufreq_cpu_exit,
-+	.exit		= cpufreq_generic_exit,
- 	.name		= CPUFREQ_NAME,
- };
- 
--- 
-1.7.12.rc2.18.g61b472e
-
+         Fan
