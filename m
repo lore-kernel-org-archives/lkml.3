@@ -1,111 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754329Ab3IMSpd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 14:45:33 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:52922 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751316Ab3IMSpb (ORCPT
+	id S1753187Ab3IMSyP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 14:54:15 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:58857 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316Ab3IMSyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 14:45:31 -0400
-X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrT1q0ngWNsKR9Dbc7nsXB+5knFuK6YxiM=
-X-RZG-CLASS-ID: mo00
-Message-ID: <52335D49.1000105@hartkopp.net>
-Date: Fri, 13 Sep 2013 20:45:29 +0200
-From: Oliver Hartkopp <socketcan@hartkopp.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130820 Icedove/17.0.8
-MIME-Version: 1.0
-To: Andre Naujoks <nautsch2@gmail.com>
-CC: davem@davemloft.net, Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net 1/3] slip/slcan: added locking in wakeup function
-References: <1379093833-4949-1-git-send-email-nautsch2@gmail.com> <1379093833-4949-2-git-send-email-nautsch2@gmail.com>
-In-Reply-To: <1379093833-4949-2-git-send-email-nautsch2@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 13 Sep 2013 14:54:14 -0400
+From: Mark Brown <broonie@kernel.org>
+To: Liam Girdwood <lgirdwood@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        Mark Brown <broonie@linaro.org>
+Date: Fri, 13 Sep 2013 19:54:04 +0100
+Message-Id: <1379098445-22163-1-git-send-email-broonie@kernel.org>
+X-Mailer: git-send-email 1.8.4.rc3
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH 1/2] regulator: core: Provide a dummy regulator with full constraints
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.09.2013 19:37, Andre Naujoks wrote:
-> The locking is needed, since the the internal buffer for the CAN frames is
-> changed during the wakeup call. This could cause buffer inconsistencies
-> under high loads, especially for the outgoing short CAN packet skbuffs.
-> 
-> The needed locks led to deadlocks before commit
-> "5ede52538ee2b2202d9dff5b06c33bfde421e6e4 tty: Remove extra wakeup from pty
-> write() path", which removed the direct callback to the wakeup function from the
-> tty layer.
-> 
-> As slcan.c is based on slip.c the issue in the original code is fixed, too.
-> 
-> Signed-off-by: Andre Naujoks <nautsch2@gmail.com>
+From: Mark Brown <broonie@linaro.org>
 
-At least for slcan.c:
+When a system has said that it has fully specified constraints for its
+regulators it is still possible that some supplies may be missing,
+especially if regulator support has been added to a driver after the
+board was integrated. We can handle such situations more gracefully by
+providing a dummy regulator.
 
-Acked-by: Oliver Hartkopp <socketcan@hartkopp.net>
+Unless the caller has specifically indicated that the system design may
+not include a given regulator by using regulator_get_optional() or that
+it needs its interactions to have an effect using regulator_get_exclusive()
+provide a dummy regulator if we can't locate a real one.
 
-Tnx for figuring that out with your heavy load testing.
+The kconfig option REGULATOR_DUMMY that provided similar behaviour for all
+regulators has been removed, systems that need it should flag that they
+have full constraints instead.  Some more thought is needed for a more
+elegant way of handling non-DT systems.
 
-Best regards,
-Oliver
+Signed-off-by: Mark Brown <broonie@linaro.org>
+---
+ drivers/regulator/Kconfig | 10 ----------
+ drivers/regulator/core.c  | 36 +++++++++++++++++++-----------------
+ 2 files changed, 19 insertions(+), 27 deletions(-)
 
-> ---
->  drivers/net/can/slcan.c | 3 +++
->  drivers/net/slip/slip.c | 3 +++
->  2 files changed, 6 insertions(+)
-> 
-> diff --git a/drivers/net/can/slcan.c b/drivers/net/can/slcan.c
-> index 874188b..d571e2e 100644
-> --- a/drivers/net/can/slcan.c
-> +++ b/drivers/net/can/slcan.c
-> @@ -286,11 +286,13 @@ static void slcan_write_wakeup(struct tty_struct *tty)
->  	if (!sl || sl->magic != SLCAN_MAGIC || !netif_running(sl->dev))
->  		return;
->  
-> +	spin_lock(&sl->lock);
->  	if (sl->xleft <= 0)  {
->  		/* Now serial buffer is almost free & we can start
->  		 * transmission of another packet */
->  		sl->dev->stats.tx_packets++;
->  		clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
-> +		spin_unlock(&sl->lock);
->  		netif_wake_queue(sl->dev);
->  		return;
->  	}
-> @@ -298,6 +300,7 @@ static void slcan_write_wakeup(struct tty_struct *tty)
->  	actual = tty->ops->write(tty, sl->xhead, sl->xleft);
->  	sl->xleft -= actual;
->  	sl->xhead += actual;
-> +	spin_unlock(&sl->lock);
->  }
->  
->  /* Send a can_frame to a TTY queue. */
-> diff --git a/drivers/net/slip/slip.c b/drivers/net/slip/slip.c
-> index a34d6bf..cc70ecf 100644
-> --- a/drivers/net/slip/slip.c
-> +++ b/drivers/net/slip/slip.c
-> @@ -429,11 +429,13 @@ static void slip_write_wakeup(struct tty_struct *tty)
->  	if (!sl || sl->magic != SLIP_MAGIC || !netif_running(sl->dev))
->  		return;
->  
-> +	spin_lock(&sl->lock);
->  	if (sl->xleft <= 0)  {
->  		/* Now serial buffer is almost free & we can start
->  		 * transmission of another packet */
->  		sl->dev->stats.tx_packets++;
->  		clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
-> +		spin_unlock(&sl->lock);
->  		sl_unlock(sl);
->  		return;
->  	}
-> @@ -441,6 +443,7 @@ static void slip_write_wakeup(struct tty_struct *tty)
->  	actual = tty->ops->write(tty, sl->xhead, sl->xleft);
->  	sl->xleft -= actual;
->  	sl->xhead += actual;
-> +	spin_unlock(&sl->lock);
->  }
->  
->  static void sl_tx_timeout(struct net_device *dev)
-> 
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index dfe5809..0417ce3 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -28,16 +28,6 @@ config REGULATOR_DEBUG
+ 	help
+ 	  Say yes here to enable debugging support.
+ 
+-config REGULATOR_DUMMY
+-	bool "Provide a dummy regulator if regulator lookups fail"
+-	help
+-	  If this option is enabled then when a regulator lookup fails
+-	  and the board has not specified that it has provided full
+-	  constraints the regulator core will provide an always
+-	  enabled dummy regulator, allowing consumer drivers to continue.
+-
+-	  A warning will be generated when this substitution is done.
+-
+ config REGULATOR_FIXED_VOLTAGE
+ 	tristate "Fixed voltage regulator support"
+ 	help
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 02af90e..c9740b5 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1225,7 +1225,7 @@ static struct regulator_dev *regulator_dev_lookup(struct device *dev,
+ 
+ /* Internal regulator request function */
+ static struct regulator *_regulator_get(struct device *dev, const char *id,
+-					bool exclusive)
++					bool exclusive, bool allow_dummy)
+ {
+ 	struct regulator_dev *rdev;
+ 	struct regulator *regulator = ERR_PTR(-EPROBE_DEFER);
+@@ -1250,30 +1250,32 @@ static struct regulator *_regulator_get(struct device *dev, const char *id,
+ 	 * If we have return value from dev_lookup fail, we do not expect to
+ 	 * succeed, so, quit with appropriate error value
+ 	 */
+-	if (ret) {
++	if (ret && ret != -ENODEV) {
+ 		regulator = ERR_PTR(ret);
+ 		goto out;
+ 	}
+ 
+-	if (board_wants_dummy_regulator) {
+-		rdev = dummy_regulator_rdev;
+-		goto found;
+-	}
+-
+-#ifdef CONFIG_REGULATOR_DUMMY
+ 	if (!devname)
+ 		devname = "deviceless";
+ 
+-	/* If the board didn't flag that it was fully constrained then
+-	 * substitute in a dummy regulator so consumers can continue.
++	/*
++	 * Assume that a regulator is physically present and enabled
++	 * even if it isn't hooked up and just provide a dummy.
+ 	 */
+-	if (!has_full_constraints) {
+-		pr_warn("%s supply %s not found, using dummy regulator\n",
+-			devname, id);
++	if (has_full_constraints && allow_dummy) {
++		/*
++		 * Log the substitution if regulator configuration is
++		 * not complete to help development.
++		 */
++		if (!has_full_constraints)
++			pr_warn("%s supply %s not found, using dummy regulator\n",
++				devname, id);
++
+ 		rdev = dummy_regulator_rdev;
+ 		goto found;
++	} else {
++		dev_err(dev, "dummy supplies not allowed\n");
+ 	}
+-#endif
+ 
+ 	mutex_unlock(&regulator_list_mutex);
+ 	return regulator;
+@@ -1331,7 +1333,7 @@ out:
+  */
+ struct regulator *regulator_get(struct device *dev, const char *id)
+ {
+-	return _regulator_get(dev, id, false);
++	return _regulator_get(dev, id, false, true);
+ }
+ EXPORT_SYMBOL_GPL(regulator_get);
+ 
+@@ -1358,7 +1360,7 @@ EXPORT_SYMBOL_GPL(regulator_get);
+  */
+ struct regulator *regulator_get_exclusive(struct device *dev, const char *id)
+ {
+-	return _regulator_get(dev, id, true);
++	return _regulator_get(dev, id, true, false);
+ }
+ EXPORT_SYMBOL_GPL(regulator_get_exclusive);
+ 
+@@ -1387,7 +1389,7 @@ EXPORT_SYMBOL_GPL(regulator_get_exclusive);
+  */
+ struct regulator *regulator_get_optional(struct device *dev, const char *id)
+ {
+-	return _regulator_get(dev, id, 0);
++	return _regulator_get(dev, id, false, false);
+ }
+ EXPORT_SYMBOL_GPL(regulator_get_optional);
+ 
+-- 
+1.8.4.rc3
 
