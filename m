@@ -1,77 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757545Ab3IMCF4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 22:05:56 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59781 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757047Ab3IMCFy convert rfc822-to-8bit (ORCPT
+	id S1757488Ab3IMCIl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 22:08:41 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:37917 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757314Ab3IMCIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 22:05:54 -0400
-Subject: Re: [PATCH] ARM: msm: Move msm devicetrees under a Qualcomm dir
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <20130912224737.GA24937@codeaurora.org>
-Date: Thu, 12 Sep 2013 21:05:52 -0500
-Cc: Olof Johansson <olof@lixom.net>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
-        Rohit Vaswani <rvaswani@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <9EA264FE-7621-458D-8333-9340DDBFC4EE@codeaurora.org>
-References: <1379003839-16068-1-git-send-email-galak@codeaurora.org> <CAOesGMisWLwYKotGDFPW6PyHJs=_+fohTdC08SGjsv2FXaa7Fg@mail.gmail.com> <25E0B143-658E-4CCC-A88A-0AF70FFF33CE@codeaurora.org> <CAOesGMhfdvyJ_2AA2e8iO_2e=q7KgpyNbcriPKFw-RLormG6bA@mail.gmail.com> <3E38F48E-EE41-4564-84A1-36CF07B08811@codeaurora.org> <20130912224737.GA24937@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>
-X-Mailer: Apple Mail (2.1283)
+	Thu, 12 Sep 2013 22:08:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <87ioy536mu.fsf@rustcorp.com.au>
+References: <1378955676-12708-1-git-send-email-peter.chen@freescale.com> <87ioy536mu.fsf@rustcorp.com.au>
+From: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Date: Thu, 12 Sep 2013 23:08:15 -0300
+Message-ID: <CAKi4VAJ5=zsJzyQNprchB2wnwh0+gg2oNP2PFsa4Lcw++3mSig@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/1] module: Make wait module's refcount to zero
+ procedure as async
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Peter Chen <peter.chen@freescale.com>, lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Sep 12, 2013 at 9:30 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> Peter Chen <peter.chen@freescale.com> writes:
+>> Currently, if module's refcount is not zero during the unload,
+>> it waits there until the user decreases that refcount.
+>
+> Hi Peter,
+>
+>         In practice userspace uses O_NONBLOCK.  In fact, I've been
+> thinking of removing the blocking case altogether, since it's not really
+> what people want.
+>
+> That would solve your problem and make the code simpler.  Thoughts?
 
-On Sep 12, 2013, at 5:47 PM, David Brown wrote:
+I'm all in favor of this. It's been almost 1 year it's deprecated in
+kmod and if anyone tries to use we force a 10s delay on module
+removal. So far nobody complained.
 
-> On Thu, Sep 12, 2013 at 12:55:36PM -0500, Kumar Gala wrote:
->> 
->> On Sep 12, 2013, at 12:06 PM, Olof Johansson wrote:
-> 
->>> My original request to please use a common prefix for your product
->>> families stands. Please prefix with msm-*, or if you have to, qcom-*
->>> instead, since you guys can't seem to make your mind up on standard
->>> prefixes (msm, apq, etc).
->> 
->> This is silly, I dont see the reason to go with
->> qcom-apq<SOC>-<BOARD>.dts and than in the future drop qcom- when we
->> mostly likely shift to a dir structure.  As engineers we are all too
->> aware of the lack of sanity in marketing names, but its what we have
->> so we have to live with it.
-> 
-> At least what we'd decided a year or two ago was to call _everything_
-> with an msm* prefix.  If marketing comes up with cute prefixes for
-> things, we would basically ignore them.  So, under that, it should be
-> an msm8074-dragonboard.  Admittedly, it might be a little confusing
-> with the name of the product having the apq in it, but as others have
-> pointed out, I think there is less confusing than not having a common
-> prefix on our MSM products.
-> 
-> At least so far, there are no chips where apq vs msm actually
-> distinguishes anything.  In fact, a simple "decoder ring" would point
-> out that the 'apq' usually corresponds with the second digit being a
-> zero.  It doesn't help that we've added an 'mpq' prefix as well.
-> 
-> I don't really see how to satisfy all of this other than qcom-apq*, or
-> just continue to use msm*.
-
-
-I think msm has run out of steam, especially as more SoCs come out of Qualcomm that aren't just targeting phones & tablets.
-
-- k
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+Lucas De Marchi
