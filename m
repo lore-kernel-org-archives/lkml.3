@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211Ab3IMPBA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 11:01:00 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:35600 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755762Ab3IMPA7 (ORCPT
+	id S1756515Ab3IMPGX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 11:06:23 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:42809 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755910Ab3IMPGV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 11:00:59 -0400
-Date: Fri, 13 Sep 2013 11:00:38 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: Ming Lei <ming.lei@canonical.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] firmware: Be a bit more verbose about direct firmware
- loading failure
-Message-ID: <20130913150038.GB31185@hmsreliant.think-freely.org>
-References: <1378496168-3684-1-git-send-email-nhorman@tuxdriver.com>
- <CACVXFVPRWEXMHyGhfZVGX2HrL3cguqVBUjTS51r2p8EGt=EPdg@mail.gmail.com>
- <20130911141943.GA3181@neilslaptop.think-freely.org>
- <CACVXFVNfkfsSJJUK_BWHLnddk=NAWDJoERmg_qycYa11G_X2RA@mail.gmail.com>
- <20130912131655.GA8619@hmsreliant.think-freely.org>
- <20130912184630.GA15948@khazad-dum.debian.net>
- <20130912203633.GC8619@hmsreliant.think-freely.org>
- <20130913135639.GA17010@khazad-dum.debian.net>
+	Fri, 13 Sep 2013 11:06:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130913135639.GA17010@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+In-Reply-To: <20130913121529.GA1437@flint.arm.linux.org.uk>
+References: <20130912153629.16487.88969@localhost.localdomain>
+	<CA+5PVA5GogJnewWvdmVo03oZRZDerE=H7BR49Xi1DZQyE_CG4Q@mail.gmail.com>
+	<CAMuHMdWgzQvKkASycHSzpTwi2c3qG+wn52YSr-=c8cDtro7NyQ@mail.gmail.com>
+	<CA+5PVA6Hm6XLdJa=x9TmZnjSH160337i-CM2HGHBpQMf06Bv9w@mail.gmail.com>
+	<20130913121529.GA1437@flint.arm.linux.org.uk>
+Date: Fri, 13 Sep 2013 11:06:20 -0400
+Message-ID: <CA+5PVA6Qon0cskv5wDyiCxSZzc2WjUFmzYmGE0zoNJC5ms1-XQ@mail.gmail.com>
+Subject: Re: [GIT PULL] Btrfs
+From: Josh Boyer <jwboyer@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Chris Mason <chris.mason@fusionio.com>, Mark Fasheh <mfasheh@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 13, 2013 at 10:56:39AM -0300, Henrique de Moraes Holschuh wrote:
-> On Thu, 12 Sep 2013, Neil Horman wrote:
-> > On Thu, Sep 12, 2013 at 03:46:30PM -0300, Henrique de Moraes Holschuh wrote:
-> > > On Thu, 12 Sep 2013, Neil Horman wrote:
-> > > > Both of these execptions should be rare, and are something the administrator
-> > > > will want to know about, so as not to confuse the real error with the mystery
-> > > > -ENOENT you would get if you fell back to the user mode helepr and it wansn't
-> > > > configured on in the running kernel.
-> > > 
-> > > Except, of course, for Intel processor microcode updates, which are going to
-> > > cause ENOENT on a large number of systems.
-> > > 
-> > > This will generate a large number of questions by users on the distro MLs.
-> > > 
-> > > However, IMHO this is *not* a reason to refuse this patch series.  If
-> > > anything, at least for Debian I will use it as an opportunity to educate
-> > > people about the existence of microcode update packages in "non-free".
-> > > 
-> > I agree. If people are running with downlevel microcode, they shold know about
-> > it.  You can't expect request_firmware to fail silently.  If people complain, I
-> > think the right solution would be to add a test to the microcode_request_fw
-> > function to check for the existence of the file before requesting it.
-> 
-> Make it a firmware loader API for "optional" firmware (i.e. which doesn't
-> complain on ENOENT), leaving for the caller the detail of whether a
-> firmware-not-there failure should be logged or not.
-> 
-That makes sense, I'll subit that in a separate patch this afternoon
-Thanks!
-Neil
+On Fri, Sep 13, 2013 at 8:15 AM, Russell King <rmk@arm.linux.org.uk> wrote:
+> On Fri, Sep 13, 2013 at 07:53:21AM -0400, Josh Boyer wrote:
+>> I'm not an ARM expert, so I don't know if ARM should use the
+>> asm-generic implementations, or just use __get_user/__put_user in all
+>> cases.  I've CC'd rmk.
+>
+> Why do we have uaccess-unaligned.h ?  Normally, these kinds of things
+> are spawned by architectures which have problems with unaligned accesses,
+> ARM being one of them, but afaik we've never need this.
+>
+> With the kernel-side trapping of unaligned accesses on older hardware,
+> we've always dealt with the normal accessor faulting.
+>
+> From what I can tell in the git history, these unaligned put_user and
+> get_user have existed all the way back to the dawn of git use.
+>
+> Can someone enlighten me why we have them?
 
-> -- 
->   "One disk to rule them all, One disk to find them. One disk to bring
->   them all and in the darkness grind them. In the Land of Redmond
->   where the shadows lie." -- The Silicon Valley Tarot
->   Henrique Holschuh
-> 
+So while that gets sorted out, would it be safe to just do as Geert
+did on m68k and put:
+
+#define __put_user_unaligned(x, ptr) __put_user((x), (ptr))
+
+in arch/arm/include/asm/uaccess.h, and let the normal accessors and
+kernel-side trapping deal with things?  I'm thinking that's a local
+fix until something gets sorted upstream, but I don't want to do it if
+it's going to break things.
+
+josh
