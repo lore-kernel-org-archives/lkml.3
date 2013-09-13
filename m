@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757809Ab3IMN1i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:27:38 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:35383 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757781Ab3IMN1d (ORCPT
+	id S1757885Ab3IMN14 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:27:56 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:53406 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757815Ab3IMN1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:27:33 -0400
+	Fri, 13 Sep 2013 09:27:47 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Viresh Kumar <viresh.kumar@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH 206/228] cpufreq: sa11x0: remove calls to cpufreq_notify_transition()
-Date: Fri, 13 Sep 2013 18:32:32 +0530
-Message-Id: <6e2ca86ce948c0bc35f7709baf22672771fcf1e8.1379063063.git.viresh.kumar@linaro.org>
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: [PATCH 208/228] cpufreq: sparc: remove calls to cpufreq_notify_transition()
+Date: Fri, 13 Sep 2013 18:32:34 +0530
+Message-Id: <e9a2b8127585439a3428ebc222b3df1dbe88924e.1379063063.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
 References: <cover.1379063063.git.viresh.kumar@linaro.org>
@@ -46,87 +46,72 @@ frequency change, this one removes it from this driver.
 
 Some related minor cleanups are also done along with it.
 
-Cc: Russell King <linux@arm.linux.org.uk>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: sparclinux@vger.kernel.org
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/sa1100-cpufreq.c | 17 ++++++-----------
- drivers/cpufreq/sa1110-cpufreq.c | 12 ++----------
- 2 files changed, 8 insertions(+), 21 deletions(-)
+ drivers/cpufreq/sparc-us2e-cpufreq.c | 7 -------
+ drivers/cpufreq/sparc-us3-cpufreq.c  | 7 -------
+ 2 files changed, 14 deletions(-)
 
-diff --git a/drivers/cpufreq/sa1100-cpufreq.c b/drivers/cpufreq/sa1100-cpufreq.c
-index b0da1fe..623da74 100644
---- a/drivers/cpufreq/sa1100-cpufreq.c
-+++ b/drivers/cpufreq/sa1100-cpufreq.c
-@@ -180,22 +180,17 @@ static void sa1100_update_dram_timings(int current_speed, int new_speed)
- static int sa1100_target(struct cpufreq_policy *policy, unsigned int ppcr)
- {
- 	unsigned int cur = sa11x0_getspeed(0);
+diff --git a/drivers/cpufreq/sparc-us2e-cpufreq.c b/drivers/cpufreq/sparc-us2e-cpufreq.c
+index 3bf5b8f..62aa23e 100644
+--- a/drivers/cpufreq/sparc-us2e-cpufreq.c
++++ b/drivers/cpufreq/sparc-us2e-cpufreq.c
+@@ -251,7 +251,6 @@ static int us2e_freq_target(struct cpufreq_policy *policy, unsigned int index)
+ 	unsigned long new_bits, new_freq;
+ 	unsigned long clock_tick, divisor, old_divisor, estar;
+ 	cpumask_t cpus_allowed;
 -	struct cpufreq_freqs freqs;
-+	unsigned int new_freq;
  
--	freqs.old = cur;
--	freqs.new = sa11x0_freq_table[ppcr].frequency;
-+	new_freq = sa11x0_freq_table[ppcr].frequency;
+ 	cpumask_copy(&cpus_allowed, tsk_cpus_allowed(current));
+ 	set_cpus_allowed_ptr(current, cpumask_of(cpu));
+@@ -265,16 +264,10 @@ static int us2e_freq_target(struct cpufreq_policy *policy, unsigned int index)
  
+ 	old_divisor = estar_to_divisor(estar);
+ 
+-	freqs.old = clock_tick / old_divisor;
+-	freqs.new = new_freq;
 -	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
 -
--	if (freqs.new > cur)
--		sa1100_update_dram_timings(cur, freqs.new);
-+	if (new_freq > cur)
-+		sa1100_update_dram_timings(cur, new_freq);
+ 	if (old_divisor != divisor)
+ 		us2e_transition(estar, new_bits, clock_tick * 1000,
+ 				old_divisor, divisor);
  
- 	PPCR = ppcr;
- 
--	if (freqs.new < cur)
--		sa1100_update_dram_timings(cur, freqs.new);
--
 -	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
-+	if (new_freq < cur)
-+		sa1100_update_dram_timings(cur, new_freq);
+-
+ 	set_cpus_allowed_ptr(current, &cpus_allowed);
  
  	return 0;
- }
-diff --git a/drivers/cpufreq/sa1110-cpufreq.c b/drivers/cpufreq/sa1110-cpufreq.c
-index 55b1818c..2c2b2e6 100644
---- a/drivers/cpufreq/sa1110-cpufreq.c
-+++ b/drivers/cpufreq/sa1110-cpufreq.c
-@@ -232,15 +232,11 @@ sdram_update_refresh(u_int cpu_khz, struct sdram_params *sdram)
- static int sa1110_target(struct cpufreq_policy *policy, unsigned int ppcr)
- {
- 	struct sdram_params *sdram = &sdram_params;
+diff --git a/drivers/cpufreq/sparc-us3-cpufreq.c b/drivers/cpufreq/sparc-us3-cpufreq.c
+index 2e54d55..724ffbd 100644
+--- a/drivers/cpufreq/sparc-us3-cpufreq.c
++++ b/drivers/cpufreq/sparc-us3-cpufreq.c
+@@ -98,7 +98,6 @@ static int us3_freq_target(struct cpufreq_policy *policy, unsigned int index)
+ 	unsigned int cpu = policy->cpu;
+ 	unsigned long new_bits, new_freq, reg;
+ 	cpumask_t cpus_allowed;
 -	struct cpufreq_freqs freqs;
- 	struct sdram_info sd;
- 	unsigned long flags;
- 	unsigned int unused;
  
--	freqs.old = sa11x0_getspeed(0);
--	freqs.new = sa11x0_freq_table[ppcr].frequency;
--
--	sdram_calculate_timing(&sd, freqs.new, sdram);
-+	sdram_calculate_timing(&sd, sa11x0_freq_table[ppcr].frequency, sdram);
+ 	cpumask_copy(&cpus_allowed, tsk_cpus_allowed(current));
+ 	set_cpus_allowed_ptr(current, cpumask_of(cpu));
+@@ -124,16 +123,10 @@ static int us3_freq_target(struct cpufreq_policy *policy, unsigned int index)
  
- #if 0
- 	/*
-@@ -259,8 +255,6 @@ static int sa1110_target(struct cpufreq_policy *policy, unsigned int ppcr)
- 	sd.mdcas[2] = 0xaaaaaaaa;
- #endif
+ 	reg = read_safari_cfg();
  
+-	freqs.old = get_current_freq(cpu, reg);
+-	freqs.new = new_freq;
 -	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
 -
- 	/*
- 	 * The clock could be going away for some time.  Set the SDRAMs
- 	 * to refresh rapidly (every 64 memory clock cycles).  To get
-@@ -305,9 +299,7 @@ static int sa1110_target(struct cpufreq_policy *policy, unsigned int ppcr)
- 	/*
- 	 * Now, return the SDRAM refresh back to normal.
- 	 */
--	sdram_update_refresh(freqs.new, sdram);
--
+ 	reg &= ~SAFARI_CFG_DIV_MASK;
+ 	reg |= new_bits;
+ 	write_safari_cfg(reg);
+ 
 -	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
-+	sdram_update_refresh(sa11x0_freq_table[ppcr].frequency, sdram);
+-
+ 	set_cpus_allowed_ptr(current, &cpus_allowed);
  
  	return 0;
- }
 -- 
 1.7.12.rc2.18.g61b472e
 
