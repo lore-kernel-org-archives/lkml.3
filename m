@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933977Ab3IMNXO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:23:14 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:44007 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757578Ab3IMNXH (ORCPT
+	id S933988Ab3IMNXY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:23:24 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:55300 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933374Ab3IMNXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:23:07 -0400
+	Fri, 13 Sep 2013 09:23:14 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 169/228] cpufreq: powernow: Convert to light weight ->target_index() routine
-Date: Fri, 13 Sep 2013 18:31:55 +0530
-Message-Id: <551cbb7714b929eac12ffff183a06f9f54ace685.1379063063.git.viresh.kumar@linaro.org>
+Subject: [PATCH 170/228] cpufreq: ppc: Convert to light weight ->target_index() routine
+Date: Fri, 13 Sep 2013 18:31:56 +0530
+Message-Id: <e63f94c1261cdb530341ab05d71b801c8829f976.1379063063.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
 References: <cover.1379063063.git.viresh.kumar@linaro.org>
@@ -33,218 +33,87 @@ routine and will pass index to it.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/powernow-k6.c | 35 +++++------------------------------
- drivers/cpufreq/powernow-k7.c | 22 ++++------------------
- drivers/cpufreq/powernow-k8.c | 26 ++++++++------------------
- 3 files changed, 17 insertions(+), 66 deletions(-)
+ drivers/cpufreq/ppc-corenet-cpufreq.c | 15 ++++-----------
+ drivers/cpufreq/ppc_cbe_cpufreq.c     | 12 ++----------
+ 2 files changed, 6 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/cpufreq/powernow-k6.c b/drivers/cpufreq/powernow-k6.c
-index eda1702..643e795 100644
---- a/drivers/cpufreq/powernow-k6.c
-+++ b/drivers/cpufreq/powernow-k6.c
-@@ -63,12 +63,12 @@ static int powernow_k6_get_cpu_multiplier(void)
- 
- 
- /**
-- * powernow_k6_set_state - set the PowerNow! multiplier
-+ * powernow_k6_target - set the PowerNow! multiplier
-  * @best_i: clock_ratio[best_i] is the target multiplier
-  *
-  *   Tries to change the PowerNow! multiplier
-  */
--static void powernow_k6_set_state(struct cpufreq_policy *policy,
-+static int powernow_k6_target(struct cpufreq_policy *policy,
- 		unsigned int best_i)
- {
- 	unsigned long outvalue = 0, invalue = 0;
-@@ -77,7 +77,7 @@ static void powernow_k6_set_state(struct cpufreq_policy *policy,
- 
- 	if (clock_ratio[best_i].driver_data > max_multiplier) {
- 		printk(KERN_ERR PFX "invalid target frequency\n");
--		return;
-+		return -EINVAL;
- 	}
- 
- 	freqs.old = busfreq * powernow_k6_get_cpu_multiplier();
-@@ -100,31 +100,6 @@ static void powernow_k6_set_state(struct cpufreq_policy *policy,
- 
- 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
- 
--	return;
--}
--
--
--/**
-- * powernow_k6_setpolicy - sets a new CPUFreq policy
-- * @policy: new policy
-- * @target_freq: the target frequency
-- * @relation: how that frequency relates to achieved frequency
-- *  (CPUFREQ_RELATION_L or CPUFREQ_RELATION_H)
-- *
-- * sets a new CPUFreq policy
-- */
--static int powernow_k6_target(struct cpufreq_policy *policy,
--			       unsigned int target_freq,
--			       unsigned int relation)
--{
--	unsigned int newstate = 0;
--
--	if (cpufreq_frequency_table_target(policy, &clock_ratio[0],
--				target_freq, relation, &newstate))
--		return -EINVAL;
--
--	powernow_k6_set_state(policy, newstate);
--
- 	return 0;
+diff --git a/drivers/cpufreq/ppc-corenet-cpufreq.c b/drivers/cpufreq/ppc-corenet-cpufreq.c
+index a0f562c..79d8e9c 100644
+--- a/drivers/cpufreq/ppc-corenet-cpufreq.c
++++ b/drivers/cpufreq/ppc-corenet-cpufreq.c
+@@ -251,27 +251,20 @@ static int __exit corenet_cpufreq_cpu_exit(struct cpufreq_policy *policy)
  }
  
-@@ -161,7 +136,7 @@ static int powernow_k6_cpu_exit(struct cpufreq_policy *policy)
- 	unsigned int i;
- 	for (i = 0; i < 8; i++) {
- 		if (i == max_multiplier)
--			powernow_k6_set_state(policy, i);
-+			powernow_k6_target(policy, i);
- 	}
- 	cpufreq_frequency_table_put_attr(policy->cpu);
- 	return 0;
-@@ -176,7 +151,7 @@ static unsigned int powernow_k6_get(unsigned int cpu)
- 
- static struct cpufreq_driver powernow_k6_driver = {
- 	.verify		= cpufreq_generic_frequency_table_verify,
--	.target		= powernow_k6_target,
-+	.target_index	= powernow_k6_target,
- 	.init		= powernow_k6_cpu_init,
- 	.exit		= powernow_k6_cpu_exit,
- 	.get		= powernow_k6_get,
-diff --git a/drivers/cpufreq/powernow-k7.c b/drivers/cpufreq/powernow-k7.c
-index 44d345b..946708a 100644
---- a/drivers/cpufreq/powernow-k7.c
-+++ b/drivers/cpufreq/powernow-k7.c
-@@ -248,7 +248,7 @@ static void change_VID(int vid)
- }
- 
- 
--static void change_speed(struct cpufreq_policy *policy, unsigned int index)
-+static int powernow_target(struct cpufreq_policy *policy, unsigned int index)
+ static int corenet_cpufreq_target(struct cpufreq_policy *policy,
+-		unsigned int target_freq, unsigned int relation)
++		unsigned int index)
  {
- 	u8 fid, vid;
  	struct cpufreq_freqs freqs;
-@@ -291,6 +291,8 @@ static void change_speed(struct cpufreq_policy *policy, unsigned int index)
- 		local_irq_enable();
+-	unsigned int new;
+ 	struct clk *parent;
+ 	int ret;
+ 	struct cpu_data *data = per_cpu(cpu_data, policy->cpu);
  
- 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
-+
-+	return 0;
- }
- 
- 
-@@ -533,22 +535,6 @@ static int powernow_decode_bios(int maxfid, int startvid)
- }
- 
- 
--static int powernow_target(struct cpufreq_policy *policy,
--			    unsigned int target_freq,
--			    unsigned int relation)
--{
--	unsigned int newstate;
+-	cpufreq_frequency_table_target(policy, data->table,
+-			target_freq, relation, &new);
 -
--	if (cpufreq_frequency_table_target(policy, powernow_table, target_freq,
--				relation, &newstate))
--		return -EINVAL;
+-	if (policy->cur == data->table[new].frequency)
+-		return 0;
 -
--	change_speed(policy, newstate);
--
--	return 0;
--}
--
--
- /*
-  * We use the fact that the bus frequency is somehow
-  * a multiple of 100000/3 khz, then we compute sgtc according
-@@ -694,7 +680,7 @@ static int powernow_cpu_exit(struct cpufreq_policy *policy)
+ 	freqs.old = policy->cur;
+-	freqs.new = data->table[new].frequency;
++	freqs.new = data->table[index].frequency;
  
- static struct cpufreq_driver powernow_driver = {
+ 	mutex_lock(&cpufreq_lock);
+ 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
+ 
+-	parent = of_clk_get(data->parent, data->table[new].driver_data);
++	parent = of_clk_get(data->parent, data->table[index].driver_data);
+ 	ret = clk_set_parent(data->clk, parent);
+ 	if (ret)
+ 		freqs.new = freqs.old;
+@@ -288,7 +281,7 @@ static struct cpufreq_driver ppc_corenet_cpufreq_driver = {
+ 	.init		= corenet_cpufreq_cpu_init,
+ 	.exit		= __exit_p(corenet_cpufreq_cpu_exit),
  	.verify		= cpufreq_generic_frequency_table_verify,
--	.target		= powernow_target,
-+	.target_index	= powernow_target,
- 	.get		= powernow_get,
- #ifdef CONFIG_X86_POWERNOW_K7_ACPI
- 	.bios_limit	= acpi_processor_get_bios_limit,
-diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
-index 8721744..612580a 100644
---- a/drivers/cpufreq/powernow-k8.c
-+++ b/drivers/cpufreq/powernow-k8.c
-@@ -977,20 +977,17 @@ static int transition_frequency_fidvid(struct powernow_k8_data *data,
- 
- struct powernowk8_target_arg {
- 	struct cpufreq_policy		*pol;
--	unsigned			targfreq;
--	unsigned			relation;
-+	unsigned			newstate;
+-	.target		= corenet_cpufreq_target,
++	.target_index	= corenet_cpufreq_target,
+ 	.get		= corenet_cpufreq_get_speed,
+ 	.attr		= cpufreq_generic_attr,
  };
- 
- static long powernowk8_target_fn(void *arg)
- {
- 	struct powernowk8_target_arg *pta = arg;
- 	struct cpufreq_policy *pol = pta->pol;
--	unsigned targfreq = pta->targfreq;
--	unsigned relation = pta->relation;
-+	unsigned newstate = pta->newstate;
- 	struct powernow_k8_data *data = per_cpu(powernow_data, pol->cpu);
- 	u32 checkfid;
- 	u32 checkvid;
--	unsigned int newstate;
- 	int ret;
- 
- 	if (!data) {
-@@ -1007,8 +1004,9 @@ static long powernowk8_target_fn(void *arg)
- 		goto transition_complete;
- 	}
- 
--	pr_debug("targ: cpu %d, %d kHz, min %d, max %d, relation %d\n",
--		pol->cpu, targfreq, pol->min, pol->max, relation);
-+	pr_debug("targ: cpu %d, %d kHz, min %d, max %d\n",
-+		pol->cpu, data->powernow_table[newstate].frequency, pol->min,
-+		pol->max);
- 
- 	if (query_current_values_with_pending_wait(data)) {
- 		ret = -EIO;
-@@ -1026,12 +1024,6 @@ static long powernowk8_target_fn(void *arg)
- 		       checkvid, data->currvid);
- 	}
- 
--	if (cpufreq_frequency_table_target(pol, data->powernow_table,
--				targfreq, relation, &newstate)) {
--		ret = -EIO;
--		goto transition_complete;
--	}
--
- 	mutex_lock(&fidvid_mutex);
- 
- 	powernow_k8_acpi_pst_values(data, newstate);
-@@ -1060,11 +1052,9 @@ transition_complete:
+diff --git a/drivers/cpufreq/ppc_cbe_cpufreq.c b/drivers/cpufreq/ppc_cbe_cpufreq.c
+index 38540d1..52f707d 100644
+--- a/drivers/cpufreq/ppc_cbe_cpufreq.c
++++ b/drivers/cpufreq/ppc_cbe_cpufreq.c
+@@ -129,18 +129,10 @@ static int cbe_cpufreq_cpu_init(struct cpufreq_policy *policy)
  }
  
- /* Driver entry point to switch to the target frequency */
--static int powernowk8_target(struct cpufreq_policy *pol,
--		unsigned targfreq, unsigned relation)
-+static int powernowk8_target(struct cpufreq_policy *pol, unsigned index)
+ static int cbe_cpufreq_target(struct cpufreq_policy *policy,
+-			      unsigned int target_freq,
+-			      unsigned int relation)
++			      unsigned int cbe_pmode_new)
  {
--	struct powernowk8_target_arg pta = { .pol = pol, .targfreq = targfreq,
--					     .relation = relation };
-+	struct powernowk8_target_arg pta = { .pol = pol, .newstate = index };
- 	int ret;
+ 	int rc;
+ 	struct cpufreq_freqs freqs;
+-	unsigned int cbe_pmode_new;
+-
+-	cpufreq_frequency_table_target(policy,
+-				       cbe_freqs,
+-				       target_freq,
+-				       relation,
+-				       &cbe_pmode_new);
  
- 	ret = work_on_cpu(pol->cpu, powernowk8_target_fn, &pta);
-@@ -1234,7 +1224,7 @@ out:
- static struct cpufreq_driver cpufreq_amd64_driver = {
- 	.flags		= CPUFREQ_ASYNC_NOTIFICATION,
+ 	freqs.old = policy->cur;
+ 	freqs.new = cbe_freqs[cbe_pmode_new].frequency;
+@@ -164,7 +156,7 @@ static int cbe_cpufreq_target(struct cpufreq_policy *policy,
+ 
+ static struct cpufreq_driver cbe_cpufreq_driver = {
  	.verify		= cpufreq_generic_frequency_table_verify,
--	.target		= powernowk8_target,
-+	.target_index	= powernowk8_target,
- 	.bios_limit	= acpi_processor_get_bios_limit,
- 	.init		= powernowk8_cpu_init,
- 	.exit		= powernowk8_cpu_exit,
+-	.target		= cbe_cpufreq_target,
++	.target_index	= cbe_cpufreq_target,
+ 	.init		= cbe_cpufreq_cpu_init,
+ 	.exit		= cpufreq_generic_exit,
+ 	.name		= "cbe-cpufreq",
 -- 
 1.7.12.rc2.18.g61b472e
 
