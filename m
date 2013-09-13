@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858Ab3IMEXN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 00:23:13 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:52776 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173Ab3IMEXK (ORCPT
+	id S1751767Ab3IMEd3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 00:33:29 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:42952 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751173Ab3IMEd1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 00:23:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <793a5fadad931d04c2adb3a61c64063b7e62d083.1378979483.git.viresh.kumar@linaro.org>
-References: <a0cad3326c6a6c8f0517332dd2230edaf67268e7.1378979483.git.viresh.kumar@linaro.org>
-	<793a5fadad931d04c2adb3a61c64063b7e62d083.1378979483.git.viresh.kumar@linaro.org>
-Date: Fri, 13 Sep 2013 09:53:09 +0530
-Message-ID: <CAKohpo=kBvx3-fkmOUzk3PsbGZxicAWD9iJyUBkXYG-1wM_WNA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] cpufreq: make sure frequency transitions are serialized
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Warren <swarren@wwwdotorg.org>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 13 Sep 2013 00:33:27 -0400
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: geoff@infradead.org
+Cc: netdev@vger.kernel.org, cbe-oss-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] net: ps3_gelic: remove deprecated IRQF_DISABLED
+Date: Fri, 13 Sep 2013 06:33:18 +0200
+Message-Id: <1379046798-7192-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 September 2013 15:40, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> Some part of this patch was pushed in mainline earlier but was then removed due
-> to loopholes in the patch. Those are now fixed and this patch is tested by the
-> people who reported these problems.
->
-> Whenever we are changing frequency of a cpu, we are calling PRECHANGE and
-> POSTCHANGE notifiers. They must be serialized. i.e. PRECHANGE or POSTCHANGE
-> shouldn't be called twice contiguously. Also, calls to cpufreq_driver_target()
-> or cpufreq_driver->target() must also be serialized. Following examples show why
-> this is important:
+This patch proposes to remove the IRQF_DISABLED flag from
+drivers/net/ethernet/toshiba/ps3_gelic_net.c
 
-Adding:
+It's a NOOP since 2.6.35 and I will remove it one day ;)
 
-Tested-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+---
+ drivers/net/ethernet/toshiba/ps3_gelic_net.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Picked from the other thread..
+diff --git a/drivers/net/ethernet/toshiba/ps3_gelic_net.c b/drivers/net/ethernet/toshiba/ps3_gelic_net.c
+index 9c805e0..f7f2ef4 100644
+--- a/drivers/net/ethernet/toshiba/ps3_gelic_net.c
++++ b/drivers/net/ethernet/toshiba/ps3_gelic_net.c
+@@ -1726,7 +1726,7 @@ static int ps3_gelic_driver_probe(struct ps3_system_bus_device *dev)
+ 		goto fail_alloc_irq;
+ 	}
+ 	result = request_irq(card->irq, gelic_card_interrupt,
+-			     IRQF_DISABLED, netdev->name, card);
++			     0, netdev->name, card);
+ 
+ 	if (result) {
+ 		dev_info(ctodev(card), "%s:request_irq failed (%d)\n",
+-- 
+1.8.1.2
+
