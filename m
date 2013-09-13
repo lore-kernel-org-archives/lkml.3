@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756452Ab3IMJ4z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 05:56:55 -0400
-Received: from mx-rz-2.rrze.uni-erlangen.de ([131.188.11.21]:44544 "EHLO
-	mx-rz-2.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754683Ab3IMJyG (ORCPT
+	id S1756581Ab3IMJ5B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 05:57:01 -0400
+Received: from mx-rz-1.rrze.uni-erlangen.de ([131.188.11.20]:35166 "EHLO
+	mx-rz-1.rrze.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754834Ab3IMJyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 13 Sep 2013 05:54:06 -0400
 X-RRZE-Submit-IP: 131.188.42.159
@@ -17,9 +17,9 @@ Cc: Dominik Paulus <dominik.paulus@fau.de>,
         Anthony Foiani <anthony.foiani@gmail.com>,
         Masanari Iida <standby24x7@gmail.com>, linux-kernel@i4.cs.fau.de,
         devel@driverdev.osuosl.org
-Subject: [PATCHv2 10/11] staging: usbip: Separate protocol/program version
-Date: Fri, 13 Sep 2013 11:56:00 +0200
-Message-Id: <1379066161-8278-11-git-send-email-dominik.paulus@fau.de>
+Subject: [PATCHv2 11/11] staging: usbip: Increment version to 1.2.0
+Date: Fri, 13 Sep 2013 11:56:01 +0200
+Message-Id: <1379066161-8278-12-git-send-email-dominik.paulus@fau.de>
 X-Mailer: git-send-email 1.8.4
 In-Reply-To: <1379066161-8278-1-git-send-email-dominik.paulus@fau.de>
 References: <1379066161-8278-1-git-send-email-dominik.paulus@fau.de>
@@ -27,73 +27,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not all new program versions necessarily introduce
-non-backwards-compatible protocol changes. We thus move the definition
-of the protocol version from configure.ac to usbip_network.h, where it
-logically belongs to.
-
 Signed-off-by: Dominik Paulus <dominik.paulus@fau.de>
 Signed-off-by: Tobias Polzer <tobias.polzer@fau.de>
 ---
- drivers/staging/usbip/userspace/configure.ac        | 1 -
- drivers/staging/usbip/userspace/src/usbip_network.c | 6 +++---
- drivers/staging/usbip/userspace/src/usbip_network.h | 6 ++++++
- 3 files changed, 9 insertions(+), 4 deletions(-)
+ drivers/staging/usbip/userspace/configure.ac | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/staging/usbip/userspace/configure.ac b/drivers/staging/usbip/userspace/configure.ac
-index 7bba496..099d24b 100644
+index 099d24b..0b0e035 100644
 --- a/drivers/staging/usbip/userspace/configure.ac
 +++ b/drivers/staging/usbip/userspace/configure.ac
-@@ -2,7 +2,6 @@ dnl Process this file with autoconf to produce a configure script.
+@@ -1,7 +1,7 @@
+ dnl Process this file with autoconf to produce a configure script.
  
  AC_PREREQ(2.59)
- AC_INIT([usbip-utils], [1.1.1], [linux-usb@vger.kernel.org])
--AC_DEFINE([USBIP_VERSION], [0x00000111], [binary-coded decimal version number])
+-AC_INIT([usbip-utils], [1.1.1], [linux-usb@vger.kernel.org])
++AC_INIT([usbip-utils], [1.2.0], [linux-usb@vger.kernel.org])
  
  CURRENT=0
  REVISION=1
-diff --git a/drivers/staging/usbip/userspace/src/usbip_network.c b/drivers/staging/usbip/userspace/src/usbip_network.c
-index 61cd8db..f5955c2 100644
---- a/drivers/staging/usbip/userspace/src/usbip_network.c
-+++ b/drivers/staging/usbip/userspace/src/usbip_network.c
-@@ -153,7 +153,7 @@ int usbip_net_send_op_common(int sockfd, uint32_t code, uint32_t status)
- 
- 	memset(&op_common, 0, sizeof(op_common));
- 
--	op_common.version = USBIP_VERSION;
-+	op_common.version = PROTOCOL_VERSION;
- 	op_common.code    = code;
- 	op_common.status  = status;
- 
-@@ -183,9 +183,9 @@ int usbip_net_recv_op_common(int sockfd, uint16_t *code)
- 
- 	PACK_OP_COMMON(0, &op_common);
- 
--	if (op_common.version != USBIP_VERSION) {
-+	if (op_common.version != PROTOCOL_VERSION) {
- 		dbg("version mismatch: %d %d", op_common.version,
--		    USBIP_VERSION);
-+		    PROTOCOL_VERSION);
- 		return -ERR_MISMATCH;
- 	}
- 
-diff --git a/drivers/staging/usbip/userspace/src/usbip_network.h b/drivers/staging/usbip/userspace/src/usbip_network.h
-index d3c1b71..6a41fd8 100644
---- a/drivers/staging/usbip/userspace/src/usbip_network.h
-+++ b/drivers/staging/usbip/userspace/src/usbip_network.h
-@@ -14,6 +14,12 @@
- 
- #include <stdint.h>
- 
-+/*
-+ * Protocol version. Incremented only on non-backwards-compatible
-+ * changes.
-+ */
-+#define PROTOCOL_VERSION 0x111
-+
- extern int usbip_port;
- extern char *usbip_port_string;
- extern char *usbip_srp_password;
 -- 
 1.8.4
 
