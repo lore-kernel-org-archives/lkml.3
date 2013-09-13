@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934375Ab3IMN1I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:27:08 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:36142 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934363Ab3IMN1E (ORCPT
+	id S1757718Ab3IMN1S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:27:18 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:39732 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754542Ab3IMN1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:27:04 -0400
+	Fri, 13 Sep 2013 09:27:11 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 202/228] cpufreq: ppc: remove calls to cpufreq_notify_transition()
-Date: Fri, 13 Sep 2013 18:32:28 +0530
-Message-Id: <5625ce6c229d9c1b96f8c7dd7ee1a8b72493e3d8.1379063063.git.viresh.kumar@linaro.org>
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Eric Miao <eric.y.miao@gmail.com>
+Subject: [PATCH 203/228] cpufreq: pxa: remove calls to cpufreq_notify_transition()
+Date: Fri, 13 Sep 2013 18:32:29 +0530
+Message-Id: <0188ac9a48f40e549db812e5e17411e65cef1f48.1379063063.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
 References: <cover.1379063063.git.viresh.kumar@linaro.org>
@@ -45,96 +46,113 @@ frequency change, this one removes it from this driver.
 
 Some related minor cleanups are also done along with it.
 
+Cc: Eric Miao <eric.y.miao@gmail.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/ppc-corenet-cpufreq.c | 19 +------------------
- drivers/cpufreq/ppc_cbe_cpufreq.c     | 19 +------------------
- 2 files changed, 2 insertions(+), 36 deletions(-)
+ drivers/cpufreq/pxa2xx-cpufreq.c | 27 ++++++---------------------
+ drivers/cpufreq/pxa3xx-cpufreq.c | 12 ------------
+ 2 files changed, 6 insertions(+), 33 deletions(-)
 
-diff --git a/drivers/cpufreq/ppc-corenet-cpufreq.c b/drivers/cpufreq/ppc-corenet-cpufreq.c
-index 79d8e9c..3f7be46 100644
---- a/drivers/cpufreq/ppc-corenet-cpufreq.c
-+++ b/drivers/cpufreq/ppc-corenet-cpufreq.c
-@@ -69,8 +69,6 @@ static const struct soc_data sdata[] = {
- static u32 min_cpufreq;
- static const u32 *fmask;
- 
--/* serialize frequency changes  */
--static DEFINE_MUTEX(cpufreq_lock);
- static DEFINE_PER_CPU(struct cpu_data *, cpu_data);
- 
- /* cpumask in a cluster */
-@@ -253,26 +251,11 @@ static int __exit corenet_cpufreq_cpu_exit(struct cpufreq_policy *policy)
- static int corenet_cpufreq_target(struct cpufreq_policy *policy,
- 		unsigned int index)
+diff --git a/drivers/cpufreq/pxa2xx-cpufreq.c b/drivers/cpufreq/pxa2xx-cpufreq.c
+index 183bc13..0a0f436 100644
+--- a/drivers/cpufreq/pxa2xx-cpufreq.c
++++ b/drivers/cpufreq/pxa2xx-cpufreq.c
+@@ -271,7 +271,6 @@ static int pxa_set_target(struct cpufreq_policy *policy, unsigned int idx)
  {
+ 	struct cpufreq_frequency_table *pxa_freqs_table;
+ 	pxa_freqs_t *pxa_freq_settings;
 -	struct cpufreq_freqs freqs;
- 	struct clk *parent;
--	int ret;
- 	struct cpu_data *data = per_cpu(cpu_data, policy->cpu);
+ 	unsigned long flags;
+ 	unsigned int new_freq_cpu, new_freq_mem;
+ 	unsigned int unused, preset_mdrefr, postset_mdrefr, cclkcfg;
+@@ -282,24 +281,17 @@ static int pxa_set_target(struct cpufreq_policy *policy, unsigned int idx)
  
+ 	new_freq_cpu = pxa_freq_settings[idx].khz;
+ 	new_freq_mem = pxa_freq_settings[idx].membus;
 -	freqs.old = policy->cur;
--	freqs.new = data->table[index].frequency;
--
--	mutex_lock(&cpufreq_lock);
--	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
--
- 	parent = of_clk_get(data->parent, data->table[index].driver_data);
--	ret = clk_set_parent(data->clk, parent);
+-	freqs.new = new_freq_cpu;
+ 
+ 	if (freq_debug)
+ 		pr_debug("Changing CPU frequency to %d Mhz, (SDRAM %d Mhz)\n",
+-			 freqs.new / 1000, (pxa_freq_settings[idx].div2) ?
++			 new_freq_cpu / 1000, (pxa_freq_settings[idx].div2) ?
+ 			 (new_freq_mem / 2000) : (new_freq_mem / 1000));
+ 
+-	if (vcc_core && freqs.new > freqs.old)
++	if (vcc_core && new_freq_cpu > policy->cur) {
+ 		ret = pxa_cpufreq_change_voltage(&pxa_freq_settings[idx]);
 -	if (ret)
--		freqs.new = freqs.old;
--
+-		return ret;
+-	/*
+-	 * Tell everyone what we're about to do...
+-	 * you should add a notify client with any platform specific
+-	 * Vcc changing capability
+-	 */
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
++		if (ret)
++			return ret;
++	}
+ 
+ 	/* Calculate the next MDREFR.  If we're slowing down the SDRAM clock
+ 	 * we need to preset the smaller DRI before the change.	 If we're
+@@ -350,13 +342,6 @@ static int pxa_set_target(struct cpufreq_policy *policy, unsigned int idx)
+ 	local_irq_restore(flags);
+ 
+ 	/*
+-	 * Tell everyone what we've just done...
+-	 * you should add a notify client with any platform specific
+-	 * SDRAM refresh timer adjustments
+-	 */
 -	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
--	mutex_unlock(&cpufreq_lock);
 -
--	return ret;
-+	return clk_set_parent(data->clk, parent);
- }
+-	/*
+ 	 * Even if voltage setting fails, we don't report it, as the frequency
+ 	 * change succeeded. The voltage reduction is not a critical failure,
+ 	 * only power savings will suffer from this.
+@@ -365,7 +350,7 @@ static int pxa_set_target(struct cpufreq_policy *policy, unsigned int idx)
+ 	 * bug is triggered (seems a deadlock). Should anybody find out where,
+ 	 * the "return 0" should become a "return ret".
+ 	 */
+-	if (vcc_core && freqs.new < freqs.old)
++	if (vcc_core && new_freq_cpu < policy->cur)
+ 		ret = pxa_cpufreq_change_voltage(&pxa_freq_settings[idx]);
  
- static struct cpufreq_driver ppc_corenet_cpufreq_driver = {
-diff --git a/drivers/cpufreq/ppc_cbe_cpufreq.c b/drivers/cpufreq/ppc_cbe_cpufreq.c
-index 52f707d..e42ca9c 100644
---- a/drivers/cpufreq/ppc_cbe_cpufreq.c
-+++ b/drivers/cpufreq/ppc_cbe_cpufreq.c
-@@ -30,9 +30,6 @@
- 
- #include "ppc_cbe_cpufreq.h"
- 
--static DEFINE_MUTEX(cbe_switch_mutex);
--
--
- /* the CBE supports an 8 step frequency scaling */
- static struct cpufreq_frequency_table cbe_freqs[] = {
- 	{1,	0},
-@@ -131,27 +128,13 @@ static int cbe_cpufreq_cpu_init(struct cpufreq_policy *policy)
- static int cbe_cpufreq_target(struct cpufreq_policy *policy,
- 			      unsigned int cbe_pmode_new)
+ 	return 0;
+diff --git a/drivers/cpufreq/pxa3xx-cpufreq.c b/drivers/cpufreq/pxa3xx-cpufreq.c
+index 132e37d..9384004 100644
+--- a/drivers/cpufreq/pxa3xx-cpufreq.c
++++ b/drivers/cpufreq/pxa3xx-cpufreq.c
+@@ -158,7 +158,6 @@ static unsigned int pxa3xx_cpufreq_get(unsigned int cpu)
+ static int pxa3xx_cpufreq_set(struct cpufreq_policy *policy, unsigned int index)
  {
--	int rc;
+ 	struct pxa3xx_freq_info *next;
 -	struct cpufreq_freqs freqs;
--
+ 	unsigned long flags;
+ 
+ 	if (policy->cpu != 0)
+@@ -166,22 +165,11 @@ static int pxa3xx_cpufreq_set(struct cpufreq_policy *policy, unsigned int index)
+ 
+ 	next = &pxa3xx_freqs[index];
+ 
 -	freqs.old = policy->cur;
--	freqs.new = cbe_freqs[cbe_pmode_new].frequency;
+-	freqs.new = next->cpufreq_mhz * 1000;
 -
--	mutex_lock(&cbe_switch_mutex);
+-	pr_debug("CPU frequency from %d MHz to %d MHz%s\n",
+-			freqs.old / 1000, freqs.new / 1000,
+-			(freqs.old == freqs.new) ? " (skipped)" : "");
+-
 -	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
 -
- 	pr_debug("setting frequency for cpu %d to %d kHz, " \
- 		 "1/%d of max frequency\n",
- 		 policy->cpu,
- 		 cbe_freqs[cbe_pmode_new].frequency,
- 		 cbe_freqs[cbe_pmode_new].driver_data);
+ 	local_irq_save(flags);
+ 	__update_core_freq(next);
+ 	__update_bus_freq(next);
+ 	local_irq_restore(flags);
  
--	rc = set_pmode(policy->cpu, cbe_pmode_new);
--
 -	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
--	mutex_unlock(&cbe_switch_mutex);
 -
--	return rc;
-+	return set_pmode(policy->cpu, cbe_pmode_new);
+ 	return 0;
  }
  
- static struct cpufreq_driver cbe_cpufreq_driver = {
 -- 
 1.7.12.rc2.18.g61b472e
 
