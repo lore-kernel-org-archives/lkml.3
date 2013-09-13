@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933827Ab3IMNUz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:20:55 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:48652 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933814Ab3IMNUu (ORCPT
+	id S933003Ab3IMNVD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:21:03 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:44717 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932976Ab3IMNU5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:20:50 -0400
+	Fri, 13 Sep 2013 09:20:57 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Viresh Kumar <viresh.kumar@linaro.org>,
-        Steven Miao <realmz6@gmail.com>
-Subject: [PATCH 151/228] cpufreq: blackfin: Convert to light weight ->target_index() routine
-Date: Fri, 13 Sep 2013 18:31:37 +0530
-Message-Id: <ca50235dcd56b275966bfbe064a5da17d03ece62.1379063063.git.viresh.kumar@linaro.org>
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: [PATCH 152/228] cpufreq: cpu0: Convert to light weight ->target_index() routine
+Date: Fri, 13 Sep 2013 18:31:38 +0530
+Message-Id: <a9f8fdbf8a241ed804ec3a581893d7d4f72d5f41.1379063063.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
 References: <cover.1379063063.git.viresh.kumar@linaro.org>
@@ -32,60 +32,60 @@ This patch converts existing .target() to newly defined light weight
 CPUFreq core will call cpufreq_frequency_table_target() before calling this
 routine and will pass index to it.
 
-Cc: Steven Miao <realmz6@gmail.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/blackfin-cpufreq.c | 17 ++++-------------
- 1 file changed, 4 insertions(+), 13 deletions(-)
+ drivers/cpufreq/cpufreq-cpu0.c | 17 ++---------------
+ 1 file changed, 2 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/cpufreq/blackfin-cpufreq.c b/drivers/cpufreq/blackfin-cpufreq.c
-index 0bc9e8c..12528b2 100644
---- a/drivers/cpufreq/blackfin-cpufreq.c
-+++ b/drivers/cpufreq/blackfin-cpufreq.c
-@@ -127,14 +127,11 @@ unsigned long cpu_set_cclk(int cpu, unsigned long new)
+diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
+index d8756e7..22a358f 100644
+--- a/drivers/cpufreq/cpufreq-cpu0.c
++++ b/drivers/cpufreq/cpufreq-cpu0.c
+@@ -34,24 +34,14 @@ static unsigned int cpu0_get_speed(unsigned int cpu)
+ 	return clk_get_rate(cpu_clk) / 1000;
  }
- #endif
  
--static int bfin_target(struct cpufreq_policy *policy,
--			unsigned int target_freq, unsigned int relation)
-+static int bfin_target(struct cpufreq_policy *policy, unsigned int index)
+-static int cpu0_set_target(struct cpufreq_policy *policy,
+-			   unsigned int target_freq, unsigned int relation)
++static int cpu0_set_target(struct cpufreq_policy *policy, unsigned int index)
  {
- #ifndef CONFIG_BF60x
- 	unsigned int plldiv;
- #endif
--	unsigned int index;
--	unsigned long cclk_hz;
  	struct cpufreq_freqs freqs;
- 	static unsigned long lpj_ref;
- 	static unsigned int  lpj_ref_freq;
-@@ -144,17 +141,11 @@ static int bfin_target(struct cpufreq_policy *policy,
- 	cycles_t cycles;
- #endif
+ 	struct opp *opp;
+ 	unsigned long volt = 0, volt_old = 0, tol = 0;
+ 	long freq_Hz, freq_exact;
+-	unsigned int index;
+ 	int ret;
  
--	if (cpufreq_frequency_table_target(policy, bfin_freq_table, target_freq,
--				relation, &index))
--		return -EINVAL;
+-	ret = cpufreq_frequency_table_target(policy, freq_table, target_freq,
+-					     relation, &index);
+-	if (ret) {
+-		pr_err("failed to match target freqency %d: %d\n",
+-		       target_freq, ret);
+-		return ret;
+-	}
 -
--	cclk_hz = bfin_freq_table[index].frequency;
+ 	freq_Hz = clk_round_rate(cpu_clk, freq_table[index].frequency * 1000);
+ 	if (freq_Hz < 0)
+ 		freq_Hz = freq_table[index].frequency * 1000;
+@@ -59,9 +49,6 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
+ 	freqs.new = freq_Hz / 1000;
+ 	freqs.old = clk_get_rate(cpu_clk) / 1000;
+ 
+-	if (freqs.old == freqs.new)
+-		return 0;
 -
- 	freqs.old = bfin_getfreq_khz(0);
--	freqs.new = cclk_hz;
-+	freqs.new = bfin_freq_table[index].frequency;
- 
- 	pr_debug("cpufreq: changing cclk to %lu; target = %u, oldfreq = %u\n",
--			cclk_hz, target_freq, freqs.old);
-+			freqs.new, freqs.new, freqs.old);
- 
  	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
- #ifndef CONFIG_BF60x
-@@ -209,7 +200,7 @@ static int __bfin_cpu_init(struct cpufreq_policy *policy)
  
- static struct cpufreq_driver bfin_driver = {
+ 	if (!IS_ERR(cpu_reg)) {
+@@ -127,7 +114,7 @@ static int cpu0_cpufreq_init(struct cpufreq_policy *policy)
+ static struct cpufreq_driver cpu0_cpufreq_driver = {
+ 	.flags = CPUFREQ_STICKY,
  	.verify = cpufreq_generic_frequency_table_verify,
--	.target = bfin_target,
-+	.target_index = bfin_target,
- 	.get = bfin_getfreq_khz,
- 	.init = __bfin_cpu_init,
+-	.target = cpu0_set_target,
++	.target_index = cpu0_set_target,
+ 	.get = cpu0_get_speed,
+ 	.init = cpu0_cpufreq_init,
  	.exit = cpufreq_generic_exit,
 -- 
 1.7.12.rc2.18.g61b472e
