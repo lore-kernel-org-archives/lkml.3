@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758160Ab3IMOcp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 10:32:45 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6610 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758144Ab3IMOcm (ORCPT
+	id S932797Ab3IMOdE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 10:33:04 -0400
+Received: from www.linutronix.de ([62.245.132.108]:36839 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757004Ab3IMOcg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 10:32:42 -0400
-X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=8G3D-EVed2cA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=znGwHLDW1tUA:10 a=JfrnYn6hAAAA:8 a=vTr9H3xdAAAA:8 a=fBP4x_uF0yMM_F_je9EA:9 a=CjuIK1q_8ugA:10 a=3Rfx1nUSh_UA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Fri, 13 Sep 2013 10:32:38 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: trinity finds ftrace/perf bug. Film at 11.
-Message-ID: <20130913103238.2a88c3e3@gandalf.local.home>
-In-Reply-To: <20130913105637.GM31370@twins.programming.kicks-ass.net>
-References: <20130911135434.GA678@redhat.com>
-	<20130912141913.2ffc7077@gandalf.local.home>
-	<20130913105637.GM31370@twins.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 13 Sep 2013 10:32:36 -0400
+Date: Fri, 13 Sep 2013 16:32:24 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Fan Du <fan.du@windriver.com>
+cc: David Miller <davem@davemloft.net>, herbert@gondor.hengli.com.au,
+        steffen.klassert@secunet.com, dborkman@redhat.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCHv3 linux-next] hrtimer: Add notifier when clock_was_set
+ was called
+In-Reply-To: <52327C92.5010009@windriver.com>
+Message-ID: <alpine.DEB.2.02.1309131628250.4089@ionos.tec.linutronix.de>
+References: <alpine.DEB.2.02.1309121441420.4089@ionos.tec.linutronix.de> <20130912134409.GB21212@gondor.apana.org.au> <alpine.DEB.2.02.1309121636010.4089@ionos.tec.linutronix.de> <20130912.133252.425268707009916773.davem@davemloft.net>
+ <52327C92.5010009@windriver.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Sep 2013 12:56:37 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Thu, Sep 12, 2013 at 02:19:13PM -0400, Steven Rostedt wrote:
+On Fri, 13 Sep 2013, Fan Du wrote:
+> (2) What I have been bugging you around here for this long time is really the
+> second
+>     problem, I'm sorry I didn't make it clearly to you and others, which is
+> below:
 > 
-> > > The good news is I can reproduce that very quickly.
-> > > (Apply http://paste.fedoraproject.org/38721/37890755 on top of trinity.git,
-> > >  and run ./trinity -l off -q -C32 -c inotify_init1 -c perf_event_open -c newlstat)
-> 
-> " The paste you are looking for does not exist "
-> 
+>     Why using wall clock time to calculate soft/hard IPsec events when
+> xfrm_state timer
+>     out happens in its timeout handler? Because even if xfrm_state using
+> CLOCK_BOOTTIME,
+>     system wall clock time changing will surely disturb soft/hard IPsec
+> events, which
+>     you raised your concern about in (*a*).
 
-"These are not the pasties you are looking for"
+No CLOCK_BOOTTIME is not affected by wall clock time changes. It's
+basically CLOCK_MONOTONIC, it just keeps counting the suspend time as
+well. So without a suspend/resume cycle CLOCK_MONOTONIC and
+CLOCK_BOOTTIME are the same. After a suspend/resume cycle
+CLOCK_BOOTTIME will be N seconds ahead of CLOCK_MONOTONIC, where N is
+the number of seconds spent in suspend.
 
+Thanks,
 
--- Steve
+	tglx
