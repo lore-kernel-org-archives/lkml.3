@@ -1,73 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754385Ab3IMGC7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 02:02:59 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:56141
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753385Ab3IMGC5 (ORCPT
+	id S1755810Ab3IMHpE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 03:45:04 -0400
+Received: from 8.mo2.mail-out.ovh.net ([188.165.52.147]:39463 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754784Ab3IMHpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 02:02:57 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(z551bizzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <r65073@freescale.com>, <thierry.reding@gmail.com>
-CC: <s.hauer@pengutronix.de>, <swarren@wwwdotorg.org>, <t.figa@samsung.com>,
-        <grant.likely@linaro.org>, <linux@arm.linux.org.uk>, <rob@landley.net>,
-        <ian.campbell@citrix.com>, <mark.rutland@arm.com>,
-        <pawel.moll@arm.com>, <rob.herring@calxeda.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-pwm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>
-Subject: [PATCHv4 0/4] Add Freescale FTM PWM driver.
-Date: Fri, 13 Sep 2013 13:58:38 +0800
-Message-ID: <1379051922-4930-1-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Fri, 13 Sep 2013 03:45:00 -0400
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Richard Genoud <richard.genoud@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
+Subject: [RFC PATCH 0/4] pinctrl: at91: various fixes
+Date: Fri, 13 Sep 2013 09:43:33 +0200
+Message-Id: <1379058213-3245-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Ovh-Tracer-Id: 14077689486294415584
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrleefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrleefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hello,
 
-This patch series is the Freescale FTM PWM implementation. And there are 8 channels most supported by the FTM PWM. This implementation is only compatible with device tree definition.
+This patch series fixes some errors in the pinctrl drivers:
+- typos in dt-binding macros and pinctrl-at91 driver (patch 1)
+- fix several at91-pinctrl functions (patch 2 and 3)
+- rework the debounce config handling (patches 4)
 
-This patch series is based on linux-next and has been tested on Vybrid VF610 Tower board using device tree.
+The last point is the most important one: the at91sam9x5/pio3 controller
+does not provide a per pin debounce time config. Instead it provides a
+common debounce time for all the pins on a given bank (PIOX).
 
-Changes in v4:
-- Check for the result and return an error for devm_kzalloc().
-- Move pinmux setting from the SoC file to the board specific file.
-- Revise the written mistake of 'ret |= FTMSC_CLKEXT;' --> 'reg |= FTMSC_CLKEXT;'.
-
-
-Changes in v3:
-- Remove "availabe" field.
-- Remove "fsl,pwm-avaliable-chs" property.
-- ...
-
-Changes in v2:
-- Remove PWM CPWM/EPWM feature and sysfs.
-- Remove some redundant code.
-- Revise some code for more readable.
-- Remove "fsl,pwm-clk-ps", "fsl,pwm-number", "fsl,pwm-channels",etc.
-- Add "fsl,pwm-avaliable-chs", "fsl,pwm-counter-clk", etc.
-- Support 8 channels default in dtsi file.
-- Add counter clock source selection.
-- Rename some function name, macro name, etc.
-- Use PWM's and OF's existing function interfaces.
-- Split clk_unprepare_enable to clk_unprepare and clk_enable,etc.
-- ...
-
-Added in v1:
-- Add Freescale FTM PWM driver support.
-- Add Freescale FTM PWM node for VF610.
-- Enable Enables FTM PWM device for Vybrid VF610 TOWER.
-- Add device tree bindings for Freescale.
+In this series I proposed 2 solutions to gracefully handle this limitation:
+1) Handle debounce time conflicts at config time (PATCH 4/4).
+   In other words, all the pins on a given bank using the debounce option must
+   use the same debounce time. If a device tries to configure a pin with
+   conflicting a debounce time, this will result in an -EINVAL error return
+   during the pin configuration.
+2) Provide a device tree property to define the default debounce time on a
+   given bank (PATCH alt 4/4)
 
 
+I prefer the first solution, as it provides a more future proof approach:
+- the generic pinconf layer provides a per pin debounce time config and if
+  we plan to support it we should take this into consideration
+- IMHO we should be able to (re)configure the debounce time after bootup and
+  the second solution does not provide any way to do this
+
+I might be wrong, so please feel free to share your thoughts about this.
+
+Best Regards,
+
+Boris
 
 
+Boris BREZILLON (4):
+  pinctrl: at91: fix typos
+  pinctrl: at91: reset caller's config variable before setting flags
+  pinctrl: at91: fix get_debounce/deglitch functions for sam9x5
+    controller
+  pinctrl: at91: check for debounce time conflicts
+
+ drivers/pinctrl/pinctrl-at91.c     |   60 +++++++++++++++++++++++++++---------
+ include/dt-bindings/pinctrl/at91.h |    2 +-
+ 2 files changed, 46 insertions(+), 16 deletions(-)
+
+-- 
+1.7.9.5
 
