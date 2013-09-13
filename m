@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933253Ab3IMNwr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:52:47 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:42165 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757793Ab3IMNwo (ORCPT
+	id S933202Ab3IMNPh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:15:37 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:64144 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933160Ab3IMNPV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:52:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130913133314.GA20461@roeck-us.net>
-References: <20130913133314.GA20461@roeck-us.net>
-Date: Fri, 13 Sep 2013 15:52:43 +0200
-X-Google-Sender-Auth: 18NeByVb3V-WYLx0wX5qcF43jn4
-Message-ID: <CAMuHMdWoNo9U0DCRoXt8V2d1SiSxX5Sku9rNvg+9MiX++XjVRg@mail.gmail.com>
-Subject: Re: Build failures due to commit 416161db (btrfs: offline dedupe)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        Chris Mason <chris.mason@fusionio.com>, Mark Fasheh <mfasheh@suse.de>,
-        Zach Brown <zab@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 13 Sep 2013 09:15:21 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Tony Luck <tony.luck@intel.com>
+Subject: [PATCH 104/228] cpufreq: ia64-acpi: don't initialize part of policy that is set by core too
+Date: Fri, 13 Sep 2013 18:30:50 +0530
+Message-Id: <c2ebc42413ca4a8b8d1a20429eeaffadc8bc239e.1379063063.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
+References: <cover.1379063063.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
+References: <cover.1379063063.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 13, 2013 at 3:33 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> fs/btrfs/ioctl.c: In function 'btrfs_ioctl_file_extent_same':
-> fs/btrfs/ioctl.c:2802:3: error: implicit declaration of function '__put_user_unaligned' [-Werror=implicit-function-declaration]
-> cc1: some warnings being treated as errors
-> make[2]: *** [fs/btrfs/ioctl.o] Error 1
-> make[2]: *** Waiting for unfinished jobs....
->
-> Seen with alpha:allmodconfig, arm:allmodconfig, m68k:allmodconfig, and
-> xtensa:allmodconfig.
+Many common initializations of struct policy are moved to core now and hence
+this driver doesn't need to do it. This patch removes such code.
 
-Known issue, cfr. my early warning 10 days ago:
+Most recent of those changes is to call ->get() in the core after calling
+->init().
 
-"Btrfs is the first user of __put_user_unaligned() outside the compat code,
-hence now all 32-bit architectures should make sure to implement this, too."
+Cc: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/ia64-acpi-cpufreq.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-http://marc.info/?l=linux-arch&m=137820065929216&w=2
+diff --git a/drivers/cpufreq/ia64-acpi-cpufreq.c b/drivers/cpufreq/ia64-acpi-cpufreq.c
+index b958bdb..90c6598 100644
+--- a/drivers/cpufreq/ia64-acpi-cpufreq.c
++++ b/drivers/cpufreq/ia64-acpi-cpufreq.c
+@@ -305,7 +305,6 @@ acpi_cpufreq_cpu_init (
+ 			    data->acpi_data.states[i].transition_latency * 1000;
+ 		}
+ 	}
+-	policy->cur = processor_get_freq(data, policy->cpu);
+ 
+ 	/* table init */
+ 	for (i = 0; i <= data->acpi_data.state_count; i++)
+-- 
+1.7.12.rc2.18.g61b472e
 
-and today's thread https://lkml.org/lkml/2013/9/12/814
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
