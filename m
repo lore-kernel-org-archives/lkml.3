@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380Ab3IMGjP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 02:39:15 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:36792 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752049Ab3IMGjO convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:10:1>);
-	Fri, 13 Sep 2013 02:39:14 -0400
-Message-Id: <5232CF2C02000078000F2ED9@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Fri, 13 Sep 2013 07:39:08 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "KY Srinivasan" <kys@microsoft.com>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: "olaf@aepfle.de" <olaf@aepfle.de>, "bp@alien8.de" <bp@alien8.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer
- frequency from the hypervisor
-References: <1378233023-4512-1-git-send-email-kys@microsoft.com>
- <dd29077371564a14b2d317d2291db8a9@SN2PR03MB061.namprd03.prod.outlook.com>
- <52325C1E.90101@zytor.com>
- <50f92d9c16a54e5bb6fa14ef72e5fdfb@SN2PR03MB061.namprd03.prod.outlook.com>
-In-Reply-To: <50f92d9c16a54e5bb6fa14ef72e5fdfb@SN2PR03MB061.namprd03.prod.outlook.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1752154Ab3IMFKU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 01:10:20 -0400
+Received: from [216.32.181.182] ([216.32.181.182]:10182 "EHLO
+	ch1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1752010Ab3IMFKR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 01:10:17 -0400
+X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
+X-SpamScore: 2
+X-BigFish: VS2(zz936eIzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzz17326ah1de097h186068h8275dhz2dh87h2a8h839hd24he5bh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h13eah1441h14ddh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+From: Steven Miao <realmz6@kernel.org>
+To: <torvalds@linux-foundation.org>
+CC: <adi-buildroot-devel@lists.sourceforge.net>,
+        <linux-kernel@vger.kernel.org>
+Subject: [uclinux-dist-devel] [GIT PULL] Blackfin updates for 3.12
+Date: Fri, 13 Sep 2013 13:12:25 +0800
+Message-ID: <1379049145-16017-1-git-send-email-realmz6@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 13.09.13 at 03:43, KY Srinivasan <kys@microsoft.com> wrote:
+Hi Linus,
 
-> 
->> -----Original Message-----
->> From: H. Peter Anvin [mailto:hpa@zytor.com]
->> Sent: Thursday, September 12, 2013 5:28 PM
->> To: KY Srinivasan
->> Cc: x86@kernel.org; gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
->> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
->> jasowang@redhat.com; tglx@linutronix.de; JBeulich@suse.com; bp@alien8.de 
->> Subject: Re: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer frequency
->> from the hypervisor
->> 
->> On 09/12/2013 05:06 PM, KY Srinivasan wrote:
->> >
->> > Peter,
->> >
->> > Let me know if you want me to address any additional issues in this patch.
->> >
->> 
->> Please address Jan and Gleb's feedback.
-> 
-> Gleb's feedback was a question and I answered that as I did Jan's feedback 
-> as well.
-> Gleb, Jan, please let me know if there is something else you want addressed 
-> here.
+please pull blackfin updates for Linux 3.12, some minor bug fixes.
 
-Indeed, apart from the question whether to change that one
-message's level from KERN_INFO to KERN_DEBUG, there was
-nothing really left unexplained (the aspect of the artificial tying
-together of distinct features is really something KY has to
-decide - I merely tried to point out that this is odd).
+The following changes since commit 6e4664525b1db28f8c4e1130957f70a94c19213e:
 
-Jan
+  Linux 3.11 (2013-09-02 13:46:10 -0700)
+
+are available in the git repository at:
+
+  http://git.kernel.org/pub/scm/linux/kernel/git/realmz6/blackfin-linux.git tags/blackfin-for-linus
+
+for you to fetch changes up to 08b67faa23fdd4df3f3f7bb06f0ad67b7366d11c:
+
+  blackfin: Ignore generated uImages (2013-09-13 10:42:39 +0800)
+
+----------------------------------------------------------------
+blackfin updates for Linux 3.12
+
+----------------------------------------------------------------
+Mark Brown (1):
+      blackfin: Ignore generated uImages
+
+Scott Jiang (2):
+      bf609: add adv7343 video encoder support
+      bf609: adv7343: add S-Video and Component output support
+
+Sonic Zhang (2):
+      blackfin: scb: Add SCB1 to SCB9 config options and data.
+      blackfin: Add STMMAC platform data to enable dwmac1000 driver on BF60x.
+
+Steven Miao (2):
+      blackfin: scb: Add system crossbar init code.
+      clock: add stmmac clock for ethernet driver
+
+ arch/blackfin/boot/.gitignore                      |    1 +
+ arch/blackfin/include/asm/scb.h                    |   21 +
+ arch/blackfin/kernel/setup.c                       |    6 +
+ arch/blackfin/mach-bf609/Kconfig                   | 1655 ++++++++++++++++++++
+ arch/blackfin/mach-bf609/Makefile                  |    1 +
+ arch/blackfin/mach-bf609/boards/ezkit.c            |   91 ++
+ arch/blackfin/mach-bf609/clock.c                   |   17 +
+ .../mach-bf609/include/mach/defBF60x_base.h        |   10 +
+ arch/blackfin/mach-bf609/scb.c                     |  363 +++++
+ arch/blackfin/mach-common/Makefile                 |    1 +
+ arch/blackfin/mach-common/scb-init.c               |   53 +
+ 11 files changed, 2219 insertions(+)
+ create mode 100644 arch/blackfin/include/asm/scb.h
+ create mode 100644 arch/blackfin/mach-bf609/scb.c
+ create mode 100644 arch/blackfin/mach-common/scb-init.c
 
