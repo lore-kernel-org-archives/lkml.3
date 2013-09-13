@@ -1,101 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757270Ab3IMASa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 20:18:30 -0400
-Received: from mga09.intel.com ([134.134.136.24]:1987 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754495Ab3IMASV convert rfc822-to-8bit (ORCPT
+	id S1757290Ab3IMATo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 20:19:44 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:35144 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753656Ab3IMATl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 20:18:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,894,1371106800"; 
-   d="scan'208";a="402610773"
-From: "Skidmore, Donald C" <donald.c.skidmore@intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Don Dutile <ddutile@redhat.com>
-Subject: RE: [E1000-devel] 3.11-rc4 ixgbevf: endless "Last Request of type
- 00 to PF Nacked" messages
-Thread-Topic: [E1000-devel] 3.11-rc4 ixgbevf: endless "Last Request of type
- 00 to PF Nacked" messages
-Thread-Index: AQHOmJVrwoQz29MPKEui5Cqk94n7XZmfOJuAgAAH/ICABEX4gP//ngZAgACDewD//6ZTMIAAeG6A//+YeXAD7722fAABgkpA
-Date: Fri, 13 Sep 2013 00:18:19 +0000
-Message-ID: <F6FB0E698C9B3143BDF729DF222866466FD547F0@ORSMSX110.amr.corp.intel.com>
-References: <CAErSpo53L3-feEw0qZvBTmRrY+SXpGrGU6oxZg3wVjH1M8JDXg@mail.gmail.com>
- <F6FB0E698C9B3143BDF729DF222866466FD41225@ORSMSX110.amr.corp.intel.com>
- <CAErSpo5AiRw7HvGQMq-n596ZkHJs_KJNn346yf+jc7yti-xpUw@mail.gmail.com>
- <CAErSpo4E9LNrfqTq1_WUoAx68_krw23BjSYbPpJPOr=zbq98xA@mail.gmail.com>
- <CAErSpo6Ky1FQeRjjbhja2KC7EYGJ2nR1ZNuYjYi89DoqLse2cw@mail.gmail.com>
- <CAErSpo7m=YB=1cHSBTwufTHAiAd+k9Re2s-ro509BELOgK8j7Q@mail.gmail.com>
- <F6FB0E698C9B3143BDF729DF222866466FD4418D@ORSMSX110.amr.corp.intel.com>
- <20130823185240.GA1507@google.com>
- <F6FB0E698C9B3143BDF729DF222866466FD4421F@ORSMSX110.amr.corp.intel.com>
- <CAErSpo4VLBon21cSzaigVqy6dS7=qfVRuPTTGuWAz+GLJWmNog@mail.gmail.com>
- <F6FB0E698C9B3143BDF729DF222866466FD44279@ORSMSX110.amr.corp.intel.com>
- <CAErSpo6pLsDTOPRgV0Qb3W9OSGZXkNOeBk+i47RyoFjK-xPEJw@mail.gmail.com>
- <CAErSpo4LKRHyq=o5PC70heoiDiHOTvqzcML9F_OVwg+EtvUw6A@mail.gmail.com>
-In-Reply-To: <CAErSpo4LKRHyq=o5PC70heoiDiHOTvqzcML9F_OVwg+EtvUw6A@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 12 Sep 2013 20:19:41 -0400
+Date: Thu, 12 Sep 2013 17:19:34 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Tibor Billes <tbilles@gmx.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Unusually high system CPU usage with recent kernels
+Message-ID: <20130913001934.GY3966@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130911064605.288090@gmx.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130911064605.288090@gmx.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13091300-6688-0000-0000-000001A21A6E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
-> Sent: Thursday, September 12, 2013 3:27 PM
-> To: Skidmore, Donald C
-> Cc: e1000-devel@lists.sourceforge.net; linux-pci@vger.kernel.org; linux-
-> kernel@vger.kernel.org; Don Dutile
-> Subject: Re: [E1000-devel] 3.11-rc4 ixgbevf: endless "Last Request of type 00
-> to PF Nacked" messages
+On Wed, Sep 11, 2013 at 08:46:04AM +0200, Tibor Billes wrote:
+> > From: Paul E. McKenney Sent: 09/09/13 10:44 PM
+> > On Mon, Sep 09, 2013 at 09:47:37PM +0200, Tibor Billes wrote:
+> > > > From: Paul E. McKenney Sent: 09/08/13 08:43 PM
+> > > > On Sun, Sep 08, 2013 at 07:22:45PM +0200, Tibor Billes wrote:
+> > > > > > From: Paul E. McKenney Sent: 09/07/13 02:23 AM
+> > > > > > On Tue, Sep 03, 2013 at 03:16:07PM -0700, Paul E. McKenney wrote:
+> > > > > > > On Tue, Sep 03, 2013 at 11:11:01PM +0200, Tibor Billes wrote:
+> > > > > > > > > From: Paul E. McKenney Sent: 08/30/13 03:24 AM
+> > > > > > > > > On Tue, Aug 27, 2013 at 10:05:42PM +0200, Tibor Billes wrote:
+> > > > > > > > > > From: Paul E. McKenney Sent: 08/26/13 06:28 AM
+> > > > > > > > > > > Here is a patch that is more likely to help. I am testing it in parallel,
+> > > > > > > > > > > but figured I should send you a sneak preview.
+> > > > > > > > > > 
+> > > > > > > > > > I tried it, but I don't see any difference in overall performance. The dstat
+> > > > > > > > > > also shows the same as before.
+> > > > > > > > > > 
+> > > > > > > > > > But I did notice something. Occasionally there is an increase in userspace
+> > > > > > > > > > CPU usage, interrupts and context switches are dropping, and it really gets
+> > > > > > > > > > more work done (scons printed commands more frequently).  I checked that
+> > > > > > > > > > this behaviour is present without your patch, I just didn't notice this
+> > > > > > > > > > before. Maybe you can make some sense out of it.
+> > > > > > > > > > 
+> > > > > > > > > > ----system---- ----total-cpu-usage---- -dsk/total- -net/total- ---paging-- ---system-- ----swap--- ------memory-usage----- -----virtual-memory----
+> > > > > > > > > >     time     |usr sys idl wai hiq siq| read  writ| recv  send|  in   out | int   csw | used  free| used  buff  cach  free|majpf minpf alloc  free
+> > > > > > > > > > 27-08 20:51:53| 23  62   5   0  11   0|   0     0 |   0     0 |   0     0 |1274  3102k|   0  7934M| 549M 56.0M  491M 6698M|   0    28   156   159 
+> > > > > > > > > > 27-08 20:51:54| 24  64   1   0  11   0|   0     0 |   0     0 |   0     0 |1317  3165k|   0  7934M| 549M 56.0M  491M 6698M|   0    53   189   182 
+> > > > > > > > > > 27-08 20:51:55| 33  50   6   2   9   0| 192k 1832k|   0     0 |   0     0 |1371  2442k|   0  7934M| 544M 56.0M  492M 6702M|   0    30k   17k   17k
+> > > > > > > > > > 27-08 20:51:56| 24  64   0   0  12   0|   0     0 |   0     0 |   0     0 |1313  3220k|   0  7934M| 544M 56.0M  492M 6701M|   0    21   272   232 
+> > > > > > > > > > 27-08 20:51:57| 24  64   0   0  12   0|   0     0 |   0     0 |   0     0 |1319  3226k|   0  7934M| 544M 56.0M  492M 6701M|   0     8    96   112 
+> > > > > > > > > > 27-08 20:51:58| 25  63   0   0  12   0|   0     0 |   0     0 |   0     0 |1317  3224k|   0  7934M| 544M 56.0M  492M 6701M|   0    12   145   141 
+> > > > > > > > > > 27-08 20:51:59| 24  64   0   0  12   0|   0     0 |   0     0 |   0     0 |1317  3223k|   0  7934M| 544M 56.0M  492M 6701M|   0    54   193   191 
+> > > > > > > > > > 27-08 20:52:00| 25  63   0   0  12   0|   0    24k|   0     0 |   0     0 |1336  3216k|   0  7934M| 544M 56.0M  492M 6701M|   0    36   161   172 
+> > > > > > > > > > 27-08 20:52:01| 24  64   0   0  12   0|   0     0 |   0     0 |   0     0 |1313  3225k|   0  7934M| 544M 56.0M  492M 6701M|   0     9   107   107 
+> > > > > > > > > > 27-08 20:52:02| 24  64   0   0  12   0|   0     0 |   0     0 |   0     0 |1327  3224k|   0  7934M| 545M 56.0M  492M 6701M|   0    13   193   200 
+> > > > > > > > > > 27-08 20:52:03| 24  64   0   0  12   0|   0     0 |   0     0 |   0     0 |1311  3226k|   0  7934M| 545M 56.0M  492M 6701M|   0    13   114   114 
+> > > > > > > > > > 27-08 20:52:04| 25  63   0   0  12   0|   0     0 |   0     0 |   0     0 |1331  3223k|   0  7934M| 544M 56.0M  492M 6701M|   0    41   190   178 
+> > > > > > > > > > 27-08 20:52:05| 24  64   0   0  12   0|   0  8192B|   0     0 |   0     0 |1315  3222k|   0  7934M| 544M 56.0M  492M 6701M|   0    30   123   122 
+> > > > > > > > > > 27-08 20:52:06| 24  64   0   0  12   0|   0     0 |   0     0 |   0     0 |1314  3223k|   0  7934M| 544M 56.0M  492M 6701M|   0    16   187   195 
+> > > > > > > > > > 27-08 20:52:07| 25  63   1   0  12   0|2212k  192k|   0     0 |   0     0 |1637  3194k|   0  7934M| 544M 56.2M  494M 6699M|   0  1363  2590  1947 
+> > > > > > > > > > 27-08 20:52:08| 17  33  18  26   6   0|3208k    0 |   0     0 |   0     0 |1351  1766k|   0  7934M| 561M 56.3M  499M 6678M|   4    10k 7620  2055 
+> > > > > > > > > > 27-08 20:52:09| 47  21  16  13   4   0|4332k  628k|   0     0 |   0     0 |1400  1081k|   0  7934M| 647M 56.3M  504M 6587M|  10    24k   25k 1151 
+> > > > > > > > > > 27-08 20:52:10| 36  34  13  11   6   0|2636k 2820k|   0     0 |   0     0 |1451  1737k|   0  7934M| 598M 56.3M  507M 6632M|   5    19k   16k   28k
+> > > > > > > > > > 27-08 20:52:11| 46  17  10  25   3   0|4288k  536k|   0     0 |   0     0 |1386   868k|   0  7934M| 613M 56.3M  513M 6611M|  24    13k 8908  3616 
+> > > > > > > > > > 27-08 20:52:12| 53  33   5   4   5   0|4740k 3992k|   0     0 |   0     0 |1773  1464k|   0  7934M| 562M 56.6M  521M 6654M|   0    36k   29k   40k
+> > > > > > > > > > 27-08 20:52:13| 60  34   0   1   6   0|4228k 1416k|   0     0 |   0     0 |1642  1670k|   0  7934M| 593M 56.6M  526M 6618M|   0    36k   26k   17k
+> > > > > > > > > > 27-08 20:52:14| 53  37   1   3   7   0|3008k 1976k|   0     0 |   0     0 |1513  1972k|   0  7934M| 541M 56.6M  529M 6668M|   0    10k 9986    23k
+> > > > > > > > > > 27-08 20:52:15| 55  34   1   4   6   0|3636k 1284k|   0     0 |   0     0 |1645  1688k|   0  7934M| 581M 56.6M  535M 6622M|   0    43k   30k   18k
+> > > > > > > > > > 27-08 20:52:16| 57  30   5   2   5   0|4404k 2320k|   0     0 |   0     0 |1715  1489k|   0  7934M| 570M 56.6M  541M 6627M|   0    39k   24k   26k
+> > > > > > > > > > 27-08 20:52:17| 50  35   3   7   6   0|2520k 1972k|   0     0 |   0     0 |1699  1598k|   0  7934M| 587M 56.6M  554M 6596M|   0    65k   40k   32k
+> > > > > > > > > > 27-08 20:52:18| 52  40   2   1   7   0|1556k 1732k|   0     0 |   0     0 |1582  1865k|   0  7934M| 551M 56.6M  567M 6619M|   0    35k   26k   33k
+> > > > > > > > > > 27-08 20:52:19| 26  62   0   0  12   0|   0     0 |   0     0 |   0     0 |1351  3240k|   0  7934M| 551M 56.6M  568M 6619M|   0    86   440   214 
+> > > > > > > > > > 27-08 20:52:20| 26  63   0   0  11   0|   0   108k|   0     0 |   0     0 |1392  3162k|   0  7934M| 555M 56.6M  560M 6623M|   0  1801  1490  2672 
+> > > > > > > > > > 27-08 20:52:21| 25  63   0   0  12   0|   0     0 |   0     0 |   0     0 |1332  3198k|   0  7934M| 555M 56.6M  560M 6623M|   0    50   245   255 
+> > > > > > > > > > 27-08 20:52:22| 25  63   1   0  12   0|   0     0 |   0     0 |   0     0 |1350  3220k|   0  7934M| 556M 56.6M  560M 6622M|   0   755   544   286 
+> > > > > > > > > > 27-08 20:52:23| 27  62   1   0  11   0|   0   272k|   0     0 |   0     0 |1323  3092k|   0  7934M| 551M 56.6M  558M 6628M|   0   341  1464  3085 
+> > > > > > > > > > 27-08 20:52:24| 25  63   0   0  12   0|   0     0 |   0     0 |   0     0 |1334  3197k|   0  7934M| 551M 56.6M  559M 6627M|   0    63   514   273 
+> > > > > > > > > > 27-08 20:52:25| 25  63   0   0  12   0|   0    40k|   0     0 |   0     0 |1329  3243k|   0  7934M| 546M 56.6M  558M 6633M|   0   321   160  1679 
+> > > > > > > > > > 27-08 20:52:26| 39  50   1   1   9   0|  48k  644k|   0     0 |   0     0 |1500  2556k|   0  7934M| 552M 56.6M  560M 6625M|   0    30k   14k   12k
+> > > > > > > > > > 27-08 20:52:27| 26  62   1   0  11   0|   0   192k|   0     0 |   0     0 |1380  3152k|   0  7934M| 553M 56.6M  560M 6624M|   0  2370   808   718 
+> > > > > > > > > > 27-08 20:52:28| 23  55  12   0  10   0|   0     0 |   0     0 |   0     0 |1247  2993k|   0  7934M| 553M 56.6M  561M 6624M|   0  1060   428   241 
+> > > > > > > > > > 27-08 20:52:29| 25  63   1   0  11   0|   0     0 |   0     0 |   0     0 |1318  3142k|   0  7934M| 554M 56.6M  561M 6623M|   0   663   442   198 
+> > > > > > > > > > 27-08 20:52:30| 25  64   0   0  12   0|   0   100k|   0     0 |   0     0 |1316  3212k|   0  7934M| 554M 56.6M  561M 6623M|   0    42   187   186 
+> > > > > > > > > > 27-08 20:52:31| 24  64   0   0  12   0|   0  4096B|   0     0 |   0     0 |1309  3222k|   0  7934M| 554M 56.6M  561M 6623M|   0     9    85    85 
+> > > > > > > > > > 27-08 20:52:32| 24  64   0   0  12   0|   0     0 |   0     0 |   0     0 |1297  3219k|   0  7934M| 554M 56.6M  561M 6623M|   0    23    95    84 
+> > > > > > > > > > 27-08 20:52:33| 25  63   0   0  11   0|   0     0 |   0     0 |   0     0 |1339  3101k|   0  7934M| 555M 56.6M  557M 6625M|   0   923  1566  2176 
+> > > > > > > > > > 27-08 20:52:34| 25  63   0   0  11   0|   0     0 |   0     0 |   0     0 |1333  3095k|   0  7934M| 555M 56.6M  559M 6623M|   0   114   701   195 
+> > > > > > > > > > 27-08 20:52:35| 26  63   0   0  11   0|   0     0 |   0     0 |   0     0 |1342  3036k|   0  7934M| 557M 56.6M  568M 6613M|   0   957  3225   516 
+> > > > > > > > > > 27-08 20:52:36| 26  60   2   0  11   0|   0    28k|   0     0 |   0     0 |1340  3091k|   0  7934M| 555M 56.6M  568M 6614M|   0  5304  5422  5609 
+> > > > > > > > > > 27-08 20:52:37| 25  64   0   0  12   0|   0     0 |   0     0 |   0     0 |1348  3260k|   0  7934M| 556M 56.6M  565M 6617M|   0    30   156  1073 
+> > > > > > > > > > 27-08 20:52:38| 24  64   0   0  12   0|   0     0 |   0     0 |   0     0 |1314  3211k|   0  7934M| 556M 56.6M  549M 6633M|   0    11   105  4285 
+> > > > > > > > > > 27-08 20:52:39| 26  63   0   0  11   0|   0     0 |   0     0 |   0     0 |1353  3031k|   0  7934M| 558M 56.6M  559M 6620M|   0   847  3866   357 
+> > > > > > > > > > 27-08 20:52:40| 26  63   0   0  12   0|   0     0 |   0     0 |   0     0 |1309  3135k|   0  7934M| 569M 56.6M  566M 6602M|   0  3940  5727  1288 
+> > > > > > > > > 
+> > > > > > > > > Interesting. The number of context switches drops during the time
+> > > > > > > > > that throughput improves. It would be good to find out what task(s)
+> > > > > > > > > are doing all of the context switches. One way to find the pids of the
+> > > > > > > > > top 20 context-switching tasks should be something like this:
+> > > > > > > > > 
+> > > > > > > > > grep ctxt /proc/*/status | sort -k2nr | head -20
+> > > > > > > > > 
+> > > > > > > > > You could use any number of methods to map back to the command.
+> > > > > > > > > When generating my last patch, I was assuming that ksoftirqd would be
+> > > > > > > > > the big offender. Of course, if it is something else, I should be
+> > > > > > > > > taking a different approach.
+> > > > > > > > 
+> > > > > > > > I did some measuring of these context switches. I used the above command
+> > > > > > > > line to get the number of context switches before compiling and about 40
+> > > > > > > > seconds later.
+> > > > > > > > 
+> > > > > > > > The good case is:
+> > > > > > > > file                                        before  after   process name
+> > > > > > > > /proc/10/status:voluntary_ctxt_switches:    38108   54327   [rcu_sched]
+> > > > > > > > /proc/19/status:voluntary_ctxt_switches:    31022   38682   [ksoftirqd/2]
+> > > > > > > > /proc/14/status:voluntary_ctxt_switches:    12947   16914   [ksoftirqd/1]
+> > > > > > > > /proc/3/status:voluntary_ctxt_switches:     11061   14885   [ksoftirqd/0]
+> > > > > > > > /proc/194/status:voluntary_ctxt_switches:   10044   11660   [kworker/2:1H]
+> > > > > > > > /proc/1603/status:voluntary_ctxt_switches:  7626    9593    /usr/bin/X
+> > > > > > > > /proc/24/status:voluntary_ctxt_switches:    6415    9571    [ksoftirqd/3]
+> > > > > > > > /proc/20/status:voluntary_ctxt_switches:    5317    8879    [kworker/2:0]
+> > > > > > > > 
+> > > > > > > > The bad case is:
+> > > > > > > > file                                            before      after       process name
+> > > > > > > > /proc/3/status:voluntary_ctxt_switches:         82411972    98542227    [ksoftirqd/0]
+> > > > > > > > /proc/23/status:voluntary_ctxt_switches:        79592040    94206823    [ksoftirqd/3]
+> > > > > > > > /proc/13/status:voluntary_ctxt_switches:        79053870    93654161    [ksoftirqd/1]
+> > > > > > > > /proc/18/status:voluntary_ctxt_switches:        78136449    92288688    [ksoftirqd/2]
+> > > > > > > > /proc/2293/status:nonvoluntary_ctxt_switches:   29038881    29038881    mate-panel
+> > > > > > > > /proc/2308/status:nonvoluntary_ctxt_switches:   26607661    26607661    nm-applet
+> > > > > > > > /proc/2317/status:nonvoluntary_ctxt_switches:   15494474    15494474    /usr/lib/polkit-mate/polkit-mate-authentication-agent-1
+> > > > > > > > /proc/2148/status:nonvoluntary_ctxt_switches:   13763674    13763674    x-session-manager
+> > > > > > > > /proc/2985/status:nonvoluntary_ctxt_switches:               12062706    python /usr/bin/scons -j4
+> > > > > > > > /proc/2323/status:nonvoluntary_ctxt_switches:   11581510    11581510    mate-volume-control-applet
+> > > > > > > > /proc/2353/status:nonvoluntary_ctxt_switches:   9213436     9213436     mate-power-manager
+> > > > > > > > /proc/2305/status:nonvoluntary_ctxt_switches:   8328471     8328471     /usr/lib/matecomponent/matecomponent-activation-server
+> > > > > > > > /proc/3041/status:nonvoluntary_ctxt_switches:               7638312     sh -c "/opt/arm-2011.03/bin/arm-none-eabi-gcc" [...]
+> > > > > > > > /proc/3055/status:nonvoluntary_ctxt_switches:               4843977     sh -c "/opt/arm-2011.03/bin/arm-none-eabi-gcc" [...]
+> > > > > > > > /proc/2253/status:nonvoluntary_ctxt_switches:   4449918     4449918     mate-keyring-daemon
+> > > > > > > 
+> > > > > > > Thank you for the info!
+> > > > > > > 
+> > > > > > > > The processes for the tables were partly collected by hand so they may
+> > > > > > > > not contain every relevant process. But what I see is that there are a
+> > > > > > > > lot more context switches in the bad case, quite many of these are non
+> > > > > > > > voluntary. The context switch increase is pretty much everywhere, not
+> > > > > > > > just ksoftirqd. I suspect the Mate related processes did their context
+> > > > > > > > switches during bootup/login, which is consistent with the bootup/login
+> > > > > > > > procedure being significantly slower (just like the compilation).
+> > > > > > > 
+> > > > > > > Also, the non-ksoftirq context switches are nonvoluntary, which likely
+> > > > > > > means that some of their context switches were preemptions by ksoftirqd.
+> > > > > > > 
+> > > > > > > OK, time to look at whatever else might be causing this...
+> > > > > > 
+> > > > > > I am still unable to reproduce this, so am reduced to shooting in the
+> > > > > > dark. The attached patch could in theory help. If it doesn't, would
+> > > > > > you be willing to do a bit of RCU event tracing?
+> > > > > > 
+> > > > > > Thanx, Paul
+> > > > > > 
+> > > > > > ------------------------------------------------------------------------
+> > > > > > 
+> > > > > >  rcu: Throttle invoke_rcu_core() invocations due to non-lazy callbacks
+> > > > > >  
+> > > > > >  If a non-lazy callback arrives on a CPU that has previously gone idle
+> > > > > >  with no non-lazy callbacks, invoke_rcu_core() forces the RCU core to
+> > > > > >  run. However, it does not update the conditions, which could result
+> > > > > >  in several closely spaced invocations of the RCU core, which in turn
+> > > > > >  could result in an excessively high context-switch rate and resulting
+> > > > > >  high overhead.
+> > > > > >  
+> > > > > >  This commit therefore updates the ->all_lazy and ->nonlazy_posted_snap
+> > > > > >  fields to prevent closely spaced invocations.
+> > > > > >  
+> > > > > >  Reported-by: Tibor Billes <tbilles@gmx.com>
+> > > > > >  Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > > > > 
+> > > > > > diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> > > > > > index dc09fb0..9d445ab 100644
+> > > > > > --- a/kernel/rcutree_plugin.h
+> > > > > > +++ b/kernel/rcutree_plugin.h
+> > > > > > @@ -1745,6 +1745,8 @@ static void rcu_prepare_for_idle(int cpu)
+> > > > > >   */
+> > > > > >   if (rdtp->all_lazy &&
+> > > > > >   rdtp->nonlazy_posted != rdtp->nonlazy_posted_snap) {
+> > > > > > + rdtp->all_lazy = false;
+> > > > > > + rdtp->nonlazy_posted_snap = rdtp->nonlazy_posted;
+> > > > > >   invoke_rcu_core();
+> > > > > >   return;
+> > > > > >   }
+> > > > > 
+> > > > > Good news Paul, the above patch did solve this issue :) I see no extra
+> > > > > context switches, no extra CPU usage and no extra compile time.
+> > > > 
+> > > > Woo-hoo!!! ;-)
+> > > > 
+> > > > May I add your Tested-by to the fix?
+> > > 
+> > > Yes, please :)
+> > 
+> > Done! ;-)
+> > 
+> > > > > Any idea why couldn't you reproduce this? Why did it only hit my system?
+> > > > 
+> > > > Timing, maybe? Another question is "Why didn't lots of people complain
+> > > > about this?" It would be good to find out because it is quite possible
+> > > > that there is some other bug that this patch is masking -- or even just
+> > > > making less probable.
+> > > 
+> > > Good point!
+> > > 
+> > > > If you are interested, please build one of the old kernels but with
+> > > > CONFIG_RCU_TRACE=y. Then run something like the following as root
+> > > > concurrently with your workload:
+> > > > 
+> > > > sleep 10
+> > > > echo 1 > /sys/kernel/debug/tracing/events/rcu/enable
+> > > > sleep 0.01
+> > > > echo 0 > /sys/kernel/debug/tracing/events/rcu/enable
+> > > > cat /sys/kernel/debug/tracing/trace > /tmp/trace
+> > > > 
+> > > > Send me the /tmp/trace file, which will probably be a few megabytes in
+> > > > size, so please compress it before sending. ;-) A good compression
+> > > > tool should be able to shrink it by a factor of 20 or thereabouts.
+> > > 
+> > > Ok, I did that. Twice! The first is with commit
+> > > 910ee45db2f4837c8440e770474758493ab94bf7, which was the first bad commit
+> > > according to the bisection I did initially. Second with the current
+> > > mainline 3.11. I have little idea of what the fields and lines mean in
+> > > the RCU trace files, so I'm not going to guess if they are essentially
+> > > the same or not, but it may provide more information to you. Both files
+> > > were created by using a shell script containing the commands you
+> > > suggested.
+> > 
+> > So traces both correspond to bad cases, correct? They are both quite
+> > impressive -- looks like you have quite the interrupt rate going on there!
+> > Almost looks like interrupts are somehow getting enabled on the path
+> > to/from idle.
+> > 
+> > Could you please also send along a trace with the fix applied?
 > 
-> On Tue, Aug 27, 2013 at 5:01 PM, Bjorn Helgaas <bhelgaas@google.com>
-> wrote:
-> 
-> > I haven't been able to reproduce the problem with the 2.10.3 ixgbevf
-> > driver from
-> > http://sourceforge.net/projects/e1000/files/ixgbevf%20stable/
-> > ...
-> > Sorry for wasting so much time on something that appears to be already
-> fixed.
-> 
-> I just tried the brand-new v3.11, and the usual, trivial:
-> 
->   # echo -n 8 > /sys/bus/pci/devices/0000:04:00.0/sriov_numvfs
-> 
-> was enough to blow up my box the same old boring way (infinite string of
-> "ixgbevf 0000:04:11.0: Last Request of type 03 to PF Nacked"
-> messages.
-> 
-> I guess this is because v3.11 still includes the 2.7.12-k ixgbevf driver, not the
-> apparently-fixed 2.10.3 version from your sourceforge page.
-> 
-> According to sourceforge, 2.7.12 was released almost a YEAR ago, on 2012-10-
-> 18, and 2.10.3 was released 2013-07-26.  Why isn't 2.10.3 in v3.11?
-> 
-> Don't you guys care that it is so easy to blow up your driver with the mainline
-> kernel?  I'm quite frustrated by how much time I've wasted on this issue.
-> 
-> I do not think that defending yourself with "please try the latest driver from
-> sourceforge" is a reasonable or friendly way to work in the Linux community.
-> 
-> Bjorn
+> Sure. The attached tar file contains traces of good kernels. The first is with
+> version 3.9.7 (no patch applied) which was the last stable kernel I tried and
+> didn't have this issue. The second is version 3.11 with your fix applied.
+> Judging by the size of the traces, 3.11.0+ is still doing more work than
+> 3.9.7.
 
-Your right I haven't been keeping the version strings up-to-date with our latest upstream pushes.  I was hoping to reach a sync point were both drivers (upstream and out of tree) were closer before I bumped the upstream version.  The relationship between the version number in the ixgbevf version number in the upstream kernel and our out of tree driver are not quite that straight forward as the version strings would suggest.  We have pushed quite a few patches since the last version bump a year ago and in fact attempt to push patches upstream in parallel with any changes we make in the out of tree driver.   But depending on quite a list of events (testing, release schedule, when net-next is open) one driver can receive patches earlier and or later than another.  Also ixgbevf is currently going through a fair amount of refactoring to bring in more up to date with ixgbe so there are a fair amount of patches currently in play. The reason I suggested you try the out of tree driver (source forge) as I knew it was currently a bit more up to date. 
+Indeed, though quite a bit less than the problematic traces.
 
-The good news is if the latest out of tree driver is correcting your problem the fix most likely is reroute to upstream.  Likewise I can send you some of the upstream patches that are in the out of tree driver but are waiting to be sent upstream, if you would like to try them.  Some of them touch code around the mbx messages, which like I mentioned in an early email the error message your seeing seems to imply something has gone wrong there.  But since we can't seem to recreate your failure local I can't know for sure.
+Did you have all three patches applied to 3.11.0, or just the last one?
+If the latter, could you please try it with all three?
 
-Thanks,
--Don Skidmore <donald.c.skidmore@intel.com>
+> > > I'm not sure about LKML policies about attaching not-so-small files to
+> > > emails, so I've dropped LKML from the CC list. Please CC the mailing
+> > > list in your reply.
+> > 
+> > Done!
+> > 
+> > Another approach is to post the traces on the web and send the URL to
+> > LKML. But whatever works for you is fine by me.
+> 
+> Sending directly to you won again :) Could you please CC the list in your
+> reply?
 
+Done!  ;-)
+
+							Thanx, Paul
 
