@@ -1,56 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415Ab3IMTKg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 15:10:36 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:36760 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754193Ab3IMTKf (ORCPT
+	id S1754688Ab3IMTMX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 15:12:23 -0400
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:51277 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752728Ab3IMTMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 15:10:35 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: iommu@lists.linux-foundation.org, David Woodhouse <dwmw2@infradead.org>,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH] MAINTAINERS: add overall IOMMU section
-Date: Fri, 13 Sep 2013 13:10:27 -0600
-Message-Id: <1379099427-29362-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.8.1.5
-X-NVConfidentiality: public
+	Fri, 13 Sep 2013 15:12:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFxnq2hjx1Aw7+iFuGnZp4sRK3HYK0Kfipz1gEYubOdnYQ@mail.gmail.com>
+References: <20130910143807.4c32d548e08d2184061f52cb@canb.auug.org.au>
+	<20130910152753.662599171456233c5f91edb4@linux-foundation.org>
+	<20130910222924.GB13318@ZenIV.linux.org.uk>
+	<20130910153520.14e49cd32feb16d45eb8abac@linux-foundation.org>
+	<20130910223624.GC13318@ZenIV.linux.org.uk>
+	<20130910154116.cc4afe048213a779040ea3cc@linux-foundation.org>
+	<20130910224823.GE13318@ZenIV.linux.org.uk>
+	<20130910225934.GF13318@ZenIV.linux.org.uk>
+	<CA+55aFwXXsk47WrAqF6yuVXOQHuNpxT7x-=MmLsNBptyzjH1zQ@mail.gmail.com>
+	<CA+55aFxz2r3voP=W0oCns5MzMqBaeYxMLxp5AxRxjY23K3nvuA@mail.gmail.com>
+	<CA+55aFxnq2hjx1Aw7+iFuGnZp4sRK3HYK0Kfipz1gEYubOdnYQ@mail.gmail.com>
+Date: Fri, 13 Sep 2013 12:12:20 -0700
+X-Google-Sender-Auth: vCBFxclLgPjbv_h1BBjL2pI02kE
+Message-ID: <CA+55aFyaRsk-KkjppTnqDxy8+y5z9Yvi3TpMZwgGJ7ad7kwM4g@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the akpm tree with Linus' tree
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Chinner <dchinner@redhat.com>, Glauber Costa <glommer@openvz.org>
+Content-Type: multipart/mixed; boundary=047d7bd7623e364b3c04e648a204
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+--047d7bd7623e364b3c04e648a204
+Content-Type: text/plain; charset=UTF-8
 
-I believe that Joerg Roedel is at least the path through which
-drivers/iommu changes should be merged. Add a MAINTAINERS entry to
-make this clear, so that he's Cd'd on all relevant patches. This is
-relevant for non-AMD/Intel IOMMUs, where get_maintainers.pl doesn't
-currently remind anyone to Cc Joerg on patches.
+On Thu, Sep 12, 2013 at 6:12 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Damn, the code is too confused. I have to go to a highschool parent
+> back-to-school meeting, so I won't get to this until maybe on a plane
+> tomorrow. Al, can you please give this a look?
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- MAINTAINERS | 7 +++++++
- 1 file changed, 7 insertions(+)
+I'm on a plane. I have gogo. Here's my current TOTALLY UNTESTED patch.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 6d0dabe..81415f6 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4457,6 +4457,13 @@ L:	linux-serial@vger.kernel.org
- S:	Maintained
- F:	drivers/tty/serial/ioc3_serial.c
- 
-+IOMMU DRIVERS
-+M:	Joerg Roedel <joro@8bytes.org>
-+L:	iommu@lists.linux-foundation.org
-+T:	git git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git
-+S:	Maintained
-+F:	drivers/iommu/
-+
- IP MASQUERADING
- M:	Juanjo Ciarlante <jjciarla@raiz.uncu.edu.ar>
- S:	Maintained
--- 
-1.8.1.5
+It tries to consolidate the dentry LRU stuff into a few helper
+functions that right now have anal checking of the flags. Maybe I
+overdid it, but the code was really confusing, and I think we got the
+free dentry counts wrong, and the bits wrong too, so I tried to be
+extra careful.
 
+There are several cases:
+ - d_lru_add/del: fairly obvious
+ - d_lru_isolate: this is when the LRU callbacks ask us to remove the
+entry from the list. This is different from d_lru_del() only in that
+it uses the raw list removal, not the lru list helper function. I'm
+not sure that's right, but that's what the code used to do.
+ - d_lru_shrink_move: move from the "global" lru list to a private shrinker list
+ - d_shrink_add/del: fairly obvious.
+
+And then "denty_lru_add/del" that actually take the current state into
+account and do the right thing. Those we had before, I'm just
+explaining the difference from the low-level operations that have
+fixed "from this state to that" semantics
+
+Hmm?
+
+Does it work? Who knows.. But *if* it works, I think it has a higher
+chance of getting all the rules for bits and free object counting
+right.
+
+Somebody not in a plane please double-check my low-oxygen-pressure thinking..
+
+                  Linus
+
+--047d7bd7623e364b3c04e648a204
+Content-Type: application/octet-stream; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hljs29cz0
+
+IGZzL2RjYWNoZS5jIHwgMTIyICsrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysr
+KysrKysrKystLS0tLS0tLS0tLS0tLQogMSBmaWxlIGNoYW5nZWQsIDk1IGluc2VydGlvbnMoKyks
+IDI3IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2ZzL2RjYWNoZS5jIGIvZnMvZGNhY2hlLmMK
+aW5kZXggMWJkNDYxNGNlOTNiLi42NDQzYjA3ZjhhM2MgMTAwNjQ0Ci0tLSBhL2ZzL2RjYWNoZS5j
+CisrKyBiL2ZzL2RjYWNoZS5jCkBAIC0zNTcsMTUgKzM1Nyw3NCBAQCBzdGF0aWMgdm9pZCBkZW50
+cnlfdW5saW5rX2lub2RlKHN0cnVjdCBkZW50cnkgKiBkZW50cnkpCiB9CiAKIC8qCisgKiBUaGUg
+RENBQ0hFX0xSVV9MSVNUIGJpdCBpcyBzZXQgd2hlbmV2ZXIgdGhlICdkX2xydScgZW50cnkKKyAq
+IGlzIGluIHVzZSAtIHdoaWNoIGluY2x1ZGVzIGJvdGggdGhlICJyZWFsIiBwZXItc3VwZXJibG9j
+aworICogTFJVIGxpc3QgX2FuZF8gdGhlIERDQUNIRV9TSFJJTktfTElTVCB1c2UuCisgKgorICog
+VGhlIERDQUNIRV9TSFJJTktfTElTVCBiaXQgaXMgc2V0IHdoZW5ldmVyIHRoZSBkZW50cnkgaXMK
+KyAqIG9uIHRoZSBzaHJpbmsgbGlzdCAoaWUgbm90IG9uIHRoZSBzdXBlcmJsb2NrIExSVSBsaXN0
+KS4KKyAqCisgKiBUaGUgcGVyLWNwdSAibmRfZGVudHJ5X3VudXNlZCIgY291bnRlcnMgYXJlIHVw
+ZGF0ZWQgd2l0aAorICogdGhlIERDQUNIRV9MUlVfTElTVCBiaXQuCisgKgorICogVGhlc2UgaGVs
+cGVyIGZ1bmN0aW9ucyBtYWtlIHN1cmUgd2UgYWx3YXlzIGZvbGxvdyB0aGUKKyAqIHJ1bGVzLiBk
+X2xvY2sgbXVzdCBiZSBoZWxkIGJ5IHRoZSBjYWxsZXIuCisgKi8KKyNkZWZpbmUgRF9GTEFHX1ZF
+UklGWShkZW50cnkseCkgV0FSTl9PTl9PTkNFKCgoZGVudHJ5KS0+ZF9mbGFncyAmIChEQ0FDSEVf
+TFJVX0xJU1QgfCBEQ0FDSEVfU0hSSU5LX0xJU1QpKSAhPSAoeCkpCitzdGF0aWMgdm9pZCBkX2xy
+dV9hZGQoc3RydWN0IGRlbnRyeSAqZGVudHJ5KQoreworCURfRkxBR19WRVJJRlkoZGVudHJ5LCAw
+KTsKKwlkZW50cnktPmRfZmxhZ3MgfD0gRENBQ0hFX0xSVV9MSVNUOworCXRoaXNfY3B1X2luYyhu
+cl9kZW50cnlfdW51c2VkKTsKKwlXQVJOX09OX09OQ0UoIWxpc3RfbHJ1X2FkZCgmZGVudHJ5LT5k
+X3NiLT5zX2RlbnRyeV9scnUsICZkZW50cnktPmRfbHJ1KSk7Cit9CisKK3N0YXRpYyB2b2lkIGRf
+bHJ1X2RlbChzdHJ1Y3QgZGVudHJ5ICpkZW50cnkpCit7CisJRF9GTEFHX1ZFUklGWShkZW50cnks
+IERDQUNIRV9MUlVfTElTVCk7CisJZGVudHJ5LT5kX2ZsYWdzICY9IH5EQ0FDSEVfTFJVX0xJU1Q7
+CisJdGhpc19jcHVfZGVjKG5yX2RlbnRyeV91bnVzZWQpOworCVdBUk5fT05fT05DRSghbGlzdF9s
+cnVfZGVsKCZkZW50cnktPmRfc2ItPnNfZGVudHJ5X2xydSwgJmRlbnRyeS0+ZF9scnUpKTsKK30K
+Kworc3RhdGljIHZvaWQgZF9scnVfaXNvbGF0ZShzdHJ1Y3QgZGVudHJ5ICpkZW50cnkpCit7CisJ
+RF9GTEFHX1ZFUklGWShkZW50cnksIERDQUNIRV9MUlVfTElTVCk7CisJZGVudHJ5LT5kX2ZsYWdz
+ICY9IH5EQ0FDSEVfTFJVX0xJU1Q7CisJdGhpc19jcHVfZGVjKG5yX2RlbnRyeV91bnVzZWQpOwor
+CWxpc3RfZGVsX2luaXQoJmRlbnRyeS0+ZF9scnUpOworfQorCitzdGF0aWMgdm9pZCBkX3Nocmlu
+a19kZWwoc3RydWN0IGRlbnRyeSAqZGVudHJ5KQoreworCURfRkxBR19WRVJJRlkoZGVudHJ5LCBE
+Q0FDSEVfU0hSSU5LX0xJU1QgfCBEQ0FDSEVfTFJVX0xJU1QpOworCWxpc3RfZGVsX2luaXQoJmRl
+bnRyeS0+ZF9scnUpOworCWRlbnRyeS0+ZF9mbGFncyAmPSB+KERDQUNIRV9TSFJJTktfTElTVCB8
+IERDQUNIRV9MUlVfTElTVCk7CisJdGhpc19jcHVfZGVjKG5yX2RlbnRyeV91bnVzZWQpOworfQor
+CitzdGF0aWMgdm9pZCBkX3Nocmlua19hZGQoc3RydWN0IGRlbnRyeSAqZGVudHJ5LCBzdHJ1Y3Qg
+bGlzdF9oZWFkICpsaXN0KQoreworCURfRkxBR19WRVJJRlkoZGVudHJ5LCAwKTsKKwlsaXN0X2Fk
+ZCgmZGVudHJ5LT5kX2xydSwgbGlzdCk7CisJZGVudHJ5LT5kX2ZsYWdzIHw9IERDQUNIRV9TSFJJ
+TktfTElTVCB8IERDQUNIRV9MUlVfTElTVDsKKwl0aGlzX2NwdV9pbmMobnJfZGVudHJ5X3VudXNl
+ZCk7Cit9CisKK3N0YXRpYyB2b2lkIGRfbHJ1X3Nocmlua19tb3ZlKHN0cnVjdCBkZW50cnkgKmRl
+bnRyeSwgc3RydWN0IGxpc3RfaGVhZCAqbGlzdCkKK3sKKwlEX0ZMQUdfVkVSSUZZKGRlbnRyeSwg
+RENBQ0hFX0xSVV9MSVNUKTsKKwlkZW50cnktPmRfZmxhZ3MgfD0gRENBQ0hFX1NIUklOS19MSVNU
+OworCWxpc3RfbW92ZV90YWlsKCZkZW50cnktPmRfbHJ1LCBsaXN0KTsKK30KKworLyoKICAqIGRl
+bnRyeV9scnVfKGFkZHxkZWwpX2xpc3QpIG11c3QgYmUgY2FsbGVkIHdpdGggZF9sb2NrIGhlbGQu
+CiAgKi8KIHN0YXRpYyB2b2lkIGRlbnRyeV9scnVfYWRkKHN0cnVjdCBkZW50cnkgKmRlbnRyeSkK
+IHsKLQlpZiAodW5saWtlbHkoIShkZW50cnktPmRfZmxhZ3MgJiBEQ0FDSEVfTFJVX0xJU1QpKSkg
+ewotCQlpZiAobGlzdF9scnVfYWRkKCZkZW50cnktPmRfc2ItPnNfZGVudHJ5X2xydSwgJmRlbnRy
+eS0+ZF9scnUpKQotCQkJdGhpc19jcHVfaW5jKG5yX2RlbnRyeV91bnVzZWQpOwotCQlkZW50cnkt
+PmRfZmxhZ3MgfD0gRENBQ0hFX0xSVV9MSVNUOwotCX0KKwlpZiAodW5saWtlbHkoIShkZW50cnkt
+PmRfZmxhZ3MgJiBEQ0FDSEVfTFJVX0xJU1QpKSkKKwkJZF9scnVfYWRkKGRlbnRyeSk7CiB9CiAK
+IC8qCkBAIC0zNzcsMTUgKzQzNiwxMSBAQCBzdGF0aWMgdm9pZCBkZW50cnlfbHJ1X2FkZChzdHJ1
+Y3QgZGVudHJ5ICpkZW50cnkpCiAgKi8KIHN0YXRpYyB2b2lkIGRlbnRyeV9scnVfZGVsKHN0cnVj
+dCBkZW50cnkgKmRlbnRyeSkKIHsKLQlpZiAoZGVudHJ5LT5kX2ZsYWdzICYgRENBQ0hFX1NIUklO
+S19MSVNUKSB7Ci0JCWxpc3RfZGVsX2luaXQoJmRlbnRyeS0+ZF9scnUpOwotCQlkZW50cnktPmRf
+ZmxhZ3MgJj0gfkRDQUNIRV9TSFJJTktfTElTVDsKLQkJcmV0dXJuOworCWlmIChkZW50cnktPmRf
+ZmxhZ3MgJiBEQ0FDSEVfTFJVX0xJU1QpIHsKKwkJaWYgKGRlbnRyeS0+ZF9mbGFncyAmIERDQUNI
+RV9TSFJJTktfTElTVCkKKwkJCXJldHVybiBkX3Nocmlua19kZWwoZGVudHJ5KTsKKwkJZF9scnVf
+ZGVsKGRlbnRyeSk7CiAJfQotCi0JaWYgKGxpc3RfbHJ1X2RlbCgmZGVudHJ5LT5kX3NiLT5zX2Rl
+bnRyeV9scnUsICZkZW50cnktPmRfbHJ1KSkKLQkJdGhpc19jcHVfZGVjKG5yX2RlbnRyeV91bnVz
+ZWQpOwotCWRlbnRyeS0+ZF9mbGFncyAmPSB+RENBQ0hFX0xSVV9MSVNUOwogfQogCiAvKioKQEAg
+LTgzNyw2ICs4OTIsMTMgQEAgc3RhdGljIHZvaWQgc2hyaW5rX2RlbnRyeV9saXN0KHN0cnVjdCBs
+aXN0X2hlYWQgKmxpc3QpCiAJCWRlbnRyeSA9IGxpc3RfZW50cnlfcmN1KGxpc3QtPnByZXYsIHN0
+cnVjdCBkZW50cnksIGRfbHJ1KTsKIAkJaWYgKCZkZW50cnktPmRfbHJ1ID09IGxpc3QpCiAJCQli
+cmVhazsgLyogZW1wdHkgKi8KKworCisJCS8qCisJCSAqIEdldCB0aGUgZGVudHJ5IGxvY2ssIGFu
+ZCByZS12ZXJpZnkgdGhhdCB0aGUgZGVudHJ5IGlzCisJCSAqIHRoaXMgb24gdGhlIHNocmlua2lu
+ZyBsaXN0LiBJZiBpdCBpcywgd2Uga25vdyB0aGF0CisJCSAqIERDQUNIRV9TSFJJTktfTElTVCBh
+bmQgRENBQ0hFX0xSVV9MSVNUIGFyZSBzZXQuCisJCSAqLwogCQlzcGluX2xvY2soJmRlbnRyeS0+
+ZF9sb2NrKTsKIAkJaWYgKGRlbnRyeSAhPSBsaXN0X2VudHJ5KGxpc3QtPnByZXYsIHN0cnVjdCBk
+ZW50cnksIGRfbHJ1KSkgewogCQkJc3Bpbl91bmxvY2soJmRlbnRyeS0+ZF9sb2NrKTsKQEAgLTg0
+OCw4ICs5MTAsNyBAQCBzdGF0aWMgdm9pZCBzaHJpbmtfZGVudHJ5X2xpc3Qoc3RydWN0IGxpc3Rf
+aGVhZCAqbGlzdCkKIAkJICogdG8gdGhlIExSVSBoZXJlLCBzbyB3ZSBjYW4gc2ltcGx5IHJlbW92
+ZSBpdCBmcm9tIHRoZSBsaXN0CiAJCSAqIGhlcmUgcmVnYXJkbGVzcyBvZiB3aGV0aGVyIGl0IGlz
+IHJlZmVyZW5jZWQgb3Igbm90LgogCQkgKi8KLQkJbGlzdF9kZWxfaW5pdCgmZGVudHJ5LT5kX2xy
+dSk7Ci0JCWRlbnRyeS0+ZF9mbGFncyAmPSB+RENBQ0hFX1NIUklOS19MSVNUOworCQlkX3Nocmlu
+a19kZWwoZGVudHJ5KTsKIAogCQkvKgogCQkgKiBXZSBmb3VuZCBhbiBpbnVzZSBkZW50cnkgd2hp
+Y2ggd2FzIG5vdCByZW1vdmVkIGZyb20KQEAgLTg2MSwxMiArOTIyLDIwIEBAIHN0YXRpYyB2b2lk
+IHNocmlua19kZW50cnlfbGlzdChzdHJ1Y3QgbGlzdF9oZWFkICpsaXN0KQogCQl9CiAJCXJjdV9y
+ZWFkX3VubG9jaygpOwogCisJCS8qCisJCSAqIElmICd0cnlfdG9fcHJ1bmUoKScgcmV0dXJucyBh
+IGRlbnRyeSwgaXQgd2lsbAorCQkgKiBiZSB0aGUgc2FtZSBvbmUgd2UgcGFzc2VkIGluLCBhbmQg
+ZF9sb2NrIHdpbGwKKwkJICogaGF2ZSBiZWVuIGhlbGQgdGhlIHdob2xlIHRpbWUsIHNvIGl0IHdp
+bGwgbm90CisJCSAqIGhhdmUgYmVlbiBhZGRlZCB0byBhbnkgb3RoZXIgbGlzdHMuIFdlIGZhaWxl
+ZAorCQkgKiB0byBnZXQgdGhlIGlub2RlIGxvY2suCisJCSAqCisJCSAqIFdlIGp1c3QgYWRkIGl0
+IGJhY2sgdG8gdGhlIHNocmluayBsaXN0LgorCQkgKi8KIAkJZGVudHJ5ID0gdHJ5X3BydW5lX29u
+ZV9kZW50cnkoZGVudHJ5KTsKIAogCQlyY3VfcmVhZF9sb2NrKCk7CiAJCWlmIChkZW50cnkpIHsK
+LQkJCWRlbnRyeS0+ZF9mbGFncyB8PSBEQ0FDSEVfU0hSSU5LX0xJU1Q7Ci0JCQlsaXN0X2FkZCgm
+ZGVudHJ5LT5kX2xydSwgbGlzdCk7CisJCQlkX3Nocmlua19hZGQoZGVudHJ5LCBsaXN0KTsKIAkJ
+CXNwaW5fdW5sb2NrKCZkZW50cnktPmRfbG9jayk7CiAJCX0KIAl9CkBAIC04OTQsNyArOTYzLDcg
+QEAgZGVudHJ5X2xydV9pc29sYXRlKHN0cnVjdCBsaXN0X2hlYWQgKml0ZW0sIHNwaW5sb2NrX3Qg
+KmxydV9sb2NrLCB2b2lkICphcmcpCiAJICogYW5vdGhlciBwYXNzIHRocm91Z2ggdGhlIExSVS4K
+IAkgKi8KIAlpZiAoZGVudHJ5LT5kX2xvY2tyZWYuY291bnQpIHsKLQkJbGlzdF9kZWxfaW5pdCgm
+ZGVudHJ5LT5kX2xydSk7CisJCWRfbHJ1X2lzb2xhdGUoZGVudHJ5KTsKIAkJc3Bpbl91bmxvY2so
+JmRlbnRyeS0+ZF9sb2NrKTsKIAkJcmV0dXJuIExSVV9SRU1PVkVEOwogCX0KQEAgLTkyNSw5ICs5
+OTQsNyBAQCBkZW50cnlfbHJ1X2lzb2xhdGUoc3RydWN0IGxpc3RfaGVhZCAqaXRlbSwgc3Bpbmxv
+Y2tfdCAqbHJ1X2xvY2ssIHZvaWQgKmFyZykKIAkJcmV0dXJuIExSVV9ST1RBVEU7CiAJfQogCi0J
+ZGVudHJ5LT5kX2ZsYWdzIHw9IERDQUNIRV9TSFJJTktfTElTVDsKLQlsaXN0X21vdmVfdGFpbCgm
+ZGVudHJ5LT5kX2xydSwgZnJlZWFibGUpOwotCXRoaXNfY3B1X2RlYyhucl9kZW50cnlfdW51c2Vk
+KTsKKwlkX2xydV9zaHJpbmtfbW92ZShkZW50cnksIGZyZWVhYmxlKTsKIAlzcGluX3VubG9jaygm
+ZGVudHJ5LT5kX2xvY2spOwogCiAJcmV0dXJuIExSVV9SRU1PVkVEOwpAQCAtOTcyLDkgKzEwMzks
+NyBAQCBzdGF0aWMgZW51bSBscnVfc3RhdHVzIGRlbnRyeV9scnVfaXNvbGF0ZV9zaHJpbmsoc3Ry
+dWN0IGxpc3RfaGVhZCAqaXRlbSwKIAlpZiAoIXNwaW5fdHJ5bG9jaygmZGVudHJ5LT5kX2xvY2sp
+KQogCQlyZXR1cm4gTFJVX1NLSVA7CiAKLQlkZW50cnktPmRfZmxhZ3MgfD0gRENBQ0hFX1NIUklO
+S19MSVNUOwotCWxpc3RfbW92ZV90YWlsKCZkZW50cnktPmRfbHJ1LCBmcmVlYWJsZSk7Ci0JdGhp
+c19jcHVfZGVjKG5yX2RlbnRyeV91bnVzZWQpOworCWRfbHJ1X3Nocmlua19tb3ZlKGRlbnRyeSwg
+ZnJlZWFibGUpOwogCXNwaW5fdW5sb2NrKCZkZW50cnktPmRfbG9jayk7CiAKIAlyZXR1cm4gTFJV
+X1JFTU9WRUQ7CkBAIC0xMzYyLDkgKzE0MjcsMTIgQEAgc3RhdGljIGVudW0gZF93YWxrX3JldCBz
+ZWxlY3RfY29sbGVjdCh2b2lkICpfZGF0YSwgc3RydWN0IGRlbnRyeSAqZGVudHJ5KQogCWlmIChk
+ZW50cnktPmRfbG9ja3JlZi5jb3VudCkgewogCQlkZW50cnlfbHJ1X2RlbChkZW50cnkpOwogCX0g
+ZWxzZSBpZiAoIShkZW50cnktPmRfZmxhZ3MgJiBEQ0FDSEVfU0hSSU5LX0xJU1QpKSB7Ci0JCWRl
+bnRyeV9scnVfZGVsKGRlbnRyeSk7Ci0JCWxpc3RfYWRkX3RhaWwoJmRlbnRyeS0+ZF9scnUsICZk
+YXRhLT5kaXNwb3NlKTsKLQkJZGVudHJ5LT5kX2ZsYWdzIHw9IERDQUNIRV9TSFJJTktfTElTVDsK
+KwkJLyoKKwkJICogSWYgd2UgZ2V0IGhlcmUsIGxvY2tyZWYuY291bnQgaXMgemVybywgYW5kCisJ
+CSAqIHRoZSBkZW50cnkgc2hvdWxkIGJlIG9uIHRoZSBMUlUgbGlzdC4gU28gd2UKKwkJICogY2Fu
+IGp1c3QgdXNlIHRoZSAibW92ZSIgaGVscGVyLgorCQkgKi8KKwkJZF9scnVfc2hyaW5rX21vdmUo
+ZGVudHJ5LCAmZGF0YS0+ZGlzcG9zZSk7CiAJCWRhdGEtPmZvdW5kKys7CiAJCXJldCA9IERfV0FM
+S19OT1JFVFJZOwogCX0K
+--047d7bd7623e364b3c04e648a204--
