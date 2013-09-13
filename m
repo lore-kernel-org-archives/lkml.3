@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725Ab3IMJ2q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 05:28:46 -0400
+	id S1754874Ab3IMJ2w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 05:28:52 -0400
 Received: from cn.fujitsu.com ([222.73.24.84]:3847 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751846Ab3IMJ2l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 05:28:41 -0400
+	id S1754469Ab3IMJ2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 05:28:46 -0400
 X-IronPort-AV: E=Sophos;i="4.90,897,1371052800"; 
-   d="scan'208";a="8515191"
+   d="scan'208";a="8515197"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
         hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org,
@@ -21,152 +21,179 @@ To: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
         prarit@redhat.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH v3 0/5] x86, memblock: Allocate memory near kernel image before SRAT parsed.
-Date: Fri, 13 Sep 2013 17:30:50 +0800
-Message-Id: <1379064655-20874-1-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v3 5/5] mem-hotplug: Introduce movablenode boot option to control memblock allocation direction.
+Date: Fri, 13 Sep 2013 17:30:55 +0800
+Message-Id: <1379064655-20874-6-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1379064655-20874-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1379064655-20874-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/13 17:26:07,
+ 2013/09/13 17:26:08,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/09/13 17:26:15,
-	Serialize complete at 2013/09/13 17:26:15
+ 2013/09/13 17:26:18,
+	Serialize complete at 2013/09/13 17:26:18
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch-set is based on tj's suggestion, and not fully tested. 
-Just for review and discussion. 
+The Hot-Pluggable fired in SRAT specifies which memory is hotpluggable.
+As we mentioned before, if hotpluggable memory is used by the kernel,
+it cannot be hot-removed. So memory hotplug users may want to set all
+hotpluggable memory in ZONE_MOVABLE so that the kernel won't use it.
 
-This patch-set is based on the latest kernel (3.11)
-HEAD is:
-commit d5d04bb48f0eb89c14e76779bb46212494de0bec
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Wed Sep 11 19:55:12 2013 -0700
+Memory hotplug users may also set a node as movable node, which has
+ZONE_MOVABLE only, so that the whole node can be hot-removed.
 
+But the kernel cannot use memory in ZONE_MOVABLE. By doing this, the
+kernel cannot use memory in movable nodes. This will cause NUMA
+performance down. And other users may be unhappy.
 
-[Problem]
+So we need a way to allow users to enable and disable this functionality.
+In this patch, we introduce movablenode boot option to allow users to
+choose to reserve hotpluggable memory and set it as ZONE_MOVABLE or not.
 
-The current Linux cannot migrate pages used by the kerenl because
-of the kernel direct mapping. In Linux kernel space, va = pa + PAGE_OFFSET.
-When the pa is changed, we cannot simply update the pagetable and
-keep the va unmodified. So the kernel pages are not migratable.
+Users can specify "movablenode" in kernel commandline to enable this
+functionality. For those who don't use memory hotplug or who don't want
+to lose their NUMA performance, just don't specify anything. The kernel
+will work as before.
 
-There are also some other issues will cause the kernel pages not migratable.
-For example, the physical address may be cached somewhere and will be used.
-It is not to update all the caches.
+After memblock is ready, before SRAT is parsed, we should allocate memory
+near the kernel image. So this patch does the following:
 
-When doing memory hotplug in Linux, we first migrate all the pages in one
-memory device somewhere else, and then remove the device. But if pages are
-used by the kernel, they are not migratable. As a result, memory used by
-the kernel cannot be hot-removed.
+1. After memblock is ready, make memblock allocate memory from low address
+   to high.
+2. After SRAT is parsed, make memblock behave as default, allocate memory
+   from high address to low.
 
-Modifying the kernel direct mapping mechanism is too difficult to do. And
-it may cause the kernel performance down and unstable. So we use the following
-way to do memory hotplug.
+This behavior is controlled by movablenode boot option.
 
+Suggested-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ Documentation/kernel-parameters.txt |   15 ++++++++++++++
+ arch/x86/kernel/setup.c             |   36 +++++++++++++++++++++++++++++++++++
+ include/linux/memory_hotplug.h      |    5 ++++
+ mm/memory_hotplug.c                 |    9 ++++++++
+ 4 files changed, 65 insertions(+), 0 deletions(-)
 
-[What we are doing]
-
-In Linux, memory in one numa node is divided into several zones. One of the
-zones is ZONE_MOVABLE, which the kernel won't use.
-
-In order to implement memory hotplug in Linux, we are going to arrange all
-hotpluggable memory in ZONE_MOVABLE so that the kernel won't use these memory.
-To do this, we need ACPI's help.
-
-In ACPI, SRAT(System Resource Affinity Table) contains NUMA info. The memory
-affinities in SRAT record every memory range in the system, and also, flags
-specifying if the memory range is hotpluggable.
-(Please refer to ACPI spec 5.0 5.2.16)
-
-With the help of SRAT, we have to do the following two things to achieve our
-goal:
-
-1. When doing memory hot-add, allow the users arranging hotpluggable as
-   ZONE_MOVABLE.
-   (This has been done by the MOVABLE_NODE functionality in Linux.)
-
-2. when the system is booting, prevent bootmem allocator from allocating
-   hotpluggable memory for the kernel before the memory initialization
-   finishes.
-
-The problem 2 is the key problem we are going to solve. But before solving it,
-we need some preparation. Please see below.
-
-
-[Preparation]
-
-Bootloader has to load the kernel image into memory. And this memory must be 
-unhotpluggable. We cannot prevent this anyway. So in a memory hotplug system, 
-we can assume any node the kernel resides in is not hotpluggable.
-
-Before SRAT is parsed, we don't know which memory ranges are hotpluggable. But
-memblock has already started to work. In the current kernel, memblock allocates 
-the following memory before SRAT is parsed:
-
-setup_arch()
- |->memblock_x86_fill()            /* memblock is ready */
- |......
- |->early_reserve_e820_mpc_new()   /* allocate memory under 1MB */
- |->reserve_real_mode()            /* allocate memory under 1MB */
- |->init_mem_mapping()             /* allocate page tables, about 2MB to map 1GB memory */
- |->dma_contiguous_reserve()       /* specified by user, should be low */
- |->setup_log_buf()                /* specified by user, several mega bytes */
- |->relocate_initrd()              /* could be large, but will be freed after boot, should reorder */
- |->acpi_initrd_override()         /* several mega bytes */
- |->reserve_crashkernel()          /* could be large, should reorder */
- |......
- |->initmem_init()                 /* Parse SRAT */
-
-According to Tejun's advice, before SRAT is parsed, we should try our best to
-allocate memory near the kernel image. Since the whole node the kernel resides 
-in won't be hotpluggable, and for a modern server, a node may have at least 16GB
-memory, allocating several mega bytes memory around the kernel image won't cross
-to hotpluggable memory.
-
-
-[About this patch-set]
-
-So this patch-set does the following:
-
-1. Make memblock be able to allocate memory from low address to high address.
-   1) Keep all the memblock APIs' prototype unmodified.
-   2) When the direction is bottom up, keep the start address greater than the 
-      end of kernel image.
-
-2. Improve init_mem_mapping() to support allocate page tables in bottom up direction.
-
-3. Introduce "movablenode" boot option to enable and disable this functionality.
-
-PS: Reordering of relocate_initrd() has not been done yet. acpi_initrd_override() 
-    needs to access initrd with virtual address. So relocate_initrd() must be done 
-    before acpi_initrd_override().
-
-
-Change log v2 -> v3:
-1. According to Toshi's suggestion, move the direction checking logic into memblock.
-   And simply the code more.
-
-Change log v1 -> v2:
-1. According to tj's suggestion, implemented a new function memblock_alloc_bottom_up() 
-   to allocate memory from bottom upwards, whihc can simplify the code.
-
-
-Tang Chen (5):
-  memblock: Introduce allocation direction to memblock.
-  memblock: Improve memblock to support allocation from lower address.
-  x86, acpi, crash, kdump: Do reserve_crashkernel() after SRAT is
-    parsed.
-  x86, mem-hotplug: Support initialize page tables from low to high.
-  mem-hotplug: Introduce movablenode boot option to control memblock
-    allocation direction.
-
- Documentation/kernel-parameters.txt |   15 ++++
- arch/x86/kernel/setup.c             |   44 ++++++++++++-
- arch/x86/mm/init.c                  |  121 ++++++++++++++++++++++++++--------
- include/linux/memblock.h            |   22 ++++++
- include/linux/memory_hotplug.h      |    5 ++
- mm/memblock.c                       |  120 +++++++++++++++++++++++++++++++----
- mm/memory_hotplug.c                 |    9 +++
- 7 files changed, 293 insertions(+), 43 deletions(-)
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 1a036cd..8c056c4 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1769,6 +1769,21 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			that the amount of memory usable for all allocations
+ 			is not too small.
+ 
++	movablenode		[KNL,X86] This parameter enables/disables the
++			kernel to arrange hotpluggable memory ranges recorded
++			in ACPI SRAT(System Resource Affinity Table) as
++			ZONE_MOVABLE. And these memory can be hot-removed when
++			the system is up.
++			By specifying this option, all the hotpluggable memory
++			will be in ZONE_MOVABLE, which the kernel cannot use.
++			This will cause NUMA performance down. For users who
++			care about NUMA performance, just don't use it.
++			If all the memory ranges in the system are hotpluggable,
++			then the ones used by the kernel at early time, such as
++			kernel code and data segments, initrd file and so on,
++			won't be set as ZONE_MOVABLE, and won't be hotpluggable.
++			Otherwise the kernel won't have enough memory to boot.
++
+ 	MTD_Partition=	[MTD]
+ 			Format: <name>,<region-number>,<size>,<offset>
+ 
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 36cfce3..617af9a 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1094,6 +1094,31 @@ void __init setup_arch(char **cmdline_p)
+ 	trim_platform_memory_ranges();
+ 	trim_low_memory_range();
+ 
++#ifdef CONFIG_MOVABLE_NODE
++	if (movablenode_enable_srat) {
++		/*
++		 * Memory used by the kernel cannot be hot-removed because Linux
++		 * cannot migrate the kernel pages. When memory hotplug is
++		 * enabled, we should prevent memblock from allocating memory
++		 * for the kernel.
++		 *
++		 * ACPI SRAT records all hotpluggable memory ranges. But before
++		 * SRAT is parsed, we don't know about it.
++		 *
++		 * The kernel image is loaded into memory at very early time. We
++		 * cannot prevent this anyway. So on NUMA system, we set any
++		 * node the kernel resides in as un-hotpluggable.
++		 *
++		 * Since on modern servers, one node could have double-digit
++		 * gigabytes memory, we can assume the memory around the kernel
++		 * image is also un-hotpluggable. So before SRAT is parsed, just
++		 * allocate memory near the kernel image to try the best to keep
++		 * the kernel away from hotpluggable memory.
++		 */
++		memblock_set_current_direction(MEMBLOCK_DIRECTION_LOW_TO_HIGH);
++	}
++#endif /* CONFIG_MOVABLE_NODE */
++
+ 	init_mem_mapping();
+ 
+ 	early_trap_pf_init();
+@@ -1132,6 +1157,17 @@ void __init setup_arch(char **cmdline_p)
+ 	early_acpi_boot_init();
+ 
+ 	initmem_init();
++
++#ifdef CONFIG_MOVABLE_NODE
++	if (movablenode_enable_srat) {
++		/*
++		 * When ACPI SRAT is parsed, which is done in initmem_init(),
++		 * set memblock back to the default behavior.
++		 */
++		memblock_set_current_direction(MEMBLOCK_DIRECTION_DEFAULT);
++	}
++#endif /* CONFIG_MOVABLE_NODE */
++
+ 	memblock_find_dma_reserve();
+ 
+ 	/*
+diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+index dd38e62..5d2c07b 100644
+--- a/include/linux/memory_hotplug.h
++++ b/include/linux/memory_hotplug.h
+@@ -33,6 +33,11 @@ enum {
+ 	ONLINE_MOVABLE,
+ };
+ 
++#ifdef CONFIG_MOVABLE_NODE
++/* Enable/disable SRAT in movablenode boot option */
++extern bool movablenode_enable_srat;
++#endif /* CONFIG_MOVABLE_NODE */
++
+ /*
+  * pgdat resizing functions
+  */
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 0eb1a1d..8a4c8ff 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -1390,6 +1390,15 @@ static bool can_offline_normal(struct zone *zone, unsigned long nr_pages)
+ {
+ 	return true;
+ }
++
++bool __initdata movablenode_enable_srat;
++
++static int __init cmdline_parse_movablenode(char *p)
++{
++	movablenode_enable_srat = true;
++	return 0;
++}
++early_param("movablenode", cmdline_parse_movablenode);
+ #else /* CONFIG_MOVABLE_NODE */
+ /* ensure the node has NORMAL memory if it is still online */
+ static bool can_offline_normal(struct zone *zone, unsigned long nr_pages)
+-- 
+1.7.1
 
