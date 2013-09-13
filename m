@@ -1,99 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256Ab3IMMqX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 08:46:23 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:49152 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751901Ab3IMMqW (ORCPT
+	id S1754987Ab3IMMx1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 08:53:27 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:35254 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842Ab3IMMx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 08:46:22 -0400
-Date: Fri, 13 Sep 2013 14:46:18 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 0/4] perf tools: New comm infrastructure
-Message-ID: <20130913124616.GC4844@somewhere>
-References: <1379017783-27032-1-git-send-email-fweisbec@gmail.com>
- <87y571qlj1.fsf@sejong.aot.lge.com>
+	Fri, 13 Sep 2013 08:53:26 -0400
+Date: Fri, 13 Sep 2013 15:53:10 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Jeff Moyer <jmoyer@redhat.com>,
+        Ramprasad Chinthekindi <rchinthekindi@stec-inc.com>,
+        Akhil Bhansali <abhansali@stec-inc.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch 3/4 v2] skd: use memcpy() as a cleanup
+Message-ID: <20130913125310.GK25896@mwanda>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <87y571qlj1.fsf@sejong.aot.lge.com>
+In-Reply-To: <CAMuHMdX88cUEu2dmamEttK=9Lv0TKiZauCtPDLbgKUde+8ufyQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 13, 2013 at 03:32:34PM +0900, Namhyung Kim wrote:
-> Hi Frederic,
-> 
-> On Thu, 12 Sep 2013 22:29:39 +0200, Frederic Weisbecker wrote:
-> > The way we handle hists sorted by comm is to first gather them by tid then
-> > in the end merge/collapse hists that end up with the same comm.
-> >
-> > But merging hists has shown some performances issues, especially with callchain
-> > where the operation can be very heavy.
-> >
-> > So this new comm infrastructure aims at removing comm collapses. It brings
-> > two features:
-> >
-> > 1) Keep track of comms lifecycle by storing timestamps when the comms
-> > are set. This way we can map the precise comm to any thread:time couple.
-> > This only works if the PERF_SAMPLE_ID comes along comm and fork events,
-> > otherwise we only track the latest comm set for a thread.
-> >
-> > This can provide us more precise comm sorted hists by distinguishing pre and
-> > post exec timeframes into seperate hists for a single thread.
-> >
-> > Note that although the comm infrastructure is ready to do this, I haven't
-> > yet made the perf tools support that. It's a TODO entry.
-> >
-> >
-> > 2) Allocate comms only once instead of duplicating them for all threads sharing
-> > a same one. Two threads having the same comm should now point to the same string.
-> > As a result we can compare hists thread comm by address.
-> >
-> > The big upside is that we can now live sort comm hists instead of collapsing
-> > them in the end of the processing.
-> >
-> > I've seen very nice performance results on perf report. Roughly a 1.5x to 2x
-> > on perf report default stdio output with callchains.
-> >
-> > You can try this branch:
-> >
-> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-> > 	perf/comm
-> >
-> > May be merging that with Namhyung callchains patches could provide some
-> > cumulative nice results.
-> 
-> I got this:
-> 
-> ui/browsers/hists.c: In function ‘hists__browser_title’:
-> ui/browsers/hists.c:1258:10: error: passing argument 1 of ‘thread__comm_curr’ discards ‘const’ qualifier from pointer target type [-Werror]
-> In file included from ui/browsers/../../util/sort.h:24:0,
->                  from ui/browsers/hists.c:11:
-> ui/browsers/../../util/thread.h:39:13: note: expected ‘struct thread *’ but argument is of type ‘const struct thread *’
-> ui/browsers/hists.c: In function ‘perf_evsel__hists_browse’:
-> ui/browsers/hists.c:1581:9: error: passing argument 1 of ‘thread__comm_curr’ discards ‘const’ qualifier from pointer target type [-Werror]
-> In file included from ui/browsers/../../util/sort.h:24:0,
->                  from ui/browsers/hists.c:11:
-> ui/browsers/../../util/thread.h:39:13: note: expected ‘struct thread *’ but argument is of type ‘const struct thread *’
-> ui/browsers/hists.c:1704:10: error: passing argument 1 of ‘thread__comm_curr’ discards ‘const’ qualifier from pointer target type [-Werror]
-> In file included from ui/browsers/../../util/sort.h:24:0,
->                  from ui/browsers/hists.c:11:
-> ui/browsers/../../util/thread.h:39:13: note: expected ‘struct thread *’ but argument is of type ‘const struct thread *’
-> cc1: all warnings being treated as errors
-> make: *** [ui/browsers/hists.o] Error 1
-> make: *** Waiting for unfinished jobs....
+The code here is copying the version to inq.driver_version but we don't
+want it to be NUL terminated.  Instead we pad the rest of the array with
+spaces.  It's fewer lines to use memcpy() and maybe a little nicer.
 
-Oops, I'm missing the libs to build the ui, so I didn't see this. Will fix, thanks!
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+---
+v2: use memcpy() instead of strncpy()
 
-> 
-> Thanks,
-> Namhyung
+diff --git a/drivers/block/skd_main.c b/drivers/block/skd_main.c
+index f892d95..20ad843 100644
+--- a/drivers/block/skd_main.c
++++ b/drivers/block/skd_main.c
+@@ -2899,9 +2899,7 @@ static void skd_do_inq_page_da(struct skd_device *skdev,
+ 			       volatile struct fit_comp_error_info *skerr,
+ 			       uint8_t *cdb, uint8_t *buf)
+ {
+-	unsigned ver_byte;
+ 	unsigned max_bytes;
+-	char *ver = DRV_VER_COMPL;
+ 	struct driver_inquiry_data inq;
+ 	u16 val;
+ 
+@@ -2945,12 +2943,8 @@ static void skd_do_inq_page_da(struct skd_device *skdev,
+ 	/* Driver version, fixed lenth, padded with spaces on the right */
+ 	inq.driver_version_length = sizeof(inq.driver_version);
+ 	memset(&inq.driver_version, ' ', sizeof(inq.driver_version));
+-	for (ver_byte = 0; ver_byte < sizeof(inq.driver_version); ver_byte++) {
+-		if (ver[ver_byte] != 0)
+-			inq.driver_version[ver_byte] = ver[ver_byte];
+-		else
+-			break;
+-	}
++	memcpy(inq.driver_version, DRV_VER_COMPL,
++	       min(sizeof(inq.driver_version), strlen(DRV_VER_COMPL)));
+ 
+ 	inq.page_length = cpu_to_be16((sizeof(inq) - 4));
+ 
+--
+To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
