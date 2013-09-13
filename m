@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758082Ab3IMN3I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:29:08 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:61313 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758038Ab3IMN2u (ORCPT
+	id S932951Ab3IMN3Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:29:16 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:63355 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758038Ab3IMN3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:28:50 -0400
+	Fri, 13 Sep 2013 09:29:12 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>, Sekhar Nori <nsekhar@ti.com>
-Subject: [PATCH 217/228] cpufreq: davinci: use cpufreq_generic_get() routine
-Date: Fri, 13 Sep 2013 18:32:43 +0530
-Message-Id: <9306a1c54e69d9fc30afe77c023d0780c84592d7.1379063063.git.viresh.kumar@linaro.org>
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 220/228] cpufreq: imx6q: use cpufreq_generic_get() routine
+Date: Fri, 13 Sep 2013 18:32:46 +0530
+Message-Id: <f5cad684acf2949d3cbb70db56c935d3659c1eb7.1379063063.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
 References: <cover.1379063063.git.viresh.kumar@linaro.org>
@@ -28,58 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 We have common infrastructure available with us for getting a CPUs clk rate.
 Lets use it for this driver.
 
-Cc: Sekhar Nori <nsekhar@ti.com>
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/davinci-cpufreq.c | 14 ++++----------
- 1 file changed, 4 insertions(+), 10 deletions(-)
+ drivers/cpufreq/imx6q-cpufreq.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/cpufreq/davinci-cpufreq.c b/drivers/cpufreq/davinci-cpufreq.c
-index 5e8a854..cd7fb6e 100644
---- a/drivers/cpufreq/davinci-cpufreq.c
-+++ b/drivers/cpufreq/davinci-cpufreq.c
-@@ -58,14 +58,6 @@ static int davinci_verify_speed(struct cpufreq_policy *policy)
- 	return 0;
- }
+diff --git a/drivers/cpufreq/imx6q-cpufreq.c b/drivers/cpufreq/imx6q-cpufreq.c
+index a3829a0..6993f0d 100644
+--- a/drivers/cpufreq/imx6q-cpufreq.c
++++ b/drivers/cpufreq/imx6q-cpufreq.c
+@@ -34,11 +34,6 @@ static struct device *cpu_dev;
+ static struct cpufreq_frequency_table *freq_table;
+ static unsigned int transition_latency;
  
--static unsigned int davinci_getspeed(unsigned int cpu)
+-static unsigned int imx6q_get_speed(unsigned int cpu)
 -{
--	if (cpu)
--		return 0;
--
--	return clk_get_rate(cpufreq.armclk) / 1000;
+-	return clk_get_rate(arm_clk) / 1000;
 -}
 -
- static int davinci_target(struct cpufreq_policy *policy, unsigned int idx)
+ static int imx6q_set_target(struct cpufreq_policy *policy, unsigned int index)
  {
- 	struct davinci_cpufreq_config *pdata = cpufreq.dev->platform_data;
-@@ -73,7 +65,7 @@ static int davinci_target(struct cpufreq_policy *policy, unsigned int idx)
- 	unsigned int old_freq, new_freq;
- 	int ret = 0;
+ 	struct opp *opp;
+@@ -133,13 +128,14 @@ static int imx6q_set_target(struct cpufreq_policy *policy, unsigned int index)
  
--	old_freq = davinci_getspeed(0);
-+	old_freq = policy->cur;
- 	new_freq = pdata->freq_table[idx].frequency;
+ static int imx6q_cpufreq_init(struct cpufreq_policy *policy)
+ {
++	policy->clk = arm_clk;
+ 	return cpufreq_generic_init(policy, freq_table, transition_latency);
+ }
  
- 	/* if moving to higher frequency, up the voltage beforehand */
-@@ -116,6 +108,8 @@ static int davinci_cpu_init(struct cpufreq_policy *policy)
- 			return result;
- 	}
- 
-+	policy->clk = cpufreq.armclk;
-+
- 	/*
- 	 * Time measurement across the target() function yields ~1500-1800us
- 	 * time taken with no drivers on notification list.
-@@ -129,7 +123,7 @@ static struct cpufreq_driver davinci_driver = {
- 	.flags		= CPUFREQ_STICKY,
- 	.verify		= davinci_verify_speed,
- 	.target_index	= davinci_target,
--	.get		= davinci_getspeed,
-+	.get		= cpufreq_generic_get,
- 	.init		= davinci_cpu_init,
- 	.exit		= cpufreq_generic_exit,
- 	.name		= "davinci",
+ static struct cpufreq_driver imx6q_cpufreq_driver = {
+ 	.verify = cpufreq_generic_frequency_table_verify,
+ 	.target_index = imx6q_set_target,
+-	.get = imx6q_get_speed,
++	.get = cpufreq_generic_get,
+ 	.init = imx6q_cpufreq_init,
+ 	.exit = cpufreq_generic_exit,
+ 	.name = "imx6q-cpufreq",
 -- 
 1.7.12.rc2.18.g61b472e
 
