@@ -1,150 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756203Ab3IMHti (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 03:49:38 -0400
-Received: from alvesta.synopsys.com ([198.182.60.77]:59215 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755500Ab3IMHte (ORCPT
+	id S1756442Ab3IMIcx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 04:32:53 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:63211 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755072Ab3IMIct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 03:49:34 -0400
-Message-ID: <5232C37E.2090800@synopsys.com>
-Date: Fri, 13 Sep 2013 13:19:18 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Fri, 13 Sep 2013 04:32:49 -0400
 MIME-Version: 1.0
-To: "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Fwd: ARC Fix for 3.12-rc1
-References: <523177B0.30203@synopsys.com>
-In-Reply-To: <523177B0.30203@synopsys.com>
-X-Enigmail-Version: 1.5.2
-X-Forwarded-Message-Id: <523177B0.30203@synopsys.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.111]
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <5232CB66.6000906@vmware.com>
+References: <20130912150645.GZ31370@twins.programming.kicks-ass.net>
+	<CAKMK7uFF2GkYapa2_DLv4WYAd0t+POaT+Vy9HG=HQhzMmtH9nA@mail.gmail.com>
+	<5231E18D.7070306@canonical.com>
+	<5231EF5A.7010901@vmware.com>
+	<52323734.4070908@canonical.com>
+	<5232B44C.9010408@vmware.com>
+	<5232BBE1.5030509@canonical.com>
+	<5232C2BB.9070303@vmware.com>
+	<5232C3E8.2050501@canonical.com>
+	<5232CB66.6000906@vmware.com>
+Date: Fri, 13 Sep 2013 10:32:48 +0200
+Message-ID: <CAKMK7uFkav0b+8AYkm_3eT=d6T6wvstHuOXkTwFt_Do4YmijQA@mail.gmail.com>
+Subject: Re: [BUG] completely bonkers use of set_need_resched + VM_FAULT_NOPAGE
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Thomas Hellstrom <thellstrom@vmware.com>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Peter Zijlstra <peterz@infradead.org>, Dave Airlie <airlied@linux.ie>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Fri, Sep 13, 2013 at 10:23 AM, Thomas Hellstrom
+<thellstrom@vmware.com> wrote:
+> As previously mentioned, copy_from_user should return -EFAULT, since the
+> VMAs are marked with VM_IO. It should not recurse into fault(), so evil
+> user-space looses.
 
-Please consider for stable 3.11.x.
-Mainline commit c3567f8a359b7917dcffa442301f88ed0a75211f
+I haven't put a printk in the code to prove this, but gem mmap also
+sets VM_IO in drm_gem_mmap_obj. And we can very much hit our own fault
+handler and deadlock ....
 
-Thx,
--Vineet
-
-
--------- Original Message --------
-Subject: ARC Fix for 3.12-rc1
-Date: Thu, 12 Sep 2013 13:43:36 +0530
-From: Vineet Gupta <vgupta@synopsys.com>
-To: linus Torvalds <torvalds@linux-foundation.org>
-CC: lkml <linux-kernel@vger.kernel.org>, Noam Camus <noamc@ezchip.com>,  Gilad
-Ben-Yossef <gilad@benyossef.com>, "stable@vger.kernel.org"
-<stable@vger.kernel.org>,  greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-Hi Linus,
-
-Noam found a bug in SMP bootup so it's fairly urgent. Please apply for 3.12-rc1
-
-Thx,
--Vineet
-
----
->From fa9486bf1867b4e16bb03f55f0d77c68edb327e9 Mon Sep 17 00:00:00 2001
-From: Noam Camus <noamc@ezchip.com>
-Date: Thu, 12 Sep 2013 13:07:39 +0530
-Subject: [PATCH] ARC: SMP failed to boot due to missing IVT setup
-
-Commit 05b016ecf5e7a "ARC: Setup Vector Table Base in early boot" moved
-the Interrupt vector Table setup out of arc_init_IRQ() which is called
-for all CPUs, to entry point of boot cpu only, breaking booting of others.
-
-Fix by adding the same to entry point of non-boot CPUs too.
-
-read_arc_build_cfg_regs() printing IVT Base Register didn't help the
-casue since it prints a synthetic value if zero which is totally bogus,
-so fix that to print the exact Register.
-
-[vgupta: Remove the now stale comment from header of arc_init_IRQ and
-also added the commentary for halt-on-reset]
-
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: Cc: <stable@vger.kernel.org> #3.11
-Signed-off-by: Noam Camus <noamc@ezchip.com>
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
----
- arch/arc/include/asm/sections.h | 1 -
- arch/arc/kernel/head.S          | 5 +++++
- arch/arc/kernel/irq.c           | 1 -
- arch/arc/kernel/setup.c         | 3 ---
- 4 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/arch/arc/include/asm/sections.h b/arch/arc/include/asm/sections.h
-index 6fc1159..764f1e3 100644
---- a/arch/arc/include/asm/sections.h
-+++ b/arch/arc/include/asm/sections.h
-@@ -11,7 +11,6 @@
-
- #include <asm-generic/sections.h>
-
--extern char _int_vec_base_lds[];
- extern char __arc_dccm_base[];
- extern char __dtb_start[];
-
-diff --git a/arch/arc/kernel/head.S b/arch/arc/kernel/head.S
-index 2a913f8..0f944f0 100644
---- a/arch/arc/kernel/head.S
-+++ b/arch/arc/kernel/head.S
-@@ -34,6 +34,9 @@ stext:
- 	;	IDENTITY Reg [ 3  2  1  0 ]
- 	;	(cpu-id)             ^^^	=> Zero for UP ARC700
- 	;					=> #Core-ID if SMP (Master 0)
-+	; Note that non-boot CPUs might not land here if halt-on-reset and
-+	; instead breath life from @first_lines_of_secondary, but we still
-+	; need to make sure only boot cpu takes this path.
- 	GET_CPU_ID  r5
- 	cmp	r5, 0
- 	jnz	arc_platform_smp_wait_to_boot
-@@ -98,6 +101,8 @@ stext:
-
- first_lines_of_secondary:
-
-+	sr	@_int_vec_base_lds, [AUX_INTR_VEC_BASE]
-+
- 	; setup per-cpu idle task as "current" on this CPU
- 	ld	r0, [@secondary_idle_tsk]
- 	SET_CURR_TASK_ON_CPU  r0, r1
-diff --git a/arch/arc/kernel/irq.c b/arch/arc/kernel/irq.c
-index 305b3f8..5fc9245 100644
---- a/arch/arc/kernel/irq.c
-+++ b/arch/arc/kernel/irq.c
-@@ -24,7 +24,6 @@
-  * -Needed for each CPU (hence not foldable into init_IRQ)
-  *
-  * what it does ?
-- * -setup Vector Table Base Reg - in case Linux not linked at 0x8000_0000
-  * -Disable all IRQs (on CPU side)
-  * -Optionally, setup the High priority Interrupts as Level 2 IRQs
-  */
-diff --git a/arch/arc/kernel/setup.c b/arch/arc/kernel/setup.c
-index cd74625..d9e15f1 100644
---- a/arch/arc/kernel/setup.c
-+++ b/arch/arc/kernel/setup.c
-@@ -46,10 +46,7 @@ static void read_arc_build_cfg_regs(void)
- 	READ_BCR(AUX_IDENTITY, cpu->core);
-
- 	cpu->timers = read_aux_reg(ARC_REG_TIMERS_BCR);
--
- 	cpu->vec_base = read_aux_reg(AUX_INTR_VEC_BASE);
--	if (cpu->vec_base == 0)
--		cpu->vec_base = (unsigned int)_int_vec_base_lds;
-
- 	READ_BCR(ARC_REG_D_UNCACH_BCR, uncached_space);
- 	cpu->uncached_base = uncached_space.start << 24;
+On a _very_ quick reading (and definitely not enough coffee yet for
+reading mm/* stuff) it looks like it's get_user_pages that will return
+an -EFAULT when hitting upon a VM_IO mapping (which makes sense since
+there's really no page backing it). Actually using get_user_pages was
+the original slowpath we've had in a few places until we've noticed
+that for pwrite that breaks legit userspace (the glBufferData(glMap))
+use-case), so we've switched to lock dropping and proper slowpaths
+using copy_*_user everywhere instead of trying to pin the userspace
+storage with get_user_pages.
+-Daniel
 -- 
-1.8.1.2
-
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
