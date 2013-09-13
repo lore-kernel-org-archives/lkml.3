@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751915Ab3IMFJd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 01:09:33 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:43271 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582Ab3IMFJb (ORCPT
+	id S1756714Ab3IMIHd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 04:07:33 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:20883 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755967Ab3IMIH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 01:09:31 -0400
-Date: Fri, 13 Sep 2013 07:09:28 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] perf fixes
-Message-ID: <20130913050927.GA8634@gmail.com>
-References: <CA+55aFwgyjqRHxLaWGxxsg_v07FrxbVTeLdHTGp7MfeSRjrKsQ@mail.gmail.com>
- <CA+55aFyCeXXr=57em8CC_Uzfk5PvOw0RHyA309wuOP-oDL7VxA@mail.gmail.com>
- <20130912184341.GA11400@ghostprotocols.net>
- <52321CE4.1080804@gmail.com>
- <20130912201855.GC32644@gmail.com>
- <20130912203831.GD11400@ghostprotocols.net>
- <20130912204618.GA3262@gmail.com>
- <52322D81.5090708@gmail.com>
- <20130912211846.GA7890@gmail.com>
- <52323BE4.5080100@gmail.com>
+	Fri, 13 Sep 2013 04:07:26 -0400
+Date: Fri, 13 Sep 2013 11:07:13 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Stefan Hajnoczi <stefanha@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] staging: line6: add bounds check in snd_toneport_source_put()
+Message-ID: <20130913080713.GI19211@elgon.mountain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <52323BE4.5080100@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+"source" comes from the user in snd_ctl_elem_write() so it needs to be
+checked.
 
-* David Ahern <dsahern@gmail.com> wrote:
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-> > By default a simple 'make' should build perf to the maximum extent 
-> > possible, with no other input required from the user - with warnings 
-> > displayed as package install suggestions.
-> 
-> By default there is no config. Autoprobing generates a first one or a 
-> user can specify a defconfig.
-
-This could work if there's not two but three states for individual 
-features:
-
-  - autoprobe
-  - on
-  - off
-
-and if autoprobe, if a system feature has been probed successfully, 
-automatically turned 'autoprobe' entries into 'on'.
-
-That would give us the best of all worlds - autodetection, configurability 
-and caching:
-
- - initial user types 'make' and gets a .config that has almost all
-   entries 'on', a few 'autoprobe'.
-
- - once the user installs a dependency, the corresponding .config entry
-   turns into 'on'.
-
- - the regular user or developers would have libraries that turn all
-   entries in the .config to 'on'.
-
- - if a user is genuinely uninterested in a feature, he can mark it 'off', 
-   which would then stay off permanently. This could also be used by
-   embedded/specialized builds.
-
- - other specialized users, like distro builds, could use a .config with
-   all entries 'on' and could enforce the presence of all dependencies for 
-   a successful build. [We could add 'make allyesconfig' to help that.]
-
-Thanks,
-
-	Ingo
+diff --git a/drivers/staging/line6/toneport.c b/drivers/staging/line6/toneport.c
+index 2f44d56..776d363 100644
+--- a/drivers/staging/line6/toneport.c
++++ b/drivers/staging/line6/toneport.c
+@@ -244,13 +244,17 @@ static int snd_toneport_source_put(struct snd_kcontrol *kcontrol,
+ 	struct snd_line6_pcm *line6pcm = snd_kcontrol_chip(kcontrol);
+ 	struct usb_line6_toneport *toneport =
+ 	    (struct usb_line6_toneport *)line6pcm->line6;
++	unsigned int source;
+ 
+-	if (ucontrol->value.enumerated.item[0] == toneport->source)
++	source = ucontrol->value.enumerated.item[0];
++	if (source >= ARRAY_SIZE(toneport_source_info))
++		return -EINVAL;
++	if (source == toneport->source)
+ 		return 0;
+ 
+-	toneport->source = ucontrol->value.enumerated.item[0];
++	toneport->source = source;
+ 	toneport_send_cmd(toneport->line6.usbdev,
+-			  toneport_source_info[toneport->source].code, 0x0000);
++			  toneport_source_info[source].code, 0x0000);
+ 	return 1;
+ }
+ 
