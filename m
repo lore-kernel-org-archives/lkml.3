@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757891Ab3IMNeD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:34:03 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:40646 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757893Ab3IMN2C (ORCPT
+	id S934045Ab3IMNed (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:34:33 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:42006 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757871Ab3IMN1y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:28:02 -0400
+	Fri, 13 Sep 2013 09:27:54 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 210/228] cpufreq: speedstep: remove calls to cpufreq_notify_transition()
-Date: Fri, 13 Sep 2013 18:32:36 +0530
-Message-Id: <6b616db1b7d44daa866c5dafc82f88de92f381bd.1379063063.git.viresh.kumar@linaro.org>
+        Viresh Kumar <viresh.kumar@linaro.org>, spear-devel@list.st.com
+Subject: [PATCH 209/228] cpufreq: SPEAr: remove calls to cpufreq_notify_transition()
+Date: Fri, 13 Sep 2013 18:32:35 +0530
+Message-Id: <b534df7a33f95a347fb064f41ae3080b2d400933.1379063063.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
 References: <cover.1379063063.git.viresh.kumar@linaro.org>
@@ -46,112 +45,54 @@ frequency change, this one removes it from this driver.
 
 Some related minor cleanups are also done along with it.
 
-Cc: David S. Miller <davem@davemloft.net>
+Cc: spear-devel@list.st.com
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/speedstep-centrino.c | 20 +-------------------
- drivers/cpufreq/speedstep-ich.c      |  9 ---------
- drivers/cpufreq/speedstep-smi.c      |  7 -------
- 3 files changed, 1 insertion(+), 35 deletions(-)
+ drivers/cpufreq/spear-cpufreq.c | 13 +------------
+ 1 file changed, 1 insertion(+), 12 deletions(-)
 
-diff --git a/drivers/cpufreq/speedstep-centrino.c b/drivers/cpufreq/speedstep-centrino.c
-index b7a2f8d..90b4581 100644
---- a/drivers/cpufreq/speedstep-centrino.c
-+++ b/drivers/cpufreq/speedstep-centrino.c
-@@ -424,9 +424,8 @@ static int centrino_cpu_exit(struct cpufreq_policy *policy)
- static int centrino_target(struct cpufreq_policy *policy, unsigned int index)
- {
- 	unsigned int	msr, oldmsr = 0, h = 0, cpu = policy->cpu;
--	struct cpufreq_freqs	freqs;
- 	int			retval = 0;
--	unsigned int		j, first_cpu, tmp;
-+	unsigned int		j, first_cpu;
- 	struct cpufreq_frequency_table *op_points;
- 	cpumask_var_t covered_cpus;
- 
-@@ -474,15 +473,6 @@ static int centrino_target(struct cpufreq_policy *policy, unsigned int index)
- 				goto out;
- 			}
- 
--			freqs.old = extract_clock(oldmsr, cpu, 0);
--			freqs.new = extract_clock(msr, cpu, 0);
--
--			pr_debug("target=%dkHz old=%d new=%d msr=%04x\n",
--				op_points->frequency, freqs.old, freqs.new, msr);
--
--			cpufreq_notify_transition(policy, &freqs,
--					CPUFREQ_PRECHANGE);
--
- 			first_cpu = 0;
- 			/* all but 16 LSB are reserved, treat them with care */
- 			oldmsr &= ~0xffff;
-@@ -497,8 +487,6 @@ static int centrino_target(struct cpufreq_policy *policy, unsigned int index)
- 		cpumask_set_cpu(j, covered_cpus);
- 	}
- 
--	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
--
- 	if (unlikely(retval)) {
- 		/*
- 		 * We have failed halfway through the frequency change.
-@@ -509,12 +497,6 @@ static int centrino_target(struct cpufreq_policy *policy, unsigned int index)
- 
- 		for_each_cpu(j, covered_cpus)
- 			wrmsr_on_cpu(j, MSR_IA32_PERF_CTL, oldmsr, h);
--
--		tmp = freqs.new;
--		freqs.new = freqs.old;
--		freqs.old = tmp;
--		cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
--		cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
- 	}
- 	retval = 0;
- 
-diff --git a/drivers/cpufreq/speedstep-ich.c b/drivers/cpufreq/speedstep-ich.c
-index 707721e..7639b2b 100644
---- a/drivers/cpufreq/speedstep-ich.c
-+++ b/drivers/cpufreq/speedstep-ich.c
-@@ -258,21 +258,12 @@ static unsigned int speedstep_get(unsigned int cpu)
- static int speedstep_target(struct cpufreq_policy *policy, unsigned int index)
- {
- 	unsigned int policy_cpu;
--	struct cpufreq_freqs freqs;
- 
- 	policy_cpu = cpumask_any_and(policy->cpus, cpu_online_mask);
--	freqs.old = speedstep_get(policy_cpu);
--	freqs.new = speedstep_freqs[index].frequency;
--
--	pr_debug("transiting from %u to %u kHz\n", freqs.old, freqs.new);
--
--	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
- 
- 	smp_call_function_single(policy_cpu, _speedstep_set_state, &index,
- 				 true);
- 
--	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
--
- 	return 0;
- }
- 
-diff --git a/drivers/cpufreq/speedstep-smi.c b/drivers/cpufreq/speedstep-smi.c
-index 19446e4..0f5326d 100644
---- a/drivers/cpufreq/speedstep-smi.c
-+++ b/drivers/cpufreq/speedstep-smi.c
-@@ -241,14 +241,7 @@ static void speedstep_set_state(unsigned int state)
-  */
- static int speedstep_target(struct cpufreq_policy *policy, unsigned int index)
+diff --git a/drivers/cpufreq/spear-cpufreq.c b/drivers/cpufreq/spear-cpufreq.c
+index 0326040..658cfe7 100644
+--- a/drivers/cpufreq/spear-cpufreq.c
++++ b/drivers/cpufreq/spear-cpufreq.c
+@@ -107,12 +107,10 @@ static int spear1340_set_cpu_rate(struct clk *sys_pclk, unsigned long newfreq)
+ static int spear_cpufreq_target(struct cpufreq_policy *policy,
+ 		unsigned int index)
  {
 -	struct cpufreq_freqs freqs;
--
--	freqs.old = speedstep_freqs[speedstep_get_state()].frequency;
--	freqs.new = speedstep_freqs[index].frequency;
+ 	unsigned long newfreq;
+ 	struct clk *srcclk;
+ 	int ret, mult = 1;
+ 
+-	freqs.old = spear_cpufreq_get(0);
+ 	newfreq = spear_cpufreq.freq_tbl[index].frequency * 1000;
+ 
+ 	if (of_machine_is_compatible("st,spear1340")) {
+@@ -145,23 +143,14 @@ static int spear_cpufreq_target(struct cpufreq_policy *policy,
+ 		return newfreq;
+ 	}
+ 
+-	freqs.new = newfreq / 1000;
+-	freqs.new /= mult;
 -
 -	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
- 	speedstep_set_state(index);
--	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
+-
+ 	if (mult == 2)
+ 		ret = spear1340_set_cpu_rate(srcclk, newfreq);
+ 	else
+ 		ret = clk_set_rate(spear_cpufreq.clk, newfreq);
  
- 	return 0;
+-	/* Get current rate after clk_set_rate, in case of failure */
+-	if (ret) {
++	if (ret)
+ 		pr_err("CPU Freq: cpu clk_set_rate failed: %d\n", ret);
+-		freqs.new = clk_get_rate(spear_cpufreq.clk) / 1000;
+-	}
+ 
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
+ 	return ret;
  }
+ 
 -- 
 1.7.12.rc2.18.g61b472e
 
