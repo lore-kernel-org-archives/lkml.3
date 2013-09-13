@@ -1,98 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073Ab3IMFd0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 01:33:26 -0400
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:44104 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751668Ab3IMFdY (ORCPT
+	id S1755360Ab3IMGDS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 02:03:18 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:1623
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755128Ab3IMGDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 01:33:24 -0400
-Message-ID: <5232A39B.5040205@vmware.com>
-Date: Fri, 13 Sep 2013 07:33:15 +0200
-From: Thomas Hellstrom <thellstrom@vmware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Fri, 13 Sep 2013 02:03:14 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(z551bizzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <r65073@freescale.com>, <thierry.reding@gmail.com>
+CC: <s.hauer@pengutronix.de>, <swarren@wwwdotorg.org>, <t.figa@samsung.com>,
+        <grant.likely@linaro.org>, <linux@arm.linux.org.uk>, <rob@landley.net>,
+        <ian.campbell@citrix.com>, <mark.rutland@arm.com>,
+        <pawel.moll@arm.com>, <rob.herring@calxeda.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-pwm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>
+Subject: [PATCHv4 3/4] ARM: dts: Enables FTM PWM device for Vybrid VF610 TOWER board.
+Date: Fri, 13 Sep 2013 13:58:41 +0800
+Message-ID: <1379051922-4930-4-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1379051922-4930-1-git-send-email-Li.Xiubo@freescale.com>
+References: <1379051922-4930-1-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-CC: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Peter Zijlstra <peterz@infradead.org>, Dave Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [BUG] completely bonkers use of set_need_resched + VM_FAULT_NOPAGE
-References: <20130912150645.GZ31370@twins.programming.kicks-ass.net> <CAKMK7uFF2GkYapa2_DLv4WYAd0t+POaT+Vy9HG=HQhzMmtH9nA@mail.gmail.com> <5231E18D.7070306@canonical.com> <5231EF5A.7010901@vmware.com> <52323734.4070908@canonical.com>
-In-Reply-To: <52323734.4070908@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2013 11:50 PM, Maarten Lankhorst wrote:
-> Op 12-09-13 18:44, Thomas Hellstrom schreef:
->> On 09/12/2013 05:45 PM, Maarten Lankhorst wrote:
->>> Op 12-09-13 17:36, Daniel Vetter schreef:
->>>> On Thu, Sep 12, 2013 at 5:06 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->>>>> So I'm poking around the preemption code and stumbled upon:
->>>>>
->>>>> drivers/gpu/drm/i915/i915_gem.c:                set_need_resched();
->>>>> drivers/gpu/drm/ttm/ttm_bo_vm.c:                        set_need_resched();
->>>>> drivers/gpu/drm/ttm/ttm_bo_vm.c:                        set_need_resched();
->>>>> drivers/gpu/drm/udl/udl_gem.c:          set_need_resched();
->>>>>
->>>>> All these sites basically do:
->>>>>
->>>>>     while (!trylock())
->>>>>           yield();
->>>>>
->>>>> which is a horrible and broken locking pattern.
->>>>>
->>>>> Firstly its deadlock prone, suppose the faulting process is a FIFOn+1
->>>>> task that preempted the lock holder at FIFOn.
->>>>>
->>>>> Secondly the implementation is worse than usual by abusing
->>>>> VM_FAULT_NOPAGE, which is supposed to install a PTE so that the fault
->>>>> doesn't retry, but you're using it as a get out of fault path. And
->>>>> you're using set_need_resched() which is not something a driver should
->>>>> _ever_ touch.
->>>>>
->>>>> Now I'm going to take away set_need_resched() -- and while you can
->>>>> 'reimplement' it using set_thread_flag() you're not going to do that
->>>>> because it will be broken due to changes to the preempt code.
->>>>>
->>>>> So please as to fix ASAP and don't allow anybody to trick you into
->>>>> merging silly things like that again ;-)
->>>> The set_need_resched in i915_gem.c:i915_gem_fault can actually be
->>>> removed. It was there to give the error handler a chance to sneak in
->>>> and reset the hw/sw tracking when the gpu is dead. That hack goes back
->>>> to the days when the locking around our error handler was somewhere
->>>> between nonexistent and totally broken, nowadays we keep things from
->>>> live-locking by a bit of magic in i915_mutex_lock_interruptible. I'll
->>>> whip up a patch to rip this out. I'll also check that our testsuite
->>>> properly exercises this path (needs a bit of work on a quick look for
->>>> better coverage).
->>>>
->>>> The one in ttm is just bonghits to shut up lockdep: ttm can recurse
->>>> into it's own pagefault handler and then deadlock, the trylock just
->>>> keeps lockdep quiet. We've had that bug arise in drm/i915 due to some
->>>> fun userspace did and now have testcases for them. The right solution
->>>> to fix this is to use copy_to|from_user_atomic in ttm everywhere it
->>>> holds locks and have slowpaths which drops locks, copies stuff into a
->>>> temp allocation and then continues. At least that's how we've fixed
->>>> all those inversions in i915-gem. I'm not volunteering to fix this ;-)
->>> Ah the case where a mmap'd address is passed to the execbuf ioctl? :P
->>>
->>> Fine I'll look into it a bit, hopefully before tuesday. Else it might take a bit longer since I'll be on my way to plumbers..
->> I think a possible fix would be if fault() were allowed to return an error and drop the mmap_sem() before returning.
->>
->> Otherwise we need to track down all copy_to_user / copy_from_user which happen with bo::reserve held.
-> CONFIG_PROVE_LOCKING=y
->
-> and hard grab that reserve lock within the fault handler, done.. lockdep will spit it out for you :p
->
-> ~Maarten
+Selecting system clock as the counter source clock by default.
 
-Given that all copy_to_user / copy_from_user paths are actually hit 
-during testing, right?
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ arch/arm/boot/dts/vf610-twr.dts | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
-/Thomas
+diff --git a/arch/arm/boot/dts/vf610-twr.dts b/arch/arm/boot/dts/vf610-twr.dts
+index 1a58678..27cbe91 100644
+--- a/arch/arm/boot/dts/vf610-twr.dts
++++ b/arch/arm/boot/dts/vf610-twr.dts
+@@ -57,6 +57,31 @@
+ 	status = "okay";
+ };
+ 
++&pwm0 {
++	fsl,pwm-counter-clk = "ftm0";
++	pinctrl-names = "ch0-active", "ch0-idle", "ch1-active", "ch1-idle",
++			"ch2-active", "ch2-idle", "ch3-active", "ch3-idle",
++			"ch4-active", "ch4-idle", "ch5-active", "ch5-idle",
++			"ch6-active", "ch6-idle", "ch7-active", "ch7-idle";
++	pinctrl-0 = <&pinctrl_pwm0_ch0_active>;
++	pinctrl-1 = <&pinctrl_pwm0_ch0_idle>;
++	pinctrl-2 = <&pinctrl_pwm0_ch1_active>;
++	pinctrl-3 = <&pinctrl_pwm0_ch1_idle>;
++	pinctrl-4 = <&pinctrl_pwm0_ch2_active>;
++	pinctrl-5 = <&pinctrl_pwm0_ch2_idle>;
++	pinctrl-6 = <&pinctrl_pwm0_ch3_active>;
++	pinctrl-7 = <&pinctrl_pwm0_ch3_idle>;
++	pinctrl-8 = <&pinctrl_pwm0_ch4_active>;
++	pinctrl-9 = <&pinctrl_pwm0_ch4_idle>;
++	pinctrl-10 = <&pinctrl_pwm0_ch5_active>;
++	pinctrl-11 = <&pinctrl_pwm0_ch5_idle>;
++	pinctrl-12 = <&pinctrl_pwm0_ch6_active>;
++	pinctrl-13 = <&pinctrl_pwm0_ch6_idle>;
++	pinctrl-14 = <&pinctrl_pwm0_ch7_active>;
++	pinctrl-15 = <&pinctrl_pwm0_ch7_idle>;
++	status = "okay";
++};
++
+ &uart1 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_uart1_1>;
+-- 
+1.8.0
+
+
