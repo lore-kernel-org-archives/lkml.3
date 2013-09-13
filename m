@@ -1,91 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755757Ab3IMVzU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 17:55:20 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:34706 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754981Ab3IMVzT (ORCPT
+	id S1755486Ab3IMWCZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 18:02:25 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:38745 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754852Ab3IMWCY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 17:55:19 -0400
-Message-ID: <1379109208.13477.16.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v3 2/5] memblock: Improve memblock to support allocation
- from lower address.
-From: Toshi Kani <toshi.kani@hp.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, akpm@linux-foundation.org, tj@kernel.org,
-        zhangyanfei@cn.fujitsu.com, liwanp@linux.vnet.ibm.com, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Date: Fri, 13 Sep 2013 15:53:28 -0600
-In-Reply-To: <1379064655-20874-3-git-send-email-tangchen@cn.fujitsu.com>
-References: <1379064655-20874-1-git-send-email-tangchen@cn.fujitsu.com>
-	 <1379064655-20874-3-git-send-email-tangchen@cn.fujitsu.com>
+	Fri, 13 Sep 2013 18:02:24 -0400
+Message-ID: <1379109742.2197.67.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: GPT detection regression in efi.c from commit 27a7c64
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Matt Porter <matt.porter@linaro.org>
+Cc: Karel Zak <kzak@redhat.com>, Matt Fleming <matt.fleming@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        torvalds@linux-foundation.org
+Date: Fri, 13 Sep 2013 15:02:22 -0700
+In-Reply-To: <20130913213607.GB8502@ohporter.com>
+References: <20130913145033.GA8502@ohporter.com>
+	 <1379089736.2197.14.camel@buesod1.americas.hpqcorp.net>
+	 <52334506.9030802@linaro.org>
+	 <1379095648.2197.27.camel@buesod1.americas.hpqcorp.net>
+	 <523354F3.70001@linaro.org> <20130913181720.GA1614@x2.net.home>
+	 <1379096972.2197.31.camel@buesod1.americas.hpqcorp.net>
+	 <52335A7A.6000406@linaro.org>
+	 <1379100399.2197.34.camel@buesod1.americas.hpqcorp.net>
+	 <20130913213607.GB8502@ohporter.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-09-13 at 17:30 +0800, Tang Chen wrote:
- :
-> @@ -100,8 +180,7 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
->  					phys_addr_t end, phys_addr_t size,
->  					phys_addr_t align, int nid)
->  {
-> -	phys_addr_t this_start, this_end, cand;
-> -	u64 i;
-> +	phys_addr_t ret;
->  
->  	/* pump up @end */
->  	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
-> @@ -111,18 +190,22 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
->  	start = max_t(phys_addr_t, start, PAGE_SIZE);
->  	end = max(start, end);
->  
-> -	for_each_free_mem_range_reverse(i, nid, &this_start, &this_end, NULL) {
-> -		this_start = clamp(this_start, start, end);
-> -		this_end = clamp(this_end, start, end);
-> +	if (memblock_direction_bottom_up()) {
-> +		/*
-> +		 * MEMBLOCK_ALLOC_ACCESSIBLE is 0, which is less than the end
-> +		 * of kernel image. So callers specify MEMBLOCK_ALLOC_ACCESSIBLE
-> +		 * as @start is OK.
-> +		 */
-> +		start =	max(start, __pa_symbol(_end)); /* End of kernel image. */
->  
-> -		if (this_end < size)
-> -			continue;
-> +		ret = __memblock_find_range(start, end, size, align, nid);
-> +		if (ret)
-> +			return ret;
->  
-> -		cand = round_down(this_end - size, align);
-> -		if (cand >= this_start)
-> -			return cand;
-> +		pr_warn("memblock: Failed to allocate memory in bottom up direction. Now try top down direction.\n");
+On Fri, 2013-09-13 at 17:36 -0400, Matt Porter wrote:
+[...]
+> > 
+> > diff --git a/block/partitions/efi.c b/block/partitions/efi.c
+> > index 1a5ec9a..9bae49c 100644
+> > --- a/block/partitions/efi.c
+> > +++ b/block/partitions/efi.c
+> > @@ -186,6 +186,7 @@ invalid:
+> >   */
+> >  static int is_pmbr_valid(legacy_mbr *mbr, sector_t total_sectors)
+> >  {
+> > +	uint32_t sz = 0;
+> >  	int i, part = 0, ret = 0; /* invalid by default */
+> >  
+> >  	if (!mbr || le16_to_cpu(mbr->signature) != MSDOS_MBR_SIGNATURE)
+> > @@ -216,12 +217,15 @@ check_hybrid:
+> >  	/*
+> >  	 * Protective MBRs take up the lesser of the whole disk
+> >  	 * or 2 TiB (32bit LBA), ignoring the rest of the disk.
+> > +	 * Some partitioning programs, nonetheless, choose to set
+> > +	 * the size to the maximum 32-bit limitation, disregarding
+> > +	 * the disk size.
+> >  	 *
+> >  	 * Hybrid MBRs do not necessarily comply with this.
+> >  	 */
+> >  	if (ret == GPT_MBR_PROTECTIVE) {
+> > -		if (le32_to_cpu(mbr->partition_record[part].size_in_lba) !=
+> > -		    min((uint32_t) total_sectors - 1, 0xFFFFFFFF))
+> > +		sz = le32_to_cpu(mbr->partition_record[part].size_in_lba);
+> > +		if (sz != (uint32_t) total_sectors - 1 || sz != 0xFFFFFFFF)
+> 
+> Almost! You'll want to get that brown paper bag out cause I've worn it
+> for this same type of bug before. Add this fix in and you can have my
+> 
+> Tested-by: Matt Porter <matt.porter@linaro.org>
+> 
+> diff --git a/block/partitions/efi.c b/block/partitions/efi.c
+> index 9bae49c..1eb09ee 100644
+> --- a/block/partitions/efi.c
+> +++ b/block/partitions/efi.c
+> @@ -225,7 +225,7 @@ check_hybrid:
+>          */
+>         if (ret == GPT_MBR_PROTECTIVE) {
+>                 sz = le32_to_cpu(mbr->partition_record[part].size_in_lba);
+> -               if (sz != (uint32_t) total_sectors - 1 || sz != 0xFFFFFFFF)
+> +               if (sz != (uint32_t) total_sectors - 1 && sz != 0xFFFFFFFF)
+> 			ret = 0;
 
-Is there any chance that this retry will succeed given that start and
-end are still the same?
+Oh my, yes, sorry about that. I obviously only built-tested this patch.
+Linus, if you're ok with it, please go ahead and pick this up.
 
 Thanks,
--Toshi
+Davidlohr
+
+8<-------------------------------------------------
+
+From: Davidlohr Bueso <davidlohr@hp.com>
+Subject: [PATCH] partitions/efi: loosen pmbr size in lba check
+
+Matt found that commit 27a7c64 (partitions/efi: account for pmbr size in lba)
+caused his GPT formatted eMMC device not to boot. The reason is that this commit
+enforced Linux to always check the lesser of the whole disk or 2Tib for the
+pMBR size in LBA. While most disk partitioning tools out there create a pMBR with
+these characteristics, Microsoft does not, as it always sets the entry to the
+maximum 32-bit limitation - even though a drive may be smaller than that[1].
+
+Loosen this check and only verify that the size is either the whole disk or
+0xFFFFFFFF. No tool in its right mind would set it to any value other than these.
+
+[1] http://thestarman.pcministry.com/asm/mbr/GPT.htm#GPTPT
+
+Reported-and-tested-by: Matt Porter <matt.porter@linaro.org>
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+---
+ block/partitions/efi.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/block/partitions/efi.c b/block/partitions/efi.c
+index 1a5ec9a..1eb09ee 100644
+--- a/block/partitions/efi.c
++++ b/block/partitions/efi.c
+@@ -186,6 +186,7 @@ invalid:
+  */
+ static int is_pmbr_valid(legacy_mbr *mbr, sector_t total_sectors)
+ {
++	uint32_t sz = 0;
+ 	int i, part = 0, ret = 0; /* invalid by default */
+ 
+ 	if (!mbr || le16_to_cpu(mbr->signature) != MSDOS_MBR_SIGNATURE)
+@@ -216,12 +217,15 @@ check_hybrid:
+ 	/*
+ 	 * Protective MBRs take up the lesser of the whole disk
+ 	 * or 2 TiB (32bit LBA), ignoring the rest of the disk.
++	 * Some partitioning programs, nonetheless, choose to set
++	 * the size to the maximum 32-bit limitation, disregarding
++	 * the disk size.
+ 	 *
+ 	 * Hybrid MBRs do not necessarily comply with this.
+ 	 */
+ 	if (ret == GPT_MBR_PROTECTIVE) {
+-		if (le32_to_cpu(mbr->partition_record[part].size_in_lba) !=
+-		    min((uint32_t) total_sectors - 1, 0xFFFFFFFF))
++		sz = le32_to_cpu(mbr->partition_record[part].size_in_lba);
++		if (sz != (uint32_t) total_sectors - 1 && sz != 0xFFFFFFFF)
+ 			ret = 0;
+ 	}
+ done:
+-- 
+1.7.11.7
 
 
->  	}
-> -	return 0;
-> +
-> +	return __memblock_find_range_rev(start, end, size, align, nid);
->  }
->  
->  /**
 
 
