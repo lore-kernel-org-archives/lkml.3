@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757374Ab3IMBbT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Sep 2013 21:31:19 -0400
-Received: from zetta.elopez.com.ar ([199.30.59.35]:52006 "EHLO
-	zetta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757309Ab3IMBbS (ORCPT
+	id S1757248Ab3IMBex (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Sep 2013 21:34:53 -0400
+Received: from longford.logfs.org ([213.229.74.203]:60277 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751040Ab3IMBew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Sep 2013 21:31:18 -0400
-Message-ID: <52326ADC.8040703@elopez.com.ar>
-Date: Thu, 12 Sep 2013 22:31:08 -0300
-From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
+	Thu, 12 Sep 2013 21:34:52 -0400
+Date: Thu, 12 Sep 2013 20:00:11 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Stephan Mueller <smueller@chronox.de>,
+        LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] /dev/random: Insufficient of entropy on many
+ architectures
+Message-ID: <20130913000011.GJ3809@logfs.org>
+References: <20130910203853.GG29237@thunk.org>
+ <522F851D.1040101@linaro.org>
+ <20130910211009.GI29237@thunk.org>
+ <522F984C.2070909@linaro.org>
+ <20130910223326.GD11063@thunk.org>
+ <522FB9F1.3070905@linaro.org>
+ <20130911005047.GA13315@thunk.org>
+ <20130912210717.GC3809@logfs.org>
+ <20130912233155.GB5279@thunk.org>
+ <20130912233535.GI3809@logfs.org>
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        =?ISO-8859-1?Q?David_Lanzend=F6rfer?= <david.lanzendoerfer@o2s.ch>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] memory: add a basic OF-based memory driver
-References: <1378863781-4235-1-git-send-email-emilio@elopez.com.ar> <1379032225-6425-1-git-send-email-emilio@elopez.com.ar> <CAOesGMiUMniKRLRgGPsimR0bXWQFbx+SL5dUJXOb8t0JfEcHsg@mail.gmail.com>
-In-Reply-To: <CAOesGMiUMniKRLRgGPsimR0bXWQFbx+SL5dUJXOb8t0JfEcHsg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130912233535.GI3809@logfs.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Olof,
+On Thu, 12 September 2013 19:35:36 -0400, JÃ¶rn Engel wrote:
+> 
+> I think the existing code is doing just fine for low interrupt loads.
+> It makes sense to spend a bit more work to squeeze the last bit of
+> randomness out.  But when you get lots of interrupts, you can be
+> sloppy and just xor things into the pool.
 
-El 12/09/13 21:57, Olof Johansson escribió:
-> On Thu, Sep 12, 2013 at 5:30 PM, Emilio López <emilio@elopez.com.ar> wrote:
->> This driver's only job is to claim and ensure the necessary clock
->> for memory operation on a DT-powered machine remains enabled.
->>
->> Signed-off-by: Emilio López <emilio@elopez.com.ar>
->> ---
->>
->> I believe this new patch should resolve all the concerns raised; as
->> always, all feedback is welcome :)
->
-> I think you're going about this the wrong way.
->
-> If you have a problem with a clock not staying on, shouldn't you just
-> marking it appropriately in the clock table instead, making sure it's
-> initialized with at least one reference to it?
+Btw, if we make collection cheap enough, we can start collecting
+entropy from the scheduler.  Computers are fairly deterministic, but
+not that much.  The exact time when calling schedule(), the kernel
+stack pointer and the userspace stack pointer all contain a bit of
+entropy.  Particularly on machines that lack input and disk
+randomness I would expect some benefits from this.
 
-If by "the clock table" you mean the tree as handled by the common clock 
-framework, there is no such flag available as of today; see Mike's reply 
-for more information.
+JÃ¶rn
 
-Personally I feel that if the general case can solve our problems (in 
-this case, having a consumer who prepares and enables the clock), we 
-should avoid adding special cases to the framework.
-
-> I believe that is how
-> some of the other platforms handle this, and it's a lot cleaner than
-> adding a fake binding and a fake driver just to grab a single clock.
-
-The binding doesn't have to be fake; it is actually describing the 
-memory controller hardware:
-
-mc: mc@0123000 {
-	compatible = "simple-memory-controller";
-	reg = <0x0123000 0x400>;
-	clocks = <&pll5 1>;
-};
-
-If one day we get docs and/or have any special features we may need from 
-the controller, we can use something like
-
-mc: mc@0123000 {
-	compatible = "vendor,awesome-mc", "simple-memory-controller";
-	reg = <0x0123000 0x400>;
-	clocks = <&pll5 1>;
-};
-
-Cheers,
-
-Emilio
-
+--
+Audacity augments courage; hesitation, fear.
+-- Publilius Syrus
