@@ -1,79 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755211Ab3IMTNs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 15:13:48 -0400
-Received: from mail-bl2lp0208.outbound.protection.outlook.com ([207.46.163.208]:9681
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755130Ab3IMTNq convert rfc822-to-8bit (ORCPT
+	id S1755249Ab3IMTPg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 15:15:36 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:49682 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752044Ab3IMTPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 15:13:46 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-CC: "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+	Fri, 13 Sep 2013 15:15:35 -0400
+Date: Fri, 13 Sep 2013 20:15:30 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 00/13] hv: clean up dev_attr usage
-Thread-Topic: [PATCH 00/13] hv: clean up dev_attr usage
-Thread-Index: AQHOsK+1mcM+7wT8AkG+31wmWIBnRpnECUGA
-Date: Fri, 13 Sep 2013 19:13:42 +0000
-Message-ID: <a9de297afbbd4c67b40c52b0eb37c960@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1379097181-23407-1-git-send-email-gregkh@linuxfoundation.org>
-In-Reply-To: <1379097181-23407-1-git-send-email-gregkh@linuxfoundation.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [131.107.174.227]
-x-o365ent-eop-header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-x-forefront-prvs: 0968D37274
-x-forefront-antispam-report: SFV:NSPM;SFS:(377454003)(13464003)(51704005)(199002)(189002)(1511001)(77096001)(81816001)(77982001)(80976001)(56816003)(81686001)(59766001)(76796001)(50986001)(76786001)(63696002)(76576001)(54356001)(74366001)(79102001)(65816001)(76482001)(74316001)(46102001)(83072001)(74502001)(51856001)(83322001)(19580405001)(19580395003)(47446002)(31966008)(74662001)(4396001)(54316002)(33646001)(56776001)(49866001)(47976001)(47736001)(74706001)(81342001)(81542001)(69226001)(66066001)(74876001)(80022001)(53806001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB063;H:SN2PR03MB061.namprd03.prod.outlook.com;CLIP:131.107.174.227;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Message-ID: <20130913191530.GV29403@sirena.org.uk>
+References: <1378065659-18135-1-git-send-email-linus.walleij@linaro.org>
+ <20130901201321.GB23687@sirena.org.uk>
+ <CACRpkdapBc6pRTTpnM3VWErMyzz1So_50H9_efsxXaEO_JLV7A@mail.gmail.com>
 MIME-Version: 1.0
-X-OriginatorOrg: DuplicateDomain-a84fc36a-4ed7-4e57-ab1c-3e967bcbad48.microsoft.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zBWMTysW9x6NrB/p"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdapBc6pRTTpnM3VWErMyzz1So_50H9_efsxXaEO_JLV7A@mail.gmail.com>
+X-Cookie: Your present plans will be successful.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/4] regulator: add STw481x VMMC driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--zBWMTysW9x6NrB/p
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> -----Original Message-----
-> From: Greg Kroah-Hartman [mailto:gregkh@linuxfoundation.org]
-> Sent: Friday, September 13, 2013 11:33 AM
-> To: KY Srinivasan; Haiyang Zhang
-> Cc: devel@linuxdriverproject.org; linux-kernel@vger.kernel.org
-> Subject: [PATCH 00/13] hv: clean up dev_attr usage
-> 
-> Hi,
-> 
-> Here's a set of 13 patches to get rid of the dev_attrs use in the hv bus
-> code, as it will be going away soon.  It's _way_ bigger than all other
-> conversions I've had to do so far in the kernel, as you were using a
-> "multiplexor" function for all of these files.
-> 
-> So, I've broken it up into individual show/store sysfs functions, and
-> cleaned up a bunch of debug structures that aren't needed and shouldn't
-> be exported to the rest of the kernel.
-> 
-> I've also fixed up some void * usage in the hv core, in patch 07, to
-> make things simpler and not so "magic" when dealing with these pages.
-> If you could review that one closely to ensure I didn't mess anything
-> up, I would appreciate it.
-> 
-> Also, are all of these files really needed for sysfs?  They seem to be
-> all debugging stuff, shouldn't they go into debugfs if you really
-> need/use them anymore?
-> 
-> KY, could you test these out?  I don't have access to a hv system at the
-> moment.  I'll wait for your ack before applying them to any of my trees.
-> 
-> thanks,
+On Fri, Sep 13, 2013 at 09:00:08PM +0200, Linus Walleij wrote:
+> On Sun, Sep 1, 2013 at 10:13 PM, Mark Brown <broonie@kernel.org> wrote:
 
-Will do. Thank you.
+> > I can put it on a branch so it can be pulled into arm-soc - it makes
+> > life easier for framework refactorings to have the driver in the
+> > regulator tree as well.  Would that be OK?
 
-K. Y
-> 
-> greg k-h
+> Sure but then you need patch 1/4 in there as well. I don't know if that
 
+It shouldn't do, the Kconfig dependencies should stop it actually
+getting built until the MFD is merged into the same tree I'd expect?
+But if it is required then I'm fine with it going via arm-soc only, it's
+just easier to avoid mistakes if there's no new drivers in other trees.
+
+> comment pertained to the situation prior to the v3.12 merge window
+> though, can I take this in now maybe or is there still a stir in the
+> regulator tree?
+
+There's still stuff going on - devm_regulator_register() is the main one
+I'm thinking of immediately.
+
+> They are mutally exclusive. You cannot have both at the same
+> time. The datasheet says:
+>=20
+> 0 Internal LDO VMMC is used
+> 1 External VMMC is used
+>=20
+> If it is set to 1, the internal VMMC is disconnected. So it's
+> like some internal mux. All designs I've seen use the internal
+> regulator though.
+>=20
+> I move this to probe() and used regulator_enable_regmap()
+> instead.
+
+Great, that seems more idiomatic.
+
+--zBWMTysW9x6NrB/p
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSM2RPAAoJELSic+t+oim9FPMP/3N6LDq1iCnJowDARf2ZmwR3
+5O9FCvH4N/UvhLpqvJXI8YQ6fLlVshkDLibuiptj1DhMqmwuH0tnV7XpTZwRNQXh
+4ZRXRKXDZuzPgjplb5F+IhUkcQVeNiw6p242z7mhme//sAXFMF1PmBUM7onXBpDh
+JK7i0YUZV9E0k2TljdaZdpah18J/QpKnYHiCqFrUPFzcrUZVbBRV0P2jxictgZrN
+DBy082obKPoH28oVMa+9AS9JBPqW9S31KFM13YADVwyOHj5yANYv2VSH518vCpnR
+2h38jApo9sDbJGNn5lbE9PU6RFLiKHiWAW7UvFhcFXT33LbzoKVNvpQmJ3OcS+TN
+vjygXR6NT6VO1njIeamy03nT/CXdzqO8RJHTNjNKEPZXd+jKBIg2r1+Y7ZyYo/cO
+1xQ+ksa1k/5HOxxHRv0oHgi2vzEqoOmWhrG5xAPP+186WLQ0ZYdacn8VP489ZAh4
+1jdb/0byppXdAxx5THnDmSPDzUmLgYZqdN60HfJKuDqbU0ueLLC3EhW75dGhhr0E
+a6dSJHzoIMa1wzruMd89Enr783bHq/GeLgB7h5lAw2rwqK5V41quLzRjpxYw/xbC
+fSaS8X2oPjX2RadhO1hc0R6Epr52YocNiNjZBIuz5eFdVbnYKwhAa26rgZ2M0zUw
+fPgAumP1sfW/MpXMGDqQ
+=M1bH
+-----END PGP SIGNATURE-----
+
+--zBWMTysW9x6NrB/p--
