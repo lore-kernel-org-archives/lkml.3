@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933528Ab3IMNS1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 09:18:27 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:40125 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933506Ab3IMNSR (ORCPT
+	id S933540Ab3IMNSh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 09:18:37 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:50603 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932757Ab3IMNSc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 09:18:17 -0400
+	Fri, 13 Sep 2013 09:18:32 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH 129/228] cpufreq: cpu0: use cpufreq_generic_init() routine
-Date: Fri, 13 Sep 2013 18:31:15 +0530
-Message-Id: <5634a2ff3f1e3d0544cc09fbf6dafb4a788ae91e.1379063063.git.viresh.kumar@linaro.org>
+        Viresh Kumar <viresh.kumar@linaro.org>, Sekhar Nori <nsekhar@ti.com>
+Subject: [PATCH 131/228] cpufreq: davinci: use cpufreq_generic_init() routine
+Date: Fri, 13 Sep 2013 18:31:17 +0530
+Message-Id: <a324c5d31baeda64af96ce09f612bb14c3f8dbff.1379063063.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1379063063.git.viresh.kumar@linaro.org>
 References: <cover.1379063063.git.viresh.kumar@linaro.org>
@@ -29,42 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Use generic cpufreq_generic_init() routine instead of replicating the same code
 here.
 
-Cc: Shawn Guo <shawn.guo@linaro.org>
+Cc: Sekhar Nori <nsekhar@ti.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/cpufreq-cpu0.c | 19 +------------------
- 1 file changed, 1 insertion(+), 18 deletions(-)
+ drivers/cpufreq/davinci-cpufreq.c | 10 +---------
+ 1 file changed, 1 insertion(+), 9 deletions(-)
 
-diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
-index 2486c13..d8756e7 100644
---- a/drivers/cpufreq/cpufreq-cpu0.c
-+++ b/drivers/cpufreq/cpufreq-cpu0.c
-@@ -121,24 +121,7 @@ post_notify:
+diff --git a/drivers/cpufreq/davinci-cpufreq.c b/drivers/cpufreq/davinci-cpufreq.c
+index 55cf094..972583b 100644
+--- a/drivers/cpufreq/davinci-cpufreq.c
++++ b/drivers/cpufreq/davinci-cpufreq.c
+@@ -136,21 +136,13 @@ static int davinci_cpu_init(struct cpufreq_policy *policy)
+ 			return result;
+ 	}
  
- static int cpu0_cpufreq_init(struct cpufreq_policy *policy)
- {
--	int ret;
--
--	ret = cpufreq_table_validate_and_show(policy, freq_table);
--	if (ret) {
--		pr_err("invalid frequency table: %d\n", ret);
--		return ret;
+-	result = cpufreq_table_validate_and_show(policy, freq_table);
+-	if (result) {
+-		pr_err("%s: cpufreq_table_validate_and_show() failed",
+-				__func__);
+-		return result;
 -	}
 -
--	policy->cpuinfo.transition_latency = transition_latency;
--
--	/*
--	 * The driver only supports the SMP configuartion where all processors
--	 * share the clock and voltage and clock.  Use cpufreq affected_cpus
--	 * interface to have all CPUs scaled together.
--	 */
--	cpumask_setall(policy->cpus);
--
+ 	/*
+ 	 * Time measurement across the target() function yields ~1500-1800us
+ 	 * time taken with no drivers on notification list.
+ 	 * Setting the latency to 2000 us to accommodate addition of drivers
+ 	 * to pre/post change notification list.
+ 	 */
+-	policy->cpuinfo.transition_latency = 2000 * 1000;
 -	return 0;
-+	return cpufreq_generic_init(policy, freq_table, transition_latency);
++	return cpufreq_generic_init(policy, freq_table, 2000 * 1000);
  }
  
- static struct cpufreq_driver cpu0_cpufreq_driver = {
+ static struct cpufreq_driver davinci_driver = {
 -- 
 1.7.12.rc2.18.g61b472e
 
