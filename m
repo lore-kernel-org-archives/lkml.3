@@ -1,47 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755921Ab3IMHcU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 03:32:20 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39844 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754278Ab3IMHcT (ORCPT
+	id S1755935Ab3IMHdz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 03:33:55 -0400
+Received: from chicago.guarana.org ([192.210.136.102]:35545 "EHLO
+	chicago.guarana.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751932Ab3IMHdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 03:32:19 -0400
-Date: Fri, 13 Sep 2013 09:31:56 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        John Stultz <john.stultz@linaro.org>,
+	Fri, 13 Sep 2013 03:33:53 -0400
+X-Greylist: delayed 533 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 Sep 2013 03:33:53 EDT
+Date: Fri, 13 Sep 2013 17:25:00 +1000
+From: Kevin Easton <kevin@guarana.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Peter Anvin <hpa@zytor.com>, Mike Galbraith <bitbucket@online.de>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org
-Subject: Re: [RFC PATCH] Introduce timekeeper latch synchronization
-Message-ID: <20130913073156.GF31370@twins.programming.kicks-ass.net>
-References: <20130913025253.GA17218@Krystal>
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/7] preempt_count rework -v2
+Message-ID: <20130913072459.GA15492@chicago.guarana.org>
+References: <20130910135636.GA8268@gmail.com>
+ <CA+55aFwmEQeF+PtM7cuaQ8OkuTS=R4JJ61Wwfv8u-Svo-V3KwQ@mail.gmail.com>
+ <20130910164519.GL31370@twins.programming.kicks-ass.net>
+ <CA+55aFz7WtcdkwKEGoqCzmC9HsY0LPK-oVK_oATYhRnbGq=2GA@mail.gmail.com>
+ <20130912022040.GT31370@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130913025253.GA17218@Krystal>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20130912022040.GT31370@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 10:52:53PM -0400, Mathieu Desnoyers wrote:
-> OK! Here is the full implementation of the idea against Linux
-> timekeeper, ntp, and PPS. It appears that ntp and PPS were relying on
-> the timekeeper seqlock too. And guess what, after booting my laptop with
-> this kernel there still no smoke coming out of it after a good 5 minutes
-> of testing. ;-)
+On Thu, Sep 12, 2013 at 04:20:40AM +0200, Peter Zijlstra wrote:
+> On Wed, Sep 11, 2013 at 04:02:14PM -0700, Linus Torvalds wrote:
+> > On Wed, Sep 11, 2013 at 11:59 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > >
+> > > OK, stripped it down further, I couldn't quite see how to collapse the
+> > > unary and binary operator variants though :/
+> > 
+> > Ok, this looks pretty good. I assume it works too? ;)
 > 
-> Comments are welcome.
+> Only compile tested that one.. the below is kvm boot tested until root
+> mount -- I'll try on actual hardware when I've gotten some sleep.
+> 
+> I split the thing up into two macros GEN_UNARY_RMWcc and
+> GEN_BINARY_RMWcc which ends up being more readable as well as smaller
+> code overall.
 
-I think that moving stuff into structures is a worthwhile change on its
-own, but I'll leave John and Thomas to decide on all that.
+If you wanted to collapse the unary and binary variants as you mentioned
+upthread, you could do something like (for the CC_HAVE_ASM_GOTO case):
 
-The latch thing does make the update side slightly more expensive due to
-having to do that copy every time, but ideally that wouldn't happen all
-that often.
+#define GEN_RMWcc(fullop, cc, ...) \
+do { \
+ asm volatile goto (fullop \
+ "j" cc " %l[cc_label]" \
+ : : __VA_ARGS__ \
+ : "memory" : cc_label); \
+ return 0; \
+cc_label: \
+ return 1; \
+} while (0)
+
+#define GEN_UNARY_RMWcc(op, var, arg0, cc) GEN_RMWcc(op " " arg0 ";", cc, "m" (var))
+#define GEN_BINARY_RMWcc(op, var, val, arg0, cc) GEN_RMWcc(op " %1, " arg0 ";", cc, "m" (var), "er" (val))
+
+    - Kevin
