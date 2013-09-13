@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415Ab3IMSJA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 14:09:00 -0400
-Received: from mga03.intel.com ([143.182.124.21]:11233 "EHLO mga03.intel.com"
+	id S1754125Ab3IMSIu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 14:08:50 -0400
+Received: from mga09.intel.com ([134.134.136.24]:3146 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754308Ab3IMSI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 14:08:58 -0400
+	id S1751901Ab3IMSIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 14:08:47 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,899,1371106800"; 
-   d="scan'208";a="294580030"
+   d="scan'208";a="377816856"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@kernel.org
 Cc: peterz@infradead.org, acme@infradead.org, linux-kernel@vger.kernel.org,
         eranian@google.com, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 2/6] perf, x86: Add Haswell specific transaction flag reporting v4
-Date: Fri, 13 Sep 2013 11:08:32 -0700
-Message-Id: <1379095716-4705-3-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 6/6] perf, x86: Suppress duplicated abort LBR records
+Date: Fri, 13 Sep 2013 11:08:36 -0700
+Message-Id: <1379095716-4705-7-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1379095716-4705-1-git-send-email-andi@firstfloor.org>
 References: <1379095716-4705-1-git-send-email-andi@firstfloor.org>
@@ -25,49 +25,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-In the PEBS handler report the transaction flags using the new
-generic transaction flags facility. Most of them come from
-the "tsx_tuning" field in PEBSv2, but the abort code is derived
-from the RAX register reported in the PEBS record.
+Haswell always give an extra LBR record after every TSX abort.
+Suppress the extra record.
 
-v2: Fix interaction with precise-loads
-v3: Mask out reserved bits. More comments.
-v4: Adjust white space
+This only works when the abort is visible in the LBR
+If the original abort has already left the 16 LBR entries
+the extra entry will will stay.
+
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_ds.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ arch/x86/kernel/cpu/perf_event.h           |  1 +
+ arch/x86/kernel/cpu/perf_event_intel.c     |  1 +
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c | 29 +++++++++++++++++++++--------
+ 3 files changed, 23 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 104cbba..f798be8 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -207,6 +207,8 @@ union hsw_tsx_tuning {
- 	u64	    value;
- };
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index cc16faa..3b303c6 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -440,6 +440,7 @@ struct x86_pmu {
+ 	int		lbr_nr;			   /* hardware stack size */
+ 	u64		lbr_sel_mask;		   /* LBR_SELECT valid bits */
+ 	const int	*lbr_sel_map;		   /* lbr_select mappings */
++	bool		lbr_double_abort;	   /* duplicated lbr aborts */
  
-+#define PEBS_HSW_TSX_FLAGS	0xff00000000
+ 	/*
+ 	 * Extra registers for events
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 7c53676..9262551 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -2515,6 +2515,7 @@ __init int intel_pmu_init(void)
+ 		x86_pmu.hw_config = hsw_hw_config;
+ 		x86_pmu.get_event_constraints = hsw_get_event_constraints;
+ 		x86_pmu.cpu_events = hsw_events_attrs;
++		x86_pmu.lbr_double_abort = true;
+ 		pr_cont("Haswell events, ");
+ 		break;
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index d5be06a..9ad9aaf 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -284,6 +284,7 @@ static void intel_pmu_lbr_read_64(struct cpu_hw_events *cpuc)
+ 	int lbr_format = x86_pmu.intel_cap.lbr_format;
+ 	u64 tos = intel_pmu_lbr_tos();
+ 	int i;
++	int out = 0;
+ 
+ 	for (i = 0; i < x86_pmu.lbr_nr; i++) {
+ 		unsigned long lbr_idx = (tos - i) & mask;
+@@ -306,15 +307,27 @@ static void intel_pmu_lbr_read_64(struct cpu_hw_events *cpuc)
+ 		}
+ 		from = (u64)((((s64)from) << skip) >> skip);
+ 
+-		cpuc->lbr_entries[i].from	= from;
+-		cpuc->lbr_entries[i].to		= to;
+-		cpuc->lbr_entries[i].mispred	= mis;
+-		cpuc->lbr_entries[i].predicted	= pred;
+-		cpuc->lbr_entries[i].in_tx	= in_tx;
+-		cpuc->lbr_entries[i].abort	= abort;
+-		cpuc->lbr_entries[i].reserved	= 0;
++		/*
++		 * Some CPUs report duplicated abort records,
++		 * with the second entry not having an abort bit set.
++		 * Skip them here. This loop runs backwards,
++		 * so we need to undo the previous record.
++		 * If the abort just happened outside the window
++		 * the extra entry cannot be removed.
++		 */
++		if (abort && x86_pmu.lbr_double_abort && out > 0)
++			out--;
 +
- void init_debug_store_on_cpu(int cpu)
- {
- 	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
-@@ -893,6 +895,16 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 	    (x86_pmu.intel_cap.pebs_format >= 2))
- 		data.weight = intel_hsw_weight(pebs);
++		cpuc->lbr_entries[out].from	= from;
++		cpuc->lbr_entries[out].to	= to;
++		cpuc->lbr_entries[out].mispred	= mis;
++		cpuc->lbr_entries[out].predicted = pred;
++		cpuc->lbr_entries[out].in_tx	= in_tx;
++		cpuc->lbr_entries[out].abort	= abort;
++		cpuc->lbr_entries[out].reserved	= 0;
++		out++;
+ 	}
+-	cpuc->lbr_stack.nr = i;
++	cpuc->lbr_stack.nr = out;
+ }
  
-+	if ((event->attr.sample_type & PERF_SAMPLE_TRANSACTION) &&
-+	    x86_pmu.intel_cap.pebs_format >= 2) {
-+		data.transaction =
-+			(pebs->tsx_tuning & PEBS_HSW_TSX_FLAGS) >> 32;
-+		/* For RTM XABORTs also log the abort code from AX */
-+		if ((data.transaction & PERF_SAMPLE_TXN_TRANSACTION) &&
-+		    (pebs->ax & 1))
-+			data.transaction |= pebs->ax & 0xff000000;
-+	}
-+
- 	if (has_branch_stack(event))
- 		data.br_stack = &cpuc->lbr_stack;
- 
+ void intel_pmu_lbr_read(void)
 -- 
 1.8.3.1
 
