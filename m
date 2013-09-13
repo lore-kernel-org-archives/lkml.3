@@ -1,87 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756300Ab3IMIG7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 04:06:59 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40628 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755929Ab3IMIGU (ORCPT
+	id S1756203Ab3IMHti (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 03:49:38 -0400
+Received: from alvesta.synopsys.com ([198.182.60.77]:59215 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755500Ab3IMHte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 04:06:20 -0400
-Date: Fri, 13 Sep 2013 10:06:05 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kevin Easton <kevin@guarana.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Peter Anvin <hpa@zytor.com>, Mike Galbraith <bitbucket@online.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/7] preempt_count rework -v2
-Message-ID: <20130913080605.GG31370@twins.programming.kicks-ass.net>
-References: <20130910135636.GA8268@gmail.com>
- <CA+55aFwmEQeF+PtM7cuaQ8OkuTS=R4JJ61Wwfv8u-Svo-V3KwQ@mail.gmail.com>
- <20130910164519.GL31370@twins.programming.kicks-ass.net>
- <CA+55aFz7WtcdkwKEGoqCzmC9HsY0LPK-oVK_oATYhRnbGq=2GA@mail.gmail.com>
- <20130912022040.GT31370@twins.programming.kicks-ass.net>
- <20130913072459.GA15492@chicago.guarana.org>
+	Fri, 13 Sep 2013 03:49:34 -0400
+Message-ID: <5232C37E.2090800@synopsys.com>
+Date: Fri, 13 Sep 2013 13:19:18 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130913072459.GA15492@chicago.guarana.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Fwd: ARC Fix for 3.12-rc1
+References: <523177B0.30203@synopsys.com>
+In-Reply-To: <523177B0.30203@synopsys.com>
+X-Enigmail-Version: 1.5.2
+X-Forwarded-Message-Id: <523177B0.30203@synopsys.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.111]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 13, 2013 at 05:25:00PM +1000, Kevin Easton wrote:
-> If you wanted to collapse the unary and binary variants as you mentioned
-> upthread, you could do something like (for the CC_HAVE_ASM_GOTO case):
+Hi Greg,
 
-Indeed, another 11 lines off, awesome!
+Please consider for stable 3.11.x.
+Mainline commit c3567f8a359b7917dcffa442301f88ed0a75211f
 
---- /dev/null
-+++ b/arch/x86/include/asm/rmwcc.h
-@@ -0,0 +1,41 @@
-+#ifndef _ASM_X86_RMWcc
-+#define _ASM_X86_RMWcc
+Thx,
+-Vineet
+
+
+-------- Original Message --------
+Subject: ARC Fix for 3.12-rc1
+Date: Thu, 12 Sep 2013 13:43:36 +0530
+From: Vineet Gupta <vgupta@synopsys.com>
+To: linus Torvalds <torvalds@linux-foundation.org>
+CC: lkml <linux-kernel@vger.kernel.org>, Noam Camus <noamc@ezchip.com>,  Gilad
+Ben-Yossef <gilad@benyossef.com>, "stable@vger.kernel.org"
+<stable@vger.kernel.org>,  greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+Hi Linus,
+
+Noam found a bug in SMP bootup so it's fairly urgent. Please apply for 3.12-rc1
+
+Thx,
+-Vineet
+
+---
+>From fa9486bf1867b4e16bb03f55f0d77c68edb327e9 Mon Sep 17 00:00:00 2001
+From: Noam Camus <noamc@ezchip.com>
+Date: Thu, 12 Sep 2013 13:07:39 +0530
+Subject: [PATCH] ARC: SMP failed to boot due to missing IVT setup
+
+Commit 05b016ecf5e7a "ARC: Setup Vector Table Base in early boot" moved
+the Interrupt vector Table setup out of arc_init_IRQ() which is called
+for all CPUs, to entry point of boot cpu only, breaking booting of others.
+
+Fix by adding the same to entry point of non-boot CPUs too.
+
+read_arc_build_cfg_regs() printing IVT Base Register didn't help the
+casue since it prints a synthetic value if zero which is totally bogus,
+so fix that to print the exact Register.
+
+[vgupta: Remove the now stale comment from header of arc_init_IRQ and
+also added the commentary for halt-on-reset]
+
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: Cc: <stable@vger.kernel.org> #3.11
+Signed-off-by: Noam Camus <noamc@ezchip.com>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+---
+ arch/arc/include/asm/sections.h | 1 -
+ arch/arc/kernel/head.S          | 5 +++++
+ arch/arc/kernel/irq.c           | 1 -
+ arch/arc/kernel/setup.c         | 3 ---
+ 4 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arc/include/asm/sections.h b/arch/arc/include/asm/sections.h
+index 6fc1159..764f1e3 100644
+--- a/arch/arc/include/asm/sections.h
++++ b/arch/arc/include/asm/sections.h
+@@ -11,7 +11,6 @@
+
+ #include <asm-generic/sections.h>
+
+-extern char _int_vec_base_lds[];
+ extern char __arc_dccm_base[];
+ extern char __dtb_start[];
+
+diff --git a/arch/arc/kernel/head.S b/arch/arc/kernel/head.S
+index 2a913f8..0f944f0 100644
+--- a/arch/arc/kernel/head.S
++++ b/arch/arc/kernel/head.S
+@@ -34,6 +34,9 @@ stext:
+ 	;	IDENTITY Reg [ 3  2  1  0 ]
+ 	;	(cpu-id)             ^^^	=> Zero for UP ARC700
+ 	;					=> #Core-ID if SMP (Master 0)
++	; Note that non-boot CPUs might not land here if halt-on-reset and
++	; instead breath life from @first_lines_of_secondary, but we still
++	; need to make sure only boot cpu takes this path.
+ 	GET_CPU_ID  r5
+ 	cmp	r5, 0
+ 	jnz	arc_platform_smp_wait_to_boot
+@@ -98,6 +101,8 @@ stext:
+
+ first_lines_of_secondary:
+
++	sr	@_int_vec_base_lds, [AUX_INTR_VEC_BASE]
 +
-+#ifdef CC_HAVE_ASM_GOTO
-+
-+#define __GEN_RMWcc(fullop, var, cc, ...)				\
-+do {									\
-+	asm volatile goto (fullop "; j" cc " %l[cc_label]"		\
-+			: : "m" (var), ## __VA_ARGS__ 			\
-+			: "memory" : cc_label);				\
-+	return 0;							\
-+cc_label:								\
-+	return 1;							\
-+} while (0)
-+
-+#define GEN_UNARY_RMWcc(op, var, arg0, cc) 				\
-+	__GEN_RMWcc(op " " arg0, var, cc)
-+
-+#define GEN_BINARY_RMWcc(op, var, val, arg0, cc)			\
-+	__GEN_RMWcc(op " %1, " arg0, var, cc, "er" (val))
-+
-+#else /* !CC_HAVE_ASM_GOTO */
-+
-+#define __GEN_RMWcc(fullop, var, cc, ...)				\
-+do {									\
-+	char c;								\
-+	asm volatile (fullop "; set" cc " %1"				\
-+			: "+m" (var), "=qm" (c)				\
-+			: __VA_ARGS__ : "memory");			\
-+	return c != 0;							\
-+} while (0)
-+
-+#define GEN_UNARY_RMWcc(op, var, arg0, cc)				\
-+	__GEN_RMWcc(op " " arg0, var, cc)
-+
-+#define GEN_BINARY_RMWcc(op, var, val, arg0, cc)			\
-+	__GEN_RMWcc(op " %2, " arg0, var, cc, "er" (val))
-+
-+#endif /* CC_HAVE_ASM_GOTO */
-+
-+#endif /* _ASM_X86_RMWcc */
+ 	; setup per-cpu idle task as "current" on this CPU
+ 	ld	r0, [@secondary_idle_tsk]
+ 	SET_CURR_TASK_ON_CPU  r0, r1
+diff --git a/arch/arc/kernel/irq.c b/arch/arc/kernel/irq.c
+index 305b3f8..5fc9245 100644
+--- a/arch/arc/kernel/irq.c
++++ b/arch/arc/kernel/irq.c
+@@ -24,7 +24,6 @@
+  * -Needed for each CPU (hence not foldable into init_IRQ)
+  *
+  * what it does ?
+- * -setup Vector Table Base Reg - in case Linux not linked at 0x8000_0000
+  * -Disable all IRQs (on CPU side)
+  * -Optionally, setup the High priority Interrupts as Level 2 IRQs
+  */
+diff --git a/arch/arc/kernel/setup.c b/arch/arc/kernel/setup.c
+index cd74625..d9e15f1 100644
+--- a/arch/arc/kernel/setup.c
++++ b/arch/arc/kernel/setup.c
+@@ -46,10 +46,7 @@ static void read_arc_build_cfg_regs(void)
+ 	READ_BCR(AUX_IDENTITY, cpu->core);
+
+ 	cpu->timers = read_aux_reg(ARC_REG_TIMERS_BCR);
+-
+ 	cpu->vec_base = read_aux_reg(AUX_INTR_VEC_BASE);
+-	if (cpu->vec_base == 0)
+-		cpu->vec_base = (unsigned int)_int_vec_base_lds;
+
+ 	READ_BCR(ARC_REG_D_UNCACH_BCR, uncached_space);
+ 	cpu->uncached_base = uncached_space.start << 24;
+-- 
+1.8.1.2
+
 
