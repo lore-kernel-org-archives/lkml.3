@@ -1,77 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754897Ab3IMG6S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 02:58:18 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:38656 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751467Ab3IMG6P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 02:58:15 -0400
-Message-ID: <1379055412.16481.7.camel@iivanov-dev.int.mm-sol.com>
-Subject: Re: [PATCH 1/2] ARM: msm: Add support for MSM8974 Dragonboard
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Rohit Vaswani <rvaswani@codeaurora.org>
-Cc: Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+	id S1756186Ab3IMI0B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 04:26:01 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:35538 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755500Ab3IMIZ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 04:25:58 -0400
+Message-ID: <5232CC15.8090208@linaro.org>
+Date: Fri, 13 Sep 2013 10:25:57 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Russell King <linux@arm.linux.org.uk>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Date: Fri, 13 Sep 2013 09:56:52 +0300
-In-Reply-To: <5231ED31.7080102@codeaurora.org>
-References: <1375743779-24993-1-git-send-email-rvaswani@codeaurora.org>
-	 <1375780486.2725.7.camel@iivanov-dev.int.mm-sol.com>
-	 <20130911180006.GA12624@codeaurora.org>
-	 <1378994706.16481.6.camel@iivanov-dev.int.mm-sol.com>
-	 <5231ED31.7080102@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+        Michal Simek <michal.simek@xilinx.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] tick: broadcast: Deny per-cpu clockevents from being
+ broadcast sources
+References: <1379004640-15117-1-git-send-email-soren.brinkmann@xilinx.com> <1379004640-15117-2-git-send-email-soren.brinkmann@xilinx.com> <alpine.DEB.2.02.1309122224420.4089@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1309122224420.4089@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-09-12 at 09:34 -0700, Rohit Vaswani wrote: 
-> On 9/12/2013 7:05 AM, Ivan T. Ivanov wrote:
-> > Hi,
-> >
-> > On Wed, 2013-09-11 at 11:00 -0700, David Brown wrote:
-> >> On Tue, Aug 06, 2013 at 12:14:46PM +0300, Ivan T. Ivanov wrote:
-> >>
-> >>> Attached patch enables earlyprink for this board.
-> >>>
-> >>> [920] booting linux @ 0x8000, ramdisk @ 0x2000000 (1067699), tags/device tree @ 0x1e00000
-> >>> Uncompressing Linux... done, booting the kernel.
-> >>> [    0.000000] Booting Linux on physical CPU 0x0
-> >>> [    0.000000] Linux version 3.11.0-rc4-00003-g7c8394e (iivanov@dev) (gcc version 4.6.3 (GCC) ) #502 SMP PREEMPT Tue Aug 6 12:09:07 EEST3
-> >>> [    0.000000] CPU: ARMv7 Processor [512f06f0] revision 0 (ARMv7), cr=10c5387d
-> >>> [    0.000000] CPU: PIPT / VIPT nonaliasing data cache, PIPT instruction cache
-> >>> [    0.000000] Machine: Qualcomm MSM (Flattened Device Tree), model: Qualcomm MSM8974 Dragonboard
-> >> We'll need to have either Rohit include this in his patch series, or
-> >> you'll have to format this as a valid patch.
-> > I don't have preferences. Rohit could you send this patch
-> > with you changes?
+On 09/12/2013 10:30 PM, Thomas Gleixner wrote:
+> On Thu, 12 Sep 2013, Soren Brinkmann wrote:
+>> From: Stephen Boyd <sboyd@codeaurora.org>
+>>
+>> On most ARM systems the per-cpu clockevents are truly per-cpu in
+>> the sense that they can't be controlled on any other CPU besides
+>> the CPU that they interrupt. If one of these clockevents were to
+>> become a broadcast source we will run into a lot of trouble
+>> because the broadcast source is enabled on the first CPU to go
+>> into deep idle (if that CPU suffers from FEAT_C3_STOP) and that
+>> could be a different CPU than what the clockevent is interrupting
+>> (or even worse the CPU that the clockevent interrupts could be
+>> offline).
+>>
+>> Theoretically it's possible to support per-cpu clockevents as the
+>> broadcast source but so far we haven't needed this and supporting
+>> it is rather complicated. Let's just deny the possibility for now
+>> until this becomes a reality (let's hope it never does!).
 > 
-> Yep. Will fixup this as part of the initial support.
-
-Thanks, 
-Ivan
-
-> > Regards,
-> > Ivan
-> >
-> >> Thanks,
-> >> David
-> >>
-> >
+> Well, we can't do it this way. There are globally accessible clock
+> event devices which deliver only to cpu0. So the mask check might be
+> causing failure here.
 > 
-> 
-> Thanks,
-> Rohit Vaswani
-> 
+> Just add a feature flag CLOCK_EVT_FEAT_PERCPU to the clock event
+> device and check for it.
 
+It sounds probably more understandable than dealing with the cpumasks.
 
+I am wondering if this is semantically opposed to
+http://lwn.net/Articles/566270/ ?
+
+[PATCH V3 0/6] cpuidle/ppc: Enable broadcast support for deep idle states
+
+  -- Daniel
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
+  * English - detected
+  * English
+  * French
+
+  * English
+  * French
+
+ <javascript:void(0);>
