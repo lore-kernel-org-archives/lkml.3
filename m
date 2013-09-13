@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756563Ab3IML2y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 07:28:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24157 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755675Ab3IML11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 07:27:27 -0400
-From: Gerd Hoffmann <kraxel@redhat.com>
-To: linux-usb@vger.kernel.org
-Cc: Gerd Hoffmann <kraxel@redhat.com>, Matthew Wilcox <willy@linux.intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-scsi@vger.kernel.org (open list:USB ATTACHED SCSI),
-        usb-storage@lists.one-eyed-alien.net (open list:USB MASS STORAGE...),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v3 2/6] uas: properly reinitialize in uas_eh_bus_reset_handler
-Date: Fri, 13 Sep 2013 13:27:11 +0200
-Message-Id: <1379071635-30701-3-git-send-email-kraxel@redhat.com>
-In-Reply-To: <1379071635-30701-1-git-send-email-kraxel@redhat.com>
-References: <1379071635-30701-1-git-send-email-kraxel@redhat.com>
+	id S1756376Ab3IMLaT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 07:30:19 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45514 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756149Ab3IMLaP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 07:30:15 -0400
+Date: Fri, 13 Sep 2013 13:29:56 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Vince Weaver <vince@deater.net>,
+        Andi Kleen <ak@linux.intel.com>, acme@infradead.org,
+        linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+        torvalds@linux-foundation.org, trinity@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>
+Subject: Re: [PATCH 1/2] tools, perf: Add a precise event qualifier v2
+Message-ID: <20130913112956.GA21832@twins.programming.kicks-ass.net>
+References: <1374501138-13496-1-git-send-email-andi@firstfloor.org>
+ <alpine.DEB.2.02.1307230137160.18617@pianoman.cluster.toy>
+ <20130723060108.GA18396@tassilo.jf.intel.com>
+ <alpine.DEB.2.02.1307231717580.27628@pianoman.cluster.toy>
+ <20130723225150.GT6123@two.firstfloor.org>
+ <20130912165733.GA23698@gmail.com>
+ <20130912173617.GI18242@two.firstfloor.org>
+ <20130913085654.GI31370@twins.programming.kicks-ass.net>
+ <20130913095057.GB11611@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130913095057.GB11611@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
----
- drivers/usb/storage/uas.c | 5 +++++
- 1 file changed, 5 insertions(+)
+On Fri, Sep 13, 2013 at 11:50:57AM +0200, Ingo Molnar wrote:
+> For example if we added 'type' as well we could expose the generic, 
+> hardware-independent events via sysfs as well.
 
-diff --git a/drivers/usb/storage/uas.c b/drivers/usb/storage/uas.c
-index d966b59..fc08ee9 100644
---- a/drivers/usb/storage/uas.c
-+++ b/drivers/usb/storage/uas.c
-@@ -85,6 +85,8 @@ static int uas_submit_urbs(struct scsi_cmnd *cmnd,
- 				struct uas_dev_info *devinfo, gfp_t gfp);
- static void uas_do_work(struct work_struct *work);
- static int uas_try_complete(struct scsi_cmnd *cmnd, const char *caller);
-+static void uas_configure_endpoints(struct uas_dev_info *devinfo);
-+static void uas_free_streams(struct uas_dev_info *devinfo);
- 
- static DECLARE_WORK(uas_work, uas_do_work);
- static DEFINE_SPINLOCK(uas_work_lock);
-@@ -800,7 +802,10 @@ static int uas_eh_bus_reset_handler(struct scsi_cmnd *cmnd)
- 	usb_kill_anchored_urbs(&devinfo->cmd_urbs);
- 	usb_kill_anchored_urbs(&devinfo->sense_urbs);
- 	usb_kill_anchored_urbs(&devinfo->data_urbs);
-+	uas_free_streams(devinfo);
- 	err = usb_reset_device(udev);
-+	if (!err)
-+		uas_configure_endpoints(devinfo);
- 	devinfo->resetting = 0;
- 
- 	if (err) {
--- 
-1.8.3.1
+Type is already fully implied by where you'll find the event in sysfs:
 
+  /sys/bus/event_sources/devices/$PMU/events/
+
+needs
+
+  perf_event_attr::type := /sys/bus/event_sources/devices/$PMU/type
