@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757977Ab3IMORU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 10:17:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45752 "EHLO mx1.redhat.com"
+	id S1758022Ab3IMOTG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 10:19:06 -0400
+Received: from ra.se.axis.com ([195.60.68.13]:46581 "EHLO ra.se.axis.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754596Ab3IMORT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 10:17:19 -0400
-Date: Fri, 13 Sep 2013 10:16:38 -0400
-From: Dave Jones <davej@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: trinity finds ftrace/perf bug. Film at 11.
-Message-ID: <20130913141638.GA6799@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	Ingo Molnar <mingo@kernel.org>
-References: <20130911135434.GA678@redhat.com>
- <20130912141913.2ffc7077@gandalf.local.home>
- <20130913105637.GM31370@twins.programming.kicks-ass.net>
+	id S1757680Ab3IMOTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 10:19:04 -0400
+Date: Fri, 13 Sep 2013 16:19:00 +0200
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "rjw@sisk.pl" <rjw@sisk.pl>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Jesper Nilsson <jespern@axis.com>, Mikael Starvik <starvik@axis.com>,
+        linux-cris-kernel <linux-cris-kernel@axis.com>
+Subject: Re: [PATCH 061/228] cpufreq: cris: Use generic cpufreq routines
+Message-ID: <20130913141900.GE32443@axis.com>
+References: <cover.1379063063.git.viresh.kumar@linaro.org>
+ <d5f36a652c8fed4bb90bb711f520c964131a0d61.1379063063.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130913105637.GM31370@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <d5f36a652c8fed4bb90bb711f520c964131a0d61.1379063063.git.viresh.kumar@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 13, 2013 at 12:56:37PM +0200, Peter Zijlstra wrote:
- > On Thu, Sep 12, 2013 at 02:19:13PM -0400, Steven Rostedt wrote:
- > 
- > > > The good news is I can reproduce that very quickly.
- > > > (Apply http://paste.fedoraproject.org/38721/37890755 on top of trinity.git,
- > > >  and run ./trinity -l off -q -C32 -c inotify_init1 -c perf_event_open -c newlstat)
- > 
- > " The paste you are looking for does not exist "
- 
-bah. that sucks. appended below.
+On Fri, Sep 13, 2013 at 03:00:07PM +0200, Viresh Kumar wrote:
+> Most of the CPUFreq drivers do similar things in .exit() and .verify() routines
+> and .attr. So its better if we have generic routines for them which can be used
+> by cpufreq drivers then.
+> 
+> This patch uses these generic routines for this driver.
 
- > And that line on its own doesn't seem to do much.. its been running for
- > minutes now.
- > 
- > Or does 'quickly' mean something else?
+Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
 
-without the diff, it'll use all kinds of fds. this diff hardwires it to just use
-fd's from perf_event_open.  I'll hack up a command line switch to do this in a better
-way at some point.
+> Cc: Mikael Starvik <starvik@axis.com>
+> Cc: linux-cris-kernel@axis.com
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-	Dave
-
-
-diff --git a/fds.c b/fds.c
-index cc1ca6d..f48c95e 100644
---- a/fds.c
-+++ b/fds.c
-@@ -119,6 +119,8 @@ static int get_new_random_fd(void)
- retry:
- 	i = rand() % 6;
- 
-+	i = 3;
-+
- 	if (do_specific_proto == TRUE)
- 		i = 1;
- 
+/^JN - Jesper Nilsson
+-- 
+               Jesper Nilsson -- jesper.nilsson@axis.com
