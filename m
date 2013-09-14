@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932366Ab3INTQE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 15:16:04 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:52054 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932238Ab3INTQD (ORCPT
+	id S932393Ab3INTVr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 15:21:47 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:42348 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932263Ab3INTVq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 15:16:03 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <5234B5F0.6010706@roeck-us.net>
-Date: Sat, 14 Sep 2013 12:16:00 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Sat, 14 Sep 2013 15:21:46 -0400
+Message-ID: <5234B74E.5000402@cogentembedded.com>
+Date: Sat, 14 Sep 2013 23:21:50 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Jean Delvare <khali@linux-fr.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, lm-sensors@lm-sensors.org,
+To: Dong Zhu <bluezhudong@gmail.com>
+CC: Richard Cochran <richardcochran@gmail.com>, Rob Landley <rob@landley.net>,
+        netdev@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/9] Introduce hwmon_device_register_with_groups and
-References: <1378003742-18685-1-git-send-email-linux@roeck-us.net> <5224E62F.1050400@roeck-us.net> <20130914203156.55e4b885@endymion.delvare>
-In-Reply-To: <20130914203156.55e4b885@endymion.delvare>
+Subject: Re: [PATCH] ptp: measure the time offset between PHC and system clock
+References: <20130914080306.GC23682@zhudong.nay.redhat.com>
+In-Reply-To: <20130914080306.GC23682@zhudong.nay.redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14/2013 11:31 AM, Jean Delvare wrote:
-> Hi Guenter,
->
-> On Mon, 02 Sep 2013 12:25:35 -0700, Guenter Roeck wrote:
->> On 08/31/2013 07:48 PM, Guenter Roeck wrote:
->>> This patch series introduces new hwmon API functions
->>> hwmon_device_register_with_groups() and devm_hwmon_device_register_with_groups().
->>>
->>> hwmon_device_register_with_groups() lets callers register hwmon devices
->>> as well as associated sysfs attributes with a single call. This simplifies
->>> hwmon device registration and avoids potential race conditions seen
->>> if sysfs attributes are created after the initial hwmon device was
->>> registered.
->>>
->>> devm_hwmon_device_register_with_groups() is the managed version of the same
->>> function.
->>>
->> Jean, any comments on this patch series ?
->>
->> If you are ok with it, I would like to push the new API (patches 1 and 7 of the series)
->> into 3.12, and keep the rest for 3.13.
->
-> I'm afraid I won't have the time to review all these patches. The
-> concept looks good to me and I trust that you implemented things right
-> so feel free to push the patches upstream even without my review.
->
+Hello.
 
-No problem. I'll add the entire series to -next after the commit window closes.
+On 09/14/2013 12:03 PM, Dong Zhu wrote:
 
-Thanks,
-Guenter
+> This patch add a method into testptp.c to measure the time offset
+> between phc and system clock through the ioctl PTP_SYS_OFFSET.
+
+> Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
+> ---
+>   Documentation/ptp/testptp.c | 40 ++++++++++++++++++++++++++++++++++++++--
+>   1 file changed, 38 insertions(+), 2 deletions(-)
+
+> diff --git a/Documentation/ptp/testptp.c b/Documentation/ptp/testptp.c
+> index f59ded0..72bb030 100644
+> --- a/Documentation/ptp/testptp.c
+> +++ b/Documentation/ptp/testptp.c
+[...]
+> @@ -376,6 +387,31 @@ int main(int argc, char *argv[])
+>   		}
+>   	}
+>
+> +	if (offset) {
+> +		sysoff = calloc(1, sizeof(*sysoff));
+> +		if (!sysoff) {
+> +			perror("calloc");
+> +			return -1;
+> +		}
+> +		sysoff->n_samples = n_samples;
+> +
+> +		if (ioctl(fd, PTP_SYS_OFFSET, sysoff))
+> +			perror("PTP_SYS_OFFSET");
+> +		else
+> +			puts("time offset between PHC and
+> +					 system clock request okay");
+
+    Don't break the string constant that way, there'll be all spaces between 
+"and" and "system" included in it. Do it like this:
+
+			puts("time offset between PHC and "
+			     "system clock request okay");
+
+WBR, Sergei
 
