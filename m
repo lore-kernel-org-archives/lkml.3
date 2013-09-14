@@ -1,91 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756382Ab3INCyC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 22:54:02 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:25312 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756004Ab3INCyB (ORCPT
+	id S1756403Ab3INC6D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 22:58:03 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:50812 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756179Ab3INC6B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 22:54:01 -0400
-Message-ID: <5233CFBF.4000803@huawei.com>
-Date: Sat, 14 Sep 2013 10:53:51 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 13 Sep 2013 22:58:01 -0400
+Message-ID: <5233D09F.6040307@oracle.com>
+Date: Sat, 14 Sep 2013 10:57:35 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] hung_task: change sysctl_hung_task_check_count to int
-References: <5233CE5E.7040004@huawei.com>
-In-Reply-To: <5233CE5E.7040004@huawei.com>
-Content-Type: text/plain; charset="GB2312"
+To: Mel Gorman <mgorman@suse.de>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/50] Basic scheduler support for automatic NUMA balancing
+ V7
+References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
+In-Reply-To: <1378805550-29949-1-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Ingo, as this touched include/linux/sched/.
+Hi Mel,
 
-On 2013/9/14 10:47, Li Zefan wrote:
-> As sysctl_hung_task_check_count is unsigned long, when this value is
-> assigned to max_count in check_hung_uninterruptible_tasks(), it's
-> truncated to int type.
+On 09/10/2013 05:31 PM, Mel Gorman wrote:
+> It has been a long time since V6 of this series and time for an update. Much
+> of this is now stabilised with the most important addition being the inclusion
+> of Peter and Rik's work on grouping tasks that share pages together.
 > 
-> Therefore if we write 2^32 to sysctl.hung_task_check_count, hung task
-> detection will be effectively disabled.
-> 
-> Not a big deal, but still it's better to fix this inconsistency.
-> 
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
-> ---
->  include/linux/sched/sysctl.h | 2 +-
->  kernel/hung_task.c           | 2 +-
->  kernel/sysctl.c              | 4 ++--
->  3 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
-> index bf8086b..9552afa 100644
-> --- a/include/linux/sched/sysctl.h
-> +++ b/include/linux/sched/sysctl.h
-> @@ -2,8 +2,8 @@
->  #define _SCHED_SYSCTL_H
->  
->  #ifdef CONFIG_DETECT_HUNG_TASK
-> +extern int	     sysctl_hung_task_check_count;
->  extern unsigned int  sysctl_hung_task_panic;
-> -extern unsigned long sysctl_hung_task_check_count;
->  extern unsigned long sysctl_hung_task_timeout_secs;
->  extern unsigned long sysctl_hung_task_warnings;
->  extern int proc_dohung_task_timeout_secs(struct ctl_table *table, int write,
-> diff --git a/kernel/hung_task.c b/kernel/hung_task.c
-> index 6df6149..b5a5d42 100644
-> --- a/kernel/hung_task.c
-> +++ b/kernel/hung_task.c
-> @@ -19,7 +19,7 @@
->  /*
->   * The number of tasks checked:
->   */
-> -unsigned long __read_mostly sysctl_hung_task_check_count = PID_MAX_LIMIT;
-> +int __read_mostly sysctl_hung_task_check_count = PID_MAX_LIMIT;
->  
->  /*
->   * Limit number of tasks checked in a batch.
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> index 07f6fc4..5e5cc21 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -962,9 +962,9 @@ static struct ctl_table kern_table[] = {
->  	{
->  		.procname	= "hung_task_check_count",
->  		.data		= &sysctl_hung_task_check_count,
-> -		.maxlen		= sizeof(unsigned long),
-> +		.maxlen		= sizeof(int),
->  		.mode		= 0644,
-> -		.proc_handler	= proc_doulongvec_minmax,
-> +		.proc_handler	= proc_dointvec_minmax,
->  	},
->  	{
->  		.procname	= "hung_task_timeout_secs",
+> This series has a number of goals. It reduces overhead of automatic balancing
+> through scan rate reduction and the avoidance of TLB flushes. It selects a
+> preferred node and moves tasks towards their memory as well as moving memory
+> toward their task. It handles shared pages and groups related tasks together.
 > 
 
+I found sometimes numa balancing will be broken after khugepaged
+started, because khugepaged always allocate huge page from the node of
+the first scanned normal page during collapsing.
+
+A simple use case is when a user run his application interleaving all
+nodes using "numactl --interleave=all xxxx".
+But after khugepaged started most pages of his application will be
+located to only one specific node.
+
+I have a simple patch fix this issue in thread:
+[PATCH 2/2] mm: thp: khugepaged: add policy for finding target node
+
+I think this may related with this topic, I don't know whether this
+series can also fix the issue I mentioned.
+
+-- 
+Regards,
+-Bob
