@@ -1,117 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755670Ab3INKsl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 06:48:41 -0400
-Received: from gmmr2.centrum.cz ([46.255.227.252]:39833 "EHLO gmmr2.centrum.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753589Ab3INKsj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 06:48:39 -0400
-To: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
-Subject: =?utf-8?q?Re=3A_=5Bpatch_0=2F7=5D_improve_memcg_oom_killer_robustness_v2?=
-Date: Sat, 14 Sep 2013 12:48:31 +0200
-From: "azurIt" <azurit@pobox.sk>
-Cc: =?utf-8?q?Andrew_Morton?= <akpm@linux-foundation.org>,
-        =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>,
-        =?utf-8?q?David_Rientjes?= <rientjes@google.com>,
-        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
-        =?utf-8?q?KOSAKI_Motohiro?= <kosaki.motohiro@jp.fujitsu.com>,
-        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <x86@kernel.org>,
-        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <20130910201222.GA25972@cmpxchg.org>, <20130910230853.FEEC19B5@pobox.sk>, <20130910211823.GJ856@cmpxchg.org>, <20130910233247.9EDF4DBA@pobox.sk>, <20130910220329.GK856@cmpxchg.org>, <20130911143305.FFEAD399@pobox.sk>, <20130911180327.GL856@cmpxchg.org>, <20130911205448.656D9D7C@pobox.sk>, <20130911191150.GN856@cmpxchg.org>, <20130911214118.7CDF2E71@pobox.sk> <20130911200426.GO856@cmpxchg.org>
-In-Reply-To: <20130911200426.GO856@cmpxchg.org>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
-X-Original-From: azurit@pobox.sk
+	id S1754729Ab3INLIR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 07:08:17 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:40432 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752490Ab3INLIP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Sep 2013 07:08:15 -0400
+Message-ID: <523451BD.4080003@kernel.org>
+Date: Sat, 14 Sep 2013 13:08:29 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
 MIME-Version: 1.0
-Message-Id: <20130914124831.4DD20346@pobox.sk>
-X-Maser: Georgo
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Lee Jones <lee.jones@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@linaro.org, denis.ciocca@st.com,
+        linux-iio@vger.kernel.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 10/38] Documentation: dt: iio: Add binding for LPS001WP
+References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org> <1378817379-8238-11-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1378817379-8238-11-git-send-email-lee.jones@linaro.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> CC: "Andrew Morton" <akpm@linux-foundation.org>, "Michal Hocko" <mhocko@suse.cz>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
->On Wed, Sep 11, 2013 at 09:41:18PM +0200, azurIt wrote:
->> >On Wed, Sep 11, 2013 at 08:54:48PM +0200, azurIt wrote:
->> >> >On Wed, Sep 11, 2013 at 02:33:05PM +0200, azurIt wrote:
->> >> >> >On Tue, Sep 10, 2013 at 11:32:47PM +0200, azurIt wrote:
->> >> >> >> >On Tue, Sep 10, 2013 at 11:08:53PM +0200, azurIt wrote:
->> >> >> >> >> >On Tue, Sep 10, 2013 at 09:32:53PM +0200, azurIt wrote:
->> >> >> >> >> >> Here is full kernel log between 6:00 and 7:59:
->> >> >> >> >> >> http://watchdog.sk/lkml/kern6.log
->> >> >> >> >> >
->> >> >> >> >> >Wow, your apaches are like the hydra.  Whenever one is OOM killed,
->> >> >> >> >> >more show up!
->> >> >> >> >> 
->> >> >> >> >> 
->> >> >> >> >> 
->> >> >> >> >> Yeah, it's supposed to do this ;)
->> >> >> >
->> >> >> >How are you expecting the machine to recover from an OOM situation,
->> >> >> >though?  I guess I don't really understand what these machines are
->> >> >> >doing.  But if you are overloading them like crazy, isn't that the
->> >> >> >expected outcome?
->> >> >> 
->> >> >> 
->> >> >> 
->> >> >> 
->> >> >> 
->> >> >> There's no global OOM, server has enough of memory. OOM is occuring only in cgroups (customers who simply don't want to pay for more memory).
->> >> >
->> >> >Yes, sure, but when the cgroups are thrashing, they use the disk and
->> >> >CPU to the point where the overall system is affected.
->> >> 
->> >> 
->> >> 
->> >> 
->> >> Didn't know that there is a disk usage because of this, i never noticed anything yet.
->> >
->> >You said there was heavy IO going on...?
->> 
->> 
->> 
->> Yes, there usually was a big IO but it was related to that
->> deadlocking bug in kernel (or i assume it was). I never saw a big IO
->> in normal conditions even when there were lots of OOM in
->> cgroups. I'm even not using swap because of this so i was assuming
->> that lacks of memory is not doing any additional IO (or am i
->> wrong?). And if you mean that last problem with IO from Monday, i
->> don't exactly know what happens but it's really long time when we
->> had so big problem with IO that it disables also root login on
->> console.
->
->The deadlocking problem should be separate from this.
->
->Even without swap, the binaries and libraries of the running tasks can
->get reclaimed (and immediately faulted back from disk, i.e thrashing).
->
->Usually the OOM killer should kick in before tasks cannibalize each
->other like that.
->
->The patch you were using did in fact have the side effect of widening
->the window between tasks entering heavy reclaim and the OOM killer
->kicking in, so it could explain the IO worsening while fixing the dead
->lock problem.
->
->That followup patch tries to narrow this window by quite a bit and
->tries to stop concurrent reclaim when the group is already OOM.
-
-
-
-Johannes,
-
-the problem happened again, twice, but i have little more info than before.
-
-Here is the first occurence, this night between 5:15 and 5:25:
- - this time i kept opened terminal from other server to this problematic one with htop running
- - when server went down i opened it and saw one process of one user running at the top and taking 97% of CPU (cgroup 1304)
- - everything was stucked so that htop didn't help me much
- - luckily, my new 'load check' script, which i was mentioning before, was able to kill apache and everything went to normal (success with it's very first version, wow ;) )
- - i checked some other logs and everything seems to point to cgroup 1304, also kernel log at 5:14-15 is showing hard OOM in that cgroup:
-http://watchdog.sk/lkml/kern7.log
-
-
-Second time it happend between 12:01 and 12:09 but it was in the middle of the day so i'm not attaching any logs (there will be lots of other junk so it will be harded to read something from it). It was related to different cgroup than in first time.
-
-azur
+added devicetree list cc.
+On 09/10/13 13:49, Lee Jones wrote:
+> LPS001WP is a Pressure and Temperature sensor.
+> 
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  .../devicetree/bindings/iio/pressure/lps001wp.txt   | 21 +++++++++++++++++++++
+>  1 file changed, 21 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/iio/pressure/lps001wp.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/iio/pressure/lps001wp.txt b/Documentation/devicetree/bindings/iio/pressure/lps001wp.txt
+> new file mode 100644
+> index 0000000..3294a65c6
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/iio/pressure/lps001wp.txt
+> @@ -0,0 +1,21 @@
+> +* STMicroelectronics Pressure Sensor
+> +
+> +Required properties:
+> +  - compatible: Should be "st,lps001wp_press"
+> +  - reg: The I2C address of the sensor
+> +
+> +Optional properties:
+> +  - vdd-supply: Phandle to the Vdd supply regulator
+> +  - vddio-supply: Phandle to the Vdd-IO supply regulator
+> +
+> +Example:
+> +
+> +i2c@80128000 {
+> +        lps001wp@5c {
+> +                compatible = "st,lps001wp_press";
+> +                reg = <0x5c>;
+> +
+> +                vdd-supply = <&ab8500_ldo_aux1_reg>;
+> +                vddio-supply = <&db8500_vsmps2_reg>;
+> +        };
+> +};
+> -- 1.8.1.2 -- To unsubscribe from this list: send the line "unsubscribe linux-iio" in the body of a message to
+> majordomo@vger.kernel.org More majordomo info at http://vger.kernel.org/majordomo-info.html
