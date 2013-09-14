@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756319Ab3INAtj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 20:49:39 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:37459 "EHLO
+	id S1756280Ab3INAth (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 20:49:37 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:37455 "EHLO
 	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756216Ab3INAt0 (ORCPT
+	with ESMTP id S1755757Ab3INAtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 20:49:26 -0400
+	Fri, 13 Sep 2013 20:49:24 -0400
 From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: linuxppc-dev@ozlabs.org, Stephane Eranian <eranian@google.com>,
         Michael Ellerman <michaele@au1.ibm.com>,
         Paul Mackerras <paulus@samba.org>,
         Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Subject: [PATCH 6/8][v4] powerpc: Rename branch_opcode() to instr_opcode()
-Date: Fri, 13 Sep 2013 17:49:13 -0700
-Message-Id: <1379119755-21025-7-git-send-email-sukadev@linux.vnet.ibm.com>
+Subject: [PATCH 3/8][v4] powerpc/perf: Add PM_MRK_GRP_CMPL event to sysfs.
+Date: Fri, 13 Sep 2013 17:49:10 -0700
+Message-Id: <1379119755-21025-4-git-send-email-sukadev@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1379119755-21025-1-git-send-email-sukadev@linux.vnet.ibm.com>
 References: <1379119755-21025-1-git-send-email-sukadev@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091400-9332-0000-0000-0000016A97FD
+x-cbid: 13091400-9332-0000-0000-0000016A97F9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The logic used in branch_opcode() to extract the opcode for an instruction
-applies to non branch instructions also. So rename to instr_opcode().
+The perf event PM_MRK_GRP_CMPL is useful in analyzing memory hierarchy
+of applications.
 
 Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 ---
- arch/powerpc/lib/code-patching.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/powerpc/perf/power8-pmu.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/arch/powerpc/lib/code-patching.c b/arch/powerpc/lib/code-patching.c
-index 17e5b23..2bc9db3 100644
---- a/arch/powerpc/lib/code-patching.c
-+++ b/arch/powerpc/lib/code-patching.c
-@@ -72,19 +72,19 @@ unsigned int create_cond_branch(const unsigned int *addr,
- 	return instruction;
- }
+diff --git a/arch/powerpc/perf/power8-pmu.c b/arch/powerpc/perf/power8-pmu.c
+index ff98fb8..5c61e59 100644
+--- a/arch/powerpc/perf/power8-pmu.c
++++ b/arch/powerpc/perf/power8-pmu.c
+@@ -24,6 +24,7 @@
+ #define PME_PM_INST_CMPL			0x00002
+ #define PME_PM_BRU_FIN				0x10068
+ #define PME_PM_BR_MPRED_CMPL			0x400f6
++#define PME_PM_MRK_GRP_CMPL			0x40130
  
--static unsigned int branch_opcode(unsigned int instr)
-+static unsigned int instr_opcode(unsigned int instr)
- {
- 	return (instr >> 26) & 0x3F;
- }
  
- static int instr_is_branch_iform(unsigned int instr)
- {
--	return branch_opcode(instr) == 18;
-+	return instr_opcode(instr) == 18;
- }
+ /*
+@@ -517,6 +518,8 @@ GENERIC_EVENT_ATTR(instructions,		PM_INST_CMPL);
+ GENERIC_EVENT_ATTR(branch-instructions,		PM_BRU_FIN);
+ GENERIC_EVENT_ATTR(branch-misses,		PM_BR_MPRED_CMPL);
  
- static int instr_is_branch_bform(unsigned int instr)
- {
--	return branch_opcode(instr) == 16;
-+	return instr_opcode(instr) == 16;
- }
++POWER_EVENT_ATTR(PM_MRK_GRP_CMPL,		PM_MRK_GRP_CMPL);
++
+ static struct attribute *power8_events_attr[] = {
+ 	GENERIC_EVENT_PTR(PM_CYC),
+ 	GENERIC_EVENT_PTR(PM_GCT_NOSLOT_CYC),
+@@ -524,6 +527,8 @@ static struct attribute *power8_events_attr[] = {
+ 	GENERIC_EVENT_PTR(PM_INST_CMPL),
+ 	GENERIC_EVENT_PTR(PM_BRU_FIN),
+ 	GENERIC_EVENT_PTR(PM_BR_MPRED_CMPL),
++
++	POWER_EVENT_PTR(PM_MRK_GRP_CMPL),
+ 	NULL
+ };
  
- int instr_is_relative_branch(unsigned int instr)
 -- 
 1.7.9.5
 
