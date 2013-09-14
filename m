@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932268Ab3INQ7z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 12:59:55 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:48443 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754691Ab3INQ7y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 12:59:54 -0400
-Message-ID: <523495EA.5090708@oracle.com>
-Date: Sat, 14 Sep 2013 12:59:22 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S932308Ab3INRBb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 13:01:31 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:1661 "EHLO mms3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932262Ab3INRBa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Sep 2013 13:01:30 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+Message-ID: <5234965F.3050404@broadcom.com>
+Date: Sat, 14 Sep 2013 19:01:19 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US;
+ rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Patch v5 0/9] liblockdep: userspace lockdep
-References: <1371163284-6346-1-git-send-email-sasha.levin@oracle.com> <20130626122408.GJ28407@twins.programming.kicks-ass.net> <20130626155325.GB7399@gmail.com> <51CB4328.7010006@oracle.com> <20130627090722.GC4398@gmail.com> <51CC4461.50207@oracle.com> <51DA127E.3040706@oracle.com> <20130708083914.GB3948@gmail.com> <5231FCA1.4090803@oracle.com> <20130912180120.GB32511@gmail.com>
-In-Reply-To: <20130912180120.GB32511@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: "Matt Fleming" <matt.fleming@intel.com>, linux-efi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: access efi variables
+References: <52333139.6020203@broadcom.com> <5233939B.3020401@zytor.com>
+In-Reply-To: <5233939B.3020401@zytor.com>
+X-WSS-ID: 7E2A4C602L884776363-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2013 02:01 PM, Ingo Molnar wrote:
->> On 07/08/2013 04:39 AM, Ingo Molnar wrote:
->>> PeterZ is in favor as well so I'll apply them after the merge window, for
->>> v3.12.
+On 09/14/13 00:37, H. Peter Anvin wrote:
+> On 09/13/2013 08:37 AM, Arend van Spriel wrote:
+>> I need to obtain a uefi variable so I went looking at the API in
+>> include/linux/efi.h. I found the following definition:
 >>
->> Hi Ingo,
+>> But according to the specs the variable I need to obtain is 2k bytes.
+>> Should I expect trouble :-p
 >>
->> Do you intend to send liblockdep in this merge window as planned?
 >
-> If Peter agrees with them and picks them up then the next merge window
-> would be fine I guess.
+> efivarfs doesn't have those limitations.
 
-I thought that Peter acked it, and the plan was to push it through the locking
-tree for 3.12?
+Thanks, Peter
 
+Looking into efivarfs it seems to use the functions that I looked at in 
+efi.h so I guess I am misinterpreting the 1024 bytes limitation in the 
+comment (either that or you are mistaken ;-) ). I need to access the 
+variable from within a device driver so using efivarfs does not feel 
+like the way to go here.
 
-Thanks,
-Sasha
+Regards,
+Arend
 
