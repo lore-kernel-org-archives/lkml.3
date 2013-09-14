@@ -1,53 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756693Ab3INAv2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 20:51:28 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:58544 "EHLO e8.ny.us.ibm.com"
+	id S1756220Ab3INA6E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 20:58:04 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:38197 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755827Ab3INAtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 20:49:22 -0400
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: linuxppc-dev@ozlabs.org, Stephane Eranian <eranian@google.com>,
-        Michael Ellerman <michaele@au1.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Subject: [PATCH 0/8][v4] powerpc/perf: Export memory hierarchy level in Power7/8.
-Date: Fri, 13 Sep 2013 17:49:07 -0700
-Message-Id: <1379119755-21025-1-git-send-email-sukadev@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091400-0320-0000-0000-000001011530
+	id S1755770Ab3INA6B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 20:58:01 -0400
+Message-ID: <5233B471.40603@ti.com>
+Date: Fri, 13 Sep 2013 19:57:21 -0500
+From: Joel Fernandes <joelf@ti.com>
+Reply-To: <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Sekhar Nori <nsekhar@ti.com>
+CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Russell King <linux@arm.linux.org.uk>, Jyri Sarah <jsarha@ti.com>,
+        Koen Kooi <koen@beagleboard.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>
+Subject: Re: [PATCH v3] ARM: EDMA: Fix clearing of unused list for DT DMA
+ resources
+References: <1378839171-14455-1-git-send-email-joelf@ti.com> <5231903F.7080301@ti.com>
+In-Reply-To: <5231903F.7080301@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Power7 and Power8 processors save the memory hierarchy level (eg: L2, L3)
-from which a load or store instruction was satisfied. Export this hierarchy
-information to the user via the perf_mem_data_src object.
+On 09/12/2013 04:58 AM, Sekhar Nori wrote:
+> On Wednesday 11 September 2013 12:22 AM, Joel Fernandes wrote:
+>> HWMOD removal for MMC is breaking edma_start as the events are being manually
+>> triggered due to unused channel list not being clear.
+[..]
+> It is better to send one version with all comments fixed. Helps avoid
+> confusion.
 
-Thanks to input from Stephane Eranian, Michael Ellerman, Michael Neuling.
+Ok, here is the final version with all comments fixed, please apply this one:
 
-Sukadev Bhattiprolu (8):
-  powerpc/perf: Rename Power8 macros to start with PME
-  powerpc/perf: Export Power8 generic events in sysfs
-  powerpc/perf: Add PM_MRK_GRP_CMPL event to sysfs.
-  powerpc/perf: Define big-endian version of perf_mem_data_src
-  powerpc/perf: Export Power8 memory hierarchy info to user space.
-  powerpc: Rename branch_opcode() to instr_opcode()
-  power: implement is_instr_load_store().
-  powerpc/perf: Export Power7 memory hierarchy info to user space.
+--->8---
+From: Joel Fernandes <joelf@ti.com>
+Subject: [PATCH v4] ARM: EDMA: Fix clearing of unused list for DT DMA resources
 
- arch/powerpc/include/asm/code-patching.h     |    1 +
- arch/powerpc/include/asm/perf_event_server.h |    2 +
- arch/powerpc/lib/code-patching.c             |   96 ++++++++++++++++++++++-
- arch/powerpc/perf/core-book3s.c              |   11 +++
- arch/powerpc/perf/power7-pmu.c               |   94 +++++++++++++++++++++++
- arch/powerpc/perf/power8-pmu.c               |  105 +++++++++++++++++++++++---
- include/uapi/linux/perf_event.h              |   58 ++++++++++++++
- 7 files changed, 352 insertions(+), 15 deletions(-)
+HWMOD removal for MMC is breaking edma_start as the events are being manually
+triggered due to unused channel list not being clear.
+
+This patch fixes the issue, by reading the "dmas" property from the DT node if
+it exists and clearing the bits in the unused channel list. For this purpose
+we use the of_* helpers to parse the arguments in the dmas phandle list.
+
+Reviewed-by: Sekhar Nori <nsekhar@ti.com>
+Reported-by: Balaji T K <balajitk@ti.com>
+Cc: Pantel Antoniou <panto@antoniou-consulting.com>
+Signed-off-by: Joel Fernandes <joelf@ti.com>
+---
+Changes since v1, in v2 and v3:
+- Reduced indentation of non-of case by returning from of-case
+- Using of_* helpers for parsing
+
+Note:
+This patch should go into the merge window as it is a critical bug fix.
+
+ arch/arm/common/edma.c | 23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+index 39ad030..43c7b22 100644
+--- a/arch/arm/common/edma.c
++++ b/arch/arm/common/edma.c
+@@ -560,14 +560,33 @@ static int reserve_contiguous_slots(int ctlr, unsigned int
+id,
+ static int prepare_unused_channel_list(struct device *dev, void *data)
+ {
+ 	struct platform_device *pdev = to_platform_device(dev);
+-	int i, ctlr;
++	int i, count, ctlr;
++	struct of_phandle_args  dma_spec;
+
++	if (dev->of_node) {
++		count = of_property_count_strings(dev->of_node, "dma-names");
++		if (count < 0)
++			return 0;
++		for (i = 0; i < count; i++) {
++			if (of_parse_phandle_with_args(dev->of_node, "dmas",
++						       "#dma-cells", i,
++						       &dma_spec))
++				continue;
++
++			ctlr = EDMA_CTLR(dma_spec.args[0]);
++			clear_bit(EDMA_CHAN_SLOT(dma_spec.args[0]),
++				  edma_cc[ctlr]->edma_unused);
++		}
++		return 0;
++	}
++
++	/* For non-OF case */
+ 	for (i = 0; i < pdev->num_resources; i++) {
+ 		if ((pdev->resource[i].flags & IORESOURCE_DMA) &&
+ 				(int)pdev->resource[i].start >= 0) {
+ 			ctlr = EDMA_CTLR(pdev->resource[i].start);
+ 			clear_bit(EDMA_CHAN_SLOT(pdev->resource[i].start),
+-					edma_cc[ctlr]->edma_unused);
++				  edma_cc[ctlr]->edma_unused);
+ 		}
+ 	}
 
 -- 
-1.7.9.5
+1.8.1.2
 
