@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932080Ab3INJiu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 05:38:50 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:61964 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752275Ab3INJis (ORCPT
+	id S1753606Ab3INJmK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 05:42:10 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:58021 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752122Ab3INJmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 05:38:48 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Tony Lindgren <tony@atomide.com>, Anton Vorontsov <anton@enomsg.org>
-Subject: Re: [PATCH 0/4] Add support for charging battery in Nokia RX-51
-Date: Sat, 14 Sep 2013 11:38:44 +0200
-User-Agent: KMail/1.13.7 (Linux/3.11.0-1+synaptics-generic; KDE/4.11.0; x86_64; ; )
-Cc: Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>, Felipe Balbi <balbi@ti.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        freemangordon@abv.bg, aaro.koskinen@iki.fi, pavel@ucw.cz
-References: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
-In-Reply-To: <1378630239-10006-1-git-send-email-pali.rohar@gmail.com>
+	Sat, 14 Sep 2013 05:42:08 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2221749.PzqJghzPj8";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201309141138.44950@pali>
+Date: Sat, 14 Sep 2013 17:42:07 +0800
+Message-ID: <CAF0htA5QzKiodZyG-mE3mgMHHDkVDz=_D8oW3Gd03NEUrY67MA@mail.gmail.com>
+Subject: [GIT PULL] S+core Architecture : fix bugs for compiling and support
+ necessary functions
+From: Lennox Wu <lennox.wu@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: liqin.linux@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2221749.PzqJghzPj8
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Hi Linus,
+Please pull these updates for S+core architecture. These updates include
+updating information of maintainers, fix some trivial errors, and add
+a necessary function for supporting ipv6.
 
-On Sunday 08 September 2013 10:50:35 Pali Roh=C3=A1r wrote:
-> This patch series finally bringing support for charging
-> battery on Nokia N900 (RX-51) without any proprietary Nokia
-> bits in userspace.
->=20
-> Pali Roh=C3=A1r (4):
->   usb: musb: Call atomic_notifier_call_chain when status is
-> changed power: isp1704_charger: Fix driver to work with
-> changes introduced in v3.5
->   power: isp1704_charger: Add callback function set_current
->   RX-51: Add platform function and data for bq24150a charger
->=20
->  arch/arm/mach-omap2/board-rx51-peripherals.c |   56
-> +++++++++++++- drivers/power/isp1704_charger.c              |
->  107 ++++++++++++++------------ drivers/usb/musb/omap2430.c =20
->                |    3 + drivers/usb/phy/phy-twl4030-usb.c   =20
->        |    2 + include/linux/power/isp1704_charger.h      =20
-> |    1 + 5 files changed, 117 insertions(+), 52 deletions(-)
+The following changes since commit bdbdfdef5766c2a60185e946df242f1bc0d37c09
 
-Hello, can you review this patch series?
+Merge tag 'hwmon-for-linus' of
+git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging
+(Fri Sep 13 10:58:41 2013 -0700)
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+on
 
---nextPart2221749.PzqJghzPj8
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iEYEABECAAYFAlI0LqQACgkQi/DJPQPkQ1IGJACfXYZ9JtqJAGRscYKVA2sr0pTY
-y+EAoLv/ZHcGHhw9KB3yKfYgluu+AjLv
-=Q/Zx
------END PGP SIGNATURE-----
+For you to fetch changes up to 969f99168b9dff2f6cc07cdf14255178d4397c4f
 
---nextPart2221749.PzqJghzPj8--
+git@github.com:sctscore/official-linux.git tags/branch-linus-20130914
+
+Best,
+Lennox Wu
+
+-----------------------------------------------
+Summary these commits:
+1. Fix some trivial errors for successfully compiling the latest
+version Linux kernel.
+2. Provide necessary function for support IPV6.
+3. Update the information of maintainers.
+------------------------------------------------
+Lennox Wu (8):
+score : Update the information of Score maintainers
+score : Implement the function csum_ipv6_magic
+score : arch/score/kernel/entry.S: fix wrong instructions
+score : arch/score/kernel/process.c : fix some typos
+score : Modify the MAKEFILE of Score
+
+ MAINTAINERS                       |    4 +-
+ arch/score/Kconfig                |    4 ++
+ arch/score/Makefile               |    4 +-
+ arch/score/include/asm/checksum.h |   93 ++++++++++++++++++++-----------------
+ arch/score/include/asm/io.h       |    1 -
+ arch/score/include/asm/pgalloc.h  |    2 +-
+ arch/score/kernel/entry.S         |    4 +-
+ arch/score/kernel/process.c       |    4 +-
+ 8 files changed, 64 insertions(+), 52 deletions(-)
