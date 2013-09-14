@@ -1,204 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932526Ab3INRQl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 13:16:41 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:36004 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751792Ab3INROF (ORCPT
+	id S932318Ab3INRYf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 13:24:35 -0400
+Received: from 6.mo5.mail-out.ovh.net ([178.32.119.138]:39602 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932223Ab3INRYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 13:14:05 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 02/11] hwmon: (max6642) Convert to use devm_hwmon_device_register_with_groups
-Date: Sat, 14 Sep 2013 10:13:43 -0700
-Message-Id: <1379178832-1489-3-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
-In-Reply-To: <1379178832-1489-1-git-send-email-linux@roeck-us.net>
-References: <1379178832-1489-1-git-send-email-linux@roeck-us.net>
+	Sat, 14 Sep 2013 13:24:32 -0400
+Date: Sat, 14 Sep 2013 18:49:08 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Boris BREZILLON <b.brezillon@overkiz.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Richard Genoud <richard.genoud@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-doc@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [RFC PATCH 2/4] pinctrl: at91: fix sam9x5 debounce/deglitch
+ functions
+Message-ID: <20130914164908.GD11420@ns203013.ovh.net>
+References: <1379058213-3245-1-git-send-email-b.brezillon@overkiz.com>
+ <1379058442-3321-1-git-send-email-b.brezillon@overkiz.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379058442-3321-1-git-send-email-b.brezillon@overkiz.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Ovh-Tracer-Id: 10613858422378179449
+X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrleehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrleehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also rename new_client variable to client and introduce
-new variable dev pointing to client->dev in the probe function,
-and use new macro ATTRIBUTE_GROUPS to declare attribute groups.
-
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
- drivers/hwmon/max6642.c |   72 ++++++++++++++++-------------------------------
- 1 file changed, 24 insertions(+), 48 deletions(-)
-
-diff --git a/drivers/hwmon/max6642.c b/drivers/hwmon/max6642.c
-index 57d58cd..3d61f8d 100644
---- a/drivers/hwmon/max6642.c
-+++ b/drivers/hwmon/max6642.c
-@@ -87,7 +87,7 @@ static int temp_to_reg(int val)
-  */
- 
- struct max6642_data {
--	struct device *hwmon_dev;
-+	struct i2c_client *client;
- 	struct mutex update_lock;
- 	bool valid; /* zero until following fields are valid */
- 	unsigned long last_updated; /* in jiffies */
-@@ -102,10 +102,10 @@ struct max6642_data {
-  * Real code
-  */
- 
--static void max6642_init_client(struct i2c_client *client)
-+static void max6642_init_client(struct max6642_data *data,
-+				struct i2c_client *client)
- {
- 	u8 config;
--	struct max6642_data *data = i2c_get_clientdata(client);
- 
- 	/*
- 	 * Start the conversions.
-@@ -168,14 +168,14 @@ static int max6642_detect(struct i2c_client *client,
- 
- static struct max6642_data *max6642_update_device(struct device *dev)
- {
--	struct i2c_client *client = to_i2c_client(dev);
--	struct max6642_data *data = i2c_get_clientdata(client);
-+	struct max6642_data *data = dev_get_drvdata(dev);
-+	struct i2c_client *client = data->client;
- 	u16 val, tmp;
- 
- 	mutex_lock(&data->update_lock);
- 
- 	if (time_after(jiffies, data->last_updated + HZ) || !data->valid) {
--		dev_dbg(&client->dev, "Updating max6642 data.\n");
-+		dev_dbg(dev, "Updating max6642 data.\n");
- 		val = i2c_smbus_read_byte_data(client,
- 					MAX6642_REG_R_LOCAL_TEMPL);
- 		tmp = (val >> 6) & 3;
-@@ -209,8 +209,8 @@ static struct max6642_data *max6642_update_device(struct device *dev)
- static ssize_t show_temp_max10(struct device *dev,
- 			       struct device_attribute *dev_attr, char *buf)
- {
--	struct max6642_data *data = max6642_update_device(dev);
- 	struct sensor_device_attribute *attr = to_sensor_dev_attr(dev_attr);
-+	struct max6642_data *data = max6642_update_device(dev);
- 
- 	return sprintf(buf, "%d\n",
- 		       temp_from_reg10(data->temp_input[attr->index]));
-@@ -219,8 +219,8 @@ static ssize_t show_temp_max10(struct device *dev,
- static ssize_t show_temp_max(struct device *dev, struct device_attribute *attr,
- 			     char *buf)
- {
--	struct max6642_data *data = max6642_update_device(dev);
- 	struct sensor_device_attribute_2 *attr2 = to_sensor_dev_attr_2(attr);
-+	struct max6642_data *data = max6642_update_device(dev);
- 
- 	return sprintf(buf, "%d\n", temp_from_reg(data->temp_high[attr2->nr]));
- }
-@@ -228,11 +228,10 @@ static ssize_t show_temp_max(struct device *dev, struct device_attribute *attr,
- static ssize_t set_temp_max(struct device *dev, struct device_attribute *attr,
- 			    const char *buf, size_t count)
- {
-+	struct sensor_device_attribute_2 *attr2 = to_sensor_dev_attr_2(attr);
-+	struct max6642_data *data = dev_get_drvdata(dev);
- 	unsigned long val;
- 	int err;
--	struct i2c_client *client = to_i2c_client(dev);
--	struct max6642_data *data = i2c_get_clientdata(client);
--	struct sensor_device_attribute_2 *attr2 = to_sensor_dev_attr_2(attr);
- 
- 	err = kstrtoul(buf, 10, &val);
- 	if (err < 0)
-@@ -240,7 +239,7 @@ static ssize_t set_temp_max(struct device *dev, struct device_attribute *attr,
- 
- 	mutex_lock(&data->update_lock);
- 	data->temp_high[attr2->nr] = clamp_val(temp_to_reg(val), 0, 255);
--	i2c_smbus_write_byte_data(client, attr2->index,
-+	i2c_smbus_write_byte_data(data->client, attr2->index,
- 				  data->temp_high[attr2->nr]);
- 	mutex_unlock(&data->update_lock);
- 	return count;
-@@ -264,7 +263,7 @@ static SENSOR_DEVICE_ATTR(temp2_fault, S_IRUGO, show_alarm, NULL, 2);
- static SENSOR_DEVICE_ATTR(temp1_max_alarm, S_IRUGO, show_alarm, NULL, 6);
- static SENSOR_DEVICE_ATTR(temp2_max_alarm, S_IRUGO, show_alarm, NULL, 4);
- 
--static struct attribute *max6642_attributes[] = {
-+static struct attribute *max6642_attrs[] = {
- 	&sensor_dev_attr_temp1_input.dev_attr.attr,
- 	&sensor_dev_attr_temp2_input.dev_attr.attr,
- 	&sensor_dev_attr_temp1_max.dev_attr.attr,
-@@ -275,52 +274,30 @@ static struct attribute *max6642_attributes[] = {
- 	&sensor_dev_attr_temp2_max_alarm.dev_attr.attr,
- 	NULL
- };
-+ATTRIBUTE_GROUPS(max6642);
- 
--static const struct attribute_group max6642_group = {
--	.attrs = max6642_attributes,
--};
--
--static int max6642_probe(struct i2c_client *new_client,
-+static int max6642_probe(struct i2c_client *client,
- 			 const struct i2c_device_id *id)
- {
-+	struct device *dev = &client->dev;
- 	struct max6642_data *data;
--	int err;
-+	struct device *hwmon_dev;
- 
--	data = devm_kzalloc(&new_client->dev, sizeof(struct max6642_data),
--			    GFP_KERNEL);
-+	data = devm_kzalloc(dev, sizeof(struct max6642_data), GFP_KERNEL);
- 	if (!data)
- 		return -ENOMEM;
- 
--	i2c_set_clientdata(new_client, data);
-+	data->client = client;
- 	mutex_init(&data->update_lock);
- 
- 	/* Initialize the MAX6642 chip */
--	max6642_init_client(new_client);
--
--	/* Register sysfs hooks */
--	err = sysfs_create_group(&new_client->dev.kobj, &max6642_group);
--	if (err)
--		return err;
--
--	data->hwmon_dev = hwmon_device_register(&new_client->dev);
--	if (IS_ERR(data->hwmon_dev)) {
--		err = PTR_ERR(data->hwmon_dev);
--		goto exit_remove_files;
--	}
--
--	return 0;
--
--exit_remove_files:
--	sysfs_remove_group(&new_client->dev.kobj, &max6642_group);
--	return err;
--}
--
--static int max6642_remove(struct i2c_client *client)
--{
--	struct max6642_data *data = i2c_get_clientdata(client);
-+	max6642_init_client(data, client);
- 
--	hwmon_device_unregister(data->hwmon_dev);
--	sysfs_remove_group(&client->dev.kobj, &max6642_group);
-+	hwmon_dev = devm_hwmon_device_register_with_groups(&client->dev,
-+							   client->name, data,
-+							   max6642_groups);
-+	if (IS_ERR(hwmon_dev))
-+		return PTR_ERR(hwmon_dev);
- 
- 	return 0;
- }
-@@ -341,7 +318,6 @@ static struct i2c_driver max6642_driver = {
- 		.name	= "max6642",
- 	},
- 	.probe		= max6642_probe,
--	.remove		= max6642_remove,
- 	.id_table	= max6642_id,
- 	.detect		= max6642_detect,
- 	.address_list	= normal_i2c,
--- 
-1.7.9.7
-
+On 09:47 Fri 13 Sep     , Boris BREZILLON wrote:
+> Replace at91_mux_get_deglitch with at91_mux_pio3_get_deglitch when using
+> sam9x5 (pio3) IP.
+> at91_mux_get_deglitch only test the activation of the "Input Filter" which
+> may be overloaded by the activation of the "Input Filter Slow Clock" to use
+> the input filter as a debounce filter instead of a deglitch filter.
+> 
+> Fix at91_mux_pio3_get_debounce to test the activation of the Input Filter
+> before testing the activation of the debounce filter (Input Filter Slow
+> Clock depends on Input Filter).
+> 
+> Fix at91_mux_pio3_set_debounce function to avoid disabling the deglitch
+> filter ("Input Filter") when debounce filter is disabled.
+> 
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> ---
+>  drivers/pinctrl/pinctrl-at91.c |   18 +++++++++++++-----
+>  1 file changed, 13 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
+> index 50b555a..6624bce 100644
+> --- a/drivers/pinctrl/pinctrl-at91.c
+> +++ b/drivers/pinctrl/pinctrl-at91.c
+> @@ -417,6 +417,14 @@ static void at91_mux_set_deglitch(void __iomem *pio, unsigned mask, bool is_on)
+>  	__raw_writel(mask, pio + (is_on ? PIO_IFER : PIO_IFDR));
+>  }
+>  
+> +static bool at91_mux_pio3_get_deglitch(void __iomem *pio, unsigned pin)
+> +{
+> +	if ((__raw_readl(pio + PIO_IFSR) >> pin) & 0x1)
+> +		return !((__raw_readl(pio + PIO_IFSCSR) >> pin) & 0x1);
+> +
+> +	return false;
+> +}
+> +
+>  static void at91_mux_pio3_set_deglitch(void __iomem *pio, unsigned mask, bool is_on)
+>  {
+>  	if (is_on)
+> @@ -428,7 +436,8 @@ static bool at91_mux_pio3_get_debounce(void __iomem *pio, unsigned pin, u32 *div
+>  {
+>  	*div = __raw_readl(pio + PIO_SCDR);
+>  
+> -	return (__raw_readl(pio + PIO_IFSCSR) >> pin) & 0x1;
+> +	return ((__raw_readl(pio + PIO_IFSR) >> pin) & 0x1) &&
+> +	       ((__raw_readl(pio + PIO_IFSCSR) >> pin) & 0x1);
+>  }
+>  
+>  static void at91_mux_pio3_set_debounce(void __iomem *pio, unsigned mask,
+> @@ -438,9 +447,8 @@ static void at91_mux_pio3_set_debounce(void __iomem *pio, unsigned mask,
+>  		__raw_writel(mask, pio + PIO_IFSCER);
+>  		__raw_writel(div & PIO_SCDR_DIV, pio + PIO_SCDR);
+>  		__raw_writel(mask, pio + PIO_IFER);
+> -	} else {
+> -		__raw_writel(mask, pio + PIO_IFDR);
+> -	}
+> +	} else
+> +		__raw_writel(mask, pio + PIO_IFSCDR);
+>  }
+>  
+>  static bool at91_mux_pio3_get_pulldown(void __iomem *pio, unsigned pin)
+> @@ -478,7 +486,7 @@ static struct at91_pinctrl_mux_ops at91sam9x5_ops = {
+>  	.mux_B_periph	= at91_mux_pio3_set_B_periph,
+>  	.mux_C_periph	= at91_mux_pio3_set_C_periph,
+>  	.mux_D_periph	= at91_mux_pio3_set_D_periph,
+> -	.get_deglitch	= at91_mux_get_deglitch,
+> +	.get_deglitch	= at91_mux_pio3_get_deglitch,
+>  	.set_deglitch	= at91_mux_pio3_set_deglitch,
+>  	.get_debounce	= at91_mux_pio3_get_debounce,
+>  	.set_debounce	= at91_mux_pio3_set_debounce,
+> -- 
+> 1.7.9.5
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
