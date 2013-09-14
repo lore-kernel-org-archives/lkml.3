@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756220Ab3INChU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 22:37:20 -0400
-Received: from alum-mailsec-scanner-3.mit.edu ([18.7.68.14]:49802 "EHLO
-	alum-mailsec-scanner-3.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755938Ab3INChS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 22:37:18 -0400
-X-Greylist: delayed 422 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 Sep 2013 22:37:17 EDT
-X-AuditID: 1207440e-b7fe96d000003c8a-d9-5233ca37e226
-Date: Fri, 13 Sep 2013 20:36:55 -0600
-From: Chuck Coffing <clc@alum.mit.edu>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH] bad bd_fsfreeze_count in freeze_bdev
-Message-ID: <20130914023655.GA3212@server.mountain-tech.net>
+	id S1756293Ab3INClS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 22:41:18 -0400
+Received: from imap.thunk.org ([74.207.234.97]:59968 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755938Ab3INClR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 22:41:17 -0400
+Date: Fri, 13 Sep 2013 22:41:08 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Marcus Sundman <marcus@hibox.fi>
+Cc: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Debugging system freezes on filesystem writes
+Message-ID: <20130914024108.GA10740@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Marcus Sundman <marcus@hibox.fi>, Jan Kara <jack@suse.cz>,
+	Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org
+References: <20130224012052.GC1196@thunk.org>
+ <512D01E0.7010009@hibox.fi>
+ <20130226231703.GA22674@quack.suse.cz>
+ <5231BA3C.2090704@hibox.fi>
+ <20130912131051.GA14664@quack.suse.cz>
+ <5231C5FF.3060504@hibox.fi>
+ <20130912143941.GB14664@quack.suse.cz>
+ <5231D8DD.5010703@hibox.fi>
+ <20130912163530.GD14664@quack.suse.cz>
+ <523200EB.7000202@hibox.fi>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <523200EB.7000202@hibox.fi>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOIsWRmVeSWpSXmKPExsUixO6iqGt+yjjIYOsqPovLu+awWZz/e5zV
-	gcnj8yY5j01P3jIFMEVx2yQllpQFZ6bn6dslcGc8nHyPseAkW0X/zpusDYzbWbsYOTgkBEwk
-	9v8t62LkBDLFJC7cW8/WxcjFISRwmVFiyotZ7BDOBSaJNe+/M4FUsQioSjTP/MoGYrMJqEk0
-	9zWC2SICChKbe5+xgtjMAjoSR54vZAexhQVMJb6vfwcW5xWwkTgwfRs7hC0ocXLmExaIei2J
-	G/9eMoEcxCwgLbH8HwdIWFRARWLKyW1sExj5ZiHpmIWkYxZCxwJG5lWMcok5pbm6uYmZOcWp
-	ybrFyYl5ealFusZ6uZkleqkppZsYIUHHt4Oxfb3MIUYBDkYlHt4Z3sZBQqyJZcWVuYcYJTmY
-	lER5nU4AhfiS8lMqMxKLM+KLSnNSiw8xSnAwK4nwnpgLlONNSaysSi3Kh0lJc7AoifOqLVH3
-	ExJITyxJzU5NLUgtgsnKcHAoSfA2nwRqFCxKTU+tSMvMKUFIM3FwgggukA08QBtqQQp5iwsS
-	c4sz0yGKTjEqSonzBoAkBEASGaV5cANg6eEVozjQP8K83iBVPMDUAtf9CmgwE9DgzbuNQAaX
-	JCKkpBoY7TY8jCs9Pre6rU8ivPjSHsO8Hdnfg16ePrO3IOfTtWUt/3ZUTzm2kvF5fcnit61r
-	/rItyWRUqZB9qRXUHFyxQ+fcnoMPQiefuXCOTeH+64eLnj07zX/DQ7dqyrd9h5KlVbKOXM33
-	2XHI20KH+fvPPxoebKuEpF5fe8GW+tjQJ/47g3pOcULFSSWW4oxEQy3mouJEAOryfLfqAgAA
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Sep 12, 2013 at 08:59:07PM +0300, Marcus Sundman wrote:
+> 
+> At 128 GB it is extremely small as it is, and I'm really struggling
+> to fit all on it. Most of my stuff is on my NAS (which has almost 10
+> TB space), but still I need several code repositories and the
+> development environment and a virtual machine etc on this tiny 128
+> GB thing.
+> 
+> So, if I used some other filesystem, might that allow me to use a
+> larger portion of the SSD without this degradation? Or with a much
+> slower rate of degradation?
 
-An error path in freeze_bdev screws up the freeze count.
+What model are you using?  It's possible that your flash device was
+designed as a cache driver for windows.  As such, it might have been
+optimized for a read-mostly workload and not something for a lot of
+random small writes.
 
-Consider:
-- call freeze_bdev with a bdev that's unmounted (stupidity or a race)
-- bd_fsfreeze_count is unconditionally incremented on entry
-- can't get the sb; error out
-- bd_fsfreeze_count is not decremented (oops!)
-- call freeze_bdev again just for obnoxiousness...
-- since bd_fsfreeze_count is already nonzero, sb is assumed good and deref'd
+The f2fs file system is designed for crappy flash drives with crappy
+FTL's, so it might work be better for you.  But let me ask you this
+--- how much is your data worth?  How much would it cost to replace
+your flash device with something better?
 
-(CC me, I'm not subscribed)
+I tend to get very nervous with crappy storage devices, and it sounds
+like your flash drive isn't a particularly good one.  I'd strongly
+suggest doing regular backups, because when flash devices die, they
+can die in extremely catastrphic ways.
 
+Regards,
 
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index c3549ed..f1c5561 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -253,6 +253,7 @@ struct super_block *freeze_bdev(struct block_device *bdev)
- 	}
- 	deactivate_super(sb);
-  out:
-+	bdev->bd_fsfreeze_count--;
- 	sync_blockdev(bdev);
- 	mutex_unlock(&bdev->bd_fsfreeze_mutex);
- 	return sb;	/* thaw_bdev releases s->s_umount */
+						- Ted
