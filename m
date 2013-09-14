@@ -1,74 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752275Ab3INEe4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 00:34:56 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:59793 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632Ab3INEey (ORCPT
+	id S1752145Ab3INEmJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 00:42:09 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:36754 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632Ab3INEmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 00:34:54 -0400
+	Sat, 14 Sep 2013 00:42:07 -0400
+Date: Sat, 14 Sep 2013 12:41:36 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Shaohua Li <shli@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <trivial@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [PATCH v2 01/25] Revert smp: Fix SMP function call empty cpu
+ mask race
+Message-ID: <20130914044136.GA2944@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
+	Jiang Liu <liuj97@gmail.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Shaohua Li <shli@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
+	Ingo Molnar <mingo@elte.hu>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org,
+	linux-arch@vger.kernel.org
+References: <1378915649-16395-1-git-send-email-liuj97@gmail.com>
+ <1378915649-16395-2-git-send-email-liuj97@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <3040696.n8OU0605eG@vostro.rjw.lan>
-References: <cover.1379063063.git.viresh.kumar@linaro.org>
-	<3040696.n8OU0605eG@vostro.rjw.lan>
-Date: Sat, 14 Sep 2013 10:04:54 +0530
-Message-ID: <CAKohpokn_FS1EcNdLg9jZJ=ChLPM1kjxtR5iFCxYyNpn1dDL7A@mail.gmail.com>
-Subject: Re: [PATCH 000/228] CPUFreq: cleanup stuff for 3.13
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378915649-16395-2-git-send-email-liuj97@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 September 2013 05:08, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Friday, September 13, 2013 06:29:06 PM Viresh Kumar wrote:
->> This is my biggest patchset ever and it might not happen again in my entire
->> career. I hope I haven't screwed up here :)
->>
->> CPUFreq cleanup patches are ready to hit linux-next (I hope it doesn't turn out
->> into horror stories, where it broke all possible architectures where Linux runs
->> :))
->>
->> Most of these are build tested only, Also done by: Fengguang Wu's build bot.
->>
->> All of these were sent separately in smaller patchsets earlier and now merged
->> together as a single set. Some parts are reviewed by platform maintainers and
->> their Acks are included in the patches (Sorry if I missed any)..
->
-> I believe I asked you to send this stuff in pieces.
->
-> In any case, there's no way I'll apply this all at once and I'm not going to
-> pull it all at once either.
+On Thu, Sep 12, 2013 at 12:07:05AM +0800, Jiang Liu wrote:
+> From: Jiang Liu <jiang.liu@huawei.com>
+> 
+> Commit f44310b98ddb7 "smp: Fix SMP function call empty cpu mask race"
+> introduced field call_function_data->cpumask_ipi to resolve a race
+> condition in smp_call_function_many().
+> 
+> Later commit 9a46ad6d6df3 "smp: make smp_call_function_many() use logic
+> similar to smp_call_function_single()" fixed the same issue in another
+> way when optimizing smp_call_function_many(), which then obsoletes
+> changes introduced by commit f44310b98ddb7. So revert it.
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Acked-by: Wang YanQing <udknight@gmail.com>
+> Cc: Jiang Liu <liuj97@gmail.com>
+> ---
+>  kernel/smp.c | 16 ++--------------
+>  1 file changed, 2 insertions(+), 14 deletions(-)
+> 
+> diff --git a/kernel/smp.c b/kernel/smp.c
+> index fe9f773..a034712 100644
+> --- a/kernel/smp.c
+> +++ b/kernel/smp.c
+> @@ -23,7 +23,6 @@ enum {
+>  struct call_function_data {
+>  	struct call_single_data	__percpu *csd;
+>  	cpumask_var_t		cpumask;
+> -	cpumask_var_t		cpumask_ipi;
+>  };
+>  
+>  static DEFINE_PER_CPU_SHARED_ALIGNED(struct call_function_data, cfd_data);
+> @@ -47,9 +46,6 @@ hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
+>  		if (!zalloc_cpumask_var_node(&cfd->cpumask, GFP_KERNEL,
+>  				cpu_to_node(cpu)))
+>  			return notifier_from_errno(-ENOMEM);
+> -		if (!zalloc_cpumask_var_node(&cfd->cpumask_ipi, GFP_KERNEL,
+> -				cpu_to_node(cpu)))
+> -			return notifier_from_errno(-ENOMEM);
+>  		cfd->csd = alloc_percpu(struct call_single_data);
+>  		if (!cfd->csd) {
+>  			free_cpumask_var(cfd->cpumask);
+> @@ -64,7 +60,6 @@ hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
+>  	case CPU_DEAD:
+>  	case CPU_DEAD_FROZEN:
+>  		free_cpumask_var(cfd->cpumask);
+> -		free_cpumask_var(cfd->cpumask_ipi);
+>  		free_percpu(cfd->csd);
+>  		break;
+>  #endif
+> @@ -255,9 +250,9 @@ int smp_call_function_single(int cpu, smp_call_func_t func, void *info,
+>  				csd = &__get_cpu_var(csd_data);
+>  
+>  			csd_lock(csd);
+> -
+>  			csd->func = func;
+>  			csd->info = info;
+> +
+>  			generic_exec_single(cpu, csd, wait);
+>  		} else {
+>  			err = -ENXIO;	/* CPU not online */
+> @@ -410,13 +405,6 @@ void smp_call_function_many(const struct cpumask *mask,
+>  	if (unlikely(!cpumask_weight(cfd->cpumask)))
+>  		return;
+>  
+> -	/*
+> -	 * After we put an entry into the list, cfd->cpumask may be cleared
+> -	 * again when another CPU sends another IPI for a SMP function call, so
+> -	 * cfd->cpumask will be zero.
+> -	 */
+> -	cpumask_copy(cfd->cpumask_ipi, cfd->cpumask);
+> -
+>  	for_each_cpu(cpu, cfd->cpumask) {
+>  		struct call_single_data *csd = per_cpu_ptr(cfd->csd, cpu);
+>  		struct call_single_queue *dst =
+> @@ -433,7 +421,7 @@ void smp_call_function_many(const struct cpumask *mask,
+>  	}
+>  
+>  	/* Send a message to all CPUs in the map */
+> -	arch_send_call_function_ipi_mask(cfd->cpumask_ipi);
+> +	arch_send_call_function_ipi_mask(cfd->cpumask);
+>  
+>  	if (wait) {
+>  		for_each_cpu(cpu, cfd->cpumask) {
+> -- 
+> 1.8.1.2
+Hi Liu and all
 
-Exactly for this reason I had following in my cover-letter:
+Commit 60c323699bb308404dcb60e8808531e02651578a 
+(kernel/smp.c: free related resources when failure occurs in hotplug_cfd())
+is a fix patch for commit you revert, and it had been merged into mainline.
 
-"As suggested by Rafael earlier, he might not apply all at once and will give
-people some chance to test sets one by one.. So, first set now, next one after
-few days. So, I am marking different sets with patch numbers to make it easier
-for Rafael.
+So could you ajust your patch to revert it together? I don't think we need
+a separate patch to revert 60c323699bb308404dcb60e8808531e02651578a, because
+your patch haven't be merged.
 
-- Patch 1->8: Generic cleanup of cpufreq core (First batch)
-- Patch 9->54: Mostly about cpufreq_table_validate_and_show() helper
-(First batch)
-- Patch 55->89: New generic routines for cpufreq drivers (First/Second batch)
-- Patch 90->126: About calling cpufreq_driver->get() from core
-(First/Second batch)
-- Patch 127->146: Generic init() routine (First/Second batch)
-- Patch 147->180: Light weight ->target() routine (Third batch)
-- Patch 181->211: Call notifiers from core instead of target()
-(Third/Fourth batch)
-- Patch 212->228: Generic get() (Fifth batch)
-"
-
-I kept them together because it looked like multiple patchsets have confused
-people.. I have seen people reviewing first few sets and later on they haven't
-bothered to review.. Probably they got confused..
-
-And so it was required to keep them together, so that people get the complete
-picture..
-
-Sorry for the noise..
+Thanks.
