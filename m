@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932450Ab3INROX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 13:14:23 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:56879 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932425Ab3INROU (ORCPT
+	id S932472Ab3INRO1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 13:14:27 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:62011 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932425Ab3INROY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 13:14:20 -0400
+	Sat, 14 Sep 2013 13:14:24 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: Jean Delvare <khali@linux-fr.org>
 Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
         Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 09/11] hwmon: (ina209) Convert to use devm_hwmon_device_register_with_groups
-Date: Sat, 14 Sep 2013 10:13:50 -0700
-Message-Id: <1379178832-1489-10-git-send-email-linux@roeck-us.net>
+Subject: [PATCH 11/11] hwmon: (jc42) Convert to use devm_hwmon_device_register_with_groups
+Date: Sat, 14 Sep 2013 10:13:52 -0700
+Message-Id: <1379178832-1489-12-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.7.9.7
 In-Reply-To: <1379178832-1489-1-git-send-email-linux@roeck-us.net>
 References: <1379178832-1489-1-git-send-email-linux@roeck-us.net>
@@ -21,166 +21,173 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also use new macro ATTRIBUTE_GROUPS to declare attribute groups.
-
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- drivers/hwmon/ina209.c |   46 ++++++++++++++++++----------------------------
- 1 file changed, 18 insertions(+), 28 deletions(-)
+ drivers/hwmon/jc42.c |   61 +++++++++++++++++++++-----------------------------
+ 1 file changed, 25 insertions(+), 36 deletions(-)
 
-diff --git a/drivers/hwmon/ina209.c b/drivers/hwmon/ina209.c
-index c6fdd5b..5378fde 100644
---- a/drivers/hwmon/ina209.c
-+++ b/drivers/hwmon/ina209.c
-@@ -63,7 +63,7 @@
- #define INA209_SHUNT_DEFAULT		10000	/* uOhm */
+diff --git a/drivers/hwmon/jc42.c b/drivers/hwmon/jc42.c
+index 4a58f13..f362cea 100644
+--- a/drivers/hwmon/jc42.c
++++ b/drivers/hwmon/jc42.c
+@@ -163,7 +163,7 @@ static struct jc42_chips jc42_chips[] = {
  
- struct ina209_data {
--	struct device *hwmon_dev;
+ /* Each client has this additional data */
+ struct jc42_data {
+-	struct device	*hwmon_dev;
 +	struct i2c_client *client;
+ 	struct mutex	update_lock;	/* protect register access */
+ 	bool		extended;	/* true if extended range supported */
+ 	bool		valid;
+@@ -193,21 +193,21 @@ MODULE_DEVICE_TABLE(i2c, jc42_id);
  
- 	struct mutex update_lock;
- 	bool valid;
-@@ -78,8 +78,8 @@ struct ina209_data {
- 
- static struct ina209_data *ina209_update_device(struct device *dev)
+ static int jc42_suspend(struct device *dev)
  {
 -	struct i2c_client *client = to_i2c_client(dev);
--	struct ina209_data *data = i2c_get_clientdata(client);
-+	struct ina209_data *data = dev_get_drvdata(dev);
-+	struct i2c_client *client = data->client;
- 	struct ina209_data *ret = data;
- 	s32 val;
- 	int i;
-@@ -234,7 +234,6 @@ static ssize_t ina209_set_interval(struct device *dev,
- 				   struct device_attribute *da,
- 				   const char *buf, size_t count)
- {
--	struct i2c_client *client = to_i2c_client(dev);
- 	struct ina209_data *data = ina209_update_device(dev);
- 	long val;
- 	u16 regval;
-@@ -250,7 +249,8 @@ static ssize_t ina209_set_interval(struct device *dev,
- 	mutex_lock(&data->update_lock);
- 	regval = ina209_reg_from_interval(data->regs[INA209_CONFIGURATION],
- 					  val);
--	i2c_smbus_write_word_swapped(client, INA209_CONFIGURATION, regval);
-+	i2c_smbus_write_word_swapped(data->client, INA209_CONFIGURATION,
-+				     regval);
- 	data->regs[INA209_CONFIGURATION] = regval;
- 	data->update_interval = ina209_interval_from_reg(regval);
- 	mutex_unlock(&data->update_lock);
-@@ -260,8 +260,7 @@ static ssize_t ina209_set_interval(struct device *dev,
- static ssize_t ina209_show_interval(struct device *dev,
- 				    struct device_attribute *da, char *buf)
- {
--	struct i2c_client *client = to_i2c_client(dev);
--	struct ina209_data *data = i2c_get_clientdata(client);
-+	struct ina209_data *data = dev_get_drvdata(dev);
+-	struct jc42_data *data = i2c_get_clientdata(client);
++	struct jc42_data *data = dev_get_drvdata(dev);
  
- 	return snprintf(buf, PAGE_SIZE, "%d\n", data->update_interval);
+ 	data->config |= JC42_CFG_SHUTDOWN;
+-	i2c_smbus_write_word_swapped(client, JC42_REG_CONFIG, data->config);
++	i2c_smbus_write_word_swapped(data->client, JC42_REG_CONFIG,
++				     data->config);
+ 	return 0;
  }
-@@ -285,9 +284,9 @@ static ssize_t ina209_reset_history(struct device *dev,
- 				    const char *buf,
- 				    size_t count)
- {
--	struct i2c_client *client = to_i2c_client(dev);
--	struct ina209_data *data = i2c_get_clientdata(client);
- 	struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
-+	struct ina209_data *data = dev_get_drvdata(dev);
-+	struct i2c_client *client = data->client;
- 	u32 mask = attr->index;
- 	long val;
- 	int i, ret;
-@@ -312,7 +311,6 @@ static ssize_t ina209_set_value(struct device *dev,
- 				const char *buf,
- 				size_t count)
- {
--	struct i2c_client *client = to_i2c_client(dev);
- 	struct ina209_data *data = ina209_update_device(dev);
- 	struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
- 	int reg = attr->index;
-@@ -332,7 +330,7 @@ static ssize_t ina209_set_value(struct device *dev,
- 		count = ret;
- 		goto abort;
- 	}
--	i2c_smbus_write_word_swapped(client, reg, ret);
-+	i2c_smbus_write_word_swapped(data->client, reg, ret);
- 	data->regs[reg] = ret;
- abort:
- 	mutex_unlock(&data->update_lock);
-@@ -457,7 +455,7 @@ static SENSOR_DEVICE_ATTR(update_interval, S_IRUGO | S_IWUSR,
-  * Finally, construct an array of pointers to members of the above objects,
-  * as required for sysfs_create_group()
-  */
--static struct attribute *ina209_attributes[] = {
-+static struct attribute *ina209_attrs[] = {
- 	&sensor_dev_attr_in0_input.dev_attr.attr,
- 	&sensor_dev_attr_in0_input_highest.dev_attr.attr,
- 	&sensor_dev_attr_in0_input_lowest.dev_attr.attr,
-@@ -498,10 +496,7 @@ static struct attribute *ina209_attributes[] = {
  
- 	NULL,
+ static int jc42_resume(struct device *dev)
+ {
+-	struct i2c_client *client = to_i2c_client(dev);
+-	struct jc42_data *data = i2c_get_clientdata(client);
++	struct jc42_data *data = dev_get_drvdata(dev);
+ 
+ 	data->config &= ~JC42_CFG_SHUTDOWN;
+-	i2c_smbus_write_word_swapped(client, JC42_REG_CONFIG, data->config);
++	i2c_smbus_write_word_swapped(data->client, JC42_REG_CONFIG,
++				     data->config);
+ 	return 0;
+ }
+ 
+@@ -317,15 +317,14 @@ static ssize_t set_##value(struct device *dev,				\
+ 			   struct device_attribute *attr,		\
+ 			   const char *buf, size_t count)		\
+ {									\
+-	struct i2c_client *client = to_i2c_client(dev);			\
+-	struct jc42_data *data = i2c_get_clientdata(client);		\
++	struct jc42_data *data = dev_get_drvdata(dev);			\
+ 	int err, ret = count;						\
+ 	long val;							\
+-	if (kstrtol(buf, 10, &val) < 0)				\
++	if (kstrtol(buf, 10, &val) < 0)					\
+ 		return -EINVAL;						\
+ 	mutex_lock(&data->update_lock);					\
+ 	data->value = jc42_temp_to_reg(val, data->extended);		\
+-	err = i2c_smbus_write_word_swapped(client, reg, data->value);	\
++	err = i2c_smbus_write_word_swapped(data->client, reg, data->value); \
+ 	if (err < 0)							\
+ 		ret = err;						\
+ 	mutex_unlock(&data->update_lock);				\
+@@ -344,8 +343,7 @@ static ssize_t set_temp_crit_hyst(struct device *dev,
+ 				  struct device_attribute *attr,
+ 				  const char *buf, size_t count)
+ {
+-	struct i2c_client *client = to_i2c_client(dev);
+-	struct jc42_data *data = i2c_get_clientdata(client);
++	struct jc42_data *data = dev_get_drvdata(dev);
+ 	unsigned long val;
+ 	int diff, hyst;
+ 	int err;
+@@ -368,7 +366,7 @@ static ssize_t set_temp_crit_hyst(struct device *dev,
+ 	mutex_lock(&data->update_lock);
+ 	data->config = (data->config & ~JC42_CFG_HYST_MASK)
+ 	  | (hyst << JC42_CFG_HYST_SHIFT);
+-	err = i2c_smbus_write_word_swapped(client, JC42_REG_CONFIG,
++	err = i2c_smbus_write_word_swapped(data->client, JC42_REG_CONFIG,
+ 					   data->config);
+ 	if (err < 0)
+ 		ret = err;
+@@ -430,8 +428,7 @@ static umode_t jc42_attribute_mode(struct kobject *kobj,
+ 				  struct attribute *attr, int index)
+ {
+ 	struct device *dev = container_of(kobj, struct device, kobj);
+-	struct i2c_client *client = to_i2c_client(dev);
+-	struct jc42_data *data = i2c_get_clientdata(client);
++	struct jc42_data *data = dev_get_drvdata(dev);
+ 	unsigned int config = data->config;
+ 	bool readonly;
+ 
+@@ -452,6 +449,7 @@ static const struct attribute_group jc42_group = {
+ 	.attrs = jc42_attributes,
+ 	.is_visible = jc42_attribute_mode,
  };
--
--static const struct attribute_group ina209_group = {
--	.attrs = ina209_attributes,
--};
-+ATTRIBUTE_GROUPS(ina209);
++__ATTRIBUTE_GROUPS(jc42);
  
- static void ina209_restore_conf(struct i2c_client *client,
- 				struct ina209_data *data)
-@@ -565,6 +560,7 @@ static int ina209_probe(struct i2c_client *client,
+ /* Return 0 if detection is successful, -ENODEV otherwise */
+ static int jc42_detect(struct i2c_client *client, struct i2c_board_info *info)
+@@ -487,14 +485,16 @@ static int jc42_detect(struct i2c_client *client, struct i2c_board_info *info)
+ 
+ static int jc42_probe(struct i2c_client *client, const struct i2c_device_id *id)
  {
- 	struct i2c_adapter *adapter = client->adapter;
- 	struct ina209_data *data;
+-	struct jc42_data *data;
+-	int config, cap, err;
+ 	struct device *dev = &client->dev;
 +	struct device *hwmon_dev;
- 	int ret;
++	struct jc42_data *data;
++	int config, cap;
  
- 	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_WORD_DATA))
-@@ -575,27 +571,23 @@ static int ina209_probe(struct i2c_client *client,
+ 	data = devm_kzalloc(dev, sizeof(struct jc42_data), GFP_KERNEL);
+ 	if (!data)
  		return -ENOMEM;
  
- 	i2c_set_clientdata(client, data);
 +	data->client = client;
+ 	i2c_set_clientdata(client, data);
  	mutex_init(&data->update_lock);
  
- 	ret = ina209_init_client(client, data);
- 	if (ret)
- 		return ret;
+@@ -515,29 +515,18 @@ static int jc42_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 	}
+ 	data->config = config;
  
 -	/* Register sysfs hooks */
--	ret = sysfs_create_group(&client->dev.kobj, &ina209_group);
--	if (ret)
-+	hwmon_dev = devm_hwmon_device_register_with_groups(&client->dev,
-+							   client->name,
-+							   data, ina209_groups);
-+	if (IS_ERR(hwmon_dev)) {
-+		ret = PTR_ERR(hwmon_dev);
- 		goto out_restore_conf;
+-	err = sysfs_create_group(&dev->kobj, &jc42_group);
+-	if (err)
+-		return err;
 -
--	data->hwmon_dev = hwmon_device_register(&client->dev);
+-	data->hwmon_dev = hwmon_device_register(dev);
 -	if (IS_ERR(data->hwmon_dev)) {
--		ret = PTR_ERR(data->hwmon_dev);
--		goto out_hwmon_device_register;
- 	}
+-		err = PTR_ERR(data->hwmon_dev);
+-		goto exit_remove;
+-	}
++	hwmon_dev = devm_hwmon_device_register_with_groups(dev, client->name,
++							   data,
++							   jc42_groups);
++	if (IS_ERR(hwmon_dev))
++		return PTR_ERR(hwmon_dev);
  
  	return 0;
+-
+-exit_remove:
+-	sysfs_remove_group(&dev->kobj, &jc42_group);
+-	return err;
+ }
  
--out_hwmon_device_register:
--	sysfs_remove_group(&client->dev.kobj, &ina209_group);
- out_restore_conf:
- 	ina209_restore_conf(client, data);
- 	return ret;
-@@ -605,8 +597,6 @@ static int ina209_remove(struct i2c_client *client)
+ static int jc42_remove(struct i2c_client *client)
  {
- 	struct ina209_data *data = i2c_get_clientdata(client);
- 
+ 	struct jc42_data *data = i2c_get_clientdata(client);
 -	hwmon_device_unregister(data->hwmon_dev);
--	sysfs_remove_group(&client->dev.kobj, &ina209_group);
- 	ina209_restore_conf(client, data);
+-	sysfs_remove_group(&client->dev.kobj, &jc42_group);
  
- 	return 0;
+ 	/* Restore original configuration except hysteresis */
+ 	if ((data->config & ~JC42_CFG_HYST_MASK) !=
+@@ -553,8 +542,8 @@ static int jc42_remove(struct i2c_client *client)
+ 
+ static struct jc42_data *jc42_update_device(struct device *dev)
+ {
+-	struct i2c_client *client = to_i2c_client(dev);
+-	struct jc42_data *data = i2c_get_clientdata(client);
++	struct jc42_data *data = dev_get_drvdata(dev);
++	struct i2c_client *client = data->client;
+ 	struct jc42_data *ret = data;
+ 	int val;
+ 
 -- 
 1.7.9.7
 
