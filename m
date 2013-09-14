@@ -1,51 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932180Ab3INPjv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 11:39:51 -0400
-Received: from relay.parallels.com ([195.214.232.42]:49410 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932101Ab3INPju (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 11:39:50 -0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-CC: Alex Shi <alex.shi@intel.com>, <linux-kernel@vger.kernel.org>,
-        <devel@openvz.org>
-Subject: [PATCH] sched: Fix task_h_load calculation
-Date: Sat, 14 Sep 2013 19:39:46 +0400
-Message-ID: <1379173186-11944-1-git-send-email-vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S932212Ab3INPlh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 11:41:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28404 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932084Ab3INPlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Sep 2013 11:41:35 -0400
+Date: Sat, 14 Sep 2013 23:39:52 +0800
+From: Dong Zhu <bluezhudong@gmail.com>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: Rob Landley <rob@landley.net>, netdev@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ptp: add the PTP_SYS_OFFSET ioctl to the testptp
+ program clock
+Message-ID: <20130914153952.GD23682@zhudong.nay.redhat.com>
+References: <20130914080306.GC23682@zhudong.nay.redhat.com>
+ <20130914143144.GA4206@netboy>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.24.21.58]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130914143144.GA4206@netboy>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch a003a2 (sched: Consider runnable load average in move_tasks())
-sets all top-level cfs_rqs' h_load to rq->avg.load_avg_contrib, which is
-always 0. This mistype leads to all tasks having weight 0 when load
-balancing in a cpu-cgroup enabled setup. There obviously should be sum
-of weights of all runnable tasks there instead. Fix it.
+On Sat, Sep 14, 2013 at 04:31:46PM +0200, Richard Cochran wrote:
+> On Sat, Sep 14, 2013 at 04:03:06PM +0800, Dong Zhu wrote:
+> > This patch add a method into testptp.c to measure the time offset
+> > between phc and system clock through the ioctl PTP_SYS_OFFSET.
+> > 
+> 
+> This is a nice addition to the testptp program. I do have a few
+> comments, below.
+> 
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Thanks very much for your comments, I have modified the patch as below,
+Cuold you have a look at it again ? Any comments would be appreciated.
+
+>From 655b45785a85599d5fff5eb3b8d9b49b72f2991f Mon Sep 17 00:00:00 2001
+From: Dong Zhu <bluezhudong@gmail.com> 
+Date: Sat, 14 Sep 2013 23:32:14 +0800
+
+This patch add a method into testptp.c to measure the time offset
+between phc and system clock through the ioctl PTP_SYS_OFFSET.
+
+Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
 ---
- kernel/sched/fair.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ Documentation/ptp/testptp.c | 40 ++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 38 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 9b3fe1c..13abc29 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4242,7 +4242,7 @@ static void update_cfs_rq_h_load(struct cfs_rq *cfs_rq)
+diff --git a/Documentation/ptp/testptp.c b/Documentation/ptp/testptp.c
+index f59ded0..8acdc70 100644
+--- a/Documentation/ptp/testptp.c
++++ b/Documentation/ptp/testptp.c
+@@ -112,6 +112,8 @@ static void usage(char *progname)
+ 		" -f val     adjust the ptp clock frequency by 'val' ppb\n"
+ 		" -g         get the ptp clock time\n"
+ 		" -h         prints this message\n"
++		" -k val     measure the time offset between phc and system clock "
++		"for 'val' times (Maximum 25)\n"
+ 		" -p val     enable output with a period of 'val' nanoseconds\n"
+ 		" -P val     enable or disable (val=1|0) the system clock PPS\n"
+ 		" -s         set the ptp clock time from the system time\n"
+@@ -133,8 +135,12 @@ int main(int argc, char *argv[])
+ 	struct itimerspec timeout;
+ 	struct sigevent sigevent;
+ 
++	struct ptp_clock_time *pct;
++	struct ptp_sys_offset *sysoff;
++
++
+ 	char *progname;
+-	int c, cnt, fd;
++	int i, c, cnt, fd;
+ 
+ 	char *device = DEVICE;
+ 	clockid_t clkid;
+@@ -144,6 +150,8 @@ int main(int argc, char *argv[])
+ 	int extts = 0;
+ 	int gettime = 0;
+ 	int oneshot = 0;
++	int offset = 0;
++	int n_samples = 0;
+ 	int periodic = 0;
+ 	int perout = -1;
+ 	int pps = -1;
+@@ -151,7 +159,7 @@ int main(int argc, char *argv[])
+ 
+ 	progname = strrchr(argv[0], '/');
+ 	progname = progname ? 1+progname : argv[0];
+-	while (EOF != (c = getopt(argc, argv, "a:A:cd:e:f:ghp:P:sSt:v"))) {
++	while (EOF != (c = getopt(argc, argv, "a:A:cd:e:f:ghk:p:P:sSt:v"))) {
+ 		switch (c) {
+ 		case 'a':
+ 			oneshot = atoi(optarg);
+@@ -174,6 +182,10 @@ int main(int argc, char *argv[])
+ 		case 'g':
+ 			gettime = 1;
+ 			break;
++		case 'k':
++			offset = 1;
++			n_samples = atoi(optarg);
++			break;
+ 		case 'p':
+ 			perout = atoi(optarg);
+ 			break;
+@@ -376,6 +388,30 @@ int main(int argc, char *argv[])
+ 		}
  	}
  
- 	if (!se) {
--		cfs_rq->h_load = rq->avg.load_avg_contrib;
-+		cfs_rq->h_load = cfs_rq->runnable_load_avg;
- 		cfs_rq->last_h_load_update = now;
- 	}
- 
++	if (offset) {
++		sysoff = calloc(1, sizeof(*sysoff));
++		if (!sysoff) {
++			perror("calloc");
++			return -1;
++		}
++		sysoff->n_samples = n_samples;
++
++		if (ioctl(fd, PTP_SYS_OFFSET, sysoff))
++			perror("PTP_SYS_OFFSET");
++		else
++			puts("phc and system clock time offset request okay");
++
++		pct = &sysoff->ts[0];
++		for (i = 0; i < sysoff->n_samples; i++, pct++) {
++			printf("system time: %ld.%ld\n", pct->sec, pct->nsec);
++			pct++;
++			printf("phc    time: %ld.%ld\n", pct->sec, pct->nsec);
++		}
++		printf("system time: %ld.%ld\n", pct->sec, pct->nsec);
++
++		free(sysoff);
++	}
++
+ 	close(fd);
+ 	return 0;
+ }
 -- 
-1.7.10.4
+1.7.11.7
 
+-- 
+Best Regards,
+Dong Zhu
