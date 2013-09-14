@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932133Ab3INPEA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 11:04:00 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:44699 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756617Ab3INPD6 (ORCPT
+	id S932180Ab3INPjv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 11:39:51 -0400
+Received: from relay.parallels.com ([195.214.232.42]:49410 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932101Ab3INPju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 11:03:58 -0400
-From: Elad Wexler <elad.wexler@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Elad Wexler <elad.wexler@gmail.com>
-Subject: [PATCH] Drivers: char: misc: 'misc_deregister()' changed the 'mutex_unlock' logic upon an error
-Date: Sat, 14 Sep 2013 18:02:11 +0300
-Message-Id: <1379170931-23517-1-git-send-email-elad.wexler@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
+	Sat, 14 Sep 2013 11:39:50 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+CC: Alex Shi <alex.shi@intel.com>, <linux-kernel@vger.kernel.org>,
+        <devel@openvz.org>
+Subject: [PATCH] sched: Fix task_h_load calculation
+Date: Sat, 14 Sep 2013 19:39:46 +0400
+Message-ID: <1379173186-11944-1-git-send-email-vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.24.21.58]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Elad Wexler <elad.wexler@gmail.com>
+Patch a003a2 (sched: Consider runnable load average in move_tasks())
+sets all top-level cfs_rqs' h_load to rq->avg.load_avg_contrib, which is
+always 0. This mistype leads to all tasks having weight 0 when load
+balancing in a cpu-cgroup enabled setup. There obviously should be sum
+of weights of all runnable tasks there instead. Fix it.
 
-This change improves code readability & is less error-prone.
-For example: case adding more error paths one should remember to call 'mutex_unlock'
-
-Signed-off-by: Elad Wexler <elad.wexler@gmail.com>
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- drivers/char/misc.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ kernel/sched/fair.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/char/misc.c b/drivers/char/misc.c
-index 190d442..dd91726 100644
---- a/drivers/char/misc.c
-+++ b/drivers/char/misc.c
-@@ -193,8 +193,8 @@ int misc_register(struct miscdevice * misc)
- 	if (misc->minor == MISC_DYNAMIC_MINOR) {
- 		int i = find_first_zero_bit(misc_minors, DYNAMIC_MINORS);
- 		if (i >= DYNAMIC_MINORS) {
--			mutex_unlock(&misc_mtx);
--			return -EBUSY;
-+			err =  -EBUSY;
-+			goto out;
- 		}
- 		misc->minor = DYNAMIC_MINORS - i - 1;
- 		set_bit(i, misc_minors);
-@@ -203,8 +203,8 @@ int misc_register(struct miscdevice * misc)
- 
- 		list_for_each_entry(c, &misc_list, list) {
- 			if (c->minor == misc->minor) {
--				mutex_unlock(&misc_mtx);
--				return -EBUSY;
-+				err = -EBUSY;
-+				goto out;
- 			}
- 		}
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 9b3fe1c..13abc29 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4242,7 +4242,7 @@ static void update_cfs_rq_h_load(struct cfs_rq *cfs_rq)
  	}
+ 
+ 	if (!se) {
+-		cfs_rq->h_load = rq->avg.load_avg_contrib;
++		cfs_rq->h_load = cfs_rq->runnable_load_avg;
+ 		cfs_rq->last_h_load_update = now;
+ 	}
+ 
 -- 
-1.8.3.1
+1.7.10.4
 
