@@ -1,76 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242Ab3INIBN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 04:01:13 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:44090 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831Ab3INIBK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 04:01:10 -0400
-Message-ID: <523417BF.7030505@gmail.com>
-Date: Sat, 14 Sep 2013 10:01:03 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130827 Icedove/17.0.8
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
-CC: Guenter Roeck <linux@roeck-us.net>, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
-        Hyun Kwon <hyunk@xilinx.com>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Rob Landley <rob@landley.net>, Grant Likely <grant.likely@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] clk: si570: Add a driver for SI570 oscillators
-References: <1379033737-30015-1-git-send-email-soren.brinkmann@xilinx.com> <1379033737-30015-2-git-send-email-soren.brinkmann@xilinx.com> <20130913170005.GB5681@roeck-us.net> <c6755ff6-104d-40fe-a753-0e165cff1e10@AM1EHSMHS004.ehs.local>
-In-Reply-To: <c6755ff6-104d-40fe-a753-0e165cff1e10@AM1EHSMHS004.ehs.local>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1755069Ab3INIEz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 04:04:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12893 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750831Ab3INIEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Sep 2013 04:04:48 -0400
+Date: Sat, 14 Sep 2013 16:03:06 +0800
+From: Dong Zhu <bluezhudong@gmail.com>
+To: Richard Cochran <richardcochran@gmail.com>, Rob Landley <rob@landley.net>
+Cc: netdev@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ptp: measure the time offset between PHC and system clock
+Message-ID: <20130914080306.GC23682@zhudong.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/2013 07:26 PM, Sören Brinkmann wrote:
-> On Fri, Sep 13, 2013 at 10:00:05AM -0700, Guenter Roeck wrote:
->> On Thu, Sep 12, 2013 at 05:55:37PM -0700, Soren Brinkmann wrote:
->>> Add a driver for SILabs 570, 571, 598, 599 programmable oscillators.
->>> The devices generate low-jitter clock signals and are reprogrammable via
->>> an I2C interface.
->>>
->>> Cc: Guenter Roeck <linux@roeck-us.net>
->>> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
->>> ---
-[...]
->>> diff --git a/drivers/clk/clk-si570.c b/drivers/clk/clk-si570.c
->>> new file mode 100644
->>> index 0000000..960d689
->>> --- /dev/null
->>> +++ b/drivers/clk/clk-si570.c
->>> @@ -0,0 +1,546 @@
-[...]
->>> +	match = of_match_node(clk_si570_of_match, client->dev.of_node);
->>> +	if (!match)
->>> +		return -EINVAL;
->>
->> Seems unusual. Is this really needed ? It precludes the driver from being used
->> in a non-devicetree environment, for example. I would guess that there is a match
->> if client->dev.of_node is set. Otherwise, this code would be needed in every
->> driver supporting devicetree, and I don't recall seeing that.
->>
->>> +	ddata = match->data;
->>> +
->> You should be able to get this information (ie the pointer to si570_device_data)
->> from id->driver_data. That would be more consistent with other i2c devices.
-> I think I copied this approach from the other clk-si... driver. I'll
-> do some research on your suggestion and change it. Could you point me to
-> an example for your proposal?
+This patch add a method into testptp.c to measure the time offset
+between phc and system clock through the ioctl PTP_SYS_OFFSET.
 
-Soeren,
+Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
+---
+ Documentation/ptp/testptp.c | 40 ++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 38 insertions(+), 2 deletions(-)
 
-I sent a patch for the match removal in clk-si5351 [1].
-Mike must have missed it, I will resend soon.
-You can take that as "an example for the proposal" above.
+diff --git a/Documentation/ptp/testptp.c b/Documentation/ptp/testptp.c
+index f59ded0..72bb030 100644
+--- a/Documentation/ptp/testptp.c
++++ b/Documentation/ptp/testptp.c
+@@ -112,6 +112,7 @@ static void usage(char *progname)
+ 		" -f val     adjust the ptp clock frequency by 'val' ppb\n"
+ 		" -g         get the ptp clock time\n"
+ 		" -h         prints this message\n"
++		" -k val     measure the time offset between PHC and system clock\n"
+ 		" -p val     enable output with a period of 'val' nanoseconds\n"
+ 		" -P val     enable or disable (val=1|0) the system clock PPS\n"
+ 		" -s         set the ptp clock time from the system time\n"
+@@ -133,8 +134,12 @@ int main(int argc, char *argv[])
+ 	struct itimerspec timeout;
+ 	struct sigevent sigevent;
+ 
++	struct ptp_clock_time *pct;
++	struct ptp_sys_offset *sysoff;
++
++
+ 	char *progname;
+-	int c, cnt, fd;
++	int i, c, cnt, fd;
+ 
+ 	char *device = DEVICE;
+ 	clockid_t clkid;
+@@ -144,6 +149,8 @@ int main(int argc, char *argv[])
+ 	int extts = 0;
+ 	int gettime = 0;
+ 	int oneshot = 0;
++	int offset = 0;
++	int n_samples = 0;
+ 	int periodic = 0;
+ 	int perout = -1;
+ 	int pps = -1;
+@@ -151,7 +158,7 @@ int main(int argc, char *argv[])
+ 
+ 	progname = strrchr(argv[0], '/');
+ 	progname = progname ? 1+progname : argv[0];
+-	while (EOF != (c = getopt(argc, argv, "a:A:cd:e:f:ghp:P:sSt:v"))) {
++	while (EOF != (c = getopt(argc, argv, "a:A:cd:e:f:ghk:p:P:sSt:v"))) {
+ 		switch (c) {
+ 		case 'a':
+ 			oneshot = atoi(optarg);
+@@ -174,6 +181,10 @@ int main(int argc, char *argv[])
+ 		case 'g':
+ 			gettime = 1;
+ 			break;
++		case 'k':
++			offset = 1;
++			n_samples = atoi(optarg);
++			break;
+ 		case 'p':
+ 			perout = atoi(optarg);
+ 			break;
+@@ -376,6 +387,31 @@ int main(int argc, char *argv[])
+ 		}
+ 	}
+ 
++	if (offset) {
++		sysoff = calloc(1, sizeof(*sysoff));
++		if (!sysoff) {
++			perror("calloc");
++			return -1;
++		}
++		sysoff->n_samples = n_samples;
++
++		if (ioctl(fd, PTP_SYS_OFFSET, sysoff))
++			perror("PTP_SYS_OFFSET");
++		else
++			puts("time offset between PHC and
++					 system clock request okay");
++
++		pct = &sysoff->ts[0];
++		for (i = 0; i < sysoff->n_samples; i++, pct++) {
++			printf("system time: %ld.%ld\n", pct->sec, pct->nsec);
++			pct++;
++			printf("phc    time: %ld.%ld\n\n", pct->sec, pct->nsec);
++		}
++		printf("system time: %ld.%ld\n", pct->sec, pct->nsec);
++
++		free(sysoff);
++	}
++
+ 	close(fd);
+ 	return 0;
+ }
+-- 
+1.7.11.7
 
-Sebastian
 
-[1] https://lkml.org/lkml/2013/9/3/484
-
+-- 
+Best Regards,
+Dong Zhu
