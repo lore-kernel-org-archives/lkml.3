@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907Ab3ING5a (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 02:57:30 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:27336 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751836Ab3ING53 (ORCPT
+	id S1753298Ab3INHBX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 03:01:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54993 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752859Ab3INHBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 02:57:29 -0400
-Message-ID: <523408C8.3040606@huawei.com>
-Date: Sat, 14 Sep 2013 14:57:12 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Sat, 14 Sep 2013 03:01:21 -0400
+Date: Sat, 14 Sep 2013 00:00:59 -0700
+From: tip-bot for Stephane Eranian <tipbot@zytor.com>
+Message-ID: <tip-9d8e3f9693245415db0b7c58551a91fa9fd1f9c7@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@kernel.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de
+In-Reply-To: <20130913201646.GA23981@google.com>
+References: <20130913201646.GA23981@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] perf/x86/intel:
+  Mark MEM_LOAD_UOPS_MISS_RETIRED as precise on SNB
+Git-Commit-ID: 9d8e3f9693245415db0b7c58551a91fa9fd1f9c7
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] hung_task: change sysctl_hung_task_check_count to int
-References: <5233CE5E.7040004@huawei.com> <5233CFBF.4000803@huawei.com> <20130914055359.GB364@gmail.com>
-In-Reply-To: <20130914055359.GB364@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 14 Sep 2013 00:01:05 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> On 2013/9/14 10:47, Li Zefan wrote:
->>> As sysctl_hung_task_check_count is unsigned long, when this value is
->>> assigned to max_count in check_hung_uninterruptible_tasks(), it's
->>> truncated to int type.
->>>
->>> Therefore if we write 2^32 to sysctl.hung_task_check_count, hung task
->>> detection will be effectively disabled.
->>>
->>> Not a big deal, but still it's better to fix this inconsistency.
->>>
->>> Signed-off-by: Li Zefan <lizefan@huawei.com>
->>> ---
->>>  include/linux/sched/sysctl.h | 2 +-
->>>  kernel/hung_task.c           | 2 +-
->>>  kernel/sysctl.c              | 4 ++--
->>>  3 files changed, 4 insertions(+), 4 deletions(-)
->>>
->>> diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
->>> index bf8086b..9552afa 100644
->>> --- a/include/linux/sched/sysctl.h
->>> +++ b/include/linux/sched/sysctl.h
->>> @@ -2,8 +2,8 @@
->>>  #define _SCHED_SYSCTL_H
->>>  
->>>  #ifdef CONFIG_DETECT_HUNG_TASK
->>> +extern int	     sysctl_hung_task_check_count;
->>>  extern unsigned int  sysctl_hung_task_panic;
->>> -extern unsigned long sysctl_hung_task_check_count;
->>>  extern unsigned long sysctl_hung_task_timeout_secs; extern unsigned 
->>>  long sysctl_hung_task_warnings; extern int 
->>>  proc_dohung_task_timeout_secs(struct ctl_table *table, int write,
-> 
-> Looks good, but I suppose most of the unsigned longs above ought to be 
-> downgraded to int as well?
-> 
+Commit-ID:  9d8e3f9693245415db0b7c58551a91fa9fd1f9c7
+Gitweb:     http://git.kernel.org/tip/9d8e3f9693245415db0b7c58551a91fa9fd1f9c7
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Fri, 13 Sep 2013 13:16:46 -0700
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Sat, 14 Sep 2013 08:00:18 +0200
 
-They can be, but they don't have to be.
+perf/x86/intel: Mark MEM_LOAD_UOPS_MISS_RETIRED as precise on SNB
 
-> Acked-by: Ingo Molnar <mingo@kernel.org>
+On Intel SNB (SNB, SNB-EP), the event MEM_LOAD_UOPS_MISS_RETIRED
+supports PEBS. It was missing for the SNB PEBS event constraint
+table thereby preventing any measurement with PEBS for it.
 
-Thanks!
+This patch adds the event to the PEBS table for SNB.
 
+WARNING: it should be noted that this event like a few others
+are subject to the erratum BT241 for Xeon E5 (SNB-EP). As such,
+the event may undercount when used with PEBS unless the
+workaround is implemented. But without this patch and just the
+workaround, the kernel would not allow precise sampling on this
+event. BT241 is documented in:
+
+  http://www.intel.com/content/dam/www/public/us/en/documents/specification-updates/xeon-e5-family-spec-update.pdf
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: peterz@infradead.org
+Cc: ak@linux.intel.com
+Cc: zheng.z.yan@intel.com
+Link: http://lkml.kernel.org/r/20130913201646.GA23981@google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/cpu/perf_event_intel_ds.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 3065c57..4ab70ac 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -558,6 +558,7 @@ struct event_constraint intel_snb_pebs_event_constraints[] = {
+ 	INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
+ 	INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
+ 	INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xd3, 0xf),    /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
+ 	INTEL_UEVENT_CONSTRAINT(0x02d4, 0xf), /* MEM_LOAD_UOPS_MISC_RETIRED.LLC_MISS */
+ 	EVENT_CONSTRAINT_END
+ };
