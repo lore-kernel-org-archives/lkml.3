@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932459Ab3INXqd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 19:46:33 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:53605 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756895Ab3INXqT (ORCPT
+	id S1756922Ab3INXq2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 19:46:28 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:51850 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756822Ab3INXp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 19:46:19 -0400
-X-Nat-Received: from [202.181.97.72]:55251 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1379202372.3491
-To: oleg@redhat.com
-Cc: security@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kthread: Make kthread_create() killable.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201309132318.HEC05218.OtVOFOFMLJHFQS@I-love.SAKURA.ne.jp>
-	<20130914160515.GA8627@redhat.com>
-In-Reply-To: <20130914160515.GA8627@redhat.com>
-Message-Id: <201309150846.HED51521.tJOFOMVFSOHQFL@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Sun, 15 Sep 2013 08:46:10 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 14092013 #11055784, status: clean
+	Sat, 14 Sep 2013 19:45:57 -0400
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: [RESEND PATCH v5 2/4] mm/vmalloc: revert "mm/vmalloc.c: emit the failure message before return"
+Date: Sun, 15 Sep 2013 07:45:40 +0800
+Message-Id: <1379202342-23140-2-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1379202342-23140-1-git-send-email-liwanp@linux.vnet.ibm.com>
+References: <1379202342-23140-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13091423-3864-0000-0000-00000A1361E5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov wrote:
-> I am wondering if this can be simplified...
-> 
-> At least you can move create->done from kthread_create_info to the
-> stack, and turn create->owner into the pointer to that completion.
+Changelog:
+ *v2 -> v3: revert commit 46c001a2 directly
 
-Use of DECLARE_COMPLETION_ONSTACK() looks harmful to me because current thread
-needs to be able to terminate as soon as possible if SIGKILLed (especially when
-SIGKILLed by OOM killer). If we move something from kmalloc()ed zone to stack,
-current thread cannot be terminated until that something is guaranteed to no
-longer be used.
+Don't warning twice in __vmalloc_area_node and __vmalloc_node_range if
+__vmalloc_area_node allocation failure. This patch revert commit 46c001a2
+(mm/vmalloc.c: emit the failure message before return).
 
-I think we need to convert from on-stack objects to kmalloc()ed objects so that
-current thread acquires ability to terminate as soon as possible.
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+---
+ mm/vmalloc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index d78d117..e3ec8b4 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -1635,7 +1635,7 @@ void *__vmalloc_node_range(unsigned long size, unsigned long align,
+ 
+ 	addr = __vmalloc_area_node(area, gfp_mask, prot, node, caller);
+ 	if (!addr)
+-		goto fail;
++		return NULL;
+ 
+ 	/*
+ 	 * In this function, newly allocated vm_struct has VM_UNINITIALIZED
+-- 
+1.8.1.2
+
