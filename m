@@ -1,86 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756482Ab3INCsN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 22:48:13 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:28860 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756439Ab3INCsL (ORCPT
+	id S1756360Ab3INCvb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 22:51:31 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:59238 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756004Ab3INCva (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 22:48:11 -0400
-Message-ID: <5233CE5E.7040004@huawei.com>
-Date: Sat, 14 Sep 2013 10:47:58 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] hung_task: change sysctl_hung_task_check_count to int
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+	Fri, 13 Sep 2013 22:51:30 -0400
+X-Nat-Received: from [202.181.97.72]:55122 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1379127005.12511
+To: keescook@chromium.org, joe@perches.com
+Cc: linux@horizon.com, akpm@linux-foundation.org, dan.carpenter@oracle.com,
+        davem@davemloft.net, eldad@fogrefinery.com, jbeulich@suse.com,
+        jkosina@suse.cz, linux-kernel@vger.kernel.org, rdunlap@infradead.org,
+        viro@zeniv.linux.org.uk
+Subject: Re: [PATCH] vsprintf: drop comment claiming %n is ignored
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <20130913195335.18955.qmail@science.horizon.com>
+	<1379111268.2066.22.camel@joe-AO722>
+	<CAGXu5jJxJVK7cu2Sc4Sdng_rLDL8ziC6aecAi7G0zL4fYnY-9Q@mail.gmail.com>
+In-Reply-To: <CAGXu5jJxJVK7cu2Sc4Sdng_rLDL8ziC6aecAi7G0zL4fYnY-9Q@mail.gmail.com>
+Message-Id: <201309141149.HGF39054.QLJVHFtMFOSOOF@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sat, 14 Sep 2013 11:49:51 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 13092013 #11048944, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As sysctl_hung_task_check_count is unsigned long, when this value is
-assigned to max_count in check_hung_uninterruptible_tasks(), it's
-truncated to int type.
+Kees Cook wrote:
+> 3- some callers of seq_printf (incorrectly) use the return value as a
+> length indication
 
-Therefore if we write 2^32 to sysctl.hung_task_check_count, hung task
-detection will be effectively disabled.
+Are there really?
 
-Not a big deal, but still it's better to fix this inconsistency.
+Is somebody using the return value from seq_printf() like
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- include/linux/sched/sysctl.h | 2 +-
- kernel/hung_task.c           | 2 +-
- kernel/sysctl.c              | 4 ++--
- 3 files changed, 4 insertions(+), 4 deletions(-)
+  pos = snprintf(buf, sizeof(buf) - 1, "%s", foo);
+  snprintf(buf + pos, sizeof(buf) - 1 - pos, "%s", bar);
 
-diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
-index bf8086b..9552afa 100644
---- a/include/linux/sched/sysctl.h
-+++ b/include/linux/sched/sysctl.h
-@@ -2,8 +2,8 @@
- #define _SCHED_SYSCTL_H
- 
- #ifdef CONFIG_DETECT_HUNG_TASK
-+extern int	     sysctl_hung_task_check_count;
- extern unsigned int  sysctl_hung_task_panic;
--extern unsigned long sysctl_hung_task_check_count;
- extern unsigned long sysctl_hung_task_timeout_secs;
- extern unsigned long sysctl_hung_task_warnings;
- extern int proc_dohung_task_timeout_secs(struct ctl_table *table, int write,
-diff --git a/kernel/hung_task.c b/kernel/hung_task.c
-index 6df6149..b5a5d42 100644
---- a/kernel/hung_task.c
-+++ b/kernel/hung_task.c
-@@ -19,7 +19,7 @@
- /*
-  * The number of tasks checked:
-  */
--unsigned long __read_mostly sysctl_hung_task_check_count = PID_MAX_LIMIT;
-+int __read_mostly sysctl_hung_task_check_count = PID_MAX_LIMIT;
- 
- /*
-  * Limit number of tasks checked in a batch.
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 07f6fc4..5e5cc21 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -962,9 +962,9 @@ static struct ctl_table kern_table[] = {
- 	{
- 		.procname	= "hung_task_check_count",
- 		.data		= &sysctl_hung_task_check_count,
--		.maxlen		= sizeof(unsigned long),
-+		.maxlen		= sizeof(int),
- 		.mode		= 0644,
--		.proc_handler	= proc_doulongvec_minmax,
-+		.proc_handler	= proc_dointvec_minmax,
- 	},
- 	{
- 		.procname	= "hung_task_timeout_secs",
--- 
-1.8.0.2
+? Since the caller cannot pass the return value from seq_printf() like
+
+  pos = seq_printf(m, "%s", foo);
+  seq_printf(m + pos, "%s", bar);
+
+, I wonder who would interpret the return value as a length indication.
+
+Even bad code which has never tested failure case, the authors should already
+know that "seq_printf() returns 0 on success case".
+
+I think that
+
+	pos += seq_printf(m, "%s", foo);
+	pos += seq_printf(m, "%s", bar);
+
+is used as the equivalent to
+
+	if (seq_printf(m, "%s", foo))
+		pos = -1;
+	if (seq_printf(m, "%s", bar))
+		pos = -1;
+
+.
+
+Joe Perches wrote:
+> @@ -174,8 +171,8 @@ static int dbg_show_state(struct seq_file *s, void *p)
+>  	int pos = 0;
+>  
+>  	/* basic device status */
+> -	pos += seq_printf(s, "DMA engine status\n");
+> -	pos += seq_printf(s, "\tChannel number: %d\n", num_dma_channels);
+> +	seq_puts(s, "DMA engine status\n");
+> +	seq_printf(s, "\tChannel number: %d\n", num_dma_channels);
+>  
+>  	return pos;
+>  }
+
+As I described above, I think this change breaks the functionality.
+We need to change like
+
+  -	pos += seq_printf(s, "DMA engine status\n");
+  -	pos += seq_printf(s, "\tChannel number: %d\n", num_dma_channels);
+  +	pos |= seq_puts(s, "DMA engine status\n");
+  +	pos |= seq_printf(s, "\tChannel number: %d\n", num_dma_channels);
+
+or
+
+  -	pos += seq_printf(s, "DMA engine status\n");
+  -	pos += seq_printf(s, "\tChannel number: %d\n", num_dma_channels);
+  +	seq_puts(s, "DMA engine status\n");
+  +	seq_printf(s, "\tChannel number: %d\n", num_dma_channels);
+   
+  - 	return pos;
+  +	return seq_overflow(s) : -1 : 0;
+
+for keeping the functionality.
