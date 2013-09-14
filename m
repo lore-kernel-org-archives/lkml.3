@@ -1,125 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755069Ab3INIEz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 04:04:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12893 "EHLO mx1.redhat.com"
+	id S1753185Ab3INIdL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 04:33:11 -0400
+Received: from 1wt.eu ([62.212.114.60]:38600 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750831Ab3INIEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 04:04:48 -0400
-Date: Sat, 14 Sep 2013 16:03:06 +0800
-From: Dong Zhu <bluezhudong@gmail.com>
-To: Richard Cochran <richardcochran@gmail.com>, Rob Landley <rob@landley.net>
-Cc: netdev@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ptp: measure the time offset between PHC and system clock
-Message-ID: <20130914080306.GC23682@zhudong.nay.redhat.com>
-MIME-Version: 1.0
+	id S1750810Ab3INIdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Sep 2013 04:33:07 -0400
+Date: Sat, 14 Sep 2013 10:32:59 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] tools/perf: add new option --ignore-vmlinux for perf top
+Message-ID: <20130914083259.GA3418@1wt.eu>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add a method into testptp.c to measure the time offset
-between phc and system clock through the ioctl PTP_SYS_OFFSET.
+Running "perf top" on a machine with possibly invalid or non-matching
+vmlinux at the various places results in no symbol resolving despite
+/proc/kallsyms being present and valid.
 
-Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
+Add a new option --ignore-vmlinux to explicitly indicate that we do
+not want to use these kernels and just use what we have (kallsyms).
+
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 ---
- Documentation/ptp/testptp.c | 40 ++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 38 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/ptp/testptp.c b/Documentation/ptp/testptp.c
-index f59ded0..72bb030 100644
---- a/Documentation/ptp/testptp.c
-+++ b/Documentation/ptp/testptp.c
-@@ -112,6 +112,7 @@ static void usage(char *progname)
- 		" -f val     adjust the ptp clock frequency by 'val' ppb\n"
- 		" -g         get the ptp clock time\n"
- 		" -h         prints this message\n"
-+		" -k val     measure the time offset between PHC and system clock\n"
- 		" -p val     enable output with a period of 'val' nanoseconds\n"
- 		" -P val     enable or disable (val=1|0) the system clock PPS\n"
- 		" -s         set the ptp clock time from the system time\n"
-@@ -133,8 +134,12 @@ int main(int argc, char *argv[])
- 	struct itimerspec timeout;
- 	struct sigevent sigevent;
- 
-+	struct ptp_clock_time *pct;
-+	struct ptp_sys_offset *sysoff;
-+
-+
- 	char *progname;
--	int c, cnt, fd;
-+	int i, c, cnt, fd;
- 
- 	char *device = DEVICE;
- 	clockid_t clkid;
-@@ -144,6 +149,8 @@ int main(int argc, char *argv[])
- 	int extts = 0;
- 	int gettime = 0;
- 	int oneshot = 0;
-+	int offset = 0;
-+	int n_samples = 0;
- 	int periodic = 0;
- 	int perout = -1;
- 	int pps = -1;
-@@ -151,7 +158,7 @@ int main(int argc, char *argv[])
- 
- 	progname = strrchr(argv[0], '/');
- 	progname = progname ? 1+progname : argv[0];
--	while (EOF != (c = getopt(argc, argv, "a:A:cd:e:f:ghp:P:sSt:v"))) {
-+	while (EOF != (c = getopt(argc, argv, "a:A:cd:e:f:ghk:p:P:sSt:v"))) {
- 		switch (c) {
- 		case 'a':
- 			oneshot = atoi(optarg);
-@@ -174,6 +181,10 @@ int main(int argc, char *argv[])
- 		case 'g':
- 			gettime = 1;
- 			break;
-+		case 'k':
-+			offset = 1;
-+			n_samples = atoi(optarg);
-+			break;
- 		case 'p':
- 			perout = atoi(optarg);
- 			break;
-@@ -376,6 +387,31 @@ int main(int argc, char *argv[])
- 		}
+Hey guys, I found that I'm still regularly rebasing this patch
+on new kernels. It would be nice if it could be merged, as it
+causes some burden on some production machines which have old
+vmlinux files at several places that we don't always want to
+risk removing just for running perf top.
+
+ tools/perf/builtin-top.c | 2 ++
+ tools/perf/util/symbol.c | 4 ++--
+ tools/perf/util/symbol.h | 1 +
+ 3 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index e06c4f8..6e7fef7 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1067,6 +1067,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		    "list of cpus to monitor"),
+ 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
+ 		   "file", "vmlinux pathname"),
++	OPT_BOOLEAN(0, "ignore-vmlinux", &symbol_conf.ignore_vmlinux,
++		    "don't load vmlinux even if found"),
+ 	OPT_BOOLEAN('K', "hide_kernel_symbols", &top.hide_kernel_symbols,
+ 		    "hide kernel symbols"),
+ 	OPT_UINTEGER('m', "mmap-pages", &opts->mmap_pages,
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index d5528e1..7eab65a 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -968,7 +968,7 @@ static int dso__load_kernel_sym(struct dso *dso, struct map *map,
+ 		goto do_kallsyms;
  	}
  
-+	if (offset) {
-+		sysoff = calloc(1, sizeof(*sysoff));
-+		if (!sysoff) {
-+			perror("calloc");
-+			return -1;
-+		}
-+		sysoff->n_samples = n_samples;
-+
-+		if (ioctl(fd, PTP_SYS_OFFSET, sysoff))
-+			perror("PTP_SYS_OFFSET");
-+		else
-+			puts("time offset between PHC and
-+					 system clock request okay");
-+
-+		pct = &sysoff->ts[0];
-+		for (i = 0; i < sysoff->n_samples; i++, pct++) {
-+			printf("system time: %ld.%ld\n", pct->sec, pct->nsec);
-+			pct++;
-+			printf("phc    time: %ld.%ld\n\n", pct->sec, pct->nsec);
-+		}
-+		printf("system time: %ld.%ld\n", pct->sec, pct->nsec);
-+
-+		free(sysoff);
-+	}
-+
- 	close(fd);
- 	return 0;
- }
+-	if (symbol_conf.vmlinux_name != NULL) {
++	if (!symbol_conf.ignore_vmlinux && symbol_conf.vmlinux_name != NULL) {
+ 		err = dso__load_vmlinux(dso, map,
+ 					symbol_conf.vmlinux_name, filter);
+ 		if (err > 0) {
+@@ -980,7 +980,7 @@ static int dso__load_kernel_sym(struct dso *dso, struct map *map,
+ 		return err;
+ 	}
+ 
+-	if (vmlinux_path != NULL) {
++	if (!symbol_conf.ignore_vmlinux && vmlinux_path != NULL) {
+ 		err = dso__load_vmlinux_path(dso, map, filter);
+ 		if (err > 0)
+ 			goto out_fixup;
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 5f720dc..3346d09 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -85,6 +85,7 @@ struct symbol_conf {
+ 	unsigned short	priv_size;
+ 	unsigned short	nr_events;
+ 	bool		try_vmlinux_path,
++			ignore_vmlinux,
+ 			show_kernel_path,
+ 			use_modules,
+ 			sort_by_name,
 -- 
-1.7.11.7
+1.7.12.2.21.g234cd45.dirty
 
-
--- 
-Best Regards,
-Dong Zhu
