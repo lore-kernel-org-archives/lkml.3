@@ -1,111 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756857Ab3INVeA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 17:34:00 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:41847 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756730Ab3INVd6 (ORCPT
+	id S1756884Ab3INVf1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 17:35:27 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:43609 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756730Ab3INVfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 17:33:58 -0400
-Message-ID: <1379194431.2978.22.camel@nightslugs>
-Subject: Re: [Linaro-mm-sig] [RFC 0/1] drm/pl111: Initial drm/kms driver for
- pl111
-From: Daniel Stone <daniels@collabora.com>
-To: Tom Cooksey <tom.cooksey@arm.com>
-Cc: "'Rob Clark'" <robdclark@gmail.com>, linux-fbdev@vger.kernel.org,
-        Pawel Moll <Pawel.Moll@arm.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
-Date: Sat, 14 Sep 2013 17:33:51 -0400
-In-Reply-To: <000101ce9298$8ce44ee0$a6aceca0$@cooksey@arm.com>
-References: <1374772648-19151-1-git-send-email-tom.cooksey@arm.com>
-		<CAF6AEGtspnhSGNM4_QQubVfOkZ1Gh1-Z3iyHOLBPVWuqRy81ew@mail.gmail.com>
-		<51f29ccd.f014b40a.34cc.ffffca2aSMTPIN_ADDED_BROKEN@mx.google.com>
-		<CAF6AEGvFPGueM_LHVij9KFzM6NJySHCzmaLstuzZkK5GwP+6gQ@mail.gmail.com>
-		<51ffdc7e.06b8b40a.2cc8.0fe0SMTPIN_ADDED_BROKEN@mx.google.com>
-	 <CAF6AEGsyKk_G-R-OX_YcgYFDgTEmCy9Vf2LV1pAOV0452QKSww@mail.gmail.com>
-	 <000101ce9298$8ce44ee0$a6aceca0$@cooksey@arm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 14 Sep 2013 17:35:25 -0400
+From: Manfred Spraul <manfred@colorfullife.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>, hhuang@redhat.com,
+        Mike Galbraith <efault@gmx.de>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Mike Galbraith <bitbucket@online.de>
+Subject: [PATCH 1/2] ipc/sem.c: Race in sem_lock()
+Date: Sat, 14 Sep 2013 23:34:55 +0200
+Message-Id: <1379194496-4642-1-git-send-email-manfred@colorfullife.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The exclusion of complex operations in sem_lock() is insufficient:
+After acquiring the per-semaphore lock, a simple op must first check that
+sem_perm.lock is not locked and only after that test check complex_count.
+The current code does it the other way around - and that creates a race.
+Details are below.
 
-On Tue, 2013-08-06 at 12:31 +0100, Tom Cooksey wrote:
-> > >> On Fri, Jul 26, 2013 at 11:58 AM, Tom Cooksey <tom.cooksey@arm.com>
-> > >> wrote:
-> > that was part of the reason to punt this problem to userspace ;-)
-> >
-> > In practice, the kernel drivers doesn't usually know too much about
-> > the dimensions/format/etc.. that is really userspace level knowledge.
-> > There are a few exceptions when the kernel needs to know how to setup
-> > GTT/etc for tiled buffers, but normally this sort of information is up
-> > at the next level up (userspace, and drm_framebuffer in case of
-> > scanout).  Userspace media frameworks like GStreamer already have a
-> > concept of format/caps negotiation.  For non-display<->gpu sharing, I
-> > think this is probably where this sort of constraint negotiation
-> > should be handled.
+The patch is a complete rewrite of sem_lock(), based in part on the code from
+Mike Galbraith. It removes all gotos and all loops and thus the risk of
+livelocks.
 
-Egads.  GStreamer's caps negotiation is already close to unbounded time;
-seems like most of the optimisation work that goes into it these days is
-all about _reducing_ the complexity of caps negotiation!
+I have tested the patch (together with the next one) on my i3 laptop and it
+didn't cause any problems.
 
-> I agree that user-space will know which devices will access the buffer
-> and thus can figure out at least a common pixel format.
+What do you think?
+I think the patch should be merged because the current sem_lock function is
+much more complex than necessary.
 
-Hm, are you sure about that? The answer is yes for 'userspace' as a
-broad handwave, but not necessarily for individual processes.  Take, for
-instance, media decode through GStreamer, being displayed by Wayland
-using a KMS plane/overlay/sprite/cursor/etc.  The media player knows
-that the buffers are coming from the decode engine, and Wayland knows
-that the buffers are going to a KMS plane, but neither of them knows the
-full combination of the two.
+The bug is probably also present in 3.10 and 3.11, but for these kernels
+is is probably simpler just to move the test of sma->complex_count after
+the spin_is_locked() test.
 
-Though this kinda feeds into an idea I've been kicking around for a
-while, which is an 'optimal hint' mechanism in the Wayland protocol.  So
-for our hypothetical dmabuf-using protocol, we'd start off with buffers
-which satisfied all the constraints of our media decode engine, but
-perhaps just the GPU rather than display controller.  At this point,
-we'd note that we could place the video in a plane if only the buffers
-were better-allocated, and send an event to the client letting it know
-how to tweak its buffer allocation for more optimal display.
+Details of the bug:
 
-But ...
+Assume:
+- sma->complex_count = 0.
+- Thread 1: semtimedop(complex op that must sleep)
+- Thread 2: semtimedop(simple op).
 
-> Though I'm not
-> so sure userspace can figure out more low-level details like alignment
-> and placement in physical memory, etc.
-> 
-> Anyway, assuming user-space can figure out how a buffer should be 
-> stored in memory, how does it indicate this to a kernel driver and 
-> actually allocate it? Which ioctl on which device does user-space
-> call, with what parameters? Are you suggesting using something like
-> ION which exposes the low-level details of how buffers are laid out in
-> physical memory to userspace? If not, what?
+Pseudo-Trace:
 
-... this is still rather unresolved. ;)
+Thread 1: sem_lock(): acquire sem_perm.lock
+Thread 1: sem_lock(): check for ongoing simple ops
+			Nothing ongoing, thread 2 is still before sem_lock().
+Thread 1: try_atomic_semop()
+	<<< preempted.
 
-Cheers,
-Daniel
+Thread 2: sem_lock():
+        static inline int sem_lock(struct sem_array *sma, struct sembuf *sops,
+                                      int nsops)
+        {
+                int locknum;
+         again:
+                if (nsops == 1 && !sma->complex_count) {
+                        struct sem *sem = sma->sem_base + sops->sem_num;
 
+                        /* Lock just the semaphore we are interested in. */
+                        spin_lock(&sem->lock);
 
-> 
-> Cheers,
-> 
-> Tom
-> 
-> 
-> 
-> 
-> 
-> 
-> _______________________________________________
-> Linaro-mm-sig mailing list
-> Linaro-mm-sig@lists.linaro.org
-> http://lists.linaro.org/mailman/listinfo/linaro-mm-sig
+                        /*
+                         * If sma->complex_count was set while we were spinning,
+                         * we may need to look at things we did not lock here.
+                         */
+                        if (unlikely(sma->complex_count)) {
+                                spin_unlock(&sem->lock);
+                                goto lock_array;
+                        }
+        <<<<<<<<<
+	<<< complex_count is still 0.
+	<<<
+        <<< Here it is preempted
+        <<<<<<<<<
 
+Thread 1: try_atomic_semop() returns, notices that it must sleep.
+Thread 1: increases sma->complex_count.
+Thread 1: drops sem_perm.lock
+Thread 2:
+                /*
+                 * Another process is holding the global lock on the
+                 * sem_array; we cannot enter our critical section,
+                 * but have to wait for the global lock to be released.
+                 */
+                if (unlikely(spin_is_locked(&sma->sem_perm.lock))) {
+                        spin_unlock(&sem->lock);
+                        spin_unlock_wait(&sma->sem_perm.lock);
+                        goto again;
+                }
+	<<< sem_perm.lock already dropped, thus no "goto again;"
+
+                locknum = sops->sem_num;
+
+Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+Cc: Mike Galbraith <bitbucket@online.de>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ ipc/sem.c | 122 +++++++++++++++++++++++++++++++++++++++-----------------------
+ 1 file changed, 78 insertions(+), 44 deletions(-)
+
+diff --git a/ipc/sem.c b/ipc/sem.c
+index 69b6a21..4836ea7 100644
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -244,70 +244,104 @@ static void merge_queues(struct sem_array *sma)
+ }
+ 
+ /*
++ * Wait until all currently ongoing simple ops have completed.
++ * Caller must own sem_perm.lock.
++ * New simple ops can start, because simple ops first check
++ * that sem_perm.lock is free.
++ */
++static void sem_wait_array(struct sem_array *sma)
++{
++	int i;
++	struct sem *sem;
++
++	for (i = 0; i < sma->sem_nsems; i++) {
++		sem = sma->sem_base + i;
++		spin_unlock_wait(&sem->lock);
++	}
++}
++
++/*
+  * If the request contains only one semaphore operation, and there are
+  * no complex transactions pending, lock only the semaphore involved.
+  * Otherwise, lock the entire semaphore array, since we either have
+  * multiple semaphores in our own semops, or we need to look at
+  * semaphores from other pending complex operations.
+- *
+- * Carefully guard against sma->complex_count changing between zero
+- * and non-zero while we are spinning for the lock. The value of
+- * sma->complex_count cannot change while we are holding the lock,
+- * so sem_unlock should be fine.
+- *
+- * The global lock path checks that all the local locks have been released,
+- * checking each local lock once. This means that the local lock paths
+- * cannot start their critical sections while the global lock is held.
+  */
+ static inline int sem_lock(struct sem_array *sma, struct sembuf *sops,
+ 			      int nsops)
+ {
+-	int locknum;
+- again:
+-	if (nsops == 1 && !sma->complex_count) {
+-		struct sem *sem = sma->sem_base + sops->sem_num;
++	struct sem *sem;
+ 
+-		/* Lock just the semaphore we are interested in. */
+-		spin_lock(&sem->lock);
++	if (nsops != 1) {
++		/* Complex operation - acquire a full lock */
++		ipc_lock_object(&sma->sem_perm);
+ 
+-		/*
+-		 * If sma->complex_count was set while we were spinning,
+-		 * we may need to look at things we did not lock here.
++		/* And wait until all simple ops that are processed
++		 * right now have dropped their locks.
+ 		 */
+-		if (unlikely(sma->complex_count)) {
+-			spin_unlock(&sem->lock);
+-			goto lock_array;
+-		}
++		sem_wait_array(sma);
++		return -1;
++	}
++
++	/*
++	 * Only one semaphore affected - try to optimize locking.
++	 * The rules are:
++	 * - optimized locking is possible if no complex operation
++	 *   is either enqueued or processed right now.
++	 * - The test for enqueued complex ops is simple:
++	 *      sma->complex_count != 0
++	 * - Testing for complex ops that are processed right now is
++	 *   a bit more difficult. Complex ops acquire the full lock
++	 *   and first wait that the running simple ops have completed.
++	 *   (see above)
++	 *   Thus: If we own a simple lock and the global lock is free
++	 *	and complex_count is now 0, then it will stay 0 and
++	 *	thus just locking sem->lock is sufficient.
++	 */
++	sem = sma->sem_base + sops->sem_num;
+ 
++	if (sma->complex_count == 0) {
+ 		/*
+-		 * Another process is holding the global lock on the
+-		 * sem_array; we cannot enter our critical section,
+-		 * but have to wait for the global lock to be released.
++		 * It appears that no complex operation is around.
++		 * Acquire the per-semaphore lock.
+ 		 */
+-		if (unlikely(spin_is_locked(&sma->sem_perm.lock))) {
+-			spin_unlock(&sem->lock);
+-			spin_unlock_wait(&sma->sem_perm.lock);
+-			goto again;
++		spin_lock(&sem->lock);
++
++		/* Then check that the global lock is free */
++		if (!spin_is_locked(&sma->sem_perm.lock)) {
++			/* spin_is_locked() is not a memory barrier */
++			smp_mb();
++
++			/* Now repeat the test of complex_count:
++			 * It can't change anymore until we drop sem->lock.
++			 * Thus: if is now 0, then it will stay 0.
++			 */
++			if (sma->complex_count == 0) {
++				/* fast path successful! */
++				return sops->sem_num;
++			}
+ 		}
++		spin_unlock(&sem->lock);
++	}
+ 
+-		locknum = sops->sem_num;
++	/* slow path: acquire the full lock */
++	ipc_lock_object(&sma->sem_perm);
++
++	if (sma->complex_count == 0) {
++		/* False alarm:
++		 * There is no complex operation, thus we can switch
++		 * back to the fast path.
++		 */
++		spin_lock(&sem->lock);
++		ipc_unlock_object(&sma->sem_perm);
++		return sops->sem_num;
+ 	} else {
+-		int i;
+-		/*
+-		 * Lock the semaphore array, and wait for all of the
+-		 * individual semaphore locks to go away.  The code
+-		 * above ensures no new single-lock holders will enter
+-		 * their critical section while the array lock is held.
++		/* Not a false alarm, thus complete the sequence for a
++		 * full lock.
+ 		 */
+- lock_array:
+-		ipc_lock_object(&sma->sem_perm);
+-		for (i = 0; i < sma->sem_nsems; i++) {
+-			struct sem *sem = sma->sem_base + i;
+-			spin_unlock_wait(&sem->lock);
+-		}
+-		locknum = -1;
++		sem_wait_array(sma);
++		return -1;
+ 	}
+-	return locknum;
+ }
+ 
+ static inline void sem_unlock(struct sem_array *sma, int locknum)
+-- 
+1.8.3.1
 
