@@ -1,107 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025Ab3INGLy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 02:11:54 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:45914 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751978Ab3INGLw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 02:11:52 -0400
-Date: Sat, 14 Sep 2013 08:11:49 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 0/4] perf tools: New comm infrastructure
-Message-ID: <20130914061148.GF364@gmail.com>
-References: <1379017783-27032-1-git-send-email-fweisbec@gmail.com>
- <20130912203658.GA3216@gmail.com>
- <20130913124354.GB4844@somewhere>
+	id S1752589Ab3INGSY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 02:18:24 -0400
+Received: from mga11.intel.com ([192.55.52.93]:43653 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751234Ab3INGSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Sep 2013 02:18:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,902,1371106800"; 
+   d="scan'208";a="401571615"
+From: Andi Kleen <andi@firstfloor.org>
+To: mingo@kernel.org
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, peterz@infradead.org,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf/x86/intel: Clean-up/reduce PEBS code
+References: <tip-8q6y4davda9aawwv5yxe7klp@git.kernel.org>
+Date: Fri, 13 Sep 2013 23:18:21 -0700
+In-Reply-To: <tip-8q6y4davda9aawwv5yxe7klp@git.kernel.org> (tip-bot for Peter
+	Zijlstra's message of "Thu, 12 Sep 2013 11:04:44 -0700")
+Message-ID: <87mwng53ki.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130913124354.GB4844@somewhere>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+tip-bot for Peter Zijlstra <tipbot@zytor.com> writes:
+> +
+> +	at  = (struct pebs_record_nhm *)(unsigned long)ds->pebs_buffer_base;
+> +	top = (struct pebs_record_nhm *)(unsigned long)ds->pebs_index;
+>  
+>  	ds->pebs_index = ds->pebs_buffer_base;
+>  
+> +	n = (top - at) / x86_pmu.pebs_record_size;
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-> On Thu, Sep 12, 2013 at 10:36:58PM +0200, Ingo Molnar wrote:
-> > 
-> > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > 
-> > > The way we handle hists sorted by comm is to first gather them by tid 
-> > > then in the end merge/collapse hists that end up with the same comm.
-> > > 
-> > > But merging hists has shown some performances issues, especially with 
-> > > callchain where the operation can be very heavy.
-> > > 
-> > > So this new comm infrastructure aims at removing comm collapses. It 
-> > > brings two features:
-> > > 
-> > > 1) Keep track of comms lifecycle by storing timestamps when the comms 
-> > > are set. This way we can map the precise comm to any thread:time couple. 
-> > > This only works if the PERF_SAMPLE_ID comes along comm and fork events, 
-> > > otherwise we only track the latest comm set for a thread.
-> > > 
-> > > This can provide us more precise comm sorted hists by distinguishing pre 
-> > > and post exec timeframes into seperate hists for a single thread.
-> > > 
-> > > Note that although the comm infrastructure is ready to do this, I 
-> > > haven't yet made the perf tools support that. It's a TODO entry.
-> > > 
-> > > 2) Allocate comms only once instead of duplicating them for all threads 
-> > > sharing a same one. Two threads having the same comm should now point to 
-> > > the same string. As a result we can compare hists thread comm by 
-> > > address.
-> > > 
-> > > The big upside is that we can now live sort comm hists instead of 
-> > > collapsing them in the end of the processing.
-> > > 
-> > > I've seen very nice performance results on perf report. Roughly a 1.5x 
-> > > to 2x on perf report default stdio output with callchains.
-> > > 
-> > > You can try this branch:
-> > > 
-> > > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-> > > 	perf/comm
-> > > 
-> > > May be merging that with Namhyung callchains patches could provide some
-> > > cumulative nice results.
-> > 
-> > It would be nice to try Linus's testcase, which is, in essence a kernel 
-> > build profile:
-> > 
-> >     make defconfig
-> >     perf record -g make -j64 bzImage
-> > 
-> > and to make sure that it can analyze the data in same, non-annoying 
-> > runtimes. What I saw was 30 minutes of runtime - a 2x improvement is not 
-> > nearly enough, 15 minutes is still an eternity.
-> 
-> I doubt we can reach anything near non-annonying runtimes after 
-> recording all the callchains of a whole kernel build perf record.
-> 
-> My patches and Namhyung's should improve the comm situation a lot but we 
-> can't do much miracle. The only way would be perhaps to be able to limit 
-> the deepness of the callchain branches.
-> 
-> Now may be we can find other big contention point in perf. It's possible 
-> we also have some endless loop somewhere.
+This adds a full slow division to the PEBS hot path.
 
-Well, it was the 100,000+ step linear list walk that was causing 90% of 
-the slowness here. Namhyung's patch should dramatically improve that. I 
-guess time for someone to post a combined tree so that it can be tested 
-all together?
+Does not seem like a improvement to me.
 
-Thanks,
+-Andi
 
-	Ingo
+-- 
+ak@linux.intel.com -- Speaking for myself only
