@@ -1,187 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755718Ab3IOK0l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 06:26:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32459 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754908Ab3IOK0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 06:26:39 -0400
-Date: Sun, 15 Sep 2013 13:26:34 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 00/15] KVM: MMU: locklessly wirte-protect
-Message-ID: <20130915102634.GB17294@redhat.com>
-References: <1378376958-27252-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+	id S1755655Ab3IOKts (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 06:49:48 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54803 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754995Ab3IOKtr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Sep 2013 06:49:47 -0400
+Date: Sat, 14 Sep 2013 13:28:09 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Markus Pargmann <mpa@pengutronix.de>, kernel@pengutronix.de,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: dev->of_node overwrite can cause device loading with different
+	driver
+Message-ID: <20130914122809.GI12758@n2100.arm.linux.org.uk>
+References: <20130913155331.GC14456@pengutronix.de> <20130913171046.GA26207@kroah.com> <20130914071653.GA26512@pengutronix.de> <20130914121729.GA7823@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1378376958-27252-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+In-Reply-To: <20130914121729.GA7823@kroah.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marcelo do you feel your comments are addressed in patches 3 and 5 of
-this series?
+On Sat, Sep 14, 2013 at 05:17:29AM -0700, Greg Kroah-Hartman wrote:
+> On Sat, Sep 14, 2013 at 09:16:53AM +0200, Markus Pargmann wrote:
+> > 3. We could fix up all drivers that change the of_node. But there are
+> >    ARM DT frameworks that require a device struct as parameter instead
+> >    of a device_node parameter (e.g. soc-generic-dmaengine-pcm). So a
+> >    driver core, initialized by a glue driver with DT bindings, has to
+> >    set dev->of_node to use those frameworks. I think it is strange to
+> >    have such DT framework interfaces if a driver is not supposed to
+> >    overwrite dev->of_node permanently.
+> 
+> How about any driver that does muck with this structure, restore it
+> properly if their probe() function fails?  Yes, you show that this is
+> going to be tricky in some places (i.e. musb), but it makes sense that
+> the burden of fixing this issue would rest on them, as they are the ones
+> causing this problem, right?
 
-On Thu, Sep 05, 2013 at 06:29:03PM +0800, Xiao Guangrong wrote:
-> Changelog v2:
-> 
-> - the changes from Gleb's review:
->   1) fix calculating the number of spte in the pte_list_add()
->   2) set iter->desc to NULL if meet a nulls desc to cleanup the code of
->      rmap_get_next()
->   3) fix hlist corruption due to accessing sp->hlish out of mmu-lock
->   4) use rcu functions to access the rcu protected pointer
->   5) spte will be missed in lockless walker if the spte is moved in a desc
->      (remove a spte from the rmap using only one desc). Fix it by bottom-up
->      walking the desc
-> 
-> - the changes from Paolo's review
->   1) make the order and memory barriers between update spte / add spte into
->      rmap and dirty-log more clear
->   
-> - the changes from Marcelo's review:
->   1) let fast page fault only fix the spts on the last level (level = 1)
->   2) improve some changelogs and comments
-> 
-> - the changes from Takuya's review:
->   move the patch "flush tlb if the spte can be locklessly modified" forward
->   to make it's more easily merged
-> 
-> Thank all of you very much for your time and patience on this patchset!
->   
-> Since we use rcu_assign_pointer() to update the points in desc even if dirty
-> log is disabled, i have measured the performance:
-> Host: Intel(R) Xeon(R) CPU           X5690  @ 3.47GHz * 12 + 36G memory
-> 
-> - migrate-perf (benchmark the time of get-dirty-log)
->   before: Run 10 times, Avg time:9009483 ns.
->   after: Run 10 times, Avg time:4807343 ns.
-> 
-> - kerbench
->   Guest: 12 VCPUs + 8G memory
->   before:
-> EPT is enabled:
-> # cat 09-05-origin-ept | grep real       
-> real 85.58
-> real 83.47
-> real 82.95
-> 
-> EPT is disabled:
-> # cat 09-05-origin-shadow | grep real
-> real 138.77
-> real 138.99
-> real 139.55
-> 
->   after:
-> EPT is enabled:
-> # cat 09-05-lockless-ept | grep real
-> real 83.40
-> real 82.81
-> real 83.39
-> 
-> EPT is disabled:
-> # cat 09-05-lockless-shadow | grep real
-> real 138.91
-> real 139.71
-> real 138.94
-> 
-> No performance regression!
-> 
-> 
-> 
-> Background
-> ==========
-> Currently, when mark memslot dirty logged or get dirty page, we need to
-> write-protect large guest memory, it is the heavy work, especially, we need to
-> hold mmu-lock which is also required by vcpu to fix its page table fault and
-> mmu-notifier when host page is being changed. In the extreme cpu / memory used
-> guest, it becomes a scalability issue.
-> 
-> This patchset introduces a way to locklessly write-protect guest memory.
-> 
-> Idea
-> ==========
-> There are the challenges we meet and the ideas to resolve them.
-> 
-> 1) How to locklessly walk rmap?
-> The first idea we got to prevent "desc" being freed when we are walking the
-> rmap is using RCU. But when vcpu runs on shadow page mode or nested mmu mode,
-> it updates the rmap really frequently.
-> 
-> So we uses SLAB_DESTROY_BY_RCU to manage "desc" instead, it allows the object
-> to be reused more quickly. We also store a "nulls" in the last "desc"
-> (desc->more) which can help us to detect whether the "desc" is moved to anther
-> rmap then we can re-walk the rmap if that happened. I learned this idea from
-> nulls-list.
-> 
-> Another issue is, when a spte is deleted from the "desc", another spte in the
-> last "desc" will be moved to this position to replace the deleted one. If the
-> deleted one has been accessed and we do not access the replaced one, the
-> replaced one is missed when we do lockless walk.
-> To fix this case, we do not backward move the spte, instead, we forward move
-> the entry: when a spte is deleted, we move the entry in the first desc to that
-> position.
-> 
-> 2) How to locklessly access shadow page table?
-> It is easy if the handler is in the vcpu context, in that case we can use
-> walk_shadow_page_lockless_begin() and walk_shadow_page_lockless_end() that
-> disable interrupt to stop shadow page be freed. But we are on the ioctl context
-> and the paths we are optimizing for have heavy workload, disabling interrupt is
-> not good for the system performance.
-> 
-> We add a indicator into kvm struct (kvm->arch.rcu_free_shadow_page), then use
-> call_rcu() to free the shadow page if that indicator is set. Set/Clear the
-> indicator are protected by slot-lock, so it need not be atomic and does not
-> hurt the performance and the scalability.
-> 
-> 3) How to locklessly write-protect guest memory?
-> Currently, there are two behaviors when we write-protect guest memory, one is
-> clearing the Writable bit on spte and the another one is dropping spte when it
-> points to large page. The former is easy we only need to atomicly clear a bit
-> but the latter is hard since we need to remove the spte from rmap. so we unify
-> these two behaviors that only make the spte readonly. Making large spte
-> readonly instead of nonpresent is also good for reducing jitter.
-> 
-> And we need to pay more attention on the order of making spte writable, adding
-> spte into rmap and setting the corresponding bit on dirty bitmap since
-> kvm_vm_ioctl_get_dirty_log() write-protects the spte based on the dirty bitmap,
-> we should ensure the writable spte can be found in rmap before the dirty bitmap
-> is visible. Otherwise, we cleared the dirty bitmap and failed to write-protect
-> the page.
-> 
-> Performance result
-> ====================
-> The performance result and the benchmark can be found at:
->   http://permalink.gmane.org/gmane.linux.kernel/1534876
-> 
-> Xiao Guangrong (15):
->   KVM: MMU: fix the count of spte number
->   KVM: MMU: properly check last spte in fast_page_fault()
->   KVM: MMU: lazily drop large spte
->   KVM: MMU: flush tlb if the spte can be locklessly modified
->   KVM: MMU: flush tlb out of mmu lock when write-protect the sptes
->   KVM: MMU: update spte and add it into rmap before dirty log
->   KVM: MMU: redesign the algorithm of pte_list
->   KVM: MMU: introduce nulls desc
->   KVM: MMU: introduce pte-list lockless walker
->   KVM: MMU: initialize the pointers in pte_list_desc properly
->   KVM: MMU: reintroduce kvm_mmu_isolate_page()
->   KVM: MMU: allow locklessly access shadow page table out of vcpu thread
->   KVM: MMU: locklessly write-protect the page
->   KVM: MMU: clean up spte_write_protect
->   KVM: MMU: use rcu functions to access the pointer
-> 
->  arch/x86/include/asm/kvm_host.h |  10 +-
->  arch/x86/kvm/mmu.c              | 566 ++++++++++++++++++++++++++++++----------
->  arch/x86/kvm/mmu.h              |  28 ++
->  arch/x86/kvm/x86.c              |  34 ++-
->  4 files changed, 491 insertions(+), 147 deletions(-)
-> 
-> -- 
-> 1.8.1.4
+It's not about overwriting at all.
 
---
-			Gleb.
+It's quite simple:
+
+1. OF creates a platform device and attaches an of_node to it.
+2. This platform device is matched using the data in the of_node structure
+   against one of the MUSB stub drivers.
+3. The MUSB stub driver creates a new platform device, and copies the
+   of_node to it, and registers it.
+4. This new platform device _can_ itself be matched against the stub
+   driver using the of_node structure.  When this happens, go to step
+   2 and repeat 2-4.
+
+That's where the problem is - it's not about overwriting an existing
+platform device's of_node pointer with something that the driver has
+dreamt up at all.
+
+If we're lucky, step 3.5 would be "match against the 'musb-hdrc' driver
+and successfully probe it" which is the only thing that would break
+the above loop.
