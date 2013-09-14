@@ -1,165 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691Ab3INGbJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 02:31:09 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:57196 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751234Ab3INGbH (ORCPT
+	id S1752907Ab3ING5a (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 02:57:30 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:27336 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751836Ab3ING53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 02:31:07 -0400
-Date: Sat, 14 Sep 2013 10:31:03 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, akpm@linux-foundation.org, mingo@elte.hu,
-        tglx@linutronix.de, Pavel Emelyanov <xemul@parallels.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm] mm: Unify pte_to_pgoff and pgoff_to_pte helpers
-Message-ID: <20130914063103.GA1761@moon>
+	Sat, 14 Sep 2013 02:57:29 -0400
+Message-ID: <523408C8.3040606@huawei.com>
+Date: Sat, 14 Sep 2013 14:57:12 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hung_task: change sysctl_hung_task_check_count to int
+References: <5233CE5E.7040004@huawei.com> <5233CFBF.4000803@huawei.com> <20130914055359.GB364@gmail.com>
+In-Reply-To: <20130914055359.GB364@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use unified pte_bitop helper to manipulate bits in pte/pgoff bitfield,
-and convert pte_to_pgoff/pgoff_to_pte to inlines.
+>> On 2013/9/14 10:47, Li Zefan wrote:
+>>> As sysctl_hung_task_check_count is unsigned long, when this value is
+>>> assigned to max_count in check_hung_uninterruptible_tasks(), it's
+>>> truncated to int type.
+>>>
+>>> Therefore if we write 2^32 to sysctl.hung_task_check_count, hung task
+>>> detection will be effectively disabled.
+>>>
+>>> Not a big deal, but still it's better to fix this inconsistency.
+>>>
+>>> Signed-off-by: Li Zefan <lizefan@huawei.com>
+>>> ---
+>>>  include/linux/sched/sysctl.h | 2 +-
+>>>  kernel/hung_task.c           | 2 +-
+>>>  kernel/sysctl.c              | 4 ++--
+>>>  3 files changed, 4 insertions(+), 4 deletions(-)
+>>>
+>>> diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
+>>> index bf8086b..9552afa 100644
+>>> --- a/include/linux/sched/sysctl.h
+>>> +++ b/include/linux/sched/sysctl.h
+>>> @@ -2,8 +2,8 @@
+>>>  #define _SCHED_SYSCTL_H
+>>>  
+>>>  #ifdef CONFIG_DETECT_HUNG_TASK
+>>> +extern int	     sysctl_hung_task_check_count;
+>>>  extern unsigned int  sysctl_hung_task_panic;
+>>> -extern unsigned long sysctl_hung_task_check_count;
+>>>  extern unsigned long sysctl_hung_task_timeout_secs; extern unsigned 
+>>>  long sysctl_hung_task_warnings; extern int 
+>>>  proc_dohung_task_timeout_secs(struct ctl_table *table, int write,
+> 
+> Looks good, but I suppose most of the unsigned longs above ought to be 
+> downgraded to int as well?
+> 
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/include/asm/pgtable-2level.h |  100 ++++++++++++++++++++--------------
- 1 file changed, 59 insertions(+), 41 deletions(-)
+They can be, but they don't have to be.
 
-Index: linux-2.6.git/arch/x86/include/asm/pgtable-2level.h
-===================================================================
---- linux-2.6.git.orig/arch/x86/include/asm/pgtable-2level.h
-+++ linux-2.6.git/arch/x86/include/asm/pgtable-2level.h
-@@ -55,6 +55,13 @@ static inline pmd_t native_pmdp_get_and_
- #define native_pmdp_get_and_clear(xp) native_local_pmdp_get_and_clear(xp)
- #endif
- 
-+/* Bit manipulation helper on pte/pgoff entry */
-+static inline unsigned long pte_bitop(unsigned long value, unsigned int rightshift,
-+				      unsigned long mask, unsigned int leftshift)
-+{
-+	return ((value >> rightshift) & mask) << leftshift;
-+}
-+
- #ifdef CONFIG_MEM_SOFT_DIRTY
- 
- /*
-@@ -71,31 +78,34 @@ static inline pmd_t native_pmdp_get_and_
- #define PTE_FILE_BITS2		(PTE_FILE_SHIFT3 - PTE_FILE_SHIFT2 - 1)
- #define PTE_FILE_BITS3		(PTE_FILE_SHIFT4 - PTE_FILE_SHIFT3 - 1)
- 
--#define pte_to_pgoff(pte)						\
--	((((pte).pte_low >> (PTE_FILE_SHIFT1))				\
--	  & ((1U << PTE_FILE_BITS1) - 1)))				\
--	+ ((((pte).pte_low >> (PTE_FILE_SHIFT2))			\
--	    & ((1U << PTE_FILE_BITS2) - 1))				\
--	   << (PTE_FILE_BITS1))						\
--	+ ((((pte).pte_low >> (PTE_FILE_SHIFT3))			\
--	    & ((1U << PTE_FILE_BITS3) - 1))				\
--	   << (PTE_FILE_BITS1 + PTE_FILE_BITS2))			\
--	+ ((((pte).pte_low >> (PTE_FILE_SHIFT4)))			\
--	    << (PTE_FILE_BITS1 + PTE_FILE_BITS2 + PTE_FILE_BITS3))
--
--#define pgoff_to_pte(off)						\
--	((pte_t) { .pte_low =						\
--	 ((((off)) & ((1U << PTE_FILE_BITS1) - 1)) << PTE_FILE_SHIFT1)	\
--	 + ((((off) >> PTE_FILE_BITS1)					\
--	     & ((1U << PTE_FILE_BITS2) - 1))				\
--	    << PTE_FILE_SHIFT2)						\
--	 + ((((off) >> (PTE_FILE_BITS1 + PTE_FILE_BITS2))		\
--	     & ((1U << PTE_FILE_BITS3) - 1))				\
--	    << PTE_FILE_SHIFT3)						\
--	 + ((((off) >>							\
--	      (PTE_FILE_BITS1 + PTE_FILE_BITS2 + PTE_FILE_BITS3)))	\
--	    << PTE_FILE_SHIFT4)						\
--	 + _PAGE_FILE })
-+#define PTE_FILE_MASK1		((1U << PTE_FILE_BITS1) - 1)
-+#define PTE_FILE_MASK2		((1U << PTE_FILE_BITS2) - 1)
-+#define PTE_FILE_MASK3		((1U << PTE_FILE_BITS3) - 1)
-+
-+#define PTE_FILE_LSHIFT2	(PTE_FILE_BITS1)
-+#define PTE_FILE_LSHIFT3	(PTE_FILE_BITS1 + PTE_FILE_BITS2)
-+#define PTE_FILE_LSHIFT4	(PTE_FILE_BITS1 + PTE_FILE_BITS2 + PTE_FILE_BITS3)
-+
-+static __always_inline pgoff_t pte_to_pgoff(pte_t pte)
-+{
-+	return (pgoff_t)
-+		(pte_bitop(pte.pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1,  0)		    +
-+		 pte_bitop(pte.pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2,  PTE_FILE_LSHIFT2) +
-+		 pte_bitop(pte.pte_low, PTE_FILE_SHIFT3, PTE_FILE_MASK3,  PTE_FILE_LSHIFT3) +
-+		 pte_bitop(pte.pte_low, PTE_FILE_SHIFT4,           -1UL,  PTE_FILE_LSHIFT4));
-+}
-+
-+static __always_inline pte_t pgoff_to_pte(pgoff_t off)
-+{
-+	return (pte_t){
-+		.pte_low =
-+			pte_bitop(off,                0, PTE_FILE_MASK1,  PTE_FILE_SHIFT1) +
-+			pte_bitop(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2,  PTE_FILE_SHIFT2) +
-+			pte_bitop(off, PTE_FILE_LSHIFT3, PTE_FILE_MASK3,  PTE_FILE_SHIFT3) +
-+			pte_bitop(off, PTE_FILE_LSHIFT4,           -1UL,  PTE_FILE_SHIFT4) +
-+			_PAGE_FILE,
-+	};
-+}
- 
- #else /* CONFIG_MEM_SOFT_DIRTY */
- 
-@@ -115,22 +125,30 @@ static inline pmd_t native_pmdp_get_and_
- #define PTE_FILE_BITS1		(PTE_FILE_SHIFT2 - PTE_FILE_SHIFT1 - 1)
- #define PTE_FILE_BITS2		(PTE_FILE_SHIFT3 - PTE_FILE_SHIFT2 - 1)
- 
--#define pte_to_pgoff(pte)						\
--	((((pte).pte_low >> PTE_FILE_SHIFT1)				\
--	  & ((1U << PTE_FILE_BITS1) - 1))				\
--	 + ((((pte).pte_low >> PTE_FILE_SHIFT2)				\
--	     & ((1U << PTE_FILE_BITS2) - 1)) << PTE_FILE_BITS1)		\
--	 + (((pte).pte_low >> PTE_FILE_SHIFT3)				\
--	    << (PTE_FILE_BITS1 + PTE_FILE_BITS2)))
--
--#define pgoff_to_pte(off)						\
--	((pte_t) { .pte_low =						\
--	 (((off) & ((1U << PTE_FILE_BITS1) - 1)) << PTE_FILE_SHIFT1)	\
--	 + ((((off) >> PTE_FILE_BITS1) & ((1U << PTE_FILE_BITS2) - 1))	\
--	    << PTE_FILE_SHIFT2)						\
--	 + (((off) >> (PTE_FILE_BITS1 + PTE_FILE_BITS2))		\
--	    << PTE_FILE_SHIFT3)						\
--	 + _PAGE_FILE })
-+#define PTE_FILE_MASK1		((1U << PTE_FILE_BITS1) - 1)
-+#define PTE_FILE_MASK2		((1U << PTE_FILE_BITS2) - 1)
-+
-+#define PTE_FILE_LSHIFT2	(PTE_FILE_BITS1)
-+#define PTE_FILE_LSHIFT3	(PTE_FILE_BITS1 + PTE_FILE_BITS2)
-+
-+static __always_inline pgoff_t pte_to_pgoff(pte_t pte)
-+{
-+	return (pgoff_t)
-+		(pte_bitop(pte.pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1,  0)		    +
-+		 pte_bitop(pte.pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2,  PTE_FILE_LSHIFT2) +
-+		 pte_bitop(pte.pte_low, PTE_FILE_SHIFT3,           -1UL,  PTE_FILE_LSHIFT3));
-+}
-+
-+static __always_inline pte_t pgoff_to_pte(pgoff_t off)
-+{
-+	return (pte_t){
-+		.pte_low =
-+			pte_bitop(off,                0, PTE_FILE_MASK1,  PTE_FILE_SHIFT1) +
-+			pte_bitop(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2,  PTE_FILE_SHIFT2) +
-+			pte_bitop(off, PTE_FILE_LSHIFT3,           -1UL,  PTE_FILE_SHIFT3) +
-+			_PAGE_FILE,
-+	};
-+}
- 
- #endif /* CONFIG_MEM_SOFT_DIRTY */
- 
+> Acked-by: Ingo Molnar <mingo@kernel.org>
+
+Thanks!
+
