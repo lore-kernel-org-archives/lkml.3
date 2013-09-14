@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752207Ab3INE7j (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 00:59:39 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:34926 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751669Ab3INE7i (ORCPT
+	id S1752351Ab3INF0H (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 01:26:07 -0400
+Received: from smtprelay0238.hostedemail.com ([216.40.44.238]:36676 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751884Ab3INF0F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 00:59:38 -0400
-Date: Sat, 14 Sep 2013 12:59:16 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: rostedt@goodmis.org
-Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] trace: show more and exactly help information about
- snapshot
-Message-ID: <20130914045916.GA4243@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>, rostedt@goodmis.org,
-	fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 14 Sep 2013 01:26:05 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:960:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2198:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3865:3866:3867:3868:3871:3872:3873:4321:5007:7652:10004:10400:10848:11232:11658:11914:12296:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not 
+X-HE-Tag: patch68_34b49e90ad40f
+X-Filterd-Recvd-Size: 1863
+Message-ID: <1379136360.1973.10.camel@joe-AO722>
+Subject: Re: [PATCH] vsprintf: drop comment claiming %n is ignored
+From: Joe Perches <joe@perches.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, keescook@chromium.org,
+        linux@horizon.com, akpm@linux-foundation.org, dan.carpenter@oracle.com,
+        davem@davemloft.net, eldad@fogrefinery.com, jbeulich@suse.com,
+        jkosina@suse.cz, linux-kernel@vger.kernel.org, rdunlap@infradead.org
+Date: Fri, 13 Sep 2013 22:26:00 -0700
+In-Reply-To: <20130914045313.GB13318@ZenIV.linux.org.uk>
+References: <20130913195335.18955.qmail@science.horizon.com>
+	 <1379111268.2066.22.camel@joe-AO722>
+	 <CAGXu5jJxJVK7cu2Sc4Sdng_rLDL8ziC6aecAi7G0zL4fYnY-9Q@mail.gmail.com>
+	 <201309141149.HGF39054.QLJVHFtMFOSOOF@I-love.SAKURA.ne.jp>
+	 <20130914030521.GZ13318@ZenIV.linux.org.uk>
+	 <20130914034801.GA13318@ZenIV.linux.org.uk>
+	 <20130914045313.GB13318@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Actually, they both are correct:
+On Sat, 2013-09-14 at 05:53 +0100, Al Viro wrote:
+> The bottom line: most of these guys could as well return void; we have
+> few overflow checks and those could be made explicit.  As it is,
+> "return -1 on overflow" had been a mistake.
 
-	default:
-		if (tr->allocated_snapshot) {
-			if (iter->cpu_file == RING_BUFFER_ALL_CPUS)
-				tracing_reset_online_cpus(&tr->max_buffer);
-			else
-				tracing_reset(&tr->max_buffer,	iter->cpu_file);
-		}
-		break;
-	}
+What do you think of adding last_ret and last_len to
+struct seq_file?  Is there any case where it's racy?
 
-It does nothing if it isn't allocated.
+I haven't noticed one, but dunno.
 
-Perhaps we need it to say "(but does not allocate or free)"
+Another option might be to use something like:
 
--- Steve
+struct seq_rtn {
+	int rtn;
+	size_t len;
+}
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- I think "Clears and frees" are reasonable, and
- "Clears and allocates are not so reasonable, so
- we don't need to say not allocate. But it is help 
- information, so make it more clearer is also acceptable. :)
- 
- kernel/trace/trace.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+as the return for all the seq_<foo> funcs.
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 7974ba2..d5f7c4d 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2760,7 +2760,7 @@ static void show_snapshot_main_help(struct seq_file *m)
- 	seq_printf(m, "# echo 0 > snapshot : Clears and frees snapshot buffer\n");
- 	seq_printf(m, "# echo 1 > snapshot : Allocates snapshot buffer, if not already allocated.\n");
- 	seq_printf(m, "#                      Takes a snapshot of the main buffer.\n");
--	seq_printf(m, "# echo 2 > snapshot : Clears snapshot buffer (but does not allocate)\n");
-+	seq_printf(m, "# echo 2 > snapshot : Clears snapshot buffer (but does not allocate or free)\n");
- 	seq_printf(m, "#                      (Doesn't have to be '2' works with any number that\n");
- 	seq_printf(m, "#                       is not a '0' or '1')\n");
- }
--- 
-1.7.12.4.dirty
+
