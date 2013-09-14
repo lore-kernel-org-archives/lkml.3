@@ -1,99 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756959Ab3INXqb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 19:46:31 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:46722 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756791Ab3INXp6 (ORCPT
+	id S932459Ab3INXqd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 19:46:33 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:53605 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756895Ab3INXqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 19:45:58 -0400
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [RESEND PATCH v5 4/4] mm/vmalloc: fix show vmap_area information race with vmap_area tear down 
-Date: Sun, 15 Sep 2013 07:45:42 +0800
-Message-Id: <1379202342-23140-4-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1379202342-23140-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1379202342-23140-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091423-4790-0000-0000-00000A51BFB8
+	Sat, 14 Sep 2013 19:46:19 -0400
+X-Nat-Received: from [202.181.97.72]:55251 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1379202372.3491
+To: oleg@redhat.com
+Cc: security@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kthread: Make kthread_create() killable.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201309132318.HEC05218.OtVOFOFMLJHFQS@I-love.SAKURA.ne.jp>
+	<20130914160515.GA8627@redhat.com>
+In-Reply-To: <20130914160515.GA8627@redhat.com>
+Message-Id: <201309150846.HED51521.tJOFOMVFSOHQFL@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sun, 15 Sep 2013 08:46:10 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 14092013 #11055784, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog:
- *v4 -> v5: return directly for !VM_VM_AREA case and remove (VM_LAZY_FREE | VM_LAZY_FREEING) check 
+Oleg Nesterov wrote:
+> I am wondering if this can be simplified...
+> 
+> At least you can move create->done from kthread_create_info to the
+> stack, and turn create->owner into the pointer to that completion.
 
-There is a race window between vmap_area tear down and show vmap_area information.
+Use of DECLARE_COMPLETION_ONSTACK() looks harmful to me because current thread
+needs to be able to terminate as soon as possible if SIGKILLed (especially when
+SIGKILLed by OOM killer). If we move something from kmalloc()ed zone to stack,
+current thread cannot be terminated until that something is guaranteed to no
+longer be used.
 
-	A                                                B
-
-remove_vm_area
-spin_lock(&vmap_area_lock);
-va->vm = NULL;
-va->flags &= ~VM_VM_AREA;
-spin_unlock(&vmap_area_lock);
-						spin_lock(&vmap_area_lock);
-						if (va->flags & (VM_LAZY_FREE | VM_LAZY_FREEZING))
-							return 0;
-						if (!(va->flags & VM_VM_AREA)) {
-							seq_printf(m, "0x%pK-0x%pK %7ld vm_map_ram\n",
-								(void *)va->va_start, (void *)va->va_end,
-								va->va_end - va->va_start);
-							return 0;
-						}
-free_unmap_vmap_area(va);
-	flush_cache_vunmap
-	free_unmap_vmap_area_noflush
-		unmap_vmap_area
-		free_vmap_area_noflush
-			va->flags |= VM_LAZY_FREE 
-
-The assumption !VM_VM_AREA represents vm_map_ram allocation is introduced by 
-commit: d4033afd(mm, vmalloc: iterate vmap_area_list, instead of vmlist, in 
-vmallocinfo()). However, !VM_VM_AREA also represents vmap_area is being tear 
-down in race window mentioned above. This patch fix it by don't dump any 
-information for !VM_VM_AREA case and also remove (VM_LAZY_FREE | VM_LAZY_FREEING)
-check since they are not possible for !VM_VM_AREA case.
-
-Suggested-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
----
- mm/vmalloc.c | 15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
-
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 5368b17..9b75028 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -2582,16 +2582,13 @@ static int s_show(struct seq_file *m, void *p)
- {
- 	struct vmap_area *va = p;
- 	struct vm_struct *v;
--
--	if (va->flags & (VM_LAZY_FREE | VM_LAZY_FREEING))
--		return 0;
--
--	if (!(va->flags & VM_VM_AREA)) {
--		seq_printf(m, "0x%pK-0x%pK %7ld vm_map_ram\n",
--			(void *)va->va_start, (void *)va->va_end,
--					va->va_end - va->va_start);
-+
-+	/*
-+	 * s_show can encounter race with remove_vm_area, !VM_VM_AREA on
-+	 * behalf of vmap area is being tear down or vm_map_ram allocation.
-+	 */
-+	if (!(va->flags & VM_VM_AREA))
- 		return 0;
--	}
- 
- 	v = va->vm;
- 
--- 
-1.8.1.2
-
+I think we need to convert from on-stack objects to kmalloc()ed objects so that
+current thread acquires ability to terminate as soon as possible.
