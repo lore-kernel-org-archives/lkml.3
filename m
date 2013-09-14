@@ -1,81 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756257Ab3INLuQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 07:50:16 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:50181 "EHLO
+	id S1756366Ab3INMGD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 08:06:03 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:50220 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751442Ab3INLuP (ORCPT
+	with ESMTP id S1754729Ab3INMGB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 07:50:15 -0400
-Date: Sat, 14 Sep 2013 13:50:11 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Fan Rong <cinifr@gmail.com>
-Cc: coosty@163.com, daniel.lezcano@linaro.org, linux@arm.linux.org.uk,
-        tglx@linutronix.de, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, mark.rutland@arm.com, pawel.moll@arm.co,
-        rob.herring@calxeda.com, linux-sunxi@googlegroups.com
-Subject: Re: [PATCH 2/4] Add cpuconfig nodes in dts for smp configure.
-Message-ID: <20130914115011.GA2746@lukather>
+	Sat, 14 Sep 2013 08:06:01 -0400
+Date: Sat, 14 Sep 2013 14:05:57 +0200
+From: "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: cinifr <cinifr@gmail.com>, Mark Rutland <Mark.Rutland@arm.com>,
+        "coosty@163.com" <coosty@163.com>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "pawel.moll@arm.co" <pawel.moll@arm.co>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>
+Subject: Re: [PATCH 3/4] Add physical count arch timer support for
+ clocksource in ARMv7.
+Message-ID: <20130914120557.GB2746@lukather>
 References: <1378968687-8200-1-git-send-email-cinifr@gmail.com>
- <1378968687-8200-3-git-send-email-cinifr@gmail.com>
+ <1378968687-8200-4-git-send-email-cinifr@gmail.com>
+ <20130912112452.GA22013@e106331-lin.cambridge.arm.com>
+ <CAK3cCBwu4somtfc9J1ZDVcC-iYD1qDJwSWzWeOomTqY9tQA2kg@mail.gmail.com>
+ <5231EE43.5090900@arm.com>
+ <CAK3cCBzr8_LTYarZDgPYZY7_-5Qco_Qw+ACi=c2uOrn7MqwkBg@mail.gmail.com>
+ <5232DB49.4050701@arm.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7yLcY/JGxB8a0rD4"
+	protocol="application/pgp-signature"; boundary="rErXCrER28iYcLtG"
 Content-Disposition: inline
-In-Reply-To: <1378968687-8200-3-git-send-email-cinifr@gmail.com>
+In-Reply-To: <5232DB49.4050701@arm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---7yLcY/JGxB8a0rD4
+--rErXCrER28iYcLtG
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Fan,
+Hi Marc, Fan,
 
-On Thu, Sep 12, 2013 at 02:51:25PM +0800, Fan Rong wrote:
-> Signed-off-by: Fan Rong <cinifr@gmail.com>
-> ---
->  arch/arm/boot/dts/sun7i-a20.dtsi |    9 +++++++--
->  1 file changed, 7 insertions(+), 2 deletions(-)
+On Fri, Sep 13, 2013 at 10:30:49AM +0100, Marc Zyngier wrote:
+> On 13/09/13 09:49, cinifr wrote:
+> > On 13 September 2013 00:39, Marc Zyngier <marc.zyngier@arm.com> wrote:
+> > I am   wondering   what is the principle between kernel and bootload?
+> > What should be done in bootloader and what should be done in kernel?
+> > As you said, If kernel boot from hyp,  Kernel can set  CNTVOFF to zero
+> > directly, does we add the code to set CNTVOFF in kernel?  But, if
+> > kernel boot from PL1 NS=3D0,  Does kernel  need to switch hyp mode to
+> > set  CNTVOFF and return  PL1 NS=3D0 mode? Or,kernel dont care it because
+> > kernel   believe bootloader have set CNTVOFF  before?
 >=20
-> diff --git a/arch/arm/boot/dts/sun7i-a20.dtsi b/arch/arm/boot/dts/sun7i-a=
-20.dtsi
-> index 999ff45..bfedcb2 100644
-> --- a/arch/arm/boot/dts/sun7i-a20.dtsi
-> +++ b/arch/arm/boot/dts/sun7i-a20.dtsi
-> @@ -20,13 +20,13 @@
->  		#address-cells =3D <1>;
->  		#size-cells =3D <0>;
-> =20
-> -		cpu@0 {
-> +		cpu0: cpu@0  {
->  			compatible =3D "arm,cortex-a7";
->  			device_type =3D "cpu";
->  			reg =3D <0>;
->  		};
-> =20
-> -		cpu@1 {
-> +		cpu1: cpu@1 {
+> In an ideal world, the bootloader should set CNTVOFF to zero. The fact
+> that the kernel does it too when booted in HYP mode is to preserve
+> itself from from broken bootloaders.
+>=20
+> CNTVOFF can only be setup from either HYP or Secure Monitor mode with
+> SCR.NS =3D=3D 1, so if you run your kernel in secure mode, it is always b=
+est
+> to do it in the bootloader.
 
-Both these changes don't seem really needed, are they?
->  			compatible =3D "arm,cortex-a7";
->  			device_type =3D "cpu";
->  			reg =3D <1>;
-> @@ -167,6 +167,11 @@
->  		#size-cells =3D <1>;
->  		ranges;
-> =20
-> +		cc: cpuconfig@01c25c00 {
-> +			compatible =3D "allwinner,sun7i-cc";
+What would happen exactly if a kernel expects CNTVOFF to be set to 0,
+and that your bootloader don't set it?
 
-Please use the sun7i-a20 prefix, and I'd prefer cpu-config instead of
-"cc".
+=46rom what you're saying, it's will be set by the kernel if it's booted
+in hypervisor mode, but what if it's not?
 
-Thanks for working on this!
+The ARM documentation says that the CNTVOFF register will hold an
+undefined value, how would that affect the kernel?
+
+Thanks,
 Maxime
 
 --=20
@@ -83,26 +86,26 @@ Maxime Ripard, Free Electrons
 Embedded Linux, Kernel and Android engineering
 http://free-electrons.com
 
---7yLcY/JGxB8a0rD4
+--rErXCrER28iYcLtG
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSNE1zAAoJEBx+YmzsjxAgxmYQAKmbHN4RXXyHtzrfstxWohO8
-WXMLkzvcg9eeO02NVRqLphwP4sy26X6XH5pQ02mYmU0QEqTg8JGki/cc1zgpK4hD
-YWde618CH8B+s6v0+KmRB4wVEcmz1zZqHQsH/q4kF38ODmOWHG1sYsULgbtG8yr+
-cDBjd3ZrBEtnidw8lD16YEYrKgXNK+RlPC2VZHVIuR21eZMhYDZGGE/9SOA7ICVv
-gxKQKx0VWWYl5y7LqpjaZ/HbcGP7WCCp2PQuEh1Q7D68LKId1/RYsrqq3Xzy7rT6
-bZ0SKjME068jkNh+Xvzact7BM3yBcx1/98drK+oNsWljJpxTOr2/YZQwj8O/0SKD
-BWkK+Q/El/bkVscLahrTQ3Fj3ME2N7ZJWLid+USEmOUy39nydastQ1ailitD21qy
-WQPE3pxvdlyKz0wYUTA4cKiwCiXdlouaYgmc5MeUJVXeYjgtQypkasUeRNlpyjUm
-ixUISczHp/6lTtwwjp02iX48sfgsaOBaCJV7KADbVUM859pbv+eHu3XbFFmeJCCc
-IN5xTK8zQFtqJ9Slm5WlWchPpV6jtCw4oJI5cw51PEK77jgiKrAZAWBscTglH07x
-hTa1POSzWN/f5Ck/HVoITSW6Vi6X8cj/i5FFnCp5HXZIZaoDAi3w0NiyWtP6ypMr
-zau/fQDRnNV8ET6tc+/n
-=+NMs
+iQIcBAEBAgAGBQJSNFElAAoJEBx+YmzsjxAg5ckP/1KwGFMNzU3B/0TFgw8BDfv9
+G4tZyZcz14Jk6CDpJIaVFTfUdsLT72yaRd7g/QC5eCEumYTwuRUGa0B57XxU10hH
+M9ZstXToKRDG1holU4LWXhLgPJ/os9lNPJ4tRO1mpkw65F046lzb+MVevdiX2mRv
+EBAcYFkYLXngLj83bfnpZj/wT9FFyferXrdIfY5fSQQ+C1M3ffI8oixZJF8gdH1l
+4teuvZzlz+AKnpZWw8Dm9LxfH369ulMlUhnuCpqRhNDrkTyLGFCWmwChW3btuhtn
+zlwfawpKGGC32pJtk18tfxZiJkcwboiGLdCadvAHw0KN+idEhvXAng306JKWHLL8
+FidEFop8sdtaK036ZnYrSvkxbJYthglZxTb0OdyaGddW159qEbXVE4APHRSujSvc
+tpl6EZOMUPBSp/7Z1JpvfIrI33quQJaR+vkMAzgvEnEa21ohI+P8JbZJvLEkx1PF
+pB3Oq6TAc2uVg6VJHwVr1Tt4XCLewJk82xngFrOoe8IEWVMuiuAKjCPBVr7hNye3
+881Y0hZYBYSw6mvyAFfaxl/wEiELsR2HVkpkVJVXOWAWOKyjbWXlmeYZwdra0Cvm
+e2V7XVOxvntmqREp8y8HuK3ZQijOewuxcChoALTMj3+8gIXWKGSCKDoE4D9rTC24
+7Ug/kif2W6JranpZmYvx
+=ExLi
 -----END PGP SIGNATURE-----
 
---7yLcY/JGxB8a0rD4--
+--rErXCrER28iYcLtG--
