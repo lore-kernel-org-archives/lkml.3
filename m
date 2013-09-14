@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756261Ab3INB1R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 21:27:17 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:55865 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755913Ab3INB1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 21:27:15 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PCI <linux-pci@vger.kernel.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Huang Ying <ying.huang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "David E. Box" <david.e.box@intel.com>
-Subject: [PATCH] PCI / ACPI / PM: Clear pme_poll for devices in D3cold on wakeup
-Date: Sat, 14 Sep 2013 03:38:20 +0200
-Message-ID: <4974289.QhzOmFXm0s@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1756288Ab3INBiN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 21:38:13 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15116 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756095Ab3INBiL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 21:38:11 -0400
+X-Authority-Analysis: v=2.0 cv=fJG7LOme c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=eIhxMilvRf8A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=ttXaytHqugIc9cpVeocA:9 a=CjuIK1q_8ugA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Fri, 13 Sep 2013 21:38:09 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [ANNOUNCE] 3.6.11.9-rt42
+Message-ID: <20130913213809.07ac1d58@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Commit 448bd85 (PCI/PM: add PCIe runtime D3cold support) added a
-piece of code to pci_acpi_wake_dev() causing that function to behave
-in a special way for devices in D3cold (so that their configuration
-registeres are not accessed before those devices are resumed).
-However, it didn't take the clearing of the pme_poll flag into
-account.  That has to be done for all devices, even if they are in
-D3cold, or pci_pme_list_scan() will not know that wakeup has been
-signaled for the device and will poll its PME Status bit
-unnecessarily.
+Dear RT Folks,
 
-Fix the problem by moving the clearing of the pme_poll flag in
-pci_acpi_wake_dev() before the code introduced by commit 448bd85.
+I'm pleased to announce the 3.6.11.9-rt42 stable release.
 
-Reported-and-tested-by: David E. Box <david.e.box@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: 3.6+ <stable@vger.kernel.org> # 3.6+
----
- drivers/pci/pci-acpi.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Index: linux-pm/drivers/pci/pci-acpi.c
-===================================================================
---- linux-pm.orig/drivers/pci/pci-acpi.c
-+++ linux-pm/drivers/pci/pci-acpi.c
-@@ -47,6 +47,9 @@ static void pci_acpi_wake_dev(acpi_handl
- 	if (event != ACPI_NOTIFY_DEVICE_WAKE || !pci_dev)
- 		return;
- 
-+	if (pci_dev->pme_poll)
-+		pci_dev->pme_poll = false;
-+
- 	if (pci_dev->current_state == PCI_D3cold) {
- 		pci_wakeup_event(pci_dev);
- 		pm_runtime_resume(&pci_dev->dev);
-@@ -57,9 +60,6 @@ static void pci_acpi_wake_dev(acpi_handl
- 	if (pci_dev->pme_support)
- 		pci_check_pme_status(pci_dev);
- 
--	if (pci_dev->pme_poll)
--		pci_dev->pme_poll = false;
--
- 	pci_wakeup_event(pci_dev);
- 	pm_runtime_resume(&pci_dev->dev);
- 
+This release is just an update to the new stable 3.6.11.9 version
+and no RT specific changes have been made.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  branch: v3.6-rt
+  Head SHA1: a9ed5595c987a8e3166d84904eb111fe550b5ebd
+
+
+Or to build 3.6.11.9-rt42 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.6.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.6.11.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/stable/patch-3.6.11.9.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patch-3.6.11.9-rt42.patch.xz
+
+
+
+
+Enjoy,
+
+-- Steve
 
