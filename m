@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756245Ab3INBF5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 21:05:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18816 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755827Ab3INBF4 (ORCPT
+	id S1756223Ab3INBSb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 21:18:31 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:46492 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755650Ab3INBSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 21:05:56 -0400
-X-Authority-Analysis: v=2.0 cv=R/aB6KtX c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=RZAKnY_hAFgA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=3NymGdysGKUA:10 a=QyXUC8HyAAAA:8 a=liYPCVhtAAAA:8 a=KDBg1F0KbQRzURRz1OwA:9 a=CjuIK1q_8ugA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Fri, 13 Sep 2013 21:05:53 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Tom Zanussi <tom.zanussi@linux.intel.com>
-Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v9 04/10] tracing: Add 'snapshot' event trigger command
-Message-ID: <20130913210553.543859df@gandalf.local.home>
-In-Reply-To: <1379106619.1558.45.camel@empanada>
-References: <cover.1378565610.git.tom.zanussi@linux.intel.com>
-	<c1245b886d62b5154f20480c63d41a368af7cffa.1378565610.git.tom.zanussi@linux.intel.com>
-	<20130913160100.30686d60@gandalf.local.home>
-	<1379106619.1558.45.camel@empanada>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 13 Sep 2013 21:18:30 -0400
+Date: Fri, 13 Sep 2013 21:18:25 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org
+Subject: Re: [RFC PATCH] Introduce timekeeper latch synchronization
+Message-ID: <20130914011825.GA24859@Krystal>
+References: <20130913025253.GA17218@Krystal> <20130913153020.GA24383@Krystal> <52336576.1060908@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52336576.1060908@linaro.org>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Sep 2013 16:10:19 -0500
-Tom Zanussi <tom.zanussi@linux.intel.com> wrote:
+* John Stultz (john.stultz@linaro.org) wrote:
+> On 09/13/2013 08:30 AM, Mathieu Desnoyers wrote:
+> > By the way, if there are some standard test-bench for timekeeping, I'd
+> > be very interested to hear about them.
+> I've got a git repo of tests that I use for basic sanity checks here:
+>     https://github.com/johnstultz-work/timetests.git
 
-> On Fri, 2013-09-13 at 16:01 -0400, Steven Rostedt wrote:
-> > On Sat,  7 Sep 2013 10:29:00 -0500
-> > Tom Zanussi <tom.zanussi@linux.intel.com> wrote:
-> > 
-> > 
-> > > --- a/kernel/trace/trace_events_trigger.c
-> > > +++ b/kernel/trace/trace_events_trigger.c
-> > > @@ -696,6 +696,74 @@ static struct event_command trigger_traceoff_cmd = {
-> > >  	.get_trigger_ops	= onoff_get_trigger_ops,
-> > >  };
-> > >  
-> > > +static void
-> > > +snapshot_trigger(struct event_trigger_data *data)
-> > > +{
-> > > +	tracing_snapshot();
-> > > +}
-> > 
-> > If CONFIG_TRACER_SNAPSHOT is not defined, then we should not bother
-> > implementing the snapshot trigger. This should be encapsulated around
-> > ifdefs.
+Thanks for the pointer! It looks like I'm currently breaking
+CLOCK_MONOTONIC_RAW. My thoughts are that struct clocksource read vs
+updates are relying on the timekeeper seqlock for synchronization.
+Therefore, I might have to apply the latch scheme to struct clocksource
+too.
+
+Thoughts ?
+
+Thanks,
+
+Mathieu
+
 > 
-> OK, I guess I was just trying to avoid the ifdef since
-> tracing_snapshot() is already ifdef'ed out (but with a WARN_ONCE()) if
-> CONFIG_TRACER_SNAPSHOT isn't defined.
-> 
-> I agree though, it would be better to just ignore all the snapshot
-> trigger code if that's the case.  Same for the stacktrace trigger,
-> though as much as I hate to put big ifdefs in the main code...
+> thanks
+> -john
 > 
 
-#ifdef's are OK when they surround entire functions and structures. I
-don't think ifdef'ing out these will cause #ifdef's within functions.
-That's when things start to look ugly.
-
--- Steve
-
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
