@@ -1,121 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756198Ab3INATU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 20:19:20 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:47735 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755919Ab3INATS (ORCPT
+	id S1756090Ab3INA0J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 20:26:09 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:44738 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755757Ab3INA0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 20:19:18 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Li Zefan <lizefan@huawei.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 2/2] [RFC] cpuset: Fix potential deadlock w/ set_mems_allowed
-Date: Fri, 13 Sep 2013 17:19:08 -0700
-Message-Id: <1379117948-7385-2-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1379117948-7385-1-git-send-email-john.stultz@linaro.org>
-References: <1379117948-7385-1-git-send-email-john.stultz@linaro.org>
+	Fri, 13 Sep 2013 20:26:07 -0400
+Message-ID: <5233AC6E.1040002@linux.vnet.ibm.com>
+Date: Sat, 14 Sep 2013 05:53:10 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
+CC: Preeti Murthy <preeti.lkml@gmail.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        "svaidy@linux.vnet.ibm.com" <svaidy@linux.vnet.ibm.com>
+Subject: Re: [PATCH 1/2] tick: broadcast: Deny per-cpu clockevents from being
+ broadcast sources
+References: <1379004640-15117-1-git-send-email-soren.brinkmann@xilinx.com> <1379004640-15117-2-git-send-email-soren.brinkmann@xilinx.com> <alpine.DEB.2.02.1309122224420.4089@ionos.tec.linutronix.de> <5232CC15.8090208@linaro.org> <CAM4v1pPQwBfQ3V6M2VGsc-Fh+VhLkQE2JZeoVc=_3kniODNEhA@mail.gmail.com> <5232EB72.9050904@linux.vnet.ibm.com> <2a29ccc9-6aea-47ca-9306-4f17d7cc2fe4@DB9EHSMHS013.ehs.local>
+In-Reply-To: <2a29ccc9-6aea-47ca-9306-4f17d7cc2fe4@DB9EHSMHS013.ehs.local>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13091400-3864-0000-0000-00000A110217
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After adding lockdep support to seqlock/seqcount structures,
-I started seeing the following warning:
+Hi Soren,
 
-[    1.070907] ======================================================
-[    1.072015] [ INFO: SOFTIRQ-safe -> SOFTIRQ-unsafe lock order detected ]
-[    1.073181] 3.11.0+ #67 Not tainted
-[    1.073801] ------------------------------------------------------
-[    1.074882] kworker/u4:2/708 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
-[    1.076088]  (&p->mems_allowed_seq){+.+...}, at: [<ffffffff81187d7f>] new_slab+0x5f/0x280
-[    1.077572]
-[    1.077572] and this task is already holding:
-[    1.078593]  (&(&q->__queue_lock)->rlock){..-...}, at: [<ffffffff81339f03>] blk_execute_rq_nowait+0x53/0xf0
-[    1.080042] which would create a new lock dependency:
-[    1.080042]  (&(&q->__queue_lock)->rlock){..-...} -> (&p->mems_allowed_seq){+.+...}
-[    1.080042]
-[    1.080042] but this new dependency connects a SOFTIRQ-irq-safe lock:
-[    1.080042]  (&(&q->__queue_lock)->rlock){..-...}
-[    1.080042] ... which became SOFTIRQ-irq-safe at:
-[    1.080042]   [<ffffffff810ec179>] __lock_acquire+0x5b9/0x1db0
-[    1.080042]   [<ffffffff810edfe5>] lock_acquire+0x95/0x130
-[    1.080042]   [<ffffffff818968a1>] _raw_spin_lock+0x41/0x80
-[    1.080042]   [<ffffffff81560c9e>] scsi_device_unbusy+0x7e/0xd0
-[    1.080042]   [<ffffffff8155a612>] scsi_finish_command+0x32/0xf0
-[    1.080042]   [<ffffffff81560e91>] scsi_softirq_done+0xa1/0x130
-[    1.080042]   [<ffffffff8133b0f3>] blk_done_softirq+0x73/0x90
-[    1.080042]   [<ffffffff81095dc0>] __do_softirq+0x110/0x2f0
-[    1.080042]   [<ffffffff81095fcd>] run_ksoftirqd+0x2d/0x60
-[    1.080042]   [<ffffffff810bc506>] smpboot_thread_fn+0x156/0x1e0
-[    1.080042]   [<ffffffff810b3916>] kthread+0xd6/0xe0
-[    1.080042]   [<ffffffff818980ac>] ret_from_fork+0x7c/0xb0
-[    1.080042]
-[    1.080042] to a SOFTIRQ-irq-unsafe lock:
-[    1.080042]  (&p->mems_allowed_seq){+.+...}
-[    1.080042] ... which became SOFTIRQ-irq-unsafe at:
-[    1.080042] ...  [<ffffffff810ec1d3>] __lock_acquire+0x613/0x1db0
-[    1.080042]   [<ffffffff810edfe5>] lock_acquire+0x95/0x130
-[    1.080042]   [<ffffffff810b3df2>] kthreadd+0x82/0x180
-[    1.080042]   [<ffffffff818980ac>] ret_from_fork+0x7c/0xb0
-[    1.080042]
-[    1.080042] other info that might help us debug this:
-[    1.080042]
-[    1.080042]  Possible interrupt unsafe locking scenario:
-[    1.080042]
-[    1.080042]        CPU0                    CPU1
-[    1.080042]        ----                    ----
-[    1.080042]   lock(&p->mems_allowed_seq);
-[    1.080042]                                local_irq_disable();
-[    1.080042]                                lock(&(&q->__queue_lock)->rlock);
-[    1.080042]                                lock(&p->mems_allowed_seq);
-[    1.080042]   <Interrupt>
-[    1.080042]     lock(&(&q->__queue_lock)->rlock);
-[    1.080042]
-[    1.080042]  *** DEADLOCK ***
+On 09/13/2013 09:53 PM, Sören Brinkmann wrote:
+> Hi Preeti,
+> Thanks for the explanation but now I'm a little confused. That's a lot of
+> details and I'm lacking the in depth knowledge to fully understand
+> everything.
+> 
+> Is it correct to say, that your patch series enables per cpu devices to
+> be the broadcast device - for PPC?
 
-The issue stems from the kthreadd() function calling set_mems_allowed
-with irqs enabled. While its possibly unlikely for the actual deadlock
-to trigger, a fix is fairly simple: disable irqs before taking the
-mems_allowed_seq lock.
+Not really. We have a pseudo clock device, which is registered as the
+broadcast device. This clock device has all the features of an external
+clock device that the broadcast framework expects from a broadcast
+device like !CLOCK_FEAT_C3STOP & !FEAT_PERCPU that you introduce in your
+patch.
 
-Let me know if you have any other suggestions or alternative fixes you'd
-prefer.
+It as though we trick the broadcast framework into believing that we
+have an external device, while in reality the pseudo device is just a dummy.
 
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- include/linux/cpuset.h | 4 ++++
- 1 file changed, 4 insertions(+)
+So if this is a pseudo device, which gets registered as the broadcast
+device, how do we program it to handle broadcast events? That is where
+the per cpu device steps in. It serves as the clock source to this
+pseudo device. Meaning we program the per cpu device for the next
+broadcast event using a hrtimer framework that we introduce, which calls
+pseudo_dev->event_handler on expiry. This is nothing but the broadcast
+handler.
 
-diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
-index cc1b01c..3fe661f 100644
---- a/include/linux/cpuset.h
-+++ b/include/linux/cpuset.h
-@@ -110,10 +110,14 @@ static inline bool put_mems_allowed(unsigned int seq)
- 
- static inline void set_mems_allowed(nodemask_t nodemask)
- {
-+	unsigned long flags;
-+
- 	task_lock(current);
-+	local_irq_save(flags);
- 	write_seqcount_begin(&current->mems_allowed_seq);
- 	current->mems_allowed = nodemask;
- 	write_seqcount_end(&current->mems_allowed_seq);
-+	local_irq_restore(flags);
- 	task_unlock(current);
- }
- 
--- 
-1.8.1.2
+Therefore we are able to manage broadcast without having to have an
+explicit clock device for the purpose.
+
+> And that would mean, that even though you have a per cpu device, you'd
+> deliberately not set the FEAT_PERCPU flag, because on PPC a per cpu
+> timer is a valid broadcast device?
+
+No we would set the FEAT_PERCPU for the per cpu device on PPC. As I
+mentioned above this is not going to be registered as the broadcast
+device. We would however not set this flag for the pseudo device, that
+we register as the broadcast device.
+
+> 
+> Assuming that is not going into an utterly wrong direction: How would we
+> close on this one? AFAIK, ARM does not have this capability and I guess
+> it won't be added. So, should I go forward with the fix proposed by
+> Thomas? Should we rename the FEAT_PERCPU flag to something else, given
+> that PPC may use per cpu devices for broadcasting and the sole usage of
+> that flag is to prevent such a device from becoming the broadcast device?
+
+You can go ahead with this fix because as explained above, when we
+register a broadcast device we use a pseudo device which has the
+features that the broadcast framework approves. The per cpu device does
+not register itself with the broadcast framework. It merely programs
+itself for the next broadcast event. Hence this fix will not hinder the
+broadcast support on PPC.
+> 
+> 	Thanks,
+> 	Sören
+> 
+> 
+Regards
+Preeti U Murthy
 
