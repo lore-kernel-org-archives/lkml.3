@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756395Ab3INAtm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 20:49:42 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:58562 "EHLO e8.ny.us.ibm.com"
+	id S1756364Ab3INAtl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 20:49:41 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:47335 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756245Ab3INAt1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756244Ab3INAt1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 13 Sep 2013 20:49:27 -0400
 From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 To: <linux-kernel@vger.kernel.org>
@@ -12,205 +12,143 @@ Cc: linuxppc-dev@ozlabs.org, Stephane Eranian <eranian@google.com>,
         Michael Ellerman <michaele@au1.ibm.com>,
         Paul Mackerras <paulus@samba.org>,
         Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Subject: [PATCH 8/8][v4] powerpc/perf: Export Power7 memory hierarchy info to user space.
-Date: Fri, 13 Sep 2013 17:49:15 -0700
-Message-Id: <1379119755-21025-9-git-send-email-sukadev@linux.vnet.ibm.com>
+Subject: [PATCH 7/8][v4] power: implement is_instr_load_store().
+Date: Fri, 13 Sep 2013 17:49:14 -0700
+Message-Id: <1379119755-21025-8-git-send-email-sukadev@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1379119755-21025-1-git-send-email-sukadev@linux.vnet.ibm.com>
 References: <1379119755-21025-1-git-send-email-sukadev@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091400-0320-0000-0000-00000101153E
+x-cbid: 13091400-7182-0000-0000-000008680CFF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Power7, the DCACHE_SRC field in MMCRA register identifies the memory
-hierarchy level (eg: L2, L3 etc) from which a data-cache miss for a
-marked instruction was satisfied.
+Implement is_instr_load_store() to detect whether a given instruction
+is one of the fixed-point or floating-point load/store instructions.
+This function will be used in a follow-on patch to save memory hierarchy
+information of the load/store.
 
-Use the 'perf_mem_data_src' object to export this hierarchy level to user
-space. Some memory hierarchy levels in Power7 don't map into the arch-neutral
-levels. However, since newer generation of the processor (i.e. Power8) uses
-fewer levels than in Power7, we don't really need to define new hierarchy
-levels just for Power7.
-
-We instead, map as many levels as possible and approximate the rest. See
-comments near dcache-src_map[] in the patch.
-
-Usage:
-
-	perf record -d -e 'cpu/PM_MRK_GRP_CMPL/' <application>
-	perf report -n --mem-mode --sort=mem,sym,dso,symbol_daddr,dso_daddr"
-
-		For samples involving load/store instructions, the memory
-		hierarchy level is shown as "L1 hit", "Remote RAM hit" etc.
-	# or
-
-	perf record --data <application>
-	perf report -D
-
-		Sample records contain a 'data_src' field which encodes the
-		memory hierarchy level: Eg: data_src 0x442 indicates
-		MEM_OP_LOAD, MEM_LVL_HIT, MEM_LVL_L2 (i.e load hit L2).
-
-Note that the PMU event PM_MRK_GRP_CMPL tracks all marked group completions
-events. While some of these are loads and stores, others like 'add'
-instructions may also be sampled.
-
-As such, the precise semantics of 'perf mem -t load' or 'perf mem -t store'
-(which require sampling only loads or only stores cannot be implemented on
-Power. (Sampling on PM_MRK_GRP_CMPL and throwing away non-loads and non-store
-samples could yield an inconsistent profile of the application).
-
-Thanks to input from Stephane Eranian, Michael Ellerman and Michael Neuling.
-
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Michael Ellerman <michael@ellerman.id.au>
 Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 ---
-Changelog[v4]:
-	Drop support for 'perf mem' for Power (use perf-record and perf-report
-	directly)
+ arch/powerpc/include/asm/code-patching.h |    1 +
+ arch/powerpc/lib/code-patching.c         |   90 ++++++++++++++++++++++++++++++
+ 2 files changed, 91 insertions(+)
 
-Changelog[v3]:
-	[Michael Ellerman] If newer levels that we defined in [v2] are not
-	needed for Power8, ignore the new levels for Power7 also, and
-	approximate them.
-	Separate the TLB level mapping to a separate patchset.
-
-Changelog[v2]:
-        [Stephane Eranian] Define new levels rather than ORing the L2 and L3
-        with REM_CCE1 and REM_CCE2.
-        [Stephane Eranian] allocate a bit PERF_MEM_XLVL_NA for architectures
-        that don't use the ->mem_xlvl field.
-        Insert the TLB patch ahead so the new TLB bits are contigous with
-        existing TLB bits.
-
- arch/powerpc/perf/power7-pmu.c |   94 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 94 insertions(+)
-
-diff --git a/arch/powerpc/perf/power7-pmu.c b/arch/powerpc/perf/power7-pmu.c
-index 56c67bc..ddfa548 100644
---- a/arch/powerpc/perf/power7-pmu.c
-+++ b/arch/powerpc/perf/power7-pmu.c
-@@ -11,8 +11,10 @@
- #include <linux/kernel.h>
- #include <linux/perf_event.h>
- #include <linux/string.h>
-+#include <linux/uaccess.h>
- #include <asm/reg.h>
- #include <asm/cputable.h>
-+#include <asm/code-patching.h>
+diff --git a/arch/powerpc/include/asm/code-patching.h b/arch/powerpc/include/asm/code-patching.h
+index a6f8c7a..3e47fe0 100644
+--- a/arch/powerpc/include/asm/code-patching.h
++++ b/arch/powerpc/include/asm/code-patching.h
+@@ -34,6 +34,7 @@ int instr_is_branch_to_addr(const unsigned int *instr, unsigned long addr);
+ unsigned long branch_target(const unsigned int *instr);
+ unsigned int translate_branch(const unsigned int *dest,
+ 			      const unsigned int *src);
++int instr_is_load_store(const unsigned int *instr);
  
- /*
-  * Bits in event code for POWER7
-@@ -317,6 +319,97 @@ static void power7_disable_pmc(unsigned int pmc, unsigned long mmcr[])
- 		mmcr[1] &= ~(0xffUL << MMCR1_PMCSEL_SH(pmc));
+ static inline unsigned long ppc_function_entry(void *func)
+ {
+diff --git a/arch/powerpc/lib/code-patching.c b/arch/powerpc/lib/code-patching.c
+index 2bc9db3..7e5dc6f 100644
+--- a/arch/powerpc/lib/code-patching.c
++++ b/arch/powerpc/lib/code-patching.c
+@@ -159,6 +159,96 @@ unsigned int translate_branch(const unsigned int *dest, const unsigned int *src)
+ 	return 0;
  }
  
-+#define POWER7_MMCRA_DCACHE_MISS	(0x1LL << 55)
-+#define POWER7_MMCRA_DCACHE_SRC_SHIFT	51
-+#define POWER7_MMCRA_DCACHE_SRC_MASK	(0xFLL << POWER7_MMCRA_DCACHE_SRC_SHIFT)
-+
-+#define P(a, b)		PERF_MEM_S(a, b)
-+#define PLH(a, b)	(P(OP, LOAD) | P(LVL, HIT) | P(a, b))
-+/*
-+ * Map the Power7 DCACHE_SRC field (bits 9..12) in MMCRA register to the
-+ * architecture-neutral memory hierarchy levels. For the levels in Power7
-+ * that don't map to the arch-neutral levels, approximate to nearest
-+ * level.
-+ *
-+ *	1-hop:	indicates another core on the same chip (2.1 and 3.1 levels).
-+ *	2-hops:	indicates a different chip on same or different node (remote
-+ *		and distant levels).
-+ *
-+ * For consistency with this interpretation of the hops, we dont use
-+ * the REM_RAM1 level below.
-+ *
-+ * The *SHR and *MOD states of the cache are ignored/not exported to user.
-+ *
-+ * ### Levels marked with ### in comments below are approximated
-+ */
-+static u64 dcache_src_map[] = {
-+	PLH(LVL, L2),			/* 00: FROM_L2 */
-+	PLH(LVL, L3),			/* 01: FROM_L3 */
-+
-+	P(LVL, NA),			/* 02: Reserved */
-+	P(LVL, NA),			/* 03: Reserved */
-+
-+	PLH(LVL, REM_CCE1),		/* 04: FROM_L2.1_SHR ### */
-+	PLH(LVL, REM_CCE1),		/* 05: FROM_L2.1_MOD ### */
-+
-+	PLH(LVL, REM_CCE1),		/* 06: FROM_L3.1_SHR ### */
-+	PLH(LVL, REM_CCE1),		/* 07: FROM_L3.1_MOD ### */
-+
-+	PLH(LVL, REM_CCE2),		/* 08: FROM_RL2L3_SHR ### */
-+	PLH(LVL, REM_CCE2),		/* 09: FROM_RL2L3_MOD ### */
-+
-+	PLH(LVL, REM_CCE2),		/* 10: FROM_DL2L3_SHR ### */
-+	PLH(LVL, REM_CCE2),		/* 11: FROM_DL2L3_MOD ### */
-+
-+	PLH(LVL, LOC_RAM),		/* 12: FROM_LMEM */
-+	PLH(LVL, REM_RAM2),		/* 13: FROM_RMEM ### */
-+	PLH(LVL, REM_RAM2),		/* 14: FROM_DMEM */
-+
-+	P(LVL, NA),			/* 15: Reserved */
-+};
-+
-+/*
-+ * Determine the memory-hierarchy information (if applicable) for the
-+ * instruction/address we are sampling. If we encountered a DCACHE_MISS,
-+ * mmcra[DCACHE_SRC_MASK] specifies the memory level from which the operand
-+ * was loaded.
-+ *
-+ * Otherwise, it is an L1-hit, provided the instruction was a load/store.
-+ */
-+static void power7_get_mem_data_src(union perf_mem_data_src *dsrc,
-+			struct pt_regs *regs)
++static unsigned int load_store_xval(const unsigned int instr)
 +{
-+	u64 idx;
-+	u64 mmcra = regs->dsisr;
-+	u64 addr;
-+	int ret;
-+	unsigned int instr;
-+
-+	if (mmcra & POWER7_MMCRA_DCACHE_MISS) {
-+		idx = mmcra & POWER7_MMCRA_DCACHE_SRC_MASK;
-+		idx >>= POWER7_MMCRA_DCACHE_SRC_SHIFT;
-+
-+		dsrc->val |= dcache_src_map[idx];
-+		return;
-+	}
-+
-+	instr = 0;
-+	addr = perf_instruction_pointer(regs);
-+
-+	if (is_kernel_addr(addr))
-+		instr = *(unsigned int *)addr;
-+	else {
-+		pagefault_disable();
-+		ret = __get_user_inatomic(instr, (unsigned int __user *)addr);
-+		pagefault_enable();
-+		if (ret)
-+			instr = 0;
-+	}
-+	if (instr && instr_is_load_store(&instr))
-+		dsrc->val |= PLH(LVL, L1);
++	return (instr >> 1) & 0x3FF;	/* bits 21..30 */
 +}
 +
++/*
++ * Values of bits 21:30 of Fixed-point and Floating-point Load and Store
++ * instructions.
++ *
++ * Reference:	PowerISA_V2.06B_Public.pdf, Sections 3.3.2 through 3.3.6 and
++ *		4.6.2 through 4.6.4.
++ */
++#define	x_lbzx		87
++#define	x_lbzux		119
++#define	x_lhzx		279
++#define	x_lhzux		311
++#define	x_lhax		343
++#define	x_lhaux		375
++#define	x_lwzx		23
++#define	x_lwzux		55
++#define	x_lwax		341
++#define	x_lwaux		373
++#define	x_ldx		21
++#define	x_ldux		53
++#define	x_stbx		215
++#define	x_stbux		247
++#define	x_sthx		407
++#define	x_sthux		439
++#define	x_stwx		151
++#define	x_stwux		183
++#define	x_stdx		149
++#define	x_stdux		181
++#define	x_lhbrx		790
++#define	x_lwbrx		534
++#define	x_sthbrx	918
++#define	x_stwbrx	662
++#define	x_ldbrx		532
++#define	x_stdbrx	660
++#define	x_lswi		597
++#define	x_lswx		533
++#define	x_stswi		725
++#define	x_stswx		661
++#define	x_lfsx		535
++#define	x_lfsux		567
++#define	x_lfdx		599
++#define	x_lfdux		631
++#define	x_lfiwax	855
++#define	x_lfiwzx	887
++#define	x_stfsx		663
++#define	x_stfsux	695
++#define	x_stfdx		727
++#define	x_stfdux	759
++#define	x_stfiwax	983
++#define	x_lfdpx		791
++#define	x_stfdpx	919
 +
- static int power7_generic_events[] = {
- 	[PERF_COUNT_HW_CPU_CYCLES] =			PME_PM_CYC,
- 	[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] =	PME_PM_GCT_NOSLOT_CYC,
-@@ -437,6 +530,7 @@ static struct power_pmu power7_pmu = {
- 	.get_constraint		= power7_get_constraint,
- 	.get_alternatives	= power7_get_alternatives,
- 	.disable_pmc		= power7_disable_pmc,
-+	.get_mem_data_src	= power7_get_mem_data_src,
- 	.flags			= PPMU_ALT_SIPR,
- 	.attr_groups		= power7_pmu_attr_groups,
- 	.n_generic		= ARRAY_SIZE(power7_generic_events),
++static unsigned int x_form_load_store[] = {
++	x_lbzx,     x_lbzux,    x_lhzx,     x_lhzux,    x_lhax,
++	x_lhaux,    x_lwzx,     x_lwzux,    x_lwax,     x_lwaux,
++	x_ldx,      x_ldux,     x_stbx,     x_stbux,    x_sthx,
++	x_sthux,    x_stwx,     x_stwux,    x_stdx,     x_stdux,
++	x_lhbrx,    x_lwbrx,    x_sthbrx,   x_stwbrx,   x_ldbrx,
++	x_stdbrx,   x_lswi,     x_lswx,     x_stswi,    x_stswx,
++	x_lfsx,     x_lfsux,    x_lfdx,     x_lfdux,    x_lfiwax,
++	x_lfiwzx,   x_stfsx,    x_stfsux,   x_stfdx,    x_stfdux,
++	x_stfiwax,  x_lfdpx,    x_stfdpx
++};
++
++int instr_is_load_store(const unsigned int *instr)
++{
++	unsigned int op;
++	int i, n;
++
++	op = instr_opcode(*instr);
++
++	if ((op >= 32 && op <= 58) || (op == 61 || op == 62))
++		return 1;
++
++	if (op == 31) {
++		n = sizeof(x_form_load_store) / sizeof(int);
++
++		for (i = 0; i < n; i++) {
++			if (x_form_load_store[i] == load_store_xval(*instr))
++				return 1;
++		}
++	}
++
++	return 0;
++}
++
+ 
+ #ifdef CONFIG_CODE_PATCHING_SELFTEST
+ 
 -- 
 1.7.9.5
 
