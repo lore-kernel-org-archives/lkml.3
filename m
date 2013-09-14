@@ -1,99 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932213Ab3INPsE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 11:48:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29771 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756655Ab3INPsB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 11:48:01 -0400
-Date: Sat, 14 Sep 2013 17:41:44 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: viro@zeniv.linux.org.uk, rostedt@goodmis.org, fweisbec@gmail.com,
-        mingo@redhat.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] argv_split: Return NULL if argument contains no
-	non-whitespace.
-Message-ID: <20130914154144.GA7884@redhat.com>
-References: <201309141632.GHD86439.VLOOOFQFJtSMFH@I-love.SAKURA.ne.jp>
+	id S932173Ab3INPxd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 11:53:33 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:42630 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753343Ab3INPxb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Sep 2013 11:53:31 -0400
+Message-ID: <52349498.5070403@kernel.org>
+Date: Sat, 14 Sep 2013 17:53:44 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201309141632.GHD86439.VLOOOFQFJtSMFH@I-love.SAKURA.ne.jp>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Lee Jones <lee.jones@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@linaro.org, denis.ciocca@st.com,
+        linux-iio@vger.kernel.org
+Subject: Re: [PATCH 19/38] iio: sensors-core: st: Support sensors which don't
+ have a Data Ready pin
+References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org> <1378817379-8238-20-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1378817379-8238-20-git-send-email-lee.jones@linaro.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14, Tetsuo Handa wrote:
->
->   # echo '|' > /proc/sys/kernel/core_pattern
->
-> and got
->
->   BUG: unable to handle kernel NULL pointer dereference at   (null)
+On 09/10/13 13:49, Lee Jones wrote:
+> Not all ST's sensors support data ready, so let's make the declaration
+> of one conditional.
+> 
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Hmm. This was fixed by 264b83c07a8 "usermodehelper: check
-subprocess_info->path != NULL".
+Hi Lee,
 
-But then this check was removed by 7f57cfa4e2a "usermodehelper:
-kill the sub_info->path[0] check".
+This one doesn't actually build:
 
-Note that the changelog says "do_execve(NULL) is safe" and I certainly
-tested this case when I sent the patch...
+  CC [M]  drivers/iio/common/st_sensors/st_sensors_core.o
+drivers/iio/common/st_sensors/st_sensors_core.c: In function 'st_sensors_set_drdy_int_pin':
+drivers/iio/common/st_sensors/st_sensors_core.c:211:4: error: 'err' undeclared (first use in this function)
+drivers/iio/common/st_sensors/st_sensors_core.c:211:4: note: each undeclared identifier is reported only once for each
+function it appears in
+drivers/iio/common/st_sensors/st_sensors_core.c:228:3: error: label 'init_error' used but not defined
+make[4]: *** [drivers/iio/common/st_sensors/st_sensors_core.o] Error 1
 
-Now it is crashes in path_openat() because pathname->name is NULL.
-Something was changed, perhaps  or (I'm afraid) I misread that code and
-my testing was wrong. do_filp_open/etc were changed to accept
-"struct filename *" a long ago.
 
-> upon core dump because helper_argv[0] == NULL at
->
->   helper_argv = argv_split(GFP_KERNEL, cn.corename, NULL);
->   call_usermodehelper_setup(helper_argv[0], ...);
+The following patch gets rid of these lines so I'm guessing you reorganised your patch
+series then didn't check buildling them in the new order.
 
-Are you sure? See above.
+Please fix this up before reposting the remainder of the series.
 
-> --- a/lib/argv_split.c
-> +++ b/lib/argv_split.c
-> @@ -50,7 +50,7 @@ EXPORT_SYMBOL(argv_free);
->   * quote processing is performed.  Multiple whitespace characters are
->   * considered to be a single argument separator.  The returned array
->   * is always NULL-terminated.  Returns NULL on memory allocation
-> - * failure.
-> + * failure or @str being empty or @str containing only white-space.
->   *
->   * The source string at `str' may be undergoing concurrent alteration via
->   * userspace sysctl activity (at least).  The argv_split() implementation
-> @@ -68,6 +68,10 @@ char **argv_split(gfp_t gfp, const char *str, int *argcp)
->  		return NULL;
->
->  	argc = count_argc(argv_str);
-> +	if (!argc) {
-> +		kfree(argv_str);
-> +		return NULL;
-> +	}
-
-Yes, this is what 264b83c07a8 suggested... But I am not sure, if nothing
-else pr_warn("failed to allocate memory") from do_coredump() doesn't look
-nice in this case.
-
-Perhaps
-
-	--- x/kernel/kmod.c
-	+++ x/kernel/kmod.c
-	@@ -571,6 +571,9 @@ int call_usermodehelper_exec(struct subp
-		DECLARE_COMPLETION_ONSTACK(done);
-		int retval = 0;
-	 
-	+	if (!sub_info->path)
-	+		return -EXXX;
-	+
-		helper_lock();
-		if (!khelper_wq || usermodehelper_disabled) {
-			retval = -EBUSY;
-
-?
-
-Oleg.
-
+> ---
+>  drivers/iio/common/st_sensors/st_sensors_core.c | 24 +++++++++++++++++++-----
+>  drivers/iio/pressure/st_pressure_core.c         |  3 ++-
+>  2 files changed, 21 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/iio/common/st_sensors/st_sensors_core.c b/drivers/iio/common/st_sensors/st_sensors_core.c
+> index eb261a5..b86cad2 100644
+> --- a/drivers/iio/common/st_sensors/st_sensors_core.c
+> +++ b/drivers/iio/common/st_sensors/st_sensors_core.c
+> @@ -198,14 +198,11 @@ int st_sensors_set_axis_enable(struct iio_dev *indio_dev, u8 axis_enable)
+>  }
+>  EXPORT_SYMBOL(st_sensors_set_axis_enable);
+>  
+> -int st_sensors_init_sensor(struct iio_dev *indio_dev,
+> -					struct st_sensors_platform_data *pdata)
+> +int st_sensors_set_drdy_int_pin(struct iio_dev *indio_dev,
+> +				struct st_sensors_platform_data *pdata)
+>  {
+> -	int err;
+>  	struct st_sensor_data *sdata = iio_priv(indio_dev);
+>  
+> -	mutex_init(&sdata->tb.buf_lock);
+> -
+>  	switch (pdata->drdy_int_pin) {
+>  	case 1:
+>  		if (sdata->sensor->drdy_irq.mask_int1 == 0) {
+> @@ -231,6 +228,20 @@ int st_sensors_init_sensor(struct iio_dev *indio_dev,
+>  		goto init_error;
+>  	}
+>  
+> +	return 0;
+> +}
+> +
+> +int st_sensors_init_sensor(struct iio_dev *indio_dev,
+> +					struct st_sensors_platform_data *pdata)
+> +{
+> +	int err = 0;
+> +	struct st_sensor_data *sdata = iio_priv(indio_dev);
+> +
+> +	mutex_init(&sdata->tb.buf_lock);
+> +
+> +	if (pdata)
+> +		err = st_sensors_set_drdy_int_pin(indio_dev, pdata);
+> +
+>  	err = st_sensors_set_enable(indio_dev, false);
+>  	if (err < 0)
+>  		goto init_error;
+> @@ -266,6 +277,9 @@ int st_sensors_set_dataready_irq(struct iio_dev *indio_dev, bool enable)
+>  	u8 drdy_mask;
+>  	struct st_sensor_data *sdata = iio_priv(indio_dev);
+>  
+> +	if (!sdata->sensor->drdy_irq.addr)
+> +		return 0;
+> +
+>  	/* Enable/Disable the interrupt generator 1. */
+>  	if (sdata->sensor->drdy_irq.ig1.en_addr > 0) {
+>  		err = st_sensors_write_data_with_mask(indio_dev,
+> diff --git a/drivers/iio/pressure/st_pressure_core.c b/drivers/iio/pressure/st_pressure_core.c
+> index 16cfbc5..279aafd 100644
+> --- a/drivers/iio/pressure/st_pressure_core.c
+> +++ b/drivers/iio/pressure/st_pressure_core.c
+> @@ -232,7 +232,8 @@ int st_press_common_probe(struct iio_dev *indio_dev,
+>  
+>  	pdata->odr = pdata->sensor->odr.odr_avl[0].hz;
+>  
+> -	if (!plat_data)
+> +	/* Some devices don't support a data ready pin. */
+> +	if (!plat_data && pdata->sensor->drdy_irq.addr)
+>  		plat_data =
+>  			(struct st_sensors_platform_data *)&default_press_pdata;
+>  
+> 
