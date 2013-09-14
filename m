@@ -1,110 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932310Ab3INSsJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 14:48:09 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:37845 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756702Ab3INSsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 14:48:07 -0400
-Date: Sat, 14 Sep 2013 11:48:01 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [PATCH] rcu: Fix CONFIG_RCU_NOCB_CPU_ALL panic on machines with
- sparse CPU mask
-Message-ID: <20130914184801.GL3966@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <191071379163800@web12j.yandex.ru>
+	id S932351Ab3INSxY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 14:53:24 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:56639 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756702Ab3INSxX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Sep 2013 14:53:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <191071379163800@web12j.yandex.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091418-5806-0000-0000-000022BCF815
+In-Reply-To: <1379173186-11944-1-git-send-email-vdavydov@parallels.com>
+References: <1379173186-11944-1-git-send-email-vdavydov@parallels.com>
+From: Paul Turner <pjt@google.com>
+Date: Sat, 14 Sep 2013 11:52:51 -0700
+Message-ID: <CAPM31RLygqU-Ck4Rru1ZQid+Hu9AY0Ag9wkTaA50f7yo0udVYQ@mail.gmail.com>
+Subject: Re: [PATCH] sched: Fix task_h_load calculation
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Alex Shi <alex.shi@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        devel@openvz.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 14, 2013 at 05:03:20PM +0400, Kirill Tkhai wrote:
-> When a system has a sparse cpumask and CONFIG_RCU_NOCB_CPU_ALL is enabled,
-> rcu_spawn_nocb_kthreads() creates nocb threads for nonexistent CPUS.
-> 
-> The problem is in rcu_bootup_announce_oddness(). cpumask_setall() sets all
-> bits from 0 to nr_cpu_ids existent and nonexistent CPUs both.
-> 
-> The sample. My cpuinfo(sparc64):
-> 
-> CPU0:		online
-> CPU2:		online
-> 
-> I get these oopses every boot:
-> 
-> Unable to handle kernel NULL pointer dereference
-> CPU: 0 PID: 23 Comm: rcuos/1 Not tainted 3.11.0+ #103
-> task: fffff800be9792c0 ti: fffff800be98c000 task.ti: fffff800be98c000
-> TSTATE: 0000004480e01604 TPC: 000000000047cffc TNPC: 000000000047d000 Y: 00000000    Not tainted
-> TPC: <prepare_to_wait+0x38/0x5c>
-> g0: 0000000000000000 g1: 0000000000000000 g2: fffff800be98fd58 g3: 0000000000acb718
-> g4: fffff800be9792c0 g5: fffff800be536000 g6: fffff800be98c000 g7: 0000000000000000
-> o0: 0000000000000000 o1: 0000000000a33d34 o2: 0000000000000001 o3: 0000000000000000
-> o4: 0000000000000000 o5: 0000000000000000 sp: fffff800be98f3d1 ret_pc: 000000000047cfd8
-> RPC: <prepare_to_wait+0x14/0x5c>
-> l0: 0000000000a33ce8 l1: 0000000000000001 l2: 0000000000a7d800 l3: fffff800bf004dc0
-> l4: fffff800be880310 l5: 0000000000a33ce8 l6: 0000000000ad0000 l7: 0000000000a33800
-> i0: 0000000000acb710 i1: fffff800be98fd40 i2: 0000000000000001 i3: fffff800be98fd40
-> i4: 0000000000000000 i5: 0000000000000000 i6: fffff800be98f491 i7: 00000000004d3f50
-> I7: <rcu_nocb_kthread+0x5c/0x224>
-> Call Trace:
->  [00000000004d3f50] rcu_nocb_kthread+0x5c/0x224
->  [000000000047c604] kthread+0x88/0x9c
->  [0000000000406084] ret_from_fork+0x1c/0x2c
->  [0000000000000000]           (null)
-> 
-> So, not possible CPUs have to be cleared.
+On Sat, Sep 14, 2013 at 8:39 AM, Vladimir Davydov
+<vdavydov@parallels.com> wrote:
+> Patch a003a2 (sched: Consider runnable load average in move_tasks())
+> sets all top-level cfs_rqs' h_load to rq->avg.load_avg_contrib, which is
+> always 0. This mistype leads to all tasks having weight 0 when load
+> balancing in a cpu-cgroup enabled setup. There obviously should be sum
+> of weights of all runnable tasks there instead. Fix it.
+>
 
-Good catch!
-
-I am hoping that your setup always has CPU 0 defined.  If not, there are
-many other problems in addition to CONFIG_RCU_NOCB_CPU_ZERO=y!
-
-> Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-> CC: Dipankar Sarma <dipankar@in.ibm.com>
-> CC: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+load_avg_contrib is the weight that
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 > ---
->  kernel/rcutree_plugin.h |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> index 130c97b..1f17e99 100644
-> --- a/kernel/rcutree_plugin.h
-> +++ b/kernel/rcutree_plugin.h
-> @@ -97,6 +97,7 @@ static void __init rcu_bootup_announce_oddness(void)
->  #ifdef CONFIG_RCU_NOCB_CPU_ALL
->  	pr_info("\tOffload RCU callbacks from all CPUs\n");
->  	cpumask_setall(rcu_nocb_mask);
-> +	cpumask_and(rcu_nocb_mask, cpu_possible_mask, rcu_nocb_mask);
+>  kernel/sched/fair.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 9b3fe1c..13abc29 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -4242,7 +4242,7 @@ static void update_cfs_rq_h_load(struct cfs_rq *cfs_rq)
+>         } Once we'v Once we've made it that e made it that
+>
+>         if (!se) {
+> -               cfs_rq->h_load = rq->avg.load_avg_contrib;
+> +               cfs_rq->h_load = cfs_rq->runnable_load_avg;
 
-Would it make sense to combine the cpumask_setall() and the cpumask_and()
-into a single cpumask_copy()?  
+Looks good.
 
->  #endif /* #ifdef CONFIG_RCU_NOCB_CPU_ALL */
->  #endif /* #ifndef CONFIG_RCU_NOCB_CPU_NONE */
->  	if (have_rcu_nocb_mask) {
+Reviewed-by: Paul Turner <pjt@google.com>
 
-Do we need a cpumask_and() within this "if" statement to handle the
-case where the kernel's rcu_nocbs= boot parameter specified a CPU
-that is not present?  (If so, probably also giving a warning about the
-non-present CPUs specified.)
-
-I believe that the answer to both questions is "yes", and I would
-welcome an updated patch that covered these cases.
-
-All that said...  Why does the system have a sparse cpu_possible_mask?
-This does cause overallocation of memory in a number of areas, including
-RCU's combining tree of rcu_node structures, to say nothing of the
-cpumasks themselves.
-
-							Thanx, Paul
-
+>                 cfs_rq->last_h_load_update = now;
+>         }
+>
+> --
+> 1.7.10.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
