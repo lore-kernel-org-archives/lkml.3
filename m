@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756881Ab3INXyi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 19:54:38 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:52405 "EHLO
+	id S1756925Ab3INXyr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 19:54:47 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:52407 "EHLO
 	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756826Ab3INXyh (ORCPT
+	with ESMTP id S1756852Ab3INXyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 19:54:37 -0400
+	Sat, 14 Sep 2013 19:54:39 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Andi Kleen <andi@firstfloor.org>, Fengguang Wu <fengguang.wu@intel.com>,
@@ -14,76 +14,56 @@ Cc: Andi Kleen <andi@firstfloor.org>, Fengguang Wu <fengguang.wu@intel.com>,
         Tony Luck <tony.luck@intel.com>, gong.chen@linux.intel.com,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [RESEND PATCH v2 1/4] mm/hwpoison: fix traverse hugetlbfs page to avoid printk flood
-Date: Sun, 15 Sep 2013 07:53:56 +0800
-Message-Id: <1379202839-23939-1-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [RESEND PATCH v2 3/4] mm/hwpoison: fix false report 2nd try page recovery
+Date: Sun, 15 Sep 2013 07:53:58 +0800
+Message-Id: <1379202839-23939-3-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1379202839-23939-1-git-send-email-liwanp@linux.vnet.ibm.com>
+References: <1379202839-23939-1-git-send-email-liwanp@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091423-2674-0000-0000-00000AA74961
+x-cbid: 13091423-2674-0000-0000-00000AA74967
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-madvise_hwpoison won't check if the page is small page or huge page and traverse 
-in small page granularity against the range unconditional, which result in a printk 
-flood "MCE xxx: already hardware poisoned" if the page is huge page. This patch fix 
-it by increase compound_order(compound_head(page)) for huge page iterator.
+If the page is poisoned by software inject w/ MF_COUNT_INCREASED flag, there
+is a false report 2nd try page recovery which is not truth, this patch fix it
+by report first try free buddy page recovery if MF_COUNT_INCREASED is set.
 
-Testcase:
+Before patch:
 
-#define _GNU_SOURCE
-#include <stdlib.h>
-#include <stdio.h>
-#include <sys/mman.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <errno.h>
+[  346.332041] Injecting memory failure at pfn 200010
+[  346.332189] MCE 0x200010: free buddy, 2nd try page recovery: Delayed
 
-#define PAGES_TO_TEST 3
-#define PAGE_SIZE	4096 * 512
+After patch:
 
-int main(void)
-{
-	char *mem;
-	int i;
-
-	mem = mmap(NULL, PAGES_TO_TEST * PAGE_SIZE,
-			PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, 0, 0);
-
-	if (madvise(mem, PAGES_TO_TEST * PAGE_SIZE, MADV_HWPOISON) == -1)
-		return -1;
-	
-	munmap(mem, PAGES_TO_TEST * PAGE_SIZE);
-
-	return 0;
-}
+[  297.742600] Injecting memory failure at pfn 200010
+[  297.742941] MCE 0x200010: free buddy page recovery: Delayed
 
 Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- mm/madvise.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ mm/memory-failure.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/mm/madvise.c b/mm/madvise.c
-index 6975bc8..539eeb9 100644
---- a/mm/madvise.c
-+++ b/mm/madvise.c
-@@ -343,10 +343,11 @@ static long madvise_remove(struct vm_area_struct *vma,
-  */
- static int madvise_hwpoison(int bhv, unsigned long start, unsigned long end)
- {
-+	struct page *p;
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EPERM;
--	for (; start < end; start += PAGE_SIZE) {
--		struct page *p;
-+	for (; start < end; start += PAGE_SIZE <<
-+				compound_order(compound_head(p))) {
- 		int ret;
- 
- 		ret = get_user_pages_fast(start, 1, 0, &p);
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index b114570..6293164 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1114,8 +1114,10 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
+ 			 * shake_page could have turned it free.
+ 			 */
+ 			if (is_free_buddy_page(p)) {
+-				action_result(pfn, "free buddy, 2nd try",
+-						DELAYED);
++				if (flags & MF_COUNT_INCREASED)
++					action_result(pfn, "free buddy", DELAYED);
++				else
++					action_result(pfn, "free buddy, 2nd try", DELAYED);
+ 				return 0;
+ 			}
+ 			action_result(pfn, "non LRU", IGNORED);
 -- 
-1.8.1.2
+1.7.5.4
 
