@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756726Ab3INMMt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 08:12:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49379 "EHLO mx1.redhat.com"
+	id S1756773Ab3INMOO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 08:14:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58539 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754955Ab3INMLr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 08:11:47 -0400
-From: Andrew Jones <drjones@redhat.com>
-To: kvmarm@lists.cs.columbia.edu, kvm@vger.kernel.org
-Cc: catalin.marinas@arm.com, christoffer.dall@linaro.org, gleb@redhat.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        marc.zyngier@arm.com, pbonzini@redhat.com, linux@arm.linux.org.uk,
-        will.deacon@arm.com
-Subject: [PATCH 2/3] arm32: kvm: rename CONFIG_KVM_ARM_MAX_VCPUS
-Date: Sat, 14 Sep 2013 14:10:55 +0200
-Message-Id: <1379160656-28050-3-git-send-email-drjones@redhat.com>
-In-Reply-To: <1379160656-28050-1-git-send-email-drjones@redhat.com>
-References: <1379160656-28050-1-git-send-email-drjones@redhat.com>
+	id S1754955Ab3INMON (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Sep 2013 08:14:13 -0400
+References: <1379160656-28050-1-git-send-email-drjones@redhat.com> <1379160656-28050-2-git-send-email-drjones@redhat.com>
+Mime-Version: 1.0 (1.0)
+In-Reply-To: <1379160656-28050-2-git-send-email-drjones@redhat.com>
+Content-Type: text/plain;
+	charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <AC39CB35-1EE1-49DE-A2E4-F544699A516B@suse.de>
+Cc: "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "pbonzini@redhat.com" <pbonzini@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+X-Mailer: iPhone Mail (10B142)
+From: Alexander Graf <agraf@suse.de>
+Subject: Re: [PATCH 1/3] arm: kvm: clamp NR_VCPUS to MAX_VCPUS
+Date: Sat, 14 Sep 2013 07:14:02 -0500
+To: Andrew Jones <drjones@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drop the _ARM_ part of the name. We can then introduce a config option
-like this to aarch64 and other arches using the same name - allowing
-grep to show them all. Also update the help text to describe the option
-more completely.
 
-Signed-off-by: Andrew Jones <drjones@redhat.com>
----
- arch/arm/include/asm/kvm_host.h | 4 ++--
- arch/arm/kvm/Kconfig            | 8 ++++----
- 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/include/asm/kvm_host.h b/arch/arm/include/asm/kvm_host.h
-index 7d22517d80711..c614d3eb176c6 100644
---- a/arch/arm/include/asm/kvm_host.h
-+++ b/arch/arm/include/asm/kvm_host.h
-@@ -25,8 +25,8 @@
- #include <asm/fpstate.h>
- #include <kvm/arm_arch_timer.h>
- 
--#if defined(CONFIG_KVM_ARM_MAX_VCPUS)
--#define KVM_MAX_VCPUS CONFIG_KVM_ARM_MAX_VCPUS
-+#if defined(CONFIG_KVM_MAX_VCPUS)
-+#define KVM_MAX_VCPUS CONFIG_KVM_MAX_VCPUS
- #else
- #define KVM_MAX_VCPUS 0
- #endif
-diff --git a/arch/arm/kvm/Kconfig b/arch/arm/kvm/Kconfig
-index ebf5015508b52..de63bfccb3eb5 100644
---- a/arch/arm/kvm/Kconfig
-+++ b/arch/arm/kvm/Kconfig
-@@ -40,16 +40,16 @@ config KVM_ARM_HOST
- 	---help---
- 	  Provides host support for ARM processors.
- 
--config KVM_ARM_MAX_VCPUS
-+config KVM_MAX_VCPUS
- 	int "Number maximum supported virtual CPUs per VM"
- 	depends on KVM_ARM_HOST
- 	default 4
- 	help
- 	  Static number of max supported virtual CPUs per VM.
- 
--	  If you choose a high number, the vcpu structures will be quite
--	  large, so only choose a reasonable number that you expect to
--	  actually use.
-+	  The default is set to the highest number of vcpus that
-+	  current hardware supports. Set to a lower number to save
-+	  some resources. Set to a higher number to test scalability.
- 
- config KVM_ARM_VGIC
- 	bool "KVM support for Virtual GIC"
--- 
-1.8.1.4
+Am 14.09.2013 um 07:10 schrieb Andrew Jones <drjones@redhat.com>:
 
+> Signed-off-by: Andrew Jones <drjones@redhat.com>
+> ---
+> arch/arm/kvm/arm.c | 2 +-
+> 1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/kvm/arm.c b/arch/arm/kvm/arm.c
+> index 741f66a2edbd7..9ebf8ac3a12ff 100644
+> --- a/arch/arm/kvm/arm.c
+> +++ b/arch/arm/kvm/arm.c
+> @@ -201,7 +201,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+>        r = 1;
+>        break;
+>    case KVM_CAP_NR_VCPUS:
+> -        r = num_online_cpus();
+> +        r = min(num_online_cpus(), KVM_MAX_VCPUS);
+
+Is there any real reason to prohibit overcommit?
+
+Alex
+
+>        break;
+>    case KVM_CAP_MAX_VCPUS:
+>        r = KVM_MAX_VCPUS;
+> -- 
+> 1.8.1.4
+> 
+> _______________________________________________
+> kvmarm mailing list
+> kvmarm@lists.cs.columbia.edu
+> https://lists.cs.columbia.edu/cucslists/listinfo/kvmarm
