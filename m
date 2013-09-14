@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756393Ab3INCru (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 22:47:50 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47222 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860Ab3INCrt (ORCPT
+	id S1756482Ab3INCsN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 22:48:13 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:28860 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756439Ab3INCsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 22:47:49 -0400
-Message-ID: <5233CE44.7080605@jp.fujitsu.com>
-Date: Fri, 13 Sep 2013 22:47:32 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 13 Sep 2013 22:48:11 -0400
+Message-ID: <5233CE5E.7040004@huawei.com>
+Date: Sat, 14 Sep 2013 10:47:58 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: suzuki@in.ibm.com
-CC: kosaki.motohiro@gmail.com, jananive@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, jeremy.fitzhardinge@citrix.com,
-        d.hatayama@jp.fujitsu.com, andi@firstfloor.org, roland@hack.frob.com,
-        amwang@redhat.com, hch@lst.de, torvalds@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com, mhiramat@redhat.com,
-        akpm@linux-foundation.org, adobriyan@gmail.com, xemul@parallels.com,
-        oleg@redhat.com, tj@kernel.org, avagin@openvz.org, gorcunov@openvz.org,
-        james.hogan@imgtec.com, vapier@gentoo.org, rdunlap@xenotime.net,
-        eparis@redhat.com, ananth@in.ibm.com, aravinda@linux.vnet.ibm.com,
-        tarundeep.singh@in.ibm.com
-Subject: Re: RFD: Non-Disruptive Core Dump Infrastructure
-References: <522472DA.4000702@linux.vnet.ibm.com> <5225A02B.6080901@linux.vnet.ibm.com> <5230C405.8040108@gmail.com> <523146F1.7060905@in.ibm.com>
-In-Reply-To: <523146F1.7060905@in.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] hung_task: change sysctl_hung_task_check_count to int
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/12/2013 12:45 AM, Suzuki K. Poulose wrote:
-> On 09/12/2013 12:57 AM, KOSAKI Motohiro wrote:
->> (9/3/13 4:39 AM), Janani Venkataraman wrote:
->>> Hello,
->>>
->>> We are working on an infrastructure to create a system core file of a
->>> specific
->>> process at run-time, non-disruptively. It can also be extended to a
->>> case where
->>> a process is able to take a self-core dump.
->>>
->>> gcore, an existing utility creates a core image of the specified
->>> process. It
->>> attaches to the process using gdb and runs the gdb gcore command and then
->>> detaches. In gcore the dump cannot be issued from a signal handler
->>> context as
->>> fork() is not signal safe and moreover it is disruptive in nature as
->>> the gdb
->>> attaches using ptrace which sends a SIGSTOP signal. Hence the gcore
->>> method
->>> cannot be used if the process wants to initiate a self dump.
->>
->> Maybe I'm missing something. But why gcore uses c-level fork()? gcore
->> need to
->> call pthread-at-fork handler? No. gcore need to flush stdio buffer? No.
->>
-> Let me clarify. If an application wants to dump itself, it has to do a
-> fork() and then exec the gcore with the pid of the appication to
-> generate the dump.
+As sysctl_hung_task_check_count is unsigned long, when this value is
+assigned to max_count in check_hung_uninterruptible_tasks(), it's
+truncated to int type.
 
-Oh, I did think the fork() is used for no application stop dump. But it is
-incorrect.
+Therefore if we write 2^32 to sysctl.hung_task_check_count, hung task
+detection will be effectively disabled.
 
-Hmm. However, if an application _itself_ want to dump itself. They can avoid
-to use signal handler properly. I'm missing the point of this discussion
-completely.
+Not a big deal, but still it's better to fix this inconsistency.
 
-So, I'd keep silence while.
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ include/linux/sched/sysctl.h | 2 +-
+ kernel/hung_task.c           | 2 +-
+ kernel/sysctl.c              | 4 ++--
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-> 
-> So, if the application wants to initiate the dump from a signal handler
-> context, it may lead to trouble.
-
-
+diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
+index bf8086b..9552afa 100644
+--- a/include/linux/sched/sysctl.h
++++ b/include/linux/sched/sysctl.h
+@@ -2,8 +2,8 @@
+ #define _SCHED_SYSCTL_H
+ 
+ #ifdef CONFIG_DETECT_HUNG_TASK
++extern int	     sysctl_hung_task_check_count;
+ extern unsigned int  sysctl_hung_task_panic;
+-extern unsigned long sysctl_hung_task_check_count;
+ extern unsigned long sysctl_hung_task_timeout_secs;
+ extern unsigned long sysctl_hung_task_warnings;
+ extern int proc_dohung_task_timeout_secs(struct ctl_table *table, int write,
+diff --git a/kernel/hung_task.c b/kernel/hung_task.c
+index 6df6149..b5a5d42 100644
+--- a/kernel/hung_task.c
++++ b/kernel/hung_task.c
+@@ -19,7 +19,7 @@
+ /*
+  * The number of tasks checked:
+  */
+-unsigned long __read_mostly sysctl_hung_task_check_count = PID_MAX_LIMIT;
++int __read_mostly sysctl_hung_task_check_count = PID_MAX_LIMIT;
+ 
+ /*
+  * Limit number of tasks checked in a batch.
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 07f6fc4..5e5cc21 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -962,9 +962,9 @@ static struct ctl_table kern_table[] = {
+ 	{
+ 		.procname	= "hung_task_check_count",
+ 		.data		= &sysctl_hung_task_check_count,
+-		.maxlen		= sizeof(unsigned long),
++		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_doulongvec_minmax,
++		.proc_handler	= proc_dointvec_minmax,
+ 	},
+ 	{
+ 		.procname	= "hung_task_timeout_secs",
+-- 
+1.8.0.2
