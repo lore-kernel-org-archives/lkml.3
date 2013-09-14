@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756522Ab3INMQz (ORCPT <rfc822;w@1wt.eu>);
+	id S932096Ab3INMQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 08:16:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62765 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752416Ab3INMQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 14 Sep 2013 08:16:55 -0400
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:46539 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752416Ab3INMQx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 08:16:53 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Benson Leung <bleung@chromium.org>
-Cc: dmitry.torokhov@gmail.com, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-gpio@vger.kernel.org,
-        devicetree@vger.kernel.org, david@protonic.nl, dianders@chromium.org
-Subject: Re: [PATCH] Input: gpio_keys - wakeup_trigger
-Date: Sat, 14 Sep 2013 14:16:47 +0200
-Message-ID: <106090496.3hTZTLSVzK@flatron>
-User-Agent: KMail/4.11.1 (Linux/3.10.10-gentoo; KDE/4.11.1; x86_64; ; )
-In-Reply-To: <1379109160-32437-1-git-send-email-bleung@chromium.org>
-References: <1379109160-32437-1-git-send-email-bleung@chromium.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+From: Andrew Jones <drjones@redhat.com>
+To: kvm@vger.kernel.org
+Cc: gleb@redhat.com, pbonzini@redhat.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] [RFC] x86: kvm: remove KVM_SOFT_MAX_VCPUS
+Date: Sat, 14 Sep 2013 14:16:51 +0200
+Message-Id: <1379161011-28239-1-git-send-email-drjones@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benson,
+This patch removes KVM_SOFT_MAX_VCPUS and uses num_online_cpus() for
+KVM_CAP_NR_VCPUS instead, as ARM does. While the API doc simply says
+KVM_CAP_NR_VCPUS should return the recommended maximum number of vcpus,
+it has been returning KVM_SOFT_MAX_VCPUS, which was defined as the
+maximum tested number of vcpus. As that concept could be
+distro-specific, this patch uses the other recommended maximum, the
+number of physical cpus, as we never recommend configuring a guest that
+has more vcpus than the host has pcpus. Of course a guest can always
+still be configured with up to KVM_CAP_MAX_VCPUS though anyway.
 
-On Friday 13 of September 2013 14:52:40 Benson Leung wrote:
-> Allow wakeup_trigger to be defined per gpio button. Currently, all
-> gpio buttons are set up as IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING.
-> It may be more appropriate to only wake the system on one edge, for
-> example if the gpio is for a Lid Switch.
-> 
-> Signed-off-by: Benson Leung <bleung@chromium.org>
-> ---
->  .../devicetree/bindings/gpio/gpio_keys.txt         |  7 +++++++
->  drivers/input/keyboard/gpio_keys.c                 | 23
-> ++++++++++++++++++++-- include/linux/gpio_keys.h                       
->   |  3 +++
->  3 files changed, 31 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/gpio/gpio_keys.txt
-> b/Documentation/devicetree/bindings/gpio/gpio_keys.txt index
-> 5c2c021..243f569 100644
-> --- a/Documentation/devicetree/bindings/gpio/gpio_keys.txt
-> +++ b/Documentation/devicetree/bindings/gpio/gpio_keys.txt
-> @@ -20,6 +20,13 @@ Optional subnode-properties:
->  	- debounce-interval: Debouncing interval time in milliseconds.
->  	  If not specified defaults to 5.
->  	- gpio-key,wakeup: Boolean, button can wake-up the system.
-> +	- gpio-key,wakeup-trigger : Specifies the type of wakeup behavior.
-> +	  <1> == Rising Edge Trigger
-> +	  <2> == Falling Edge Trigger
-> +	  <3> == Both Rising and Falling Edge Trigger
-> +	  <4> == Level High Trigger
-> +	  <8> == Level Low Trigger
-> +	  If not specified, defaults to <3> == Both Rising and Falling.
+I've put RFC on this patch because I'm not sure if there are any gotchas
+lurking with this change. The change now means hosts no longer return
+the same number for KVM_CAP_NR_VCPUS, and that number is likely going to
+generally be quite a bit less than what KVM_SOFT_MAX_VCPUS was (160). I
+can't think of anything other than generating more warnings[1] from qemu
+with guests that configure more vcpus than pcpus though.
 
-I don't like two things in this patch.
+[1] Actually, until 972fc544b6034a in uq/master is merged there won't be
+    any warnings either.
 
-First is that this looks completely like a configuration option, not 
-hardware description, so it's not something that should be put into DT. 
-Especially that users might want to use another wake-up trigger depending 
-on their use cases. I'd rather see this as a sysfs entry.
+Signed-off-by: Andrew Jones <drjones@redhat.com>
+---
+ arch/x86/include/asm/kvm_host.h | 1 -
+ arch/x86/kvm/x86.c              | 2 +-
+ 2 files changed, 1 insertion(+), 2 deletions(-)
 
-Another thing is that this driver assumes that key events are indicated by 
-edges on the GPIO line, so I don't think level trigger setting make any 
-sense here. I'd rather allow three settings here (through a sysfs knob) - 
-key down, key up, key down or up.
-
-Best regards,
-Tomasz
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index c76ff74a98f2e..9236c63315a9b 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -32,7 +32,6 @@
+ #include <asm/asm.h>
+ 
+ #define KVM_MAX_VCPUS 255
+-#define KVM_SOFT_MAX_VCPUS 160
+ #define KVM_USER_MEM_SLOTS 125
+ /* memory slots that are not exposed to userspace */
+ #define KVM_PRIVATE_MEM_SLOTS 3
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index e5ca72a5cdb6d..d9d3e2ed68ee9 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -2604,7 +2604,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+ 		r = !kvm_x86_ops->cpu_has_accelerated_tpr();
+ 		break;
+ 	case KVM_CAP_NR_VCPUS:
+-		r = KVM_SOFT_MAX_VCPUS;
++		r = min(num_online_cpus(), KVM_MAX_VCPUS);
+ 		break;
+ 	case KVM_CAP_MAX_VCPUS:
+ 		r = KVM_MAX_VCPUS;
+-- 
+1.8.1.4
 
