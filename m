@@ -1,86 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756580Ab3INLbl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 07:31:41 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11007 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751442Ab3INLbk (ORCPT
+	id S1756257Ab3INLuQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 07:50:16 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:50181 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751442Ab3INLuP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 07:31:40 -0400
-X-Authority-Analysis: v=2.0 cv=ddwCLAre c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=IUAB6XBAk1cA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=10LPOIgpgYkA:10 a=pGLkceISAAAA:8 a=pSnE_Gf4ntdRVt0mp-8A:9 a=CjuIK1q_8ugA:10 a=MSl-tDqOz04A:10 a=TNySWaWTJngDQgeP:21 a=ApdrRFGhVdCNXiyc:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Sat, 14 Sep 2013 07:31:38 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Wang YanQing <udknight@gmail.com>
-Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] trace: show more and exactly help information about
- snapshot
-Message-ID: <20130914073138.1cd6026c@gandalf.local.home>
-In-Reply-To: <20130914045916.GA4243@udknight>
-References: <20130914045916.GA4243@udknight>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 14 Sep 2013 07:50:15 -0400
+Date: Sat, 14 Sep 2013 13:50:11 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Fan Rong <cinifr@gmail.com>
+Cc: coosty@163.com, daniel.lezcano@linaro.org, linux@arm.linux.org.uk,
+        tglx@linutronix.de, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, mark.rutland@arm.com, pawel.moll@arm.co,
+        rob.herring@calxeda.com, linux-sunxi@googlegroups.com
+Subject: Re: [PATCH 2/4] Add cpuconfig nodes in dts for smp configure.
+Message-ID: <20130914115011.GA2746@lukather>
+References: <1378968687-8200-1-git-send-email-cinifr@gmail.com>
+ <1378968687-8200-3-git-send-email-cinifr@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7yLcY/JGxB8a0rD4"
+Content-Disposition: inline
+In-Reply-To: <1378968687-8200-3-git-send-email-cinifr@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 14 Sep 2013 12:59:16 +0800
-Wang YanQing <udknight@gmail.com> wrote:
 
-> Actually, they both are correct:
-> 
-> 	default:
-> 		if (tr->allocated_snapshot) {
-> 			if (iter->cpu_file == RING_BUFFER_ALL_CPUS)
-> 				tracing_reset_online_cpus(&tr->max_buffer);
-> 			else
-> 				tracing_reset(&tr->max_buffer,	iter->cpu_file);
-> 		}
-> 		break;
-> 	}
-> 
-> It does nothing if it isn't allocated.
-> 
-> Perhaps we need it to say "(but does not allocate or free)"
-> 
-> -- Steve
-> 
-> Signed-off-by: Wang YanQing <udknight@gmail.com>
+--7yLcY/JGxB8a0rD4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Fan,
+
+On Thu, Sep 12, 2013 at 02:51:25PM +0800, Fan Rong wrote:
+> Signed-off-by: Fan Rong <cinifr@gmail.com>
 > ---
->  I think "Clears and frees" are reasonable, and
->  "Clears and allocates are not so reasonable, so
->  we don't need to say not allocate. But it is help 
->  information, so make it more clearer is also acceptable. :)
+>  arch/arm/boot/dts/sun7i-a20.dtsi |    9 +++++++--
+>  1 file changed, 7 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/arch/arm/boot/dts/sun7i-a20.dtsi b/arch/arm/boot/dts/sun7i-a=
+20.dtsi
+> index 999ff45..bfedcb2 100644
+> --- a/arch/arm/boot/dts/sun7i-a20.dtsi
+> +++ b/arch/arm/boot/dts/sun7i-a20.dtsi
+> @@ -20,13 +20,13 @@
+>  		#address-cells =3D <1>;
+>  		#size-cells =3D <0>;
+> =20
+> -		cpu@0 {
+> +		cpu0: cpu@0  {
+>  			compatible =3D "arm,cortex-a7";
+>  			device_type =3D "cpu";
+>  			reg =3D <0>;
+>  		};
+> =20
+> -		cpu@1 {
+> +		cpu1: cpu@1 {
 
-I'm getting ready to go to Linux Con / Linux Plumbers. I wont be able to
-get to this before, and may not be able to get to it while I'm there.
-As the original is technically correct, I'll put this into my 3.13
-queue.
+Both these changes don't seem really needed, are they?
+>  			compatible =3D "arm,cortex-a7";
+>  			device_type =3D "cpu";
+>  			reg =3D <1>;
+> @@ -167,6 +167,11 @@
+>  		#size-cells =3D <1>;
+>  		ranges;
+> =20
+> +		cc: cpuconfig@01c25c00 {
+> +			compatible =3D "allwinner,sun7i-cc";
 
-Thanks,
+Please use the sun7i-a20 prefix, and I'd prefer cpu-config instead of
+"cc".
 
--- Steve
+Thanks for working on this!
+Maxime
 
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
->  
->  kernel/trace/trace.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index 7974ba2..d5f7c4d 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -2760,7 +2760,7 @@ static void show_snapshot_main_help(struct seq_file *m)
->  	seq_printf(m, "# echo 0 > snapshot : Clears and frees snapshot buffer\n");
->  	seq_printf(m, "# echo 1 > snapshot : Allocates snapshot buffer, if not already allocated.\n");
->  	seq_printf(m, "#                      Takes a snapshot of the main buffer.\n");
-> -	seq_printf(m, "# echo 2 > snapshot : Clears snapshot buffer (but does not allocate)\n");
-> +	seq_printf(m, "# echo 2 > snapshot : Clears snapshot buffer (but does not allocate or free)\n");
->  	seq_printf(m, "#                      (Doesn't have to be '2' works with any number that\n");
->  	seq_printf(m, "#                       is not a '0' or '1')\n");
->  }
+--7yLcY/JGxB8a0rD4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSNE1zAAoJEBx+YmzsjxAgxmYQAKmbHN4RXXyHtzrfstxWohO8
+WXMLkzvcg9eeO02NVRqLphwP4sy26X6XH5pQ02mYmU0QEqTg8JGki/cc1zgpK4hD
+YWde618CH8B+s6v0+KmRB4wVEcmz1zZqHQsH/q4kF38ODmOWHG1sYsULgbtG8yr+
+cDBjd3ZrBEtnidw8lD16YEYrKgXNK+RlPC2VZHVIuR21eZMhYDZGGE/9SOA7ICVv
+gxKQKx0VWWYl5y7LqpjaZ/HbcGP7WCCp2PQuEh1Q7D68LKId1/RYsrqq3Xzy7rT6
+bZ0SKjME068jkNh+Xvzact7BM3yBcx1/98drK+oNsWljJpxTOr2/YZQwj8O/0SKD
+BWkK+Q/El/bkVscLahrTQ3Fj3ME2N7ZJWLid+USEmOUy39nydastQ1ailitD21qy
+WQPE3pxvdlyKz0wYUTA4cKiwCiXdlouaYgmc5MeUJVXeYjgtQypkasUeRNlpyjUm
+ixUISczHp/6lTtwwjp02iX48sfgsaOBaCJV7KADbVUM859pbv+eHu3XbFFmeJCCc
+IN5xTK8zQFtqJ9Slm5WlWchPpV6jtCw4oJI5cw51PEK77jgiKrAZAWBscTglH07x
+hTa1POSzWN/f5Ck/HVoITSW6Vi6X8cj/i5FFnCp5HXZIZaoDAi3w0NiyWtP6ypMr
+zau/fQDRnNV8ET6tc+/n
+=+NMs
+-----END PGP SIGNATURE-----
+
+--7yLcY/JGxB8a0rD4--
