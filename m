@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652Ab3INJdw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 05:33:52 -0400
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:46131 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752122Ab3INJdt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 05:33:49 -0400
-Date: Sat, 14 Sep 2013 11:33:43 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Russell King <rmk@arm.linux.org.uk>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Chris Mason <chris.mason@fusionio.com>, Mark Fasheh <mfasheh@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [GIT PULL] Btrfs
-Message-ID: <20130914093343.GA5094@osiris>
-References: <20130912153629.16487.88969@localhost.localdomain>
- <CA+5PVA5GogJnewWvdmVo03oZRZDerE=H7BR49Xi1DZQyE_CG4Q@mail.gmail.com>
- <CAMuHMdWgzQvKkASycHSzpTwi2c3qG+wn52YSr-=c8cDtro7NyQ@mail.gmail.com>
- <CA+5PVA6Hm6XLdJa=x9TmZnjSH160337i-CM2HGHBpQMf06Bv9w@mail.gmail.com>
- <20130913121529.GA1437@flint.arm.linux.org.uk>
- <CA+5PVA6Qon0cskv5wDyiCxSZzc2WjUFmzYmGE0zoNJC5ms1-XQ@mail.gmail.com>
- <CA+5PVA4NAmFnc3s6CaaDow9P3xLXOiEngHjQ_P5+TEG--LZ9ZQ@mail.gmail.com>
- <20130913155835.GA9697@flint.arm.linux.org.uk>
+	id S1753589Ab3INJes (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 05:34:48 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:53320 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752122Ab3INJeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Sep 2013 05:34:46 -0400
+Date: Sat, 14 Sep 2013 11:31:25 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: rjw@sisk.pl, linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Andrew Lunn <andrew@lunn.ch>
+Subject: Re: [PATCH 069/228] cpufreq: kirkwood: Use generic cpufreq routines
+Message-ID: <20130914093125.GE23705@lunn.ch>
+References: <cover.1379063063.git.viresh.kumar@linaro.org>
+ <c1cbe4428eb9708c437c9f63e661e6a82260b4cb.1379063063.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130913155835.GA9697@flint.arm.linux.org.uk>
+In-Reply-To: <c1cbe4428eb9708c437c9f63e661e6a82260b4cb.1379063063.git.viresh.kumar@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091409-3548-0000-0000-0000068B11E9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 13, 2013 at 04:58:36PM +0100, Russell King wrote:
-> On Fri, Sep 13, 2013 at 11:38:15AM -0400, Josh Boyer wrote:
-> > On Fri, Sep 13, 2013 at 11:06 AM, Josh Boyer <jwboyer@gmail.com> wrote:
-> > > On Fri, Sep 13, 2013 at 8:15 AM, Russell King <rmk@arm.linux.org.uk> wrote:
-> > >> On Fri, Sep 13, 2013 at 07:53:21AM -0400, Josh Boyer wrote:
-> > >>> I'm not an ARM expert, so I don't know if ARM should use the
-> > >>> asm-generic implementations, or just use __get_user/__put_user in all
-> > >>> cases.  I've CC'd rmk.
-> > >>
-> > >> Why do we have uaccess-unaligned.h ?  Normally, these kinds of things
-> > >> are spawned by architectures which have problems with unaligned accesses,
-> > >> ARM being one of them, but afaik we've never need this.
-> > >>
-> > >> With the kernel-side trapping of unaligned accesses on older hardware,
-> > >> we've always dealt with the normal accessor faulting.
-> > >>
-> > >> From what I can tell in the git history, these unaligned put_user and
-> > >> get_user have existed all the way back to the dawn of git use.
-> > >>
-> > >> Can someone enlighten me why we have them?
-> > 
-> > I somehow fail at email and dropped Russell from CC on accident.  Sigh.
+On Fri, Sep 13, 2013 at 06:30:15PM +0530, Viresh Kumar wrote:
+> Most of the CPUFreq drivers do similar things in .exit() and .verify() routines
+> and .attr. So its better if we have generic routines for them which can be used
+> by cpufreq drivers then.
 > 
-> You're not the first to do that recently.  I'm beginning to think it's
-> something someone has written into email clients to make them do in order
-> to piss me off.  I mean, it's _hard_ to do - you have to manually edit the
-> recipients list to just drop one person.
+> This patch uses these generic routines for this driver.
+> 
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  drivers/cpufreq/kirkwood-cpufreq.c | 22 +++-------------------
+>  1 file changed, 3 insertions(+), 19 deletions(-)
 
-You configured your mail client to generate a "Mail-Followup-To:" header
-field which actively asks other mail clients to remove you from replies.
-So you only get what you ask for... ;)
+Hi Viresh
 
-I think the mutt "metoo" variable will change that, but I don't know
-for sure.
+You can add:
 
+Tested-by: Andrew Lunn <andrew@lunn.ch>
+
+to
+
+[PATCH 069/228] cpufreq: kirkwood: Use generic cpufreq routines
+[PATCH 107/228] cpufreq: kirkwood: don't initialize part of policy that is set by core
+[PATCH 161/228] cpufreq: kirkwood: Convert to light weight ->target_index() routine
+[PATCH 195/228] cpufreq: kirkwood: remove calls to cpufreq_notify_transition()
+
+It does however require the patch:
+
+http://www.spinics.net/lists/arm-kernel/msg273378.html
+
+but this is not because of this patch series, it was already broken.
+
+Thanks
+	Andrew
