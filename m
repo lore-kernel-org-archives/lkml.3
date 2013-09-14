@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753298Ab3INHBX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 03:01:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54993 "EHLO
+	id S1753773Ab3INHB2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 03:01:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54995 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752859Ab3INHBV (ORCPT
+	with ESMTP id S1753335Ab3INHBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 03:01:21 -0400
-Date: Sat, 14 Sep 2013 00:00:59 -0700
-From: tip-bot for Stephane Eranian <tipbot@zytor.com>
-Message-ID: <tip-9d8e3f9693245415db0b7c58551a91fa9fd1f9c7@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de
-In-Reply-To: <20130913201646.GA23981@google.com>
-References: <20130913201646.GA23981@google.com>
+	Sat, 14 Sep 2013 03:01:24 -0400
+Date: Sat, 14 Sep 2013 00:01:08 -0700
+From: tip-bot for Mathias Nyman <tipbot@zytor.com>
+Message-ID: <tip-0f531431d3de88efb4234d6c0ce22089ec035a38@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        mika.westerberg@linux.intel.com, mathias.nyman@linux.intel.com,
+        rafael.j.wysocki@intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        mathias.nyman@linux.intel.com, mika.westerberg@linux.intel.com,
+        tglx@linutronix.de, rafael.j.wysocki@intel.com
+In-Reply-To: <1379080949-21734-1-git-send-email-mathias.nyman@linux.intel.com>
+References: <1379080949-21734-1-git-send-email-mathias.nyman@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] perf/x86/intel:
-  Mark MEM_LOAD_UOPS_MISS_RETIRED as precise on SNB
-Git-Commit-ID: 9d8e3f9693245415db0b7c58551a91fa9fd1f9c7
+Subject: [tip:x86/urgent] x86/intel/lpss:
+  Add pin control support to Intel low power subsystem
+Git-Commit-ID: 0f531431d3de88efb4234d6c0ce22089ec035a38
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,54 +30,53 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 14 Sep 2013 00:01:05 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 14 Sep 2013 00:01:14 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9d8e3f9693245415db0b7c58551a91fa9fd1f9c7
-Gitweb:     http://git.kernel.org/tip/9d8e3f9693245415db0b7c58551a91fa9fd1f9c7
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Fri, 13 Sep 2013 13:16:46 -0700
+Commit-ID:  0f531431d3de88efb4234d6c0ce22089ec035a38
+Gitweb:     http://git.kernel.org/tip/0f531431d3de88efb4234d6c0ce22089ec035a38
+Author:     Mathias Nyman <mathias.nyman@linux.intel.com>
+AuthorDate: Fri, 13 Sep 2013 17:02:29 +0300
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sat, 14 Sep 2013 08:00:18 +0200
+CommitDate: Sat, 14 Sep 2013 08:06:28 +0200
 
-perf/x86/intel: Mark MEM_LOAD_UOPS_MISS_RETIRED as precise on SNB
+x86/intel/lpss: Add pin control support to Intel low power subsystem
 
-On Intel SNB (SNB, SNB-EP), the event MEM_LOAD_UOPS_MISS_RETIRED
-supports PEBS. It was missing for the SNB PEBS event constraint
-table thereby preventing any measurement with PEBS for it.
+x86 chips with LPSS (low power subsystem) such as Lynxpoint and
+Baytrail have SoC like peripheral support and controllable pins.
 
-This patch adds the event to the PEBS table for SNB.
+At the moment, Baytrail needs the pinctrl-baytrail driver to let
+peripherals control their gpio resources, but more pincontrol
+functions such as pin muxing and grouping are possible to add
+later.
 
-WARNING: it should be noted that this event like a few others
-are subject to the erratum BT241 for Xeon E5 (SNB-EP). As such,
-the event may undercount when used with PEBS unless the
-workaround is implemented. But without this patch and just the
-workaround, the kernel would not allow precise sampling on this
-event. BT241 is documented in:
-
-  http://www.intel.com/content/dam/www/public/us/en/documents/specification-updates/xeon-e5-family-spec-update.pdf
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Cc: peterz@infradead.org
-Cc: ak@linux.intel.com
-Cc: zheng.z.yan@intel.com
-Link: http://lkml.kernel.org/r/20130913201646.GA23981@google.com
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Link: http://lkml.kernel.org/r/1379080949-21734-1-git-send-email-mathias.nyman@linux.intel.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/cpu/perf_event_intel_ds.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/Kconfig | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 3065c57..4ab70ac 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -558,6 +558,7 @@ struct event_constraint intel_snb_pebs_event_constraints[] = {
- 	INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
- 	INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
- 	INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0xd3, 0xf),    /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
- 	INTEL_UEVENT_CONSTRAINT(0x02d4, 0xf), /* MEM_LOAD_UOPS_MISC_RETIRED.LLC_MISS */
- 	EVENT_CONSTRAINT_END
- };
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index b32ebf9..4d5843d 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -482,11 +482,12 @@ config X86_INTEL_LPSS
+ 	bool "Intel Low Power Subsystem Support"
+ 	depends on ACPI
+ 	select COMMON_CLK
++	select PINCTRL
+ 	---help---
+ 	  Select to build support for Intel Low Power Subsystem such as
+ 	  found on Intel Lynxpoint PCH. Selecting this option enables
+-	  things like clock tree (common clock framework) which are needed
+-	  by the LPSS peripheral drivers.
++	  things like clock tree (common clock framework) and pincontrol
++	  which are needed by the LPSS peripheral drivers.
+ 
+ config X86_RDC321X
+ 	bool "RDC R-321x SoC"
