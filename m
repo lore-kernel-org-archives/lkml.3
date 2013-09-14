@@ -1,145 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932212Ab3INPlh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 11:41:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28404 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932084Ab3INPlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 11:41:35 -0400
-Date: Sat, 14 Sep 2013 23:39:52 +0800
-From: Dong Zhu <bluezhudong@gmail.com>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: Rob Landley <rob@landley.net>, netdev@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ptp: add the PTP_SYS_OFFSET ioctl to the testptp
- program clock
-Message-ID: <20130914153952.GD23682@zhudong.nay.redhat.com>
-References: <20130914080306.GC23682@zhudong.nay.redhat.com>
- <20130914143144.GA4206@netboy>
+	id S932219Ab3INPpg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 11:45:36 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:42574 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753343Ab3INPpf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Sep 2013 11:45:35 -0400
+Message-ID: <523492BB.5070004@kernel.org>
+Date: Sat, 14 Sep 2013 17:45:47 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130914143144.GA4206@netboy>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Lee Jones <lee.jones@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@linaro.org, denis.ciocca@st.com,
+        linux-iio@vger.kernel.org
+Subject: Re: [PATCH 18/38] iio: sensors-core: st: Allow full-scale to be an
+ optional feature
+References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org> <1378817379-8238-19-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1378817379-8238-19-git-send-email-lee.jones@linaro.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 14, 2013 at 04:31:46PM +0200, Richard Cochran wrote:
-> On Sat, Sep 14, 2013 at 04:03:06PM +0800, Dong Zhu wrote:
-> > This patch add a method into testptp.c to measure the time offset
-> > between phc and system clock through the ioctl PTP_SYS_OFFSET.
-> > 
+On 09/10/13 13:49, Lee Jones wrote:
+> Some chips either don't support it or fail to provide adequate documentation,
+> so sometimes it's impossible to enable the feature even if it is supported.
 > 
-> This is a nice addition to the testptp program. I do have a few
-> comments, below.
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Applied to the togreg branch of iio.git
+
+Thanks
+> ---
+>  drivers/iio/common/st_sensors/st_sensors_core.c | 11 +++++++----
+>  drivers/iio/pressure/st_pressure_core.c         |  6 ++++--
+>  2 files changed, 11 insertions(+), 6 deletions(-)
 > 
-
-Thanks very much for your comments, I have modified the patch as below,
-Cuold you have a look at it again ? Any comments would be appreciated.
-
->From 655b45785a85599d5fff5eb3b8d9b49b72f2991f Mon Sep 17 00:00:00 2001
-From: Dong Zhu <bluezhudong@gmail.com> 
-Date: Sat, 14 Sep 2013 23:32:14 +0800
-
-This patch add a method into testptp.c to measure the time offset
-between phc and system clock through the ioctl PTP_SYS_OFFSET.
-
-Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
----
- Documentation/ptp/testptp.c | 40 ++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 38 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/ptp/testptp.c b/Documentation/ptp/testptp.c
-index f59ded0..8acdc70 100644
---- a/Documentation/ptp/testptp.c
-+++ b/Documentation/ptp/testptp.c
-@@ -112,6 +112,8 @@ static void usage(char *progname)
- 		" -f val     adjust the ptp clock frequency by 'val' ppb\n"
- 		" -g         get the ptp clock time\n"
- 		" -h         prints this message\n"
-+		" -k val     measure the time offset between phc and system clock "
-+		"for 'val' times (Maximum 25)\n"
- 		" -p val     enable output with a period of 'val' nanoseconds\n"
- 		" -P val     enable or disable (val=1|0) the system clock PPS\n"
- 		" -s         set the ptp clock time from the system time\n"
-@@ -133,8 +135,12 @@ int main(int argc, char *argv[])
- 	struct itimerspec timeout;
- 	struct sigevent sigevent;
- 
-+	struct ptp_clock_time *pct;
-+	struct ptp_sys_offset *sysoff;
-+
-+
- 	char *progname;
--	int c, cnt, fd;
-+	int i, c, cnt, fd;
- 
- 	char *device = DEVICE;
- 	clockid_t clkid;
-@@ -144,6 +150,8 @@ int main(int argc, char *argv[])
- 	int extts = 0;
- 	int gettime = 0;
- 	int oneshot = 0;
-+	int offset = 0;
-+	int n_samples = 0;
- 	int periodic = 0;
- 	int perout = -1;
- 	int pps = -1;
-@@ -151,7 +159,7 @@ int main(int argc, char *argv[])
- 
- 	progname = strrchr(argv[0], '/');
- 	progname = progname ? 1+progname : argv[0];
--	while (EOF != (c = getopt(argc, argv, "a:A:cd:e:f:ghp:P:sSt:v"))) {
-+	while (EOF != (c = getopt(argc, argv, "a:A:cd:e:f:ghk:p:P:sSt:v"))) {
- 		switch (c) {
- 		case 'a':
- 			oneshot = atoi(optarg);
-@@ -174,6 +182,10 @@ int main(int argc, char *argv[])
- 		case 'g':
- 			gettime = 1;
- 			break;
-+		case 'k':
-+			offset = 1;
-+			n_samples = atoi(optarg);
-+			break;
- 		case 'p':
- 			perout = atoi(optarg);
- 			break;
-@@ -376,6 +388,30 @@ int main(int argc, char *argv[])
- 		}
- 	}
- 
-+	if (offset) {
-+		sysoff = calloc(1, sizeof(*sysoff));
-+		if (!sysoff) {
-+			perror("calloc");
-+			return -1;
-+		}
-+		sysoff->n_samples = n_samples;
-+
-+		if (ioctl(fd, PTP_SYS_OFFSET, sysoff))
-+			perror("PTP_SYS_OFFSET");
-+		else
-+			puts("phc and system clock time offset request okay");
-+
-+		pct = &sysoff->ts[0];
-+		for (i = 0; i < sysoff->n_samples; i++, pct++) {
-+			printf("system time: %ld.%ld\n", pct->sec, pct->nsec);
-+			pct++;
-+			printf("phc    time: %ld.%ld\n", pct->sec, pct->nsec);
-+		}
-+		printf("system time: %ld.%ld\n", pct->sec, pct->nsec);
-+
-+		free(sysoff);
-+	}
-+
- 	close(fd);
- 	return 0;
- }
--- 
-1.7.11.7
-
--- 
-Best Regards,
-Dong Zhu
+> diff --git a/drivers/iio/common/st_sensors/st_sensors_core.c b/drivers/iio/common/st_sensors/st_sensors_core.c
+> index 965ee22..eb261a5 100644
+> --- a/drivers/iio/common/st_sensors/st_sensors_core.c
+> +++ b/drivers/iio/common/st_sensors/st_sensors_core.c
+> @@ -235,10 +235,13 @@ int st_sensors_init_sensor(struct iio_dev *indio_dev,
+>  	if (err < 0)
+>  		goto init_error;
+>  
+> -	err = st_sensors_set_fullscale(indio_dev,
+> -						sdata->current_fullscale->num);
+> -	if (err < 0)
+> -		goto init_error;
+> +	if (sdata->current_fullscale) {
+> +		err = st_sensors_set_fullscale(indio_dev,
+> +					       sdata->current_fullscale->num);
+> +		if (err < 0)
+> +			goto init_error;
+> +	} else
+> +		dev_info(&indio_dev->dev, "Full-scale not possible\n");
+>  
+>  	err = st_sensors_set_odr(indio_dev, sdata->odr);
+>  	if (err < 0)
+> diff --git a/drivers/iio/pressure/st_pressure_core.c b/drivers/iio/pressure/st_pressure_core.c
+> index ceebd3c..16cfbc5 100644
+> --- a/drivers/iio/pressure/st_pressure_core.c
+> +++ b/drivers/iio/pressure/st_pressure_core.c
+> @@ -226,8 +226,10 @@ int st_press_common_probe(struct iio_dev *indio_dev,
+>  	indio_dev->channels = pdata->sensor->ch;
+>  	indio_dev->num_channels = ARRAY_SIZE(st_press_channels);
+>  
+> -	pdata->current_fullscale = (struct st_sensor_fullscale_avl *)
+> -						&pdata->sensor->fs.fs_avl[0];
+> +	if (pdata->sensor->fs.addr != 0)
+> +		pdata->current_fullscale = (struct st_sensor_fullscale_avl *)
+> +			&pdata->sensor->fs.fs_avl[0];
+> +
+>  	pdata->odr = pdata->sensor->odr.odr_avl[0].hz;
+>  
+>  	if (!plat_data)
+> 
