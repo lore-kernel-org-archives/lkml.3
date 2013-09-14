@@ -1,70 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756293Ab3INClS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Sep 2013 22:41:18 -0400
-Received: from imap.thunk.org ([74.207.234.97]:59968 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755938Ab3INClR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Sep 2013 22:41:17 -0400
-Date: Fri, 13 Sep 2013 22:41:08 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Marcus Sundman <marcus@hibox.fi>
-Cc: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Debugging system freezes on filesystem writes
-Message-ID: <20130914024108.GA10740@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Marcus Sundman <marcus@hibox.fi>, Jan Kara <jack@suse.cz>,
-	Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org
-References: <20130224012052.GC1196@thunk.org>
- <512D01E0.7010009@hibox.fi>
- <20130226231703.GA22674@quack.suse.cz>
- <5231BA3C.2090704@hibox.fi>
- <20130912131051.GA14664@quack.suse.cz>
- <5231C5FF.3060504@hibox.fi>
- <20130912143941.GB14664@quack.suse.cz>
- <5231D8DD.5010703@hibox.fi>
- <20130912163530.GD14664@quack.suse.cz>
- <523200EB.7000202@hibox.fi>
+	id S1756365Ab3INCnx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Sep 2013 22:43:53 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:27222 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756004Ab3INCnv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Sep 2013 22:43:51 -0400
+Message-ID: <5233CD2A.3010504@huawei.com>
+Date: Sat, 14 Sep 2013 10:42:50 +0800
+From: Jianguo Wu <wujianguo@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <523200EB.7000202@hibox.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Tang Chen <tangchen@cn.fujitsu.com>
+CC: <rjw@sisk.pl>, <lenb@kernel.org>, <tglx@linutronix.de>, <mingo@elte.hu>,
+        <hpa@zytor.com>, <akpm@linux-foundation.org>, <tj@kernel.org>,
+        <toshi.kani@hp.com>, <zhangyanfei@cn.fujitsu.com>,
+        <liwanp@linux.vnet.ibm.com>, <trenn@suse.de>, <yinghai@kernel.org>,
+        <jiang.liu@huawei.com>, <wency@cn.fujitsu.com>, <laijs@cn.fujitsu.com>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <izumi.taku@jp.fujitsu.com>,
+        <mgorman@suse.de>, <minchan@kernel.org>, <mina86@mina86.com>,
+        <gong.chen@linux.intel.com>, <vasilis.liaskovitis@profitbricks.com>,
+        <lwoodman@redhat.com>, <riel@redhat.com>, <jweiner@redhat.com>,
+        <prarit@redhat.com>, <x86@kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH v3 1/5] memblock: Introduce allocation direction to memblock.
+References: <1379064655-20874-1-git-send-email-tangchen@cn.fujitsu.com> <1379064655-20874-2-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1379064655-20874-2-git-send-email-tangchen@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.216]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 12, 2013 at 08:59:07PM +0300, Marcus Sundman wrote:
+Hi Tang,
+
+On 2013/9/13 17:30, Tang Chen wrote:
+
+> The Linux kernel cannot migrate pages used by the kernel. As a result, kernel
+> pages cannot be hot-removed. So we cannot allocate hotpluggable memory for
+> the kernel.
 > 
-> At 128 GB it is extremely small as it is, and I'm really struggling
-> to fit all on it. Most of my stuff is on my NAS (which has almost 10
-> TB space), but still I need several code repositories and the
-> development environment and a virtual machine etc on this tiny 128
-> GB thing.
+> ACPI SRAT (System Resource Affinity Table) contains the memory hotplug info.
+> But before SRAT is parsed, memblock has already started to allocate memory
+> for the kernel. So we need to prevent memblock from doing this.
 > 
-> So, if I used some other filesystem, might that allow me to use a
-> larger portion of the SSD without this degradation? Or with a much
-> slower rate of degradation?
+> In a memory hotplug system, any numa node the kernel resides in should
+> be unhotpluggable. And for a modern server, each node could have at least
+> 16GB memory. So memory around the kernel image is highly likely unhotpluggable.
+> 
+> So the basic idea is: Allocate memory from the end of the kernel image and
+> to the higher memory. Since memory allocation before SRAT is parsed won't
+> be too much, it could highly likely be in the same node with kernel image.
+> 
+> The current memblock can only allocate memory from high address to low.
+> So this patch introduces the allocation direct to memblock. It could be
+> used to tell memblock to allocate memory from high to low or from low
+> to high.
+> 
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> ---
+>  include/linux/memblock.h |   22 ++++++++++++++++++++++
+>  mm/memblock.c            |   13 +++++++++++++
+>  2 files changed, 35 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+> index 31e95ac..a7d3436 100644
+> --- a/include/linux/memblock.h
+> +++ b/include/linux/memblock.h
+> @@ -19,6 +19,11 @@
+>  
+>  #define INIT_MEMBLOCK_REGIONS	128
+>  
+> +/* Allocation order. */
 
-What model are you using?  It's possible that your flash device was
-designed as a cache driver for windows.  As such, it might have been
-optimized for a read-mostly workload and not something for a lot of
-random small writes.
+s/order/direction/
 
-The f2fs file system is designed for crappy flash drives with crappy
-FTL's, so it might work be better for you.  But let me ask you this
---- how much is your data worth?  How much would it cost to replace
-your flash device with something better?
+> +#define MEMBLOCK_DIRECTION_HIGH_TO_LOW	0
+> +#define MEMBLOCK_DIRECTION_LOW_TO_HIGH	1
+> +#define MEMBLOCK_DIRECTION_DEFAULT	MEMBLOCK_DIRECTION_HIGH_TO_LOW
+> +
+>  struct memblock_region {
+>  	phys_addr_t base;
+>  	phys_addr_t size;
+> @@ -35,6 +40,7 @@ struct memblock_type {
+>  };
+>  
+>  struct memblock {
+> +	int current_direction;      /* allocate from higher or lower address */
+>  	phys_addr_t current_limit;
+>  	struct memblock_type memory;
+>  	struct memblock_type reserved;
+> @@ -148,6 +154,12 @@ phys_addr_t memblock_alloc_try_nid(phys_addr_t size, phys_addr_t align, int nid)
+>  
+>  phys_addr_t memblock_alloc(phys_addr_t size, phys_addr_t align);
+>  
+> +static inline bool memblock_direction_bottom_up(void)
+> +{
+> +	return memblock.current_direction == MEMBLOCK_DIRECTION_LOW_TO_HIGH;
+> +}
+> +
+> +
+>  /* Flags for memblock_alloc_base() amd __memblock_alloc_base() */
+>  #define MEMBLOCK_ALLOC_ANYWHERE	(~(phys_addr_t)0)
+>  #define MEMBLOCK_ALLOC_ACCESSIBLE	0
+> @@ -175,6 +187,16 @@ static inline void memblock_dump_all(void)
+>  }
+>  
+>  /**
+> + * memblock_set_current_direction - Set current allocation direction to allow
+> + *                                  allocating memory from higher to lower
+> + *                                  address or from lower to higher address
+> + *
+> + * @direction: In which order to allocate memory. Could be
 
-I tend to get very nervous with crappy storage devices, and it sounds
-like your flash drive isn't a particularly good one.  I'd strongly
-suggest doing regular backups, because when flash devices die, they
-can die in extremely catastrphic ways.
+s/order/direction/
 
-Regards,
+> + *             MEMBLOCK_DIRECTION_{HIGH_TO_LOW|LOW_TO_HIGH}
+> + */
+> +void memblock_set_current_direction(int direction);
+> +
+> +/**
+>   * memblock_set_current_limit - Set the current allocation limit to allow
+>   *                         limiting allocations to what is currently
+>   *                         accessible during boot
+> diff --git a/mm/memblock.c b/mm/memblock.c
+> index 0ac412a..f24ca2e 100644
+> --- a/mm/memblock.c
+> +++ b/mm/memblock.c
+> @@ -32,6 +32,7 @@ struct memblock memblock __initdata_memblock = {
+>  	.reserved.cnt		= 1,	/* empty dummy entry */
+>  	.reserved.max		= INIT_MEMBLOCK_REGIONS,
+>  
+> +	.current_direction	= MEMBLOCK_DIRECTION_DEFAULT,
+>  	.current_limit		= MEMBLOCK_ALLOC_ANYWHERE,
+>  };
+>  
+> @@ -995,6 +996,18 @@ void __init_memblock memblock_trim_memory(phys_addr_t align)
+>  	}
+>  }
+>  
+> +void __init_memblock memblock_set_current_direction(int direction)
+> +{
+> +	if (direction != MEMBLOCK_DIRECTION_HIGH_TO_LOW &&
+> +	    direction != MEMBLOCK_DIRECTION_LOW_TO_HIGH) {
+> +		pr_warn("memblock: Failed to set allocation order. "
+> +			"Invalid order type: %d\n", direction);
 
-						- Ted
+s/order/direction/
+
+> +		return;
+> +	}
+> +
+> +	memblock.current_direction = direction;
+> +}
+> +
+>  void __init_memblock memblock_set_current_limit(phys_addr_t limit)
+>  {
+>  	memblock.current_limit = limit;
+
+
+
