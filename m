@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895Ab3INES7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 00:18:59 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:61945 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800Ab3INES5 (ORCPT
+	id S1751978Ab3INE3W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 00:29:22 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:55034 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751763Ab3INE3R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 00:18:57 -0400
-Message-ID: <5233E393.5090109@huawei.com>
-Date: Sat, 14 Sep 2013 12:18:27 +0800
-From: Xie XiuQi <xiexiuqi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Sat, 14 Sep 2013 00:29:17 -0400
 MIME-Version: 1.0
-To: Doug Thompson <dougthompson@xmission.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 5/5] i7core_edac: remove .c suffix from the mod name
-References: <5233E216.3030506@huawei.com>
-In-Reply-To: <5233E216.3030506@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.69.18]
-X-CFilter-Loop: Reflected
+In-Reply-To: <10372288.T6XyLE5FeS@vostro.rjw.lan>
+References: <cover.1379062834.git.viresh.kumar@linaro.org>
+	<10372288.T6XyLE5FeS@vostro.rjw.lan>
+Date: Sat, 14 Sep 2013 09:59:15 +0530
+Message-ID: <CAKohponbmEDmq3c85h=oSNKTfy+BcS0SLVdGp42osOrGQJha9g@mail.gmail.com>
+Subject: Re: [PATCH 0/2] cpufreq: fix transition_ongoing count for powernow-k8
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I found i7core_edac driver used 'xxx_edac.c' as mod name,
-but others used 'xxx_edac'. So remove .c suffix.
+On 14 September 2013 05:12, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Friday, September 13, 2013 06:29:37 PM Viresh Kumar wrote:
+>> This has been running in my mind since few days... That we have fixed cpufreq
+>> core and all other drivers for transition serialization but what about
+>> powernow-k8? It is somewhat special (even more than exynos5440).. It queues a
+>> work from ->target() and may or maynot send notifications at all..
+>>
+>> Finally I have got a solution now (detailed logs in the patch)..
+>> These must go with following patchset:
+>
+> The "must go" here is a totally wrong way of speaking about things, because I'm
+> not sure I'll take this patch series yet.
+>
+>> https://lkml.org/lkml/2013/9/12/173
 
-Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
----
- drivers/edac/i7core_edac.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+The "must go" was about keeping all four patches together, rather than
+forcing you to take them all..
 
-diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
-index 80a963d..92f24e9 100644
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -2233,7 +2233,7 @@ static int i7core_register_mci(struct i7core_dev *i7core_dev)
- 	mci->mtype_cap = MEM_FLAG_DDR3;
- 	mci->edac_ctl_cap = EDAC_FLAG_NONE;
- 	mci->edac_cap = EDAC_FLAG_NONE;
--	mci->mod_name = "i7core_edac.c";
-+	mci->mod_name = EDAC_MOD_STR;
- 	mci->mod_ver = I7CORE_REVISION;
- 	mci->ctl_name = kasprintf(GFP_KERNEL, "i7 core #%d",
- 				  i7core_dev->socket);
--- 
-1.8.2.2
-
-
+Sorry for the confusion..
