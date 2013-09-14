@@ -1,130 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932336Ab3INRZt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 13:25:49 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:65484 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932223Ab3INRZs (ORCPT
+	id S1756750Ab3INSOf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 14:14:35 -0400
+Received: from mo5.mail-out.ovh.net ([178.32.228.5]:36425 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754179Ab3INSOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 13:25:48 -0400
-Message-ID: <52349C14.2070508@gmail.com>
-Date: Sat, 14 Sep 2013 11:25:40 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Sat, 14 Sep 2013 14:14:34 -0400
+Date: Sat, 14 Sep 2013 18:55:25 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Boris BREZILLON <b.brezillon@overkiz.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Richard Genoud <richard.genoud@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-doc@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [RFC PATCH 3/4] pinctrl: at91: improve pinconf_set/get function
+ robustness
+Message-ID: <20130914165525.GE11420@ns203013.ovh.net>
+References: <1379058213-3245-1-git-send-email-b.brezillon@overkiz.com>
+ <1379058549-3413-1-git-send-email-b.brezillon@overkiz.com>
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH] perf session: Add option to copy events when queueing
-References: <1378496221-61525-1-git-send-email-dsahern@gmail.com> <20130914161626.GD1718@localhost.localdomain>
-In-Reply-To: <20130914161626.GD1718@localhost.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379058549-3413-1-git-send-email-b.brezillon@overkiz.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Ovh-Tracer-Id: 10719974488958413689
+X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrleehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrleehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/14/13 10:16 AM, Frederic Weisbecker wrote:
->> @@ -676,7 +682,12 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
->>
->>   	new->timestamp = timestamp;
->>   	new->file_offset = file_offset;
->> -	new->event = event;
->> +
->> +	if (s->copy_on_queue) {
->> +		new->event = malloc(event->header.size);
->> +		memcpy(new->event, event, event->header.size);
->> +	} else
->> +		new->event = event;
+On 09:49 Fri 13 Sep     , Boris BREZILLON wrote:
+> Reset caller's config variable before setting current config flags to avoid
+> erronous config return.
+> 
+> DEBOUNCE and DEGLITCH options are mutually exclusive. Return an error if they
+> are both defined in the config.
+> Do not call set_deglitch if DEBOUNCE is enabled to avoid reseting the IFSR
+> register (which will result in disabling the debounce filter).
+> 
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> ---
+>  drivers/pinctrl/pinctrl-at91.c |   18 +++++++++++++-----
+>  1 file changed, 13 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
+> index 6624bce..ac9dbea 100644
+> --- a/drivers/pinctrl/pinctrl-at91.c
+> +++ b/drivers/pinctrl/pinctrl-at91.c
+> @@ -724,6 +724,7 @@ static int at91_pinconf_get(struct pinctrl_dev *pctldev,
+>  	dev_dbg(info->dev, "%s:%d, pin_id=%d, config=0x%lx", __func__, __LINE__, pin_id, *config);
+>  	pio = pin_to_controller(info, pin_to_bank(pin_id));
+>  	pin = pin_id % MAX_NB_GPIO_PER_BANK;
+> +	*config = 0;
+>  
+>  	if (at91_mux_get_multidrive(pio, pin))
+>  		*config |= MULTI_DRIVE;
+> @@ -757,13 +758,20 @@ static int at91_pinconf_set(struct pinctrl_dev *pctldev,
+>  	if (config & PULL_UP && config & PULL_DOWN)
+>  		return -EINVAL;
+>  
+> -	at91_mux_set_pullup(pio, mask, config & PULL_UP);
+> -	at91_mux_set_multidrive(pio, mask, config & MULTI_DRIVE);
+> -	if (info->ops->set_deglitch)
+> -		info->ops->set_deglitch(pio, mask, config & DEGLITCH);
+> -	if (info->ops->set_debounce)
+> +	if (config & DEBOUNCE && config & DEGLITCH)
+> +		return -EINVAL;
+here ok
+> +
+> +	if (config & DEBOUNCE) {
+> +		if (!info->ops->set_debounce)
+> +			return -ENOTSUPP;
+a warning is better here than an error
+> +
+>  		info->ops->set_debounce(pio, mask, config & DEBOUNCE,
+>  				(config & DEBOUNCE_VAL) >> DEBOUNCE_VAL_SHIFT);
+> +	} else if (info->ops->set_deglitch)
+> +		info->ops->set_deglitch(pio, mask, config & DEGLITCH);
+> +
 
----8<---
 
-> So do you think it should stay optional? This looks like a global problem, I mean
-> the event can be unmapped anytime for any builtin tool mapping it, right?
+> +	at91_mux_set_pullup(pio, mask, config & PULL_UP);
+> +	at91_mux_set_multidrive(pio, mask, config & MULTI_DRIVE);
 
-Yes. I could make it the default behavior; just overhead in doing that 
-(malloc/copy for each event).
-
->
-> Also we already allocate the sample list node (struct sample_queue) from os->sample
-> buffer. ie: we have our own allocator there.
->
-> Probably we should reuse that and include the copied event space in "struct sample_queue"?
-
-
-Right, that's where I put the malloc and copy - I kept the relevant 
-change above. I take it you are thinking of something different but I am 
-not following you. You definitely do NOT want to change struct 
-sample_queue to include an event - like this:
-
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 51f5edf..866944a 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -491,7 +491,7 @@ static perf_event__swap_op perf_event__swap_ops[] = {
-  struct sample_queue {
-     u64         timestamp;
-     u64         file_offset;
--   union perf_event    *event;
-+   union perf_event    event;
-     struct list_head    list;
-  };
-
-size of event is determined by mmap_event (mmap2_event in latest code) 
-which is > 4096 because of the filename argument. Including the event 
-directly in sample_queue would balloon memory usage (learned this the 
-hard way!).
-
->
-> Also looking at it now, it seems we have a bug on the existing code:
->
->
->          if (!list_empty(sc)) {
->                  new = list_entry(sc->next, struct sample_queue, list);
->                  list_del(&new->list);
->          } else if (os->sample_buffer) {
->                  new = os->sample_buffer + os->sample_buffer_idx;
->                  if (++os->sample_buffer_idx == MAX_SAMPLE_BUFFER)
->                          os->sample_buffer = NULL;
->          } else {
->                 os->sample_buffer = malloc(MAX_SAMPLE_BUFFER * sizeof(*new));
->                 if (!os->sample_buffer)
->                          return -ENOMEM;
->                 list_add(&os->sample_buffer->list, &os->to_free);
->                 os->sample_buffer_idx = 2;
->                 new = os->sample_buffer + 1;
->          }
->
-> If we actually run out of buffer rooms, we should realloc right after and not
-> wait for the next entry, otherwise we loose an event:
->
->          if (!list_empty(sc)) {
->                  new = list_entry(sc->next, struct sample_queue, list);
->                  list_del(&new->list);
->          } else {
->                  if (os->sample_buffer) {
->                          new = os->sample_buffer + os->sample_buffer_idx;
->                          if (++os->sample_buffer_idx == MAX_SAMPLE_BUFFER)
->                                  os->sample_buffer = NULL;
->                  }
->
->                  if (!os->sample_buffer) {
-> 	                os->sample_buffer = malloc(MAX_SAMPLE_BUFFER * sizeof(*new));
->                          if (!os->sample_buffer)
->                                  return -ENOMEM;
->                          list_add(&os->sample_buffer->list, &os->to_free);
->                          os->sample_buffer_idx = 2;
->                          new = os->sample_buffer + 1;
->          }
->
->
-> Although the mirrored os->sample_buffer condition check is a bit ugly and should move to
-> a function. But the idea is there.
-
-Ok. That should be a separate patch. Are you going to submit that one?
-
-David
-
+>  	if (info->ops->set_pulldown)
+>  		info->ops->set_pulldown(pio, mask, config & PULL_DOWN);
+>  	if (info->ops->disable_schmitt_trig && config & DIS_SCHMIT)
+> -- 
+> 1.7.9.5
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
