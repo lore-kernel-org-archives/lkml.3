@@ -1,95 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932116Ab3INOVK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 10:21:10 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:34562 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756510Ab3INOVI (ORCPT
+	id S932128Ab3INOcK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 10:32:10 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:49848 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756510Ab3INOcH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 10:21:08 -0400
+	Sat, 14 Sep 2013 10:32:07 -0400
+Date: Sat, 14 Sep 2013 16:31:46 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Dong Zhu <bluezhudong@gmail.com>
+Cc: Rob Landley <rob@landley.net>, netdev@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ptp: measure the time offset between PHC and system clock
+Message-ID: <20130914143144.GA4206@netboy>
+References: <20130914080306.GC23682@zhudong.nay.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+icZUUkJgeUaJmNzAZQysV9dUHzwPzU7k3pn8vrThSD780xaQ@mail.gmail.com>
-References: <CA+icZUUkJgeUaJmNzAZQysV9dUHzwPzU7k3pn8vrThSD780xaQ@mail.gmail.com>
-Date: Sat, 14 Sep 2013 16:21:05 +0200
-Message-ID: <CACW0xKV-jh2Zfz1-s0xX-NxYBixEF8Hf90jEbo0oouFE18CdyQ@mail.gmail.com>
-Subject: Re: scripts/config: fix variable substitution command
-From: =?ISO-8859-1?Q?Cl=E9ment_Chauplannaz?= <chauplac@gmail.com>
-To: sedat.dilek@gmail.com
-Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130914080306.GC23682@zhudong.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/9/14 Sedat Dilek <sedat.dilek@gmail.com>:
-> Hi,
->
-> The ChangeLog from [1] says:
->
-> Commit 229455bc02b87f7128f190c4491b4ceffff38648 accidentally changed
-> the separator between sed `s' command and its parameters from ':' to
-> '/'.
-> Revert this change.
->
-> Reported-and-tested-by: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Clement Chauplannaz <chauplac@gmail.com>
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
->
-> *** Bad commit reference: 229455bc02b87f7128f190c4491b4ceffff38648 ***
-> (Linus-tree)
->
-> To quote [2] and see its EXAMPLE:
->
-> "If you want to refer to a specific commit, don't just refer to the
-> SHA-1 ID of the commit. Please also include the oneline summary of
-> the commit, to make it easier for reviewers to know what it is about.
->
-> Example:
->
-> Commit e21d2170f36602ae2708 ("video: remove unnecessary
-> platform_set_drvdata()") removed the unnecessary
-> platform_set_drvdata(), but left the variable "dev" unused,
-> delete it."
->
-> That's why the commit-id without the subject-line is no good help.
-> It does not help anyone when you reference a local GIT or linux-kbuild
-> GIT related commit-id.
->
-> So, can you point me/us to the correct commit with subject, please?!
-> Is this patch even "CC: stable"?
->
-> Thanks.
->
-> Regards,
-> - Sedat -
->
->
-> [1] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=86eb781889ec31f6421b86ab252ea609d456322d
-> [2] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/SubmittingPatches#n112
+On Sat, Sep 14, 2013 at 04:03:06PM +0800, Dong Zhu wrote:
+> This patch add a method into testptp.c to measure the time offset
+> between phc and system clock through the ioctl PTP_SYS_OFFSET.
+> 
 
+This is a nice addition to the testptp program. I do have a few
+comments, below.
 
-Hi Sedat,
+First off, the subject line should mention testptp. How about this?
 
-My apologies for that mistake. The initial commit, as present in Linus tree, is:
-83e8b90e1d2cc5ff5d2443f2486c2d786a4997ce - scripts/config: use sed's
-POSIX interface
+    [PATCH] ptp: add the PTP_SYS_OFFSET ioctl to the testptp program
 
-Thus, the commit message for this patch should read:
-scripts/config: fix variable substitution command
+> Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
+> ---
+>  Documentation/ptp/testptp.c | 40 ++++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 38 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/ptp/testptp.c b/Documentation/ptp/testptp.c
+> index f59ded0..72bb030 100644
+> --- a/Documentation/ptp/testptp.c
+> +++ b/Documentation/ptp/testptp.c
+> @@ -112,6 +112,7 @@ static void usage(char *progname)
+>  		" -f val     adjust the ptp clock frequency by 'val' ppb\n"
+>  		" -g         get the ptp clock time\n"
+>  		" -h         prints this message\n"
+> +		" -k val     measure the time offset between PHC and system clock\n"
 
-Commit 83e8b90e1d2cc5ff5d2443f2486c2d786a4997ce ("scripts/config: use sed's
-POSIX interface") accidentally changed the separator between sed `s' command
-and its parameters from ':' to '/'.
+The help message should tell the user what 'val' is.
 
-Revert this change.
+>  		" -p val     enable output with a period of 'val' nanoseconds\n"
+>  		" -P val     enable or disable (val=1|0) the system clock PPS\n"
+>  		" -s         set the ptp clock time from the system time\n"
+> @@ -133,8 +134,12 @@ int main(int argc, char *argv[])
+>  	struct itimerspec timeout;
+>  	struct sigevent sigevent;
+>  
+> +	struct ptp_clock_time *pct;
+> +	struct ptp_sys_offset *sysoff;
+> +
+> +
+>  	char *progname;
+> -	int c, cnt, fd;
+> +	int i, c, cnt, fd;
+>  
+>  	char *device = DEVICE;
+>  	clockid_t clkid;
+> @@ -144,6 +149,8 @@ int main(int argc, char *argv[])
+>  	int extts = 0;
+>  	int gettime = 0;
+>  	int oneshot = 0;
+> +	int offset = 0;
+> +	int n_samples = 0;
+>  	int periodic = 0;
+>  	int perout = -1;
+>  	int pps = -1;
+> @@ -151,7 +158,7 @@ int main(int argc, char *argv[])
+>  
+>  	progname = strrchr(argv[0], '/');
+>  	progname = progname ? 1+progname : argv[0];
+> -	while (EOF != (c = getopt(argc, argv, "a:A:cd:e:f:ghp:P:sSt:v"))) {
+> +	while (EOF != (c = getopt(argc, argv, "a:A:cd:e:f:ghk:p:P:sSt:v"))) {
+>  		switch (c) {
+>  		case 'a':
+>  			oneshot = atoi(optarg);
+> @@ -174,6 +181,10 @@ int main(int argc, char *argv[])
+>  		case 'g':
+>  			gettime = 1;
+>  			break;
+> +		case 'k':
+> +			offset = 1;
+> +			n_samples = atoi(optarg);
+> +			break;
+>  		case 'p':
+>  			perout = atoi(optarg);
+>  			break;
+> @@ -376,6 +387,31 @@ int main(int argc, char *argv[])
+>  		}
+>  	}
+>  
+> +	if (offset) {
+> +		sysoff = calloc(1, sizeof(*sysoff));
+> +		if (!sysoff) {
+> +			perror("calloc");
+> +			return -1;
+> +		}
+> +		sysoff->n_samples = n_samples;
+> +
+> +		if (ioctl(fd, PTP_SYS_OFFSET, sysoff))
+> +			perror("PTP_SYS_OFFSET");
+> +		else
+> +			puts("time offset between PHC and
+> +					 system clock request okay");
+> +
+> +		pct = &sysoff->ts[0];
+> +		for (i = 0; i < sysoff->n_samples; i++, pct++) {
+> +			printf("system time: %ld.%ld\n", pct->sec, pct->nsec);
+> +			pct++;
+> +			printf("phc    time: %ld.%ld\n\n", pct->sec, pct->nsec);
+                                                    ^^^^
+I think the output would look nicer with only one newline. After all,
+each measurement is a {sys,phc,sys} triplet and not a {sys,phc} pair.
 
-Reported-and-tested-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Clement Chauplannaz <chauplac@gmail.com>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+> +		}
+> +		printf("system time: %ld.%ld\n", pct->sec, pct->nsec);
+> +
+> +		free(sysoff);
+> +	}
+> +
 
-
-Regards,
-Clement
+Thanks,
+Richard
