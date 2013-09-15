@@ -1,44 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982Ab3IOIZT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 04:25:19 -0400
-Received: from admin.maxareality.sk ([109.74.145.15]:56047 "EHLO
-	admin.maxareality.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753250Ab3IOIZN (ORCPT
+	id S1754275Ab3IOIs3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 04:48:29 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:37519 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753250Ab3IOIs0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 04:25:13 -0400
+	Sun, 15 Sep 2013 04:48:26 -0400
+Date: Sun, 15 Sep 2013 10:48:12 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Dong Zhu <bluezhudong@gmail.com>
+Cc: Rob Landley <rob@landley.net>, netdev@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ptp: add the PTP_SYS_OFFSET ioctl to the testptp program
+ clock
+Message-ID: <20130915084811.GA10163@netboy>
+References: <20130914080306.GC23682@zhudong.nay.redhat.com>
+ <20130914143144.GA4206@netboy>
+ <20130914153952.GD23682@zhudong.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Date: Sun, 15 Sep 2013 10:21:40 +0200
-From: WEBMAIL UPDATE 2013 <info@maxareality.sk>
-To: undisclosed-recipients:;
-Subject: =?UTF-8?Q?V=C3=A1=C5=BEen=C3=AD=20E-mail=20u=C5=BE=C3=ADvate=C4=BEa=3B?=
-Message-ID: <7e981f3e117212bee9b27a727607a2e9@127.0.0.1>
-User-Agent: RoundCube Webmail/0.3.1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130914153952.GD23682@zhudong.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Sep 14, 2013 at 11:39:52PM +0800, Dong Zhu wrote:
+> On Sat, Sep 14, 2013 at 04:31:46PM +0200, Richard Cochran wrote:
+> > On Sat, Sep 14, 2013 at 04:03:06PM +0800, Dong Zhu wrote:
+> > > This patch add a method into testptp.c to measure the time offset
+> > > between phc and system clock through the ioctl PTP_SYS_OFFSET.
+> > > 
+> > 
+> > This is a nice addition to the testptp program. I do have a few
+> > comments, below.
+> > 
+> 
+> Thanks very much for your comments, I have modified the patch as below,
+> Cuold you have a look at it again ? Any comments would be appreciated.
 
+It looks better, but could you please tweak a few more things?
 
--- 
-Vážení E-mail užívateľa;
+> Subject: Re: [PATCH] ptp: add the PTP_SYS_OFFSET ioctl to the testptp program clock
 
-Prekročili ste 23432 boxy nastaviť svoje
-Webová služba / Administrátor, a budete mať problémy pri odosielaní a
-prijímať e-maily, kým znova overiť. Musíte aktualizovať kliknutím na
-odkaz nižšie a vyplňte údaje pre overenie vášho účtu
-Prosím, kliknite na odkaz nižšie alebo skopírovať vložiť do
-e-prehliadač pre overenie Schránky.
+The subject line has the word "clock" at the end by mistake.
+ 
+...
 
-http://webmailupdate1022021.jimdo.com/
+> diff --git a/Documentation/ptp/testptp.c b/Documentation/ptp/testptp.c
+> index f59ded0..8acdc70 100644
+> --- a/Documentation/ptp/testptp.c
+> +++ b/Documentation/ptp/testptp.c
+> @@ -112,6 +112,8 @@ static void usage(char *progname)
+>  		" -f val     adjust the ptp clock frequency by 'val' ppb\n"
+>  		" -g         get the ptp clock time\n"
+>  		" -h         prints this message\n"
+> +		" -k val     measure the time offset between phc and system clock "
+> +		"for 'val' times (Maximum 25)\n"
 
-Pozor!
-Ak tak neurobíte, budú mať obmedzený prístup k e-mailu schránky. Ak
-sa
-nepodarí aktualizovať svoj účet do troch dní od aktualizácie
-oznámenia,
-bude váš účet natrvalo uzavretá.
-S pozdravom,
-System Administrator ®
+This line is getting a bit too long for the terminal. Please line up
+the text, like this:
+
+		" -k val     measure the time offset between phc and system clock\n"
+		"            for 'val' times (Maximum 25)\n"
+
+Also, when you resubmit the patch, add "net-next" and a patch version,
+like this: [PATCH net-next v3].
+
+Thanks,
+Richard
