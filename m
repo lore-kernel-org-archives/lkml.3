@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932542Ab3IORlP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 13:41:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48188 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932187Ab3IORlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 13:41:14 -0400
-Date: Sun, 15 Sep 2013 19:34:56 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: viro@zeniv.linux.org.uk, rostedt@goodmis.org, fweisbec@gmail.com,
-        mingo@redhat.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kmod: Check for NULL at call_usermodehelper_exec().
-Message-ID: <20130915173456.GA16204@redhat.com>
-References: <201309150910.CCE73459.VMOFtJFLSHOQFO@I-love.SAKURA.ne.jp> <201309152323.GDG73435.VLOQFHOJtOFFSM@I-love.SAKURA.ne.jp> <20130915163157.GB13344@redhat.com> <201309160202.FBC60981.FQOHSLFMFtOJVO@I-love.SAKURA.ne.jp> <20130915171549.GA15346@redhat.com> <201309160226.DGH90134.QLSFtOJOOMFHVF@I-love.SAKURA.ne.jp>
+	id S1753522Ab3IORuJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 13:50:09 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:40834 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071Ab3IORuH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Sep 2013 13:50:07 -0400
+X-Originating-IP: 83.160.107.163
+Date: Sun, 15 Sep 2013 19:50:00 +0200
+From: Matthias Kaehlcke <matthias.list@kaehlcke.net>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Felipe Balbi <balbi@ti.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] iio: ti_am335x_adc: Take touchscreen channels into
+ account for conversion timeout
+Message-ID: <20130915175000.GA24058@raspi>
+Mail-Followup-To: Matthias Kaehlcke <matthias.list@kaehlcke.net>,
+	Jonathan Cameron <jic23@kernel.org>,
+	Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+	Felipe Balbi <balbi@ti.com>,
+	Pantelis Antoniou <panto@antoniou-consulting.com>,
+	linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <f1830a7d0debce351966d2f3232158313d87dcc0.1378846446.git.matthias@kaehlcke.net>
+ <20130910210228.GC30481@raspi>
+ <5235DD9A.5040700@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201309160226.DGH90134.QLSFtOJOOMFHVF@I-love.SAKURA.ne.jp>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <5235DD9A.5040700@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Argh...
+Hi Jonathan,
 
-Tetsuo, I am sorry. Not only I am stupid, I managed to confuse you.
+thanks for your comments
 
-On 09/16, Tetsuo Handa wrote:
->
-> Acked-by: Oleg Nesterov <oleg@redhat.com>
+El Sun, Sep 15, 2013 at 05:17:30PM +0100 Jonathan Cameron ha dit:
 
-I tried to ack you previous version which I wrongly blamed ;)
+> On 09/10/13 22:02, Matthias Kaehlcke wrote:
+> > The calculation of the old conversion timeout value was based on the number of
+> > channels used by this driver. This doesn't take into account that other channels
+> > can be used by the touchscreen driver. Adjust the timeout value to the maximum
+> > if the touchscreen driver is enabled
+> > 
+> > Signed-off-by: Matthias Kaehlcke <matthias@kaehlcke.net>
+> Hmm... This is a bit of an uggly solution.  Can we do anything neater via some
+> callbacks in the underlying mfd?
 
-However, I agree with this version as well. Feel free to use
-either one, you have my ack in any case.
+i agree, it isn't a very elegant solution. as it's a max timeout which
+should never be hit i thought it might be good enough. using a
+callback in the mfd is feasible, the mfd has information about the
+number of steps used by the touchscreen driver. i'll send a reworked
+version soon
 
-Sorry to all for noise and confusion.
+thanks
 
-> ---
->  kernel/kmod.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/kmod.c b/kernel/kmod.c
-> index fb32636..a962470 100644
-> --- a/kernel/kmod.c
-> +++ b/kernel/kmod.c
-> @@ -571,6 +571,10 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
->  	DECLARE_COMPLETION_ONSTACK(done);
->  	int retval = 0;
->  
-> +	if (!sub_info->path) {
-> +		call_usermodehelper_freeinfo(sub_info);
-> +		return -ENOENT;
-> +	}
->  	helper_lock();
->  	if (!khelper_wq || usermodehelper_disabled) {
->  		retval = -EBUSY;
-> -- 
-> 1.7.1
+-- 
+Matthias Kaehlcke
+Embedded Linux Developer
+Amsterdam
 
+             "The only important thing Windows does better
+            than Debian is implementing the win32 platform"
+                                                                 .''`.
+    using free software / Debian GNU/Linux | http://debian.org  : :'  :
+                                                                `. `'`
+gpg --keyserver pgp.mit.edu --recv-keys 47D8E5D4                  `-
