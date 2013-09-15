@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756914Ab3IOA57 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 20:57:59 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:51751 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932507Ab3IOA5y (ORCPT
+	id S932694Ab3IOA6K (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 20:58:10 -0400
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:62015 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756928Ab3IOA6E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 20:57:54 -0400
+	Sat, 14 Sep 2013 20:58:04 -0400
 From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
@@ -24,10 +24,10 @@ Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>,
         "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
         Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "Lee, Chun-Yi" <jlee@suse.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH V4 08/15] Hibernate: introduced RSA key-pair to verify signature of snapshot
-Date: Sun, 15 Sep 2013 08:56:54 +0800
-Message-Id: <1379206621-18639-9-git-send-email-jlee@suse.com>
+        "Lee, Chun-Yi" <jlee@suse.com>
+Subject: [PATCH V4 09/15] Hibernate: generate and verify signature of snapshot
+Date: Sun, 15 Sep 2013 08:56:55 +0800
+Message-Id: <1379206621-18639-10-git-send-email-jlee@suse.com>
 X-Mailer: git-send-email 1.6.0.2
 In-Reply-To: <1379206621-18639-1-git-send-email-jlee@suse.com>
 References: <1379206621-18639-1-git-send-email-jlee@suse.com>
@@ -35,743 +35,511 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduced a hibernate_key.c file to query the key pair from EFI variables
-and maintain key pair for check signature of S4 snapshot image. We
-loaded the private key when snapshot image stored success.
+This patch add the code for generate/verify signature of snapshot, it
+put the signature to snapshot header. This approach can support both
+on userspace hibernate and in-kernel hibernate.
 
-This patch introduced 2 EFI variables for store the key to sign S4 image and
-verify signature when S4 wake up. The names and GUID are:
-  S4SignKey-fe141863-c070-478e-b8a3-878a5dc9ef21	[BOOT SERVICES][NV]
-  S4WakeKey-fe141863-c070-478e-b8a3-878a5dc9ef21	[RUNTIME SERVICES][V]
+v3:
+- Change the naming of SIG_LENG to SIG_LEN
+- Extracts the code of signature generation code from copy_data_pages() to
+  swsusp_generate_signature(), call it in swsusp_save() after copy_data_pages()
+  finished.
+- Change the naming of h_buf to handle_buffers.
+- Removed duplicate code in snapshot_verify_signature() and
+  snapshot_image_verify().
+- Merged [PATCH 14/18]
+  Hibernate: applied SNAPSHOT_VERIFICATION config to switch signature check
 
-S4SignKey is used by EFI bootloader to pass the RSA private key that packaged
-by PKCS#8 format, kernel will read and parser it when system boot and reload
-it when S4 resume. EFI bootloader need gnerate a new private key when every
-time system boot.
-
-S4WakeKey is used to parse the RSA public key that packaged by X.509
-certificate, kernel will read and parse it for check the signature of
-S4 snapshot image when S4 resume.
-
-The follow-up patch will remove S4SignKey and S4WakeKey after load them
-to kernel for avoid anyone can access it through efivarfs.
-
-V4:
-- Removed duplicate cast of params->hdr.setup_data
-- Declare dummy function of setup_s4_keys() and efi_reserve_s4_skey_data() to
-  avoid ifdef.
-- Use forward_info structure to maintain the empty of forward information and
-  new sign key from boot kernel to resume target kernel.
-- Use efivar API to access S4WakeKey variable.
-
-V3:
-- Load S4 sign key before ExitBootServices.
-  Load private key before ExitBootServices() then bootloader doesn't need
-  generate key-pair for each booting:
-   + Add setup_s4_keys() to eboot.c to load S4 sign key before ExitBootServices.
-   + Reserve the memory block of sign key data blob in efi.c
-- In Makefile, moved hibernate_keys.o before hibernate.o for load S4 sign
-  key before check hibernate image. It makes sure the new sign key will be
-  transfer to resume target kernel.
-- Set "depends on EFI_STUB" in Kconfig
-
-V2:
-Add CONFIG_SNAPSHOT_VERIFICATION for build of hibernate_keys.c depend on
-Kconfig.
+v2:
+- Due to loaded S4 sign key before ExitBootServices, we need forward key from
+  boot kernel to resume target kernel. So this patch add a empty page in
+  snapshot image, then we keep the pfn of this empty page in snapshot header.
+  When system resume from hibernate, we fill new sign key to this empty page
+  space after snapshot image checked pass. This mechanism let boot kernel can
+  forward new sign key to resume target kernel but don't need write new private
+  key to any other storage, e.g. swap.
 
 Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Takashi Iwai <tiwai@suse.de>
+Cc: Pavel Machek <pavel@ucw.cz>
 Reviewed-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
 ---
- arch/x86/boot/compressed/eboot.c      |   92 +++++++++++
- arch/x86/include/asm/efi.h            |    9 +
- arch/x86/include/uapi/asm/bootparam.h |    1 +
- arch/x86/platform/efi/efi.c           |   68 ++++++++
- include/linux/efi.h                   |   25 +++
- kernel/power/Kconfig                  |   16 ++-
- kernel/power/Makefile                 |    1 +
- kernel/power/hibernate.c              |    2 +
- kernel/power/hibernate_keys.c         |  292 +++++++++++++++++++++++++++++++++
- kernel/power/power.h                  |   30 ++++
- 10 files changed, 534 insertions(+), 2 deletions(-)
- create mode 100644 kernel/power/hibernate_keys.c
+ kernel/power/power.h    |   13 ++
+ kernel/power/snapshot.c |  288 ++++++++++++++++++++++++++++++++++++++++++++++-
+ kernel/power/swap.c     |    4 +
+ kernel/power/user.c     |    5 +
+ 4 files changed, 307 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index 53bfe4f..983dc7d 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -369,6 +369,96 @@ free_handle:
- 	return status;
- }
- 
-+#ifdef CONFIG_SNAPSHOT_VERIFICATION
-+static efi_status_t setup_s4_keys(struct boot_params *params)
-+{
-+	struct setup_data *data;
-+	unsigned long datasize;
-+	u32 attr;
-+	struct efi_s4_key *s4key;
-+	efi_status_t status;
-+
-+	data = (struct setup_data *)params->hdr.setup_data;
-+
-+	while (data && data->next)
-+		data = (struct setup_data *)(unsigned long)data->next;
-+
-+	status = efi_call_phys3(sys_table->boottime->allocate_pool,
-+				EFI_LOADER_DATA, sizeof(*s4key), &s4key);
-+	if (status != EFI_SUCCESS) {
-+		efi_printk("Failed to alloc memory for efi_s4_key\n");
-+		goto error_setup;
-+	}
-+
-+	s4key->data.type = SETUP_S4_KEY;
-+	s4key->data.len = sizeof(struct efi_s4_key) -
-+		sizeof(struct setup_data);
-+	s4key->data.next = 0;
-+	s4key->skey_dsize = 0;
-+	s4key->err_status = 0;
-+
-+	if (data)
-+		data->next = (unsigned long)s4key;
-+	else
-+		params->hdr.setup_data = (unsigned long)s4key;
-+
-+	/* obtain the size of key data */
-+	datasize = 0;
-+	status = efi_call_phys5(sys_table->runtime->get_variable,
-+				EFI_S4_SIGN_KEY_NAME, &EFI_HIBERNATE_GUID,
-+				NULL, &datasize, NULL);
-+	if (status != EFI_BUFFER_TOO_SMALL) {
-+		efi_printk("Couldn't get S4 key data size\n");
-+		goto error_size;
-+	}
-+	if (datasize > SKEY_DBUF_MAX_SIZE) {
-+		efi_printk("The size of S4 sign key is too large\n");
-+		status = EFI_UNSUPPORTED;
-+		goto error_size;
-+	}
-+
-+	s4key->skey_dsize = datasize;
-+	status = efi_call_phys3(sys_table->boottime->allocate_pool,
-+				EFI_LOADER_DATA, s4key->skey_dsize,
-+				&s4key->skey_data_addr);
-+	if (status != EFI_SUCCESS) {
-+		efi_printk("Failed to alloc page for S4 key data\n");
-+		goto error_s4key;
-+	}
-+
-+	attr = 0;
-+	memset((void *)s4key->skey_data_addr, 0, s4key->skey_dsize);
-+	status = efi_call_phys5(sys_table->runtime->get_variable,
-+				EFI_S4_SIGN_KEY_NAME, &EFI_HIBERNATE_GUID, &attr,
-+				&(s4key->skey_dsize), s4key->skey_data_addr);
-+	if (status) {
-+		efi_printk("Couldn't get S4 key data\n");
-+		goto error_gets4key;
-+	}
-+	if (attr & EFI_VARIABLE_RUNTIME_ACCESS) {
-+		efi_printk("S4 sign key can not be a runtime variable\n");
-+		memset((void *)s4key->skey_data_addr, 0, s4key->skey_dsize);
-+		status = EFI_UNSUPPORTED;
-+		goto error_gets4key;
-+	}
-+
-+	return 0;
-+
-+error_gets4key:
-+	efi_call_phys1(sys_table->boottime->free_pool, s4key->skey_data_addr);
-+error_s4key:
-+error_size:
-+	s4key->err_status = status;
-+error_setup:
-+	return status;
-+}
-+#else
-+static inline efi_status_t setup_s4_keys(struct boot_params *params)
-+{
-+	return 0;
-+}
-+#endif /* CONFIG_SNAPSHOT_VERIFICATION */
-+
- /*
-  * See if we have Graphics Output Protocol
-  */
-@@ -1209,6 +1299,8 @@ struct boot_params *efi_main(void *handle, efi_system_table_t *_table,
- 
- 	setup_efi_pci(boot_params);
- 
-+	setup_s4_keys(boot_params);
-+
- 	status = efi_call_phys3(sys_table->boottime->allocate_pool,
- 				EFI_LOADER_DATA, sizeof(*gdt),
- 				(void **)&gdt);
-diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
-index 0062a01..56ececa 100644
---- a/arch/x86/include/asm/efi.h
-+++ b/arch/x86/include/asm/efi.h
-@@ -102,6 +102,15 @@ extern void efi_call_phys_epilog(void);
- extern void efi_unmap_memmap(void);
- extern void efi_memory_uc(u64 addr, unsigned long size);
- 
-+#ifdef CONFIG_SNAPSHOT_VERIFICATION
-+struct efi_s4_key {
-+	struct setup_data data;
-+	unsigned long err_status;
-+	unsigned long skey_dsize;
-+	void *skey_data_addr;
-+};
-+#endif
-+
- #ifdef CONFIG_EFI
- 
- static inline bool efi_is_native(void)
-diff --git a/arch/x86/include/uapi/asm/bootparam.h b/arch/x86/include/uapi/asm/bootparam.h
-index 85d7685..79398ff 100644
---- a/arch/x86/include/uapi/asm/bootparam.h
-+++ b/arch/x86/include/uapi/asm/bootparam.h
-@@ -6,6 +6,7 @@
- #define SETUP_E820_EXT			1
- #define SETUP_DTB			2
- #define SETUP_PCI			3
-+#define SETUP_S4_KEY			4
- 
- /* ram_size flags */
- #define RAMDISK_IMAGE_START_MASK	0x07FF
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 90f6ed1..dd807e3 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -704,6 +704,71 @@ static int __init efi_memmap_init(void)
- 	return 0;
- }
- 
-+#ifdef CONFIG_SNAPSHOT_VERIFICATION
-+static unsigned long skey_dsize;
-+static u64 skey_data_addr;
-+static unsigned long skey_err_status;
-+
-+bool efi_s4_key_available(void)
-+{
-+	return skey_dsize && skey_data_addr && !skey_err_status;
-+}
-+
-+unsigned long __init efi_copy_skey_data(void *page_addr)
-+{
-+	void *key_addr;
-+
-+	if (efi_s4_key_available()) {
-+		key_addr = early_ioremap(skey_data_addr, skey_dsize);
-+		memcpy(page_addr, key_addr, skey_dsize);
-+		early_iounmap(key_addr, skey_dsize);
-+	}
-+
-+	return skey_dsize;
-+}
-+
-+void __init efi_erase_s4_skey_data(void)
-+{
-+	void *key_addr;
-+
-+	key_addr = early_ioremap(skey_data_addr, skey_dsize);
-+	memset(key_addr, 0, skey_dsize);
-+	early_iounmap(key_addr, skey_dsize);
-+	memblock_free(skey_data_addr, skey_dsize);
-+	skey_data_addr = 0;
-+	skey_dsize = 0;
-+}
-+
-+static void __init efi_reserve_s4_skey_data(void)
-+{
-+	u64 pa_data;
-+	struct setup_data *data;
-+	struct efi_s4_key *s4key;
-+
-+	skey_err_status = 0;
-+	pa_data = boot_params.hdr.setup_data;
-+	while (pa_data) {
-+		data = early_ioremap(pa_data, sizeof(*s4key));
-+		if (data->type == SETUP_S4_KEY) {
-+			s4key = (struct efi_s4_key *)data;
-+			if (!s4key->err_status) {
-+				skey_dsize = s4key->skey_dsize;
-+				skey_data_addr = (u64) s4key->skey_data_addr;
-+				memblock_reserve(skey_data_addr, skey_dsize);
-+			} else {
-+				skey_err_status = s4key->err_status;
-+				pr_err("Get S4 sign key from EFI fail: 0x%lx\n",
-+					skey_err_status);
-+			}
-+		}
-+		pa_data = data->next;
-+		early_iounmap(data, sizeof(*s4key));
-+	}
-+}
-+#else
-+static inline void efi_reserve_s4_skey_data(void) {}
-+#endif /* CONFIG_SNAPSHOT_VERIFICATION */
-+
- void __init efi_init(void)
- {
- 	efi_char16_t *c16;
-@@ -729,6 +794,9 @@ void __init efi_init(void)
- 
- 	set_bit(EFI_SYSTEM_TABLES, &x86_efi_facility);
- 
-+	/* keep s4 key from setup_data */
-+	efi_reserve_s4_skey_data();
-+
- 	/*
- 	 * Show what we know for posterity
- 	 */
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 5f8f176..57e78fc 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -389,6 +389,18 @@ typedef efi_status_t efi_query_variable_store_t(u32 attributes, unsigned long si
- #define EFI_FILE_SYSTEM_GUID \
-     EFI_GUID(  0x964e5b22, 0x6459, 0x11d2, 0x8e, 0x39, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b )
- 
-+#ifdef CONFIG_SNAPSHOT_VERIFICATION
-+#define EFI_HIBERNATE_GUID \
-+    EFI_GUID(0xfe141863, 0xc070, 0x478e, 0xb8, 0xa3, 0x87, 0x8a, 0x5d, 0xc9, 0xef, 0x21)
-+/*
-+ * The UEFI variable names of the key-pair to verify S4 snapshot image:
-+ * S4SignKey-EFI_HIBERNATE_GUID: The private key is used to sign snapshot
-+ * S4WakeKey-EFI_HIBERNATE_GUID: The public key is used to verify snapshot
-+ */
-+#define EFI_S4_SIGN_KEY_NAME    ((efi_char16_t [10]) { 'S', '4', 'S', 'i', 'g', 'n', 'K', 'e', 'y', 0 })
-+#define EFI_S4_WAKE_KEY_NAME    ((efi_char16_t [10]) { 'S', '4', 'W', 'a', 'k', 'e', 'K', 'e', 'y', 0 })
-+#endif /* CONFIG_SNAPSHOT_VERIFICATION */
-+
- typedef struct {
- 	efi_guid_t guid;
- 	u64 table;
-@@ -577,6 +589,19 @@ extern void efi_enter_virtual_mode (void);	/* switch EFI to virtual mode, if pos
- extern void efi_late_init(void);
- extern void efi_free_boot_services(void);
- extern efi_status_t efi_query_variable_store(u32 attributes, unsigned long size);
-+
-+#ifdef CONFIG_SNAPSHOT_VERIFICATION
-+struct forward_info_head {
-+	bool                    sig_enforce;
-+	int                     sig_check_ret;
-+	unsigned long           skey_dsize;
-+} __attribute__((packed));
-+#define SKEY_DBUF_MAX_SIZE      (PAGE_SIZE - sizeof(struct forward_info_head))
-+extern bool efi_s4_key_available(void);
-+extern unsigned long efi_copy_skey_data(void *page_addr);
-+extern void efi_erase_s4_skey_data(void);
-+#endif /* CONFIG_SNAPSHOT_VERIFICATION */
-+
- #else
- static inline void efi_late_init(void) {}
- static inline void efi_free_boot_services(void) {}
-diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
-index d444c4e..b592d88 100644
---- a/kernel/power/Kconfig
-+++ b/kernel/power/Kconfig
-@@ -66,8 +66,17 @@ config HIBERNATION
- 
- 	  For more information take a look at <file:Documentation/power/swsusp.txt>.
- 
--config ARCH_SAVE_PAGE_KEYS
--	bool
-+config SNAPSHOT_VERIFICATION
-+	bool "Hibernate snapshot verification"
-+	depends on HIBERNATION
-+	depends on EFI_STUB
-+	depends on X86
-+	select PKCS8_PRIVATE_KEY_INFO_PARSER
-+	help
-+	  This option provides support for generate anad verify the signautre by
-+	  RSA key-pair against hibernate snapshot image. Current mechanism
-+	  dependent on UEFI environment. EFI bootloader should generate the
-+	  key-pair.
- 
- config PM_STD_PARTITION
- 	string "Default resume partition"
-@@ -91,6 +100,9 @@ config PM_STD_PARTITION
- 	  suspended image to. It will simply pick the first available swap 
- 	  device.
- 
-+config ARCH_SAVE_PAGE_KEYS
-+	bool
-+
- config PM_SLEEP
- 	def_bool y
- 	depends on SUSPEND || HIBERNATE_CALLBACKS
-diff --git a/kernel/power/Makefile b/kernel/power/Makefile
-index 29472bf..46b6422 100644
---- a/kernel/power/Makefile
-+++ b/kernel/power/Makefile
-@@ -7,6 +7,7 @@ obj-$(CONFIG_VT_CONSOLE_SLEEP)	+= console.o
- obj-$(CONFIG_FREEZER)		+= process.o
- obj-$(CONFIG_SUSPEND)		+= suspend.o
- obj-$(CONFIG_PM_TEST_SUSPEND)	+= suspend_test.o
-+obj-$(CONFIG_SNAPSHOT_VERIFICATION)    += hibernate_keys.o
- obj-$(CONFIG_HIBERNATION)	+= hibernate.o snapshot.o swap.o user.o \
- 				   block_io.o
- obj-$(CONFIG_PM_AUTOSLEEP)	+= autosleep.o
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index b26f5f1..90a25c7 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -28,6 +28,7 @@
- #include <linux/syscore_ops.h>
- #include <linux/ctype.h>
- #include <linux/genhd.h>
-+#include <linux/key.h>
- 
- #include "power.h"
- 
-@@ -680,6 +681,7 @@ int hibernate(void)
- 		pm_restore_gfp_mask();
- 	} else {
- 		pr_debug("PM: Image restored successfully.\n");
-+		restore_sig_forward_info();
- 	}
- 
-  Thaw:
-diff --git a/kernel/power/hibernate_keys.c b/kernel/power/hibernate_keys.c
-new file mode 100644
-index 0000000..0bce9ab
---- /dev/null
-+++ b/kernel/power/hibernate_keys.c
-@@ -0,0 +1,292 @@
-+#include <linux/sched.h>
-+#include <linux/efi.h>
-+#include <linux/mpi.h>
-+#include <linux/asn1.h>
-+#include <crypto/public_key.h>
-+#include <keys/asymmetric-type.h>
-+
-+#include "power.h"
-+
-+static unsigned char const_seq = (ASN1_SEQ | (ASN1_CONS << 5));
-+
-+struct forward_info {
-+	struct forward_info_head        head;
-+	unsigned char                   skey_data_buf[SKEY_DBUF_MAX_SIZE];
-+};
-+
-+static void *skey_data;
-+static void *forward_info_buf;
-+static unsigned long skey_dsize;
-+
-+bool swsusp_page_is_sign_key(struct page *page)
-+{
-+	unsigned long skey_data_pfn;
-+	bool ret;
-+
-+	if (!skey_data || IS_ERR(skey_data))
-+		return false;
-+
-+	skey_data_pfn = page_to_pfn(virt_to_page(skey_data));
-+	ret = (page_to_pfn(page) == skey_data_pfn) ? true : false;
-+	if (ret)
-+		pr_info("PM: Avoid snapshot the page of S4 sign key.\n");
-+
-+	return ret;
-+}
-+
-+unsigned long get_sig_forward_info_pfn(void)
-+{
-+	if (!forward_info_buf)
-+		return 0;
-+
-+	return page_to_pfn(virt_to_page(forward_info_buf));
-+}
-+
-+void fill_sig_forward_info(void *page, int sig_check_ret_in)
-+{
-+	struct forward_info *info;
-+
-+	if (!page)
-+		return;
-+
-+	memset(page, 0, PAGE_SIZE);
-+	info = (struct forward_info *)page;
-+
-+	info->head.sig_check_ret = sig_check_ret_in;
-+	if (skey_data && !IS_ERR(skey_data) &&
-+		skey_dsize <= SKEY_DBUF_MAX_SIZE) {
-+		info->head.skey_dsize = skey_dsize;
-+		memcpy(info->skey_data_buf, skey_data, skey_dsize);
-+	} else
-+		pr_info("PM: Fill S4 sign key fail, size: %ld\n", skey_dsize);
-+
-+	pr_info("PM: Filled sign information to forward buffer\n");
-+}
-+
-+void restore_sig_forward_info(void)
-+{
-+	struct forward_info *info;
-+	int sig_check_ret;
-+
-+	if (!forward_info_buf) {
-+		pr_err("PM: Restore S4 sign key fail\n");
-+		return;
-+	}
-+	info = (struct forward_info *)forward_info_buf;
-+
-+	sig_check_ret = info->head.sig_check_ret;
-+	if (sig_check_ret)
-+		pr_info("PM: Signature check fail: %d\n", sig_check_ret);
-+
-+	if (info->head.skey_dsize <= SKEY_DBUF_MAX_SIZE &&
-+		info->skey_data_buf[0] == const_seq) {
-+
-+		/* restore sign key size and data from buffer */
-+		skey_dsize = info->head.skey_dsize;
-+		memset(skey_data, 0, PAGE_SIZE);
-+		memcpy(skey_data, info->skey_data_buf, skey_dsize);
-+	}
-+
-+	/* reset skey page buffer */
-+	memset(forward_info_buf, 0, PAGE_SIZE);
-+}
-+
-+bool skey_data_available(void)
-+{
-+	bool ret = false;
-+
-+	/* Sign key is PKCS#8 format that must be a Constructed SEQUENCE */
-+	ret = skey_data && !IS_ERR(skey_data) &&
-+		(skey_dsize != 0) &&
-+		((unsigned char *)skey_data)[0] == const_seq;
-+
-+	return ret;
-+}
-+
-+struct key *get_sign_key(void)
-+{
-+	const struct cred *cred = current_cred();
-+	struct key *skey;
-+	int err;
-+
-+	if (!skey_data || IS_ERR(skey_data))
-+		return ERR_PTR(-EBADMSG);
-+
-+	skey = key_alloc(&key_type_asymmetric, "s4_sign_key",
-+			GLOBAL_ROOT_UID, GLOBAL_ROOT_GID,
-+			cred, 0, KEY_ALLOC_NOT_IN_QUOTA);
-+	if (IS_ERR(skey)) {
-+		pr_err("PM: Allocate s4 sign key error: %ld\n", PTR_ERR(skey));
-+		goto error_keyalloc;
-+	}
-+
-+	err = key_instantiate_and_link(skey, skey_data, skey_dsize, NULL, NULL);
-+	if (err < 0) {
-+		pr_err("PM: S4 sign key instantiate error: %d\n", err);
-+		if (skey)
-+			key_put(skey);
-+		skey = ERR_PTR(err);
-+		goto error_keyinit;
-+	}
-+
-+	return skey;
-+
-+error_keyinit:
-+error_keyalloc:
-+	return skey;
-+}
-+
-+void erase_skey_data(void)
-+{
-+	if (!skey_data || IS_ERR(skey_data))
-+		return;
-+
-+	memset(skey_data, 0, PAGE_SIZE);
-+}
-+
-+void destroy_sign_key(struct key *skey)
-+{
-+	erase_skey_data();
-+	if (skey)
-+		key_put(skey);
-+}
-+
-+static void *load_wake_key_data(unsigned long *datasize)
-+{
-+	struct efivar_entry *entry;
-+	u32 attr;
-+	void *wkey_data;
-+	int ret;
-+
-+	entry = kmalloc(sizeof(*entry), GFP_KERNEL);
-+	if (!entry)
-+		return ERR_PTR(-ENOMEM);
-+
-+	memcpy(entry->var.VariableName, EFI_S4_WAKE_KEY_NAME, sizeof(EFI_S4_WAKE_KEY_NAME));
-+	memcpy(&(entry->var.VendorGuid), &EFI_HIBERNATE_GUID, sizeof(efi_guid_t));
-+
-+	/* obtain the size */
-+	*datasize = 0;
-+	ret = efivar_entry_size(entry, datasize);
-+	if (ret)
-+		goto error_size;
-+
-+	wkey_data = kzalloc(*datasize, GFP_KERNEL);
-+	if (!wkey_data) {
-+		ret = -ENOMEM;
-+		goto error_size;
-+	}
-+
-+	ret = efivar_entry_get(entry, &attr, datasize, wkey_data);
-+	if (ret) {
-+		pr_err("PM: Get wake key data error: %d\n", ret);
-+		goto error_get;
-+	}
-+	/* check attributes */
-+	if (attr & EFI_VARIABLE_NON_VOLATILE) {
-+		pr_err("PM: Wake key has wrong attributes: 0x%x\n", attr);
-+		goto error_get;
-+	}
-+
-+	kfree(entry);
-+
-+	return wkey_data;
-+
-+error_get:
-+	memset(wkey_data, 0, *datasize);
-+	kfree(wkey_data);
-+	*datasize = 0;
-+error_size:
-+	kfree(entry);
-+
-+	return ERR_PTR(ret);
-+}
-+
-+int wkey_data_available(void)
-+{
-+	static int ret = 1;
-+	unsigned long datasize;
-+	void *wkey_data;
-+
-+	if (ret > 0) {
-+		wkey_data = load_wake_key_data(&datasize);
-+		if (wkey_data && IS_ERR(wkey_data)) {
-+			ret = PTR_ERR(wkey_data);
-+			goto error;
-+		} else {
-+			if (wkey_data) {
-+				memset(wkey_data, 0, datasize);
-+				kfree(wkey_data);
-+			}
-+			ret = 0;
-+		}
-+	}
-+
-+error:
-+	return ret;
-+}
-+
-+struct key *get_wake_key(void)
-+{
-+	const struct cred *cred = current_cred();
-+	void *wkey_data;
-+	unsigned long datasize = 0;
-+	struct key *wkey;
-+	int err;
-+
-+	wkey_data = load_wake_key_data(&datasize);
-+	if (IS_ERR(wkey_data)) {
-+		wkey = (struct key *)wkey_data;
-+		goto error_data;
-+	}
-+
-+	wkey = key_alloc(&key_type_asymmetric, "s4_wake_key",
-+			GLOBAL_ROOT_UID, GLOBAL_ROOT_GID,
-+			cred, 0, KEY_ALLOC_NOT_IN_QUOTA);
-+	if (IS_ERR(wkey)) {
-+		pr_err("PM: Allocate s4 wake key error: %ld\n", PTR_ERR(wkey));
-+		goto error_keyalloc;
-+	}
-+	err = key_instantiate_and_link(wkey, wkey_data, datasize, NULL, NULL);
-+	if (err < 0) {
-+		pr_err("PM: S4 wake key instantiate error: %d\n", err);
-+		if (wkey)
-+			key_put(wkey);
-+		wkey = ERR_PTR(err);
-+	}
-+
-+error_keyalloc:
-+	if (wkey_data && !IS_ERR(wkey_data))
-+		kfree(wkey_data);
-+error_data:
-+	return wkey;
-+}
-+
-+size_t get_key_length(const struct key *key)
-+{
-+	const struct public_key *pk = key->payload.data;
-+	size_t len;
-+
-+	/* TODO: better check the RSA type */
-+
-+	len = mpi_get_nbits(pk->rsa.n);
-+	len = (len + 7) / 8;
-+
-+	return len;
-+}
-+
-+static int __init init_sign_key_data(void)
-+{
-+	skey_data = (void *)get_zeroed_page(GFP_KERNEL);
-+	forward_info_buf = (void *)get_zeroed_page(GFP_KERNEL);
-+
-+	if (skey_data && efi_s4_key_available()) {
-+		skey_dsize = efi_copy_skey_data(skey_data);
-+		efi_erase_s4_skey_data();
-+		pr_info("PM: Load s4 sign key from EFI\n");
-+	}
-+
-+	return 0;
-+}
-+
-+late_initcall(init_sign_key_data);
 diff --git a/kernel/power/power.h b/kernel/power/power.h
-index 7d4b7ff..661f124 100644
+index 661f124..d2da75b 100644
 --- a/kernel/power/power.h
 +++ b/kernel/power/power.h
-@@ -160,6 +160,36 @@ extern void swsusp_close(fmode_t);
- extern int swsusp_unmark(void);
- #endif
+@@ -3,6 +3,9 @@
+ #include <linux/utsname.h>
+ #include <linux/freezer.h>
  
-+/* kernel/power/hibernate_key.c */
-+#ifdef CONFIG_SNAPSHOT_VERIFICATION
-+extern bool skey_data_available(void);
-+extern struct key *get_sign_key(void);
-+extern void erase_skey_data(void);
-+extern void destroy_sign_key(struct key *key);
-+extern int wkey_data_available(void);
-+extern struct key *get_wake_key(void);
-+extern size_t get_key_length(const struct key *key);
++/* The maximum length of snapshot signature */
++#define SIG_LEN 512
 +
-+extern void restore_sig_forward_info(void);
-+extern bool swsusp_page_is_sign_key(struct page *page);
-+extern unsigned long get_sig_forward_info_pfn(void);
-+extern void fill_sig_forward_info(void *page_addr, int sig_check_ret);
+ struct swsusp_info {
+ 	struct new_utsname	uts;
+ 	u32			version_code;
+@@ -11,6 +14,8 @@ struct swsusp_info {
+ 	unsigned long		image_pages;
+ 	unsigned long		pages;
+ 	unsigned long		size;
++	unsigned long           sig_forward_info_pfn;
++	u8			signature[SIG_LEN];
+ } __attribute__((aligned(PAGE_SIZE)));
+ 
+ #ifdef CONFIG_HIBERNATION
+@@ -134,6 +139,14 @@ extern int snapshot_read_next(struct snapshot_handle *handle);
+ extern int snapshot_write_next(struct snapshot_handle *handle);
+ extern void snapshot_write_finalize(struct snapshot_handle *handle);
+ extern int snapshot_image_loaded(struct snapshot_handle *handle);
++#ifdef CONFIG_SNAPSHOT_VERIFICATION
++extern int snapshot_image_verify(void);
 +#else
-+static inline bool skey_data_available(void)
-+{
-+	return false;
-+}
-+static inline void restore_sig_forward_info(void) {}
-+static inline bool swsusp_page_is_sign_key(struct page *page)
-+{
-+	return false;
-+}
-+static inline unsigned long get_sig_forward_info_pfn(void)
++static inline int snapshot_image_verify(void)
 +{
 +	return 0;
 +}
-+#endif /* !CONFIG_SNAPSHOT_VERIFICATION */
++#endif
+ 
+ /* If unset, the snapshot device cannot be open. */
+ extern atomic_t snapshot_device_available;
+diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
+index 349587b..edab31f 100644
+--- a/kernel/power/snapshot.c
++++ b/kernel/power/snapshot.c
+@@ -27,6 +27,9 @@
+ #include <linux/highmem.h>
+ #include <linux/list.h>
+ #include <linux/slab.h>
++#include <crypto/hash.h>
++#include <crypto/public_key.h>
++#include <keys/asymmetric-type.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/mmu_context.h>
+@@ -1031,6 +1034,126 @@ static inline void copy_data_page(unsigned long dst_pfn, unsigned long src_pfn)
+ }
+ #endif /* CONFIG_HIGHMEM */
+ 
++#ifdef CONFIG_SNAPSHOT_VERIFICATION
++#define SNAPSHOT_HASH "sha256"
++#endif
 +
- /* kernel/power/block_io.c */
- extern struct block_device *hib_resume_bdev;
++/*
++ * Signature of snapshot for check.
++ */
++static u8 signature[SIG_LEN];
++
++/*
++ * Keep the pfn of forward information buffer from resume target. We write
++ * the next time sign key to this page in snapshot image before restore.
++ */
++unsigned long sig_forward_info_pfn;
++
++void **handle_buffers;
++void *sig_forward_info_buf;
++
++static int
++swsusp_generate_signature(struct memory_bitmap *copy_bm, unsigned int nr_pages)
++{
++#ifdef CONFIG_SNAPSHOT_VERIFICATION
++	unsigned long pfn;
++	struct page *d_page;
++	void *hash_buffer = NULL;
++	struct crypto_shash *tfm;
++	struct shash_desc *desc;
++	u8 *digest;
++	size_t digest_size, desc_size;
++	struct key *s4_sign_key;
++	struct public_key_signature *pks;
++	int ret, i;
++
++	ret = -ENOMEM;
++	tfm = crypto_alloc_shash(SNAPSHOT_HASH, 0, 0);
++	if (IS_ERR(tfm)) {
++		pr_err("IS_ERR(tfm): %ld", PTR_ERR(tfm));
++		return PTR_ERR(tfm);
++	}
++
++	desc_size = crypto_shash_descsize(tfm) + sizeof(*desc);
++	digest_size = crypto_shash_digestsize(tfm);
++	digest = kzalloc(digest_size + desc_size, GFP_KERNEL);
++	if (!digest) {
++		pr_err("digest allocate fail");
++		ret = -ENOMEM;
++		goto error_digest;
++	}
++	desc = (void *) digest + digest_size;
++	desc->tfm = tfm;
++	desc->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
++	ret = crypto_shash_init(desc);
++	if (ret < 0)
++		goto error_shash;
++
++	memory_bm_position_reset(copy_bm);
++	for (i = 0; i < nr_pages; i++) {
++		pfn = memory_bm_next_pfn(copy_bm);
++
++		/* Generate digest */
++		d_page = pfn_to_page(pfn);
++		if (PageHighMem(d_page)) {
++			void *kaddr;
++			kaddr = kmap_atomic(d_page);
++			copy_page(buffer, kaddr);
++			kunmap_atomic(kaddr);
++			hash_buffer = buffer;
++		} else {
++			hash_buffer = page_address(d_page);
++		}
++		ret = crypto_shash_update(desc, hash_buffer, PAGE_SIZE);
++		if (ret)
++			goto error_shash;
++	}
++
++	crypto_shash_final(desc, digest);
++	if (ret)
++		goto error_shash;
++
++	/* Generate signature by private key */
++	s4_sign_key = get_sign_key();
++	if (!s4_sign_key || IS_ERR(s4_sign_key)) {
++		pr_err("Get S4 sign key fail: %ld\n", PTR_ERR(s4_sign_key));
++		ret = PTR_ERR(s4_sign_key);
++		goto error_key;
++	}
++
++	pks = generate_signature(s4_sign_key, digest, PKEY_HASH_SHA256, false);
++	if (IS_ERR(pks)) {
++		pr_err("Generate signature fail: %lx", PTR_ERR(pks));
++		ret = PTR_ERR(pks);
++		goto error_sign;
++	} else
++		memcpy(signature, pks->S, pks->k);
++
++	destroy_sign_key(s4_sign_key);
++
++	if (pks && pks->digest)
++		kfree(pks->digest);
++	if (pks && pks->rsa.s)
++		mpi_free(pks->rsa.s);
++	kfree(pks);
++	kfree(digest);
++	crypto_free_shash(tfm);
++
++	return 0;
++
++error_sign:
++	destroy_sign_key(s4_sign_key);
++error_key:
++error_shash:
++	kfree(digest);
++error_digest:
++	crypto_free_shash(tfm);
++	return ret;
++#else
++	return 0;
++#endif /* CONFIG_SNAPSHOT_VERIFICATION */
++}
++
+ static void
+ copy_data_pages(struct memory_bitmap *copy_bm, struct memory_bitmap *orig_bm)
+ {
+@@ -1580,6 +1703,7 @@ swsusp_alloc(struct memory_bitmap *orig_bm, struct memory_bitmap *copy_bm,
+ asmlinkage int swsusp_save(void)
+ {
+ 	unsigned int nr_pages, nr_highmem;
++	int ret;
+ 
+ 	printk(KERN_INFO "PM: Creating hibernation image:\n");
+ 
+@@ -1614,6 +1738,14 @@ asmlinkage int swsusp_save(void)
+ 	nr_copy_pages = nr_pages;
+ 	nr_meta_pages = DIV_ROUND_UP(nr_pages * sizeof(long), PAGE_SIZE);
+ 
++	if (skey_data_available()) {
++		ret = swsusp_generate_signature(&copy_bm, nr_pages);
++		if (ret)
++			return ret;
++	} else
++		/* set zero signature if skey doesn't exist */
++		memset(signature, 0, SIG_LEN);
++
+ 	printk(KERN_INFO "PM: Hibernation image created (%d pages copied)\n",
+ 		nr_pages);
+ 
+@@ -1657,6 +1789,8 @@ static int init_header(struct swsusp_info *info)
+ 	info->pages = snapshot_get_image_size();
+ 	info->size = info->pages;
+ 	info->size <<= PAGE_SHIFT;
++	info->sig_forward_info_pfn = get_sig_forward_info_pfn();
++	memcpy(info->signature, signature, SIG_LEN);
+ 	return init_header_complete(info);
+ }
+ 
+@@ -1819,6 +1953,8 @@ load_header(struct swsusp_info *info)
+ 	if (!error) {
+ 		nr_copy_pages = info->image_pages;
+ 		nr_meta_pages = info->pages - info->image_pages - 1;
++		sig_forward_info_pfn = info->sig_forward_info_pfn;
++		memcpy(signature, info->signature, SIG_LEN);
+ 	}
+ 	return error;
+ }
+@@ -2159,7 +2295,8 @@ prepare_image(struct memory_bitmap *new_bm, struct memory_bitmap *bm)
+  *	set for its caller to write to.
+  */
+ 
+-static void *get_buffer(struct memory_bitmap *bm, struct chain_allocator *ca)
++static void *get_buffer(struct memory_bitmap *bm, struct chain_allocator *ca,
++		unsigned long *_pfn)
+ {
+ 	struct pbe *pbe;
+ 	struct page *page;
+@@ -2168,6 +2305,9 @@ static void *get_buffer(struct memory_bitmap *bm, struct chain_allocator *ca)
+ 	if (pfn == BM_END_OF_MAP)
+ 		return ERR_PTR(-EFAULT);
+ 
++	if (_pfn)
++		*_pfn = pfn;
++
+ 	page = pfn_to_page(pfn);
+ 	if (PageHighMem(page))
+ 		return get_highmem_page_buffer(page, ca);
+@@ -2214,6 +2354,7 @@ static void *get_buffer(struct memory_bitmap *bm, struct chain_allocator *ca)
+ int snapshot_write_next(struct snapshot_handle *handle)
+ {
+ 	static struct chain_allocator ca;
++	unsigned long pfn;
+ 	int error = 0;
+ 
+ 	/* Check if we have already loaded the entire image */
+@@ -2236,6 +2377,15 @@ int snapshot_write_next(struct snapshot_handle *handle)
+ 		if (error)
+ 			return error;
+ 
++#ifdef CONFIG_SNAPSHOT_VERIFICATION
++		/* Allocate void * array to keep buffer point for generate hash,
++		 * handle_buffers will freed in snapshot_image_verify().
++		 */
++		handle_buffers = kmalloc(sizeof(void *) * nr_copy_pages, GFP_KERNEL);
++		if (!handle_buffers)
++			pr_err("Allocate hash buffer fail!\n");
++#endif
++
+ 		error = memory_bm_create(&copy_bm, GFP_ATOMIC, PG_ANY);
+ 		if (error)
+ 			return error;
+@@ -2258,20 +2408,31 @@ int snapshot_write_next(struct snapshot_handle *handle)
+ 			chain_init(&ca, GFP_ATOMIC, PG_SAFE);
+ 			memory_bm_position_reset(&orig_bm);
+ 			restore_pblist = NULL;
+-			handle->buffer = get_buffer(&orig_bm, &ca);
++			handle->buffer = get_buffer(&orig_bm, &ca, &pfn);
+ 			handle->sync_read = 0;
+ 			if (IS_ERR(handle->buffer))
+ 				return PTR_ERR(handle->buffer);
++#ifdef CONFIG_SNAPSHOT_VERIFICATION
++			if (handle_buffers)
++				*handle_buffers = handle->buffer;
++#endif
+ 		}
+ 	} else {
+ 		copy_last_highmem_page();
+ 		/* Restore page key for data page (s390 only). */
+ 		page_key_write(handle->buffer);
+-		handle->buffer = get_buffer(&orig_bm, &ca);
++		handle->buffer = get_buffer(&orig_bm, &ca, &pfn);
+ 		if (IS_ERR(handle->buffer))
+ 			return PTR_ERR(handle->buffer);
+ 		if (handle->buffer != buffer)
+ 			handle->sync_read = 0;
++#ifdef CONFIG_SNAPSHOT_VERIFICATION
++		if (handle_buffers)
++			*(handle_buffers + (handle->cur - nr_meta_pages - 1)) = handle->buffer;
++		/* Keep the buffer of sign key in snapshot */
++		if (pfn == sig_forward_info_pfn)
++			sig_forward_info_buf = handle->buffer;
++#endif
+ 	}
+ 	handle->cur++;
+ 	return PAGE_SIZE;
+@@ -2304,6 +2465,127 @@ int snapshot_image_loaded(struct snapshot_handle *handle)
+ 			handle->cur <= nr_meta_pages + nr_copy_pages);
+ }
+ 
++#ifdef CONFIG_SNAPSHOT_VERIFICATION
++int snapshot_verify_signature(u8 *digest, size_t digest_size)
++{
++	struct key *s4_wake_key;
++	struct public_key_signature *pks;
++	int ret;
++	MPI mpi;
++
++	/* load public key */
++	s4_wake_key = get_wake_key();
++	if (!s4_wake_key || IS_ERR(s4_wake_key)) {
++		pr_err("PM: Get S4 wake key fail: %ld\n", PTR_ERR(s4_wake_key));
++		return PTR_ERR(s4_wake_key);
++	}
++
++	pks = kzalloc(digest_size + sizeof(*pks), GFP_KERNEL);
++	if (!pks) {
++		pr_err("PM: Allocate public key signature fail!");
++		return -ENOMEM;
++	}
++	pks->pkey_hash_algo = PKEY_HASH_SHA256;
++	pks->digest = digest;
++	pks->digest_size = digest_size;
++
++	mpi = mpi_read_raw_data(signature, get_key_length(s4_wake_key));
++	if (!mpi) {
++		pr_err("PM: mpi_read_raw_data fail!\n");
++		ret = -ENOMEM;
++		goto error_mpi;
++	}
++	pks->mpi[0] = mpi;
++	pks->nr_mpi = 1;
++
++	/* RSA signature check */
++	ret = verify_signature(s4_wake_key, pks);
++	if (ret)
++		pr_err("snapshot S4 signature verification fail: %d\n", ret);
++
++	if (pks->rsa.s)
++		mpi_free(pks->rsa.s);
++error_mpi:
++	kfree(pks);
++	return ret;
++}
++
++static void snapshot_fill_sig_forward_info(int sig_check_ret)
++{
++	if (!sig_forward_info_buf)
++		return;
++
++	/* Fill new s4 sign key to snapshot in memory */
++	fill_sig_forward_info(sig_forward_info_buf, sig_check_ret);
++	/* clean skey page data */
++	erase_skey_data();
++}
++
++int snapshot_image_verify(void)
++{
++	struct crypto_shash *tfm = NULL
++	struct shash_desc *desc;
++	u8 *digest = NULL;
++	size_t digest_size, desc_size;
++	int ret, i;
++
++	if (!handle_buffers)
++		return 0;
++
++	ret = wkey_data_available();
++	if (ret)
++		goto forward_ret;
++
++	tfm = crypto_alloc_shash(SNAPSHOT_HASH, 0, 0);
++	if (IS_ERR(tfm)) {
++		pr_err("IS_ERR(tfm): %ld", PTR_ERR(tfm));
++		return PTR_ERR(tfm);
++	}
++
++	desc_size = crypto_shash_descsize(tfm) + sizeof(*desc);
++	digest_size = crypto_shash_digestsize(tfm);
++	digest = kzalloc(digest_size + desc_size, GFP_KERNEL);
++	if (!digest) {
++		pr_err("digest allocate fail");
++		ret = -ENOMEM;
++		goto error_digest;
++	}
++	desc = (void *) digest + digest_size;
++	desc->tfm = tfm;
++	desc->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
++
++	ret = crypto_shash_init(desc);
++	if (ret < 0)
++		goto error_shash;
++
++	for (i = 0; i < nr_copy_pages; i++) {
++		ret = crypto_shash_update(desc, *(handle_buffers + i), PAGE_SIZE);
++		if (ret)
++			goto error_shash;
++	}
++
++	ret = crypto_shash_final(desc, digest);
++	if (ret)
++		goto error_shash;
++
++	ret = snapshot_verify_signature(digest, digest_size);
++	if (ret)
++		pr_info("PM: snapshot signature check FAIL: %d\n", ret);
++	else
++		pr_info("PM: snapshot signature check SUCCESS!\n");
++
++forward_ret:
++	snapshot_fill_sig_forward_info(ret);
++error_shash:
++	kfree(handle_buffers);
++	kfree(digest);
++error_digest:
++	if (tfm)
++		crypto_free_shash(tfm);
++	return ret;
++}
++#endif /* CONFIG_SNAPSHOT_VERIFICATION */
++
+ #ifdef CONFIG_HIGHMEM
+ /* Assumes that @buf is ready and points to a "safe" page */
+ static inline void
+diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+index 7c33ed2..5aef236 100644
+--- a/kernel/power/swap.c
++++ b/kernel/power/swap.c
+@@ -1004,6 +1004,8 @@ static int load_image(struct swap_map_handle *handle,
+ 		snapshot_write_finalize(snapshot);
+ 		if (!snapshot_image_loaded(snapshot))
+ 			ret = -ENODATA;
++		else
++			ret = snapshot_image_verify();
+ 	}
+ 	swsusp_show_speed(&start, &stop, nr_to_read, "Read");
+ 	return ret;
+@@ -1358,6 +1360,8 @@ out_finish:
+ 				}
+ 			}
+ 		}
++		if (!ret)
++			ret = snapshot_image_verify();
+ 	}
+ 	swsusp_show_speed(&start, &stop, nr_to_read, "Read");
+ out_clean:
+diff --git a/kernel/power/user.c b/kernel/power/user.c
+index 4ed81e7..e2088af 100644
+--- a/kernel/power/user.c
++++ b/kernel/power/user.c
+@@ -228,6 +228,7 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
+ 		if (!data->frozen || data->ready)
+ 			break;
+ 		pm_restore_gfp_mask();
++		restore_sig_forward_info();
+ 		thaw_processes();
+ 		data->frozen = 0;
+ 		break;
+@@ -253,6 +254,10 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
+ 			error = -EPERM;
+ 			break;
+ 		}
++		if (snapshot_image_verify()) {
++			error = -EPERM;
++			break;
++		}
+ 		error = hibernation_restore(data->platform_support);
+ 		break;
  
 -- 
 1.6.0.2
