@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756728Ab3IOL3G (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 07:29:06 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:46807 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756184Ab3IOL3E (ORCPT
+	id S1755817Ab3IOLeo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 07:34:44 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:58866 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751881Ab3IOLen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 07:29:04 -0400
-Date: Sun, 15 Sep 2013 13:27:56 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Milo Kim <milo.kim@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org
-Subject: Re: [PATCH v3 4/4] Documentation: add LP3943 DT bindings and document
-Message-ID: <20130915112755.GB9765@ulmo>
-References: <1378949700-6384-1-git-send-email-milo.kim@ti.com>
- <20130912152455.GN11227@lee--X1>
+	Sun, 15 Sep 2013 07:34:43 -0400
+Message-ID: <52359B4E.7060700@colorfullife.com>
+Date: Sun, 15 Sep 2013 13:34:38 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZoaI/ZTpAVc4A5k6"
-Content-Disposition: inline
-In-Reply-To: <20130912152455.GN11227@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mike Galbraith <efault@gmx.de>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>, hhuang@redhat.com,
+        Greg KH <greg@kroah.com>
+Subject: Re: [PATCH 1/2] ipc/sem.c: Race in sem_lock()
+References: <1379194496-4642-1-git-send-email-manfred@colorfullife.com> <1379225343.5545.154.camel@marge.simpson.net>
+In-Reply-To: <1379225343.5545.154.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi all,
 
---ZoaI/ZTpAVc4A5k6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 09/15/2013 08:09 AM, Mike Galbraith wrote:
+> On Sat, 2013-09-14 at 23:34 +0200, Manfred Spraul wrote:
+>
+>> The bug is probably also present in 3.10 and 3.11, but for these kernels
+>> is is probably simpler just to move the test of sma->complex_count after
+>> the spin_is_locked() test.
+> IMHO, your 6 patch series should go to stable as well.  Scalability is
+> still BAD without them.  Now, you've shown the lock split to be buggy.
+>
+> Logically, the whole thing should be reverted entirely in stable, or
+> fixed up properly.
+Davidlohr: Are you working on fixing the open issues?
 
-On Thu, Sep 12, 2013 at 04:24:55PM +0100, Lee Jones wrote:
-> On Thu, 12 Sep 2013, Milo Kim wrote:
-[...]
-> > diff --git a/Documentation/lp3943.txt b/Documentation/lp3943.txt
-> > new file mode 100644
-> > index 0000000..576ebd0
-> > --- /dev/null
-> > +++ b/Documentation/lp3943.txt
-[...]
-> If this stuff is really important (and most of it really isn't), then
-> put it either in the commit log or in the driver.
+IMHO Mike is right, especially for the 3.10 long-term kernel:
+Either everything in ipc/*.c must be reverted or it should be fixed 
+properly (i.e.: cherry-pick ipc/*)
 
-I can only speak for myself, but the initial driver commit message is
-about the last place I look for this kind of information. I'd expect it
-to be either somewhere in Documentation/ or in one of the source files.
-In this case I'd probably look at the MFD core driver source file. More
-likely, even, I'd just go google "LP3943" and grab a public datasheet
-=66rom TI where all of this can hopefully be found.
+I have created bugzilla entries for all issues I'm aware of:
 
-Thierry
+https://bugzilla.kernel.org/show_bug.cgi?id=61351
+     I sent a patch yesterday.
 
---ZoaI/ZTpAVc4A5k6
-Content-Type: application/pgp-signature
+https://bugzilla.kernel.org/show_bug.cgi?id=61321
+https://bugzilla.kernel.org/show_bug.cgi?id=61331
+https://bugzilla.kernel.org/show_bug.cgi?id=61341
+https://bugzilla.kernel.org/show_bug.cgi?id=61361
+https://bugzilla.kernel.org/show_bug.cgi?id=61371
+     No patches for theses 5 bugs.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
+And: Given these numbers from Mike, I would hate to revert anything:
+On 09/15/2013 10:06 AM, Mike Galbraith wrote:
+> On Sun, 2013-09-15 at 08:09 +0200, Mike Galbraith wrote:
+>
+>> Humongous improvements...
+> (a couple sem-waitzero numbers)
+>
+> master:  Cpus 64, interleave 1 delay 0: 10039494796 in 30 secs
+> 3.10.10: Cpus 64, interleave 1 delay 0:   129236313 in 30 secs
+>
+> (rapidly scrolling micro-font bench vs reality disclaimer)
+One semop() completed every 3 ns, around 600 cpu ticks per operation.
 
-iQIcBAEBAgAGBQJSNZm7AAoJEN0jrNd/PrOhLdQP/RahXyucPoSbeWP0AOpQdyeA
-nwZ9SA3eTylBK8N2RKDGAWErFQAG+NutyPZLx902wNpnJyuY6NjQvsS+yTxsf7zl
-PNH2sa9TBRbJDvna05ijoUeAYilkfcTWxh6Bo2+UvJaSnxYAITRiXm1n+egO2/fd
-HoKi9/CiG22xIKJrpIFf6Nlwp3t1F5T7tUhNWSrgR8DXRSmU9s8XLTC5kOBYekaI
-Yy9+30jmcgnxGZDkkW1sDGFPe/FeiMUaY3q5um5ah5PjKpYU+vhQY15HN7K67o5I
-Fi38fM4XFNvqgwhM65ivjaPWeaZ26Gd81JpBBx382UBZZNph35i/i26cxXqkTTOn
-dBJyNH5dD4R8yAc+ninzpWVpjCkWYdmCMelVOjLIWZHEQJ4Y1pcX5YX+cFMIiZOY
-3h+35DF2DYD8Y+uJeug0+lNwmNqRx4RBYGrWol1d8hi4CPM1Jn7iEWxl4aO+HwJK
-hOzFVHK083MG1NPlDQJCtVlaDrSJFrpqP0kOnvjEFulxXlurTXvLjGDSFkVTWS/I
-HibS+v3AnhCWakjQEXC2HEPsbklmIMCavLRQNjc3pNPEtEt32N1qTWZEUtG+X5EV
-XOFQDbCSfZzLYH37zoB41hr4boiQLsDRAqigDBWW5wT8l9iJMdaFn3ZNe7XKqh0n
-yiLPNKbSkZSfb5ewqc2E
-=5WER
------END PGP SIGNATURE-----
-
---ZoaI/ZTpAVc4A5k6--
+--
+     Manfred
