@@ -1,84 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737Ab3IOFeV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 01:34:21 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:41859 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752299Ab3IOFeT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 01:34:19 -0400
-Date: Sat, 14 Sep 2013 22:34:15 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [git pull] Input updates for 3.12-rc0
-Message-ID: <20130915053415.GA9577@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lrZ03NoBR/3+SXJZ"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752861Ab3IOGJJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 02:09:09 -0400
+Received: from mout.gmx.net ([212.227.15.18]:51180 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752360Ab3IOGJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Sep 2013 02:09:08 -0400
+Message-ID: <1379225343.5545.154.camel@marge.simpson.net>
+Subject: Re: [PATCH 1/2] ipc/sem.c: Race in sem_lock()
+From: Mike Galbraith <efault@gmx.de>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>, hhuang@redhat.com
+Date: Sun, 15 Sep 2013 08:09:03 +0200
+In-Reply-To: <1379194496-4642-1-git-send-email-manfred@colorfullife.com>
+References: <1379194496-4642-1-git-send-email-manfred@colorfullife.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V03:K0:EqqqVLgLtCT8BvdxDWJQWvdpIPLZht8kX1nhdyeVTYWa/fg7IFe
+ xZRyt4AxRwd7WMhcg5SzZa9/AtpMUwAgkT+62UyBlOdrsd4Hl+mwtBboeNGQudkz4GinnCC
+ veL2Gt8iVYJoOPn/+XMmHh9SZsTywV3aAyyeL7sMaQZPOZ9vFNnXvRzYVSFPOoYSn4k/cFQ
+ jKCV2jzuINZGGwUqNgxeA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 2013-09-14 at 23:34 +0200, Manfred Spraul wrote:
 
---lrZ03NoBR/3+SXJZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> The bug is probably also present in 3.10 and 3.11, but for these kernels
+> is is probably simpler just to move the test of sma->complex_count after
+> the spin_is_locked() test.
 
-Hi Linus,
+IMHO, your 6 patch series should go to stable as well.  Scalability is
+still BAD without them.  Now, you've shown the lock split to be buggy.
 
-Please pull from:
+Logically, the whole thing should be reverted entirely in stable, or
+fixed up properly.  Humongous improvements will find their way into
+every long term stable kernel on the planet regardless, so..
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-or
-	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+Stable may as well do the Borg thing, resistance really is futile ;-)
 
-to receive updates for the input subsystem. The only change is David
-Hermann's new EVIOCREVOKE evdev ioctl that allows safely passing file
-descriptors to input devices to session processes and later being able
-to stop delivery of events through these fds so that inactive sessions
-will no longer receive user input that does not belong to them.
+-Mike
 
-Changelog:
----------
-
-David Herrmann (1):
-      Input: evdev - add EVIOCREVOKE ioctl
-
-
-Diffstat:
---------
-
- drivers/input/evdev.c      | 37 +++++++++++++++++++++++++++++++------
- include/uapi/linux/input.h |  1 +
- 2 files changed, 32 insertions(+), 6 deletions(-)
-
---=20
-Dmitry
-
-
---lrZ03NoBR/3+SXJZ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSNUbWAAoJEH70+W8r6ZYqqVMP/159JOloVUDV2uO9kCOB2Zlz
-ZFwbcXHxiqChXgZYh3+HdkLse74u10vjLxibiE0CcFM0ubIKazVxvPYlzkXTa5OB
-SAy2e1X1I/WyoCSZnG0fLMF5murL7D2/q9KPHQObYgbHau+WfJRqbrZYHbCLz7rC
-MnIk+On1ohDngiaos7kLpZEW6rpRh1TpPMsH5gmoVyjKXuQChajfNLBe+Ed7AJYC
-DXK6xmGyX3Jdgo6APfaYZeFDgJZUmiui/gt74bqKlfRZbVuvzk9la0GDgoQVvOjJ
-PW9q3nylzEkTBIWF2vKS8vTg7OjcF3dZsDJjzh4lKDP5pSH4ChELt4iWtHqyyZTz
-cd6O2oYkKO5ROF7/Cp0nGWw49HDW2SQ+CBAfY647Lo7+4UfyhNhkBIaV4kwF2XFv
-b3tISpIwkVLC6a0lrAPU8cVeZGrrzr6tCyET7MebBzkQ9Q8kvdj/IAE6uPrlK0pU
-nFnfd+GFaQnD9cN4dd166tftezz8CUKkAabsVLsc+Vm6GfCCICvr4fyQByFFS0mj
-p830x2I/FsTqPbGyauzkeKhfp6wE2FV5JPa+Q+snzmFY7bXrp3TtEylzmY+0+akV
-ZT96yPFo5n1uEABmRaqlymM0Fr8ylUo02XPf0bpSZqsaf9HL6VPJydu/j4efwsl2
-DR2tjQFB/broktrShOt3
-=gHrj
------END PGP SIGNATURE-----
-
---lrZ03NoBR/3+SXJZ--
