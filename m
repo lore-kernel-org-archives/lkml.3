@@ -1,52 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755652Ab3IOWEr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 18:04:47 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:35409 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754756Ab3IOWEp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 18:04:45 -0400
-From: Andrea Adami <andrea.adami@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] ARM: sa1100: collie.c: fall back to jedec_probe flash detection
-Date: Mon, 16 Sep 2013 00:04:42 +0200
-Message-Id: <1379282682-26985-1-git-send-email-andrea.adami@gmail.com>
-X-Mailer: git-send-email 1.8.1.5
+	id S1755486Ab3IOWEk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 18:04:40 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:37550 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754756Ab3IOWEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Sep 2013 18:04:37 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
+        <linux@roeck-us.net>, <rui.zhang@intel.com>, <wni@nvidia.com>
+CC: <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
+        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Viresh Kumar <viresh.kumar@linaro.org>, <cpufreq@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>
+Subject: [PATCH 04/16] cpufreq: cpufreq-cpu0: add dt node parsing for cooling device properties
+Date: Sun, 15 Sep 2013 18:02:31 -0400
+Message-ID: <1379282563-14650-5-git-send-email-eduardo.valentin@ti.com>
+X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
+In-Reply-To: <1379282563-14650-1-git-send-email-eduardo.valentin@ti.com>
+References: <1379282563-14650-1-git-send-email-eduardo.valentin@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zaurus collie contains 2 LH28F640BFHE-PTTL90 (64M 4Mx16) and
-at the moment cfi will not detect the collie NOR.
-In the meanwhile we can revert to the jedec-probe map which has been
-fixed with following commit:
+This patch changes the cpufreq-cpu0 driver to consider if
+a cpu needs cooling (with cpufreq). In case the cooling is needed,
+the cpu0 device tree node needs to be properly configured
+with cooling device properties.
 
-mtd: jedec_probe: fix LH28F640BF definition
-fe2f4c8e0bf2756b670ee78fa9772613a2ea8495
+In case these properties are present,, the driver will
+load a cpufreq cooling device in the system. The cpufreq-cpu0
+driver is not interested in determining how the system should
+be using the cooling device. The driver is responsible
+only of loading the cooling device.
 
-Somehow this is unsatisfactory because the flash is mounted READ ONLY
-(as from factory, with a RO cramfs)
+Describing how the cooling device will be used can be
+accomplished by setting up a thermal zone that references
+and is composed by the cpufreq cooling device.
 
-Signed-off-by: Andrea Adami <andrea.adami@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: cpufreq@vger.kernel.org
+Cc: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: devicetree-discuss@lists.ozlabs.org
+Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- arch/arm/mach-sa1100/collie.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ .../devicetree/bindings/cpufreq/cpufreq-cpu0.txt         |  7 +++++++
+ drivers/cpufreq/Kconfig                                  |  2 +-
+ drivers/cpufreq/cpufreq-cpu0.c                           | 16 ++++++++++++++++
+ 3 files changed, 24 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-sa1100/collie.c b/arch/arm/mach-sa1100/collie.c
-index 612a456..7fb96eb 100644
---- a/arch/arm/mach-sa1100/collie.c
-+++ b/arch/arm/mach-sa1100/collie.c
-@@ -289,7 +289,7 @@ static void collie_flash_exit(void)
- }
+diff --git a/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt b/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
+index 051f764..f055515 100644
+--- a/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
++++ b/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
+@@ -15,6 +15,10 @@ Optional properties:
+ - clock-latency: Specify the possible maximum transition latency for clock,
+   in unit of nanoseconds.
+ - voltage-tolerance: Specify the CPU voltage tolerance in percentage.
++- #cooling-cells:
++- cooling-min-level:
++- cooling-max-level:
++     Please refer to Documentation/devicetree/bindings/thermal/thermal.txt.
  
- static struct flash_platform_data collie_flash_data = {
--	.map_name	= "cfi_probe",
-+	.map_name	= "jedec_probe",
- 	.init		= collie_flash_init,
- 	.set_vpp	= collie_set_vpp,
- 	.exit		= collie_flash_exit,
+ Examples:
+ 
+@@ -33,6 +37,9 @@ cpus {
+ 			198000  850000
+ 		>;
+ 		clock-latency = <61036>; /* two CLK32 periods */
++		#cooling-cells = <2>;
++		cooling-min-level = <0>;
++		cooling-max-level = <2>;
+ 	};
+ 
+ 	cpu@1 {
+diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
+index 534fcb8..92e6921 100644
+--- a/drivers/cpufreq/Kconfig
++++ b/drivers/cpufreq/Kconfig
+@@ -186,7 +186,7 @@ config CPU_FREQ_GOV_CONSERVATIVE
+ 
+ config GENERIC_CPUFREQ_CPU0
+ 	tristate "Generic CPU0 cpufreq driver"
+-	depends on HAVE_CLK && REGULATOR && PM_OPP && OF
++	depends on HAVE_CLK && REGULATOR && PM_OPP && OF && CPU_THERMAL
+ 	select CPU_FREQ_TABLE
+ 	help
+ 	  This adds a generic cpufreq driver for CPU0 frequency management.
+diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
+index cbfffa9..c573e95 100644
+--- a/drivers/cpufreq/cpufreq-cpu0.c
++++ b/drivers/cpufreq/cpufreq-cpu0.c
+@@ -12,7 +12,9 @@
+ #define pr_fmt(fmt)	KBUILD_MODNAME ": " fmt
+ 
+ #include <linux/clk.h>
++#include <linux/cpu_cooling.h>
+ #include <linux/cpufreq.h>
++#include <linux/cpumask.h>
+ #include <linux/err.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
+@@ -20,6 +22,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/slab.h>
++#include <linux/thermal.h>
+ 
+ static unsigned int transition_latency;
+ static unsigned int voltage_tolerance; /* in percentage */
+@@ -28,6 +31,7 @@ static struct device *cpu_dev;
+ static struct clk *cpu_clk;
+ static struct regulator *cpu_reg;
+ static struct cpufreq_frequency_table *freq_table;
++static struct thermal_cooling_device *cdev;
+ 
+ static int cpu0_verify_speed(struct cpufreq_policy *policy)
+ {
+@@ -255,6 +259,17 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
+ 		goto out_free_table;
+ 	}
+ 
++	/*
++	 * For now, just loading the cooling device;
++	 * thermal DT code takes care of matching them.
++	 */
++	if (of_find_property(np, "#cooling-cells", NULL)) {
++		cdev = of_cpufreq_cooling_register(np, cpu_present_mask);
++		if (IS_ERR(cdev))
++			pr_err("running cpufreq without cooling device: %ld\n",
++			       PTR_ERR(cdev));
++	}
++
+ 	of_node_put(np);
+ 	return 0;
+ 
+@@ -267,6 +282,7 @@ out_put_node:
+ 
+ static int cpu0_cpufreq_remove(struct platform_device *pdev)
+ {
++	cpufreq_cooling_unregister(cdev);
+ 	cpufreq_unregister_driver(&cpu0_cpufreq_driver);
+ 	opp_free_cpufreq_table(cpu_dev, &freq_table);
+ 
 -- 
-1.8.1.5
+1.8.2.1.342.gfa7285d
 
