@@ -1,72 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757120Ab3IOPwh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 11:52:37 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:53227 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756992Ab3IOPwg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 11:52:36 -0400
-Message-ID: <5235E5E1.3040808@kernel.org>
-Date: Sun, 15 Sep 2013 17:52:49 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
+	id S1757171Ab3IOP43 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 11:56:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30173 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757024Ab3IOP42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Sep 2013 11:56:28 -0400
+Date: Sun, 15 Sep 2013 17:50:06 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Hurley <peter@hurleysoftware.com>
+Cc: codonell <codonell@redhat.com>, Eduard Benes <ebenes@redhat.com>,
+        Karel Srot <ksrot@redhat.com>, Matt Newsome <mnewsome@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/1] tty: disassociate_ctty() sends the extra SIGCONT
+Message-ID: <20130915155006.GA11913@redhat.com>
 MIME-Version: 1.0
-To: Matthias Kaehlcke <matthias.list@kaehlcke.net>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Felipe Balbi <balbi@ti.com>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] iio: ti_am335x_adc: Take touchscreen channels into
- account for conversion timeout
-References: <f1830a7d0debce351966d2f3232158313d87dcc0.1378846446.git.matthias@kaehlcke.net> <20130910210228.GC30481@raspi> <5235DD9A.5040700@kernel.org>
-In-Reply-To: <5235DD9A.5040700@kernel.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/13 17:17, Jonathan Cameron wrote:
-> On 09/10/13 22:02, Matthias Kaehlcke wrote:
->> The calculation of the old conversion timeout value was based on the number of
->> channels used by this driver. This doesn't take into account that other channels
->> can be used by the touchscreen driver. Adjust the timeout value to the maximum
->> if the touchscreen driver is enabled
->>
->> Signed-off-by: Matthias Kaehlcke <matthias@kaehlcke.net>
-> Hmm... This is a bit of an uggly solution.  Can we do anything neater via some
-> callbacks in the underlying mfd?  Rachna, any thoughts on this?
-Ah, Rachna's email is dead.  So, anyone else care to comment?
-> 
-> If not I'm happy to take this as fixing a real problem and we can tidy up later
-> if needed.
-> 
-> Jonathan
->> ---
->>  drivers/iio/adc/ti_am335x_adc.c | 4 ++++
->>  1 file changed, 4 insertions(+)
->>
->> diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
->> index 3ceac3e..898fc78 100644
->> --- a/drivers/iio/adc/ti_am335x_adc.c
->> +++ b/drivers/iio/adc/ti_am335x_adc.c
->> @@ -146,7 +146,11 @@ static int tiadc_read_raw(struct iio_dev *indio_dev,
->>  	bool found = false;
->>  	u32 step_en;
->>  	unsigned long timeout = jiffies + usecs_to_jiffies
->> +#ifdef CONFIG_TOUCHSCREEN_TI_AM335X_TSC
->> +				(IDLE_TIMEOUT * TOTAL_CHANNELS);
->> +#else
->>  				(IDLE_TIMEOUT * adc_dev->channels);
->> +#endif
->>  	step_en = get_adc_step_mask(adc_dev);
->>  	am335x_tsc_se_set(adc_dev->mfd_tscadc, step_en);
->>  
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Hello.
+
+I know nothing about tty's, I have no idea why disassociate_ctty()
+checked on_exit before kill_pgrp(SIGCONT). And why this depends on
+tty/old_pgrp/TTY_DRIVER_TYPE_PTY.
+
+But this was changed in v3.10, probably by f91e2590 "tty: Signal
+foreground group processes in hangup", and this breaks LSB tests
+which do not expect the "wrong" SIGCONT.
+
+The patch cc's stable, but it needs the ack or nack from someone
+who these HUP/CONT rules.
+
+IOW, I won't argue if the user-visible (and undocumented) change
+added by f91e2590 is actually fine, in this case LSB should be
+fixed.
+
+Oleg.
+
