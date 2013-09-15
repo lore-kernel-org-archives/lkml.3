@@ -1,207 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757004Ab3IOJKf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 05:10:35 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:35040 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753563Ab3IOJKd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 05:10:33 -0400
-Date: Sun, 15 Sep 2013 11:10:29 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: David Ahern <dsahern@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] perf test-hack: Split out feature tests to cache them and to
- build them in parallel
-Message-ID: <20130915091029.GA21465@gmail.com>
-References: <20130912133855.GA23780@gmail.com>
- <CA+55aFwgyjqRHxLaWGxxsg_v07FrxbVTeLdHTGp7MfeSRjrKsQ@mail.gmail.com>
- <CA+55aFyCeXXr=57em8CC_Uzfk5PvOw0RHyA309wuOP-oDL7VxA@mail.gmail.com>
- <20130912184341.GA11400@ghostprotocols.net>
- <52321CE4.1080804@gmail.com>
- <20130912200236.GC11400@ghostprotocols.net>
- <20130912203116.GD32644@gmail.com>
- <20130912204313.GA3259@gmail.com>
+	id S1756908Ab3IOJT0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 05:19:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15318 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751357Ab3IOJTZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Sep 2013 05:19:25 -0400
+Date: Sun, 15 Sep 2013 14:49:05 +0530 (IST)
+From: P J P <ppandit@redhat.com>
+X-X-Sender: pjp@dhcp193-39.pnq.redhat.com
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] Export initial ramdisk compression config
+Message-ID: <alpine.LFD.2.03.1309151434580.7830@erqung.pbz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130912204313.GA3259@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: MULTIPART/MIXED; BOUNDARY="1091184577-1494639324-1379236756=:7830"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-So, the discussion died down a bit, so just to demonstrate how feature 
-tests should be done IMO, here's a quick hack to perf that adds a new 
-'make feature-check' test-target and factors out 4 standalone feature 
-tests:
+--1091184577-1494639324-1379236756=:7830
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 
- $ make feature-check
- ...
- Testing features:
- dwarf  support:  disabled
- ELF    support:  enabled
- glibc  support:  enabled
- Bionic support:  disabled
+   Hello,
 
-Repeat invocations only rebuild the testcases that failed. If no testcase 
-fails then nothing is rebuilt and the features check runs very fast.
+While building the 3.11 kernel recently, I bumped into this issue.
 
-Even in the worst-case when most testcases are rebuilt there's a big 
-improvement in runtime due to building the testcases in parallel.
+Menuconfig allows one to choose compression format of an initial ramdisk 
+image. But this selection does not result in creation of a duly compressed 
+initramfs image. Because - $ make install - does not pass on the selected 
+compression option to dracut(8) tool, which generates the initramfs file. This 
+leads to a situation wherein the initramfs file is gzip(1) compressed, but the 
+kernel knows only to decompress the user's chosen compression format.
 
-NOTE: the new testcases are not fed back into perf's 
-NO_DWARF/NO_LIBELF/etc. flag hierarchy yet, the patch only demonstrates 
-that this method is a viable and fast method that solves most of our 
-current problems in this area.
+The attached patch herein, attempts to fix this issue by exporting the 
+compression configuration option to an environment variable of a sub-shell 
+spawned by Make(1) with the invocation of installkernel(8) during the 
+installation process.
 
-Other advantages over the current config/feature-tests.mak method:
+The dracut(8) & new-kernel-pkg(8) tools need to be patched to recognise and 
+read such an environment variable and use the selected compression algorithm 
+while creating the initial ramdisk image files.
 
- - The individual testcases can be built/tested in the feature-checks/ 
-   directory as well, individually
+Could someone please review this one too?
 
- - The testcases are simple, plain, standalone C files, unlike
-   config/feature-tests.mak which suffers from escaping complications.
+Thank you.
+--
+Prasad J Pandit / Red Hat Security Response Team
+DB7A 84C5 D3F9 7CD1 B5EB  C939 D048 7860 3655 602B
+--1091184577-1494639324-1379236756=:7830
+Content-Type: TEXT/PLAIN; charset=US-ASCII; name=0002-Export-initial-ramdisk-compression-config-option.patch
+Content-Transfer-Encoding: BASE64
+Content-ID: <alpine.LFD.2.03.1309151449050.7830@erqung.pbz>
+Content-Description: 
+Content-Disposition: attachment; filename=0002-Export-initial-ramdisk-compression-config-option.patch
 
-'make clean' in feature-checks/ gets rid of all testcase binaries.
+RnJvbSA4ODg3OGM3ZGZiMDRlNjliNzVmMTUxOGZlODA5YjkxNzA5NWEzM2I4
+IE1vbiBTZXAgMTcgMDA6MDA6MDAgMjAwMQ0KRnJvbTogUCBKIFAgPHByYXNh
+ZEByZWRoYXQuY29tPg0KRGF0ZTogU3VuLCAxNSBTZXAgMjAxMyAxMzozNzo0
+MyArMDUzMA0KU3ViamVjdDogW1BBVENIIDIvMl0gRXhwb3J0IGluaXRpYWwg
+cmFtZGlzayBjb21wcmVzc2lvbiBjb25maWcgb3B0aW9uDQoNCk1ha2UgbWVu
+dWNvbmZpZyBhbGxvd3Mgb25lIHRvIGNob29zZSBjb21wcmVzc2lvbiBmb3Jt
+YXQgb2YgYW4NCmluaXRpYWwgcmFtZGlzayBpbWFnZS4gQnV0IHRoaXMgY2hv
+aWNlIGRvZXMgbm90IHJlc3VsdCBpbiBkdWx5DQpjb21wcmVzc2VkIHJhbWRp
+c2sgaW1hZ2UuIEJlY2F1c2UgLSAkIG1ha2UgaW5zdGFsbCAtIGRvZXMgbm90
+DQpwYXNzIG9uIHRoZSBzZWxlY3RlZCBjb21wcmVzc2lvbiBjaG9pY2UgdG8g
+dGhlIGRyYWN1dCg4KSB0b29sLA0Kd2hpY2ggY3JlYXRlcyB0aGUgaW5pdHJh
+bWZzIGZpbGUuIGRyYWN1dCg4KSBnZW5lcmF0ZXMgdGhlIGltYWdlDQp3aXRo
+IHRoZSBkZWZhdWx0IGNvbXByZXNzaW9uLCBpZS4gZ3ppcCgxKS4NCg0KVGhp
+cyBwYXRjaCBleHBvcnRzIHRoZSBzZWxlY3RlZCBjb21wcmVzc2lvbiBvcHRp
+b24gdG8gYSBzdWItc2hlbGwNCmVudmlyb25tZW50LCBzbyB0aGF0IGl0IGNv
+dWxkIGJlIHVzZWQgYnkgZHJhY3V0KDgpIHRvb2wgdG8gZ2VuZXJhdGUNCmFw
+cHJvcHJpYXRlbHkgY29tcHJlc3NlZCBpbml0cmFtZnMgaW1hZ2VzLg0KDQpU
+aGVyZSBpc24ndCBhIHN0cmFpZ2h0IGZvcndhcmQgd2F5IHRvIHBhc3Mgb24g
+b3B0aW9ucyB0byBkcmFjdXQoOCkNCnZpYSBwb3NpdGlvbmFsIHBhcmFtZXRl
+cnMuIEJlY2F1c2UgaXQgaXMgaW5kaXJlY3RseSBpbnZva2VkIGF0IHRoZQ0K
+ZW5kIG9mIGEgJCBtYWtlIGluc3RhbGwgc2VxdWVuY2UuDQoNCiAjIG1ha2Ug
+aW5zdGFsbA0KICAgLT4gYXJjaC8kYXJjaC9ib290L01ha2VmaWxlDQogICAg
+LT4gYXJjaC8kYXJjaC9ib290L2luc3RhbGwuc2gNCiAgICAgLT4gL3NiaW5n
+L2luc3RhbGxrZXJuZWwgLi4uDQogICAgICAtPiAvc2Jpbi9uZXcta2VybmVs
+LXBrZyAuLi4NCiAgICAgICAtPiAvc2Jpbi9kcmFjdXQgLi4uDQoNClNpZ25l
+ZC1vZmYtYnk6IFAgSiBQIDxwcmFzYWRAcmVkaGF0LmNvbT4NCg0KZGlmZiAt
+LWdpdCBhL2FyY2gveDg2L01ha2VmaWxlIGIvYXJjaC94ODYvTWFrZWZpbGUN
+CmluZGV4IDQxMjUwZmIuLjlmNGNkZjFkIDEwMDY0NA0KLS0tIGEvYXJjaC94
+ODYvTWFrZWZpbGUNCisrKyBiL2FyY2gveDg2L01ha2VmaWxlDQpAQCAtMTEs
+NiArMTEsMjMgQEAgZWxzZQ0KICAgICAgICAgS0JVSUxEX0RFRkNPTkZJRyA6
+PSAkKEFSQ0gpX2RlZmNvbmZpZw0KIGVuZGlmDQogDQorIyBTZWxlY3QgaW5p
+dGlhbCByYW1kaXNrIGNvbXByZXNzaW9uIGZvcm1hdCwgZGVmYXVsdCBpcyBn
+emlwKDEpLg0KKyMgVGhpcyBzaGFsbCBiZSB1c2VkIGJ5IHRoZSBkcmFjdXQo
+OCkgdG9vbCB3aGlsZSBjcmVhdGluZyBhbiBpbml0cmFtZnMgaW1hZ2UuDQor
+Iw0KK0lOSVRSRF9DT01QUkVTUz1nemlwDQoraWZlcSAoJChDT05GSUdfUkRf
+QlpJUDIpLCB5KQ0KKyAgICAgICAgSU5JVFJEX0NPTVBSRVNTPWJ6aXAyDQor
+ZWxzZSBpZmVxICgkKENPTkZJR19SRF9MWk1BKSwgeSkNCisgICAgICAgIElO
+SVRSRF9DT01QUkVTUz1sem1hDQorZWxzZSBpZmVxICgkKENPTkZJR19SRF9Y
+WiksIHkpDQorICAgICAgICBJTklUUkRfQ09NUFJFU1M9eHoNCitlbHNlIGlm
+ZXEgKCQoQ09ORklHX1JEX0xaTyksIHkpDQorICAgICAgICBJTklUUkRfQ09N
+UFJFU1M9bHpvDQorZWxzZSBpZmVxICgkKENPTkZJR19SRF9MWjQpLCB5KQ0K
+KyAgICAgICAgSU5JVFJEX0NPTVBSRVNTPWx6NA0KK2VuZGlmDQorZXhwb3J0
+IElOSVRSRF9DT01QUkVTUw0KKw0KICMgQklUUyBpcyB1c2VkIGFzIGV4dGVu
+c2lvbiBmb3IgZmlsZXMgd2hpY2ggYXJlIGF2YWlsYWJsZSBpbiBhIDMyIGJp
+dA0KICMgYW5kIGEgNjQgYml0IHZlcnNpb24gdG8gc2ltcGxpZnkgc2hhcmVk
+IE1ha2VmaWxlcy4NCiAjIGUuZy46IG9iai15ICs9IGZvb18kKEJJVFMpLm8N
+CmRpZmYgLS1naXQgYS9pbml0L2RvX21vdW50c19yZC5jIGIvaW5pdC9kb19t
+b3VudHNfcmQuYw0KaW5kZXggNzZmYWVjMS4uYjNkNmMzOCAxMDA2NDQNCi0t
+LSBhL2luaXQvZG9fbW91bnRzX3JkLmMNCisrKyBiL2luaXQvZG9fbW91bnRz
+X3JkLmMNCkBAIC01Nyw2ICs1NywxMSBAQCBzdGF0aWMgaW50IF9faW5pdCBj
+cmRfbG9hZChpbnQgaW5fZmQsIGludCBvdXRfZmQsIGRlY29tcHJlc3NfZm4g
+ZGVjbyk7DQogICoJY3JhbWZzDQogICoJc3F1YXNoZnMNCiAgKglnemlwDQor
+ICoJYnppcDINCisgKglsem1hDQorICoJeHoNCisgKglsem8NCisgKglsejQN
+CiAgKi8NCiBzdGF0aWMgaW50IF9faW5pdA0KIGlkZW50aWZ5X3JhbWRpc2tf
+aW1hZ2UoaW50IGZkLCBpbnQgc3RhcnRfYmxvY2ssIGRlY29tcHJlc3NfZm4g
+KmRlY29tcHJlc3NvcikNCi0tIA0KMS44LjMuMQ0KDQo=
 
-Thanks,
-
-	Ingo
-
----------------------->
-
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 3a0ff7f..e6398e7 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -816,3 +816,17 @@ clean: $(LIBTRACEEVENT)-clean $(LIBLK)-clean
- .PHONY: all install clean strip $(LIBTRACEEVENT) $(LIBLK)
- .PHONY: shell_compatibility_test please_set_SHELL_PATH_to_a_more_modern_shell
- .PHONY: .FORCE-PERF-VERSION-FILE TAGS tags cscope .FORCE-PERF-CFLAGS
-+
-+#
-+# Build the feature check binaries in parallel, ignore errors, ignore return value and suppress output:
-+#
-+feature-check-build:
-+	@echo "Testing features:"
-+	@-make -i -j -C feature-checks >/dev/null 2>&1
-+
-+feature-check: feature-check-build
-+	@echo -n "dwarf  support:  "; [ -f feature-checks/test-dwarf  ] && echo enabled || echo disabled
-+	@echo -n "ELF    support:  "; [ -f feature-checks/test-libelf ] && echo enabled || echo disabled
-+	@echo -n "glibc  support:  "; [ -f feature-checks/test-glibc  ] && echo enabled || echo disabled
-+	@echo -n "Bionic support:  "; [ -f feature-checks/test-bionic ] && echo enabled || echo disabled
-+
-diff --git a/tools/perf/feature-checks/Makefile b/tools/perf/feature-checks/Makefile
-new file mode 100644
-index 0000000..dea10c8
---- /dev/null
-+++ b/tools/perf/feature-checks/Makefile
-@@ -0,0 +1,26 @@
-+
-+FILES=test-hello test-dwarf test-libelf test-glibc test-bionic
-+
-+all: $(FILES)
-+
-+###############################
-+
-+test-hello: test-hello.c
-+	$(CC) -o $@ $@.c
-+
-+test-dwarf: test-dwarf.c
-+	$(CC) -o $@ $@.c -ldw
-+
-+test-libelf: test-libelf.c
-+	$(CC) -o $@ $@.c -lelf
-+
-+test-glibc: test-glibc.c
-+	$(CC) -o $@ $@.c
-+
-+test-bionic: test-bionic.c
-+	$(CC) -o $@ $@.c
-+
-+###############################
-+
-+clean:
-+	rm -f $(FILES)
-diff --git a/tools/perf/feature-checks/test-bionic.c b/tools/perf/feature-checks/test-bionic.c
-new file mode 100644
-index 0000000..eac24e9
---- /dev/null
-+++ b/tools/perf/feature-checks/test-bionic.c
-@@ -0,0 +1,6 @@
-+#include <android/api-level.h>
-+
-+int main(void)
-+{
-+	return __ANDROID_API__;
-+}
-diff --git a/tools/perf/feature-checks/test-dwarf.c b/tools/perf/feature-checks/test-dwarf.c
-new file mode 100644
-index 0000000..783dfcd
---- /dev/null
-+++ b/tools/perf/feature-checks/test-dwarf.c
-@@ -0,0 +1,9 @@
-+#include <dwarf.h>
-+#include <elfutils/libdw.h>
-+#include <elfutils/version.h>
-+
-+int main(void)
-+{
-+	Dwarf *dbg = dwarf_begin(0, DWARF_C_READ);
-+	return (long)dbg;
-+}
-diff --git a/tools/perf/feature-checks/test-glibc.c b/tools/perf/feature-checks/test-glibc.c
-new file mode 100644
-index 0000000..13c66a5
---- /dev/null
-+++ b/tools/perf/feature-checks/test-glibc.c
-@@ -0,0 +1,8 @@
-+#include <gnu/libc-version.h>
-+
-+int main(void)
-+{
-+	const char *version = gnu_get_libc_version();
-+	return (long)version;
-+}
-+
-diff --git a/tools/perf/feature-checks/test-hello b/tools/perf/feature-checks/test-hello
-new file mode 100755
-index 0000000..6e9a668
-Binary files /dev/null and b/tools/perf/feature-checks/test-hello differ
-diff --git a/tools/perf/feature-checks/test-hello.c b/tools/perf/feature-checks/test-hello.c
-new file mode 100644
-index 0000000..c9f398d
---- /dev/null
-+++ b/tools/perf/feature-checks/test-hello.c
-@@ -0,0 +1,6 @@
-+#include <stdio.h>
-+
-+int main(void)
-+{
-+	return puts("hi");
-+}
-diff --git a/tools/perf/feature-checks/test-libelf b/tools/perf/feature-checks/test-libelf
-new file mode 100755
-index 0000000..bafde82
-Binary files /dev/null and b/tools/perf/feature-checks/test-libelf differ
-diff --git a/tools/perf/feature-checks/test-libelf.c b/tools/perf/feature-checks/test-libelf.c
-new file mode 100644
-index 0000000..1a08f97
---- /dev/null
-+++ b/tools/perf/feature-checks/test-libelf.c
-@@ -0,0 +1,7 @@
-+#include <libelf.h>
-+
-+int main(void)
-+{
-+	Elf *elf = elf_begin(0, ELF_C_READ, 0);
-+	return (long)elf;
-+}
+--1091184577-1494639324-1379236756=:7830--
