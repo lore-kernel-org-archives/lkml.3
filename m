@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757266Ab3IOR0z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 13:26:55 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:54278 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757187Ab3IOR0y (ORCPT
+	id S932525Ab3IORa3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 13:30:29 -0400
+Received: from relay.parallels.com ([195.214.232.42]:56018 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932122Ab3IORa1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 13:26:54 -0400
-X-Nat-Received: from [202.181.97.72]:53952 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1379266002.5645
-To: oleg@redhat.com
-Cc: viro@zeniv.linux.org.uk, rostedt@goodmis.org, fweisbec@gmail.com,
-        mingo@redhat.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kmod: Check for NULL at call_usermodehelper_exec().
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201309150910.CCE73459.VMOFtJFLSHOQFO@I-love.SAKURA.ne.jp>
-	<201309152323.GDG73435.VLOQFHOJtOFFSM@I-love.SAKURA.ne.jp>
-	<20130915163157.GB13344@redhat.com>
-	<201309160202.FBC60981.FQOHSLFMFtOJVO@I-love.SAKURA.ne.jp>
-	<20130915171549.GA15346@redhat.com>
-In-Reply-To: <20130915171549.GA15346@redhat.com>
-Message-Id: <201309160226.DGH90134.QLSFtOJOOMFHVF@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Mon, 16 Sep 2013 02:26:41 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 15092013 #11084683, status: clean
+	Sun, 15 Sep 2013 13:30:27 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+CC: Paul Turner <pjt@google.com>, <linux-kernel@vger.kernel.org>,
+        <devel@openvz.org>
+Subject: [PATCH 1/2] sched: load_balance: Prevent reselect prev dst_cpu if some pinned
+Date: Sun, 15 Sep 2013 21:30:13 +0400
+Message-ID: <281f59b6e596c718dd565ad267fc38f5b8e5c995.1379265590.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.24.21.58]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From d6ff218545060c5f8b75b15d5b34bffcf625508f Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Mon, 16 Sep 2013 02:19:10 +0900
-Subject: [PATCH] kmod: Check for NULL at call_usermodehelper_exec().
+Currently new_dst_cpu is prevented from being reselected actually, not
+dst_cpu. This can result in attempting to pull tasks to this_cpu twice.
 
-If /proc/sys/kernel/core_pattern contains only "|", NULL pointer dereference
-happens upon core dump because argv_split("") returns argv[0] == NULL.
-
-This bug was once fixed by commit 264b83c0 "usermodehelper: check
-subprocess_info->path != NULL" but was by error reintroduced by commit
-7f57cfa4 "usermodehelper: kill the sub_info->path[0] check".
-
-This bug seems to exist since 2.6.19 (the version which core dump to pipe was
-added). Depending on kernel version and config, some side effect might happen
-immediately after this oops (e.g. kernel panic with 2.6.32-358.18.1.el6).
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- kernel/kmod.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ kernel/sched/fair.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/kmod.c b/kernel/kmod.c
-index fb32636..a962470 100644
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -571,6 +571,10 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
- 	DECLARE_COMPLETION_ONSTACK(done);
- 	int retval = 0;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 9b3fe1c..cd59640 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5269,15 +5269,15 @@ more_balance:
+ 		 */
+ 		if ((env.flags & LBF_SOME_PINNED) && env.imbalance > 0) {
  
-+	if (!sub_info->path) {
-+		call_usermodehelper_freeinfo(sub_info);
-+		return -ENOENT;
-+	}
- 	helper_lock();
- 	if (!khelper_wq || usermodehelper_disabled) {
- 		retval = -EBUSY;
++			/* Prevent to re-select dst_cpu via env's cpus */
++			cpumask_clear_cpu(env.dst_cpu, env.cpus);
++
+ 			env.dst_rq	 = cpu_rq(env.new_dst_cpu);
+ 			env.dst_cpu	 = env.new_dst_cpu;
+ 			env.flags	&= ~LBF_SOME_PINNED;
+ 			env.loop	 = 0;
+ 			env.loop_break	 = sched_nr_migrate_break;
+ 
+-			/* Prevent to re-select dst_cpu via env's cpus */
+-			cpumask_clear_cpu(env.dst_cpu, env.cpus);
+-
+ 			/*
+ 			 * Go back to "more_balance" rather than "redo" since we
+ 			 * need to continue with same src_cpu.
 -- 
-1.7.1
+1.7.10.4
+
