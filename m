@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757405Ab3IOWHt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 18:07:49 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60419 "EHLO arroyo.ext.ti.com"
+	id S1755086Ab3IOWEd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 18:04:33 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60303 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757280Ab3IOWGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 18:06:43 -0400
+	id S1754687Ab3IOWEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Sep 2013 18:04:10 -0400
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
         <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
@@ -13,82 +13,79 @@ To: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
 CC: <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
         <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
         <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH 13/16] arm: dts: add omap5 GPU thermal data
-Date: Sun, 15 Sep 2013 18:02:40 -0400
-Message-ID: <1379282563-14650-14-git-send-email-eduardo.valentin@ti.com>
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: [PATCH 01/16] drivers: thermal: allow registering without .get_temp
+Date: Sun, 15 Sep 2013 18:02:28 -0400
+Message-ID: <1379282563-14650-2-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 In-Reply-To: <1379282563-14650-1-git-send-email-eduardo.valentin@ti.com>
 References: <1379282563-14650-1-git-send-email-eduardo.valentin@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes a dtsi file to contain the thermal data
-for GPU domain on OMAP5 and later SoCs. This data will
-enable a thermal shutdown at 125C.
+This patch changes the thermal core driver to allow
+registration of thermal zones without the .get_temp callback.
 
-This thermal data can be reused across TI SoC devices.
+The idea behind this change is to allow lazy registration
+of sensor callbacks.
 
-Cc: "Benoît Cousson" <bcousson@baylibre.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Ian Campbell <ian.campbell@citrix.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-omap@vger.kernel.org
-Cc: devicetree@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
+The thermal zone will be disabled whenever the ops
+does not contain a .get_temp callback. The sysfs interface
+will be returning -EINVAL on any temperature read operation.
+
+Cc: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-pm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- arch/arm/boot/dts/omap5-gpu-thermal.dtsi | 28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
- create mode 100644 arch/arm/boot/dts/omap5-gpu-thermal.dtsi
+ drivers/thermal/thermal_core.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/boot/dts/omap5-gpu-thermal.dtsi b/arch/arm/boot/dts/omap5-gpu-thermal.dtsi
-new file mode 100644
-index 0000000..08a1290
---- /dev/null
-+++ b/arch/arm/boot/dts/omap5-gpu-thermal.dtsi
-@@ -0,0 +1,28 @@
-+/*
-+ * Device Tree Source for OMAP543x SoC GPU thermal
-+ *
-+ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
-+ * Contact: Eduardo Valentin <eduardo.valentin@ti.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public License
-+ * version 2.  This program is licensed "as is" without any warranty of any
-+ * kind, whether express or implied.
-+ */
+diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
+index 4962a6a..8a94300 100644
+--- a/drivers/thermal/thermal_core.c
++++ b/drivers/thermal/thermal_core.c
+@@ -402,7 +402,7 @@ int thermal_zone_get_temp(struct thermal_zone_device *tz, unsigned long *temp)
+ 	enum thermal_trip_type type;
+ #endif
+ 
+-	if (!tz || IS_ERR(tz))
++	if (!tz || IS_ERR(tz) || !tz->ops->get_temp)
+ 		goto exit;
+ 
+ 	mutex_lock(&tz->lock);
+@@ -455,6 +455,9 @@ void thermal_zone_device_update(struct thermal_zone_device *tz)
+ {
+ 	int count;
+ 
++	if (!tz->ops->get_temp)
++		return;
 +
-+#include <dt-bindings/thermal/thermal.h>
+ 	update_temperature(tz);
+ 
+ 	for (count = 0; count < tz->trips; count++)
+@@ -1384,7 +1387,7 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
+ 	if (trips > THERMAL_MAX_TRIPS || trips < 0 || mask >> trips)
+ 		return ERR_PTR(-EINVAL);
+ 
+-	if (!ops || !ops->get_temp)
++	if (!ops)
+ 		return ERR_PTR(-EINVAL);
+ 
+ 	if (trips > 0 && (!ops->get_trip_type || !ops->get_trip_temp))
+@@ -1488,6 +1491,9 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
+ 
+ 	INIT_DELAYED_WORK(&(tz->poll_queue), thermal_zone_device_check);
+ 
++	if (!tz->ops->get_temp)
++		thermal_zone_device_set_polling(tz, 0);
 +
-+gpu_thermal: gpu_thermal {
-+	passive-delay = <250>; /* milliseconds */
-+	polling-delay = <1000>; /* milliseconds */
-+
-+		/* sensor       ID */
-+	sensors = <&bandgap     1>;
-+
-+	trips {
-+		gpu_crit: gpu_crit {
-+			temperature = <125000>; /* milliCelsius */
-+			hysteresis = <2000>; /* milliCelsius */
-+			type = <THERMAL_TRIP_CRITICAL>;
-+		};
-+	};
-+};
+ 	thermal_zone_device_update(tz);
+ 
+ 	if (!result)
 -- 
 1.8.2.1.342.gfa7285d
 
