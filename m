@@ -1,64 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598Ab3IOEyr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 00:54:47 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:60749 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751590Ab3IOEyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 00:54:45 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH 211/228] cpufreq: tegra: remove calls to cpufreq_notify_transition()
-Date: Sun, 15 Sep 2013 07:05:48 +0200
-Message-ID: <32077984.uYNhUh2ogt@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAKohpono-J-Ohzdn=pbNK+HhXhJ2Lf-UBM7OPynTgAwxLd4F4A@mail.gmail.com>
-References: <cover.1379063063.git.viresh.kumar@linaro.org> <52339729.7030309@wwwdotorg.org> <CAKohpono-J-Ohzdn=pbNK+HhXhJ2Lf-UBM7OPynTgAwxLd4F4A@mail.gmail.com>
+	id S1752737Ab3IOFeV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 01:34:21 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:41859 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752299Ab3IOFeT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Sep 2013 01:34:19 -0400
+Date: Sat, 14 Sep 2013 22:34:15 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 3.12-rc0
+Message-ID: <20130915053415.GA9577@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lrZ03NoBR/3+SXJZ"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, September 14, 2013 09:39:31 AM Viresh Kumar wrote:
-> On 14 September 2013 04:22, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> > I wonder if this series is bisectable? Perhaps I should just go and read
-> > the rest of the series, but I presume there's a patch somewhere else
-> > that adds those two cpufreq_notify_transition() to the cpufreq core.
-> > Either that happens before this patch (in which case listeners will get
-> > two notifications each time; perhaps that is safe?), or after this patch
-> > (in which case with just this patch applied, no notifications will be
-> > sent until a later patch!
-> 
-> Hmm.. Good Catch..
-> 
-> So, yes git bisect would be compilable but not runnable.. As we are
-> already serialized notifications and so two PRE notifications will
-> generate a crash..
-> 
-> But I don't want to get all that in a single patch as that would be:
-> 
->  40 files changed, 192 insertions(+), 623 deletions(-)
-> 
-> And that would be hard to review it..
-> 
-> Any suggestions?
 
-Well, I guess you can assume that everyone has a chance to review the series
-by now and send it as one patch in the next iteration.
+--lrZ03NoBR/3+SXJZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-A patch that adds 192 lines of code isn't shockingly large by any measure.
+Hi Linus,
 
-Thanks,
-Rafael
+Please pull from:
 
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+
+to receive updates for the input subsystem. The only change is David
+Hermann's new EVIOCREVOKE evdev ioctl that allows safely passing file
+descriptors to input devices to session processes and later being able
+to stop delivery of events through these fds so that inactive sessions
+will no longer receive user input that does not belong to them.
+
+Changelog:
+---------
+
+David Herrmann (1):
+      Input: evdev - add EVIOCREVOKE ioctl
+
+
+Diffstat:
+--------
+
+ drivers/input/evdev.c      | 37 +++++++++++++++++++++++++++++++------
+ include/uapi/linux/input.h |  1 +
+ 2 files changed, 32 insertions(+), 6 deletions(-)
+
+--=20
+Dmitry
+
+
+--lrZ03NoBR/3+SXJZ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSNUbWAAoJEH70+W8r6ZYqqVMP/159JOloVUDV2uO9kCOB2Zlz
+ZFwbcXHxiqChXgZYh3+HdkLse74u10vjLxibiE0CcFM0ubIKazVxvPYlzkXTa5OB
+SAy2e1X1I/WyoCSZnG0fLMF5murL7D2/q9KPHQObYgbHau+WfJRqbrZYHbCLz7rC
+MnIk+On1ohDngiaos7kLpZEW6rpRh1TpPMsH5gmoVyjKXuQChajfNLBe+Ed7AJYC
+DXK6xmGyX3Jdgo6APfaYZeFDgJZUmiui/gt74bqKlfRZbVuvzk9la0GDgoQVvOjJ
+PW9q3nylzEkTBIWF2vKS8vTg7OjcF3dZsDJjzh4lKDP5pSH4ChELt4iWtHqyyZTz
+cd6O2oYkKO5ROF7/Cp0nGWw49HDW2SQ+CBAfY647Lo7+4UfyhNhkBIaV4kwF2XFv
+b3tISpIwkVLC6a0lrAPU8cVeZGrrzr6tCyET7MebBzkQ9Q8kvdj/IAE6uPrlK0pU
+nFnfd+GFaQnD9cN4dd166tftezz8CUKkAabsVLsc+Vm6GfCCICvr4fyQByFFS0mj
+p830x2I/FsTqPbGyauzkeKhfp6wE2FV5JPa+Q+snzmFY7bXrp3TtEylzmY+0+akV
+ZT96yPFo5n1uEABmRaqlymM0Fr8ylUo02XPf0bpSZqsaf9HL6VPJydu/j4efwsl2
+DR2tjQFB/broktrShOt3
+=gHrj
+-----END PGP SIGNATURE-----
+
+--lrZ03NoBR/3+SXJZ--
