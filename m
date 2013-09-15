@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757219Ab3IOP4p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 11:56:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28742 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757187Ab3IOP4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 11:56:44 -0400
-Date: Sun, 15 Sep 2013 17:50:26 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Hurley <peter@hurleysoftware.com>
-Cc: codonell <codonell@redhat.com>, Eduard Benes <ebenes@redhat.com>,
-        Karel Srot <ksrot@redhat.com>, Matt Newsome <mnewsome@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] tty: disassociate_ctty() sends the extra SIGCONT
-Message-ID: <20130915155026.GA11917@redhat.com>
-References: <20130915155006.GA11913@redhat.com>
+	id S932266Ab3IOQHj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 12:07:39 -0400
+Received: from mail-qa0-f67.google.com ([209.85.216.67]:58867 "EHLO
+	mail-qa0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757091Ab3IOQHi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Sep 2013 12:07:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130915155006.GA11913@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Date: Sun, 15 Sep 2013 16:07:37 +0000
+X-Google-Sender-Auth: f2GU7CMFjsGehsRVfig5QB_CjO4
+Message-ID: <CAEO8Q+OLPo6dsc1Vs6-x8D4Z2nz4evGUf6fWwjxSaCN6sp-xHg@mail.gmail.com>
+Subject: My name is Mrs Emma Aiono.
+From: Mrs Emma Aiono <mrsemmaaiono01@gmail.com>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Starting from v3.10 (probably f91e2590 "tty: Signal foreground
-group processes in hangup") disassociate_ctty() sends SIGCONT
-if tty && on_exit. This breaks LSB test-suite, in particular
-test8 in _exit.c and test40 in sigcon5.c.
+Good Day Friend,
 
-Put the "!on_exit" check back to restore the old behaviour.
+My name is Mrs Emma Aiono have been suffering from Brest cancer
+disease and the doctor says that i have just few days to leave. I am
+from Australian, but based in Burkina Faso, Africa since 7 years ago as
+a business woman dealing with cotton exportation, now that i am about
+to end the race like this, without any family members and no child.
 
-Cc: stable@vger.kernel.org # v3.10+
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Karel Srot <ksrot@redhat.com>
----
- drivers/tty/tty_io.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+I have ($9.8 Million US DOLLARS) in Bank of Africa (B.O.A) which i
+instructed the bank to give African union leaders to help sick people
+around Africa . But my mind is not at rest because i am writing this
+letter now through the help of my nurse beside me here in my hospital
+room.
 
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index a9355ce..3a1a01a 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -854,7 +854,8 @@ void disassociate_ctty(int on_exit)
- 			struct pid *tty_pgrp = tty_get_pgrp(tty);
- 			if (tty_pgrp) {
- 				kill_pgrp(tty_pgrp, SIGHUP, on_exit);
--				kill_pgrp(tty_pgrp, SIGCONT, on_exit);
-+				if (!on_exit)
-+					kill_pgrp(tty_pgrp, SIGCONT, on_exit);
- 				put_pid(tty_pgrp);
- 			}
- 		}
--- 
-1.5.5.1
+I also have ($4.8 Million US Dollars) in another bank in Burkina Faso
+which i want you to claim from the bank and use help less privilege
+people in your country, but you must assure me that you will take only
+30% of the total money and give the rest 70% to the Charity
+organization and orphanage home in your country for my heart to rest.
 
+Upon the receipt of your email that you are willing and capable to
+execute my plan, i will instruct the bank management to make the
+immediate transfer into your account.
 
+Thanks and best regard
+Yours Faithfully,
+Mrs Emma Aiono
+Reply to this e-mail(mrsemmaaiono01@gmail.com).
