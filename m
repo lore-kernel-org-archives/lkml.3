@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755655Ab3IOKts (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 06:49:48 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54803 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754995Ab3IOKtr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 06:49:47 -0400
-Date: Sat, 14 Sep 2013 13:28:09 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Markus Pargmann <mpa@pengutronix.de>, kernel@pengutronix.de,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: dev->of_node overwrite can cause device loading with different
-	driver
-Message-ID: <20130914122809.GI12758@n2100.arm.linux.org.uk>
-References: <20130913155331.GC14456@pengutronix.de> <20130913171046.GA26207@kroah.com> <20130914071653.GA26512@pengutronix.de> <20130914121729.GA7823@kroah.com>
+	id S1755871Ab3IOLM0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 07:12:26 -0400
+Received: from mail.eperm.de ([89.247.134.16]:56906 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755320Ab3IOLMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Sep 2013 07:12:24 -0400
+From: Stephan Mueller <smueller@chronox.de>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: =?ISO-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
+        John Stultz <john.stultz@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, dave.taht@bufferbloat.net,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] /dev/random: Insufficient of entropy on many architectures
+Date: Sun, 15 Sep 2013 13:12:15 +0200
+Message-ID: <3242570.OlG8jyNm4p@tauon>
+User-Agent: KMail/4.10.5 (Linux/3.10.10-200.fc19.x86_64; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20130913185931.GB15366@thunk.org>
+References: <10005394.BRCyBMYWy3@tauon> <1974157.PE35U8AyTG@tauon> <20130913185931.GB15366@thunk.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130914121729.GA7823@kroah.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 14, 2013 at 05:17:29AM -0700, Greg Kroah-Hartman wrote:
-> On Sat, Sep 14, 2013 at 09:16:53AM +0200, Markus Pargmann wrote:
-> > 3. We could fix up all drivers that change the of_node. But there are
-> >    ARM DT frameworks that require a device struct as parameter instead
-> >    of a device_node parameter (e.g. soc-generic-dmaengine-pcm). So a
-> >    driver core, initialized by a glue driver with DT bindings, has to
-> >    set dev->of_node to use those frameworks. I think it is strange to
-> >    have such DT framework interfaces if a driver is not supposed to
-> >    overwrite dev->of_node permanently.
-> 
-> How about any driver that does muck with this structure, restore it
-> properly if their probe() function fails?  Yes, you show that this is
-> going to be tricky in some places (i.e. musb), but it makes sense that
-> the burden of fixing this issue would rest on them, as they are the ones
-> causing this problem, right?
+Am Freitag, 13. September 2013, 14:59:31 schrieb Theodore Ts'o:
 
-It's not about overwriting at all.
+Hi Theodore,
 
-It's quite simple:
+>On Fri, Sep 13, 2013 at 07:36:20AM +0200, Stephan Mueller wrote:
+>
+>However, if you are worried about a malicious entropy source, things
+>are a little bit different.  Suppose RDRAND == AES(i++, NSA_KEY),
+>where the NSA doesn't know the starting value of i.  But if it get can
+>get a raw RDRAND value (say, someone uses it without doing any
+>whitening as a session key or as a D-H parameter), it can decrypt the
+>output using the NSA_KEY, and then now that it knows i, it can brute
+>force break the RDRAND output, even if it's not entirely sure how many
+>times RDRAND has been called between that cleanb RDRAND value and the
+>RDRAND output it is trying to break.
+>
+>In *this* case, smearing out the value of RDRAND across the entropy
+>pool does help, becuase it makes it significantly harder to get a
+>clean RDRAND value to decrypt.
 
-1. OF creates a platform device and attaches an of_node to it.
-2. This platform device is matched using the data in the of_node structure
-   against one of the MUSB stub drivers.
-3. The MUSB stub driver creates a new platform device, and copies the
-   of_node to it, and registers it.
-4. This new platform device _can_ itself be matched against the stub
-   driver using the of_node structure.  When this happens, go to step
-   2 and repeat 2-4.
+Agreed. I was only talking about "well-behaved" entropy sources.
+>
+>
+>That being said, the much bigger problem that I'm worried about is not
+>necessarily a trojan'ed RDRAND, but rather on embedded ARM and MIPS
+>devices where we have unsufficient entropy, and on the first boot out
+>of the box, there is no random seed file that can be fixed in at boot
 
-That's where the problem is - it's not about overwriting an existing
-platform device's of_node pointer with something that the driver has
-dreamt up at all.
+Yes, my local MIPS-based router which is a very ubiquitous one in 
+Germany (Fritz Box) does not seed /dev/random but yet starts using 
+/dev/urandom during boot cycle.
 
-If we're lucky, step 3.5 would be "match against the 'musb-hdrc' driver
-and successfully probe it" which is the only thing that would break
-the above loop.
+>time.  Mixing in personalization information (serial numbers, MAC
+>addresses) which *hopefully* the NSA wouldn't know in the case of
+>pervasive, bulk surveillance, is a bit of a help.  But it's certainly
+>no help against a direct, targetted attack.
+
+That is why I am hoping that the CPU jitter as harvested by my RNG will 
+help as it delivers entropy on demand in a bandwidth where the initial 
+seeding may not needed any more and we have sufficient entropy during 
+boot sequence.
+>
+>Regards,
+>
+>						- Ted
+
+
+Ciao
+Stephan
