@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756792Ab3IOOXt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 10:23:49 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:62053 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751908Ab3IOOXs (ORCPT
+	id S1756968Ab3IOPGN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 11:06:13 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:59677 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754372Ab3IOPGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 10:23:48 -0400
-X-Nat-Received: from [202.181.97.72]:59291 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1379255014.3234
-To: oleg@redhat.com
-Cc: viro@zeniv.linux.org.uk, rostedt@goodmis.org, fweisbec@gmail.com,
-        mingo@redhat.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] kmod: Check for NULL at call_usermodehelper_exec().
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201309141632.GHD86439.VLOOOFQFJtSMFH@I-love.SAKURA.ne.jp>
-	<20130914154144.GA7884@redhat.com>
-	<201309150910.CCE73459.VMOFtJFLSHOQFO@I-love.SAKURA.ne.jp>
-In-Reply-To: <201309150910.CCE73459.VMOFtJFLSHOQFO@I-love.SAKURA.ne.jp>
-Message-Id: <201309152323.GDG73435.VLOQFHOJtOFFSM@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Sun, 15 Sep 2013 23:23:29 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 15092013 #11084683, status: clean
+	Sun, 15 Sep 2013 11:06:08 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <5235CCD8.4080304@roeck-us.net>
+Date: Sun, 15 Sep 2013 08:06:00 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: linux-kbuild <linux-kbuild@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michal Marek <mmarek@suse.cz>, Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH] modpost: Fix secondary errors seen if a single module
+ build fails
+References: <1379219942-31545-1-git-send-email-linux@roeck-us.net> <CAMuHMdWJ6w5WnY-80SQpYWiVkvaPNbU7w5-UAxqFxPfFVjB1+w@mail.gmail.com>
+In-Reply-To: <CAMuHMdWJ6w5WnY-80SQpYWiVkvaPNbU7w5-UAxqFxPfFVjB1+w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From fe6723ba2816b42e26697472a3f2a3045614032b Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Sun, 15 Sep 2013 23:17:15 +0900
-Subject: [PATCH] kmod: Check for NULL at call_usermodehelper_exec().
+On 09/15/2013 01:15 AM, Geert Uytterhoeven wrote:
+> On Sun, Sep 15, 2013 at 6:39 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> -      cmd_modpost = $(MODLISTCMD) | sed 's/\.ko$/.o/' | $(modpost) -s -T -
+>> +      cmd_modpost = $(MODLISTCMD) | sed 's/\.ko$/.o/' | \
+>> +       while read a; do [ -f $a ] && echo $a; done | $(modpost) -s -T -
+>
+> I'm wondering whether this can be filtered without using a shell while loop?
+> E.g. using "ls"?
+>
 
-If /proc/sys/kernel/core_pattern contains only "|", NULL pointer dereference
-happens upon core dump because argv_split("") returns argv[0] == NULL.
+An alternative would be "$(MODLISTCMD) | sed 's/\.ko$/.o/' | xargs -r ls 2>/dev/null | ..."
 
-This bug seems to exist since 2.6.19 (the version which core dump to pipe was
-added). Depending on kernel version and config, some side effect might happen
-immediately after this oops (e.g. kernel panic with 2.6.32-358.18.1.el6).
+I was a bit concerned about side effects of unexpected ls output.
+But I'll be happy to change it along that line if people think
+that it is better (and/or less ugly).
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
----
- kernel/kmod.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+Guenter
 
-diff --git a/kernel/kmod.c b/kernel/kmod.c
-index fb32636..3b59f6e 100644
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -572,6 +572,10 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
- 	int retval = 0;
- 
- 	helper_lock();
-+	if (!sub_info->path) {
-+		retval = -ENOENT;
-+		goto out;
-+	}
- 	if (!khelper_wq || usermodehelper_disabled) {
- 		retval = -EBUSY;
- 		goto out;
--- 
-1.7.1
