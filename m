@@ -1,70 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932487Ab3INXzI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 19:55:08 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:56134 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756832Ab3INXyi (ORCPT
+	id S1756882Ab3IOALM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 20:11:12 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:62656 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756830Ab3IOALK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 19:54:38 -0400
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Fengguang Wu <fengguang.wu@intel.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Tony Luck <tony.luck@intel.com>, gong.chen@linux.intel.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [RESEND PATCH v2 2/4] mm/hwpoison: fix miss catch transparent huge page 
-Date: Sun, 15 Sep 2013 07:53:57 +0800
-Message-Id: <1379202839-23939-2-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1379202839-23939-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1379202839-23939-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13091423-8878-0000-0000-000008D75D9A
+	Sat, 14 Sep 2013 20:11:10 -0400
+X-Nat-Received: from [202.181.97.72]:62170 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1379203854.22072
+To: oleg@redhat.com
+Cc: viro@zeniv.linux.org.uk, rostedt@goodmis.org, fweisbec@gmail.com,
+        mingo@redhat.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] argv_split: Return NULL if argument contains nonon-whitespace.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201309141632.GHD86439.VLOOOFQFJtSMFH@I-love.SAKURA.ne.jp>
+	<20130914154144.GA7884@redhat.com>
+In-Reply-To: <20130914154144.GA7884@redhat.com>
+Message-Id: <201309150910.CCE73459.VMOFtJFLSHOQFO@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sun, 15 Sep 2013 09:10:53 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 14092013 #11055784, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog:
- *v1 -> v2: reverse PageTransHuge(page) && !PageHuge(page) check 
+Oleg Nesterov wrote:
+> > upon core dump because helper_argv[0] == NULL at
+> >
+> >   helper_argv = argv_split(GFP_KERNEL, cn.corename, NULL);
+> >   call_usermodehelper_setup(helper_argv[0], ...);
+> 
+> Are you sure? See above.
+> 
 
-PageTransHuge() can't guarantee the page is transparent huge page since it 
-return true for both transparent huge and hugetlbfs pages. This patch fix 
-it by check the page is also !hugetlbfs page.
+Yes, I'm sure. execve(NULL) from user space is safe, but
+do_execve(NULL) from kernel space is not safe.
 
-Before patch:
+---------- patch start ----------
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -763,6 +763,9 @@ struct file *open_exec(const char *name)
+ 		.lookup_flags = LOOKUP_FOLLOW,
+ 	};
+ 
++	if (WARN_ON(!name))
++		return ERR_PTR(-EINVAL);
++
+ 	file = do_filp_open(AT_FDCWD, &tmp, &open_exec_flags);
+ 	if (IS_ERR(file))
+ 		goto out;
+---------- patch end ----------
 
-[  121.571128] Injecting memory failure at pfn 23a200
-[  121.571141] MCE 0x23a200: huge page recovery: Delayed
-[  140.355100] MCE: Memory failure is now running on 0x23a200
+---------- dmesg start ----------
+die[3924]: segfault at 0 ip 0804839c sp bf9d3c78 error 4 in die[8048000+1000]
+------------[ cut here ]------------
+WARNING: CPU: 1 PID: 3925 at fs/exec.c:766 open_exec+0xfd/0x110()
+Modules linked in: ipv6 binfmt_misc
+CPU: 1 PID: 3925 Comm: kworker/u4:0 Not tainted 3.11.0-10050-g3711d86-dirty #111
+Hardware name: VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform, BIOS 6.00 08/15/2008
+ 00000000 c0557e9e c068909b c0139756 c067af64 00000001 00000f55 c068909b
+ 000002fe c01da24d c01da24d 00000000 de754a80 df120b50 00000000 c013979b
+ 00000009 00000000 c01da24d de6626c0 c0158c68 df120b50 00000000 00000000
+Call Trace:
+ [<c0557e9e>] ? dump_stack+0x3e/0x50
+ [<c0139756>] ? warn_slowpath_common+0x86/0xb0
+ [<c01da24d>] ? open_exec+0xfd/0x110
+ [<c01da24d>] ? open_exec+0xfd/0x110
+ [<c013979b>] ? warn_slowpath_null+0x1b/0x20
+ [<c01da24d>] ? open_exec+0xfd/0x110
+ [<c0158c68>] ? prepare_creds+0x88/0xb0
+ [<c01da98c>] ? do_execve+0x18c/0x560
+ [<c014aa2c>] ? ____call_usermodehelper+0xbc/0xe0
+ [<c05605f7>] ? ret_from_kernel_thread+0x1b/0x28
+ [<c014aa50>] ? ____call_usermodehelper+0xe0/0xe0
+---[ end trace 63bb92bc8d58b0c2 ]---
+Core dump to | pipe failed
+---------- dmesg end ----------
 
-After patch:
+> Perhaps
+> 
+> 	--- x/kernel/kmod.c
+> 	+++ x/kernel/kmod.c
+> 	@@ -571,6 +571,9 @@ int call_usermodehelper_exec(struct subp
+> 		DECLARE_COMPLETION_ONSTACK(done);
+> 		int retval = 0;
+> 	 
+> 	+	if (!sub_info->path)
+> 	+		return -EXXX;
+> 	+
+> 		helper_lock();
+> 		if (!khelper_wq || usermodehelper_disabled) {
+> 			retval = -EBUSY;
+> 
+> ?
+> 
 
-[   94.290793] Injecting memory failure at pfn 23a000
-[   94.290800] MCE 0x23a000: huge page recovery: Delayed
-[  105.722303] MCE: Software-unpoisoned page 0x23a000
-
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
----
- mm/memory-failure.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index e28ee77..b114570 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1349,7 +1349,7 @@ int unpoison_memory(unsigned long pfn)
- 	 * worked by memory_failure() and the page lock is not held yet.
- 	 * In such case, we yield to memory_failure() and make unpoison fail.
- 	 */
--	if (PageTransHuge(page)) {
-+	if (!PageHuge(page) && PageTransHuge(page)) {
- 		pr_info("MCE: Memory failure is now running on %#lx\n", pfn);
- 			return 0;
- 	}
--- 
-1.8.1.2
-
+I'm OK with that.
