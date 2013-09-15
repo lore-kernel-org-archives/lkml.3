@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757260Ab3IORR1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 13:17:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25509 "EHLO mx1.redhat.com"
+	id S1757263Ab3IORWJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 13:22:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64659 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757231Ab3IORRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 13:17:25 -0400
-Date: Sun, 15 Sep 2013 19:11:09 +0200
+	id S1757187Ab3IORWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Sep 2013 13:22:07 -0400
+Date: Sun, 15 Sep 2013 19:15:49 +0200
 From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Eric Paris <eparis@redhat.com>, Kees Cook <keescook@chromium.org>,
-        Richard Guy Briggs <rgb@redhat.com>, Steve Grubb <sgrubb@redhat.com>,
-        Zach Levis <zml@linux.vnet.ibm.com>, linux-audit@redhat.com,
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: viro@zeniv.linux.org.uk, rostedt@goodmis.org, fweisbec@gmail.com,
+        mingo@redhat.com, akpm@linux-foundation.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/1] audit_alloc: clear TIF_SYSCALL_AUDIT if
-	!audit_context
-Message-ID: <20130915171109.GA15418@redhat.com>
-References: <20130915171038.GA15410@redhat.com>
+Subject: Re: [PATCH] kmod: Check for NULL at call_usermodehelper_exec().
+Message-ID: <20130915171549.GA15346@redhat.com>
+References: <201309141632.GHD86439.VLOOOFQFJtSMFH@I-love.SAKURA.ne.jp> <20130914154144.GA7884@redhat.com> <201309150910.CCE73459.VMOFtJFLSHOQFO@I-love.SAKURA.ne.jp> <201309152323.GDG73435.VLOQFHOJtOFFSM@I-love.SAKURA.ne.jp> <20130915163157.GB13344@redhat.com> <201309160202.FBC60981.FQOHSLFMFtOJVO@I-love.SAKURA.ne.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130915171038.GA15410@redhat.com>
+In-Reply-To: <201309160202.FBC60981.FQOHSLFMFtOJVO@I-love.SAKURA.ne.jp>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If audit_filter_task() nacks the new thread it makes sense
-to clear TIF_SYSCALL_AUDIT which can be copied from parent
-by dup_task_struct().
+On 09/16, Tetsuo Handa wrote:
+>
+> Oleg Nesterov wrote:
+> > It looks a bit ugly to check ->path under helper_lock(), just add
+> >
+> > 	if (!sub_info->path)
+> > 		retval = -ENOENT;
+> >
+> > at the start. Otherwise the code looks as if there is a subtle
+> > reason to take the lock before this check.
+>
+> Did you mean this?
+>
+>  	DECLARE_COMPLETION_ONSTACK(done);
+>  	int retval = 0;
+>
+> +	if (!sub_info->path) {
+> +		call_usermodehelper_freeinfo(sub_info);
 
-A wrong TIF_SYSCALL_AUDIT is not really bad but it triggers
-the "slow" audit paths in entry.S to ensure the task can not
-miss audit_syscall_*() calls, this is pointless if the task
-has no ->audit_context.
+Aah, sorry! I forgot about _freeinfo().
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Steve Grubb <sgrubb@redhat.com>
----
- kernel/auditsc.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+I still think that perhaps it makes sense to update the changelog,
+but this is minor.
 
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 9845cb3..95293ab 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -943,8 +943,10 @@ int audit_alloc(struct task_struct *tsk)
- 		return 0; /* Return if not auditing. */
- 
- 	state = audit_filter_task(tsk, &key);
--	if (state == AUDIT_DISABLED)
-+	if (state == AUDIT_DISABLED) {
-+		clear_tsk_thread_flag(tsk, TIF_SYSCALL_AUDIT);
- 		return 0;
-+	}
- 
- 	if (!(context = audit_alloc_context(state))) {
- 		kfree(key);
--- 
-1.5.5.1
-
+Acked-by: Oleg Nesterov <oleg@redhat.com>
 
