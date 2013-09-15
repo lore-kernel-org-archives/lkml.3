@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756973Ab3IONxj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 09:53:39 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:54697 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756541Ab3IONxh (ORCPT
+	id S1756792Ab3IOOXt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 10:23:49 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:62053 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751908Ab3IOOXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 09:53:37 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: input question: ambient light sensor button
-Date: Sun, 15 Sep 2013 15:53:33 +0200
-User-Agent: KMail/1.13.7 (Linux/3.11.0-1+synaptics-generic; KDE/4.11.1; x86_64; ; )
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart275853707.FCcElxl8mS";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201309151553.34000@pali>
+	Sun, 15 Sep 2013 10:23:48 -0400
+X-Nat-Received: from [202.181.97.72]:59291 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1379255014.3234
+To: oleg@redhat.com
+Cc: viro@zeniv.linux.org.uk, rostedt@goodmis.org, fweisbec@gmail.com,
+        mingo@redhat.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] kmod: Check for NULL at call_usermodehelper_exec().
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <201309141632.GHD86439.VLOOOFQFJtSMFH@I-love.SAKURA.ne.jp>
+	<20130914154144.GA7884@redhat.com>
+	<201309150910.CCE73459.VMOFtJFLSHOQFO@I-love.SAKURA.ne.jp>
+In-Reply-To: <201309150910.CCE73459.VMOFtJFLSHOQFO@I-love.SAKURA.ne.jp>
+Message-Id: <201309152323.GDG73435.VLOQFHOJtOFFSM@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Sun, 15 Sep 2013 23:23:29 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 15092013 #11084683, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart275853707.FCcElxl8mS
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+>From fe6723ba2816b42e26697472a3f2a3045614032b Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Sun, 15 Sep 2013 23:17:15 +0900
+Subject: [PATCH] kmod: Check for NULL at call_usermodehelper_exec().
 
-Hello,
+If /proc/sys/kernel/core_pattern contains only "|", NULL pointer dereference
+happens upon core dump because argv_split("") returns argv[0] == NULL.
 
-I do not know where to ask this question, but I think that kernel=20
-developers could help me.
+This bug seems to exist since 2.6.19 (the version which core dump to pipe was
+added). Depending on kernel version and config, some side effect might happen
+immediately after this oops (e.g. kernel panic with 2.6.32-358.18.1.el6).
 
-I have notebook with one special button on keyboard which is=20
-designed for turning ambient light sensor on and off. By default=20
-pressing button do nothing (I can turn ambient light sensor on/off=20
-via sysfs platform wmi module). Button press is reported by=20
-kernel input device AT Translated Set 2 keyboard and reports it=20
-as button "touchpad off".
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+---
+ kernel/kmod.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-Of course "touchpad off" is incorrect and I'd like to ask which=20
-kernel key or button from /usr/include/linux/input.h should be=20
-mapped for my ambient light sensor button? Is there already some?=20
-And what is strategy for allocating KEY_* and BTN_* numbers?
-
-I'd like to know this, so udev could have correct DMI keymap=20
-hooks and other userspace programs can understand ambient light=20
-sensor button correctly.
-
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart275853707.FCcElxl8mS
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlI1u90ACgkQi/DJPQPkQ1JUKQCggeHfh9PuhAZJBOCp2E7/9xrJ
-uBMAmwUqeP/8oxNljwunGa/5hqOU6F9O
-=D6r8
------END PGP SIGNATURE-----
-
---nextPart275853707.FCcElxl8mS--
+diff --git a/kernel/kmod.c b/kernel/kmod.c
+index fb32636..3b59f6e 100644
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -572,6 +572,10 @@ int call_usermodehelper_exec(struct subprocess_info *sub_info, int wait)
+ 	int retval = 0;
+ 
+ 	helper_lock();
++	if (!sub_info->path) {
++		retval = -ENOENT;
++		goto out;
++	}
+ 	if (!khelper_wq || usermodehelper_disabled) {
+ 		retval = -EBUSY;
+ 		goto out;
+-- 
+1.7.1
