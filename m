@@ -1,94 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753790Ab3IOUfW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 16:35:22 -0400
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:49370 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752888Ab3IOUfV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 16:35:21 -0400
-Date: Sun, 15 Sep 2013 22:35:20 +0200
-From: Andreas Mohr <andi@lisas.de>
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: Andreas Mohr <andi@lisas.de>, alsa-devel@alsa-project.org,
-        krzysztof.h1@wp.pl,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] ES938 support for ES18xx driver
-Message-ID: <20130915203520.GA10589@rhlx01.hs-esslingen.de>
-References: <20130915184902.GA23480@rhlx01.hs-esslingen.de>
- <201309152225.46581.linux@rainbow-software.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201309152225.46581.linux@rainbow-software.org>
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754084Ab3IOUtT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 16:49:19 -0400
+Received: from ring0.de ([91.143.88.219]:38790 "EHLO smtp.ring0.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752787Ab3IOUtQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Sep 2013 16:49:16 -0400
+X-Spam-Report: * -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
+	*      [score: 0.0000]
+From: Sebastian Reichel <sre@debian.org>
+To: Sebastian Reichel <sre@ring0.de>, Linus Walleij <linus.walleij@linaro.org>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Carlos Chinea <cch.devel@gmail.com>, Paul Walmsley <paul@pwsan.com>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>,
+        =?UTF-8?q?=27Beno=C3=AEt=20Cousson=27?= <bcousson@baylibre.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, Sebastian Reichel <sre@debian.org>
+Subject: [RFCv2 1/3] ARM: OMAP2+: hwmod-data: Add SSI information
+Date: Sun, 15 Sep 2013 22:44:14 +0200
+Message-Id: <1379277856-24571-2-git-send-email-sre@debian.org>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1379277856-24571-1-git-send-email-sre@debian.org>
+References: <1379277856-24571-1-git-send-email-sre@debian.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch adds Synchronous Serial Interface (SSI) hwmod support for
+OMAP34xx SoCs.
 
-On Sun, Sep 15, 2013 at 10:25:45PM +0200, Ondrej Zary wrote:
-> On Sunday 15 September 2013 20:49:02 Andreas Mohr wrote:
-> BTW. I've got an AZT3328 card and it works fine with your driver. Thanks for 
-> it.
+Signed-off-by: Sebastian Reichel <sre@debian.org>
+---
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c | 48 ++++++++++++++++++++++++++++++
+ 1 file changed, 48 insertions(+)
 
-What!?!? I didn't quite expect any kernel dev to have that one, too ;)
+diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+index 0c3a427..9e56fab 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+@@ -3693,6 +3693,53 @@ static struct omap_hwmod_ocp_if omap3xxx_l4_core__aes = {
+ 	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+ };
+ 
++/*
++ * 'ssi' class
++ * synchronous serial interface (multichannel and full-duplex serial if)
++ */
++
++static struct omap_hwmod_class_sysconfig omap34xx_ssi_sysc = {
++	.rev_offs	= 0x0000,
++	.sysc_offs	= 0x0010,
++	.syss_offs	= 0x0014,
++	.sysc_flags	= (SYSC_HAS_AUTOIDLE | SYSC_HAS_EMUFREE |
++			   SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE |
++			   SYSC_HAS_SOFTRESET | SYSS_HAS_RESET_STATUS),
++	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
++			   SIDLE_SMART_WKUP | MSTANDBY_FORCE | MSTANDBY_NO |
++			   MSTANDBY_SMART | MSTANDBY_SMART_WKUP),
++	.sysc_fields	= &omap_hwmod_sysc_type1,
++};
++
++static struct omap_hwmod_class omap34xx_ssi_hwmod_class = {
++	.name	= "ssi",
++	.sysc	= &omap34xx_ssi_sysc,
++};
++
++static struct omap_hwmod omap34xx_ssi_hwmod = {
++	.name		= "ssi",
++	.class		= &omap34xx_ssi_hwmod_class,
++	.clkdm_name	= "core_l4_clkdm",
++	.main_clk	= "ssi_ssr_fck",
++	.prcm		= {
++		.omap2 = {
++			.prcm_reg_id		= 1,
++			.module_bit		= OMAP3430_EN_SSI_SHIFT,
++			.module_offs		= CORE_MOD,
++			.idlest_reg_id		= 1,
++			.idlest_idle_bit	= OMAP3430ES2_ST_SSI_IDLE_SHIFT,
++		},
++	},
++};
++
++/* L4 CORE -> SSI */
++static struct omap_hwmod_ocp_if omap34xx_l4_core__ssi = {
++	.master		= &omap3xxx_l4_core_hwmod,
++	.slave		= &omap34xx_ssi_hwmod,
++	.clk		= "ssi_ick",
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
+ static struct omap_hwmod_ocp_if *omap3xxx_hwmod_ocp_ifs[] __initdata = {
+ 	&omap3xxx_l3_main__l4_core,
+ 	&omap3xxx_l3_main__l4_per,
+@@ -3818,6 +3865,7 @@ static struct omap_hwmod_ocp_if *omap34xx_hwmod_ocp_ifs[] __initdata = {
+ #ifdef CONFIG_OMAP_IOMMU_IVA2
+ 	&omap3xxx_l3_main__mmu_iva,
+ #endif
++	&omap34xx_l4_core__ssi,
+ 	NULL
+ };
+ 
+-- 
+1.8.4.rc3
 
-(got several commits sitting here and waiting for submission though)
-
-> I'm thinking about doing some reverse-engineering of thunderbird-based sound 
-> cards (VLSI Thunderbird - Aztech PCI 368-DSP, Thunderbird Avenger - Philips 
-> Acoustic/Seismic/Rhythmic Edge).
-
-Oh, nice. I've got the Aztech PCI 368-DSP, too (that was somewhat obligatory
-due to having written another Aztech card driver...).
-
-And yeah, the PCI 368 (etc.) series does seem to be some rather heavy
-support hole indeed, IIRC (especially as it's more modern PCI-based and not ISA).
-
-
-> > So perhaps ES938 has (perhaps since it might more or less conform to
-> > certain standards specs?) another control for PCM output switch as well
-> > which would need implementing or simply isn't set properly?
-> > (to clarify, we're talking about a switch which would cause output signal
-> > to be grabbed pre or post the 3D manipulation block)
-> 
-> The good thing is that there's a datasheet available for ES938 - e.g. at 
-> http://www.datasheetarchive.com/ES938-datasheet.html
-> 
-> The 3D switch works but the level doesn't. Maybe I should use only the 3 
-> specific level values from the datasheet and not a variable scale. Or just 
-> remove the level control completely as Windows driver does (there's only a 3D 
-> switch).
-
-Hmm. Perhaps they removed it "Since It Does Not Work"? ;-P
-
-
-Thanks for hinting at the TLV control dB values thingy! Didn't know that such
-thing existed, thus azt3328 does not have it (yet?).
-
-
-> > Perhaps we could have a more verbose message here?
-> > That ES938 surely must have some human-readable characteristics...
-> > (hmm, what about "ES938 3D audio effects processor found!"?)
-> > ((or "Detected ..."))
-> 
-> Yes, that's wrong - it's only for testing purposes. There should probably be 
-> no message at all as the es18xx driver itself does not display anything if 
-> everything is OK.
-
-...or that, yeah.
-
-
-> > Perhaps that check is not specific enough, i.e. it might be useful
-> > to figure out a more precise check?
-> 
-> snd_es938_read_reg() checks that the returned data match the format used by 
-> ES938. Maybe we can reread all the register values back after writing to be 
-> sure.
-
-Is there any chip ID/version register to be identified?
-
-Andreas Mohr
