@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548Ab3IOEfh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 00:35:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46662 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751590Ab3IOEff (ORCPT
+	id S932534Ab3IOEjW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 00:39:22 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:65090 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932465Ab3IOEjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 00:35:35 -0400
-Date: Sat, 14 Sep 2013 21:35:46 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Thiago Farina <tfransosi@gmail.com>
-Cc: Andre Naujoks <nautsch2@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Arnd Bergmann <arnd@arndb.de>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>,
-        Jason Baron <jbaron@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux list <linux-kernel@vger.kernel.org>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH net 2/3] lib: introduce upper case hex ascii helpers
-Message-Id: <20130914213546.ae435cdd.akpm@linux-foundation.org>
-In-Reply-To: <CACnwZYdBocYEjASpKCNZ6cfLNpzxeLxaVjLCHwxwsYO+P14tAQ@mail.gmail.com>
-References: <1379093833-4949-1-git-send-email-nautsch2@gmail.com>
-	<1379093833-4949-3-git-send-email-nautsch2@gmail.com>
-	<CACnwZYdBocYEjASpKCNZ6cfLNpzxeLxaVjLCHwxwsYO+P14tAQ@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 15 Sep 2013 00:39:21 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-kbuild@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH] modpost: Fix secondary errors seen if a single module build fails
+Date: Sat, 14 Sep 2013 21:39:02 -0700
+Message-Id: <1379219942-31545-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 15 Sep 2013 01:27:03 -0300 Thiago Farina <tfransosi@gmail.com> wrote:
+Commit ea4054a23 (modpost: handle huge numbers of modules) added
+support for building a large number of modules.
 
-> On Fri, Sep 13, 2013 at 2:37 PM, Andre Naujoks <nautsch2@gmail.com> wrote:
-> > To be able to use the hex ascii functions in case sensitive environments
-> > the array hex_asc_upper[] and the needed functions for hex_byte_pack_upper()
-> > are introduced.
-> >
-> > Signed-off-by: Andre Naujoks <nautsch2@gmail.com>
-> > ---
-> >  include/linux/kernel.h | 11 +++++++++++
-> >  lib/hexdump.c          |  2 ++
-> >  2 files changed, 13 insertions(+)
-> >
-> > diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> > index 482ad2d..672ddc4 100644
-> > --- a/include/linux/kernel.h
-> > +++ b/include/linux/kernel.h
-> > @@ -439,6 +439,17 @@ static inline char *hex_byte_pack(char *buf, u8 byte)
-> >         return buf;
-> >  }
-> >
-> > +extern const char hex_asc_upper[];
-> > +#define hex_asc_upper_lo(x)    hex_asc_upper[((x) & 0x0f)]
-> > +#define hex_asc_upper_hi(x)    hex_asc_upper[((x) & 0xf0) >> 4]
-> Does using a macro instead of a real function (static inline)
-> generates a better code?
+Unfortunately, the commit changed the semantics of the makefile: Instead of
+passing only existing object files to modpost, make now passes all expected
+object files. If make was started with option -i, this results in a modpost
+error if a single file failed to build.
 
-Yes, a static inline would be nicer, but these are derived from
-hex_asc_lo/hex_asc_hi.  If we change one we should change the other
-and that becomes a separate cleanup.  So I think this patch is
-OK as-is.
+Example with the current btrfs build falure on m68k:
 
-Also, it would make sense to get all the *hex* stuff out of kernel.h
-and into a new header file (hexchar.h?).  They're a clean
-self-contained thing and kernel.h is rather a dumping ground.
+fs/btrfs/btrfs.o: No such file or directory
+make[1]: [__modpost] Error 1 (ignored)
+
+This error is followed by lots of errors such as:
+
+m68k-linux-gcc: error: arch/m68k/emu/nfcon.mod.c: No such file or directory
+m68k-linux-gcc: fatal error: no input files
+compilation terminated.
+make[1]: [arch/m68k/emu/nfcon.mod.o] Error 1 (ignored)
+
+This doesn't matter much for normal builds, but it is annoying for builds
+started with "make -i" due to the large number of secondary errors.
+Those errors unnececessarily clog any error log and make it difficult
+to find the real errors in the build.
+
+Fix the problem by only passing existing object files to modpost.
+
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ scripts/Makefile.modpost |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/scripts/Makefile.modpost b/scripts/Makefile.modpost
+index 8dcdca2..387c806 100644
+--- a/scripts/Makefile.modpost
++++ b/scripts/Makefile.modpost
+@@ -81,7 +81,8 @@ modpost = scripts/mod/modpost                    \
+ 
+ # We can go over command line length here, so be careful.
+ quiet_cmd_modpost = MODPOST $(words $(filter-out vmlinux FORCE, $^)) modules
+-      cmd_modpost = $(MODLISTCMD) | sed 's/\.ko$$/.o/' | $(modpost) -s -T -
++      cmd_modpost = $(MODLISTCMD) | sed 's/\.ko$$/.o/' | \
++	while read a; do [ -f $$a ] && echo $$a; done | $(modpost) -s -T -
+ 
+ PHONY += __modpost
+ __modpost: $(modules:.ko=.o) FORCE
+-- 
+1.7.9.7
 
