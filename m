@@ -1,44 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757022Ab3IOJkD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 05:40:03 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:51322 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751163Ab3IOJkB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 05:40:01 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] powerpc: Make add_system_ram_resources() __init
-Date: Sun, 15 Sep 2013 11:39:36 +0200
-Message-Id: <1379237976-3241-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754720Ab3IOJud (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 05:50:33 -0400
+Received: from gnurou.org ([207.192.72.5]:40426 "EHLO mail.gnurou.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751881Ab3IOJu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Sep 2013 05:50:29 -0400
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <t.figa@samsung.com>, Dave Martin <Dave.Martin@arm.com>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Kevin Hilman <khilman@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: gnurou@gmail.com, devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH v6 3/5] ARM: tegra: split setting of CPU reset handler
+Date: Sun, 15 Sep 2013 18:40:26 +0900
+Message-Id: <1379238028-7960-4-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1379238028-7960-1-git-send-email-acourbot@nvidia.com>
+References: <1379238028-7960-1-git-send-email-acourbot@nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-add_system_ram_resources() is a subsys_initcall.
+Not all Tegra devices can set the CPU reset handler in the same way.
+In particular, devices using a TrustZone secure monitor cannot set the
+reset handler directly and need to do it through a firmware operation.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+This patch separates the act of setting the reset handler from its
+preparation, so the former can be implemented in a different way.
+
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
 ---
- arch/powerpc/mm/mem.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-tegra/reset.c | 27 +++++++++++++++++----------
+ 1 file changed, 17 insertions(+), 10 deletions(-)
 
-diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
-index 1cf9c5b..25e0f26 100644
---- a/arch/powerpc/mm/mem.c
-+++ b/arch/powerpc/mm/mem.c
-@@ -498,7 +498,7 @@ void update_mmu_cache(struct vm_area_struct *vma, unsigned long address,
-  * System memory should not be in /proc/iomem but various tools expect it
-  * (eg kdump).
-  */
--static int add_system_ram_resources(void)
-+static int __init add_system_ram_resources(void)
- {
- 	struct memblock_region *reg;
+diff --git a/arch/arm/mach-tegra/reset.c b/arch/arm/mach-tegra/reset.c
+index 1ac434e..6964117 100644
+--- a/arch/arm/mach-tegra/reset.c
++++ b/arch/arm/mach-tegra/reset.c
+@@ -33,26 +33,18 @@
  
+ static bool is_enabled;
+ 
+-static void __init tegra_cpu_reset_handler_enable(void)
++static void __init tegra_cpu_reset_handler_set(const u32 reset_address)
+ {
+-	void __iomem *iram_base = IO_ADDRESS(TEGRA_IRAM_RESET_BASE);
+ 	void __iomem *evp_cpu_reset =
+ 		IO_ADDRESS(TEGRA_EXCEPTION_VECTORS_BASE + 0x100);
+ 	void __iomem *sb_ctrl = IO_ADDRESS(TEGRA_SB_BASE);
+ 	u32 reg;
+ 
+-	BUG_ON(is_enabled);
+-	BUG_ON(tegra_cpu_reset_handler_size > TEGRA_IRAM_RESET_HANDLER_SIZE);
+-
+-	memcpy(iram_base, (void *)__tegra_cpu_reset_handler_start,
+-			tegra_cpu_reset_handler_size);
+-
+ 	/*
+ 	 * NOTE: This must be the one and only write to the EVP CPU reset
+ 	 *       vector in the entire system.
+ 	 */
+-	writel(TEGRA_IRAM_RESET_BASE + tegra_cpu_reset_handler_offset,
+-			evp_cpu_reset);
++	writel(reset_address, evp_cpu_reset);
+ 	wmb();
+ 	reg = readl(evp_cpu_reset);
+ 
+@@ -66,6 +58,21 @@ static void __init tegra_cpu_reset_handler_enable(void)
+ 		writel(reg, sb_ctrl);
+ 		wmb();
+ 	}
++}
++
++static void __init tegra_cpu_reset_handler_enable(void)
++{
++	void __iomem *iram_base = IO_ADDRESS(TEGRA_IRAM_RESET_BASE);
++	const u32 reset_address = TEGRA_IRAM_RESET_BASE +
++						tegra_cpu_reset_handler_offset;
++
++	BUG_ON(is_enabled);
++	BUG_ON(tegra_cpu_reset_handler_size > TEGRA_IRAM_RESET_HANDLER_SIZE);
++
++	memcpy(iram_base, (void *)__tegra_cpu_reset_handler_start,
++			tegra_cpu_reset_handler_size);
++
++	tegra_cpu_reset_handler_set(reset_address);
+ 
+ 	is_enabled = true;
+ }
 -- 
-1.7.9.5
+1.8.4
 
