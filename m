@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756176Ab3IOWFk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 18:05:40 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:51705 "EHLO bear.ext.ti.com"
+	id S1756316Ab3IOWFt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 18:05:49 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:51711 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754393Ab3IOWFh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 18:05:37 -0400
+	id S1754429Ab3IOWFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Sep 2013 18:05:47 -0400
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
         <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
@@ -14,133 +14,95 @@ CC: <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
         <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
         <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
         Eduardo Valentin <eduardo.valentin@ti.com>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [PATCH 05/16] hwmon: lm75: expose to thermal fw via DT nodes
-Date: Sun, 15 Sep 2013 18:02:32 -0400
-Message-ID: <1379282563-14650-6-git-send-email-eduardo.valentin@ti.com>
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH 08/16] arm: dts: add omap4 CPU thermal data
+Date: Sun, 15 Sep 2013 18:02:35 -0400
+Message-ID: <1379282563-14650-9-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 In-Reply-To: <1379282563-14650-1-git-send-email-eduardo.valentin@ti.com>
 References: <1379282563-14650-1-git-send-email-eduardo.valentin@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds to lm75 temperature sensor the possibility
-to expose itself as thermal zone device, registered on the
-thermal framework.
+This patch changes a dtsi file to contain the thermal data
+for MPU domain on OMAP4 and later SoCs. This data will
+enable the passive cooling with CPUfreq cooling device
+at 100C and the system will do a thermal shutdown at 125C.
 
-The thermal zone is built only if a device tree node
-describing a thermal zone for this sensor is present
-inside the lm75 DT node. Otherwise, the driver behavior
-will be the same.
+This thermal data can be reused across TI SoC devices.
 
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: Guenter Roeck <linux@roeck-us.net>
-Cc: lm-sensors@lm-sensors.org
+Cc: "Benoît Cousson" <bcousson@baylibre.com>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Ian Campbell <ian.campbell@citrix.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-omap@vger.kernel.org
+Cc: devicetree@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- drivers/hwmon/lm75.c | 46 +++++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 41 insertions(+), 5 deletions(-)
+ arch/arm/boot/dts/omap4-cpu-thermal.dtsi | 41 ++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+ create mode 100644 arch/arm/boot/dts/omap4-cpu-thermal.dtsi
 
-diff --git a/drivers/hwmon/lm75.c b/drivers/hwmon/lm75.c
-index c03b490..2ba09ef 100644
---- a/drivers/hwmon/lm75.c
-+++ b/drivers/hwmon/lm75.c
-@@ -27,6 +27,8 @@
- #include <linux/hwmon-sysfs.h>
- #include <linux/err.h>
- #include <linux/mutex.h>
-+#include <linux/of.h>
-+#include <linux/thermal.h>
- #include "lm75.h"
- 
- 
-@@ -70,6 +72,7 @@ static const u8 LM75_REG_TEMP[3] = {
- /* Each client has this additional data */
- struct lm75_data {
- 	struct device		*hwmon_dev;
-+	struct thermal_zone_device	*tz;
- 	struct mutex		update_lock;
- 	u8			orig_conf;
- 	u8			resolution;	/* In bits, between 9 and 12 */
-@@ -90,22 +93,42 @@ static struct lm75_data *lm75_update_device(struct device *dev);
- 
- /*-----------------------------------------------------------------------*/
- 
-+static inline long lm75_reg_to_mc(s16 temp, u8 resolution)
-+{
-+	return ((temp >> (16 - resolution)) * 1000) >> (resolution - 8);
-+}
+diff --git a/arch/arm/boot/dts/omap4-cpu-thermal.dtsi b/arch/arm/boot/dts/omap4-cpu-thermal.dtsi
+new file mode 100644
+index 0000000..dd69788
+--- /dev/null
++++ b/arch/arm/boot/dts/omap4-cpu-thermal.dtsi
+@@ -0,0 +1,41 @@
++/*
++ * Device Tree Source for OMAP4/5 SoC CPU thermal
++ *
++ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
++ * Contact: Eduardo Valentin <eduardo.valentin@ti.com>
++ *
++ * This file is licensed under the terms of the GNU General Public License
++ * version 2.  This program is licensed "as is" without any warranty of any
++ * kind, whether express or implied.
++ */
 +
- /* sysfs attributes for hwmon */
- 
-+static int lm75_read_temp(void *dev, long *temp)
-+{
-+	struct lm75_data *data = lm75_update_device(dev);
-+	long temperature;
++#include <dt-bindings/thermal/thermal.h>
 +
-+	if (IS_ERR(data))
-+		return PTR_ERR(data);
++cpu_thermal: cpu_thermal {
++	passive-delay = <250>; /* milliseconds */
++	polling-delay = <1000>; /* milliseconds */
 +
-+	temperature = lm75_reg_to_mc(data->temp[0], data->resolution);
-+	if (temperature < 0)
-+		dev_warn(data->hwmon_dev,
-+			 "operating in negative temp: %ld\n", temperature);
++		/* sensor       ID */
++        sensors = <&bandgap     0>;
 +
-+	*temp = temperature;
++        trips {
++                cpu_alert0: cpu_alert {
++                        temperature = <100000>; /* milliCelsius */
++                        hysteresis = <2000>; /* milliCelsius */
++                        type = <THERMAL_TRIP_PASSIVE>;
++                };
++                cpu_crit: cpu_crit {
++                        temperature = <125000>; /* milliCelsius */
++                        hysteresis = <2000>; /* milliCelsius */
++                        type = <THERMAL_TRIP_CRITICAL>;
++                };
++        };
 +
-+	return 0;
-+}
-+
- static ssize_t show_temp(struct device *dev, struct device_attribute *da,
- 			 char *buf)
- {
- 	struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
- 	struct lm75_data *data = lm75_update_device(dev);
--	long temp;
- 
- 	if (IS_ERR(data))
- 		return PTR_ERR(data);
- 
--	temp = ((data->temp[attr->index] >> (16 - data->resolution)) * 1000)
--	       >> (data->resolution - 8);
--
--	return sprintf(buf, "%ld\n", temp);
-+	return sprintf(buf, "%ld\n", lm75_reg_to_mc(data->temp[attr->index],
-+						    data->resolution));
- }
- 
- static ssize_t set_temp(struct device *dev, struct device_attribute *da,
-@@ -271,6 +294,17 @@ lm75_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 		goto exit_remove;
- 	}
- 
-+	data->tz = thermal_zone_of_sensor_register(&client->dev,
-+						   0,
-+						   &client->dev,
-+						   lm75_read_temp, NULL);
-+	if (IS_ERR(data->tz)) {
-+		dev_warn(&client->dev,
-+			 "Could not parse thermal data in device tree: %ld\n",
-+			 PTR_ERR(data->tz));
-+		data->tz = NULL;
-+	}
-+
- 	dev_info(&client->dev, "%s: sensor '%s'\n",
- 		 dev_name(data->hwmon_dev), client->name);
- 
-@@ -285,6 +319,8 @@ static int lm75_remove(struct i2c_client *client)
- {
- 	struct lm75_data *data = i2c_get_clientdata(client);
- 
-+	/* thermal zone life cycle is not our responsibility */
-+	thermal_zone_of_sensor_unregister(&client->dev, data->tz);
- 	hwmon_device_unregister(data->hwmon_dev);
- 	sysfs_remove_group(&client->dev.kobj, &lm75_group);
- 	lm75_write_value(client, LM75_REG_CONF, data->orig_conf);
++	cooling-attachments {
++		attach0 {
++			trip = <&cpu_alert0>;
++			cooling-device =
++				<&cpu0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
++		};
++	};
++};
 -- 
 1.8.2.1.342.gfa7285d
 
