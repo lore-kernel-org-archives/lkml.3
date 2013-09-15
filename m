@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756968Ab3IOPGN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 11:06:13 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:59677 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754372Ab3IOPGI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 11:06:08 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <5235CCD8.4080304@roeck-us.net>
-Date: Sun, 15 Sep 2013 08:06:00 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: linux-kbuild <linux-kbuild@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michal Marek <mmarek@suse.cz>, Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH] modpost: Fix secondary errors seen if a single module
- build fails
-References: <1379219942-31545-1-git-send-email-linux@roeck-us.net> <CAMuHMdWJ6w5WnY-80SQpYWiVkvaPNbU7w5-UAxqFxPfFVjB1+w@mail.gmail.com>
-In-Reply-To: <CAMuHMdWJ6w5WnY-80SQpYWiVkvaPNbU7w5-UAxqFxPfFVjB1+w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757031Ab3IOPMT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 11:12:19 -0400
+Received: from mga02.intel.com ([134.134.136.20]:11876 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756650Ab3IOPMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Sep 2013 11:12:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,909,1371106800"; 
+   d="scan'208";a="403616406"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 1/2] mei: mei_release: drop redundant check if cb is NULL
+Date: Sun, 15 Sep 2013 18:11:06 +0300
+Message-Id: <1379257867-9107-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/2013 01:15 AM, Geert Uytterhoeven wrote:
-> On Sun, Sep 15, 2013 at 6:39 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->> -      cmd_modpost = $(MODLISTCMD) | sed 's/\.ko$/.o/' | $(modpost) -s -T -
->> +      cmd_modpost = $(MODLISTCMD) | sed 's/\.ko$/.o/' | \
->> +       while read a; do [ -f $a ] && echo $a; done | $(modpost) -s -T -
->
-> I'm wondering whether this can be filtered without using a shell while loop?
-> E.g. using "ls"?
->
+mei_io_cb_free follows kfree design and check for NULL internally
 
-An alternative would be "$(MODLISTCMD) | sed 's/\.ko$/.o/' | xargs -r ls 2>/dev/null | ..."
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/misc/mei/main.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-I was a bit concerned about side effects of unexpected ls output.
-But I'll be happy to change it along that line if people think
-that it is better (and/or less ugly).
-
-Guenter
+diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
+index b8f8604..c71420e 100644
+--- a/drivers/misc/mei/main.c
++++ b/drivers/misc/mei/main.c
+@@ -165,10 +165,7 @@ static int mei_release(struct inode *inode, struct file *file)
+ 
+ 	file->private_data = NULL;
+ 
+-	if (cb) {
+-		mei_io_cb_free(cb);
+-		cb = NULL;
+-	}
++	mei_io_cb_free(cb);
+ 
+ 	kfree(cl);
+ out:
+-- 
+1.8.3.1
 
