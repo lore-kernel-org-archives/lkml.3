@@ -1,138 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754928Ab3IOXdp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 19:33:45 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:55600 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754158Ab3IOXdn (ORCPT
+	id S1755017Ab3IOX4c (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 19:56:32 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:40649 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754187Ab3IOX4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 19:33:43 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <523643D4.30208@roeck-us.net>
-Date: Sun, 15 Sep 2013 16:33:40 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-CC: swarren@wwwdotorg.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ian.campbell@citrix.com, rob.herring@calxeda.com, rui.zhang@intel.com,
-        wni@nvidia.com, grant.likely@linaro.org, durgadoss.r@intel.com,
-        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
-        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>
-Subject: Re: [PATCH 06/16] hwmon: tmp102: expose to thermal fw via DT nodes
-References: <1379282563-14650-1-git-send-email-eduardo.valentin@ti.com> <1379282563-14650-7-git-send-email-eduardo.valentin@ti.com>
-In-Reply-To: <1379282563-14650-7-git-send-email-eduardo.valentin@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 15 Sep 2013 19:56:30 -0400
+Date: Mon, 16 Sep 2013 09:56:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: linux-next: manual merge of the h8300-remove tree with Linus' tree
+Message-Id: <20130916095618.ebbe64569b730dc9bd5593c5@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__16_Sep_2013_09_56_18_+1000_MbhPV7Xwydt_F8JG"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/2013 03:02 PM, Eduardo Valentin wrote:
-> This patch adds to tmp102 temperature sensor the possibility
-> to expose itself as thermal zone device, registered on the
-> thermal framework.
->
-> The thermal zone is built only if a device tree node
-> describing a thermal zone for this sensor is present
-> inside the tmp102 DT node. Otherwise, the driver behavior
-> will be the same.
->
-> Cc: Jean Delvare <khali@linux-fr.org>
-> Cc: Guenter Roeck <linux@roeck-us.net>
-> Cc: lm-sensors@lm-sensors.org
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
-> ---
->   drivers/hwmon/tmp102.c | 28 ++++++++++++++++++++++++++++
->   1 file changed, 28 insertions(+)
->
-> diff --git a/drivers/hwmon/tmp102.c b/drivers/hwmon/tmp102.c
-> index d7b47ab..e432444 100644
-> --- a/drivers/hwmon/tmp102.c
-> +++ b/drivers/hwmon/tmp102.c
-> @@ -27,6 +27,8 @@
->   #include <linux/mutex.h>
->   #include <linux/device.h>
->   #include <linux/jiffies.h>
-> +#include <linux/thermal.h>
-> +#include <linux/of.h>
->
->   #define	DRIVER_NAME "tmp102"
->
-> @@ -50,6 +52,7 @@
->
->   struct tmp102 {
->   	struct device *hwmon_dev;
-> +	struct thermal_zone_device *tz;
->   	struct mutex lock;
->   	u16 config_orig;
->   	unsigned long last_update;
-> @@ -93,6 +96,19 @@ static struct tmp102 *tmp102_update_device(struct i2c_client *client)
->   	return tmp102;
->   }
->
-> +static int tmp102_read_temp(void *dev, long *temp)
-> +{
-> +	struct tmp102 *tmp102 = tmp102_update_device(to_i2c_client(dev));
-> +
-> +	if (tmp102->temp[0] < 0)
-> +		dev_warn(tmp102->hwmon_dev,
-> +			 "operating in negative temp: %d\n", tmp102->temp[0]);
-> +
+--Signature=_Mon__16_Sep_2013_09_56_18_+1000_MbhPV7Xwydt_F8JG
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Please drop this warning.
+Hi Guenter,
 
-Guenter
+Today's linux-next merge of the h8300-remove tree got a conflict in
+arch/h8300/Kconfig between commit 0244ad004a54 ("Remove GENERIC_HARDIRQ
+config option") from Linus' tree and commit d02babe847bf ("Drop support
+for Renesas H8/300 (h8300) architecture") from the h8300-remove tree.
 
-> +	*temp = tmp102->temp[0];
-> +
-> +	return 0;
-> +}
-> +
->   static ssize_t tmp102_show_temp(struct device *dev,
->   				struct device_attribute *attr,
->   				char *buf)
-> @@ -204,6 +220,16 @@ static int tmp102_probe(struct i2c_client *client,
->   		goto fail_remove_sysfs;
->   	}
->
-> +	tmp102->tz = thermal_zone_of_sensor_register(&client->dev, 0,
-> +						     &client->dev,
-> +						     tmp102_read_temp, NULL);
-> +	if (IS_ERR(tmp102->tz)) {
-> +		dev_warn(&client->dev,
-> +			 "Could not parse thermal data in device tree: %ld\n",
-> +			 PTR_ERR(tmp102->tz));
+I just removed the file and can carry the fix as necessary (no action is
+required).
 
-Please drop this warning. You already create error messages in
-thermal_zone_of_sensor_register(). That should be sufficient.
-The same applies to the lm75 patch.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-As a side note, I would suggest to provide devm_ functions for registration.
-We are introducing those for hwmon registration, which enables us to remove
-most _remove functions. It would be great if we can keep it that way.
+--Signature=_Mon__16_Sep_2013_09_56_18_+1000_MbhPV7Xwydt_F8JG
+Content-Type: application/pgp-signature
 
-On a higher level, I don't think it is a good idea to make thermal zones
-and thermal zone data mandatory. Many systems may neither need nor want it.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
 
-Guenter
+iQIcBAEBCAAGBQJSNkknAAoJEECxmPOUX5FEjjgP/0pXGp6BXkRKjmgVbKsZKu9J
+4Lq8s3WoRRoUaS7qJ9EzJWtrYESShGYllcRNSgXaUSz+kpWkzSwZr6S7KVxiXsis
+vgZux0jV4/gpNs7vWPTedsHRhNi5qxEPV8ZBYJHUK35j7z+GNB6dJt9zZVYwVhSp
+mhU11kCTEZgaqfNfiYMwHZ5k0NMd63OLAKHS41bHxCRRvgOxt+hv6z1q1P6ogf4W
+hJSsADAuvI2A36XmLCq1AY7KyJnbotcZyr3xvPu9r/dI8LbHd/FRYu7xCZBH+PI/
+5cBe000p5fosJv9d8OvJDkgjB1LUlh9WyjookZHbgYzhjkIZgQSzZ6+Yill5Bd3Q
+IwOROSjkQad2xFe9jBqJ48Yv04E1GXxDVyB4K6qOwpb5YkiTS6sCC7QmyK3Tbe06
+GcYFXJH2tBIBx+VGRFcouW0eAyBXEStMoiinNjChiVvfRxo2L8iJaxfxcN647Rym
+vYbH/ebjVoTSMohpnNc2s2zhrrZhO4MUEHQLxuLG7wlSb5SQNEijSiukNPvFUuuB
+BZfGLVp8O5S0pDhBIRUMLONraqwKZvO8JEh0+pxVa6pnwCFL0W2roVu6pzAfndnF
+GU80fkt9l8xqca4dRUd9KX4u8Hy6KnQSoMoH+Kzhtozc5pPwKFdGXxruzo1E6KHm
+2s6QV85xTs8rLHIExYxy
+=ds8G
+-----END PGP SIGNATURE-----
 
-> +		tmp102->tz = NULL;
-> +	}
-> +
->   	dev_info(&client->dev, "initialized\n");
->
->   	return 0;
-> @@ -220,6 +246,8 @@ static int tmp102_remove(struct i2c_client *client)
->   {
->   	struct tmp102 *tmp102 = i2c_get_clientdata(client);
->
-> +	/* thermal zone life cycle is not our responsibility */
-> +	thermal_zone_of_sensor_unregister(&client->dev, tmp102->tz);
->   	hwmon_device_unregister(tmp102->hwmon_dev);
->   	sysfs_remove_group(&client->dev.kobj, &tmp102_attr_group);
->
->
-
+--Signature=_Mon__16_Sep_2013_09_56_18_+1000_MbhPV7Xwydt_F8JG--
