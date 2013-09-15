@@ -1,17 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750Ab3IOUtq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 16:49:46 -0400
-Received: from ring0.de ([91.143.88.219]:38796 "EHLO smtp.ring0.de"
+	id S1754561Ab3IOUto (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 16:49:44 -0400
+Received: from ring0.de ([91.143.88.219]:38810 "EHLO smtp.ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753567Ab3IOUtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 16:49:19 -0400
+	id S1754156Ab3IOUtX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Sep 2013 16:49:23 -0400
 X-Spam-Report: * -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
 	*      [score: 0.0000]
-	*  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
-	*       See http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
-	*      for more information.
-	*      [URIs: lkml.org]
 From: Sebastian Reichel <sre@debian.org>
 To: Sebastian Reichel <sre@ring0.de>, Linus Walleij <linus.walleij@linaro.org>,
         Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
@@ -29,81 +25,182 @@ Cc: Kevin Hilman <khilman@deeprootsystems.com>,
         devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-omap@vger.kernel.org, Sebastian Reichel <sre@debian.org>
-Subject: [RFCv2 0/3] OMAP SSI driver
-Date: Sun, 15 Sep 2013 22:44:13 +0200
-Message-Id: <1379277856-24571-1-git-send-email-sre@debian.org>
+Subject: [RFCv2 3/3] ARM: dts: N900: Add SSI information
+Date: Sun, 15 Sep 2013 22:44:16 +0200
+Message-Id: <1379277856-24571-4-git-send-email-sre@debian.org>
 X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1379277856-24571-1-git-send-email-sre@debian.org>
+References: <1379277856-24571-1-git-send-email-sre@debian.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Add SSI device tree data for OMAP34xx and Nokia N900.
 
-Here is the second round of the OMAP SSI driver patches.
-
-In this round I added/fixed:
-- Usage of runtime PM
-  Previously runtime PM was only used to enable/disable the involved
-  clocks. Now the driver makes use of resume/suspend callbacks, which
-  simplified its code (the driver did its own reference counting).
-- Removal of deprecated IRQF_DISABLED flag from irq requests
-- HWMOD: set SSI parent to L4-Core instead of L3
-  I checked the public OMAP3 TRM, which assigns the address space used
-  by the driver as reserved L4-Core address space.
-- HWMOD: removed data, which will be specified via Device Tree
-- Change omap_ssi_port.wktest and omap_ssi_port.wkin_cken from
-  "unsigned int" to "bool"
-- Change omap_ssi_port.wk_refcount from "int" to "unsigned int"
-- Convert __raw_read* to read*_relaxed / write*_relaxed
-- Removal of involved platform and board code
-- Split driver into omap_ssi.c and omap_ssi_port.c
-  This changes helps in making the DT interface cleaner.
-- Creation & Documentation of DT bindings
-
-TODO:
-- Central Message Queue
-  I did not yet implement a central message queue in the HSI framework.
-  I would prefer to do this after SSI is working in the mainline kernel,
-  since that makes testing easier.
-- HSI client registration via DT
-  This needs changes in the HSI framework, which currently assumes,
-  that clients are registered via board support code. This is more
-  or less independent of the controller and should be added in an
-  independent patchset IMHO.
-
-Version 1 (*) of the patchset: https://lkml.org/lkml/2013/8/11/67
-
-(*) There have been patchsets send out by Carlos before my RFCv1,
-    see RFCv1 for details.
-
--- Sebastian
-
-Sebastian Reichel (3):
-  ARM: OMAP2+: hwmod-data: Add SSI information
-  ARM: OMAP2+: HSI: Introduce OMAP SSI driver
-  ARM: dts: N900: Add SSI information
-
- Documentation/devicetree/bindings/hsi/omap_ssi.txt |   73 ++
- arch/arm/boot/dts/omap3-n900.dts                   |    8 +
- arch/arm/boot/dts/omap34xx.dtsi                    |   49 +
- arch/arm/mach-omap2/omap_hwmod_3xxx_data.c         |   48 +
- drivers/hsi/Kconfig                                |    1 +
- drivers/hsi/Makefile                               |    1 +
- drivers/hsi/controllers/Kconfig                    |   20 +
- drivers/hsi/controllers/Makefile                   |    6 +
- drivers/hsi/controllers/omap_ssi.c                 |  585 +++++++++
- drivers/hsi/controllers/omap_ssi.h                 |  167 +++
- drivers/hsi/controllers/omap_ssi_port.c            | 1346 ++++++++++++++++++++
- drivers/hsi/controllers/omap_ssi_regs.h            |  172 +++
- 12 files changed, 2476 insertions(+)
+Signed-off-by: Sebastian Reichel <sre@debian.org>
+---
+ Documentation/devicetree/bindings/hsi/omap_ssi.txt | 73 ++++++++++++++++++++++
+ arch/arm/boot/dts/omap3-n900.dts                   |  8 +++
+ arch/arm/boot/dts/omap34xx.dtsi                    | 49 +++++++++++++++
+ 3 files changed, 130 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/hsi/omap_ssi.txt
- create mode 100644 drivers/hsi/controllers/Kconfig
- create mode 100644 drivers/hsi/controllers/Makefile
- create mode 100644 drivers/hsi/controllers/omap_ssi.c
- create mode 100644 drivers/hsi/controllers/omap_ssi.h
- create mode 100644 drivers/hsi/controllers/omap_ssi_port.c
- create mode 100644 drivers/hsi/controllers/omap_ssi_regs.h
 
+diff --git a/Documentation/devicetree/bindings/hsi/omap_ssi.txt b/Documentation/devicetree/bindings/hsi/omap_ssi.txt
+new file mode 100644
+index 0000000..e3597eb
+--- /dev/null
++++ b/Documentation/devicetree/bindings/hsi/omap_ssi.txt
+@@ -0,0 +1,73 @@
++OMAP SSI controller bindings
++
++Required properties:
++- compatible:		Should be set to the following value
++                        ti,omap3-ssi (applicable to OMAP34xx devices)
++- ti,hwmods:		Name of the hwmod associated to the controller, which
++			is "ssi".
++- reg:			Contains SSI register address range (base address and
++			length).
++- reg-names:		Contains the names of the address ranges. It's
++                        expected, that "sys" and "gdd" address ranges are
++			provided.
++- interrupts: 		Contains the interrupt information for the controller.
++- interrupt-names:      Contains the names of the interrupts. It's expected,
++			that "gdd_mpu" is provided.
++- ranges		Required as an empty node
++- #address-cells	Should be set to <1>
++- #size-cells		Should be set to <1>
++
++Each port is represented as a sub-node of the ti,omap3-ssi device.
++
++Required Port sub-node properties:
++- compatible:		Should be set to the following value
++                        ti,omap3-ssi-port (applicable to OMAP34xx devices)
++- reg:			Contains port's register address range (base address
++			and length).
++- reg-names:		Contains the names of the address ranges. It's
++                        expected, that "tx" and "rx" address ranges are
++			provided.
++- interrupt-parent	Should be a phandle for the interrupt controller
++- interrupts:		Contains the interrupt information for the port.
++- interrupt-names:	Contains the names of the interrupts. It's expected,
++			that "mpu_irq0" and "mpu_irq1" are provided.
++- ti,ssi-cawake-gpio:	Defines which GPIO pin is used to signify CAWAKE
++			events for the port. This is an optional board-specific
++			property. If it's missing the port will not be
++			enabled.
++
++Example for Nokia N900:
++
++ssi-controller@48058000 {
++	compatible = "ti,omap3-ssi";
++	ti,hwmods = "ssi";
++
++	reg = <0x48058000 0x1000>,
++	      <0x48059000 0x1000>;
++	reg-names = "sys",
++		    "gdd";
++
++	interrupts = <55>;
++	interrupt-names = "gdd_mpu";
++
++	#address-cells = <1>;
++	#size-cells = <1>;
++	ranges;
++
++	ssi-port@0 {
++		compatible = "ti,omap3-ssi-port";
++
++		reg = <0x4805a000 0x800>,
++		      <0x4805a800 0x800>;
++		reg-names = "tx",
++			    "rx";
++
++		interrupt-parent = <&intc>;
++		interrupts = <51>,
++			     <52>;
++		interrupt-names = "mpu_irq0",
++				  "mpu_irq1";
++
++		ti,ssi-cawake-gpio = <&gpio5 23 GPIO_ACTIVE_HIGH>; /* 151 */
++	}
++}
+diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
+index 0582356..cc4a3e2 100644
+--- a/arch/arm/boot/dts/omap3-n900.dts
++++ b/arch/arm/boot/dts/omap3-n900.dts
+@@ -186,6 +186,14 @@
+ 	power = <50>;
+ };
+ 
++&ssi_port1 {
++	ti,ssi-cawake-gpio = <&gpio5 23 GPIO_ACTIVE_HIGH>; /* 151 */
++};
++
++&ssi_port2 {
++	status = "disabled";
++};
++
+ &uart1 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&uart1_pins>;
+diff --git a/arch/arm/boot/dts/omap34xx.dtsi b/arch/arm/boot/dts/omap34xx.dtsi
+index 5355d61..393b7a7 100644
+--- a/arch/arm/boot/dts/omap34xx.dtsi
++++ b/arch/arm/boot/dts/omap34xx.dtsi
+@@ -25,4 +25,53 @@
+ 			clock-latency = <300000>; /* From legacy driver */
+ 		};
+ 	};
++
++	ocp {
++		ssi: ssi-controller@48058000 {
++			compatible = "ti,omap3-ssi";
++			ti,hwmods = "ssi";
++
++			reg = <0x48058000 0x1000>,
++			      <0x48059000 0x1000>;
++			reg-names = "sys",
++				    "gdd";
++
++			interrupts = <55>;
++			interrupt-names = "gdd_mpu";
++
++			#address-cells = <1>;
++			#size-cells = <1>;
++			ranges;
++
++			ssi_port1: ssi-port@0 {
++				compatible = "ti,omap3-ssi-port";
++
++				reg = <0x4805a000 0x800>,
++				      <0x4805a800 0x800>;
++				reg-names = "tx",
++					    "rx";
++
++				interrupt-parent = <&intc>;
++				interrupts = <51>,
++					     <52>;
++				interrupt-names = "mpu_irq0",
++						  "mpu_irq1";
++			};
++
++			ssi_port2: ssi-port@1 {
++				compatible = "ti,omap3-ssi-port";
++
++				reg = <0x4805b000 0x800>,
++				      <0x4805b800 0x800>;
++				reg-names = "tx",
++					    "rx";
++
++				interrupt-parent = <&intc>;
++				interrupts = <53>,
++					     <54>;
++				interrupt-names = "mpu_irq0",
++						  "mpu_irq1";
++			};
++		};
++	};
+ };
 -- 
 1.8.4.rc3
 
