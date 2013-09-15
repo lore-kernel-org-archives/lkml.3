@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932437Ab3IOQdS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 12:33:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16779 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757130Ab3IOQdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 12:33:00 -0400
-Date: Sun, 15 Sep 2013 18:26:41 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: viro@zeniv.linux.org.uk, rostedt@goodmis.org, fweisbec@gmail.com,
-        mingo@redhat.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] argv_split: Return NULL if argument contains
-	nonon-whitespace.
-Message-ID: <20130915162641.GA13344@redhat.com>
-References: <201309141632.GHD86439.VLOOOFQFJtSMFH@I-love.SAKURA.ne.jp> <20130914154144.GA7884@redhat.com> <201309150910.CCE73459.VMOFtJFLSHOQFO@I-love.SAKURA.ne.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201309150910.CCE73459.VMOFtJFLSHOQFO@I-love.SAKURA.ne.jp>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932531Ab3IOQeJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 12:34:09 -0400
+Received: from mx-out.ocsa-data.net ([194.36.166.37]:56489 "EHLO
+	mx-out.ocsa-data.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932446Ab3IOQeI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Sep 2013 12:34:08 -0400
+Message-ID: <1379262842.9257.1.camel@dworkin>
+Subject: Re: [PATCH v3 8/8] industrialio: use anon_inode_getfd() with
+ O_CLOEXEC flag
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org
+Date: Sun, 15 Sep 2013 18:34:02 +0200
+In-Reply-To: <5235DFD2.4050008@kernel.org>
+References: <cover.1378460926.git.ydroneaud@opteya.com>
+	 <91c7332bc0616447587ec64a0c8f512a1d9e498d.1378460926.git.ydroneaud@opteya.com>
+	 <5235DFD2.4050008@kernel.org>
+Organization: OPTEYA
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+X-Spam-Score: -1.44
+X-abuse-contact: abuse@ocsa-data.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15, Tetsuo Handa wrote:
->
-> Oleg Nesterov wrote:
-> > > upon core dump because helper_argv[0] == NULL at
-> > >
-> > >   helper_argv = argv_split(GFP_KERNEL, cn.corename, NULL);
-> > >   call_usermodehelper_setup(helper_argv[0], ...);
-> >
-> > Are you sure? See above.
-> >
->
-> Yes, I'm sure.
+Hi,
 
-I thougt you meant that call_usermodehelper_setup() crashes. "See above"
-means that afaics it should crash in do_filp_open().
+Le dimanche 15 septembre 2013 à 17:26 +0100, Jonathan Cameron a écrit :
+> On 09/06/13 11:39, Yann Droneaud wrote:
 
-> execve(NULL) from user space is safe,
+[...]
 
-because it never does do_execve(NULL),
+> >   http://lkml.kernel.org/r/cover.1377372576.git.ydroneaud@opteya.com
+> > 
+> > Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+> > Link: http://lkml.kernel.org/r/cover.1378460926.git.ydroneaud@opteya.com
+> 
+> Thanks Yann.  I had no idea about this issue but your well supported description
+> above made this easy to review.
+> 
+> Applied to the togreg branch of git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio.git
+> as it's not a regression but if there is support for pushing this back to stable
+> I personally am not against it.
+> 
 
-> but
-> do_execve(NULL) from kernel space is not safe.
+It's not a -stable materiel. So let it flow to v3.12 or v3.13.
 
-Yes, this is clear.
+Thanks for the review.
 
-> > Perhaps
-> >
-> > 	--- x/kernel/kmod.c
-> > 	+++ x/kernel/kmod.c
-> > 	@@ -571,6 +571,9 @@ int call_usermodehelper_exec(struct subp
-> > 		DECLARE_COMPLETION_ONSTACK(done);
-> > 		int retval = 0;
-> >
-> > 	+	if (!sub_info->path)
-> > 	+		return -EXXX;
-> > 	+
-> > 		helper_lock();
-> > 		if (!khelper_wq || usermodehelper_disabled) {
-> > 			retval = -EBUSY;
-> >
-> > ?
-> >
->
-> I'm OK with that.
+Regards.
 
-OK,
+-- 
+Yann Droneaud
+OPTEYA
 
-Oleg.
 
