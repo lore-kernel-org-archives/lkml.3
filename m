@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757269Ab3IOWGe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 18:06:34 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37624 "EHLO comal.ext.ti.com"
+	id S1757315Ab3IOWGo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 18:06:44 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:51733 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756485Ab3IOWGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 18:06:30 -0400
+	id S1757278Ab3IOWGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Sep 2013 18:06:41 -0400
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
         <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
@@ -18,9 +18,9 @@ CC: <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
         Tony Lindgren <tony@atomide.com>,
         Russell King <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH 16/16] arm: dts: add cooling properties on omap5 cpu node
-Date: Sun, 15 Sep 2013 18:02:43 -0400
-Message-ID: <1379282563-14650-17-git-send-email-eduardo.valentin@ti.com>
+Subject: [PATCH 12/16] arm: dts: add cooling properties on omap4460 cpu node
+Date: Sun, 15 Sep 2013 18:02:39 -0400
+Message-ID: <1379282563-14650-13-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 In-Reply-To: <1379282563-14650-1-git-send-email-eduardo.valentin@ti.com>
 References: <1379282563-14650-1-git-send-email-eduardo.valentin@ti.com>
@@ -31,7 +31,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OMAP5 devices can reach high temperatures and thus
+OMAP4460 devices can reach high temperatures and thus
 needs to have cpufreq-cooling on systems running on it.
 
 This patch adds the required cooling device properties
@@ -51,23 +51,25 @@ Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- arch/arm/boot/dts/omap5.dtsi | 3 +++
- 1 file changed, 3 insertions(+)
+ arch/arm/boot/dts/omap4460.dtsi | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
-index b2ca0cf..9eb95b7 100644
---- a/arch/arm/boot/dts/omap5.dtsi
-+++ b/arch/arm/boot/dts/omap5.dtsi
-@@ -37,6 +37,9 @@
- 			device_type = "cpu";
- 			compatible = "arm,cortex-a15";
- 			reg = <0x0>;
+diff --git a/arch/arm/boot/dts/omap4460.dtsi b/arch/arm/boot/dts/omap4460.dtsi
+index b6b9b83..0806f03 100644
+--- a/arch/arm/boot/dts/omap4460.dtsi
++++ b/arch/arm/boot/dts/omap4460.dtsi
+@@ -20,6 +20,11 @@
+ 				920000  1313000
+ 			>;
+ 			clock-latency = <300000>; /* From legacy driver */
 +
 +			/* cooling options */
++			cooling-min-level = <0>;
++			cooling-max-level = <2>;
 +			#cooling-cells = <2>; /* min followed by max */
  		};
- 		cpu@1 {
- 			device_type = "cpu";
+ 	};
+ 
 -- 
 1.8.2.1.342.gfa7285d
 
