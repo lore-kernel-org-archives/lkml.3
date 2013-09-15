@@ -1,74 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753719Ab3IOH70 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 03:59:26 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:45573 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752985Ab3IOH7Z convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 03:59:25 -0400
-MIME-Version: 1.0
-From: Hui Zhu <teawater@gmail.com>
-Date: Sun, 15 Sep 2013 15:58:44 +0800
-Message-ID: <CANFwon1yAeqsDCq7rs=ak3pEUD=sMd81t3C45yTZF+TPLmGOBw@mail.gmail.com>
-Subject: KGTP (Linux debugger and tracer) 20130915 release (bugs fix and pdf doc)
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gdb@sourceware.org" <gdb@sourceware.org>, kgtp <kgtp@freelists.org>
-Cc: Marc Khouzam <marc.khouzam@ericsson.com>,
-        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
-        Steven <mqyoung@gmail.com>, Coly Li <colyli@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Geunsik Lim <leemgs1@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Tao Ma <taoma.tm@gmail.com>,
-        Oliver Yang <yangoliver@gmail.com>, Brad_Dixon@mentor.com
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
+	id S1753842Ab3IOIHL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 04:07:11 -0400
+Received: from mout.gmx.net ([212.227.17.20]:63300 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752985Ab3IOIHC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Sep 2013 04:07:02 -0400
+Message-ID: <1379232411.5545.183.camel@marge.simpson.net>
+Subject: Re: [PATCH 1/2] ipc/sem.c: Race in sem_lock()
+From: Mike Galbraith <efault@gmx.de>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>, hhuang@redhat.com
+Date: Sun, 15 Sep 2013 10:06:51 +0200
+In-Reply-To: <1379225343.5545.154.camel@marge.simpson.net>
+References: <1379194496-4642-1-git-send-email-manfred@colorfullife.com>
+	 <1379225343.5545.154.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V03:K0:Cv1tH0XT5CVaH2eF5HkV0NoNeXjIO/W7U+YVEA0yJlzeTW7Y5dr
+ 5iZyKFmJvByhKNohwOH4dir1oofITqqbG6oew65pdwAapmo91S1KivPbH1++wmHAVFFKLAs
+ 89/876oeu+9JX7DGf7CGp8rnxiAnIxxg45fwrn/nDQdJmmX8hqAa93G+APXw72PrzMNwuia
+ TtiHAuELTA/+4vOvKxjDA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+On Sun, 2013-09-15 at 08:09 +0200, Mike Galbraith wrote:
 
-KGTP (http://code.google.com/p/kgtp/) is a flexible, lightweight and
-realtime Linux debugger and tracer.
-To use it, you don't need patch or rebuild the Linux kernel. Just
-build KGTP module and insmod it is OK.
-This is the video that I introduce KGTP in GNU Tools Cauldron 2013
-http://www.youtube.com/watch?v=7nfGAbNsEZY or
-http://www.tudou.com/programs/view/fPu_koiKo38/ .
+> Humongous improvements...
 
-Please go to http://code.google.com/p/kgtp/wiki/HOWTO
-https://raw.github.com/teawater/kgtp/master/kgtp.pdf or
-http://code.google.com/p/kgtp/wiki/HOWTO
-https://raw.github.com/teawater/kgtp/master/kgtpcn.pdf (Chinese) to
-get more info about howto use KGTP.
+(a couple sem-waitzero numbers)
 
-Please goto https://code.google.com/p/kgtp/wiki/HOWTO#Table_of_different_between_GDB_debug_normal_program_and_KGTP
-or https://code.google.com/p/kgtp/wiki/HOWTOCN#GDB调试普通程序和KGTP的区别表
-(Chinese) get the table of different between GDB debug normal program
-and KGTP if you have experience using GDB debug normal program.
+master:  Cpus 64, interleave 1 delay 0: 10039494796 in 30 secs
+3.10.10: Cpus 64, interleave 1 delay 0:   129236313 in 30 secs
 
-Now, KGTP 20130915 release.
-You can get the package:
-Get through https:
-https://github.com/teawater/kgtp/archive/20130915.tar.gz
-Get through git:
-git clone https://github.com/teawater/kgtp.git
-git checkout 20130915 -b 20130915
+(rapidly scrolling micro-font bench vs reality disclaimer)
 
-The main change of this release is:
-Fixed bugs around x86_32.  And They also reminded me to do this test
-on x86_32 before release. (I just do x86_64 in before.) Thanks help
-from Brad Dixon.
-Fixed bugs around while-stepping.
-Added pdf format docs.
-Moved to github.
-
-Now, I am working on insert tracepoint to user space program that base
-on Uprobes.  The most of code work was done.  Please goto
-https://github.com/teawater/kgtp/tree/uprobes-dev try it if you are
-interesting with this function.
-
-Thanks,
-Hui
