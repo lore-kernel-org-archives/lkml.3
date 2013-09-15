@@ -1,82 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656Ab3IOVrW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 17:47:22 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:61334 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753832Ab3IOVrV (ORCPT
+	id S1754338Ab3IOWEA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 18:04:00 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:38415 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752846Ab3IOWD6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 17:47:21 -0400
-From: Andrea Adami <andrea.adami@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Marko Katic <dromede@gmail.com>, Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] ARM: pxa: sharpsl_param.c: fix invalid memory access
-Date: Sun, 15 Sep 2013 23:47:17 +0200
-Message-Id: <1379281637-26854-1-git-send-email-andrea.adami@gmail.com>
-X-Mailer: git-send-email 1.8.1.5
+	Sun, 15 Sep 2013 18:03:58 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: <swarren@wwwdotorg.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
+        <linux@roeck-us.net>, <rui.zhang@intel.com>, <wni@nvidia.com>
+CC: <grant.likely@linaro.org>, <durgadoss.r@intel.com>,
+        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: [PATCH 00/16] device thermal limits represented in device tree nodes (v3)
+Date: Sun, 15 Sep 2013 18:02:27 -0400
+Message-ID: <1379282563-14650-1-git-send-email-eduardo.valentin@ti.com>
+X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After commit 72662e01088394577be4a3f14da94cf87bea2591
-ARM: head.S: only include __turn_mmu_on in the initial identity mapping
+Hello all,
 
-Zaurus PXA devices call sharpsl_save_param() during fixup and hang on
-boot because memcpy refers to physical addresses no longer valid if the
-MMU is setup.
-Zaurus collie (SA1100) is unaffected (function is called in init_machine).
+Here is the continuation of work of representing hardware thermal properties
+in device tree infrastructure. The present patch series is the third version
+of this work. Previous versions were sent as RFCs and can be found here:
+RFCv2: http://lkml.org/lkml/2013/8/23/594
+RFCv1: http://lkml.org/lkml/2013/7/22/319
 
-Signed-off-by: Marko Katic <dromede@gmail.com>
-Signed-off-by: Andrea Adami <andrea.adami@gmail.com>
----
- arch/arm/common/sharpsl_param.c | 17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+The major change between RFCv2 and this version is the fact that I am now
+designing the binding accordingly to the common practice of creating links
+from consumers to producers, as seen in regulators for instance. The change
+make a thermal zone node point to used cooling devices and used sensor devices.
+As direct need, cooling devices then need to be properly represented.
+I am proposing to have cooling properties inside existing nodes, e.g. fan nodes,
+cpu nodes. The change also required me to modify the existing thermal core
+code to allow decoupling thermal zones from sensor code. Currently, the
+binding proposal covers for the situation in which one thermal zone has
+several sensor devices. Although this situation is not covered by the
+current thermal framework code, and thus not supported by this series.
+I believe this is not a stopper for this series, it can be done
+in later patch sets.
 
-diff --git a/arch/arm/common/sharpsl_param.c b/arch/arm/common/sharpsl_param.c
-index d56c932..ac886f2 100644
---- a/arch/arm/common/sharpsl_param.c
-+++ b/arch/arm/common/sharpsl_param.c
-@@ -23,9 +23,17 @@
-  * them early in the boot process, then pass them to the appropriate drivers.
-  * Not all devices use all parameters but the format is common to all.
-  */
-+
-+/* NOTE:
-+ * Zaurus PXA devices call sharpsl_save_param() during fixup so we need
-+ * to translate the physical address.
-+ * Zaurus collie (SA1100) is unaffected (function is called in init_machine).
-+ */
-+
- #ifdef CONFIG_ARCH_SA1100
- #define PARAM_BASE	0xe8ffc000
- #else
-+#include <asm/memory.h>
- #define PARAM_BASE	0xa0000a00
- #endif
- #define MAGIC_CHG(a,b,c,d) ( ( d << 24 ) | ( c << 16 )  | ( b << 8 ) | a )
-@@ -41,7 +49,12 @@ EXPORT_SYMBOL(sharpsl_param);
- 
- void sharpsl_save_param(void)
- {
--	memcpy(&sharpsl_param, (void *)PARAM_BASE, sizeof(struct sharpsl_param_info));
-+#ifdef CONFIG_ARCH_SA1100
-+	void *param_start = (void *)PARAM_BASE;
-+#else
-+	void *param_start = phys_to_virt(PARAM_BASE);
-+#endif
-+	memcpy(&sharpsl_param, param_start, sizeof(struct sharpsl_param_info));
- 
- 	if (sharpsl_param.comadj_keyword != COMADJ_MAGIC)
- 		sharpsl_param.comadj=-1;
-@@ -58,5 +71,3 @@ void sharpsl_save_param(void)
- 	if (sharpsl_param.adadj_keyword != AD_MAGIC)
- 		sharpsl_param.adadj=-1;
- }
--
--
+The second patch includes a detailed documentation with examples
+and the proposed code. In this patch series, a part from the dt parser,
+there are changes in the cpufreq code to load the cpu cooling device,
+also changes in the following sensor drivers: tmp102, lm75 and ti-soc-thermal.
+Several changes in TI's SoC DT bindings are also included, as source
+of tested examples.
+
+The present patch series was tested on OMAP4430, OMAP4460, OMAP5430 and DRA7,
+although the DRA7 changes were not sent as the core device tree support is
+currently in the process to find its way to upstream.
+
+All best,
+
+Eduardo Valentin (16):
+  drivers: thermal: allow registering without .get_temp
+  drivers: thermal: introduce device tree parser
+  drivers: thermal: cpu_cooling: introduce of_cpufreq_cooling_register
+  cpufreq: cpufreq-cpu0: add dt node parsing for cooling device
+    properties
+  hwmon: lm75: expose to thermal fw via DT nodes
+  hwmon: tmp102: expose to thermal fw via DT nodes
+  thermal: ti-soc-thermal: use thermal DT infrastructure
+  arm: dts: add omap4 CPU thermal data
+  arm: dts: add omap4430 thermal data
+  arm: dts: add omap4460 thermal data
+  arm: dts: add cooling properties on omap4430 cpu node
+  arm: dts: add cooling properties on omap4460 cpu node
+  arm: dts: add omap5 GPU thermal data
+  arm: dts: add omap5 CORE thermal data
+  arm: dts: add omap5 thermal data
+  arm: dts: add cooling properties on omap5 cpu node
+
+ .../devicetree/bindings/cpufreq/cpufreq-cpu0.txt   |   7 +
+ .../devicetree/bindings/thermal/thermal.txt        | 498 ++++++++++++++
+ arch/arm/boot/dts/omap4-cpu-thermal.dtsi           |  41 ++
+ arch/arm/boot/dts/omap443x.dtsi                    |  15 +-
+ arch/arm/boot/dts/omap4460.dtsi                    |  15 +-
+ arch/arm/boot/dts/omap5-core-thermal.dtsi          |  28 +
+ arch/arm/boot/dts/omap5-gpu-thermal.dtsi           |  28 +
+ arch/arm/boot/dts/omap5.dtsi                       |  15 +-
+ drivers/cpufreq/Kconfig                            |   2 +-
+ drivers/cpufreq/cpufreq-cpu0.c                     |  16 +
+ drivers/hwmon/lm75.c                               |  46 +-
+ drivers/hwmon/tmp102.c                             |  28 +
+ drivers/thermal/Kconfig                            |  14 +
+ drivers/thermal/Makefile                           |   1 +
+ drivers/thermal/cpu_cooling.c                      |  31 +
+ drivers/thermal/of-thermal.c                       | 763 +++++++++++++++++++++
+ drivers/thermal/thermal_core.c                     |  19 +-
+ drivers/thermal/thermal_core.h                     |   9 +
+ drivers/thermal/ti-soc-thermal/ti-thermal-common.c |  77 ++-
+ include/dt-bindings/thermal/thermal.h              |  27 +
+ include/linux/cpu_cooling.h                        |  25 +
+ include/linux/thermal.h                            |  28 +-
+ 22 files changed, 1701 insertions(+), 32 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/thermal/thermal.txt
+ create mode 100644 arch/arm/boot/dts/omap4-cpu-thermal.dtsi
+ create mode 100644 arch/arm/boot/dts/omap5-core-thermal.dtsi
+ create mode 100644 arch/arm/boot/dts/omap5-gpu-thermal.dtsi
+ create mode 100644 drivers/thermal/of-thermal.c
+ create mode 100644 include/dt-bindings/thermal/thermal.h
+
 -- 
-1.8.1.5
+1.8.2.1.342.gfa7285d
 
