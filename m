@@ -1,36 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756813Ab3IOJBk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 05:01:40 -0400
-Received: from trent.utfs.org ([94.185.90.103]:37003 "EHLO trent.utfs.org"
+	id S1756946Ab3IOJDZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 05:03:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59885 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754383Ab3IOJBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 05:01:39 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <eb1060ff-d56d-42b7-89f5-a459820edb82@email.android.com>
-References: <alpine.DEB.2.11.1309070133340.21301@trent.utfs.org> <87r4cybio2.fsf@xmission.com> <alpine.DEB.2.11.1309100124020.6509@trent.utfs.org> <20130914111426.GB4663@cachalot> <eb1060ff-d56d-42b7-89f5-a459820edb82@email.android.com>
+	id S1753563Ab3IOJDY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Sep 2013 05:03:24 -0400
+Date: Sun, 15 Sep 2013 12:03:22 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Andrew Jones <drjones@redhat.com>
+Cc: kvm@vger.kernel.org, pbonzini@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [RFC] x86: kvm: remove KVM_SOFT_MAX_VCPUS
+Message-ID: <20130915090322.GV17294@redhat.com>
+References: <1379161011-28239-1-git-send-email-drjones@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: proc hidepid=2 and SGID programs
-From: Christian Kujau <lists@nerdbynature.de>
-Date: Sun, 15 Sep 2013 02:01:33 -0700
-To: Vasiliy Kulikov <segoon@openwall.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Message-ID: <2d0d35e4-0088-46bf-94b8-de09d33629ed@email.android.com>
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379161011-28239-1-git-send-email-drjones@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christian Kujau <lists@nerdbynature.de> wrote:
->Vasiliy Kulikov <segoon@openwall.com> 
->"pgrep sgid-program" returned nothing but "kill pics off stiff program"
+On Sat, Sep 14, 2013 at 02:16:51PM +0200, Andrew Jones wrote:
+> This patch removes KVM_SOFT_MAX_VCPUS and uses num_online_cpus() for
+> KVM_CAP_NR_VCPUS instead, as ARM does. While the API doc simply says
+> KVM_CAP_NR_VCPUS should return the recommended maximum number of vcpus,
+> it has been returning KVM_SOFT_MAX_VCPUS, which was defined as the
+> maximum tested number of vcpus. As that concept could be
+> distro-specific, this patch uses the other recommended maximum, the
+> number of physical cpus, as we never recommend configuring a guest that
+> has more vcpus than the host has pcpus. Of course a guest can always
+> still be configured with up to KVM_CAP_MAX_VCPUS though anyway.
+> 
+> I've put RFC on this patch because I'm not sure if there are any gotchas
+> lurking with this change. The change now means hosts no longer return
+> the same number for KVM_CAP_NR_VCPUS, and that number is likely going to
+> generally be quite a bit less than what KVM_SOFT_MAX_VCPUS was (160). I
+> can't think of anything other than generating more warnings[1] from qemu
+> with guests that configure more vcpus than pcpus though.
+> 
+Another gotcha is that on a host with more then 160 cpus recommended
+value will grow which is not a good idea without appropriate testing.
 
-Gaah, that should read "kill pid-of-sgid-program", sorry.
+> [1] Actually, until 972fc544b6034a in uq/master is merged there won't be
+>     any warnings either.
+> 
+> Signed-off-by: Andrew Jones <drjones@redhat.com>
+> ---
+>  arch/x86/include/asm/kvm_host.h | 1 -
+>  arch/x86/kvm/x86.c              | 2 +-
+>  2 files changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index c76ff74a98f2e..9236c63315a9b 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -32,7 +32,6 @@
+>  #include <asm/asm.h>
+>  
+>  #define KVM_MAX_VCPUS 255
+> -#define KVM_SOFT_MAX_VCPUS 160
+>  #define KVM_USER_MEM_SLOTS 125
+>  /* memory slots that are not exposed to userspace */
+>  #define KVM_PRIVATE_MEM_SLOTS 3
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index e5ca72a5cdb6d..d9d3e2ed68ee9 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -2604,7 +2604,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+>  		r = !kvm_x86_ops->cpu_has_accelerated_tpr();
+>  		break;
+>  	case KVM_CAP_NR_VCPUS:
+> -		r = KVM_SOFT_MAX_VCPUS;
+> +		r = min(num_online_cpus(), KVM_MAX_VCPUS);
+s/KVM_MAX_VCPUS/KVM_SOFT_MAX_VCPUS/.  Also what about hotplug cpus?
 
-C.
+>  		break;
+>  	case KVM_CAP_MAX_VCPUS:
+>  		r = KVM_MAX_VCPUS;
+> -- 
+> 1.8.1.4
 
-
+--
+			Gleb.
