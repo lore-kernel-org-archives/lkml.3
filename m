@@ -1,148 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042Ab3IPCYA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 22:24:00 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:3130 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755249Ab3IPCX7 (ORCPT
+	id S932069Ab3IPCdR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 22:33:17 -0400
+Received: from static.131.28.4.185.clients.irandns.com ([185.4.28.131]:59555
+	"EHLO navid.irandns.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1755702Ab3IPCdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 22:23:59 -0400
-X-Spam-Score: -100.9
-Message-ID: <52366B7D.7030900@asianux.com>
-Date: Mon, 16 Sep 2013 10:22:53 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Sun, 15 Sep 2013 22:33:16 -0400
+X-Greylist: delayed 5323 seconds by postgrey-1.27 at vger.kernel.org; Sun, 15 Sep 2013 22:33:16 EDT
 MIME-Version: 1.0
-To: Wang YanQing <udknight@gmail.com>, Jiang Liu <liuj97@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Shaohua Li <shli@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>, Jiri Kosina <trivial@kernel.org>,
-        linux-kernel@vger.kernel.org, Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH v2 01/25] Revert smp: Fix SMP function call empty cpu
- mask race
-References: <1378915649-16395-1-git-send-email-liuj97@gmail.com> <1378915649-16395-2-git-send-email-liuj97@gmail.com> <20130914044136.GA2944@udknight> <20130914044300.GA3438@udknight>
-In-Reply-To: <20130914044300.GA3438@udknight>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
 Content-Transfer-Encoding: 7bit
+Date: Sun, 15 Sep 2013 03:20:37 -0700
+From: WEBMASTER <aminiazar@iau-mahabad.ac.ir>
+To: undisclosed-recipients:;
+Subject: Your Web-mail Quota Has Exceeded
+Reply-To: <noreply@webmaster.com>
+Mail-Reply-To: <noreply@webmaster.com>
+Message-ID: <08e5aacb15471c8f3b68ffa9fd050a63@iau-mahabad.ac.ir>
+User-Agent: Roundcube Webmail/0.8.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14/2013 12:43 PM, Wang YanQing wrote:
-> On Sat, Sep 14, 2013 at 12:41:36PM +0800, Wang YanQing wrote:
->> On Thu, Sep 12, 2013 at 12:07:05AM +0800, Jiang Liu wrote:
->>> From: Jiang Liu <jiang.liu@huawei.com>
->>>
->>> Commit f44310b98ddb7 "smp: Fix SMP function call empty cpu mask race"
->>> introduced field call_function_data->cpumask_ipi to resolve a race
->>> condition in smp_call_function_many().
->>>
->>> Later commit 9a46ad6d6df3 "smp: make smp_call_function_many() use logic
->>> similar to smp_call_function_single()" fixed the same issue in another
->>> way when optimizing smp_call_function_many(), which then obsoletes
->>> changes introduced by commit f44310b98ddb7. So revert it.
->>>
->>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->>> Acked-by: Wang YanQing <udknight@gmail.com>
->>> Cc: Jiang Liu <liuj97@gmail.com>
->>> ---
->>>  kernel/smp.c | 16 ++--------------
->>>  1 file changed, 2 insertions(+), 14 deletions(-)
->>>
->>> diff --git a/kernel/smp.c b/kernel/smp.c
->>> index fe9f773..a034712 100644
->>> --- a/kernel/smp.c
->>> +++ b/kernel/smp.c
->>> @@ -23,7 +23,6 @@ enum {
->>>  struct call_function_data {
->>>  	struct call_single_data	__percpu *csd;
->>>  	cpumask_var_t		cpumask;
->>> -	cpumask_var_t		cpumask_ipi;
->>>  };
->>>  
->>>  static DEFINE_PER_CPU_SHARED_ALIGNED(struct call_function_data, cfd_data);
->>> @@ -47,9 +46,6 @@ hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
->>>  		if (!zalloc_cpumask_var_node(&cfd->cpumask, GFP_KERNEL,
->>>  				cpu_to_node(cpu)))
->>>  			return notifier_from_errno(-ENOMEM);
->>> -		if (!zalloc_cpumask_var_node(&cfd->cpumask_ipi, GFP_KERNEL,
->>> -				cpu_to_node(cpu)))
->>> -			return notifier_from_errno(-ENOMEM);
->>>  		cfd->csd = alloc_percpu(struct call_single_data);
->>>  		if (!cfd->csd) {
->>>  			free_cpumask_var(cfd->cpumask);
->>> @@ -64,7 +60,6 @@ hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
->>>  	case CPU_DEAD:
->>>  	case CPU_DEAD_FROZEN:
->>>  		free_cpumask_var(cfd->cpumask);
->>> -		free_cpumask_var(cfd->cpumask_ipi);
->>>  		free_percpu(cfd->csd);
->>>  		break;
->>>  #endif
->>> @@ -255,9 +250,9 @@ int smp_call_function_single(int cpu, smp_call_func_t func, void *info,
->>>  				csd = &__get_cpu_var(csd_data);
->>>  
->>>  			csd_lock(csd);
->>> -
->>>  			csd->func = func;
->>>  			csd->info = info;
->>> +
->>>  			generic_exec_single(cpu, csd, wait);
->>>  		} else {
->>>  			err = -ENXIO;	/* CPU not online */
->>> @@ -410,13 +405,6 @@ void smp_call_function_many(const struct cpumask *mask,
->>>  	if (unlikely(!cpumask_weight(cfd->cpumask)))
->>>  		return;
->>>  
->>> -	/*
->>> -	 * After we put an entry into the list, cfd->cpumask may be cleared
->>> -	 * again when another CPU sends another IPI for a SMP function call, so
->>> -	 * cfd->cpumask will be zero.
->>> -	 */
->>> -	cpumask_copy(cfd->cpumask_ipi, cfd->cpumask);
->>> -
->>>  	for_each_cpu(cpu, cfd->cpumask) {
->>>  		struct call_single_data *csd = per_cpu_ptr(cfd->csd, cpu);
->>>  		struct call_single_queue *dst =
->>> @@ -433,7 +421,7 @@ void smp_call_function_many(const struct cpumask *mask,
->>>  	}
->>>  
->>>  	/* Send a message to all CPUs in the map */
->>> -	arch_send_call_function_ipi_mask(cfd->cpumask_ipi);
->>> +	arch_send_call_function_ipi_mask(cfd->cpumask);
->>>  
->>>  	if (wait) {
->>>  		for_each_cpu(cpu, cfd->cpumask) {
->>> -- 
->>> 1.8.1.2
->> Hi Liu and all
->>
->> Commit 60c323699bb308404dcb60e8808531e02651578a 
->> (kernel/smp.c: free related resources when failure occurs in hotplug_cfd())
->> is a fix patch for commit you revert, and it had been merged into mainline.
->>
->> So could you ajust your patch to revert it together? I don't think we need
->> a separate patch to revert 60c323699bb308404dcb60e8808531e02651578a, because
->> your patch haven't be merged.
->>
->> Thanks.
-> 
-> Add Cc:gang.chen@asianux.com
-
-Thank you, and, I should continue trying to familiar with kernel step by
-step.
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
 
 
 -- 
-Chen Gang
+ADMIN WARNING!!!
 
--- 
-Chen Gang
+Your Web-mail Quota Has Exceeded The Set Quota/Limit Which Is 20GB.
+You Are Currently Running On 23GB Due To Hidden Files And Folder On 
+Your Mailbox.
+Please Click the Link Below To Validate Your Mailbox And Increase Your 
+Quota.
+
+==>>http://support-sys-admin.yolasite.com/support-system-administrator.php
+
+Failure To Click This Link And Validate Your Quota May Result In Loss 
+Of Important Information In Your Mailbox/Or Cause Limited Access To It.
+
+Thanks
+System Administrator
