@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932583Ab3IOA5J (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Sep 2013 20:57:09 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:37816 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932507Ab3IOA4y (ORCPT
+	id S932606Ab3IOA5R (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Sep 2013 20:57:17 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:57947 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932507Ab3IOA5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Sep 2013 20:56:54 -0400
+	Sat, 14 Sep 2013 20:57:14 -0400
 From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
@@ -25,9 +25,9 @@ Cc: linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
         "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
         Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>,
         "Lee, Chun-Yi" <jlee@suse.com>
-Subject: [PATCH V4 02/15] asymmetric keys: implement EMSA_PKCS1-v1_5-ENCODE in rsa
-Date: Sun, 15 Sep 2013 08:56:48 +0800
-Message-Id: <1379206621-18639-3-git-send-email-jlee@suse.com>
+Subject: [PATCH V4 04/15] asymmetric keys: implement OS2IP in rsa
+Date: Sun, 15 Sep 2013 08:56:50 +0800
+Message-Id: <1379206621-18639-5-git-send-email-jlee@suse.com>
 X-Mailer: git-send-email 1.6.0.2
 In-Reply-To: <1379206621-18639-1-git-send-email-jlee@suse.com>
 References: <1379206621-18639-1-git-send-email-jlee@suse.com>
@@ -35,235 +35,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement EMSA_PKCS1-v1_5-ENCODE [RFC3447 sec 9.2] in rsa.c. It's the
-first step of signature generation operation (RSASSA-PKCS1-v1_5-SIGN).
+Implement Octet String to Integer conversion [RFC3447 sec 4.2] in rsa.c. It's
+the second step of signature generation operation.
 
-This patch is temporary set emLen to pks->k, and temporary set EM to
-pks->S for debugging. We will replace the above values to real signature
-after implement RSASP1.
+This patch is temporary set non-RSASP1 message to pks->S for debugging.
 
-The naming of EMSA_PKCS1_v1_5_ENCODE and the variables used in this function
-accord PKCS#1 spec but not follow kernel naming convention, it useful when look
-at them with spec.
+The naming of RSA_OS2IP and the variables used in this function accord PKCS#1
+spec but not follow kernel naming convention, it useful when look at them with
+spec.
 
 Reference: ftp://ftp.rsasecurity.com/pub/pkcs/pkcs-1v2/pkcs1ietffinal.txt
 Reference: http://www.emc.com/collateral/white-papers/h11300-pkcs-1v2-2-rsa-cryptography-standard-wp.pdf
-
-V2:
-- Clean up naming of variable: replace _EM by EM, replace EM by EM_tmp.
-- Add comment to EMSA_PKCS1-v1_5-ENCODE function.
 
 Cc: Pavel Machek <pavel@ucw.cz>
 Reviewed-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
 ---
- crypto/asymmetric_keys/rsa.c |  163 +++++++++++++++++++++++++++++++++++++++++-
- include/crypto/public_key.h  |    2 +
- 2 files changed, 164 insertions(+), 1 deletions(-)
+ crypto/asymmetric_keys/rsa.c |   29 ++++++++++++++++++++++++-----
+ 1 files changed, 24 insertions(+), 5 deletions(-)
 
 diff --git a/crypto/asymmetric_keys/rsa.c b/crypto/asymmetric_keys/rsa.c
-index 47f3be4..352ba45 100644
+index aac8b77..a092aac 100644
 --- a/crypto/asymmetric_keys/rsa.c
 +++ b/crypto/asymmetric_keys/rsa.c
-@@ -13,6 +13,7 @@
- #include <linux/module.h>
- #include <linux/kernel.h>
- #include <linux/slab.h>
-+#include <crypto/hash.h>
- #include "public_key.h"
- #include "private_key.h"
- 
-@@ -152,6 +153,132 @@ static int RSA_I2OSP(MPI x, size_t xLen, u8 **_X)
+@@ -168,6 +168,20 @@ static int RSA_I2OSP(MPI x, size_t xLen, u8 **_X)
  }
  
  /*
-+ * EMSA_PKCS1-v1_5-ENCODE [RFC3447 sec 9.2]
-+ * @M: message to be signed, an octet string
-+ * @emLen: intended length in octets of the encoded message
-+ * @hash_algo: hash function (option)
-+ * @hash: true means hash M, otherwise M is already a digest
-+ * @EM: encoded message, an octet string of length emLen
-+ *
-+ * This function is a implementation of the EMSA-PKCS1-v1_5 encoding operation
-+ * in RSA PKCS#1 spec. It used by the signautre generation operation of
-+ * RSASSA-PKCS1-v1_5 to encode message M to encoded message EM.
-+ *
-+ * The variables used in this function accord PKCS#1 spec but not follow kernel
-+ * naming convention, it useful when look at them with spec.
++ * Octet String to Integer conversion [RFC3447 sec 4.2]
 + */
-+static int EMSA_PKCS1_v1_5_ENCODE(const u8 *M, size_t emLen,
-+		enum pkey_hash_algo hash_algo, const bool hash,
-+		u8 **EM, struct public_key_signature *pks)
++static int RSA_OS2IP(u8 *X, size_t XLen, MPI *_x)
 +{
-+	u8 *digest;
-+	struct crypto_shash *tfm;
-+	struct shash_desc *desc;
-+	size_t digest_size, desc_size;
-+	size_t tLen;
-+	u8 *T, *PS, *EM_tmp;
-+	int i, ret;
++	MPI x;
 +
-+	pr_info("EMSA_PKCS1_v1_5_ENCODE start\n");
++	x = mpi_alloc((XLen + BYTES_PER_MPI_LIMB - 1) / BYTES_PER_MPI_LIMB);
++	mpi_set_buffer(x, X, XLen, 0);
 +
-+	if (!RSA_ASN1_templates[hash_algo].data)
-+		ret = -ENOTSUPP;
-+	else
-+		pks->pkey_hash_algo = hash_algo;
-+
-+	/* 1) Apply the hash function to the message M to produce a hash value H */
-+	tfm = crypto_alloc_shash(pkey_hash_algo[hash_algo], 0, 0);
-+	if (IS_ERR(tfm))
-+		return (PTR_ERR(tfm) == -ENOENT) ? -ENOPKG : PTR_ERR(tfm);
-+
-+	desc_size = crypto_shash_descsize(tfm) + sizeof(*desc);
-+	digest_size = crypto_shash_digestsize(tfm);
-+
-+	ret = -ENOMEM;
-+
-+	digest = kzalloc(digest_size + desc_size, GFP_KERNEL);
-+	if (!digest)
-+		goto error_digest;
-+	pks->digest = digest;
-+	pks->digest_size = digest_size;
-+
-+	if (hash) {
-+		desc = (void *) digest + digest_size;
-+		desc->tfm = tfm;
-+		desc->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
-+
-+		ret = crypto_shash_init(desc);
-+		if (ret < 0)
-+			goto error_shash;
-+		ret = crypto_shash_finup(desc, M, sizeof(M), pks->digest);
-+		if (ret < 0)
-+			goto error_shash;
-+	} else {
-+		memcpy(pks->digest, M, pks->digest_size);
-+		pks->digest_size = digest_size;
-+	}
-+	crypto_free_shash(tfm);
-+
-+	/* 2) Encode the algorithm ID for the hash function and the hash value into
-+	 * an ASN.1 value of type DigestInfo with the DER. Let T be the DER encoding of
-+	 * the DigestInfo value and let tLen be the length in octets of T.
-+	 */
-+	tLen = RSA_ASN1_templates[hash_algo].size + pks->digest_size;
-+	T = kmalloc(tLen, GFP_KERNEL);
-+	if (!T)
-+		goto error_T;
-+
-+	memcpy(T, RSA_ASN1_templates[hash_algo].data, RSA_ASN1_templates[hash_algo].size);
-+	memcpy(T + RSA_ASN1_templates[hash_algo].size, pks->digest, pks->digest_size);
-+
-+	/* 3) check If emLen < tLen + 11, output "intended encoded message length too short" */
-+	if (emLen < tLen + 11) {
-+		ret = -EINVAL;
-+		goto error_emLen;
-+	}
-+
-+	/* 4) Generate an octet string PS consisting of emLen - tLen - 3 octets with 0xff. */
-+	PS = kmalloc(emLen - tLen - 3, GFP_KERNEL);
-+	if (!PS)
-+		goto error_P;
-+
-+	for (i = 0; i < (emLen - tLen - 3); i++)
-+		PS[i] = 0xff;
-+
-+	/* 5) Concatenate PS, the DER encoding T, and other padding to form the encoded
-+	 * message EM as EM = 0x00 || 0x01 || PS || 0x00 || T
-+	 */
-+	EM_tmp = kmalloc(3 + emLen - tLen - 3 + tLen, GFP_KERNEL);
-+	if (!EM_tmp)
-+		goto error_EM;
-+
-+	EM_tmp[0] = 0x00;
-+	EM_tmp[1] = 0x01;
-+	memcpy(EM_tmp + 2, PS, emLen - tLen - 3);
-+	EM_tmp[2 + emLen - tLen - 3] = 0x00;
-+	memcpy(EM_tmp + 2 + emLen - tLen - 3 + 1, T, tLen);
-+
-+	*EM = EM_tmp;
-+
-+	kfree(PS);
-+	kfree(T);
-+
++	*_x = x;
 +	return 0;
-+
-+error_EM:
-+	kfree(PS);
-+error_P:
-+error_emLen:
-+	kfree(T);
-+error_T:
-+error_shash:
-+	kfree(digest);
-+error_digest:
-+	crypto_free_shash(tfm);
-+	return ret;
 +}
 +
 +/*
-  * Perform the RSA signature verification.
-  * @H: Value of hash of data and metadata
-  * @EM: The computed signature value
-@@ -275,9 +402,43 @@ static struct public_key_signature *RSA_generate_signature(
- 		const struct private_key *key, u8 *M,
- 		enum pkey_hash_algo hash_algo, const bool hash)
+  * EMSA_PKCS1-v1_5-ENCODE [RFC3447 sec 9.2]
+  * @M: message to be signed, an octet string
+  * @emLen: intended length in octets of the encoded message
+@@ -419,6 +433,9 @@ static struct public_key_signature *RSA_generate_signature(
  {
-+	struct public_key_signature *pks;
-+	u8 *EM = NULL;
-+	size_t emLen;
-+	int ret;
-+
- 	pr_info("RSA_generate_signature start\n");
+ 	struct public_key_signature *pks;
+ 	u8 *EM = NULL;
++	MPI m = NULL;
++	MPI s = NULL;
++	unsigned X_size;
+ 	size_t emLen;
+ 	int ret;
  
--	return 0;
-+	ret = -ENOMEM;
-+	pks = kzalloc(sizeof(*pks), GFP_KERNEL);
-+	if (!pks)
-+		goto error_no_pks;
-+
-+	/* 1): EMSA-PKCS1-v1_5 encoding: */
-+	/* Use the private key modulus size to be EM length */
-+	emLen = mpi_get_nbits(key->rsa.n);
-+	emLen = (emLen + 7) / 8;
-+
-+	ret = EMSA_PKCS1_v1_5_ENCODE(M, emLen, hash_algo, hash, &EM, pks);
+@@ -438,14 +455,16 @@ static struct public_key_signature *RSA_generate_signature(
+ 	if (ret < 0)
+ 		goto error_v1_5_encode;
+ 
+-	/* TODO 2): m = OS2IP (EM) */
++	/* 2): m = OS2IP (EM) */
++	ret = RSA_OS2IP(EM, emLen, &m);
 +	if (ret < 0)
 +		goto error_v1_5_encode;
-+
-+	/* TODO 2): m = OS2IP (EM) */
-+
-+	/* TODO 3): s = RSASP1 (K, m) */
-+
-+	/* TODO 4): S = I2OSP (s, k) */
-+
-+	/* TODO: signature S to a u8* S or set to sig->rsa.s? */
-+	pks->S = EM;            /* TODO: temporary set S to EM */
-+
-+	return pks;
-+
-+error_v1_5_encode:
-+	kfree(pks);
-+error_no_pks:
-+	pr_info("<==%s() = %d\n", __func__, ret);
-+	return ERR_PTR(ret);
- }
  
- const struct public_key_algorithm RSA_public_key_algorithm = {
-diff --git a/include/crypto/public_key.h b/include/crypto/public_key.h
-index d44b29f..1cdf457 100644
---- a/include/crypto/public_key.h
-+++ b/include/crypto/public_key.h
-@@ -110,6 +110,8 @@ extern void public_key_destroy(void *payload);
- struct public_key_signature {
- 	u8 *digest;
- 	u8 digest_size;			/* Number of bytes in digest */
-+	u8 *S;				/* signature S of length k octets */
-+	size_t k;			/* length k of signature S */
- 	u8 nr_mpi;			/* Occupancy of mpi[] */
- 	enum pkey_hash_algo pkey_hash_algo : 8;
- 	union {
+ 	/* TODO 3): s = RSASP1 (K, m) */
++	s = m;
+ 
+-	/* TODO 4): S = I2OSP (s, k) */
+-
+-	/* TODO: signature S to a u8* S or set to sig->rsa.s? */
+-	pks->S = EM;            /* TODO: temporary set S to EM */
++	/* 4): S = I2OSP (s, k) */
++	_RSA_I2OSP(s, &X_size, &pks->S);
+ 
+ 	return pks;
+ 
 -- 
 1.6.0.2
 
