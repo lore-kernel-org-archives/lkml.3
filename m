@@ -1,146 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757477Ab3IPIgH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 04:36:07 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:59038 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755977Ab3IPIdU (ORCPT
+	id S1755783Ab3IPIkE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 04:40:04 -0400
+Received: from smtp-out002.kontent.com ([81.88.40.216]:50217 "EHLO
+	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751470Ab3IPIkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 04:33:20 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-i2c@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: [PATCH 2/9] irqdomain: Introduce __irq_create_mapping()
-Date: Mon, 16 Sep 2013 10:31:59 +0200
-Message-Id: <1379320326-13241-3-git-send-email-treding@nvidia.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1379320326-13241-1-git-send-email-treding@nvidia.com>
-References: <1379320326-13241-1-git-send-email-treding@nvidia.com>
+	Mon, 16 Sep 2013 04:40:03 -0400
+Message-ID: <1379320800.15916.15.camel@linux-fkkt.site>
+Subject: Re: Why does test_bit() take a volatile addr?
+From: Oliver Neukum <oliver@neukum.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: torvalds@linux-foundation.org, "Michael S. Tsirkin" <mst@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 16 Sep 2013 10:40:00 +0200
+In-Reply-To: <87ioy11k8s.fsf@rustcorp.com.au>
+References: <87ioy11k8s.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.9.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a version of irq_create_mapping() that propagates the precise
-error code instead of returning 0 for all errors. It will be used in
-subsequent patches to allow further propagation of error codes.
+On Mon, 2013-09-16 at 13:38 +0930, Rusty Russell wrote:
+> Predates git, does anyone remember the rationale?
+> 
+> ie:
+>         int test_bit(int nr, const volatile unsigned long *addr)
+> 
+> I noticed because gcc failed to elimiate some code in a patch I was
+> playing with.
+> 
+> I'm nervous about subtle bugs involved in ripping it out, even if noone
+> knows why.  Should I add __test_bit()?
 
-To avoid code duplication, implement irq_create_mapping() as a wrapper
-around the new __irq_create_mapping().
+It seems to me that if you do
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
- kernel/irq/irqdomain.c | 59 +++++++++++++++++++++++++++++++++-----------------
- 1 file changed, 39 insertions(+), 20 deletions(-)
+b = *ptr & 0xf;
+c = b << 2;
+if (test_bit(1, ptr))
 
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index 706724e..d2a3b01 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -374,30 +374,21 @@ unsigned int irq_create_direct_mapping(struct irq_domain *domain)
- }
- EXPORT_SYMBOL_GPL(irq_create_direct_mapping);
- 
--/**
-- * irq_create_mapping() - Map a hardware interrupt into linux irq space
-- * @domain: domain owning this hardware interrupt or NULL for default domain
-- * @hwirq: hardware irq number in that domain space
-- *
-- * Only one mapping per hardware interrupt is permitted. Returns a linux
-- * irq number.
-- * If the sense/trigger is to be specified, set_irq_type() should be called
-- * on the number returned from that call.
-- */
--unsigned int irq_create_mapping(struct irq_domain *domain,
--				irq_hw_number_t hwirq)
-+static int __irq_create_mapping(struct irq_domain *domain,
-+				irq_hw_number_t hwirq, unsigned int *virqp)
- {
--	unsigned int hint;
--	int virq;
-+	unsigned int hint, virq;
-+	int ret;
- 
--	pr_debug("irq_create_mapping(0x%p, 0x%lx)\n", domain, hwirq);
-+	pr_debug("__irq_create_mapping(0x%p, 0x%lx, %p)\n", domain, hwirq,
-+		 virqp);
- 
- 	/* Look for default domain if nececssary */
- 	if (domain == NULL)
- 		domain = irq_default_domain;
- 	if (domain == NULL) {
- 		WARN(1, "%s(, %lx) called with NULL domain\n", __func__, hwirq);
--		return 0;
-+		return -ENODEV;
- 	}
- 	pr_debug("-> using domain @%p\n", domain);
- 
-@@ -405,7 +396,11 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
- 	virq = irq_find_mapping(domain, hwirq);
- 	if (virq) {
- 		pr_debug("-> existing mapping on virq %d\n", virq);
--		return virq;
-+
-+		if (virqp)
-+			*virqp = virq;
-+
-+		return 0;
- 	}
- 
- 	/* Allocate a virtual interrupt number */
-@@ -417,17 +412,41 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
- 		virq = irq_alloc_desc_from(1, of_node_to_nid(domain->of_node));
- 	if (virq <= 0) {
- 		pr_debug("-> virq allocation failed\n");
--		return 0;
-+		return virq ? : -ENOSPC;
- 	}
- 
--	if (irq_domain_associate(domain, virq, hwirq)) {
-+	ret = irq_domain_associate(domain, virq, hwirq);
-+	if (ret) {
- 		irq_free_desc(virq);
--		return 0;
-+		return ret;
- 	}
- 
- 	pr_debug("irq %lu on domain %s mapped to virtual irq %u\n",
- 		hwirq, of_node_full_name(domain->of_node), virq);
- 
-+	if (virqp)
-+		*virqp = virq;
-+
-+	return 0;
-+}
-+/**
-+ * irq_create_mapping() - Map a hardware interrupt into linux irq space
-+ * @domain: domain owning this hardware interrupt or NULL for default domain
-+ * @hwirq: hardware irq number in that domain space
-+ *
-+ * Only one mapping per hardware interrupt is permitted. Returns a linux
-+ * irq number.
-+ * If the sense/trigger is to be specified, set_irq_type() should be called
-+ * on the number returned from that call.
-+ */
-+unsigned int irq_create_mapping(struct irq_domain *domain,
-+				irq_hw_number_t hwirq)
-+{
-+	unsigned int virq;
-+
-+	if (__irq_create_mapping(domain, hwirq, &virq))
-+		return 0;
-+
- 	return virq;
- }
- EXPORT_SYMBOL_GPL(irq_create_mapping);
--- 
-1.8.4
+the compiler could optimize away the memory access on ptr without
+the volatile. We'd have to add a lot of mb().
+
+	Regards
+		Oliver
+
 
