@@ -1,66 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932693Ab3IPL0u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 07:26:50 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:55663 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932639Ab3IPL0T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 07:26:19 -0400
-Date: Mon, 16 Sep 2013 12:26:14 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Denis CIOCCA <denis.ciocca@st.com>
-Cc: Jonathan Cameron <jic23@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jic23@cam.ac.uk" <jic23@cam.ac.uk>, "arnd@arndb.de" <arnd@arndb.de>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Subject: Re: [PATCH 38/38] iio: magn-core: st: Provide support for the
- LSM303DLH
-Message-ID: <20130916112614.GC16984@lee--X1>
-References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
- <1378817379-8238-39-git-send-email-lee.jones@linaro.org>
- <5234A28D.1030409@kernel.org>
- <20130916073151.GB3999@lee--X1>
- <5236D03D.2030506@st.com>
- <20130916100809.GI3999@lee--X1>
- <5236DADD.3040205@st.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5236DADD.3040205@st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932616Ab3IPL0O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 07:26:14 -0400
+Received: from mga09.intel.com ([134.134.136.24]:43334 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932547Ab3IPL0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 07:26:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,914,1371106800"; 
+   d="scan'208";a="396283065"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Alex Thorlton <athorlton@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: "Eric W . Biederman" <ebiederm@xmission.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Dave Jones <davej@redhat.com>,
+        David Howells <dhowells@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Rik van Riel <riel@redhat.com>, Robin Holt <robinmholt@gmail.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCHv2 9/9] x86, mm: enable split page table lock for PMD level
+Date: Mon, 16 Sep 2013 14:25:40 +0300
+Message-Id: <1379330740-5602-10-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.8.4.rc3
+In-Reply-To: <1379330740-5602-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1379330740-5602-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Sep 2013, Denis CIOCCA wrote:
+Enable PMD split page table lock for X86_64 and PAE.
 
-> Hi Lee,
-> 
-> > The driver mentions that the first group of sensors have a WAI of 
-> > 0x3c: #define ST_MAGN_1_WAI_EXP 0x3c And when I print out the WAI read 
-> > from the device: Requested device: lsm303dlh_magn - read WAI: 0x3c I 
-> > guess I could have been lied to again by the board's datasheet again 
-> > and the attached device isn't actually a LSM303DLH, but how can I tell 
-> > for sure? 
-> On LSM303DLH you have to read 0x0a 0x0b and 0x0c registers, you have to 
-> find 0x48, 0x34 and 0x33. I think in the snowball there is the LSM303DLHC.
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ arch/x86/Kconfig               |  4 ++++
+ arch/x86/include/asm/pgalloc.h | 11 ++++++++++-
+ 2 files changed, 14 insertions(+), 1 deletion(-)
 
-I just did that too:
-
-  Device: lsm303dlh_magn: WAI: (0x3c)
-  st_magn_common_probe():  IR: ID1 (0x48) ID2 (0x34) ID3 (0x33)
-
-It appears the LSM303DLH does have a populated WAI register after all.
-
-Now what? :)
-
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 30c40f0..6a5cf6a 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1880,6 +1880,10 @@ config USE_PERCPU_NUMA_NODE_ID
+ 	def_bool y
+ 	depends on NUMA
+ 
++config ARCH_ENABLE_SPLIT_PMD_PTLOCK
++	def_bool y
++	depends on X86_64 || X86_PAE
++
+ menu "Power management and ACPI options"
+ 
+ config ARCH_HIBERNATION_HEADER
+diff --git a/arch/x86/include/asm/pgalloc.h b/arch/x86/include/asm/pgalloc.h
+index b4389a4..e2fb2b6 100644
+--- a/arch/x86/include/asm/pgalloc.h
++++ b/arch/x86/include/asm/pgalloc.h
+@@ -80,12 +80,21 @@ static inline void pmd_populate(struct mm_struct *mm, pmd_t *pmd,
+ #if PAGETABLE_LEVELS > 2
+ static inline pmd_t *pmd_alloc_one(struct mm_struct *mm, unsigned long addr)
+ {
+-	return (pmd_t *)get_zeroed_page(GFP_KERNEL|__GFP_REPEAT);
++	struct page *page;
++	page = alloc_pages(GFP_KERNEL | __GFP_REPEAT| __GFP_ZERO, 0);
++	if (!page)
++		return NULL;
++	if (!pgtable_pmd_page_ctor(page)) {
++		__free_pages(page, 0);
++		return NULL;
++	}
++	return (pmd_t *)page_address(page);
+ }
+ 
+ static inline void pmd_free(struct mm_struct *mm, pmd_t *pmd)
+ {
+ 	BUG_ON((unsigned long)pmd & (PAGE_SIZE-1));
++	pgtable_pmd_page_dtor(virt_to_page(pmd));
+ 	free_page((unsigned long)pmd);
+ }
+ 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.4.rc3
+
