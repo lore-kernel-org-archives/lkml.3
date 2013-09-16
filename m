@@ -1,116 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751579Ab3IPQup (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 12:50:45 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:39933 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750948Ab3IPQun (ORCPT
+	id S1751460Ab3IPQ4K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 12:56:10 -0400
+Received: from mail-by2lp0244.outbound.protection.outlook.com ([207.46.163.244]:35634
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750932Ab3IPQ4H convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 12:50:43 -0400
-Message-ID: <523736DE.1050201@wwwdotorg.org>
-Date: Mon, 16 Sep 2013 10:50:38 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 16 Sep 2013 12:56:07 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: "olaf@aepfle.de" <olaf@aepfle.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "vojtech@suse.cz" <vojtech@suse.cz>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: RE: [PATCH 1/1] Drivers: input: serio: New driver to support
+ Hyper-V synthetic keyboard
+Thread-Topic: [PATCH 1/1] Drivers: input: serio: New driver to support
+ Hyper-V synthetic keyboard
+Thread-Index: AQHOspfSNoWHhKt7u0WqPY6XUwHbdJnIBjYAgABmTaCAAArAAIAAC6Bw
+Date: Mon, 16 Sep 2013 16:56:03 +0000
+Message-ID: <baabf219b12b40de8e17b029e621e079@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1379309334-25042-1-git-send-email-kys@microsoft.com>
+ <20130916082110.GN25896@mwanda>
+ <3b5096d0190b4440a8e25afbd22ab72d@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130916150548.GO25896@mwanda>
+In-Reply-To: <20130916150548.GO25896@mwanda>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:4898:80e8:ed31::3]
+x-forefront-prvs: 0971922F40
+x-forefront-antispam-report: SFV:NSPM;SFS:(51704005)(377454003)(189002)(199002)(13464003)(24454002)(83072001)(80022001)(74876001)(69226001)(81342001)(19580405001)(83322001)(19580395003)(46102001)(51856001)(74706001)(81542001)(53806001)(4396001)(76482001)(54316002)(56776001)(49866001)(47736001)(33646001)(47976001)(74502001)(74662001)(31966008)(47446002)(76576001)(74316001)(76786001)(65816001)(77096001)(80976001)(76796001)(56816003)(59766001)(77982001)(81686001)(79102001)(54356001)(63696002)(81816001)(50986001)(74366001)(24736002)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB062;H:SN2PR03MB061.namprd03.prod.outlook.com;CLIP:2001:4898:80e8:ed31::3;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>, Tomasz Figa <t.figa@samsung.com>,
-        Dave Martin <Dave.Martin@arm.com>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, gnurou@gmail.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v6 1/5] ARM: add basic support for Trusted Foundations
-References: <1379238028-7960-1-git-send-email-acourbot@nvidia.com> <1379238028-7960-2-git-send-email-acourbot@nvidia.com>
-In-Reply-To: <1379238028-7960-2-git-send-email-acourbot@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: DuplicateDomain-a84fc36a-4ed7-4e57-ab1c-3e967bcbad48.microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/2013 03:40 AM, Alexandre Courbot wrote:
-> Trusted Foundations is a TrustZone-based secure monitor for ARM that
-> can be invoked using the same SMC-based API on all supported
-> platforms. This patch adds initial basic support for Trusted
-> Foundations using the ARM firmware API. Current features are limited
-> to the ability to boot secondary processors.
+
+
+> -----Original Message-----
+> From: Dan Carpenter [mailto:dan.carpenter@oracle.com]
+> Sent: Monday, September 16, 2013 8:06 AM
+> To: KY Srinivasan
+> Cc: olaf@aepfle.de; gregkh@linuxfoundation.org; jasowang@redhat.com;
+> dmitry.torokhov@gmail.com; linux-kernel@vger.kernel.org; vojtech@suse.cz;
+> linux-input@vger.kernel.org; apw@canonical.com; devel@linuxdriverproject.org
+> Subject: Re: [PATCH 1/1] Drivers: input: serio: New driver to support Hyper-V
+> synthetic keyboard
 > 
-> Note: The API followed by Trusted Foundations does *not* follow the SMC
-> calling conventions. It has nothing to do with PSCI neither and is only
-> relevant to devices that use Trusted Foundations (like most Tegra-based
-> retail devices).
+> On Mon, Sep 16, 2013 at 02:46:24PM +0000, KY Srinivasan wrote:
+> > > > +			case VM_PKT_DATA_INBAND:
+> > > > +				hv_kbd_on_receive(device, desc);
+> > >
+> > > This is the error handling I mentioned at the top.  hv_kbd_on_receive()
+> > > doesn't take into consideration the amount of data we recieved, it
+> > > trusts the offset we recieved from the user.  There is an out of bounds
+> > > read.
+> >
+> > What user are you referring to. The message is sent by the host - the user
+> keystroke
+> > is normalized into a fixed size packet by the host and sent to the  guest. We will
+> parse this
+> > packet, based on the host specified layout here.
+> >
+> 
+> The user means the hypervisor, yes.
+> 
+> I don't want the hypervisor accessing outside of the buffer.  It is
+> robustness issue.  Just check the offset against "bytes_recvd".  It's
+> not complicated.
 
-> diff --git a/arch/arm/firmware/trusted_foundations.c b/arch/arm/firmware/trusted_foundations.c
+At the outset, let me apologize for not understanding your concern.
+You say: " I don't want the hypervisor accessing outside of the buffer"
+Where did you see the hypervisor accessing anything outside the buffer?
+The buffer is allocated by this driver and a packet from vmbus is read into this
+buffer - this is the call to vmbus_recvpacket(). If the specified buffer is smaller
+than the packet that needs to be read, then nothing will be read. Once the read
+completes, we can be sure we have read a valid packet and can proceed to parse it in
+this driver.
 
-> +#if IS_ENABLED(CONFIG_OF)
-> +void of_register_trusted_foundations(void)
-> +{
-> +	struct device_node *node;
-> +	struct trusted_foundations_platform_data pdata;
-> +	int err;
-> +
-> +	node = of_find_compatible_node(NULL, NULL, "tl,trusted-foundations");
-> +	if (!node)
-> +		return;
-...
+I don't want to be argumentative, I am just not seeing the issue.
 
-> diff --git a/arch/arm/include/asm/trusted_foundations.h b/arch/arm/include/asm/trusted_foundations.h
+Regards,
 
-> +#if IS_ENABLED(CONFIG_TRUSTED_FOUNDATIONS)
-> +void register_trusted_foundations(struct trusted_foundations_platform_data *pd);
-> +#if IS_ENABLED(CONFIG_OF)
-> +void of_register_trusted_foundations(void);
-> +#endif
-
-I still don't think that's correct.
-
-If TF support is enabled, yet DT support is not enabled, then there is
-no prototype, implementation, or dummy implementation for
-of_register_trusted_foundations(). I think there should be a dummy
-implementation in this case, shouldn't there?
-
-> +
-> +#else /* CONFIG_TRUSTED_FOUNDATIONS */
-> +
-> +#include <linux/printk.h>
-> +#include <linux/of.h>
-> +#include <asm/bug.h>
-> +
-> +static inline void register_trusted_foundations(
-> +				   struct trusted_foundations_platform_data *pd)
-> +{
-> +	panic("No support for Trusted Foundations, stopping...\n");
-> +}
-> +
-> +#if IS_ENABLED(CONFIG_OF)
-> +static inline void of_register_trusted_foundations(void)
-> +{
-> +	/* If we find the target should enable TF but does not support it,
-> +	 * fail as the system won't be able to do much anyway */
-> +	if (of_find_compatible_node(NULL, NULL, "tl,trusted-foundations"))
-> +		register_trusted_foundations(NULL);
-> +}
-> +#else
-> +static inline void of_register_trusted_foundations(void)
-> +{
-> +}
-> +#endif /* CONFIG_OF */
-
-That's more complex than it needs to be; there is a dummy
-of_find_compatible_node() in the !OF case, so you don't need to ifdef
-the implementation of of_register_trusted_foundations(); you just need
-the first implementation here.
-
-> +#endif /* CONFIG_TRUSTED_FOUNDATIONS */
-
-In summary, I think you need:
-
-If TF is enabled, always implement of_register_trusted_foundations() in
-the C file, and rely on of_find_compatible_node() to return NULL if
-!CONFIG_OF.
-
-If TF is not enabled, implement the inline version in the header file,
-and again rely on of_find_compatible_node() to return NULL if !CONFIG_OF.
-
-Unless I'm missing something!
+K. Y
+ 
