@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757475Ab3IPLLY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 07:11:24 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:43023 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753170Ab3IPLLW (ORCPT
+	id S932426Ab3IPLMR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 07:12:17 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47459 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753371Ab3IPLMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 07:11:22 -0400
-Date: Mon, 16 Sep 2013 12:11:18 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Denis CIOCCA <denis.ciocca@st.com>
-Cc: Jonathan Cameron <jic23@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jic23@cam.ac.uk" <jic23@cam.ac.uk>, "arnd@arndb.de" <arnd@arndb.de>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Subject: Re: [PATCH 38/38] iio: magn-core: st: Provide support for the
- LSM303DLH
-Message-ID: <20130916111118.GM3999@lee--X1>
-References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
- <1378817379-8238-39-git-send-email-lee.jones@linaro.org>
- <5234A28D.1030409@kernel.org>
- <20130916073151.GB3999@lee--X1>
- <5236D03D.2030506@st.com>
- <20130916100809.GI3999@lee--X1>
- <5236DADD.3040205@st.com>
+	Mon, 16 Sep 2013 07:12:16 -0400
+Date: Mon, 16 Sep 2013 13:12:13 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [GIT pull] timers core for 3.12
+In-Reply-To: <alpine.DEB.2.02.1309161158280.4089@ionos.tec.linutronix.de>
+Message-ID: <alpine.DEB.2.02.1309161311070.4089@ionos.tec.linutronix.de>
+References: <alpine.DEB.2.02.1309161158280.4089@ionos.tec.linutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5236DADD.3040205@st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Sep 2013, Denis CIOCCA wrote:
+On Mon, 16 Sep 2013, Thomas Gleixner wrote:
 
-> Hi Lee,
+> Linus,
 > 
-> > The driver mentions that the first group of sensors have a WAI of 
-> > 0x3c: #define ST_MAGN_1_WAI_EXP 0x3c And when I print out the WAI read 
-> > from the device: Requested device: lsm303dlh_magn - read WAI: 0x3c I 
-> > guess I could have been lied to again by the board's datasheet again 
-> > and the attached device isn't actually a LSM303DLH, but how can I tell 
-> > for sure? 
-> On LSM303DLH you have to read 0x0a 0x0b and 0x0c registers, you have to 
-> find 0x48, 0x34 and 0x33. I think in the snowball there is the LSM303DLHC.
+> please pull the latest timers/core git tree from:
+> 
+>    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers/core
+> 
+>  * armada SoC clocksource overhaul with a trivial merge conflict
+>  * Minor improvements to various SoC clocksource drivers
 
-I'm inclined to agree with you. I'll make the necessary changes.
+Sorry for sending it late. It got delayed in various ways and
+unfortunately there is stuff already merged via the SoC tree which
+depends on this :(
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Thanks,
+
+	tglx
