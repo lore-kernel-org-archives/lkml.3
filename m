@@ -1,76 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757434Ab3IPKkP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 06:40:15 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40501 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755369Ab3IPKkN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 06:40:13 -0400
-Date: Mon, 16 Sep 2013 11:40:09 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Wang Shilong <wangshilong1991@gmail.com>
-Message-ID: <20130916104009.GA29403@sirena.org.uk>
-References: <1379094851-26385-1-git-send-email-linus.walleij@linaro.org>
- <20130916091956.GF3999@lee--X1>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kv1tUqrW/oiGCBvw"
-Content-Disposition: inline
-In-Reply-To: <20130916091956.GF3999@lee--X1>
-X-Cookie: Your present plans will be successful.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/4 v2] mfd: add STw481x driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1757457Ab3IPKmM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 06:42:12 -0400
+Received: from mga03.intel.com ([143.182.124.21]:37130 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753380Ab3IPKmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 06:42:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,914,1371106800"; 
+   d="scan'208";a="361035119"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Alex Thorlton <athorlton@sgi.com>, Mel Gorman <mgorman@suse.de>,
+        Andi Kleen <andi@firstfloor.org>, Michal Hocko <mhocko@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        kirill.shutemov@linux.intel.com, linux-kernel@vger.kernel.org
+In-Reply-To: <1379117362-gwv3vrog-mutt-n-horiguchi@ah.jp.nec.com>
+References: <1379117362-gwv3vrog-mutt-n-horiguchi@ah.jp.nec.com>
+Subject: RE: [PATCH v4] hugetlbfs: support split page table lock
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130916104205.5605CE0090@blue.fi.intel.com>
+Date: Mon, 16 Sep 2013 13:42:05 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Naoya Horiguchi wrote:
+> Hi,
+> 
+> Kirill posted split_ptl patchset for thp today, so in this version
+> I post only hugetlbfs part. I added Kconfig variables in following
+> Kirill's patches (although without CONFIG_SPLIT_*_PTLOCK_CPUS.)
+> 
+> This patch changes many lines, but all are in hugetlbfs specific code,
+> so I think we can apply this independent of thp patches.
+> -----
+> From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Date: Fri, 13 Sep 2013 18:12:30 -0400
+> Subject: [PATCH v4] hugetlbfs: support split page table lock
+> 
+> Currently all of page table handling by hugetlbfs code are done under
+> mm->page_table_lock. So when a process have many threads and they heavily
+> access to the memory, lock contention happens and impacts the performance.
+> 
+> This patch makes hugepage support split page table lock so that we use
+> page->ptl of the leaf node of page table tree which is pte for normal pages
+> but can be pmd and/or pud for hugepages of some architectures.
+> 
+> ChangeLog v4:
+>  - introduce arch dependent macro ARCH_ENABLE_SPLIT_HUGETLB_PTLOCK
+>    (only defined for x86 for now)
+>  - rename USE_SPLIT_PTLOCKS_HUGETLB to USE_SPLIT_HUGETLB_PTLOCKS
+> 
+> ChangeLog v3:
+>  - disable split ptl for ppc with USE_SPLIT_PTLOCKS_HUGETLB.
+>  - remove replacement in some architecture dependent code. This is justified
+>    because an allocation of pgd/pud/pmd/pte entry can race with other
+>    allocation, not with read/write access, so we can use different locks.
+>    http://thread.gmane.org/gmane.linux.kernel.mm/106292/focus=106458
+> 
+> ChangeLog v2:
+>  - add split ptl on other archs missed in v1
+>  - drop changes on arch/{powerpc,tile}/mm/hugetlbpage.c
+> 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> ---
+>  arch/x86/Kconfig         |  4 +++
+>  include/linux/hugetlb.h  | 20 +++++++++++
+>  include/linux/mm_types.h |  2 ++
+>  mm/Kconfig               |  3 ++
+>  mm/hugetlb.c             | 92 +++++++++++++++++++++++++++++-------------------
+>  mm/mempolicy.c           |  5 +--
+>  mm/migrate.c             |  4 +--
+>  mm/rmap.c                |  2 +-
+>  8 files changed, 91 insertions(+), 41 deletions(-)
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 6a5cf6a..5b83d14 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -1884,6 +1884,10 @@ config ARCH_ENABLE_SPLIT_PMD_PTLOCK
+>  	def_bool y
+>  	depends on X86_64 || X86_PAE
+>  
+> +config ARCH_ENABLE_SPLIT_HUGETLB_PTLOCK
+> +	def_bool y
+> +	depends on X86_64 || X86_PAE
+> +
+>  menu "Power management and ACPI options"
+>  
+>  config ARCH_HIBERNATION_HEADER
+> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+> index 0393270..2cdac68 100644
+> --- a/include/linux/hugetlb.h
+> +++ b/include/linux/hugetlb.h
+> @@ -80,6 +80,24 @@ extern const unsigned long hugetlb_zero, hugetlb_infinity;
+>  extern int sysctl_hugetlb_shm_group;
+>  extern struct list_head huge_boot_pages;
+>  
+> +#if USE_SPLIT_HUGETLB_PTLOCKS
+> +#define huge_pte_lockptr(mm, ptep) ({__pte_lockptr(virt_to_page(ptep)); })
+> +#else	/* !USE_SPLIT_HUGETLB_PTLOCKS */
+> +#define huge_pte_lockptr(mm, ptep) ({&(mm)->page_table_lock; })
+> +#endif	/* USE_SPLIT_HUGETLB_PTLOCKS */
+> +
+> +#define huge_pte_offset_lock(mm, address, ptlp)		\
+> +({							\
+> +	pte_t *__pte = huge_pte_offset(mm, address);	\
+> +	spinlock_t *__ptl = NULL;			\
+> +	if (__pte) {					\
+> +		__ptl = huge_pte_lockptr(mm, __pte);	\
+> +		*(ptlp) = __ptl;			\
+> +		spin_lock(__ptl);			\
+> +	}						\
+> +	__pte;						\
+> +})
+> +
 
---kv1tUqrW/oiGCBvw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+[ Disclaimer: I don't know much about hugetlb. ]
 
-On Mon, Sep 16, 2013 at 10:19:56AM +0100, Lee Jones wrote:
+I don't think it's correct. Few points:
 
-> Can't you just NULL .id_table?
+ - Hugetlb supports multiple page sizes: on x86_64 2M (PMD) and 1G (PUD).
+   My patchset only implements it for PMD. We don't even initialize
+   spinlock in struct page for PUD.
+ - If we enable split PMD lock we should use it *globally*. With you patch
+   we can end up with different locks used by hugetlb and rest of kernel
+   to protect the same PMD table if USE_SPLIT_HUGETLB_PTLOCKS !=
+   USE_SPLIT_PMD_PTLOCKS. It's just broken.
 
-> Here's the code which would use it:
-> > /* match on an id table if there is one */
-> > if (driver->id_table)
-> >         return i2c_match_id(driver->id_table, client) != NULL;
+What we should really do is take split pmd lock (using pmd_lock*) if we
+try to protect PMD level and fallback to mm->page_table_lock if we want to
+protect upper levels.
 
-> Matching for "dummy" will just waste cycles.
+>  /* arch callbacks */
+>  
+>  pte_t *huge_pte_alloc(struct mm_struct *mm,
+> @@ -164,6 +182,8 @@ static inline void __unmap_hugepage_range(struct mmu_gather *tlb,
+>  	BUG();
+>  }
+>  
+> +#define huge_pte_lockptr(mm, ptep) 0
+> +
 
-i2c_device_probe() will return -ENODEV if id_table is NULL before we get
-to actually matching.  We could remove that check though...
+NULL?
 
---kv1tUqrW/oiGCBvw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+>  #endif /* !CONFIG_HUGETLB_PAGE */
+>  
+>  #define HUGETLB_ANON_FILE "anon_hugepage"
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSNuAGAAoJELSic+t+oim9ei8P/00Fa5ryWJOfTyt2FqK/T9dV
-KYjRAxLvl+Nz+qNmyB/r4f8owYkkrdm55ozTwWKRbJq6JDJ3fVO8V/OJTkwxkRYB
-xETR2aZi1KUKmCgJ/+2xpDjXnbGXEz2ybTA9+qiJE1Ic/pg2h1vkL0V3EMKBzRfW
-fmOgp7KGewjSDmIa6S9BCxjzDw38oIbX9QI3WWQuu9Yu25F8TxqJc5oE1OaJA28y
-m+qP6CF3Uba1yVXirWEDy3eA+PvD/PkEz2vdamqvO5We7ofXGquRgpN35iqK8Xig
-TtA/pKyzTw5LxiLxUqD8EFOwRzpxm87grjHH9VpJOgucm4qP3G/QYxjdPGbrs1JO
-OlY+0GrO2IxpzAAmjVPT1coRpVHROcyeSRCvS5AVXiy0BUcjcxiG454A907a3xSl
-CB04R5+7EKGH4ZFAXP9ZxCfyMzSJwafEAyxHyY96uuMOqsPxoo5830gYN1PO8qEl
-AZ6MIql3MfTzs0SVWr4LAMJCYbZckgXCk8zvtoVl/YTAOtDEKDjTVMS9DntUGCQN
-TI7altJyMSQtACtjTBMhrEo94uBHfOlDpJvaGLLxSx+23TOi+RnLa+VjQtBPGGDm
-zY8houKzJfYmKLUGAti7GTKFR8Bzdfh34Al6txpRy3lkifmkb2inl0dGiwNZULzO
-iu/xWh08zPtjLFCD7l72
-=rF0s
------END PGP SIGNATURE-----
-
---kv1tUqrW/oiGCBvw--
+-- 
+ Kirill A. Shutemov
