@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754982Ab3IPNoM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 09:44:12 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:49997 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754424Ab3IPNoG (ORCPT
+	id S1755339Ab3IPNoQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 09:44:16 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:49887 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754424Ab3IPNoN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 09:44:06 -0400
+	Mon, 16 Sep 2013 09:44:13 -0400
 From: Iker Pedrosa <ikerpedrosam@gmail.com>
 To: pavel@ucw.cz
 Cc: gregkh@linuxfoundation.org, ikerpedrosam@gmail.com, harsh1kumar@gmail.com,
         dan.carpenter@oracle.com, mujeeb.adil@gmail.com,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 04/24] Staging: winbond: phy_calibration: first of the patches that fixes lines over 80 characters
-Date: Mon, 16 Sep 2013 15:43:24 +0200
-Message-Id: <1379339024-12157-5-git-send-email-ikerpedrosam@gmail.com>
+Subject: [PATCH v2 08/24] Staging: winbond: reg: changed sleep function from msleep to usleep
+Date: Mon, 16 Sep 2013 15:43:28 +0200
+Message-Id: <1379339024-12157-9-git-send-email-ikerpedrosam@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379339024-12157-1-git-send-email-ikerpedrosam@gmail.com>
 References: <1379339024-12157-1-git-send-email-ikerpedrosam@gmail.com>
@@ -22,143 +22,194 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-First of the patches that fixes the lines over 80 characters in phy_calibration.c
+According to the documentation it is not recommended to use msleep for 1ms - 20ms because it may sleep longer than 20ms. So, it is recommended to use usleep instead.
+
+In the first revision Greg KH pointed out that this change broke the build. In my computer it builds properly so if someone has the same problem please copy the output so that I can figure out what is the problem.
 
 Signed-off-by: Iker Pedrosa <ikerpedrosam@gmail.com>
 ---
- drivers/staging/winbond/phy_calibration.c | 46 ++++++++++++++++++-------------
- 1 file changed, 27 insertions(+), 19 deletions(-)
+ drivers/staging/winbond/reg.c | 54 +++++++++++++++++++++----------------------
+ 1 file changed, 27 insertions(+), 27 deletions(-)
 
-diff --git a/drivers/staging/winbond/phy_calibration.c b/drivers/staging/winbond/phy_calibration.c
-index cfbfbbb..6635c85 100644
---- a/drivers/staging/winbond/phy_calibration.c
-+++ b/drivers/staging/winbond/phy_calibration.c
-@@ -27,10 +27,12 @@
- #define DEG2RAD(X)      (0.017453 * (X))
+diff --git a/drivers/staging/winbond/reg.c b/drivers/staging/winbond/reg.c
+index 80b4b34..c023fda 100644
+--- a/drivers/staging/winbond/reg.c
++++ b/drivers/staging/winbond/reg.c
+@@ -890,9 +890,9 @@ void Uxx_power_on_procedure(struct hw_data *pHwData)
+ 	else {
+ 		Wb35Reg_WriteSync(pHwData, 0x03f4, 0xFF5807FF);
+ 		Wb35Reg_WriteSync(pHwData, 0x03d4, 0x80); /* regulator on only */
+-		msleep(10);
+-		Wb35Reg_WriteSync(pHwData, 0x03d4, 0xb8); /* REG_ON RF_RSTN on, and */
+-		msleep(10);
++		usleep(10000);
++		Wb35Reg_WriteSync(pHwData, 0x03d4, 0xb8); /* REG_ON RF_RSTN on */
++		usleep(10000);
+ 		ltmp = 0x4968;
+ 		if ((pHwData->phy_type == RF_WB_242) ||
+ 			(RF_WB_242_1 == pHwData->phy_type))
+@@ -905,7 +905,7 @@ void Uxx_power_on_procedure(struct hw_data *pHwData)
+ 		Wb35Reg_ReadSync(pHwData, 0x03d0, &ltmp);
+ 		loop = 500; /* Wait for 5 second */
+ 		while (!(ltmp & 0x20) && loop--) {
+-			msleep(10);
++			usleep(10000);
+ 			if (!Wb35Reg_ReadSync(pHwData, 0x03d0, &ltmp))
+ 				break;
+ 		}
+@@ -914,7 +914,7 @@ void Uxx_power_on_procedure(struct hw_data *pHwData)
+ 	}
  
- static const s32 Angles[] = {
--	FIXED(DEG2RAD(45.0)),     FIXED(DEG2RAD(26.565)),   FIXED(DEG2RAD(14.0362)),
--	FIXED(DEG2RAD(7.12502)),  FIXED(DEG2RAD(3.57633)),  FIXED(DEG2RAD(1.78991)),
--	FIXED(DEG2RAD(0.895174)), FIXED(DEG2RAD(0.447614)), FIXED(DEG2RAD(0.223811)),
--	FIXED(DEG2RAD(0.111906)), FIXED(DEG2RAD(0.055953)), FIXED(DEG2RAD(0.027977))
-+	FIXED(DEG2RAD(45.0)),     FIXED(DEG2RAD(26.565)),
-+	FIXED(DEG2RAD(14.0362)),  FIXED(DEG2RAD(7.12502)),
-+	FIXED(DEG2RAD(3.57633)),  FIXED(DEG2RAD(1.78991)),
-+	FIXED(DEG2RAD(0.895174)), FIXED(DEG2RAD(0.447614)),
-+	FIXED(DEG2RAD(0.223811)), FIXED(DEG2RAD(0.111906)),
-+	FIXED(DEG2RAD(0.055953)), FIXED(DEG2RAD(0.027977))
- };
+ 	Wb35Reg_WriteSync(pHwData, 0x03b0, 1); /* Reset hardware first */
+-	msleep(10);
++	usleep(10000);
  
- /****************** LOCAL FUNCTION DECLARATION SECTION **********************/
-@@ -296,7 +298,8 @@ void _sin_cos(s32 angle, s32 *sin, s32 *cos)
+ 	/* Set burst write delay */
+ 	Wb35Reg_WriteSync(pHwData, 0x03f8, 0x7ff);
+@@ -1055,18 +1055,18 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
+ 	case RF_AIROHA_2230:
+ 		ltmp = (1 << 31) | (0 << 30) | (20 << 24) | BitReverse((0x07 << 20) | 0xE168E, 20);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+-		msleep(10);
++		usleep(10000);
+ 		ltmp = (1 << 31) | (0 << 30) | (20 << 24) | BitReverse(al2230_rf_data[7], 20);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+-		msleep(10);
++		usleep(10000);
+ 	case RF_AIROHA_2230S:
+ 		Wb35Reg_WriteSync(pHwData, 0x03d4, 0x80); /* regulator on only */
+-		msleep(10);
++		usleep(10000);
+ 		Wb35Reg_WriteSync(pHwData, 0x03d4, 0xa0); /* PLL_PD REF_PD set to 0 */
+-		msleep(10);
++		usleep(10000);
+ 		Wb35Reg_WriteSync(pHwData, 0x03d4, 0xe0); /* MLK_EN */
+ 		Wb35Reg_WriteSync(pHwData, 0x03b0, 1); /* Reset hardware first */
+-		msleep(10);
++		usleep(10000);
+ 		/* ========================================================= */
+ 
+ 		/* The follow code doesn't use the burst-write mode */
+@@ -1077,15 +1077,15 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
+ 		Wb35Reg_WriteSync(pHwData, 0x105c, ltmp);
+ 		pHwData->reg.BB50 |= 0x13; /* (MASK_IQCAL_MODE|MASK_CALIB_START) */
+ 		Wb35Reg_WriteSync(pHwData, 0x1050, pHwData->reg.BB50);
+-		msleep(5);
++		usleep(5000);
+ 
+ 		ltmp = (1 << 31) | (0 << 30) | (20 << 24) | BitReverse((0x0F << 20) | 0xF01B0, 20);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+-		msleep(5);
++		usleep(5000);
+ 
+ 		ltmp = (1 << 31) | (0 << 30) | (20 << 24) | BitReverse((0x0F << 20) | 0xF01E0, 20);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+-		msleep(5);
++		usleep(5000);
+ 
+ 		ltmp = (1 << 31) | (0 << 30) | (20 << 24) | BitReverse((0x0F << 20) | 0xF01A0, 20);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+@@ -1102,13 +1102,13 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
+ 		/* 2.4GHz */
+ 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | 0x9ABA8F;
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+-		msleep(5);
++		usleep(5000);
+ 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | 0x3ABA8F;
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+-		msleep(5);
++		usleep(5000);
+ 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | 0x1ABA8F;
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+-		msleep(5);
++		usleep(5000);
+ 
+ 		/* 5GHz */
+ 		Wb35Reg_WriteSync(pHwData, 0x03dc, 0x00000000);
+@@ -1119,20 +1119,20 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
+ 		/* Write to register. number must less and equal than 16 */
+ 		for (i = 0; i < number; i++)
+ 			Wb35Reg_WriteSync(pHwData, 0x0864, pltmp[i]);
+-		msleep(5);
++		usleep(5000);
+ 
+ 		Wb35Reg_WriteSync(pHwData, 0x03dc, 0x00000080);
+ 		pr_debug("* PLL_ON    high\n");
+ 
+ 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | 0x9ABA8F;
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+-		msleep(5);
++		usleep(5000);
+ 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | 0x3ABA8F;
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+-		msleep(5);
++		usleep(5000);
+ 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | 0x12BACF;
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+-		msleep(5);
++		usleep(5000);
+ 		break;
+ 	case RF_WB_242:
+ 	case RF_WB_242_1:
+@@ -1147,11 +1147,11 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
+ 		/* Calibration (1a.0). Synthesizer reset */
+ 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x0F<<24) | 0x00101E, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+-		msleep(5);
++		usleep(5000);
+ 		/* Calibration (1a). VCO frequency calibration mode ; waiting 2msec VCO calibration time */
+ 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFE69c0, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+-		msleep(2);
++		usleep(2000);
+ 
+ 		/* ----- Calibration (2). TX baseband Gm-C filter auto-tuning */
+ 		/* Calibration (2a). turn off ENCAL signal */
+@@ -1210,7 +1210,7 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
+ 		/* Calibration (5d). turn on RX DC offset cal function; and waiting 2 msec cal time */
+ 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFF6DC0, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+-		msleep(2);
++		usleep(2000);
+ 		/* Calibration (5f). turn off ENCAL signal */
+ 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFAEDC0, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+@@ -1222,7 +1222,7 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
+ 		/* Calibration (5d). turn on RX DC offset cal function; and waiting 2 msec cal time */
+ 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFF6DC0, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+-		msleep(2);
++		usleep(2000);
+ 		/* Calibration (5f). turn off ENCAL signal */
+ 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFAEDC0, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+@@ -1234,7 +1234,7 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
+ 		/* Calibration (5d). turn on RX DC offset cal function; and waiting 2 msec cal time */
+ 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFF6DC0, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+-		msleep(2);
++		usleep(2000);
+ 		/* Calibration (5f). turn off ENCAL signal */
+ 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFAEDC0, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+@@ -1246,7 +1246,7 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
+ 		/* Calibration (5d). turn on RX DC offset cal function; and waiting 2 msec cal time */
+ 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFF6DC0, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+-		msleep(2);
++		usleep(2000);
+ 		/* Calibration (5f). turn off ENCAL signal */
+ 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFAEDC0, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+@@ -1258,7 +1258,7 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
+ 		/* 0x00 0xF86100 ; 3E184   ; Switch RF chip to normal mode */
+ 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xF86100, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+-		msleep(5);
++		usleep(5000);
+ 		break;
  	}
  }
- 
--static unsigned char hal_get_dxx_reg(struct hw_data *pHwData, u16 number, u32 *pValue)
-+static unsigned char hal_get_dxx_reg(struct hw_data *pHwData, u16 number,
-+				     u32 *pValue)
- {
- 	if (number < 0x1000)
- 		number += 0x1000;
-@@ -304,7 +307,8 @@ static unsigned char hal_get_dxx_reg(struct hw_data *pHwData, u16 number, u32 *p
- }
- #define hw_get_dxx_reg(_A, _B, _C) hal_get_dxx_reg(_A, _B, (u32 *)_C)
- 
--static unsigned char hal_set_dxx_reg(struct hw_data *pHwData, u16 number, u32 value)
-+static unsigned char hal_set_dxx_reg(struct hw_data *pHwData, u16 number,
-+				     u32 value)
- {
- 	unsigned char ret;
- 
-@@ -407,7 +411,8 @@ void _rxadc_dc_offset_cancellation_winbond(struct hw_data *phw_data, u32 frequen
- 	PHY_DEBUG(("[CAL]    ** adc_dc_cal_i = %d (0x%04X)\n",
- 			   _s9_to_s32(val&0x000001FF), val&0x000001FF));
- 	PHY_DEBUG(("[CAL]    ** adc_dc_cal_q = %d (0x%04X)\n",
--			   _s9_to_s32((val&0x0003FE00)>>9), (val&0x0003FE00)>>9));
-+			   _s9_to_s32((val&0x0003FE00)>>9),
-+			   (val&0x0003FE00)>>9));
- #endif
- 
- 	hw_get_dxx_reg(phw_data, REG_MODE_CTRL, &val);
-@@ -535,7 +540,8 @@ void _txidac_dc_offset_cancellation_winbond(struct hw_data *phw_data)
- 		}
- 
- 		PHY_DEBUG(("[CAL]    ** fix_cancel_dc_i = %d (0x%04X)\n",
--				   fix_cancel_dc_i, _s32_to_s5(fix_cancel_dc_i)));
-+				   fix_cancel_dc_i,
-+				   _s32_to_s5(fix_cancel_dc_i)));
- 
- 		if ((abs(mag_1-mag_0)*6) > mag_0)
- 			break;
-@@ -711,7 +717,8 @@ u8 _tx_iq_calibration_loop_winbond(struct hw_data *phw_data,
- 	loop = LOOP_TIMES;
- 
- 	while (loop > 0) {
--		PHY_DEBUG(("[CAL] [%d.] <_tx_iq_calibration_loop>\n", (LOOP_TIMES-loop+1)));
-+		PHY_DEBUG(("[CAL] [%d.] <_tx_iq_calibration_loop>\n",
-+				   (LOOP_TIMES-loop+1)));
- 
- 		iqcal_tone_i_avg = 0;
- 		iqcal_tone_q_avg = 0;
-@@ -719,8 +726,8 @@ u8 _tx_iq_calibration_loop_winbond(struct hw_data *phw_data,
- 			return 0;
- 		for (capture_time = 0; capture_time < 10; capture_time++) {
- 			/*
--			 * a. Set iqcal_mode[1:0] to 0x2 and set "calib_start" to 0x1 to
--			 *    enable "IQ calibration Mode II"
-+			 * a. Set iqcal_mode[1:0] to 0x2 and set "calib_start"
-+			 *    to 0x1 to enable "IQ calibration Mode II"
- 			 */
- 			reg_mode_ctrl &= ~(MASK_IQCAL_TONE_SEL|MASK_IQCAL_MODE);
- 			reg_mode_ctrl &= ~MASK_IQCAL_MODE;
-@@ -749,8 +756,8 @@ u8 _tx_iq_calibration_loop_winbond(struct hw_data *phw_data,
- 			PHY_DEBUG(("[CAL]    MODE_CTRL (write) = 0x%08X\n", reg_mode_ctrl));
- 
- 			/*
--			 * d. Set iqcal_mode[1:0] to 0x3 and set "calib_start" to 0x1 to
--			 *    enable "IQ calibration Mode II"
-+			 * d. Set iqcal_mode[1:0] to 0x3 and set "calib_start"
-+			 *    to 0x1 to enable "IQ calibration Mode II"
- 			 */
- 			/* hw_get_dxx_reg(phw_data, REG_MODE_CTRL, &val); */
- 			hw_get_dxx_reg(phw_data, REG_MODE_CTRL, &reg_mode_ctrl);
-@@ -766,7 +773,7 @@ u8 _tx_iq_calibration_loop_winbond(struct hw_data *phw_data,
- 			iqcal_tone_i = _s13_to_s32(val & 0x00001FFF);
- 			iqcal_tone_q = _s13_to_s32((val & 0x03FFE000) >> 13);
- 			PHY_DEBUG(("[CAL]    ** iqcal_tone_i = %d, iqcal_tone_q = %d\n",
--			iqcal_tone_i, iqcal_tone_q));
-+					   iqcal_tone_i, iqcal_tone_q));
- 			if (capture_time == 0)
- 				continue;
- 			else {
-@@ -1146,7 +1153,8 @@ u8 _rx_iq_calibration_loop_winbond(struct hw_data *phw_data, u16 factor, u32 fre
- 	/* for (loop = 0; loop < LOOP_TIMES; loop++) */
- 	loop = LOOP_TIMES;
- 	while (loop > 0) {
--		PHY_DEBUG(("[CAL] [%d.] <_rx_iq_calibration_loop>\n", (LOOP_TIMES-loop+1)));
-+		PHY_DEBUG(("[CAL] [%d.] <_rx_iq_calibration_loop>\n",
-+				   (LOOP_TIMES-loop+1)));
- 		iqcal_tone_i_avg = 0;
- 		iqcal_tone_q_avg = 0;
- 		iqcal_image_i_avg = 0;
-@@ -1199,13 +1207,13 @@ u8 _rx_iq_calibration_loop_winbond(struct hw_data *phw_data, u16 factor, u32 fre
- 
- 		/* d. */
- 		rot_tone_i_b = (iqcal_tone_i * iqcal_tone_i +
--						iqcal_tone_q * iqcal_tone_q) / 1024;
-+					iqcal_tone_q * iqcal_tone_q) / 1024;
- 		rot_tone_q_b = (iqcal_tone_i * iqcal_tone_q * (-1) +
--						iqcal_tone_q * iqcal_tone_i) / 1024;
-+					iqcal_tone_q * iqcal_tone_i) / 1024;
- 		rot_image_i_b = (iqcal_image_i * iqcal_tone_i -
--						 iqcal_image_q * iqcal_tone_q) / 1024;
-+					iqcal_image_q * iqcal_tone_q) / 1024;
- 		rot_image_q_b = (iqcal_image_i * iqcal_tone_q +
--						 iqcal_image_q * iqcal_tone_i) / 1024;
-+					iqcal_image_q * iqcal_tone_i) / 1024;
- 
- 		PHY_DEBUG(("[CAL]    ** rot_tone_i_b  = %d\n", rot_tone_i_b));
- 		PHY_DEBUG(("[CAL]    ** rot_tone_q_b  = %d\n", rot_tone_q_b));
 -- 
 1.8.1.2
 
