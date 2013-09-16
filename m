@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752112Ab3IPXKp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 19:10:45 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:41448 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996Ab3IPXJ6 (ORCPT
+	id S1752149Ab3IPXLG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 19:11:06 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:38117 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953Ab3IPXJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 19:09:58 -0400
+	Mon, 16 Sep 2013 19:09:56 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
 Cc: Grant Likely <grant.likely@linaro.org>,
         Rob Herring <rob.herring@calxeda.com>,
-        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
-Subject: [PATCH 28/28] mips: use common of_flat_dt_get_machine_name
-Date: Mon, 16 Sep 2013 18:09:24 -0500
-Message-Id: <1379372965-22359-29-git-send-email-robherring2@gmail.com>
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 26/28] arm64: use common of_flat_dt_get_machine_name
+Date: Mon, 16 Sep 2013 18:09:22 -0500
+Message-Id: <1379372965-22359-27-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379372965-22359-1-git-send-email-robherring2@gmail.com>
 References: <1379372965-22359-1-git-send-email-robherring2@gmail.com>
@@ -24,45 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <rob.herring@calxeda.com>
 
-Convert mips to use the common of_flat_dt_get_machine_name function.
+Convert arm64 to use the common of_flat_dt_get_machine_name function.
 
 Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org
 ---
- arch/mips/kernel/prom.c | 15 +--------------
- 1 file changed, 1 insertion(+), 14 deletions(-)
+ arch/arm64/kernel/setup.c | 11 +----------
+ 1 file changed, 1 insertion(+), 10 deletions(-)
 
-diff --git a/arch/mips/kernel/prom.c b/arch/mips/kernel/prom.c
-index 0b2485f..3c3b0df 100644
---- a/arch/mips/kernel/prom.c
-+++ b/arch/mips/kernel/prom.c
-@@ -47,24 +47,11 @@ void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
- 	return __alloc_bootmem(size, align, __pa(MAX_DMA_ADDRESS));
- }
+diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
+index 3790004..4504f28 100644
+--- a/arch/arm64/kernel/setup.c
++++ b/arch/arm64/kernel/setup.c
+@@ -124,8 +124,6 @@ static void __init setup_processor(void)
  
--int __init early_init_dt_scan_model(unsigned long node,	const char *uname,
--				    int depth, void *data)
--{
--	if (!depth) {
--		char *model = of_get_flat_dt_prop(node, "model", NULL);
--
--		if (model)
--			mips_set_machine_name(model);
--	}
--	return 0;
--}
--
- void __init __dt_setup_arch(struct boot_param_header *bph)
+ static void __init setup_machine_fdt(phys_addr_t dt_phys)
  {
- 	if (!early_init_dt_scan(bph))
- 		return;
+-	unsigned long dt_root;
+-
+ 	if (!dt_phys || !early_init_dt_scan(phys_to_virt(dt_phys))) {
+ 		early_print("\n"
+ 			"Error: invalid device tree blob at physical address 0x%p (virtual address 0x%p)\n"
+@@ -137,14 +135,7 @@ static void __init setup_machine_fdt(phys_addr_t dt_phys)
+ 			cpu_relax();
+ 	}
  
--	/* try to load the mips machine name */
--	of_scan_flat_dt(early_init_dt_scan_model, NULL);
-+	mips_set_machine_name(of_flat_dt_get_machine_name());
+-	dt_root = of_get_flat_dt_root();
+-
+-	machine_name = of_get_flat_dt_prop(dt_root, "model", NULL);
+-	if (!machine_name)
+-		machine_name = of_get_flat_dt_prop(dt_root, "compatible", NULL);
+-	if (!machine_name)
+-		machine_name = "<unknown>";
+-	pr_info("Machine: %s\n", machine_name);
++	machine_name = of_flat_dt_get_machine_name();
  }
- #endif
+ 
+ /*
 -- 
 1.8.1.2
 
