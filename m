@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831Ab3IPFnN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 01:43:13 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41653 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753047Ab3IPFnM (ORCPT
+	id S932302Ab3IPFoG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 01:44:06 -0400
+Received: from vaxjo.synopsys.com ([198.182.60.75]:44886 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754106Ab3IPFoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 01:43:12 -0400
-Date: Mon, 16 Sep 2013 07:43:01 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH 2/2] sched: load_balance: Reset env when going to redo
- due to all pinned
-Message-ID: <20130916054301.GK21832@twins.programming.kicks-ass.net>
-References: <281f59b6e596c718dd565ad267fc38f5b8e5c995.1379265590.git.vdavydov@parallels.com>
- <c34e2ebbe55403d5db111fa3ecdf6ca52b73a337.1379265590.git.vdavydov@parallels.com>
+	Mon, 16 Sep 2013 01:44:04 -0400
+Message-ID: <52369A94.5060900@synopsys.com>
+Date: Mon, 16 Sep 2013 11:13:48 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <c34e2ebbe55403d5db111fa3ecdf6ca52b73a337.1379265590.git.vdavydov@parallels.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <Alexey.Brodkin@synopsys.com>, <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [PATCH] ethernet/arc/arc_emac: Fix huge delays in large file
+ copies
+References: <1378295235-18928-1-git-send-email-vgupta@synopsys.com> <20130905.142530.732425484460470485.davem@davemloft.net> <522EBBD2.1060003@synopsys.com>
+In-Reply-To: <522EBBD2.1060003@synopsys.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.111]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 15, 2013 at 09:30:14PM +0400, Vladimir Davydov wrote:
-> Firstly, reset env.dst_cpu/dst_rq to this_cpu/this_rq, because it could
-> have changed in 'some pinned' case. Otherwise, should_we_balance() can
-> stop balancing beforehand.
+On 09/10/2013 11:57 AM, Vineet Gupta wrote:
+> On 09/05/2013 11:55 PM, David Miller wrote:
+>> From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+>> Date: Wed, 4 Sep 2013 17:17:15 +0530
+>>
+>>> copying large files to a NFS mounted host was taking absurdly large
+>>> time.
+>>>
+>>> Turns out that TX BD reclaim had a sublte bug.
+>>>
+>>> Loop starts off from @txbd_dirty cursor and stops when it hits a BD
+>>> still in use by controller. However when it stops it needs to keep the
+>>> cursor at that very BD to resume scanning in next iteration. However it
+>>> was erroneously incrementing the cursor, causing the next scan(s) to
+>>> fail too, unless the BD chain was completely drained out.
+>>>
+>>> [ARCLinux]$ ls -l -sh /disk/log.txt
+>>>  17976 -rw-r--r--    1 root     root       17.5M Sep  /disk/log.txt
+>>>
+>>> ========== Before =====================
+>>> [ARCLinux]$ time cp /disk/log.txt /mnt/.
+>>> real    31m 7.95s
+>>> user    0m 0.00s
+>>> sys     0m 0.10s
+>>>
+>>> ========== After =====================
+>>> [ARCLinux]$ time cp /disk/log.txt /mnt/.
+>>> real    0m 24.33s
+>>> user    0m 0.00s
+>>> sys     0m 0.19s
+>>>
+>>> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+>>
+>> Applied.
+>>
 > 
-> Secondly, reset env.flags, because it can have LBF_SOME_PINNED set.
+> Hi Greg,
 > 
-> Thirdly, reset env.dst_grpmask cpus in env.cpus to allow handling 'some
-> pinned' case when pulling tasks from a new busiest cpu.
-
-Did you actually run into any problems because of this?
-
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> ---
->  kernel/sched/fair.c |   12 ++++++++++--
->  1 file changed, 10 insertions(+), 2 deletions(-)
+> This needs a stable backport (3.11).
+> Mainline commit 27082ee1b92f4d41e78b85
 > 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index cd59640..d840e51 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -5289,8 +5289,16 @@ more_balance:
->  		if (unlikely(env.flags & LBF_ALL_PINNED)) {
->  			cpumask_clear_cpu(cpu_of(busiest), cpus);
->  			if (!cpumask_empty(cpus)) {
-> -				env.loop = 0;
-> -				env.loop_break = sched_nr_migrate_break;
-> +				env.dst_cpu	= this_cpu;
-> +				env.dst_rq	= this_rq;
-> +				env.flags	= 0;
-> +				env.loop	= 0;
-> +				env.loop_break	= sched_nr_migrate_break;
-> +
-> +				/* Reset cpus cleared in LBF_SOME_PINNED case */
-> +				if (env.dst_grpmask)
-> +					cpumask_or(cpus, cpus, env.dst_grpmask);
-> +
->  				goto redo;
->  			}
->  			goto out_balanced;
+> Thx,
+> -Vineet
 
-So the problem I have with this is that it removes the bound on the
-number of iterations we do. Currently we're limited by the bits in cpus,
-but by resetting those we can do on and on and on...
+Hi Greg,
+
+I didn't spot this one in your stable-queue for 3.11.
+Please apply.
+
+Thx,
+Vineet
+
+
+
