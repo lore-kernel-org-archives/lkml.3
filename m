@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757291Ab3IPKbD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 06:31:03 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47128 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753383Ab3IPKbC (ORCPT
+	id S932209Ab3IPKdO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 06:33:14 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61810 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756272Ab3IPKdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 06:31:02 -0400
-Date: Mon, 16 Sep 2013 12:30:52 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, akpm@linuxfoundation.org,
-        linux-arch@vger.kernel.org, Steven Rostedt <srostedt@redhat.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [gcv v4 05/38] percpu: Add preemption checks to __this_cpu ops
-Message-ID: <20130916103052.GB29018@twins.programming.kicks-ass.net>
-References: <20130903190014.794420260@linux.com>
- <00000140e5f56965-daead878-020f-4dd9-b239-5547db26f274-000000@email.amazonses.com>
+	Mon, 16 Sep 2013 06:33:13 -0400
+Message-ID: <5236DE60.3020901@monstr.eu>
+Date: Mon, 16 Sep 2013 12:33:04 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <00000140e5f56965-daead878-020f-4dd9-b239-5547db26f274-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+CC: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH 3/3] video: xilinxfb: Simplify error path
+References: <7016a90750626ba866dddc6f85cfdd71943f6891.1378965270.git.michal.simek@xilinx.com> <940bbdfc5c67282ab461b9c82b55f18fc34c959d.1378965270.git.michal.simek@xilinx.com> <5236D4BD.9050707@ti.com>
+In-Reply-To: <5236D4BD.9050707@ti.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="oVCHwaQN7pXte2OmtAbm6QPDuFlOhpfem"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 03, 2013 at 10:33:20PM +0000, Christoph Lameter wrote:
-> We define a check function in order to avoid trouble with the
-> include files. Then the higher level __this_cpu macros are
-> modified to involve the check before any operation.
-> 
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--oVCHwaQN7pXte2OmtAbm6QPDuFlOhpfem
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-So this_cpu_ptr() is the one with the check, and __this_cpu_ptr() is the
-one without. But for the other this_cpu ops __this_cpu_$OP() is going to
-be the one with a check and this_cpu_$OP() the one without?
+On 09/16/2013 11:51 AM, Tomi Valkeinen wrote:
+> On 12/09/13 08:54, Michal Simek wrote:
+>=20
+>> @@ -394,16 +382,12 @@ static int xilinxfb_release(struct device *dev)
+>>  	/* Turn off the display */
+>>  	xilinx_fb_out32(drvdata, REG_CTRL, 0);
+>>
+>> -	/* Release the resources, as allocated based on interface */
+>> -	if (drvdata->flags & BUS_ACCESS_FLAG)
+>> -		devm_iounmap(dev, drvdata->regs);
+>>  #ifdef CONFIG_PPC_DCR
+>> -	else
+>> +	/* Release the resources, as allocated based on interface */
+>> +	if (!(drvdata->flags & BUS_ACCESS_FLAG))
+>>  		dcr_unmap(drvdata->dcr_host, drvdata->dcr_len);
+>>  #endif
+>=20
+> I might be mistaken, and it's not strictly part of this series, but
+> shouldn't dcr_unmap be called somewhere else also, if the probe fails?
 
-Sounds like a bloody marvelous idea :/
+yes. It should.
+
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
 
 
-> Index: linux/include/linux/percpu.h
-> ===================================================================
-> --- linux.orig/include/linux/percpu.h	2013-09-03 13:38:49.818888738 -0500
-> +++ linux/include/linux/percpu.h	2013-09-03 13:38:49.810888819 -0500
-> @@ -172,6 +172,12 @@ extern phys_addr_t per_cpu_ptr_to_phys(v
->  
->  extern void __bad_size_call_parameter(void);
->  
-> +#ifdef CONFIG_PREEMPT
-> +extern void this_cpu_preempt_check(void);
-> +#else
-> +static inline void this_cpu_preempt_check(void) { }
-> +#endif
+--oVCHwaQN7pXte2OmtAbm6QPDuFlOhpfem
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-How about re-using debug_smp_processor_id() instead?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlI23mAACgkQykllyylKDCE7kgCcDISIKNxmcIP2TU7IVEOlCXIa
+h5gAnA/0ZAQDWy2vTHPK0etCb4crQwWt
+=Y59r
+-----END PGP SIGNATURE-----
+
+--oVCHwaQN7pXte2OmtAbm6QPDuFlOhpfem--
