@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756942Ab3IPPIP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 11:08:15 -0400
-Received: from mga14.intel.com ([143.182.124.37]:11350 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754125Ab3IPPIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 11:08:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,915,1371106800"; 
-   d="scan'208";a="361184735"
-Date: Mon, 16 Sep 2013 18:13:33 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Graeme Gregory <graeme.gregory@linaro.org>
-Cc: Mark Brown <broonie@kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        linux-i2c@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lv Zheng <lv.zheng@intel.com>, Aaron Lu <aaron.lu@intel.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH v2 1/9] i2c: prepare runtime PM support for I2C client
- devices
-Message-ID: <20130916151333.GQ7393@intel.com>
-References: <87bo3whjz4.fsf@linaro.org>
- <20130913145022.GC7393@intel.com>
- <20130913173149.GE7393@intel.com>
- <87ioy4e8bw.fsf@linaro.org>
- <20130915064139.GJ7393@intel.com>
- <20130915124744.GW29403@sirena.org.uk>
- <20130915132823.GL7393@intel.com>
- <20130916101249.GX29403@sirena.org.uk>
- <20130916143811.GP7393@intel.com>
- <20130916144616.GM1823@xora-yoga.xora.org.uk>
+	id S1756758Ab3IPPJk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 11:09:40 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:16523 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753049Ab3IPPJi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 11:09:38 -0400
+Date: Mon, 16 Sep 2013 18:05:48 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "olaf@aepfle.de" <olaf@aepfle.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "vojtech@suse.cz" <vojtech@suse.cz>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: Re: [PATCH 1/1] Drivers: input: serio: New driver to support Hyper-V
+ synthetic keyboard
+Message-ID: <20130916150548.GO25896@mwanda>
+References: <1379309334-25042-1-git-send-email-kys@microsoft.com>
+ <20130916082110.GN25896@mwanda>
+ <3b5096d0190b4440a8e25afbd22ab72d@SN2PR03MB061.namprd03.prod.outlook.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130916144616.GM1823@xora-yoga.xora.org.uk>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+In-Reply-To: <3b5096d0190b4440a8e25afbd22ab72d@SN2PR03MB061.namprd03.prod.outlook.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 03:46:16PM +0100, Graeme Gregory wrote:
-> On Mon, Sep 16, 2013 at 05:38:12PM +0300, Mika Westerberg wrote:
-> > On Mon, Sep 16, 2013 at 11:12:49AM +0100, Mark Brown wrote:
-> > > That's definitely an ACPI specific (probably x86 specific ACPI?)
-> > > requirement not a generic one, on some systems it would increase power
-> > > consumption since the controller will need to sit on while the device is
-> > > functioning autonomously.
+On Mon, Sep 16, 2013 at 02:46:24PM +0000, KY Srinivasan wrote:
+> > > +			case VM_PKT_DATA_INBAND:
+> > > +				hv_kbd_on_receive(device, desc);
 > > 
-> > Yes, the ACPI 5.0 spec says that the device cannot be in higher D-state
-> > than its parent. This is not x86 specific, though I'm not sure if this is
-> > implemented elsewhere.
-> > 
-> I do not think this stops the OS fine controlling the power of the device
-> though. It is only a mechanism to make sure the tree of D states is vaguely
-> sane from the ACPI point of view. What happens in each D state is never
-> actually defined in the ACPI spec.
+> > This is the error handling I mentioned at the top.  hv_kbd_on_receive()
+> > doesn't take into consideration the amount of data we recieved, it
+> > trusts the offset we recieved from the user.  There is an out of bounds
+> > read.
+> 
+> What user are you referring to. The message is sent by the host - the user keystroke
+> is normalized into a fixed size packet by the host and sent to the  guest. We will parse this
+> packet, based on the host specified layout here.
+> 
 
-I think there's a pretty good definition of the D-states in chapter 2.3 of
-the ACPI 5.0 spec.
+The user means the hypervisor, yes.
 
-In our case the problem is that the I2C controller is in D3Cold (off) and
-we try to move the I2C client device to D0 (on) it violates the ACPI spec.
+I don't want the hypervisor accessing outside of the buffer.  It is
+robustness issue.  Just check the offset against "bytes_recvd".  It's
+not complicated.
 
-Anyway we are looking if we can somehow make this work in such way that it
-doesn't prevent non-ACPI devices from functioning as they expect now.
+If you have a different place where the guest does this then tell me
+which function to look at.
+
+regards,
+dan carpenter
