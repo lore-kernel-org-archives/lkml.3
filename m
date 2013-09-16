@@ -1,135 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158Ab3IPSmQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 14:42:16 -0400
-Received: from smarthost01c.mail.zen.net.uk ([212.23.1.5]:47994 "EHLO
-	smarthost01c.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751831Ab3IPSmO (ORCPT
+	id S1752219Ab3IPSmc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 14:42:32 -0400
+Received: from mail-by2lp0235.outbound.protection.outlook.com ([207.46.163.235]:47650
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751353Ab3IPSm3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 14:42:14 -0400
-X-Greylist: delayed 8106 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Sep 2013 14:42:14 EDT
-Message-ID: <1379356930.3422.71.camel@linaro1.home>
-Subject: Re: [PATCH 1/2] cpufreq: unlock correct rwsem while updating
- policy->cpu
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Mon, 16 Sep 2013 19:42:10 +0100
-In-Reply-To: <CAKohpomEQsS-WHQpa=_07NQ1FXDB711inrmMgUguD529BA7g1A@mail.gmail.com>
-References: <075032be4fd288074b8f699d4f4ba0179518df6f.1379344038.git.viresh.kumar@linaro.org>
-	 <1379348823.3422.42.camel@linaro1.home>
-	 <CAKohpomEQsS-WHQpa=_07NQ1FXDB711inrmMgUguD529BA7g1A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-smarthost01c-IP: [82.69.122.217]
+	Mon, 16 Sep 2013 14:42:29 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "vojtech@suse.cz" <vojtech@suse.cz>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: RE: [PATCH 1/1] Drivers: input: serio: New driver to support
+ Hyper-V synthetic keyboard
+Thread-Topic: [PATCH 1/1] Drivers: input: serio: New driver to support
+ Hyper-V synthetic keyboard
+Thread-Index: AQHOspfSNoWHhKt7u0WqPY6XUwHbdJnIBjYAgABmTaCAAArAAIAAC6BwgAAXC4CAABPrMIAAA2WAgAABSXA=
+Date: Mon, 16 Sep 2013 18:42:25 +0000
+Message-ID: <117fbf407a554684b4d72ab06b033eeb@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1379309334-25042-1-git-send-email-kys@microsoft.com>
+ <20130916082110.GN25896@mwanda>
+ <3b5096d0190b4440a8e25afbd22ab72d@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130916150548.GO25896@mwanda>
+ <baabf219b12b40de8e17b029e621e079@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130916170951.GB20734@core.coreip.homeip.net>
+ <3e45f054c6e243eabf2896ab1dcf38d4@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130916183319.GM19256@mwanda>
+In-Reply-To: <20130916183319.GM19256@mwanda>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:4898:80e8:ed31::3]
+x-forefront-prvs: 0971922F40
+x-forefront-antispam-report: SFV:NSPM;SFS:(13464003)(377454003)(51704005)(199002)(189002)(80976001)(54356001)(77096001)(76576001)(77982001)(59766001)(56816003)(81816001)(81686001)(79102001)(65816001)(74366001)(76482001)(74316001)(76786001)(76796001)(50986001)(63696002)(46102001)(83072001)(74502001)(51856001)(19580405001)(83322001)(19580395003)(47446002)(74662001)(31966008)(69226001)(74706001)(81342001)(81542001)(80022001)(53806001)(54316002)(4396001)(74876001)(47736001)(47976001)(33646001)(49866001)(56776001)(24736002)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB063;H:SN2PR03MB061.namprd03.prod.outlook.com;CLIP:2001:4898:80e8:ed31::3;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: DuplicateDomain-a84fc36a-4ed7-4e57-ab1c-3e967bcbad48.microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-09-16 at 22:38 +0530, Viresh Kumar wrote:
-> On 16 September 2013 21:57, Jon Medhurst (Tixy) <tixy@linaro.org> wrote:
-> > If I take mainline code and just change the line above to:
+
+
+> -----Original Message-----
+> From: Dan Carpenter [mailto:dan.carpenter@oracle.com]
+> Sent: Monday, September 16, 2013 11:33 AM
+> To: KY Srinivasan
+> Cc: Dmitry Torokhov; olaf@aepfle.de; gregkh@linuxfoundation.org;
+> jasowang@redhat.com; linux-kernel@vger.kernel.org; vojtech@suse.cz; linux-
+> input@vger.kernel.org; apw@canonical.com; devel@linuxdriverproject.org
+> Subject: Re: [PATCH 1/1] Drivers: input: serio: New driver to support Hyper-V
+> synthetic keyboard
 > 
-> You meant this line by above line?
+> Just roll something like the following into your patch.
 > 
->          unlock_policy_rwsem_write(cpu);
-
-Yes.
-
-> >    up_write(&per_cpu(cpu_policy_rwsem, (per_cpu(cpufreq_cpu_data,
-> > cpu))->last_cpu));
-> > then the big_little cpufreq driver works for me.
+> regards,
+> dan carpenter
 > 
-> That would be same as: up_write(&per_cpu(cpu_policy_rwsem, policy->last_cpu));
-
-Yes. (I had cut'n'pasted from the unlock_policy_rwsem_ macro)
-
-> >> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> >> index 43c24aa..c18bf7b 100644
-> >> --- a/drivers/cpufreq/cpufreq.c
-> >> +++ b/drivers/cpufreq/cpufreq.c
-> >> @@ -952,9 +952,16 @@ static void update_policy_cpu(struct cpufreq_policy *policy, unsigned int cpu)
-> >>       if (cpu == policy->cpu)
-> >>               return;
-> >>
-> >> +     /* take direct locks as lock_policy_rwsem_write wouldn't work here */
-> >> +     down_write(&per_cpu(cpu_policy_rwsem, policy->cpu));
-> >> +     down_write(&per_cpu(cpu_policy_rwsem, cpu));
-> >> +
-> >>       policy->last_cpu = policy->cpu;
-> >>       policy->cpu = cpu;
-> >>
-> >> +     up_write(&per_cpu(cpu_policy_rwsem, cpu));
-> >> +     up_write(&per_cpu(cpu_policy_rwsem, policy->cpu));
-> >
-> > You've just overwritten policy->cpu with cpu.
+> diff --git a/drivers/input/serio/hyperv-keyboard.c b/drivers/input/serio/hyperv-
+> keyboard.c
+> index 0d4625f..262721b 100644
+> --- a/drivers/input/serio/hyperv-keyboard.c
+> +++ b/drivers/input/serio/hyperv-keyboard.c
+> @@ -151,15 +151,18 @@ static void hv_kbd_free_device(struct hv_kbd_dev
+> *device)
+>  }
 > 
-> Stupid enough :)
+>  static void hv_kbd_on_receive(struct hv_device *device,
+> -				struct vmpacket_descriptor *packet)
+> +			      struct vmpacket_descriptor *packet, size_t size)
+>  {
+>  	struct synth_kbd_msg *msg;
+>  	struct hv_kbd_dev *kbd_dev = hv_get_drvdata(device);
+>  	struct synth_kbd_keystroke *ks_msg;
+> +	int offset;
+>  	u16 scan_code;
 > 
-> > I tried using
-> > policy->last_cpu to fix that, but it still doesn't work for me (giving
-> > the lockdep warning I mentioned.) If I change the code to just lock the
-> > original policy->cpu lock only, then all is fine.
+> -	msg = (struct synth_kbd_msg *)((unsigned long)packet +
+> -					(packet->offset8 << 3));
+> +	offset = packet->offset8 << 3;
+> +	if (offset + sizeof(struct synth_kbd_protocol_response) > size)
+> +		return;
+> +	msg = (void *)packet + offset;
 > 
-> Fixed my patch now.. find attached..
-
-The commit log to that patch still mentions taking both locks.
-The code itself fixes the lockdep errors I had, so
-
-Tested-by: Jon Medhurst <tixy@linaro.org>
-
-however, I still have concerns about the locking (below)...
-
->  It mentions why lock for last cpu is
-> enough here. Copied that here too..
+>  	switch (msg->header.type) {
+>  	case SYNTH_KBD_PROTOCOL_RESPONSE:
+> @@ -220,7 +223,7 @@ static void hv_kbd_on_channel_callback(void *context)
+>  				break;
 > 
-> + /*
-> + * Take direct locks as lock_policy_rwsem_write wouldn't work here.
-> + * Also lock for last cpu is enough here as contention will happen only
-> + * after policy->cpu is changed and after it is changed, other threads
-> + * will try to acquire lock for new cpu. And policy is already updated
-> + * by then.
-> + */
+>  			case VM_PKT_DATA_INBAND:
+> -				hv_kbd_on_receive(device, desc);
+> +				hv_kbd_on_receive(device, desc, bytes_recvd);
+>  				break;
 > 
-> > Also, this locking is now just happening around policy->cpu update,
-> > whereas before this change, it was locked for the whole of
-> > update_policy_cpu, i.e. cpufreq_frequency_table_update_policy_cpu and
-> > the notifier callbacks. Is that change of lock coverage OK?
-> 
-> Yeah, the rwsem is only required for updating policy's fields and so that
-> should be okay.
+>  			default:
 
-But what about reads, like in cpufreq_frequency_table_update_policy_cpu
-which is called immediately after the unlocking writes? Should that not
-be covered by a reader lock?
+Dan,
 
-And after that call, policy is passed into blocking_notifier_call_chain,
-do those callbacks not want to look at policy fields? Or are they going
-to do there own locking?
+Rolling the changes you have indicated is not the issue; this can trivially be done.
+My contention is that it is not needed given that the underlying function is already
+doing that. Look at the function  vmbus_recvpacket_raw() in drivers/hv/channel.c.
 
-Or is update_policy_cpu itself meant to be called with a read lock held?
-(It doesn't appear to be as the semaphore 'activiy' field of the lock is
-zero).
+Regards,
 
-Or is there some other non-obvious synchronisation method which means
-the policy object can't change?
-
-This is the first time I've looked at this code, so feel free just to
-say 'it's complicated, just trust me, I'm the expert, I know what I'm
-doing'...
-
--- 
-Tixy
-
-
-
+K. Y
 
 
