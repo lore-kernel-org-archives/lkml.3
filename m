@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757187Ab3IPIwa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 04:52:30 -0400
-Received: from smtp-out-159.synserver.de ([212.40.185.159]:1061 "EHLO
-	smtp-out-156.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756213Ab3IPIw3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 04:52:29 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 1519
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Stefani Seibold <stefani@seibold.net>
-Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH] kfifo: kfifo_copy_{to,from}_user: Fix copied bytes calculation
-Date: Mon, 16 Sep 2013 10:53:51 +0200
-Message-Id: <1379321631-3197-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.8.0
+	id S1756868Ab3IPIzU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 04:55:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41271 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751470Ab3IPIzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 04:55:19 -0400
+Date: Mon, 16 Sep 2013 11:55:17 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Andrew Jones <drjones@redhat.com>
+Cc: kvm@vger.kernel.org, pbonzini@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [RFC] x86: kvm: remove KVM_SOFT_MAX_VCPUS
+Message-ID: <20130916085517.GK17294@redhat.com>
+References: <1379161011-28239-1-git-send-email-drjones@redhat.com>
+ <20130915090322.GV17294@redhat.com>
+ <20130916082208.GA2101@hawk.usersys.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130916082208.GA2101@hawk.usersys.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'copied' and 'len' are in bytes, while 'ret' is in elements, so we need to
-multiply 'ret' with the size of one element to get the correct result.
-
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- lib/kfifo.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/lib/kfifo.c b/lib/kfifo.c
-index 7b7f830..d79b9d2 100644
---- a/lib/kfifo.c
-+++ b/lib/kfifo.c
-@@ -215,7 +215,7 @@ static unsigned long kfifo_copy_from_user(struct __kfifo *fifo,
- 	 * incrementing the fifo->in index counter
- 	 */
- 	smp_wmb();
--	*copied = len - ret;
-+	*copied = len - ret * esize;
- 	/* return the number of elements which are not copied */
- 	return ret;
- }
-@@ -275,7 +275,7 @@ static unsigned long kfifo_copy_to_user(struct __kfifo *fifo, void __user *to,
- 	 * incrementing the fifo->out index counter
- 	 */
- 	smp_wmb();
--	*copied = len - ret;
-+	*copied = len - ret * esize;
- 	/* return the number of elements which are not copied */
- 	return ret;
- }
--- 
-1.8.0
-
+On Mon, Sep 16, 2013 at 10:22:09AM +0200, Andrew Jones wrote:
+> > > [1] Actually, until 972fc544b6034a in uq/master is merged there won't be
+> > >     any warnings either.
+> > > 
+> > > Signed-off-by: Andrew Jones <drjones@redhat.com>
+> > > ---
+> > >  arch/x86/include/asm/kvm_host.h | 1 -
+> > >  arch/x86/kvm/x86.c              | 2 +-
+> > >  2 files changed, 1 insertion(+), 2 deletions(-)
+> > > 
+> > > diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> > > index c76ff74a98f2e..9236c63315a9b 100644
+> > > --- a/arch/x86/include/asm/kvm_host.h
+> > > +++ b/arch/x86/include/asm/kvm_host.h
+> > > @@ -32,7 +32,6 @@
+> > >  #include <asm/asm.h>
+> > >  
+> > >  #define KVM_MAX_VCPUS 255
+> > > -#define KVM_SOFT_MAX_VCPUS 160
+> > >  #define KVM_USER_MEM_SLOTS 125
+> > >  /* memory slots that are not exposed to userspace */
+> > >  #define KVM_PRIVATE_MEM_SLOTS 3
+> > > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> > > index e5ca72a5cdb6d..d9d3e2ed68ee9 100644
+> > > --- a/arch/x86/kvm/x86.c
+> > > +++ b/arch/x86/kvm/x86.c
+> > > @@ -2604,7 +2604,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+> > >  		r = !kvm_x86_ops->cpu_has_accelerated_tpr();
+> > >  		break;
+> > >  	case KVM_CAP_NR_VCPUS:
+> > > -		r = KVM_SOFT_MAX_VCPUS;
+> > > +		r = min(num_online_cpus(), KVM_MAX_VCPUS);
+> > s/KVM_MAX_VCPUS/KVM_SOFT_MAX_VCPUS/.  Also what about hotplug cpus?
+> 
+> I'll send a v2 with this change.
+> 
+> I thought a bit about hotplug, and thus using num_possible_cpus()
+> instead, but then decided it made more sense to stick to what's online now
+> for the recommended number. It's just a recommendation anyway. So as long
+> as KVM_MAX_VCPUS is >= num_possible_cpus(), then one can still configure
+> more vcpus to count for all hotplugable cpus, if they wish.
+> 
+It is just recommended, but we do warn about it, so it is user visible.
+Well, the whole point of it existence is to be user visible ;). If user
+creates a guest with max cpus greater than current number if online
+cpus, taking into account feature grows, he will get a warning, but we
+should not warn about it.
+ 
+--
+			Gleb.
