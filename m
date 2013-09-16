@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920Ab3IPNo0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 09:44:26 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:43659 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752570Ab3IPNoW (ORCPT
+	id S1756394Ab3IPNof (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 09:44:35 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:53993 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755931Ab3IPNob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 09:44:22 -0400
+	Mon, 16 Sep 2013 09:44:31 -0400
 From: Iker Pedrosa <ikerpedrosam@gmail.com>
 To: pavel@ucw.cz
 Cc: gregkh@linuxfoundation.org, ikerpedrosam@gmail.com, harsh1kumar@gmail.com,
         dan.carpenter@oracle.com, mujeeb.adil@gmail.com,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 13/24] Staging: winbond: reg: fifth of the patches that fixes lines over 80 characters
-Date: Mon, 16 Sep 2013 15:43:33 +0200
-Message-Id: <1379339024-12157-14-git-send-email-ikerpedrosam@gmail.com>
+Subject: [PATCH v2 19/24] Staging: winbond: wb35rx: fixed some lines over 80 characters
+Date: Mon, 16 Sep 2013 15:43:39 +0200
+Message-Id: <1379339024-12157-20-git-send-email-ikerpedrosam@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379339024-12157-1-git-send-email-ikerpedrosam@gmail.com>
 References: <1379339024-12157-1-git-send-email-ikerpedrosam@gmail.com>
@@ -22,86 +22,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fifth of the patches that fixes the lines over 80 characters in reg.c
+Fixed some lines over 80 characters.
 
 Signed-off-by: Iker Pedrosa <ikerpedrosam@gmail.com>
 ---
- drivers/staging/winbond/reg.c | 33 ++++++++++++++++++++++-----------
- 1 file changed, 22 insertions(+), 11 deletions(-)
+ drivers/staging/winbond/wb35rx.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/winbond/reg.c b/drivers/staging/winbond/reg.c
-index 6d2ab1e..11b155f 100644
---- a/drivers/staging/winbond/reg.c
-+++ b/drivers/staging/winbond/reg.c
-@@ -1242,46 +1242,57 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
+diff --git a/drivers/staging/winbond/wb35rx.c b/drivers/staging/winbond/wb35rx.c
+index 48ed95c..999b7046 100644
+--- a/drivers/staging/winbond/wb35rx.c
++++ b/drivers/staging/winbond/wb35rx.c
+@@ -16,7 +16,8 @@
+ #include "core.h"
+ #include "wb35rx_f.h"
  
- 		/* for LNA=10 -------- */
- 		/* Calibration (5c-m). RX DC offset current bias ON; & LNA=10; RXVGA=111111 */
--		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x06<<24) | 0x342FCC, 24);
-+		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
-+			       | BitReverse((0x06<<24) | 0x342FCC, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
- 		/* Calibration (5d). turn on RX DC offset cal function; and waiting 2 msec cal time */
--		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFF6DC0, 24);
-+		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
-+			       | BitReverse((0x00<<24) | 0xFF6DC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
- 		usleep(2000);
- 		/* Calibration (5f). turn off ENCAL signal */
--		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFAEDC0, 24);
-+		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
-+			       | BitReverse((0x00<<24) | 0xFAEDC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+-static void packet_came(struct ieee80211_hw *hw, char *pRxBufferAddress, int PacketSize)
++static void packet_came(struct ieee80211_hw *hw, char *pRxBufferAddress,
++				int PacketSize)
+ {
+ 	struct wbsoft_priv *priv = hw->priv;
+ 	struct sk_buff *skb;
+@@ -306,7 +307,9 @@ static void Wb35Rx_reset_descriptor(struct hw_data *pHwData)
+ 	pWb35Rx->EP3vm_state = VM_STOP;
+ 	pWb35Rx->rx_halt = 0;
  
- 		/* for LNA=01 -------- */
- 		/* Calibration (5c-m). RX DC offset current bias ON; & LNA=01; RXVGA=111111 */
--		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x06<<24) | 0x341FCC, 24);
-+		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
-+			       | BitReverse((0x06<<24) | 0x341FCC, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
- 		/* Calibration (5d). turn on RX DC offset cal function; and waiting 2 msec cal time */
--		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFF6DC0, 24);
-+		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
-+			       | BitReverse((0x00<<24) | 0xFF6DC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
- 		usleep(2000);
- 		/* Calibration (5f). turn off ENCAL signal */
--		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFAEDC0, 24);
-+		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
-+			       | BitReverse((0x00<<24) | 0xFAEDC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
- 
- 		/* for LNA=00 -------- */
- 		/* Calibration (5c-l). RX DC offset current bias ON; & LNA=00; RXVGA=111111 */
--		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x06<<24) | 0x340FCC, 24);
-+		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
-+			       | BitReverse((0x06<<24) | 0x340FCC, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
- 		/* Calibration (5d). turn on RX DC offset cal function; and waiting 2 msec cal time */
--		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFF6DC0, 24);
-+		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
-+			       | BitReverse((0x00<<24) | 0xFF6DC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
- 		usleep(2000);
- 		/* Calibration (5f). turn off ENCAL signal */
--		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFAEDC0, 24);
-+		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
-+			       | BitReverse((0x00<<24) | 0xFAEDC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
- 		/* Calibration (5g). turn on AGC servo-loop */
--		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x01<<24) | 0xEFFFC2, 24);
-+		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
-+			       | BitReverse((0x01<<24) | 0xEFFFC2, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
- 
- 		/* ----- Calibration (7). Switch RF chip to normal mode */
- 		/* 0x00 0xF86100 ; 3E184   ; Switch RF chip to normal mode */
--		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xF86100, 24);
-+		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
-+			       | BitReverse((0x00<<24) | 0xF86100, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
- 		usleep(5000);
- 		break;
+-	/* Initial the Queue. The last buffer is reserved for used if the Rx resource is unavailable. */
++	/* Initial the Queue. The last buffer is reserved for used if the Rx
++	 * resource is unavailable.
++	*/
+ 	for (i = 0; i < MAX_USB_RX_BUFFER_NUMBER; i++)
+ 		pWb35Rx->RxOwner[i] = 1;
+ }
 -- 
 1.8.1.2
 
