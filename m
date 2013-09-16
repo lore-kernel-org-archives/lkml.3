@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752173Ab3IPEVx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 00:21:53 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:13084 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751465Ab3IPEVv (ORCPT
+	id S1752272Ab3IPE1a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 00:27:30 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:33949 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751808Ab3IPE11 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 00:21:51 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Sun, 15 Sep 2013 21:18:35 -0700
-Message-ID: <52368762.7000701@nvidia.com>
-Date: Mon, 16 Sep 2013 12:21:54 +0800
-From: Wei Ni <wni@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	Mon, 16 Sep 2013 00:27:27 -0400
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "linux@roeck-us.net" <linux@roeck-us.net>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 1/3] hwmon: (lm90) Add power control
-References: <1378985061-28547-1-git-send-email-wni@nvidia.com> <1378985061-28547-2-git-send-email-wni@nvidia.com> <20130912115106.GM29403@sirena.org.uk>
-In-Reply-To: <20130912115106.GM29403@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <32077984.uYNhUh2ogt@vostro.rjw.lan>
+References: <cover.1379063063.git.viresh.kumar@linaro.org>
+	<52339729.7030309@wwwdotorg.org>
+	<CAKohpono-J-Ohzdn=pbNK+HhXhJ2Lf-UBM7OPynTgAwxLd4F4A@mail.gmail.com>
+	<32077984.uYNhUh2ogt@vostro.rjw.lan>
+Date: Mon, 16 Sep 2013 09:57:27 +0530
+Message-ID: <CAKohponrJerykspkd0b4wtE2YtPRMpphUW_3ZN0Lg9Q6bNdJRg@mail.gmail.com>
+Subject: Re: [PATCH 211/228] cpufreq: tegra: remove calls to cpufreq_notify_transition()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2013 07:51 PM, Mark Brown wrote:
-> * PGP Signed by an unknown key
-> 
-> On Thu, Sep 12, 2013 at 07:24:19PM +0800, Wei Ni wrote:
-> 
->> +#include <linux/delay.h>
-> 
-> You don't need this any more, otherwise
+On 15 September 2013 10:35, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> Well, I guess you can assume that everyone has a chance to review the series
+> by now and send it as one patch in the next iteration.
 
-Oh, yes, I will remove it.
+Yeah, that's what I thought..
 
-> 
-> Reviewed-by: Mark Brown <broonie@linaro.org>
-> 
-> * Unknown Key
-> * 0x7EA229BD
-> 
+> A patch that adds 192 lines of code isn't shockingly large by any measure.
 
+It was more about removal of things and the number of files it touches..
+But yes, its good for review to send them separately but in the end they can
+be merged..
