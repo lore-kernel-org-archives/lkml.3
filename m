@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757513Ab3IPLIT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 07:08:19 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47776 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751298Ab3IPLIS (ORCPT
+	id S932536Ab3IPLIk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 07:08:40 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:46852 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751298Ab3IPLIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 07:08:18 -0400
-Date: Mon, 16 Sep 2013 13:08:05 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: mingo@kernel.org, acme@infradead.org, linux-kernel@vger.kernel.org,
-        eranian@google.com, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 2/6] perf, x86: Add Haswell specific transaction flag
- reporting v4
-Message-ID: <20130916110805.GE29018@twins.programming.kicks-ass.net>
-References: <1379095716-4705-1-git-send-email-andi@firstfloor.org>
- <1379095716-4705-3-git-send-email-andi@firstfloor.org>
+	Mon, 16 Sep 2013 07:08:38 -0400
+Date: Mon, 16 Sep 2013 12:08:34 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Denis CIOCCA <denis.ciocca@st.com>
+Cc: Jonathan Cameron <jic23@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
+Subject: Re: [PATCH 32/38] iio: accel-core: st: Move LSM303DLH into correct
+ group
+Message-ID: <20130916110834.GL3999@lee--X1>
+References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
+ <1378817379-8238-33-git-send-email-lee.jones@linaro.org>
+ <5234A20F.7040008@kernel.org>
+ <20130916080546.GC3999@lee--X1>
+ <5236CD17.5010901@st.com>
+ <20130916093812.GG3999@lee--X1>
+ <5236D5F0.2030601@st.com>
+ <20130916101925.GJ3999@lee--X1>
+ <5236DC25.3060909@st.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1379095716-4705-3-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5236DC25.3060909@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 13, 2013 at 11:08:32AM -0700, Andi Kleen wrote:
-> @@ -207,6 +207,8 @@ union hsw_tsx_tuning {
->  	u64	    value;
->  };
->  
-> +#define PEBS_HSW_TSX_FLAGS	0xff00000000
+On Mon, 16 Sep 2013, Denis CIOCCA wrote:
 
-That's a 64bit value and this needs ULL.
+> >> I've tried with real device...Unfortunately, you are right for name on
+> >> the package...
+> >> So, are you using the LSM303DLHC?
+> > According to my datasheet [1], I have the LSM303DLH.
+> >
+> > [1] http://www.calao-systems.com/repository/pub/EMBEDDED%20COMPUTERS/SKY-S9500-ULP-XXX/C12-SDK/SCH-00103-B11.pdf
+> >
+> Mhh...I saw the LSM303DLHC...
+> The LSM303DLH is not populated, there is only the footprint but is not 
+> soldered...
 
->  void init_debug_store_on_cpu(int cpu)
->  {
->  	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
-> @@ -893,6 +895,16 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
->  	    (x86_pmu.intel_cap.pebs_format >= 2))
->  		data.weight = intel_hsw_weight(pebs);
->  
-> +	if ((event->attr.sample_type & PERF_SAMPLE_TRANSACTION) &&
-> +	    x86_pmu.intel_cap.pebs_format >= 2) {
-> +		data.transaction =
-> +			(pebs->tsx_tuning & PEBS_HSW_TSX_FLAGS) >> 32;
+The documentation says is the other way round.
 
-Screw checkpatch and make that an 81 char line or rename the thing
-data.txn or so.
+See the big "Not populated" box around the LSM303DLHC?
 
-> +		/* For RTM XABORTs also log the abort code from AX */
-> +		if ((data.transaction & PERF_SAMPLE_TXN_TRANSACTION) &&
-> +		    (pebs->ax & 1))
-> +			data.transaction |= pebs->ax & 0xff000000;
-
-Yeah, do data.txn, that also allows the above line break to go away.
-
-> +	}
-> +
->  	if (has_branch_stack(event))
->  		data.br_stack = &cpuc->lbr_stack;
->  
-> -- 
-> 1.8.3.1
-> 
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
