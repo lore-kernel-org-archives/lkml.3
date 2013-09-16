@@ -1,58 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757274Ab3IPKTg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 06:19:36 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:56154 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752934Ab3IPKTf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 06:19:35 -0400
-Date: Mon, 16 Sep 2013 11:19:25 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Denis CIOCCA <denis.ciocca@st.com>
-Cc: Jonathan Cameron <jic23@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Subject: Re: [PATCH 32/38] iio: accel-core: st: Move LSM303DLH into correct
- group
-Message-ID: <20130916101925.GJ3999@lee--X1>
-References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
- <1378817379-8238-33-git-send-email-lee.jones@linaro.org>
- <5234A20F.7040008@kernel.org>
- <20130916080546.GC3999@lee--X1>
- <5236CD17.5010901@st.com>
- <20130916093812.GG3999@lee--X1>
- <5236D5F0.2030601@st.com>
+	id S1757352Ab3IPKXK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 06:23:10 -0400
+Received: from gmmr7.centrum.cz ([46.255.225.249]:41027 "EHLO gmmr7.centrum.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752352Ab3IPKXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 06:23:07 -0400
+To: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
+Subject: =?utf-8?q?Re=3A_=5Bpatch_0=2F7=5D_improve_memcg_oom_killer_robustness_v2?=
+Date: Mon, 16 Sep 2013 12:22:59 +0200
+From: "azurIt" <azurit@pobox.sk>
+Cc: =?utf-8?q?Andrew_Morton?= <akpm@linux-foundation.org>,
+        =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>,
+        =?utf-8?q?David_Rientjes?= <rientjes@google.com>,
+        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
+        =?utf-8?q?KOSAKI_Motohiro?= <kosaki.motohiro@jp.fujitsu.com>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <x86@kernel.org>,
+        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <20130910201222.GA25972@cmpxchg.org>, <20130910230853.FEEC19B5@pobox.sk>, <20130910211823.GJ856@cmpxchg.org>, <20130910233247.9EDF4DBA@pobox.sk>, <20130910220329.GK856@cmpxchg.org>, <20130911143305.FFEAD399@pobox.sk>, <20130911180327.GL856@cmpxchg.org>, <20130911205448.656D9D7C@pobox.sk>, <20130911191150.GN856@cmpxchg.org>, <20130911214118.7CDF2E71@pobox.sk> <20130911200426.GO856@cmpxchg.org>
+In-Reply-To: <20130911200426.GO856@cmpxchg.org>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+X-Original-From: azurit@pobox.sk
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+Message-Id: <20130916122259.F60857D4@pobox.sk>
+X-Maser: oho
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <5236D5F0.2030601@st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > That's what the datasheet for the board says. Perhaps it's that that's 
-> > incorrect? Annoyingly, instead of printing the device name on the 
-> > package, ST put some non-Googleable nonsense is there instead 
-> > (probably the serial number). Nevertheless, I'll revert the patch and 
-> > work something else out.
-> 
-> I've tried with real device...Unfortunately, you are right for name on 
-> the package...
-> So, are you using the LSM303DLHC?
+> CC: "Andrew Morton" <akpm@linux-foundation.org>, "Michal Hocko" <mhocko@suse.cz>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+>On Wed, Sep 11, 2013 at 09:41:18PM +0200, azurIt wrote:
+>> >On Wed, Sep 11, 2013 at 08:54:48PM +0200, azurIt wrote:
+>> >> >On Wed, Sep 11, 2013 at 02:33:05PM +0200, azurIt wrote:
+>> >> >> >On Tue, Sep 10, 2013 at 11:32:47PM +0200, azurIt wrote:
+>> >> >> >> >On Tue, Sep 10, 2013 at 11:08:53PM +0200, azurIt wrote:
+>> >> >> >> >> >On Tue, Sep 10, 2013 at 09:32:53PM +0200, azurIt wrote:
+>> >> >> >> >> >> Here is full kernel log between 6:00 and 7:59:
+>> >> >> >> >> >> http://watchdog.sk/lkml/kern6.log
+>> >> >> >> >> >
+>> >> >> >> >> >Wow, your apaches are like the hydra.  Whenever one is OOM killed,
+>> >> >> >> >> >more show up!
+>> >> >> >> >> 
+>> >> >> >> >> 
+>> >> >> >> >> 
+>> >> >> >> >> Yeah, it's supposed to do this ;)
+>> >> >> >
+>> >> >> >How are you expecting the machine to recover from an OOM situation,
+>> >> >> >though?  I guess I don't really understand what these machines are
+>> >> >> >doing.  But if you are overloading them like crazy, isn't that the
+>> >> >> >expected outcome?
+>> >> >> 
+>> >> >> 
+>> >> >> 
+>> >> >> 
+>> >> >> 
+>> >> >> There's no global OOM, server has enough of memory. OOM is occuring only in cgroups (customers who simply don't want to pay for more memory).
+>> >> >
+>> >> >Yes, sure, but when the cgroups are thrashing, they use the disk and
+>> >> >CPU to the point where the overall system is affected.
+>> >> 
+>> >> 
+>> >> 
+>> >> 
+>> >> Didn't know that there is a disk usage because of this, i never noticed anything yet.
+>> >
+>> >You said there was heavy IO going on...?
+>> 
+>> 
+>> 
+>> Yes, there usually was a big IO but it was related to that
+>> deadlocking bug in kernel (or i assume it was). I never saw a big IO
+>> in normal conditions even when there were lots of OOM in
+>> cgroups. I'm even not using swap because of this so i was assuming
+>> that lacks of memory is not doing any additional IO (or am i
+>> wrong?). And if you mean that last problem with IO from Monday, i
+>> don't exactly know what happens but it's really long time when we
+>> had so big problem with IO that it disables also root login on
+>> console.
+>
+>The deadlocking problem should be separate from this.
+>
+>Even without swap, the binaries and libraries of the running tasks can
+>get reclaimed (and immediately faulted back from disk, i.e thrashing).
+>
+>Usually the OOM killer should kick in before tasks cannibalize each
+>other like that.
+>
+>The patch you were using did in fact have the side effect of widening
+>the window between tasks entering heavy reclaim and the OOM killer
+>kicking in, so it could explain the IO worsening while fixing the dead
+>lock problem.
+>
+>That followup patch tries to narrow this window by quite a bit and
+>tries to stop concurrent reclaim when the group is already OOM.
+>
 
-According to my datasheet [1], I have the LSM303DLH.
+Johannes,
 
-[1] http://www.calao-systems.com/repository/pub/EMBEDDED%20COMPUTERS/SKY-S9500-ULP-XXX/C12-SDK/SCH-00103-B11.pdf
+it's, unfortunately, happening several times per day and we cannot work like this :( i will boot previous kernel this night. If you have any patches which can help me or you, please send them so i can install them with this reboot. Thank you.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+azur
