@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932383Ab3IPDFJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 23:05:09 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:10966 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932258Ab3IPDE5 (ORCPT
+	id S1756710Ab3IPDEz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 23:04:55 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:48311 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756477Ab3IPDEt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 23:04:57 -0400
+	Sun, 15 Sep 2013 23:04:49 -0400
 From: Davidlohr Bueso <davidlohr@hp.com>
 To: Manfred Spraul <manfred@colorfullife.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
@@ -14,73 +14,52 @@ To: Manfred Spraul <manfred@colorfullife.com>,
 Cc: Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
         sedat.dilek@gmail.com,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr@hp.com>, stable@vger.kernel.org,
-        #@domain.invalid, for@domain.invalid, 3.11@domain.invalid
-Subject: [PATCH 4/4] ipc,msg: prevent race with rmid in msgsnd,msgrcv
-Date: Sun, 15 Sep 2013 20:04:37 -0700
-Message-Id: <1379300677-24188-5-git-send-email-davidlohr@hp.com>
+        Davidlohr Bueso <davidlohr@hp.com>
+Subject: [PATCH 0/4] ipc: shm and msg fixes
+Date: Sun, 15 Sep 2013 20:04:33 -0700
+Message-Id: <1379300677-24188-1-git-send-email-davidlohr@hp.com>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1379300677-24188-1-git-send-email-davidlohr@hp.com>
-References: <1379300677-24188-1-git-send-email-davidlohr@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes a race in both msgrcv() and msgsnd() between finding the msg and
-actually dealing with the queue, as another thread can delete shmid
-underneath us if we are preempted before acquiring the kern_ipc_perm.lock.
+This patchset deals with the selinux and rmid races Manfred found on
+the ipc scaling work that has been going on. It specifically addresses
+shared mem and msg queues. While semaphores still need updated, I want
+to make sure these are correct first. Also, Manfred had already sent out
+a patchset that deals with a race in sem complex operations. So any changes
+should be on top of his.
 
-Manfred illustrates this nicely:
+Patches 1 and 2 deal with shared memory.
+Patches 3 and 4 deal with msg queues.
+Specific details about each race and its fix are in the corresponding
+patches.
 
-Assume a preemptible kernel that is preempted just after
-> msq = msq_obtain_object_check(ns, msqid)
-in do_msgrcv().
-The only lock that is held is rcu_read_lock().
+Note that Linus suggested a good alternative to patches 1 and 3: use
+kfree_rcu() and delay the freeing of the security structure. I would
+much prefer that approach to doing security checks with the lock held,
+but I want to leave the patches out and ready in case we go with the
+later solution.
 
-Now the other thread processes IPC_RMID.
-When the first task is resumed, then it will happily wait for messages on a
-deleted queue.
+I have tested these patches with IPC testcases from LTP on both my
+quad-core laptop and on a 64 core NUMA server. In both cases, voluntary
+and forced preemption have passed the tests -- note that I was not able
+to reproduce any of these bugs in the first case, so these tests were
+mostly to make sure I didn't further introduce any other issues.
 
-Fix this by checking for if the queue has been deleted after taking the lock.
+Manfred, could you please give me your feedback on these, as I'd like
+to make sure I'm not doing anything stupid.
 
-Reported-by: Manfred Spraul <manfred@colorfullife.com>
-Cc: stable@vger.kernel.org # for 3.11
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
----
- ipc/msg.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+Davidlohr Bueso (4):
+  ipc,shm: fix race with selinux
+  ipc,shm: prevent race with rmid in shmat(2)
+  ipc,msg: fix race with selinux
+  ipc,msg: prevent race with rmid in msgsnd,msgrcv
 
-diff --git a/ipc/msg.c b/ipc/msg.c
-index 06e8aae..4e7d95a 100644
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -690,6 +690,12 @@ long do_msgsnd(int msqid, long mtype, void __user *mtext,
- 		if (ipcperms(ns, &msq->q_perm, S_IWUGO))
- 			goto out_unlock0;
- 
-+		/* raced with RMID? */
-+		if (msq->q_perm.deleted) {
-+			err = -EIDRM;
-+			goto out_unlock0;
-+		}
-+
- 		err = security_msg_queue_msgsnd(msq, msg, msgflg);
- 		if (err)
- 			goto out_unlock0;
-@@ -896,6 +902,13 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp, int msgfl
- 			goto out_unlock1;
- 
- 		ipc_lock_object(&msq->q_perm);
-+
-+		/* raced with RMID? */
-+		if (msq->q_perm.deleted) {
-+			msg = ERR_PTR(-EIDRM);
-+			goto out_unlock0;
-+		}
-+
- 		msg = find_msg(msq, &msgtyp, mode);
- 		if (!IS_ERR(msg)) {
- 			/*
+ ipc/msg.c | 27 +++++++++++++++++++++------
+ ipc/shm.c | 31 ++++++++++++++++++++++---------
+ 2 files changed, 43 insertions(+), 15 deletions(-)
+
 -- 
 1.7.11.7
 
