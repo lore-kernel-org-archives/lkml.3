@@ -1,84 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116Ab3IPNfa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 09:35:30 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:36977 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751994Ab3IPNf2 (ORCPT
+	id S1753210Ab3IPNiM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 09:38:12 -0400
+Received: from outrelay01.libero.it ([212.52.84.101]:40413 "EHLO
+	outrelay01.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438Ab3IPNiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 09:35:28 -0400
-Date: Mon, 16 Sep 2013 15:35:59 +0200
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mszeredi@suse.cz, stable@vger.kernel.org
-Subject: Re: [PATCH 06/11] gfs2: d_splice_alias() cant return error
-Message-ID: <20130916133559.GB31733@tucsk.piliscsaba.szeredi.hu>
-References: <1379335925-30858-1-git-send-email-miklos@szeredi.hu>
- <1379335925-30858-7-git-send-email-miklos@szeredi.hu>
- <1379337469.2718.18.camel@menhir>
+	Mon, 16 Sep 2013 09:38:10 -0400
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A0C0203.523709BF.0023,ss=1,re=0.000,fgs=0
+X-libjamoibt: 1587
+Message-ID: <571525005.2373231379338686866.JavaMail.actor@webmail22>
+Date: Mon, 16 Sep 2013 15:38:06 +0200 (CEST)
+From: Fabio Pedretti <fabio.ped@libero.it>
+Reply-To: Fabio Pedretti <fabio.ped@libero.it>
+To: stable@vger.kernel.org
+Subject: zram commit to backport in 3.2 serie also
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1379337469.2718.18.camel@menhir>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-SenderIP: 192.167.16.4
+X-libjamv: IUXhxo0BATw=
+X-libjamsun: 4R/zWh8kgjzMasaSkJGfUb+zGmQredZf
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 02:17:49PM +0100, Steven Whitehouse wrote:
-> Hi,
-> 
-> On Mon, 2013-09-16 at 14:52 +0200, Miklos Szeredi wrote:
-> > From: Miklos Szeredi <mszeredi@suse.cz>
-> > 
-> > unless it was given an IS_ERR(inode), which isn't the case here.  So clean
-> > up the unnecessary error handling in gfs2_create_inode().
-> > 
-> > This paves the way for real fixes (hence the stable Cc).
-> > 
-> That makes send to me:
-> 
-> Acked-by: Steven Whitehouse <swhiteho@redhat.com>
-> 
-> I can put this in the gfs2 tree if that makes sense to do,
+Hi, this patch should be applied in 3.2 as well:
+https://lkml.org/lkml/2013/8/13/270
 
-Sure, please do.
+It will fix a regression introduced in the 3.2.49 (same commit in 3.10.6 and 
+fix applied in 3.10.7).
 
-Thanks,
-Miklos
-
-
-> Steve.
-> 
-> > Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-> > Cc: Steven Whitehouse <swhiteho@redhat.com>
-> > Cc: stable@vger.kernel.org
-> > ---
-> >  fs/gfs2/inode.c | 4 +---
-> >  1 file changed, 1 insertion(+), 3 deletions(-)
-> > 
-> > diff --git a/fs/gfs2/inode.c b/fs/gfs2/inode.c
-> > index 64915ee..6d7f976 100644
-> > --- a/fs/gfs2/inode.c
-> > +++ b/fs/gfs2/inode.c
-> > @@ -584,7 +584,7 @@ static int gfs2_create_inode(struct inode *dir, struct dentry *dentry,
-> >  	if (!IS_ERR(inode)) {
-> >  		d = d_splice_alias(inode, dentry);
-> >  		error = 0;
-> > -		if (file && !IS_ERR(d)) {
-> > +		if (file) {
-> >  			if (d == NULL)
-> >  				d = dentry;
-> >  			if (S_ISREG(inode->i_mode))
-> > @@ -593,8 +593,6 @@ static int gfs2_create_inode(struct inode *dir, struct dentry *dentry,
-> >  				error = finish_no_open(file, d);
-> >  		}
-> >  		gfs2_glock_dq_uninit(ghs);
-> > -		if (IS_ERR(d))
-> > -			return PTR_ERR(d);
-> >  		return error;
-> >  	} else if (error != -ENOENT) {
-> >  		goto fail_gunlock;
-> 
-> 
+Thanks
