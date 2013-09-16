@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751419Ab3IPUvr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 16:51:47 -0400
-Received: from smtpfb1-g21.free.fr ([212.27.42.9]:37183 "EHLO
-	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988Ab3IPUvo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 16:51:44 -0400
-From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
-To: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
-Cc: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH linux-next] pinctrl: fix pinconf_dbg_config_write return type
-Date: Mon, 16 Sep 2013 22:50:32 +0200
-Message-Id: <1379364632-19197-1-git-send-email-vincent.stehle@laposte.net>
-X-Mailer: git-send-email 1.8.4.rc3
+	id S1751461Ab3IPUww (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 16:52:52 -0400
+Received: from gmmr2.centrum.cz ([46.255.227.252]:58408 "EHLO gmmr2.centrum.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750948Ab3IPUwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 16:52:49 -0400
+To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
+Subject: =?utf-8?q?Re=3A_=5Bpatch_0=2F7=5D_improve_memcg_oom_killer_robustness_v2?=
+Date: Mon, 16 Sep 2013 22:52:46 +0200
+From: "azurIt" <azurit@pobox.sk>
+Cc: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>,
+        =?utf-8?q?Andrew_Morton?= <akpm@linux-foundation.org>,
+        =?utf-8?q?David_Rientjes?= <rientjes@google.com>,
+        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
+        =?utf-8?q?KOSAKI_Motohiro?= <kosaki.motohiro@jp.fujitsu.com>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <x86@kernel.org>,
+        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <20130911191150.GN856@cmpxchg.org>, <20130911214118.7CDF2E71@pobox.sk>, <20130911200426.GO856@cmpxchg.org>, <20130914124831.4DD20346@pobox.sk>, <20130916134014.GA3674@dhcp22.suse.cz>, <20130916160119.2E76C2A1@pobox.sk>, <20130916140607.GC3674@dhcp22.suse.cz>, <20130916161316.5113F6E7@pobox.sk>, <20130916145744.GE3674@dhcp22.suse.cz>, <20130916170543.77F1ECB4@pobox.sk> <20130916152548.GF3674@dhcp22.suse.cz>
+In-Reply-To: <20130916152548.GF3674@dhcp22.suse.cz>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+X-Original-From: azurit@pobox.sk
 MIME-Version: 1.0
+Message-Id: <20130916225246.A633145B@pobox.sk>
+X-Maser: brud
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Have pinconf_dbg_config_write() return a ssize_t. This fixes the following
-compilation warning:
+> CC: "Johannes Weiner" <hannes@cmpxchg.org>, "Andrew Morton" <akpm@linux-foundation.org>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+>On Mon 16-09-13 17:05:43, azurIt wrote:
+>> > CC: "Johannes Weiner" <hannes@cmpxchg.org>, "Andrew Morton" <akpm@linux-foundation.org>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+>> >On Mon 16-09-13 16:13:16, azurIt wrote:
+>> >[...]
+>> >> >You can use sysrq+l via serial console to see tasks hogging the CPU or
+>> >> >sysrq+t to see all the existing tasks.
+>> >> 
+>> >> 
+>> >> Doesn't work here, it just prints 'l' resp. 't'.
+>> >
+>> >I am using telnet for accessing my serial consoles exported by
+>> >the multiplicator or KVM and it can send sysrq via ctrl+t (Send
+>> >Break). Check your serial console setup.
+>> 
+>> 
+>> 
+>> I'm using Raritan KVM and i created keyboard macro 'sysrq + l' resp.
+>> 'sysrq + t'. I'm also unable to use it on my local PC. Maybe it needs
+>> to be enabled somehow?
+>
+>Probably yes. echo 1 > /proc/sys/kernel/sysrq should enable all sysrq
+>commands. You can select also some of them (have a look at
+>Documentation/sysrq.txt for more information)
 
-  drivers/pinctrl/pinconf.c:617:2: warning: initialization from incompatible pointer type [enabled by default]
-  drivers/pinctrl/pinconf.c:617:2: warning: (near initialization for ‘pinconf_dbg_pinconfig_fops.write’) [enabled by default]
 
-Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
-Cc: Linus Walleij <linus.walleij@linaro.org>
----
+Now it happens again and i was just looking on the server's htop. I'm sure that this time it was only one process (apache) running under user account (not root). It was taking about 100% CPU (about 100% of one core). I was able to kill it by hand inside htop but everything was very slow, server load was immediately on 500. I'm sure it must be related to that Johannes kernel patches because i'm also using i/o throttling in cgroups via Block IO controller so users are unable to create such a huge I/O. I will try to take stacks of processes but i'm not able to identify the problematic process so i will have to take them from *all* apache processes while killing them.
 
-Hi,
-
-This can be seen with e.g. next-20130916 with x86 allmodconfig.
-
-Best regards,
-
-V.
-
- drivers/pinctrl/pinconf.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/pinctrl/pinconf.c b/drivers/pinctrl/pinconf.c
-index a138965..1664e78 100644
---- a/drivers/pinctrl/pinconf.c
-+++ b/drivers/pinctrl/pinconf.c
-@@ -490,7 +490,7 @@ exit:
-  * <devicename> <state> <pinname> are values that should match the pinctrl-maps
-  * <newvalue> reflects the new config and is driver dependant
-  */
--static int pinconf_dbg_config_write(struct file *file,
-+static ssize_t pinconf_dbg_config_write(struct file *file,
- 	const char __user *user_buf, size_t count, loff_t *ppos)
- {
- 	struct pinctrl_maps *maps_node;
--- 
-1.8.4.rc3
-
+azur
