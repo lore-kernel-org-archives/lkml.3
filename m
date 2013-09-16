@@ -1,63 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757495Ab3IPMBh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 08:01:37 -0400
-Received: from smtp-out-180.synserver.de ([212.40.185.180]:1041 "EHLO
-	smtp-out-178.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751494Ab3IPMBg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 08:01:36 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 7082
-Message-ID: <5236F378.9060906@metafoo.de>
-Date: Mon, 16 Sep 2013 14:03:04 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130827 Icedove/17.0.8
+	id S1757556Ab3IPMDi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 08:03:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40954 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751494Ab3IPMDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 08:03:37 -0400
+Date: Mon, 16 Sep 2013 14:03:33 +0200
+From: Andrew Jones <drjones@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: kvm@vger.kernel.org, pbonzini@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: kvm: introduce CONFIG_KVM_MAX_VCPUS
+Message-ID: <20130916120332.GB14981@hawk.usersys.redhat.com>
+References: <1379161129-28393-1-git-send-email-drjones@redhat.com>
+ <20130915090838.GW17294@redhat.com>
+ <20130916082820.GB2101@hawk.usersys.redhat.com>
+ <20130916084710.GJ17294@redhat.com>
 MIME-Version: 1.0
-To: Denis CIOCCA <denis.ciocca@st.com>
-CC: Jonathan Cameron <jic23@kernel.org>, Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jic23@cam.ac.uk" <jic23@cam.ac.uk>, "arnd@arndb.de" <arnd@arndb.de>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Subject: Re: [PATCH 14/38] iio: accel: st: Append _accel to accelerator sensor
- device names
-References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org> <1378817379-8238-15-git-send-email-lee.jones@linaro.org> <52345330.4050707@kernel.org> <5234562D.5050803@kernel.org> <5236C259.6050701@metafoo.de> <5236CD88.10809@st.com>
-In-Reply-To: <5236CD88.10809@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130916084710.GJ17294@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/2013 11:21 AM, Denis CIOCCA wrote:
-> Hi Lars,
->> On 09/14/2013 02:27 PM, Jonathan Cameron wrote:
->>> On 09/14/13 13:14, Jonathan Cameron wrote:
->>>> On 09/10/13 13:49, Lee Jones wrote:
->>>>> Some of ST's sensors are appended with their sensor type and some
->>>>> are not. For consistency we're extending the same naming convention
->>>>> throughout.
->>>>>
->>>>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
->>>> Honestly I don't care either way on these, but consistency would definitely
->>>> be good so applied to the togreg branch of iio.git
->>>>
->>>> Thanks,
->>> Actually change of plan. I'm going to hold off on these as this an ABI change.
->>> Iritating though having these as completely inconsistent is, changing this
->>> will change device identification from userspace which is not a good idea.
->>>
->>> Sorry Lee, but we really shouldn't do this. I should have picked up on this
->>> in the original driver reviews but that's hindsight for you.
->> I think those with the suffix are the ones where you have accel and gyro in
->> the same package, the ones without the suffix are pure accelerometers.
-> Yes You are right. I've used this kind of logic... What do you think about?
-> 
-> Denis
+On Mon, Sep 16, 2013 at 11:47:10AM +0300, Gleb Natapov wrote:
+> On Mon, Sep 16, 2013 at 10:28:20AM +0200, Andrew Jones wrote:
+> > On Sun, Sep 15, 2013 at 12:08:38PM +0300, Gleb Natapov wrote:
+> > > On Sat, Sep 14, 2013 at 02:18:49PM +0200, Andrew Jones wrote:
+> > > > Take CONFIG_KVM_MAX_VCPUS from arm32, but set the default to 255.
+> > > > 
+> > > > Signed-off-by: Andrew Jones <drjones@redhat.com>
+> > > > ---
+> > > >  arch/x86/include/asm/kvm_host.h |  5 +++--
+> > > >  arch/x86/kvm/Kconfig            | 10 ++++++++++
+> > > >  2 files changed, 13 insertions(+), 2 deletions(-)
+> > > > 
+> > > > diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> > > > index c76ff74a98f2e..e7e9b523a8f7e 100644
+> > > > --- a/arch/x86/include/asm/kvm_host.h
+> > > > +++ b/arch/x86/include/asm/kvm_host.h
+> > > > @@ -31,8 +31,9 @@
+> > > >  #include <asm/msr-index.h>
+> > > >  #include <asm/asm.h>
+> > > >  
+> > > > -#define KVM_MAX_VCPUS 255
+> > > > -#define KVM_SOFT_MAX_VCPUS 160
+> > > > +#define KVM_MAX_VCPUS CONFIG_KVM_MAX_VCPUS
+> > > > +#define KVM_SOFT_MAX_VCPUS min(160, KVM_MAX_VCPUS)
+> > > > +
+> > > >  #define KVM_USER_MEM_SLOTS 125
+> > > >  /* memory slots that are not exposed to userspace */
+> > > >  #define KVM_PRIVATE_MEM_SLOTS 3
+> > > > diff --git a/arch/x86/kvm/Kconfig b/arch/x86/kvm/Kconfig
+> > > > index a47a3e54b964b..e9532c33527ee 100644
+> > > > --- a/arch/x86/kvm/Kconfig
+> > > > +++ b/arch/x86/kvm/Kconfig
+> > > > @@ -52,6 +52,16 @@ config KVM
+> > > >  
+> > > >  	  If unsure, say N.
+> > > >  
+> > > > +config KVM_MAX_VCPUS
+> > > > +	int "Number maximum supported virtual CPUs per VM"
+> > > > +	depends on KVM
+> > > > +	default 255
+> > > > +	help
+> > > > +	  Static number of max supported virtual CPUs per VM.
+> > > > +
+> > > > +	  Set to a lower number to save some resources. Set to a higher
+> > > > +	  number to test scalability.
+> > > > +
+> > > Maximum this can save is around 2K per VM. This is pretty insignificant
+> > > considering overall memory footprint even smallest VM has.
+> > 
+> > Should I reword this, dropping all 'save resources' verbiage, in order to
+> > avoid sending a message that this option can affect resource consumption?
+> > Or just leave it as it is, because even though it's insignificant, it's
+> > still true and balances out the 'Set to a higher' part.
+> > 
+> I do not think config option is necessary. The overhead is so
+> insignificant that there is no point in additional user visible knob,
+> at least while only 255 vcpu are supported. Is there a reason for anyone
+> to configure less them 255 vcpus here? OTOH what prevents someone from
+> configuring more then 255 vcpus?
 
-Seems sensible to me.
+The reason to configure less is to be able to compile a hard limit,
+without having to muck with the source. E.g. if you really don't want to
+allow more than KVM_SOFT_MAX_VCPUS to be configured, then you can compile
+with CONFIG_KVM_MAX_VCPUS == KVM_SOFT_MAX_VCPUS.
 
+Nothing prevents someone from configuring more than the max in
+userspace, but if they try to create/use more than the max
+(kvm_vm_ioctl_create_vcpu), it'll fail (EINVAL).
+
+I see this as a step towards getting rid of KVM_SOFT_MAX_VCPUS. I.e.
+compile with whatever maximum limit you want (can support), and return
+online/possible cpus for the recommended number. Only configure the kernel
+with more than your typical maximum (was KVM_SOFT_MAX_VCPUS) for
+development/testing purposes.
+
+drew
