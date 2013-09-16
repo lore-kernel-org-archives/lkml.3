@@ -1,42 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757469Ab3IPLDa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 07:03:30 -0400
-Received: from mout.gmx.net ([212.227.15.18]:51527 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753079Ab3IPLD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 07:03:29 -0400
-Message-ID: <1379329403.5510.60.camel@marge.simpson.net>
-Subject: Re: [PATCH 1/2] ipc/sem.c: Race in sem_lock()
-From: Mike Galbraith <efault@gmx.de>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>, hhuang@redhat.com
-Date: Mon, 16 Sep 2013 13:03:23 +0200
-In-Reply-To: <1379232411.5545.183.camel@marge.simpson.net>
-References: <1379194496-4642-1-git-send-email-manfred@colorfullife.com>
-	 <1379225343.5545.154.camel@marge.simpson.net>
-	 <1379232411.5545.183.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V03:K0:I2xSCKdQA1V+fWye/phvVpR2Tb8my8CC0ZjtKl80jbhkamt2wv2
- /eF2qR781yredQemkiXiJ/Z+EPT77srr6rgP0ijlZaZQ8ufGqOhkNYhZcGicEfKnYjpc5Gj
- 2RVuIlpVTRg2f8sPMzGeRPWfI8t9cdx+SvfirHw49jypf8MZtUxRDfNtLe9p3CdPuGNu7rt
- NdICp0Agf43KFBe3V7QLg==
+	id S1757494Ab3IPLE7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 07:04:59 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47667 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752032Ab3IPLE6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 07:04:58 -0400
+Date: Mon, 16 Sep 2013 13:04:47 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: mingo@kernel.org, acme@infradead.org, linux-kernel@vger.kernel.org,
+        eranian@google.com, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/6] perf, core: Add generic transaction flags v4
+Message-ID: <20130916110447.GS21832@twins.programming.kicks-ass.net>
+References: <1379095716-4705-1-git-send-email-andi@firstfloor.org>
+ <1379095716-4705-2-git-send-email-andi@firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379095716-4705-2-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-09-15 at 10:06 +0200, Mike Galbraith wrote:
+On Fri, Sep 13, 2013 at 11:08:31AM -0700, Andi Kleen wrote:
+>  /*
+> + * Values for the transaction event qualifier, mostly for abort events.
+> + * Multiple bits can be set.
+> + */
+> +enum {
+> +	PERF_SAMPLE_TXN_ELISION        = (1 << 0), /* From elision */
+> +	PERF_SAMPLE_TXN_TRANSACTION    = (1 << 1), /* From transaction */
+> +	PERF_SAMPLE_TXN_SYNC           = (1 << 2), /* Instruction is related */
+> +	PERF_SAMPLE_TXN_ASYNC          = (1 << 3), /* Instruction not related */
+> +	PERF_SAMPLE_TXN_RETRY          = (1 << 4), /* Retry possible */
+> +	PERF_SAMPLE_TXN_CONFLICT       = (1 << 5), /* Conflict abort */
+> +	PERF_SAMPLE_TXN_CAPACITY_WRITE = (1 << 6), /* Capacity write abort */
+> +	PERF_SAMPLE_TXN_CAPACITY_READ  = (1 << 7), /* Capacity read abort */
+> +
+> +	PERF_SAMPLE_TXN_MAX	       = (1 << 8),  /* non-ABI */
+> +
+> +	/* bits 24..31 are reserved for the abort code */
+> +
+> +	PERF_SAMPLE_TXN_ABORT_MASK  = 0xff000000,
+> +	PERF_SAMPLE_TXN_ABORT_SHIFT = 24,
+> +};
 
-> master:  Cpus 64, interleave 1 delay 0: 10039494796 in 30 secs
+Also do we want to do s/_SAMPLE// on that? Sadly we have both patterns,
+PERF_SAMPLE_BRANCH_xxx and PERF_MEM_xxx.
 
-plus patches
-  master:  Cpus 64, interleave 1 delay 0:  9139925137 in 30 secs
-
-> 3.10.10: Cpus 64, interleave 1 delay 0:   129236313 in 30 secs
 
