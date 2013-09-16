@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033Ab3IPOcx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 10:32:53 -0400
-Received: from mga09.intel.com ([134.134.136.24]:5719 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753009Ab3IPOcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 10:32:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,915,1371106800"; 
-   d="scan'208";a="378926631"
-Date: Mon, 16 Sep 2013 17:38:12 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Kevin Hilman <khilman@linaro.org>, linux-i2c@vger.kernel.org,
-        Wolfram Sang <wsa@the-dreams.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lv Zheng <lv.zheng@intel.com>, Aaron Lu <aaron.lu@intel.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH v2 1/9] i2c: prepare runtime PM support for I2C client
- devices
-Message-ID: <20130916143811.GP7393@intel.com>
-References: <87vc25pvvm.fsf@linaro.org>
- <20130913065434.GZ7393@intel.com>
- <87bo3whjz4.fsf@linaro.org>
- <20130913145022.GC7393@intel.com>
- <20130913173149.GE7393@intel.com>
- <87ioy4e8bw.fsf@linaro.org>
- <20130915064139.GJ7393@intel.com>
- <20130915124744.GW29403@sirena.org.uk>
- <20130915132823.GL7393@intel.com>
- <20130916101249.GX29403@sirena.org.uk>
+	id S1754348Ab3IPOgk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 10:36:40 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:41984 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752911Ab3IPOgj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 10:36:39 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Alex Thorlton <athorlton@sgi.com>, Mel Gorman <mgorman@suse.de>,
+        Andi Kleen <andi@firstfloor.org>, Michal Hocko <mhocko@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        kirill.shutemov@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] hugetlbfs: support split page table lock
+In-Reply-To: <1379117362-gwv3vrog-mutt-n-horiguchi@ah.jp.nec.com>
+References: <1379117362-gwv3vrog-mutt-n-horiguchi@ah.jp.nec.com>
+User-Agent: Notmuch/0.16+32~g01f5508 (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+Date: Mon, 16 Sep 2013 20:06:30 +0530
+Message-ID: <878uywbzpt.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130916101249.GX29403@sirena.org.uk>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13091614-3864-0000-0000-00000A186E51
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 11:12:49AM +0100, Mark Brown wrote:
-> That's definitely an ACPI specific (probably x86 specific ACPI?)
-> requirement not a generic one, on some systems it would increase power
-> consumption since the controller will need to sit on while the device is
-> functioning autonomously.
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
 
-Yes, the ACPI 5.0 spec says that the device cannot be in higher D-state
-than its parent. This is not x86 specific, though I'm not sure if this is
-implemented elsewhere.
+> Hi,
+>
+> Kirill posted split_ptl patchset for thp today, so in this version
+> I post only hugetlbfs part. I added Kconfig variables in following
+> Kirill's patches (although without CONFIG_SPLIT_*_PTLOCK_CPUS.)
+>
+> This patch changes many lines, but all are in hugetlbfs specific code,
+> so I think we can apply this independent of thp patches.
+> -----
+> From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Date: Fri, 13 Sep 2013 18:12:30 -0400
+> Subject: [PATCH v4] hugetlbfs: support split page table lock
+>
+> Currently all of page table handling by hugetlbfs code are done under
+> mm->page_table_lock. So when a process have many threads and they heavily
+> access to the memory, lock contention happens and impacts the performance.
+>
+> This patch makes hugepage support split page table lock so that we use
+> page->ptl of the leaf node of page table tree which is pte for normal pages
+> but can be pmd and/or pud for hugepages of some architectures.
+>
+> ChangeLog v4:
+>  - introduce arch dependent macro ARCH_ENABLE_SPLIT_HUGETLB_PTLOCK
+>    (only defined for x86 for now)
+>  - rename USE_SPLIT_PTLOCKS_HUGETLB to USE_SPLIT_HUGETLB_PTLOCKS
 
-> Even though the controller power consumption is going to be minimal the
-> power domain it is in may be relatively large.  Can't the power domains
-> for ACPI deal with this requirement, for example by making the I2C slave
-> power domains children of the controller power domain?
+Can we have separate locking for THP and hugetlb ? Doesn't both require us to
+use same locking when updating pmd ?
 
-We'll look into this. Thanks for the suggestion.
+
+-aneesh
+
