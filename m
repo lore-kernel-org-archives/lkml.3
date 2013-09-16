@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751485Ab3IPQef (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 12:34:35 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:35639 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750874Ab3IPQed (ORCPT
+	id S1751527Ab3IPQgE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 12:36:04 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:55522 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149Ab3IPQgC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 12:34:33 -0400
-Message-ID: <52373314.5070806@wwwdotorg.org>
-Date: Mon, 16 Sep 2013 10:34:28 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 16 Sep 2013 12:36:02 -0400
+Date: Mon, 16 Sep 2013 18:35:47 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 17/50] mm: Do not flush TLB during protection change if
+ !pte_present && !migration_entry
+Message-ID: <20130916163547.GF9326@twins.programming.kicks-ass.net>
+References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
+ <1378805550-29949-18-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Mike Turquette <mturquette@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Guenter Roeck <linux@roeck-us.net>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Hyun Kwon <hyunk@xilinx.com>
-Subject: Re: [PATCH] clk: si570: Add a driver for SI570 oscillators
-References: <1379033737-30015-1-git-send-email-soren.brinkmann@xilinx.com> <1379033737-30015-2-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1379033737-30015-2-git-send-email-soren.brinkmann@xilinx.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378805550-29949-18-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2013 06:55 PM, Soren Brinkmann wrote:
-> Add a driver for SILabs 570, 571, 598, 599 programmable oscillators.
-> The devices generate low-jitter clock signals and are reprogrammable via
-> an I2C interface.
-
-> diff --git a/Documentation/devicetree/bindings/clock/silabs,si570.txt b/Documentation/devicetree/bindings/clock/silabs,si570.txt
-
-> +Required properties:
-> + - compatible: Shall be one of "silabs,si57x", "silabs,si59x".
-> + - reg: I2C device address.
-> + - #clock-cells: From common clock bindings: Shall be 0.
-> + - factory-fout: Factory set default frequency
-
-So, there's no way to query this from the device at all? Looking at the
-data-sheet, all the frequency generation parameters are in registers,
-and the device supports I2C read commands. As such, I'm not convinced
-this property is necessary.
-
-> +Optional properties:
-> + - initial-fout: Initial output frequency to set during probe
-
-"probe" is a Linux-specific concept. This property should be removed. If
-the driver is asked to set a specific frequency, it should do so, but I
-don't think it should program something pro-actively just because it
-starts up.
-
-If this property is acceptable, it'd be better to describe it more along
-the lines of the following:
-
-initial-fout: The frequency at which the system requires the clock to
-operate.
-
-> + - temperature-stability-7ppm: Indicate a device with a temperature stability
-> +			       of 7ppm
+On Tue, Sep 10, 2013 at 10:31:57AM +0100, Mel Gorman wrote:
+> NUMA PTE scanning is expensive both in terms of the scanning itself and
+> the TLB flush if there are any updates. Currently non-present PTEs are
+> accounted for as an update and incurring a TLB flush where it is only
+> necessary for anonymous migration entries. This patch addresses the
+> problem and should reduce TLB flushes.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  mm/mprotect.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/mm/mprotect.c b/mm/mprotect.c
+> index 1f9b54b..1e9cef0 100644
+> --- a/mm/mprotect.c
+> +++ b/mm/mprotect.c
+> @@ -109,8 +109,9 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+>  				make_migration_entry_read(&entry);
+>  				set_pte_at(mm, addr, pte,
+>  					swp_entry_to_pte(entry));
 > +
-> +Example:
-> +	si570: clock-generator@5d {
-> +		#clock-cells = <0>;
-> +		compatible = "silabs,si570";
-> +		reg = <0x5d>;
-> +		factory-fout = <156250000>;
-> +	};
+> +				pages++;
+>  			}
+> -			pages++;
+>  		}
+>  	} while (pte++, addr += PAGE_SIZE, addr != end);
+>  	arch_leave_lazy_mmu_mode();
 
+Should we fold this into patch 7 ?
