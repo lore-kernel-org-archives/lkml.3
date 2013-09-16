@@ -1,49 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751737Ab3IPQa2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 12:30:28 -0400
-Received: from science.horizon.com ([71.41.210.146]:65194 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751700Ab3IPQa1 (ORCPT
+	id S1751485Ab3IPQef (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 12:34:35 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:35639 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750874Ab3IPQed (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 12:30:27 -0400
-Date: 16 Sep 2013 12:30:25 -0400
-Message-ID: <20130916163025.15457.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: keescook@chromium.org, viro@ZenIV.linux.org.uk
-Subject: Re: [PATCH 0/2] vsprintf: ignore %n again
-Cc: akpm@linux-foundation.org, dan.carpenter@oracle.com, JBeulich@suse.com,
-        joe@perches.com, kosaki.motohiro@gmail.com,
-        linux-kernel@vger.kernel.org, linux@horizon.com,
-        penguin-kernel@i-love.sakura.ne.jp
-In-Reply-To: <20130916155504.GC13318@ZenIV.linux.org.uk>
+	Mon, 16 Sep 2013 12:34:33 -0400
+Message-ID: <52373314.5070806@wwwdotorg.org>
+Date: Mon, 16 Sep 2013 10:34:28 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Mike Turquette <mturquette@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Guenter Roeck <linux@roeck-us.net>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Hyun Kwon <hyunk@xilinx.com>
+Subject: Re: [PATCH] clk: si570: Add a driver for SI570 oscillators
+References: <1379033737-30015-1-git-send-email-soren.brinkmann@xilinx.com> <1379033737-30015-2-git-send-email-soren.brinkmann@xilinx.com>
+In-Reply-To: <1379033737-30015-2-git-send-email-soren.brinkmann@xilinx.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This is completely pointless.  *ANY* untrusted format string kernel-side
-> is pretty much it.  Blocking %n is not "defense in depth", it's security
-> theater.  Again, if attacker can feed an arbitrary format string to
-> vsnprintf(), it's over - you've lost.  It's not just about information
-> leaks vs. ability to store a value of attacker's choosing at the address
-> of attacker's choosing as it was in userland.  Kernel-side an ability to
-> trigger read from an arbitrary address is much nastier than information
-> leak risk; consider iomem, for starters.
+On 09/12/2013 06:55 PM, Soren Brinkmann wrote:
+> Add a driver for SILabs 570, 571, 598, 599 programmable oscillators.
+> The devices generate low-jitter clock signals and are reprogrammable via
+> an I2C interface.
 
-You've got to be kidding.  Yes, sometimes a read can have effects, but
-such addresses are rare, not present in the main kernel memory mapping,
-and you'd have to find a pointer to such an address (or a preceding
-address with no nul bytes in between) on the stack at a known offset when
-designing the printf string.  That's tricky, and not always possible.
-Even for hardware devices, read side effects have gone out of style,
-other than forcing PCI posted writes through.
+> diff --git a/Documentation/devicetree/bindings/clock/silabs,si570.txt b/Documentation/devicetree/bindings/clock/silabs,si570.txt
 
-And just because a hardware read has side effects doesn't mean it's
-exploitable.  Being able to drop characters from a serial port is only
-a DoS.
+> +Required properties:
+> + - compatible: Shall be one of "silabs,si57x", "silabs,si59x".
+> + - reg: I2C device address.
+> + - #clock-cells: From common clock bindings: Shall be 0.
+> + - factory-fout: Factory set default frequency
 
-On the other hand, the ability to write an arbitrary, attacker-controlled
-small integer to any address findable on the stack is very powerful and
-easy to exploit.
+So, there's no way to query this from the device at all? Looking at the
+data-sheet, all the frequency generation parameters are in registers,
+and the device supports I2C read commands. As such, I'm not convinced
+this property is necessary.
 
-Those two risks aren't remotely equivalent.
+> +Optional properties:
+> + - initial-fout: Initial output frequency to set during probe
+
+"probe" is a Linux-specific concept. This property should be removed. If
+the driver is asked to set a specific frequency, it should do so, but I
+don't think it should program something pro-actively just because it
+starts up.
+
+If this property is acceptable, it'd be better to describe it more along
+the lines of the following:
+
+initial-fout: The frequency at which the system requires the clock to
+operate.
+
+> + - temperature-stability-7ppm: Indicate a device with a temperature stability
+> +			       of 7ppm
+> +
+> +Example:
+> +	si570: clock-generator@5d {
+> +		#clock-cells = <0>;
+> +		compatible = "silabs,si570";
+> +		reg = <0x5d>;
+> +		factory-fout = <156250000>;
+> +	};
+
