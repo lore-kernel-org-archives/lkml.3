@@ -1,70 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932291Ab3IPJRs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 05:17:48 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:58386 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752448Ab3IPJRq (ORCPT
+	id S932357Ab3IPJRx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 05:17:53 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:33856 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755904Ab3IPJRu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 05:17:46 -0400
+	Mon, 16 Sep 2013 05:17:50 -0400
 From: Jean Pihet <jean.pihet@linaro.org>
 To: Will Deacon <will.deacon@arm.com>, Jiri Olsa <jolsa@redhat.com>,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
         linux-arm-kernel@lists.infradead.org, Ingo Molnar <mingo@kernel.org>
 Cc: patches@linaro.org, Jean Pihet <jean.pihet@linaro.org>
-Subject: [PATCH v2 0/4] perf: parse the dwarf backtrace info from .debug_frame section
-Date: Mon, 16 Sep 2013 11:17:29 +0200
-Message-Id: <1379323053-11458-1-git-send-email-jean.pihet@linaro.org>
+Subject: [PATCH 2/4] ARM: perf: wire up perf_regs and unwind support for ARM
+Date: Mon, 16 Sep 2013 11:17:31 +0200
+Message-Id: <1379323053-11458-3-git-send-email-jean.pihet@linaro.org>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1379323053-11458-1-git-send-email-jean.pihet@linaro.org>
+References: <1379323053-11458-1-git-send-email-jean.pihet@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On ARM the debug info is not present in the .eh_frame sections but
-in .debug_frame instead, in dwarf format.
+From: Will Deacon <will.deacon@arm.com>
 
-This patch set uses libunwind to load and parse the dwarf debug info from
-the .debug_frame section if no .eh_frame_hdr section is found; also it
-sets the hooks in the perf_regs and libunwind code for ARMv7.
+This patch hooks in the perf_regs and libunwind code for ARM.
 
-Dependencies:
- . if present, libunwind >= 1.1 is needed to prevent a segfault when
-   parsing the dwarf info,
- . libunwind needs to be configured with --enable-debug-frame
-   to prevent a linkage error. Note: --enable-debug-frame is automatically
-   selected on ARM).
-
-The generated perf has been tested on ARMv7 (OMAP4, Marvell Armada XP) and
-x86_64, using the following commands:
- perf record -g [dwarf] -- <binary>
- perf report --sort symbol --call-graph --stdio
-
-
-Jean Pihet (2):
-  perf tools: Check libunwind for availability of dwarf parsing feature
-  perf: parse the .debug_frame section in case .eh_frame is not present
-
-Will Deacon (2):
-  ARM: perf: add support for perf registers API
-  ARM: perf: wire up perf_regs and unwind support for ARM
-
- arch/arm/Kconfig                        |  2 +
- arch/arm/include/uapi/asm/Kbuild        |  1 +
- arch/arm/include/uapi/asm/perf_regs.h   | 23 +++++++++++
- arch/arm/kernel/Makefile                |  1 +
- arch/arm/kernel/perf_regs.c             | 30 ++++++++++++++
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+---
  tools/perf/arch/arm/Makefile            |  3 ++
- tools/perf/arch/arm/include/perf_regs.h | 54 +++++++++++++++++++++++++
- tools/perf/arch/arm/util/unwind.c       | 48 ++++++++++++++++++++++
- tools/perf/config/Makefile              |  7 +++-
- tools/perf/config/feature-tests.mak     | 11 ++++-
- tools/perf/util/unwind.c                | 71 +++++++++++++++++++++++++--------
- 11 files changed, 232 insertions(+), 19 deletions(-)
- create mode 100644 arch/arm/include/uapi/asm/perf_regs.h
- create mode 100644 arch/arm/kernel/perf_regs.c
+ tools/perf/arch/arm/include/perf_regs.h | 54 +++++++++++++++++++++++++++++++++
+ tools/perf/arch/arm/util/unwind.c       | 48 +++++++++++++++++++++++++++++
+ tools/perf/config/Makefile              |  7 +++--
+ 4 files changed, 110 insertions(+), 2 deletions(-)
  create mode 100644 tools/perf/arch/arm/include/perf_regs.h
  create mode 100644 tools/perf/arch/arm/util/unwind.c
 
+diff --git a/tools/perf/arch/arm/Makefile b/tools/perf/arch/arm/Makefile
+index 15130b5..fe9b61e 100644
+--- a/tools/perf/arch/arm/Makefile
++++ b/tools/perf/arch/arm/Makefile
+@@ -2,3 +2,6 @@ ifndef NO_DWARF
+ PERF_HAVE_DWARF_REGS := 1
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
+ endif
++ifndef NO_LIBUNWIND
++LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind.o
++endif
+diff --git a/tools/perf/arch/arm/include/perf_regs.h b/tools/perf/arch/arm/include/perf_regs.h
+new file mode 100644
+index 0000000..2a1cfde
+--- /dev/null
++++ b/tools/perf/arch/arm/include/perf_regs.h
+@@ -0,0 +1,54 @@
++#ifndef ARCH_PERF_REGS_H
++#define ARCH_PERF_REGS_H
++
++#include <stdlib.h>
++#include "../../util/types.h"
++#include <asm/perf_regs.h>
++
++#define PERF_REGS_MASK	((1ULL << PERF_REG_ARM_MAX) - 1)
++#define PERF_REG_IP	PERF_REG_ARM_PC
++#define PERF_REG_SP	PERF_REG_ARM_SP
++
++static inline const char *perf_reg_name(int id)
++{
++	switch (id) {
++	case PERF_REG_ARM_R0:
++		return "r0";
++	case PERF_REG_ARM_R1:
++		return "r1";
++	case PERF_REG_ARM_R2:
++		return "r2";
++	case PERF_REG_ARM_R3:
++		return "r3";
++	case PERF_REG_ARM_R4:
++		return "r4";
++	case PERF_REG_ARM_R5:
++		return "r5";
++	case PERF_REG_ARM_R6:
++		return "r6";
++	case PERF_REG_ARM_R7:
++		return "r7";
++	case PERF_REG_ARM_R8:
++		return "r8";
++	case PERF_REG_ARM_R9:
++		return "r9";
++	case PERF_REG_ARM_R10:
++		return "r10";
++	case PERF_REG_ARM_FP:
++		return "fp";
++	case PERF_REG_ARM_IP:
++		return "ip";
++	case PERF_REG_ARM_SP:
++		return "sp";
++	case PERF_REG_ARM_LR:
++		return "lr";
++	case PERF_REG_ARM_PC:
++		return "pc";
++	default:
++		return NULL;
++	}
++
++	return NULL;
++}
++
++#endif /* ARCH_PERF_REGS_H */
+diff --git a/tools/perf/arch/arm/util/unwind.c b/tools/perf/arch/arm/util/unwind.c
+new file mode 100644
+index 0000000..da3dc95
+--- /dev/null
++++ b/tools/perf/arch/arm/util/unwind.c
+@@ -0,0 +1,48 @@
++
++#include <errno.h>
++#include <libunwind.h>
++#include "perf_regs.h"
++#include "../../util/unwind.h"
++
++int unwind__arch_reg_id(int regnum)
++{
++	switch (regnum) {
++	case UNW_ARM_R0:
++		return PERF_REG_ARM_R0;
++	case UNW_ARM_R1:
++		return PERF_REG_ARM_R1;
++	case UNW_ARM_R2:
++		return PERF_REG_ARM_R2;
++	case UNW_ARM_R3:
++		return PERF_REG_ARM_R3;
++	case UNW_ARM_R4:
++		return PERF_REG_ARM_R4;
++	case UNW_ARM_R5:
++		return PERF_REG_ARM_R5;
++	case UNW_ARM_R6:
++		return PERF_REG_ARM_R6;
++	case UNW_ARM_R7:
++		return PERF_REG_ARM_R7;
++	case UNW_ARM_R8:
++		return PERF_REG_ARM_R8;
++	case UNW_ARM_R9:
++		return PERF_REG_ARM_R9;
++	case UNW_ARM_R10:
++		return PERF_REG_ARM_R10;
++	case UNW_ARM_R11:
++		return PERF_REG_ARM_FP;
++	case UNW_ARM_R12:
++		return PERF_REG_ARM_IP;
++	case UNW_ARM_R13:
++		return PERF_REG_ARM_SP;
++	case UNW_ARM_R14:
++		return PERF_REG_ARM_LR;
++	case UNW_ARM_R15:
++		return PERF_REG_ARM_PC;
++	default:
++		pr_err("unwind: invalid reg id %d\n", regnum);
++		return -EINVAL;
++	}
++
++	return -EINVAL;
++}
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 214e17e..4b65710 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -29,6 +29,10 @@ ifeq ($(ARCH),x86_64)
+   NO_PERF_REGS := 0
+   LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
+ endif
++ifeq ($(ARCH),arm)
++  NO_PERF_REGS := 0
++  LIBUNWIND_LIBS = -lunwind -lunwind-arm
++endif
+ 
+ ifeq ($(NO_PERF_REGS),0)
+   CFLAGS += -DHAVE_PERF_REGS
+@@ -205,8 +209,7 @@ ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DLIBELF_MMAP),y)
+ endif # try-cc
+ endif # NO_LIBELF
+ 
+-# There's only x86 (both 32 and 64) support for CFI unwind so far
+-ifneq ($(ARCH),x86)
++ifeq ($(LIBUNWIND_LIBS),)
+   NO_LIBUNWIND := 1
+ endif
+ 
 -- 
 1.7.11.7
 
