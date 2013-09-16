@@ -1,156 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757457Ab3IPKmM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 06:42:12 -0400
-Received: from mga03.intel.com ([143.182.124.21]:37130 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753380Ab3IPKmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 06:42:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,914,1371106800"; 
-   d="scan'208";a="361035119"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Alex Thorlton <athorlton@sgi.com>, Mel Gorman <mgorman@suse.de>,
-        Andi Kleen <andi@firstfloor.org>, Michal Hocko <mhocko@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        kirill.shutemov@linux.intel.com, linux-kernel@vger.kernel.org
-In-Reply-To: <1379117362-gwv3vrog-mutt-n-horiguchi@ah.jp.nec.com>
-References: <1379117362-gwv3vrog-mutt-n-horiguchi@ah.jp.nec.com>
-Subject: RE: [PATCH v4] hugetlbfs: support split page table lock
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130916104205.5605CE0090@blue.fi.intel.com>
-Date: Mon, 16 Sep 2013 13:42:05 +0300 (EEST)
+	id S1757474Ab3IPKoE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 06:44:04 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47334 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753380Ab3IPKoB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 06:44:01 -0400
+Date: Mon, 16 Sep 2013 12:43:49 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Dave Jones <davej@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: trinity finds ftrace/perf bug. Film at 11.
+Message-ID: <20130916104349.GC29018@twins.programming.kicks-ass.net>
+References: <20130911135434.GA678@redhat.com>
+ <20130912141913.2ffc7077@gandalf.local.home>
+ <20130913105637.GM31370@twins.programming.kicks-ass.net>
+ <20130913141638.GA6799@redhat.com>
+ <20130916093719.GR21832@twins.programming.kicks-ass.net>
+ <20130916102535.GA1071@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130916102535.GA1071@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Naoya Horiguchi wrote:
-> Hi,
-> 
-> Kirill posted split_ptl patchset for thp today, so in this version
-> I post only hugetlbfs part. I added Kconfig variables in following
-> Kirill's patches (although without CONFIG_SPLIT_*_PTLOCK_CPUS.)
-> 
-> This patch changes many lines, but all are in hugetlbfs specific code,
-> so I think we can apply this independent of thp patches.
-> -----
-> From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Date: Fri, 13 Sep 2013 18:12:30 -0400
-> Subject: [PATCH v4] hugetlbfs: support split page table lock
-> 
-> Currently all of page table handling by hugetlbfs code are done under
-> mm->page_table_lock. So when a process have many threads and they heavily
-> access to the memory, lock contention happens and impacts the performance.
-> 
-> This patch makes hugepage support split page table lock so that we use
-> page->ptl of the leaf node of page table tree which is pte for normal pages
-> but can be pmd and/or pud for hugepages of some architectures.
-> 
-> ChangeLog v4:
->  - introduce arch dependent macro ARCH_ENABLE_SPLIT_HUGETLB_PTLOCK
->    (only defined for x86 for now)
->  - rename USE_SPLIT_PTLOCKS_HUGETLB to USE_SPLIT_HUGETLB_PTLOCKS
-> 
-> ChangeLog v3:
->  - disable split ptl for ppc with USE_SPLIT_PTLOCKS_HUGETLB.
->  - remove replacement in some architecture dependent code. This is justified
->    because an allocation of pgd/pud/pmd/pte entry can race with other
->    allocation, not with read/write access, so we can use different locks.
->    http://thread.gmane.org/gmane.linux.kernel.mm/106292/focus=106458
-> 
-> ChangeLog v2:
->  - add split ptl on other archs missed in v1
->  - drop changes on arch/{powerpc,tile}/mm/hugetlbpage.c
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> ---
->  arch/x86/Kconfig         |  4 +++
->  include/linux/hugetlb.h  | 20 +++++++++++
->  include/linux/mm_types.h |  2 ++
->  mm/Kconfig               |  3 ++
->  mm/hugetlb.c             | 92 +++++++++++++++++++++++++++++-------------------
->  mm/mempolicy.c           |  5 +--
->  mm/migrate.c             |  4 +--
->  mm/rmap.c                |  2 +-
->  8 files changed, 91 insertions(+), 41 deletions(-)
-> 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 6a5cf6a..5b83d14 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -1884,6 +1884,10 @@ config ARCH_ENABLE_SPLIT_PMD_PTLOCK
->  	def_bool y
->  	depends on X86_64 || X86_PAE
->  
-> +config ARCH_ENABLE_SPLIT_HUGETLB_PTLOCK
-> +	def_bool y
-> +	depends on X86_64 || X86_PAE
-> +
->  menu "Power management and ACPI options"
->  
->  config ARCH_HIBERNATION_HEADER
-> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> index 0393270..2cdac68 100644
-> --- a/include/linux/hugetlb.h
-> +++ b/include/linux/hugetlb.h
-> @@ -80,6 +80,24 @@ extern const unsigned long hugetlb_zero, hugetlb_infinity;
->  extern int sysctl_hugetlb_shm_group;
->  extern struct list_head huge_boot_pages;
->  
-> +#if USE_SPLIT_HUGETLB_PTLOCKS
-> +#define huge_pte_lockptr(mm, ptep) ({__pte_lockptr(virt_to_page(ptep)); })
-> +#else	/* !USE_SPLIT_HUGETLB_PTLOCKS */
-> +#define huge_pte_lockptr(mm, ptep) ({&(mm)->page_table_lock; })
-> +#endif	/* USE_SPLIT_HUGETLB_PTLOCKS */
-> +
-> +#define huge_pte_offset_lock(mm, address, ptlp)		\
-> +({							\
-> +	pte_t *__pte = huge_pte_offset(mm, address);	\
-> +	spinlock_t *__ptl = NULL;			\
-> +	if (__pte) {					\
-> +		__ptl = huge_pte_lockptr(mm, __pte);	\
-> +		*(ptlp) = __ptl;			\
-> +		spin_lock(__ptl);			\
-> +	}						\
-> +	__pte;						\
-> +})
-> +
+On Mon, Sep 16, 2013 at 12:25:35PM +0200, Ingo Molnar wrote:
+> Also, Dave, do you run a single copy of Trinity, or multiple ones? Any 
+> special options for Peter to reproduce your crashes?
 
-[ Disclaimer: I don't know much about hugetlb. ]
-
-I don't think it's correct. Few points:
-
- - Hugetlb supports multiple page sizes: on x86_64 2M (PMD) and 1G (PUD).
-   My patchset only implements it for PMD. We don't even initialize
-   spinlock in struct page for PUD.
- - If we enable split PMD lock we should use it *globally*. With you patch
-   we can end up with different locks used by hugetlb and rest of kernel
-   to protect the same PMD table if USE_SPLIT_HUGETLB_PTLOCKS !=
-   USE_SPLIT_PMD_PTLOCKS. It's just broken.
-
-What we should really do is take split pmd lock (using pmd_lock*) if we
-try to protect PMD level and fallback to mm->page_table_lock if we want to
-protect upper levels.
-
->  /* arch callbacks */
->  
->  pte_t *huge_pte_alloc(struct mm_struct *mm,
-> @@ -164,6 +182,8 @@ static inline void __unmap_hugepage_range(struct mmu_gather *tlb,
->  	BUG();
->  }
->  
-> +#define huge_pte_lockptr(mm, ptep) 0
-> +
-
-NULL?
-
->  #endif /* !CONFIG_HUGETLB_PAGE */
->  
->  #define HUGETLB_ANON_FILE "anon_hugepage"
-
--- 
- Kirill A. Shutemov
+Trinity seems to spawn a process for each cpu available. So I get to run
+24 copies -- I presume they're all seeded differently.
