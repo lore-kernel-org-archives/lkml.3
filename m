@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756060Ab3IPOIl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 10:08:41 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51527 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753210Ab3IPOIk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 10:08:40 -0400
-Date: Mon, 16 Sep 2013 07:07:36 -0700
-From: "tip-bot for Michael S. Tsirkin" <tipbot@zytor.com>
-Message-ID: <tip-13b62e46d5407c7d619aea1dc9c3e0991b631b57@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        mst@redhat.com, peterz@infradead.org, fweisbec@gmail.com,
-        tglx@linutronix.de, kosaki.motohiro@jp.fujitsu.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        mst@redhat.com, peterz@infradead.org, fweisbec@gmail.com,
-        tglx@linutronix.de, kosaki.motohiro@jp.fujitsu.com
-In-Reply-To: <20130916083036.GA1113@redhat.com>
-References: <20130916083036.GA1113@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched: Fix comment for sched_info_depart
-Git-Commit-ID: 13b62e46d5407c7d619aea1dc9c3e0991b631b57
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1754323Ab3IPONV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 10:13:21 -0400
+Received: from gmmr2.centrum.cz ([46.255.227.252]:56100 "EHLO gmmr2.centrum.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753236Ab3IPONT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 10:13:19 -0400
+To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
+Subject: =?utf-8?q?Re=3A_=5Bpatch_0=2F7=5D_improve_memcg_oom_killer_robustness_v2?=
+Date: Mon, 16 Sep 2013 16:13:16 +0200
+From: "azurIt" <azurit@pobox.sk>
+Cc: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>,
+        =?utf-8?q?Andrew_Morton?= <akpm@linux-foundation.org>,
+        =?utf-8?q?David_Rientjes?= <rientjes@google.com>,
+        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
+        =?utf-8?q?KOSAKI_Motohiro?= <kosaki.motohiro@jp.fujitsu.com>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <x86@kernel.org>,
+        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <20130910220329.GK856@cmpxchg.org>, <20130911143305.FFEAD399@pobox.sk>, <20130911180327.GL856@cmpxchg.org>, <20130911205448.656D9D7C@pobox.sk>, <20130911191150.GN856@cmpxchg.org>, <20130911214118.7CDF2E71@pobox.sk>, <20130911200426.GO856@cmpxchg.org>, <20130914124831.4DD20346@pobox.sk>, <20130916134014.GA3674@dhcp22.suse.cz>, <20130916160119.2E76C2A1@pobox.sk> <20130916140607.GC3674@dhcp22.suse.cz>
+In-Reply-To: <20130916140607.GC3674@dhcp22.suse.cz>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+X-Original-From: azurit@pobox.sk
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Message-Id: <20130916161316.5113F6E7@pobox.sk>
+X-Maser: oho
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 16 Sep 2013 07:07:42 -0700 (PDT)
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  13b62e46d5407c7d619aea1dc9c3e0991b631b57
-Gitweb:     http://git.kernel.org/tip/13b62e46d5407c7d619aea1dc9c3e0991b631b57
-Author:     Michael S. Tsirkin <mst@redhat.com>
-AuthorDate: Mon, 16 Sep 2013 11:30:36 +0300
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 16 Sep 2013 11:18:34 +0200
+> CC: "Johannes Weiner" <hannes@cmpxchg.org>, "Andrew Morton" <akpm@linux-foundation.org>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+>On Mon 16-09-13 16:01:19, azurIt wrote:
+>> > CC: "Johannes Weiner" <hannes@cmpxchg.org>, "Andrew Morton" <akpm@linux-foundation.org>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+>> >On Sat 14-09-13 12:48:31, azurIt wrote:
+>> >[...]
+>> >> Here is the first occurence, this night between 5:15 and 5:25:
+>> >>  - this time i kept opened terminal from other server to this problematic one with htop running
+>> >>  - when server went down i opened it and saw one process of one user running at the top and taking 97% of CPU (cgroup 1304)
+>> >
+>> >I guess you do not have a stack trace(s) for that process? That would be
+>> >extremely helpful.
+>> 
+>> I'm afraid it won't be possible as server is completely not responding
+>> when it happens. Anyway, i don't think it was a fault of one process
+>> or one user.
+>
+>You can use sysrq+l via serial console to see tasks hogging the CPU or
+>sysrq+t to see all the existing tasks.
 
-sched: Fix comment for sched_info_depart
 
-sched_info_depart seems to be only called from
-sched_info_switch(), so only on involuntary task switch.
+Doesn't work here, it just prints 'l' resp. 't'.
 
-Fix the comment to match.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Link: http://lkml.kernel.org/r/20130916083036.GA1113@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/stats.h | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/sched/stats.h b/kernel/sched/stats.h
-index 5aef494..c7edee7 100644
---- a/kernel/sched/stats.h
-+++ b/kernel/sched/stats.h
-@@ -104,8 +104,9 @@ static inline void sched_info_queued(struct task_struct *t)
- }
- 
- /*
-- * Called when a process ceases being the active-running process, either
-- * voluntarily or involuntarily.  Now we can calculate how long we ran.
-+ * Called when a process ceases being the active-running process involuntarily
-+ * due, typically, to expiring its time slice (this may also be called when
-+ * switching to the idle task).  Now we can calculate how long we ran.
-  * Also, if the process is still in the TASK_RUNNING state, call
-  * sched_info_queued() to mark that it has now again started waiting on
-  * the runqueue.
+azur
