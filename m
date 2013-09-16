@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756578Ab3IPIJr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 04:09:47 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:61440 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755229Ab3IPIJn (ORCPT
+	id S1756652Ab3IPILl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 04:11:41 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43701 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752873Ab3IPILj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 04:09:43 -0400
+	Mon, 16 Sep 2013 04:11:39 -0400
+Date: Mon, 16 Sep 2013 10:11:32 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [PATCH 1/2] sched: calculate_imbalance: Fix local->avg_load >
+ sds->avg_load case
+Message-ID: <20130916081132.GP21832@twins.programming.kicks-ass.net>
+References: <8f596cc6bc0e5e655119dc892c9bfcad26e971f4.1379252740.git.vdavydov@parallels.com>
+ <20130916055202.GL21832@twins.programming.kicks-ass.net>
+ <5236BBF0.8030505@parallels.com>
 MIME-Version: 1.0
-In-Reply-To: <1379317437-28329-2-git-send-email-keescook@chromium.org>
-References: <1379317437-28329-1-git-send-email-keescook@chromium.org>
-	<1379317437-28329-2-git-send-email-keescook@chromium.org>
-Date: Mon, 16 Sep 2013 10:09:42 +0200
-X-Google-Sender-Auth: bTWzhsUoctNoXY_Yen7Xqc_ZAi0
-Message-ID: <CAMuHMdUw7J6TmQ=13_zoC=rvGy0PZwd8VF5t3g8pjPQX5WaVUg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] remove all uses of printf's %n
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Joe Perches <joe@perches.com>, George Spelvin <linux@horizon.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Jan Beulich <JBeulich@suse.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5236BBF0.8030505@parallels.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 9:43 AM, Kees Cook <keescook@chromium.org> wrote:
-> All users of %n are calculating padding size when using seq_file, so
-> instead use the new last_len member for discovering the length of the
-> written strings.
+On Mon, Sep 16, 2013 at 12:06:08PM +0400, Vladimir Davydov wrote:
+> On 09/16/2013 09:52 AM, Peter Zijlstra wrote:
+> >On Sun, Sep 15, 2013 at 05:49:13PM +0400, Vladimir Davydov wrote:
 
-Would it make sense to provide a seq_pad(...) function instead, to avoid
-exposing more seq_file internals to its callers?
+> >>-	if (busiest->avg_load < sds->avg_load) {
+> >>+	if (busiest->avg_load <= sds->avg_load ||
+> >>+	    local->avg_load >= sds->avg_load) {
+> >>  		env->imbalance = 0;
+> >>  		return fix_small_imbalance(env, sds);
+> >>  	}
+> >Why the = part? Surely 'busiest->avg_load < sds->avg_load ||
+> >local->avg_load > sds->avg_load' avoids both underflows?
+> 
+> Of course it does, but env->imbalance will be assigned to 0 anyway in =
+> case, so why not go shortcut?
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+D'uh right.. hadn't had my morning juice yet.
