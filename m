@@ -1,89 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754391Ab3IPE4B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 00:56:01 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:52861 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752220Ab3IPEz4 (ORCPT
+	id S1752954Ab3IPFHF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 01:07:05 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:62853 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752103Ab3IPFHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 00:55:56 -0400
-X-AuditID: cbfee68d-b7fe86d0000077a5-15-52368f56e845
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Jens Axboe'" <axboe@kernel.dk>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 1/2] block: sx8: use module_pci_driver()
-Date: Mon, 16 Sep 2013 13:55:49 +0900
-Message-id: <000101ceb299$03b50b20$0b1f2160$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac6ymQNolKFi0ZN3SoCAKtWb5a/8Nw==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMIsWRmVeSWpSXmKPExsVy+t8zI92wfrMgg0/rlS3mrF/DZrH6bj+b
-	xeWFl1gtLu+aw+bA4nH5bKnHiRm/WTz6tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoErY8//f4wF
-	rWwVdxo2MDcwdrB2MXJySAiYSNxa288CYYtJXLi3nq2LkYtDSGAZo8TKc/sZYYrO/9kGlZjO
-	KPHlQAsjhPOLUeLuraNg7WwCahJfvhxm72Lk4BAR0Jdoa9EACTMLpEk0/N8ONkhYwEJi+7qz
-	zCA2i4CqxMr3vWA2r4CtREfXfjYIW1Dix+R7LBC9WhLrdx5ngrDlJTavecsMMl5CQF3i0V9d
-	iE16EjsfCkBUiEjse/EO7DIJgXXsEtfXbGSHWCUg8W3yIRaIVlmJTQeYId6SlDi44gbLBEax
-	WUgWz0KyeBaSxbOQrFjAyLKKUTS1ILmgOCm9yFCvODG3uDQvXS85P3cTIyTCencw3j5gfYgx
-	GWj9RGYp0eR8YITmlcQbGpsZWZiamBobmVuakSasJM6r1mIdKCSQnliSmp2aWpBaFF9UmpNa
-	fIiRiYNTqoExIXfJNpYmS/3WfOPL2XIsq+cI9CkqRf1qOXH98M+D4vfasvmVn7+N+fdm2awP
-	dgJhjhuXm4Wb9116H7O93l9GkT/NbhajoK1RVoL6PF8X/sO7Py3ZpWi0c+n9M/MNTrRJOUjy
-	lBjtSEvf+ulWZ7/1vUseF3+43ps8gz3F/nFf5+4/ryYcm7RTiaU4I9FQi7moOBEAy2EbmcYC	AAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAKsWRmVeSWpSXmKPExsVy+t9jQd2wfrMgg8dX5C3mrF/DZrH6bj+b
-	xeWFl1gtLu+aw+bA4nH5bKnHiRm/WTz6tqxi9Pi8SS6AJaqB0SYjNTEltUghNS85PyUzL91W
-	yTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaKWSQlliTilQKCCxuFhJ3w7ThNAQN10L
-	mMYIXd+QILgeIwM0kLCOMWPP/3+MBa1sFXcaNjA3MHawdjFyckgImEic/7ONDcIWk7hwbz2Q
-	zcUhJDCdUeLLgRZGCOcXo8TdW0dZQKrYBNQkvnw5zN7FyMEhIqAv0daiARJmFkiTaPi/nRHE
-	FhawkNi+7iwziM0ioCqx8n0vmM0rYCvR0bWfDcIWlPgx+R4LRK+WxPqdx5kgbHmJzWveMoOM
-	lxBQl3j0Vxdik57EzocCEBUiEvtevGOcwCgwC8mgWUgGzUIyaBaSlgWMLKsYRVMLkguKk9Jz
-	DfWKE3OLS/PS9ZLzczcxguP3mdQOxpUNFocYBTgYlXh4O7TNgoRYE8uKK3MPMUpwMCuJ8Eb7
-	AYV4UxIrq1KL8uOLSnNSiw8xJgP9OZFZSjQ5H5ha8kriDY1NzIwsjcwsjEzMzUkTVhLnPdBq
-	HSgkkJ5YkpqdmlqQWgSzhYmDU6qBsZ450OddtvyHDBMvx8oVNyzW7mdVe71mQ+WE03M+8fVe
-	WiS3NDTj26LNX73nGT561LnY9V2RsfT2TS1vT01bE5n77szsSRpbvR4XnPAQaYpoWse91+DC
-	8pB1a0qbBFcq2+VLTL8l03SD/ZTRu+w61Z1qXOJWMfNu3+iOqtLRveU4a9akuMDvZ5RYijMS
-	DbWYi4oTAVS8/cgjAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 16 Sep 2013 01:07:03 -0400
+Date: Sun, 15 Sep 2013 22:06:59 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Lennox Wu <lennox.wu@gmail.com>
+Cc: linux-kernel@vger.kernel.org, liqin.linux@gmail.com,
+        torvalds@linux-foundation.org
+Subject: Re: [GIT PULL] S+core Architecture : fix bugs for compiling and
+ support necessary functions
+Message-ID: <20130916050659.GA26457@roeck-us.net>
+References: <CAF0htA5QzKiodZyG-mE3mgMHHDkVDz=_D8oW3Gd03NEUrY67MA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAF0htA5QzKiodZyG-mE3mgMHHDkVDz=_D8oW3Gd03NEUrY67MA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use module_pci_driver() macro which makes the code smaller and
-simpler.
+On Sat, Sep 14, 2013 at 05:42:07PM +0800, Lennox Wu wrote:
+> Hi Linus,
+> Please pull these updates for S+core architecture. These updates include
+> updating information of maintainers, fix some trivial errors, and add
+> a necessary function for supporting ipv6.
+> 
+> The following changes since commit bdbdfdef5766c2a60185e946df242f1bc0d37c09
+> 
+> Merge tag 'hwmon-for-linus' of
+> git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging
+> (Fri Sep 13 10:58:41 2013 -0700)
+> 
+> on
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+> 
+> 
+> For you to fetch changes up to 969f99168b9dff2f6cc07cdf14255178d4397c4f
+> 
+> git@github.com:sctscore/official-linux.git tags/branch-linus-20130914
+> 
+> Best,
+> Lennox Wu
+> 
+Your e-mail is not signed. You don't even have a pgp key as far as
+I can see, at least not one associated with your e-mail address.
+How do you expect anyone to establish your identity ?
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/block/sx8.c |   15 +--------------
- 1 file changed, 1 insertion(+), 14 deletions(-)
+In addition to that, the tag in your repository is not signed and
+does not contain a summary of your changes. Your patches do not
+have a Signed-off-by: tag. The pull message below appears to be
+hand-edited and does not match an auto-generated pull request
+(which should have given you a hint that the commit logs have
+a problem).
 
-diff --git a/drivers/block/sx8.c b/drivers/block/sx8.c
-index 3fb6ab4..7b2ac95 100644
---- a/drivers/block/sx8.c
-+++ b/drivers/block/sx8.c
-@@ -1747,17 +1747,4 @@ static void carm_remove_one (struct pci_dev *pdev)
- 	pci_set_drvdata(pdev, NULL);
- }
- 
--static int __init carm_init(void)
--{
--	return pci_register_driver(&carm_driver);
--}
--
--static void __exit carm_exit(void)
--{
--	pci_unregister_driver(&carm_driver);
--}
--
--module_init(carm_init);
--module_exit(carm_exit);
--
--
-+module_pci_driver(carm_driver);
--- 
-1.7.10.4
+You did not even copy Linus on this e-mail. Do you really think
+he would even notice your pull request, much less apply it ?
 
+Guenter
 
+> -----------------------------------------------
+> Summary these commits:
+> 1. Fix some trivial errors for successfully compiling the latest
+> version Linux kernel.
+> 2. Provide necessary function for support IPV6.
+> 3. Update the information of maintainers.
+> ------------------------------------------------
+> Lennox Wu (8):
+> score : Update the information of Score maintainers
+> score : Implement the function csum_ipv6_magic
+> score : arch/score/kernel/entry.S: fix wrong instructions
+> score : arch/score/kernel/process.c : fix some typos
+> score : Modify the MAKEFILE of Score
+> 
+>  MAINTAINERS                       |    4 +-
+>  arch/score/Kconfig                |    4 ++
+>  arch/score/Makefile               |    4 +-
+>  arch/score/include/asm/checksum.h |   93 ++++++++++++++++++++-----------------
+>  arch/score/include/asm/io.h       |    1 -
+>  arch/score/include/asm/pgalloc.h  |    2 +-
+>  arch/score/kernel/entry.S         |    4 +-
+>  arch/score/kernel/process.c       |    4 +-
+>  8 files changed, 64 insertions(+), 52 deletions(-)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+> 
