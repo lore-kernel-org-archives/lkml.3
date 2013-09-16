@@ -1,143 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751779Ab3IPRIJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 13:08:09 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:44063 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751631Ab3IPRIH (ORCPT
+	id S1751843Ab3IPRJQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 13:09:16 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:48980 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751491Ab3IPRJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 13:08:07 -0400
+	Mon, 16 Sep 2013 13:09:14 -0400
+Message-ID: <52373B34.4060709@wwwdotorg.org>
+Date: Mon, 16 Sep 2013 11:09:08 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <1379348823.3422.42.camel@linaro1.home>
-References: <075032be4fd288074b8f699d4f4ba0179518df6f.1379344038.git.viresh.kumar@linaro.org>
-	<1379348823.3422.42.camel@linaro1.home>
-Date: Mon, 16 Sep 2013 22:38:05 +0530
-Message-ID: <CAKohpomEQsS-WHQpa=_07NQ1FXDB711inrmMgUguD529BA7g1A@mail.gmail.com>
-Subject: Re: [PATCH 1/2] cpufreq: unlock correct rwsem while updating policy->cpu
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Content-Type: multipart/mixed; boundary=089e0149d0ae648b2204e6833f43
+To: Lars Poeschel <poeschel@lemonage.de>
+CC: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Mark Brown <broonie@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>, Pawel Moll <pawel.moll@arm.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>,
+        joelf@ti.com
+Subject: Re: [PATCH v3] gpio: interrupt consistency check for OF GPIO IRQs
+References: <1377526030-32024-1-git-send-email-larsi@wh2.tu-dresden.de> <522FBED9.9000305@collabora.co.uk> <5230C7F6.3080803@wwwdotorg.org> <3653629.tapNZSuWhS@lem-wkst-02>
+In-Reply-To: <3653629.tapNZSuWhS@lem-wkst-02>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---089e0149d0ae648b2204e6833f43
-Content-Type: text/plain; charset=ISO-8859-1
-
-On 16 September 2013 21:57, Jon Medhurst (Tixy) <tixy@linaro.org> wrote:
-> If I take mainline code and just change the line above to:
-
-You meant this line by above line?
-
-         unlock_policy_rwsem_write(cpu);
-
->    up_write(&per_cpu(cpu_policy_rwsem, (per_cpu(cpufreq_cpu_data,
-> cpu))->last_cpu));
-> then the big_little cpufreq driver works for me.
-
-That would be same as: up_write(&per_cpu(cpu_policy_rwsem, policy->last_cpu));
-
->> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
->> index 43c24aa..c18bf7b 100644
->> --- a/drivers/cpufreq/cpufreq.c
->> +++ b/drivers/cpufreq/cpufreq.c
->> @@ -952,9 +952,16 @@ static void update_policy_cpu(struct cpufreq_policy *policy, unsigned int cpu)
->>       if (cpu == policy->cpu)
->>               return;
+On 09/16/2013 10:03 AM, Lars Poeschel wrote:
+> On Monday 16 September 2013 13:43:50, Stephen Warren wrote:
+>> On 09/10/2013 06:52 PM, Javier Martinez Canillas wrote:
+>>> On 09/11/2013 12:34 AM, Stephen Warren wrote:
+>>>> On 09/10/2013 03:37 PM, Mark Brown wrote:
+>>>>> On Tue, Sep 10, 2013 at 01:53:47PM -0600, Stephen Warren wrote:
+>>>>>> Doesn't this patch call gpio_request() on the GPIO first, and
+>>>>>> hence prevent the driver's own gpio_request() from succeeding,
+>>>>>> since the GPIO is already requested? If this is not a problem, it
+>>>>>> sounds like a bug in gpio_request() not ensuring mutual exclusion
+>>>>>> for the GPIO.
+>>>>>
+>>>>> Or at the very least something that's likely to break in the
+>>>>> future.
+>>>>
+>>>> Looking at the GPIO code, it already prevents double-requests:
+>>>>>         if (test_and_set_bit(FLAG_REQUESTED, &desc->flags) == 0) {
+>>>>>         
+>>>>>                 desc_set_label(desc, label ? : "?");
+>>>>>                 status = 0;
+>>>>>         
+>>>>>         } else {
+>>>>>         
+>>>>>                 status = -EBUSY;
+>>>>>                 module_put(chip->owner);
+>>>>>                 goto done;
+>>>>>         
+>>>>>         }
+>>>>
+>>>> And I tested it in practice, and it really does fail.
+>>>
+>>> I'm a bit confused now. Doesn't the fact that gpio_request() prevents
+>>> double-requests mean that the use-case that you say that have not been
+>>> covered by this patch can't actually happen?
+>>>
+>>> I mean, if when using board files an explicit call to gpio_request() is
+>>> made by platform code then a driver can't call gpio_request() for the
+>>> same gpio. So this patch shouldn't cause any regression since is just
+>>> auto-requesting a GPIO when is mapped as an IRQ in a DT which basically
+>>> will be the same that was made by board files before.
 >>
->> +     /* take direct locks as lock_policy_rwsem_write wouldn't work here */
->> +     down_write(&per_cpu(cpu_policy_rwsem, policy->cpu));
->> +     down_write(&per_cpu(cpu_policy_rwsem, cpu));
->> +
->>       policy->last_cpu = policy->cpu;
->>       policy->cpu = cpu;
+>> I'm not familiar with the board file path; Linus describe this.
+> 
+> It seems Linus is busy, I'll try to help out.
+> 
+>> It sounds like that path is for the case where a driver /only/ cares
+>> about using a pin as an IRQ, and hence the driver only calls
+>> request_irq(). The board file is (earlier) calling gpio_request() in
+>> order to set up that input pin to work correctly as an IRQ. Hence, there
+>> is no double-call to gpio_request().
+> 
+> No, a board file is not a path or something. A board file describes the wirings 
+> and specifics of an (embedded) computer in C code. The complete knowledge of 
+> how things are connected on a board and which drivers to use is in this piece 
+> of code. Devicetree replaces legacy board files. These two do pretty much the 
+> same, but board files have more power, because they are executed and can 
+> contain whatever code is needed to setup a board.
+> But you are right, the driver only calls request_irq(), the board file set up 
+> the pin before and told the driver which irq to use.
+
+path == code path, or execution path. I'm well aware of what board files
+are in general.
+
+I'm just not familiar with board files that employ this particular hack.
+
+>> The case I said wouldn't work is:
 >>
->> +     up_write(&per_cpu(cpu_policy_rwsem, cpu));
->> +     up_write(&per_cpu(cpu_policy_rwsem, policy->cpu));
->
-> You've just overwritten policy->cpu with cpu.
+>> * This patch calls gpio_request() in order to make the pin work as an IRQ.
+>>
+>> * Driver uses the pin as both a GPIO and an IRQ, and hence calls
+>> gpio_request() and request_irq().
+>>
+>> So, there's a double-call to gpio_request(), which fails, and the driver
+>> fails to probe.
+> 
+> Again, no. In that case you don't define your pin as irq in the device tree, 
+> but only as gpio. The driver knows how to handle gpios and turn them into irqs 
+> so you have to present it a gpio not an irq. In that case the patch will not 
+> call gpio_request() and there is no double-call to gpio_request().
 
-Stupid enough :)
+That is a way to make this patch work, yes. However, there's no
+guarantee that every driver or DT binding works this way. Forcing
+bindings to work that way is forcing Linux-internal details upon
+bindings, which should not be done. Put another way, I don't believe
+there's any rule when writing DT bindings that states that bindings must
+not describe the same pin as both a GPIO and an IRQ, although admittedly
+that may be unusual.
 
-> I tried using
-> policy->last_cpu to fix that, but it still doesn't work for me (giving
-> the lockdep warning I mentioned.) If I change the code to just lock the
-> original policy->cpu lock only, then all is fine.
+...
+> I agree with you that it would be the best if the only call would be 
+> request_irq and the chip driver programs the HW appropriately. It would be a 
+> dream, but unfortunately this is not possible at the moment. This is something 
+> that Linus pointed out very very early in this whole discussion. The gpio and 
+> irq frameworks don't share any information. The irq framework has no chance to 
+> program the HW, because it will never find the related gpio.
+> For this to work the frameworks have to change (and possibly all drivers/board 
+> files/whatever using request_irq() and/or request_gpio()) have to change.
+> That is something that I do not dare to do alone.
 
-Fixed my patch now.. find attached.. It mentions why lock for last cpu is
-enough here. Copied that here too..
-
-+ /*
-+ * Take direct locks as lock_policy_rwsem_write wouldn't work here.
-+ * Also lock for last cpu is enough here as contention will happen only
-+ * after policy->cpu is changed and after it is changed, other threads
-+ * will try to acquire lock for new cpu. And policy is already updated
-+ * by then.
-+ */
-
-> Also, this locking is now just happening around policy->cpu update,
-> whereas before this change, it was locked for the whole of
-> update_policy_cpu, i.e. cpufreq_frequency_table_update_policy_cpu and
-> the notifier callbacks. Is that change of lock coverage OK?
-
-Yeah, the rwsem is only required for updating policy's fields and so that
-should be okay.
-
---089e0149d0ae648b2204e6833f43
-Content-Type: application/octet-stream; 
-	name="0001-cpufreq-unlock-correct-rwsem-while-updating-policy-c.patch"
-Content-Disposition: attachment; 
-	filename="0001-cpufreq-unlock-correct-rwsem-while-updating-policy-c.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hlny50mf0
-
-RnJvbSA1MWUzNDU4Zjc4NTNjY2E5OWNmYmRmYTVhYzQxOWRmZGU0NzFjNWZhIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpNZXNzYWdlLUlkOiA8NTFlMzQ1OGY3ODUzY2NhOTljZmJkZmE1YWM0MTlk
-ZmRlNDcxYzVmYS4xMzc5MzUxMTU4LmdpdC52aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRnJvbTog
-VmlyZXNoIEt1bWFyIDx2aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRGF0ZTogTW9uLCAxNiBTZXAg
-MjAxMyAyMDoxNzowOCArMDUzMApTdWJqZWN0OiBbUEFUQ0hdIGNwdWZyZXE6IHVubG9jayBjb3Jy
-ZWN0IHJ3c2VtIHdoaWxlIHVwZGF0aW5nIHBvbGljeS0+Y3B1CgpDdXJyZW50IGNvZGUgbG9va3Mg
-bGlrZSB0aGlzOgoKICAgICAgICBXQVJOX09OKGxvY2tfcG9saWN5X3J3c2VtX3dyaXRlKGNwdSkp
-OwogICAgICAgIHVwZGF0ZV9wb2xpY3lfY3B1KHBvbGljeSwgbmV3X2NwdSk7CiAgICAgICAgdW5s
-b2NrX3BvbGljeV9yd3NlbV93cml0ZShjcHUpOwoKe2xvY2t8dW5sb2NrfV9wb2xpY3lfcndzZW1f
-d3JpdGUoY3B1KSB0YWtlcy9yZWxlYXNlcyBwb2xpY3ktPmNwdSdzIHJ3c2VtLgpCZWNhdXNlIGNw
-dSBpcyBjaGFuZ2luZyB3aXRoIHRoZSBjYWxsIHRvIHVwZGF0ZV9wb2xpY3lfY3B1KCksIHRoZQp1
-bmxvY2tfcG9saWN5X3J3c2VtX3dyaXRlKCkgd2lsbCByZWxlYXNlIHRoZSBpbmNvcnJlY3QgbG9j
-ay4KClRoZSByaWdodCBzb2x1dGlvbiB3b3VsZCBiZSB0byB0YWtlIHJ3c2VtIGxvY2svdW5sb2Nr
-IGZvciBib3RoIG9sZCBhbmQgbmV3IGNwdS4KVGhpcyBwYXRjaCBmaXhlcyB0aGlzIGJ1ZyBieSB0
-YWtpbmcgYm90aCBsb2NrcyBkaXJlY3RseSBpbnN0ZWFkIG9mIGNhbGxpbmcKbG9ja19wb2xpY3lf
-cndzZW1fd3JpdGUoKS4KClJlcG9ydGVkLWJ5OiBKb24gTWVkaHVyc3Q8dGl4eUBsaW5hcm8ub3Jn
-PgpTaWduZWQtb2ZmLWJ5OiBWaXJlc2ggS3VtYXIgPHZpcmVzaC5rdW1hckBsaW5hcm8ub3JnPgot
-LS0KIGRyaXZlcnMvY3B1ZnJlcS9jcHVmcmVxLmMgfCAxMyArKysrKysrKysrKy0tCiAxIGZpbGUg
-Y2hhbmdlZCwgMTEgaW5zZXJ0aW9ucygrKSwgMiBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9k
-cml2ZXJzL2NwdWZyZXEvY3B1ZnJlcS5jIGIvZHJpdmVycy9jcHVmcmVxL2NwdWZyZXEuYwppbmRl
-eCA0M2MyNGFhLi4xNDc5NTIyIDEwMDY0NAotLS0gYS9kcml2ZXJzL2NwdWZyZXEvY3B1ZnJlcS5j
-CisrKyBiL2RyaXZlcnMvY3B1ZnJlcS9jcHVmcmVxLmMKQEAgLTk1Miw5ICs5NTIsMjAgQEAgc3Rh
-dGljIHZvaWQgdXBkYXRlX3BvbGljeV9jcHUoc3RydWN0IGNwdWZyZXFfcG9saWN5ICpwb2xpY3ks
-IHVuc2lnbmVkIGludCBjcHUpCiAJaWYgKGNwdSA9PSBwb2xpY3ktPmNwdSkKIAkJcmV0dXJuOwog
-CisJLyoKKwkgKiBUYWtlIGRpcmVjdCBsb2NrcyBhcyBsb2NrX3BvbGljeV9yd3NlbV93cml0ZSB3
-b3VsZG4ndCB3b3JrIGhlcmUuCisJICogQWxzbyBsb2NrIGZvciBsYXN0IGNwdSBpcyBlbm91Z2gg
-aGVyZSBhcyBjb250ZW50aW9uIHdpbGwgaGFwcGVuIG9ubHkKKwkgKiBhZnRlciBwb2xpY3ktPmNw
-dSBpcyBjaGFuZ2VkIGFuZCBhZnRlciBpdCBpcyBjaGFuZ2VkLCBvdGhlciB0aHJlYWRzCisJICog
-d2lsbCB0cnkgdG8gYWNxdWlyZSBsb2NrIGZvciBuZXcgY3B1LiBBbmQgcG9saWN5IGlzIGFscmVh
-ZHkgdXBkYXRlZAorCSAqIGJ5IHRoZW4uCisJICovCisJZG93bl93cml0ZSgmcGVyX2NwdShjcHVf
-cG9saWN5X3J3c2VtLCBwb2xpY3ktPmNwdSkpOworCiAJcG9saWN5LT5sYXN0X2NwdSA9IHBvbGlj
-eS0+Y3B1OwogCXBvbGljeS0+Y3B1ID0gY3B1OwogCisJdXBfd3JpdGUoJnBlcl9jcHUoY3B1X3Bv
-bGljeV9yd3NlbSwgcG9saWN5LT5sYXN0X2NwdSkpOworCiAjaWZkZWYgQ09ORklHX0NQVV9GUkVR
-X1RBQkxFCiAJY3B1ZnJlcV9mcmVxdWVuY3lfdGFibGVfdXBkYXRlX3BvbGljeV9jcHUocG9saWN5
-KTsKICNlbmRpZgpAQCAtMTIwMyw5ICsxMjE0LDcgQEAgc3RhdGljIGludCBfX2NwdWZyZXFfcmVt
-b3ZlX2Rldl9wcmVwYXJlKHN0cnVjdCBkZXZpY2UgKmRldiwKIAogCQluZXdfY3B1ID0gY3B1ZnJl
-cV9ub21pbmF0ZV9uZXdfcG9saWN5X2NwdShwb2xpY3ksIGNwdSwgZnJvemVuKTsKIAkJaWYgKG5l
-d19jcHUgPj0gMCkgewotCQkJV0FSTl9PTihsb2NrX3BvbGljeV9yd3NlbV93cml0ZShjcHUpKTsK
-IAkJCXVwZGF0ZV9wb2xpY3lfY3B1KHBvbGljeSwgbmV3X2NwdSk7Ci0JCQl1bmxvY2tfcG9saWN5
-X3J3c2VtX3dyaXRlKGNwdSk7CiAKIAkJCWlmICghZnJvemVuKSB7CiAJCQkJcHJfZGVidWcoIiVz
-OiBwb2xpY3kgS29iamVjdCBtb3ZlZCB0byBjcHU6ICVkICIKLS0gCjEuNy4xMi5yYzIuMTguZzYx
-YjQ3MmUKCg==
---089e0149d0ae648b2204e6833f43--
+This is a controller-specific issue, and has nothing to do with the GPIO
+or IRQ frameworks. The driver for the combined irq/gpio_chip simply
+needs to program the HW when the IRQ is requested or set up. The Tegra
+driver already works this way, so there's actual proof that it is
+possible to do this in practice.
