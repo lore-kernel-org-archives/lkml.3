@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754564Ab3IPOG1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 10:06:27 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:33459 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754226Ab3IPOGZ (ORCPT
+	id S1755450Ab3IPOGg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 10:06:36 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:59024 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754226Ab3IPOGa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 10:06:25 -0400
+	Mon, 16 Sep 2013 10:06:30 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, stable@vger.kernel.org,
         kvm@vger.kernel.org, gleb@redhat.com, jan.kiszka@siemens.com
-Subject: [PATCH 1/3] KVM: cleanup (physical) CPU hotplug
-Date: Mon, 16 Sep 2013 16:06:11 +0200
-Message-Id: <1379340373-5135-2-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH 3/3] KVM: Convert kvm_lock back to non-raw spinlock
+Date: Mon, 16 Sep 2013 16:06:13 +0200
+Message-Id: <1379340373-5135-4-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1379340373-5135-1-git-send-email-pbonzini@redhat.com>
 References: <1379340373-5135-1-git-send-email-pbonzini@redhat.com>
@@ -21,66 +21,200 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the useless argument, and do not do anything if there are no
-VMs running at the time of the hotplug.
+In commit e935b8372cf8 ("KVM: Convert kvm_lock to raw_spinlock"),
+the kvm_lock was made a raw lock.  However, the kvm mmu_shrink()
+function tries to grab the (non-raw) mmu_lock within the scope of
+the raw locked kvm_lock being held.  This leads to the following:
 
+BUG: sleeping function called from invalid context at kernel/rtmutex.c:659
+in_atomic(): 1, irqs_disabled(): 0, pid: 55, name: kswapd0
+Preemption disabled at:[<ffffffffa0376eac>] mmu_shrink+0x5c/0x1b0 [kvm]
+
+Pid: 55, comm: kswapd0 Not tainted 3.4.34_preempt-rt
+Call Trace:
+ [<ffffffff8106f2ad>] __might_sleep+0xfd/0x160
+ [<ffffffff817d8d64>] rt_spin_lock+0x24/0x50
+ [<ffffffffa0376f3c>] mmu_shrink+0xec/0x1b0 [kvm]
+ [<ffffffff8111455d>] shrink_slab+0x17d/0x3a0
+ [<ffffffff81151f00>] ? mem_cgroup_iter+0x130/0x260
+ [<ffffffff8111824a>] balance_pgdat+0x54a/0x730
+ [<ffffffff8111fe47>] ? set_pgdat_percpu_threshold+0xa7/0xd0
+ [<ffffffff811185bf>] kswapd+0x18f/0x490
+ [<ffffffff81070961>] ? get_parent_ip+0x11/0x50
+ [<ffffffff81061970>] ? __init_waitqueue_head+0x50/0x50
+ [<ffffffff81118430>] ? balance_pgdat+0x730/0x730
+ [<ffffffff81060d2b>] kthread+0xdb/0xe0
+ [<ffffffff8106e122>] ? finish_task_switch+0x52/0x100
+ [<ffffffff817e1e94>] kernel_thread_helper+0x4/0x10
+ [<ffffffff81060c50>] ? __init_kthread_worker+0x
+
+After the previous patch, kvm_lock need not be a raw spinlock anymore,
+so change it back.
+
+Reported-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 Cc: stable@vger.kernel.org
 Cc: kvm@vger.kernel.org
 Cc: gleb@redhat.com
 Cc: jan.kiszka@siemens.com
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- virt/kvm/kvm_main.c | 14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ Documentation/virtual/kvm/locking.txt |  2 +-
+ arch/x86/kvm/mmu.c                    |  4 ++--
+ arch/x86/kvm/x86.c                    |  8 ++++----
+ include/linux/kvm_host.h              |  2 +-
+ virt/kvm/kvm_main.c                   | 18 +++++++++---------
+ 5 files changed, 17 insertions(+), 17 deletions(-)
 
+diff --git a/Documentation/virtual/kvm/locking.txt b/Documentation/virtual/kvm/locking.txt
+index ba9e1c2..f886941 100644
+--- a/Documentation/virtual/kvm/locking.txt
++++ b/Documentation/virtual/kvm/locking.txt
+@@ -132,7 +132,7 @@ See the comments in spte_has_volatile_bits() and mmu_spte_update().
+ ------------
+ 
+ Name:		kvm_lock
+-Type:		raw_spinlock
++Type:		spinlock_t
+ Arch:		any
+ Protects:	- vm_list
+ 
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 6e2d2c8..d027a72 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -4429,7 +4429,7 @@ static int mmu_shrink(struct shrinker *shrink, struct shrink_control *sc)
+ 	if (nr_to_scan == 0)
+ 		goto out;
+ 
+-	raw_spin_lock(&kvm_lock);
++	spin_lock(&kvm_lock);
+ 
+ 	list_for_each_entry(kvm, &vm_list, vm_list) {
+ 		int idx;
+@@ -4473,7 +4473,7 @@ unlock:
+ 		break;
+ 	}
+ 
+-	raw_spin_unlock(&kvm_lock);
++	spin_unlock(&kvm_lock);
+ 
+ out:
+ 	return percpu_counter_read_positive(&kvm_total_used_mmu_pages);
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 7c36099..3acd631 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5273,7 +5273,7 @@ static int kvmclock_cpufreq_notifier(struct notifier_block *nb, unsigned long va
+ 
+ 	smp_call_function_single(freq->cpu, tsc_khz_changed, freq, 1);
+ 
+-	raw_spin_lock(&kvm_lock);
++	spin_lock(&kvm_lock);
+ 	list_for_each_entry(kvm, &vm_list, vm_list) {
+ 		kvm_for_each_vcpu(i, vcpu, kvm) {
+ 			if (vcpu->cpu != freq->cpu)
+@@ -5283,7 +5283,7 @@ static int kvmclock_cpufreq_notifier(struct notifier_block *nb, unsigned long va
+ 				send_ipi = 1;
+ 		}
+ 	}
+-	raw_spin_unlock(&kvm_lock);
++	spin_unlock(&kvm_lock);
+ 
+ 	if (freq->old < freq->new && send_ipi) {
+ 		/*
+@@ -5436,12 +5436,12 @@ static void pvclock_gtod_update_fn(struct work_struct *work)
+ 	struct kvm_vcpu *vcpu;
+ 	int i;
+ 
+-	raw_spin_lock(&kvm_lock);
++	spin_lock(&kvm_lock);
+ 	list_for_each_entry(kvm, &vm_list, vm_list)
+ 		kvm_for_each_vcpu(i, vcpu, kvm)
+ 			set_bit(KVM_REQ_MASTERCLOCK_UPDATE, &vcpu->requests);
+ 	atomic_set(&kvm_guest_has_master_clock, 0);
+-	raw_spin_unlock(&kvm_lock);
++	spin_unlock(&kvm_lock);
+ }
+ 
+ static DECLARE_WORK(pvclock_gtod_work, pvclock_gtod_update_fn);
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index 749bdb1..7c961e1 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -142,7 +142,7 @@ struct kvm;
+ struct kvm_vcpu;
+ extern struct kmem_cache *kvm_vcpu_cache;
+ 
+-extern raw_spinlock_t kvm_lock;
++extern spinlock_t kvm_lock;
+ extern struct list_head vm_list;
+ 
+ struct kvm_io_range {
 diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 979bff4..75522b3 100644
+index da13379..3397a9c 100644
 --- a/virt/kvm/kvm_main.c
 +++ b/virt/kvm/kvm_main.c
-@@ -2681,10 +2681,11 @@ static void hardware_enable_nolock(void *junk)
- 	}
+@@ -70,7 +70,7 @@ MODULE_LICENSE("GPL");
+  * 		kvm->lock --> kvm->slots_lock --> kvm->irq_lock
+  */
+ 
+-DEFINE_RAW_SPINLOCK(kvm_lock);
++DEFINE_SPINLOCK(kvm_lock);
+ static DEFINE_RAW_SPINLOCK(kvm_count_lock);
+ LIST_HEAD(vm_list);
+ 
+@@ -491,9 +491,9 @@ static struct kvm *kvm_create_vm(unsigned long type)
+ 	if (r)
+ 		goto out_err;
+ 
+-	raw_spin_lock(&kvm_lock);
++	spin_lock(&kvm_lock);
+ 	list_add(&kvm->vm_list, &vm_list);
+-	raw_spin_unlock(&kvm_lock);
++	spin_unlock(&kvm_lock);
+ 
+ 	return kvm;
+ 
+@@ -582,9 +582,9 @@ static void kvm_destroy_vm(struct kvm *kvm)
+ 	struct mm_struct *mm = kvm->mm;
+ 
+ 	kvm_arch_sync_events(kvm);
+-	raw_spin_lock(&kvm_lock);
++	spin_lock(&kvm_lock);
+ 	list_del(&kvm->vm_list);
+-	raw_spin_unlock(&kvm_lock);
++	spin_unlock(&kvm_lock);
+ 	kvm_free_irq_routing(kvm);
+ 	for (i = 0; i < KVM_NR_BUSES; i++)
+ 		kvm_io_bus_destroy(kvm->buses[i]);
+@@ -3057,10 +3057,10 @@ static int vm_stat_get(void *_offset, u64 *val)
+ 	struct kvm *kvm;
+ 
+ 	*val = 0;
+-	raw_spin_lock(&kvm_lock);
++	spin_lock(&kvm_lock);
+ 	list_for_each_entry(kvm, &vm_list, vm_list)
+ 		*val += *(u32 *)((void *)kvm + offset);
+-	raw_spin_unlock(&kvm_lock);
++	spin_unlock(&kvm_lock);
+ 	return 0;
  }
  
--static void hardware_enable(void *junk)
-+static void hardware_enable(void)
- {
- 	raw_spin_lock(&kvm_lock);
--	hardware_enable_nolock(junk);
-+	if (kvm_usage_count)
-+		hardware_enable_nolock(NULL);
- 	raw_spin_unlock(&kvm_lock);
+@@ -3074,12 +3074,12 @@ static int vcpu_stat_get(void *_offset, u64 *val)
+ 	int i;
+ 
+ 	*val = 0;
+-	raw_spin_lock(&kvm_lock);
++	spin_lock(&kvm_lock);
+ 	list_for_each_entry(kvm, &vm_list, vm_list)
+ 		kvm_for_each_vcpu(i, vcpu, kvm)
+ 			*val += *(u32 *)((void *)vcpu + offset);
+ 
+-	raw_spin_unlock(&kvm_lock);
++	spin_unlock(&kvm_lock);
+ 	return 0;
  }
  
-@@ -2698,10 +2699,11 @@ static void hardware_disable_nolock(void *junk)
- 	kvm_arch_hardware_disable(NULL);
- }
- 
--static void hardware_disable(void *junk)
-+static void hardware_disable(void)
- {
- 	raw_spin_lock(&kvm_lock);
--	hardware_disable_nolock(junk);
-+	if (kvm_usage_count)
-+		hardware_disable_nolock(NULL);
- 	raw_spin_unlock(&kvm_lock);
- }
- 
-@@ -2756,12 +2758,12 @@ static int kvm_cpu_hotplug(struct notifier_block *notifier, unsigned long val,
- 	case CPU_DYING:
- 		printk(KERN_INFO "kvm: disabling virtualization on CPU%d\n",
- 		       cpu);
--		hardware_disable(NULL);
-+		hardware_disable();
- 		break;
- 	case CPU_STARTING:
- 		printk(KERN_INFO "kvm: enabling virtualization on CPU%d\n",
- 		       cpu);
--		hardware_enable(NULL);
-+		hardware_enable();
- 		break;
- 	}
- 	return NOTIFY_OK;
 -- 
 1.8.3.1
-
 
