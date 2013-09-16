@@ -1,92 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887Ab3IPXcG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 19:32:06 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:42784 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751846Ab3IPXcD (ORCPT
+	id S1751719Ab3IPXgE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 19:36:04 -0400
+Received: from mga11.intel.com ([192.55.52.93]:12611 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751352Ab3IPXgB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 19:32:03 -0400
-Message-ID: <523794EE.10505@hurleysoftware.com>
-Date: Mon, 16 Sep 2013 19:31:58 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 16 Sep 2013 19:36:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,919,1371106800"; 
+   d="scan'208";a="402713226"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Linus Walleij" <linus.walleij@linaro.org>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: RE: [PATCH 2/2] gpio / ACPI: add support for GPIO operation regions
+Thread-Topic: [PATCH 2/2] gpio / ACPI: add support for GPIO operation regions
+Thread-Index: AQHOsJQAl34IB1lxyU2PFiwcEyBhepnEW9mAgAF8/4CAAa8jcIAACnDA///u0ACAAYYsQA==
+Date: Mon, 16 Sep 2013 23:35:56 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E8802463D85@SHSMSX101.ccr.corp.intel.com>
+References: <1379085280-2211-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1379085280-2211-2-git-send-email-mika.westerberg@linux.intel.com>
+ <1AE640813FDE7649BE1B193DEA596E880246367A@SHSMSX101.ccr.corp.intel.com>
+ <20130915065151.GK7393@intel.com>
+ <1AE640813FDE7649BE1B193DEA596E88024639E4@SHSMSX101.ccr.corp.intel.com>
+ <1AE640813FDE7649BE1B193DEA596E8802463A46@SHSMSX101.ccr.corp.intel.com>
+ <20130916081048.GM7393@intel.com>
+In-Reply-To: <20130916081048.GM7393@intel.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Alexey Neyman <stilor@att.net>
-CC: linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-acpi <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH PING] Fix coalescing of host bridge windows in arch/x86/pci/acpi.c
-References: <201309121719.17447.stilor@att.net> <201309160941.54844.stilor@att.net>
-In-Reply-To: <201309160941.54844.stilor@att.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ +cc Bjorn Helgaas, Rafael Wysocki, linux-acpi ]
+> From: Mika Westerberg [mailto:mika.westerberg@linux.intel.com]
+> Sent: Monday, September 16, 2013 4:11 PM
+> 
+> On Mon, Sep 16, 2013 at 01:21:53AM +0000, Zheng, Lv wrote:
+> > > A pseudo device may be created to access the GPIO operation region fields provided by one GPIO device.
+> > > The pseudo device may have other functions to access other GPIO operation region fields provided by other GPIO devices, or even worse
+> to
+> > > access other ACPI provided value-adds.
+> > > So hierarchically the pseudo device only requires CPU, thus should not be under the GPIO device, which means the GPIO operation
+> regions
+> > > have nothing to do with the GPIO devices' ACPI handle.
+> >
+> > Sorry for the wording.
+> > It's better to say the GPIO operation region users haven't strict
+> > relationship to the GPIO operation region providers.
+> > As the installation is to provide GPIO operation regions to the users, it
+> > shouldn't relate to the providers' ACPI handle.
+> 
+> If I understand you correctly you mean that there might be multiple users
+> (different devices) for the same GPIO operation region, right?
 
-On 09/16/2013 12:41 PM, Alexey Neyman wrote:
-> Hi all,
->
-> Could anybody review/commit the patch?
+No, this is not what I meant.
+Can one vendor device uses two or more GPIO pins from different GPIO ports?
 
-LKML is a pretty general list and maintainers don't typically
-trawl the list for more work to do. The get_maintainer script
-can be used to help determine to whom to address a patch.
+> That shouldn't be a problem as far as I can tell.
+> 
+> What comes to the hierarchy you refer, I'm not sure if that is a problem
+> either (unless I'm missing something). The GPIO can be used anywhere in the
+> ASL, it doesn't have to be descendant of the GPIO device. You only need to
+> do something like this:
+> 
+> 	// Assert the GPIO
+> 	Store(1, \_SB.PCI0.SHD3)
+> 
+> In other words, use the fully qualified name.
 
-peter@thor:~/src/kernels/next$ ./scripts/get_maintainer.pl -f arch/x86/pci/acpi.c
-Thomas Gleixner <tglx@linutronix.de> (maintainer:X86 ARCHITECTURE...)
-Ingo Molnar <mingo@redhat.com> (maintainer:X86 ARCHITECTURE...)
-"H. Peter Anvin" <hpa@zytor.com> (maintainer:X86 ARCHITECTURE...)
-x86@kernel.org (maintainer:X86 ARCHITECTURE...)
-Bjorn Helgaas <bhelgaas@google.com> (commit_signer:5/8=62%)
-"Rafael J. Wysocki" <rafael.j.wysocki@intel.com> (commit_signer:3/8=38%)
-Feng Tang <feng.tang@intel.com> (commit_signer:1/8=12%)
-Yijing Wang <wangyijing@huawei.com> (commit_signer:1/8=12%)
-Mike Yoknis <mike.yoknis@hp.com> (commit_signer:1/8=12%)
-linux-kernel@vger.kernel.org (open list)
+Yes, which means this line of code can be everywhere in the namespace.
+It is not required to be under one particular GPIO device as long as there is an operation region defined in that scope.
 
-Regards,
-Peter Hurley
+The problem is the installation, the first parameter for acpi_install_address_space_handler() is a namespace node, the function will call _REG for all OperationRegions below the scope whose top most node is the specified node.
+The nodes out of this scope are not affected.  So if an OperationRegion is defined out of this scope, problem happens.
 
-PS - You'll want to inline your patch as well because as you can see
-replies don't include it.
+> Typically when the GPIO device _REG() is called it sets some variable like
+> AVBL to true which is then checked in the code that uses the GPIO:
+> 
+> 	If (LEqual (\_SB.PCI0.GPO0.AVBL, One))
+> 	{
+> 		Store (Zero, \_SB.PCI0..SHD3)
+> 	}
+> 
+> So if there is no driver, this part of the code is never called.
 
-> Regards,
-> Alexey.
->
-> On Thursday, September 12, 2013 05:19:16 pm Alexey Neyman wrote:
->> Hi all,
->>
->> I have a board with a BIOS bug that reports the following I/O port regions
->> in _CRS on one of the host bridges:
->>
->> 0x0000-0x03af // #0
->> 0x03e0-0x0cf7 // #1
->> 0x03b0-0x03bb // #2
->> 0x03c0-0x03df // #3
->> 0x0000-0xdfff // #4
->> 0xf000-0xffff // #5
->>
->> Obviously, region number #4 is erroneous as it overlaps with regions #0..3.
->> However, code in coalesce_windows() in arch/x86/pci/acpi.c attempts to
->> recover from such kind of BIOS bugs by merging the overlapping regions.
->> Current code expands region #0 to 0x0000-0xdffff and makes region #4
->> ignored. As a result, overlap of the expanded region #0 with regions #1..3
->> remains undetected. As a result, regions #1..3 are inserted into the
->> resource tree as if they were consumers of the 0x0000-0xdfff regions, and
->> devices that have resources in one of these regions (e.g. 0x3f6 for legacy
->> IDE) have a resource conflict - the kernel does not initialize them.
->>
->> The attached patch makes the code in coalesce_windows() instead ignore res1
->> (which is already dealt with), possibly expanding res2 instead. As res2 has
->> not been reached in the outer loop in coalesce_windows(), the code will
->> then check for overlaps of the just-expanded resource with the rest of the
->> resources.
->>
->> Regards,
->> Alexey.
+This can trigger exceptions, which can be used to load the GPIO driver.
+This seems to be another topic.
 
+Thanks and best regards
+-Lv
