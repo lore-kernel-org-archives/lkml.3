@@ -1,115 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751353Ab3IPPWc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 11:22:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12685 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751320Ab3IPPWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 11:22:31 -0400
-Date: Mon, 16 Sep 2013 17:22:26 +0200
-From: Andrew Jones <drjones@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: kvm@vger.kernel.org, pbonzini@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [RFC] x86: kvm: remove KVM_SOFT_MAX_VCPUS
-Message-ID: <20130916152226.GA17256@hawk.usersys.redhat.com>
-References: <1379161011-28239-1-git-send-email-drjones@redhat.com>
- <20130915090322.GV17294@redhat.com>
- <20130916082208.GA2101@hawk.usersys.redhat.com>
- <20130916085517.GK17294@redhat.com>
- <20130916114725.GA14981@hawk.usersys.redhat.com>
- <20130916144118.GB906@redhat.com>
-MIME-Version: 1.0
+	id S1751389Ab3IPPWv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 11:22:51 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59728 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974Ab3IPPWt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 11:22:49 -0400
+Subject: Re: "memory" binding issues
+Mime-Version: 1.0 (Apple Message framework v1283)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130916144118.GB906@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1379300274.4098.77.camel@pasglop>
+Date: Mon, 16 Sep 2013 10:22:48 -0500
+Cc: devicetree@vger.kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        m.szyprowski@samsung.com, swarren@nvidia.com, rob.herring@calxeda.com,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <0A20DA07-7B18-4BD5-AF32-172022B92611@codeaurora.org>
+References: <1379300274.4098.77.camel@pasglop>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 05:41:18PM +0300, Gleb Natapov wrote:
-> On Mon, Sep 16, 2013 at 01:47:26PM +0200, Andrew Jones wrote:
-> > On Mon, Sep 16, 2013 at 11:55:17AM +0300, Gleb Natapov wrote:
-> > > On Mon, Sep 16, 2013 at 10:22:09AM +0200, Andrew Jones wrote:
-> > > > > > [1] Actually, until 972fc544b6034a in uq/master is merged there won't be
-> > > > > >     any warnings either.
-> > > > > > 
-> > > > > > Signed-off-by: Andrew Jones <drjones@redhat.com>
-> > > > > > ---
-> > > > > >  arch/x86/include/asm/kvm_host.h | 1 -
-> > > > > >  arch/x86/kvm/x86.c              | 2 +-
-> > > > > >  2 files changed, 1 insertion(+), 2 deletions(-)
-> > > > > > 
-> > > > > > diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> > > > > > index c76ff74a98f2e..9236c63315a9b 100644
-> > > > > > --- a/arch/x86/include/asm/kvm_host.h
-> > > > > > +++ b/arch/x86/include/asm/kvm_host.h
-> > > > > > @@ -32,7 +32,6 @@
-> > > > > >  #include <asm/asm.h>
-> > > > > >  
-> > > > > >  #define KVM_MAX_VCPUS 255
-> > > > > > -#define KVM_SOFT_MAX_VCPUS 160
-> > > > > >  #define KVM_USER_MEM_SLOTS 125
-> > > > > >  /* memory slots that are not exposed to userspace */
-> > > > > >  #define KVM_PRIVATE_MEM_SLOTS 3
-> > > > > > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> > > > > > index e5ca72a5cdb6d..d9d3e2ed68ee9 100644
-> > > > > > --- a/arch/x86/kvm/x86.c
-> > > > > > +++ b/arch/x86/kvm/x86.c
-> > > > > > @@ -2604,7 +2604,7 @@ int kvm_dev_ioctl_check_extension(long ext)
-> > > > > >  		r = !kvm_x86_ops->cpu_has_accelerated_tpr();
-> > > > > >  		break;
-> > > > > >  	case KVM_CAP_NR_VCPUS:
-> > > > > > -		r = KVM_SOFT_MAX_VCPUS;
-> > > > > > +		r = min(num_online_cpus(), KVM_MAX_VCPUS);
-> > > > > s/KVM_MAX_VCPUS/KVM_SOFT_MAX_VCPUS/.  Also what about hotplug cpus?
-> > > > 
-> > > > I'll send a v2 with this change.
-> > > > 
-> > > > I thought a bit about hotplug, and thus using num_possible_cpus()
-> > > > instead, but then decided it made more sense to stick to what's online now
-> > > > for the recommended number. It's just a recommendation anyway. So as long
-> > > > as KVM_MAX_VCPUS is >= num_possible_cpus(), then one can still configure
-> > > > more vcpus to count for all hotplugable cpus, if they wish.
-> > > > 
-> > > It is just recommended, but we do warn about it, so it is user visible.
-> > > Well, the whole point of it existence is to be user visible ;). If user
-> > > creates a guest with max cpus greater than current number if online
-> > > cpus, taking into account feature grows, he will get a warning, but we
-> > > should not warn about it.
-> > 
-> > Even it if means the user may end up running, e.g. 128 vcpus on 96 pcpus
-> > indefinitely? I'd rather warn about it, which could remind them to offline
-> > 32 vcpus for the time being.
-> But there are other means to detect number of online cpus:
-> sysconf(_SC_NPROCESSORS_ONLN). Actually you can determine number of
-> possible cpus too with _SC_NPROCESSORS_CONF, so returning those values
-> as KVM_CAP_NR_VCPUS does not provide any additional information. What
-> if QEMU process is bound to two cores on 64 core host, do you want to
-> warn if qemu is created with more then 2 vcpus in such case? You can do
-> that too with pthread_setaffinity_np(). 
+
+On Sep 15, 2013, at 9:57 PM, Benjamin Herrenschmidt wrote:
+
+> [resent to the right list this time around]
 > 
-> >                               Although, as we're just discussing when or
-> > when not to output a warning, then I'm not really stressed about it either
-> > way. I can certainly change this to num_possible_cpus(), if all are in
-> > agreement that that is a better recommendation.
-> > 
-> With this patch we only reduce information available to userspace. QEMU
-> can already obtain all the information it needs to produce meaningful
-> warning.
+> Hi folks !
+> 
+> So I don't have the bandwidth to follow closely what's going on, but I
+> just today noticed the crackpot that went into 3.11 as part of commit:
+> 
+> 9d8eab7af79cb4ce2de5de39f82c455b1f796963
+> drivers: of: add initialization code for dma reserved memory
+> 
+> Fist of all, do NOT add (or change) a binding as part of a patch
+> implementing code, it's gross.
+> 
+> Secondly, I don't know how much that binding was discussed on the list
+> (I assume it was and I just missed it) but it's gross.
+> 
+> It duplicates a binding that Jeremy Kerr had proposed a while ago for
+> a /reserved-ranges (and /reserved-names) pair of properties, possibly in
+> a better way but the fact is that the original binding received little
+> or no feedback and we went on and implemented support for it in powerpc
+> back in early 3.11 merge window.
+> 
+> Additionally, it has the following issues:
+> 
+> - It describes the "memory" node as /memory, which is WRONG
+> 
+> It should be "/memory@unit-address, this is important because the Linux
+> kernel of_find_device_by_path() isn't smart enough to do partial
+> searches (unlike the real OFW one) and thus to ignore the unit address
+> for search purposes, and you *need* the unit address if you have
+> multiple memory nodes (which you typically do on NUMA machines).
+> 
+> - To add to the above mistake, it defines "reserved memory" as a child
+> node of the "/memory" node. That is wrong or at least poorly thought
+> out. There can be several "memory" nodes, representing different areas
+> of memory, possibly even interleaved, having the reserved ranges as
+> children of a specific memory nodes thus doesn't work very well.
+> Breaking them up into regions based on what memory nodes they cover is
+> really nasty. Basically, the "reserved-memory" node should have been at
+> the root of the device-tree.
+> 
+> - It provides no indication of what a given region is used for (or used
+> by). In the example, "display_region" is a label (thus information that
+> is lost) and unless it's referenced by another node there is no good way
+> to know what this region is about which is quite annoying.
+> 
+> - The "memory-region" property is a phandle to a "reserved-memory"
+> region, this is not intuitive. If anything, the property should have
+> been called "reserved-memory-region".
+> 
+> - The way the "compatible" property is documented breaks a basic
+> premise that the device-tree is a hardware description and not some
+> convenient way to pass linux specific kernel parameters accross. It is
+> *ok* to pass some linux specific stuff and to make compromise based on
+> what a driver generally might expect but the whole business of using
+> that to describe what to put in CMA is pushing it pretty far ...
+> 
+> - The implementation of early_init_dt_scan_reserved_mem() will not work
+> on a setup whose /memory node has a unit address (typically /memory@0)
+> 
+> Now, I'd like to understand why not use the simpler binding originally
+> proposed by Jeremy, which had the advantage of proposing a unique name
+> per region in the traditional form "vendor,name", which then allows
+> drivers to pick up the region directly if they wish to query, remove or
+> update it in the tree for example (because they changed the framebuffer
+> address for example and want kexec to continue working).
+> 
+> I don't object to having a node per region, though it seemed unnecessary
+> at the time, but in any case, the current binding is crap and need to be
+> fixed urgently before its use spreads.
+> 
+> Ben.
 
-All good points. We're still left with the fact that KVM_CAP_NR_VCPU
-currently returns a distro-specific number though, which can only be
-modified by changing a constant embedded in the source. So I still believe
-that a config option is in order, but now you're convincing me that the
-option should adjust KVM_SOFT_MAX_VCPUS instead. The default should also
-remain distro-neutral, so I vote 255. We'd then change the defines to be
 
-#define KVM_SOFT_MAX_VCPUS CONFIG_KVM_SOFT_MAX_VCPUS
-#define KVM_MAX_VCPUS KVM_SOFT_MAX_VCPUS
+Where is Jermey's binding documented ?
 
-distros can then configure something lower than 255 (160), and developers
-can configure anything they want. Neither will create a warning gap unless
-the developer manually changes the KVM_MAX_VCPUS define to create one.
+Is there concern of "breaking" whatever got merged in powerpc?
 
-drew
+- k
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
