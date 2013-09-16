@@ -1,82 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751798Ab3IPQl2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 12:41:28 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:35509 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751337Ab3IPQl1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 12:41:27 -0400
-Message-ID: <523734B2.6050208@wwwdotorg.org>
-Date: Mon, 16 Sep 2013 10:41:22 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1751853Ab3IPQl5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 12:41:57 -0400
+Received: from asmtp.lnxw.com ([207.21.185.2]:37157 "EHLO asmtp.lnxw.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751098Ab3IPQl4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 12:41:56 -0400
+From: Alexey Neyman <stilor@att.net>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH PING] Fix coalescing of host bridge windows in arch/x86/pci/acpi.c
+Date: Mon, 16 Sep 2013 09:41:54 -0700
+User-Agent: KMail/1.13.5 (Linux/2.6.34-020634-generic; KDE/4.4.5; i686; ; )
+References: <201309121719.17447.stilor@att.net>
+In-Reply-To: <201309121719.17447.stilor@att.net>
 MIME-Version: 1.0
-To: boris brezillon <b.brezillon@overkiz.com>
-CC: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Richard Genoud <richard.genoud@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH alt 4/4] pinctrl: at91: rework debounce configuration
-References: <1379058213-3245-1-git-send-email-b.brezillon@overkiz.com> <1379058813-3489-1-git-send-email-b.brezillon@overkiz.com> <52339479.6030402@wwwdotorg.org> <52340B68.5020505@overkiz.com>
-In-Reply-To: <52340B68.5020505@overkiz.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: Multipart/Mixed;
+  boundary="Boundary-00=_STzNStZBkR4m37a"
+Message-Id: <201309160941.54844.stilor@att.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14/2013 01:08 AM, boris brezillon wrote:
-> Hello Stephen,
-> 
-> Le 14/09/2013 00:40, Stephen Warren a écrit :
->> On 09/13/2013 01:53 AM, Boris BREZILLON wrote:
->>> AT91 SoCs do not support per pin debounce time configuration.
->>> Instead you have to configure a debounce time which will be used for all
->>> pins of a given bank (PIOA, PIOB, ...).
-...
->>>   Required properties for pin configuration node:
-...
->>> -DEBOUNCE_VAL    (0x3fff << 17): debounce val.
->>
->> This change would break the DT ABI since it removes a feature that's
->> already present.
-...
->> I suppose it's still up to the Atmel maintainers to decide whether this
->> is appropriate, or whether the impact to out-of-tree DT files would be
->> problematic.
->>
->> Assuming the DT ABI can be broken, I think I'd prefer to do so, rather
->> than take "non-alt" patch 4/4, since a per-pin DEBOUNCE_VAL clearly
->> doesn't correctly model the HW, assuming the patch description is
->> correct. I don't think arguments re: the generic pinconf debounce
->> property hold; if the Linux-specific/internal generic property doesn't
->> apply, the DT binding should not be bent to adjust to it, but should
->> rather still represent the HW itself.
-> 
-> What about the last point in my list: "reconfigure debounce after
-> startup" ?
-> 
-> Here is an example that may be problematic:
-> 
-> Let's say you have one device using multiple configuration of pins
-> ("default", "xxx", "yyy").
-> The "default" config needs a particular debounce time on a given pin and
-> the "xxx" and "yyy"
-> configs need different debounce time on the same pin.
-> 
-> How would you solve this with this patch approach ?
+--Boundary-00=_STzNStZBkR4m37a
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
 
-Each state has a different pin configuration node, and hence can specify
-a different debounce value. This patch has no impact on that (it just
-changes whether the state-specific node specifies the debounce value in
-a single standalone property, or encodes it into each entry in the pins
-property, all within the same node).
+Hi all,
+
+Could anybody review/commit the patch?
+
+Regards,
+Alexey.
+
+On Thursday, September 12, 2013 05:19:16 pm Alexey Neyman wrote:
+> Hi all,
+> 
+> I have a board with a BIOS bug that reports the following I/O port regions
+> in _CRS on one of the host bridges:
+> 
+> 0x0000-0x03af // #0
+> 0x03e0-0x0cf7 // #1
+> 0x03b0-0x03bb // #2
+> 0x03c0-0x03df // #3
+> 0x0000-0xdfff // #4
+> 0xf000-0xffff // #5
+> 
+> Obviously, region number #4 is erroneous as it overlaps with regions #0..3.
+> However, code in coalesce_windows() in arch/x86/pci/acpi.c attempts to
+> recover from such kind of BIOS bugs by merging the overlapping regions.
+> Current code expands region #0 to 0x0000-0xdffff and makes region #4
+> ignored. As a result, overlap of the expanded region #0 with regions #1..3
+> remains undetected. As a result, regions #1..3 are inserted into the
+> resource tree as if they were consumers of the 0x0000-0xdfff regions, and
+> devices that have resources in one of these regions (e.g. 0x3f6 for legacy
+> IDE) have a resource conflict - the kernel does not initialize them.
+> 
+> The attached patch makes the code in coalesce_windows() instead ignore res1
+> (which is already dealt with), possibly expanding res2 instead. As res2 has
+> not been reached in the outer loop in coalesce_windows(), the code will
+> then check for overlaps of the just-expanded resource with the rest of the
+> resources.
+> 
+> Regards,
+> Alexey.
+
+--Boundary-00=_STzNStZBkR4m37a
+Content-Type: text/x-patch;
+  charset="UTF-8";
+  name="acpi.c.diff"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename="acpi.c.diff"
+
+--- arch/x86/pci/acpi.c.orig	2013-09-12 16:23:06.113813150 -0700
++++ arch/x86/pci/acpi.c	2013-09-12 16:23:56.605813117 -0700
+@@ -357,12 +357,12 @@
+ 			 * the kernel resource tree doesn't allow overlaps.
+ 			 */
+ 			if (resource_overlaps(res1, res2)) {
+-				res1->start = min(res1->start, res2->start);
+-				res1->end = max(res1->end, res2->end);
++				res2->start = min(res1->start, res2->start);
++				res2->end = max(res1->end, res2->end);
+ 				dev_info(&info->bridge->dev,
+ 					 "host bridge window expanded to %pR; %pR ignored\n",
+-					 res1, res2);
+-				res2->flags = 0;
++					 res2, res1);
++				res1->flags = 0;
+ 			}
+ 		}
+ 	}
+
+--Boundary-00=_STzNStZBkR4m37a--
