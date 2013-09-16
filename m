@@ -1,45 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751487Ab3IPWmm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 18:42:42 -0400
-Received: from gate.crashing.org ([63.228.1.57]:56586 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750953Ab3IPWmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 18:42:40 -0400
-Message-ID: <1379371339.3721.42.camel@pasglop>
-Subject: Re: "memory" binding issues
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: devicetree@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        m.szyprowski@samsung.com, swarren@nvidia.com, rob.herring@calxeda.com,
-        Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 17 Sep 2013 08:42:19 +1000
-In-Reply-To: <0A20DA07-7B18-4BD5-AF32-172022B92611@codeaurora.org>
-References: <1379300274.4098.77.camel@pasglop>
-	 <0A20DA07-7B18-4BD5-AF32-172022B92611@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751524Ab3IPWnx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 18:43:53 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:53433 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953Ab3IPWnw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 18:43:52 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] sched/nohz: add debugfs control over sched_tick_max_deferment
+Date: Mon, 16 Sep 2013 15:43:48 -0700
+Message-Id: <1379371429-22214-1-git-send-email-khilman@linaro.org>
+X-Mailer: git-send-email 1.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-09-16 at 10:22 -0500, Kumar Gala wrote:
-> Where is Jermey's binding documented ?
+Allow debugfs override of sched_tick_max_deferment in order to ease
+finding/fixing the remaining issues with full nohz.
 
-It looks like I actually came up with this binding :-) Jeremy reminded
-me yesterday. It was posted to the DT list a while back, arguably we
-should have merged it.
+The value to be written is in jiffies, and -1 means the max deferment
+is disabled (scheduler_tick_max_deferment() returns KTIME_MAX.)
 
-> Is there concern of "breaking" whatever got merged in powerpc?
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Kevin Hilman <khilman@linaro.org>
+---
+ kernel/sched/core.c | 16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
-No. I'm happy to switch over to something else but if anybody uses the
-current one we have on powerpc, we can keep the code to support it as
-well, it's not a lot of it.
-
-Cheers,
-Ben.
-
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 5ac63c9..4b1fe3e 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2175,6 +2175,8 @@ void scheduler_tick(void)
+ }
+ 
+ #ifdef CONFIG_NO_HZ_FULL
++static u32 sched_tick_max_deferment = HZ;
++
+ /**
+  * scheduler_tick_max_deferment
+  *
+@@ -2193,13 +2195,25 @@ u64 scheduler_tick_max_deferment(void)
+ 	struct rq *rq = this_rq();
+ 	unsigned long next, now = ACCESS_ONCE(jiffies);
+ 
+-	next = rq->last_sched_tick + HZ;
++	if (sched_tick_max_deferment == -1)
++		return KTIME_MAX;
++
++	next = rq->last_sched_tick + sched_tick_max_deferment;
+ 
+ 	if (time_before_eq(next, now))
+ 		return 0;
+ 
+ 	return jiffies_to_usecs(next - now) * NSEC_PER_USEC;
+ }
++
++static __init int sched_nohz_full_init_debug(void)
++{
++	debugfs_create_u32("sched_tick_max_deferment", 0644, NULL,
++			   &sched_tick_max_deferment);
++
++	return 0;
++}
++late_initcall(sched_nohz_full_init_debug);
+ #endif
+ 
+ notrace unsigned long get_parent_ip(unsigned long addr)
+-- 
+1.8.3
 
