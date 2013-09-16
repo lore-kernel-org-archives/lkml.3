@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757577Ab3IPNuu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 09:50:50 -0400
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:41033 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754126Ab3IPNoD (ORCPT
+	id S1756881Ab3IPNut (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 09:50:49 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:55089 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754161Ab3IPNoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 09:44:03 -0400
+	Mon, 16 Sep 2013 09:44:04 -0400
 From: Iker Pedrosa <ikerpedrosam@gmail.com>
 To: pavel@ucw.cz
 Cc: gregkh@linuxfoundation.org, ikerpedrosam@gmail.com, harsh1kumar@gmail.com,
         dan.carpenter@oracle.com, mujeeb.adil@gmail.com,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 02/24] Staging: winbond: mto: avoided use of extern functions
-Date: Mon, 16 Sep 2013 15:43:22 +0200
-Message-Id: <1379339024-12157-3-git-send-email-ikerpedrosam@gmail.com>
+Subject: [PATCH v2 03/24] Staging: winbond: mto: deleted extern functions
+Date: Mon, 16 Sep 2013 15:43:23 +0200
+Message-Id: <1379339024-12157-4-git-send-email-ikerpedrosam@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379339024-12157-1-git-send-email-ikerpedrosam@gmail.com>
 References: <1379339024-12157-1-git-send-email-ikerpedrosam@gmail.com>
@@ -22,52 +22,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prototype of two functions added to the header to avoid the use of extern.
+Deleted declaration of external functions that weren't used on this driver.
 
 Signed-off-by: Iker Pedrosa <ikerpedrosam@gmail.com>
 ---
- drivers/staging/winbond/mto.c | 4 +---
- drivers/staging/winbond/mto.h | 4 ++--
- 2 files changed, 3 insertions(+), 5 deletions(-)
+ drivers/staging/winbond/mto.h | 4 ----
+ 1 file changed, 4 deletions(-)
 
-diff --git a/drivers/staging/winbond/mto.c b/drivers/staging/winbond/mto.c
-index 0d0f9fb..b031ecd 100644
---- a/drivers/staging/winbond/mto.c
-+++ b/drivers/staging/winbond/mto.c
-@@ -21,6 +21,7 @@
- #include "wbhal.h"
- #include "wb35reg_f.h"
- #include "core.h"
-+#include "mto.h"
- 
- /* Declare SQ3 to rate and fragmentation threshold table */
- /* Declare fragmentation threshold table */
-@@ -45,9 +46,6 @@ static int retryrate_rec[MTO_MAX_DATA_RATE_LEVELS];
- 
- static u8 boSparseTxTraffic;
- 
--void MTO_Init(struct wbsoft_priv *adapter);
--void MTO_SetTxCount(struct wbsoft_priv *adapter, u8 t0, u8 index);
--
- /*
-  * ===========================================================================
-  * MTO_Init --
 diff --git a/drivers/staging/winbond/mto.h b/drivers/staging/winbond/mto.h
-index a0f659c..22bb264 100644
+index 22bb264..8d41eed 100644
 --- a/drivers/staging/winbond/mto.h
 +++ b/drivers/staging/winbond/mto.h
-@@ -127,12 +127,12 @@ extern u16 MTO_Frag_Th_Tbl[];
- #define MTO_DATA_RATE()			MTO_Data_Rate_Tbl[MTO_RATE_LEVEL()]
- #define MTO_FRAG_TH()			MTO_Frag_Th_Tbl[MTO_FRAG_TH_LEVEL()]
+@@ -129,10 +129,6 @@ extern u16 MTO_Frag_Th_Tbl[];
  
--extern void MTO_Init(struct wbsoft_priv *);
-+void MTO_Init(struct wbsoft_priv *);
-+void MTO_SetTxCount(struct wbsoft_priv *adapter, u8 t0, u8 index);
- extern void MTO_PeriodicTimerExpired(struct wbsoft_priv *);
- extern void MTO_SetDTORateRange(struct wbsoft_priv *, u8 *, u8);
- extern u8 MTO_GetTxRate(struct wbsoft_priv *adapter, u32 fpdu_len);
- extern u8 MTO_GetTxFallbackRate(struct wbsoft_priv *adapter);
--extern void MTO_SetTxCount(struct wbsoft_priv *adapter, u8 t0, u8 index);
+ void MTO_Init(struct wbsoft_priv *);
+ void MTO_SetTxCount(struct wbsoft_priv *adapter, u8 t0, u8 index);
+-extern void MTO_PeriodicTimerExpired(struct wbsoft_priv *);
+-extern void MTO_SetDTORateRange(struct wbsoft_priv *, u8 *, u8);
+-extern u8 MTO_GetTxRate(struct wbsoft_priv *adapter, u32 fpdu_len);
+-extern u8 MTO_GetTxFallbackRate(struct wbsoft_priv *adapter);
  
  #endif /* __MTO_H__ */
  
