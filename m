@@ -1,36 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210Ab3IPNiM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 09:38:12 -0400
-Received: from outrelay01.libero.it ([212.52.84.101]:40413 "EHLO
-	outrelay01.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438Ab3IPNiK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 09:38:10 -0400
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A0C0203.523709BF.0023,ss=1,re=0.000,fgs=0
-X-libjamoibt: 1587
-Message-ID: <571525005.2373231379338686866.JavaMail.actor@webmail22>
-Date: Mon, 16 Sep 2013 15:38:06 +0200 (CEST)
-From: Fabio Pedretti <fabio.ped@libero.it>
-Reply-To: Fabio Pedretti <fabio.ped@libero.it>
-To: stable@vger.kernel.org
-Subject: zram commit to backport in 3.2 serie also
-Cc: linux-kernel@vger.kernel.org
+	id S1753669Ab3IPNkU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 09:40:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39789 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751337Ab3IPNkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 09:40:17 -0400
+Date: Mon, 16 Sep 2013 15:40:14 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: azurIt <azurit@pobox.sk>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/7] improve memcg oom killer robustness v2
+Message-ID: <20130916134014.GA3674@dhcp22.suse.cz>
+References: <20130910211823.GJ856@cmpxchg.org>
+ <20130910233247.9EDF4DBA@pobox.sk>
+ <20130910220329.GK856@cmpxchg.org>
+ <20130911143305.FFEAD399@pobox.sk>
+ <20130911180327.GL856@cmpxchg.org>
+ <20130911205448.656D9D7C@pobox.sk>
+ <20130911191150.GN856@cmpxchg.org>
+ <20130911214118.7CDF2E71@pobox.sk>
+ <20130911200426.GO856@cmpxchg.org>
+ <20130914124831.4DD20346@pobox.sk>
 MIME-Version: 1.0
-Content-Type: text/plain;charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-SenderIP: 192.167.16.4
-X-libjamv: IUXhxo0BATw=
-X-libjamsun: 4R/zWh8kgjzMasaSkJGfUb+zGmQredZf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130914124831.4DD20346@pobox.sk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, this patch should be applied in 3.2 as well:
-https://lkml.org/lkml/2013/8/13/270
+On Sat 14-09-13 12:48:31, azurIt wrote:
+[...]
+> Here is the first occurence, this night between 5:15 and 5:25:
+>  - this time i kept opened terminal from other server to this problematic one with htop running
+>  - when server went down i opened it and saw one process of one user running at the top and taking 97% of CPU (cgroup 1304)
 
-It will fix a regression introduced in the 3.2.49 (same commit in 3.10.6 and 
-fix applied in 3.10.7).
+I guess you do not have a stack trace(s) for that process? That would be
+extremely helpful.
 
-Thanks
+>  - everything was stucked so that htop didn't help me much
+>  - luckily, my new 'load check' script, which i was mentioning before, was able to kill apache and everything went to normal (success with it's very first version, wow ;) )
+>  - i checked some other logs and everything seems to point to cgroup 1304, also kernel log at 5:14-15 is showing hard OOM in that cgroup:
+> http://watchdog.sk/lkml/kern7.log
+
+I am not sure what you mean by hard OOM because there is no global OOM
+in that log:
+$ grep "Kill process" kern7.log | sed 's@.*]\(.*Kill process\>\).*@\1@' | sort -u
+ Memory cgroup out of memory: Kill process
+
+But you had a lot of memcg OOMs in that group (1304) during that time
+(and even earlier):
+$ grep "\<1304\>" kern7.log 
+Sep 14 05:03:45 server01 kernel: [188287.778020] Task in /1304/uid killed as a result of limit of /1304
+Sep 14 05:03:46 server01 kernel: [188287.871427] [30433]  1304 30433   181781    66426   7       0             0 apache2
+Sep 14 05:03:46 server01 kernel: [188287.871594] [30808]  1304 30808   169111    53866   4       0             0 apache2
+Sep 14 05:03:46 server01 kernel: [188287.871742] [30809]  1304 30809   181168    65992   2       0             0 apache2
+Sep 14 05:03:46 server01 kernel: [188287.871890] [30811]  1304 30811   168684    53399   3       0             0 apache2
+Sep 14 05:03:46 server01 kernel: [188287.872041] [30814]  1304 30814   181102    65924   3       0             0 apache2
+Sep 14 05:03:46 server01 kernel: [188287.872189] [30815]  1304 30815   168814    53451   4       0             0 apache2
+Sep 14 05:03:46 server01 kernel: [188287.877731] Task in /1304/uid killed as a result of limit of /1304
+Sep 14 05:03:46 server01 kernel: [188287.973155] [30808]  1304 30808   169111    53918   3       0             0 apache2
+Sep 14 05:03:46 server01 kernel: [188287.973155] [30809]  1304 30809   181168    65992   2       0             0 apache2
+Sep 14 05:03:46 server01 kernel: [188287.973155] [30811]  1304 30811   168684    53399   3       0             0 apache2
+Sep 14 05:03:46 server01 kernel: [188287.973155] [30814]  1304 30814   181102    65924   3       0             0 apache2
+Sep 14 05:03:46 server01 kernel: [188287.973155] [30815]  1304 30815   168815    53558   0       0             0 apache2
+Sep 14 05:03:47 server01 kernel: [188289.137540] Task in /1304/uid killed as a result of limit of /1304
+Sep 14 05:03:47 server01 kernel: [188289.231873] [30809]  1304 30809   182662    67534   7       0             0 apache2
+Sep 14 05:03:47 server01 kernel: [188289.232021] [30811]  1304 30811   171920    56781   4       0             0 apache2
+Sep 14 05:03:47 server01 kernel: [188289.232171] [30814]  1304 30814   182596    67470   3       0             0 apache2
+Sep 14 05:03:47 server01 kernel: [188289.232319] [30815]  1304 30815   171920    56778   1       0             0 apache2
+Sep 14 05:03:47 server01 kernel: [188289.232478] [30896]  1304 30896   171918    56761   0       0             0 apache2
+[...]
+Sep 14 05:14:00 server01 kernel: [188902.666893] Task in /1304/uid killed as a result of limit of /1304
+Sep 14 05:14:00 server01 kernel: [188902.742928] [ 7806]  1304  7806   178891    64008   6       0             0 apache2
+Sep 14 05:14:00 server01 kernel: [188902.743080] [ 7910]  1304  7910   175318    60302   2       0             0 apache2
+Sep 14 05:14:00 server01 kernel: [188902.743228] [ 7911]  1304  7911   174943    59878   1       0             0 apache2
+Sep 14 05:14:00 server01 kernel: [188902.743376] [ 7912]  1304  7912   171568    56404   3       0             0 apache2
+Sep 14 05:14:00 server01 kernel: [188902.743524] [ 7914]  1304  7914   174911    59879   5       0             0 apache2
+Sep 14 05:14:00 server01 kernel: [188902.743673] [ 7915]  1304  7915   173472    58386   2       0             0 apache2
+Sep 14 05:14:02 server01 kernel: [188904.249749] Task in /1304/uid killed as a result of limit of /1304
+Sep 14 05:14:02 server01 kernel: [188904.336276] [ 7910]  1304  7910   176278    61211   6       0             0 apache2
+Sep 14 05:14:02 server01 kernel: [188904.336276] [ 7911]  1304  7911   176278    61211   7       0             0 apache2
+Sep 14 05:14:02 server01 kernel: [188904.336276] [ 7912]  1304  7912   173732    58655   3       0             0 apache2
+Sep 14 05:14:02 server01 kernel: [188904.336276] [ 7914]  1304  7914   176269    61211   7       0             0 apache2
+Sep 14 05:14:02 server01 kernel: [188904.336276] [ 7915]  1304  7915   176269    61211   7       0             0 apache2
+Sep 14 05:14:02 server01 kernel: [188904.336276] [ 7966]  1304  7966   170385    55164   7       0             0 apache2
+Sep 14 05:14:02 server01 kernel: [188904.340992] Task in /1304/uid killed as a result of limit of /1304
+Sep 14 05:14:02 server01 kernel: [188904.424284] [ 7911]  1304  7911   176340    61332   2       0             0 apache2
+Sep 14 05:14:02 server01 kernel: [188904.424284] [ 7912]  1304  7912   173996    58901   1       0             0 apache2
+Sep 14 05:14:02 server01 kernel: [188904.424284] [ 7914]  1304  7914   176331    61331   4       0             0 apache2
+Sep 14 05:14:02 server01 kernel: [188904.424284] [ 7915]  1304  7915   176331    61331   2       0             0 apache2
+Sep 14 05:14:02 server01 kernel: [188904.424284] [ 7966]  1304  7966   170385    55164   7       0             0 apache2
+[...]
+
+The only thing that is clear from this is that there is always one
+process killed and a new one is spawned and that leads to the same
+out of memory situation. So this is precisely what Johannes already
+described as a Hydra load.
+
+There is a silence in the logs:
+Sep 14 05:14:39 server01 kernel: [188940.869639] Killed process 8453 (apache2) total-vm:710732kB, anon-rss:245680kB, file-rss:4588kB
+Sep 14 05:21:24 server01 kernel: [189344.518699] grsec: From 95.103.217.66: failed fork with errno EAGAIN by /bin/dash[sh:10362] uid/euid:1387/1387 g
+id/egid:100/100, parent /usr/sbin/cron[cron:10144] uid/euid:0/0 gid/egid:0/0
+
+Myabe that is what you are referring to as a stuck situation. Is pid
+8453 the task you have seen consuming the CPU? If yes, then we would
+need a stack for that task to find out what is going on.
+
+Other than that nothing really suspicious in the log AFAICS.
+-- 
+Michal Hocko
+SUSE Labs
