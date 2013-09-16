@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927Ab3IPNyu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 09:54:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51511 "EHLO mx1.redhat.com"
+	id S1755068Ab3IPN4Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 09:56:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60772 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752515Ab3IPNys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 09:54:48 -0400
-Subject: Re: [PATCH 07/11] gfs2: pass correct dentry to finish_open() in
- __gfs2_lookup()
+	id S1753499Ab3IPN4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 09:56:22 -0400
+Subject: Re: [PATCH 06/11] gfs2: d_splice_alias() cant return error
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: Miklos Szeredi <miklos@szeredi.hu>
 Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, mszeredi@suse.cz, stable@vger.kernel.org
-In-Reply-To: <20130916133422.GA31733@tucsk.piliscsaba.szeredi.hu>
+In-Reply-To: <20130916133559.GB31733@tucsk.piliscsaba.szeredi.hu>
 References: <1379335925-30858-1-git-send-email-miklos@szeredi.hu>
-	 <1379335925-30858-8-git-send-email-miklos@szeredi.hu>
-	 <1379337194.2718.16.camel@menhir>
-	 <20130916133422.GA31733@tucsk.piliscsaba.szeredi.hu>
+	 <1379335925-30858-7-git-send-email-miklos@szeredi.hu>
+	 <1379337469.2718.18.camel@menhir>
+	 <20130916133559.GB31733@tucsk.piliscsaba.szeredi.hu>
 Content-Type: text/plain; charset="UTF-8"
 Organization: Red Hat UK Ltd
-Date: Mon, 16 Sep 2013 14:54:54 +0100
-Message-ID: <1379339694.2718.21.camel@menhir>
+Date: Mon, 16 Sep 2013 14:56:28 +0100
+Message-ID: <1379339788.2718.23.camel@menhir>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,69 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On Mon, 2013-09-16 at 15:34 +0200, Miklos Szeredi wrote:
-> On Mon, Sep 16, 2013 at 02:13:14PM +0100, Steven Whitehouse wrote:
+On Mon, 2013-09-16 at 15:35 +0200, Miklos Szeredi wrote:
+> On Mon, Sep 16, 2013 at 02:17:49PM +0100, Steven Whitehouse wrote:
 > > Hi,
 > > 
 > > On Mon, 2013-09-16 at 14:52 +0200, Miklos Szeredi wrote:
 > > > From: Miklos Szeredi <mszeredi@suse.cz>
 > > > 
-> > > AFAICS if d_splice_alias() returned non-NULL, this code would Oops
-> > > (finish_open expects an instantiated dentry).
+> > > unless it was given an IS_ERR(inode), which isn't the case here.  So clean
+> > > up the unnecessary error handling in gfs2_create_inode().
 > > > 
+> > > This paves the way for real fixes (hence the stable Cc).
+> > > 
+> > That makes send to me:
+> > 
+> > Acked-by: Steven Whitehouse <swhiteho@redhat.com>
+> > 
+> > I can put this in the gfs2 tree if that makes sense to do,
+> 
+> Sure, please do.
+> 
+> Thanks,
+> Miklos
+> 
+Ok. I'll add the patches shortly. I need to try and wrap my brain around
+patch 8 too,
+
+Steve.
+
+> 
+> > Steve.
+> > 
 > > > Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 > > > Cc: Steven Whitehouse <swhiteho@redhat.com>
 > > > Cc: stable@vger.kernel.org
 > > > ---
-> > >  fs/gfs2/inode.c | 2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > >  fs/gfs2/inode.c | 4 +---
+> > >  1 file changed, 1 insertion(+), 3 deletions(-)
 > > > 
 > > > diff --git a/fs/gfs2/inode.c b/fs/gfs2/inode.c
-> > > index 6d7f976..abe7dae 100644
+> > > index 64915ee..6d7f976 100644
 > > > --- a/fs/gfs2/inode.c
 > > > +++ b/fs/gfs2/inode.c
-> > > @@ -774,7 +774,7 @@ static struct dentry *__gfs2_lookup(struct inode *dir, struct dentry *dentry,
-> > >  
-> > >  	d = d_splice_alias(inode, dentry);
-> > >  	if (file && S_ISREG(inode->i_mode))
-> > > -		error = finish_open(file, dentry, gfs2_open_common, opened);
-> > > +		error = finish_open(file, d ? d : dentry, gfs2_open_common, opened);
-> > >  
-> > >  	gfs2_glock_dq_uninit(&gh);
-> > >  	if (error)
+> > > @@ -584,7 +584,7 @@ static int gfs2_create_inode(struct inode *dir, struct dentry *dentry,
+> > >  	if (!IS_ERR(inode)) {
+> > >  		d = d_splice_alias(inode, dentry);
+> > >  		error = 0;
+> > > -		if (file && !IS_ERR(d)) {
+> > > +		if (file) {
+> > >  			if (d == NULL)
+> > >  				d = dentry;
+> > >  			if (S_ISREG(inode->i_mode))
+> > > @@ -593,8 +593,6 @@ static int gfs2_create_inode(struct inode *dir, struct dentry *dentry,
+> > >  				error = finish_no_open(file, d);
+> > >  		}
+> > >  		gfs2_glock_dq_uninit(ghs);
+> > > -		if (IS_ERR(d))
+> > > -			return PTR_ERR(d);
+> > >  		return error;
+> > >  	} else if (error != -ENOENT) {
+> > >  		goto fail_gunlock;
 > > 
-> > Not sure I understand why this is required... when the inode is a
-> > regular file, d can only be an error (if the inode is an error) or it
-> > will be NULL.
-> 
-> Okay, you're right.  Still, something like the following should make this clear
-> and ensure things don't break in the future.
-> 
-or better still, just add a comment to explain the situation as the
-reader may still be wondering why that BUG_ON() will never trigger,
-
-Steve.
-
-> Thanks,
-> Miklos
-> 
-> ---
->  fs/gfs2/inode.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> --- a/fs/gfs2/inode.c
-> +++ b/fs/gfs2/inode.c
-> @@ -775,8 +775,10 @@ static struct dentry *__gfs2_lookup(stru
->  	}
->  
->  	d = d_splice_alias(inode, dentry);
-> -	if (file && S_ISREG(inode->i_mode))
-> +	if (file && S_ISREG(inode->i_mode)) {
-> +		BUG_ON(d);
->  		error = finish_open(file, dentry, gfs2_open_common, opened);
-> +	}
->  
->  	gfs2_glock_dq_uninit(&gh);
->  	if (error)
+> > 
 
 
