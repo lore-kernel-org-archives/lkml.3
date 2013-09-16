@@ -1,39 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751651Ab3IPWx0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 18:53:26 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:31528 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751406Ab3IPWxZ (ORCPT
+	id S1751506Ab3IPXFw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 19:05:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57735 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953Ab3IPXFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 18:53:25 -0400
-Date: Tue, 17 Sep 2013 01:49:39 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: Akira Hayakawa <ruby.wktk@gmail.com>, devel@driverdev.osuosl.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, agk@redhat.com, joe@perches.com,
-        akpm@linux-foundation.org, cesarb@cesarb.net, m.chehab@samsung.com
-Subject: Re: staging: Add dm-writeboost
-Message-ID: <20130916224939.GT25896@mwanda>
-References: <5223208D.4000008@gmail.com>
- <20130916215357.GA5015@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130916215357.GA5015@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Mon, 16 Sep 2013 19:05:49 -0400
+Date: Mon, 16 Sep 2013 16:05:47 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Josef Bacik <jbacik@fusionio.com>
+Cc: <linux-btrfs@vger.kernel.org>, <walken@google.com>, <mingo@elte.hu>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] rwsem: add rwsem_is_contended
+Message-Id: <20130916160547.371b74f91511a42ac263449e@linux-foundation.org>
+In-Reply-To: <1377872041-390-1-git-send-email-jbacik@fusionio.com>
+References: <1377872041-390-1-git-send-email-jbacik@fusionio.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 05:53:57PM -0400, Mike Snitzer wrote:
-> - variable names need to be a bit more verbose (arr => array)
+On Fri, 30 Aug 2013 10:14:01 -0400 Josef Bacik <jbacik@fusionio.com> wrote:
 
-"struct array " is a horrible name.  :P  Please don't use either "arr"
-or "array".
+> Btrfs uses an rwsem to control access to its extent tree.  Threads will hold a
+> read lock on this rwsem while they scan the extent tree, and if need_resched()
+> they will drop the lock and schedule.  The transaction commit needs to take a
+> write lock for this rwsem for a very short period to switch out the commit
+> roots.  If there are a lot of threads doing this caching operation we can starve
+> out the committers which slows everybody out.  To address this we want to add
+> this functionality to see if our rwsem has anybody waiting to take a write lock
+> so we can drop it and schedule for a bit to allow the commit to continue.
+> Thanks,
+> 
 
-regards,
-dan carpenter
+This sounds rather nasty and hacky.  Rather then working around a
+locking shortcoming in a caller it would be better to fix/enhance the
+core locking code.  What would such a change need to do?
+
+Presently rwsem waiters are fifo-queued, are they not?  So the commit
+thread will eventually get that lock.  Apparently that's not working
+adequately for you but I don't fully understand what it is about these
+dynamics which is causing observable problems.
+
+> I've cc'ed people who seemed like they may be in charge/familiar with this code,
+> hopefully I got the right people.
+> 
+>  include/linux/rwsem.h |    1 +
+>  lib/rwsem.c           |   17 +++++++++++++++++
+
+This will break CONFIG_RWSEM_GENERIC_SPINLOCK=n?
 
