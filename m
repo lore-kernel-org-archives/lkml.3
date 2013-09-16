@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932581Ab3IPL0K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 07:26:10 -0400
-Received: from mga09.intel.com ([134.134.136.24]:43334 "EHLO mga09.intel.com"
+	id S932656Ab3IPL0W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 07:26:22 -0400
+Received: from mga03.intel.com ([143.182.124.21]:27276 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932470Ab3IPL0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 07:26:03 -0400
+	id S932555Ab3IPL0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 07:26:04 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,914,1371106800"; 
-   d="scan'208";a="396283060"
+   d="scan'208";a="361047298"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Alex Thorlton <athorlton@sgi.com>, Ingo Molnar <mingo@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -30,9 +30,9 @@ Cc: "Eric W . Biederman" <ebiederm@xmission.com>,
         Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv2 5/9] mm, thp: move ptl taking inside page_check_address_pmd()
-Date: Mon, 16 Sep 2013 14:25:36 +0300
-Message-Id: <1379330740-5602-6-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv2 6/9] mm, thp: do not access mm->pmd_huge_pte directly
+Date: Mon, 16 Sep 2013 14:25:37 +0300
+Message-Id: <1379330740-5602-7-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.8.4.rc3
 In-Reply-To: <1379330740-5602-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1379330740-5602-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -40,199 +40,136 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With split page table lock we can't know which lock we need to take
-before we find the relevant pmd.
+Currently mm->pmd_huge_pte protected by page table lock. It will not
+work with split lock. We have to have per-pmd pmd_huge_pte for proper
+access serialization.
 
-Let's move lock taking inside the function.
+For now, let's just introduce wrapper to access mm->pmd_huge_pte.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- include/linux/huge_mm.h |  3 ++-
- mm/huge_memory.c        | 43 +++++++++++++++++++++++++++----------------
- mm/rmap.c               | 13 +++++--------
- 3 files changed, 34 insertions(+), 25 deletions(-)
+ arch/s390/mm/pgtable.c | 12 ++++++------
+ arch/sparc/mm/tlb.c    | 12 ++++++------
+ include/linux/mm.h     |  1 +
+ mm/pgtable-generic.c   | 12 ++++++------
+ 4 files changed, 19 insertions(+), 18 deletions(-)
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index 4aca0d8..91672e2 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -54,7 +54,8 @@ enum page_check_address_pmd_flag {
- extern pmd_t *page_check_address_pmd(struct page *page,
- 				     struct mm_struct *mm,
- 				     unsigned long address,
--				     enum page_check_address_pmd_flag flag);
-+				     enum page_check_address_pmd_flag flag,
-+				     spinlock_t **ptl);
+diff --git a/arch/s390/mm/pgtable.c b/arch/s390/mm/pgtable.c
+index de8cbc3..c463e5c 100644
+--- a/arch/s390/mm/pgtable.c
++++ b/arch/s390/mm/pgtable.c
+@@ -1225,11 +1225,11 @@ void pgtable_trans_huge_deposit(struct mm_struct *mm, pmd_t *pmdp,
+ 	assert_spin_locked(&mm->page_table_lock);
  
- #define HPAGE_PMD_ORDER (HPAGE_PMD_SHIFT-PAGE_SHIFT)
- #define HPAGE_PMD_NR (1<<HPAGE_PMD_ORDER)
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 59a1340..3a1f5c1 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1500,23 +1500,33 @@ int __pmd_trans_huge_lock(pmd_t *pmd, struct vm_area_struct *vma,
- 	return 0;
+ 	/* FIFO */
+-	if (!mm->pmd_huge_pte)
++	if (!pmd_huge_pte(mm, pmdp))
+ 		INIT_LIST_HEAD(lh);
+ 	else
+-		list_add(lh, (struct list_head *) mm->pmd_huge_pte);
+-	mm->pmd_huge_pte = pgtable;
++		list_add(lh, (struct list_head *) pmd_huge_pte(mm, pmdp));
++	pmd_huge_pte(mm, pmdp) = pgtable;
  }
  
-+/*
-+ * This function returns whether a given @page is mapped onto the @address
-+ * in the virtual space of @mm.
-+ *
-+ * When it's true, this function returns *pmd with holding the page table lock
-+ * and passing it back to the caller via @ptl.
-+ * If it's false, returns NULL without holding the page table lock.
-+ */
- pmd_t *page_check_address_pmd(struct page *page,
- 			      struct mm_struct *mm,
- 			      unsigned long address,
--			      enum page_check_address_pmd_flag flag)
-+			      enum page_check_address_pmd_flag flag,
-+			      spinlock_t **ptl)
- {
--	pmd_t *pmd, *ret = NULL;
-+	pmd_t *pmd;
+ pgtable_t pgtable_trans_huge_withdraw(struct mm_struct *mm, pmd_t *pmdp)
+@@ -1241,12 +1241,12 @@ pgtable_t pgtable_trans_huge_withdraw(struct mm_struct *mm, pmd_t *pmdp)
+ 	assert_spin_locked(&mm->page_table_lock);
  
- 	if (address & ~HPAGE_PMD_MASK)
--		goto out;
-+		return NULL;
- 
- 	pmd = mm_find_pmd(mm, address);
- 	if (!pmd)
--		goto out;
-+		return NULL;
-+	*ptl = pmd_lock(mm, pmd);
- 	if (pmd_none(*pmd))
--		goto out;
-+		goto unlock;
- 	if (pmd_page(*pmd) != page)
--		goto out;
-+		goto unlock;
- 	/*
- 	 * split_vma() may create temporary aliased mappings. There is
- 	 * no risk as long as all huge pmd are found and have their
-@@ -1526,14 +1536,15 @@ pmd_t *page_check_address_pmd(struct page *page,
- 	 */
- 	if (flag == PAGE_CHECK_ADDRESS_PMD_NOTSPLITTING_FLAG &&
- 	    pmd_trans_splitting(*pmd))
--		goto out;
-+		goto unlock;
- 	if (pmd_trans_huge(*pmd)) {
- 		VM_BUG_ON(flag == PAGE_CHECK_ADDRESS_PMD_SPLITTING_FLAG &&
- 			  !pmd_trans_splitting(*pmd));
--		ret = pmd;
-+		return pmd;
+ 	/* FIFO */
+-	pgtable = mm->pmd_huge_pte;
++	pgtable = pmd_huge_pte(mm, pmdp);
+ 	lh = (struct list_head *) pgtable;
+ 	if (list_empty(lh))
+-		mm->pmd_huge_pte = NULL;
++		pmd_huge_pte(mm, pmdp) = NULL;
+ 	else {
+-		mm->pmd_huge_pte = (pgtable_t) lh->next;
++		pmd_huge_pte(mm, pmdp) = (pgtable_t) lh->next;
+ 		list_del(lh);
  	}
--out:
--	return ret;
-+unlock:
-+	spin_unlock(*ptl);
-+	return NULL;
+ 	ptep = (pte_t *) pgtable;
+diff --git a/arch/sparc/mm/tlb.c b/arch/sparc/mm/tlb.c
+index 7a91f28..656cc46 100644
+--- a/arch/sparc/mm/tlb.c
++++ b/arch/sparc/mm/tlb.c
+@@ -196,11 +196,11 @@ void pgtable_trans_huge_deposit(struct mm_struct *mm, pmd_t *pmdp,
+ 	assert_spin_locked(&mm->page_table_lock);
+ 
+ 	/* FIFO */
+-	if (!mm->pmd_huge_pte)
++	if (!pmd_huge_pte(mm, pmdp))
+ 		INIT_LIST_HEAD(lh);
+ 	else
+-		list_add(lh, (struct list_head *) mm->pmd_huge_pte);
+-	mm->pmd_huge_pte = pgtable;
++		list_add(lh, (struct list_head *) pmd_huge_pte(mm, pmdp));
++	pmd_huge_pte(mm, pmdp) = pgtable;
  }
  
- static int __split_huge_page_splitting(struct page *page,
-@@ -1541,6 +1552,7 @@ static int __split_huge_page_splitting(struct page *page,
- 				       unsigned long address)
- {
- 	struct mm_struct *mm = vma->vm_mm;
-+	spinlock_t *ptl;
- 	pmd_t *pmd;
- 	int ret = 0;
- 	/* For mmu_notifiers */
-@@ -1548,9 +1560,8 @@ static int __split_huge_page_splitting(struct page *page,
- 	const unsigned long mmun_end   = address + HPAGE_PMD_SIZE;
+ pgtable_t pgtable_trans_huge_withdraw(struct mm_struct *mm, pmd_t *pmdp)
+@@ -211,12 +211,12 @@ pgtable_t pgtable_trans_huge_withdraw(struct mm_struct *mm, pmd_t *pmdp)
+ 	assert_spin_locked(&mm->page_table_lock);
  
- 	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
--	spin_lock(&mm->page_table_lock);
- 	pmd = page_check_address_pmd(page, mm, address,
--				     PAGE_CHECK_ADDRESS_PMD_NOTSPLITTING_FLAG);
-+			PAGE_CHECK_ADDRESS_PMD_NOTSPLITTING_FLAG, &ptl);
- 	if (pmd) {
- 		/*
- 		 * We can't temporarily set the pmd to null in order
-@@ -1561,8 +1572,8 @@ static int __split_huge_page_splitting(struct page *page,
- 		 */
- 		pmdp_splitting_flush(vma, address, pmd);
- 		ret = 1;
-+		spin_unlock(ptl);
+ 	/* FIFO */
+-	pgtable = mm->pmd_huge_pte;
++	pgtable = pmd_huge_pte(mm, pmdp);
+ 	lh = (struct list_head *) pgtable;
+ 	if (list_empty(lh))
+-		mm->pmd_huge_pte = NULL;
++		pmd_huge_pte(mm, pmdp) = NULL;
+ 	else {
+-		mm->pmd_huge_pte = (pgtable_t) lh->next;
++		pmd_huge_pte(mm, pmdp) = (pgtable_t) lh->next;
+ 		list_del(lh);
  	}
--	spin_unlock(&mm->page_table_lock);
- 	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
- 
- 	return ret;
-@@ -1693,14 +1704,14 @@ static int __split_huge_page_map(struct page *page,
- 				 unsigned long address)
- {
- 	struct mm_struct *mm = vma->vm_mm;
-+	spinlock_t *ptl;
- 	pmd_t *pmd, _pmd;
- 	int ret = 0, i;
- 	pgtable_t pgtable;
- 	unsigned long haddr;
- 
--	spin_lock(&mm->page_table_lock);
- 	pmd = page_check_address_pmd(page, mm, address,
--				     PAGE_CHECK_ADDRESS_PMD_SPLITTING_FLAG);
-+			PAGE_CHECK_ADDRESS_PMD_SPLITTING_FLAG, &ptl);
- 	if (pmd) {
- 		pgtable = pgtable_trans_huge_withdraw(mm, pmd);
- 		pmd_populate(mm, &_pmd, pgtable);
-@@ -1755,8 +1766,8 @@ static int __split_huge_page_map(struct page *page,
- 		pmdp_invalidate(vma, address, pmd);
- 		pmd_populate(mm, pmd, pgtable);
- 		ret = 1;
-+		spin_unlock(ptl);
- 	}
--	spin_unlock(&mm->page_table_lock);
- 
- 	return ret;
+ 	pte_val(pgtable[0]) = 0;
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index e3481c6..b96aac9 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1299,6 +1299,7 @@ static inline spinlock_t *pmd_lockptr(struct mm_struct *mm, pmd_t *pmd)
+ 	return &mm->page_table_lock;
  }
-diff --git a/mm/rmap.c b/mm/rmap.c
-index fd3ee7a..b59d741 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -665,25 +665,23 @@ int page_referenced_one(struct page *page, struct vm_area_struct *vma,
- 			unsigned long *vm_flags)
+ 
++#define pmd_huge_pte(mm, pmd) ((mm)->pmd_huge_pte)
+ 
+ static inline spinlock_t *pmd_lock(struct mm_struct *mm, pmd_t *pmd)
  {
- 	struct mm_struct *mm = vma->vm_mm;
-+	spinlock_t *ptl;
- 	int referenced = 0;
+diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
+index 3929a40..41fee3e 100644
+--- a/mm/pgtable-generic.c
++++ b/mm/pgtable-generic.c
+@@ -154,11 +154,11 @@ void pgtable_trans_huge_deposit(struct mm_struct *mm, pmd_t *pmdp,
+ 	assert_spin_locked(&mm->page_table_lock);
  
- 	if (unlikely(PageTransHuge(page))) {
- 		pmd_t *pmd;
+ 	/* FIFO */
+-	if (!mm->pmd_huge_pte)
++	if (!pmd_huge_pte(mm, pmdp))
+ 		INIT_LIST_HEAD(&pgtable->lru);
+ 	else
+-		list_add(&pgtable->lru, &mm->pmd_huge_pte->lru);
+-	mm->pmd_huge_pte = pgtable;
++		list_add(&pgtable->lru, &pmd_huge_pte(mm, pmdp)->lru);
++	pmd_huge_pte(mm, pmdp) = pgtable;
+ }
+ #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
+ #endif
+@@ -173,11 +173,11 @@ pgtable_t pgtable_trans_huge_withdraw(struct mm_struct *mm, pmd_t *pmdp)
+ 	assert_spin_locked(&mm->page_table_lock);
  
--		spin_lock(&mm->page_table_lock);
- 		/*
- 		 * rmap might return false positives; we must filter
- 		 * these out using page_check_address_pmd().
- 		 */
- 		pmd = page_check_address_pmd(page, mm, address,
--					     PAGE_CHECK_ADDRESS_PMD_FLAG);
--		if (!pmd) {
--			spin_unlock(&mm->page_table_lock);
-+					     PAGE_CHECK_ADDRESS_PMD_FLAG, &ptl);
-+		if (!pmd)
- 			goto out;
--		}
- 
- 		if (vma->vm_flags & VM_LOCKED) {
--			spin_unlock(&mm->page_table_lock);
-+			spin_unlock(ptl);
- 			*mapcount = 0;	/* break early from loop */
- 			*vm_flags |= VM_LOCKED;
- 			goto out;
-@@ -692,10 +690,9 @@ int page_referenced_one(struct page *page, struct vm_area_struct *vma,
- 		/* go ahead even if the pmd is pmd_trans_splitting() */
- 		if (pmdp_clear_flush_young_notify(vma, address, pmd))
- 			referenced++;
--		spin_unlock(&mm->page_table_lock);
-+		spin_unlock(ptl);
- 	} else {
- 		pte_t *pte;
--		spinlock_t *ptl;
- 
- 		/*
- 		 * rmap might return false positives; we must filter
+ 	/* FIFO */
+-	pgtable = mm->pmd_huge_pte;
++	pgtable = pmd_huge_pte(mm, pmdp);
+ 	if (list_empty(&pgtable->lru))
+-		mm->pmd_huge_pte = NULL;
++		pmd_huge_pte(mm, pmdp) = NULL;
+ 	else {
+-		mm->pmd_huge_pte = list_entry(pgtable->lru.next,
++		pmd_huge_pte(mm, pmdp) = list_entry(pgtable->lru.next,
+ 					      struct page, lru);
+ 		list_del(&pgtable->lru);
+ 	}
 -- 
 1.8.4.rc3
 
