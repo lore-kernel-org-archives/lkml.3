@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757405Ab3IPNrh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 09:47:37 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:61295 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754459Ab3IPNoU (ORCPT
+	id S1757371Ab3IPNrg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 09:47:36 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:59042 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755671Ab3IPNoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 09:44:20 -0400
+	Mon, 16 Sep 2013 09:44:23 -0400
 From: Iker Pedrosa <ikerpedrosam@gmail.com>
 To: pavel@ucw.cz
 Cc: gregkh@linuxfoundation.org, ikerpedrosam@gmail.com, harsh1kumar@gmail.com,
         dan.carpenter@oracle.com, mujeeb.adil@gmail.com,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 12/24] Staging: winbond: reg: fourth of the patches that fixes lines over 80 characters
-Date: Mon, 16 Sep 2013 15:43:32 +0200
-Message-Id: <1379339024-12157-13-git-send-email-ikerpedrosam@gmail.com>
+Subject: [PATCH v2 14/24] Staging: winbond: reg: sixth of the patches that fixes lines over 80 characters
+Date: Mon, 16 Sep 2013 15:43:34 +0200
+Message-Id: <1379339024-12157-15-git-send-email-ikerpedrosam@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379339024-12157-1-git-send-email-ikerpedrosam@gmail.com>
 References: <1379339024-12157-1-git-send-email-ikerpedrosam@gmail.com>
@@ -22,86 +22,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fourth of the patches that fixes the lines over 80 characters in reg.c
+Sixth of the patches that fixes the lines over 80 characters in reg.c
 
 Signed-off-by: Iker Pedrosa <ikerpedrosam@gmail.com>
 ---
- drivers/staging/winbond/reg.c | 33 ++++++++++++++++++++++-----------
- 1 file changed, 22 insertions(+), 11 deletions(-)
+ drivers/staging/winbond/reg.c | 28 ++++++++++++++++++----------
+ 1 file changed, 18 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/staging/winbond/reg.c b/drivers/staging/winbond/reg.c
-index 6aae4da..6d2ab1e 100644
+index 11b155f..e51530e 100644
 --- a/drivers/staging/winbond/reg.c
 +++ b/drivers/staging/winbond/reg.c
-@@ -1187,46 +1187,57 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
+@@ -1728,7 +1728,8 @@ static void set_tx_power_per_channel_wb242(struct hw_data *pHwData,
+  *   None.
+  * ===========================================================================
+  */
+-void RFSynthesizer_SwitchingChannel(struct hw_data *pHwData,  struct chan_info Channel)
++void RFSynthesizer_SwitchingChannel(struct hw_data *pHwData,
++					   struct chan_info Channel)
+ {
+ 	struct wb35_reg *reg = &pHwData->reg;
+ 	u32	pltmp[16]; /* The 16 is the maximum capability of hardware */
+@@ -1881,9 +1882,9 @@ void RFSynthesizer_SwitchingChannel(struct hw_data *pHwData,  struct chan_info C
+ 		/* BB: select 5 GHz */
+ 		reg->BB50 &= ~(BIT(11) | BIT(12));
+ 		if (Channel.ChanNo <= 64)
+-			reg->BB50 |= BIT(12);				/* 10-5.25GHz */
++			reg->BB50 |= BIT(12);			/* 10-5.25GHz */
+ 		else if ((Channel.ChanNo >= 100) && (Channel.ChanNo <= 124))
+-			reg->BB50 |= BIT(11);				/* 01-5.48GHz */
++			reg->BB50 |= BIT(11);			/* 01-5.48GHz */
+ 		else if ((Channel.ChanNo >= 128) && (Channel.ChanNo <= 161))
+ 			reg->BB50 |= (BIT(12) | BIT(11));	/* 11-5.775GHz */
+ 		else	/* Chan 184 ~ 196 will use bit[12-11] = 10 in version sh-src-1.2.25 */
+@@ -1958,7 +1959,8 @@ u8 RFSynthesizer_SetMaxim2828_24Power(struct hw_data *pHwData, u8 index)
+ 	u32	PowerData;
+ 	if (index > 1)
+ 		index = 1;
+-	PowerData = (1 << 31) | (0 << 30) | (18 << 24) | BitReverse(max2828_power_data_24[index], 18);
++	PowerData = (1 << 31) | (0 << 30) | (18 << 24)
++			    | BitReverse(max2828_power_data_24[index], 18);
+ 	Wb35Reg_Write(pHwData, 0x0864, PowerData);
+ 	return index;
+ }
+@@ -1968,7 +1970,8 @@ u8 RFSynthesizer_SetMaxim2828_50Power(struct hw_data *pHwData, u8 index)
+ 	u32	PowerData;
+ 	if (index > 1)
+ 		index = 1;
+-	PowerData = (1 << 31) | (0 << 30) | (18 << 24) | BitReverse(max2828_power_data_50[index], 18);
++	PowerData = (1 << 31) | (0 << 30) | (18 << 24)
++			    | BitReverse(max2828_power_data_50[index], 18);
+ 	Wb35Reg_Write(pHwData, 0x0864, PowerData);
+ 	return index;
+ }
+@@ -1978,7 +1981,8 @@ u8 RFSynthesizer_SetMaxim2827_24Power(struct hw_data *pHwData, u8 index)
+ 	u32	PowerData;
+ 	if (index > 1)
+ 		index = 1;
+-	PowerData = (1 << 31) | (0 << 30) | (18 << 24) | BitReverse(max2827_power_data_24[index], 18);
++	PowerData = (1 << 31) | (0 << 30) | (18 << 24)
++			    | BitReverse(max2827_power_data_24[index], 18);
+ 	Wb35Reg_Write(pHwData, 0x0864, PowerData);
+ 	return index;
+ }
+@@ -1988,7 +1992,8 @@ u8 RFSynthesizer_SetMaxim2827_50Power(struct hw_data *pHwData, u8 index)
+ 	u32	PowerData;
+ 	if (index > 1)
+ 		index = 1;
+-	PowerData = (1 << 31) | (0 << 30) | (18 << 24) | BitReverse(max2827_power_data_50[index], 18);
++	PowerData = (1 << 31) | (0 << 30) | (18 << 24)
++			    | BitReverse(max2827_power_data_50[index], 18);
+ 	Wb35Reg_Write(pHwData, 0x0864, PowerData);
+ 	return index;
+ }
+@@ -1998,7 +2003,8 @@ u8 RFSynthesizer_SetMaxim2825Power(struct hw_data *pHwData, u8 index)
+ 	u32	PowerData;
+ 	if (index > 1)
+ 		index = 1;
+-	PowerData = (1 << 31) | (0 << 30) | (18 << 24) | BitReverse(max2825_power_data_24[index], 18);
++	PowerData = (1 << 31) | (0 << 30) | (18 << 24)
++			    | BitReverse(max2825_power_data_24[index], 18);
+ 	Wb35Reg_Write(pHwData, 0x0864, PowerData);
+ 	return index;
+ }
+@@ -2016,7 +2022,8 @@ u8 RFSynthesizer_SetAiroha2230Power(struct hw_data *pHwData, u8 index)
+ 	if (i == count)
+ 		i--;
  
- 		/* ----- Calibration (3). RX baseband Gm-C filter auto-tuning */
- 		/* Calibration (3a). turn off ENCAL signal */
--		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFAEDC0, 24);
-+		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
-+			       | BitReverse((0x00<<24) | 0xFAEDC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
- 		/* Calibration (3b.0). RX filter auto-tuning BW: RFLBW=100 (TC5376A+corner default;) */
--		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x07<<24) | 0x0C68CE, 24);
-+		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
-+			       | BitReverse((0x07<<24) | 0x0C68CE, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
- 		/* Calibration (3b). send RX reset signal */
--		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x0F<<24) | 0x00401E, 24);
-+		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
-+			       | BitReverse((0x0F<<24) | 0x00401E, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
- 		/* Calibration (3c). turn-on RX Gm-C filter auto-tuning */
--		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFEEDC0, 24);
-+		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
-+			       | BitReverse((0x00<<24) | 0xFEEDC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
- 		udelay(150); /* Sleep 150 us */
- 		/* Calibration (3e). turn off ENCAL signal */
--		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFAEDC0, 24);
-+		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
-+			       | BitReverse((0x00<<24) | 0xFAEDC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
- 
- 		/* ----- Calibration (4). TX LO leakage calibration */
- 		/* Calibration (4a). TX LO leakage calibration */
--		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFD6BC0, 24);
-+		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
-+			       | BitReverse((0x00<<24) | 0xFD6BC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
- 		udelay(150); /* Sleep 150 us */
- 
- 		/* ----- Calibration (5). RX DC offset calibration */
- 		/* Calibration (5a). turn off ENCAL signal and set to RX SW DC calibration mode */
--		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFAEDC0, 24);
-+		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
-+			       | BitReverse((0x00<<24) | 0xFAEDC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
- 		/* Calibration (5b). turn off AGC servo-loop & RSSI */
--		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x01<<24) | 0xEBFFC2, 24);
-+		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
-+			       | BitReverse((0x01<<24) | 0xEBFFC2, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
- 
- 		/* for LNA=11 -------- */
- 		/* Calibration (5c-h). RX DC offset current bias ON; & LNA=11; RXVGA=111111 */
--		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x06<<24) | 0x343FCC, 24);
-+		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
-+			       | BitReverse((0x06<<24) | 0x343FCC, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
- 		/* Calibration (5d). turn on RX DC offset cal function; and waiting 2 msec cal time */
--		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFF6DC0, 24);
-+		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
-+			       | BitReverse((0x00<<24) | 0xFF6DC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
- 		usleep(2000);
- 		/* Calibration (5f). turn off ENCAL signal */
--		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFAEDC0, 24);
-+		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
-+			       | BitReverse((0x00<<24) | 0xFAEDC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
- 
- 		/* for LNA=10 -------- */
+-	PowerData = (1 << 31) | (0 << 30) | (20 << 24) | BitReverse(al2230_txvga_data[i][0], 20);
++	PowerData = (1 << 31) | (0 << 30) | (20 << 24)
++			    | BitReverse(al2230_txvga_data[i][0], 20);
+ 	Wb35Reg_Write(pHwData, 0x0864, PowerData);
+ 	return i;
+ }
+@@ -2033,7 +2040,8 @@ u8 RFSynthesizer_SetAiroha7230Power(struct hw_data *pHwData, u8 index)
+ 	}
+ 	if (i == count)
+ 		i--;
+-	PowerData = (1 << 31) | (0 << 30) | (24 << 24) | (al7230_txvga_data[i][0] & 0xffffff);
++	PowerData = (1 << 31) | (0 << 30) | (24 << 24)
++			    | (al7230_txvga_data[i][0] & 0xffffff);
+ 	Wb35Reg_Write(pHwData, 0x0864, PowerData);
+ 	return i;
+ }
 -- 
 1.8.1.2
 
