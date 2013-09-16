@@ -1,75 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755135Ab3IPIFZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 04:05:25 -0400
-Received: from mga02.intel.com ([134.134.136.20]:52883 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751426Ab3IPIFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 04:05:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,913,1371106800"; 
-   d="scan'208";a="378737987"
-Date: Mon, 16 Sep 2013 11:10:48 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Zheng, Lv" <lv.zheng@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH 2/2] gpio / ACPI: add support for GPIO operation regions
-Message-ID: <20130916081048.GM7393@intel.com>
-References: <1379085280-2211-1-git-send-email-mika.westerberg@linux.intel.com>
- <1379085280-2211-2-git-send-email-mika.westerberg@linux.intel.com>
- <1AE640813FDE7649BE1B193DEA596E880246367A@SHSMSX101.ccr.corp.intel.com>
- <20130915065151.GK7393@intel.com>
- <1AE640813FDE7649BE1B193DEA596E88024639E4@SHSMSX101.ccr.corp.intel.com>
- <1AE640813FDE7649BE1B193DEA596E8802463A46@SHSMSX101.ccr.corp.intel.com>
+	id S1755430Ab3IPIFv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 04:05:51 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:41417 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755245Ab3IPIFu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 04:05:50 -0400
+Date: Mon, 16 Sep 2013 09:05:46 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@linaro.org, denis.ciocca@st.com,
+        linux-iio@vger.kernel.org
+Subject: Re: [PATCH 32/38] iio: accel-core: st: Move LSM303DLH into correct
+ group
+Message-ID: <20130916080546.GC3999@lee--X1>
+References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
+ <1378817379-8238-33-git-send-email-lee.jones@linaro.org>
+ <5234A20F.7040008@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E8802463A46@SHSMSX101.ccr.corp.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5234A20F.7040008@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 01:21:53AM +0000, Zheng, Lv wrote:
-> > A pseudo device may be created to access the GPIO operation region fields provided by one GPIO device.
-> > The pseudo device may have other functions to access other GPIO operation region fields provided by other GPIO devices, or even worse to
-> > access other ACPI provided value-adds.
-> > So hierarchically the pseudo device only requires CPU, thus should not be under the GPIO device, which means the GPIO operation regions
-> > have nothing to do with the GPIO devices' ACPI handle.
+On Sat, 14 Sep 2013, Jonathan Cameron wrote:
+
+> On 09/10/13 13:49, Lee Jones wrote:
+> > The LSM303DLH's WAI (WhoAmI) is 0x33, meaning it should be enabled by
+> > Accel Sensor group one. For the device to probe without error, we'll
+> > need to ensure it's registered with the correct WAI.
+> > 
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> You clearly have a better datasheet than I have as for that part it doesn't even claim to
+> have the relevant register to read a who am I from.
 > 
-> Sorry for the wording.
-> It's better to say the GPIO operation region users haven't strict
-> relationship to the GPIO operation region providers.
-> As the installation is to provide GPIO operation regions to the users, it
-> shouldn't relate to the providers' ACPI handle.
+> Now that datasheet does list odr values as 50, 100, 400 1000 which would put it where it originally
+> was in these tables.
+> 
+> http://www.st.com/web/en/resource/technical/document/datasheet/CD00260288.pdf
+> 
+> I haven't checked other elements...
+> 
+> I'm confused but suspect we may need another type entry to deal with this one.
 
-If I understand you correctly you mean that there might be multiple users
-(different devices) for the same GPIO operation region, right?
+Hmmm... on initial thought, I don't know how we can handle this one. I
+assumed the WAIs were a one-stop-shop for device identification. I also
+thought that they would only match if the functionality and register
+maps would be the same.
 
-That shouldn't be a problem as far as I can tell.
+I'll touch base with Denis on this, perhaps he can shed some light.
 
-What comes to the hierarchy you refer, I'm not sure if that is a problem
-either (unless I'm missing something). The GPIO can be used anywhere in the
-ASL, it doesn't have to be descendant of the GPIO device. You only need to
-do something like this:
+> > ---
+> >  drivers/iio/accel/st_accel_core.c | 4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/iio/accel/st_accel_core.c b/drivers/iio/accel/st_accel_core.c
+> > index ea62291..03a2b6b 100644
+> > --- a/drivers/iio/accel/st_accel_core.c
+> > +++ b/drivers/iio/accel/st_accel_core.c
+> > @@ -170,6 +170,7 @@ static const struct st_sensors st_accel_sensors[] = {
+> >  			[2] = LSM330D_ACCEL_DEV_NAME,
+> >  			[3] = LSM330DL_ACCEL_DEV_NAME,
+> >  			[4] = LSM330DLC_ACCEL_DEV_NAME,
+> > +			[5] = LSM303DLH_ACCEL_DEV_NAME,
+> >  		},
+> >  		.ch = (struct iio_chan_spec *)st_accel_12bit_channels,
+> >  		.odr = {
+> > @@ -238,8 +239,7 @@ static const struct st_sensors st_accel_sensors[] = {
+> >  		.sensors_supported = {
+> >  			[0] = LIS331DLH_ACCEL_DEV_NAME,
+> >  			[1] = LSM303DL_ACCEL_DEV_NAME,
+> > -			[2] = LSM303DLH_ACCEL_DEV_NAME,
+> > -			[3] = LSM303DLM_ACCEL_DEV_NAME,
+> > +			[2] = LSM303DLM_ACCEL_DEV_NAME,
+> >  		},
+> >  		.ch = (struct iio_chan_spec *)st_accel_12bit_channels,
+> >  		.odr = {
+> > 
 
-	// Assert the GPIO
-	Store(1, \_SB.PCI0.SHD3)
-
-In other words, use the fully qualified name.
-
-Typically when the GPIO device _REG() is called it sets some variable like
-AVBL to true which is then checked in the code that uses the GPIO:
-
-	If (LEqual (\_SB.PCI0.GPO0.AVBL, One))
-	{
-		Store (Zero, \_SB.PCI0..SHD3)
-	}
-
-So if there is no driver, this part of the code is never called.
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
