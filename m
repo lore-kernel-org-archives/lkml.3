@@ -1,97 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751460Ab3IPQ4K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 12:56:10 -0400
-Received: from mail-by2lp0244.outbound.protection.outlook.com ([207.46.163.244]:35634
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750932Ab3IPQ4H convert rfc822-to-8bit (ORCPT
+	id S1751544Ab3IPRAG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 13:00:06 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:40267 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932Ab3IPRAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 12:56:07 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: "olaf@aepfle.de" <olaf@aepfle.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "vojtech@suse.cz" <vojtech@suse.cz>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: RE: [PATCH 1/1] Drivers: input: serio: New driver to support
- Hyper-V synthetic keyboard
-Thread-Topic: [PATCH 1/1] Drivers: input: serio: New driver to support
- Hyper-V synthetic keyboard
-Thread-Index: AQHOspfSNoWHhKt7u0WqPY6XUwHbdJnIBjYAgABmTaCAAArAAIAAC6Bw
-Date: Mon, 16 Sep 2013 16:56:03 +0000
-Message-ID: <baabf219b12b40de8e17b029e621e079@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1379309334-25042-1-git-send-email-kys@microsoft.com>
- <20130916082110.GN25896@mwanda>
- <3b5096d0190b4440a8e25afbd22ab72d@SN2PR03MB061.namprd03.prod.outlook.com>
- <20130916150548.GO25896@mwanda>
-In-Reply-To: <20130916150548.GO25896@mwanda>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:4898:80e8:ed31::3]
-x-forefront-prvs: 0971922F40
-x-forefront-antispam-report: SFV:NSPM;SFS:(51704005)(377454003)(189002)(199002)(13464003)(24454002)(83072001)(80022001)(74876001)(69226001)(81342001)(19580405001)(83322001)(19580395003)(46102001)(51856001)(74706001)(81542001)(53806001)(4396001)(76482001)(54316002)(56776001)(49866001)(47736001)(33646001)(47976001)(74502001)(74662001)(31966008)(47446002)(76576001)(74316001)(76786001)(65816001)(77096001)(80976001)(76796001)(56816003)(59766001)(77982001)(81686001)(79102001)(54356001)(63696002)(81816001)(50986001)(74366001)(24736002)(3826001);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB062;H:SN2PR03MB061.namprd03.prod.outlook.com;CLIP:2001:4898:80e8:ed31::3;FPR:;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 16 Sep 2013 13:00:03 -0400
+Message-ID: <5237390E.5070203@wwwdotorg.org>
+Date: Mon, 16 Sep 2013 10:59:58 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-X-OriginatorOrg: DuplicateDomain-a84fc36a-4ed7-4e57-ab1c-3e967bcbad48.microsoft.com
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Mike Turquette <mturquette@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Hyun Kwon <hyunk@xilinx.com>
+Subject: Re: [PATCH] clk: si570: Add a driver for SI570 oscillators
+References: <1379033737-30015-1-git-send-email-soren.brinkmann@xilinx.com> <1379033737-30015-2-git-send-email-soren.brinkmann@xilinx.com> <52373314.5070806@wwwdotorg.org> <20130916164927.GB21352@roeck-us.net>
+In-Reply-To: <20130916164927.GB21352@roeck-us.net>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/16/2013 10:49 AM, Guenter Roeck wrote:
+> On Mon, Sep 16, 2013 at 10:34:28AM -0600, Stephen Warren wrote:
+>> On 09/12/2013 06:55 PM, Soren Brinkmann wrote:
+>>> Add a driver for SILabs 570, 571, 598, 599 programmable oscillators.
+>>> The devices generate low-jitter clock signals and are reprogrammable via
+>>> an I2C interface.
+>>
+>>> diff --git a/Documentation/devicetree/bindings/clock/silabs,si570.txt b/Documentation/devicetree/bindings/clock/silabs,si570.txt
+>>
+>>> +Required properties:
+>>> + - compatible: Shall be one of "silabs,si57x", "silabs,si59x".
+>>> + - reg: I2C device address.
+>>> + - #clock-cells: From common clock bindings: Shall be 0.
+>>> + - factory-fout: Factory set default frequency
+>>
+>> So, there's no way to query this from the device at all? Looking at the
+>> data-sheet, all the frequency generation parameters are in registers,
+>> and the device supports I2C read commands. As such, I'm not convinced
+>> this property is necessary.
+>
+> Unfortunately, the chip does not report the factory setting for fout,
+> so the property is needed. The chip can not be programmed without it.
 
+So fout is not the default overall output frequency, but rather
+something internal that that feeds into the frequency generation
+process, and the registers in the device only describe that frequency
+generation process, not the frequency that feeds into it?
 
-> -----Original Message-----
-> From: Dan Carpenter [mailto:dan.carpenter@oracle.com]
-> Sent: Monday, September 16, 2013 8:06 AM
-> To: KY Srinivasan
-> Cc: olaf@aepfle.de; gregkh@linuxfoundation.org; jasowang@redhat.com;
-> dmitry.torokhov@gmail.com; linux-kernel@vger.kernel.org; vojtech@suse.cz;
-> linux-input@vger.kernel.org; apw@canonical.com; devel@linuxdriverproject.org
-> Subject: Re: [PATCH 1/1] Drivers: input: serio: New driver to support Hyper-V
-> synthetic keyboard
-> 
-> On Mon, Sep 16, 2013 at 02:46:24PM +0000, KY Srinivasan wrote:
-> > > > +			case VM_PKT_DATA_INBAND:
-> > > > +				hv_kbd_on_receive(device, desc);
-> > >
-> > > This is the error handling I mentioned at the top.  hv_kbd_on_receive()
-> > > doesn't take into consideration the amount of data we recieved, it
-> > > trusts the offset we recieved from the user.  There is an out of bounds
-> > > read.
-> >
-> > What user are you referring to. The message is sent by the host - the user
-> keystroke
-> > is normalized into a fixed size packet by the host and sent to the  guest. We will
-> parse this
-> > packet, based on the host specified layout here.
-> >
-> 
-> The user means the hypervisor, yes.
-> 
-> I don't want the hypervisor accessing outside of the buffer.  It is
-> robustness issue.  Just check the offset against "bytes_recvd".  It's
-> not complicated.
+If so, it might be worth enhancing the binding documentation to briefly
+describe that. Presumably the details are all in the HW documentation,
+but it'd be nice if the binding doc was obviously correct without having
+to fully understand the entire HW documentation.
 
-At the outset, let me apologize for not understanding your concern.
-You say: " I don't want the hypervisor accessing outside of the buffer"
-Where did you see the hypervisor accessing anything outside the buffer?
-The buffer is allocated by this driver and a packet from vmbus is read into this
-buffer - this is the call to vmbus_recvpacket(). If the specified buffer is smaller
-than the packet that needs to be read, then nothing will be read. Once the read
-completes, we can be sure we have read a valid packet and can proceed to parse it in
-this driver.
+>>> +Optional properties:
+>>> + - initial-fout: Initial output frequency to set during probe
+>>
+>> "probe" is a Linux-specific concept. This property should be removed. If
+>> the driver is asked to set a specific frequency, it should do so, but I
+>> don't think it should program something pro-actively just because it
+>> starts up.
+>>
+>> If this property is acceptable, it'd be better to describe it more along
+>> the lines of the following:
+>>
+>> initial-fout: The frequency at which the system requires the clock to
+>> operate.
+>
+> It should probably be something like "clock-frequency". In many use cases
+> the programmed frequency is set to a constant frequency at system startup
+> and never changed, similar to other clocks.
 
-I don't want to be argumentative, I am just not seeing the issue.
+I was going to suggest that too, but re-considered since I think
+clock-frequency is more appropriate for fixed-frequency clocks, rather
+than to specify the value at which a programmable clock generator should
+operate?
 
-Regards,
-
-K. Y
- 
+I don't think we have a good story yet for how to represent
+how-we-want-the-clock-tree-configured, as opposed to representing the HW
+itself (which is what DT should be more about).
