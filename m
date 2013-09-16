@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756556Ab3IPNoi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 09:44:38 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:44885 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756358Ab3IPNof (ORCPT
+	id S1755647Ab3IPNoU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 09:44:20 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:48442 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755041Ab3IPNoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 09:44:35 -0400
+	Mon, 16 Sep 2013 09:44:18 -0400
 From: Iker Pedrosa <ikerpedrosam@gmail.com>
 To: pavel@ucw.cz
 Cc: gregkh@linuxfoundation.org, ikerpedrosam@gmail.com, harsh1kumar@gmail.com,
         dan.carpenter@oracle.com, mujeeb.adil@gmail.com,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 21/24] Staging: winbond: wb35tx: Replace printk with netdev_err
-Date: Mon, 16 Sep 2013 15:43:41 +0200
-Message-Id: <1379339024-12157-22-git-send-email-ikerpedrosam@gmail.com>
+Subject: [PATCH v2 11/24] Staging: winbond: reg: third of the patches that fixes lines over 80 characters
+Date: Mon, 16 Sep 2013 15:43:31 +0200
+Message-Id: <1379339024-12157-12-git-send-email-ikerpedrosam@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379339024-12157-1-git-send-email-ikerpedrosam@gmail.com>
 References: <1379339024-12157-1-git-send-email-ikerpedrosam@gmail.com>
@@ -22,53 +22,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The previously used printk lacked the warning level, now we've got a more accurate way to know the error.
+Third of the patches that fixes the lines over 80 characters in reg.c
 
 Signed-off-by: Iker Pedrosa <ikerpedrosam@gmail.com>
 ---
- drivers/staging/winbond/wb35tx.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/staging/winbond/reg.c | 30 ++++++++++++++++++++----------
+ 1 file changed, 20 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/staging/winbond/wb35tx.c b/drivers/staging/winbond/wb35tx.c
-index 8c25cbd..18b28f2 100644
---- a/drivers/staging/winbond/wb35tx.c
-+++ b/drivers/staging/winbond/wb35tx.c
-@@ -32,7 +32,7 @@ static void Wb35Tx_complete(struct urb *pUrb)
- 	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
- 	struct wb35_mds *pMds = &adapter->Mds;
+diff --git a/drivers/staging/winbond/reg.c b/drivers/staging/winbond/reg.c
+index a65e8ce..6aae4da 100644
+--- a/drivers/staging/winbond/reg.c
++++ b/drivers/staging/winbond/reg.c
+@@ -1083,15 +1083,18 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
+ 		Wb35Reg_WriteSync(pHwData, 0x1050, pHwData->reg.BB50);
+ 		usleep(5000);
  
--	printk("wb35: tx complete\n");
-+	netdev_err(pUrb->dev, "wb35: tx complete\n");
- 	/* Variable setting */
- 	pWb35Tx->EP4vm_state = VM_COMPLETED;
- 	pWb35Tx->EP4VM_status = pUrb->status; /* Store the last result of Irp */
-@@ -49,7 +49,7 @@ static void Wb35Tx_complete(struct urb *pUrb)
+-		ltmp = (1 << 31) | (0 << 30) | (20 << 24) | BitReverse((0x0F << 20) | 0xF01B0, 20);
++		ltmp = (1 << 31) | (0 << 30) | (20 << 24)
++			       | BitReverse((0x0F << 20) | 0xF01B0, 20);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+ 		usleep(5000);
  
- 	/* The URB is completed, check the result */
- 	if (pWb35Tx->EP4VM_status != 0) {
--		printk("URB submission failed\n");
-+		netdev_err(pUrb->dev, "URB submission failed\n");
- 		pWb35Tx->EP4vm_state = VM_STOP;
- 		goto error;
- 	}
-@@ -96,7 +96,7 @@ static void Wb35Tx(struct wbsoft_priv *adapter)
- 	pWb35Tx->EP4vm_state = VM_RUNNING;
- 	retv = usb_submit_urb(pUrb, GFP_ATOMIC);
- 	if (retv < 0) {
--		printk("EP4 Tx Irp sending error\n");
-+		netdev_err(pUrb->dev, "EP4 Tx Irp sending error\n");
- 		goto cleanup;
- 	}
+-		ltmp = (1 << 31) | (0 << 30) | (20 << 24) | BitReverse((0x0F << 20) | 0xF01E0, 20);
++		ltmp = (1 << 31) | (0 << 30) | (20 << 24)
++			       | BitReverse((0x0F << 20) | 0xF01E0, 20);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+ 		usleep(5000);
  
-@@ -218,7 +218,7 @@ static void Wb35Tx_EP2VM_complete(struct urb *pUrb)
+-		ltmp = (1 << 31) | (0 << 30) | (20 << 24) | BitReverse((0x0F << 20) | 0xF01A0, 20);
++		ltmp = (1 << 31) | (0 << 30) | (20 << 24)
++			       | BitReverse((0x0F << 20) | 0xF01A0, 20);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
  
- 	/* The Urb is completed, check the result */
- 	if (pWb35Tx->EP2VM_status != 0) {
--		printk("EP2 IoCompleteRoutine return error\n");
-+		netdev_err(pUrb->dev, "EP2 IoCompleteRoutine return error\n");
- 		pWb35Tx->EP2vm_state = VM_STOP;
- 		goto error;
- 	}
+ 		Wb35Reg_WriteSync(pHwData, 0x105c, pHwData->reg.BB5C);
+@@ -1149,30 +1152,37 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
+ 
+ 		/* ----- Calibration (1). VCO frequency calibration */
+ 		/* Calibration (1a.0). Synthesizer reset */
+-		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x0F<<24) | 0x00101E, 24);
++		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
++			       | BitReverse((0x0F<<24) | 0x00101E, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+ 		usleep(5000);
+ 		/* Calibration (1a). VCO frequency calibration mode ; waiting 2msec VCO calibration time */
+-		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFE69c0, 24);
++		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
++			       | BitReverse((0x00<<24) | 0xFE69c0, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+ 		usleep(2000);
+ 
+ 		/* ----- Calibration (2). TX baseband Gm-C filter auto-tuning */
+ 		/* Calibration (2a). turn off ENCAL signal */
+-		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xF8EBC0, 24);
++		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
++			       | BitReverse((0x00<<24) | 0xF8EBC0, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+ 		/* Calibration (2b.0). TX filter auto-tuning BW: TFLBW=101 (TC5376A default) */
+-		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x07<<24) | 0x0C68CE, 24);
++		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
++			       | BitReverse((0x07<<24) | 0x0C68CE, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+ 		/* Calibration (2b). send TX reset signal */
+-		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x0F<<24) | 0x00201E, 24);
++		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
++			       | BitReverse((0x0F<<24) | 0x00201E, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+ 		/* Calibration (2c). turn-on TX Gm-C filter auto-tuning */
+-		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFCEBC0, 24);
++		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
++			       | BitReverse((0x00<<24) | 0xFCEBC0, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+ 		udelay(150); /* Sleep 150 us */
+ 		/* turn off ENCAL signal */
+-		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xF8EBC0, 24);
++		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
++			       | BitReverse((0x00<<24) | 0xF8EBC0, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+ 
+ 		/* ----- Calibration (3). RX baseband Gm-C filter auto-tuning */
 -- 
 1.8.1.2
 
