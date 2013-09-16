@@ -1,123 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751683Ab3IPWQR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 18:16:17 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:37013 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276Ab3IPWQP (ORCPT
+	id S1751767Ab3IPWQp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 18:16:45 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:33415 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751723Ab3IPWQm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 18:16:15 -0400
-Date: Mon, 16 Sep 2013 15:16:07 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "vojtech@suse.cz" <vojtech@suse.cz>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: Re: [PATCH 1/1] Drivers: input: serio: New driver to support Hyper-V
- synthetic keyboard
-Message-ID: <20130916221606.GA8243@core.coreip.homeip.net>
-References: <1379309334-25042-1-git-send-email-kys@microsoft.com>
- <20130916082110.GN25896@mwanda>
- <3b5096d0190b4440a8e25afbd22ab72d@SN2PR03MB061.namprd03.prod.outlook.com>
- <20130916150548.GO25896@mwanda>
- <baabf219b12b40de8e17b029e621e079@SN2PR03MB061.namprd03.prod.outlook.com>
- <20130916170951.GB20734@core.coreip.homeip.net>
- <3e45f054c6e243eabf2896ab1dcf38d4@SN2PR03MB061.namprd03.prod.outlook.com>
+	Mon, 16 Sep 2013 18:16:42 -0400
+Message-ID: <52378345.50306@hurleysoftware.com>
+Date: Mon, 16 Sep 2013 18:16:37 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3e45f054c6e243eabf2896ab1dcf38d4@SN2PR03MB061.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        codonell <codonell@redhat.com>, Eduard Benes <ebenes@redhat.com>,
+        Karel Srot <ksrot@redhat.com>, Matt Newsome <mnewsome@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] tty: disassociate_ctty() sends the extra SIGCONT
+References: <20130915155006.GA11913@redhat.com> <20130915155026.GA11917@redhat.com>
+In-Reply-To: <20130915155026.GA11917@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 06:29:45PM +0000, KY Srinivasan wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
-> > Sent: Monday, September 16, 2013 10:10 AM
-> > To: KY Srinivasan
-> > Cc: Dan Carpenter; olaf@aepfle.de; gregkh@linuxfoundation.org;
-> > jasowang@redhat.com; linux-kernel@vger.kernel.org; vojtech@suse.cz; linux-
-> > input@vger.kernel.org; apw@canonical.com; devel@linuxdriverproject.org
-> > Subject: Re: [PATCH 1/1] Drivers: input: serio: New driver to support Hyper-V
-> > synthetic keyboard
-> > 
-> > On Mon, Sep 16, 2013 at 04:56:03PM +0000, KY Srinivasan wrote:
-> > >
-> > >
-> > > > -----Original Message-----
-> > > > From: Dan Carpenter [mailto:dan.carpenter@oracle.com]
-> > > > Sent: Monday, September 16, 2013 8:06 AM
-> > > > To: KY Srinivasan
-> > > > Cc: olaf@aepfle.de; gregkh@linuxfoundation.org; jasowang@redhat.com;
-> > > > dmitry.torokhov@gmail.com; linux-kernel@vger.kernel.org;
-> > vojtech@suse.cz;
-> > > > linux-input@vger.kernel.org; apw@canonical.com;
-> > devel@linuxdriverproject.org
-> > > > Subject: Re: [PATCH 1/1] Drivers: input: serio: New driver to support Hyper-V
-> > > > synthetic keyboard
-> > > >
-> > > > On Mon, Sep 16, 2013 at 02:46:24PM +0000, KY Srinivasan wrote:
-> > > > > > > +			case VM_PKT_DATA_INBAND:
-> > > > > > > +				hv_kbd_on_receive(device, desc);
-> > > > > >
-> > > > > > This is the error handling I mentioned at the top.  hv_kbd_on_receive()
-> > > > > > doesn't take into consideration the amount of data we recieved, it
-> > > > > > trusts the offset we recieved from the user.  There is an out of bounds
-> > > > > > read.
-> > > > >
-> > > > > What user are you referring to. The message is sent by the host - the user
-> > > > keystroke
-> > > > > is normalized into a fixed size packet by the host and sent to the  guest. We
-> > will
-> > > > parse this
-> > > > > packet, based on the host specified layout here.
-> > > > >
-> > > >
-> > > > The user means the hypervisor, yes.
-> > > >
-> > > > I don't want the hypervisor accessing outside of the buffer.  It is
-> > > > robustness issue.  Just check the offset against "bytes_recvd".  It's
-> > > > not complicated.
-> > >
-> > > At the outset, let me apologize for not understanding your concern.
-> > > You say: " I don't want the hypervisor accessing outside of the buffer"
-> > > Where did you see the hypervisor accessing anything outside the buffer?
-> > > The buffer is allocated by this driver and a packet from vmbus is read into this
-> > > buffer - this is the call to vmbus_recvpacket(). If the specified buffer is smaller
-> > > than the packet that needs to be read, then nothing will be read. Once the read
-> > > completes, we can be sure we have read a valid packet and can proceed to
-> > parse it in
-> > > this driver.
-> > 
-> > The concern is that number of bytes received and contents of a packet
-> > are not in sync. Imagine if we were told that 16 butes was received but
-> > in the packet offset is 78. Then we'll try reading well past the buffer
-> > boundary that we allocated for the packets.
-> 
-> I am not sure how this would be the case. Following are the semantics of the function
-> vmbus_recvpacket_raw():
-> 
-> If the packet to be read is larger than the buffer specified; nothing will be read and 
-> appropriate error is returned. If a  packet is read, the complete packet is read and 
-> so we can safely peek into this packet based on the information in the header.
+On 09/15/2013 11:50 AM, Oleg Nesterov wrote:
+> Starting from v3.10 (probably f91e2590 "tty: Signal foreground
+> group processes in hangup") disassociate_ctty() sends SIGCONT
+> if tty && on_exit. This breaks LSB test-suite, in particular
+> test8 in _exit.c and test40 in sigcon5.c.
+>
+> Put the "!on_exit" check back to restore the old behaviour.
+>
+> Cc: stable@vger.kernel.org # v3.10+
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> Reported-by: Karel Srot <ksrot@redhat.com>
 
-No, you can not safely use contents of the packet because it has not
-been vetted. The semantics you are talking about is provided by
-vmbus_recvpacket(). That function does indeed look inside the packet end
-ensures that offset specified in the packet is sane and would not exceed
-the buffer. The vmbus_recvpacket_raw() does not do such validation.
+Although I confirmed your results with a new unit test,
+I'd like to review the source code for the reported tests.
+Where can grab the source for the LSB tests, _exit.c and sigcon5.c?
+Direct links would be appreciated.
 
-Thanks.
-
--- 
-Dmitry
+Regards,
+Peter Hurley
