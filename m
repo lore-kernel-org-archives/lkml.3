@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932412Ab3IPJR6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 05:17:58 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:60906 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752402Ab3IPJRx (ORCPT
+	id S932329Ab3IPJRu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 05:17:50 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:58318 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932210Ab3IPJRs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 05:17:53 -0400
+	Mon, 16 Sep 2013 05:17:48 -0400
 From: Jean Pihet <jean.pihet@linaro.org>
 To: Will Deacon <will.deacon@arm.com>, Jiri Olsa <jolsa@redhat.com>,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
         linux-arm-kernel@lists.infradead.org, Ingo Molnar <mingo@kernel.org>
 Cc: patches@linaro.org, Jean Pihet <jean.pihet@linaro.org>
-Subject: [PATCH 4/4] perf: parse the .debug_frame section in case .eh_frame is not present
-Date: Mon, 16 Sep 2013 11:17:33 +0200
-Message-Id: <1379323053-11458-5-git-send-email-jean.pihet@linaro.org>
+Subject: [PATCH 1/4] ARM: perf: add support for perf registers API
+Date: Mon, 16 Sep 2013 11:17:30 +0200
+Message-Id: <1379323053-11458-2-git-send-email-jean.pihet@linaro.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1379323053-11458-1-git-send-email-jean.pihet@linaro.org>
 References: <1379323053-11458-1-git-send-email-jean.pihet@linaro.org>
@@ -22,137 +22,126 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On ARM the debug info is not present in the .eh_frame sections but
-in .debug_frame instead, in the dwarf format.
-Use libunwind to load and parse the debug info.
+From: Will Deacon <will.deacon@arm.com>
 
-Dependencies:
- . if present, libunwind >= 1.1 is needed to prevent a segfault when
-   parsing the dwarf info,
- . libunwind needs to be configured with --enable-debug-frame
-   to prevent a linkage error. Note: --enable-debug-frame is automatically
-   selected on ARM).
+This patch implements the functions required for the perf registers API,
+allowing the perf tool to interface kernel register dumps with libunwind
+in order to provide userspace backtracing.
 
-Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Cc: Jean Pihet <jean.pihet@linaro.org>
 ---
- tools/perf/config/Makefile |  2 +-
- tools/perf/util/unwind.c   | 71 +++++++++++++++++++++++++++++++++++-----------
- 2 files changed, 56 insertions(+), 17 deletions(-)
+ arch/arm/Kconfig                      |  2 ++
+ arch/arm/include/uapi/asm/Kbuild      |  1 +
+ arch/arm/include/uapi/asm/perf_regs.h | 23 +++++++++++++++++++++++
+ arch/arm/kernel/Makefile              |  1 +
+ arch/arm/kernel/perf_regs.c           | 30 ++++++++++++++++++++++++++++++
+ 5 files changed, 57 insertions(+)
+ create mode 100644 arch/arm/include/uapi/asm/perf_regs.h
+ create mode 100644 arch/arm/kernel/perf_regs.c
 
-diff --git a/tools/perf/util/unwind.c b/tools/perf/util/unwind.c
-index 2f891f7..429a99c 100644
---- a/tools/perf/util/unwind.c
-+++ b/tools/perf/util/unwind.c
-@@ -39,6 +39,15 @@ UNW_OBJ(dwarf_search_unwind_table) (unw_addr_space_t as,
- 
- #define dwarf_search_unwind_table UNW_OBJ(dwarf_search_unwind_table)
- 
-+extern int
-+UNW_OBJ(dwarf_find_debug_frame) (int found, unw_dyn_info_t *di_debug,
-+				 unw_word_t ip,
-+				 unw_word_t segbase,
-+				 const char *obj_name, unw_word_t start,
-+				 unw_word_t end);
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 3f7714d..5595888 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -51,6 +51,8 @@ config ARM
+ 	select HAVE_MOD_ARCH_SPECIFIC if ARM_UNWIND
+ 	select HAVE_OPROFILE if (HAVE_PERF_EVENTS)
+ 	select HAVE_PERF_EVENTS
++	select HAVE_PERF_REGS
++	select HAVE_PERF_USER_STACK_DUMP
+ 	select HAVE_REGS_AND_STACK_ACCESS_API
+ 	select HAVE_SYSCALL_TRACEPOINTS
+ 	select HAVE_UID16
+diff --git a/arch/arm/include/uapi/asm/Kbuild b/arch/arm/include/uapi/asm/Kbuild
+index 18d76fd..70a1c9d 100644
+--- a/arch/arm/include/uapi/asm/Kbuild
++++ b/arch/arm/include/uapi/asm/Kbuild
+@@ -7,6 +7,7 @@ header-y += hwcap.h
+ header-y += ioctls.h
+ header-y += kvm_para.h
+ header-y += mman.h
++header-y += perf_regs.h
+ header-y += posix_types.h
+ header-y += ptrace.h
+ header-y += setup.h
+diff --git a/arch/arm/include/uapi/asm/perf_regs.h b/arch/arm/include/uapi/asm/perf_regs.h
+new file mode 100644
+index 0000000..ce59448
+--- /dev/null
++++ b/arch/arm/include/uapi/asm/perf_regs.h
+@@ -0,0 +1,23 @@
++#ifndef _ASM_ARM_PERF_REGS_H
++#define _ASM_ARM_PERF_REGS_H
 +
-+#define dwarf_find_debug_frame UNW_OBJ(dwarf_find_debug_frame)
++enum perf_event_arm_regs {
++	PERF_REG_ARM_R0,
++	PERF_REG_ARM_R1,
++	PERF_REG_ARM_R2,
++	PERF_REG_ARM_R3,
++	PERF_REG_ARM_R4,
++	PERF_REG_ARM_R5,
++	PERF_REG_ARM_R6,
++	PERF_REG_ARM_R7,
++	PERF_REG_ARM_R8,
++	PERF_REG_ARM_R9,
++	PERF_REG_ARM_R10,
++	PERF_REG_ARM_FP,
++	PERF_REG_ARM_IP,
++	PERF_REG_ARM_SP,
++	PERF_REG_ARM_LR,
++	PERF_REG_ARM_PC,
++	PERF_REG_ARM_MAX,
++};
++#endif /* _ASM_ARM_PERF_REGS_H */
+diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+index 5140df5f..9b818ca 100644
+--- a/arch/arm/kernel/Makefile
++++ b/arch/arm/kernel/Makefile
+@@ -78,6 +78,7 @@ obj-$(CONFIG_CPU_XSC3)		+= xscale-cp0.o
+ obj-$(CONFIG_CPU_MOHAWK)	+= xscale-cp0.o
+ obj-$(CONFIG_CPU_PJ4)		+= pj4-cp0.o
+ obj-$(CONFIG_IWMMXT)		+= iwmmxt.o
++obj-$(CONFIG_PERF_EVENTS)	+= perf_regs.o
+ obj-$(CONFIG_HW_PERF_EVENTS)	+= perf_event.o perf_event_cpu.o
+ AFLAGS_iwmmxt.o			:= -Wa,-mcpu=iwmmxt
+ obj-$(CONFIG_ARM_CPU_TOPOLOGY)  += topology.o
+diff --git a/arch/arm/kernel/perf_regs.c b/arch/arm/kernel/perf_regs.c
+new file mode 100644
+index 0000000..6e4379c
+--- /dev/null
++++ b/arch/arm/kernel/perf_regs.c
+@@ -0,0 +1,30 @@
 +
- #define DW_EH_PE_FORMAT_MASK	0x0f	/* format of the encoded value */
- #define DW_EH_PE_APPL_MASK	0x70	/* how the value is to be applied */
- 
-@@ -245,8 +254,9 @@ static int unwind_spec_ehframe(struct dso *dso, struct machine *machine,
- 	return 0;
- }
- 
--static int read_unwind_spec(struct dso *dso, struct machine *machine,
--			    u64 *table_data, u64 *segbase, u64 *fde_count)
-+static int read_unwind_spec_eh_frame(struct dso *dso, struct machine *machine,
-+				     u64 *table_data, u64 *segbase,
-+				     u64 *fde_count)
- {
- 	int ret = -EINVAL, fd;
- 	u64 offset;
-@@ -255,6 +265,7 @@ static int read_unwind_spec(struct dso *dso, struct machine *machine,
- 	if (fd < 0)
- 		return -EINVAL;
- 
-+	/* Check the .eh_frame section for unwinding info */
- 	offset = elf_section_offset(fd, ".eh_frame_hdr");
- 	close(fd);
- 
-@@ -263,10 +274,27 @@ static int read_unwind_spec(struct dso *dso, struct machine *machine,
- 					  table_data, segbase,
- 					  fde_count);
- 
--	/* TODO .debug_frame check if eh_frame_hdr fails */
- 	return ret;
- }
- 
-+static int read_unwind_spec_debug_frame(struct dso *dso,
-+					struct machine *machine, u64 *offset)
++#include <linux/errno.h>
++#include <linux/kernel.h>
++#include <linux/perf_event.h>
++#include <linux/bug.h>
++#include <asm/perf_regs.h>
++#include <asm/ptrace.h>
++
++u64 perf_reg_value(struct pt_regs *regs, int idx)
 +{
-+	int fd = dso__data_fd(dso, machine);
-+
-+	if (fd < 0)
-+		return -EINVAL;
-+
-+	/* Check the .debug_frame section for unwinding info */
-+	*offset = elf_section_offset(fd, ".debug_frame");
-+	close(fd);
-+
-+	if (*offset)
++	if (WARN_ON_ONCE((u32)idx >= PERF_REG_ARM_MAX))
 +		return 0;
 +
-+	return -EINVAL;
++	return regs->uregs[idx];
 +}
 +
- static struct map *find_map(unw_word_t ip, struct unwind_info *ui)
- {
- 	struct addr_location al;
-@@ -291,20 +319,31 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pi,
- 
- 	pr_debug("unwind: find_proc_info dso %s\n", map->dso->name);
- 
--	if (read_unwind_spec(map->dso, ui->machine,
--			     &table_data, &segbase, &fde_count))
--		return -EINVAL;
-+	/* Check the .eh_frame section for unwinding info */
-+	if (!read_unwind_spec_eh_frame(map->dso, ui->machine,
-+				       &table_data, &segbase, &fde_count)) {
-+		memset(&di, 0, sizeof(di));
-+		di.format   = UNW_INFO_FORMAT_REMOTE_TABLE;
-+		di.start_ip = map->start;
-+		di.end_ip   = map->end;
-+		di.u.rti.segbase    = map->start + segbase;
-+		di.u.rti.table_data = map->start + table_data;
-+		di.u.rti.table_len  = fde_count * sizeof(struct table_entry)
-+				      / sizeof(unw_word_t);
-+		return dwarf_search_unwind_table(as, ip, &di, pi,
-+						 need_unwind_info, arg);
-+	}
++#define REG_RESERVED (~((1ULL << PERF_REG_ARM_MAX) - 1))
 +
-+	/* Check the .debug_frame section for unwinding info */
-+	if (!read_unwind_spec_debug_frame(map->dso, ui->machine, &segbase)) {
-+		memset(&di, 0, sizeof(di));
-+		dwarf_find_debug_frame(0, &di, ip, 0, map->dso->name,
-+				       map->start, map->end);
-+		return dwarf_search_unwind_table(as, ip, &di, pi,
-+						 need_unwind_info, arg);
-+	}
- 
--	memset(&di, 0, sizeof(di));
--	di.format   = UNW_INFO_FORMAT_REMOTE_TABLE;
--	di.start_ip = map->start;
--	di.end_ip   = map->end;
--	di.u.rti.segbase    = map->start + segbase;
--	di.u.rti.table_data = map->start + table_data;
--	di.u.rti.table_len  = fde_count * sizeof(struct table_entry)
--			      / sizeof(unw_word_t);
--	return dwarf_search_unwind_table(as, ip, &di, pi,
--					 need_unwind_info, arg);
-+	return -EINVAL;
- }
- 
- static int access_fpreg(unw_addr_space_t __maybe_unused as,
++int perf_reg_validate(u64 mask)
++{
++	if (!mask || mask & REG_RESERVED)
++		return -EINVAL;
++
++	return 0;
++}
++
++u64 perf_reg_abi(struct task_struct *task)
++{
++	return PERF_SAMPLE_REGS_ABI_32;
++}
 -- 
 1.7.11.7
 
