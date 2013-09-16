@@ -1,84 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932495Ab3IPLrc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 07:47:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36952 "EHLO mx1.redhat.com"
+	id S932572Ab3IPLsj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 07:48:39 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:46496 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756615Ab3IPLrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 07:47:31 -0400
-Date: Mon, 16 Sep 2013 13:47:26 +0200
-From: Andrew Jones <drjones@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: kvm@vger.kernel.org, pbonzini@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [RFC] x86: kvm: remove KVM_SOFT_MAX_VCPUS
-Message-ID: <20130916114725.GA14981@hawk.usersys.redhat.com>
-References: <1379161011-28239-1-git-send-email-drjones@redhat.com>
- <20130915090322.GV17294@redhat.com>
- <20130916082208.GA2101@hawk.usersys.redhat.com>
- <20130916085517.GK17294@redhat.com>
+	id S932304Ab3IPLsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 07:48:37 -0400
+Message-ID: <5236F00B.5040605@ti.com>
+Date: Mon, 16 Sep 2013 17:18:27 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130916085517.GK17294@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <joelf@ti.com>
+CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Russell King <linux@arm.linux.org.uk>, Jyri Sarah <jsarha@ti.com>,
+        Koen Kooi <koen@beagleboard.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>
+Subject: Re: [PATCH v3] ARM: EDMA: Fix clearing of unused list for DT DMA
+ resources
+References: <1378839171-14455-1-git-send-email-joelf@ti.com> <5231903F.7080301@ti.com> <5233B471.40603@ti.com>
+In-Reply-To: <5233B471.40603@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 11:55:17AM +0300, Gleb Natapov wrote:
-> On Mon, Sep 16, 2013 at 10:22:09AM +0200, Andrew Jones wrote:
-> > > > [1] Actually, until 972fc544b6034a in uq/master is merged there won't be
-> > > >     any warnings either.
-> > > > 
-> > > > Signed-off-by: Andrew Jones <drjones@redhat.com>
-> > > > ---
-> > > >  arch/x86/include/asm/kvm_host.h | 1 -
-> > > >  arch/x86/kvm/x86.c              | 2 +-
-> > > >  2 files changed, 1 insertion(+), 2 deletions(-)
-> > > > 
-> > > > diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> > > > index c76ff74a98f2e..9236c63315a9b 100644
-> > > > --- a/arch/x86/include/asm/kvm_host.h
-> > > > +++ b/arch/x86/include/asm/kvm_host.h
-> > > > @@ -32,7 +32,6 @@
-> > > >  #include <asm/asm.h>
-> > > >  
-> > > >  #define KVM_MAX_VCPUS 255
-> > > > -#define KVM_SOFT_MAX_VCPUS 160
-> > > >  #define KVM_USER_MEM_SLOTS 125
-> > > >  /* memory slots that are not exposed to userspace */
-> > > >  #define KVM_PRIVATE_MEM_SLOTS 3
-> > > > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> > > > index e5ca72a5cdb6d..d9d3e2ed68ee9 100644
-> > > > --- a/arch/x86/kvm/x86.c
-> > > > +++ b/arch/x86/kvm/x86.c
-> > > > @@ -2604,7 +2604,7 @@ int kvm_dev_ioctl_check_extension(long ext)
-> > > >  		r = !kvm_x86_ops->cpu_has_accelerated_tpr();
-> > > >  		break;
-> > > >  	case KVM_CAP_NR_VCPUS:
-> > > > -		r = KVM_SOFT_MAX_VCPUS;
-> > > > +		r = min(num_online_cpus(), KVM_MAX_VCPUS);
-> > > s/KVM_MAX_VCPUS/KVM_SOFT_MAX_VCPUS/.  Also what about hotplug cpus?
-> > 
-> > I'll send a v2 with this change.
-> > 
-> > I thought a bit about hotplug, and thus using num_possible_cpus()
-> > instead, but then decided it made more sense to stick to what's online now
-> > for the recommended number. It's just a recommendation anyway. So as long
-> > as KVM_MAX_VCPUS is >= num_possible_cpus(), then one can still configure
-> > more vcpus to count for all hotplugable cpus, if they wish.
-> > 
-> It is just recommended, but we do warn about it, so it is user visible.
-> Well, the whole point of it existence is to be user visible ;). If user
-> creates a guest with max cpus greater than current number if online
-> cpus, taking into account feature grows, he will get a warning, but we
-> should not warn about it.
+Hi Joel,
 
-Even it if means the user may end up running, e.g. 128 vcpus on 96 pcpus
-indefinitely? I'd rather warn about it, which could remind them to offline
-32 vcpus for the time being. Although, as we're just discussing when or
-when not to output a warning, then I'm not really stressed about it either
-way. I can certainly change this to num_possible_cpus(), if all are in
-agreement that that is a better recommendation.
+On Saturday 14 September 2013 06:27 AM, Joel Fernandes wrote:
+> From: Joel Fernandes <joelf@ti.com>
+> Subject: [PATCH v4] ARM: EDMA: Fix clearing of unused list for DT DMA resources
+> 
+> HWMOD removal for MMC is breaking edma_start as the events are being manually
+> triggered due to unused channel list not being clear.
+> 
+> This patch fixes the issue, by reading the "dmas" property from the DT node if
+> it exists and clearing the bits in the unused channel list. For this purpose
+> we use the of_* helpers to parse the arguments in the dmas phandle list.
+> 
+> Reviewed-by: Sekhar Nori <nsekhar@ti.com>
+> Reported-by: Balaji T K <balajitk@ti.com>
+> Cc: Pantel Antoniou <panto@antoniou-consulting.com>
+> Signed-off-by: Joel Fernandes <joelf@ti.com>
+> ---
+> Changes since v1, in v2 and v3:
+> - Reduced indentation of non-of case by returning from of-case
+> - Using of_* helpers for parsing
+> 
+> Note:
+> This patch should go into the merge window as it is a critical bug fix.
 
-drew
+I still cannot find any users of edma in the device tree sources either
+in linux-next or linus/master. Why cannot this wait until v3.13?
+
+> 
+>  arch/arm/common/edma.c | 23 +++++++++++++++++++++--
+>  1 file changed, 21 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+> index 39ad030..43c7b22 100644
+> --- a/arch/arm/common/edma.c
+> +++ b/arch/arm/common/edma.c
+> @@ -560,14 +560,33 @@ static int reserve_contiguous_slots(int ctlr, unsigned int
+> id,
+>  static int prepare_unused_channel_list(struct device *dev, void *data)
+>  {
+>  	struct platform_device *pdev = to_platform_device(dev);
+> -	int i, ctlr;
+> +	int i, count, ctlr;
+> +	struct of_phandle_args  dma_spec;
+> 
+> +	if (dev->of_node) {
+> +		count = of_property_count_strings(dev->of_node, "dma-names");
+> +		if (count < 0)
+> +			return 0;
+> +		for (i = 0; i < count; i++) {
+> +			if (of_parse_phandle_with_args(dev->of_node, "dmas",
+> +						       "#dma-cells", i,
+> +						       &dma_spec))
+> +				continue;
+
+This will break for the case where devices on platform bus use non-EDMA
+dma controllers like SDMA or CPPI (DRA7x has both EDMA and SDMA on the
+same chip). You need to do an additional check to make sure the dma
+controller is indeed EDMA. Something like.
+
+	if(!of_device_is_compatible(dma_spec.np, "ti,edma3"))
+		continue;
+
+Don forget to call of_node_put() on dma_spec.np (something that needs to
+be done even with your current code).
+
+> +
+> +			ctlr = EDMA_CTLR(dma_spec.args[0]);
+> +			clear_bit(EDMA_CHAN_SLOT(dma_spec.args[0]),
+> +				  edma_cc[ctlr]->edma_unused);
+
+We don't support the second controller when using DT and the controller
+number is not really encoded in the argument to edma phandle. So just
+simplify this to:
+
+	clear_bit(EDMA_CHAN_SLOT(dma_spec.args[0]), 	
+		  edma_cc[0]->edma_unused);
+
+> +		}
+> +		return 0;
+> +	}
+> +
+> +	/* For non-OF case */
+>  	for (i = 0; i < pdev->num_resources; i++) {
+>  		if ((pdev->resource[i].flags & IORESOURCE_DMA) &&
+>  				(int)pdev->resource[i].start >= 0) {
+>  			ctlr = EDMA_CTLR(pdev->resource[i].start);
+>  			clear_bit(EDMA_CHAN_SLOT(pdev->resource[i].start),
+> -					edma_cc[ctlr]->edma_unused);
+> +				  edma_cc[ctlr]->edma_unused);
+
+This is a useful change and I am okay with it happening in this
+otherwise unrelated patch, but please mention this in changelog.
+
+Thanks,
+Sekhar
+
