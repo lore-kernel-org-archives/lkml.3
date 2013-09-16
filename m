@@ -1,107 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931Ab3IPIdI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 04:33:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54132 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751388Ab3IPIdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 04:33:05 -0400
-Date: Mon, 16 Sep 2013 11:32:22 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Andrew Jones <drjones@redhat.com>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pbonzini@redhat.com" <pbonzini@redhat.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH 2/3] arm32: kvm: rename CONFIG_KVM_ARM_MAX_VCPUS
-Message-ID: <20130916083221.GI17294@redhat.com>
-References: <1379160656-28050-1-git-send-email-drjones@redhat.com>
- <1379160656-28050-3-git-send-email-drjones@redhat.com>
- <20130915093002.GX17294@redhat.com>
- <5236BCB7.9080102@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5236BCB7.9080102@arm.com>
+	id S1756713Ab3IPIdX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 04:33:23 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:52094 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755946Ab3IPIdS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 04:33:18 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-i2c@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: [PATCH 1/9] of/irq: Rework of_irq_count()
+Date: Mon, 16 Sep 2013 10:31:58 +0200
+Message-Id: <1379320326-13241-2-git-send-email-treding@nvidia.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1379320326-13241-1-git-send-email-treding@nvidia.com>
+References: <1379320326-13241-1-git-send-email-treding@nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 09:09:27AM +0100, Marc Zyngier wrote:
-> On 15/09/13 10:30, Gleb Natapov wrote:
-> > On Sat, Sep 14, 2013 at 02:10:55PM +0200, Andrew Jones wrote:
-> >> Drop the _ARM_ part of the name. We can then introduce a config option
-> >> like this to aarch64 and other arches using the same name - allowing
-> >> grep to show them all. Also update the help text to describe the option
-> >> more completely.
-> >>
-> >> Signed-off-by: Andrew Jones <drjones@redhat.com>
-> >> ---
-> >>  arch/arm/include/asm/kvm_host.h | 4 ++--
-> >>  arch/arm/kvm/Kconfig            | 8 ++++----
-> >>  2 files changed, 6 insertions(+), 6 deletions(-)
-> >>
-> >> diff --git a/arch/arm/include/asm/kvm_host.h b/arch/arm/include/asm/kvm_host.h
-> >> index 7d22517d80711..c614d3eb176c6 100644
-> >> --- a/arch/arm/include/asm/kvm_host.h
-> >> +++ b/arch/arm/include/asm/kvm_host.h
-> >> @@ -25,8 +25,8 @@
-> >>  #include <asm/fpstate.h>
-> >>  #include <kvm/arm_arch_timer.h>
-> >>  
-> >> -#if defined(CONFIG_KVM_ARM_MAX_VCPUS)
-> >> -#define KVM_MAX_VCPUS CONFIG_KVM_ARM_MAX_VCPUS
-> >> +#if defined(CONFIG_KVM_MAX_VCPUS)
-> >> +#define KVM_MAX_VCPUS CONFIG_KVM_MAX_VCPUS
-> >>  #else
-> >>  #define KVM_MAX_VCPUS 0
-> >>  #endif
-> >> diff --git a/arch/arm/kvm/Kconfig b/arch/arm/kvm/Kconfig
-> >> index ebf5015508b52..de63bfccb3eb5 100644
-> >> --- a/arch/arm/kvm/Kconfig
-> >> +++ b/arch/arm/kvm/Kconfig
-> >> @@ -40,16 +40,16 @@ config KVM_ARM_HOST
-> >>  	---help---
-> >>  	  Provides host support for ARM processors.
-> >>  
-> >> -config KVM_ARM_MAX_VCPUS
-> >> +config KVM_MAX_VCPUS
-> >>  	int "Number maximum supported virtual CPUs per VM"
-> >>  	depends on KVM_ARM_HOST
-> >>  	default 4
-> >>  	help
-> >>  	  Static number of max supported virtual CPUs per VM.
-> >>  
-> >> -	  If you choose a high number, the vcpu structures will be quite
-> >> -	  large, so only choose a reasonable number that you expect to
-> >> -	  actually use.
-> > I do no see why on ARM vcpu structure size depends on KVM_ARM_MAX_VCPUS.
-> > Can somebody point me to it.
-> 
-> There's a number of indirections, but here you go:
-> arch/arm/include/asm/kvm_host.h:#define KVM_MAX_VCPUS CONFIG_KVM_ARM_MAX_VCPUS
-> 
-> include/kvm/arm_vgic.h:#define VGIC_MAX_CPUS            KVM_MAX_VCPUS
-> 
-> include/kvm/arm_vgic.h:#if (VGIC_MAX_CPUS > 8)
-> include/kvm/arm_vgic.h: } percpu[VGIC_MAX_CPUS];
-> include/kvm/arm_vgic.h: u32 percpu[VGIC_MAX_CPUS][VGIC_NR_PRIVATE_IRQS / 4];
-> include/kvm/arm_vgic.h: u8                      irq_sgi_sources[VGIC_MAX_CPUS][VGIC_NR_SGIS];
-> include/kvm/arm_vgic.h: struct vgic_bitmap      irq_spi_target[VGIC_MAX_CPUS];
-> 
-> Basically, the GIC emulation data structures are sized on the number of VCPUs
-> (as well as the number of supported interrupts).
-> 
-But vgic is per VM though, not per cpu as far as I can see, so the
-overhead is also per VM, no? Is VGIC_MAX_CPUS limit architectural or
-juts an implementation detail?
+The of_irq_to_resource() helper that is used to implement of_irq_count()
+tries to resolve interrupts and in fact creates a mapping for resolved
+interrupts. That's pretty heavy lifting for something that claims to
+just return the number of interrupts requested by a given device node.
 
---
-			Gleb.
+Instead, use the more lightweight of_irq_map_one(), which, despite the
+name, doesn't create an actual mapping. Perhaps a better name would be
+of_irq_translate_one().
+
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+ drivers/of/irq.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/of/irq.c b/drivers/of/irq.c
+index 1752988..5f44388 100644
+--- a/drivers/of/irq.c
++++ b/drivers/of/irq.c
+@@ -368,9 +368,10 @@ EXPORT_SYMBOL_GPL(of_irq_to_resource);
+  */
+ int of_irq_count(struct device_node *dev)
+ {
++	struct of_irq irq;
+ 	int nr = 0;
+ 
+-	while (of_irq_to_resource(dev, nr, NULL))
++	while (of_irq_map_one(dev, nr, &irq) == 0)
+ 		nr++;
+ 
+ 	return nr;
+-- 
+1.8.4
+
