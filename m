@@ -1,78 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752323Ab3IPShv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 14:37:51 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:41362 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752091Ab3IPSht (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 14:37:49 -0400
-Message-ID: <52374FF7.8040604@wwwdotorg.org>
-Date: Mon, 16 Sep 2013 12:37:43 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1752144Ab3IPSkp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 14:40:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54064 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751641Ab3IPSko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 14:40:44 -0400
+Date: Mon, 16 Sep 2013 14:40:30 -0400
+From: Dave Jones <davej@redhat.com>
+To: Stephen Smalley <sds@tycho.nsa.gov>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, eparis@redhat.com,
+        james.l.morris@oracle.com
+Subject: [PATCH] conditionally reschedule while loading selinux policy.
+Message-ID: <20130916184030.GA15800@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Stephen Smalley <sds@tycho.nsa.gov>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, eparis@redhat.com,
+	james.l.morris@oracle.com
+References: <20130916173036.GA17950@redhat.com>
+ <52374350.1090403@tycho.nsa.gov>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Mike Turquette <mturquette@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Hyun Kwon <hyunk@xilinx.com>
-Subject: Re: [PATCH] clk: si570: Add a driver for SI570 oscillators
-References: <1379033737-30015-1-git-send-email-soren.brinkmann@xilinx.com> <1379033737-30015-2-git-send-email-soren.brinkmann@xilinx.com> <52373314.5070806@wwwdotorg.org> <20130916164927.GB21352@roeck-us.net> <5237390E.5070203@wwwdotorg.org> <20130916173540.GA3481@roeck-us.net>
-In-Reply-To: <20130916173540.GA3481@roeck-us.net>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52374350.1090403@tycho.nsa.gov>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/2013 11:35 AM, Guenter Roeck wrote:
-> On Mon, Sep 16, 2013 at 10:59:58AM -0600, Stephen Warren wrote:
->> On 09/16/2013 10:49 AM, Guenter Roeck wrote:
->>> On Mon, Sep 16, 2013 at 10:34:28AM -0600, Stephen Warren wrote:
->>>> On 09/12/2013 06:55 PM, Soren Brinkmann wrote:
->>>>> Add a driver for SILabs 570, 571, 598, 599 programmable oscillators.
->>>>> The devices generate low-jitter clock signals and are reprogrammable via
->>>>> an I2C interface.
-...
->>>>> +Optional properties:
->>>>> + - initial-fout: Initial output frequency to set during probe
->>>>
->>>> "probe" is a Linux-specific concept. This property should be removed. If
->>>> the driver is asked to set a specific frequency, it should do so, but I
->>>> don't think it should program something pro-actively just because it
->>>> starts up.
->>>>
->>>> If this property is acceptable, it'd be better to describe it more along
->>>> the lines of the following:
->>>>
->>>> initial-fout: The frequency at which the system requires the clock to
->>>> operate.
->>>
->>> It should probably be something like "clock-frequency". In many use cases
->>> the programmed frequency is set to a constant frequency at system startup
->>> and never changed, similar to other clocks.
->>
->> I was going to suggest that too, but re-considered since I think
->> clock-frequency is more appropriate for fixed-frequency clocks, rather
->> than to specify the value at which a programmable clock generator should
->> operate?
->>
->> I don't think we have a good story yet for how to represent
->> how-we-want-the-clock-tree-configured, as opposed to representing the HW
->> itself (which is what DT should be more about).
->
-> In many cases the chip _is_ used to generate a fixed frequency, so we will
-> have to have a means to describe it. That it _can_ be used differently is a
-> different matter. After all, that is true for many clock generators.
+On a slow machine (with debugging enabled), upgrading selinux policy may take
+a considerable amount of time. Long enough that the softlockup detector
+gets triggered.
 
-Perhaps if clock-frequency is specified, the driver should refuse to
-provide anything else. If clock-frequency isn't specified, the driver
-shouldn't touch the HW when it initializes, but should honor any
-requests that come in from other drivers? That would maintain what I
-feel is clock-frequency's connection to being a fixed clock.
+The backtrace looks like this..
+
+ > BUG: soft lockup - CPU#2 stuck for 23s! [load_policy:19045]
+ > Call Trace:
+ >  [<ffffffff81221ddf>] symcmp+0xf/0x20
+ >  [<ffffffff81221c27>] hashtab_search+0x47/0x80
+ >  [<ffffffff8122e96c>] mls_convert_context+0xdc/0x1c0
+ >  [<ffffffff812294e8>] convert_context+0x378/0x460
+ >  [<ffffffff81229170>] ? security_context_to_sid_core+0x240/0x240
+ >  [<ffffffff812221b5>] sidtab_map+0x45/0x80
+ >  [<ffffffff8122bb9f>] security_load_policy+0x3ff/0x580
+ >  [<ffffffff810788a8>] ? sched_clock_cpu+0xa8/0x100
+ >  [<ffffffff810786dd>] ? sched_clock_local+0x1d/0x80
+ >  [<ffffffff810788a8>] ? sched_clock_cpu+0xa8/0x100
+ >  [<ffffffff8103096a>] ? __change_page_attr_set_clr+0x82a/0xa50
+ >  [<ffffffff810786dd>] ? sched_clock_local+0x1d/0x80
+ >  [<ffffffff810788a8>] ? sched_clock_cpu+0xa8/0x100
+ >  [<ffffffff8103096a>] ? __change_page_attr_set_clr+0x82a/0xa50
+ >  [<ffffffff810788a8>] ? sched_clock_cpu+0xa8/0x100
+ >  [<ffffffff81534ddc>] ? retint_restore_args+0xe/0xe
+ >  [<ffffffff8109c82d>] ? trace_hardirqs_on_caller+0xfd/0x1c0
+ >  [<ffffffff81279a2e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ >  [<ffffffff810d28a8>] ? rcu_irq_exit+0x68/0xb0
+ >  [<ffffffff81534ddc>] ? retint_restore_args+0xe/0xe
+ >  [<ffffffff8121e947>] sel_write_load+0xa7/0x770
+ >  [<ffffffff81139633>] ? vfs_write+0x1c3/0x200
+ >  [<ffffffff81210e8e>] ? security_file_permission+0x1e/0xa0
+ >  [<ffffffff8113952b>] vfs_write+0xbb/0x200
+ >  [<ffffffff811581c7>] ? fget_light+0x397/0x4b0
+ >  [<ffffffff81139c27>] SyS_write+0x47/0xa0
+ >  [<ffffffff8153bde4>] tracesys+0xdd/0xe2
+ 
+Stephen Smalley suggested:
+
+ > Maybe put a cond_resched() within the ebitmap_for_each_positive_bit()
+ > loop in mls_convert_context()?
+
+That seems to do the trick. Tested by downgrading and re-upgrading selinux-policy-targeted.
+
+Signed-off-by: Dave Jones <davej@fedoraproject.org>
+
+diff --git a/security/selinux/ss/mls.c b/security/selinux/ss/mls.c
+index 40de8d3..9ef8e51 100644
+--- a/security/selinux/ss/mls.c
++++ b/security/selinux/ss/mls.c
+@@ -500,6 +500,8 @@ int mls_convert_context(struct policydb *oldp,
+ 			rc = ebitmap_set_bit(&bitmap, catdatum->value - 1, 1);
+ 			if (rc)
+ 				return rc;
++
++			cond_resched();
+ 		}
+ 		ebitmap_destroy(&c->range.level[l].cat);
+ 		c->range.level[l].cat = bitmap;
