@@ -1,106 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332Ab3IPH6u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 03:58:50 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:45085 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751310Ab3IPH6t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 03:58:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130909170349.GD4701@variantweb.net>
-References: <000901ceaac0$a5f28420$f1d78c60$%yang@samsung.com>
-	<20130909170349.GD4701@variantweb.net>
-Date: Mon, 16 Sep 2013 15:58:48 +0800
-Message-ID: <CAL1ERfMzZc_jKZ3xS9PTDuByQ06Ar2tsfQwC4E7E2LCWQfyn3g@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] mm/zswap: bugfix: memory leak when re-swapon
-From: Weijie Yang <weijie.yang.kh@gmail.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Weijie Yang <weijie.yang@samsung.com>, minchan@kernel.org,
-        bob.liu@oracle.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754125Ab3IPIB7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 04:01:59 -0400
+Received: from mga02.intel.com ([134.134.136.20]:37179 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751062Ab3IPIB6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 04:01:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,913,1371106800"; 
+   d="scan'208";a="403856027"
+Message-ID: <1379318513.17490.64.camel@sauron.fi.intel.com>
+Subject: Re: [GIT PULL] UBI changes for 3.12-rc1
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-mtd <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 16 Sep 2013 11:01:53 +0300
+In-Reply-To: <1379316610.17490.58.camel@sauron.fi.intel.com>
+References: <1379316610.17490.58.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-First, I apologize for my delay reply and appreciate the review from
-you and Bob Liu.
+On Mon, 2013-09-16 at 10:30 +0300, Artem Bityutskiy wrote:
+> Hi Linus,
+> 
+> very few changes. I'll start using a single UBI/UBIFS tree instead
+> of 2 trees from now on. So in the future you'll get 1 small pull
+> request instead of 2 tiny ones.
 
-On Tue, Sep 10, 2013 at 1:03 AM, Seth Jennings
-<sjenning@linux.vnet.ibm.com> wrote:
-> On Fri, Sep 06, 2013 at 01:16:45PM +0800, Weijie Yang wrote:
->> zswap_tree is not freed when swapoff, and it got re-kmalloc in swapon,
->> so memory-leak occurs.
->>
->> Modify: free memory of zswap_tree in zswap_frontswap_invalidate_area().
->>
->> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
->> ---
->>  mm/zswap.c |    4 ++++
->>  1 file changed, 4 insertions(+)
->>
->> diff --git a/mm/zswap.c b/mm/zswap.c
->> index deda2b6..cbd9578 100644
->> --- a/mm/zswap.c
->> +++ b/mm/zswap.c
->> @@ -816,6 +816,10 @@ static void zswap_frontswap_invalidate_area(unsigned type)
->>       }
->>       tree->rbroot = RB_ROOT;
->>       spin_unlock(&tree->lock);
->> +
->> +     zbud_destroy_pool(tree->pool);
->> +     kfree(tree);
->> +     zswap_trees[type] = NULL;
->
-> You changed how this works from v1.  Any particular reason?
+Also, I do realize this is very late, apologies for this. But the
+changes are just small fixes so I they should be OK for -rc2 as well.
 
-My reason is that if someone use other frontswap backend to replace zswap,
-the memory used by zswap is not freed, so I free the memory in swapoff.
+-- 
+Best Regards,
+Artem Bityutskiy
 
-> In this version you free the tree structure, which is fine as long as we
-> know for sure nothing will try to access it afterward unless there is a
-> swapon to reactivate it.
->
-> I'm just a little worried about a race here between a store and
-> invalidate_area.  I think there is probably some mechanism to prevent
-> this, I just haven't been able to demonstrate it to myself.
->
-> The situation I'm worried about is:
->
-> shrink_page_list()
-> add_to_swap() then return (gets the swap entry)
-> try_to_unmap() then return (sets the swap entry in the pte)
-> pageout()
-> swap_writepage()
-> zswap_frontswap_store()
->
-> interacting with a swapoff operation.
->
-> When zswap_frontswap_store() is called, we continue to hold the page
-> lock.  I think that might block the loop in try_to_unuse(), called by
-> swapoff, until we release it after the store.
->
-> I think it should be fine.  Just wanted to think it through.
-
-Before try_to_unuse() called in swapoff, the swap_info[type] flags SWP_WRITEOK
-is cleared under lock, so no swap entry will be alloced from this
-swap_info[type].
-
-in try_to_unuse(), as you say, the race is protected by page lock and
-writeback flags.
-
-and after try_to_unuse(), frontswap_invalidate_area() is protected by
-swapon_mutex.
-
-so I think it is fine.
-
-> Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
->
->>  }
->>
->>  static struct zbud_ops zswap_zbud_ops = {
->> --
->> 1.7.10.4
->>
->>
->
