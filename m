@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226Ab3IPMwJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 08:52:09 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:40201 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752911Ab3IPMvs (ORCPT
+	id S1754008Ab3IPMwF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 08:52:05 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:50541 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752616Ab3IPMvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 08:51:48 -0400
+	Mon, 16 Sep 2013 08:51:46 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mszeredi@suse.cz, Steven Whitehouse <swhiteho@redhat.com>,
+        mszeredi@suse.cz, Steve French <sfrench@samba.org>,
         stable@vger.kernel.org
-Subject: [PATCH 07/11] gfs2: pass correct dentry to finish_open() in __gfs2_lookup()
-Date: Mon, 16 Sep 2013 14:52:01 +0200
-Message-Id: <1379335925-30858-8-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 05/11] cifs: fix filp leak in cifs_atomic_open()
+Date: Mon, 16 Sep 2013 14:51:59 +0200
+Message-Id: <1379335925-30858-6-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1379335925-30858-1-git-send-email-miklos@szeredi.hu>
 References: <1379335925-30858-1-git-send-email-miklos@szeredi.hu>
@@ -24,29 +24,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-AFAICS if d_splice_alias() returned non-NULL, this code would Oops
-(finish_open expects an instantiated dentry).
+If an error occurs after having called finish_open() then fput() needs to
+be called on the already opened file.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Cc: Steven Whitehouse <swhiteho@redhat.com>
+Cc: Steve French <sfrench@samba.org>
 Cc: stable@vger.kernel.org
 ---
- fs/gfs2/inode.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/cifs/dir.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/gfs2/inode.c b/fs/gfs2/inode.c
-index 6d7f976..abe7dae 100644
---- a/fs/gfs2/inode.c
-+++ b/fs/gfs2/inode.c
-@@ -774,7 +774,7 @@ static struct dentry *__gfs2_lookup(struct inode *dir, struct dentry *dentry,
+diff --git a/fs/cifs/dir.c b/fs/cifs/dir.c
+index d3e2eaa..5384c2a 100644
+--- a/fs/cifs/dir.c
++++ b/fs/cifs/dir.c
+@@ -500,6 +500,7 @@ cifs_atomic_open(struct inode *inode, struct dentry *direntry,
+ 		if (server->ops->close)
+ 			server->ops->close(xid, tcon, &fid);
+ 		cifs_del_pending_open(&open);
++		fput(file);
+ 		rc = -ENOMEM;
+ 	}
  
- 	d = d_splice_alias(inode, dentry);
- 	if (file && S_ISREG(inode->i_mode))
--		error = finish_open(file, dentry, gfs2_open_common, opened);
-+		error = finish_open(file, d ? d : dentry, gfs2_open_common, opened);
- 
- 	gfs2_glock_dq_uninit(&gh);
- 	if (error)
 -- 
 1.8.1.4
 
