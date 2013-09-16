@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756726Ab3IPNom (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 09:44:42 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:47595 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756358Ab3IPNoj (ORCPT
+	id S1755920Ab3IPNo0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 09:44:26 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:43659 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752570Ab3IPNoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 09:44:39 -0400
+	Mon, 16 Sep 2013 09:44:22 -0400
 From: Iker Pedrosa <ikerpedrosam@gmail.com>
 To: pavel@ucw.cz
 Cc: gregkh@linuxfoundation.org, ikerpedrosam@gmail.com, harsh1kumar@gmail.com,
         dan.carpenter@oracle.com, mujeeb.adil@gmail.com,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 23/24] Staging: winbond: wbusb: fixed some lines over 80 characters
-Date: Mon, 16 Sep 2013 15:43:43 +0200
-Message-Id: <1379339024-12157-24-git-send-email-ikerpedrosam@gmail.com>
+Subject: [PATCH v2 13/24] Staging: winbond: reg: fifth of the patches that fixes lines over 80 characters
+Date: Mon, 16 Sep 2013 15:43:33 +0200
+Message-Id: <1379339024-12157-14-git-send-email-ikerpedrosam@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379339024-12157-1-git-send-email-ikerpedrosam@gmail.com>
 References: <1379339024-12157-1-git-send-email-ikerpedrosam@gmail.com>
@@ -22,68 +22,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed some lines over 80 characters.
+Fifth of the patches that fixes the lines over 80 characters in reg.c
 
 Signed-off-by: Iker Pedrosa <ikerpedrosam@gmail.com>
 ---
- drivers/staging/winbond/wbusb.c | 16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
+ drivers/staging/winbond/reg.c | 33 ++++++++++++++++++++++-----------
+ 1 file changed, 22 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/staging/winbond/wbusb.c b/drivers/staging/winbond/wbusb.c
-index 3fa1ae4..a2868f2 100644
---- a/drivers/staging/winbond/wbusb.c
-+++ b/drivers/staging/winbond/wbusb.c
-@@ -169,7 +169,8 @@ static void hal_set_radio_mode(struct hw_data *pHwData, unsigned char radio_off)
- 	Wb35Reg_Write(pHwData, 0x0824, reg->M24_MacControl);
- }
+diff --git a/drivers/staging/winbond/reg.c b/drivers/staging/winbond/reg.c
+index 6d2ab1e..11b155f 100644
+--- a/drivers/staging/winbond/reg.c
++++ b/drivers/staging/winbond/reg.c
+@@ -1242,46 +1242,57 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
  
--static void hal_set_current_channel_ex(struct hw_data *pHwData, struct chan_info channel)
-+static void hal_set_current_channel_ex(struct hw_data *pHwData,
-+				       struct chan_info channel)
- {
- 	struct wb35_reg *reg = &pHwData->reg;
+ 		/* for LNA=10 -------- */
+ 		/* Calibration (5c-m). RX DC offset current bias ON; & LNA=10; RXVGA=111111 */
+-		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x06<<24) | 0x342FCC, 24);
++		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
++			       | BitReverse((0x06<<24) | 0x342FCC, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+ 		/* Calibration (5d). turn on RX DC offset cal function; and waiting 2 msec cal time */
+-		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFF6DC0, 24);
++		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
++			       | BitReverse((0x00<<24) | 0xFF6DC0, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+ 		usleep(2000);
+ 		/* Calibration (5f). turn off ENCAL signal */
+-		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFAEDC0, 24);
++		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
++			       | BitReverse((0x00<<24) | 0xFAEDC0, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
  
-@@ -186,7 +187,8 @@ static void hal_set_current_channel_ex(struct hw_data *pHwData, struct chan_info
- 				       sizeof(struct chan_info));
- }
+ 		/* for LNA=01 -------- */
+ 		/* Calibration (5c-m). RX DC offset current bias ON; & LNA=01; RXVGA=111111 */
+-		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x06<<24) | 0x341FCC, 24);
++		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
++			       | BitReverse((0x06<<24) | 0x341FCC, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+ 		/* Calibration (5d). turn on RX DC offset cal function; and waiting 2 msec cal time */
+-		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFF6DC0, 24);
++		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
++			       | BitReverse((0x00<<24) | 0xFF6DC0, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+ 		usleep(2000);
+ 		/* Calibration (5f). turn off ENCAL signal */
+-		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFAEDC0, 24);
++		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
++			       | BitReverse((0x00<<24) | 0xFAEDC0, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
  
--static void hal_set_current_channel(struct hw_data *pHwData, struct chan_info channel)
-+static void hal_set_current_channel(struct hw_data *pHwData,
-+					    struct chan_info channel)
- {
- 	hal_set_current_channel_ex(pHwData, channel);
- }
-@@ -206,7 +208,9 @@ static void hal_set_accept_broadcast(struct hw_data *pHwData, u8 enable)
- 	Wb35Reg_Write(pHwData, 0x0800, reg->M00_MacControl);
- }
+ 		/* for LNA=00 -------- */
+ 		/* Calibration (5c-l). RX DC offset current bias ON; & LNA=00; RXVGA=111111 */
+-		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x06<<24) | 0x340FCC, 24);
++		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
++			       | BitReverse((0x06<<24) | 0x340FCC, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+ 		/* Calibration (5d). turn on RX DC offset cal function; and waiting 2 msec cal time */
+-		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFF6DC0, 24);
++		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
++			       | BitReverse((0x00<<24) | 0xFF6DC0, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+ 		usleep(2000);
+ 		/* Calibration (5f). turn off ENCAL signal */
+-		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFAEDC0, 24);
++		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
++			       | BitReverse((0x00<<24) | 0xFAEDC0, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+ 		/* Calibration (5g). turn on AGC servo-loop */
+-		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x01<<24) | 0xEFFFC2, 24);
++		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
++			       | BitReverse((0x01<<24) | 0xEFFFC2, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
  
--/* For wep key error detection, we need to accept broadcast packets to be received temporary. */
-+/* For wep key error detection, we need to accept broadcast packets to be
-+ * received temporary.
-+*/
- static void hal_set_accept_promiscuous(struct hw_data *pHwData, u8 enable)
- {
- 	struct wb35_reg *reg = &pHwData->reg;
-@@ -290,7 +294,8 @@ static const struct ieee80211_ops wbsoft_ops = {
- 	.get_tsf		= wbsoft_get_tsf,
- };
- 
--static void hal_set_ethernet_address(struct hw_data *pHwData, u8 *current_address)
-+static void hal_set_ethernet_address(struct hw_data *pHwData,
-+					     u8 *current_address)
- {
- 	u32 ltmp[2];
- 
-@@ -305,7 +310,8 @@ static void hal_set_ethernet_address(struct hw_data *pHwData, u8 *current_addres
- 	Wb35Reg_BurstWrite(pHwData, 0x03e8, ltmp, 2, AUTO_INCREMENT);
- }
- 
--static void hal_get_permanent_address(struct hw_data *pHwData, u8 *pethernet_address)
-+static void hal_get_permanent_address(struct hw_data *pHwData,
-+					      u8 *pethernet_address)
- {
- 	if (pHwData->SurpriseRemove)
- 		return;
+ 		/* ----- Calibration (7). Switch RF chip to normal mode */
+ 		/* 0x00 0xF86100 ; 3E184   ; Switch RF chip to normal mode */
+-		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xF86100, 24);
++		ltmp = (1 << 31) | (0 << 30) | (24 << 24)
++			       | BitReverse((0x00<<24) | 0xF86100, 24);
+ 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
+ 		usleep(5000);
+ 		break;
 -- 
 1.8.1.2
 
