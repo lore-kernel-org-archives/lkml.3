@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538Ab3IPWKf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 18:10:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19928 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751043Ab3IPWKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 18:10:32 -0400
-Date: Mon, 16 Sep 2013 18:09:57 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Wu, Fengguang" <fengguang.wu@intel.com>,
-        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <1379369397-ld8lbcn-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31CFD2D6@ORSMSX106.amr.corp.intel.com>
-References: <1379202839-23939-1-git-send-email-liwanp@linux.vnet.ibm.com>
- <20130915001352.GQ18242@two.firstfloor.org>
- <3908561D78D1C84285E8C5FCA982C28F31CFD2D6@ORSMSX106.amr.corp.intel.com>
-Subject: Re: [RESEND PATCH v2 1/4] mm/hwpoison: fix traverse hugetlbfs page to
- avoid printk flood
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
+	id S1751609Ab3IPWMF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 18:12:05 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:65409 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043Ab3IPWMC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 18:12:02 -0400
+Message-ID: <5237824E.5090802@windriver.com>
+Date: Mon, 16 Sep 2013 18:12:30 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>, <gleb@redhat.com>,
+        <jan.kiszka@siemens.com>
+Subject: Re: [PATCH 0/3] KVM: Make kvm_lock non-raw
+References: <1379340373-5135-1-git-send-email-pbonzini@redhat.com>
+In-Reply-To: <1379340373-5135-1-git-send-email-pbonzini@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <3908561D78D1C84285E8C5FCA982C28F31CFD2D6@ORSMSX106.amr.corp.intel.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 09:50:06PM +0000, Luck, Tony wrote:
-> This is good - but the real solution is to stop poisoning entire huge pages ... they should
-> be broken into 4K pages and just one 4K page should be poisoned.
+On 13-09-16 10:06 AM, Paolo Bonzini wrote:
+> Paul Gortmaker reported a BUG on preempt-rt kernels, due to taking the
+> mmu_lock within the raw kvm_lock in mmu_shrink_scan.  He provided a
+> patch that shrunk the kvm_lock critical section so that the mmu_lock
+> critical section does not nest with it, but in the end there is no reason
+> for the vm_list to be protected by a raw spinlock.  Only manipulations
+> of kvm_usage_count and the consequent hardware_enable/disable operations
+> are not preemptable.
 > 
-> Naoya Horiguchi: I thought that you were looking at this problem some months ago. Any progress?
+> This small series thus splits the kvm_lock in the "raw" part and the
+> "non-raw" part.
+> 
+> Paul, could you please provide your Tested-by?
 
-Sorry, I have no meaningful progress on this. Splitting hugepages is not
-a trivial operation, and introduce more complexity on hugetlbfs code.
-I don't hit on any usecase of it rather than memory failure, so I'm not
-sure that it's worth doing now.
+Sure, I'll go back and see if I can find what triggered it in the
+original report, and give the patches a spin on 3.4.x-rt (and probably
+3.10.x-rt, since that is where rt-current is presently).
 
-Thanks,
-Naoya Horiguchi
+Paul.
+--
+
+> 
+> Thanks,
+> 
+> Paolo
+> 
+> Paolo Bonzini (3):
+>   KVM: cleanup (physical) CPU hotplug
+>   KVM: protect kvm_usage_count with its own spinlock
+>   KVM: Convert kvm_lock back to non-raw spinlock
+> 
+>  Documentation/virtual/kvm/locking.txt |  8 ++++--
+>  arch/x86/kvm/mmu.c                    |  4 +--
+>  arch/x86/kvm/x86.c                    |  8 +++---
+>  include/linux/kvm_host.h              |  2 +-
+>  virt/kvm/kvm_main.c                   | 51 ++++++++++++++++++-----------------
+>  5 files changed, 40 insertions(+), 33 deletions(-)
+> 
