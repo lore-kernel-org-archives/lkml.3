@@ -1,38 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757474Ab3IPKoE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 06:44:04 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47334 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753380Ab3IPKoB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 06:44:01 -0400
-Date: Mon, 16 Sep 2013 12:43:49 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Dave Jones <davej@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: trinity finds ftrace/perf bug. Film at 11.
-Message-ID: <20130916104349.GC29018@twins.programming.kicks-ass.net>
-References: <20130911135434.GA678@redhat.com>
- <20130912141913.2ffc7077@gandalf.local.home>
- <20130913105637.GM31370@twins.programming.kicks-ass.net>
- <20130913141638.GA6799@redhat.com>
- <20130916093719.GR21832@twins.programming.kicks-ass.net>
- <20130916102535.GA1071@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130916102535.GA1071@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1753739Ab3IPKqj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 06:46:39 -0400
+Received: from mga03.intel.com ([143.182.124.21]:47741 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752032Ab3IPKqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 06:46:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,914,1371106800"; 
+   d="scan'208";a="361036260"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 00/11] perf tools: kcore improvements
+Date: Mon, 16 Sep 2013 13:52:41 +0300
+Message-Id: <1379328772-21214-1-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 12:25:35PM +0200, Ingo Molnar wrote:
-> Also, Dave, do you run a single copy of Trinity, or multiple ones? Any 
-> special options for Peter to reproduce your crashes?
+Hi
 
-Trinity seems to spawn a process for each cpu available. So I get to run
-24 copies -- I presume they're all seeded differently.
+Here are some improvements for using kcore.  There are 3
+improvements:
+
+	- validate that kcore matches the perf.data modules
+	- workaround objdump difficulties with kcore
+	- add kcore to the build-id cache
+
+Note that I have included:
+
+	perf tools: fix buildid cache handling of kallsyms with kcore
+
+which has been sent earlier.
+
+
+Adrian Hunter (11):
+      perf tools: fix buildid cache handling of kallsyms with kcore
+      perf tools: fix path unpopulated in machine__create_modules()
+      perf tools: make a separate function to parse /proc/modules
+      perf tools: validate kcore module addresses
+      perf tools: workaround objdump difficulties with kcore
+      perf tools: add map__find_other_map_symbol()
+      perf tools: fix annotate_browser__callq()
+      perf tools: find kcore symbols on other maps
+      perf tools: add copyfile_mode()
+      perf buildid-cache: add ability to add kcore to the cache
+      perf tools: add ability to find kcore in build-id cache
+
+ tools/perf/Documentation/perf-buildid-cache.txt |  12 +
+ tools/perf/builtin-buildid-cache.c              | 146 +++++-
+ tools/perf/ui/browsers/annotate.c               |  10 +-
+ tools/perf/util/annotate.c                      |  36 +-
+ tools/perf/util/header.c                        |  44 +-
+ tools/perf/util/machine.c                       |  76 +---
+ tools/perf/util/map.c                           |  27 ++
+ tools/perf/util/map.h                           |   2 +
+ tools/perf/util/symbol-elf.c                    | 579 ++++++++++++++++++++++++
+ tools/perf/util/symbol-minimal.c                |  15 +
+ tools/perf/util/symbol.c                        | 431 +++++++++++++++---
+ tools/perf/util/symbol.h                        |  20 +
+ tools/perf/util/util.c                          |  18 +-
+ tools/perf/util/util.h                          |   1 +
+ 14 files changed, 1263 insertions(+), 154 deletions(-)
+
+Regards
+Adrian
+
