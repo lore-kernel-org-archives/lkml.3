@@ -1,133 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab3IPOGb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 10:06:31 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:42410 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754458Ab3IPOG1 (ORCPT
+	id S1756060Ab3IPOIl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 10:08:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51527 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753210Ab3IPOIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 10:06:27 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, stable@vger.kernel.org,
-        kvm@vger.kernel.org, gleb@redhat.com, jan.kiszka@siemens.com
-Subject: [PATCH 2/3] KVM: protect kvm_usage_count with its own spinlock
-Date: Mon, 16 Sep 2013 16:06:12 +0200
-Message-Id: <1379340373-5135-3-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1379340373-5135-1-git-send-email-pbonzini@redhat.com>
-References: <1379340373-5135-1-git-send-email-pbonzini@redhat.com>
+	Mon, 16 Sep 2013 10:08:40 -0400
+Date: Mon, 16 Sep 2013 07:07:36 -0700
+From: "tip-bot for Michael S. Tsirkin" <tipbot@zytor.com>
+Message-ID: <tip-13b62e46d5407c7d619aea1dc9c3e0991b631b57@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        mst@redhat.com, peterz@infradead.org, fweisbec@gmail.com,
+        tglx@linutronix.de, kosaki.motohiro@jp.fujitsu.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        mst@redhat.com, peterz@infradead.org, fweisbec@gmail.com,
+        tglx@linutronix.de, kosaki.motohiro@jp.fujitsu.com
+In-Reply-To: <20130916083036.GA1113@redhat.com>
+References: <20130916083036.GA1113@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched: Fix comment for sched_info_depart
+Git-Commit-ID: 13b62e46d5407c7d619aea1dc9c3e0991b631b57
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 16 Sep 2013 07:07:42 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The VM list need not be protected by a raw spinlock.  Separate the
-two so that kvm_lock can be made non-raw.
+Commit-ID:  13b62e46d5407c7d619aea1dc9c3e0991b631b57
+Gitweb:     http://git.kernel.org/tip/13b62e46d5407c7d619aea1dc9c3e0991b631b57
+Author:     Michael S. Tsirkin <mst@redhat.com>
+AuthorDate: Mon, 16 Sep 2013 11:30:36 +0300
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 16 Sep 2013 11:18:34 +0200
 
-Cc: stable@vger.kernel.org
-Cc: kvm@vger.kernel.org
-Cc: gleb@redhat.com
-Cc: jan.kiszka@siemens.com
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+sched: Fix comment for sched_info_depart
+
+sched_info_depart seems to be only called from
+sched_info_switch(), so only on involuntary task switch.
+
+Fix the comment to match.
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Link: http://lkml.kernel.org/r/20130916083036.GA1113@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- Documentation/virtual/kvm/locking.txt |  6 +++++-
- virt/kvm/kvm_main.c                   | 19 ++++++++++---------
- 2 files changed, 15 insertions(+), 10 deletions(-)
+ kernel/sched/stats.h | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/virtual/kvm/locking.txt b/Documentation/virtual/kvm/locking.txt
-index a9f366e..ba9e1c2 100644
---- a/Documentation/virtual/kvm/locking.txt
-+++ b/Documentation/virtual/kvm/locking.txt
-@@ -135,7 +135,11 @@ Name:		kvm_lock
- Type:		raw_spinlock
- Arch:		any
- Protects:	- vm_list
--		- hardware virtualization enable/disable
-+
-+Name:		kvm_count_lock
-+Type:		raw_spinlock_t
-+Arch:		any
-+Protects:	- hardware virtualization enable/disable
- Comment:	'raw' because hardware enabling/disabling must be atomic /wrt
- 		migration.
- 
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 75522b3..da13379 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -71,6 +71,7 @@ MODULE_LICENSE("GPL");
-  */
- 
- DEFINE_RAW_SPINLOCK(kvm_lock);
-+static DEFINE_RAW_SPINLOCK(kvm_count_lock);
- LIST_HEAD(vm_list);
- 
- static cpumask_var_t cpus_hardware_enabled;
-@@ -2683,10 +2684,10 @@ static void hardware_enable_nolock(void *junk)
- 
- static void hardware_enable(void)
- {
--	raw_spin_lock(&kvm_lock);
-+	raw_spin_lock(&kvm_count_lock);
- 	if (kvm_usage_count)
- 		hardware_enable_nolock(NULL);
--	raw_spin_unlock(&kvm_lock);
-+	raw_spin_unlock(&kvm_count_lock);
+diff --git a/kernel/sched/stats.h b/kernel/sched/stats.h
+index 5aef494..c7edee7 100644
+--- a/kernel/sched/stats.h
++++ b/kernel/sched/stats.h
+@@ -104,8 +104,9 @@ static inline void sched_info_queued(struct task_struct *t)
  }
  
- static void hardware_disable_nolock(void *junk)
-@@ -2701,10 +2702,10 @@ static void hardware_disable_nolock(void *junk)
- 
- static void hardware_disable(void)
- {
--	raw_spin_lock(&kvm_lock);
-+	raw_spin_lock(&kvm_count_lock);
- 	if (kvm_usage_count)
- 		hardware_disable_nolock(NULL);
--	raw_spin_unlock(&kvm_lock);
-+	raw_spin_unlock(&kvm_count_lock);
- }
- 
- static void hardware_disable_all_nolock(void)
-@@ -2718,16 +2719,16 @@ static void hardware_disable_all_nolock(void)
- 
- static void hardware_disable_all(void)
- {
--	raw_spin_lock(&kvm_lock);
-+	raw_spin_lock(&kvm_count_lock);
- 	hardware_disable_all_nolock();
--	raw_spin_unlock(&kvm_lock);
-+	raw_spin_unlock(&kvm_count_lock);
- }
- 
- static int hardware_enable_all(void)
- {
- 	int r = 0;
- 
--	raw_spin_lock(&kvm_lock);
-+	raw_spin_lock(&kvm_count_lock);
- 
- 	kvm_usage_count++;
- 	if (kvm_usage_count == 1) {
-@@ -2740,7 +2741,7 @@ static int hardware_enable_all(void)
- 		}
- 	}
- 
--	raw_spin_unlock(&kvm_lock);
-+	raw_spin_unlock(&kvm_count_lock);
- 
- 	return r;
- }
-@@ -3133,7 +3134,7 @@ static int kvm_suspend(void)
- static void kvm_resume(void)
- {
- 	if (kvm_usage_count) {
--		WARN_ON(raw_spin_is_locked(&kvm_lock));
-+		WARN_ON(raw_spin_is_locked(&kvm_count_lock));
- 		hardware_enable_nolock(NULL);
- 	}
- }
--- 
-1.8.3.1
-
-
+ /*
+- * Called when a process ceases being the active-running process, either
+- * voluntarily or involuntarily.  Now we can calculate how long we ran.
++ * Called when a process ceases being the active-running process involuntarily
++ * due, typically, to expiring its time slice (this may also be called when
++ * switching to the idle task).  Now we can calculate how long we ran.
+  * Also, if the process is still in the TASK_RUNNING state, call
+  * sched_info_queued() to mark that it has now again started waiting on
+  * the runqueue.
