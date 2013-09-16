@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751734Ab3IPUtp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 16:49:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43398 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751029Ab3IPUtn (ORCPT
+	id S1751419Ab3IPUvr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 16:51:47 -0400
+Received: from smtpfb1-g21.free.fr ([212.27.42.9]:37183 "EHLO
+	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988Ab3IPUvo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 16:49:43 -0400
-Message-ID: <52376ED9.5080208@canonical.com>
-Date: Mon, 16 Sep 2013 16:49:29 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 16 Sep 2013 16:51:44 -0400
+From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>
+To: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
+Cc: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@laposte.net>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH linux-next] pinctrl: fix pinconf_dbg_config_write return type
+Date: Mon, 16 Sep 2013 22:50:32 +0200
+Message-Id: <1379364632-19197-1-git-send-email-vincent.stehle@laposte.net>
+X-Mailer: git-send-email 1.8.4.rc3
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: thomas@m3y3r.de, Jiri Kosina <jkosina@suse.cz>, list@osuosl.org,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        LKML <linux-kernel@vger.kernel.org>, open@osuosl.org,
-        HID CORE LAYER <linux-input@vger.kernel.org>,
-        devel@linuxdriverproject.org
-Subject: Re: [v3.11][Regression] HID: hyperv: convert alloc+memcpy to memdup
-References: <5237430B.5040009@canonical.com> <20130916203824.GP25896@mwanda>
-In-Reply-To: <20130916203824.GP25896@mwanda>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/2013 04:38 PM, Dan Carpenter wrote:
-> On Mon, Sep 16, 2013 at 01:42:35PM -0400, Joseph Salisbury wrote:
->> Reverting the patch changes the driver back to useing kzalloc() and
->> memcpy() instead of  kmemdup.  Doing so has uncovered another bug, which
->> causes an oops on memcpy()[1].  We are in the process of bisecting that
->> one now and will provide the results.
-> The two bugs are the same it's that the code has shifted a little.  Mark
-> the commit as buggy and continue with the git bisect.
->
-> regards,
-> dan carpenter
-Can you explain a little further?  Mark commit a4a23f6 as bad?  An
-initial bisect already reported that was the first bad commit, so it
-can't be marked bad.  The oops on memcpy() happens after commit a4a23f6
-is reverted.  The oops on memcpy() did not happen before a4a23f6 was
-committed, so I assume this new oops was introduced by a change later.
+Have pinconf_dbg_config_write() return a ssize_t. This fixes the following
+compilation warning:
 
-Right now I'm bisecting down the oops on memcpy() by updating the bisect
-with good or bad, depending if the test kernel hit the oops.  I then
-revert a4a23f6, so that revert is the HEAD of the tree each time before
-building the kernel again(As long as the commit spit out by bisect is
-after when a4a23f6 was introduced).
+  drivers/pinctrl/pinconf.c:617:2: warning: initialization from incompatible pointer type [enabled by default]
+  drivers/pinctrl/pinconf.c:617:2: warning: (near initialization for ‘pinconf_dbg_pinconfig_fops.write’) [enabled by default]
 
-Thanks,
+Signed-off-by: Vincent Stehlé <vincent.stehle@laposte.net>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+---
 
-Joe
+Hi,
 
+This can be seen with e.g. next-20130916 with x86 allmodconfig.
+
+Best regards,
+
+V.
+
+ drivers/pinctrl/pinconf.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/pinctrl/pinconf.c b/drivers/pinctrl/pinconf.c
+index a138965..1664e78 100644
+--- a/drivers/pinctrl/pinconf.c
++++ b/drivers/pinctrl/pinconf.c
+@@ -490,7 +490,7 @@ exit:
+  * <devicename> <state> <pinname> are values that should match the pinctrl-maps
+  * <newvalue> reflects the new config and is driver dependant
+  */
+-static int pinconf_dbg_config_write(struct file *file,
++static ssize_t pinconf_dbg_config_write(struct file *file,
+ 	const char __user *user_buf, size_t count, loff_t *ppos)
+ {
+ 	struct pinctrl_maps *maps_node;
+-- 
+1.8.4.rc3
 
