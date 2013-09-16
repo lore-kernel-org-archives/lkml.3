@@ -1,103 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757556Ab3IPMDi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 08:03:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40954 "EHLO mx1.redhat.com"
+	id S1757483Ab3IPMIZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 08:08:25 -0400
+Received: from ozlabs.org ([203.10.76.45]:50409 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751494Ab3IPMDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 08:03:37 -0400
-Date: Mon, 16 Sep 2013 14:03:33 +0200
-From: Andrew Jones <drjones@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: kvm@vger.kernel.org, pbonzini@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: kvm: introduce CONFIG_KVM_MAX_VCPUS
-Message-ID: <20130916120332.GB14981@hawk.usersys.redhat.com>
-References: <1379161129-28393-1-git-send-email-drjones@redhat.com>
- <20130915090838.GW17294@redhat.com>
- <20130916082820.GB2101@hawk.usersys.redhat.com>
- <20130916084710.GJ17294@redhat.com>
+	id S1751494Ab3IPMIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 08:08:23 -0400
+Date: Mon, 16 Sep 2013 22:09:09 +1000
+From: David Gibson <david@gibson.dropbear.id.au>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH v2 19/20] mm, hugetlb: retry if failed to allocate and
+ there is concurrent user
+Message-ID: <20130916120909.GA2706@voom.fritz.box>
+References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1376040398-11212-20-git-send-email-iamjoonsoo.kim@lge.com>
+ <20130905011553.GA10158@voom.redhat.com>
+ <20130905054357.GA23597@lge.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="n8g4imXOkfNTN/H1"
 Content-Disposition: inline
-In-Reply-To: <20130916084710.GJ17294@redhat.com>
+In-Reply-To: <20130905054357.GA23597@lge.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 11:47:10AM +0300, Gleb Natapov wrote:
-> On Mon, Sep 16, 2013 at 10:28:20AM +0200, Andrew Jones wrote:
-> > On Sun, Sep 15, 2013 at 12:08:38PM +0300, Gleb Natapov wrote:
-> > > On Sat, Sep 14, 2013 at 02:18:49PM +0200, Andrew Jones wrote:
-> > > > Take CONFIG_KVM_MAX_VCPUS from arm32, but set the default to 255.
-> > > > 
-> > > > Signed-off-by: Andrew Jones <drjones@redhat.com>
-> > > > ---
-> > > >  arch/x86/include/asm/kvm_host.h |  5 +++--
-> > > >  arch/x86/kvm/Kconfig            | 10 ++++++++++
-> > > >  2 files changed, 13 insertions(+), 2 deletions(-)
-> > > > 
-> > > > diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> > > > index c76ff74a98f2e..e7e9b523a8f7e 100644
-> > > > --- a/arch/x86/include/asm/kvm_host.h
-> > > > +++ b/arch/x86/include/asm/kvm_host.h
-> > > > @@ -31,8 +31,9 @@
-> > > >  #include <asm/msr-index.h>
-> > > >  #include <asm/asm.h>
-> > > >  
-> > > > -#define KVM_MAX_VCPUS 255
-> > > > -#define KVM_SOFT_MAX_VCPUS 160
-> > > > +#define KVM_MAX_VCPUS CONFIG_KVM_MAX_VCPUS
-> > > > +#define KVM_SOFT_MAX_VCPUS min(160, KVM_MAX_VCPUS)
-> > > > +
-> > > >  #define KVM_USER_MEM_SLOTS 125
-> > > >  /* memory slots that are not exposed to userspace */
-> > > >  #define KVM_PRIVATE_MEM_SLOTS 3
-> > > > diff --git a/arch/x86/kvm/Kconfig b/arch/x86/kvm/Kconfig
-> > > > index a47a3e54b964b..e9532c33527ee 100644
-> > > > --- a/arch/x86/kvm/Kconfig
-> > > > +++ b/arch/x86/kvm/Kconfig
-> > > > @@ -52,6 +52,16 @@ config KVM
-> > > >  
-> > > >  	  If unsure, say N.
-> > > >  
-> > > > +config KVM_MAX_VCPUS
-> > > > +	int "Number maximum supported virtual CPUs per VM"
-> > > > +	depends on KVM
-> > > > +	default 255
-> > > > +	help
-> > > > +	  Static number of max supported virtual CPUs per VM.
-> > > > +
-> > > > +	  Set to a lower number to save some resources. Set to a higher
-> > > > +	  number to test scalability.
-> > > > +
-> > > Maximum this can save is around 2K per VM. This is pretty insignificant
-> > > considering overall memory footprint even smallest VM has.
-> > 
-> > Should I reword this, dropping all 'save resources' verbiage, in order to
-> > avoid sending a message that this option can affect resource consumption?
-> > Or just leave it as it is, because even though it's insignificant, it's
-> > still true and balances out the 'Set to a higher' part.
-> > 
-> I do not think config option is necessary. The overhead is so
-> insignificant that there is no point in additional user visible knob,
-> at least while only 255 vcpu are supported. Is there a reason for anyone
-> to configure less them 255 vcpus here? OTOH what prevents someone from
-> configuring more then 255 vcpus?
 
-The reason to configure less is to be able to compile a hard limit,
-without having to muck with the source. E.g. if you really don't want to
-allow more than KVM_SOFT_MAX_VCPUS to be configured, then you can compile
-with CONFIG_KVM_MAX_VCPUS == KVM_SOFT_MAX_VCPUS.
+--n8g4imXOkfNTN/H1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Nothing prevents someone from configuring more than the max in
-userspace, but if they try to create/use more than the max
-(kvm_vm_ioctl_create_vcpu), it'll fail (EINVAL).
+On Thu, Sep 05, 2013 at 02:43:57PM +0900, Joonsoo Kim wrote:
+> Hello, David.
+>=20
+> First of all, thanks for review!
+>=20
+> On Thu, Sep 05, 2013 at 11:15:53AM +1000, David Gibson wrote:
+> > On Fri, Aug 09, 2013 at 06:26:37PM +0900, Joonsoo Kim wrote:
+> > > If parallel fault occur, we can fail to allocate a hugepage,
+> > > because many threads dequeue a hugepage to handle a fault of same add=
+ress.
+> > > This makes reserved pool shortage just for a little while and this ca=
+use
+> > > faulting thread who can get hugepages to get a SIGBUS signal.
+> > >=20
+> > > To solve this problem, we already have a nice solution, that is,
+> > > a hugetlb_instantiation_mutex. This blocks other threads to dive into
+> > > a fault handler. This solve the problem clearly, but it introduce
+> > > performance degradation, because it serialize all fault handling.
+> > >=20
+> > > Now, I try to remove a hugetlb_instantiation_mutex to get rid of
+> > > performance degradation. For achieving it, at first, we should ensure=
+ that
+> > > no one get a SIGBUS if there are enough hugepages.
+> > >=20
+> > > For this purpose, if we fail to allocate a new hugepage when there is
+> > > concurrent user, we return just 0, instead of VM_FAULT_SIGBUS. With t=
+his,
+> > > these threads defer to get a SIGBUS signal until there is no
+> > > concurrent user, and so, we can ensure that no one get a SIGBUS if th=
+ere
+> > > are enough hugepages.
+> > >=20
+> > > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> > >=20
+> > > diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+> > > index e29e28f..981c539 100644
+> > > --- a/include/linux/hugetlb.h
+> > > +++ b/include/linux/hugetlb.h
+> > > @@ -242,6 +242,7 @@ struct hstate {
+> > >  	int next_nid_to_free;
+> > >  	unsigned int order;
+> > >  	unsigned long mask;
+> > > +	unsigned long nr_dequeue_users;
+> > >  	unsigned long max_huge_pages;
+> > >  	unsigned long nr_huge_pages;
+> > >  	unsigned long free_huge_pages;
+> > > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> > > index 8743e5c..0501fe5 100644
+> > > --- a/mm/hugetlb.c
+> > > +++ b/mm/hugetlb.c
+> > > @@ -561,6 +561,7 @@ retry_cpuset:
+> > >  		if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask)) {
+> > >  			page =3D dequeue_huge_page_node(h, zone_to_nid(zone));
+> > >  			if (page) {
+> > > +				h->nr_dequeue_users++;
+> >=20
+> > So, nr_dequeue_users doesn't seem to be incremented in the
+> > alloc_huge_page_node() path.  I'm not sure exactly where that's used,
+> > so I'm not sure if it's a problem.
+> >=20
+>=20
+> Hmm.. I think that it isn't a problem. The point is that we want to avoid
+> the race which kill the legitimate users of hugepages by out of resources.
+> This allocation doesn't harm to the legitimate users.
 
-I see this as a step towards getting rid of KVM_SOFT_MAX_VCPUS. I.e.
-compile with whatever maximum limit you want (can support), and return
-online/possible cpus for the recommended number. Only configure the kernel
-with more than your typical maximum (was KVM_SOFT_MAX_VCPUS) for
-development/testing purposes.
+Well, my point is just that since whatever callers there are to this
+function are external, they need to be checked to see if they can
+participate in this race.
 
-drew
+>=20
+> > >  				if (!use_reserve)
+> > >  					break;
+> > > =20
+> > > @@ -577,6 +578,16 @@ retry_cpuset:
+> > >  	return page;
+> > >  }
+> > > =20
+> > > +static void commit_dequeued_huge_page(struct hstate *h, bool do_dequ=
+eue)
+> > > +{
+> > > +	if (!do_dequeue)
+> > > +		return;
+> >=20
+> > Seems like it would be easier to do this test in the callers, but I
+> > doubt it matters much.
+>=20
+> Yes, I will fix it.
+>=20
+> >=20
+> > > +	spin_lock(&hugetlb_lock);
+> > > +	h->nr_dequeue_users--;
+> > > +	spin_unlock(&hugetlb_lock);
+> > > +}
+> > > +
+> > >  static void update_and_free_page(struct hstate *h, struct page *page)
+> > >  {
+> > >  	int i;
+> > > @@ -1110,7 +1121,9 @@ static void vma_commit_reservation(struct hstat=
+e *h,
+> > >  }
+> > > =20
+> > >  static struct page *alloc_huge_page(struct vm_area_struct *vma,
+> > > -				    unsigned long addr, int use_reserve)
+> > > +				    unsigned long addr, int use_reserve,
+> > > +				    unsigned long *nr_dequeue_users,
+> > > +				    bool *do_dequeue)
+> > >  {
+> > >  	struct hugepage_subpool *spool =3D subpool_vma(vma);
+> > >  	struct hstate *h =3D hstate_vma(vma);
+> > > @@ -1138,8 +1151,11 @@ static struct page *alloc_huge_page(struct vm_=
+area_struct *vma,
+> > >  		return ERR_PTR(-ENOSPC);
+> > >  	}
+> > >  	spin_lock(&hugetlb_lock);
+> > > +	*do_dequeue =3D true;
+> > >  	page =3D dequeue_huge_page_vma(h, vma, addr, use_reserve);
+> > >  	if (!page) {
+> > > +		*nr_dequeue_users =3D h->nr_dequeue_users;
+> >=20
+> > So, the nr_dequeue_users parameter is only initialized if !page here.
+> > It's not obvious to me that the callers only use it in hat case.
+>=20
+> Okay. I will fix it.
+>=20
+> >=20
+> > > +		*do_dequeue =3D false;
+> > >  		spin_unlock(&hugetlb_lock);
+> > >  		page =3D alloc_buddy_huge_page(h, NUMA_NO_NODE);
+> > >  		if (!page) {
+> >=20
+> > I think the counter also needs to be incremented in the case where we
+> > call alloc_buddy_huge_page() from alloc_huge_page().  Even though it's
+> > new, it gets added to the hugepage pool at this point and could still
+> > be a contended page for the last allocation, unless I'm missing
+> > something.
+>=20
+> Your comment has reasonable point to me, but I have a different opinion.
+>=20
+> As I already mentioned, the point is that we want to avoid the race
+> which kill the legitimate users of hugepages by out of resources.
+> I increase 'h->nr_dequeue_users' when the hugepage allocated by
+> administrator is dequeued. It is because what the hugepage I want to
+> protect from the race is the one allocated by administrator via
+> kernel param or /proc interface. Administrator may already know how many
+> hugepages are needed for their application so that he may set nr_hugepage
+> to reasonable value. I want to guarantee that these hugepages can be used
+> for his application without any race, since he assume that the application
+> would work fine with these hugepages.
+>=20
+> To protect hugepages returned from alloc_buddy_huge_page() from the race
+> is different for me. Although it will be added to the hugepage pool, this
+> doesn't guarantee certain application's success more. If certain
+> application's success depends on the race of this new hugepage, it's death
+> by the race doesn't matter, since nobody assume that it works fine.
+
+Hrm.  I still think this path should be included.  Although I'll agree
+that failing in this case is less bad.
+
+However, it can still lead to a situation where with two processes or
+threads, faulting on exactly the same shared page we have one succeed
+and the other fail.  That's a strange behaviour and I think we want to
+avoid it in this case too.
+
+--=20
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
+
+--n8g4imXOkfNTN/H1
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSNvTlAAoJEGw4ysog2bOSo9AQAMWe90W5ba7DZnrpnhcYtaCv
+QjS7+pvssY/lXlbzp3IwwaGndc+AAMLvMOvXpWqx6gshurJpad2EnO0ETk+RiKXZ
+QGDyEz0iXktGnaY5c/ed/lQM1dCoMMzLwyfi85UbNa4NJnCWNyBlvsxB9JjQUxaA
+/TiXaFpoxK+ADSPEzfJl/Xb2nYplu3z4iP8R7pd0WTVBld7goU1JSxhhJKFXMTq8
+S7pqMc1I3c9ExQzgobTQgqxMS0AzP5RhUpb0TXyiv8rujyuJ09VntKtED2w5WkZ+
+Ei8Sf6a5ZlbUzFjaOf0pXieIx9aLazg/mxkMwo10TDhR7W5YxmK/Px9rVPp3QWh/
+Je35R3aF54Igjw99fqIZcCRnCi6/hLLtTVykPswagZFa384hBgkdELafYVM7kT8n
+iKVhrEo4X7aF8clDVMcS15e95T2DgaxtOasFYlsLaBEuCdHBikeRyZZqadA6vsHJ
+UB7SbaiJh6jSuW//9S6negc1zZPHmABCuvof4PHU2YaKjC8SMDGQeYq2v+LC1KmY
+uCKbUw4XKx56JRpG4yKWtQZGYXpovqxOSnR0FN94mcjHcxaFy+6YeoMsJOQvVQ4o
+lQx87OcM19jG63d824M9ecoNkP27eCXYADyVNiT0EF2mThpteUJYLlm2f4lQd9a2
+AM30xrUCAxw9S6JeL93K
+=pM7j
+-----END PGP SIGNATURE-----
+
+--n8g4imXOkfNTN/H1--
