@@ -1,106 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756364Ab3IPIJg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 04:09:36 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:53956 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752601Ab3IPIJb convert rfc822-to-8bit (ORCPT
+	id S1756578Ab3IPIJr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 04:09:47 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:61440 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755229Ab3IPIJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 04:09:31 -0400
-Message-ID: <5236BCB7.9080102@arm.com>
-Date: Mon, 16 Sep 2013 09:09:27 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Mon, 16 Sep 2013 04:09:43 -0400
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Andrew Jones <drjones@redhat.com>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pbonzini@redhat.com" <pbonzini@redhat.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH 2/3] arm32: kvm: rename CONFIG_KVM_ARM_MAX_VCPUS
-References: <1379160656-28050-1-git-send-email-drjones@redhat.com> <1379160656-28050-3-git-send-email-drjones@redhat.com> <20130915093002.GX17294@redhat.com>
-In-Reply-To: <20130915093002.GX17294@redhat.com>
-X-Enigmail-Version: 1.4.6
-X-OriginalArrivalTime: 16 Sep 2013 08:09:28.0849 (UTC) FILETIME=[10F23810:01CEB2B4]
-X-MC-Unique: 113091609092901101
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1379317437-28329-2-git-send-email-keescook@chromium.org>
+References: <1379317437-28329-1-git-send-email-keescook@chromium.org>
+	<1379317437-28329-2-git-send-email-keescook@chromium.org>
+Date: Mon, 16 Sep 2013 10:09:42 +0200
+X-Google-Sender-Auth: bTWzhsUoctNoXY_Yen7Xqc_ZAi0
+Message-ID: <CAMuHMdUw7J6TmQ=13_zoC=rvGy0PZwd8VF5t3g8pjPQX5WaVUg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] remove all uses of printf's %n
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>, George Spelvin <linux@horizon.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Jan Beulich <JBeulich@suse.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/09/13 10:30, Gleb Natapov wrote:
-> On Sat, Sep 14, 2013 at 02:10:55PM +0200, Andrew Jones wrote:
->> Drop the _ARM_ part of the name. We can then introduce a config option
->> like this to aarch64 and other arches using the same name - allowing
->> grep to show them all. Also update the help text to describe the option
->> more completely.
->>
->> Signed-off-by: Andrew Jones <drjones@redhat.com>
->> ---
->>  arch/arm/include/asm/kvm_host.h | 4 ++--
->>  arch/arm/kvm/Kconfig            | 8 ++++----
->>  2 files changed, 6 insertions(+), 6 deletions(-)
->>
->> diff --git a/arch/arm/include/asm/kvm_host.h b/arch/arm/include/asm/kvm_host.h
->> index 7d22517d80711..c614d3eb176c6 100644
->> --- a/arch/arm/include/asm/kvm_host.h
->> +++ b/arch/arm/include/asm/kvm_host.h
->> @@ -25,8 +25,8 @@
->>  #include <asm/fpstate.h>
->>  #include <kvm/arm_arch_timer.h>
->>  
->> -#if defined(CONFIG_KVM_ARM_MAX_VCPUS)
->> -#define KVM_MAX_VCPUS CONFIG_KVM_ARM_MAX_VCPUS
->> +#if defined(CONFIG_KVM_MAX_VCPUS)
->> +#define KVM_MAX_VCPUS CONFIG_KVM_MAX_VCPUS
->>  #else
->>  #define KVM_MAX_VCPUS 0
->>  #endif
->> diff --git a/arch/arm/kvm/Kconfig b/arch/arm/kvm/Kconfig
->> index ebf5015508b52..de63bfccb3eb5 100644
->> --- a/arch/arm/kvm/Kconfig
->> +++ b/arch/arm/kvm/Kconfig
->> @@ -40,16 +40,16 @@ config KVM_ARM_HOST
->>  	---help---
->>  	  Provides host support for ARM processors.
->>  
->> -config KVM_ARM_MAX_VCPUS
->> +config KVM_MAX_VCPUS
->>  	int "Number maximum supported virtual CPUs per VM"
->>  	depends on KVM_ARM_HOST
->>  	default 4
->>  	help
->>  	  Static number of max supported virtual CPUs per VM.
->>  
->> -	  If you choose a high number, the vcpu structures will be quite
->> -	  large, so only choose a reasonable number that you expect to
->> -	  actually use.
-> I do no see why on ARM vcpu structure size depends on KVM_ARM_MAX_VCPUS.
-> Can somebody point me to it.
+On Mon, Sep 16, 2013 at 9:43 AM, Kees Cook <keescook@chromium.org> wrote:
+> All users of %n are calculating padding size when using seq_file, so
+> instead use the new last_len member for discovering the length of the
+> written strings.
 
-There's a number of indirections, but here you go:
-arch/arm/include/asm/kvm_host.h:#define KVM_MAX_VCPUS CONFIG_KVM_ARM_MAX_VCPUS
+Would it make sense to provide a seq_pad(...) function instead, to avoid
+exposing more seq_file internals to its callers?
 
-include/kvm/arm_vgic.h:#define VGIC_MAX_CPUS            KVM_MAX_VCPUS
+Gr{oetje,eeting}s,
 
-include/kvm/arm_vgic.h:#if (VGIC_MAX_CPUS > 8)
-include/kvm/arm_vgic.h: } percpu[VGIC_MAX_CPUS];
-include/kvm/arm_vgic.h: u32 percpu[VGIC_MAX_CPUS][VGIC_NR_PRIVATE_IRQS / 4];
-include/kvm/arm_vgic.h: u8                      irq_sgi_sources[VGIC_MAX_CPUS][VGIC_NR_SGIS];
-include/kvm/arm_vgic.h: struct vgic_bitmap      irq_spi_target[VGIC_MAX_CPUS];
+                        Geert
 
-Basically, the GIC emulation data structures are sized on the number of VCPUs
-(as well as the number of supported interrupts).
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-	M.
--- 
-Jazz is not dead. It just smells funny...
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
