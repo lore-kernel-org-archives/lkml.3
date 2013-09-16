@@ -1,75 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756868Ab3IPIzU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 04:55:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41271 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751470Ab3IPIzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 04:55:19 -0400
-Date: Mon, 16 Sep 2013 11:55:17 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Andrew Jones <drjones@redhat.com>
-Cc: kvm@vger.kernel.org, pbonzini@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [RFC] x86: kvm: remove KVM_SOFT_MAX_VCPUS
-Message-ID: <20130916085517.GK17294@redhat.com>
-References: <1379161011-28239-1-git-send-email-drjones@redhat.com>
- <20130915090322.GV17294@redhat.com>
- <20130916082208.GA2101@hawk.usersys.redhat.com>
+	id S1754298Ab3IPJBP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 05:01:15 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46818 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314Ab3IPJBN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 05:01:13 -0400
+Date: Mon, 16 Sep 2013 11:01:00 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Fan Du <fan.du@windriver.com>
+cc: David Miller <davem@davemloft.net>, herbert@gondor.hengli.com.au,
+        steffen.klassert@secunet.com, dborkman@redhat.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCHv3 linux-next] hrtimer: Add notifier when clock_was_set
+ was called
+In-Reply-To: <52365021.8040906@windriver.com>
+Message-ID: <alpine.DEB.2.02.1309161059220.4089@ionos.tec.linutronix.de>
+References: <alpine.DEB.2.02.1309121441420.4089@ionos.tec.linutronix.de> <20130912134409.GB21212@gondor.apana.org.au> <alpine.DEB.2.02.1309121636010.4089@ionos.tec.linutronix.de> <20130912.133252.425268707009916773.davem@davemloft.net> <52327C92.5010009@windriver.com>
+ <alpine.DEB.2.02.1309131628250.4089@ionos.tec.linutronix.de> <52365021.8040906@windriver.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130916082208.GA2101@hawk.usersys.redhat.com>
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-199846746-1379322061=:4089"
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 10:22:09AM +0200, Andrew Jones wrote:
-> > > [1] Actually, until 972fc544b6034a in uq/master is merged there won't be
-> > >     any warnings either.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--8323329-199846746-1379322061=:4089
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+
+On Mon, 16 Sep 2013, Fan Du wrote:
+> On 2013年09月13日 22:32, Thomas Gleixner wrote:
+> > On Fri, 13 Sep 2013, Fan Du wrote:
+> > > (2) What I have been bugging you around here for this long time is really
+> > > the
+> > > second
+> > >      problem, I'm sorry I didn't make it clearly to you and others, which
+> > > is
+> > > below:
 > > > 
-> > > Signed-off-by: Andrew Jones <drjones@redhat.com>
-> > > ---
-> > >  arch/x86/include/asm/kvm_host.h | 1 -
-> > >  arch/x86/kvm/x86.c              | 2 +-
-> > >  2 files changed, 1 insertion(+), 2 deletions(-)
-> > > 
-> > > diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> > > index c76ff74a98f2e..9236c63315a9b 100644
-> > > --- a/arch/x86/include/asm/kvm_host.h
-> > > +++ b/arch/x86/include/asm/kvm_host.h
-> > > @@ -32,7 +32,6 @@
-> > >  #include <asm/asm.h>
-> > >  
-> > >  #define KVM_MAX_VCPUS 255
-> > > -#define KVM_SOFT_MAX_VCPUS 160
-> > >  #define KVM_USER_MEM_SLOTS 125
-> > >  /* memory slots that are not exposed to userspace */
-> > >  #define KVM_PRIVATE_MEM_SLOTS 3
-> > > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> > > index e5ca72a5cdb6d..d9d3e2ed68ee9 100644
-> > > --- a/arch/x86/kvm/x86.c
-> > > +++ b/arch/x86/kvm/x86.c
-> > > @@ -2604,7 +2604,7 @@ int kvm_dev_ioctl_check_extension(long ext)
-> > >  		r = !kvm_x86_ops->cpu_has_accelerated_tpr();
-> > >  		break;
-> > >  	case KVM_CAP_NR_VCPUS:
-> > > -		r = KVM_SOFT_MAX_VCPUS;
-> > > +		r = min(num_online_cpus(), KVM_MAX_VCPUS);
-> > s/KVM_MAX_VCPUS/KVM_SOFT_MAX_VCPUS/.  Also what about hotplug cpus?
+> > >      Why using wall clock time to calculate soft/hard IPsec events when
+> > > xfrm_state timer
+> > >      out happens in its timeout handler? Because even if xfrm_state using
+> > > CLOCK_BOOTTIME,
+> > >      system wall clock time changing will surely disturb soft/hard IPsec
+> > > events, which
+> > >      you raised your concern about in (*a*).
+> > 
+> > No CLOCK_BOOTTIME is not affected by wall clock time changes. It's
+> > basically CLOCK_MONOTONIC, it just keeps counting the suspend time as
+> > well. So without a suspend/resume cycle CLOCK_MONOTONIC and
+> > CLOCK_BOOTTIME are the same. After a suspend/resume cycle
+> > CLOCK_BOOTTIME will be N seconds ahead of CLOCK_MONOTONIC, where N is
+> > the number of seconds spent in suspend.
 > 
-> I'll send a v2 with this change.
+> Sorry for the ambiguity. Yes, CLOCK_BOOTTIME is monotonic *and* counting
+> suspend/resume time as well as not affected by wall clock time change.
 > 
-> I thought a bit about hotplug, and thus using num_possible_cpus()
-> instead, but then decided it made more sense to stick to what's online now
-> for the recommended number. It's just a recommendation anyway. So as long
-> as KVM_MAX_VCPUS is >= num_possible_cpus(), then one can still configure
-> more vcpus to count for all hotplugable cpus, if they wish.
+> Using CLOCK_BOOTTIME guarantees b- will timeout in a right manner, i.e., not
+> affected by wall clock time change, as well as keep the timer valid when
+> suspend/resume.
 > 
-It is just recommended, but we do warn about it, so it is user visible.
-Well, the whole point of it existence is to be user visible ;). If user
-creates a guest with max cpus greater than current number if online
-cpus, taking into account feature grows, he will get a warning, but we
-should not warn about it.
- 
---
-			Gleb.
+> A classic way of using timer is:
+>  a- Arm a timer with specified interval
+>  b- Wait for the timer to timeout
+>  c- After the timeout, notify the event to other place in the timer handler.
+> 
+> IPsec key lifetime timer does its this way:
+>  a- Arm a timer with specified interval
+>  b- Wait for the timer to timeout
+>  c- After timeout, in the timer handler, using wall clock time to calculate
+>    which kind of event to notify user(soft or hard for both key use time,
+>    and key created time). So the problem arises at this stage if wall clock
+>    time changed.
+
+And why on earth must it use wall clock time for selecting the event
+type?
+
+Thanks,
+
+	tglx
+--8323329-199846746-1379322061=:4089--
