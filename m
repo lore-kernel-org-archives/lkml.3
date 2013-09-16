@@ -1,27 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932239Ab3IPEv5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 00:51:57 -0400
-Received: from 184-106-116-120.static.cloud-ips.com ([184.106.116.120]:54633
-	"HELO leadtexting.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with SMTP id S1752858Ab3IPEv4 convert rfc822-to-8bit (ORCPT
+	id S932343Ab3IPExj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 00:53:39 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:58399 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752954Ab3IPExh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 00:51:56 -0400
-X-Greylist: delayed 48264 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Sep 2013 00:51:56 EDT
-Message-ID: <B4F68C30-BAB5-4E5F-B0D9-190D1ED49555@leadtexting.com>
-Content-Type: text/plain; charset=US-ASCII
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Re: Pls Reply Soon!
-To: Recipients <mslizawong@hlb.com>
-From: mslizawong@hlb.com
-Date: Sun, 15 Sep 2013 16:29:27 -0700
-Reply-To: mslizawo@gmail.com
+	Mon, 16 Sep 2013 00:53:37 -0400
+Date: Mon, 16 Sep 2013 00:53:36 -0400 (EDT)
+Message-Id: <20130916.005336.1461520866204280459.davem@davemloft.net>
+To: antonio.alecrim@gmail.com
+Cc: isdn@linux-pingi.de, standby24x7@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] isdn: hfcpci_softirq: get func return to suppress
+ compiler warning
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1379179240-21927-1-git-send-email-antonio.alecrim@gmail.com>
+References: <1379179240-21927-1-git-send-email-antonio.alecrim@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Sun, 15 Sep 2013 21:53:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-i have a business proposal for you, write me back for more info.
--Sent from my ipad.
+From: Antonio Alecrim Jr <antonio.alecrim@gmail.com>
+Date: Sat, 14 Sep 2013 14:20:40 -0300
 
+> Signed-off-by: Antonio Alecrim Jr <antonio.alecrim@gmail.com>
+
+Applied.
