@@ -1,101 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756879Ab3IPJUI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 05:20:08 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:55715 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752042Ab3IPJUG (ORCPT
+	id S1757233Ab3IPJUq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 05:20:46 -0400
+Received: from eu1sys200aog122.obsmtp.com ([207.126.144.153]:49981 "EHLO
+	eu1sys200aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753175Ab3IPJUo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 05:20:06 -0400
-Date: Mon, 16 Sep 2013 10:19:56 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>,
-        Wang Shilong <wangshilong1991@gmail.com>
-Subject: Re: [PATCH 1/4 v2] mfd: add STw481x driver
-Message-ID: <20130916091956.GF3999@lee--X1>
-References: <1379094851-26385-1-git-send-email-linus.walleij@linaro.org>
+	Mon, 16 Sep 2013 05:20:44 -0400
+From: Denis CIOCCA <denis.ciocca@st.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Jonathan Cameron <jic23@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
+Date: Mon, 16 Sep 2013 11:19:19 +0200
+Subject: Re: [PATCH 32/38] iio: accel-core: st: Move LSM303DLH into correct
+ group
+Thread-Topic: [PATCH 32/38] iio: accel-core: st: Move LSM303DLH into correct
+ group
+Thread-Index: Ac6yvdSttCjToWW/RJGjhx6syB3PXw==
+Message-ID: <5236CD17.5010901@st.com>
+References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
+ <1378817379-8238-33-git-send-email-lee.jones@linaro.org>
+ <5234A20F.7040008@kernel.org> <20130916080546.GC3999@lee--X1>
+In-Reply-To: <20130916080546.GC3999@lee--X1>
+Accept-Language: it-IT, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
+ Thunderbird/17.0.8
+acceptlanguage: it-IT, en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1379094851-26385-1-git-send-email-linus.walleij@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8G9KnSB002996
 
-On Fri, 13 Sep 2013, Linus Walleij wrote:
+Hi Lee,
+>> On 09/10/13 13:49, Lee Jones wrote:
+>>> The LSM303DLH's WAI (WhoAmI) is 0x33, meaning it should be enabled by
+>>> Accel Sensor group one. For the device to probe without error, we'll
+>>> need to ensure it's registered with the correct WAI.
+>>>
+>>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>> You clearly have a better datasheet than I have as for that part it doesn't even claim to
+>> have the relevant register to read a who am I from.
+>>
+>> Now that datasheet does list odr values as 50, 100, 400 1000 which would put it where it originally
+>> was in these tables.
+>>
+>> http://www.st.com/web/en/resource/technical/document/datasheet/CD00260288.pdf
+>>
+>> I haven't checked other elements...
+>>
+>> I'm confused but suspect we may need another type entry to deal with this one.
+> Hmmm... on initial thought, I don't know how we can handle this one. I
+> assumed the WAIs were a one-stop-shop for device identification. I also
+> thought that they would only match if the functionality and register
+> maps would be the same.
+>
+> I'll touch base with Denis on this, perhaps he can shed some light.
+>
+I've just checked, the WAI is 0x32. It was correct...Are you sure that 
+you use the LSM303DLH?
 
-> This adds a driver for the STw481x PMICs found in the Nomadik
-> family of platforms. This one uses pure device tree probing.
-> Print some of the OTP registers on boot and register a regulator
-> MFD child.
-> 
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
-> Hi Sam/Lee, I'm seeking an ACK for this driver to take it through
-> the ARM SoC tree with the enablement patches.
+Denis
 
-Sorry, not just yet. I need to straighten out one last thing.
 
-> ChangeLog v1->v2:
-> - Fix remnant checkpatch errors.
-> - #define some more registers to make things clear.
-> - Document the power control register access function.
-> - Don't free devm_*-allocated devices.
-> - Use module_i2c_driver() macro.
-> ---
->  drivers/mfd/Kconfig         |  10 ++
->  drivers/mfd/Makefile        |   1 +
->  drivers/mfd/stw481x.c       | 250 ++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/stw481x.h |  56 ++++++++++
->  4 files changed, 317 insertions(+)
->  create mode 100644 drivers/mfd/stw481x.c
->  create mode 100644 include/linux/mfd/stw481x.h
-> 
 
-> +/*
-> + * This ID table is completely unused, as this is a pure
-> + * device-tree probed driver, but it has to be here due to
-> + * the structure of the I2C core.
-> + */
-
->From what I can gather, the code doesn't agree with you.
-
-> +static const struct i2c_device_id dummy_id[] = {
-> +	{ "dummy", 0 },
-> +	{ }
-> +};
-
-Can't you just NULL .id_table?
-
-Here's the code which would use it:
-> /* match on an id table if there is one */
-> if (driver->id_table)
->         return i2c_match_id(driver->id_table, client) != NULL;
-
-Matching for "dummy" will just waste cycles.
-
-> +static struct i2c_driver stw481x_driver = {
-> +	.driver = {
-> +		.name	= "stw481x",
-> +		.of_match_table = stw481x_match,
-> +	},
-> +	.probe		= stw481x_probe,
-> +	.remove		= stw481x_remove,
-> +	.id_table	= dummy_id,
-> +};
-> +
-> +module_i2c_driver(stw481x_driver);
-> +
-> +MODULE_AUTHOR("Linus Walleij");
-> +MODULE_DESCRIPTION("STw481x PMIC driver");
-> +MODULE_LICENSE("GPL v2");
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org â”‚ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+>>> ---
+>>>   drivers/iio/accel/st_accel_core.c | 4 ++--
+>>>   1 file changed, 2 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/drivers/iio/accel/st_accel_core.c b/drivers/iio/accel/st_accel_core.c
+>>> index ea62291..03a2b6b 100644
+>>> --- a/drivers/iio/accel/st_accel_core.c
+>>> +++ b/drivers/iio/accel/st_accel_core.c
+>>> @@ -170,6 +170,7 @@ static const struct st_sensors st_accel_sensors[] = {
+>>>   			[2] = LSM330D_ACCEL_DEV_NAME,
+>>>   			[3] = LSM330DL_ACCEL_DEV_NAME,
+>>>   			[4] = LSM330DLC_ACCEL_DEV_NAME,
+>>> +			[5] = LSM303DLH_ACCEL_DEV_NAME,
+>>>   		},
+>>>   		.ch = (struct iio_chan_spec *)st_accel_12bit_channels,
+>>>   		.odr = {
+>>> @@ -238,8 +239,7 @@ static const struct st_sensors st_accel_sensors[] = {
+>>>   		.sensors_supported = {
+>>>   			[0] = LIS331DLH_ACCEL_DEV_NAME,
+>>>   			[1] = LSM303DL_ACCEL_DEV_NAME,
+>>> -			[2] = LSM303DLH_ACCEL_DEV_NAME,
+>>> -			[3] = LSM303DLM_ACCEL_DEV_NAME,
+>>> +			[2] = LSM303DLM_ACCEL_DEV_NAME,
+>>>   		},
+>>>   		.ch = (struct iio_chan_spec *)st_accel_12bit_channels,
+>>>   		.odr = {
+>>>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
