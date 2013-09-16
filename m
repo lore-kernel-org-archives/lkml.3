@@ -1,51 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754314Ab3IPNep (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 09:34:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49395 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751284Ab3IPNen (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 09:34:43 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-To: Steve French <smfrench@gmail.com>
-Cc: Jeff Layton <jlayton@redhat.com>, Sachin Prabhu <sprabhu@redhat.com>,
-        dhowells@redhat.com, linux-cifs@vger.kernel.org,
-        linux-cachefs@redhat.com, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] CIFS FS-Cache bugfix
-Date: Mon, 16 Sep 2013 14:34:40 +0100
-Message-ID: <12400.1379338480@warthog.procyon.org.uk>
+	id S1754116Ab3IPNfa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 09:35:30 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:36977 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751994Ab3IPNf2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 09:35:28 -0400
+Date: Mon, 16 Sep 2013 15:35:59 +0200
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mszeredi@suse.cz, stable@vger.kernel.org
+Subject: Re: [PATCH 06/11] gfs2: d_splice_alias() cant return error
+Message-ID: <20130916133559.GB31733@tucsk.piliscsaba.szeredi.hu>
+References: <1379335925-30858-1-git-send-email-miklos@szeredi.hu>
+ <1379335925-30858-7-git-send-email-miklos@szeredi.hu>
+ <1379337469.2718.18.camel@menhir>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379337469.2718.18.camel@menhir>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 16, 2013 at 02:17:49PM +0100, Steven Whitehouse wrote:
+> Hi,
+> 
+> On Mon, 2013-09-16 at 14:52 +0200, Miklos Szeredi wrote:
+> > From: Miklos Szeredi <mszeredi@suse.cz>
+> > 
+> > unless it was given an IS_ERR(inode), which isn't the case here.  So clean
+> > up the unnecessary error handling in gfs2_create_inode().
+> > 
+> > This paves the way for real fixes (hence the stable Cc).
+> > 
+> That makes send to me:
+> 
+> Acked-by: Steven Whitehouse <swhiteho@redhat.com>
+> 
+> I can put this in the gfs2 tree if that makes sense to do,
 
-Hi Steve,
+Sure, please do.
 
-Could you pull a CIFS bugfix from my fscache branch?
+Thanks,
+Miklos
 
-David
----
-The following changes since commit 5a6f282a2052bb13171b53f03b34501cf72c33f1:
 
-  fscache: Netfs function for cleanup post readpages (2013-09-06 09:17:30 +0100)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git fscache
-
-for you to fetch changes up to 19ce0a7c9e94ae975e1c029b65b332cbf77b41ec:
-
-  CIFS: FS-Cache: Uncache unread pages in cifs_readpages() before freeing them (2013-09-06 09:17:30 +0100)
-
-----------------------------------------------------------------
-David Howells (1):
-      CIFS: FS-Cache: Uncache unread pages in cifs_readpages() before freeing them
-
- fs/cifs/file.c    |  8 ++++++++
- fs/cifs/fscache.c |  7 +++++++
- fs/cifs/fscache.h | 13 +++++++++++++
- 3 files changed, 28 insertions(+)
+> Steve.
+> 
+> > Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+> > Cc: Steven Whitehouse <swhiteho@redhat.com>
+> > Cc: stable@vger.kernel.org
+> > ---
+> >  fs/gfs2/inode.c | 4 +---
+> >  1 file changed, 1 insertion(+), 3 deletions(-)
+> > 
+> > diff --git a/fs/gfs2/inode.c b/fs/gfs2/inode.c
+> > index 64915ee..6d7f976 100644
+> > --- a/fs/gfs2/inode.c
+> > +++ b/fs/gfs2/inode.c
+> > @@ -584,7 +584,7 @@ static int gfs2_create_inode(struct inode *dir, struct dentry *dentry,
+> >  	if (!IS_ERR(inode)) {
+> >  		d = d_splice_alias(inode, dentry);
+> >  		error = 0;
+> > -		if (file && !IS_ERR(d)) {
+> > +		if (file) {
+> >  			if (d == NULL)
+> >  				d = dentry;
+> >  			if (S_ISREG(inode->i_mode))
+> > @@ -593,8 +593,6 @@ static int gfs2_create_inode(struct inode *dir, struct dentry *dentry,
+> >  				error = finish_no_open(file, d);
+> >  		}
+> >  		gfs2_glock_dq_uninit(ghs);
+> > -		if (IS_ERR(d))
+> > -			return PTR_ERR(d);
+> >  		return error;
+> >  	} else if (error != -ENOENT) {
+> >  		goto fail_gunlock;
+> 
+> 
