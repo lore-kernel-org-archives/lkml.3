@@ -1,47 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751339Ab3IPToh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 15:44:37 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:44363 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750799Ab3IPToe (ORCPT
+	id S1751212Ab3IPTuK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 15:50:10 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56362 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842Ab3IPTuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 15:44:34 -0400
+	Mon, 16 Sep 2013 15:50:07 -0400
+Date: Mon, 16 Sep 2013 20:50:03 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "mszeredi@suse.cz" <mszeredi@suse.cz>,
+        Eric Van Hensbergen <ericvh@gmail.com>,
+        "M. Mohan Kumar" <mohan@in.ibm.com>, stable@vger.kernel.org
+Subject: Re: [PATCH 02/11] 9p: fix dentry leak in v9fs_vfs_atomic_open_dotl()
+Message-ID: <20130916195003.GE13318@ZenIV.linux.org.uk>
+References: <1379335925-30858-1-git-send-email-miklos@szeredi.hu>
+ <1379335925-30858-3-git-send-email-miklos@szeredi.hu>
+ <20130916181938.GD13318@ZenIV.linux.org.uk>
+ <CAJfpegt3mAKVE7ToZbvPpFQCY1EAZ3tKfn__kfpGz4HeXWr8fw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAJxxZ0OEGSw+0a0skLCuSham2R+Q3UR=f=Ddf1-SeqS2qbE9zg@mail.gmail.com>
-References: <1379049145-16017-1-git-send-email-realmz6@kernel.org>
-	<CA+55aFzJtybx3B=zcv1atCD-wUMc1YLdXndjX_d_ZxTDUpmOrQ@mail.gmail.com>
-	<CAJxxZ0OEGSw+0a0skLCuSham2R+Q3UR=f=Ddf1-SeqS2qbE9zg@mail.gmail.com>
-Date: Mon, 16 Sep 2013 15:44:33 -0400
-X-Google-Sender-Auth: 1a4m2CuLocxzzCpvXJ-yYLvsevs
-Message-ID: <CA+55aFwkKBbvN5sE5SxLpjZhUPE252s-3ptwnJ=9t97j_XAiAw@mail.gmail.com>
-Subject: Re: [uclinux-dist-devel] [GIT PULL] Blackfin updates for 3.12
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Sonic Zhang <sonic.adi@gmail.com>
-Cc: Steven Miao <realmz6@kernel.org>,
-        adi-buildroot-devel@lists.sourceforge.net,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJfpegt3mAKVE7ToZbvPpFQCY1EAZ3tKfn__kfpGz4HeXWr8fw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 1:28 AM, Sonic Zhang <sonic.adi@gmail.com> wrote:
->
-> I am sorry to put many config options into the Blackfin Kconfig file.
-> In the case this is not preferred, we will make sure no more device
-> config options are put into the Kconfig files.
+On Mon, Sep 16, 2013 at 09:03:25PM +0200, Miklos Szeredi wrote:
+> On Mon, Sep 16, 2013 at 8:19 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> > On Mon, Sep 16, 2013 at 02:51:56PM +0200, Miklos Szeredi wrote:
+> >> From: Miklos Szeredi <mszeredi@suse.cz>
+> >>
+> >> commit b6f4bee02f "fs/9p: Fix atomic_open" fixed the O_EXCL behavior, but
+> >> results in a dentry leak if v9fs_vfs_lookup() returns non-NULL.
+> >
+> > Frankly, I would prefer to deal with that in fs/namei.c:atomic_open()
+> > instead.  I.e. let it call finish_no_open() as it used to do and
+> > turn
+> >                 if (create_error && dentry->d_inode == NULL) {
+> >                         error = create_error;
+> >                         goto out;
+> >                 }
+> > in fs/namei.c:atomic_open() into
+> >                 if (!dentry->d_inode) {
+> >                         if (create_error) {
+> >                                 error = create_error;
+> >                                 goto out;
+> >                         }
+> >                 } else if ((open_flag & (O_CREAT | O_EXCL)) == (O_CREAT | O_EXCL)) {
+> >                         error = -EEXIST;
+> >                         goto out;
+> >                 }
+> >
+> > rather than try to deal with that crap in each instance of ->atomic_open()...
+> > Objections?
+> 
+> ->atomic_open() could be any one of
+> 
+>  lookup
+>  lookup+create
+>  lookup+create+open
+> 
+> If it's the second one then the above is wrong.  Sure, we could check
+> FILE_CREATED as well, and if file wasn't created yet dentry is
+> positive then we return EEXIST.  But for that to be correct we need
+> the last patch in the series, preventing FILE_CREATED from being set
+> unconditionally.
 
-It's not so much "no more device config options", it's more a matter of level.
+You mean, lookup + create + return finish_no_open()?  Does anything actually
+do that?  I agree that we want your "deal with setting FILE_CREATED in
+filesystems", BTW, and I'm fine with putting it in front of the rest of
+the queue.
 
-If it's a couple of core options in the SoC, what the heck, use
-Kconfig. Many of your board files are pretty small and have one or two
-device config options in them. That's fine.
-
-It's when it's thousands of lines of Kconfig file (and that isn't even
-comments or anything like that), then that's a sign that you should
-start seriously thinking about using some proper device configuration.
-Device-tree is the one most architectures use, but heck, maybe it's
-overkill for blackfin.
-
-                    Linus
+I would definitely prefer EEXIST logics dealt with in fs/namei.c - if nothing
+else, it had been done wrong in too many instances...
