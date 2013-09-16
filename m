@@ -1,88 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500Ab3IPQtd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 12:49:33 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:54108 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932Ab3IPQtb (ORCPT
+	id S1751579Ab3IPQup (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 12:50:45 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39933 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750948Ab3IPQun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 12:49:31 -0400
-Date: Mon, 16 Sep 2013 09:49:27 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>, Mike Turquette <mturquette@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Hyun Kwon <hyunk@xilinx.com>
-Subject: Re: [PATCH] clk: si570: Add a driver for SI570 oscillators
-Message-ID: <20130916164927.GB21352@roeck-us.net>
-References: <1379033737-30015-1-git-send-email-soren.brinkmann@xilinx.com>
- <1379033737-30015-2-git-send-email-soren.brinkmann@xilinx.com>
- <52373314.5070806@wwwdotorg.org>
+	Mon, 16 Sep 2013 12:50:43 -0400
+Message-ID: <523736DE.1050201@wwwdotorg.org>
+Date: Mon, 16 Sep 2013 10:50:38 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52373314.5070806@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexandre Courbot <acourbot@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>, Tomasz Figa <t.figa@samsung.com>,
+        Dave Martin <Dave.Martin@arm.com>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, gnurou@gmail.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v6 1/5] ARM: add basic support for Trusted Foundations
+References: <1379238028-7960-1-git-send-email-acourbot@nvidia.com> <1379238028-7960-2-git-send-email-acourbot@nvidia.com>
+In-Reply-To: <1379238028-7960-2-git-send-email-acourbot@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 10:34:28AM -0600, Stephen Warren wrote:
-> On 09/12/2013 06:55 PM, Soren Brinkmann wrote:
-> > Add a driver for SILabs 570, 571, 598, 599 programmable oscillators.
-> > The devices generate low-jitter clock signals and are reprogrammable via
-> > an I2C interface.
+On 09/15/2013 03:40 AM, Alexandre Courbot wrote:
+> Trusted Foundations is a TrustZone-based secure monitor for ARM that
+> can be invoked using the same SMC-based API on all supported
+> platforms. This patch adds initial basic support for Trusted
+> Foundations using the ARM firmware API. Current features are limited
+> to the ability to boot secondary processors.
 > 
-> > diff --git a/Documentation/devicetree/bindings/clock/silabs,si570.txt b/Documentation/devicetree/bindings/clock/silabs,si570.txt
-> 
-> > +Required properties:
-> > + - compatible: Shall be one of "silabs,si57x", "silabs,si59x".
-> > + - reg: I2C device address.
-> > + - #clock-cells: From common clock bindings: Shall be 0.
-> > + - factory-fout: Factory set default frequency
-> 
-> So, there's no way to query this from the device at all? Looking at the
-> data-sheet, all the frequency generation parameters are in registers,
-> and the device supports I2C read commands. As such, I'm not convinced
-> this property is necessary.
-> 
-Unfortunately, the chip does not report the factory setting for fout,
-so the property is needed. The chip can not be programmed without it.
+> Note: The API followed by Trusted Foundations does *not* follow the SMC
+> calling conventions. It has nothing to do with PSCI neither and is only
+> relevant to devices that use Trusted Foundations (like most Tegra-based
+> retail devices).
 
-> > +Optional properties:
-> > + - initial-fout: Initial output frequency to set during probe
-> 
-> "probe" is a Linux-specific concept. This property should be removed. If
-> the driver is asked to set a specific frequency, it should do so, but I
-> don't think it should program something pro-actively just because it
-> starts up.
-> 
-> If this property is acceptable, it'd be better to describe it more along
-> the lines of the following:
-> 
-> initial-fout: The frequency at which the system requires the clock to
-> operate.
-> 
-It should probably be something like "clock-frequency". In many use cases
-the programmed frequency is set to a constant frequency at system startup
-and never changed, similar to other clocks.
+> diff --git a/arch/arm/firmware/trusted_foundations.c b/arch/arm/firmware/trusted_foundations.c
 
-Guenter
+> +#if IS_ENABLED(CONFIG_OF)
+> +void of_register_trusted_foundations(void)
+> +{
+> +	struct device_node *node;
+> +	struct trusted_foundations_platform_data pdata;
+> +	int err;
+> +
+> +	node = of_find_compatible_node(NULL, NULL, "tl,trusted-foundations");
+> +	if (!node)
+> +		return;
+...
 
-> > + - temperature-stability-7ppm: Indicate a device with a temperature stability
-> > +			       of 7ppm
-> > +
-> > +Example:
-> > +	si570: clock-generator@5d {
-> > +		#clock-cells = <0>;
-> > +		compatible = "silabs,si570";
-> > +		reg = <0x5d>;
-> > +		factory-fout = <156250000>;
-> > +	};
-> 
-> 
+> diff --git a/arch/arm/include/asm/trusted_foundations.h b/arch/arm/include/asm/trusted_foundations.h
+
+> +#if IS_ENABLED(CONFIG_TRUSTED_FOUNDATIONS)
+> +void register_trusted_foundations(struct trusted_foundations_platform_data *pd);
+> +#if IS_ENABLED(CONFIG_OF)
+> +void of_register_trusted_foundations(void);
+> +#endif
+
+I still don't think that's correct.
+
+If TF support is enabled, yet DT support is not enabled, then there is
+no prototype, implementation, or dummy implementation for
+of_register_trusted_foundations(). I think there should be a dummy
+implementation in this case, shouldn't there?
+
+> +
+> +#else /* CONFIG_TRUSTED_FOUNDATIONS */
+> +
+> +#include <linux/printk.h>
+> +#include <linux/of.h>
+> +#include <asm/bug.h>
+> +
+> +static inline void register_trusted_foundations(
+> +				   struct trusted_foundations_platform_data *pd)
+> +{
+> +	panic("No support for Trusted Foundations, stopping...\n");
+> +}
+> +
+> +#if IS_ENABLED(CONFIG_OF)
+> +static inline void of_register_trusted_foundations(void)
+> +{
+> +	/* If we find the target should enable TF but does not support it,
+> +	 * fail as the system won't be able to do much anyway */
+> +	if (of_find_compatible_node(NULL, NULL, "tl,trusted-foundations"))
+> +		register_trusted_foundations(NULL);
+> +}
+> +#else
+> +static inline void of_register_trusted_foundations(void)
+> +{
+> +}
+> +#endif /* CONFIG_OF */
+
+That's more complex than it needs to be; there is a dummy
+of_find_compatible_node() in the !OF case, so you don't need to ifdef
+the implementation of of_register_trusted_foundations(); you just need
+the first implementation here.
+
+> +#endif /* CONFIG_TRUSTED_FOUNDATIONS */
+
+In summary, I think you need:
+
+If TF is enabled, always implement of_register_trusted_foundations() in
+the C file, and rely on of_find_compatible_node() to return NULL if
+!CONFIG_OF.
+
+If TF is not enabled, implement the inline version in the header file,
+and again rely on of_find_compatible_node() to return NULL if !CONFIG_OF.
+
+Unless I'm missing something!
