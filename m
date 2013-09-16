@@ -1,176 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757274Ab3IPPKm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 11:10:42 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:46472 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757207Ab3IPPKh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 11:10:37 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl, tixy@linaro.org
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 2/2] cpufreq: make return type of lock_policy_rwsem_{read|write}() as void
-Date: Mon, 16 Sep 2013 20:40:17 +0530
-Message-Id: <a257808b511a83f210ed699149ce87fef5db6236.1379344038.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <075032be4fd288074b8f699d4f4ba0179518df6f.1379344038.git.viresh.kumar@linaro.org>
-References: <075032be4fd288074b8f699d4f4ba0179518df6f.1379344038.git.viresh.kumar@linaro.org>
-In-Reply-To: <075032be4fd288074b8f699d4f4ba0179518df6f.1379344038.git.viresh.kumar@linaro.org>
-References: <075032be4fd288074b8f699d4f4ba0179518df6f.1379344038.git.viresh.kumar@linaro.org>
+	id S1754671Ab3IPPQb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 11:16:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39895 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752763Ab3IPPQa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 11:16:30 -0400
+Date: Mon, 16 Sep 2013 17:10:15 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: John Johansen <john.johansen@canonical.com>
+Cc: Richard Guy Briggs <rgb@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] apparmor: remove the "task" arg from
+	may_change_ptraced_domain()
+Message-ID: <20130916151015.GA28563@redhat.com>
+References: <20130916142035.GA26661@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130916142035.GA26661@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lock_policy_rwsem_{read|write}() currently has return type of int but it always
-return zero and hence its return type must be void instead. This patch makes its
-return type void and fixes all users of it as well.
+On 09/16, Oleg Nesterov wrote:
+>
+> Unless task == current ptrace_parent(task) is not safe even under
+> rcu_read_lock() and most of the current users are not right.
 
-Reported-by: Jon Medhurst<tixy@linaro.org>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/cpufreq.c | 38 +++++++++++---------------------------
- 1 file changed, 11 insertions(+), 27 deletions(-)
+In particular selinux is buggy. But this needs another simple patch,
+will do tomorrow.
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index c18bf7b..598af5c 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -67,13 +67,11 @@ static DEFINE_PER_CPU(char[CPUFREQ_NAME_LEN], cpufreq_cpu_governor);
- static DEFINE_PER_CPU(struct rw_semaphore, cpu_policy_rwsem);
- 
- #define lock_policy_rwsem(mode, cpu)					\
--static int lock_policy_rwsem_##mode(int cpu)				\
-+static void lock_policy_rwsem_##mode(int cpu)				\
- {									\
- 	struct cpufreq_policy *policy = per_cpu(cpufreq_cpu_data, cpu);	\
- 	BUG_ON(!policy);						\
- 	down_##mode(&per_cpu(cpu_policy_rwsem, policy->cpu));		\
--									\
--	return 0;							\
- }
- 
- lock_policy_rwsem(read, cpu);
-@@ -653,13 +651,12 @@ static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buf)
- {
- 	struct cpufreq_policy *policy = to_policy(kobj);
- 	struct freq_attr *fattr = to_attr(attr);
--	ssize_t ret = -EINVAL;
-+	ssize_t ret;
- 
- 	if (!down_read_trylock(&cpufreq_rwsem))
--		goto exit;
-+		return -EINVAL;
- 
--	if (lock_policy_rwsem_read(policy->cpu) < 0)
--		goto up_read;
-+	lock_policy_rwsem_read(policy->cpu);
- 
- 	if (fattr->show)
- 		ret = fattr->show(policy, buf);
-@@ -667,10 +664,8 @@ static ssize_t show(struct kobject *kobj, struct attribute *attr, char *buf)
- 		ret = -EIO;
- 
- 	unlock_policy_rwsem_read(policy->cpu);
--
--up_read:
- 	up_read(&cpufreq_rwsem);
--exit:
-+
- 	return ret;
- }
- 
-@@ -689,8 +684,7 @@ static ssize_t store(struct kobject *kobj, struct attribute *attr,
- 	if (!down_read_trylock(&cpufreq_rwsem))
- 		goto unlock;
- 
--	if (lock_policy_rwsem_write(policy->cpu) < 0)
--		goto up_read;
-+	lock_policy_rwsem_write(policy->cpu);
- 
- 	if (fattr->store)
- 		ret = fattr->store(policy, buf, count);
-@@ -699,7 +693,6 @@ static ssize_t store(struct kobject *kobj, struct attribute *attr,
- 
- 	unlock_policy_rwsem_write(policy->cpu);
- 
--up_read:
- 	up_read(&cpufreq_rwsem);
- unlock:
- 	put_online_cpus();
-@@ -1143,7 +1136,7 @@ static int cpufreq_nominate_new_policy_cpu(struct cpufreq_policy *policy,
- 	if (ret) {
- 		pr_err("%s: Failed to move kobj: %d", __func__, ret);
- 
--		WARN_ON(lock_policy_rwsem_write(old_cpu));
-+		lock_policy_rwsem_write(old_cpu);
- 		cpumask_set_cpu(old_cpu, policy->cpus);
- 		unlock_policy_rwsem_write(old_cpu);
- 
-@@ -1196,7 +1189,7 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
- 			policy->governor->name, CPUFREQ_NAME_LEN);
- #endif
- 
--	WARN_ON(lock_policy_rwsem_write(cpu));
-+	lock_policy_rwsem_write(cpu);
- 	cpus = cpumask_weight(policy->cpus);
- 
- 	if (cpus > 1)
-@@ -1459,14 +1452,11 @@ unsigned int cpufreq_get(unsigned int cpu)
- 	if (!down_read_trylock(&cpufreq_rwsem))
- 		return 0;
- 
--	if (unlikely(lock_policy_rwsem_read(cpu)))
--		goto out_policy;
-+	lock_policy_rwsem_read(cpu);
- 
- 	ret_freq = __cpufreq_get(cpu);
- 
- 	unlock_policy_rwsem_read(cpu);
--
--out_policy:
- 	up_read(&cpufreq_rwsem);
- 
- 	return ret_freq;
-@@ -1690,14 +1680,12 @@ int cpufreq_driver_target(struct cpufreq_policy *policy,
- {
- 	int ret = -EINVAL;
- 
--	if (unlikely(lock_policy_rwsem_write(policy->cpu)))
--		goto fail;
-+	lock_policy_rwsem_write(policy->cpu);
- 
- 	ret = __cpufreq_driver_target(policy, target_freq, relation);
- 
- 	unlock_policy_rwsem_write(policy->cpu);
- 
--fail:
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(cpufreq_driver_target);
-@@ -1988,10 +1976,7 @@ int cpufreq_update_policy(unsigned int cpu)
- 		goto no_policy;
- 	}
- 
--	if (unlikely(lock_policy_rwsem_write(cpu))) {
--		ret = -EINVAL;
--		goto fail;
--	}
-+	lock_policy_rwsem_write(cpu);
- 
- 	pr_debug("updating policy for CPU %u\n", cpu);
- 	memcpy(&new_policy, policy, sizeof(*policy));
-@@ -2020,7 +2005,6 @@ int cpufreq_update_policy(unsigned int cpu)
- 
- 	unlock_policy_rwsem_write(cpu);
- 
--fail:
- 	cpufreq_cpu_put(policy);
- no_policy:
- 	return ret;
--- 
-1.7.12.rc2.18.g61b472e
+> So may_change_ptraced_domain(task) looks wrong as well. However it
+> is always called with task == current so the code is actually fine.
+> Remove this argument to make this fact clear.
+> 
+> Note: perhaps we should simply kill ptrace_parent(), it buys almost
+> nothing. And it is obviously racy, perhaps this should be fixed.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  security/apparmor/domain.c |   14 ++++++--------
+>  1 files changed, 6 insertions(+), 8 deletions(-)
+> 
+> diff --git a/security/apparmor/domain.c b/security/apparmor/domain.c
+> index 26c607c..8423558 100644
+> --- a/security/apparmor/domain.c
+> +++ b/security/apparmor/domain.c
+> @@ -50,23 +50,21 @@ void aa_free_domain_entries(struct aa_domain *domain)
+>  
+>  /**
+>   * may_change_ptraced_domain - check if can change profile on ptraced task
+> - * @task: task we want to change profile of   (NOT NULL)
+>   * @to_profile: profile to change to  (NOT NULL)
+>   *
+> - * Check if the task is ptraced and if so if the tracing task is allowed
+> + * Check if current is ptraced and if so if the tracing task is allowed
+>   * to trace the new domain
+>   *
+>   * Returns: %0 or error if change not allowed
+>   */
+> -static int may_change_ptraced_domain(struct task_struct *task,
+> -				     struct aa_profile *to_profile)
+> +static int may_change_ptraced_domain(struct aa_profile *to_profile)
+>  {
+>  	struct task_struct *tracer;
+>  	struct aa_profile *tracerp = NULL;
+>  	int error = 0;
+>  
+>  	rcu_read_lock();
+> -	tracer = ptrace_parent(task);
+> +	tracer = ptrace_parent(current);
+>  	if (tracer)
+>  		/* released below */
+>  		tracerp = aa_get_task_profile(tracer);
+> @@ -477,7 +475,7 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
+>  	}
+>  
+>  	if (bprm->unsafe & (LSM_UNSAFE_PTRACE | LSM_UNSAFE_PTRACE_CAP)) {
+> -		error = may_change_ptraced_domain(current, new_profile);
+> +		error = may_change_ptraced_domain(new_profile);
+>  		if (error) {
+>  			aa_put_profile(new_profile);
+>  			goto audit;
+> @@ -690,7 +688,7 @@ int aa_change_hat(const char *hats[], int count, u64 token, bool permtest)
+>  			}
+>  		}
+>  
+> -		error = may_change_ptraced_domain(current, hat);
+> +		error = may_change_ptraced_domain(hat);
+>  		if (error) {
+>  			info = "ptraced";
+>  			error = -EPERM;
+> @@ -829,7 +827,7 @@ int aa_change_profile(const char *ns_name, const char *hname, bool onexec,
+>  	}
+>  
+>  	/* check if tracing task is allowed to trace target domain */
+> -	error = may_change_ptraced_domain(current, target);
+> +	error = may_change_ptraced_domain(target);
+>  	if (error) {
+>  		info = "ptrace prevents transition";
+>  		goto audit;
+> -- 
+> 1.5.5.1
+> 
 
