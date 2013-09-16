@@ -1,113 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751890Ab3IPRL4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 13:11:56 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:55013 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751389Ab3IPRLy (ORCPT
+	id S1751904Ab3IPRN0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 13:13:26 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:53949 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104Ab3IPRNZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 13:11:54 -0400
-Date: Mon, 16 Sep 2013 18:10:30 +0100
-From: Dave Martin <Dave.Martin@arm.com>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: "tony@atomide.com" <tony@atomide.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        "nm@ti.com" <nm@ti.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "aaro.koskinen@iki.fi" <aaro.koskinen@iki.fi>,
-        "pdeschrijver@nvidia.com" <pdeschrijver@nvidia.com>,
+	Mon, 16 Sep 2013 13:13:25 -0400
+Date: Mon, 16 Sep 2013 10:13:20 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
-        "pavel@ucw.cz" <pavel@ucw.cz>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 1/2] ARM: OMAP: Add secure function omap_smc3() which
- calling instruction smc #1
-Message-ID: <20130916171023.GA17477@localhost.localdomain>
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "vojtech@suse.cz" <vojtech@suse.cz>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: Re: [PATCH 1/1] Drivers: input: serio: New driver to support Hyper-V
+ synthetic keyboard
+Message-ID: <20130916171320.GC20734@core.coreip.homeip.net>
+References: <1379309334-25042-1-git-send-email-kys@microsoft.com>
+ <20130916152019.GB12105@core.coreip.homeip.net>
+ <076938490f5141ef957947dc10b82c65@SN2PR03MB061.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <076938490f5141ef957947dc10b82c65@SN2PR03MB061.namprd03.prod.outlook.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 14, 2013 at 10:37:12AM +0100, Pali Rohár wrote:
-> On Sunday 08 September 2013 09:43:29 Pali Rohár wrote:
-> > Here is new version (v4) of omap secure part patch:
-> > 
-> > Other secure functions omap_smc1() and omap_smc2() calling
-> > instruction smc #0 but Nokia RX-51 board needs to call smc #1
-> > for PPA access.
-> > 
-> > Signed-off-by: Ivaylo Dimitrov <freemangordon@abv.bg>
-> > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> > ---
-> > diff --git a/arch/arm/mach-omap2/omap-secure.h
-> > b/arch/arm/mach-omap2/omap-secure.h index 0e72917..c4586f4
-> > 100644
-> > --- a/arch/arm/mach-omap2/omap-secure.h
-> > +++ b/arch/arm/mach-omap2/omap-secure.h
-> > @@ -51,6 +51,7 @@
-> >  extern u32 omap_secure_dispatcher(u32 idx, u32 flag, u32
-> > nargs, u32 arg1, u32 arg2, u32 arg3, u32 arg4);
-> >  extern u32 omap_smc2(u32 id, u32 falg, u32 pargs);
-> > +extern u32 omap_smc3(u32 id, u32 process, u32 flag, u32
-> > pargs); extern phys_addr_t
-> > omap_secure_ram_mempool_base(void); extern int
-> > omap_secure_ram_reserve_memblock(void);
-> > 
-> > diff --git a/arch/arm/mach-omap2/omap-smc.S
-> > b/arch/arm/mach-omap2/omap-smc.S index f6441c1..fd90125
-> > 100644
-> > --- a/arch/arm/mach-omap2/omap-smc.S
-> > +++ b/arch/arm/mach-omap2/omap-smc.S
-> > @@ -1,9 +1,11 @@
-> >  /*
-> > - * OMAP44xx secure APIs file.
-> > + * OMAP34xx and OMAP44xx secure APIs file.
-> >   *
-> >   * Copyright (C) 2010 Texas Instruments, Inc.
-> >   * Written by Santosh Shilimkar <santosh.shilimkar@ti.com>
-> >   *
-> > + * Copyright (C) 2012 Ivaylo Dimitrov <freemangordon@abv.bg>
-> > + * Copyright (C) 2013 Pali Rohár <pali.rohar@gmail.com>
-> >   *
-> >   * This program is free software,you can redistribute it
-> > and/or modify * it under the terms of the GNU General Public
-> > License version 2 as @@ -54,6 +56,23 @@ ENTRY(omap_smc2)
-> >  	ldmfd   sp!, {r4-r12, pc}
-> >  ENDPROC(omap_smc2)
-> > 
-> > +/**
-> > + * u32 omap_smc3(u32 service_id, u32 process_id, u32 flag,
-> > u32 pargs) + * Low level common routine for secure HAL and
-> > PPA APIs via smc #1 + * r0 - @service_id: Secure Service ID
-> > + * r1 - @process_id: Process ID
-> > + * r2 - @flag: Flag to indicate the criticality of operation
-> > + * r3 - @pargs: Physical address of parameter list
-> > + */
-> > +ENTRY(omap_smc3)
-> > +	stmfd	sp!, {r4-r11, lr}
-> > +	mov	r12, r0		@ Copy the secure service ID
-> > +	mov	r6, #0xff	@ Indicate new Task call
-> > +	dsb			@ Memory Barrier (not sure if needed, copied from
-> > omap_smc2) +	smc	#1		@ Call PPA service
-> > +	ldmfd	sp!, {r4-r11, pc}
-> > +ENDPROC(omap_smc3)
-> > +
-> >  ENTRY(omap_modify_auxcoreboot0)
-> >  	stmfd   sp!, {r1-r12, lr}
-> >  	ldr	r12, =0x104
+On Mon, Sep 16, 2013 at 03:52:18PM +0000, KY Srinivasan wrote:
 > 
-> Dave, it is ok now?
+> 
+> > -----Original Message-----
+> > From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
+> > Sent: Monday, September 16, 2013 8:20 AM
+> > To: KY Srinivasan
+> > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; linux-input@vger.kernel.org; vojtech@suse.cz;
+> > olaf@aepfle.de; apw@canonical.com; jasowang@redhat.com
+> > Subject: Re: [PATCH 1/1] Drivers: input: serio: New driver to support Hyper-V
+> > synthetic keyboard
+> > 
+> > Hi K. Y.
+> > 
+> > On Sun, Sep 15, 2013 at 10:28:54PM -0700, K. Y. Srinivasan wrote:
+> > > Add a new driver to support synthetic keyboard. On the next generation
+> > > Hyper-V guest firmware, many legacy devices will not be emulated and this
+> > > driver will be required.
+> > >
+> > > I would like to thank Vojtech Pavlik <vojtech@suse.cz> for helping me with the
+> > > details of the AT keyboard driver.
+> > >
+> > 
+> > In addition to what Dan said:
+> > 
+> > > +
+> > > +struct synth_kbd_protocol_response {
+> > > +	struct synth_kbd_msg_hdr header;
+> > > +	u32 accepted:1;
+> > > +	u32 reserved:31;
+> > > +};
+> > 
+> > Use of bitfields for on the wire structures makes me uneasy. I know that
+> > currently you only going to run LE on LE, but still, maybe using
+> > explicit shifts and masks would be better,
+> 
+> This definition of the data structure is defined by the host. I will see what I
+> can do here.
 
-Yes, that's sufficient to warn people to stop and think (at least, if
-someone copy-pastes it, they will likely highlight the possible error by
-copy-pasting the comment too).  Thanks.
+You do not really need to change protocol, you just sat that accepted is
+the bit 0 of the word and define endianness (LE in your case). Then you
+do:
 
-Acked-by: Dave Martin <Dave.Martin@arm.com>
+	struct synth_kbd_protocol_response {
+		struct synth_kbd_msg_hdr header;
+		__le32 status;
+	}
 
+	#define KBD_PROTOCOL_ACCEPTED BIT(0)
+
+	...
+
+	status = _le32_to_cpu(response->status);
+	accepted = status & KBD_PROTOCOL_ACCEPTED;
+
+Thanks.
+
+-- 
+Dmitry
