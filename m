@@ -1,73 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab3IPO0r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 10:26:47 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:47943 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753831Ab3IPO0j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 10:26:39 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: gleb@redhat.com
-Subject: [PATCH v2 1/3] KVM: x86: mask unsupported XSAVE entries from leaf 0Dh index 0
-Date: Mon, 16 Sep 2013 16:26:29 +0200
-Message-Id: <1379341591-6538-2-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1379341591-6538-1-git-send-email-pbonzini@redhat.com>
-References: <1379341591-6538-1-git-send-email-pbonzini@redhat.com>
+	id S1756288Ab3IPO0y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 10:26:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50750 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755754Ab3IPO0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 10:26:50 -0400
+Date: Mon, 16 Sep 2013 16:20:35 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: John Johansen <john.johansen@canonical.com>
+Cc: Richard Guy Briggs <rgb@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] apparmor: remove the "task" arg from
+	may_change_ptraced_domain()
+Message-ID: <20130916142035.GA26661@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-XSAVE entries that KVM does not support are reported by
-KVM_GET_SUPPORTED_CPUID for leaf 0Dh index 0 if the host supports them;
-they should be left out unless there is also hypervisor support for them.
+Unless task == current ptrace_parent(task) is not safe even under
+rcu_read_lock() and most of the current users are not right.
 
-Sub-leafs are correctly handled in supported_xcr0_bit, fix index 0
-to match.
+So may_change_ptraced_domain(task) looks wrong as well. However it
+is always called with task == current so the code is actually fine.
+Remove this argument to make this fact clear.
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Note: perhaps we should simply kill ptrace_parent(), it buys almost
+nothing. And it is obviously racy, perhaps this should be fixed.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- arch/x86/kvm/cpuid.c | 4 +++-
- arch/x86/kvm/x86.h   | 1 +
- 2 files changed, 4 insertions(+), 1 deletion(-)
+ security/apparmor/domain.c |   14 ++++++--------
+ 1 files changed, 6 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
-index b110fe6..a03a9fa 100644
---- a/arch/x86/kvm/cpuid.c
-+++ b/arch/x86/kvm/cpuid.c
-@@ -182,7 +182,7 @@ static bool supported_xcr0_bit(unsigned bit)
+diff --git a/security/apparmor/domain.c b/security/apparmor/domain.c
+index 26c607c..8423558 100644
+--- a/security/apparmor/domain.c
++++ b/security/apparmor/domain.c
+@@ -50,23 +50,21 @@ void aa_free_domain_entries(struct aa_domain *domain)
+ 
+ /**
+  * may_change_ptraced_domain - check if can change profile on ptraced task
+- * @task: task we want to change profile of   (NOT NULL)
+  * @to_profile: profile to change to  (NOT NULL)
+  *
+- * Check if the task is ptraced and if so if the tracing task is allowed
++ * Check if current is ptraced and if so if the tracing task is allowed
+  * to trace the new domain
+  *
+  * Returns: %0 or error if change not allowed
+  */
+-static int may_change_ptraced_domain(struct task_struct *task,
+-				     struct aa_profile *to_profile)
++static int may_change_ptraced_domain(struct aa_profile *to_profile)
  {
- 	u64 mask = ((u64)1 << bit);
+ 	struct task_struct *tracer;
+ 	struct aa_profile *tracerp = NULL;
+ 	int error = 0;
  
--	return mask & (XSTATE_FP | XSTATE_SSE | XSTATE_YMM) & host_xcr0;
-+	return mask & KVM_SUPPORTED_XCR0 & host_xcr0;
- }
+ 	rcu_read_lock();
+-	tracer = ptrace_parent(task);
++	tracer = ptrace_parent(current);
+ 	if (tracer)
+ 		/* released below */
+ 		tracerp = aa_get_task_profile(tracer);
+@@ -477,7 +475,7 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
+ 	}
  
- #define F(x) bit(X86_FEATURE_##x)
-@@ -383,6 +383,8 @@ static int do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
- 	case 0xd: {
- 		int idx, i;
+ 	if (bprm->unsafe & (LSM_UNSAFE_PTRACE | LSM_UNSAFE_PTRACE_CAP)) {
+-		error = may_change_ptraced_domain(current, new_profile);
++		error = may_change_ptraced_domain(new_profile);
+ 		if (error) {
+ 			aa_put_profile(new_profile);
+ 			goto audit;
+@@ -690,7 +688,7 @@ int aa_change_hat(const char *hats[], int count, u64 token, bool permtest)
+ 			}
+ 		}
  
-+		entry->eax &= host_xcr0 & KVM_SUPPORTED_XCR0;
-+		entry->edx &= (host_xcr0 & KVM_SUPPORTED_XCR0) >> 32;
- 		entry->flags |= KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
- 		for (idx = 1, i = 1; idx < 64; ++idx) {
- 			if (*nent >= maxnent)
-diff --git a/arch/x86/kvm/x86.h b/arch/x86/kvm/x86.h
-index e224f7a..587fb9e 100644
---- a/arch/x86/kvm/x86.h
-+++ b/arch/x86/kvm/x86.h
-@@ -122,6 +122,7 @@ int kvm_write_guest_virt_system(struct x86_emulate_ctxt *ctxt,
- 	gva_t addr, void *val, unsigned int bytes,
- 	struct x86_exception *exception);
+-		error = may_change_ptraced_domain(current, hat);
++		error = may_change_ptraced_domain(hat);
+ 		if (error) {
+ 			info = "ptraced";
+ 			error = -EPERM;
+@@ -829,7 +827,7 @@ int aa_change_profile(const char *ns_name, const char *hname, bool onexec,
+ 	}
  
-+#define KVM_SUPPORTED_XCR0	(XSTATE_FP | XSTATE_SSE | XSTATE_YMM)
- extern u64 host_xcr0;
- 
- extern struct static_key kvm_no_apic_vcpu;
+ 	/* check if tracing task is allowed to trace target domain */
+-	error = may_change_ptraced_domain(current, target);
++	error = may_change_ptraced_domain(target);
+ 	if (error) {
+ 		info = "ptrace prevents transition";
+ 		goto audit;
 -- 
-1.8.3.1
+1.5.5.1
 
 
