@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339Ab3IPNoQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 09:44:16 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:49887 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754424Ab3IPNoN (ORCPT
+	id S1756272Ab3IPNoa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 09:44:30 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:52303 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755931Ab3IPNo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 09:44:13 -0400
+	Mon, 16 Sep 2013 09:44:27 -0400
 From: Iker Pedrosa <ikerpedrosam@gmail.com>
 To: pavel@ucw.cz
 Cc: gregkh@linuxfoundation.org, ikerpedrosam@gmail.com, harsh1kumar@gmail.com,
         dan.carpenter@oracle.com, mujeeb.adil@gmail.com,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 08/24] Staging: winbond: reg: changed sleep function from msleep to usleep
-Date: Mon, 16 Sep 2013 15:43:28 +0200
-Message-Id: <1379339024-12157-9-git-send-email-ikerpedrosam@gmail.com>
+Subject: [PATCH v2 16/24] Staging: winbond: wb35reg_f: fixed lines over 80 characters
+Date: Mon, 16 Sep 2013 15:43:36 +0200
+Message-Id: <1379339024-12157-17-git-send-email-ikerpedrosam@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379339024-12157-1-git-send-email-ikerpedrosam@gmail.com>
 References: <1379339024-12157-1-git-send-email-ikerpedrosam@gmail.com>
@@ -22,194 +22,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to the documentation it is not recommended to use msleep for 1ms - 20ms because it may sleep longer than 20ms. So, it is recommended to use usleep instead.
-
-In the first revision Greg KH pointed out that this change broke the build. In my computer it builds properly so if someone has the same problem please copy the output so that I can figure out what is the problem.
+Fixed lines over 80 characters.
 
 Signed-off-by: Iker Pedrosa <ikerpedrosam@gmail.com>
 ---
- drivers/staging/winbond/reg.c | 54 +++++++++++++++++++++----------------------
- 1 file changed, 27 insertions(+), 27 deletions(-)
+ drivers/staging/winbond/wb35reg_f.h | 18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/staging/winbond/reg.c b/drivers/staging/winbond/reg.c
-index 80b4b34..c023fda 100644
---- a/drivers/staging/winbond/reg.c
-+++ b/drivers/staging/winbond/reg.c
-@@ -890,9 +890,9 @@ void Uxx_power_on_procedure(struct hw_data *pHwData)
- 	else {
- 		Wb35Reg_WriteSync(pHwData, 0x03f4, 0xFF5807FF);
- 		Wb35Reg_WriteSync(pHwData, 0x03d4, 0x80); /* regulator on only */
--		msleep(10);
--		Wb35Reg_WriteSync(pHwData, 0x03d4, 0xb8); /* REG_ON RF_RSTN on, and */
--		msleep(10);
-+		usleep(10000);
-+		Wb35Reg_WriteSync(pHwData, 0x03d4, 0xb8); /* REG_ON RF_RSTN on */
-+		usleep(10000);
- 		ltmp = 0x4968;
- 		if ((pHwData->phy_type == RF_WB_242) ||
- 			(RF_WB_242_1 == pHwData->phy_type))
-@@ -905,7 +905,7 @@ void Uxx_power_on_procedure(struct hw_data *pHwData)
- 		Wb35Reg_ReadSync(pHwData, 0x03d0, &ltmp);
- 		loop = 500; /* Wait for 5 second */
- 		while (!(ltmp & 0x20) && loop--) {
--			msleep(10);
-+			usleep(10000);
- 			if (!Wb35Reg_ReadSync(pHwData, 0x03d0, &ltmp))
- 				break;
- 		}
-@@ -914,7 +914,7 @@ void Uxx_power_on_procedure(struct hw_data *pHwData)
- 	}
+diff --git a/drivers/staging/winbond/wb35reg_f.h b/drivers/staging/winbond/wb35reg_f.h
+index 95dc980..cd6710c 100644
+--- a/drivers/staging/winbond/wb35reg_f.h
++++ b/drivers/staging/winbond/wb35reg_f.h
+@@ -15,7 +15,8 @@ void Uxx_ReadEthernetAddress(struct hw_data *hw_data);
+ void Dxx_initial(struct hw_data *hw_data);
+ void Mxx_initial(struct hw_data *hw_data);
+ void RFSynthesizer_initial(struct hw_data *hw_data);
+-void RFSynthesizer_SwitchingChannel(struct hw_data *hw_data, struct chan_info channel);
++void RFSynthesizer_SwitchingChannel(struct hw_data *hw_data,
++					   struct chan_info channel);
+ void BBProcessor_initial(struct hw_data *hw_data);
+ void BBProcessor_RateChanging(struct hw_data *hw_data, u8 rate);
+ u8 RFSynthesizer_SetPowerIndex(struct hw_data *hw_data, u8 power_index);
+@@ -34,10 +35,14 @@ void EEPROMTxVgaAdjust(struct hw_data *hw_data);
  
- 	Wb35Reg_WriteSync(pHwData, 0x03b0, 1); /* Reset hardware first */
--	msleep(10);
-+	usleep(10000);
+ void Wb35Reg_destroy(struct hw_data *hw_data);
  
- 	/* Set burst write delay */
- 	Wb35Reg_WriteSync(pHwData, 0x03f8, 0x7ff);
-@@ -1055,18 +1055,18 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
- 	case RF_AIROHA_2230:
- 		ltmp = (1 << 31) | (0 << 30) | (20 << 24) | BitReverse((0x07 << 20) | 0xE168E, 20);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(10);
-+		usleep(10000);
- 		ltmp = (1 << 31) | (0 << 30) | (20 << 24) | BitReverse(al2230_rf_data[7], 20);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(10);
-+		usleep(10000);
- 	case RF_AIROHA_2230S:
- 		Wb35Reg_WriteSync(pHwData, 0x03d4, 0x80); /* regulator on only */
--		msleep(10);
-+		usleep(10000);
- 		Wb35Reg_WriteSync(pHwData, 0x03d4, 0xa0); /* PLL_PD REF_PD set to 0 */
--		msleep(10);
-+		usleep(10000);
- 		Wb35Reg_WriteSync(pHwData, 0x03d4, 0xe0); /* MLK_EN */
- 		Wb35Reg_WriteSync(pHwData, 0x03b0, 1); /* Reset hardware first */
--		msleep(10);
-+		usleep(10000);
- 		/* ========================================================= */
+-unsigned char Wb35Reg_Read(struct hw_data *hw_data, u16 register_no, u32 *register_value);
+-unsigned char Wb35Reg_ReadSync(struct hw_data *hw_data, u16 register_no, u32 *register_value);
+-unsigned char Wb35Reg_Write(struct hw_data *hw_data, u16 register_no, u32 register_value);
+-unsigned char Wb35Reg_WriteSync(struct hw_data *hw_data, u16 register_no, u32 register_value);
++unsigned char Wb35Reg_Read(struct hw_data *hw_data, u16 register_no,
++				   u32 *register_value);
++unsigned char Wb35Reg_ReadSync(struct hw_data *hw_data, u16 register_no,
++				   u32 *register_value);
++unsigned char Wb35Reg_Write(struct hw_data *hw_data, u16 register_no,
++				   u32 register_value);
++unsigned char Wb35Reg_WriteSync(struct hw_data *hw_data, u16 register_no,
++				   u32 register_value);
+ unsigned char Wb35Reg_WriteWithCallbackValue(struct hw_data *hw_data,
+ 							 u16 register_no,
+ 							 u32 register_value,
+@@ -59,7 +64,8 @@ void CardGetMulticastBit(u8 address[MAC_ADDR_LENGTH], u8 *byte, u8 *value);
+ u32 CardComputeCrc(u8 *buffer, u32 length);
  
- 		/* The follow code doesn't use the burst-write mode */
-@@ -1077,15 +1077,15 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
- 		Wb35Reg_WriteSync(pHwData, 0x105c, ltmp);
- 		pHwData->reg.BB50 |= 0x13; /* (MASK_IQCAL_MODE|MASK_CALIB_START) */
- 		Wb35Reg_WriteSync(pHwData, 0x1050, pHwData->reg.BB50);
--		msleep(5);
-+		usleep(5000);
+ void Wb35Reg_phy_calibration(struct hw_data *hw_data);
+-void Wb35Reg_Update(struct hw_data *hw_data, u16 register_no, u32 register_value);
++void Wb35Reg_Update(struct hw_data *hw_data, u16 register_no,
++			   u32 register_value);
+ unsigned char adjust_TXVGA_for_iq_mag(struct hw_data *hw_data);
  
- 		ltmp = (1 << 31) | (0 << 30) | (20 << 24) | BitReverse((0x0F << 20) | 0xF01B0, 20);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(5);
-+		usleep(5000);
- 
- 		ltmp = (1 << 31) | (0 << 30) | (20 << 24) | BitReverse((0x0F << 20) | 0xF01E0, 20);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(5);
-+		usleep(5000);
- 
- 		ltmp = (1 << 31) | (0 << 30) | (20 << 24) | BitReverse((0x0F << 20) | 0xF01A0, 20);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
-@@ -1102,13 +1102,13 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
- 		/* 2.4GHz */
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | 0x9ABA8F;
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(5);
-+		usleep(5000);
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | 0x3ABA8F;
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(5);
-+		usleep(5000);
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | 0x1ABA8F;
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(5);
-+		usleep(5000);
- 
- 		/* 5GHz */
- 		Wb35Reg_WriteSync(pHwData, 0x03dc, 0x00000000);
-@@ -1119,20 +1119,20 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
- 		/* Write to register. number must less and equal than 16 */
- 		for (i = 0; i < number; i++)
- 			Wb35Reg_WriteSync(pHwData, 0x0864, pltmp[i]);
--		msleep(5);
-+		usleep(5000);
- 
- 		Wb35Reg_WriteSync(pHwData, 0x03dc, 0x00000080);
- 		pr_debug("* PLL_ON    high\n");
- 
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | 0x9ABA8F;
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(5);
-+		usleep(5000);
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | 0x3ABA8F;
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(5);
-+		usleep(5000);
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | 0x12BACF;
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(5);
-+		usleep(5000);
- 		break;
- 	case RF_WB_242:
- 	case RF_WB_242_1:
-@@ -1147,11 +1147,11 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
- 		/* Calibration (1a.0). Synthesizer reset */
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x0F<<24) | 0x00101E, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(5);
-+		usleep(5000);
- 		/* Calibration (1a). VCO frequency calibration mode ; waiting 2msec VCO calibration time */
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFE69c0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(2);
-+		usleep(2000);
- 
- 		/* ----- Calibration (2). TX baseband Gm-C filter auto-tuning */
- 		/* Calibration (2a). turn off ENCAL signal */
-@@ -1210,7 +1210,7 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
- 		/* Calibration (5d). turn on RX DC offset cal function; and waiting 2 msec cal time */
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFF6DC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(2);
-+		usleep(2000);
- 		/* Calibration (5f). turn off ENCAL signal */
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFAEDC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
-@@ -1222,7 +1222,7 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
- 		/* Calibration (5d). turn on RX DC offset cal function; and waiting 2 msec cal time */
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFF6DC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(2);
-+		usleep(2000);
- 		/* Calibration (5f). turn off ENCAL signal */
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFAEDC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
-@@ -1234,7 +1234,7 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
- 		/* Calibration (5d). turn on RX DC offset cal function; and waiting 2 msec cal time */
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFF6DC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(2);
-+		usleep(2000);
- 		/* Calibration (5f). turn off ENCAL signal */
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFAEDC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
-@@ -1246,7 +1246,7 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
- 		/* Calibration (5d). turn on RX DC offset cal function; and waiting 2 msec cal time */
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFF6DC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(2);
-+		usleep(2000);
- 		/* Calibration (5f). turn off ENCAL signal */
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xFAEDC0, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
-@@ -1258,7 +1258,7 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
- 		/* 0x00 0xF86100 ; 3E184   ; Switch RF chip to normal mode */
- 		ltmp = (1 << 31) | (0 << 30) | (24 << 24) | BitReverse((0x00<<24) | 0xF86100, 24);
- 		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
--		msleep(5);
-+		usleep(5000);
- 		break;
- 	}
- }
+ #endif
 -- 
 1.8.1.2
 
