@@ -1,66 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757423Ab3IPLUU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 07:20:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63002 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755309Ab3IPLUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 07:20:16 -0400
-Date: Mon, 16 Sep 2013 12:22:11 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Jan Beulich <JBeulich@suse.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2 2/6] PCI/MSI: Factor out pci_get_msi_cap() interface
-Message-ID: <20130916102210.GA14102@dhcp-26-207.brq.redhat.com>
-References: <20130905150259.GA30984@dhcp-26-207.brq.redhat.com>
- <20130905150442.GA24148@htj.dyndns.org>
- <20130905154041.GD30984@dhcp-26-207.brq.redhat.com>
- <20130905154436.GC24148@htj.dyndns.org>
- <20130905185440.GA13175@dhcp-26-207.brq.redhat.com>
- <20130905200608.GA3846@htj.dyndns.org>
- <CAErSpo4TU2geqzY3AYsL08KimBqtfwa4iUoFHgcFt0zMTBJkHw@mail.gmail.com>
- <20130906160621.GF22763@mtj.dyndns.org>
- <20130906233205.GF12956@google.com>
- <20130909152044.GA24962@dhcp-26-207.brq.redhat.com>
+	id S932482Ab3IPLWB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 07:22:01 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48027 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932306Ab3IPLV5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 07:21:57 -0400
+Date: Mon, 16 Sep 2013 13:21:44 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: mingo@kernel.org, acme@infradead.org, linux-kernel@vger.kernel.org,
+        eranian@google.com, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/6] perf, x86: Add Haswell specific transaction flag
+ reporting v4
+Message-ID: <20130916112144.GA9326@twins.programming.kicks-ass.net>
+References: <1379095716-4705-1-git-send-email-andi@firstfloor.org>
+ <1379095716-4705-3-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130909152044.GA24962@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1379095716-4705-3-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 09, 2013 at 05:20:44PM +0200, Alexander Gordeev wrote:
-> On Fri, Sep 06, 2013 at 05:32:05PM -0600, Bjorn Helgaas wrote:
-> > I propose that you rework it that way, and at least find out what
-> > (if anything) would break if we do that.  Or maybe we just give up
-> > some optimization; it would be nice to quantify that, too.
-> 
-> Hi Bjorn,
-> 
-> The series is what it seems a direction to take.
-> 
-> Looks like we need PPC folks to agree on the quota check update
-> for pSeries (yes, they do bail out with a positive return value
-> from arch_msi_check_device()):
+On Fri, Sep 13, 2013 at 11:08:32AM -0700, Andi Kleen wrote:
+> @@ -893,6 +895,16 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+>  	    (x86_pmu.intel_cap.pebs_format >= 2))
+>  		data.weight = intel_hsw_weight(pebs);
+>  
+> +	if ((event->attr.sample_type & PERF_SAMPLE_TRANSACTION) &&
+> +	    x86_pmu.intel_cap.pebs_format >= 2) {
+> +		data.transaction =
+> +			(pebs->tsx_tuning & PEBS_HSW_TSX_FLAGS) >> 32;
+> +		/* For RTM XABORTs also log the abort code from AX */
+> +		if ((data.transaction & PERF_SAMPLE_TXN_TRANSACTION) &&
+> +		    (pebs->ax & 1))
+> +			data.transaction |= pebs->ax & 0xff000000;
+> +	}
+> +
+>  	if (has_branch_stack(event))
+>  		data.br_stack = &cpuc->lbr_stack;
+>  
 
-Hi Ben,
+Also, since we know now have 2 format >= 2 branches we can combine them;
+something like so?
 
-An initiative to simplify MSI/MSI-X allocation interface is brewing.
-It seems pSeries quota thing is an obstacle. If it could be given up
-(patch 2/9).
-
-Thanks!
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index f364c13..862e59f 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -206,6 +206,8 @@ union hsw_tsx_tuning {
+ 	u64	    value;
+ };
+ 
++#define PEBS_HSW_TSX_FLAGS	0xff00000000
++
+ void init_debug_store_on_cpu(int cpu)
+ {
+ 	struct debug_store *ds = per_cpu(cpu_hw_events, cpu).ds;
+@@ -880,18 +882,30 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 	else
+ 		regs.flags &= ~PERF_EFLAGS_EXACT;
+ 
+-	if ((event->attr.sample_type & PERF_SAMPLE_ADDR) &&
+-	    x86_pmu.intel_cap.pebs_format >= 1)
++	if (has_branch_stack(event))
++		data.br_stack = &cpuc->lbr_stack;
++
++	if (x86_pmu.intel_cap.pebs_format < 1)
++		goto done;
++
++	if (event->attr.sample_type & PERF_SAMPLE_ADDR)
+ 		data.addr = pebs->dla;
+ 
++	if (x86_pmu.intel_cap.pebs_format < 2)
++		goto done;
++
+ 	/* Only set the TSX weight when no memory weight was requested. */
+-	if ((event->attr.sample_type & PERF_SAMPLE_WEIGHT) && !fll &&
+-	    (x86_pmu.intel_cap.pebs_format >= 2))
++	if ((event->attr.sample_type & PERF_SAMPLE_WEIGHT) && !fll)
+ 		data.weight = intel_hsw_weight(pebs);
+ 
+-	if (has_branch_stack(event))
+-		data.br_stack = &cpuc->lbr_stack;
++	if ((event->attr.sample_type & PERF_SAMPLE_TRANSACTION)) {
++		data.txn = (pebs->tsx_tuning & PEBS_HSW_TSX_FLAGS) >> 32;
++		/* For RTM XABORTs also log the abort code from AX */
++		if ((data.txn & PERF_SAMPLE_TXN_TRANSACTION) && (pebs->ax & 1))
++			data.txn |= pebs->ax & 0xff000000;
++	}
+ 
++done:
+ 	if (perf_event_overflow(event, &data, &regs))
+ 		x86_pmu_stop(event, 0);
+ }
