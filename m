@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588Ab3IPXO1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 19:14:27 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:46053 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747Ab3IPXJm (ORCPT
+	id S1752628Ab3IPXO5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 19:14:57 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:33082 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751718Ab3IPXJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 19:09:42 -0400
+	Mon, 16 Sep 2013 19:09:41 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
 Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 11/28] arm: use early_init_dt_scan
-Date: Mon, 16 Sep 2013 18:09:07 -0500
-Message-Id: <1379372965-22359-12-git-send-email-robherring2@gmail.com>
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH 09/28] of: Introduce common early_init_dt_scan
+Date: Mon, 16 Sep 2013 18:09:05 -0500
+Message-Id: <1379372965-22359-10-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379372965-22359-1-git-send-email-robherring2@gmail.com>
 References: <1379372965-22359-1-git-send-email-robherring2@gmail.com>
@@ -25,57 +23,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <rob.herring@calxeda.com>
 
-Convert arm to use new early_init_dt_scan function.
+Most architectures scan the all the same items early in the FDT and none
+are really architecture specific. Create a common early_init_dt_scan to
+unify the early scan of root, memory, and chosen nodes in the flattened
+DT.
 
 Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org
+Cc: Grant Likely <grant.likely@linaro.org>
 ---
- arch/arm/kernel/devtree.c | 15 +--------------
- 1 file changed, 1 insertion(+), 14 deletions(-)
+ drivers/of/fdt.c       | 18 ++++++++++++++++++
+ include/linux/of_fdt.h |  2 ++
+ 2 files changed, 20 insertions(+)
 
-diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
-index f35906b..04050f7 100644
---- a/arch/arm/kernel/devtree.c
-+++ b/arch/arm/kernel/devtree.c
-@@ -183,7 +183,6 @@ bool arch_match_cpu_phys_id(int cpu, u64 phys_id)
-  */
- const struct machine_desc * __init setup_machine_fdt(unsigned int dt_phys)
- {
--	struct boot_param_header *devtree;
- 	const struct machine_desc *mdesc, *mdesc_best = NULL;
- 	unsigned int score, mdesc_score = ~1;
- 	unsigned long dt_root;
-@@ -199,14 +198,9 @@ const struct machine_desc * __init setup_machine_fdt(unsigned int dt_phys)
- 	if (!dt_phys)
- 		return NULL;
+diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+index eca1810..0714dd4 100644
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -785,6 +785,24 @@ void * __init __weak early_init_dt_alloc_memory_arch(u64 size, u64 align)
+ }
+ #endif
  
--	devtree = phys_to_virt(dt_phys);
--
--	/* check device tree validity */
--	if (be32_to_cpu(devtree->magic) != OF_DT_HEADER)
--		return NULL;
-+	early_init_dt_scan(phys_to_virt(dt_phys));
++bool __init early_init_dt_scan(void *params)
++{
++	/* Setup flat device-tree pointer */
++	initial_boot_params = params;
++
++	/* check device tree validity */
++	if (be32_to_cpu(initial_boot_params->magic) != OF_DT_HEADER)
++		return false;
++
++	/* Retrieve various information from the /chosen node */
++	of_scan_flat_dt(early_init_dt_scan_chosen, boot_command_line);
++	/* Initialize {size,address}-cells info */
++	of_scan_flat_dt(early_init_dt_scan_root, NULL);
++	/* Setup memory, calling early_init_dt_add_memory_arch */
++	of_scan_flat_dt(early_init_dt_scan_memory, NULL);
++	return true;
++}
++
+ /**
+  * unflatten_device_tree - create tree of device_nodes from flat blob
+  *
+diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
+index 58c28a8..73e1651 100644
+--- a/include/linux/of_fdt.h
++++ b/include/linux/of_fdt.h
+@@ -116,6 +116,8 @@ extern void early_init_dt_setup_initrd_arch(u64 start, u64 end);
+ extern int early_init_dt_scan_root(unsigned long node, const char *uname,
+ 				   int depth, void *data);
  
- 	/* Search the mdescs for the 'best' compatible value match */
--	initial_boot_params = devtree;
- 	dt_root = of_get_flat_dt_root();
- 	for_each_machine_desc(mdesc) {
- 		score = of_flat_dt_match(dt_root, mdesc->dt_compat);
-@@ -240,13 +234,6 @@ const struct machine_desc * __init setup_machine_fdt(unsigned int dt_phys)
- 		model = "<unknown>";
- 	pr_info("Machine: %s, model: %s\n", mdesc_best->name, model);
- 
--	/* Retrieve various information from the /chosen node */
--	of_scan_flat_dt(early_init_dt_scan_chosen, boot_command_line);
--	/* Initialize {size,address}-cells info */
--	of_scan_flat_dt(early_init_dt_scan_root, NULL);
--	/* Setup memory, calling early_init_dt_add_memory_arch */
--	of_scan_flat_dt(early_init_dt_scan_memory, NULL);
--
- 	/* Change machine number to match the mdesc we're using */
- 	__machine_arch_type = mdesc_best->nr;
- 
++extern bool early_init_dt_scan(void *params);
++
+ /* Other Prototypes */
+ extern void unflatten_device_tree(void);
+ extern void unflatten_and_copy_device_tree(void);
 -- 
 1.8.1.2
 
