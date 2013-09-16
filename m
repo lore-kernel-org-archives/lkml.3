@@ -1,108 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752735Ab3IPXQW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 19:16:22 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:50433 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237Ab3IPXJf (ORCPT
+	id S1751661Ab3IPX2R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 19:28:17 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56720 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751271Ab3IPX2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 19:09:35 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Salter <msalter@redhat.com>,
-        Aurelien Jacquiot <a-jacquiot@ti.com>, linux-c6x-dev@linux-c6x.org
-Subject: [PATCH 01/28] c6x: use boot_command_line instead of private c6x_command_line
-Date: Mon, 16 Sep 2013 18:08:57 -0500
-Message-Id: <1379372965-22359-2-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1379372965-22359-1-git-send-email-robherring2@gmail.com>
-References: <1379372965-22359-1-git-send-email-robherring2@gmail.com>
+	Mon, 16 Sep 2013 19:28:15 -0400
+Date: Tue, 17 Sep 2013 00:28:10 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "mszeredi@suse.cz" <mszeredi@suse.cz>,
+        Eric Van Hensbergen <ericvh@gmail.com>,
+        "M. Mohan Kumar" <mohan@in.ibm.com>, stable@vger.kernel.org
+Subject: Re: [PATCH 02/11] 9p: fix dentry leak in v9fs_vfs_atomic_open_dotl()
+Message-ID: <20130916232810.GG13318@ZenIV.linux.org.uk>
+References: <1379335925-30858-1-git-send-email-miklos@szeredi.hu>
+ <1379335925-30858-3-git-send-email-miklos@szeredi.hu>
+ <20130916181938.GD13318@ZenIV.linux.org.uk>
+ <CAJfpegt3mAKVE7ToZbvPpFQCY1EAZ3tKfn__kfpGz4HeXWr8fw@mail.gmail.com>
+ <20130916195003.GE13318@ZenIV.linux.org.uk>
+ <CAJfpegsLeuw55Diw0yDmiFR+7qkSkOrW2fUbjmzFC9OxVsrAkQ@mail.gmail.com>
+ <20130916220241.GF13318@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130916220241.GF13318@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
+On Mon, Sep 16, 2013 at 11:02:41PM +0100, Al Viro wrote:
+> On Mon, Sep 16, 2013 at 10:09:46PM +0200, Miklos Szeredi wrote:
+> 
+> > > I would definitely prefer EEXIST logics dealt with in fs/namei.c - if nothing
+> > > else, it had been done wrong in too many instances...
+> > 
+> > Okay.
+> 
+> OK, so I'm taking 1, 5, 9, 10, 11, then add check to fs/namei.c:atomic_open(),
+> leaving the rest of gfs2 ones for gfs2 tree...  Give me a few and I'll push
+> that.
 
-Save some pointless copying of the kernel command line and just use
-boot_command_line instead.
-
-Also remove default_command_line as it is not referenced anywhere, and
-the DT code already handles the default command line.
-
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: Mark Salter <msalter@redhat.com>
-Cc: Aurelien Jacquiot <a-jacquiot@ti.com>
-Cc: linux-c6x-dev@linux-c6x.org
----
- arch/c6x/include/asm/setup.h |  2 --
- arch/c6x/kernel/devicetree.c |  2 +-
- arch/c6x/kernel/setup.c      | 11 +----------
- 3 files changed, 2 insertions(+), 13 deletions(-)
-
-diff --git a/arch/c6x/include/asm/setup.h b/arch/c6x/include/asm/setup.h
-index ecead15..6968044 100644
---- a/arch/c6x/include/asm/setup.h
-+++ b/arch/c6x/include/asm/setup.h
-@@ -14,8 +14,6 @@
- #include <uapi/asm/setup.h>
- 
- #ifndef __ASSEMBLY__
--extern char c6x_command_line[COMMAND_LINE_SIZE];
--
- extern int c6x_add_memory(phys_addr_t start, unsigned long size);
- 
- extern unsigned long ram_start;
-diff --git a/arch/c6x/kernel/devicetree.c b/arch/c6x/kernel/devicetree.c
-index 9e15ab9..5e8c838 100644
---- a/arch/c6x/kernel/devicetree.c
-+++ b/arch/c6x/kernel/devicetree.c
-@@ -24,7 +24,7 @@ void __init early_init_devtree(void *params)
- 	 * device-tree, including the platform type, initrd location and
- 	 * size and more ...
- 	 */
--	of_scan_flat_dt(early_init_dt_scan_chosen, c6x_command_line);
-+	of_scan_flat_dt(early_init_dt_scan_chosen, boot_command_line);
- 
- 	/* Scan memory nodes and rebuild MEMBLOCKs */
- 	of_scan_flat_dt(early_init_dt_scan_root, NULL);
-diff --git a/arch/c6x/kernel/setup.c b/arch/c6x/kernel/setup.c
-index f4e72bd..0e5a812 100644
---- a/arch/c6x/kernel/setup.c
-+++ b/arch/c6x/kernel/setup.c
-@@ -68,13 +68,6 @@ unsigned long ram_end;
- static unsigned long dma_start __initdata;
- static unsigned long dma_size __initdata;
- 
--char c6x_command_line[COMMAND_LINE_SIZE];
--
--#if defined(CONFIG_CMDLINE_BOOL)
--static const char default_command_line[COMMAND_LINE_SIZE] __section(.cmdline) =
--	CONFIG_CMDLINE;
--#endif
--
- struct cpuinfo_c6x {
- 	const char *cpu_name;
- 	const char *cpu_voltage;
-@@ -296,8 +289,6 @@ notrace void __init machine_init(unsigned long dt_ptr)
- 	/* Do some early initialization based on the flat device tree */
- 	early_init_devtree(fdt);
- 
--	/* parse_early_param needs a boot_command_line */
--	strlcpy(boot_command_line, c6x_command_line, COMMAND_LINE_SIZE);
- 	parse_early_param();
- }
- 
-@@ -309,7 +300,7 @@ void __init setup_arch(char **cmdline_p)
- 	printk(KERN_INFO "Initializing kernel\n");
- 
- 	/* Initialize command line */
--	*cmdline_p = c6x_command_line;
-+	*cmdline_p = boot_command_line;
- 
- 	memory_end = ram_end;
- 	memory_end &= ~(PAGE_SIZE - 1);
--- 
-1.8.1.2
-
+Pushed (head at d332c7).  That should cover 9p and fuse as well, AFAICS.
+Do you have any problems with that variant?
