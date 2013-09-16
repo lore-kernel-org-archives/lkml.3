@@ -1,58 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757385Ab3IPKYG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 06:24:06 -0400
-Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:35455 "EHLO
-	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753283Ab3IPKYE (ORCPT
+	id S1757416Ab3IPKYq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 06:24:46 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:44277 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753283Ab3IPKYp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 06:24:04 -0400
-From: Denis CIOCCA <denis.ciocca@st.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Jonathan Cameron <jic23@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Date: Mon, 16 Sep 2013 12:23:33 +0200
-Subject: Re: [PATCH 32/38] iio: accel-core: st: Move LSM303DLH into correct
- group
-Thread-Topic: [PATCH 32/38] iio: accel-core: st: Move LSM303DLH into correct
- group
-Thread-Index: Ac6yxs1JZR1PU5C4RZScnXl1RfaH4w==
-Message-ID: <5236DC25.3060909@st.com>
-References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
- <1378817379-8238-33-git-send-email-lee.jones@linaro.org>
- <5234A20F.7040008@kernel.org> <20130916080546.GC3999@lee--X1>
- <5236CD17.5010901@st.com> <20130916093812.GG3999@lee--X1>
- <5236D5F0.2030601@st.com> <20130916101925.GJ3999@lee--X1>
-In-Reply-To: <20130916101925.GJ3999@lee--X1>
-Accept-Language: it-IT, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
- Thunderbird/17.0.8
-acceptlanguage: it-IT, en-US
-Content-Type: text/plain; charset="utf-8"
+	Mon, 16 Sep 2013 06:24:45 -0400
+Date: Mon, 16 Sep 2013 11:23:37 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Wei Ni <wni@nvidia.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        "khali@linux-fr.org" <khali@linux-fr.org>,
+        "linux@roeck-us.net" <linux@roeck-us.net>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20130916102337.GZ29403@sirena.org.uk>
+References: <1378985061-28547-1-git-send-email-wni@nvidia.com>
+ <1378985061-28547-4-git-send-email-wni@nvidia.com>
+ <5231D709.5080308@wwwdotorg.org>
+ <523688FB.2010701@nvidia.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+EtoZOcuEljFWerI"
+Content-Disposition: inline
+In-Reply-To: <523688FB.2010701@nvidia.com>
+X-Cookie: Your present plans will be successful.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v4 3/3] Documentation: dt: hwmon: add OF document for LM90
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8GAOAGX003351
 
->> I've tried with real device...Unfortunately, you are right for name on
->> the package...
->> So, are you using the LSM303DLHC?
-> According to my datasheet [1], I have the LSM303DLH.
->
-> [1] http://www.calao-systems.com/repository/pub/EMBEDDED%20COMPUTERS/SKY-S9500-ULP-XXX/C12-SDK/SCH-00103-B11.pdf
->
-Mhh...I saw the LSM303DLHC...
-The LSM303DLH is not populated, there is only the footprint but is not 
-soldered...
 
-Denisÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+--+EtoZOcuEljFWerI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Mon, Sep 16, 2013 at 12:28:43PM +0800, Wei Ni wrote:
+> On 09/12/2013 11:00 PM, Stephen Warren wrote:
+
+> >> +- vcc-supply: vcc regulator for the supply voltage.
+> >> +              If this is not set, assuming vcc is always powered.
+
+> > I thought that was going to be a "Required Property".
+
+> There may have many platforms without regulator, they always power on
+> this device, so how can they set this "vcc-supply "property if we set it
+> as "Required Property".
+> Set to dummy-regulator? but it seems the regulator framework can't
+> handle it yet.
+
+To repeat once more: these platforms will physically have a regulator,
+the device won't function without power and unfortunately the device
+tree bindings only have optional and required properties.
+
+--+EtoZOcuEljFWerI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSNtwmAAoJELSic+t+oim9XukQAInDuT/CuiodQAxLwPHctc1o
+1PDVDOD2tw2Y5raXf2BoiiFfIvOuQPjq85S2+rib0cO6CAGr9kNOn5TgYw+R3Cwx
++0wRkzs50kUjDrQGS1iMeFH3uRCiFRfajmyMaftUIQ8SPR5pmZHGnPc9CF0n19G0
+C6QwNP/FpWbxRNaqTtiaFAPeSPYQjblCEknicV/R0o2kZoSqv6pWPBDqjfgX4t58
+QPwAXd1yCscAnHXThz8OgUCxHCY+qeXtlU5WnqNp0TTCNsi1WOXXVn5bafJsDKPl
+pwKxDFfvNDFZZnMGa2pOZANzWlJ4lsYP/74ghk52pTI86zjSpEBW5WUZ4yyoTdNR
+/jN+i08Ml6gR4lqdFUimvX/UjEjoU6ndbkZ6pCXps9S/qfLCbU3k2o3BpwjeZ9D/
+a93vVhPxDXIdnAHJNkgSlBJAr4HZ6fGH0l7Azzh5to6CCLmTSDsbulXXYOkEY8MM
+EDqMg8osQXHCOcE1hVt73rXGp3FDWRJ5oBbY8sHomIw7TGJe0bBbXRtKlWJrOO6d
+Q6SUCXJuxcOSr23EBKJy0i6SkzSvzWFd0n2tYzhDnOrtgoezY6JwjAgodYfPKaZ3
++m62n01rsy8u4M9WrcDHyE4KDgGXd75AvUx3AexY8sctunSfjAsl7uxdK0WgbtNh
+t+LVAd8OQdxQ4HTgZqTl
+=aUd3
+-----END PGP SIGNATURE-----
+
+--+EtoZOcuEljFWerI--
