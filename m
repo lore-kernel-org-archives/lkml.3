@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757490Ab3IPNsw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 09:48:52 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:48410 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755010Ab3IPNoO (ORCPT
+	id S1754756Ab3IPNoK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 09:44:10 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:60352 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754008Ab3IPNoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 09:44:14 -0400
+	Mon, 16 Sep 2013 09:44:07 -0400
 From: Iker Pedrosa <ikerpedrosam@gmail.com>
 To: pavel@ucw.cz
 Cc: gregkh@linuxfoundation.org, ikerpedrosam@gmail.com, harsh1kumar@gmail.com,
         dan.carpenter@oracle.com, mujeeb.adil@gmail.com,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 09/24] Staging: winbond: reg: first of the patches that fixes lines over 80 characters
-Date: Mon, 16 Sep 2013 15:43:29 +0200
-Message-Id: <1379339024-12157-10-git-send-email-ikerpedrosam@gmail.com>
+Subject: [PATCH v2 05/24] Staging: winbond: phy_calibration: second of the patches that fixes lines over 80 characters
+Date: Mon, 16 Sep 2013 15:43:25 +0200
+Message-Id: <1379339024-12157-6-git-send-email-ikerpedrosam@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379339024-12157-1-git-send-email-ikerpedrosam@gmail.com>
 References: <1379339024-12157-1-git-send-email-ikerpedrosam@gmail.com>
@@ -22,99 +22,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-First of the patches that fixes the lines over 80 characters in reg.c
+Second of the patches that fixes the lines over 80 characters in phy_calibration.c
 
 Signed-off-by: Iker Pedrosa <ikerpedrosam@gmail.com>
 ---
- drivers/staging/winbond/reg.c | 26 ++++++++++----------------
- 1 file changed, 10 insertions(+), 16 deletions(-)
+ drivers/staging/winbond/phy_calibration.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/winbond/reg.c b/drivers/staging/winbond/reg.c
-index c023fda..429c28e 100644
---- a/drivers/staging/winbond/reg.c
-+++ b/drivers/staging/winbond/reg.c
-@@ -809,12 +809,7 @@ u32 w89rf242_txvga_data[][5] = {
- 	{(0x05 << 24) | 0x24C7CA, 34, 0x00292315, 0x0800FEFF, 0x72724242}
- };
+diff --git a/drivers/staging/winbond/phy_calibration.c b/drivers/staging/winbond/phy_calibration.c
+index 6635c85..7fc95ee 100644
+--- a/drivers/staging/winbond/phy_calibration.c
++++ b/drivers/staging/winbond/phy_calibration.c
+@@ -1233,8 +1233,10 @@ u8 _rx_iq_calibration_loop_winbond(struct hw_data *phw_data, u16 factor, u32 fre
+ 		b_2 = (rot_image_q_b * 32768) / rot_tone_i_b -
+ 			phw_data->iq_rsdl_phase_tx_d2;
  
--/* ================================================================================================== */
--
--
--
- /*
-- * =============================================================================================================
-  *  Uxx_ReadEthernetAddress --
-  *
-  *  Routine Description:
-@@ -826,15 +821,15 @@ u32 w89rf242_txvga_data[][5] = {
-  *  Return Value:
-  *
-  *    The address is stored in EthernetIDAddr.
-- * =============================================================================================================
-  */
- void Uxx_ReadEthernetAddress(struct hw_data *pHwData)
- {
- 	u32	ltmp;
+-		PHY_DEBUG(("[CAL]    ** iq_rsdl_gain_tx_d2 = %d\n", phw_data->iq_rsdl_gain_tx_d2));
+-		PHY_DEBUG(("[CAL]    ** iq_rsdl_phase_tx_d2= %d\n", phw_data->iq_rsdl_phase_tx_d2));
++		PHY_DEBUG(("[CAL]    ** iq_rsdl_gain_tx_d2 = %d\n",
++			   phw_data->iq_rsdl_gain_tx_d2));
++		PHY_DEBUG(("[CAL]    ** iq_rsdl_phase_tx_d2= %d\n",
++			   phw_data->iq_rsdl_phase_tx_d2));
+ 		PHY_DEBUG(("[CAL]    ***** EPSILON/2 = %d\n", a_2));
+ 		PHY_DEBUG(("[CAL]    ***** THETA/2   = %d\n", b_2));
  
- 	/*
--	 * Reading Ethernet address from EEPROM and set into hardware due to MAC address maybe change.
--	 * Only unplug and plug again can make hardware read EEPROM again.
-+	 * Reading Ethernet address from EEPROM and set into hardware due to
-+	 * MAC address maybe change. Only unplug and plug again can make
-+	 * hardware read EEPROM again.
- 	 */
- 	Wb35Reg_WriteSync(pHwData, 0x03b4, 0x08000000); /* Start EEPROM access + Read + address(0x0d) */
- 	Wb35Reg_ReadSync(pHwData, 0x03b4, &ltmp);
-@@ -852,18 +847,17 @@ void Uxx_ReadEthernetAddress(struct hw_data *pHwData)
+@@ -1280,7 +1282,8 @@ u8 _rx_iq_calibration_loop_winbond(struct hw_data *phw_data, u16 factor, u32 fre
  
+ 		/* e. */
+ 		pwr_tone = (iqcal_tone_i*iqcal_tone_i + iqcal_tone_q*iqcal_tone_q);
+-		pwr_image = (iqcal_image_i*iqcal_image_i + iqcal_image_q*iqcal_image_q)*factor;
++		pwr_image = (iqcal_image_i*iqcal_image_i +
++			     iqcal_image_q*iqcal_image_q)*factor;
  
- /*
-- * ===============================================================================================================
-  *  CardGetMulticastBit --
-  *  Description:
-- *    For a given multicast address, returns the byte and bit in the card multicast registers that it hashes to.
-- *    Calls CardComputeCrc() to determine the CRC value.
-+ *    For a given multicast address, returns the byte and bit in the card
-+ *    multicast registers that it hashes to. Calls CardComputeCrc() to
-+ *    determine the CRC value.
-  *  Arguments:
-  *    Address - the address
-  *    Byte - the byte that it hashes to
-  *    Value - will have a 1 in the relevant bit
-  *  Return Value:
-  *    None.
-- * ==============================================================================================================
-  */
- void CardGetMulticastBit(u8 Address[ETH_ALEN], u8 *Byte, u8 *Value)
- {
-@@ -926,7 +920,8 @@ static void Set_ChanIndep_RfData_al7230_24(struct hw_data *pHwData, u32 *pltmp,
- 	u8	i;
- 	for (i = 0; i < number; i++) {
- 		pHwData->phy_para[i] = al7230_rf_data_24[i];
--		pltmp[i] = (1 << 31) | (0 << 30) | (24 << 24) | (al7230_rf_data_24[i] & 0xffffff);
-+		pltmp[i] = (1 << 31) | (0 << 30) | (24 << 24) |
-+			   (al7230_rf_data_24[i] & 0xffffff);
- 	}
- }
+ 		PHY_DEBUG(("[CAL]    ** pwr_tone  = %d\n", pwr_tone));
+ 		PHY_DEBUG(("[CAL]    ** pwr_image  = %d\n", pwr_image));
+@@ -1577,7 +1580,8 @@ unsigned char adjust_TXVGA_for_iq_mag(struct hw_data *phw_data)
  
-@@ -936,15 +931,14 @@ static void Set_ChanIndep_RfData_al7230_50(struct hw_data *pHwData, u32 *pltmp,
- 	u8	i;
- 	for (i = 0; i < number; i++) {
- 		pHwData->phy_para[i] = al7230_rf_data_50[i];
--		pltmp[i] = (1 << 31) | (0 << 30) | (24 << 24) | (al7230_rf_data_50[i] & 0xffffff);
-+		pltmp[i] = (1 << 31) | (0 << 30) | (24 << 24)
-+				   | (al7230_rf_data_50[i] & 0xffffff);
- 	}
- }
+ 		sqsum = iqcal_tone_i0*iqcal_tone_i0 + iqcal_tone_q0*iqcal_tone_q0;
+ 		iq_mag_0_tx = (s32) _sqrt(sqsum);
+-		PHY_DEBUG(("[CAL]    ** auto_adjust_txvga_for_iq_mag_0_tx=%d\n", iq_mag_0_tx));
++		PHY_DEBUG(("[CAL]    ** auto_adjust_txvga_for_iq_mag_0_tx=%d\n",
++			   iq_mag_0_tx));
  
- 
- /*
-- * =============================================================================================================
-  * RFSynthesizer_initial --
-- * =============================================================================================================
-  */
- void RFSynthesizer_initial(struct hw_data *pHwData)
- {
+ 		if (iq_mag_0_tx >= 700 && iq_mag_0_tx <= 1750)
+ 			break;
 -- 
 1.8.1.2
 
