@@ -1,130 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932572Ab3IPLsj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 07:48:39 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:46496 "EHLO comal.ext.ti.com"
+	id S932607Ab3IPLtZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 07:49:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51718 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932304Ab3IPLsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 07:48:37 -0400
-Message-ID: <5236F00B.5040605@ti.com>
-Date: Mon, 16 Sep 2013 17:18:27 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S932304Ab3IPLtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 07:49:24 -0400
+Message-ID: <5236F096.8040702@redhat.com>
+Date: Mon, 16 Sep 2013 13:50:46 +0200
+From: Laszlo Ersek <lersek@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: <joelf@ti.com>
-CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Russell King <linux@arm.linux.org.uk>, Jyri Sarah <jsarha@ti.com>,
-        Koen Kooi <koen@beagleboard.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH v3] ARM: EDMA: Fix clearing of unused list for DT DMA
- resources
-References: <1378839171-14455-1-git-send-email-joelf@ti.com> <5231903F.7080301@ti.com> <5233B471.40603@ti.com>
-In-Reply-To: <5233B471.40603@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Matt Fleming <matt@console-pimps.org>
+CC: jerry.hoemann@hp.com, Andrew Fish <afish@apple.com>,
+        edk2-devel@lists.sourceforge.net, linux-efi@vger.kernel.org,
+        Gleb Natapov <gleb@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Brian Richardson <brian.richardson@intel.com>,
+        Colin Ian King <colin.king@canonical.com>,
+        Randy Wright <rwright@hp.com>, Linn Crosetto <linn.crosetto@hp.com>,
+        terry.lee@hp.com, samer.el-haj-mahmoud@hp.com, randy.pawell@hp.com,
+        chrisp@hp.com, linda.knippers@hp.com, dong.wei@hp.com,
+        "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Chao Zhang <chao.b.zhang@intel.com>, Yao Jiewen <jiewen.yao@intel.com>
+Subject: Re: [edk2] Corrupted EFI region
+References: <52001896.1030509@redhat.com> <20130805220808.GC14067@pd.tnic> <20130806141036.GD14891@pd.tnic> <520116D1.2010000@redhat.com> <20130807151935.GJ17920@pd.tnic> <CCFD3CBD-62B0-4046-B96D-18CB1A815F72@apple.com> <20130807201908.GG2515@console-pimps.org> <D5982201-6DC4-469F-812A-74A8402ADEE9@apple.com> <20130808101730.GJ2515@console-pimps.org> <20130913203812.GA312@anatevka.fc.hp.com> <20130916105920.GB2697@console-pimps.org>
+In-Reply-To: <20130916105920.GB2697@console-pimps.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joel,
-
-On Saturday 14 September 2013 06:27 AM, Joel Fernandes wrote:
-> From: Joel Fernandes <joelf@ti.com>
-> Subject: [PATCH v4] ARM: EDMA: Fix clearing of unused list for DT DMA resources
+On 09/16/13 12:59, Matt Fleming wrote:
+> On Fri, 13 Sep, at 02:38:12PM, jerry.hoemann@hp.com wrote:
+>> Matt,
+>>
+>> We have hit an issue on our new platform in development related to the
+>> call of efi_reserve_boot_services() from setup_arch().
+>>
+>> The reservation can interfere with allocation of the crash kernel.
+>  
+> Jerry, thanks for bringing this up.
 > 
-> HWMOD removal for MMC is breaking edma_start as the events are being manually
-> triggered due to unused channel list not being clear.
+>> In pre 3.9(?) kernels,  the crash kernel is required to be allocated from
+>> physically contiguous memory below 896 MB.
+>>
+>> Our new platforms are large in both the amount of memory and the amount
+>> of IO. This requires large crash kernels for kdump to work.  This is even
+>> after the work done for makedumpfile v 1.5 to allow it to work with a
+>> smaller foot print.
+>>
+>>
+>> One of the problems is that drivers will allocate memory as boot code and/or
+>> data in the region < 896 that effectively fragments this memory.
+>> With the reservation, we can't reuse the memory when needed for the
+>> crash kernels.   If we remove the reservation and allow the kernel
+>> to reuse the memory,  we the reservation of the crash kernel succeeds.
+>>
+>> This is definitely a problem for distros that are pre 3.9.  Probably less
+>> so for top of tree, but i haven't been focused there.
+>>
+>> So we are definitely interested in finding a mechanism to not
+>> do this reservation on platforms that don't have the issues described
+>> earlier in this thread.
 > 
-> This patch fixes the issue, by reading the "dmas" property from the DT node if
-> it exists and clearing the bits in the unused channel list. For this purpose
-> we use the of_* helpers to parse the arguments in the dmas phandle list.
-> 
-> Reviewed-by: Sekhar Nori <nsekhar@ti.com>
-> Reported-by: Balaji T K <balajitk@ti.com>
-> Cc: Pantel Antoniou <panto@antoniou-consulting.com>
-> Signed-off-by: Joel Fernandes <joelf@ti.com>
-> ---
-> Changes since v1, in v2 and v3:
-> - Reduced indentation of non-of case by returning from of-case
-> - Using of_* helpers for parsing
-> 
-> Note:
-> This patch should go into the merge window as it is a critical bug fix.
+> OK, in an ideal world we'd move the crash kernel reservation after
+> efi_free_boot_services(), because at that point the boot regions are
+> available again. But it seems that we reserve the boot regions really
+> early during startup and release them relatively late. The reason is
+> that the Boot Graphics Resource Table (BGRT) data, if present, is
+> located in the Boot Services Data regions but we can't extract the
+> address of the region from the ACPI tables until we've setup the ACPI
+> subsystem, which happens quite late.
 
-I still cannot find any users of edma in the device tree sources either
-in linux-next or linus/master. Why cannot this wait until v3.13?
+Why is BGRT allocated as Boot Services Data?
 
-> 
->  arch/arm/common/edma.c | 23 +++++++++++++++++++++--
->  1 file changed, 21 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
-> index 39ad030..43c7b22 100644
-> --- a/arch/arm/common/edma.c
-> +++ b/arch/arm/common/edma.c
-> @@ -560,14 +560,33 @@ static int reserve_contiguous_slots(int ctlr, unsigned int
-> id,
->  static int prepare_unused_channel_list(struct device *dev, void *data)
->  {
->  	struct platform_device *pdev = to_platform_device(dev);
-> -	int i, ctlr;
-> +	int i, count, ctlr;
-> +	struct of_phandle_args  dma_spec;
-> 
-> +	if (dev->of_node) {
-> +		count = of_property_count_strings(dev->of_node, "dma-names");
-> +		if (count < 0)
-> +			return 0;
-> +		for (i = 0; i < count; i++) {
-> +			if (of_parse_phandle_with_args(dev->of_node, "dmas",
-> +						       "#dma-cells", i,
-> +						       &dma_spec))
-> +				continue;
+In file
+"MdeModulePkg/Universal/Acpi/BootGraphicsResourceTableDxe/BootGraphicsResourceTableDxe.c":
 
-This will break for the case where devices on platform bus use non-EDMA
-dma controllers like SDMA or CPPI (DRA7x has both EDMA and SDMA on the
-same chip). You need to do an additional check to make sure the dma
-controller is indeed EDMA. Something like.
+InstallBootGraphicsResourceTable()
+  BgrtAllocateBsDataMemoryBelow4G()
+    gBS->AllocatePages(... EfiBootServicesData ...)
 
-	if(!of_device_is_compatible(dma_spec.np, "ti,edma3"))
-		continue;
+>From Table 25. Memory Type Usage before ExitBootServices():
 
-Don forget to call of_node_put() on dma_spec.np (something that needs to
-be done even with your current code).
+  EfiBootServicesData  -- The data portions of a loaded Boot Services
+                          Driver, and the default data allocation type
+                          used by a Boot Services Driver to allocate
+                          pool memory.
 
-> +
-> +			ctlr = EDMA_CTLR(dma_spec.args[0]);
-> +			clear_bit(EDMA_CHAN_SLOT(dma_spec.args[0]),
-> +				  edma_cc[ctlr]->edma_unused);
+  EfiACPIReclaimMemory -- Memory that holds the ACPI tables.
 
-We don't support the second controller when using DT and the controller
-number is not really encoded in the argument to edma phandle. So just
-simplify this to:
+>From Table 26. Memory Type Usage after ExitBootServices():
 
-	clear_bit(EDMA_CHAN_SLOT(dma_spec.args[0]), 	
-		  edma_cc[0]->edma_unused);
+  EfiBootServicesData -- Memory available for general use.
 
-> +		}
-> +		return 0;
-> +	}
-> +
-> +	/* For non-OF case */
->  	for (i = 0; i < pdev->num_resources; i++) {
->  		if ((pdev->resource[i].flags & IORESOURCE_DMA) &&
->  				(int)pdev->resource[i].start >= 0) {
->  			ctlr = EDMA_CTLR(pdev->resource[i].start);
->  			clear_bit(EDMA_CHAN_SLOT(pdev->resource[i].start),
-> -					edma_cc[ctlr]->edma_unused);
-> +				  edma_cc[ctlr]->edma_unused);
+  EfiACPIReclaimMemory -- This memory is to be preserved by the loader
+                          and OS until ACPI is enabled. Once ACPI is
+                          enabled, the memory in this range is available
+                          for general use.
 
-This is a useful change and I am okay with it happening in this
-otherwise unrelated patch, but please mention this in changelog.
+I thought that anything referenced by a pointer in any ACPI table was
+EfiACPIReclaimMemory or stricter. Specifically, the RSDT or XSDT points
+to BGRT, so BGRT is EfiACPIReclaimMemory.  BGRT points to the image data
+(with its Image Address field), hence the image data should be
+EfiACPIReclaimMemory too.
+
+Otherwise, the pointer (BGRT.ImageAddress) can outlive the pointed-to
+storage (the image data).
+
+The image data sounds to me like textbook example for
+EfiACPIReclaimMemory. This way the kernel could free Boot Services Data
+early, perform the crash kernel reservation right after, and safely
+access BGRT whenever the ACPI subsystem is brought up later.
+
+
+The edk2 commit that flipped the memory type underneath the image data
+from EfiReservedMemoryType to EfiBootServicesData is:
+
+    https://github.com/tianocore/edk2/commit/4c58575e
+
+I think this commit is wrong. It's fine for OSPM to release the image
+data at some point, but not right after ExitBootServices(), because
+referencing pointers in ACPI tables survive strictly longer.
+
+... Actually, the commit does follow the ACPI spec 5.0:
+
+5.2.22.4 Image Address
+
+    The Image Address contains the location in memory where an
+    in-memory copy of the boot image can be found. The image should be
+    stored in EfiBootServicesData, allowing the system to reclaim
+    the memory when the image is no longer needed.
+
+The ACPI spec 5.0 should recommend EfiACPIReclaimMemory here IMO. (I
+take the current wording ("should be stored") as a recommendation only.)
+
+If that's in fact a recommendation (and not a hard requirement), then it
+should be easy to change BgrtAllocateBsDataMemoryBelow4G() again.
 
 Thanks,
-Sekhar
-
+Laszlo
