@@ -1,52 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254Ab3IPN2l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 09:28:41 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:34661 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753990Ab3IPN2j (ORCPT
+	id S1754905Ab3IPNbN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 09:31:13 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:37540 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753975Ab3IPNbL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 09:28:39 -0400
+	Mon, 16 Sep 2013 09:31:11 -0400
+Date: Mon, 16 Sep 2013 14:31:06 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        jic23@cam.ac.uk, arnd@arndb.de, linus.walleij@linaro.org,
+        denis.ciocca@st.com, linux-iio@vger.kernel.org
+Subject: Re: [PATCH 14/38] iio: accel: st: Append _accel to accelerator
+ sensor device names
+Message-ID: <20130916133106.GI16984@lee--X1>
+References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
+ <1378817379-8238-15-git-send-email-lee.jones@linaro.org>
+ <52345330.4050707@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20130915165030.GU18242@two.firstfloor.org>
-References: <CANFwon1yAeqsDCq7rs=ak3pEUD=sMd81t3C45yTZF+TPLmGOBw@mail.gmail.com>
- <20130915165030.GU18242@two.firstfloor.org>
-From: Hui Zhu <teawater@gmail.com>
-Date: Mon, 16 Sep 2013 21:27:58 +0800
-Message-ID: <CANFwon1RuK6Q3xGdai7HWB2zRwmjsXHqUx2Gzwh9cK72KqgxpA@mail.gmail.com>
-Subject: Re: KGTP (Linux debugger and tracer) 20130915 release (bugs fix and
- pdf doc)
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <52345330.4050707@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 12:50 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> On Sun, Sep 15, 2013 at 03:58:44PM +0800, Hui Zhu wrote:
->> Hi guys,
->>
->> KGTP (http://code.google.com/p/kgtp/) is a flexible, lightweight and
->> realtime Linux debugger and tracer.
->> To use it, you don't need patch or rebuild the Linux kernel. Just
->> build KGTP module and insmod it is OK.
->
-> I see the source tree still has patches. Are they merely to build
-> inside the kernel tree? Or is there some functionality that
-> would benefit from patching?
+> Honestly I don't care either way on these, but consistency would definitely
+> be good so applied to the togreg branch of iio.git
 
-The patchs help some people include KGTP to them special Linux Kernel
-tree.  Its functions are same with function of modules.
+For clarification, is togreg due for the v3.12 merge window or will be
+get a settling period in -next?
 
->
-> Real time kernel debugging seems like a useful functionality
-> and mainline should probably support it.
-
-Thanks.  I will try to make a patch for upstream later.
-
-Best,
-Hui
-
->
-> -Andi
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
