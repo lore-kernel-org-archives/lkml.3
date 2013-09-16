@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708Ab3IPXQR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 19:16:17 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:41409 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751437Ab3IPXJg (ORCPT
+	id S1752735Ab3IPXQW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 19:16:22 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:50433 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237Ab3IPXJf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 19:09:36 -0400
+	Mon, 16 Sep 2013 19:09:35 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
 Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Jonas Bonn <jonas@southpole.se>,
-        linux@openrisc.net
-Subject: [PATCH 02/28] openrisc: use boot_command_line instead of private cmd_line
-Date: Mon, 16 Sep 2013 18:08:58 -0500
-Message-Id: <1379372965-22359-3-git-send-email-robherring2@gmail.com>
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Salter <msalter@redhat.com>,
+        Aurelien Jacquiot <a-jacquiot@ti.com>, linux-c6x-dev@linux-c6x.org
+Subject: [PATCH 01/28] c6x: use boot_command_line instead of private c6x_command_line
+Date: Mon, 16 Sep 2013 18:08:57 -0500
+Message-Id: <1379372965-22359-2-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379372965-22359-1-git-send-email-robherring2@gmail.com>
 References: <1379372965-22359-1-git-send-email-robherring2@gmail.com>
@@ -25,69 +26,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Rob Herring <rob.herring@calxeda.com>
 
 Save some pointless copying of the kernel command line and just use
-boot_command_line instead. The DT code already handles CONFIG_CMDLINE,
-so a separate copy is not needed.
+boot_command_line instead.
+
+Also remove default_command_line as it is not referenced anywhere, and
+the DT code already handles the default command line.
 
 Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: Jonas Bonn <jonas@southpole.se>
-Cc: linux@lists.openrisc.net
+Cc: Mark Salter <msalter@redhat.com>
+Cc: Aurelien Jacquiot <a-jacquiot@ti.com>
+Cc: linux-c6x-dev@linux-c6x.org
 ---
- arch/openrisc/kernel/prom.c  | 7 +------
- arch/openrisc/kernel/setup.c | 4 +---
- 2 files changed, 2 insertions(+), 9 deletions(-)
+ arch/c6x/include/asm/setup.h |  2 --
+ arch/c6x/kernel/devicetree.c |  2 +-
+ arch/c6x/kernel/setup.c      | 11 +----------
+ 3 files changed, 2 insertions(+), 13 deletions(-)
 
-diff --git a/arch/openrisc/kernel/prom.c b/arch/openrisc/kernel/prom.c
-index a63e768..bf3fd05 100644
---- a/arch/openrisc/kernel/prom.c
-+++ b/arch/openrisc/kernel/prom.c
-@@ -47,8 +47,6 @@
- #include <asm/sections.h>
- #include <asm/setup.h>
+diff --git a/arch/c6x/include/asm/setup.h b/arch/c6x/include/asm/setup.h
+index ecead15..6968044 100644
+--- a/arch/c6x/include/asm/setup.h
++++ b/arch/c6x/include/asm/setup.h
+@@ -14,8 +14,6 @@
+ #include <uapi/asm/setup.h>
  
--extern char cmd_line[COMMAND_LINE_SIZE];
+ #ifndef __ASSEMBLY__
+-extern char c6x_command_line[COMMAND_LINE_SIZE];
 -
- void __init early_init_dt_add_memory_arch(u64 base, u64 size)
- {
- 	size &= PAGE_MASK;
-@@ -67,15 +65,12 @@ void __init early_init_devtree(void *params)
+ extern int c6x_add_memory(phys_addr_t start, unsigned long size);
+ 
+ extern unsigned long ram_start;
+diff --git a/arch/c6x/kernel/devicetree.c b/arch/c6x/kernel/devicetree.c
+index 9e15ab9..5e8c838 100644
+--- a/arch/c6x/kernel/devicetree.c
++++ b/arch/c6x/kernel/devicetree.c
+@@ -24,7 +24,7 @@ void __init early_init_devtree(void *params)
  	 * device-tree, including the platform type, initrd location and
- 	 * size, TCE reserve, and more ...
+ 	 * size and more ...
  	 */
--	of_scan_flat_dt(early_init_dt_scan_chosen, cmd_line);
+-	of_scan_flat_dt(early_init_dt_scan_chosen, c6x_command_line);
 +	of_scan_flat_dt(early_init_dt_scan_chosen, boot_command_line);
  
  	/* Scan memory nodes and rebuild MEMBLOCKs */
  	of_scan_flat_dt(early_init_dt_scan_root, NULL);
- 	of_scan_flat_dt(early_init_dt_scan_memory, NULL);
+diff --git a/arch/c6x/kernel/setup.c b/arch/c6x/kernel/setup.c
+index f4e72bd..0e5a812 100644
+--- a/arch/c6x/kernel/setup.c
++++ b/arch/c6x/kernel/setup.c
+@@ -68,13 +68,6 @@ unsigned long ram_end;
+ static unsigned long dma_start __initdata;
+ static unsigned long dma_size __initdata;
  
--	/* Save command line for /proc/cmdline and then parse parameters */
--	strlcpy(boot_command_line, cmd_line, COMMAND_LINE_SIZE);
+-char c6x_command_line[COMMAND_LINE_SIZE];
 -
- 	memblock_allow_resize();
- 
- 	/* We must copy the flattend device tree from init memory to regular
-diff --git a/arch/openrisc/kernel/setup.c b/arch/openrisc/kernel/setup.c
-index d7359ff..719c5c8 100644
---- a/arch/openrisc/kernel/setup.c
-+++ b/arch/openrisc/kernel/setup.c
-@@ -50,8 +50,6 @@
- 
- #include "vmlinux.h"
- 
--char __initdata cmd_line[COMMAND_LINE_SIZE] = CONFIG_CMDLINE;
+-#if defined(CONFIG_CMDLINE_BOOL)
+-static const char default_command_line[COMMAND_LINE_SIZE] __section(.cmdline) =
+-	CONFIG_CMDLINE;
+-#endif
 -
- static unsigned long __init setup_memory(void)
- {
- 	unsigned long bootmap_size;
-@@ -316,7 +314,7 @@ void __init setup_arch(char **cmdline_p)
- 		conswitchp = &dummy_con;
- #endif
+ struct cpuinfo_c6x {
+ 	const char *cpu_name;
+ 	const char *cpu_voltage;
+@@ -296,8 +289,6 @@ notrace void __init machine_init(unsigned long dt_ptr)
+ 	/* Do some early initialization based on the flat device tree */
+ 	early_init_devtree(fdt);
  
--	*cmdline_p = cmd_line;
+-	/* parse_early_param needs a boot_command_line */
+-	strlcpy(boot_command_line, c6x_command_line, COMMAND_LINE_SIZE);
+ 	parse_early_param();
+ }
+ 
+@@ -309,7 +300,7 @@ void __init setup_arch(char **cmdline_p)
+ 	printk(KERN_INFO "Initializing kernel\n");
+ 
+ 	/* Initialize command line */
+-	*cmdline_p = c6x_command_line;
 +	*cmdline_p = boot_command_line;
  
- 	printk(KERN_INFO "OpenRISC Linux -- http://openrisc.net\n");
- }
+ 	memory_end = ram_end;
+ 	memory_end &= ~(PAGE_SIZE - 1);
 -- 
 1.8.1.2
 
