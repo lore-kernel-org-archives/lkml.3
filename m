@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751760Ab3IPQDK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 12:03:10 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:46882 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751615Ab3IPQCu (ORCPT
+	id S1751811Ab3IPQDQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 12:03:16 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:37396 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751722Ab3IPQDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 12:02:50 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        jic23@cam.ac.uk
-Cc: arnd@arndb.de, linus.walleij@linaro.org, denis.ciocca@st.com,
-        linux-iio@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 13/20] iio: sensors-core: st: Clean-up error handling in st_sensors_read_axis_data()
-Date: Mon, 16 Sep 2013 17:02:19 +0100
-Message-Id: <1379347346-823-14-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1379347346-823-1-git-send-email-lee.jones@linaro.org>
-References: <1379347346-823-1-git-send-email-lee.jones@linaro.org>
+	Mon, 16 Sep 2013 12:03:13 -0400
+Date: Mon, 16 Sep 2013 18:03:11 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andi Kleen <andi@firstfloor.org>, mingo@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf/x86/intel: Clean-up/reduce PEBS code
+Message-ID: <20130916160311.GW18242@two.firstfloor.org>
+References: <tip-8q6y4davda9aawwv5yxe7klp@git.kernel.org>
+ <87mwng53ki.fsf@tassilo.jf.intel.com>
+ <20130916060736.GN21832@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130916060736.GN21832@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gets rid of those unnecessary gotos.
+> There already was an implicit division there, and
+> sizeof(pebs_record_hsw) = 176, can it really optimize that constant
+> division?
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/iio/common/st_sensors/st_sensors_core.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+Yes it can (if nothing else then by converting it to * 1/x)
 
-diff --git a/drivers/iio/common/st_sensors/st_sensors_core.c b/drivers/iio/common/st_sensors/st_sensors_core.c
-index c5fbe58..76e573b 100644
---- a/drivers/iio/common/st_sensors/st_sensors_core.c
-+++ b/drivers/iio/common/st_sensors/st_sensors_core.c
-@@ -331,10 +331,8 @@ static int st_sensors_read_axis_data(struct iio_dev *indio_dev,
- 	unsigned int byte_for_channel = ch->scan_type.storagebits >> 3;
- 
- 	outdata = kmalloc(byte_for_channel, GFP_KERNEL);
--	if (!outdata) {
--		err = -EINVAL;
--		goto st_sensors_read_axis_data_error;
--	}
-+	if (!outdata)
-+		return -ENOMEM;
- 
- 	err = sdata->tf->read_multiple_byte(&sdata->tb, sdata->dev,
- 				ch->address, byte_for_channel,
-@@ -349,7 +347,7 @@ static int st_sensors_read_axis_data(struct iio_dev *indio_dev,
- 
- st_sensors_free_memory:
- 	kfree(outdata);
--st_sensors_read_axis_data_error:
-+
- 	return err;
- }
- 
+The only exception is with -Os, but if you want performance
+you should not be using that anyways.
+
+You could do that manually, but it's easiest to just keep
+the code paths separate and let the compiler worry about it.
+
+> I suppose we could go and introduce CONFIG_PERF_DEBUG and stuff sanity
+> checks under that.. :/
+
+Hmm, it's not a sanity check?
+
+-Andi
+
 -- 
-1.8.1.2
-
+ak@linux.intel.com -- Speaking for myself only.
