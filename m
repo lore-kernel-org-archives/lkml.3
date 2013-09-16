@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751908Ab3IPQEZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 12:04:25 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:62183 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751686Ab3IPQC6 (ORCPT
+	id S1752046Ab3IPQEg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 12:04:36 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:42801 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751658Ab3IPQCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 12:02:58 -0400
+	Mon, 16 Sep 2013 12:02:54 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         jic23@cam.ac.uk
 Cc: arnd@arndb.de, linus.walleij@linaro.org, denis.ciocca@st.com,
         linux-iio@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 20/20] iio: magn-core: st: Clean up error handling in probe()
-Date: Mon, 16 Sep 2013 17:02:26 +0100
-Message-Id: <1379347346-823-21-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 16/20] iio: pressure-core: st: Provide support for the Vdd power supply
+Date: Mon, 16 Sep 2013 17:02:22 +0100
+Message-Id: <1379347346-823-17-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379347346-823-1-git-send-email-lee.jones@linaro.org>
 References: <1379347346-823-1-git-send-email-lee.jones@linaro.org>
@@ -22,75 +22,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reduce the amount of those unnecessary goto calls, as in most cases
-we can simply return immediately. We also only call for the IRQ number
-once and use that value throughout.
+The power to some of the sensors are controlled by regulators. In most
+cases these are 'always on', but if not they will fail to work until
+the regulator is enabled using the relevant APIs. This patch allows for
+the Vdd power supply to be specified by either platform data or Device
+Tree.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/iio/magnetometer/st_magn_core.c | 19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+ drivers/iio/pressure/st_pressure_core.c | 28 ++++++++++++++++++++++++++++
+ include/linux/iio/common/st_sensors.h   |  3 +++
+ 2 files changed, 31 insertions(+)
 
-diff --git a/drivers/iio/magnetometer/st_magn_core.c b/drivers/iio/magnetometer/st_magn_core.c
-index e8d2849..729c71a 100644
---- a/drivers/iio/magnetometer/st_magn_core.c
-+++ b/drivers/iio/magnetometer/st_magn_core.c
-@@ -348,8 +348,9 @@ static const struct iio_info magn_info = {
- int st_magn_common_probe(struct iio_dev *indio_dev,
- 					struct st_sensors_platform_data *pdata)
- {
--	int err;
- 	struct st_sensor_data *mdata = iio_priv(indio_dev);
-+	int irq = mdata->get_irq_data_ready(indio_dev);
+diff --git a/drivers/iio/pressure/st_pressure_core.c b/drivers/iio/pressure/st_pressure_core.c
+index e879542..c801c80 100644
+--- a/drivers/iio/pressure/st_pressure_core.c
++++ b/drivers/iio/pressure/st_pressure_core.c
+@@ -23,6 +23,7 @@
+ #include <linux/iio/sysfs.h>
+ #include <linux/iio/trigger.h>
+ #include <linux/iio/buffer.h>
++#include <linux/regulator/consumer.h>
+ #include <asm/unaligned.h>
+ 
+ #include <linux/iio/common/st_sensors.h>
+@@ -313,6 +314,29 @@ static const struct iio_trigger_ops st_press_trigger_ops = {
+ #define ST_PRESS_TRIGGER_OPS NULL
+ #endif
+ 
++void st_press_power_enable(struct iio_dev *indio_dev)
++{
++	struct st_sensor_data *pdata = iio_priv(indio_dev);
 +	int err;
- 
- 	indio_dev->modes = INDIO_DIRECT_MODE;
- 	indio_dev->info = &magn_info;
-@@ -357,7 +358,7 @@ int st_magn_common_probe(struct iio_dev *indio_dev,
- 	err = st_sensors_check_device_support(indio_dev,
- 				ARRAY_SIZE(st_magn_sensors), st_magn_sensors);
- 	if (err < 0)
--		goto st_magn_common_probe_error;
-+		return err;
- 
- 	mdata->num_data_channels = ST_MAGN_NUMBER_DATA_CHANNELS;
- 	mdata->multiread_bit = mdata->sensor->multi_read_bit;
-@@ -370,12 +371,12 @@ int st_magn_common_probe(struct iio_dev *indio_dev,
- 
- 	err = st_sensors_init_sensor(indio_dev, pdata);
- 	if (err < 0)
--		goto st_magn_common_probe_error;
-+		return err;
- 
--	if (mdata->get_irq_data_ready(indio_dev) > 0) {
-+	if (irq > 0) {
- 		err = st_magn_allocate_ring(indio_dev);
- 		if (err < 0)
--			goto st_magn_common_probe_error;
-+			return err;
- 		err = st_sensors_allocate_trigger(indio_dev, NULL);
- 		if (err < 0)
- 			goto st_magn_probe_trigger_error;
-@@ -385,15 +386,15 @@ int st_magn_common_probe(struct iio_dev *indio_dev,
- 	if (err)
- 		goto st_magn_device_register_error;
- 
--	return err;
-+	return 0;
- 
- st_magn_device_register_error:
--	if (mdata->get_irq_data_ready(indio_dev) > 0)
-+	if (irq > 0)
- 		st_sensors_deallocate_trigger(indio_dev);
- st_magn_probe_trigger_error:
--	if (mdata->get_irq_data_ready(indio_dev) > 0)
-+	if (irq > 0)
- 		st_magn_deallocate_ring(indio_dev);
--st_magn_common_probe_error:
 +
- 	return err;
- }
- EXPORT_SYMBOL(st_magn_common_probe);
++	/* Regulators not mandatory, but if requested we should enable it. */
++	pdata->vdd = devm_regulator_get_optional(&indio_dev->dev, "vdd");
++	if (!IS_ERR(pdata->vdd)) {
++		err = regulator_enable(pdata->vdd);
++		if (err != 0)
++			dev_warn(&indio_dev->dev,
++				 "Failed to enable specified Vdd supply\n");
++	}
++}
++
++void st_press_power_disable(struct iio_dev *indio_dev)
++{
++	struct st_sensor_data *pdata = iio_priv(indio_dev);
++
++	if (!IS_ERR(pdata->vdd))
++		regulator_disable(pdata->vdd);
++}
++
+ int st_press_common_probe(struct iio_dev *indio_dev,
+ 				struct st_sensors_platform_data *plat_data)
+ {
+@@ -323,6 +347,8 @@ int st_press_common_probe(struct iio_dev *indio_dev,
+ 	indio_dev->modes = INDIO_DIRECT_MODE;
+ 	indio_dev->info = &press_info;
+ 
++	st_press_power_enable(indio_dev);
++
+ 	err = st_sensors_check_device_support(indio_dev,
+ 					      ARRAY_SIZE(st_press_sensors),
+ 					      st_press_sensors);
+@@ -381,6 +407,8 @@ void st_press_common_remove(struct iio_dev *indio_dev)
+ {
+ 	struct st_sensor_data *pdata = iio_priv(indio_dev);
+ 
++	st_press_power_disable(indio_dev);
++
+ 	iio_device_unregister(indio_dev);
+ 	if (pdata->get_irq_data_ready(indio_dev) > 0) {
+ 		st_sensors_deallocate_trigger(indio_dev);
+diff --git a/include/linux/iio/common/st_sensors.h b/include/linux/iio/common/st_sensors.h
+index e732fda..968b84e 100644
+--- a/include/linux/iio/common/st_sensors.h
++++ b/include/linux/iio/common/st_sensors.h
+@@ -16,6 +16,7 @@
+ #include <linux/irqreturn.h>
+ #include <linux/iio/trigger.h>
+ #include <linux/bitops.h>
++#include <linux/regulator/consumer.h>
+ 
+ #include <linux/platform_data/st_sensors_pdata.h>
+ 
+@@ -201,6 +202,7 @@ struct st_sensors {
+  * @trig: The trigger in use by the core driver.
+  * @sensor: Pointer to the current sensor struct in use.
+  * @current_fullscale: Maximum range of measure by the sensor.
++ * @vdd: Pointer to sensor's Vdd power supply
+  * @enabled: Status of the sensor (false->off, true->on).
+  * @multiread_bit: Use or not particular bit for [I2C/SPI] multiread.
+  * @buffer_data: Data used by buffer part.
+@@ -216,6 +218,7 @@ struct st_sensor_data {
+ 	struct iio_trigger *trig;
+ 	struct st_sensors *sensor;
+ 	struct st_sensor_fullscale_avl *current_fullscale;
++	struct regulator *vdd;
+ 
+ 	bool enabled;
+ 	bool multiread_bit;
 -- 
 1.8.1.2
 
