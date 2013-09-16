@@ -1,91 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754298Ab3IPJBP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 05:01:15 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46818 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314Ab3IPJBN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 05:01:13 -0400
-Date: Mon, 16 Sep 2013 11:01:00 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Fan Du <fan.du@windriver.com>
-cc: David Miller <davem@davemloft.net>, herbert@gondor.hengli.com.au,
-        steffen.klassert@secunet.com, dborkman@redhat.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCHv3 linux-next] hrtimer: Add notifier when clock_was_set
- was called
-In-Reply-To: <52365021.8040906@windriver.com>
-Message-ID: <alpine.DEB.2.02.1309161059220.4089@ionos.tec.linutronix.de>
-References: <alpine.DEB.2.02.1309121441420.4089@ionos.tec.linutronix.de> <20130912134409.GB21212@gondor.apana.org.au> <alpine.DEB.2.02.1309121636010.4089@ionos.tec.linutronix.de> <20130912.133252.425268707009916773.davem@davemloft.net> <52327C92.5010009@windriver.com>
- <alpine.DEB.2.02.1309131628250.4089@ionos.tec.linutronix.de> <52365021.8040906@windriver.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752827Ab3IPJLp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 05:11:45 -0400
+Received: from nm12-vm0.bullet.mail.bf1.yahoo.com ([98.139.213.140]:39936 "EHLO
+	nm12-vm0.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751942Ab3IPJLo convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 05:11:44 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 422184.55293.bm@omp1060.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=wNIfoZhTCb/lVXwaqvhjBatF8c5PbOCG6oemE4tn5gc7Knxh+VMlcPNBHejR3hUHYt+rSadcgHOaFkRPHP3WIlLRH/k5jj5dWVUuxTD73dPjEwXyMVoimSYrwRU/dVrLGG3uPYRNkWv9F7Pyt53xtNpcObPmV+tNPtGuOsAd2g0=;
+X-YMail-OSG: jMiADzUVM1n7Uw_q8b7knnhhd2OSP4uIqzr.N4uKgJ9q.hV
+ Cft5yjwHd1e002dJAdM2O
+X-Rocket-MIMEInfo: 002.001,RGVhciBGcmllbmQsDQpHcmVldGluZ3MgdG8geW91IGFuZCB5b3VyIGZhbWlseS4NCg0KTXkgbmFtZSBpcyBNcnMgTW9uYXRlIEFkYW1hLCB0aGUgY3VycmVudCBDaGllZiBBdWRpdG9yIG9mIGEgZm9ybWlkYWJsZSBiYW5rIGhlcmUgaW4gT3VhZ2Fkb3Vnb3UsIEJ1cmtpbmEgRmFzbywgV2VzdCBBZnJpY2EuIEkgaGF2ZSBhIHRyYW5zYWN0aW9uIHdvcnRoIG9mIDEyLjUgTWlsbGlvbiBVLlMgZG9sbGFycyBmb3IgdHJhbnNmZXJyaW5nIGludG8geW91ciBjYXJlIGZvciBvdXIgbXV0dWFsIGJlbmVmaXRzLCBzbwEwAQEBAQ--
+X-RocketYMMF: frombalissun100
+X-Mailer: YahooMailClassic/330 YahooMailWebService/0.8.157.561
+Message-ID: <1379322702.10772.YahooMailBasic@web140006.mail.bf1.yahoo.com>
+Date: Mon, 16 Sep 2013 02:11:42 -0700 (PDT)
+From: monat <m77777a@sify.com>
+Reply-To: m77777a@sify.com
+Subject: From Mrs Monat Adama.
+To: undisclosed recipients:;
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-199846746-1379322061=:4089"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Dear Friend,
+Greetings to you and your family.
 
---8323329-199846746-1379322061=:4089
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+My name is Mrs Monate Adama, the current Chief Auditor of a formidable bank here in Ouagadougou, Burkina Faso, West Africa. I have a transaction worth of 12.5 Million U.S dollars for transferring into your care for our mutual benefits, so� i need your assistance with 100% cooperation to realise this task. 
+Further details about the fund, its source and the administrative procedure to transfer this fund into your receiving bank account shall be made known to you immediately as I have your positive response.
 
-On Mon, 16 Sep 2013, Fan Du wrote:
-> On 2013年09月13日 22:32, Thomas Gleixner wrote:
-> > On Fri, 13 Sep 2013, Fan Du wrote:
-> > > (2) What I have been bugging you around here for this long time is really
-> > > the
-> > > second
-> > >      problem, I'm sorry I didn't make it clearly to you and others, which
-> > > is
-> > > below:
-> > > 
-> > >      Why using wall clock time to calculate soft/hard IPsec events when
-> > > xfrm_state timer
-> > >      out happens in its timeout handler? Because even if xfrm_state using
-> > > CLOCK_BOOTTIME,
-> > >      system wall clock time changing will surely disturb soft/hard IPsec
-> > > events, which
-> > >      you raised your concern about in (*a*).
-> > 
-> > No CLOCK_BOOTTIME is not affected by wall clock time changes. It's
-> > basically CLOCK_MONOTONIC, it just keeps counting the suspend time as
-> > well. So without a suspend/resume cycle CLOCK_MONOTONIC and
-> > CLOCK_BOOTTIME are the same. After a suspend/resume cycle
-> > CLOCK_BOOTTIME will be N seconds ahead of CLOCK_MONOTONIC, where N is
-> > the number of seconds spent in suspend.
-> 
-> Sorry for the ambiguity. Yes, CLOCK_BOOTTIME is monotonic *and* counting
-> suspend/resume time as well as not affected by wall clock time change.
-> 
-> Using CLOCK_BOOTTIME guarantees b- will timeout in a right manner, i.e., not
-> affected by wall clock time change, as well as keep the timer valid when
-> suspend/resume.
-> 
-> A classic way of using timer is:
->  a- Arm a timer with specified interval
->  b- Wait for the timer to timeout
->  c- After the timeout, notify the event to other place in the timer handler.
-> 
-> IPsec key lifetime timer does its this way:
->  a- Arm a timer with specified interval
->  b- Wait for the timer to timeout
->  c- After timeout, in the timer handler, using wall clock time to calculate
->    which kind of event to notify user(soft or hard for both key use time,
->    and key created time). So the problem arises at this stage if wall clock
->    time changed.
+Thanks and Regards,
 
-And why on earth must it use wall clock time for selecting the event
-type?
-
-Thanks,
-
-	tglx
---8323329-199846746-1379322061=:4089--
+Mrs Monate Adama.
