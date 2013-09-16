@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751614Ab3IPQOg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 12:14:36 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:39677 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893Ab3IPQOe convert rfc822-to-8bit (ORCPT
+	id S1751751Ab3IPQPT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 12:15:19 -0400
+Received: from mail-1.atlantis.sk ([80.94.52.57]:60917 "EHLO
+	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751229Ab3IPQPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 12:14:34 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Subject: Re: [PATCH] [media] media/v4l2: VIDEO_RENESAS_VSP1 should depend on HAS_DMA
-Date: Mon, 16 Sep 2013 18:14:36 +0200
-Message-ID: <1824528.Vfxhey5Hfr@avalon>
-User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <CAMuHMdV6QrVcHfxwnS7EDQF6J6DjLTTZRNPP-VkWuJOv4HFweg@mail.gmail.com>
-References: <1378471436-7045-1-git-send-email-geert@linux-m68k.org> <2886273.7m0Ub6qIMh@avalon> <CAMuHMdV6QrVcHfxwnS7EDQF6J6DjLTTZRNPP-VkWuJOv4HFweg@mail.gmail.com>
+	Mon, 16 Sep 2013 12:15:17 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Andreas Mohr <andi@lisas.de>
+Subject: Re: [RFC PATCH] ES938 support for ES18xx driver
+Date: Mon, 16 Sep 2013 18:14:44 +0200
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: alsa-devel@alsa-project.org, krzysztof.h1@wp.pl,
+        Kernel development list <linux-kernel@vger.kernel.org>
+References: <20130915184902.GA23480@rhlx01.hs-esslingen.de> <201309152304.27585.linux@rainbow-software.org> <20130915212358.GB32375@rhlx01.hs-esslingen.de>
+In-Reply-To: <20130915212358.GB32375@rhlx01.hs-esslingen.de>
+X-KMail-QuotePrefix: > 
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201309161814.45080.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+On Sunday 15 September 2013 23:23:58 Andreas Mohr wrote:
+> On Sun, Sep 15, 2013 at 11:04:26PM +0200, Ondrej Zary wrote:
+> > On Sunday 15 September 2013 22:35:20 Andreas Mohr wrote:
+> > > What!?!? I didn't quite expect any kernel dev to have that one, too ;)
+> >
+> > Don't remember where I got it from but it looked nice so I bought it :)
+>
+> Yup, e.g. the builtin amp is quite nice.
+>
+> > > Thanks for hinting at the TLV control dB values thingy! Didn't know
+> > > that such thing existed, thus azt3328 does not have it (yet?).
+> >
+> > It's a nice thing, especially for cards that can go above 0 dB. You then
+> > know that the sound can be distorted when you set e.g. PCM volume too
+> > high.
+>
+> Hmm, any hint how to precisely do dB values normalization scaling,
+> for a card where this is not documented? Or perhaps that's actually easy -
+> haven't thought about it...
 
-On Friday 06 September 2013 19:07:50 Geert Uytterhoeven wrote:
-> On Fri, Sep 6, 2013 at 5:20 PM, Laurent Pinchart wrote:
-> > On Friday 06 September 2013 14:43:56 Geert Uytterhoeven wrote:
-> >> If NO_DMA=y:
-> >> 
-> >> warning: (... && VIDEO_RENESAS_VSP1 && ...) selects VIDEOBUF2_DMA_CONTIG
-> >> which has unmet direct dependencies (MEDIA_SUPPORT && HAS_DMA)
-> >> 
-> >> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function
-> >> ‘vb2_dc_mmap’:
-> >> drivers/media/v4l2-core/videobuf2-dma-contig.c:202: error: implicit
-> >> declaration of function ‘dma_mmap_coherent’
-> >> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function
-> >> ‘vb2_dc_get_base_sgt’:
-> >> drivers/media/v4l2-core/videobuf2-dma-contig.c:385:
-> >> error: implicit declaration of function ‘dma_get_sgtable’ make[7]: ***
-> >> [drivers/media/v4l2-core/videobuf2-dma-contig.o] Error 1
-> >> 
-> >> VIDEO_RENESAS_VSP1 (which doesn't have a platform dependency) selects
-> >> VIDEOBUF2_DMA_CONTIG, but the latter depends on HAS_DMA.
-> >> 
-> >> Make VIDEO_RENESAS_VSP1 depend on HAS_DMA to fix this.
-> > 
-> > Is there a chance we could fix the Kconfig infrastructure instead ? It
-> > warns about the unmet dependency, shouldn't it disallow selecting the
-> > driver in the first place ? I have a vague feeling that this topic has
-> > been discussed before though.
-> 
-> This has come up several times before.
-> Unfortunately "select" was "designed" to circumvent all dependencies of
-> the target symbol.
+Perhaps with 3 sound cards: one for recording, one with known dB values and 
+one unknown.
+First play some test signal at known dB value and record that.
+Then play the signal using on the unknown card and ajdust its mixer so that 
+the recording revel is the same as before.
+Repeat a few times to find out the dB value of mixer step.
 
-I suppose that fixing this "design bug" (or feature, depending on how one sees 
-it) has been discussed extensively in the past and that the behaviour will not 
-change in the near future.
+> > > Is there any chip ID/version register to be identified?
+> >
+> > No, there are only 8 registers, all(? - haven't tested) R/W.
+>
+> OK, but possibly they happen to be creating another virtual register
+> mapping range? (i.e. index/data register combo?)
 
-I'll take your patch in and push it to v3.12.
-
-> > If that's not possible,
-> > 
-> >> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> > 
-> > Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Datasheet says that there are no more registers - just 0..7 (2,3,4 are 
+reserved).
 
 -- 
-Regards,
-
-Laurent Pinchart
-
+Ondrej Zary
