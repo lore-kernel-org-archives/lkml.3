@@ -1,89 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751320Ab3IPQX5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 12:23:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56046 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750932Ab3IPQXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 12:23:55 -0400
-Message-ID: <523730F2.40408@redhat.com>
-Date: Mon, 16 Sep 2013 18:25:22 +0200
-From: Laszlo Ersek <lersek@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
+	id S1751458Ab3IPQYg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 12:24:36 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:60880 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750948Ab3IPQYe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 12:24:34 -0400
+Date: Mon, 16 Sep 2013 17:24:28 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Linus Walleij <linus.walleij@linaro.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wang Shilong <wangshilong1991@gmail.com>
+Message-ID: <20130916162428.GE29403@sirena.org.uk>
+References: <1379094851-26385-1-git-send-email-linus.walleij@linaro.org>
+ <20130916091956.GF3999@lee--X1>
+ <20130916104009.GA29403@sirena.org.uk>
+ <CACRpkdatiELF3WK9qE_Mgcq3iCgv5w3X22xp1=232JJq9sWggQ@mail.gmail.com>
+ <20130916135118.GD29403@sirena.org.uk>
+ <20130916152104.GA3909@katana>
+ <20130916153414.GN16984@lee--X1>
+ <20130916160001.GC3909@katana>
+ <20130916160537.GO16984@lee--X1>
 MIME-Version: 1.0
-To: Josh Triplett <josh@joshtriplett.org>
-CC: Matt Fleming <matt@console-pimps.org>, jerry.hoemann@hp.com,
-        Andrew Fish <afish@apple.com>, edk2-devel@lists.sourceforge.net,
-        linux-efi@vger.kernel.org, Gleb Natapov <gleb@redhat.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Brian Richardson <brian.richardson@intel.com>,
-        Colin Ian King <colin.king@canonical.com>,
-        Randy Wright <rwright@hp.com>, Linn Crosetto <linn.crosetto@hp.com>,
-        terry.lee@hp.com, samer.el-haj-mahmoud@hp.com, randy.pawell@hp.com,
-        chrisp@hp.com, linda.knippers@hp.com, dong.wei@hp.com,
-        "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
-        Chao Zhang <chao.b.zhang@intel.com>, Yao Jiewen <jiewen.yao@intel.com>
-Subject: Re: [edk2] Corrupted EFI region
-References: <20130806141036.GD14891@pd.tnic> <520116D1.2010000@redhat.com> <20130807151935.GJ17920@pd.tnic> <CCFD3CBD-62B0-4046-B96D-18CB1A815F72@apple.com> <20130807201908.GG2515@console-pimps.org> <D5982201-6DC4-469F-812A-74A8402ADEE9@apple.com> <20130808101730.GJ2515@console-pimps.org> <20130913203812.GA312@anatevka.fc.hp.com> <20130916105920.GB2697@console-pimps.org> <5236F096.8040702@redhat.com> <20130916155751.GA3636@leaf>
-In-Reply-To: <20130916155751.GA3636@leaf>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LJYYZogMzwQTNNqC"
+Content-Disposition: inline
+In-Reply-To: <20130916160537.GO16984@lee--X1>
+X-Cookie: Your present plans will be successful.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/4 v2] mfd: add STw481x driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/13 17:57, Josh Triplett wrote:
 
->> The edk2 commit that flipped the memory type underneath the image data
->> from EfiReservedMemoryType to EfiBootServicesData is:
->>
->>     https://github.com/tianocore/edk2/commit/4c58575e
->>
->> I think this commit is wrong. It's fine for OSPM to release the image
->> data at some point, but not right after ExitBootServices(), because
->> referencing pointers in ACPI tables survive strictly longer.
->>
->> ... Actually, the commit does follow the ACPI spec 5.0:
->>
->> 5.2.22.4 Image Address
->>
->>     The Image Address contains the location in memory where an
->>     in-memory copy of the boot image can be found. The image should be
->>     stored in EfiBootServicesData, allowing the system to reclaim
->>     the memory when the image is no longer needed.
->>
->> The ACPI spec 5.0 should recommend EfiACPIReclaimMemory here IMO. (I
->> take the current wording ("should be stored") as a recommendation only.)
-> 
-> I agree that UEFI *should* store the BGRT in EfiACPIReclaimMemory, but
-> in practice the UEFI firmware I've seen with a BGRT does follow that
-> recommendation and store it in EfiBootServicesData.  So, even if the
-> recommendation in the spec changed, the kernel would still have to
-> accomodate both possibilities.
+--LJYYZogMzwQTNNqC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Just for the theoretical debate:
+On Mon, Sep 16, 2013 at 05:05:37PM +0100, Lee Jones wrote:
+> > > So in the mean time are you happy with this "dummy" approach?
 
-The edk2 commit linked above is 5 days old. All UEFI firmware in the
-wild (on released hardware) should be using EfiReservedMemoryType (the
-pre-patch memory type), which is even stricter.
+> > No. "dummy" is reserved for a dummy device in case an i2c slave needs
+> > more than one address. The proper solution would be if
+> > i2c_sysfs_new_device() could recognize the of_device_ids.
 
-EfiReservedMemoryType can never be released & repurposed, so it should
-make no difference for crash kernel allocation, shouldn't it?
+> Okay, thanks for clarifying.
 
-- call efi_free_boot_services() -- doesn't touch the image data (which
-  is in RAM of EfiReservedMemoryType),
-- reserve crash kernel,
-- access BGRT via ACPI.
+Or for now to use something like stw481x (even if it's never expected to
+actually make a difference).
 
-BGRT had appeared in edk2 with
+--LJYYZogMzwQTNNqC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-  https://github.com/tianocore/edk2/commit/0284e90c
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
 
-and EfiReservedMemoryType used to be the allocation type until commit
-4c58575e.
+iQIcBAEBAgAGBQJSNzC5AAoJELSic+t+oim9HRYQAJ16Q1v8fjVDnyNQs480KQN0
+HJKAi6qUUQh3JziwFpgAf+YbTsXpbGsky27jwDLvtzjdvFymlvOi2BC1a37MzYSB
+SHUp3G+Bp2Op5ljSasDukazIswmSNsc5N0GbyHFWism/XjlAZ/k6SsY9/Eni3QVL
+T3yZkytMOU8EUzO2tSMM/Pz5zei9kd3UPI0IoCtr/+SvbacIOsljG4gZI02YTfsR
+apa1neZhLA9gi8FObCQmKHFMyQNKiwt/FFn8SHd2BZojp5vqhlwZXlAN1QrcuCMH
+CtyGd96/ftXC4OXXsWpr6Sh25rdPQhscpN3xwY69QYYCtbujBbC4TI693dinhqGA
+sXDLafzfOmM41fHv1Adv8YuldCK7h77zrHQCvTWPNQz8wWgkzWU0g4lBe7weWUvt
+711YrGlCPikbV/kLyGMNlwZLVT8R0WSBgelUPVX8YS3BydQFGpXYKyRa3tKS882z
+iMpe/hphW425eN7yyFE+kRfC+27CjG5DwvVL8bYYZPV8MSMKexog6sfgfqu40Yq+
+04t+W0woxm7TkAVWW0vDbOvl9NbvycfF3Rc2SzWoerdrHcqhF/0UNqBEeSSKu7zZ
+ugLSZKdx8nxoXlInzoUUAEFFSIiPoV54gZpUp3AuUBr1AiINGL5kHkJkdydqELSF
+7/fuNmV6dild11cYFr41
+=TO9M
+-----END PGP SIGNATURE-----
 
-Or are you alluding to UEFI firmware that's not based on TianoCore?
-
-Laszlo
+--LJYYZogMzwQTNNqC--
