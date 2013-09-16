@@ -1,146 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751183Ab3IPPT7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 11:19:59 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:64708 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750977Ab3IPPT5 (ORCPT
+	id S1751243Ab3IPPU0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 11:20:26 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:36762 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197Ab3IPPUZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 11:19:57 -0400
-Date: Mon, 16 Sep 2013 08:19:53 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Subject: Re: [RFC PATCH 5/6] extcon-gpio: Describe devicetree bindings
-Message-ID: <20130916151953.GA5801@roeck-us.net>
-References: <1377836978-24082-1-git-send-email-linux@roeck-us.net>
- <1377836978-24082-6-git-send-email-linux@roeck-us.net>
- <20130912164100.GF22013@e106331-lin.cambridge.arm.com>
- <20130912165304.GA12202@roeck-us.net>
- <20130916142147.GF30650@e106331-lin.cambridge.arm.com>
+	Mon, 16 Sep 2013 11:20:25 -0400
+Date: Mon, 16 Sep 2013 08:20:20 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, linux-input@vger.kernel.org,
+        vojtech@suse.cz, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com
+Subject: Re: [PATCH 1/1] Drivers: input: serio: New driver to support Hyper-V
+ synthetic keyboard
+Message-ID: <20130916152019.GB12105@core.coreip.homeip.net>
+References: <1379309334-25042-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130916142147.GF30650@e106331-lin.cambridge.arm.com>
+In-Reply-To: <1379309334-25042-1-git-send-email-kys@microsoft.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 03:21:47PM +0100, Mark Rutland wrote:
-> On Thu, Sep 12, 2013 at 05:53:04PM +0100, Guenter Roeck wrote:
-> > On Thu, Sep 12, 2013 at 05:41:00PM +0100, Mark Rutland wrote:
-> > > On Fri, Aug 30, 2013 at 05:29:37AM +0100, Guenter Roeck wrote:
-> > > > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> > > > ---
-> > > >  .../devicetree/bindings/extcon/extcon-gpio         |   23 ++++++++++++++++++++
-> > > >  1 file changed, 23 insertions(+)
-> > > >  create mode 100644 Documentation/devicetree/bindings/extcon/extcon-gpio
-> > > > 
-> > > > diff --git a/Documentation/devicetree/bindings/extcon/extcon-gpio b/Documentation/devicetree/bindings/extcon/extcon-gpio
-> > > > new file mode 100644
-> > > > index 0000000..091ddc6
-> > > > --- /dev/null
-> > > > +++ b/Documentation/devicetree/bindings/extcon/extcon-gpio
-> > > > @@ -0,0 +1,23 @@
-> > > > +Device-Tree bindings for extcon/extcon-gpio driver
-> > > 
-> > > Bindings shouldn't refer to Linux-specifics like particular drivers.
-> > > What class of hardware are you actually trying to describe?
-> > > 
-> > Agreed. Question is where to put the bindings, as they are not really 
-> > specific to the extcon driver. The extcon driver merely implements 
-> > the bindings. This is why the "compatible" statement reads "gpio-connector"
-> > and not "extcon-something".
-> > 
-> > The bindings describe a connector managed through gpio pins.
-> 
-> Ok, then that's what the binding document should state.
-> 
-> > 
-> > > > +
-> > > > +Required properties:
-> > > > +	- compatible = "gpio-connector";
-> > > > +	- presence-detect-gpios - presence detect gpio pin
-> > > > +
-> > > > +Optional properties:
-> > > > +	- debounce-interval - debounce interval in milli-seconds
-> > > > +	- state-on - on (connected) state
-> > > > +	- state-off - off (disconnected) state
-> > > > +	  Depending on the type of connector or cable, states may
-> > > > +	  for example be reported as "connected"/"disconnected"
-> > > > +	  or "inserted"/"removed".
-> > > 
-> > > I don't understand what the state-* properties describe. Do these
-> > > provide semantic information to drivers? What is the full set of valid
-> > > values?
-> > > 
-> > That is merely text which is ultimately passed on to the user.
-> > Guess 'semantic information' might be a way to phrase it.
-> 
-> Where do these end up appearing to the user? Through names in the
+Hi K. Y.
 
-Yes.
-
-> filesystem? That's an ABI, which should be thoroughly described...
+On Sun, Sep 15, 2013 at 10:28:54PM -0700, K. Y. Srinivasan wrote:
+> Add a new driver to support synthetic keyboard. On the next generation
+> Hyper-V guest firmware, many legacy devices will not be emulated and this
+> driver will be required.
 > 
-Tricky, as I can not really describe how the extcon driver implements it.
-I can add something like above explanation, ie that the implementation is
-expected to pass the property to the user. Would that be acceptable ?
-
-> If it's arbitrary, why is it necessary at all? Surely sensible names for
-> the state of the connector can be coded in the driver for the device
-> attached to said connectors (which can be consistent and later changed
-> if necessary)...
+> I would like to thank Vojtech Pavlik <vojtech@suse.cz> for helping me with the
+> details of the AT keyboard driver. 
 > 
-Good point. I took a "hint" from the implementation in the extcon driver,
-which lets one do that. But doesn't your comment apply to pretty much all
-"label" and similar properties in the various devicetree descriptions ?
 
-> > 
-> > > > +
-> > > > +Example node:
-> > > > +
-> > > > +	some-connector {
-> > > > +		compatible = "gpio-connector";
-> > > > +		presence-detect-gpios = <&gpio1 7 1>;
-> > > > +		debounce-interval = <1>;
-> > > > +		state-on = "connected";
-> > > > +		state-on = "disconnected";
-> 
-> I don't think that's a valid dts. I assume the second is meant to be
-> "state-off"?
-> 
-Yes, obviously.
+In addition to what Dan said:
 
-> > > > +	};
-> > > 
-> > > I'm not sure how much value this adds to bindings over describing the
-> > > gpios directly. This seems to add a layer of indirection because of
-> > > Linux internals.
-> > > 
-> > Not sure I understand what you mean with "describing the gpios directly".
-> > Can you elaborate and/or provide an example ?
-> 
-> Take a look at the MMC bindings [1], specifically the cd-gpios and
-> wp-gpios properties. I don't see why the connection of the GPIO needs to
-> be described by a wrapper device that doesn't really exist, when it can
-> be described directly.
-> 
-Question is - described to what or for what ? 
+> +
+> +struct synth_kbd_protocol_response {
+> +	struct synth_kbd_msg_hdr header;
+> +	u32 accepted:1;
+> +	u32 reserved:31;
+> +};
 
-I think what you are saying is that describing a generic connector via
-devicetree is not acceptable, even though it _does_ describe hardware.
-I would have to describe a specific connector for a specific hardware
-instead, which in turn would need its own driver. Is that correct ?
+Use of bitfields for on the wire structures makes me uneasy. I know that
+currently you only going to run LE on LE, but still, maybe using
+explicit shifts and masks would be better,
 
-Thanks,
-Guenter
+> +
+> +struct synth_kbd_keystroke {
+> +	struct synth_kbd_msg_hdr header;
+> +	u16 make_code;
+> +	u16 reserved0;
+> +	u32 is_unicode:1;
+> +	u32 is_break:1;
+> +	u32 is_e0:1;
+> +	u32 is_e1:1;
+> +	u32 reserved:28;
+> +};
+
+Same here.
+
+> +
+> +
+> +#define HK_MAXIMUM_MESSAGE_SIZE 256
+> +
+> +#define KBD_VSC_SEND_RING_BUFFER_SIZE		(10 * PAGE_SIZE)
+> +#define KBD_VSC_RECV_RING_BUFFER_SIZE		(10 * PAGE_SIZE)
+> +
+> +#define XTKBD_EMUL0     0xe0
+> +#define XTKBD_EMUL1     0xe1
+> +#define XTKBD_RELEASE   0x80
+> +
+> +
+> +/*
+> + * Represents a keyboard device
+> + */
+> +struct hv_kbd_dev {
+> +	unsigned char keycode[256];
+
+I do not see anything using keycode table? This is wrong level for it
+regardless.
+
+> +	struct hv_device	*device;
+> +	struct synth_kbd_protocol_request protocol_req;
+> +	struct synth_kbd_protocol_response protocol_resp;
+> +	/* Synchronize the request/response if needed */
+> +	struct completion	wait_event;
+> +	struct serio		*hv_serio;
+> +};
+> +
+> +
+> +static struct hv_kbd_dev *hv_kbd_alloc_device(struct hv_device *device)
+> +{
+> +	struct hv_kbd_dev *kbd_dev;
+> +	struct serio	*hv_serio;
+
+You are aligning with tabs half of declarations, leaving the others. Can
+we not align at all?
+
+> +
+> +	kbd_dev = kzalloc(sizeof(struct hv_kbd_dev), GFP_KERNEL);
+> +
+> +	if (!kbd_dev)
+> +		return NULL;
+> +
+> +	hv_serio = kzalloc(sizeof(struct serio), GFP_KERNEL);
+> +
+> +	if (hv_serio == NULL) {
+> +		kfree(kbd_dev);
+> +		return NULL;
+> +	}
+> +
+> +	hv_serio->id.type	= SERIO_8042_XL;
+> +	strlcpy(hv_serio->name, dev_name(&device->device),
+> +		sizeof(hv_serio->name));
+> +	strlcpy(hv_serio->phys, dev_name(&device->device),
+> +		sizeof(hv_serio->phys));
+> +	hv_serio->dev.parent  = &device->device;
+
+Do you also want to set up serio's parent device to point to hv device?
+
+> +
+> +
+> +	kbd_dev->device = device;
+> +	kbd_dev->hv_serio = hv_serio;
+> +	hv_set_drvdata(device, kbd_dev);
+> +	init_completion(&kbd_dev->wait_event);
+> +
+> +	return kbd_dev;
+> +}
+> +
+> +static void hv_kbd_free_device(struct hv_kbd_dev *device)
+> +{
+> +	serio_unregister_port(device->hv_serio);
+> +	kfree(device->hv_serio);
+
+Serio ports are refcounted, do not free them explicitly after they have
+been registered.
+
+> +	hv_set_drvdata(device->device, NULL);
+> +	kfree(device);
+> +}
+
+
+Thanks.
+
+-- 
+Dmitry
