@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757634Ab3IPKsY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 06:48:24 -0400
+	id S1757504Ab3IPKqw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 06:46:52 -0400
 Received: from mga03.intel.com ([143.182.124.21]:47741 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757529Ab3IPKq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 06:46:58 -0400
+	id S1751208Ab3IPKqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 06:46:49 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,914,1371106800"; 
-   d="scan'208";a="361036363"
+   d="scan'208";a="361036302"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 06/11] perf tools: add map__find_other_map_symbol()
-Date: Mon, 16 Sep 2013 13:52:47 +0300
-Message-Id: <1379328772-21214-7-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 03/11] perf tools: make a separate function to parse /proc/modules
+Date: Mon, 16 Sep 2013 13:52:44 +0300
+Message-Id: <1379328772-21214-4-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1379328772-21214-1-git-send-email-adrian.hunter@intel.com>
 References: <1379328772-21214-1-git-send-email-adrian.hunter@intel.com>
@@ -28,65 +28,190 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a function to find a symbol using an ip that
-might be on a different map.
+Make a separate function to parse /proc/modules
+so that it can be reused.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/map.c | 27 +++++++++++++++++++++++++++
- tools/perf/util/map.h |  2 ++
- 2 files changed, 29 insertions(+)
+ tools/perf/util/machine.c | 67 +++++++++++++----------------------------------
+ tools/perf/util/symbol.c  | 58 ++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/symbol.h  |  3 +++
+ 3 files changed, 79 insertions(+), 49 deletions(-)
 
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 4f6680d..beedeef 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -213,6 +213,33 @@ struct symbol *map__find_symbol_by_name(struct map *map, const char *name,
- 	return dso__find_symbol_by_name(map->dso, map->type, name);
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 1ae917c..b77c1bd 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -776,12 +776,22 @@ static int machine__set_modules_path(struct machine *machine)
+ 	return map_groups__set_modules_path_dir(&machine->kmaps, modules_path);
  }
  
-+struct symbol *map__find_other_map_symbol(struct map **map_ptr, u64 *ip_ptr,
-+					  symbol_filter_t filter)
-+{
-+	struct map *map = *map_ptr;
-+	u64 ip = *ip_ptr;
-+	struct map *sym_map = NULL;
-+	struct symbol *sym;
+-static int machine__create_modules(struct machine *machine)
++static int machine__create_module(void *arg, const char *name, u64 start)
+ {
+-	char *line = NULL;
+-	size_t n;
+-	FILE *file;
++	struct machine *machine = arg;
+ 	struct map *map;
 +
-+	if (ip >= map->start && ip <= map->end)
-+		sym_map = map;
-+	else if (map->groups)
-+		sym_map = map_groups__find(map->groups, map->type, ip);
++	map = machine__new_module(machine, start, name);
++	if (map == NULL)
++		return -1;
 +
-+	if (!sym_map)
-+		return NULL;
++	dso__kernel_module_get_build_id(map->dso, machine->root_dir);
 +
-+	ip = sym_map->map_ip(sym_map, ip);
-+
-+	sym = map__find_symbol(sym_map, ip, filter);
-+	if (sym) {
-+		*map_ptr = sym_map;
-+		*ip_ptr = ip;
-+	}
-+
-+	return sym;
++	return 0;
 +}
 +
- struct map *map__clone(struct map *map)
- {
- 	return memdup(map, sizeof(*map));
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index 4886ca2..b7b494c 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -106,6 +106,8 @@ struct symbol *map__find_symbol(struct map *map,
- 				u64 addr, symbol_filter_t filter);
- struct symbol *map__find_symbol_by_name(struct map *map, const char *name,
- 					symbol_filter_t filter);
-+struct symbol *map__find_other_map_symbol(struct map **map_ptr, u64 *ip_ptr,
-+					  symbol_filter_t filter);
- void map__fixup_start(struct map *map);
- void map__fixup_end(struct map *map);
++static int machine__create_modules(struct machine *machine)
++{
+ 	char path[PATH_MAX];
+ 
+ 	if (machine__is_default_guest(machine))
+@@ -792,56 +802,15 @@ static int machine__create_modules(struct machine *machine)
+ 	if (symbol__restricted_filename(path, "/proc/modules"))
+ 		return -1;
+ 
+-	file = fopen(path, "r");
+-	if (file == NULL)
++	if (modules__parse(path, machine, machine__create_module))
+ 		return -1;
+ 
+-	while (!feof(file)) {
+-		char name[PATH_MAX];
+-		u64 start;
+-		char *sep;
+-		int line_len;
+-
+-		line_len = getline(&line, &n, file);
+-		if (line_len < 0)
+-			break;
+-
+-		if (!line)
+-			goto out_failure;
+-
+-		line[--line_len] = '\0'; /* \n */
+-
+-		sep = strrchr(line, 'x');
+-		if (sep == NULL)
+-			continue;
+-
+-		hex2u64(sep + 1, &start);
+-
+-		sep = strchr(line, ' ');
+-		if (sep == NULL)
+-			continue;
+-
+-		*sep = '\0';
+-
+-		snprintf(name, sizeof(name), "[%s]", line);
+-		map = machine__new_module(machine, start, name);
+-		if (map == NULL)
+-			goto out_delete_line;
+-		dso__kernel_module_get_build_id(map->dso, machine->root_dir);
+-	}
++	if (!machine__set_modules_path(machine))
++		return 0;
+ 
+-	free(line);
+-	fclose(file);
++	pr_debug("Problems setting modules path maps, continuing anyway...\n");
+ 
+-	if (machine__set_modules_path(machine) < 0) {
+-		pr_debug("Problems setting modules path maps, continuing anyway...\n");
+-	}
+ 	return 0;
+-
+-out_delete_line:
+-	free(line);
+-out_failure:
+-	return -1;
+ }
+ 
+ int machine__create_kernel_maps(struct machine *machine)
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 7eb0362..1926292 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -499,6 +499,64 @@ out_failure:
+ 	return -1;
+ }
+ 
++int modules__parse(const char *filename, void *arg,
++		   int (*process_module)(void *arg, const char *name,
++					 u64 start))
++{
++	char *line = NULL;
++	size_t n;
++	FILE *file;
++	int err = 0;
++
++	file = fopen(filename, "r");
++	if (file == NULL)
++		return -1;
++
++	while (1) {
++		char name[PATH_MAX];
++		u64 start;
++		char *sep;
++		ssize_t line_len;
++
++		line_len = getline(&line, &n, file);
++		if (line_len < 0) {
++			if (feof(file))
++				break;
++			err = -1;
++			goto out;
++		}
++
++		if (!line) {
++			err = -1;
++			goto out;
++		}
++
++		line[--line_len] = '\0'; /* \n */
++
++		sep = strrchr(line, 'x');
++		if (sep == NULL)
++			continue;
++
++		hex2u64(sep + 1, &start);
++
++		sep = strchr(line, ' ');
++		if (sep == NULL)
++			continue;
++
++		*sep = '\0';
++
++		snprintf(name, sizeof(name), "[%s]", line);
++
++		err = process_module(arg, name, start);
++		if (err)
++			break;
++	}
++out:
++	free(line);
++	fclose(file);
++	return err;
++}
++
+ struct process_kallsyms_args {
+ 	struct map *map;
+ 	struct dso *dso;
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index fd5b70e..924505b 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -222,6 +222,9 @@ int sysfs__read_build_id(const char *filename, void *bf, size_t size);
+ int kallsyms__parse(const char *filename, void *arg,
+ 		    int (*process_symbol)(void *arg, const char *name,
+ 					  char type, u64 start));
++int modules__parse(const char *filename, void *arg,
++		   int (*process_module)(void *arg, const char *name,
++					 u64 start));
+ int filename__read_debuglink(const char *filename, char *debuglink,
+ 			     size_t size);
  
 -- 
 1.7.11.7
