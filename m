@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903Ab3IPHYN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 03:24:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23038 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751062Ab3IPHYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 03:24:12 -0400
-Date: Mon, 16 Sep 2013 10:26:03 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Why does test_bit() take a volatile addr?
-Message-ID: <20130916072603.GA11007@redhat.com>
-References: <87ioy11k8s.fsf@rustcorp.com.au>
- <20130916165344.144f0d0f1b58111f1c8c87cc@canb.auug.org.au>
+	id S1753801Ab3IPHYo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 03:24:44 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:42852 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751923Ab3IPHYn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 03:24:43 -0400
+Date: Mon, 16 Sep 2013 09:24:31 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf/x86/intel: Clean-up/reduce PEBS code
+Message-ID: <20130916072431.GV26785@twins.programming.kicks-ass.net>
+References: <tip-8q6y4davda9aawwv5yxe7klp@git.kernel.org>
+ <87mwng53ki.fsf@tassilo.jf.intel.com>
+ <20130916060736.GN21832@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130916165344.144f0d0f1b58111f1c8c87cc@canb.auug.org.au>
+In-Reply-To: <20130916060736.GN21832@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 04:53:44PM +1000, Stephen Rothwell wrote:
-> Hi Rusty,
+On Mon, Sep 16, 2013 at 08:07:36AM +0200, Peter Zijlstra wrote:
+> There already was an implicit division there, and
+> sizeof(pebs_record_hsw) = 176, can it really optimize that constant
+> division?
 > 
-> On Mon, 16 Sep 2013 13:38:35 +0930 Rusty Russell <rusty@rustcorp.com.au> wrote:
-> >
-> > Predates git, does anyone remember the rationale?
-> > 
-> > ie:
-> >         int test_bit(int nr, const volatile unsigned long *addr)
-> 
-> Because we sometimes pass volatile pointers to it and gcc will complain
-> if you pass a volatile to a non volatile  (I think).
+> I suppose we could go and introduce CONFIG_PERF_DEBUG and stuff sanity
+> checks under that.. :/
 
-Where are these? I did git grep -W test_bit and looked for volatile,
-couldn't find anything.
+Or we could write it like so:
 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-
-
+---
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -954,16 +954,16 @@ static void intel_pmu_drain_pebs_nhm(str
+ 
+ 	ds->pebs_index = ds->pebs_buffer_base;
+ 
+-	n = (top - at) / x86_pmu.pebs_record_size;
+-	if (n <= 0)
++	if (unlikely(at > top))
+ 		return;
+ 
+ 	/*
+ 	 * Should not happen, we program the threshold at 1 and do not
+ 	 * set a reset value.
+ 	 */
+-	WARN_ONCE(n > x86_pmu.max_pebs_events,
+-		  "Unexpected number of pebs records %d\n", n);
++	WARN_ONCE(top - at > x86_pmu.max_pebs_events * x86_pmu.pebs_record_size,
++		  "Unexpected number of pebs records %d\n", 
++		  (top - at) / x86_pmu.pebs_record_size);
+ 
+ 	for (; at < top; at += x86_pmu.pebs_record_size) {
+ 		struct pebs_record_nhm *p = at;
