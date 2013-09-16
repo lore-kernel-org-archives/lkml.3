@@ -1,90 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751148Ab3IPUJw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 16:09:52 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:45472 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982Ab3IPUJs (ORCPT
+	id S1751292Ab3IPUNz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 16:13:55 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:19108 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750920Ab3IPUNx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 16:09:48 -0400
+	Mon, 16 Sep 2013 16:13:53 -0400
+Date: Mon, 16 Sep 2013 23:13:28 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "olaf@aepfle.de" <olaf@aepfle.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "vojtech@suse.cz" <vojtech@suse.cz>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: Re: [PATCH 1/1] Drivers: input: serio: New driver to support Hyper-V
+ synthetic keyboard
+Message-ID: <20130916201328.GN19256@mwanda>
+References: <1379309334-25042-1-git-send-email-kys@microsoft.com>
+ <20130916082110.GN25896@mwanda>
+ <3b5096d0190b4440a8e25afbd22ab72d@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130916150548.GO25896@mwanda>
+ <baabf219b12b40de8e17b029e621e079@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130916170951.GB20734@core.coreip.homeip.net>
+ <3e45f054c6e243eabf2896ab1dcf38d4@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130916183319.GM19256@mwanda>
+ <117fbf407a554684b4d72ab06b033eeb@SN2PR03MB061.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-X-Originating-IP: [86.59.245.170]
-In-Reply-To: <20130916195003.GE13318@ZenIV.linux.org.uk>
-References: <1379335925-30858-1-git-send-email-miklos@szeredi.hu>
-	<1379335925-30858-3-git-send-email-miklos@szeredi.hu>
-	<20130916181938.GD13318@ZenIV.linux.org.uk>
-	<CAJfpegt3mAKVE7ToZbvPpFQCY1EAZ3tKfn__kfpGz4HeXWr8fw@mail.gmail.com>
-	<20130916195003.GE13318@ZenIV.linux.org.uk>
-Date: Mon, 16 Sep 2013 22:09:46 +0200
-Message-ID: <CAJfpegsLeuw55Diw0yDmiFR+7qkSkOrW2fUbjmzFC9OxVsrAkQ@mail.gmail.com>
-Subject: Re: [PATCH 02/11] 9p: fix dentry leak in v9fs_vfs_atomic_open_dotl()
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>,
-        Eric Van Hensbergen <ericvh@gmail.com>,
-        "M. Mohan Kumar" <mohan@in.ibm.com>, stable@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <117fbf407a554684b4d72ab06b033eeb@SN2PR03MB061.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 9:50 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Mon, Sep 16, 2013 at 09:03:25PM +0200, Miklos Szeredi wrote:
->> On Mon, Sep 16, 2013 at 8:19 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->> > On Mon, Sep 16, 2013 at 02:51:56PM +0200, Miklos Szeredi wrote:
->> >> From: Miklos Szeredi <mszeredi@suse.cz>
->> >>
->> >> commit b6f4bee02f "fs/9p: Fix atomic_open" fixed the O_EXCL behavior, but
->> >> results in a dentry leak if v9fs_vfs_lookup() returns non-NULL.
->> >
->> > Frankly, I would prefer to deal with that in fs/namei.c:atomic_open()
->> > instead.  I.e. let it call finish_no_open() as it used to do and
->> > turn
->> >                 if (create_error && dentry->d_inode == NULL) {
->> >                         error = create_error;
->> >                         goto out;
->> >                 }
->> > in fs/namei.c:atomic_open() into
->> >                 if (!dentry->d_inode) {
->> >                         if (create_error) {
->> >                                 error = create_error;
->> >                                 goto out;
->> >                         }
->> >                 } else if ((open_flag & (O_CREAT | O_EXCL)) == (O_CREAT | O_EXCL)) {
->> >                         error = -EEXIST;
->> >                         goto out;
->> >                 }
->> >
->> > rather than try to deal with that crap in each instance of ->atomic_open()...
->> > Objections?
->>
->> ->atomic_open() could be any one of
->>
->>  lookup
->>  lookup+create
->>  lookup+create+open
->>
->> If it's the second one then the above is wrong.  Sure, we could check
->> FILE_CREATED as well, and if file wasn't created yet dentry is
->> positive then we return EEXIST.  But for that to be correct we need
->> the last patch in the series, preventing FILE_CREATED from being set
->> unconditionally.
->
-> You mean, lookup + create + return finish_no_open()?  Does anything actually
-> do that?
+On Mon, Sep 16, 2013 at 06:42:25PM +0000, KY Srinivasan wrote:
+> Dan,
+> 
+> Rolling the changes you have indicated is not the issue; this can trivially be done.
+> My contention is that it is not needed given that the underlying function is already
+> doing that. Look at the function  vmbus_recvpacket_raw() in drivers/hv/channel.c.
+> 
 
-Fuse does.
+I'm confused.
 
->  I agree that we want your "deal with setting FILE_CREATED in
-> filesystems", BTW, and I'm fine with putting it in front of the rest of
-> the queue.
->
-> I would definitely prefer EEXIST logics dealt with in fs/namei.c - if nothing
-> else, it had been done wrong in too many instances...
+There is no mention of ->offset8 in vmbus_recvpacket_raw().
 
-Okay.
+It's a good idea to add a check there but the lower levels don't know
+about the sizeof(synth_kbd_protocol_response) so we would still need
+something like my check.
 
-Thanks,
-Miklos
+regards,
+dan carpenter
+
