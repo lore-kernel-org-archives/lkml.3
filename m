@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757558Ab3IPNuY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 09:50:24 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:46409 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756881Ab3IPNuW (ORCPT
+	id S1757577Ab3IPNuu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 09:50:50 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:41033 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754126Ab3IPNoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 09:50:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo6475cSMDtdk2ywFUUyb_szOFVdUy9Pm0DjnRTuiCVPhw@mail.gmail.com>
-References: <20130529222955.10627.50429.stgit@bhelgaas-glaptop>
- <CAErSpo7s1m=6WvgeVOQ3Zj=mU8=+13pT4hJ8k5-KkrDDGOU+5w@mail.gmail.com>
- <20130613183315.GH10979@localhost> <CAErSpo6475cSMDtdk2ywFUUyb_szOFVdUy9Pm0DjnRTuiCVPhw@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 16 Sep 2013 07:49:59 -0600
-Message-ID: <CAErSpo6eSCzUAyP4quc77-pts-=7GzjYeG2EbGbL8onbG9=SKQ@mail.gmail.com>
-Subject: Re: [PATCH] bio-integrity: Fix use of bs->bio_integrity_pool after free
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 16 Sep 2013 09:44:03 -0400
+From: Iker Pedrosa <ikerpedrosam@gmail.com>
+To: pavel@ucw.cz
+Cc: gregkh@linuxfoundation.org, ikerpedrosam@gmail.com, harsh1kumar@gmail.com,
+        dan.carpenter@oracle.com, mujeeb.adil@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 02/24] Staging: winbond: mto: avoided use of extern functions
+Date: Mon, 16 Sep 2013 15:43:22 +0200
+Message-Id: <1379339024-12157-3-git-send-email-ikerpedrosam@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1379339024-12157-1-git-send-email-ikerpedrosam@gmail.com>
+References: <1379339024-12157-1-git-send-email-ikerpedrosam@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[update Kent's email address]
+Prototype of two functions added to the header to avoid the use of extern.
 
-On Mon, Sep 16, 2013 at 7:40 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Thu, Jun 13, 2013 at 12:33 PM, Kent Overstreet
-> <koverstreet@google.com> wrote:
->> On Thu, Jun 13, 2013 at 12:14:54PM -0600, Bjorn Helgaas wrote:
->>> On Wed, May 29, 2013 at 4:29 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->>> > This fixes a copy and paste error introduced by 9f060e2231
->>> > ("block: Convert integrity to bvec_alloc_bs()").
->>> >
->>> > Found by Coverity (CID 1020654).
->>> >
->>> > Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
->>> > ---
->>> >  fs/bio-integrity.c |    2 +-
->>> >  1 file changed, 1 insertion(+), 1 deletion(-)
->>> >
->>> > diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
->>> > index 8fb4291..45e944f 100644
->>> > --- a/fs/bio-integrity.c
->>> > +++ b/fs/bio-integrity.c
->>> > @@ -734,7 +734,7 @@ void bioset_integrity_free(struct bio_set *bs)
->>> >                 mempool_destroy(bs->bio_integrity_pool);
->>> >
->>> >         if (bs->bvec_integrity_pool)
->>> > -               mempool_destroy(bs->bio_integrity_pool);
->>> > +               mempool_destroy(bs->bvec_integrity_pool);
->>> >  }
->>> >  EXPORT_SYMBOL(bioset_integrity_free);
->>>
->>> Kent, do you want to chime in on this?  Looks like an obvious error to
->>> me, but maybe I'm missing something and we should teach Coverity to
->>> shut up about it.
->>
->> Sorry - no, this is definitely a bug:
->>
->> Acked-by: Kent Overstreet <koverstreet@google.com>
->
-> From my v3.12-rc1 reminder list: what's going on with this patch?
->
-> It's been acked, Gu asked whether he could include it in some
-> patchset, I see a Sep 11 2013 patch from Gu upstream already
-> (bc5c8f078), but this patch (from May 29 2013) still hasn't gone
-> anywhere.  Why is this so hard?
->
-> Bjorn
+Signed-off-by: Iker Pedrosa <ikerpedrosam@gmail.com>
+---
+ drivers/staging/winbond/mto.c | 4 +---
+ drivers/staging/winbond/mto.h | 4 ++--
+ 2 files changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/staging/winbond/mto.c b/drivers/staging/winbond/mto.c
+index 0d0f9fb..b031ecd 100644
+--- a/drivers/staging/winbond/mto.c
++++ b/drivers/staging/winbond/mto.c
+@@ -21,6 +21,7 @@
+ #include "wbhal.h"
+ #include "wb35reg_f.h"
+ #include "core.h"
++#include "mto.h"
+ 
+ /* Declare SQ3 to rate and fragmentation threshold table */
+ /* Declare fragmentation threshold table */
+@@ -45,9 +46,6 @@ static int retryrate_rec[MTO_MAX_DATA_RATE_LEVELS];
+ 
+ static u8 boSparseTxTraffic;
+ 
+-void MTO_Init(struct wbsoft_priv *adapter);
+-void MTO_SetTxCount(struct wbsoft_priv *adapter, u8 t0, u8 index);
+-
+ /*
+  * ===========================================================================
+  * MTO_Init --
+diff --git a/drivers/staging/winbond/mto.h b/drivers/staging/winbond/mto.h
+index a0f659c..22bb264 100644
+--- a/drivers/staging/winbond/mto.h
++++ b/drivers/staging/winbond/mto.h
+@@ -127,12 +127,12 @@ extern u16 MTO_Frag_Th_Tbl[];
+ #define MTO_DATA_RATE()			MTO_Data_Rate_Tbl[MTO_RATE_LEVEL()]
+ #define MTO_FRAG_TH()			MTO_Frag_Th_Tbl[MTO_FRAG_TH_LEVEL()]
+ 
+-extern void MTO_Init(struct wbsoft_priv *);
++void MTO_Init(struct wbsoft_priv *);
++void MTO_SetTxCount(struct wbsoft_priv *adapter, u8 t0, u8 index);
+ extern void MTO_PeriodicTimerExpired(struct wbsoft_priv *);
+ extern void MTO_SetDTORateRange(struct wbsoft_priv *, u8 *, u8);
+ extern u8 MTO_GetTxRate(struct wbsoft_priv *adapter, u32 fpdu_len);
+ extern u8 MTO_GetTxFallbackRate(struct wbsoft_priv *adapter);
+-extern void MTO_SetTxCount(struct wbsoft_priv *adapter, u8 t0, u8 index);
+ 
+ #endif /* __MTO_H__ */
+ 
+-- 
+1.8.1.2
+
