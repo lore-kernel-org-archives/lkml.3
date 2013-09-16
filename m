@@ -1,88 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754916Ab3IPGsK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 02:48:10 -0400
-Received: from briaree.onecert.fr ([134.212.190.4]:34097 "EHLO
-	briaree.onecert.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751353Ab3IPGrg (ORCPT
+	id S1753103Ab3IPGyE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 02:54:04 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:38200 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292Ab3IPGyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 02:47:36 -0400
-From: Paul Chavent <Paul.Chavent@onera.fr>
-To: linux-usb@vger.kernel.org, gregkh@linuxfoundation.org, jhovold@gmail.com,
-        fschaefer.oss@googlemail.com, jslaby@suse.cz, max@suse.de,
-        giometti@enneenne.com
-Cc: linux-kernel@vger.kernel.org, Paul Chavent <Paul.Chavent@onera.fr>
-Subject: [PATCH 2/2] USB : serial : invoke dcd_change ldisc's handler.
-Date: Mon, 16 Sep 2013 08:41:00 +0200
-Message-Id: <1379313660-2510-3-git-send-email-paul.chavent@onera.fr>
-X-Mailer: git-send-email 1.7.12.1
-In-Reply-To: <1379313660-2510-1-git-send-email-paul.chavent@onera.fr>
-References: <1379313660-2510-1-git-send-email-paul.chavent@onera.fr>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (briaree.onecert.fr [134.212.190.4]); Mon, 16 Sep 2013 08:47:20 +0200 (CEST)
+	Mon, 16 Sep 2013 02:54:03 -0400
+Date: Mon, 16 Sep 2013 16:53:44 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        "LKML" <linux-kernel@vger.kernel.org>
+Subject: Re: Why does test_bit() take a volatile addr?
+Message-Id: <20130916165344.144f0d0f1b58111f1c8c87cc@canb.auug.org.au>
+In-Reply-To: <87ioy11k8s.fsf@rustcorp.com.au>
+References: <87ioy11k8s.fsf@rustcorp.com.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__16_Sep_2013_16_53_44_+1000_wCSAuZol.1Yz3xi7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DCD pin of the serial port can receive a PPS signal. By calling
-the port line discipline dcd handle, this patch allow to monitor PPS
-through USB serial devices.
+--Signature=_Mon__16_Sep_2013_16_53_44_+1000_wCSAuZol.1Yz3xi7
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-However the performance aren't as good as the uart drivers, so
-document this point too.
+Hi Rusty,
 
-Signed-off-by: Paul Chavent <paul.chavent@onera.fr>
----
- Documentation/pps/pps.txt    | 15 +++++++++++++++
- drivers/usb/serial/generic.c | 10 ++++++++++
- 2 files changed, 25 insertions(+)
+On Mon, 16 Sep 2013 13:38:35 +0930 Rusty Russell <rusty@rustcorp.com.au> wr=
+ote:
+>
+> Predates git, does anyone remember the rationale?
+>=20
+> ie:
+>         int test_bit(int nr, const volatile unsigned long *addr)
 
-diff --git a/Documentation/pps/pps.txt b/Documentation/pps/pps.txt
-index d35dcdd..c03b1be 100644
---- a/Documentation/pps/pps.txt
-+++ b/Documentation/pps/pps.txt
-@@ -66,6 +66,21 @@ In LinuxPPS the PPS sources are simply char devices usually mapped
- into files /dev/pps0, /dev/pps1, etc..
- 
- 
-+PPS with USB to serial devices
-+------------------------------
-+
-+It is possible to grab the PPS from an USB to serial device. However,
-+you should take into account the latencies and jitter introduced by
-+the USB stack. Users has reported clock instability around +-1ms when
-+synchronized with PPS through USB. This isn't suited for time server
-+synchronization.
-+
-+If your device doesn't report PPS, you can check that the feature is
-+supported by its driver. Most of the time, you only need to add a call
-+to usb_serial_handle_dcd_change after checking the DCD status (see
-+ch341 and pl2303 examples).
-+
-+
- Coding example
- --------------
- 
-diff --git a/drivers/usb/serial/generic.c b/drivers/usb/serial/generic.c
-index 1f31e6b..3a5dac8 100644
---- a/drivers/usb/serial/generic.c
-+++ b/drivers/usb/serial/generic.c
-@@ -570,6 +570,16 @@ void usb_serial_handle_dcd_change(struct usb_serial_port *usb_port,
- 
- 	dev_dbg(&usb_port->dev, "%s - status %d\n", __func__, status);
- 
-+	if (tty) {
-+		struct tty_ldisc *ld = tty_ldisc_ref(tty);
-+
-+		if (ld) {
-+			if (ld->ops->dcd_change)
-+				ld->ops->dcd_change(tty, status);
-+			tty_ldisc_deref(ld);
-+		}
-+	}
-+
- 	if (status)
- 		wake_up_interruptible(&port->open_wait);
- 	else if (tty && !C_CLOCAL(tty))
--- 
-1.7.12.1
+Because we sometimes pass volatile pointers to it and gcc will complain
+if you pass a volatile to a non volatile  (I think).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__16_Sep_2013_16_53_44_+1000_wCSAuZol.1Yz3xi7
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSNqr9AAoJEECxmPOUX5FEE/cQAIP7xSKnGXPWkL19EjLBdPTb
+AOn5UxeKYDB/QNi1Qj6KSLajXY+QkbBO2TtvzsbYP/gc+EGprEdwFKtLkq0M3pDX
+QLIbrWjup2pnnhDtUnu2LTcyobfOyRT4Fnah4RDMFwtNvP8q4KnqQYtdJgFYI48A
+bj4Ja34SA6uhdsC1x6s1DelbrfzQvLjr+Yf/y0dlRMhJnjmcSaRQxBPxUhH6R8mr
+JJQnTVZ8JuMhkxR30UzTeVshYw6RJoZNhg3NoBkYr0CMRoIA45/+Dqpj+nuCSzgG
+zM17w2YGZYfY6u41Lb7pYTgUl+Ca6R7wJPINZsAL/hnlRYwrKwiD29LJLn0HT8fa
+q2b36H5mygaMQnptxqPQ8KluxsPFjn37HlALnweDBnt2vDeHqAC0t4+OHCBWY2lH
+2tq+lRriuiNV8qL2bYMSKH+qy0kqW/J60gV7C/j2HvTnM4R62nynyQ5h6+UOmpk1
+PW3lVyFOGf3PW2g4J/Q87W/VsElFqm7dhRMCWNf+PL4vv+miR/dOUU5VxbxG/sj7
+ikla8zEiKA5ZaIhBTG3r9jgZgVQcS8CT7GlJPv7pNrpe4ssL6Aj286IvNPBya1Kr
+VXczbCDItpLJ8ACELsZpZUhUhodfdSiemhEhvhYACtFjvY94SQc2sr76it4LEHW9
+t6QzigrNKWS7h4j0Wxqm
+=TEGR
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__16_Sep_2013_16_53_44_+1000_wCSAuZol.1Yz3xi7--
