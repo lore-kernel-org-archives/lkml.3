@@ -1,82 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751269Ab3IPPeV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 11:34:21 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:63589 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942Ab3IPPeT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 11:34:19 -0400
-Date: Mon, 16 Sep 2013 16:34:14 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Mark Brown <broonie@kernel.org>, Linus Walleij <linus.walleij@linaro.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wang Shilong <wangshilong1991@gmail.com>
-Subject: Re: [PATCH 1/4 v2] mfd: add STw481x driver
-Message-ID: <20130916153414.GN16984@lee--X1>
-References: <1379094851-26385-1-git-send-email-linus.walleij@linaro.org>
- <20130916091956.GF3999@lee--X1>
- <20130916104009.GA29403@sirena.org.uk>
- <CACRpkdatiELF3WK9qE_Mgcq3iCgv5w3X22xp1=232JJq9sWggQ@mail.gmail.com>
- <20130916135118.GD29403@sirena.org.uk>
- <20130916152104.GA3909@katana>
+	id S1751062Ab3IPPgk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 11:36:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4040 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750753Ab3IPPgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 11:36:39 -0400
+Date: Mon, 16 Sep 2013 17:36:34 +0200
+From: Andrew Jones <drjones@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: kvm@vger.kernel.org, pbonzini@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: kvm: introduce CONFIG_KVM_MAX_VCPUS
+Message-ID: <20130916153633.GB17256@hawk.usersys.redhat.com>
+References: <1379161129-28393-1-git-send-email-drjones@redhat.com>
+ <20130915090838.GW17294@redhat.com>
+ <20130916082820.GB2101@hawk.usersys.redhat.com>
+ <20130916084710.GJ17294@redhat.com>
+ <20130916120332.GB14981@hawk.usersys.redhat.com>
+ <20130916141620.GA906@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130916152104.GA3909@katana>
+In-Reply-To: <20130916141620.GA906@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Sep 2013, Wolfram Sang wrote:
+On Mon, Sep 16, 2013 at 05:16:20PM +0300, Gleb Natapov wrote:
+> On Mon, Sep 16, 2013 at 02:03:33PM +0200, Andrew Jones wrote:
+> > On Mon, Sep 16, 2013 at 11:47:10AM +0300, Gleb Natapov wrote:
+> > > On Mon, Sep 16, 2013 at 10:28:20AM +0200, Andrew Jones wrote:
+> > > > On Sun, Sep 15, 2013 at 12:08:38PM +0300, Gleb Natapov wrote:
+> > > > > On Sat, Sep 14, 2013 at 02:18:49PM +0200, Andrew Jones wrote:
+> > > > > > Take CONFIG_KVM_MAX_VCPUS from arm32, but set the default to 255.
+> > > > > > 
+> > > > > > Signed-off-by: Andrew Jones <drjones@redhat.com>
+> > > > > > ---
+> > > > > >  arch/x86/include/asm/kvm_host.h |  5 +++--
+> > > > > >  arch/x86/kvm/Kconfig            | 10 ++++++++++
+> > > > > >  2 files changed, 13 insertions(+), 2 deletions(-)
+> > > > > > 
+> > > > > > diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> > > > > > index c76ff74a98f2e..e7e9b523a8f7e 100644
+> > > > > > --- a/arch/x86/include/asm/kvm_host.h
+> > > > > > +++ b/arch/x86/include/asm/kvm_host.h
+> > > > > > @@ -31,8 +31,9 @@
+> > > > > >  #include <asm/msr-index.h>
+> > > > > >  #include <asm/asm.h>
+> > > > > >  
+> > > > > > -#define KVM_MAX_VCPUS 255
+> > > > > > -#define KVM_SOFT_MAX_VCPUS 160
+> > > > > > +#define KVM_MAX_VCPUS CONFIG_KVM_MAX_VCPUS
+> > > > > > +#define KVM_SOFT_MAX_VCPUS min(160, KVM_MAX_VCPUS)
+> > > > > > +
+> > > > > >  #define KVM_USER_MEM_SLOTS 125
+> > > > > >  /* memory slots that are not exposed to userspace */
+> > > > > >  #define KVM_PRIVATE_MEM_SLOTS 3
+> > > > > > diff --git a/arch/x86/kvm/Kconfig b/arch/x86/kvm/Kconfig
+> > > > > > index a47a3e54b964b..e9532c33527ee 100644
+> > > > > > --- a/arch/x86/kvm/Kconfig
+> > > > > > +++ b/arch/x86/kvm/Kconfig
+> > > > > > @@ -52,6 +52,16 @@ config KVM
+> > > > > >  
+> > > > > >  	  If unsure, say N.
+> > > > > >  
+> > > > > > +config KVM_MAX_VCPUS
+> > > > > > +	int "Number maximum supported virtual CPUs per VM"
+> > > > > > +	depends on KVM
+> > > > > > +	default 255
+> > > > > > +	help
+> > > > > > +	  Static number of max supported virtual CPUs per VM.
+> > > > > > +
+> > > > > > +	  Set to a lower number to save some resources. Set to a higher
+> > > > > > +	  number to test scalability.
+> > > > > > +
+> > > > > Maximum this can save is around 2K per VM. This is pretty insignificant
+> > > > > considering overall memory footprint even smallest VM has.
+> > > > 
+> > > > Should I reword this, dropping all 'save resources' verbiage, in order to
+> > > > avoid sending a message that this option can affect resource consumption?
+> > > > Or just leave it as it is, because even though it's insignificant, it's
+> > > > still true and balances out the 'Set to a higher' part.
+> > > > 
+> > > I do not think config option is necessary. The overhead is so
+> > > insignificant that there is no point in additional user visible knob,
+> > > at least while only 255 vcpu are supported. Is there a reason for anyone
+> > > to configure less them 255 vcpus here? OTOH what prevents someone from
+> > > configuring more then 255 vcpus?
+> > 
+> > The reason to configure less is to be able to compile a hard limit,
+> > without having to muck with the source. E.g. if you really don't want to
+> > allow more than KVM_SOFT_MAX_VCPUS to be configured, then you can compile
+> > with CONFIG_KVM_MAX_VCPUS == KVM_SOFT_MAX_VCPUS.
+> > 
+> > Nothing prevents someone from configuring more than the max in
+> > userspace, but if they try to create/use more than the max
+> > (kvm_vm_ioctl_create_vcpu), it'll fail (EINVAL).
+> > 
+> I was talking about configuring more then 255 vcus in kernel config. You
+> should have "range 1 255" there.
+
+Ah, I assumed one could configure this higher if they wanted to test
+something higher. Other than requiring another word in a bitmap, I didn't
+see what would change going beyond that boundary.
 
 > 
-> On Mon, Sep 16, 2013 at 02:51:18PM +0100, Mark Brown wrote:
-> > On Mon, Sep 16, 2013 at 02:44:35PM +0200, Linus Walleij wrote:
+> > I see this as a step towards getting rid of KVM_SOFT_MAX_VCPUS. I.e.
+> > compile with whatever maximum limit you want (can support), and return
+> > online/possible cpus for the recommended number. Only configure the kernel
+> > with more than your typical maximum (was KVM_SOFT_MAX_VCPUS) for
+> > development/testing purposes.
 > > 
-> > > I've tried to fix this for DT-only I2C devices
-> > > and this very driver was the reason.
-> > 
-> > > But a tiresome regression due to drivers relying on this
-> > > i2c_device_id not being NULL and inability to remove it from the I2C
-> > > core without refactoring the world ensued, see:
-> > > commit c80f52847c50109ca248c22efbf71ff10553dca4
-> > 
-> > Oh, that was the change...
-> > 
-> > > Reverted in:
-> > > commit 661f6c1cd926c6c973e03c6b5151d161f3a666ed
-> > 
-> > > For this reason I think:
-> > > http://marc.info/?l=linux-next&m=137148411231784&w=2
-> > 
-> > > I have tentatively given up getting pure DT I2C drivers
-> > > to probe, I don't think I have the whole picture, but
-> > > Wolfram has serious doubts about this and say we have
-> > > to be careful ....
-> > 
-> > > Wolfram, do you have some ideas on how we should
-> > > proceed or ar you happy with merging this as-is?
-> > 
-> > I'd have expected that it should be possible to change things such that
-> > the change in the core doesn't produce any change in behaviour for
-> > existing drivers.  Can we not change the patch so that i2c_match_id()
-> > copes with getting a NULL id_table?  Something like this:
-> 
-> I hacked something like this after Linus posted his approach. However, I
-> found out that run time instanciating ('new_device' file) needs an
-> id_table. I wasn't to keen on disabling the feature for dt-only drivers.
-> That's where I stopped, due to lack of time.
+> The idea behind soft/hard limit was to allow people easily check
+> scalability without need to recompile the kernel. If custom build will
+> be needed most people will not bother.
 
-So in the mean time are you happy with this "dummy" approach?
+Keeping the default 255 wouldn't have changed anything we have today,
+other than making it easier to adjust for scalability testing beyond 255
+(assuming they could go beyond). However, as I just wrote in the other
+thread, you've convinced me to keep a constant soft limit definition, but
+since the soft limit is a custom concept, then I believe it belongs in the
+config.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+drew
