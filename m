@@ -1,40 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576Ab3IPG3G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 02:29:06 -0400
-Received: from 173-212-243-67.static.hostnoc.net ([173.212.243.67]:60626 "EHLO
-	smtp3.moriyishu.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256Ab3IPG3E (ORCPT
+	id S1753591Ab3IPGdK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 02:33:10 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:34088 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753098Ab3IPGdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 02:29:04 -0400
-Date: Mon, 16 Sep 2013 14:28:37 +0800
-From: "Fsbho" <sales@menjiechem.com>
-Reply-To: sales@menjiechem.com
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: ATTN:Purchasing Manager---supply 2-ethylanthraquinone---menjie
- chemicals co
-Message-ID: <201309161428375783579@moriyishu.com>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+	Mon, 16 Sep 2013 02:33:08 -0400
+Date: Sun, 15 Sep 2013 19:25:33 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: rydberg@euromail.se
+Cc: Nick Dyer <nick.dyer@itdev.co.uk>, Daniel Kurtz <djkurtz@chromium.org>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
+        Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olofj@chromium.org>,
+        Yufeng Shen <miletus@chromium.org>
+Subject: Re: [PATCH 20/51] Input: atmel_mxt_ts - Set default irqflags when
+ there is no pdata
+Message-ID: <20130916022533.GA6468@core.coreip.homeip.net>
+References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
+ <1372337366-9286-21-git-send-email-nick.dyer@itdev.co.uk>
+ <20130718171744.GC32381@polaris.bitmath.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130718171744.GC32381@polaris.bitmath.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8G6TWwd002067
 
-Dear Sir or Madam: 
-      Good Day! Glad to learn you`re on the market of hydrogen peroxide(H2O2) products.
-      We are a professional manufacturers of organic intermediate for 17years , as well as the supplier for ARKEMA, FMC ,now we specialized in the products: 
-the working carrier for hydrogen peroxide: 2-Ethylanthraquinone(2-EAQ)
-    If you are interesting in any of our products, pls contact me, i will send you more details of the products for your reference!
-Best regards
+On Thu, Jul 18, 2013 at 07:17:44PM +0200, rydberg@euromail.se wrote:
+> Hi Nick,
+> 
+> > From: Yufeng Shen <miletus@chromium.org>
+> > 
+> > This is the preparation for supporting the code path when there is
+> > platform data provided and still boot the device into a sane state
+> > with backup NVRAM config.
+> > 
+> > Make the irqflags default to be IRQF_TRIGGER_FALLING if no platform data is
+> > provided.
 
-David tan
-Sales?Depart. Manager
-skype:tjyf512
-tel/fax:86 536 8980651     China
-company: Weifang Menjie Chemical Co.,Ltd
-Website: http://menjie.en.alibaba.com/
-                www.menjiechem.comÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I think if there is no platform data we should use 0 as IRQ falgs and
+assume that IRQ line is properly configured by the board code or via
+device tree.
+
+Thanks.
+
+-- 
+Dmitry
