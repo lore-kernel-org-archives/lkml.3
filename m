@@ -1,84 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932302Ab3IPFoG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 01:44:06 -0400
-Received: from vaxjo.synopsys.com ([198.182.60.75]:44886 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754106Ab3IPFoE (ORCPT
+	id S1753764Ab3IPFwK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 01:52:10 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41729 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752858Ab3IPFwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 01:44:04 -0400
-Message-ID: <52369A94.5060900@synopsys.com>
-Date: Mon, 16 Sep 2013 11:13:48 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 16 Sep 2013 01:52:09 -0400
+Date: Mon, 16 Sep 2013 07:52:02 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [PATCH 1/2] sched: calculate_imbalance: Fix local->avg_load >
+ sds->avg_load case
+Message-ID: <20130916055202.GL21832@twins.programming.kicks-ass.net>
+References: <8f596cc6bc0e5e655119dc892c9bfcad26e971f4.1379252740.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-To: greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <Alexey.Brodkin@synopsys.com>, <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [PATCH] ethernet/arc/arc_emac: Fix huge delays in large file
- copies
-References: <1378295235-18928-1-git-send-email-vgupta@synopsys.com> <20130905.142530.732425484460470485.davem@davemloft.net> <522EBBD2.1060003@synopsys.com>
-In-Reply-To: <522EBBD2.1060003@synopsys.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.111]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8f596cc6bc0e5e655119dc892c9bfcad26e971f4.1379252740.git.vdavydov@parallels.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2013 11:57 AM, Vineet Gupta wrote:
-> On 09/05/2013 11:55 PM, David Miller wrote:
->> From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
->> Date: Wed, 4 Sep 2013 17:17:15 +0530
->>
->>> copying large files to a NFS mounted host was taking absurdly large
->>> time.
->>>
->>> Turns out that TX BD reclaim had a sublte bug.
->>>
->>> Loop starts off from @txbd_dirty cursor and stops when it hits a BD
->>> still in use by controller. However when it stops it needs to keep the
->>> cursor at that very BD to resume scanning in next iteration. However it
->>> was erroneously incrementing the cursor, causing the next scan(s) to
->>> fail too, unless the BD chain was completely drained out.
->>>
->>> [ARCLinux]$ ls -l -sh /disk/log.txt
->>>  17976 -rw-r--r--    1 root     root       17.5M Sep  /disk/log.txt
->>>
->>> ========== Before =====================
->>> [ARCLinux]$ time cp /disk/log.txt /mnt/.
->>> real    31m 7.95s
->>> user    0m 0.00s
->>> sys     0m 0.10s
->>>
->>> ========== After =====================
->>> [ARCLinux]$ time cp /disk/log.txt /mnt/.
->>> real    0m 24.33s
->>> user    0m 0.00s
->>> sys     0m 0.19s
->>>
->>> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
->>
->> Applied.
->>
+On Sun, Sep 15, 2013 at 05:49:13PM +0400, Vladimir Davydov wrote:
+> In busiest->group_imb case we can come to calculate_imbalance() with
+> local->avg_load >= busiest->avg_load >= sds->avg_load. This can result
+> in imbalance overflow, because it is calculated as follows
 > 
-> Hi Greg,
+> env->imbalance = min(
+> 	max_pull * busiest->group_power,
+> 	(sds->avg_load - local->avg_load) * local->group_power
+> ) / SCHED_POWER_SCALE;
 > 
-> This needs a stable backport (3.11).
-> Mainline commit 27082ee1b92f4d41e78b85
+> As a result we can end up constantly bouncing tasks from one cpu to
+> another if there are pinned tasks.
 > 
-> Thx,
-> -Vineet
+> Fix this by skipping the assignment and assuming imbalance=0 in case
+> local->avg_load > sds->avg_load.
+> --
+> The bug can be caught by running 2*N cpuhogs pinned to two logical cpus
+> belonging to different cores on an HT-enabled machine with N logical
+> cpus: just look at se.nr_migrations growth.
+> 
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> ---
+>  kernel/sched/fair.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 9b3fe1c..507a8a9 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -4896,7 +4896,8 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+>  	 * max load less than avg load(as we skip the groups at or below
+>  	 * its cpu_power, while calculating max_load..)
+>  	 */
+> -	if (busiest->avg_load < sds->avg_load) {
+> +	if (busiest->avg_load <= sds->avg_load ||
+> +	    local->avg_load >= sds->avg_load) {
+>  		env->imbalance = 0;
+>  		return fix_small_imbalance(env, sds);
+>  	}
 
-Hi Greg,
-
-I didn't spot this one in your stable-queue for 3.11.
-Please apply.
-
-Thx,
-Vineet
-
-
-
+Why the = part? Surely 'busiest->avg_load < sds->avg_load ||
+local->avg_load > sds->avg_load' avoids both underflows?
