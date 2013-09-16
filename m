@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754439Ab3IPFbj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 01:31:39 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:56941 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753481Ab3IPFbh (ORCPT
+	id S1753831Ab3IPFnN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 01:43:13 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41653 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753047Ab3IPFnM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 01:31:37 -0400
-From: Chander Kashyap <chander.kashyap@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: kgene.kim@samsung.com, tglx@linutronix.de, thomas.ab@samsung.com,
-        Chander Kashyap <chander.kashyap@linaro.org>
-Subject: [PATCH] irqchip: exynos-combiner: remove hard-coded irq_base value
-Date: Mon, 16 Sep 2013 11:01:22 +0530
-Message-Id: <1379309482-19779-1-git-send-email-chander.kashyap@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 16 Sep 2013 01:43:12 -0400
+Date: Mon, 16 Sep 2013 07:43:01 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [PATCH 2/2] sched: load_balance: Reset env when going to redo
+ due to all pinned
+Message-ID: <20130916054301.GK21832@twins.programming.kicks-ass.net>
+References: <281f59b6e596c718dd565ad267fc38f5b8e5c995.1379265590.git.vdavydov@parallels.com>
+ <c34e2ebbe55403d5db111fa3ecdf6ca52b73a337.1379265590.git.vdavydov@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <c34e2ebbe55403d5db111fa3ecdf6ca52b73a337.1379265590.git.vdavydov@parallels.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pass '0' in place of hardcoded "irq_base" value as "first_irq" parameter to
-"irq_domain_add_simple" in order to use linear irq domain.
+On Sun, Sep 15, 2013 at 09:30:14PM +0400, Vladimir Davydov wrote:
+> Firstly, reset env.dst_cpu/dst_rq to this_cpu/this_rq, because it could
+> have changed in 'some pinned' case. Otherwise, should_we_balance() can
+> stop balancing beforehand.
+> 
+> Secondly, reset env.flags, because it can have LBF_SOME_PINNED set.
+> 
+> Thirdly, reset env.dst_grpmask cpus in env.cpus to allow handling 'some
+> pinned' case when pulling tasks from a new busiest cpu.
 
-Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
----
- drivers/irqchip/exynos-combiner.c |   15 +++------------
- 1 file changed, 3 insertions(+), 12 deletions(-)
+Did you actually run into any problems because of this?
 
-diff --git a/drivers/irqchip/exynos-combiner.c b/drivers/irqchip/exynos-combiner.c
-index 4c68265..b4ed356 100644
---- a/drivers/irqchip/exynos-combiner.c
-+++ b/drivers/irqchip/exynos-combiner.c
-@@ -206,8 +206,7 @@ static unsigned int combiner_lookup_irq(int group)
- 
- static void __init combiner_init(void __iomem *combiner_base,
- 				 struct device_node *np,
--				 unsigned int max_nr,
--				 int irq_base)
-+				 unsigned int max_nr)
- {
- 	int i, irq;
- 	unsigned int nr_irq;
-@@ -221,7 +220,7 @@ static void __init combiner_init(void __iomem *combiner_base,
- 		return;
- 	}
- 
--	combiner_irq_domain = irq_domain_add_simple(np, nr_irq, irq_base,
-+	combiner_irq_domain = irq_domain_add_simple(np, nr_irq, 0,
- 				&combiner_irq_domain_ops, combiner_data);
- 	if (WARN_ON(!combiner_irq_domain)) {
- 		pr_warning("%s: irq domain init failed\n", __func__);
-@@ -248,7 +247,6 @@ static int __init combiner_of_init(struct device_node *np,
- {
- 	void __iomem *combiner_base;
- 	unsigned int max_nr = 20;
--	int irq_base = -1;
- 
- 	combiner_base = of_iomap(np, 0);
- 	if (!combiner_base) {
-@@ -262,14 +260,7 @@ static int __init combiner_of_init(struct device_node *np,
- 			__func__, max_nr);
- 	}
- 
--	/* 
--	 * FIXME: This is a hardwired COMBINER_IRQ(0,0). Once all devices
--	 * get their IRQ from DT, remove this in order to get dynamic
--	 * allocation.
--	 */
--	irq_base = 160;
--
--	combiner_init(combiner_base, np, max_nr, irq_base);
-+	combiner_init(combiner_base, np, max_nr);
- 
- 	return 0;
- }
--- 
-1.7.9.5
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> ---
+>  kernel/sched/fair.c |   12 ++++++++++--
+>  1 file changed, 10 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index cd59640..d840e51 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -5289,8 +5289,16 @@ more_balance:
+>  		if (unlikely(env.flags & LBF_ALL_PINNED)) {
+>  			cpumask_clear_cpu(cpu_of(busiest), cpus);
+>  			if (!cpumask_empty(cpus)) {
+> -				env.loop = 0;
+> -				env.loop_break = sched_nr_migrate_break;
+> +				env.dst_cpu	= this_cpu;
+> +				env.dst_rq	= this_rq;
+> +				env.flags	= 0;
+> +				env.loop	= 0;
+> +				env.loop_break	= sched_nr_migrate_break;
+> +
+> +				/* Reset cpus cleared in LBF_SOME_PINNED case */
+> +				if (env.dst_grpmask)
+> +					cpumask_or(cpus, cpus, env.dst_grpmask);
+> +
+>  				goto redo;
+>  			}
+>  			goto out_balanced;
 
+So the problem I have with this is that it removes the bound on the
+number of iterations we do. Currently we're limited by the bits in cpus,
+but by resetting those we can do on and on and on...
