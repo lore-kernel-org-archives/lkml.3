@@ -1,101 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751641Ab3IPQ3o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 12:29:44 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55401 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002Ab3IPQ3n (ORCPT
+	id S1751689Ab3IPQaL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 12:30:11 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:52533 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751025Ab3IPQaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 12:29:43 -0400
-Date: Mon, 16 Sep 2013 18:29:26 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: eranian@gmail.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: PEBS bug on HSW: "Unexpected number of pebs records 10" (was:
- Re: [GIT PULL] perf changes for v3.12)
-Message-ID: <20130916162926.GA12926@twins.programming.kicks-ass.net>
-References: <CAMsRxfLEO15kKrbmtKKXuW-JTtCCgiuXS6wFs9kiLmG1wge24A@mail.gmail.com>
- <20130910115306.GA6091@gmail.com>
- <CAMsRxfLvbExOzjz8tQu7AchQgKBh5S4b7VMQmFtr1RxK4ksAvA@mail.gmail.com>
- <20130910133845.GB7537@gmail.com>
- <CAMsRxfJ5HG+0AiooOUFh8TzvCoK3YcBFpeAF0eTzdkDm=wB84g@mail.gmail.com>
- <20130910142942.GB8388@gmail.com>
- <CAMsRxf+18qz_vOkEZ1a8D9Z7BywWZPNB=qEn0bHXMFg96sALTQ@mail.gmail.com>
- <20130910171449.GA10812@gmail.com>
- <CAMsRxfKdpK7Mmt=BSPnGCGGERTFbqTG0qe_cFDTvxsdLCO-A9g@mail.gmail.com>
- <20130916154146.GA6470@gmail.com>
+	Mon, 16 Sep 2013 12:30:07 -0400
+X-Originating-IP: 50.43.39.152
+Date: Mon, 16 Sep 2013 09:29:54 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Laszlo Ersek <lersek@redhat.com>
+Cc: Matt Fleming <matt@console-pimps.org>, jerry.hoemann@hp.com,
+        Andrew Fish <afish@apple.com>, edk2-devel@lists.sourceforge.net,
+        linux-efi@vger.kernel.org, Gleb Natapov <gleb@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Brian Richardson <brian.richardson@intel.com>,
+        Colin Ian King <colin.king@canonical.com>,
+        Randy Wright <rwright@hp.com>, Linn Crosetto <linn.crosetto@hp.com>,
+        terry.lee@hp.com, samer.el-haj-mahmoud@hp.com, randy.pawell@hp.com,
+        chrisp@hp.com, linda.knippers@hp.com, dong.wei@hp.com,
+        "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
+        Chao Zhang <chao.b.zhang@intel.com>, Yao Jiewen <jiewen.yao@intel.com>
+Subject: Re: [edk2] Corrupted EFI region
+Message-ID: <20130916162918.GA4555@leaf>
+References: <20130807151935.GJ17920@pd.tnic>
+ <CCFD3CBD-62B0-4046-B96D-18CB1A815F72@apple.com>
+ <20130807201908.GG2515@console-pimps.org>
+ <D5982201-6DC4-469F-812A-74A8402ADEE9@apple.com>
+ <20130808101730.GJ2515@console-pimps.org>
+ <20130913203812.GA312@anatevka.fc.hp.com>
+ <20130916105920.GB2697@console-pimps.org>
+ <5236F096.8040702@redhat.com>
+ <20130916155751.GA3636@leaf>
+ <523730F2.40408@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130916154146.GA6470@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <523730F2.40408@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 05:41:46PM +0200, Ingo Molnar wrote:
+On Mon, Sep 16, 2013 at 06:25:22PM +0200, Laszlo Ersek wrote:
+> On 09/16/13 17:57, Josh Triplett wrote:
 > 
-> * Stephane Eranian <eranian@googlemail.com> wrote:
-> 
-> > Hi,
+> >> The edk2 commit that flipped the memory type underneath the image data
+> >> from EfiReservedMemoryType to EfiBootServicesData is:
+> >>
+> >>     https://github.com/tianocore/edk2/commit/4c58575e
+> >>
+> >> I think this commit is wrong. It's fine for OSPM to release the image
+> >> data at some point, but not right after ExitBootServices(), because
+> >> referencing pointers in ACPI tables survive strictly longer.
+> >>
+> >> ... Actually, the commit does follow the ACPI spec 5.0:
+> >>
+> >> 5.2.22.4 Image Address
+> >>
+> >>     The Image Address contains the location in memory where an
+> >>     in-memory copy of the boot image can be found. The image should be
+> >>     stored in EfiBootServicesData, allowing the system to reclaim
+> >>     the memory when the image is no longer needed.
+> >>
+> >> The ACPI spec 5.0 should recommend EfiACPIReclaimMemory here IMO. (I
+> >> take the current wording ("should be stored") as a recommendation only.)
 > > 
-> > Some updates on this problem.
-> > I have been running tests all week-end long on my HSW.
-> > I can reproduce the problem. What I know:
-> > 
-> > - It is not linked with callchain
-> > - The extra entries are valid
-> > - The reset values are still zeroes
-> > - The problem does not happen on SNB with the same test case
-> > - The PMU state looks sane when that happens.
-> > - The problem occurs even when restricting to one CPU/core (taskset -c 0-3)
-> > 
-> > So it seems like the threshold is ignored. But I don't understand where 
-> > there reset values are coming from. So it looks more like a bug in 
-> > micro-code where under certain circumstances multiple entries get 
-> > written.
+> > I agree that UEFI *should* store the BGRT in EfiACPIReclaimMemory, but
+> > in practice the UEFI firmware I've seen with a BGRT does follow that
+> > recommendation and store it in EfiBootServicesData.  So, even if the
+> > recommendation in the spec changed, the kernel would still have to
+> > accomodate both possibilities.
 > 
-> Either multiple entries are written, or the PMI/NMI is not asserted as it 
-> should be?
-
-No, both :-)
-
-> > Something must be happening with the interrupt or HT. I will disable HT 
-> > next and also disable the NMI watchdog.
+> Just for the theoretical debate:
 > 
-> Yes, interaction with the NMI watchdog events might also be possible.
+> The edk2 commit linked above is 5 days old. All UEFI firmware in the
+> wild (on released hardware) should be using EfiReservedMemoryType (the
+> pre-patch memory type), which is even stricter.
 > 
-> If it's truly just the threshold that is broken occasionally in a 
-> statistically insignificant manner then the bug is relatively benign and 
-> we could work it around in the kernel by ignoring excess entries.
+> EfiReservedMemoryType can never be released & repurposed, so it should
+> make no difference for crash kernel allocation, shouldn't it?
 > 
-> In that case we should probably not annoy users with the scary kernel 
-> warning and instead increase a debug count somewhere so that it's still 
-> detectable.
+> - call efi_free_boot_services() -- doesn't touch the image data (which
+>   is in RAM of EfiReservedMemoryType),
+> - reserve crash kernel,
+> - access BGRT via ACPI.
+> 
+> BGRT had appeared in edk2 with
+> 
+>   https://github.com/tianocore/edk2/commit/0284e90c
+> 
+> and EfiReservedMemoryType used to be the allocation type until commit
+> 4c58575e.
+> 
+> Or are you alluding to UEFI firmware that's not based on TianoCore?
 
-Its not just a broken threshold. When a PEBS event happens it can re-arm
-itself but only if you program a RESET value !0. We don't do that, so
-each counter should only ever fire once.
+I'm saying, in practice, that the systems I tested BGRT support on and
+submitted patches for stored the BGRT's image in EfiBootServicesData.
 
-We must do this because PEBS is broken on NHM+ in that the
-pebs_record::status is a direct copy of the overflow status field at
-time of the assist and if you use the RESET thing nothing will clear the
-status bits and you cannot demux the PEBS events back to the event that
-generated them.
-
-Worse, since its the overflow that arms the assist, and the assist
-happens at some undefined amount of cycles after this event it is
-possible for another assist to happen first.
-
-That is, suppose both CNT0 and CNT1 have PEBS enabled and CNT0 overflows
-first it is possible to find the CNT1 entry first in the buffer with
-both of them having status := 0x03.
-
-Complete and utter trainwreck.
-
-This is why we have a threshold of 1 and use NMI for PMI even for pure
-PEBS, it minimizes the complete clusterfuck described above.
-
+- Josh Triplett
