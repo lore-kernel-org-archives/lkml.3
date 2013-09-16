@@ -1,97 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756327Ab3IPIWY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 04:22:24 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:64507 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756112Ab3IPIWW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 04:22:22 -0400
-Date: Mon, 16 Sep 2013 09:22:17 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@linaro.org, denis.ciocca@st.com,
-        linux-iio@vger.kernel.org
-Subject: Re: [PATCH 21/38] iio: sensors-core: st: Clean-up error handling in
- st_sensors_read_axis_data()
-Message-ID: <20130916082217.GE3999@lee--X1>
-References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
- <1378817379-8238-22-git-send-email-lee.jones@linaro.org>
- <523495D0.1050002@kernel.org>
+	id S1754768Ab3IPI21 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 04:28:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3961 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751181Ab3IPI20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 04:28:26 -0400
+Date: Mon, 16 Sep 2013 10:28:20 +0200
+From: Andrew Jones <drjones@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: kvm@vger.kernel.org, pbonzini@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: kvm: introduce CONFIG_KVM_MAX_VCPUS
+Message-ID: <20130916082820.GB2101@hawk.usersys.redhat.com>
+References: <1379161129-28393-1-git-send-email-drjones@redhat.com>
+ <20130915090838.GW17294@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <523495D0.1050002@kernel.org>
+In-Reply-To: <20130915090838.GW17294@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 14 Sep 2013, Jonathan Cameron wrote:
-
-> On 09/10/13 13:49, Lee Jones wrote:
-> > Gets rid of those unnecessary gotos.
-> 
-> Unfortunately it introduced a bug whilst it is at it.  Sometimes
-> those gotos are necessary and the 'right' way to do things.
+On Sun, Sep 15, 2013 at 12:08:38PM +0300, Gleb Natapov wrote:
+> On Sat, Sep 14, 2013 at 02:18:49PM +0200, Andrew Jones wrote:
+> > Take CONFIG_KVM_MAX_VCPUS from arm32, but set the default to 255.
 > > 
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > Signed-off-by: Andrew Jones <drjones@redhat.com>
 > > ---
-> >  drivers/iio/common/st_sensors/st_sensors_core.c | 17 +++++++----------
-> >  1 file changed, 7 insertions(+), 10 deletions(-)
+> >  arch/x86/include/asm/kvm_host.h |  5 +++--
+> >  arch/x86/kvm/Kconfig            | 10 ++++++++++
+> >  2 files changed, 13 insertions(+), 2 deletions(-)
 > > 
-> > diff --git a/drivers/iio/common/st_sensors/st_sensors_core.c b/drivers/iio/common/st_sensors/st_sensors_core.c
-> > index 8c4c54c..148f0e5 100644
-> > --- a/drivers/iio/common/st_sensors/st_sensors_core.c
-> > +++ b/drivers/iio/common/st_sensors/st_sensors_core.c
-> > @@ -331,26 +331,23 @@ static int st_sensors_read_axis_data(struct iio_dev *indio_dev,
-> >  	unsigned int byte_for_channel = ch->scan_type.storagebits >> 3;
+> > diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> > index c76ff74a98f2e..e7e9b523a8f7e 100644
+> > --- a/arch/x86/include/asm/kvm_host.h
+> > +++ b/arch/x86/include/asm/kvm_host.h
+> > @@ -31,8 +31,9 @@
+> >  #include <asm/msr-index.h>
+> >  #include <asm/asm.h>
 > >  
-> >  	outdata = kmalloc(byte_for_channel, GFP_KERNEL);
-> > -	if (!outdata) {
-> > -		err = -EINVAL;
-> > -		goto st_sensors_read_axis_data_error;
-> > -	}
-> > +	if (!outdata)
-> > +		return -ENOMEM;
-> I agree this change makes complete sense.
+> > -#define KVM_MAX_VCPUS 255
+> > -#define KVM_SOFT_MAX_VCPUS 160
+> > +#define KVM_MAX_VCPUS CONFIG_KVM_MAX_VCPUS
+> > +#define KVM_SOFT_MAX_VCPUS min(160, KVM_MAX_VCPUS)
+> > +
+> >  #define KVM_USER_MEM_SLOTS 125
+> >  /* memory slots that are not exposed to userspace */
+> >  #define KVM_PRIVATE_MEM_SLOTS 3
+> > diff --git a/arch/x86/kvm/Kconfig b/arch/x86/kvm/Kconfig
+> > index a47a3e54b964b..e9532c33527ee 100644
+> > --- a/arch/x86/kvm/Kconfig
+> > +++ b/arch/x86/kvm/Kconfig
+> > @@ -52,6 +52,16 @@ config KVM
 > >  
-> >  	err = sdata->tf->read_multiple_byte(&sdata->tb, sdata->dev,
-> >  				ch->address, byte_for_channel,
-> >  				outdata, sdata->multiread_bit);
-> > -	if (err < 0)
-> > -		goto st_sensors_free_memory;
-> > +	if (err < 0) {
-> > +		kfree(outdata);
-> > +		return err;
-> > +	}
-> I don't like this change as....
+> >  	  If unsure, say N.
 > >  
-> >  	if (byte_for_channel == 2)
-> >  		*data = (s16)get_unaligned_le16(outdata);
-> >  	else if (byte_for_channel == 3)
-> >  		*data = (s32)st_sensors_get_unaligned_le24(outdata);
-> >  
-> > -st_sensors_free_memory:
-> > -	kfree(outdata);
-> you now don't free out data in the case of no error.  This is precisely the case
-> where a goto is the correct way to handle things as the free need to occur whether
-> or not the error occurs.
+> > +config KVM_MAX_VCPUS
+> > +	int "Number maximum supported virtual CPUs per VM"
+> > +	depends on KVM
+> > +	default 255
+> > +	help
+> > +	  Static number of max supported virtual CPUs per VM.
+> > +
+> > +	  Set to a lower number to save some resources. Set to a higher
+> > +	  number to test scalability.
+> > +
+> Maximum this can save is around 2K per VM. This is pretty insignificant
+> considering overall memory footprint even smallest VM has.
 
-Ah, you're quite right. I'll fix up.
+Should I reword this, dropping all 'save resources' verbiage, in order to
+avoid sending a message that this option can affect resource consumption?
+Or just leave it as it is, because even though it's insignificant, it's
+still true and balances out the 'Set to a higher' part.
 
-> > -st_sensors_read_axis_data_error:
-> > -	return err;
-> > +	return 0;
-> >  }
-> >  
-> >  int st_sensors_read_info_raw(struct iio_dev *indio_dev,
-> > 
+drew
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> 
+> >  config KVM_INTEL
+> >  	tristate "KVM for Intel processors support"
+> >  	depends on KVM
+> > -- 
+> > 1.8.1.4
+> 
+> --
+> 			Gleb.
