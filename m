@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751428Ab3IPViQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 17:38:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20266 "EHLO mx1.redhat.com"
+	id S1751436Ab3IPVuK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 17:50:10 -0400
+Received: from mga03.intel.com ([143.182.124.21]:14001 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750968Ab3IPViM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 17:38:12 -0400
-Date: Mon, 16 Sep 2013 17:37:40 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Alex Thorlton <athorlton@sgi.com>, Mel Gorman <mgorman@suse.de>,
-        Andi Kleen <andi@firstfloor.org>, Michal Hocko <mhocko@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        kirill.shutemov@linux.intel.com, linux-kernel@vger.kernel.org
-Message-ID: <1379367460-zt1iacf9-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <878uywbzpt.fsf@linux.vnet.ibm.com>
-References: <1379117362-gwv3vrog-mutt-n-horiguchi@ah.jp.nec.com>
- <878uywbzpt.fsf@linux.vnet.ibm.com>
-Subject: Re: [PATCH v4] hugetlbfs: support split page table lock
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1750983Ab3IPVuI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 17:50:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,918,1371106800"; 
+   d="scan'208";a="361375935"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Andi Kleen <andi@firstfloor.org>, Wanpeng Li <liwanp@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "Wu, Fengguang" <fengguang.wu@intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [RESEND PATCH v2 1/4] mm/hwpoison: fix traverse hugetlbfs page
+ to avoid printk flood
+Thread-Topic: [RESEND PATCH v2 1/4] mm/hwpoison: fix traverse hugetlbfs page
+ to avoid printk flood
+Thread-Index: AQHOsaXFJmJWUCUhwUmKHzq/SE5I2JnGYvcAgAKGf9A=
+Date: Mon, 16 Sep 2013 21:50:06 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F31CFD2D6@ORSMSX106.amr.corp.intel.com>
+References: <1379202839-23939-1-git-send-email-liwanp@linux.vnet.ibm.com>
+ <20130915001352.GQ18242@two.firstfloor.org>
+In-Reply-To: <20130915001352.GQ18242@two.firstfloor.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 08:06:30PM +0530, Aneesh Kumar K.V wrote:
-> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
-> 
-> > Hi,
-> >
-> > Kirill posted split_ptl patchset for thp today, so in this version
-> > I post only hugetlbfs part. I added Kconfig variables in following
-> > Kirill's patches (although without CONFIG_SPLIT_*_PTLOCK_CPUS.)
-> >
-> > This patch changes many lines, but all are in hugetlbfs specific code,
-> > so I think we can apply this independent of thp patches.
-> > -----
-> > From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > Date: Fri, 13 Sep 2013 18:12:30 -0400
-> > Subject: [PATCH v4] hugetlbfs: support split page table lock
-> >
-> > Currently all of page table handling by hugetlbfs code are done under
-> > mm->page_table_lock. So when a process have many threads and they heavily
-> > access to the memory, lock contention happens and impacts the performance.
-> >
-> > This patch makes hugepage support split page table lock so that we use
-> > page->ptl of the leaf node of page table tree which is pte for normal pages
-> > but can be pmd and/or pud for hugepages of some architectures.
-> >
-> > ChangeLog v4:
-> >  - introduce arch dependent macro ARCH_ENABLE_SPLIT_HUGETLB_PTLOCK
-> >    (only defined for x86 for now)
-> >  - rename USE_SPLIT_PTLOCKS_HUGETLB to USE_SPLIT_HUGETLB_PTLOCKS
-> 
-> Can we have separate locking for THP and hugetlb ?
+This is good - but the real solution is to stop poisoning entire huge pages ... they should
+be broken into 4K pages and just one 4K page should be poisoned.
 
-I think yes, because thp code and hugetlbfs code are clearly separated
-and we can execute only one of them on the same vma.
+Naoya Horiguchi: I thought that you were looking at this problem some months ago. Any progress?
 
-> Doesn't both require us to
-> use same locking when updating pmd ?
-
-I think no for the same reason.
-
-Thanks,
-Naoya Horiguchi
+-Tony
