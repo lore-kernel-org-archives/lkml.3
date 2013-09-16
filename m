@@ -1,96 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756259Ab3IPCmR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 22:42:17 -0400
-Received: from gate.crashing.org ([63.228.1.57]:53027 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755830Ab3IPCmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 22:42:16 -0400
-Message-ID: <1379299309.4098.72.camel@pasglop>
-Subject: "memory" binding issues
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: devicetree-discuss@lists.ozlabs.org
-Cc: Linux Kernel list <linux-kernel@vger.kernel.org>, m.szyprowski@samsung.com,
-        swarren@nvidia.com, rob.herring@calxeda.com,
-        Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 16 Sep 2013 12:41:49 +1000
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755996Ab3IPCts (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 22:49:48 -0400
+Received: from mail-db8lp0184.outbound.messaging.microsoft.com ([213.199.154.184]:30432
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752361Ab3IPCtp convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Sep 2013 22:49:45 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zz1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5hbe9i1155h)
+From: Xiubo Li-B47053 <B47053@freescale.com>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: Guo Shawn-R65073 <r65073@freescale.com>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "t.figa@samsung.com" <t.figa@samsung.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "rob@landley.net" <rob@landley.net>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: RE: [PATCHv4 4/4] Documentation: Add device tree bindings for
+ Freescale FTM PWM.
+Thread-Topic: [PATCHv4 4/4] Documentation: Add device tree bindings for
+ Freescale FTM PWM.
+Thread-Index: AQHOsEcUJGsqFtbvB0meG1WvpYnSMpnEQjUAgANo3nA=
+Date: Mon, 16 Sep 2013 02:49:06 +0000
+Message-ID: <1DD289F6464F0949A2FCA5AA6DC23F82833236@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <1379051922-4930-1-git-send-email-Li.Xiubo@freescale.com>
+ <1379051922-4930-5-git-send-email-Li.Xiubo@freescale.com>
+ <523392EA.6050909@wwwdotorg.org>
+In-Reply-To: <523392EA.6050909@wwwdotorg.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.208.78]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi folks !
+> > +- fsl,pwm-counter-clk: The FTM PWM counter clock source, should be
+> > +one of the
+> > +  entries in clock-names.
+> 
+> So the IP block has 3 input clocks, and also a mux to select which one to
+> use? That sounds slightly unusual, but possible.
+> 
+> If there is really only 1 clock input to the IP block, and the mux is
+> part of some other module, then this binding should have only 1 entry in
+> clocks.
+> 
 
-So I don't have the bandwidth to follow closely what's going on, but I
-just today noticed the crackpot that went into 3.11 as part of commit:
+Yes, there are 3 input clocks that can be selectable, and the mux is inside the FTM IP block.
 
-9d8eab7af79cb4ce2de5de39f82c455b1f796963
-drivers: of: add initialization code for dma reserved memory
 
-Fist of all, do NOT add (or change) a binding as part of a patch
-implementing code, it's gross.
+Thanks.
 
-Secondly, I don't know how much that binding was discussed on the list
-(I assume it was and I just missed it) but it's gross.
-
-It duplicates a binding that Jeremy Kerr had proposed a while ago for
-a /reserved-ranges (and /reserved-names) pair of properties, possibly in
-a better way but the fact is that the original binding received little
-or no feedback and we went on and implemented support for it in powerpc
-back in early 3.11 merge window.
-
-Additionally, it has the following issues:
-
- - It describes the "memory" node as /memory, which is WRONG
-
-It should be "/memory@unit-address, this is important because the Linux
-kernel of_find_device_by_path() isn't smart enough to do partial
-searches (unlike the real OFW one) and thus to ignore the unit address
-for search purposes, and you *need* the unit address if you have
-multiple memory nodes (which you typically do on NUMA machines).
-
- - To add to the above mistake, it defines "reserved memory" as a child
-node of the "/memory" node. That is wrong or at least poorly thought
-out. There can be several "memory" nodes, representing different areas
-of memory, possibly even interleaved, having the reserved ranges as
-children of a specific memory nodes thus doesn't work very well.
-Breaking them up into regions based on what memory nodes they cover is
-really nasty. Basically, the "reserved-memory" node should have been at
-the root of the device-tree.
-
- - It provides no indication of what a given region is used for (or used
-by). In the example, "display_region" is a label (thus information that
-is lost) and unless it's referenced by another node there is no good way
-to know what this region is about which is quite annoying.
-
- - The "memory-region" property is a phandle to a "reserved-memory"
-region, this is not intuitive. If anything, the property should have
-been called "reserved-memory-region".
-
- - The way the "compatible" property is documented breaks a basic
-premise that the device-tree is a hardware description and not some
-convenient way to pass linux specific kernel parameters accross. It is
-*ok* to pass some linux specific stuff and to make compromise based on
-what a driver generally might expect but the whole business of using
-that to describe what to put in CMA is pushing it pretty far ...
-
- - The implementation of early_init_dt_scan_reserved_mem() will not work
-on a setup whose /memory node has a unit address (typically /memory@0)
-
-Now, I'd like to understand why not use the simpler binding originally
-proposed by Jeremy, which had the advantage of proposing a unique name
-per region in the traditional form "vendor,name", which then allows
-drivers to pick up the region directly if they wish to query, remove or
-update it in the tree for example (because they changed the framebuffer
-address for example and want kexec to continue working).
-
-I don't object to having a node per region, though it seemed unnecessary
-at the time, but in any case, the current binding is crap and need to be
-fixed urgently before its use spreads.
-
-Ben.
-
+--
+Best Regard,
+Xiubo
 
