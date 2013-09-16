@@ -1,100 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751731Ab3IPWq0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 18:46:26 -0400
-Received: from gate.crashing.org ([63.228.1.57]:45885 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751204Ab3IPWqX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 18:46:23 -0400
-Message-ID: <1379371567.3721.46.camel@pasglop>
-Subject: Re: "memory" binding issues
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: devicetree@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        m.szyprowski@samsung.com, swarren@nvidia.com, rob.herring@calxeda.com,
-        Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 17 Sep 2013 08:46:07 +1000
-In-Reply-To: <52372F2A.2050003@wwwdotorg.org>
-References: <1379300274.4098.77.camel@pasglop>
-	 <52372F2A.2050003@wwwdotorg.org>
+	id S1751819Ab3IPWqn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 18:46:43 -0400
+Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:52983
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751775Ab3IPWqk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 18:46:40 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: VS-5(zzbb2dI98dI9371I936eI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
+Message-ID: <1379371590.2536.187.camel@snotra.buserror.net>
+Subject: Re: [PATCH v9 2/3] DMA: Freescale: Add new 8-channel DMA engine
+ device tree nodes
+From: Scott Wood <scottwood@freescale.com>
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Hongbo Zhang <hongbo.zhang@freescale.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "djbw@fb.com" <djbw@fb.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Date: Mon, 16 Sep 2013 17:46:30 -0500
+In-Reply-To: <20130912171541.GH22013@e106331-lin.cambridge.arm.com>
+References: <1377861980-7027-1-git-send-email-hongbo.zhang@freescale.com>
+	 <1377861980-7027-3-git-send-email-hongbo.zhang@freescale.com>
+	 <20130902155636.GA18206@e106331-lin.cambridge.arm.com>
+	 <5225A57E.4030003@freescale.com>
+	 <20130912171541.GH22013@e106331-lin.cambridge.arm.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-09-16 at 10:17 -0600, Stephen Warren wrote:
-> On 09/15/2013 08:57 PM, Benjamin Herrenschmidt wrote:
-> > [resent to the right list this time around]
-> > 
-> > Hi folks !
-> > 
-> > So I don't have the bandwidth to follow closely what's going on, but I
-> > just today noticed the crackpot that went into 3.11 as part of commit:
-> > 
-> > 9d8eab7af79cb4ce2de5de39f82c455b1f796963
-> > drivers: of: add initialization code for dma reserved memory
-> > 
-> > Fist of all, do NOT add (or change) a binding as part of a patch
-> > implementing code, it's gross.
+On Thu, 2013-09-12 at 18:15 +0100, Mark Rutland wrote:
+> On Tue, Sep 03, 2013 at 10:01:50AM +0100, Hongbo Zhang wrote:
+> > On 09/02/2013 11:58 PM, Mark Rutland wrote:
+> > > May some channels be unusable for some reason, or will all eight
+> > > channels be wired on any given Elo3 DMA?
+> > Sorry, not get your point clearly, maybe you are clear now because of my
+> > previous explanations.
 > 
-> Personally, I would argue the opposite; it's much easier to see what's
-> going on when it's all together in one patch. 
-
-One patch series eventually, but not the same patch.
-
-> Ensuring ABI stability can
-> only be achieved through code review, i.e. splitting into separate
-> DT/code patches won't achieve that, so that argument doesn't affect this.
+> I assume that on any El03 DMA, there won't be a case where you can't
+> describe the channel at 0x80, for instance. It will always be present
+> (but it might not be wired up to anything any therefore be useful)?
 > 
-> ...
-> > Additionally, it has the following issues:
-> > 
-> >  - It describes the "memory" node as /memory, which is WRONG
-> > 
-> > It should be "/memory@unit-address, this is important because the Linux
-> > kernel of_find_device_by_path() isn't smart enough to do partial
-> > searches (unlike the real OFW one) and thus to ignore the unit address
-> > for search purposes, and you *need* the unit address if you have
-> > multiple memory nodes (which you typically do on NUMA machines).
-> 
-> Perhaps /memory should have had a unit-address, but it never has had on
-> ARM; see arch/arm/boot/dts/skeleton.dtsi which says:
+> This was related to my concerns about the status register description --
+> if the channels at 0x0,0x80,0x100,0x180 weren't wired, what would get
+> described in the dt? I guess that would never actually happen because
+> all 8 channels must always be present in the Elo3 IP block.
 
-Well, this is a mistake ARM folks might have done from day one but it
-should still be fixed :-)
+If a channel is not usable for whatever reason (other than that "used
+for a different fixed purpose and thus described with a different
+compatible" thing that was mentioned earlier in these threads), wouldn't
+it just have status = "disabled" or similar, or be absent?
 
-A node that has a "reg" property should have the corresponding unit
-address.
+-Scott
 
->         memory { device_type = "memory"; reg = <0 0>; };
-> 
-> ... and the fact that reg in /memory can have multiple entries seems to
-> support the expectation we only have a single node here. I'm not sure
-> how we could possibly change this now it's become so entrenched?
-
-Because everybody else does differently ? If you have things like NUMA
-configurations where some memory ranges pertain to different nodes, you
-need a memory node per NUMA node so you can add the other node-local
-properties there.
-
-The above should have been memory@0
-
-The best way to fix this in a backward compatible manner is to once and
-for all for our implementation of path-lookup to be able to work with
-partial path components like a real OFW does, ie, name only, unit
-address only, or both.
-
-In anycase, just "/memory" will break on at least powerpc.
-
-Ben.
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 
