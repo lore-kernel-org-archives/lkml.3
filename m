@@ -1,113 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756745Ab3IPPCK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 11:02:10 -0400
-Received: from ring0.de ([91.143.88.219]:42237 "EHLO smtp.ring0.de"
+	id S1756868Ab3IPPEb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 11:04:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28602 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753907Ab3IPPCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 11:02:06 -0400
-X-Spam-Report: * -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-Date: Mon, 16 Sep 2013 17:01:47 +0200
-From: Sebastian Reichel <sre@debian.org>
-To: Javier Martinez Canillas <martinez.javier@gmail.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>, Paul Walmsley <paul@pwsan.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Landley <rob@landley.net>,
-        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [RFCv2 3/3] ARM: dts: N900: Add SSI information
-Message-ID: <20130916150147.GA14047@earth.universe>
-Mail-Followup-To: Javier Martinez Canillas <martinez.javier@gmail.com>,
-	Linus Walleij <linus.walleij@linaro.org>,
-	Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-	Carlos Chinea <cch.devel@gmail.com>, Paul Walmsley <paul@pwsan.com>,
-	Kevin Hilman <khilman@deeprootsystems.com>,
-	Tony Lindgren <tony@atomide.com>,
-	Russell King <linux@arm.linux.org.uk>,
-	Grant Likely <grant.likely@linaro.org>,
-	Rob Herring <rob.herring@calxeda.com>,
-	Pawel Moll <pawel.moll@arm.com>,
-	Mark Rutland <mark.rutland@arm.com>,
-	Stephen Warren <swarren@wwwdotorg.org>,
-	Ian Campbell <ijc+devicetree@hellion.org.uk>,
-	Rob Landley <rob@landley.net>,
-	=?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-	devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
-	"linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-References: <1379277856-24571-1-git-send-email-sre@debian.org>
- <1379277856-24571-4-git-send-email-sre@debian.org>
- <CAAwP0s0e-gYkNA78eQH7x2VJbM1byaisUeqU8YbbeWUbKwsxCQ@mail.gmail.com>
+	id S1754026Ab3IPPE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 11:04:28 -0400
+Date: Mon, 16 Sep 2013 18:04:22 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v2 09/15] KVM: MMU: introduce pte-list lockless walker
+Message-ID: <20130916150422.GC906@redhat.com>
+References: <1378376958-27252-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1378376958-27252-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20130916124213.GR17294@redhat.com>
+ <52370D1A.8070505@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="9amGYk9869ThD9tj"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAAwP0s0e-gYkNA78eQH7x2VJbM1byaisUeqU8YbbeWUbKwsxCQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <52370D1A.8070505@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 16, 2013 at 09:52:26PM +0800, Xiao Guangrong wrote:
+> Hi Gleb,
+> 
+> On 09/16/2013 08:42 PM, Gleb Natapov wrote:
+> 
+> >>  static unsigned long *__gfn_to_rmap(gfn_t gfn, int level,
+> >>  				    struct kvm_memory_slot *slot)
+> >>  {
+> >> @@ -4651,7 +4700,7 @@ int kvm_mmu_module_init(void)
+> >>  {
+> >>  	pte_list_desc_cache = kmem_cache_create("pte_list_desc",
+> >>  					    sizeof(struct pte_list_desc),
+> >> -					    0, 0, NULL);
+> >> +					    0, SLAB_DESTROY_BY_RCU, NULL);
+> > Haven't we agreed that constructor is needed for the cache?
+> 
+> Yes. I've made it as a separate patch:
+> [PATCH v2 10/15] KVM: MMU: initialize the pointers in pte_list_desc properly
+> 
+Ah, I haven't got there yet :)
 
---9amGYk9869ThD9tj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-
-> Is the Synchronous Serial Interface (SSI)  only supported by
-> OMAP34xx/OMAP35xx SoC and not by OMAP36xx/OMAP37xx SoC?
->=20
-> I'm asking this since if SSI is supported by both we should add the
-> device nodes in omap3.dtsi instead of omap34xx.dtsi.
->=20
-> I thought that all OMAP3 SoC supported SSI and all OMAP4 SoC supported
-> HSI but I guess I was wrong...
-
-I just do not know. Information about the SSI core is not included
-in the public OMAP TRM. It only lists the memory space as reserved.
-
-Thus I only included it in OMAP34xx, which is used in Nokia N900 and
-must support SSI.
-
--- Sebastian
-
---9amGYk9869ThD9tj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSNx1bAAoJENju1/PIO/qaOVUQAKFOU5QX6CGyWq647P1idzBq
-VwzZpJUSScmjcZBMlvD2ogMREJhOyPr6gsj4ClzlYCkH1drGrBHCgSsIt4PdnYh2
-JXODjsAtdSMg6hC9r4eG4KECSoXLNduRvhzLB/ejNMwJuCFwuHX3x9JCCIBReg+g
-4/Vxf6x5kJJr7bZuG3Mw66/MAQh87w/l0k4LVDiQP/U2Jd7dWvyYiOCbYwngaOwY
-mFUr6lR2nltamKytJkiNOP55uNKywhwXJ/pTse8NQdQQZ92ymn64RglshJ4/1R76
-PsXwfz7aWoyYvdZUSHVBM0XXszLxqghPYcsdXyQnrImVPh9fxMJxoJ2EJxkrvaRG
-DnYKr7C8+60aahGY676yM2dyfiK0EanZ1nWXb3kYq6ZednUaV7f+wsHsHzc3PtJd
-yQx3dCus6bGieVPxYCp0UUS9AsR6MbnOXa1HRkUkEl42LZwCE8N6pcOJJq2tyRi1
-JH1r2WXHEYC0y26yxLBJ1NF6DoOf66h48OU/VhOdqg//W74JSuu1D/7zMj/Pb9v+
-llZZfBsPYNxErUtZ1yCAKD+5RTsns4vv1pN7a+ANJ6I+dAZss0MBRArD6QUlYug8
-yY4gFmfAPSJV6lGA/ohLMNAyfINkz+4WtgIqXzeaAufo3S0nrLSZag6ReD+j+fGA
-iMffh7ZQBKn/4M0pdYHD
-=aYve
------END PGP SIGNATURE-----
-
---9amGYk9869ThD9tj--
+--
+			Gleb.
