@@ -1,145 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751497Ab3IPQ1K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 12:27:10 -0400
-Received: from smarthost01c.mail.zen.net.uk ([212.23.1.5]:40234 "EHLO
-	smarthost01c.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750905Ab3IPQ1J (ORCPT
+	id S1751537Ab3IPQ1a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 12:27:30 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:60617 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974Ab3IPQ12 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 12:27:09 -0400
-Message-ID: <1379348823.3422.42.camel@linaro1.home>
-Subject: Re: [PATCH 1/2] cpufreq: unlock correct rwsem while updating
- policy->cpu
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: rjw@sisk.pl, linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com
-Date: Mon, 16 Sep 2013 17:27:03 +0100
-In-Reply-To: <075032be4fd288074b8f699d4f4ba0179518df6f.1379344038.git.viresh.kumar@linaro.org>
-References: <075032be4fd288074b8f699d4f4ba0179518df6f.1379344038.git.viresh.kumar@linaro.org>
+	Mon, 16 Sep 2013 12:27:28 -0400
+Message-ID: <5237314D.7080102@ti.com>
+Date: Mon, 16 Sep 2013 11:26:53 -0500
+From: Joel Fernandes <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Sekhar Nori <nsekhar@ti.com>
+CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Russell King <linux@arm.linux.org.uk>, Jyri Sarah <jsarha@ti.com>,
+        Koen Kooi <koen@beagleboard.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Pantel Antoniou <panto@antoniou-consulting.com>
+Subject: Re: [PATCH v3] ARM: EDMA: Fix clearing of unused list for DT DMA
+ resources
+References: <1378839171-14455-1-git-send-email-joelf@ti.com> <5231903F.7080301@ti.com> <5233B471.40603@ti.com> <5236F00B.5040605@ti.com>
+In-Reply-To: <5236F00B.5040605@ti.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-smarthost01c-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-09-16 at 20:40 +0530, Viresh Kumar wrote:
-> Current code looks like this:
+On 09/16/2013 06:48 AM, Sekhar Nori wrote:
+> Hi Joel,
 > 
->         WARN_ON(lock_policy_rwsem_write(cpu));
->         update_policy_cpu(policy, new_cpu);
->         unlock_policy_rwsem_write(cpu);
+> On Saturday 14 September 2013 06:27 AM, Joel Fernandes wrote:
+>> From: Joel Fernandes <joelf@ti.com>
+>> Subject: [PATCH v4] ARM: EDMA: Fix clearing of unused list for DT DMA resources
+>>
+>> HWMOD removal for MMC is breaking edma_start as the events are being manually
+>> triggered due to unused channel list not being clear.
+>>
+>> This patch fixes the issue, by reading the "dmas" property from the DT node if
+>> it exists and clearing the bits in the unused channel list. For this purpose
+>> we use the of_* helpers to parse the arguments in the dmas phandle list.
+>>
+>> Reviewed-by: Sekhar Nori <nsekhar@ti.com>
+>> Reported-by: Balaji T K <balajitk@ti.com>
+>> Cc: Pantel Antoniou <panto@antoniou-consulting.com>
+>> Signed-off-by: Joel Fernandes <joelf@ti.com>
+>> ---
+>> Changes since v1, in v2 and v3:
+>> - Reduced indentation of non-of case by returning from of-case
+>> - Using of_* helpers for parsing
+>>
+>> Note:
+>> This patch should go into the merge window as it is a critical bug fix.
 > 
-> {lock|unlock}_policy_rwsem_write(cpu) takes/releases policy->cpu's rwsem.
-> Because cpu is changing with the call to update_policy_cpu(), the
-> unlock_policy_rwsem_write() will release the incorrect lock.
+> I still cannot find any users of edma in the device tree sources either
+> in linux-next or linus/master. Why cannot this wait until v3.13?
+
+I understand this affects only DT users of EDMA. But I get so many private
+reports of breakage due to this patch not being there that I think it will save
+everyone a lot of pain, specially folks creating integration trees to have this
+patch available by default.
+
+Further, EDMA DT enabling is surely to go in for 3.13, so its best if this is
+applied in advance here.
+
+I feel we shouldn't leave code intentionally broken just because it is not yet
+enabled in DTS, specially when it is about to be enabled in DT. For example, a
+potential problem is MMC/SD file system corruption due to DMA failure.
+
+>>  arch/arm/common/edma.c | 23 +++++++++++++++++++++--
+>>  1 file changed, 21 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+>> index 39ad030..43c7b22 100644
+>> --- a/arch/arm/common/edma.c
+>> +++ b/arch/arm/common/edma.c
+>> @@ -560,14 +560,33 @@ static int reserve_contiguous_slots(int ctlr, unsigned int
+>> id,
+>>  static int prepare_unused_channel_list(struct device *dev, void *data)
+>>  {
+>>  	struct platform_device *pdev = to_platform_device(dev);
+>> -	int i, ctlr;
+>> +	int i, count, ctlr;
+>> +	struct of_phandle_args  dma_spec;
+>>
+>> +	if (dev->of_node) {
+>> +		count = of_property_count_strings(dev->of_node, "dma-names");
+>> +		if (count < 0)
+>> +			return 0;
+>> +		for (i = 0; i < count; i++) {
+>> +			if (of_parse_phandle_with_args(dev->of_node, "dmas",
+>> +						       "#dma-cells", i,
+>> +						       &dma_spec))
+>> +				continue;
 > 
-> The right solution would be to take rwsem lock/unlock for both old and new cpu.
+> This will break for the case where devices on platform bus use non-EDMA
+> dma controllers like SDMA or CPPI (DRA7x has both EDMA and SDMA on the
+> same chip). You need to do an additional check to make sure the dma
+> controller is indeed EDMA. Something like.
 
-I thought possibly something like that, then wondered if threads could
-take the locks in different orders at the same time, leading to
-deadlock? So as I wasn't familiar with cpufreq I thought I'd leave it to
-the experts to worry about :-)
+Ok, edma is probed earlier so I could never see any problem.
+Thanks for pointing this out,
 
-This patch contains a bug, see inline comment below. Even with that
-fixed it still doesn't work for me. I get a lockdep warning (below). I
-have verified the cpu and locks are different locks, and it's not a
-harmless false positive because I later get the message 'cpufreq:
-__cpufreq_remove_dev_prepare: Failed to stop governor'.
+Using the below method is more future-proof than using compatible literal
+strings directly. The only problem is the matches table has to be defined
+earlier in the sources. What do you think?
 
-=============================================
-[ INFO: possible recursive locking detected ]
-3.11.0+ #4 Not tainted
----------------------------------------------
-swapper/0/1 is trying to acquire lock:
-  (&per_cpu(cpu_policy_rwsem, cpu)){+.+...}, at: [<c0293c03>] update_policy_cpu+0x53/0xa4
+                        if (!of_match_node(edma_of_ids, dma_spec.np) {
+                                of_node_put(dma_spec.np);
+                                continue;
+                        }
 
-but task is already holding lock:
-  (&per_cpu(cpu_policy_rwsem, cpu)){+.+...}, at: [<c0293bef>] update_policy_cpu+0x3f/0xa4
-other info that might help us debug this:
-  Possible unsafe locking scenario:
-        CPU0
-        ----
-   lock(&per_cpu(cpu_policy_rwsem, cpu));
-   lock(&per_cpu(cpu_policy_rwsem, cpu));
 
-*** DEADLOCK ***
-
-  May be due to missing lock nesting notation
-4 locks held by swapper/0/1:
- #0:  (bL_switcher_activation_lock){+.+.+.}, at: [<c0019b03>] bL_switcher_enable+0x17/0x2d8
- #1:  ((bL_activation_notifier).rwsem){.+.+.+}, at: [<c00370bd>] __blocking_notifier_call_chain+0x1d/0x40
- #2:  (subsys mutex#6){+.+.+.}, at: [<c023279d>] subsys_interface_unregister+0x1d/0x68
- #3:  (&per_cpu(cpu_policy_rwsem, cpu)){+.+...}, at: [<c0293bef>] update_policy_cpu+0x3f/0xa4
-
-> This patch fixes this bug by taking both locks directly instead of calling
-> lock_policy_rwsem_write().
+> 	if(!of_device_is_compatible(dma_spec.np, "ti,edma3"))
+> 		continue;
 > 
-> Reported-by: Jon Medhurst<tixy@linaro.org>
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
-> Hi Rafael,
+> Don forget to call of_node_put() on dma_spec.np (something that needs to
+> be done even with your current code).
+
+Ok, will do.
+
+
+>> +
+>> +			ctlr = EDMA_CTLR(dma_spec.args[0]);
+>> +			clear_bit(EDMA_CHAN_SLOT(dma_spec.args[0]),
+>> +				  edma_cc[ctlr]->edma_unused);
 > 
-> Probably we can get this patch in for 3.12? The second one can go in 3.13.
+> We don't support the second controller when using DT and the controller
+> number is not really encoded in the argument to edma phandle. So just
+> simplify this to:
 > 
-> These are compile tested only at my end. Tixy reported these and probably can
-> give his tested-by once he is done testing them.
+> 	clear_bit(EDMA_CHAN_SLOT(dma_spec.args[0]), 	
+> 		  edma_cc[0]->edma_unused);
+
+I think let's not make that assumption just incase in the future we support more
+than one EDMA controller for DT-based boot. Is that ok?
+
 > 
->  drivers/cpufreq/cpufreq.c | 9 +++++++--
->  1 file changed, 7 insertions(+), 2 deletions(-)
+>> +		}
+>> +		return 0;
+>> +	}
+>> +
+>> +	/* For non-OF case */
+>>  	for (i = 0; i < pdev->num_resources; i++) {
+>>  		if ((pdev->resource[i].flags & IORESOURCE_DMA) &&
+>>  				(int)pdev->resource[i].start >= 0) {
+>>  			ctlr = EDMA_CTLR(pdev->resource[i].start);
+>>  			clear_bit(EDMA_CHAN_SLOT(pdev->resource[i].start),
+>> -					edma_cc[ctlr]->edma_unused);
+>> +				  edma_cc[ctlr]->edma_unused);
 > 
-If I take mainline code and just change the line above to:
-   up_write(&per_cpu(cpu_policy_rwsem, (per_cpu(cpufreq_cpu_data,
-cpu))->last_cpu));
-then the big_little cpufreq driver works for me.
+> This is a useful change and I am okay with it happening in this
+> otherwise unrelated patch, but please mention this in changelog.
 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 43c24aa..c18bf7b 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -952,9 +952,16 @@ static void update_policy_cpu(struct cpufreq_policy *policy, unsigned int cpu)
->  	if (cpu == policy->cpu)
->  		return;
->  
-> +	/* take direct locks as lock_policy_rwsem_write wouldn't work here */
-> +	down_write(&per_cpu(cpu_policy_rwsem, policy->cpu));
-> +	down_write(&per_cpu(cpu_policy_rwsem, cpu));
-> +
->  	policy->last_cpu = policy->cpu;
->  	policy->cpu = cpu;
->  
-> +	up_write(&per_cpu(cpu_policy_rwsem, cpu));
-> +	up_write(&per_cpu(cpu_policy_rwsem, policy->cpu));
+Below is the updated version (v5), can you check and let me know if you had any
+other comments?
 
-You've just overwritten policy->cpu with cpu. I tried using
-policy->last_cpu to fix that, but it still doesn't work for me (giving
-the lockdep warning I mentioned.) If I change the code to just lock the
-original policy->cpu lock only, then all is fine.
+---8<---
+From: Joel Fernandes <joelf@ti.com>
+Subject: [PATCH v5] ARM: EDMA: Fix clearing of unused list for DT DMA resources
 
-Also, this locking is now just happening around policy->cpu update,
-whereas before this change, it was locked for the whole of
-update_policy_cpu, i.e. cpufreq_frequency_table_update_policy_cpu and
-the notifier callbacks. Is that change of lock coverage OK?
+HWMOD removal for MMC is breaking edma_start as the events are being manually
+triggered due to unused channel list not being clear.
 
-> +
->  #ifdef CONFIG_CPU_FREQ_TABLE
->  	cpufreq_frequency_table_update_policy_cpu(policy);
->  #endif
-> @@ -1203,9 +1210,7 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
->  
->  		new_cpu = cpufreq_nominate_new_policy_cpu(policy, cpu, frozen);
->  		if (new_cpu >= 0) {
-> -			WARN_ON(lock_policy_rwsem_write(cpu));
->  			update_policy_cpu(policy, new_cpu);
-> -			unlock_policy_rwsem_write(cpu);
->  
->  			if (!frozen) {
->  				pr_debug("%s: policy Kobject moved to cpu: %d "
+The above issue is fixed by reading the "dmas" property from the DT node if it
+exists and clearing the bits in the unused channel list if the dma controller
+used by any device is EDMA. For this purpose we use the of_* helpers to parse
+the arguments in the dmas phandle list.
 
+Also introduced is a minor clean up of a checkpatch error in old code.
+
+Reviewed-by: Sekhar Nori <nsekhar@ti.com>
+Reported-by: Balaji T K <balajitk@ti.com>
+Cc: Pantel Antoniou <panto@antoniou-consulting.com>
+Signed-off-by: Joel Fernandes <joelf@ti.com>
+---
+Changes since v4:
+- Using of_node_put on dma_spec's node pointer.
+- Update changelog with minor cleanup information.
+
+Changes since v1, in v2 and v3:
+ - Reduced indentation of non-of case by returning from of-case
+ - Using of_* helpers for parsing
+
+ arch/arm/common/edma.c | 39 ++++++++++++++++++++++++++++++++-------
+ 1 file changed, 32 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+index 117f955..8b5c6ed 100644
+--- a/arch/arm/common/edma.c
++++ b/arch/arm/common/edma.c
+@@ -269,6 +269,11 @@ static const struct edmacc_param dummy_paramset = {
+ 	.ccnt = 1,
+ };
+
++static const struct of_device_id edma_of_ids[] = {
++	{ .compatible = "ti,edma3", },
++	{}
++};
++
+ /*****************************************************************************/
+
+ static void map_dmach_queue(unsigned ctlr, unsigned ch_no,
+@@ -560,14 +565,39 @@ static int reserve_contiguous_slots(int ctlr, unsigned int id,
+ static int prepare_unused_channel_list(struct device *dev, void *data)
+ {
+ 	struct platform_device *pdev = to_platform_device(dev);
+-	int i, ctlr;
++	int i, count, ctlr;
++	struct of_phandle_args  dma_spec;
+
++	if (dev->of_node) {
++		count = of_property_count_strings(dev->of_node, "dma-names");
++		if (count < 0)
++			return 0;
++		for (i = 0; i < count; i++) {
++			if (of_parse_phandle_with_args(dev->of_node, "dmas",
++						       "#dma-cells", i,
++						       &dma_spec))
++				continue;
++
++			if (!of_match_node(edma_of_ids, dma_spec.np)) {
++				of_node_put(dma_spec.np);
++				continue;
++			}
++
++			ctlr = EDMA_CTLR(dma_spec.args[0]);
++			clear_bit(EDMA_CHAN_SLOT(dma_spec.args[0]),
++				  edma_cc[ctlr]->edma_unused);
++			of_node_put(dma_spec.np);
++		}
++		return 0;
++	}
++
++	/* For non-OF case */
+ 	for (i = 0; i < pdev->num_resources; i++) {
+ 		if ((pdev->resource[i].flags & IORESOURCE_DMA) &&
+ 				(int)pdev->resource[i].start >= 0) {
+ 			ctlr = EDMA_CTLR(pdev->resource[i].start);
+ 			clear_bit(EDMA_CHAN_SLOT(pdev->resource[i].start),
+-					edma_cc[ctlr]->edma_unused);
++				  edma_cc[ctlr]->edma_unused);
+ 		}
+ 	}
+
+@@ -1762,11 +1792,6 @@ static int edma_probe(struct platform_device *pdev)
+ 	return 0;
+ }
+
+-static const struct of_device_id edma_of_ids[] = {
+-	{ .compatible = "ti,edma3", },
+-	{}
+-};
+-
+ static struct platform_driver edma_driver = {
+ 	.driver = {
+ 		.name	= "edma",
 -- 
-Tixy
+1.8.1.2
 
