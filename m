@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932261Ab3IPLGT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 07:06:19 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:34976 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753465Ab3IPLGS (ORCPT
+	id S932408Ab3IPLGm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 07:06:42 -0400
+Received: from smtp-out002.kontent.com ([81.88.40.216]:46940 "EHLO
+	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753774Ab3IPLGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 07:06:18 -0400
-Date: Mon, 16 Sep 2013 12:06:14 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Wang Shilong <wangshilong1991@gmail.com>
-Subject: Re: [PATCH 1/4 v2] mfd: add STw481x driver
-Message-ID: <20130916110614.GK3999@lee--X1>
-References: <1379094851-26385-1-git-send-email-linus.walleij@linaro.org>
- <20130916091956.GF3999@lee--X1>
- <20130916104009.GA29403@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130916104009.GA29403@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 16 Sep 2013 07:06:41 -0400
+Message-ID: <1379329599.15916.25.camel@linux-fkkt.site>
+Subject: Re: Doubts on IO requests in USB subsystem
+From: Oliver Neukum <oliver@neukum.org>
+To: "Morales, Alejandra" <alejandra.morales@tum.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 16 Sep 2013 13:06:39 +0200
+In-Reply-To: <9E3F9C2076C45D4783F09B90D5BE77CE18E667@BADWLRZ-SWMBX13.ads.mwn.de>
+References: <9E3F9C2076C45D4783F09B90D5BE77CE189C61@BADWLRZ-SWMBX13.ads.mwn.de>
+	 ,<1378744818.1381.4.camel@linux-fkkt.site>
+	 <9E3F9C2076C45D4783F09B90D5BE77CE18E667@BADWLRZ-SWMBX13.ads.mwn.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.9.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Sep 2013, Mark Brown wrote:
+On Mon, 2013-09-16 at 10:33 +0000, Morales, Alejandra wrote:
+> 2013/9/9 Oliver Neukum <oliver@neukum.org>
+> >
+> > Your prime suspect is the detection of medium change which was
+> > moved into the kernel in 3.2 or so. It can be disabled by sysfs.
+> > Generally the notion that a certain task originates a read or write
+> > on a block device is iffy. Read-ahead and shared data structures
+> > make it impossible to accurately tell.
+> >
+> > USB storage devices are notorious for setting the removable bit
+> > even if they have no removable medium.
+> >
+> 
+> Thanks for the answer Oliver. Unfortunately it doesn't seem to be the
+> medium change detection what is causing these requests, since the
+> removable bit is disabled and the polling period is set to -1:
 
-> On Mon, Sep 16, 2013 at 10:19:56AM +0100, Lee Jones wrote:
-> 
-> > Can't you just NULL .id_table?
-> 
-> > Here's the code which would use it:
-> > > /* match on an id table if there is one */
-> > > if (driver->id_table)
-> > >         return i2c_match_id(driver->id_table, client) != NULL;
-> 
-> > Matching for "dummy" will just waste cycles.
-> 
-> i2c_device_probe() will return -ENODEV if id_table is NULL before we get
-> to actually matching.  We could remove that check though...
+Interesting. Then you have no choice. Make a usbmon trace and look
+at the SCSI commands going to the device.
 
-Unless there will be any repercussions that I am naive to I think that
-sounds suitable. Any volunteers?
+	HTH
+		Oliver
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
