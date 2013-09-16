@@ -1,93 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847Ab3IPICq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 04:02:46 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:34304 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754254Ab3IPICo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 04:02:44 -0400
-Date: Mon, 16 Sep 2013 18:02:31 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Why does test_bit() take a volatile addr?
-Message-Id: <20130916180231.1570f7c5cebab599cef5b4bb@canb.auug.org.au>
-In-Reply-To: <20130916072603.GA11007@redhat.com>
-References: <87ioy11k8s.fsf@rustcorp.com.au>
-	<20130916165344.144f0d0f1b58111f1c8c87cc@canb.auug.org.au>
-	<20130916072603.GA11007@redhat.com>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__16_Sep_2013_18_02_31_+1000_znUmxkLdG_xA4WSy"
+	id S1755135Ab3IPIFZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 04:05:25 -0400
+Received: from mga02.intel.com ([134.134.136.20]:52883 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751426Ab3IPIFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 04:05:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,913,1371106800"; 
+   d="scan'208";a="378737987"
+Date: Mon, 16 Sep 2013 11:10:48 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Zheng, Lv" <lv.zheng@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH 2/2] gpio / ACPI: add support for GPIO operation regions
+Message-ID: <20130916081048.GM7393@intel.com>
+References: <1379085280-2211-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1379085280-2211-2-git-send-email-mika.westerberg@linux.intel.com>
+ <1AE640813FDE7649BE1B193DEA596E880246367A@SHSMSX101.ccr.corp.intel.com>
+ <20130915065151.GK7393@intel.com>
+ <1AE640813FDE7649BE1B193DEA596E88024639E4@SHSMSX101.ccr.corp.intel.com>
+ <1AE640813FDE7649BE1B193DEA596E8802463A46@SHSMSX101.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1AE640813FDE7649BE1B193DEA596E8802463A46@SHSMSX101.ccr.corp.intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__16_Sep_2013_18_02_31_+1000_znUmxkLdG_xA4WSy
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Sep 16, 2013 at 01:21:53AM +0000, Zheng, Lv wrote:
+> > A pseudo device may be created to access the GPIO operation region fields provided by one GPIO device.
+> > The pseudo device may have other functions to access other GPIO operation region fields provided by other GPIO devices, or even worse to
+> > access other ACPI provided value-adds.
+> > So hierarchically the pseudo device only requires CPU, thus should not be under the GPIO device, which means the GPIO operation regions
+> > have nothing to do with the GPIO devices' ACPI handle.
+> 
+> Sorry for the wording.
+> It's better to say the GPIO operation region users haven't strict
+> relationship to the GPIO operation region providers.
+> As the installation is to provide GPIO operation regions to the users, it
+> shouldn't relate to the providers' ACPI handle.
 
-Hi Michael,
+If I understand you correctly you mean that there might be multiple users
+(different devices) for the same GPIO operation region, right?
 
-On Mon, 16 Sep 2013 10:26:03 +0300 "Michael S. Tsirkin" <mst@redhat.com> wr=
-ote:
->
-> On Mon, Sep 16, 2013 at 04:53:44PM +1000, Stephen Rothwell wrote:
-> >=20
-> > On Mon, 16 Sep 2013 13:38:35 +0930 Rusty Russell <rusty@rustcorp.com.au=
-> wrote:
-> > >
-> > > Predates git, does anyone remember the rationale?
-> > >=20
-> > > ie:
-> > >         int test_bit(int nr, const volatile unsigned long *addr)
-> >=20
-> > Because we sometimes pass volatile pointers to it and gcc will complain
-> > if you pass a volatile to a non volatile  (I think).
->=20
-> Where are these? I did git grep -W test_bit and looked for volatile,
-> couldn't find anything.
+That shouldn't be a problem as far as I can tell.
 
-OK, so it was a bit of a guess.  Have you really checked the type of
-every address passed to every call of test_bit()?
+What comes to the hierarchy you refer, I'm not sure if that is a problem
+either (unless I'm missing something). The GPIO can be used anywhere in the
+ASL, it doesn't have to be descendant of the GPIO device. You only need to
+do something like this:
 
-Second guess:  we wanted to make the test_bit access volatile (as opposed
-to the datatypes of the objects being tested) so that things like
+	// Assert the GPIO
+	Store(1, \_SB.PCI0.SHD3)
 
-	while (testbit(bit, addr)) {
-		do_very_little();
+In other words, use the fully qualified name.
+
+Typically when the GPIO device _REG() is called it sets some variable like
+AVBL to true which is then checked in the code that uses the GPIO:
+
+	If (LEqual (\_SB.PCI0.GPO0.AVBL, One))
+	{
+		Store (Zero, \_SB.PCI0..SHD3)
 	}
 
-don't get over optimised (since we are operating in a very threaded
-environment that the compiler not might expect).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__16_Sep_2013_18_02_31_+1000_znUmxkLdG_xA4WSy
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSNrscAAoJEECxmPOUX5FE5PIP/2hAsnGU76wd3St+ktVnP8k+
-BJYBdiMJCwMqm0YWBGtJrcuIaViOdelgvyXFjSvOal/54xI69HBWn9CgxISpDAZ9
-f/Rery1+OsvnKMNMvTsyBjfCtv59bAibyjBi95lTYbcUJzk8+fF8jf5RkmmjpaWq
-B2LZyICgzNZMexSpQ3wnrn9JOHx85grTV9E7dDD2brtTo10MG2IXUvrTYTT0ur8l
-DDrhr3NWcST1cmsTsKrQGrQPoGINRpd98WpJJrzg/TdHm81Mf9EOF0RDC/TEppel
-JWFxRtUARZijd45Y6MUbpQlWJ7zlcW0pgmjqakxrwvidSIgeLvJk8rVJ/C2pX3cw
-sJ7YS4dfly4cdW3PGALjHPainRutJiQJM3TtSILuqfNCd0XH8i72OHMP0dupJB1n
-j5Adzo66w+YlUVzB6T3TKe5B7ShBXR7WBEiejfuHPY03Dalg2AZTp4ZlIqUmyAcz
-FiYUZmu49aHtSoYPK2NiWGMCxXjv1dN8w6ntX0CzQ0LQMGvBbIySJQLLsbKe7awW
-zX3niVoqkw636oFhRS13pHDKOM0Eo7HU5cyg4PEIfMJ2jPYzc5EPDYCCPQhqRTMW
-iwclrMK6LnBWl8fFFIB7Rrfk2jXsOn9TNBGITXbCBufWTH6ZOYPznlexTHUJxRfw
-KQ5yT7V3opRXZ1cHyNsd
-=ZbOF
------END PGP SIGNATURE-----
-
---Signature=_Mon__16_Sep_2013_18_02_31_+1000_znUmxkLdG_xA4WSy--
+So if there is no driver, this part of the code is never called.
