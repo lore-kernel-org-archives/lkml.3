@@ -1,56 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754323Ab3IPONV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 10:13:21 -0400
-Received: from gmmr2.centrum.cz ([46.255.227.252]:56100 "EHLO gmmr2.centrum.cz"
+	id S1754480Ab3IPOQY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 10:16:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64789 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753236Ab3IPONT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 10:13:19 -0400
-To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
-Subject: =?utf-8?q?Re=3A_=5Bpatch_0=2F7=5D_improve_memcg_oom_killer_robustness_v2?=
-Date: Mon, 16 Sep 2013 16:13:16 +0200
-From: "azurIt" <azurit@pobox.sk>
-Cc: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>,
-        =?utf-8?q?Andrew_Morton?= <akpm@linux-foundation.org>,
-        =?utf-8?q?David_Rientjes?= <rientjes@google.com>,
-        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
-        =?utf-8?q?KOSAKI_Motohiro?= <kosaki.motohiro@jp.fujitsu.com>,
-        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <x86@kernel.org>,
-        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <20130910220329.GK856@cmpxchg.org>, <20130911143305.FFEAD399@pobox.sk>, <20130911180327.GL856@cmpxchg.org>, <20130911205448.656D9D7C@pobox.sk>, <20130911191150.GN856@cmpxchg.org>, <20130911214118.7CDF2E71@pobox.sk>, <20130911200426.GO856@cmpxchg.org>, <20130914124831.4DD20346@pobox.sk>, <20130916134014.GA3674@dhcp22.suse.cz>, <20130916160119.2E76C2A1@pobox.sk> <20130916140607.GC3674@dhcp22.suse.cz>
-In-Reply-To: <20130916140607.GC3674@dhcp22.suse.cz>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
-X-Original-From: azurit@pobox.sk
+	id S1752594Ab3IPOQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 10:16:23 -0400
+Date: Mon, 16 Sep 2013 17:16:20 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Andrew Jones <drjones@redhat.com>
+Cc: kvm@vger.kernel.org, pbonzini@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: kvm: introduce CONFIG_KVM_MAX_VCPUS
+Message-ID: <20130916141620.GA906@redhat.com>
+References: <1379161129-28393-1-git-send-email-drjones@redhat.com>
+ <20130915090838.GW17294@redhat.com>
+ <20130916082820.GB2101@hawk.usersys.redhat.com>
+ <20130916084710.GJ17294@redhat.com>
+ <20130916120332.GB14981@hawk.usersys.redhat.com>
 MIME-Version: 1.0
-Message-Id: <20130916161316.5113F6E7@pobox.sk>
-X-Maser: oho
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130916120332.GB14981@hawk.usersys.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> CC: "Johannes Weiner" <hannes@cmpxchg.org>, "Andrew Morton" <akpm@linux-foundation.org>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
->On Mon 16-09-13 16:01:19, azurIt wrote:
->> > CC: "Johannes Weiner" <hannes@cmpxchg.org>, "Andrew Morton" <akpm@linux-foundation.org>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
->> >On Sat 14-09-13 12:48:31, azurIt wrote:
->> >[...]
->> >> Here is the first occurence, this night between 5:15 and 5:25:
->> >>  - this time i kept opened terminal from other server to this problematic one with htop running
->> >>  - when server went down i opened it and saw one process of one user running at the top and taking 97% of CPU (cgroup 1304)
->> >
->> >I guess you do not have a stack trace(s) for that process? That would be
->> >extremely helpful.
->> 
->> I'm afraid it won't be possible as server is completely not responding
->> when it happens. Anyway, i don't think it was a fault of one process
->> or one user.
->
->You can use sysrq+l via serial console to see tasks hogging the CPU or
->sysrq+t to see all the existing tasks.
+On Mon, Sep 16, 2013 at 02:03:33PM +0200, Andrew Jones wrote:
+> On Mon, Sep 16, 2013 at 11:47:10AM +0300, Gleb Natapov wrote:
+> > On Mon, Sep 16, 2013 at 10:28:20AM +0200, Andrew Jones wrote:
+> > > On Sun, Sep 15, 2013 at 12:08:38PM +0300, Gleb Natapov wrote:
+> > > > On Sat, Sep 14, 2013 at 02:18:49PM +0200, Andrew Jones wrote:
+> > > > > Take CONFIG_KVM_MAX_VCPUS from arm32, but set the default to 255.
+> > > > > 
+> > > > > Signed-off-by: Andrew Jones <drjones@redhat.com>
+> > > > > ---
+> > > > >  arch/x86/include/asm/kvm_host.h |  5 +++--
+> > > > >  arch/x86/kvm/Kconfig            | 10 ++++++++++
+> > > > >  2 files changed, 13 insertions(+), 2 deletions(-)
+> > > > > 
+> > > > > diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> > > > > index c76ff74a98f2e..e7e9b523a8f7e 100644
+> > > > > --- a/arch/x86/include/asm/kvm_host.h
+> > > > > +++ b/arch/x86/include/asm/kvm_host.h
+> > > > > @@ -31,8 +31,9 @@
+> > > > >  #include <asm/msr-index.h>
+> > > > >  #include <asm/asm.h>
+> > > > >  
+> > > > > -#define KVM_MAX_VCPUS 255
+> > > > > -#define KVM_SOFT_MAX_VCPUS 160
+> > > > > +#define KVM_MAX_VCPUS CONFIG_KVM_MAX_VCPUS
+> > > > > +#define KVM_SOFT_MAX_VCPUS min(160, KVM_MAX_VCPUS)
+> > > > > +
+> > > > >  #define KVM_USER_MEM_SLOTS 125
+> > > > >  /* memory slots that are not exposed to userspace */
+> > > > >  #define KVM_PRIVATE_MEM_SLOTS 3
+> > > > > diff --git a/arch/x86/kvm/Kconfig b/arch/x86/kvm/Kconfig
+> > > > > index a47a3e54b964b..e9532c33527ee 100644
+> > > > > --- a/arch/x86/kvm/Kconfig
+> > > > > +++ b/arch/x86/kvm/Kconfig
+> > > > > @@ -52,6 +52,16 @@ config KVM
+> > > > >  
+> > > > >  	  If unsure, say N.
+> > > > >  
+> > > > > +config KVM_MAX_VCPUS
+> > > > > +	int "Number maximum supported virtual CPUs per VM"
+> > > > > +	depends on KVM
+> > > > > +	default 255
+> > > > > +	help
+> > > > > +	  Static number of max supported virtual CPUs per VM.
+> > > > > +
+> > > > > +	  Set to a lower number to save some resources. Set to a higher
+> > > > > +	  number to test scalability.
+> > > > > +
+> > > > Maximum this can save is around 2K per VM. This is pretty insignificant
+> > > > considering overall memory footprint even smallest VM has.
+> > > 
+> > > Should I reword this, dropping all 'save resources' verbiage, in order to
+> > > avoid sending a message that this option can affect resource consumption?
+> > > Or just leave it as it is, because even though it's insignificant, it's
+> > > still true and balances out the 'Set to a higher' part.
+> > > 
+> > I do not think config option is necessary. The overhead is so
+> > insignificant that there is no point in additional user visible knob,
+> > at least while only 255 vcpu are supported. Is there a reason for anyone
+> > to configure less them 255 vcpus here? OTOH what prevents someone from
+> > configuring more then 255 vcpus?
+> 
+> The reason to configure less is to be able to compile a hard limit,
+> without having to muck with the source. E.g. if you really don't want to
+> allow more than KVM_SOFT_MAX_VCPUS to be configured, then you can compile
+> with CONFIG_KVM_MAX_VCPUS == KVM_SOFT_MAX_VCPUS.
+> 
+> Nothing prevents someone from configuring more than the max in
+> userspace, but if they try to create/use more than the max
+> (kvm_vm_ioctl_create_vcpu), it'll fail (EINVAL).
+> 
+I was talking about configuring more then 255 vcus in kernel config. You
+should have "range 1 255" there.
 
+> I see this as a step towards getting rid of KVM_SOFT_MAX_VCPUS. I.e.
+> compile with whatever maximum limit you want (can support), and return
+> online/possible cpus for the recommended number. Only configure the kernel
+> with more than your typical maximum (was KVM_SOFT_MAX_VCPUS) for
+> development/testing purposes.
+> 
+The idea behind soft/hard limit was to allow people easily check
+scalability without need to recompile the kernel. If custom build will
+be needed most people will not bother.
 
-Doesn't work here, it just prints 'l' resp. 't'.
-
-azur
+--
+			Gleb.
