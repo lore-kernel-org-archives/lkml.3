@@ -1,38 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751497Ab3IQEiX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 00:38:23 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:42403 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751201Ab3IQEiV (ORCPT
+	id S1751718Ab3IQEmv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 00:42:51 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:49867 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644Ab3IQEms convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 00:38:21 -0400
+	Tue, 17 Sep 2013 00:42:48 -0400
+Date: Mon, 16 Sep 2013 14:44:53 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [RFC] extending splice for copy offloading
+To: Eric Wong <normalperson@yhbt.net>
+Cc: Zach Brown <zab@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        "Martin K. Petersen" <mkp@mkp.net>, Jens Axboe <axboe@kernel.dk>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>
+References: <1378919210-10372-1-git-send-email-zab@redhat.com>
+	<20130911211722.GA9725@dcvr.yhbt.net>
+In-Reply-To: <20130911211722.GA9725@dcvr.yhbt.net> (from
+	normalperson@yhbt.net on Wed Sep 11 16:17:23 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1379360693.1974.29@driftwood>
 MIME-Version: 1.0
-In-Reply-To: <7384008.XcFgntkLDk@vostro.rjw.lan>
-References: <075032be4fd288074b8f699d4f4ba0179518df6f.1379344038.git.viresh.kumar@linaro.org>
-	<1379348823.3422.42.camel@linaro1.home>
-	<CAKohpomEQsS-WHQpa=_07NQ1FXDB711inrmMgUguD529BA7g1A@mail.gmail.com>
-	<7384008.XcFgntkLDk@vostro.rjw.lan>
-Date: Tue, 17 Sep 2013 10:08:20 +0530
-Message-ID: <CAKohpondRF0NiYQW4vc1RXHaiqV3vCR9EHtZhM42AMW8xvm-+A@mail.gmail.com>
-Subject: Re: [PATCH 1/2] cpufreq: unlock correct rwsem while updating policy->cpu
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 September 2013 00:04, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> Care to resend with a subject indicating that that's a patch update?
->
-> Like [PATCH v2] etc. or similar?
+On 09/11/2013 04:17:23 PM, Eric Wong wrote:
+> Zach Brown <zab@redhat.com> wrote:
+> > Towards the end of that thread Eric Wong asked why we didn't just
+> > extend splice.  I immediately replied with some dumb dismissive
+> > answer.  Once I sat down and looked at it, though, it does make a
+> > lot of sense.  So good job, Eric.  +10 Dummie points for me.
+> 
+> Thanks for revisiting that :>
+> 
+> > Some things to talk about:
+> > - I really don't care about the naming here.  If you do, holler.
+> 
+> Exposing "DIRECT" to userspace now might confuse users into expecting
+> O_DIRECT behavior.  I say this as an easily-confused user.
+> 
+> In the future, perhaps O_DIRECT behavior can become per-splice  
+> (instead
+> of just per-open) and can save SPLICE_F_DIRECT for that.
+> 
+> > - We might want different flags for file-to-file splicing and  
+> acceleration
+> > - We might want flags to require or forbid acceleration
+> 
+> > - We might want to provide all these flags to sendfile, too
+> 
+> Another syscall?  I prefer not.  Better to just maintain the sendfile
+> API as-is for compatibility reasons and nudge users towards splice.
+> 
+> > Thoughts?  Objections?
+> 
+> I'll try to test/comment more in a week or two (not much time for
+> computing until then).
 
-Yeah.. I was waiting for Tixy to test it once..
+Just a vague note that I've wanted to use splice implementing cp and  
+patch and cat and so on in toybox, but couldn't because it needs a pipe.
+
+So I'm quite interested in moves to lift this restriction...
+
+Rob
