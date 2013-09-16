@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756Ab3IPNoK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 09:44:10 -0400
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:60352 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754008Ab3IPNoH (ORCPT
+	id S1757497Ab3IPNtW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 09:49:22 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:38393 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754720Ab3IPNoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 09:44:07 -0400
+	Mon, 16 Sep 2013 09:44:10 -0400
 From: Iker Pedrosa <ikerpedrosam@gmail.com>
 To: pavel@ucw.cz
 Cc: gregkh@linuxfoundation.org, ikerpedrosam@gmail.com, harsh1kumar@gmail.com,
         dan.carpenter@oracle.com, mujeeb.adil@gmail.com,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 05/24] Staging: winbond: phy_calibration: second of the patches that fixes lines over 80 characters
-Date: Mon, 16 Sep 2013 15:43:25 +0200
-Message-Id: <1379339024-12157-6-git-send-email-ikerpedrosam@gmail.com>
+Subject: [PATCH v2 07/24] Staging: winbond: reg: white space deleted
+Date: Mon, 16 Sep 2013 15:43:27 +0200
+Message-Id: <1379339024-12157-8-git-send-email-ikerpedrosam@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1379339024-12157-1-git-send-email-ikerpedrosam@gmail.com>
 References: <1379339024-12157-1-git-send-email-ikerpedrosam@gmail.com>
@@ -22,50 +22,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Second of the patches that fixes the lines over 80 characters in phy_calibration.c
+White space deleted before semicolons.
 
 Signed-off-by: Iker Pedrosa <ikerpedrosam@gmail.com>
 ---
- drivers/staging/winbond/phy_calibration.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/staging/winbond/reg.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/winbond/phy_calibration.c b/drivers/staging/winbond/phy_calibration.c
-index 6635c85..7fc95ee 100644
---- a/drivers/staging/winbond/phy_calibration.c
-+++ b/drivers/staging/winbond/phy_calibration.c
-@@ -1233,8 +1233,10 @@ u8 _rx_iq_calibration_loop_winbond(struct hw_data *phw_data, u16 factor, u32 fre
- 		b_2 = (rot_image_q_b * 32768) / rot_tone_i_b -
- 			phw_data->iq_rsdl_phase_tx_d2;
+diff --git a/drivers/staging/winbond/reg.c b/drivers/staging/winbond/reg.c
+index 5883d23..80b4b34 100644
+--- a/drivers/staging/winbond/reg.c
++++ b/drivers/staging/winbond/reg.c
+@@ -1088,7 +1088,7 @@ void RFSynthesizer_initial(struct hw_data *pHwData)
+ 		msleep(5);
  
--		PHY_DEBUG(("[CAL]    ** iq_rsdl_gain_tx_d2 = %d\n", phw_data->iq_rsdl_gain_tx_d2));
--		PHY_DEBUG(("[CAL]    ** iq_rsdl_phase_tx_d2= %d\n", phw_data->iq_rsdl_phase_tx_d2));
-+		PHY_DEBUG(("[CAL]    ** iq_rsdl_gain_tx_d2 = %d\n",
-+			   phw_data->iq_rsdl_gain_tx_d2));
-+		PHY_DEBUG(("[CAL]    ** iq_rsdl_phase_tx_d2= %d\n",
-+			   phw_data->iq_rsdl_phase_tx_d2));
- 		PHY_DEBUG(("[CAL]    ***** EPSILON/2 = %d\n", a_2));
- 		PHY_DEBUG(("[CAL]    ***** THETA/2   = %d\n", b_2));
+ 		ltmp = (1 << 31) | (0 << 30) | (20 << 24) | BitReverse((0x0F << 20) | 0xF01A0, 20);
+-		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp) ;
++		Wb35Reg_WriteSync(pHwData, 0x0864, ltmp);
  
-@@ -1280,7 +1282,8 @@ u8 _rx_iq_calibration_loop_winbond(struct hw_data *phw_data, u16 factor, u32 fre
+ 		Wb35Reg_WriteSync(pHwData, 0x105c, pHwData->reg.BB5C);
+ 		pHwData->reg.BB50 &= ~0x13; /* (MASK_IQCAL_MODE|MASK_CALIB_START); */
+@@ -2096,7 +2096,7 @@ void Mxx_initial(struct hw_data *pHwData)
+ 	pltmp[5] = reg->M38_MacControl;
  
- 		/* e. */
- 		pwr_tone = (iqcal_tone_i*iqcal_tone_i + iqcal_tone_q*iqcal_tone_q);
--		pwr_image = (iqcal_image_i*iqcal_image_i + iqcal_image_q*iqcal_image_q)*factor;
-+		pwr_image = (iqcal_image_i*iqcal_image_i +
-+			     iqcal_image_q*iqcal_image_q)*factor;
+ 	/* M3C */
+-	tmp = (DEFAULT_PIFST << 26) | (DEFAULT_EIFST << 16) | (DEFAULT_DIFST << 8) | (DEFAULT_SIFST << 4) | DEFAULT_OSIFST ;
++	tmp = (DEFAULT_PIFST << 26) | (DEFAULT_EIFST << 16) | (DEFAULT_DIFST << 8) | (DEFAULT_SIFST << 4) | DEFAULT_OSIFST;
+ 	reg->M3C_MacControl = tmp;
+ 	pltmp[6] = tmp;
  
- 		PHY_DEBUG(("[CAL]    ** pwr_tone  = %d\n", pwr_tone));
- 		PHY_DEBUG(("[CAL]    ** pwr_image  = %d\n", pwr_image));
-@@ -1577,7 +1580,8 @@ unsigned char adjust_TXVGA_for_iq_mag(struct hw_data *phw_data)
- 
- 		sqsum = iqcal_tone_i0*iqcal_tone_i0 + iqcal_tone_q0*iqcal_tone_q0;
- 		iq_mag_0_tx = (s32) _sqrt(sqsum);
--		PHY_DEBUG(("[CAL]    ** auto_adjust_txvga_for_iq_mag_0_tx=%d\n", iq_mag_0_tx));
-+		PHY_DEBUG(("[CAL]    ** auto_adjust_txvga_for_iq_mag_0_tx=%d\n",
-+			   iq_mag_0_tx));
- 
- 		if (iq_mag_0_tx >= 700 && iq_mag_0_tx <= 1750)
- 			break;
 -- 
 1.8.1.2
 
