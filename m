@@ -1,54 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232Ab3IPMmK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 08:42:10 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:10962 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751212Ab3IPMmH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 08:42:07 -0400
-Message-ID: <5236FC88.6050409@huawei.com>
-Date: Mon, 16 Sep 2013 20:41:44 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1753559Ab3IPMmW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 08:42:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5706 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751243Ab3IPMmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 08:42:18 -0400
+Date: Mon, 16 Sep 2013 15:42:13 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v2 09/15] KVM: MMU: introduce pte-list lockless walker
+Message-ID: <20130916124213.GR17294@redhat.com>
+References: <1378376958-27252-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1378376958-27252-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mm/ksm: return NULL when doesn't get mergeable page
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.216]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378376958-27252-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In get_mergeable_page() local variable page is not initialized,
-it may hold a garbage value, when find_mergeable_vma() return NULL,
-get_mergeable_page() may return a garbage value to the caller.
+On Thu, Sep 05, 2013 at 06:29:12PM +0800, Xiao Guangrong wrote:
+> The basic idea is from nulls list which uses a nulls to indicate
+> whether the desc is moved to different pte-list
+> 
+> Note, we should do bottom-up walk in the desc since we always move
+> the bottom entry to the deleted position. A desc only has 3 entries
+> in the current code so it is not a problem now, but the issue will
+> be triggered if we expend the size of desc in the further development
+> 
+> Thanks to SLAB_DESTROY_BY_RCU, the desc can be quickly reused
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kvm/mmu.c | 57 ++++++++++++++++++++++++++++++++++++++++++++++++++----
+>  1 file changed, 53 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index c5f1b27..3e1432f 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -975,6 +975,10 @@ static int count_spte_number(struct pte_list_desc *desc)
+>  	return first_free + desc_num * PTE_LIST_EXT;
+>  }
+>  
+> +#define rcu_assign_pte_list(pte_list_p, value)				\
+> +	rcu_assign_pointer(*(unsigned long __rcu **)(pte_list_p),	\
+> +			(unsigned long *)(value))
+> +
+>  /*
+>   * Pte mapping structures:
+>   *
+> @@ -994,7 +998,7 @@ static int pte_list_add(struct kvm_vcpu *vcpu, u64 *spte,
+>  
+>  	if (!*pte_list) {
+>  		rmap_printk("pte_list_add: %p %llx 0->1\n", spte, *spte);
+> -		*pte_list = (unsigned long)spte;
+> +		rcu_assign_pte_list(pte_list, spte);
+>  		return 0;
+>  	}
+>  
+> @@ -1004,7 +1008,7 @@ static int pte_list_add(struct kvm_vcpu *vcpu, u64 *spte,
+>  		desc->sptes[0] = (u64 *)*pte_list;
+>  		desc->sptes[1] = spte;
+>  		desc_mark_nulls(pte_list, desc);
+> -		*pte_list = (unsigned long)desc | 1;
+> +		rcu_assign_pte_list(pte_list, (unsigned long)desc | 1);
+>  		return 1;
+>  	}
+>  
+> @@ -1017,7 +1021,7 @@ static int pte_list_add(struct kvm_vcpu *vcpu, u64 *spte,
+>  		new_desc = mmu_alloc_pte_list_desc(vcpu);
+>  		new_desc->more = desc;
+>  		desc = new_desc;
+> -		*pte_list = (unsigned long)desc | 1;
+> +		rcu_assign_pte_list(pte_list, (unsigned long)desc | 1);
+>  	}
+>  
+>  	free_pos = find_first_free(desc);
+> @@ -1125,6 +1129,51 @@ static void pte_list_walk(unsigned long *pte_list, pte_list_walk_fn fn)
+>  	WARN_ON(desc_get_nulls_value(desc) != pte_list);
+>  }
+>  
+> +/* The caller should hold rcu lock. */
+> +static void pte_list_walk_lockless(unsigned long *pte_list,
+> +				   pte_list_walk_fn fn)
+> +{
+> +	struct pte_list_desc *desc;
+> +	unsigned long pte_list_value;
+> +	int i;
+> +
+> +restart:
+> +	/*
+> +	 * Force the pte_list to be reloaded.
+> +	 *
+> +	 * See the comments in hlist_nulls_for_each_entry_rcu().
+> +	 */
+> +	barrier();
+> +	pte_list_value = *rcu_dereference(pte_list);
+> +	if (!pte_list_value)
+> +		return;
+> +
+> +	if (!(pte_list_value & 1))
+> +		return fn((u64 *)pte_list_value);
+> +
+> +	desc = (struct pte_list_desc *)(pte_list_value & ~1ul);
+> +	while (!desc_is_a_nulls(desc)) {
+> +		/*
+> +		 * We should do top-down walk since we always use the higher
+> +		 * indices to replace the deleted entry if only one desc is
+> +		 * used in the rmap when a spte is removed. Otherwise the
+> +		 * moved entry will be missed.
+> +		 */
+> +		for (i = PTE_LIST_EXT - 1; i >= 0; i--)
+> +			if (desc->sptes[i])
+> +				fn(desc->sptes[i]);
+> +
+> +		desc = rcu_dereference(desc->more);
+> +
+> +		/* It is being initialized. */
+> +		if (unlikely(!desc))
+> +			goto restart;
+> +	}
+> +
+> +	if (unlikely(desc_get_nulls_value(desc) != pte_list))
+> +		goto restart;
+> +}
+> +
+>  static unsigned long *__gfn_to_rmap(gfn_t gfn, int level,
+>  				    struct kvm_memory_slot *slot)
+>  {
+> @@ -4651,7 +4700,7 @@ int kvm_mmu_module_init(void)
+>  {
+>  	pte_list_desc_cache = kmem_cache_create("pte_list_desc",
+>  					    sizeof(struct pte_list_desc),
+> -					    0, 0, NULL);
+> +					    0, SLAB_DESTROY_BY_RCU, NULL);
+Haven't we agreed that constructor is needed for the cache?
 
-So initialize page as NULL.
+>  	if (!pte_list_desc_cache)
+>  		goto nomem;
+>  
+> -- 
+> 1.8.1.4
 
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
----
- mm/ksm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/mm/ksm.c b/mm/ksm.c
-index b6afe0c..87efbae 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -460,7 +460,7 @@ static struct page *get_mergeable_page(struct rmap_item *rmap_item)
- 	struct mm_struct *mm = rmap_item->mm;
- 	unsigned long addr = rmap_item->address;
- 	struct vm_area_struct *vma;
--	struct page *page;
-+	struct page *page = NULL;
- 
- 	down_read(&mm->mmap_sem);
- 	vma = find_mergeable_vma(mm, addr);
--- 
-1.7.1
-
-
+--
+			Gleb.
