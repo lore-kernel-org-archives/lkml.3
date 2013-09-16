@@ -1,84 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751002Ab3IPQNE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 12:13:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47214 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750741Ab3IPQND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 12:13:03 -0400
-Date: Mon, 16 Sep 2013 17:11:50 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 07/50] mm: Account for a THP NUMA hinting update as one
- PTE update
-Message-ID: <20130916161150.GF22421@suse.de>
-References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
- <1378805550-29949-8-git-send-email-mgorman@suse.de>
- <20130916123645.GD9326@twins.programming.kicks-ass.net>
- <52370A2F.90006@redhat.com>
- <20130916145438.GT21832@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130916145438.GT21832@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751542Ab3IPQNU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 12:13:20 -0400
+Received: from smtprelay0058.hostedemail.com ([216.40.44.58]:50003 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751101Ab3IPQNT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 12:13:19 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3865:3867:3868:3870:3871:3872:3874:4321:5007:6119:7652:7903:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: kitty30_90b89f9f9973e
+X-Filterd-Recvd-Size: 1458
+Message-ID: <1379347993.1934.16.camel@joe-AO722>
+Subject: Re: [PATCH 1/2] remove all uses of printf's %n
+From: Joe Perches <joe@perches.com>
+To: George Spelvin <linux@horizon.com>
+Cc: keescook@chromium.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, dan.carpenter@oracle.com, JBeulich@suse.com,
+        kosaki.motohiro@gmail.com, penguin-kernel@i-love.sakura.ne.jp,
+        viro@zeniv.linux.org.uk
+Date: Mon, 16 Sep 2013 09:13:13 -0700
+In-Reply-To: <20130916160717.1621.qmail@science.horizon.com>
+References: <20130916160717.1621.qmail@science.horizon.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 04:54:38PM +0200, Peter Zijlstra wrote:
-> On Mon, Sep 16, 2013 at 09:39:59AM -0400, Rik van Riel wrote:
-> > On 09/16/2013 08:36 AM, Peter Zijlstra wrote:
-> > > On Tue, Sep 10, 2013 at 10:31:47AM +0100, Mel Gorman wrote:
-> > >> A THP PMD update is accounted for as 512 pages updated in vmstat.  This is
-> > >> large difference when estimating the cost of automatic NUMA balancing and
-> > >> can be misleading when comparing results that had collapsed versus split
-> > >> THP. This patch addresses the accounting issue.
-> > >>
-> > >> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > >> ---
-> > >>  mm/mprotect.c | 2 +-
-> > >>  1 file changed, 1 insertion(+), 1 deletion(-)
-> > >>
-> > >> diff --git a/mm/mprotect.c b/mm/mprotect.c
-> > >> index 94722a4..2bbb648 100644
-> > >> --- a/mm/mprotect.c
-> > >> +++ b/mm/mprotect.c
-> > >> @@ -145,7 +145,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma,
-> > >>  				split_huge_page_pmd(vma, addr, pmd);
-> > >>  			else if (change_huge_pmd(vma, pmd, addr, newprot,
-> > >>  						 prot_numa)) {
-> > >> -				pages += HPAGE_PMD_NR;
-> > >> +				pages++;
-> > > 
-> > > But now you're not counting pages anymore..
-> > 
-> > The migrate statistics still count pages. That makes sense, since the
-> > amount of work scales with the amount of memory moved.
+On Mon, 2013-09-16 at 12:07 -0400, George Spelvin wrote:
+> it gave me an idea.  We could put this padding logic straight
+> into vsprintf and clean up all the callers.
+[]
+> Since the only pad character currently used is space, we could omit the
+> argument and use something like %127%, but gcc gets even more confused
+> by that.
 > 
-> Right.
-> 
-> > It is just the "number of faults" counters that actually count the
-> > number of faults again, instead of the number of pages represented
-> > by each fault.
-> 
-> So you're suggesting s/pages/faults/ or somesuch?
-> 
+> The code is easy enough.  But any suggestions for ways to represent it
+> in the format string would be appreciated.
 
-It's really the number of ptes that are updated.
+%*p<new_type><pad_char> (space assumed if not existing)
 
-> > IMHO this change makes sense.
-> 
-> I never said the change didn't make sense as such. Just that we're no
-> longer counting pages in change_*_range().
-
-well, it's still a THP page. Is it worth renaming?
-
--- 
-Mel Gorman
-SUSE Labs
