@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751717Ab3IPXog (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 19:44:36 -0400
-Received: from mga09.intel.com ([134.134.136.24]:65441 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751044Ab3IPXod convert rfc822-to-8bit (ORCPT
+	id S1751879Ab3IPXqu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 19:46:50 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:49338 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525Ab3IPXqt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 19:44:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,919,1371106800"; 
-   d="scan'208";a="379191615"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Wu, Fengguang" <fengguang.wu@intel.com>,
-        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [RESEND PATCH v2 1/4] mm/hwpoison: fix traverse hugetlbfs page
- to avoid printk flood
-Thread-Topic: [RESEND PATCH v2 1/4] mm/hwpoison: fix traverse hugetlbfs page
- to avoid printk flood
-Thread-Index: AQHOsaXFJmJWUCUhwUmKHzq/SE5I2JnGYvcAgAKGf9CAAHuMgIAAFJ6A//+PnLA=
-Date: Mon, 16 Sep 2013 23:44:32 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F31CFD50B@ORSMSX106.amr.corp.intel.com>
-References: <1379202839-23939-1-git-send-email-liwanp@linux.vnet.ibm.com>
- <20130915001352.GQ18242@two.firstfloor.org>
- <3908561D78D1C84285E8C5FCA982C28F31CFD2D6@ORSMSX106.amr.corp.intel.com>
- <1379369397-ld8lbcn-mutt-n-horiguchi@ah.jp.nec.com>
- <20130916232345.GA3241@hacker.(null)>
-In-Reply-To: <20130916232345.GA3241@hacker.(null)>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 16 Sep 2013 19:46:49 -0400
+Date: Tue, 17 Sep 2013 00:46:14 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Wang Shilong <wangshilong1991@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Message-ID: <20130916234614.GG21013@sirena.org.uk>
+References: <1379098875-9959-1-git-send-email-linus.walleij@linaro.org>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8bBEDOJVaa9YlTAt"
+Content-Disposition: inline
+In-Reply-To: <1379098875-9959-1-git-send-email-linus.walleij@linaro.org>
+X-Cookie: Give him an evasive answer.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/4 v2] regulator: add STw481x VMMC driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>Sorry, I have no meaningful progress on this. Splitting hugepages is not
->>a trivial operation, and introduce more complexity on hugetlbfs code.
->>I don't hit on any usecase of it rather than memory failure, so I'm not
->>sure that it's worth doing now.
->
-> Agreed. ;-)
 
-Agreed that huge pages should be split - or that it is not worth splitting them?
+--8bBEDOJVaa9YlTAt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Actually I wonder how useful huge pages still are - transparent huge pages may
-give most of the benefits without having to modify applications to use them.
-Plus the kernel does know how to split them when an error occurs (which I care
-about more than most people).
+On Fri, Sep 13, 2013 at 09:01:15PM +0200, Linus Walleij wrote:
+> The ST Microelectronics STw481x PMIC used for the Nomadik
+> has one single software-controlled regulator for VMMC.
+> This driver registers directly to the compatible string
+> as there is just one regulator.
 
--Tony
+Applied, thanks.
+
+--8bBEDOJVaa9YlTAt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSN5hDAAoJELSic+t+oim9btgP/1MXNSp3BplAeEsBod0wDWuo
+hXqDDnlbDVm6SFsLHETnDHcZMJFSNhtY3nN68LgknCmGLPCyhxkW56YX42d4YvvL
+3UdTHX12SAwKC4Lj4QzIJp9BOKBgQnphLy8IdxDDLAC9bXU+lS2Dd499riSAurJi
+4D+tqhEQsRyRklYmlN8qRbRGdf+FRmlroLGOi6lkB0eeKa7JmA9hkIwYmWBwBavl
+az/JWNv/4UG38qFDuebVu+ekqjl8fEkFeA/NPx4ojaNHZoji+fbRVHs1WZyf45Dd
+U90ONT0f/VGWRendNb0HkMSMChVoxSe80KF4SCJxZD4r1X8VgPBdOxnNx36SMJv5
+Zl9x7vD4SoOeeh+Wg3mFgB5ZOVPVTcPVBOpcksapOU4D+lKtAWXuKF680ei2Gq1d
+zWCajF3epNDpvS3EvXNcsyJd5ssE/iYhEMgFL44e5/hLNuxj2Pe/sFCBzRfuE9Tl
+KLMvt87NLZ6rIhNBzBBI+6o+hApFTRkZnOboXeoSsHyZLG8s8AbYER68ne4QzWyr
+vFrXVJklG1VJ9kdUKRD2hWClQ6XWgtqVsBQMxXcsjivG2ChadUhEQIHHlgXDod72
+nlIQkhwNeC3urexOTEuq1Qe8W4C10z7UHf2F9RDWa1l61uIb08u0AZuAOGJn3+Hi
+3EevxeBJLZ8xJOBJIvP+
+=6BOe
+-----END PGP SIGNATURE-----
+
+--8bBEDOJVaa9YlTAt--
