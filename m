@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751396Ab3IPPYK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 11:24:10 -0400
-Received: from gmmr5.centrum.cz ([46.255.225.250]:44957 "EHLO gmmr5.centrum.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750842Ab3IPPYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 11:24:08 -0400
-To: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
-Subject: =?utf-8?q?Re=3A_=5Bpatch_0=2F7=5D_improve_memcg_oom_killer_robustness_v2?=
-Date: Mon, 16 Sep 2013 17:24:05 +0200
-From: "azurIt" <azurit@pobox.sk>
-Cc: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>,
-        =?utf-8?q?Andrew_Morton?= <akpm@linux-foundation.org>,
-        =?utf-8?q?David_Rientjes?= <rientjes@google.com>,
-        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
-        =?utf-8?q?KOSAKI_Motohiro?= <kosaki.motohiro@jp.fujitsu.com>,
-        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>, <x86@kernel.org>,
-        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <20130911191150.GN856@cmpxchg.org>, <20130911214118.7CDF2E71@pobox.sk>, <20130911200426.GO856@cmpxchg.org>, <20130914124831.4DD20346@pobox.sk>, <20130916134014.GA3674@dhcp22.suse.cz>, <20130916160119.2E76C2A1@pobox.sk>, <20130916140607.GC3674@dhcp22.suse.cz>, <20130916161316.5113F6E7@pobox.sk>, <20130916145744.GE3674@dhcp22.suse.cz>, <20130916170543.77F1ECB4@pobox.sk> <20130916151726.GY856@cmpxchg.org>
-In-Reply-To: <20130916151726.GY856@cmpxchg.org>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
-X-Original-From: azurit@pobox.sk
+	id S1751149Ab3IPPZq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 11:25:46 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:33448 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750786Ab3IPPZp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 11:25:45 -0400
 MIME-Version: 1.0
-Message-Id: <20130916172405.740B7FBD@pobox.sk>
-X-Maser: Georgo
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1379344187.1934.1.camel@joe-AO722>
+References: <1379317437-28329-1-git-send-email-keescook@chromium.org>
+	<1379317437-28329-2-git-send-email-keescook@chromium.org>
+	<201309162041.HHG69783.FLFMJFtSOQOHVO@I-love.SAKURA.ne.jp>
+	<CAGXu5jJErvcfdq0=QDd2pwCeK7kKnJ-GY2ybv9ssdkF6NjNvDw@mail.gmail.com>
+	<1379344187.1934.1.camel@joe-AO722>
+Date: Mon, 16 Sep 2013 08:25:44 -0700
+X-Google-Sender-Auth: MmRXkW9D5jOuc0VXS4RXNEcu0xs
+Message-ID: <CAGXu5jK7ALtFq74duH_ymoLnmoHKYmty+60HCG3YFyhghi2Scg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] remove all uses of printf's %n
+From: Kees Cook <keescook@chromium.org>
+To: Joe Perches <joe@perches.com>
+Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        LKML <linux-kernel@vger.kernel.org>,
+        George Spelvin <linux@horizon.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Jan Beulich <JBeulich@suse.com>,
+        Motohiro KOSAKI <kosaki.motohiro@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> CC: "Michal Hocko" <mhocko@suse.cz>, "Andrew Morton" <akpm@linux-foundation.org>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
->On Mon, Sep 16, 2013 at 05:05:43PM +0200, azurIt wrote:
->> > CC: "Johannes Weiner" <hannes@cmpxchg.org>, "Andrew Morton" <akpm@linux-foundation.org>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
->> >On Mon 16-09-13 16:13:16, azurIt wrote:
->> >[...]
->> >> >You can use sysrq+l via serial console to see tasks hogging the CPU or
->> >> >sysrq+t to see all the existing tasks.
->> >> 
->> >> 
->> >> Doesn't work here, it just prints 'l' resp. 't'.
->> >
->> >I am using telnet for accessing my serial consoles exported by
->> >the multiplicator or KVM and it can send sysrq via ctrl+t (Send
->> >Break). Check your serial console setup.
->> 
->> 
->> 
->> I'm using Raritan KVM and i created keyboard macro 'sysrq + l' resp. 'sysrq + t'. I'm also unable to use it on my local PC. Maybe it needs to be enabled somehow?
+On Mon, Sep 16, 2013 at 8:09 AM, Joe Perches <joe@perches.com> wrote:
+> On Mon, 2013-09-16 at 07:59 -0700, Kees Cook wrote:
+>> Perhaps instead of seq->count, there should be an access function?
+>> seq_get_count(seq) or something?
 >
->Can you 'echo t >/proc/sysrq-trigger'?
+> My thought was to add a seq_last_len()
 
+That would mean growing the size of the seq_file structure and adding
+instructions for all users. While I personally have no problem with
+that, I worry others might. If we just use seq->count (or equivalent
+function), then only those that want length will use it. I actually
+think this uses fewer instructions than %n. Especially in the case
+where seq_printf got replaced by seq_puts. :)
 
+-Kees
 
-# ls -la /proc/sysrq-trigger
-ls: cannot access /proc/sysrq-trigger: No such file or directory
+-- 
+Kees Cook
+Chrome OS Security
