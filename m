@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758Ab3IPPJk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 11:09:40 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:16523 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753049Ab3IPPJi (ORCPT
+	id S932128Ab3IPPJz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 11:09:55 -0400
+Received: from smtprelay0020.hostedemail.com ([216.40.44.20]:42068 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755282Ab3IPPJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 11:09:38 -0400
-Date: Mon, 16 Sep 2013 18:05:48 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "olaf@aepfle.de" <olaf@aepfle.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "vojtech@suse.cz" <vojtech@suse.cz>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: Re: [PATCH 1/1] Drivers: input: serio: New driver to support Hyper-V
- synthetic keyboard
-Message-ID: <20130916150548.GO25896@mwanda>
-References: <1379309334-25042-1-git-send-email-kys@microsoft.com>
- <20130916082110.GN25896@mwanda>
- <3b5096d0190b4440a8e25afbd22ab72d@SN2PR03MB061.namprd03.prod.outlook.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3b5096d0190b4440a8e25afbd22ab72d@SN2PR03MB061.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Mon, 16 Sep 2013 11:09:54 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1560:1593:1594:1711:1714:1730:1747:1777:1792:2198:2199:2393:2559:2562:2828:2901:3138:3139:3140:3141:3142:3622:3866:3867:4321:5007:6642:7652:10004:10400:10848:11232:11658:11914:12517:12519:12740:13019:13069:13160:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: farm61_1b7bbcce35145
+X-Filterd-Recvd-Size: 1478
+Message-ID: <1379344187.1934.1.camel@joe-AO722>
+Subject: Re: [PATCH 1/2] remove all uses of printf's %n
+From: Joe Perches <joe@perches.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        LKML <linux-kernel@vger.kernel.org>,
+        George Spelvin <linux@horizon.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Jan Beulich <JBeulich@suse.com>,
+        Motohiro KOSAKI <kosaki.motohiro@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Mon, 16 Sep 2013 08:09:47 -0700
+In-Reply-To: <CAGXu5jJErvcfdq0=QDd2pwCeK7kKnJ-GY2ybv9ssdkF6NjNvDw@mail.gmail.com>
+References: <1379317437-28329-1-git-send-email-keescook@chromium.org>
+	 <1379317437-28329-2-git-send-email-keescook@chromium.org>
+	 <201309162041.HHG69783.FLFMJFtSOQOHVO@I-love.SAKURA.ne.jp>
+	 <CAGXu5jJErvcfdq0=QDd2pwCeK7kKnJ-GY2ybv9ssdkF6NjNvDw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 02:46:24PM +0000, KY Srinivasan wrote:
-> > > +			case VM_PKT_DATA_INBAND:
-> > > +				hv_kbd_on_receive(device, desc);
-> > 
-> > This is the error handling I mentioned at the top.  hv_kbd_on_receive()
-> > doesn't take into consideration the amount of data we recieved, it
-> > trusts the offset we recieved from the user.  There is an out of bounds
-> > read.
-> 
-> What user are you referring to. The message is sent by the host - the user keystroke
-> is normalized into a fixed size packet by the host and sent to the  guest. We will parse this
-> packet, based on the host specified layout here.
-> 
+On Mon, 2013-09-16 at 07:59 -0700, Kees Cook wrote:
+> Perhaps instead of seq->count, there should be an access function?
+> seq_get_count(seq) or something?
 
-The user means the hypervisor, yes.
+My thought was to add a seq_last_len()
 
-I don't want the hypervisor accessing outside of the buffer.  It is
-robustness issue.  Just check the offset against "bytes_recvd".  It's
-not complicated.
 
-If you have a different place where the guest does this then tell me
-which function to look at.
 
-regards,
-dan carpenter
