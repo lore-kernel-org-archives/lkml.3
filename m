@@ -1,43 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751410Ab3IPQTf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 12:19:35 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:45274 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750880Ab3IPQTe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 12:19:34 -0400
-Message-ID: <52372F9A.1080102@gmail.com>
-Date: Mon, 16 Sep 2013 12:19:38 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1751320Ab3IPQX5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 12:23:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56046 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750932Ab3IPQXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 12:23:55 -0400
+Message-ID: <523730F2.40408@redhat.com>
+Date: Mon, 16 Sep 2013 18:25:22 +0200
+From: Laszlo Ersek <lersek@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Jianguo Wu <wujianguo@huawei.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        kosaki.motohiro@gmail.com
-Subject: Re: [PATCH] mm/mempolicy: use NUMA_NO_NODE
-References: <5236FF32.60503@huawei.com>
-In-Reply-To: <5236FF32.60503@huawei.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Josh Triplett <josh@joshtriplett.org>
+CC: Matt Fleming <matt@console-pimps.org>, jerry.hoemann@hp.com,
+        Andrew Fish <afish@apple.com>, edk2-devel@lists.sourceforge.net,
+        linux-efi@vger.kernel.org, Gleb Natapov <gleb@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Brian Richardson <brian.richardson@intel.com>,
+        Colin Ian King <colin.king@canonical.com>,
+        Randy Wright <rwright@hp.com>, Linn Crosetto <linn.crosetto@hp.com>,
+        terry.lee@hp.com, samer.el-haj-mahmoud@hp.com, randy.pawell@hp.com,
+        chrisp@hp.com, linda.knippers@hp.com, dong.wei@hp.com,
+        "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
+        Chao Zhang <chao.b.zhang@intel.com>, Yao Jiewen <jiewen.yao@intel.com>
+Subject: Re: [edk2] Corrupted EFI region
+References: <20130806141036.GD14891@pd.tnic> <520116D1.2010000@redhat.com> <20130807151935.GJ17920@pd.tnic> <CCFD3CBD-62B0-4046-B96D-18CB1A815F72@apple.com> <20130807201908.GG2515@console-pimps.org> <D5982201-6DC4-469F-812A-74A8402ADEE9@apple.com> <20130808101730.GJ2515@console-pimps.org> <20130913203812.GA312@anatevka.fc.hp.com> <20130916105920.GB2697@console-pimps.org> <5236F096.8040702@redhat.com> <20130916155751.GA3636@leaf>
+In-Reply-To: <20130916155751.GA3636@leaf>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(9/16/13 8:53 AM), Jianguo Wu wrote:
-> Use more appropriate NUMA_NO_NODE instead of -1
->
-> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-> ---
->   mm/mempolicy.c |   10 +++++-----
->   1 files changed, 5 insertions(+), 5 deletions(-)
+On 09/16/13 17:57, Josh Triplett wrote:
 
-I think this patch don't make any functional change, right?
+>> The edk2 commit that flipped the memory type underneath the image data
+>> from EfiReservedMemoryType to EfiBootServicesData is:
+>>
+>>     https://github.com/tianocore/edk2/commit/4c58575e
+>>
+>> I think this commit is wrong. It's fine for OSPM to release the image
+>> data at some point, but not right after ExitBootServices(), because
+>> referencing pointers in ACPI tables survive strictly longer.
+>>
+>> ... Actually, the commit does follow the ACPI spec 5.0:
+>>
+>> 5.2.22.4 Image Address
+>>
+>>     The Image Address contains the location in memory where an
+>>     in-memory copy of the boot image can be found. The image should be
+>>     stored in EfiBootServicesData, allowing the system to reclaim
+>>     the memory when the image is no longer needed.
+>>
+>> The ACPI spec 5.0 should recommend EfiACPIReclaimMemory here IMO. (I
+>> take the current wording ("should be stored") as a recommendation only.)
+> 
+> I agree that UEFI *should* store the BGRT in EfiACPIReclaimMemory, but
+> in practice the UEFI firmware I've seen with a BGRT does follow that
+> recommendation and store it in EfiBootServicesData.  So, even if the
+> recommendation in the spec changed, the kernel would still have to
+> accomodate both possibilities.
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Just for the theoretical debate:
 
+The edk2 commit linked above is 5 days old. All UEFI firmware in the
+wild (on released hardware) should be using EfiReservedMemoryType (the
+pre-patch memory type), which is even stricter.
 
+EfiReservedMemoryType can never be released & repurposed, so it should
+make no difference for crash kernel allocation, shouldn't it?
+
+- call efi_free_boot_services() -- doesn't touch the image data (which
+  is in RAM of EfiReservedMemoryType),
+- reserve crash kernel,
+- access BGRT via ACPI.
+
+BGRT had appeared in edk2 with
+
+  https://github.com/tianocore/edk2/commit/0284e90c
+
+and EfiReservedMemoryType used to be the allocation type until commit
+4c58575e.
+
+Or are you alluding to UEFI firmware that's not based on TianoCore?
+
+Laszlo
