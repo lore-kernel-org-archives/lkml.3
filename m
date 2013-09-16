@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab3IPIGQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 04:06:16 -0400
-Received: from relay.parallels.com ([195.214.232.42]:37206 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368Ab3IPIGP (ORCPT
+	id S1754589Ab3IPIIb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 04:08:31 -0400
+Received: from ip-196-116.sn1.eutelia.it ([62.94.196.116]:29459 "EHLO
+	goldrake.enneenne.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751181Ab3IPII3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 04:06:15 -0400
-Message-ID: <5236BBF0.8030505@parallels.com>
-Date: Mon, 16 Sep 2013 12:06:08 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130827 Icedove/17.0.8
+	Mon, 16 Sep 2013 04:08:29 -0400
+Date: Mon, 16 Sep 2013 10:08:09 +0200
+From: Rodolfo Giometti <giometti@enneenne.com>
+To: Paul Chavent <Paul.Chavent@onera.fr>
+Cc: linux-usb@vger.kernel.org, gregkh@linuxfoundation.org, jhovold@gmail.com,
+        fschaefer.oss@googlemail.com, jslaby@suse.cz, max@suse.de,
+        linux-kernel@vger.kernel.org
+Message-ID: <20130916080809.GJ6521@enneenne.com>
+Mail-Followup-To: Paul Chavent <Paul.Chavent@onera.fr>,
+	linux-usb@vger.kernel.org, gregkh@linuxfoundation.org,
+	jhovold@gmail.com, fschaefer.oss@googlemail.com, jslaby@suse.cz,
+	max@suse.de, linux-kernel@vger.kernel.org
+References: <1379313660-2510-1-git-send-email-paul.chavent@onera.fr>
+ <1379313660-2510-3-git-send-email-paul.chavent@onera.fr>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        <linux-kernel@vger.kernel.org>, <devel@openvz.org>
-Subject: Re: [PATCH 1/2] sched: calculate_imbalance: Fix local->avg_load >
- sds->avg_load case
-References: <8f596cc6bc0e5e655119dc892c9bfcad26e971f4.1379252740.git.vdavydov@parallels.com> <20130916055202.GL21832@twins.programming.kicks-ass.net>
-In-Reply-To: <20130916055202.GL21832@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.22.158]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379313660-2510-3-git-send-email-paul.chavent@onera.fr>
+Organization: GNU/Linux Device Drivers, Embedded Systems and Courses
+X-PGP-Key: gpg --keyserver keyserver.linux.it --recv-keys D25A5633
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 192.168.32.10
+X-SA-Exim-Mail-From: giometti@enneenne.com
+Subject: Re: [PATCH 2/2] USB : serial : invoke dcd_change ldisc's handler.
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on goldrake.enneenne.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/2013 09:52 AM, Peter Zijlstra wrote:
-> On Sun, Sep 15, 2013 at 05:49:13PM +0400, Vladimir Davydov wrote:
->> In busiest->group_imb case we can come to calculate_imbalance() with
->> local->avg_load >= busiest->avg_load >= sds->avg_load. This can result
->> in imbalance overflow, because it is calculated as follows
->>
->> env->imbalance = min(
->> 	max_pull * busiest->group_power,
->> 	(sds->avg_load - local->avg_load) * local->group_power
->> ) / SCHED_POWER_SCALE;
->>
->> As a result we can end up constantly bouncing tasks from one cpu to
->> another if there are pinned tasks.
->>
->> Fix this by skipping the assignment and assuming imbalance=0 in case
->> local->avg_load > sds->avg_load.
->> --
->> The bug can be caught by running 2*N cpuhogs pinned to two logical cpus
->> belonging to different cores on an HT-enabled machine with N logical
->> cpus: just look at se.nr_migrations growth.
->>
->> Signed-off-by: Vladimir Davydov<vdavydov@parallels.com>
->> ---
->>   kernel/sched/fair.c |    3 ++-
->>   1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> index 9b3fe1c..507a8a9 100644
->> --- a/kernel/sched/fair.c
->> +++ b/kernel/sched/fair.c
->> @@ -4896,7 +4896,8 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
->>   	 * max load less than avg load(as we skip the groups at or below
->>   	 * its cpu_power, while calculating max_load..)
->>   	 */
->> -	if (busiest->avg_load < sds->avg_load) {
->> +	if (busiest->avg_load <= sds->avg_load ||
->> +	    local->avg_load >= sds->avg_load) {
->>   		env->imbalance = 0;
->>   		return fix_small_imbalance(env, sds);
->>   	}
-> Why the = part? Surely 'busiest->avg_load < sds->avg_load ||
-> local->avg_load > sds->avg_load' avoids both underflows?
+On Mon, Sep 16, 2013 at 08:41:00AM +0200, Paul Chavent wrote:
+> The DCD pin of the serial port can receive a PPS signal. By calling
+> the port line discipline dcd handle, this patch allow to monitor PPS
+> through USB serial devices.
+> 
+> However the performance aren't as good as the uart drivers, so
+> document this point too.
+> 
+> Signed-off-by: Paul Chavent <paul.chavent@onera.fr>
 
-Of course it does, but env->imbalance will be assigned to 0 anyway in = 
-case, so why not go shortcut?
+Acked-by: Rodolfo Giometti <giometti@enneenne.com>
+
+-- 
+
+GNU/Linux Solutions                  e-mail: giometti@enneenne.com
+Linux Device Driver                          giometti@linux.it
+Embedded Systems                     phone:  +39 349 2432127
+UNIX programming                     skype:  rodolfo.giometti
+Freelance ICT Italia - Consulente ICT Italia - www.consulenti-ict.it
