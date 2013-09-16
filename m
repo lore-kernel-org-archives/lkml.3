@@ -1,151 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559Ab3IPMmW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 08:42:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5706 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751243Ab3IPMmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 08:42:18 -0400
-Date: Mon, 16 Sep 2013 15:42:13 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 09/15] KVM: MMU: introduce pte-list lockless walker
-Message-ID: <20130916124213.GR17294@redhat.com>
-References: <1378376958-27252-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1378376958-27252-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+	id S1753591Ab3IPMoj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 08:44:39 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:47707 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347Ab3IPMog (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 08:44:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1378376958-27252-10-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+In-Reply-To: <20130916104009.GA29403@sirena.org.uk>
+References: <1379094851-26385-1-git-send-email-linus.walleij@linaro.org>
+	<20130916091956.GF3999@lee--X1>
+	<20130916104009.GA29403@sirena.org.uk>
+Date: Mon, 16 Sep 2013 14:44:35 +0200
+Message-ID: <CACRpkdatiELF3WK9qE_Mgcq3iCgv5w3X22xp1=232JJq9sWggQ@mail.gmail.com>
+Subject: Re: [PATCH 1/4 v2] mfd: add STw481x driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mark Brown <broonie@kernel.org>, Wolfram Sang <wsa@the-dreams.de>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wang Shilong <wangshilong1991@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 05, 2013 at 06:29:12PM +0800, Xiao Guangrong wrote:
-> The basic idea is from nulls list which uses a nulls to indicate
-> whether the desc is moved to different pte-list
-> 
-> Note, we should do bottom-up walk in the desc since we always move
-> the bottom entry to the deleted position. A desc only has 3 entries
-> in the current code so it is not a problem now, but the issue will
-> be triggered if we expend the size of desc in the further development
-> 
-> Thanks to SLAB_DESTROY_BY_RCU, the desc can be quickly reused
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> ---
->  arch/x86/kvm/mmu.c | 57 ++++++++++++++++++++++++++++++++++++++++++++++++++----
->  1 file changed, 53 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index c5f1b27..3e1432f 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -975,6 +975,10 @@ static int count_spte_number(struct pte_list_desc *desc)
->  	return first_free + desc_num * PTE_LIST_EXT;
->  }
->  
-> +#define rcu_assign_pte_list(pte_list_p, value)				\
-> +	rcu_assign_pointer(*(unsigned long __rcu **)(pte_list_p),	\
-> +			(unsigned long *)(value))
-> +
->  /*
->   * Pte mapping structures:
->   *
-> @@ -994,7 +998,7 @@ static int pte_list_add(struct kvm_vcpu *vcpu, u64 *spte,
->  
->  	if (!*pte_list) {
->  		rmap_printk("pte_list_add: %p %llx 0->1\n", spte, *spte);
-> -		*pte_list = (unsigned long)spte;
-> +		rcu_assign_pte_list(pte_list, spte);
->  		return 0;
->  	}
->  
-> @@ -1004,7 +1008,7 @@ static int pte_list_add(struct kvm_vcpu *vcpu, u64 *spte,
->  		desc->sptes[0] = (u64 *)*pte_list;
->  		desc->sptes[1] = spte;
->  		desc_mark_nulls(pte_list, desc);
-> -		*pte_list = (unsigned long)desc | 1;
-> +		rcu_assign_pte_list(pte_list, (unsigned long)desc | 1);
->  		return 1;
->  	}
->  
-> @@ -1017,7 +1021,7 @@ static int pte_list_add(struct kvm_vcpu *vcpu, u64 *spte,
->  		new_desc = mmu_alloc_pte_list_desc(vcpu);
->  		new_desc->more = desc;
->  		desc = new_desc;
-> -		*pte_list = (unsigned long)desc | 1;
-> +		rcu_assign_pte_list(pte_list, (unsigned long)desc | 1);
->  	}
->  
->  	free_pos = find_first_free(desc);
-> @@ -1125,6 +1129,51 @@ static void pte_list_walk(unsigned long *pte_list, pte_list_walk_fn fn)
->  	WARN_ON(desc_get_nulls_value(desc) != pte_list);
->  }
->  
-> +/* The caller should hold rcu lock. */
-> +static void pte_list_walk_lockless(unsigned long *pte_list,
-> +				   pte_list_walk_fn fn)
-> +{
-> +	struct pte_list_desc *desc;
-> +	unsigned long pte_list_value;
-> +	int i;
-> +
-> +restart:
-> +	/*
-> +	 * Force the pte_list to be reloaded.
-> +	 *
-> +	 * See the comments in hlist_nulls_for_each_entry_rcu().
-> +	 */
-> +	barrier();
-> +	pte_list_value = *rcu_dereference(pte_list);
-> +	if (!pte_list_value)
-> +		return;
-> +
-> +	if (!(pte_list_value & 1))
-> +		return fn((u64 *)pte_list_value);
-> +
-> +	desc = (struct pte_list_desc *)(pte_list_value & ~1ul);
-> +	while (!desc_is_a_nulls(desc)) {
-> +		/*
-> +		 * We should do top-down walk since we always use the higher
-> +		 * indices to replace the deleted entry if only one desc is
-> +		 * used in the rmap when a spte is removed. Otherwise the
-> +		 * moved entry will be missed.
-> +		 */
-> +		for (i = PTE_LIST_EXT - 1; i >= 0; i--)
-> +			if (desc->sptes[i])
-> +				fn(desc->sptes[i]);
-> +
-> +		desc = rcu_dereference(desc->more);
-> +
-> +		/* It is being initialized. */
-> +		if (unlikely(!desc))
-> +			goto restart;
-> +	}
-> +
-> +	if (unlikely(desc_get_nulls_value(desc) != pte_list))
-> +		goto restart;
-> +}
-> +
->  static unsigned long *__gfn_to_rmap(gfn_t gfn, int level,
->  				    struct kvm_memory_slot *slot)
->  {
-> @@ -4651,7 +4700,7 @@ int kvm_mmu_module_init(void)
->  {
->  	pte_list_desc_cache = kmem_cache_create("pte_list_desc",
->  					    sizeof(struct pte_list_desc),
-> -					    0, 0, NULL);
-> +					    0, SLAB_DESTROY_BY_RCU, NULL);
-Haven't we agreed that constructor is needed for the cache?
+On Mon, Sep 16, 2013 at 12:40 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Mon, Sep 16, 2013 at 10:19:56AM +0100, Lee Jones wrote:
+>
+>> Can't you just NULL .id_table?
 
->  	if (!pte_list_desc_cache)
->  		goto nomem;
->  
-> -- 
-> 1.8.1.4
+No. That is not OK with the I2C core. It's
+not easy to get rid of the requirement for .id_table
+not to be NULL either.
 
---
-			Gleb.
+>> Here's the code which would use it:
+>> > /* match on an id table if there is one */
+>> > if (driver->id_table)
+>> >         return i2c_match_id(driver->id_table, client) != NULL;
+>
+>> Matching for "dummy" will just waste cycles.
+>
+> i2c_device_probe() will return -ENODEV if id_table is NULL before we get
+> to actually matching.  We could remove that check though...
+
+Copy+pasting from my own reply earlier:
+
+I've tried to fix this for DT-only I2C devices
+and this very driver was the reason.
+
+But a tiresome regression due to drivers relying on this
+i2c_device_id not being NULL and inability to remove it from the I2C
+core without refactoring the world ensued, see:
+commit c80f52847c50109ca248c22efbf71ff10553dca4
+
+Reverted in:
+commit 661f6c1cd926c6c973e03c6b5151d161f3a666ed
+
+For this reason I think:
+http://marc.info/?l=linux-next&m=137148411231784&w=2
+
+I have tentatively given up getting pure DT I2C drivers
+to probe, I don't think I have the whole picture, but
+Wolfram has serious doubts about this and say we have
+to be careful ....
+
+Wolfram, do you have some ideas on how we should
+proceed or ar you happy with merging this as-is?
+
+Yours,
+Linus Walleij
