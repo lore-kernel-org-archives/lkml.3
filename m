@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757373Ab3IPKqo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 06:46:44 -0400
+	id S1757482Ab3IPKqr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 06:46:47 -0400
 Received: from mga03.intel.com ([143.182.124.21]:47741 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753868Ab3IPKqm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 06:46:42 -0400
+	id S1751208Ab3IPKqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 06:46:45 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,914,1371106800"; 
-   d="scan'208";a="361036283"
+   d="scan'208";a="361036291"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
@@ -17,9 +17,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 01/11] perf tools: fix buildid cache handling of kallsyms with kcore
-Date: Mon, 16 Sep 2013 13:52:42 +0300
-Message-Id: <1379328772-21214-2-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 02/11] perf tools: fix path unpopulated in machine__create_modules()
+Date: Mon, 16 Sep 2013 13:52:43 +0300
+Message-Id: <1379328772-21214-3-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1379328772-21214-1-git-send-email-adrian.hunter@intel.com>
 References: <1379328772-21214-1-git-send-email-adrian.hunter@intel.com>
@@ -28,111 +28,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When kallsyms is used with kcore the dso long_name becomes
-the kcore file name.  That prevents the buildid cache from
-caching kallsyms.  (There is no support at present for
-caching kcore).  Fix by changing it so that the kallsyms
-name is used in that case instead.
+In machine__create_modules() the 'path' char array
+was used in a call to symbol__restricted_filename()
+without always being populated.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/header.c | 44 ++++++++++++++++++++++++++++++--------------
- 1 file changed, 30 insertions(+), 14 deletions(-)
+ tools/perf/util/machine.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 26441d0..cff62f6 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -199,9 +199,11 @@ static int write_buildid(char *name, size_t name_len, u8 *build_id,
- 	return write_padded(fd, name, name_len + 1, len);
- }
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 933d14f..1ae917c 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -782,20 +782,17 @@ static int machine__create_modules(struct machine *machine)
+ 	size_t n;
+ 	FILE *file;
+ 	struct map *map;
+-	const char *modules;
+ 	char path[PATH_MAX];
  
--static int __dsos__write_buildid_table(struct list_head *head, pid_t pid,
--				u16 misc, int fd)
-+static int __dsos__write_buildid_table(struct machine *machine,
-+				       struct list_head *head, pid_t pid,
-+				       u16 misc, int fd)
- {
-+	char nm[PATH_MAX];
- 	struct dso *pos;
+ 	if (machine__is_default_guest(machine))
+-		modules = symbol_conf.default_guest_modules;
+-	else {
+-		sprintf(path, "%s/proc/modules", machine->root_dir);
+-		modules = path;
+-	}
++		strncpy(path, symbol_conf.default_guest_modules, PATH_MAX);
++	else
++		snprintf(path, PATH_MAX, "%s/proc/modules", machine->root_dir);
  
- 	dsos__for_each_with_build_id(pos, head) {
-@@ -215,6 +217,10 @@ static int __dsos__write_buildid_table(struct list_head *head, pid_t pid,
- 		if (is_vdso_map(pos->short_name)) {
- 			name = (char *) VDSO__MAP_NAME;
- 			name_len = sizeof(VDSO__MAP_NAME) + 1;
-+		} else if (dso__is_kcore(pos)) {
-+			machine__mmap_name(machine, nm, sizeof(nm));
-+			name = nm;
-+			name_len = strlen(nm) + 1;
- 		} else {
- 			name = pos->long_name;
- 			name_len = pos->long_name_len + 1;
-@@ -240,10 +246,10 @@ static int machine__write_buildid_table(struct machine *machine, int fd)
- 		umisc = PERF_RECORD_MISC_GUEST_USER;
- 	}
+ 	if (symbol__restricted_filename(path, "/proc/modules"))
+ 		return -1;
  
--	err = __dsos__write_buildid_table(&machine->kernel_dsos, machine->pid,
--					  kmisc, fd);
-+	err = __dsos__write_buildid_table(machine, &machine->kernel_dsos,
-+					  machine->pid, kmisc, fd);
- 	if (err == 0)
--		err = __dsos__write_buildid_table(&machine->user_dsos,
-+		err = __dsos__write_buildid_table(machine, &machine->user_dsos,
- 						  machine->pid, umisc, fd);
- 	return err;
- }
-@@ -375,32 +381,42 @@ out_free:
- 	return err;
- }
- 
--static int dso__cache_build_id(struct dso *dso, const char *debugdir)
-+static int dso__cache_build_id(struct machine *machine, struct dso *dso,
-+			       const char *debugdir)
- {
- 	bool is_kallsyms = dso->kernel && dso->long_name[0] != '/';
- 	bool is_vdso = is_vdso_map(dso->short_name);
-+	char *name = dso->long_name;
-+	char nm[PATH_MAX];
- 
--	return build_id_cache__add_b(dso->build_id, sizeof(dso->build_id),
--				     dso->long_name, debugdir,
--				     is_kallsyms, is_vdso);
-+	if (dso__is_kcore(dso)) {
-+		is_kallsyms = true;
-+		machine__mmap_name(machine, nm, sizeof(nm));
-+		name = nm;
-+	}
-+	return build_id_cache__add_b(dso->build_id, sizeof(dso->build_id), name,
-+				     debugdir, is_kallsyms, is_vdso);
- }
- 
--static int __dsos__cache_build_ids(struct list_head *head, const char *debugdir)
-+static int __dsos__cache_build_ids(struct machine *machine,
-+				   struct list_head *head, const char *debugdir)
- {
- 	struct dso *pos;
- 	int err = 0;
- 
- 	dsos__for_each_with_build_id(pos, head)
--		if (dso__cache_build_id(pos, debugdir))
-+		if (dso__cache_build_id(machine, pos, debugdir))
- 			err = -1;
- 
- 	return err;
- }
- 
--static int machine__cache_build_ids(struct machine *machine, const char *debugdir)
-+static int machine__cache_build_ids(struct machine *machine,
-+				    const char *debugdir)
- {
--	int ret = __dsos__cache_build_ids(&machine->kernel_dsos, debugdir);
--	ret |= __dsos__cache_build_ids(&machine->user_dsos, debugdir);
-+	int ret = __dsos__cache_build_ids(machine, &machine->kernel_dsos,
-+					  debugdir);
-+	ret |= __dsos__cache_build_ids(machine, &machine->user_dsos, debugdir);
- 	return ret;
- }
+-	file = fopen(modules, "r");
++	file = fopen(path, "r");
+ 	if (file == NULL)
+ 		return -1;
  
 -- 
 1.7.11.7
