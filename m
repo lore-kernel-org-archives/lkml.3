@@ -1,104 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751689Ab3IPQaL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 12:30:11 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:52533 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751025Ab3IPQaH (ORCPT
+	id S1751737Ab3IPQa2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 12:30:28 -0400
+Received: from science.horizon.com ([71.41.210.146]:65194 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751700Ab3IPQa1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 12:30:07 -0400
-X-Originating-IP: 50.43.39.152
-Date: Mon, 16 Sep 2013 09:29:54 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Laszlo Ersek <lersek@redhat.com>
-Cc: Matt Fleming <matt@console-pimps.org>, jerry.hoemann@hp.com,
-        Andrew Fish <afish@apple.com>, edk2-devel@lists.sourceforge.net,
-        linux-efi@vger.kernel.org, Gleb Natapov <gleb@redhat.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Brian Richardson <brian.richardson@intel.com>,
-        Colin Ian King <colin.king@canonical.com>,
-        Randy Wright <rwright@hp.com>, Linn Crosetto <linn.crosetto@hp.com>,
-        terry.lee@hp.com, samer.el-haj-mahmoud@hp.com, randy.pawell@hp.com,
-        chrisp@hp.com, linda.knippers@hp.com, dong.wei@hp.com,
-        "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
-        Chao Zhang <chao.b.zhang@intel.com>, Yao Jiewen <jiewen.yao@intel.com>
-Subject: Re: [edk2] Corrupted EFI region
-Message-ID: <20130916162918.GA4555@leaf>
-References: <20130807151935.GJ17920@pd.tnic>
- <CCFD3CBD-62B0-4046-B96D-18CB1A815F72@apple.com>
- <20130807201908.GG2515@console-pimps.org>
- <D5982201-6DC4-469F-812A-74A8402ADEE9@apple.com>
- <20130808101730.GJ2515@console-pimps.org>
- <20130913203812.GA312@anatevka.fc.hp.com>
- <20130916105920.GB2697@console-pimps.org>
- <5236F096.8040702@redhat.com>
- <20130916155751.GA3636@leaf>
- <523730F2.40408@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <523730F2.40408@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 16 Sep 2013 12:30:27 -0400
+Date: 16 Sep 2013 12:30:25 -0400
+Message-ID: <20130916163025.15457.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: keescook@chromium.org, viro@ZenIV.linux.org.uk
+Subject: Re: [PATCH 0/2] vsprintf: ignore %n again
+Cc: akpm@linux-foundation.org, dan.carpenter@oracle.com, JBeulich@suse.com,
+        joe@perches.com, kosaki.motohiro@gmail.com,
+        linux-kernel@vger.kernel.org, linux@horizon.com,
+        penguin-kernel@i-love.sakura.ne.jp
+In-Reply-To: <20130916155504.GC13318@ZenIV.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 06:25:22PM +0200, Laszlo Ersek wrote:
-> On 09/16/13 17:57, Josh Triplett wrote:
-> 
-> >> The edk2 commit that flipped the memory type underneath the image data
-> >> from EfiReservedMemoryType to EfiBootServicesData is:
-> >>
-> >>     https://github.com/tianocore/edk2/commit/4c58575e
-> >>
-> >> I think this commit is wrong. It's fine for OSPM to release the image
-> >> data at some point, but not right after ExitBootServices(), because
-> >> referencing pointers in ACPI tables survive strictly longer.
-> >>
-> >> ... Actually, the commit does follow the ACPI spec 5.0:
-> >>
-> >> 5.2.22.4 Image Address
-> >>
-> >>     The Image Address contains the location in memory where an
-> >>     in-memory copy of the boot image can be found. The image should be
-> >>     stored in EfiBootServicesData, allowing the system to reclaim
-> >>     the memory when the image is no longer needed.
-> >>
-> >> The ACPI spec 5.0 should recommend EfiACPIReclaimMemory here IMO. (I
-> >> take the current wording ("should be stored") as a recommendation only.)
-> > 
-> > I agree that UEFI *should* store the BGRT in EfiACPIReclaimMemory, but
-> > in practice the UEFI firmware I've seen with a BGRT does follow that
-> > recommendation and store it in EfiBootServicesData.  So, even if the
-> > recommendation in the spec changed, the kernel would still have to
-> > accomodate both possibilities.
-> 
-> Just for the theoretical debate:
-> 
-> The edk2 commit linked above is 5 days old. All UEFI firmware in the
-> wild (on released hardware) should be using EfiReservedMemoryType (the
-> pre-patch memory type), which is even stricter.
-> 
-> EfiReservedMemoryType can never be released & repurposed, so it should
-> make no difference for crash kernel allocation, shouldn't it?
-> 
-> - call efi_free_boot_services() -- doesn't touch the image data (which
->   is in RAM of EfiReservedMemoryType),
-> - reserve crash kernel,
-> - access BGRT via ACPI.
-> 
-> BGRT had appeared in edk2 with
-> 
->   https://github.com/tianocore/edk2/commit/0284e90c
-> 
-> and EfiReservedMemoryType used to be the allocation type until commit
-> 4c58575e.
-> 
-> Or are you alluding to UEFI firmware that's not based on TianoCore?
+> This is completely pointless.  *ANY* untrusted format string kernel-side
+> is pretty much it.  Blocking %n is not "defense in depth", it's security
+> theater.  Again, if attacker can feed an arbitrary format string to
+> vsnprintf(), it's over - you've lost.  It's not just about information
+> leaks vs. ability to store a value of attacker's choosing at the address
+> of attacker's choosing as it was in userland.  Kernel-side an ability to
+> trigger read from an arbitrary address is much nastier than information
+> leak risk; consider iomem, for starters.
 
-I'm saying, in practice, that the systems I tested BGRT support on and
-submitted patches for stored the BGRT's image in EfiBootServicesData.
+You've got to be kidding.  Yes, sometimes a read can have effects, but
+such addresses are rare, not present in the main kernel memory mapping,
+and you'd have to find a pointer to such an address (or a preceding
+address with no nul bytes in between) on the stack at a known offset when
+designing the printf string.  That's tricky, and not always possible.
+Even for hardware devices, read side effects have gone out of style,
+other than forcing PCI posted writes through.
 
-- Josh Triplett
+And just because a hardware read has side effects doesn't mean it's
+exploitable.  Being able to drop characters from a serial port is only
+a DoS.
+
+On the other hand, the ability to write an arbitrary, attacker-controlled
+small integer to any address findable on the stack is very powerful and
+easy to exploit.
+
+Those two risks aren't remotely equivalent.
