@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756780Ab3IPJdV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 05:33:21 -0400
-Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:49855 "EHLO
-	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752667Ab3IPJdU (ORCPT
+	id S1755737Ab3IPJh3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 05:37:29 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45938 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752270Ab3IPJh2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 05:33:20 -0400
-From: Denis CIOCCA <denis.ciocca@st.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Jonathan Cameron <jic23@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jic23@cam.ac.uk" <jic23@cam.ac.uk>, "arnd@arndb.de" <arnd@arndb.de>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Date: Mon, 16 Sep 2013 11:32:45 +0200
-Subject: Re: [PATCH 38/38] iio: magn-core: st: Provide support for the
- LSM303DLH
-Thread-Topic: [PATCH 38/38] iio: magn-core: st: Provide support for the
- LSM303DLH
-Thread-Index: Ac6yv7T2FR4onOtjRLOcxSdZfoJ2Zg==
-Message-ID: <5236D03D.2030506@st.com>
-References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
- <1378817379-8238-39-git-send-email-lee.jones@linaro.org>
- <5234A28D.1030409@kernel.org> <20130916073151.GB3999@lee--X1>
-In-Reply-To: <20130916073151.GB3999@lee--X1>
-Accept-Language: it-IT, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
- Thunderbird/17.0.8
-acceptlanguage: it-IT, en-US
-Content-Type: text/plain; charset="utf-8"
+	Mon, 16 Sep 2013 05:37:28 -0400
+Date: Mon, 16 Sep 2013 11:37:19 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dave Jones <davej@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: trinity finds ftrace/perf bug. Film at 11.
+Message-ID: <20130916093719.GR21832@twins.programming.kicks-ass.net>
+References: <20130911135434.GA678@redhat.com>
+ <20130912141913.2ffc7077@gandalf.local.home>
+ <20130913105637.GM31370@twins.programming.kicks-ass.net>
+ <20130913141638.GA6799@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130913141638.GA6799@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8G9XPiF003072
 
-Hi Lee,
-> index 12e7e79..b2e2917 100644
-> --- a/drivers/iio/magnetometer/st_magn_core.c
-> +++ b/drivers/iio/magnetometer/st_magn_core.c
-> @@ -151,7 +151,8 @@ static const struct st_sensors st_magn_sensors[] = {
->   		.wai = ST_MAGN_1_WAI_EXP,
->   		.sensors_supported = {
->   			[0] = LSM303DLHC_MAGN_DEV_NAME,
-> -			[1] = LSM303DLM_MAGN_DEV_NAME,
-> +			[1] = LSM303DLH_MAGN_DEV_NAME,
-> +			[0] = LSM303DLM_MAGN_DEV_NAME,
-Are you sure that it works?
-Because LSM303DLH magnetometer use different kind of WAI registers. This 
-driver read 0x0f and in this case the value is 0 and the driver do not 
-probe...You have to read the identification registers (0x0a, 0x0b, 0x0c) 
-in that case.
+On Fri, Sep 13, 2013 at 10:16:38AM -0400, Dave Jones wrote:
+> without the diff, it'll use all kinds of fds. this diff hardwires it to just use
+> fd's from perf_event_open.  I'll hack up a command line switch to do this in a better
+> way at some point.
+> 
+> 	Dave
+> 
+> 
+> diff --git a/fds.c b/fds.c
+> index cc1ca6d..f48c95e 100644
+> --- a/fds.c
+> +++ b/fds.c
+> @@ -119,6 +119,8 @@ static int get_new_random_fd(void)
+>  retry:
+>  	i = rand() % 6;
+>  
+> +	i = 3;
+> +
+>  	if (do_specific_proto == TRUE)
+>  		i = 1;
 
-Denisÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I'm just not having much luck it seems, even after actually enabling
+list debugging (D0H).
+
+What kind of hardware are you running this on?
