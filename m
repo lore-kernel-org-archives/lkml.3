@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948Ab3IPSJD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 14:09:03 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:47325 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751512Ab3IPSJB (ORCPT
+	id S1751700Ab3IPSKu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 14:10:50 -0400
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:37634 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842Ab3IPSKs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 14:09:01 -0400
-Message-ID: <5237491E.8080901@gmail.com>
-Date: Tue, 17 Sep 2013 03:08:30 +0900
-From: ERAMOTO Masaya <eramoto.masaya@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
+	Mon, 16 Sep 2013 14:10:48 -0400
+Date: Mon, 16 Sep 2013 21:10:32 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Javier Martinez Canillas <martinez.javier@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Carlos Chinea <cch.devel@gmail.com>, Paul Walmsley <paul@pwsan.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [RFCv2 3/3] ARM: dts: N900: Add SSI information
+Message-ID: <20130916181032.GB30568@blackmetal.musicnaut.iki.fi>
+References: <1379277856-24571-1-git-send-email-sre@debian.org>
+ <1379277856-24571-4-git-send-email-sre@debian.org>
+ <CAAwP0s0e-gYkNA78eQH7x2VJbM1byaisUeqU8YbbeWUbKwsxCQ@mail.gmail.com>
+ <20130916150147.GA14047@earth.universe>
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Time: Clocksource: finish searching when clocksource_enqueue()
- found the inserting place.
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130916150147.GA14047@earth.universe>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-clocksource_enqueue() do extra behavior in the sorted list as below:
-   * it compares all clocksources in the list even if found the
-     inserting place.
-   * it copies to entry until finding there.
+On Mon, Sep 16, 2013 at 05:01:47PM +0200, Sebastian Reichel wrote:
+> > Is the Synchronous Serial Interface (SSI)  only supported by
+> > OMAP34xx/OMAP35xx SoC and not by OMAP36xx/OMAP37xx SoC?
+> > 
+> > I'm asking this since if SSI is supported by both we should add the
+> > device nodes in omap3.dtsi instead of omap34xx.dtsi.
+> > 
+> > I thought that all OMAP3 SoC supported SSI and all OMAP4 SoC supported
+> > HSI but I guess I was wrong...
+> 
+> I just do not know. Information about the SSI core is not included
+> in the public OMAP TRM. It only lists the memory space as reserved.
+> 
+> Thus I only included it in OMAP34xx, which is used in Nokia N900 and
+> must support SSI.
 
-So fixed clocksource_enqueue() as below:
-   * it finishes to compare clocksource when found there.
-   * it copies to entry only when found there.
+I think N9 and N950 (OMAP3630) are using pretty much the same driver.
 
-Signed-off-by: ERAMOTO Masaya <eramoto.masaya@gmail.com>
----
-  kernel/time/clocksource.c | 6 ++++--
-  1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-index 50a8736..5b340a4 100644
---- a/kernel/time/clocksource.c
-+++ b/kernel/time/clocksource.c
-@@ -700,9 +700,11 @@ static void clocksource_enqueue(struct clocksource *cs)
-
-  	list_for_each_entry(tmp, &clocksource_list, list)
-  		/* Keep track of the place, where to insert */
--		if (tmp->rating >= cs->rating)
-+		if (tmp->rating < cs->rating) {
-  			entry = &tmp->list;
--	list_add(&cs->list, entry);
-+			break;
-+		}
-+	list_add_tail(&cs->list, entry);
-  }
-
-  /**
+A.
