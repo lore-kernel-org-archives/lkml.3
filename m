@@ -1,107 +1,372 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757197Ab3IPJiS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 05:38:18 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:32887 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756114Ab3IPJiQ (ORCPT
+	id S1756985Ab3IPJoT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 05:44:19 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:59046 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752415Ab3IPJoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 05:38:16 -0400
-Date: Mon, 16 Sep 2013 10:38:12 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Denis CIOCCA <denis.ciocca@st.com>
-Cc: Jonathan Cameron <jic23@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Subject: Re: [PATCH 32/38] iio: accel-core: st: Move LSM303DLH into correct
- group
-Message-ID: <20130916093812.GG3999@lee--X1>
-References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
- <1378817379-8238-33-git-send-email-lee.jones@linaro.org>
- <5234A20F.7040008@kernel.org>
- <20130916080546.GC3999@lee--X1>
- <5236CD17.5010901@st.com>
+	Mon, 16 Sep 2013 05:44:17 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@pengutronix.de
+Date: Mon, 16 Sep 2013 11:44:04 +0200
+Message-Id: <1379324644-20934-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.8.4.rc3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <5236CD17.5010901@st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+Subject: [RFC, PATCH] clocksource: provide timekeeping for efm32 SoCs
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on metis.ext.pengutronix.de)
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Sep 2013, Denis CIOCCA wrote:
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+Hello,
 
-> Hi Lee,
-> >> On 09/10/13 13:49, Lee Jones wrote:
-> >>> The LSM303DLH's WAI (WhoAmI) is 0x33, meaning it should be enabled by
-> >>> Accel Sensor group one. For the device to probe without error, we'll
-> >>> need to ensure it's registered with the correct WAI.
-> >>>
-> >>> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> >> You clearly have a better datasheet than I have as for that part it doesn't even claim to
-> >> have the relevant register to read a who am I from.
-> >>
-> >> Now that datasheet does list odr values as 50, 100, 400 1000 which would put it where it originally
-> >> was in these tables.
-> >>
-> >> http://www.st.com/web/en/resource/technical/document/datasheet/CD00260288.pdf
-> >>
-> >> I haven't checked other elements...
-> >>
-> >> I'm confused but suspect we may need another type entry to deal with this one.
-> > Hmmm... on initial thought, I don't know how we can handle this one. I
-> > assumed the WAIs were a one-stop-shop for device identification. I also
-> > thought that they would only match if the functionality and register
-> > maps would be the same.
-> >
-> > I'll touch base with Denis on this, perhaps he can shed some light.
-> >
-> I've just checked, the WAI is 0x32. It was correct...Are you sure that 
-> you use the LSM303DLH?
+I'm not sure that the way I implemented if a given timer is used as
+clock_source or clock_event_device is robust. Does it need locking?
+The reason to create a timer device for each timer instead of a single
+device of all of them is that it makes it cleaner to specify irqs and
+clks which each timer has one of each respectively. I didn't find an
+example, but while looking I wondered if in zevio-timer.c a single timer
+can really support both clock_event and clocksource.
 
-That's what the datasheet for the board says. Perhaps it's that that's
-incorrect? Annoyingly, instead of printing the device name on the
-package, ST put some non-Googleable nonsense is there instead
-(probably the serial number).
+I guess for inclusion I need to write a document describing the
+of-binding. I will include that in the next iteration.
 
-Nevertheless, I'll revert the patch and work something else out.
+checkpatch wails that the description of CLKSRC_EFM32 is too short. I
+think it's OK though.
 
-> >>> ---
-> >>>   drivers/iio/accel/st_accel_core.c | 4 ++--
-> >>>   1 file changed, 2 insertions(+), 2 deletions(-)
-> >>>
-> >>> diff --git a/drivers/iio/accel/st_accel_core.c b/drivers/iio/accel/st_accel_core.c
-> >>> index ea62291..03a2b6b 100644
-> >>> --- a/drivers/iio/accel/st_accel_core.c
-> >>> +++ b/drivers/iio/accel/st_accel_core.c
-> >>> @@ -170,6 +170,7 @@ static const struct st_sensors st_accel_sensors[] = {
-> >>>   			[2] = LSM330D_ACCEL_DEV_NAME,
-> >>>   			[3] = LSM330DL_ACCEL_DEV_NAME,
-> >>>   			[4] = LSM330DLC_ACCEL_DEV_NAME,
-> >>> +			[5] = LSM303DLH_ACCEL_DEV_NAME,
-> >>>   		},
-> >>>   		.ch = (struct iio_chan_spec *)st_accel_12bit_channels,
-> >>>   		.odr = {
-> >>> @@ -238,8 +239,7 @@ static const struct st_sensors st_accel_sensors[] = {
-> >>>   		.sensors_supported = {
-> >>>   			[0] = LIS331DLH_ACCEL_DEV_NAME,
-> >>>   			[1] = LSM303DL_ACCEL_DEV_NAME,
-> >>> -			[2] = LSM303DLH_ACCEL_DEV_NAME,
-> >>> -			[3] = LSM303DLM_ACCEL_DEV_NAME,
-> >>> +			[2] = LSM303DLM_ACCEL_DEV_NAME,
-> >>>   		},
-> >>>   		.ch = (struct iio_chan_spec *)st_accel_12bit_channels,
-> >>>   		.odr = {
-> >>>
+Best regards
+Uwe
 
+ drivers/clocksource/Kconfig      |   8 ++
+ drivers/clocksource/Makefile     |   1 +
+ drivers/clocksource/time-efm32.c | 274 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 283 insertions(+)
+ create mode 100644 drivers/clocksource/time-efm32.c
+
+diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+index 41c6946..410b152 100644
+--- a/drivers/clocksource/Kconfig
++++ b/drivers/clocksource/Kconfig
+@@ -70,6 +70,14 @@ config CLKSRC_DBX500_PRCMU_SCHED_CLOCK
+ 	help
+ 	  Use the always on PRCMU Timer as sched_clock
+ 
++config CLKSRC_EFM32
++	bool "Clocksource for Energy Micro's EFM32 SoCs" if !ARCH_EFM32
++	depends on OF && ARM && (ARCH_EFM32 || COMPILE_TEST)
++	default ARCH_EFM32
++	help
++	  Support to use the timers of EFM32 SoCs as clock source and clock
++	  event device.
++
+ config ARM_ARCH_TIMER
+ 	bool
+ 	select CLKSRC_OF if OF
+diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+index 704d6d3..33621ef 100644
+--- a/drivers/clocksource/Makefile
++++ b/drivers/clocksource/Makefile
+@@ -27,6 +27,7 @@ obj-$(CONFIG_VT8500_TIMER)	+= vt8500_timer.o
+ obj-$(CONFIG_ARCH_NSPIRE)	+= zevio-timer.o
+ obj-$(CONFIG_ARCH_BCM)		+= bcm_kona_timer.o
+ obj-$(CONFIG_CADENCE_TTC_TIMER)	+= cadence_ttc_timer.o
++obj-$(CONFIG_CLKSRC_EFM32)	+= time-efm32.o
+ obj-$(CONFIG_CLKSRC_EXYNOS_MCT)	+= exynos_mct.o
+ obj-$(CONFIG_CLKSRC_SAMSUNG_PWM)	+= samsung_pwm_timer.o
+ obj-$(CONFIG_VF_PIT_TIMER)	+= vf_pit_timer.o
+diff --git a/drivers/clocksource/time-efm32.c b/drivers/clocksource/time-efm32.c
+new file mode 100644
+index 0000000..6ead8d7
+--- /dev/null
++++ b/drivers/clocksource/time-efm32.c
+@@ -0,0 +1,274 @@
++/*
++ * Copyright (C) 2013 Pengutronix
++ * Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
++ *
++ * This program is free software; you can redistribute it and/or modify it under
++ * the terms of the GNU General Public License version 2 as published by the
++ * Free Software Foundation.
++ */
++
++#define pr_fmt(fmt)	KBUILD_MODNAME ": " fmt
++
++#include <linux/kernel.h>
++#include <linux/clocksource.h>
++#include <linux/clockchips.h>
++#include <linux/irq.h>
++#include <linux/interrupt.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++#include <linux/clk.h>
++
++#define TIMERn_CTRL			0x00
++#define TIMERn_CTRL_PRESC(val)			(((val) & 0xf) << 24)
++#define TIMERn_CTRL_PRESC_1024			TIMERn_CTRL_PRESC(10)
++#define TIMERn_CTRL_CLKSEL(val)			(((val) & 0x3) << 16)
++#define TIMERn_CTRL_CLKSEL_PRESCHFPERCLK	TIMERn_CTRL_CLKSEL(0)
++#define TIMERn_CTRL_OSMEN			0x00000010
++#define TIMERn_CTRL_MODE(val)			(((val) & 0x3) <<  0)
++#define TIMERn_CTRL_MODE_UP			TIMERn_CTRL_MODE(0)
++#define TIMERn_CTRL_MODE_DOWN			TIMERn_CTRL_MODE(1)
++
++#define TIMERn_CMD			0x04
++#define TIMERn_CMD_START			0x1
++#define TIMERn_CMD_STOP				0x2
++
++#define TIMERn_IEN			0x0c
++#define TIMERn_IF			0x10
++#define TIMERn_IFS			0x14
++#define TIMERn_IFC			0x18
++#define TIMERn_IRQ_UF				0x2
++#define TIMERn_IRQ_OF				0x1
++
++#define TIMERn_TOP			0x1c
++#define TIMERn_CNT			0x24
++
++#define TIMER_CLOCKSOURCE	0
++#define TIMER_CLOCKEVENT	1
++
++struct efm32_clock_event_ddata {
++	struct clock_event_device evtdev;
++	void __iomem *base;
++	unsigned periodic_top;
++};
++
++static void efm32_clock_event_set_mode(enum clock_event_mode mode,
++				       struct clock_event_device *evtdev)
++{
++	struct efm32_clock_event_ddata *ddata =
++		container_of(evtdev, struct efm32_clock_event_ddata, evtdev);
++
++	switch (mode) {
++	case CLOCK_EVT_MODE_PERIODIC:
++		writel_relaxed(TIMERn_CMD_STOP, ddata->base + TIMERn_CMD);
++		writel_relaxed(ddata->periodic_top, ddata->base + TIMERn_TOP);
++		writel_relaxed(TIMERn_CTRL_PRESC_1024 |
++			       TIMERn_CTRL_CLKSEL_PRESCHFPERCLK |
++			       TIMERn_CTRL_MODE_DOWN,
++			       ddata->base + TIMERn_CTRL);
++		writel_relaxed(TIMERn_CMD_START, ddata->base + TIMERn_CMD);
++		break;
++
++	case CLOCK_EVT_MODE_ONESHOT:
++		writel_relaxed(TIMERn_CMD_STOP, ddata->base + TIMERn_CMD);
++		writel_relaxed(TIMERn_CTRL_PRESC_1024 |
++			       TIMERn_CTRL_CLKSEL_PRESCHFPERCLK |
++			       TIMERn_CTRL_OSMEN |
++			       TIMERn_CTRL_MODE_DOWN,
++			       ddata->base + TIMERn_CTRL);
++		break;
++
++	case CLOCK_EVT_MODE_UNUSED:
++	case CLOCK_EVT_MODE_SHUTDOWN:
++		writel_relaxed(TIMERn_CMD_STOP, ddata->base + TIMERn_CMD);
++		break;
++
++	case CLOCK_EVT_MODE_RESUME:
++		break;
++	}
++}
++
++static int efm32_clock_event_set_next_event(unsigned long evt,
++					    struct clock_event_device *evtdev)
++{
++	struct efm32_clock_event_ddata *ddata =
++		container_of(evtdev, struct efm32_clock_event_ddata, evtdev);
++
++	writel_relaxed(TIMERn_CMD_STOP, ddata->base + TIMERn_CMD);
++	writel_relaxed(evt, ddata->base + TIMERn_CNT);
++	writel_relaxed(TIMERn_CMD_START, ddata->base + TIMERn_CMD);
++
++	return 0;
++}
++
++static irqreturn_t efm32_clock_event_handler(int irq, void *dev_id)
++{
++	struct efm32_clock_event_ddata *ddata = dev_id;
++
++	writel_relaxed(TIMERn_IRQ_UF, ddata->base + TIMERn_IFC);
++
++	ddata->evtdev.event_handler(&ddata->evtdev);
++
++	return IRQ_HANDLED;
++}
++
++static struct efm32_clock_event_ddata clock_event_ddata = {
++	.evtdev = {
++		.name = "efm32 clockevent",
++		.features = CLOCK_EVT_FEAT_ONESHOT | CLOCK_EVT_MODE_PERIODIC,
++		.set_mode = efm32_clock_event_set_mode,
++		.set_next_event = efm32_clock_event_set_next_event,
++		.rating = 200,
++	},
++};
++
++static struct irqaction efm32_clock_event_irq = {
++	.name = "efm32 clockevent",
++	.flags = IRQF_TIMER,
++	.handler = efm32_clock_event_handler,
++	.dev_id = &clock_event_ddata,
++};
++
++static int efm32_clocksource_init(struct device_node *np)
++{
++	struct clk *clk;
++	void __iomem *base;
++	unsigned long rate;
++	int ret;
++
++	clk = of_clk_get(np, 0);
++	if (IS_ERR(clk)) {
++		ret = PTR_ERR(clk);
++		pr_err("failed to get clock for clocksource (%d)\n", ret);
++		goto err_clk_get;
++	}
++
++	ret = clk_prepare_enable(clk);
++	if (ret) {
++		pr_err("failed to enable timer clock for clocksource (%d)\n",
++		       ret);
++		goto err_clk_enable;
++	}
++	rate = clk_get_rate(clk);
++
++	base = of_iomap(np, 0);
++	if (!base) {
++		ret = -EADDRNOTAVAIL;
++		pr_err("failed to map registers for clocksource\n");
++		goto err_iomap;
++	}
++
++	writel_relaxed(TIMERn_CTRL_PRESC_1024 |
++		       TIMERn_CTRL_CLKSEL_PRESCHFPERCLK |
++		       TIMERn_CTRL_MODE_UP, base + TIMERn_CTRL);
++	writel_relaxed(TIMERn_CMD_START, base + TIMERn_CMD);
++
++	ret = clocksource_mmio_init(base + TIMERn_CNT, "efm32 timer",
++				    DIV_ROUND_CLOSEST(rate, 1024), 200, 16,
++				    clocksource_mmio_readl_up);
++	if (ret) {
++		pr_err("failed to init clocksource (%d)\n", ret);
++		goto err_clocksource_init;
++	}
++
++	return 0;
++
++err_clocksource_init:
++
++	iounmap(base);
++err_iomap:
++
++	clk_disable_unprepare(clk);
++err_clk_enable:
++
++	clk_put(clk);
++err_clk_get:
++
++	return ret;
++}
++
++static int __init efm32_clockevent_init(struct device_node *np)
++{
++	struct clk *clk;
++	void __iomem *base;
++	unsigned long rate;
++	int irq;
++	int ret;
++
++	clk = of_clk_get(np, 0);
++	if (IS_ERR(clk)) {
++		ret = PTR_ERR(clk);
++		pr_err("failed to get clock for clockevent (%d)\n", ret);
++		goto err_clk_get;
++	}
++
++	ret = clk_prepare_enable(clk);
++	if (ret) {
++		pr_err("failed to enable timer clock for clockevent (%d)\n",
++		       ret);
++		goto err_clk_enable;
++	}
++	rate = clk_get_rate(clk);
++
++	base = of_iomap(np, 0);
++	if (!base) {
++		ret = -EADDRNOTAVAIL;
++		pr_err("failed to map registers for clockevent\n");
++		goto err_iomap;
++	}
++
++	irq = irq_of_parse_and_map(np, 0);
++	if (!irq) {
++		ret = -ENOENT;
++		pr_err("failed to get irq for clockevent\n");
++		goto err_get_irq;
++	}
++
++	writel_relaxed(TIMERn_IRQ_UF, base + TIMERn_IEN);
++
++	clock_event_ddata.base = base;
++	clock_event_ddata.periodic_top = DIV_ROUND_CLOSEST(rate, 1024 * HZ);
++
++	setup_irq(irq, &efm32_clock_event_irq);
++
++	clockevents_config_and_register(&clock_event_ddata.evtdev,
++			DIV_ROUND_CLOSEST(rate, 1024), 0xf, 0xffff);
++
++	return 0;
++
++err_get_irq:
++
++	iounmap(base);
++err_iomap:
++
++	clk_disable_unprepare(clk);
++err_clk_enable:
++
++	clk_put(clk);
++err_clk_get:
++
++	return ret;
++}
++
++static void __init efm32_timer_init(struct device_node *np)
++{
++	static int has_clocksource, has_clockevent;
++	int ret;
++
++	if (!has_clocksource) {
++		ret = efm32_clocksource_init(np);
++		if (!ret) {
++			has_clocksource = 1;
++			return;
++		}
++	}
++
++	if (!has_clockevent) {
++		ret = efm32_clockevent_init(np);
++		if (!ret) {
++			has_clockevent = 1;
++			return;
++		}
++	}
++}
++CLOCKSOURCE_OF_DECLARE(efm32, "efm32,timer", efm32_timer_init);
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.4.rc3
+
