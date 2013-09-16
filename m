@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757463Ab3IPKep (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 06:34:45 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:56020 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752688Ab3IPKeo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 06:34:44 -0400
-Message-ID: <5236DEBF.7070003@ti.com>
-Date: Mon, 16 Sep 2013 13:34:39 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1757434Ab3IPKkP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 06:40:15 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:40501 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755369Ab3IPKkN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 06:40:13 -0400
+Date: Mon, 16 Sep 2013 11:40:09 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Wang Shilong <wangshilong1991@gmail.com>
+Message-ID: <20130916104009.GA29403@sirena.org.uk>
+References: <1379094851-26385-1-git-send-email-linus.walleij@linaro.org>
+ <20130916091956.GF3999@lee--X1>
 MIME-Version: 1.0
-To: <monstr@monstr.eu>
-CC: Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <linux-fbdev@vger.kernel.org>
-Subject: Re: [PATCH 3/3] video: xilinxfb: Simplify error path
-References: <7016a90750626ba866dddc6f85cfdd71943f6891.1378965270.git.michal.simek@xilinx.com> <940bbdfc5c67282ab461b9c82b55f18fc34c959d.1378965270.git.michal.simek@xilinx.com> <5236D4BD.9050707@ti.com> <5236DE60.3020901@monstr.eu>
-In-Reply-To: <5236DE60.3020901@monstr.eu>
-X-Enigmail-Version: 1.5.2
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="iwJUlIJREr1fXdUdv73R1xOb4tMf58sSc"
+	protocol="application/pgp-signature"; boundary="kv1tUqrW/oiGCBvw"
+Content-Disposition: inline
+In-Reply-To: <20130916091956.GF3999@lee--X1>
+X-Cookie: Your present plans will be successful.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/4 v2] mfd: add STw481x driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---iwJUlIJREr1fXdUdv73R1xOb4tMf58sSc
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
 
-On 16/09/13 13:33, Michal Simek wrote:
-> On 09/16/2013 11:51 AM, Tomi Valkeinen wrote:
->> On 12/09/13 08:54, Michal Simek wrote:
->>
->>> @@ -394,16 +382,12 @@ static int xilinxfb_release(struct device *dev)=
+--kv1tUqrW/oiGCBvw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->>>  	/* Turn off the display */
->>>  	xilinx_fb_out32(drvdata, REG_CTRL, 0);
->>>
->>> -	/* Release the resources, as allocated based on interface */
->>> -	if (drvdata->flags & BUS_ACCESS_FLAG)
->>> -		devm_iounmap(dev, drvdata->regs);
->>>  #ifdef CONFIG_PPC_DCR
->>> -	else
->>> +	/* Release the resources, as allocated based on interface */
->>> +	if (!(drvdata->flags & BUS_ACCESS_FLAG))
->>>  		dcr_unmap(drvdata->dcr_host, drvdata->dcr_len);
->>>  #endif
->>
->> I might be mistaken, and it's not strictly part of this series, but
->> shouldn't dcr_unmap be called somewhere else also, if the probe fails?=
+On Mon, Sep 16, 2013 at 10:19:56AM +0100, Lee Jones wrote:
 
->=20
-> yes. It should.
+> Can't you just NULL .id_table?
 
-Do you want me to apply these patches as they are, or do you want to
-improve the series to include the dcr_unmap fix?
+> Here's the code which would use it:
+> > /* match on an id table if there is one */
+> > if (driver->id_table)
+> >         return i2c_match_id(driver->id_table, client) != NULL;
 
- Tomi
+> Matching for "dummy" will just waste cycles.
 
+i2c_device_probe() will return -ENODEV if id_table is NULL before we get
+to actually matching.  We could remove that check though...
 
-
---iwJUlIJREr1fXdUdv73R1xOb4tMf58sSc
+--kv1tUqrW/oiGCBvw
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Version: GnuPG v2.0.21 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSNt6/AAoJEPo9qoy8lh71h7QP/irrUQWcEEvL8lvo/6yX0sC4
-nTwE2OTGcnVZXbyRRabSqx/MQ1mmliwd1w8wPFXj1i03qh4b4inpHLvJ28ArmBbJ
-WMEs5AcKhnigg19Z6UNyUjOtn4rvMb7qdBVsMjNewLsFSkUXU4+JpriDuaJrwczE
-K2qTSeOxae1Gi51SMGNEF53RSQeeAqMLYzkbrltM5pWsRkyQamOLf6nJwZ4No+zu
-uD45aB12rYLWKKJzDpOfz59e1gGqHoQ2aauEsbdEZCduntVinCj7HToHJvuqxCA7
-A9ASUhwRKQm7MtBkuY8O8HAxSCjUSpiLV9szJuU2lRP1cy/cxINssguZMRuIEUDc
-8mz/Ez3wCdl7BHDYExJuxjn7EW6E2Jk1mbh5YyV8Q4FEn3QQGGx5QTKgWecmfDND
-ffFrprmqbKOa4OUhl2gWWUArCcEuqlmgIyr7PxldgIK+dVjsl1KdRCYqbfqRI9de
-D6siFCf1hBvXC4p3BNFB6J1dOxdePJ+SSl4qXrGjfx9iKM7vYhb2xgR3Vg/9BTIf
-4yqoiC7USXifcFKBqQepWt2LDsBQ9P9wbRBa6GoxrEv/oOQ/0rNTu3lpQj8psZ/c
-zuznEdarKs5tF4pmNfklVL/WtvbPTMNBkHRAmsxnxw5E/TWkoGkzzhgKDAr4Ixvs
-m9z7A/LUQIHoJOUCz62R
-=SXD3
+iQIcBAEBAgAGBQJSNuAGAAoJELSic+t+oim9ei8P/00Fa5ryWJOfTyt2FqK/T9dV
+KYjRAxLvl+Nz+qNmyB/r4f8owYkkrdm55ozTwWKRbJq6JDJ3fVO8V/OJTkwxkRYB
+xETR2aZi1KUKmCgJ/+2xpDjXnbGXEz2ybTA9+qiJE1Ic/pg2h1vkL0V3EMKBzRfW
+fmOgp7KGewjSDmIa6S9BCxjzDw38oIbX9QI3WWQuu9Yu25F8TxqJc5oE1OaJA28y
+m+qP6CF3Uba1yVXirWEDy3eA+PvD/PkEz2vdamqvO5We7ofXGquRgpN35iqK8Xig
+TtA/pKyzTw5LxiLxUqD8EFOwRzpxm87grjHH9VpJOgucm4qP3G/QYxjdPGbrs1JO
+OlY+0GrO2IxpzAAmjVPT1coRpVHROcyeSRCvS5AVXiy0BUcjcxiG454A907a3xSl
+CB04R5+7EKGH4ZFAXP9ZxCfyMzSJwafEAyxHyY96uuMOqsPxoo5830gYN1PO8qEl
+AZ6MIql3MfTzs0SVWr4LAMJCYbZckgXCk8zvtoVl/YTAOtDEKDjTVMS9DntUGCQN
+TI7altJyMSQtACtjTBMhrEo94uBHfOlDpJvaGLLxSx+23TOi+RnLa+VjQtBPGGDm
+zY8houKzJfYmKLUGAti7GTKFR8Bzdfh34Al6txpRy3lkifmkb2inl0dGiwNZULzO
+iu/xWh08zPtjLFCD7l72
+=rF0s
 -----END PGP SIGNATURE-----
 
---iwJUlIJREr1fXdUdv73R1xOb4tMf58sSc--
+--kv1tUqrW/oiGCBvw--
