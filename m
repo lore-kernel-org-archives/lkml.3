@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647Ab3IPA0w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Sep 2013 20:26:52 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:62231 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755179Ab3IPA0v (ORCPT
+	id S1755327Ab3IPArF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Sep 2013 20:47:05 -0400
+Received: from mga09.intel.com ([134.134.136.24]:49372 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754796Ab3IPArD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Sep 2013 20:26:51 -0400
-Message-ID: <52365021.8040906@windriver.com>
-Date: Mon, 16 Sep 2013 08:26:09 +0800
-From: Fan Du <fan.du@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Sun, 15 Sep 2013 20:47:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.90,911,1371106800"; 
+   d="scan'208";a="396103984"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Linus Walleij" <linus.walleij@linaro.org>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: RE: [PATCH 2/2] gpio / ACPI: add support for GPIO operation regions
+Thread-Topic: [PATCH 2/2] gpio / ACPI: add support for GPIO operation regions
+Thread-Index: AQHOsJQAl34IB1lxyU2PFiwcEyBhepnEW9mAgAF8/4CAAa8jcA==
+Date: Mon, 16 Sep 2013 00:46:55 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E88024639E4@SHSMSX101.ccr.corp.intel.com>
+References: <1379085280-2211-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1379085280-2211-2-git-send-email-mika.westerberg@linux.intel.com>
+ <1AE640813FDE7649BE1B193DEA596E880246367A@SHSMSX101.ccr.corp.intel.com>
+ <20130915065151.GK7393@intel.com>
+In-Reply-To: <20130915065151.GK7393@intel.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: David Miller <davem@davemloft.net>, <herbert@gondor.hengli.com.au>,
-        <steffen.klassert@secunet.com>, <dborkman@redhat.com>,
-        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCHv3 linux-next] hrtimer: Add notifier when clock_was_set
- was called
-References: <alpine.DEB.2.02.1309121441420.4089@ionos.tec.linutronix.de> <20130912134409.GB21212@gondor.apana.org.au> <alpine.DEB.2.02.1309121636010.4089@ionos.tec.linutronix.de> <20130912.133252.425268707009916773.davem@davemloft.net> <52327C92.5010009@windriver.com> <alpine.DEB.2.02.1309131628250.4089@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1309131628250.4089@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [128.224.162.195]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Thomas
+> From: Mika Westerberg [mailto:mika.westerberg@linux.intel.com]
+> Sent: Sunday, September 15, 2013 2:52 PM
+> 
+> On Sat, Sep 14, 2013 at 12:10:37AM +0000, Zheng, Lv wrote:
+> > Is it possible to install the handler for ACPI_ROOT_OBJECT?
+> > Can it be achieved by implementing a setup callback?
+> 
+> Yes that can be done. However, that would mean that we always install the
+> operation region handler even if there is no suitable GPIO driver loaded.
+> With this patch we install the handler once the GPIO driver for this device
+> is registered. If nothing is registered no handlers will be installed.
+> 
+> What would be the advantage in doing what you propose?
 
-On 2013年09月13日 22:32, Thomas Gleixner wrote:
-> On Fri, 13 Sep 2013, Fan Du wrote:
->> (2) What I have been bugging you around here for this long time is really the
->> second
->>      problem, I'm sorry I didn't make it clearly to you and others, which is
->> below:
->>
->>      Why using wall clock time to calculate soft/hard IPsec events when
->> xfrm_state timer
->>      out happens in its timeout handler? Because even if xfrm_state using
->> CLOCK_BOOTTIME,
->>      system wall clock time changing will surely disturb soft/hard IPsec
->> events, which
->>      you raised your concern about in (*a*).
->
-> No CLOCK_BOOTTIME is not affected by wall clock time changes. It's
-> basically CLOCK_MONOTONIC, it just keeps counting the suspend time as
-> well. So without a suspend/resume cycle CLOCK_MONOTONIC and
-> CLOCK_BOOTTIME are the same. After a suspend/resume cycle
-> CLOCK_BOOTTIME will be N seconds ahead of CLOCK_MONOTONIC, where N is
-> the number of seconds spent in suspend.
+A pseudo device may be created to access the GPIO operation region fields provided by one GPIO device.
+The pseudo device may have other functions to access other GPIO operation region fields provided by other GPIO devices, or even worse to access other ACPI provided value-adds.
+So hierarchically the pseudo device only requires CPU, thus should not be under the GPIO device, which means the GPIO operation regions have nothing to do with the GPIO devices' ACPI handle.
+We cannot imply that the BIOS writers won't create such Frankenstein in the future.
+So it's better to install address space handlers from ACPI_ROOT_OBJECT.
 
-Sorry for the ambiguity. Yes, CLOCK_BOOTTIME is monotonic *and* counting
-suspend/resume time as well as not affected by wall clock time change.
+> > Maybe you can also eliminate acpi_attach_data usages by doing so.
+> 
+> I think we still need that for ACPI _EVT handling.
 
-Using CLOCK_BOOTTIME guarantees b- will timeout in a right manner, i.e., not
-affected by wall clock time change, as well as keep the timer valid when
-suspend/resume.
+It could be good if we can find a way to eliminate all acpi_attach_data usages and make this function deprecated.
+But that's fine. :-)
 
-A classic way of using timer is:
-  a- Arm a timer with specified interval
-  b- Wait for the timer to timeout
-  c- After the timeout, notify the event to other place in the timer handler.
-
-IPsec key lifetime timer does its this way:
-  a- Arm a timer with specified interval
-  b- Wait for the timer to timeout
-  c- After timeout, in the timer handler, using wall clock time to calculate
-    which kind of event to notify user(soft or hard for both key use time,
-    and key created time). So the problem arises at this stage if wall clock
-    time changed.
-
-
-
-Thanks
-
-> Thanks,
->
-> 	tglx
->
-
--- 
-浮沉随浪只记今朝笑
-
---fan
+Thanks and best regards
+-Lv
