@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753725Ab3IPOGK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 10:06:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41169 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752250Ab3IPOGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 10:06:08 -0400
-Date: Mon, 16 Sep 2013 16:06:07 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: azurIt <azurit@pobox.sk>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/7] improve memcg oom killer robustness v2
-Message-ID: <20130916140607.GC3674@dhcp22.suse.cz>
-References: <20130910220329.GK856@cmpxchg.org>
- <20130911143305.FFEAD399@pobox.sk>
- <20130911180327.GL856@cmpxchg.org>
- <20130911205448.656D9D7C@pobox.sk>
- <20130911191150.GN856@cmpxchg.org>
- <20130911214118.7CDF2E71@pobox.sk>
- <20130911200426.GO856@cmpxchg.org>
- <20130914124831.4DD20346@pobox.sk>
- <20130916134014.GA3674@dhcp22.suse.cz>
- <20130916160119.2E76C2A1@pobox.sk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130916160119.2E76C2A1@pobox.sk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754204Ab3IPOGY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 10:06:24 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:32785 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753764Ab3IPOGW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 10:06:22 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, kvm@vger.kernel.org,
+        gleb@redhat.com, jan.kiszka@siemens.com
+Subject: [PATCH 0/3] KVM: Make kvm_lock non-raw
+Date: Mon, 16 Sep 2013 16:06:10 +0200
+Message-Id: <1379340373-5135-1-git-send-email-pbonzini@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 16-09-13 16:01:19, azurIt wrote:
-> > CC: "Johannes Weiner" <hannes@cmpxchg.org>, "Andrew Morton" <akpm@linux-foundation.org>, "David Rientjes" <rientjes@google.com>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>, "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-> >On Sat 14-09-13 12:48:31, azurIt wrote:
-> >[...]
-> >> Here is the first occurence, this night between 5:15 and 5:25:
-> >>  - this time i kept opened terminal from other server to this problematic one with htop running
-> >>  - when server went down i opened it and saw one process of one user running at the top and taking 97% of CPU (cgroup 1304)
-> >
-> >I guess you do not have a stack trace(s) for that process? That would be
-> >extremely helpful.
-> 
-> I'm afraid it won't be possible as server is completely not responding
-> when it happens. Anyway, i don't think it was a fault of one process
-> or one user.
+Paul Gortmaker reported a BUG on preempt-rt kernels, due to taking the
+mmu_lock within the raw kvm_lock in mmu_shrink_scan.  He provided a
+patch that shrunk the kvm_lock critical section so that the mmu_lock
+critical section does not nest with it, but in the end there is no reason
+for the vm_list to be protected by a raw spinlock.  Only manipulations
+of kvm_usage_count and the consequent hardware_enable/disable operations
+are not preemptable.
 
-You can use sysrq+l via serial console to see tasks hogging the CPU or
-sysrq+t to see all the existing tasks.
- 
-[...]
+This small series thus splits the kvm_lock in the "raw" part and the
+"non-raw" part.
+
+Paul, could you please provide your Tested-by?
+
+Thanks,
+
+Paolo
+
+Paolo Bonzini (3):
+  KVM: cleanup (physical) CPU hotplug
+  KVM: protect kvm_usage_count with its own spinlock
+  KVM: Convert kvm_lock back to non-raw spinlock
+
+ Documentation/virtual/kvm/locking.txt |  8 ++++--
+ arch/x86/kvm/mmu.c                    |  4 +--
+ arch/x86/kvm/x86.c                    |  8 +++---
+ include/linux/kvm_host.h              |  2 +-
+ virt/kvm/kvm_main.c                   | 51 ++++++++++++++++++-----------------
+ 5 files changed, 40 insertions(+), 33 deletions(-)
+
 -- 
-Michal Hocko
-SUSE Labs
+1.8.3.1
+
