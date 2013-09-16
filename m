@@ -1,39 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932536Ab3IPLIk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 07:08:40 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:46852 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751298Ab3IPLIi (ORCPT
+	id S1757475Ab3IPLLY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 07:11:24 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:43023 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753170Ab3IPLLW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 07:08:38 -0400
-Date: Mon, 16 Sep 2013 12:08:34 +0100
+	Mon, 16 Sep 2013 07:11:22 -0400
+Date: Mon, 16 Sep 2013 12:11:18 +0100
 From: Lee Jones <lee.jones@linaro.org>
 To: Denis CIOCCA <denis.ciocca@st.com>
 Cc: Jonathan Cameron <jic23@kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
+        "jic23@cam.ac.uk" <jic23@cam.ac.uk>, "arnd@arndb.de" <arnd@arndb.de>,
         "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
         "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Subject: Re: [PATCH 32/38] iio: accel-core: st: Move LSM303DLH into correct
- group
-Message-ID: <20130916110834.GL3999@lee--X1>
+Subject: Re: [PATCH 38/38] iio: magn-core: st: Provide support for the
+ LSM303DLH
+Message-ID: <20130916111118.GM3999@lee--X1>
 References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
- <1378817379-8238-33-git-send-email-lee.jones@linaro.org>
- <5234A20F.7040008@kernel.org>
- <20130916080546.GC3999@lee--X1>
- <5236CD17.5010901@st.com>
- <20130916093812.GG3999@lee--X1>
- <5236D5F0.2030601@st.com>
- <20130916101925.GJ3999@lee--X1>
- <5236DC25.3060909@st.com>
+ <1378817379-8238-39-git-send-email-lee.jones@linaro.org>
+ <5234A28D.1030409@kernel.org>
+ <20130916073151.GB3999@lee--X1>
+ <5236D03D.2030506@st.com>
+ <20130916100809.GI3999@lee--X1>
+ <5236DADD.3040205@st.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <5236DC25.3060909@st.com>
+In-Reply-To: <5236DADD.3040205@st.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -41,20 +39,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, 16 Sep 2013, Denis CIOCCA wrote:
 
-> >> I've tried with real device...Unfortunately, you are right for name on
-> >> the package...
-> >> So, are you using the LSM303DLHC?
-> > According to my datasheet [1], I have the LSM303DLH.
-> >
-> > [1] http://www.calao-systems.com/repository/pub/EMBEDDED%20COMPUTERS/SKY-S9500-ULP-XXX/C12-SDK/SCH-00103-B11.pdf
-> >
-> Mhh...I saw the LSM303DLHC...
-> The LSM303DLH is not populated, there is only the footprint but is not 
-> soldered...
+> Hi Lee,
+> 
+> > The driver mentions that the first group of sensors have a WAI of 
+> > 0x3c: #define ST_MAGN_1_WAI_EXP 0x3c And when I print out the WAI read 
+> > from the device: Requested device: lsm303dlh_magn - read WAI: 0x3c I 
+> > guess I could have been lied to again by the board's datasheet again 
+> > and the attached device isn't actually a LSM303DLH, but how can I tell 
+> > for sure? 
+> On LSM303DLH you have to read 0x0a 0x0b and 0x0c registers, you have to 
+> find 0x48, 0x34 and 0x33. I think in the snowball there is the LSM303DLHC.
 
-The documentation says is the other way round.
-
-See the big "Not populated" box around the LSM303DLHC?
+I'm inclined to agree with you. I'll make the necessary changes.
 
 -- 
 Lee Jones
