@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755668Ab3IPOuQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 10:50:16 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:56265 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753397Ab3IPOuO (ORCPT
+	id S1754756Ab3IPOw6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 10:52:58 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:37144 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753049Ab3IPOwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 10:50:14 -0400
+	Mon, 16 Sep 2013 10:52:54 -0400
 From: Manish Badarkhe <badarkhe.manish@gmail.com>
 To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: josh.wu@atmel.com, dmitry.torokhov@gmail.com, badarkhe.manish@gmail.com
-Subject: [PATCH] Input: atmel_mxt_ts - update to devm_* API
-Date: Mon, 16 Sep 2013 20:20:16 +0530
-Message-Id: <1379343016-6354-1-git-send-email-badarkhe.manish@gmail.com>
+Subject: [PATCH] Input: atmel_tscadcc - update to devm_* API
+Date: Mon, 16 Sep 2013 20:22:58 +0530
+Message-Id: <1379343178-6468-1-git-send-email-badarkhe.manish@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,96 +23,127 @@ resources.
 
 Signed-off-by: Manish Badarkhe <badarkhe.manish@gmail.com>
 ---
-This is just clean up of code to manage resources using "devm_" 
+This is just clean up of code to manage resources using "devm_"
 funtions. Not tested on hardware.
 
-:100644 100644 59aa240... 73c5ad0... M	drivers/input/touchscreen/atmel_mxt_ts.c
- drivers/input/touchscreen/atmel_mxt_ts.c |   27 +++++++++++----------------
- 1 file changed, 11 insertions(+), 16 deletions(-)
+:100644 100644 bddabc5... 4ddf97c... M	drivers/input/touchscreen/atmel_tsadcc.c
+ drivers/input/touchscreen/atmel_tsadcc.c |   53 ++++++++----------------------
+ 1 file changed, 13 insertions(+), 40 deletions(-)
 
-diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index 59aa240..73c5ad0 100644
---- a/drivers/input/touchscreen/atmel_mxt_ts.c
-+++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -1139,12 +1139,12 @@ static int mxt_probe(struct i2c_client *client,
- 	if (!pdata)
- 		return -EINVAL;
+diff --git a/drivers/input/touchscreen/atmel_tsadcc.c b/drivers/input/touchscreen/atmel_tsadcc.c
+index bddabc5..4ddf97c 100644
+--- a/drivers/input/touchscreen/atmel_tsadcc.c
++++ b/drivers/input/touchscreen/atmel_tsadcc.c
+@@ -197,53 +197,47 @@ static int atmel_tsadcc_probe(struct platform_device *pdev)
+ 	}
  
--	data = kzalloc(sizeof(struct mxt_data), GFP_KERNEL);
+ 	/* Allocate memory for device */
+-	ts_dev = kzalloc(sizeof(struct atmel_tsadcc), GFP_KERNEL);
++	ts_dev = devm_kzalloc(&pdev->dev, sizeof(struct atmel_tsadcc),
++			      GFP_KERNEL);
+ 	if (!ts_dev) {
+ 		dev_err(&pdev->dev, "failed to allocate memory.\n");
+ 		return -ENOMEM;
+ 	}
+ 	platform_set_drvdata(pdev, ts_dev);
+ 
 -	input_dev = input_allocate_device();
-+	data = devm_kzalloc(&client->dev, sizeof(struct mxt_data), GFP_KERNEL);
-+	input_dev = devm_input_allocate_device(&client->dev);
- 	if (!data || !input_dev) {
- 		dev_err(&client->dev, "Failed to allocate memory\n");
- 		error = -ENOMEM;
++	input_dev = devm_input_allocate_device(&pdev->dev);
+ 	if (!input_dev) {
+ 		dev_err(&pdev->dev, "failed to allocate input device.\n");
+ 		err = -EBUSY;
 -		goto err_free_mem;
 +		goto err_out;
  	}
  
- 	data->is_tp = pdata && pdata->is_tp;
-@@ -1170,7 +1170,7 @@ static int mxt_probe(struct i2c_client *client,
- 
- 	error = mxt_initialize(data);
- 	if (error)
--		goto err_free_mem;
+ 	ts_dev->irq = platform_get_irq(pdev, 0);
+ 	if (ts_dev->irq < 0) {
+ 		dev_err(&pdev->dev, "no irq ID is designated.\n");
+ 		err = -ENODEV;
+-		goto err_free_dev;
 +		goto err_out;
+ 	}
  
- 	__set_bit(EV_ABS, input_dev->evbit);
- 	__set_bit(EV_KEY, input_dev->evbit);
-@@ -1224,9 +1224,10 @@ static int mxt_probe(struct i2c_client *client,
- 	input_set_drvdata(input_dev, data);
- 	i2c_set_clientdata(client, data);
+-	if (!request_mem_region(res->start, resource_size(res),
+-				"atmel tsadcc regs")) {
+-		dev_err(&pdev->dev, "resources is unavailable.\n");
+-		err = -EBUSY;
+-		goto err_free_dev;
+-	}
+-
+-	tsc_base = ioremap(res->start, resource_size(res));
++	tsc_base = devm_ioremap_resource(&pdev->dev, res);
+ 	if (!tsc_base) {
+ 		dev_err(&pdev->dev, "failed to map registers.\n");
+ 		err = -ENOMEM;
+-		goto err_release_mem;
++		goto err_out;
+ 	}
  
--	error = request_threaded_irq(client->irq, NULL, mxt_interrupt,
--				     pdata->irqflags | IRQF_ONESHOT,
--				     client->name, data);
-+	error = devm_request_threaded_irq(&client->dev,
-+				client->irq, NULL, mxt_interrupt,
-+				pdata->irqflags | IRQF_ONESHOT,
-+				client->name, data);
- 	if (error) {
- 		dev_err(&client->dev, "Failed to register interrupt\n");
- 		goto err_free_object;
-@@ -1234,11 +1235,11 @@ static int mxt_probe(struct i2c_client *client,
+-	err = request_irq(ts_dev->irq, atmel_tsadcc_interrupt, 0,
+-			pdev->dev.driver->name, ts_dev);
++	err = devm_request_irq(&pdev->dev, ts_dev->irq, atmel_tsadcc_interrupt,
++			       0, pdev->dev.driver->name, ts_dev);
+ 	if (err) {
+ 		dev_err(&pdev->dev, "failed to allocate irq.\n");
+-		goto err_unmap_regs;
++		goto err_out;
+ 	}
  
- 	error = mxt_make_highchg(data);
- 	if (error)
+-	ts_dev->clk = clk_get(&pdev->dev, "tsc_clk");
++	ts_dev->clk = devm_clk_get(&pdev->dev, "tsc_clk");
+ 	if (IS_ERR(ts_dev->clk)) {
+ 		dev_err(&pdev->dev, "failed to get ts_clk\n");
+ 		err = PTR_ERR(ts_dev->clk);
 -		goto err_free_irq;
-+		goto err_free_object;
++		goto err_out;
+ 	}
  
- 	error = input_register_device(input_dev);
- 	if (error)
--		goto err_free_irq;
-+		goto err_free_object;
+ 	ts_dev->input = input_dev;
+@@ -309,37 +303,17 @@ static int atmel_tsadcc_probe(struct platform_device *pdev)
  
- 	error = sysfs_create_group(&client->dev.kobj, &mxt_attr_group);
- 	if (error)
-@@ -1249,13 +1250,9 @@ static int mxt_probe(struct i2c_client *client,
- err_unregister_device:
- 	input_unregister_device(input_dev);
- 	input_dev = NULL;
+ err_fail:
+ 	clk_disable(ts_dev->clk);
+-	clk_put(ts_dev->clk);
 -err_free_irq:
--	free_irq(client->irq, data);
- err_free_object:
- 	kfree(data->object_table);
--err_free_mem:
+-	free_irq(ts_dev->irq, ts_dev);
+-err_unmap_regs:
+-	iounmap(tsc_base);
+-err_release_mem:
+-	release_mem_region(res->start, resource_size(res));
+-err_free_dev:
 -	input_free_device(input_dev);
--	kfree(data);
+-err_free_mem:
+-	kfree(ts_dev);
 +err_out:
- 	return error;
+ 	return err;
  }
  
-@@ -1264,10 +1261,8 @@ static int mxt_remove(struct i2c_client *client)
- 	struct mxt_data *data = i2c_get_clientdata(client);
+ static int atmel_tsadcc_remove(struct platform_device *pdev)
+ {
+ 	struct atmel_tsadcc *ts_dev = platform_get_drvdata(pdev);
+-	struct resource *res;
+-
+-	free_irq(ts_dev->irq, ts_dev);
  
- 	sysfs_remove_group(&client->dev.kobj, &mxt_attr_group);
--	free_irq(data->irq, data);
- 	input_unregister_device(data->input_dev);
- 	kfree(data->object_table);
--	kfree(data);
+ 	input_unregister_device(ts_dev->input);
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	iounmap(tsc_base);
+-	release_mem_region(res->start, resource_size(res));
+-
+ 	clk_disable(ts_dev->clk);
+-	clk_put(ts_dev->clk);
+-
+-	kfree(ts_dev);
  
  	return 0;
  }
+@@ -356,4 +330,3 @@ module_platform_driver(atmel_tsadcc_driver);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Atmel TouchScreen Driver");
+ MODULE_AUTHOR("Dan Liang <dan.liang@atmel.com>");
+-
 -- 
 1.7.10.4
 
