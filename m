@@ -1,57 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589Ab3IPIIb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 04:08:31 -0400
-Received: from ip-196-116.sn1.eutelia.it ([62.94.196.116]:29459 "EHLO
-	goldrake.enneenne.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751181Ab3IPII3 (ORCPT
+	id S1755820Ab3IPIIh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 04:08:37 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43581 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751181Ab3IPIIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 04:08:29 -0400
-Date: Mon, 16 Sep 2013 10:08:09 +0200
-From: Rodolfo Giometti <giometti@enneenne.com>
-To: Paul Chavent <Paul.Chavent@onera.fr>
-Cc: linux-usb@vger.kernel.org, gregkh@linuxfoundation.org, jhovold@gmail.com,
-        fschaefer.oss@googlemail.com, jslaby@suse.cz, max@suse.de,
-        linux-kernel@vger.kernel.org
-Message-ID: <20130916080809.GJ6521@enneenne.com>
-Mail-Followup-To: Paul Chavent <Paul.Chavent@onera.fr>,
-	linux-usb@vger.kernel.org, gregkh@linuxfoundation.org,
-	jhovold@gmail.com, fschaefer.oss@googlemail.com, jslaby@suse.cz,
-	max@suse.de, linux-kernel@vger.kernel.org
-References: <1379313660-2510-1-git-send-email-paul.chavent@onera.fr>
- <1379313660-2510-3-git-send-email-paul.chavent@onera.fr>
+	Mon, 16 Sep 2013 04:08:35 -0400
+Date: Mon, 16 Sep 2013 10:08:28 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [PATCH 1/2] sched: load_balance: Prevent reselect prev dst_cpu
+ if some pinned
+Message-ID: <20130916080828.GO21832@twins.programming.kicks-ass.net>
+References: <281f59b6e596c718dd565ad267fc38f5b8e5c995.1379265590.git.vdavydov@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1379313660-2510-3-git-send-email-paul.chavent@onera.fr>
-Organization: GNU/Linux Device Drivers, Embedded Systems and Courses
-X-PGP-Key: gpg --keyserver keyserver.linux.it --recv-keys D25A5633
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 192.168.32.10
-X-SA-Exim-Mail-From: giometti@enneenne.com
-Subject: Re: [PATCH 2/2] USB : serial : invoke dcd_change ldisc's handler.
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on goldrake.enneenne.com)
+In-Reply-To: <281f59b6e596c718dd565ad267fc38f5b8e5c995.1379265590.git.vdavydov@parallels.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 08:41:00AM +0200, Paul Chavent wrote:
-> The DCD pin of the serial port can receive a PPS signal. By calling
-> the port line discipline dcd handle, this patch allow to monitor PPS
-> through USB serial devices.
+On Sun, Sep 15, 2013 at 09:30:13PM +0400, Vladimir Davydov wrote:
+> Currently new_dst_cpu is prevented from being reselected actually, not
+> dst_cpu. This can result in attempting to pull tasks to this_cpu twice.
 > 
-> However the performance aren't as good as the uart drivers, so
-> document this point too.
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> ---
+>  kernel/sched/fair.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 > 
-> Signed-off-by: Paul Chavent <paul.chavent@onera.fr>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 9b3fe1c..cd59640 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -5269,15 +5269,15 @@ more_balance:
+>  		 */
+>  		if ((env.flags & LBF_SOME_PINNED) && env.imbalance > 0) {
+>  
+> +			/* Prevent to re-select dst_cpu via env's cpus */
+> +			cpumask_clear_cpu(env.dst_cpu, env.cpus);
+> +
+>  			env.dst_rq	 = cpu_rq(env.new_dst_cpu);
+>  			env.dst_cpu	 = env.new_dst_cpu;
+>  			env.flags	&= ~LBF_SOME_PINNED;
+>  			env.loop	 = 0;
+>  			env.loop_break	 = sched_nr_migrate_break;
+>  
+> -			/* Prevent to re-select dst_cpu via env's cpus */
+> -			cpumask_clear_cpu(env.dst_cpu, env.cpus);
+> -
+>  			/*
+>  			 * Go back to "more_balance" rather than "redo" since we
+>  			 * need to continue with same src_cpu.
 
-Acked-by: Rodolfo Giometti <giometti@enneenne.com>
+FWIW please submit patches against tip/master (or at the very least
+against tip/sched/core).
 
--- 
+I currently picked up:
 
-GNU/Linux Solutions                  e-mail: giometti@enneenne.com
-Linux Device Driver                          giometti@linux.it
-Embedded Systems                     phone:  +39 349 2432127
-UNIX programming                     skype:  rodolfo.giometti
-Freelance ICT Italia - Consulente ICT Italia - www.consulenti-ict.it
+vladimir_davydov-2_sched-fix_small_imbalance__fix_local-_avg_load___busiest-_avg_load_case.patch
+vladimir_davydov-sched-fix_task_h_load_calculation.patch
+vladimir_davydov-1_sched-load_balance__prevent_reselect_prev_dst_cpu_if_some_pinned.patch
+
+So I've two patches still outstanding.. one on the <= vs < issue and the
+other for loosing the bound on the load-balance passes.
