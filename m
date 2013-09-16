@@ -1,94 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757389Ab3IPK7e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 06:59:34 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:60050 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753241Ab3IPK7c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 06:59:32 -0400
-Date: Mon, 16 Sep 2013 11:59:20 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: jerry.hoemann@hp.com
-Cc: Andrew Fish <afish@apple.com>, edk2-devel@lists.sourceforge.net,
-        Laszlo Ersek <lersek@redhat.com>, linux-efi@vger.kernel.org,
-        Gleb Natapov <gleb@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Brian Richardson <brian.richardson@intel.com>,
-        Colin Ian King <colin.king@canonical.com>,
-        Randy Wright <rwright@hp.com>, Linn Crosetto <linn.crosetto@hp.com>,
-        terry.lee@hp.com, samer.el-haj-mahmoud@hp.com, randy.pawell@hp.com,
-        chrisp@hp.com, linda.knippers@hp.com, dong.wei@hp.com,
-        "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: Re: [edk2] Corrupted EFI region
-Message-ID: <20130916105920.GB2697@console-pimps.org>
-References: <52001896.1030509@redhat.com>
- <20130805220808.GC14067@pd.tnic>
- <20130806141036.GD14891@pd.tnic>
- <520116D1.2010000@redhat.com>
- <20130807151935.GJ17920@pd.tnic>
- <CCFD3CBD-62B0-4046-B96D-18CB1A815F72@apple.com>
- <20130807201908.GG2515@console-pimps.org>
- <D5982201-6DC4-469F-812A-74A8402ADEE9@apple.com>
- <20130808101730.GJ2515@console-pimps.org>
- <20130913203812.GA312@anatevka.fc.hp.com>
+	id S1757445Ab3IPLBZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 07:01:25 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:19388 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753189Ab3IPLBV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Sep 2013 07:01:21 -0400
+X-IronPort-AV: E=Sophos;i="4.90,914,1371052800"; 
+   d="scan'208";a="8538432"
+Message-ID: <5236E4D9.6010502@cn.fujitsu.com>
+Date: Mon, 16 Sep 2013 19:00:41 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130913203812.GA312@anatevka.fc.hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: tj@kernel.org
+CC: Tang Chen <tangchen@cn.fujitsu.com>, rjw@sisk.pl, lenb@kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, toshi.kani@hp.com,
+        liwanp@linux.vnet.ibm.com, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v3 0/5] x86, memblock: Allocate memory near kernel image
+ before SRAT parsed.
+References: <1379064655-20874-1-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1379064655-20874-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/09/16 18:59:44,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/09/16 18:59:50,
+	Serialize complete at 2013/09/16 18:59:50
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Sep, at 02:38:12PM, jerry.hoemann@hp.com wrote:
-> Matt,
-> 
-> We have hit an issue on our new platform in development related to the
-> call of efi_reserve_boot_services() from setup_arch().
-> 
-> The reservation can interfere with allocation of the crash kernel.
- 
-Jerry, thanks for bringing this up.
+Hello tejun,
 
-> In pre 3.9(?) kernels,  the crash kernel is required to be allocated from
-> physically contiguous memory below 896 MB.
-> 
-> Our new platforms are large in both the amount of memory and the amount
-> of IO. This requires large crash kernels for kdump to work.  This is even
-> after the work done for makedumpfile v 1.5 to allow it to work with a
-> smaller foot print.
-> 
-> 
-> One of the problems is that drivers will allocate memory as boot code and/or
-> data in the region < 896 that effectively fragments this memory.
-> With the reservation, we can't reuse the memory when needed for the
-> crash kernels.   If we remove the reservation and allow the kernel
-> to reuse the memory,  we the reservation of the crash kernel succeeds.
-> 
-> This is definitely a problem for distros that are pre 3.9.  Probably less
-> so for top of tree, but i haven't been focused there.
-> 
-> So we are definitely interested in finding a mechanism to not
-> do this reservation on platforms that don't have the issues described
-> earlier in this thread.
+Could you please help reviewing the patchset? As you suggested,
+we've make the patchset much simpler and cleaner.
 
-OK, in an ideal world we'd move the crash kernel reservation after
-efi_free_boot_services(), because at that point the boot regions are
-available again. But it seems that we reserve the boot regions really
-early during startup and release them relatively late. The reason is
-that the Boot Graphics Resource Table (BGRT) data, if present, is
-located in the Boot Services Data regions but we can't extract the
-address of the region from the ACPI tables until we've setup the ACPI
-subsystem, which happens quite late.
+Thanks in advance!
 
-I wonder whether performing the reservation of the crash kernel memory
-first, before efi_reserve_boot_services(), would help. That way we'd
-only need to reserve remaining regions in efi_reserve_boot_services().
-This scheme would rely on nothing writing into the crash kernel area
-before we've extracted the BGRT data, however.
+On 09/13/2013 05:30 PM, Tang Chen wrote:
+> This patch-set is based on tj's suggestion, and not fully tested. 
+> Just for review and discussion. 
+> 
+> This patch-set is based on the latest kernel (3.11)
+> HEAD is:
+> commit d5d04bb48f0eb89c14e76779bb46212494de0bec
+> Author: Linus Torvalds <torvalds@linux-foundation.org>
+> Date:   Wed Sep 11 19:55:12 2013 -0700
+> 
+> 
+> [Problem]
+> 
+> The current Linux cannot migrate pages used by the kerenl because
+> of the kernel direct mapping. In Linux kernel space, va = pa + PAGE_OFFSET.
+> When the pa is changed, we cannot simply update the pagetable and
+> keep the va unmodified. So the kernel pages are not migratable.
+> 
+> There are also some other issues will cause the kernel pages not migratable.
+> For example, the physical address may be cached somewhere and will be used.
+> It is not to update all the caches.
+> 
+> When doing memory hotplug in Linux, we first migrate all the pages in one
+> memory device somewhere else, and then remove the device. But if pages are
+> used by the kernel, they are not migratable. As a result, memory used by
+> the kernel cannot be hot-removed.
+> 
+> Modifying the kernel direct mapping mechanism is too difficult to do. And
+> it may cause the kernel performance down and unstable. So we use the following
+> way to do memory hotplug.
+> 
+> 
+> [What we are doing]
+> 
+> In Linux, memory in one numa node is divided into several zones. One of the
+> zones is ZONE_MOVABLE, which the kernel won't use.
+> 
+> In order to implement memory hotplug in Linux, we are going to arrange all
+> hotpluggable memory in ZONE_MOVABLE so that the kernel won't use these memory.
+> To do this, we need ACPI's help.
+> 
+> In ACPI, SRAT(System Resource Affinity Table) contains NUMA info. The memory
+> affinities in SRAT record every memory range in the system, and also, flags
+> specifying if the memory range is hotpluggable.
+> (Please refer to ACPI spec 5.0 5.2.16)
+> 
+> With the help of SRAT, we have to do the following two things to achieve our
+> goal:
+> 
+> 1. When doing memory hot-add, allow the users arranging hotpluggable as
+>    ZONE_MOVABLE.
+>    (This has been done by the MOVABLE_NODE functionality in Linux.)
+> 
+> 2. when the system is booting, prevent bootmem allocator from allocating
+>    hotpluggable memory for the kernel before the memory initialization
+>    finishes.
+> 
+> The problem 2 is the key problem we are going to solve. But before solving it,
+> we need some preparation. Please see below.
+> 
+> 
+> [Preparation]
+> 
+> Bootloader has to load the kernel image into memory. And this memory must be 
+> unhotpluggable. We cannot prevent this anyway. So in a memory hotplug system, 
+> we can assume any node the kernel resides in is not hotpluggable.
+> 
+> Before SRAT is parsed, we don't know which memory ranges are hotpluggable. But
+> memblock has already started to work. In the current kernel, memblock allocates 
+> the following memory before SRAT is parsed:
+> 
+> setup_arch()
+>  |->memblock_x86_fill()            /* memblock is ready */
+>  |......
+>  |->early_reserve_e820_mpc_new()   /* allocate memory under 1MB */
+>  |->reserve_real_mode()            /* allocate memory under 1MB */
+>  |->init_mem_mapping()             /* allocate page tables, about 2MB to map 1GB memory */
+>  |->dma_contiguous_reserve()       /* specified by user, should be low */
+>  |->setup_log_buf()                /* specified by user, several mega bytes */
+>  |->relocate_initrd()              /* could be large, but will be freed after boot, should reorder */
+>  |->acpi_initrd_override()         /* several mega bytes */
+>  |->reserve_crashkernel()          /* could be large, should reorder */
+>  |......
+>  |->initmem_init()                 /* Parse SRAT */
+> 
+> According to Tejun's advice, before SRAT is parsed, we should try our best to
+> allocate memory near the kernel image. Since the whole node the kernel resides 
+> in won't be hotpluggable, and for a modern server, a node may have at least 16GB
+> memory, allocating several mega bytes memory around the kernel image won't cross
+> to hotpluggable memory.
+> 
+> 
+> [About this patch-set]
+> 
+> So this patch-set does the following:
+> 
+> 1. Make memblock be able to allocate memory from low address to high address.
+>    1) Keep all the memblock APIs' prototype unmodified.
+>    2) When the direction is bottom up, keep the start address greater than the 
+>       end of kernel image.
+> 
+> 2. Improve init_mem_mapping() to support allocate page tables in bottom up direction.
+> 
+> 3. Introduce "movablenode" boot option to enable and disable this functionality.
+> 
+> PS: Reordering of relocate_initrd() has not been done yet. acpi_initrd_override() 
+>     needs to access initrd with virtual address. So relocate_initrd() must be done 
+>     before acpi_initrd_override().
+> 
+> 
+> Change log v2 -> v3:
+> 1. According to Toshi's suggestion, move the direction checking logic into memblock.
+>    And simply the code more.
+> 
+> Change log v1 -> v2:
+> 1. According to tj's suggestion, implemented a new function memblock_alloc_bottom_up() 
+>    to allocate memory from bottom upwards, whihc can simplify the code.
+> 
+> 
+> Tang Chen (5):
+>   memblock: Introduce allocation direction to memblock.
+>   memblock: Improve memblock to support allocation from lower address.
+>   x86, acpi, crash, kdump: Do reserve_crashkernel() after SRAT is
+>     parsed.
+>   x86, mem-hotplug: Support initialize page tables from low to high.
+>   mem-hotplug: Introduce movablenode boot option to control memblock
+>     allocation direction.
+> 
+>  Documentation/kernel-parameters.txt |   15 ++++
+>  arch/x86/kernel/setup.c             |   44 ++++++++++++-
+>  arch/x86/mm/init.c                  |  121 ++++++++++++++++++++++++++--------
+>  include/linux/memblock.h            |   22 ++++++
+>  include/linux/memory_hotplug.h      |    5 ++
+>  mm/memblock.c                       |  120 +++++++++++++++++++++++++++++++----
+>  mm/memory_hotplug.c                 |    9 +++
+>  7 files changed, 293 insertions(+), 43 deletions(-)
+> 
+> 
+
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+Thanks.
+Zhang Yanfei
