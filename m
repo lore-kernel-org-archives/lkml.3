@@ -1,100 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751359Ab3IQEHf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 00:07:35 -0400
-Received: from alvesta.synopsys.com ([198.182.60.77]:62986 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751125Ab3IQEHc convert rfc822-to-8bit (ORCPT
+	id S1751435Ab3IQELt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 00:11:49 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:60104 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076Ab3IQELp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 00:07:32 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: David Miller <davem@davemloft.net>
-CC: greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Alexey.Brodkin@synopsys.com" <Alexey.Brodkin@synopsys.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [PATCH] ethernet/arc/arc_emac: Fix huge delays in large file
- copies
-Thread-Topic: [PATCH] ethernet/arc/arc_emac: Fix huge delays in large file
- copies
-Thread-Index: AQHOsxSJ1ZAy2elFY0GqgerXRxd1ZA==
-Date: Tue, 17 Sep 2013 04:07:23 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA2307514C1F4@IN01WEMBXA.internal.synopsys.com>
-References: <1378295235-18928-1-git-send-email-vgupta@synopsys.com>
- <20130905.142530.732425484460470485.davem@davemloft.net>
- <522EBBD2.1060003@synopsys.com> <52369A94.5060900@synopsys.com>
- <20130916194012.GA23656@kroah.com>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.12.239.237]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 17 Sep 2013 00:11:45 -0400
+From: Roy Franz <roy.franz@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        matt.fleming@intel.com
+Cc: leif.lindholm@linaro.org, msalter@redhat.com,
+        Roy Franz <roy.franz@linaro.org>
+Subject: [PATCH V4 00/17] ARM EFI stub common code
+Date: Mon, 16 Sep 2013 21:11:16 -0700
+Message-Id: <1379391093-27948-1-git-send-email-roy.franz@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/2013 01:10 AM, greg Kroah-Hartman wrote:
-> On Mon, Sep 16, 2013 at 11:13:48AM +0530, Vineet Gupta wrote:
->> On 09/10/2013 11:57 AM, Vineet Gupta wrote:
->>> On 09/05/2013 11:55 PM, David Miller wrote:
->>>> From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
->>>> Date: Wed, 4 Sep 2013 17:17:15 +0530
->>>>
->>>>> copying large files to a NFS mounted host was taking absurdly large
->>>>> time.
->>>>>
->>>>> Turns out that TX BD reclaim had a sublte bug.
->>>>>
->>>>> Loop starts off from @txbd_dirty cursor and stops when it hits a BD
->>>>> still in use by controller. However when it stops it needs to keep the
->>>>> cursor at that very BD to resume scanning in next iteration. However it
->>>>> was erroneously incrementing the cursor, causing the next scan(s) to
->>>>> fail too, unless the BD chain was completely drained out.
->>>>>
->>>>> [ARCLinux]$ ls -l -sh /disk/log.txt
->>>>>  17976 -rw-r--r--    1 root     root       17.5M Sep  /disk/log.txt
->>>>>
->>>>> ========== Before =====================
->>>>> [ARCLinux]$ time cp /disk/log.txt /mnt/.
->>>>> real    31m 7.95s
->>>>> user    0m 0.00s
->>>>> sys     0m 0.10s
->>>>>
->>>>> ========== After =====================
->>>>> [ARCLinux]$ time cp /disk/log.txt /mnt/.
->>>>> real    0m 24.33s
->>>>> user    0m 0.00s
->>>>> sys     0m 0.19s
->>>>>
->>>>> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
->>>> Applied.
->>>>
->>> Hi Greg,
->>>
->>> This needs a stable backport (3.11).
->>> Mainline commit 27082ee1b92f4d41e78b85
->>>
->>> Thx,
->>> -Vineet
->> Hi Greg,
->>
->> I didn't spot this one in your stable-queue for 3.11.
->> Please apply.
-> Network patches for the stable tree needs to go through the networking
-> maintainer.  Please let them know about this and they will forward it on
-> to me if needed.
->
-> thanks,
->
-> greg k-h
+This patch is the common/x86 portion of the ARM EFI stub
+patchset broken out.  These changes support the addition
+of EFI stub support for the ARM and ARM64 architectures.
+The common code that is now shared in efi-stub-helper.c
+is based on code in the x86 stub that has been generalized
+to support other architectures.
 
-Hi David,
 
-Can you please do the needful for stable 3.11 backport of this patch.
 
-Thx,
--Vineet
+(Previously these changes were submitted as part of
+the "EFI stub for ARM" patch series that included the
+common/x86 changes as well as the ARM changes.)
+Changes since V3:
+* Made relocate_kernel() a shared function.
+* Made command line unicode to ASCII conversion ASCII
+  a shared function
+* Updated efi_get_memory_map() to return descriptor version,
+  and updated x86 stub to use it to retrieve final memory map.
+* removed min_address argument of efi_low_alloc(), as it is
+  no longer used.
+* Squashed very tiny patch moving EFI_READ_CHUNK_SIZE into
+  related patch.
+
+
+Changes since v2:
+* EFI bugfix "correct call to free_pages" that patch series
+  depends on now in mainline
+* remove unnecessary zimage_size variable from relocate_kernel()
+* correct return types on EFI functions - should be efi_status_t, not int.
+
+Changes since V1:
+* Broke up changes to x86 and common code into more patches.
+  10 more patches in this series.
+
+
+Roy Franz (17):
+  EFI stub documentation updates
+  Add proper definitions for some EFI function pointers.
+  Move common EFI stub code from x86 arch code to common location
+  Add system table pointer argument to shared functions.
+  Rename memory allocation/free functions
+  Enforce minimum alignment of 1 page on allocations.
+  Move relocate_kernel() to shared file.
+  Generalize relocate_kernel() for use by other architectures.
+  Move unicode to ASCII conversion to shared function.
+  Rename __get_map() to efi_get_memory_map()
+  generalize efi_get_memory_map()
+  use efi_get_memory_map() to get final map for x86
+  Allow efi_free() to be called with size of 0, and do nothing in that
+    case.
+  Generalize handle_ramdisks() and rename to handle_cmdline_files().
+  Renames in handle_cmdline_files() to complete generalization.
+  Fix types in EFI calls to match EFI function definitions.
+  resolve warnings found on ARM compile
+
+ Documentation/efi-stub.txt             |   65 ++++
+ Documentation/x86/efi-stub.txt         |   65 ----
+ arch/x86/Kconfig                       |    2 +-
+ arch/x86/boot/compressed/eboot.c       |  582 ++---------------------------
+ arch/x86/boot/compressed/eboot.h       |    9 -
+ drivers/firmware/efi/efi-stub-helper.c |  627 ++++++++++++++++++++++++++++++++
+ include/linux/efi.h                    |   50 ++-
+ 7 files changed, 767 insertions(+), 633 deletions(-)
+ create mode 100644 Documentation/efi-stub.txt
+ delete mode 100644 Documentation/x86/efi-stub.txt
+ create mode 100644 drivers/firmware/efi/efi-stub-helper.c
+
+-- 
+1.7.10.4
+
