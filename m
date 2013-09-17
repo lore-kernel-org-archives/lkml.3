@@ -1,68 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752399Ab3IQEOO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 00:14:14 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:50672 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752344Ab3IQEOL (ORCPT
+	id S1751770Ab3IQEME (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 00:12:04 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:51034 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553Ab3IQELz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 00:14:11 -0400
-Message-ID: <5237D710.2020301@gmail.com>
-Date: Mon, 16 Sep 2013 22:14:08 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH] perf session: Add option to copy events when queueing
-References: <1378496221-61525-1-git-send-email-dsahern@gmail.com> <20130914161626.GD1718@localhost.localdomain> <52349C14.2070508@gmail.com> <20130916164022.GA29373@localhost.localdomain>
-In-Reply-To: <20130916164022.GA29373@localhost.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 17 Sep 2013 00:11:55 -0400
+From: Roy Franz <roy.franz@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        matt.fleming@intel.com
+Cc: leif.lindholm@linaro.org, msalter@redhat.com,
+        Roy Franz <roy.franz@linaro.org>
+Subject: [PATCH 07/17] Move relocate_kernel() to shared file.
+Date: Mon, 16 Sep 2013 21:11:23 -0700
+Message-Id: <1379391093-27948-8-git-send-email-roy.franz@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1379391093-27948-1-git-send-email-roy.franz@linaro.org>
+References: <1379391093-27948-1-git-send-email-roy.franz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/16/13 10:40 AM, Frederic Weisbecker wrote:
->> Yes. I could make it the default behavior; just overhead in doing
->> that (malloc/copy for each event).
->
-> Are there any tool that don't suffer from this bug somehow? If not then it must
-> be applied unconditionally.
+The relocate_kernel() function will be generalized and used
+by all architectures, as they all have similar requirements.
 
-I believe only 'live' commands would be affected: top, kvm stat live, my 
-local scheduling daemon. perf-trace bypasses session and time ordering 
-(though I question that decision).
+Signed-off-by: Roy Franz <roy.franz@linaro.org>
+---
+ arch/x86/boot/compressed/eboot.c       |   34 -------------------------------
+ drivers/firmware/efi/efi-stub-helper.c |   35 ++++++++++++++++++++++++++++++++
+ 2 files changed, 35 insertions(+), 34 deletions(-)
 
----8<---
-
->> size of event is determined by mmap_event (mmap2_event in latest
->> code) which is > 4096 because of the filename argument. Including
->> the event directly in sample_queue would balloon memory usage
->> (learned this the hard way!).
->
-> Ah then perhaps we can allocate with the dynamic size of the event?
-
-Yes, that's how I have it my patch -- allocate memory based on header 
-size and copy in the queue_event function. I think we agree on this part 
-now.
-
----8<---
-
->>> Although the mirrored os->sample_buffer condition check is a bit ugly and should move to
->>> a function. But the idea is there.
->>
->> Ok. That should be a separate patch. Are you going to submit that one?
->
-> Yeah, unless you beat me at it :)
-
-That's not going to happen on my end due to a recent time constraint 
-(jury duty - minimum 1 week trial). At best I can do a patch in early 
-October.
-
-David
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index 2a4430a..5bbba86 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -677,40 +677,6 @@ free_mem_map:
+ 	return status;
+ }
+ 
+-static efi_status_t relocate_kernel(struct setup_header *hdr)
+-{
+-	unsigned long start, nr_pages;
+-	efi_status_t status;
+-
+-	/*
+-	 * The EFI firmware loader could have placed the kernel image
+-	 * anywhere in memory, but the kernel has various restrictions
+-	 * on the max physical address it can run at. Attempt to move
+-	 * the kernel to boot_params.pref_address, or as low as
+-	 * possible.
+-	 */
+-	start = hdr->pref_address;
+-	nr_pages = round_up(hdr->init_size, EFI_PAGE_SIZE) / EFI_PAGE_SIZE;
+-
+-	status = efi_call_phys4(sys_table->boottime->allocate_pages,
+-				EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
+-				nr_pages, &start);
+-	if (status != EFI_SUCCESS) {
+-		status = efi_low_alloc(sys_table, hdr->init_size,
+-				   hdr->kernel_alignment, &start);
+-		if (status != EFI_SUCCESS)
+-			efi_printk(sys_table, "Failed to alloc mem for kernel\n");
+-	}
+-
+-	if (status == EFI_SUCCESS)
+-		memcpy((void *)start, (void *)(unsigned long)hdr->code32_start,
+-		       hdr->init_size);
+-
+-	hdr->pref_address = hdr->code32_start;
+-	hdr->code32_start = (__u32)start;
+-
+-	return status;
+-}
+ 
+ /*
+  * On success we return a pointer to a boot_params structure, and NULL
+diff --git a/drivers/firmware/efi/efi-stub-helper.c b/drivers/firmware/efi/efi-stub-helper.c
+index 9e451c6..1d5f219 100644
+--- a/drivers/firmware/efi/efi-stub-helper.c
++++ b/drivers/firmware/efi/efi-stub-helper.c
+@@ -483,3 +483,38 @@ fail:
+ 
+ 	return status;
+ }
++
++static efi_status_t relocate_kernel(struct setup_header *hdr)
++{
++	unsigned long start, nr_pages;
++	efi_status_t status;
++
++	/*
++	 * The EFI firmware loader could have placed the kernel image
++	 * anywhere in memory, but the kernel has various restrictions
++	 * on the max physical address it can run at. Attempt to move
++	 * the kernel to boot_params.pref_address, or as low as
++	 * possible.
++	 */
++	start = hdr->pref_address;
++	nr_pages = round_up(hdr->init_size, EFI_PAGE_SIZE) / EFI_PAGE_SIZE;
++
++	status = efi_call_phys4(sys_table->boottime->allocate_pages,
++				EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
++				nr_pages, &start);
++	if (status != EFI_SUCCESS) {
++		status = efi_low_alloc(sys_table, hdr->init_size,
++				   hdr->kernel_alignment, &start);
++		if (status != EFI_SUCCESS)
++			efi_printk(sys_table, "Failed to alloc mem for kernel\n");
++	}
++
++	if (status == EFI_SUCCESS)
++		memcpy((void *)start, (void *)(unsigned long)hdr->code32_start,
++		       hdr->init_size);
++
++	hdr->pref_address = hdr->code32_start;
++	hdr->code32_start = (__u32)start;
++
++	return status;
++}
+-- 
+1.7.10.4
 
