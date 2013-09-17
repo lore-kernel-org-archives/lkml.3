@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab3IQKEw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 06:04:52 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55072 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752598Ab3IQKEv (ORCPT
+	id S1752428Ab3IQKRA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 06:17:00 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:35812 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752145Ab3IQKQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 06:04:51 -0400
-Date: Tue, 17 Sep 2013 11:04:17 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>, nicolas.ferre@atmel.com,
-        linux-kernel@vger.kernel.org, Marc Pignat <marc.pignat@hevs.ch>,
-        john.stultz@linaro.org, kernel@pengutronix.de,
-        Ronald Wahl <ronald.wahl@raritan.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] [PATCH] clocksource: tcb: fix min_delta calculation
-Message-ID: <20130917100417.GQ12758@n2100.arm.linux.org.uk>
-References: <1379077365-18458-1-git-send-email-mkl@pengutronix.de> <20130917095600.GJ26819@ludovic.desroches@atmel.com>
+	Tue, 17 Sep 2013 06:16:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130917095600.GJ26819@ludovic.desroches@atmel.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Originating-IP: [86.59.245.170]
+In-Reply-To: <20130916232810.GG13318@ZenIV.linux.org.uk>
+References: <1379335925-30858-1-git-send-email-miklos@szeredi.hu>
+	<1379335925-30858-3-git-send-email-miklos@szeredi.hu>
+	<20130916181938.GD13318@ZenIV.linux.org.uk>
+	<CAJfpegt3mAKVE7ToZbvPpFQCY1EAZ3tKfn__kfpGz4HeXWr8fw@mail.gmail.com>
+	<20130916195003.GE13318@ZenIV.linux.org.uk>
+	<CAJfpegsLeuw55Diw0yDmiFR+7qkSkOrW2fUbjmzFC9OxVsrAkQ@mail.gmail.com>
+	<20130916220241.GF13318@ZenIV.linux.org.uk>
+	<20130916232810.GG13318@ZenIV.linux.org.uk>
+Date: Tue, 17 Sep 2013 12:16:56 +0200
+Message-ID: <CAJfpegtJwgFNNQQB3AX9umsK+RacpQFSoakAMs++w6TT9x0yGw@mail.gmail.com>
+Subject: Re: [PATCH 02/11] 9p: fix dentry leak in v9fs_vfs_atomic_open_dotl()
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "mszeredi@suse.cz" <mszeredi@suse.cz>,
+        Eric Van Hensbergen <ericvh@gmail.com>,
+        "M. Mohan Kumar" <mohan@in.ibm.com>, stable@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17, 2013 at 11:56:00AM +0200, Ludovic Desroches wrote:
-> Any reason to not do this:
-> 
-> --- a/drivers/clocksource/tcb_clksrc.c
-> +++ b/drivers/clocksource/tcb_clksrc.c
-> @@ -144,6 +144,9 @@ static void tc_mode(enum clock_event_mode m, struct
-> clock_event_device *d)
->  
->  static int tc_next_event(unsigned long delta, struct clock_event_device
-> *d)
->  {
-> +       if (delta < d->min_delta_ticks)
-> +               delta = d->min_delta_ticks;
-> +
->         __raw_writel(delta, tcaddr + ATMEL_TC_REG(2, RC));
->  
->         /* go go gadget! */
-> 
-> Then we can keep the same min_delta.
+On Tue, Sep 17, 2013 at 1:28 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Mon, Sep 16, 2013 at 11:02:41PM +0100, Al Viro wrote:
+>> On Mon, Sep 16, 2013 at 10:09:46PM +0200, Miklos Szeredi wrote:
+>>
+>> > > I would definitely prefer EEXIST logics dealt with in fs/namei.c - if nothing
+>> > > else, it had been done wrong in too many instances...
+>> >
+>> > Okay.
+>>
+>> OK, so I'm taking 1, 5, 9, 10, 11, then add check to fs/namei.c:atomic_open(),
+>> leaving the rest of gfs2 ones for gfs2 tree...  Give me a few and I'll push
+>> that.
+>
+> Pushed (head at d332c7).  That should cover 9p and fuse as well, AFAICS.
+> Do you have any problems with that variant?
 
-You really should not play such games in your set_next_event() code - if
-the interval is not supported, you should return -ETIME so that the core
-code knows about it and can adjust things to suit.  If you're getting
-deltas which are too small for the hardware, that'll either be because
-the bounds are wrong, or there's a bug in the core code.
+Just one. This needs to be removed, since this condition is now
+explicitly allowed and later checked for:
+
+    if (WARN_ON(excl && !(*opened & FILE_CREATED)))
+        *opened |= FILE_CREATED;
+
+Thanks,
+Miklos
