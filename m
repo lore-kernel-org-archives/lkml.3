@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751794Ab3IQEqp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 00:46:45 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:57539 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751275Ab3IQEqm (ORCPT
+	id S1751681Ab3IQEw2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 00:52:28 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:42393 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238Ab3IQEwZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 00:46:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <1379356930.3422.71.camel@linaro1.home>
-References: <075032be4fd288074b8f699d4f4ba0179518df6f.1379344038.git.viresh.kumar@linaro.org>
-	<1379348823.3422.42.camel@linaro1.home>
-	<CAKohpomEQsS-WHQpa=_07NQ1FXDB711inrmMgUguD529BA7g1A@mail.gmail.com>
-	<1379356930.3422.71.camel@linaro1.home>
-Date: Tue, 17 Sep 2013 10:16:42 +0530
-Message-ID: <CAKohpo=kgYoSKJVpQRPP-QVZXWYXgD4OXukPyzdgC-6n0DhsWA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] cpufreq: unlock correct rwsem while updating policy->cpu
+	Tue, 17 Sep 2013 00:52:25 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
+        tixy@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V2 1/2] cpufreq: unlock correct rwsem while updating policy->cpu
+Date: Tue, 17 Sep 2013 10:22:11 +0530
+Message-Id: <63ac1edc637ef2c8cf05579972506ad5365948c1.1379393377.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 September 2013 00:12, Jon Medhurst (Tixy) <tixy@linaro.org> wrote:
-> The commit log to that patch still mentions taking both locks.
+Current code looks like this:
 
-Yeah, it was sent in hurry to just give you a working solution and I forgot
-to see the log if it is still valid.
+        WARN_ON(lock_policy_rwsem_write(cpu));
+        update_policy_cpu(policy, new_cpu);
+        unlock_policy_rwsem_write(cpu);
 
-> The code itself fixes the lockdep errors I had, so
->
-> Tested-by: Jon Medhurst <tixy@linaro.org>
+{lock|unlock}_policy_rwsem_write(cpu) takes/releases policy->cpu's rwsem.
+Because cpu is changing with the call to update_policy_cpu(), the
+unlock_policy_rwsem_write() will release the incorrect lock.
 
-Great!!
+The right solution would be to release the same lock as was taken earlier. Also
+update_policy_cpu() was also called from cpufreq_add_dev() without any locks and
+so its better if we move this locking to inside update_policy_cpu().
 
-> however, I still have concerns about the locking (below)...
+Reported-and-Tested-by: Jon Medhurst<tixy@linaro.org>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+Hi Rafael,
 
-:(
+Only one patch is sent now as other one is unchanged.
 
-> But what about reads, like in cpufreq_frequency_table_update_policy_cpu
-> which is called immediately after the unlocking writes? Should that not
-> be covered by a reader lock?
->
-> And after that call, policy is passed into blocking_notifier_call_chain,
-> do those callbacks not want to look at policy fields? Or are they going
-> to do there own locking?
+ drivers/cpufreq/cpufreq.c | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
-policy->cpu is used at multiple places outside of cpufreq.c and cpufreq
-core can't really put read locks for those accesses. Things will turn bad
-only if cpufreq core has got these races where we are trying to access
-a struct or pointer that belonged to the last policy->cpu, which is updated
-now.. For example the case of lock you reported.. And so lock is required
-only for those places..
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 43c24aa..1479522 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -952,9 +952,20 @@ static void update_policy_cpu(struct cpufreq_policy *policy, unsigned int cpu)
+ 	if (cpu == policy->cpu)
+ 		return;
+ 
++	/*
++	 * Take direct locks as lock_policy_rwsem_write wouldn't work here.
++	 * Also lock for last cpu is enough here as contention will happen only
++	 * after policy->cpu is changed and after it is changed, other threads
++	 * will try to acquire lock for new cpu. And policy is already updated
++	 * by then.
++	 */
++	down_write(&per_cpu(cpu_policy_rwsem, policy->cpu));
++
+ 	policy->last_cpu = policy->cpu;
+ 	policy->cpu = cpu;
+ 
++	up_write(&per_cpu(cpu_policy_rwsem, policy->last_cpu));
++
+ #ifdef CONFIG_CPU_FREQ_TABLE
+ 	cpufreq_frequency_table_update_policy_cpu(policy);
+ #endif
+@@ -1203,9 +1214,7 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
+ 
+ 		new_cpu = cpufreq_nominate_new_policy_cpu(policy, cpu, frozen);
+ 		if (new_cpu >= 0) {
+-			WARN_ON(lock_policy_rwsem_write(cpu));
+ 			update_policy_cpu(policy, new_cpu);
+-			unlock_policy_rwsem_write(cpu);
+ 
+ 			if (!frozen) {
+ 				pr_debug("%s: policy Kobject moved to cpu: %d "
+-- 
+1.7.12.rc2.18.g61b472e
 
-> Or is update_policy_cpu itself meant to be called with a read lock held?
-
-No.
-
-> This is the first time I've looked at this code, so feel free just to
-> say 'it's complicated, just trust me, I'm the expert, I know what I'm
-> doing'...
-
-We aren't that rude :)
-
-Now, that you have tested this patch let me resent it...
