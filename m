@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752918Ab3IQMoA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 08:44:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48751 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752872Ab3IQMn4 (ORCPT
+	id S1752949Ab3IQMoF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 08:44:05 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:35989 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752919Ab3IQMoB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 08:43:56 -0400
+	Tue, 17 Sep 2013 08:44:01 -0400
 From: Russ Dill <Russ.Dill@ti.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-omap@vger.kernel.org
@@ -14,9 +14,9 @@ Cc: linux-kbuild@vger.kernel.org, Ard Biesheuvel <ard.biesheuvel@linaro.org>,
         mans@mansr.com, Shawn Guo <shawn.guo@linaro.org>,
         Dave Martin <Dave.Martin@arm.com>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: [RFC PATCH 02/11] lib: devres: Add exec versions of devm_ioremap_resource and friends
-Date: Tue, 17 Sep 2013 05:43:28 -0700
-Message-Id: <1379421817-15759-3-git-send-email-Russ.Dill@ti.com>
+Subject: [RFC PATCH 04/11] asm-generic: fncpy: Add function copying macros
+Date: Tue, 17 Sep 2013 05:43:30 -0700
+Message-Id: <1379421817-15759-5-git-send-email-Russ.Dill@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1379421817-15759-1-git-send-email-Russ.Dill@ti.com>
 References: <1379421817-15759-1-git-send-email-Russ.Dill@ti.com>
@@ -24,197 +24,508 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that there is an _exec version of ioremap, add devm support for it.
+Under certain arches (ARM) function pointers cannot be
+used naively. Specifically, for thumb functions, their 0 bit
+is set, but they are contained on a word aligned address.
+
+Add a fncpy macro to perform function copies correctly
+along with two helpers, fnptr_to_address, and fnptr_translate.
 
 Signed-off-by: Russ Dill <Russ.Dill@ti.com>
 ---
- include/linux/device.h | 17 ++++++++-
- include/linux/io.h     |  4 +++
- lib/devres.c           | 97 ++++++++++++++++++++++++++++++++++++++++++++++++--
- 3 files changed, 114 insertions(+), 4 deletions(-)
+ arch/alpha/include/asm/fncpy.h      |   1 +
+ arch/arc/include/asm/fncpy.h        |   1 +
+ arch/arm/include/asm/fncpy.h        |  76 +++++++-------------------
+ arch/arm/plat-omap/sram.c           |   2 +-
+ arch/arm64/include/asm/fncpy.h      |   1 +
+ arch/avr32/include/asm/fncpy.h      |   1 +
+ arch/blackfin/include/asm/fncpy.h   |   1 +
+ arch/c6x/include/asm/fncpy.h        |   1 +
+ arch/cris/include/asm/fncpy.h       |   1 +
+ arch/frv/include/asm/fncpy.h        |   1 +
+ arch/h8300/include/asm/fncpy.h      |   1 +
+ arch/hexagon/include/asm/fncpy.h    |   1 +
+ arch/ia64/include/asm/fncpy.h       |   1 +
+ arch/m32r/include/asm/fncpy.h       |   1 +
+ arch/m68k/include/asm/fncpy.h       |   1 +
+ arch/metag/include/asm/fncpy.h      |   1 +
+ arch/microblaze/include/asm/fncpy.h |   1 +
+ arch/mips/include/asm/fncpy.h       |   1 +
+ arch/mn10300/include/asm/fncpy.h    |   1 +
+ arch/openrisc/include/asm/fncpy.h   |   1 +
+ arch/parisc/include/asm/fncpy.h     |   1 +
+ arch/powerpc/include/asm/fncpy.h    |   1 +
+ arch/s390/include/asm/fncpy.h       |   1 +
+ arch/score/include/asm/fncpy.h      |   1 +
+ arch/sh/include/asm/fncpy.h         |   1 +
+ arch/sparc/include/asm/fncpy.h      |   1 +
+ arch/tile/include/asm/fncpy.h       |   1 +
+ arch/um/include/asm/fncpy.h         |   1 +
+ arch/unicore32/include/asm/fncpy.h  |   1 +
+ arch/x86/include/asm/fncpy.h        |   1 +
+ arch/xtensa/include/asm/fncpy.h     |   1 +
+ include/asm-generic/fncpy.h         | 104 ++++++++++++++++++++++++++++++++++++
+ 32 files changed, 154 insertions(+), 57 deletions(-)
+ create mode 100644 arch/alpha/include/asm/fncpy.h
+ create mode 100644 arch/arc/include/asm/fncpy.h
+ create mode 100644 arch/arm64/include/asm/fncpy.h
+ create mode 100644 arch/avr32/include/asm/fncpy.h
+ create mode 100644 arch/blackfin/include/asm/fncpy.h
+ create mode 100644 arch/c6x/include/asm/fncpy.h
+ create mode 100644 arch/cris/include/asm/fncpy.h
+ create mode 100644 arch/frv/include/asm/fncpy.h
+ create mode 100644 arch/h8300/include/asm/fncpy.h
+ create mode 100644 arch/hexagon/include/asm/fncpy.h
+ create mode 100644 arch/ia64/include/asm/fncpy.h
+ create mode 100644 arch/m32r/include/asm/fncpy.h
+ create mode 100644 arch/m68k/include/asm/fncpy.h
+ create mode 100644 arch/metag/include/asm/fncpy.h
+ create mode 100644 arch/microblaze/include/asm/fncpy.h
+ create mode 100644 arch/mips/include/asm/fncpy.h
+ create mode 100644 arch/mn10300/include/asm/fncpy.h
+ create mode 100644 arch/openrisc/include/asm/fncpy.h
+ create mode 100644 arch/parisc/include/asm/fncpy.h
+ create mode 100644 arch/powerpc/include/asm/fncpy.h
+ create mode 100644 arch/s390/include/asm/fncpy.h
+ create mode 100644 arch/score/include/asm/fncpy.h
+ create mode 100644 arch/sh/include/asm/fncpy.h
+ create mode 100644 arch/sparc/include/asm/fncpy.h
+ create mode 100644 arch/tile/include/asm/fncpy.h
+ create mode 100644 arch/um/include/asm/fncpy.h
+ create mode 100644 arch/unicore32/include/asm/fncpy.h
+ create mode 100644 arch/x86/include/asm/fncpy.h
+ create mode 100644 arch/xtensa/include/asm/fncpy.h
+ create mode 100644 include/asm-generic/fncpy.h
 
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 22b546a..204180a 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -596,10 +596,25 @@ extern int devres_release_group(struct device *dev, void *id);
- extern void *devm_kzalloc(struct device *dev, size_t size, gfp_t gfp);
- extern void devm_kfree(struct device *dev, void *p);
- 
--void __iomem *devm_ioremap_resource(struct device *dev, struct resource *res);
-+void __iomem *__devm_ioremap_resource(struct device *dev, struct resource *res,
-+				     bool exec);
-+static inline void __iomem *devm_ioremap_resource(struct device *dev,
-+						  struct resource *res)
-+{
-+	return __devm_ioremap_resource(dev, res, false);
-+}
- void __iomem *devm_request_and_ioremap(struct device *dev,
- 			struct resource *res);
- 
-+static inline void __iomem *devm_ioremap_exec_resource(struct device *dev,
-+						       struct resource *res)
-+{
-+	return __devm_ioremap_resource(dev, res, true);
-+}
-+
-+void __iomem *devm_request_and_ioremap_exec(struct device *dev,
-+			struct resource *res);
-+
- /* allows to add/remove a custom action to devres stack */
- int devm_add_action(struct device *dev, void (*action)(void *), void *data);
- void devm_remove_action(struct device *dev, void (*action)(void *), void *data);
-diff --git a/include/linux/io.h b/include/linux/io.h
-index f4f42fa..582b207 100644
---- a/include/linux/io.h
-+++ b/include/linux/io.h
-@@ -62,6 +62,10 @@ void __iomem *devm_ioremap(struct device *dev, resource_size_t offset,
- 			    unsigned long size);
- void __iomem *devm_ioremap_nocache(struct device *dev, resource_size_t offset,
- 				    unsigned long size);
-+void __iomem *devm_ioremap_exec(struct device *dev, resource_size_t offset,
-+			    unsigned long size);
-+void __iomem *devm_ioremap_exec_nocache(struct device *dev, resource_size_t offset,
-+				    unsigned long size);
- void devm_iounmap(struct device *dev, void __iomem *addr);
- int check_signature(const volatile void __iomem *io_addr,
- 			const unsigned char *signature, int length);
-diff --git a/lib/devres.c b/lib/devres.c
-index 8235331..06cafe5 100644
---- a/lib/devres.c
-+++ b/lib/devres.c
-@@ -72,6 +72,64 @@ void __iomem *devm_ioremap_nocache(struct device *dev, resource_size_t offset,
- EXPORT_SYMBOL(devm_ioremap_nocache);
- 
- /**
-+ * devm_ioremap_exec - Managed ioremap_exec()
-+ * @dev: Generic device to remap IO address for
-+ * @offset: BUS offset to map
-+ * @size: Size of map
-+ *
-+ * Managed ioremap_exec().  Map is automatically unmapped on driver detach.
-+ */
-+void __iomem *devm_ioremap_exec(struct device *dev, resource_size_t offset,
-+				unsigned long size)
-+{
-+	void __iomem **ptr, *addr;
-+
-+	ptr = devres_alloc(devm_ioremap_release, sizeof(*ptr), GFP_KERNEL);
-+	if (!ptr)
-+		return NULL;
-+
-+	addr = ioremap_exec(offset, size);
-+	if (addr) {
-+		*ptr = addr;
-+		devres_add(dev, ptr);
-+	} else
-+		devres_free(ptr);
-+
-+	return addr;
-+}
-+EXPORT_SYMBOL(devm_ioremap_exec);
-+
-+/**
-+ * devm_ioremap_exec_nocache - Managed ioremap_exec_nocache()
-+ * @dev: Generic device to remap IO address for
-+ * @offset: BUS offset to map
-+ * @size: Size of map
-+ *
-+ * Managed ioremap_exec_nocache().  Map is automatically unmapped on driver
-+ * detach.
-+ */
-+void __iomem *devm_ioremap_exec_nocache(struct device *dev,
-+					resource_size_t offset,
-+					unsigned long size)
-+{
-+	void __iomem **ptr, *addr;
-+
-+	ptr = devres_alloc(devm_ioremap_release, sizeof(*ptr), GFP_KERNEL);
-+	if (!ptr)
-+		return NULL;
-+
-+	addr = ioremap_exec_nocache(offset, size);
-+	if (addr) {
-+		*ptr = addr;
-+		devres_add(dev, ptr);
-+	} else
-+		devres_free(ptr);
-+
-+	return addr;
-+}
-+EXPORT_SYMBOL(devm_ioremap_exec_nocache);
-+
-+/**
-  * devm_iounmap - Managed iounmap()
-  * @dev: Generic device to unmap for
-  * @addr: Address to unmap
-@@ -104,7 +162,8 @@ EXPORT_SYMBOL(devm_iounmap);
-  *	if (IS_ERR(base))
-  *		return PTR_ERR(base);
+diff --git a/arch/alpha/include/asm/fncpy.h b/arch/alpha/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/alpha/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/arc/include/asm/fncpy.h b/arch/arc/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/arc/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/arm/include/asm/fncpy.h b/arch/arm/include/asm/fncpy.h
+index de53547..f165f20 100644
+--- a/arch/arm/include/asm/fncpy.h
++++ b/arch/arm/include/asm/fncpy.h
+@@ -17,16 +17,12 @@
+  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
   */
--void __iomem *devm_ioremap_resource(struct device *dev, struct resource *res)
-+void __iomem *__devm_ioremap_resource(struct device *dev, struct resource *res,
-+				      bool exec)
- {
- 	resource_size_t size;
- 	const char *name;
-@@ -125,7 +184,11 @@ void __iomem *devm_ioremap_resource(struct device *dev, struct resource *res)
- 		return ERR_PTR(-EBUSY);
+ 
++#ifndef __ASM_FNCPY_H
++#define __ASM_FNCPY_H
++
++#include <linux/types.h>
++
+ /*
+- * These macros are intended for use when there is a need to copy a low-level
+- * function body into special memory.
+- *
+- * For example, when reconfiguring the SDRAM controller, the code doing the
+- * reconfiguration may need to run from SRAM.
+- *
+- * NOTE: that the copied function body must be entirely self-contained and
+- * position-independent in order for this to work properly.
+- *
+  * NOTE: in order for embedded literals and data to get referenced correctly,
+  * the alignment of functions must be preserved when copying.  To ensure this,
+  * the source and destination addresses for fncpy() must be aligned to a
+@@ -34,61 +30,29 @@
+  * You will typically need a ".align 3" directive in the assembler where the
+  * function to be copied is defined, and ensure that your allocator for the
+  * destination buffer returns 8-byte-aligned pointers.
+- *
+- * Typical usage example:
+- *
+- * extern int f(args);
+- * extern uint32_t size_of_f;
+- * int (*copied_f)(args);
+- * void *sram_buffer;
+- *
+- * copied_f = fncpy(sram_buffer, &f, size_of_f);
+- *
+- * ... later, call the function: ...
+- *
+- * copied_f(args);
+- *
+- * The size of the function to be copied can't be determined from C:
+- * this must be determined by other means, such as adding assmbler directives
+- * in the file where f is defined.
+- */
++*/
++#define ARCH_FNCPY_ALIGN	3
+ 
+-#ifndef __ASM_FNCPY_H
+-#define __ASM_FNCPY_H
+-
+-#include <linux/types.h>
+-#include <linux/string.h>
+-
+-#include <asm/bug.h>
+-#include <asm/cacheflush.h>
+-
+-/*
+- * Minimum alignment requirement for the source and destination addresses
+- * for function copying.
+- */
+-#define FNCPY_ALIGN 8
+-
+-#define fncpy(dest_buf, funcp, size) ({					\
++/* Clear the Thumb bit */
++#define fnptr_to_addr(funcp) ({						\
+ 	uintptr_t __funcp_address;					\
+-	typeof(funcp) __result;						\
+ 									\
+ 	asm("" : "=r" (__funcp_address) : "0" (funcp));			\
++	__funcp_address & ~1;						\
++})
++
++/* Put the Thumb bit back */
++#define fnptr_translate(orig_funcp, new_addr) ({			\
++	uintptr_t __funcp_address;					\
++	typeof(orig_funcp) __result;					\
+ 									\
+-	/*								\
+-	 * Ensure alignment of source and destination addresses,	\
+-	 * disregarding the function's Thumb bit:			\
+-	 */								\
+-	BUG_ON((uintptr_t)(dest_buf) & (FNCPY_ALIGN - 1) ||		\
+-		(__funcp_address & ~(uintptr_t)1 & (FNCPY_ALIGN - 1)));	\
+-									\
+-	memcpy(dest_buf, (void const *)(__funcp_address & ~1), size);	\
+-	flush_icache_range((unsigned long)(dest_buf),			\
+-		(unsigned long)(dest_buf) + (size));			\
+-									\
++	asm("" : "=r" (__funcp_address) : "0" (orig_funcp));		\
+ 	asm("" : "=r" (__result)					\
+-		: "0" ((uintptr_t)(dest_buf) | (__funcp_address & 1)));	\
++		: "0" ((uintptr_t)(new_addr) | (__funcp_address & 1)));	\
+ 									\
+ 	__result;							\
+ })
+ 
++#include <asm-generic/fncpy.h>
++
+ #endif /* !__ASM_FNCPY_H */
+diff --git a/arch/arm/plat-omap/sram.c b/arch/arm/plat-omap/sram.c
+index a5bc92d..90ccd74 100644
+--- a/arch/arm/plat-omap/sram.c
++++ b/arch/arm/plat-omap/sram.c
+@@ -54,7 +54,7 @@ void *omap_sram_push_address(unsigned long size)
  	}
  
--	if (res->flags & IORESOURCE_CACHEABLE)
-+	if (exec && res->flags & IORESOURCE_CACHEABLE)
-+		dest_ptr = devm_ioremap_exec(dev, res->start, size);
-+	else if (exec)
-+		dest_ptr = devm_ioremap_exec_nocache(dev, res->start, size);
-+	else if (res->flags & IORESOURCE_CACHEABLE)
- 		dest_ptr = devm_ioremap(dev, res->start, size);
- 	else
- 		dest_ptr = devm_ioremap_nocache(dev, res->start, size);
-@@ -138,7 +201,7 @@ void __iomem *devm_ioremap_resource(struct device *dev, struct resource *res)
+ 	new_ceil -= size;
+-	new_ceil = ROUND_DOWN(new_ceil, FNCPY_ALIGN);
++	new_ceil = ROUND_DOWN(new_ceil, 1 << ARCH_FNCPY_ALIGN);
+ 	omap_sram_ceil = IOMEM(new_ceil);
  
- 	return dest_ptr;
- }
--EXPORT_SYMBOL(devm_ioremap_resource);
-+EXPORT_SYMBOL(__devm_ioremap_resource);
- 
- /**
-  * devm_request_and_ioremap() - Check, request region, and ioremap resource
-@@ -168,6 +231,34 @@ void __iomem *devm_request_and_ioremap(struct device *device,
- }
- EXPORT_SYMBOL(devm_request_and_ioremap);
- 
-+/**
-+ * devm_request_and_ioremap_exec() - Check, request region, and ioremap resource
-+ * @dev: Generic device to handle the resource for
-+ * @res: resource to be handled
+ 	return (void *)omap_sram_ceil;
+diff --git a/arch/arm64/include/asm/fncpy.h b/arch/arm64/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/arm64/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/avr32/include/asm/fncpy.h b/arch/avr32/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/avr32/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/blackfin/include/asm/fncpy.h b/arch/blackfin/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/blackfin/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/c6x/include/asm/fncpy.h b/arch/c6x/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/c6x/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/cris/include/asm/fncpy.h b/arch/cris/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/cris/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/frv/include/asm/fncpy.h b/arch/frv/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/frv/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/h8300/include/asm/fncpy.h b/arch/h8300/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/h8300/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/hexagon/include/asm/fncpy.h b/arch/hexagon/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/hexagon/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/ia64/include/asm/fncpy.h b/arch/ia64/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/ia64/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/m32r/include/asm/fncpy.h b/arch/m32r/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/m32r/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/m68k/include/asm/fncpy.h b/arch/m68k/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/m68k/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/metag/include/asm/fncpy.h b/arch/metag/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/metag/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/microblaze/include/asm/fncpy.h b/arch/microblaze/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/microblaze/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/mips/include/asm/fncpy.h b/arch/mips/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/mips/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/mn10300/include/asm/fncpy.h b/arch/mn10300/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/mn10300/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/openrisc/include/asm/fncpy.h b/arch/openrisc/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/openrisc/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/parisc/include/asm/fncpy.h b/arch/parisc/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/parisc/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/powerpc/include/asm/fncpy.h b/arch/powerpc/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/powerpc/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/s390/include/asm/fncpy.h b/arch/s390/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/s390/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/score/include/asm/fncpy.h b/arch/score/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/score/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/sh/include/asm/fncpy.h b/arch/sh/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/sh/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/sparc/include/asm/fncpy.h b/arch/sparc/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/sparc/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/tile/include/asm/fncpy.h b/arch/tile/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/tile/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/um/include/asm/fncpy.h b/arch/um/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/um/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/unicore32/include/asm/fncpy.h b/arch/unicore32/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/unicore32/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/x86/include/asm/fncpy.h b/arch/x86/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/x86/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/arch/xtensa/include/asm/fncpy.h b/arch/xtensa/include/asm/fncpy.h
+new file mode 100644
+index 0000000..ee4741c
+--- /dev/null
++++ b/arch/xtensa/include/asm/fncpy.h
+@@ -0,0 +1 @@
++#include <asm-generic/fncpy.h>
+diff --git a/include/asm-generic/fncpy.h b/include/asm-generic/fncpy.h
+new file mode 100644
+index 0000000..1a25282
+--- /dev/null
++++ b/include/asm-generic/fncpy.h
+@@ -0,0 +1,104 @@
++/*
++ * include/asm-generic/fncpy.h - helper macros for function body copying
 + *
-+ * Takes all necessary steps to ioremap a mem resource. Uses managed device, so
-+ * everything is undone on driver detach. Checks arguments, so you can feed
-+ * it the result from e.g. platform_get_resource() directly. Returns the
-+ * remapped pointer or NULL on error. Usage example:
++ * Copyright (C) 2011 Linaro Limited
 + *
-+ *	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+ *	base = devm_request_and_ioremap_exec(&pdev->dev, res);
-+ *	if (!base)
-+ *		return -EADDRNOTAVAIL;
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 + */
-+void __iomem *devm_request_and_ioremap_exec(struct device *device,
-+					    struct resource *res)
-+{
-+	void __iomem *dest_ptr;
 +
-+	dest_ptr = devm_ioremap_exec_resource(device, res);
-+	if (IS_ERR(dest_ptr))
-+		return NULL;
++/*
++ * These macros are intended for use when there is a need to copy a low-level
++ * function body into special memory.
++ *
++ * For example, when reconfiguring the SDRAM controller, the code doing the
++ * reconfiguration may need to run from SRAM.
++ *
++ * NOTE: that the copied function body must be entirely self-contained and
++ * position-independent in order for this to work properly.
++ *
++ * Typical usage example:
++ *
++ * extern int f(args);
++ * extern uint32_t size_of_f;
++ * int (*copied_f)(args);
++ * void *sram_buffer;
++ *
++ * copied_f = fncpy(sram_buffer, &f, size_of_f);
++ *
++ * ... later, call the function: ...
++ *
++ * copied_f(args);
++ *
++ * The size of the function to be copied can't be determined from C:
++ * this must be determined by other means, such as adding assmbler directives
++ * in the file where f is defined.
++ */
 +
-+	return dest_ptr;
-+}
-+EXPORT_SYMBOL(devm_request_and_ioremap_exec);
++#ifndef __ASM_GENERIC_FNCPY_H
++#define __ASM_GENERIC_FNCPY_H
 +
- #ifdef CONFIG_HAS_IOPORT
- /*
-  * Generic iomap devres
++#include <linux/types.h>
++#include <linux/string.h>
++
++#include <asm/bug.h>
++#include <asm/cacheflush.h>
++
++/*
++ * Minimum alignment requirement for the source and destination addresses
++ * for function copying.
++ */
++#ifndef ARCH_FNCPY_ALIGN
++#define ARCH_FNCPY_ALIGN	0
++#endif
++
++#define ARCH_FNCPY_MASK		((1 << (ARCH_FNCPY_ALIGN)) - 1)
++
++#ifndef fnptr_to_addr
++#define fnptr_to_addr(funcp) ({						\
++	(uintptr_t) (funcp);						\
++})
++#endif
++
++#ifndef fnptr_translate
++#define fnptr_translate(orig_funcp, new_addr) ({			\
++	(typeof(orig_funcp)) (new_addr);				\
++})
++#endif
++
++/* Ensure alignment of source and destination addresses */
++#ifndef fn_dest_invalid
++#define fn_dest_invalid(funcp, dest_buf) ({				\
++	uintptr_t __funcp_address;					\
++									\
++	__funcp_address = fnptr_to_addr(funcp);				\
++									\
++	((uintptr_t)(dest_buf) & ARCH_FNCPY_MASK) ||			\
++		(__funcp_address & ARCH_FNCPY_MASK);			\
++})
++#endif
++
++#ifndef fncpy
++#define fncpy(dest_buf, funcp, size) ({					\
++	BUG_ON(fn_dest_invalid(funcp, dest_buf));			\
++									\
++	memcpy(dest_buf, (void const *)(funcp), size);			\
++	flush_icache_range((unsigned long)(dest_buf),			\
++		(unsigned long)(dest_buf) + (size));			\
++									\
++	fnptr_translate(funcp, dest_buf);				\
++})
++#endif
++
++#endif /* !__ASM_GENERIC_FNCPY_H */
++
 -- 
 1.8.3.2
 
