@@ -1,46 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137Ab3IQPLJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 11:11:09 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:34480 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752864Ab3IQPLI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 11:11:08 -0400
-Date: Tue, 17 Sep 2013 16:11:00 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: wm5110: Update noise gate default to match the
- patch file
-Message-ID: <20130917151100.GA16984@lee--X1>
-References: <1379429060-10610-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	id S1753112Ab3IQPOY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 11:14:24 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:55217 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752796Ab3IQPOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 11:14:23 -0400
+Date: Tue, 17 Sep 2013 11:14:08 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, dave.hansen@intel.com,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, bp@suse.de,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH resend] drop_caches: add some documentation and info
+ message
+Message-ID: <20130917151408.GE3278@cmpxchg.org>
+References: <1374842669-22844-1-git-send-email-mhocko@suse.cz>
+ <20130729135743.c04224fb5d8e64b2730d8263@linux-foundation.org>
+ <51F9D1F6.4080001@jp.fujitsu.com>
+ <20130731201708.efa5ae87.akpm@linux-foundation.org>
+ <CAHGf_=r7mek+ueJWfu_6giMOueDTnMs8dY1jJrKyX+gfPys6uA@mail.gmail.com>
+ <20130802073304.GA17746@dhcp22.suse.cz>
+ <51FD653A.3060004@jp.fujitsu.com>
+ <20130804080751.GA24005@dhcp22.suse.cz>
+ <CAHGf_=o19rxB=neUPzZAeL9eeLnksKcbqCJjc+vg=EhYtnuwCw@mail.gmail.com>
+ <20130805072013.GA10146@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1379429060-10610-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130805072013.GA10146@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Sep 2013, Charles Keepax wrote:
-
-> The default value for the noise gate control register is changed in the
-> patch file, we need to reflect this in the defaults array, this patch
-> does so.
+On Mon, Aug 05, 2013 at 09:20:13AM +0200, Michal Hocko wrote:
+> On Sun 04-08-13 21:13:44, KOSAKI Motohiro wrote:
+> > On Sun, Aug 4, 2013 at 4:07 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> > > On Sat 03-08-13 16:16:58, KOSAKI Motohiro wrote:
+> > >> >>> You missed the "!".  I'm proposing that setting the new bit 2 will
+> > >> >>> permit people to prevent the new printk if it is causing them problems.
+> > >> >>
+> > >> >> No I don't. I'm sure almost all abuse users think our usage is correct. Then,
+> > >> >> I can imagine all crazy applications start to use this flag eventually.
+> > >> >
+> > >> > I guess we do not care about those. If somebody wants to shoot his feet
+> > >> > then we cannot do much about it. The primary motivation was to find out
+> > >> > those that think this is right and they are willing to change the setup
+> > >> > once they know this is not the right way to do things.
+> > >> >
+> > >> > I think that giving a way to suppress the warning is a good step. Log
+> > >> > level might be to coarse and sysctl would be an overkill.
+> > >>
+> > >> When Dave Hansen reported this issue originally, he explained a lot of userland
+> > >> developer misuse /proc/drop_caches because they don't understand what
+> > >> drop_caches do.
+> > >> So, if they never understand the fact, why can we trust them? I have no
+> > >> idea.
+> > >
+> > > Well, most of that usage I have come across was legacy scripts which
+> > > happened to work at a certain point in time because we sucked.
+> > > Thinks have changed but such scripts happen to survive a long time.
+> > > We are primarily interested in those.
+> > 
+> > Well, if the main target is shell script, task_comm and pid don't help us
+> > a lot. I suggest to add ppid too.
 > 
-> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-> ---
->  drivers/mfd/wm5110-tables.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> I do not have any objections to add ppid.
+>  
+> > >> Or, if you have different motivation w/ Dave, please let me know it.
+> > >
+> > > We have seen reports where users complained about performance drop down
+> > > when in fact the real culprit turned out to be such a clever script
+> > > which dropped caches on the background thinking it will help to free
+> > > some memory. Such cases are tedious to reveal.
+> > 
+> > Imagine such script have bit-2 and no logging output. Because
+> > the script author think "we are doing the right thing".
+> > Why distro guys want such suppress messages?
+> 
+> I am not really pushing this suppressing functionality. I just
+> understand that there might be some legitimate use for supressing and if
+> that is a must for merging the printk, I can live with that.
 
-Applied, thanks.
+Is there any conceivable use case that legitimately drops caches at
+such a rate that the logging output becomes a problem?
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+We export an interface that provides something useful in exceptional
+cases but has significant impact on the kernel's ongoing operations.
+Kernel developers want this information in problem reports.  It's the
+same thing as forcefully tainting kernels when a proprietary module is
+loaded.
