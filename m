@@ -1,80 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751850Ab3IQFFc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 01:05:32 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:65060 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555Ab3IQFFa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 01:05:30 -0400
+	id S1752027Ab3IQFGF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 01:06:05 -0400
+Received: from ozlabs.org ([203.10.76.45]:58018 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751698Ab3IQFGC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 01:06:02 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Julia Lawall <julia.lawall@lip6.fr>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>
+Subject: Re: Please add PTR_RET tree.
+In-Reply-To: <20130715173826.f698f36373c6f701126b42d3@canb.auug.org.au>
+References: <8738rg30cw.fsf@rustcorp.com.au> <20130715173826.f698f36373c6f701126b42d3@canb.auug.org.au>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Tue, 17 Sep 2013 10:20:55 +0930
+Message-ID: <87y56wz2xc.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <CAG6tG3yQVhANm1eHx3W3Hacp8t5Bh=pF9dQbHc3rSVs5n0WR9g@mail.gmail.com>
-References: <1367416573-5430-1-git-send-email-rlove@google.com>
-	<20130513214216.GA23743@kroah.com>
-	<CA+2_TiZ3dECAW8LV-Es=BjHCwgWw69zbWkr73at+0_c-EaDHmA@mail.gmail.com>
-	<CAG9bXvkH0L5FjkU3-=3X3zwp3vw8U7+jJRYp28GFXjLkQKBL5g@mail.gmail.com>
-	<CAG9bXvkjV6-O3JZH6taVX-dZ1tzbSoqaC_sN00LRszsS4QAnrg@mail.gmail.com>
-	<CAG6tG3zaU=gkJZzNezOX=s5WWDrc2x7SHiDy3UxVzDvKkw2foA@mail.gmail.com>
-	<20130516094559.4d2c9212.akpm@linux-foundation.org>
-	<CAG6tG3xLydqQTOHaXMpdCo8m+WkydAqgLvi5HW8_djoO-hcf9g@mail.gmail.com>
-	<20130516101907.d102dd91.akpm@linux-foundation.org>
-	<CAG6tG3yQVhANm1eHx3W3Hacp8t5Bh=pF9dQbHc3rSVs5n0WR9g@mail.gmail.com>
-Date: Tue, 17 Sep 2013 13:05:29 +0800
-Message-ID: <CAG9bXvkaAg2tqUKU8Gv-8rseraWzdaXXgohHg9BqnVmsLd=33w@mail.gmail.com>
-Subject: Re: [PATCH -next] ashmem: Fix ashmem_shrink deadlock.
-From: Raul Xiong <raulxiong@gmail.com>
-To: Robert Love <rlove@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Neil Zhang <glacier1980@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Shankar Brahadeeswaran <shankoo77@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Bringert <bringert@google.com>,
-        devel <devel@driverdev.osuosl.org>, Hugh Dickins <hughd@google.com>,
-        Anjana V Kumar <anjanavk12@gmail.com>,
-        linux-next <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/5/17 Robert Love <rlove@google.com>:
-> On Thu, May 16, 2013 at 1:19 PM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
->> On Thu, 16 May 2013 13:08:17 -0400 Robert Love <rlove@google.com> wrote:
->>> This problem seems a rare proper use of mutex_trylock.
+Stephen Rothwell <sfr@canb.auug.org.au> writes:
+> Hi Rusty,
+>
+> On Mon, 15 Jul 2013 14:07:03 +0930 Rusty Russell <rusty@rustcorp.com.au> wrote:
 >>
->> Not really.  The need for a trylock is often an indication that a
->> subsystem has a locking misdesign.  That is indeed the case here.
+>> Temporary branch for PTR_RET -> PTR_ERR_OR_ZERO and associated cleanups.
+>> 
+>>         git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git PTR_RET
+>> 
+>> Log appended.  Contributors and people who didn't already ack CC'd.
 >
-> It is exactly the same as PF_MEMALLOC. We've got an effectively
-> asynchronous event (shrinking) that can occur while you are holding
-> locks requisite to that shrinking. Given that the shrinkage is best
-> effort, a trylock actually communicates the intent pretty well: "If
-> possible, grab this lock and shrink."
->
-> I think the idiomatic fix is to introduce a GFP_SHMEM but that seems
-> overkill. Lots of the GFP flags are really just preventing recursing
-> into the shrinkage code and it seems ill-designed that we require
-> developers to know where they might end up. But we can disagree. :)
->
->> Well, it's not exactly a ton of work, but adding a per-ashmem_area lock
->> to protect ->file would rather be putting lipstick on a pig.  I suppose
->> we can put the trylock in there and run away, but it wouldn't hurt to
->> drop in a big fat comment somewhere explaining that the driver should be
->> migrated to a per-object locking scheme.
->
-> Unfortunately I think ashmem_shrink would need to grab the per-object
-> lock too; it needs to update the ranges. I'm sure we could re-design
-> this but I don't think it is as easy as simply pushing the locking
-> into the objects.
->
->        Robert
+> Added from tomorrow.
 
-Hi all,
-I am wondering if this is fixed in latest kernel? We are continuously
-seeing this deadlock issue.
+Please remove PTR_RET tree, it's merged.
 
-Best Regards,
-Raul
+Cheers,
+Rusty.
