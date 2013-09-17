@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599Ab3IQLNX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 07:13:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33238 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab3IQLNW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 07:13:22 -0400
-Date: Tue, 17 Sep 2013 04:13:41 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: baisong zhong <baisong.zhong@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]    adjust the error labels to make it clear
-Message-ID: <20130917111341.GA16648@kroah.com>
-References: <1379409313-1917-1-git-send-email-baisong.zhong@gmail.com>
+	id S1752665Ab3IQLOP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 07:14:15 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46079 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752481Ab3IQLON (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 07:14:13 -0400
+Message-ID: <52383998.6080504@ti.com>
+Date: Tue, 17 Sep 2013 16:44:32 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1379409313-1917-1-git-send-email-baisong.zhong@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: <linux-next@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: old trees
+References: <20130917170124.0afa2e103a9977355ad7c72c@canb.auug.org.au>
+In-Reply-To: <20130917170124.0afa2e103a9977355ad7c72c@canb.auug.org.au>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17, 2013 at 05:15:13PM +0800, baisong zhong wrote:
-> From: zhongbaisong <baisong.zhong@gmail.com>
+Hi Stephen,
+
+On Tuesday 17 September 2013 12:31 PM, Stephen Rothwell wrote:
+> Hi all,
 > 
-> Signed-off-by: zhongbaisong <baisong.zhong@gmail.com>
-
-I need a changelog description in here, as to why you are making this
-change, your Subject: is not descriptive at all.  What is being made
-"clear"?
-
-> ---
->  fs/sysfs/mount.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
+> This message is bcc'd to each of the contacts for the trees listed below,
+> so apologies if you get two copies.
 > 
-> diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
-> index afd8327..f6681a6 100644
-> --- a/fs/sysfs/mount.c
-> +++ b/fs/sysfs/mount.c
-> @@ -182,12 +182,12 @@ int __init sysfs_init(void)
->  		}
->  	} else
->  		goto out_err;
-> -out:
-> -	return err;
-> +
->  out_err:
->  	kmem_cache_destroy(sysfs_dir_cachep);
->  	sysfs_dir_cachep = NULL;
-> -	goto out;
-> +out:
-> +	return err;
+> I have been inspired to check the ages of the trees included in
+> linux-next.  Below I have listed all the trees that have not been
+> commited to in the past 6 months.  Please let me know if the tree is not
+> longer in use.  I don't mind keeping these trees in linux-next if they
+> will have continued use, but would like to remove any that are no longer
+> needed.
+> 
+> Tree		Last commit
+> ----		-----------
 
-You tested this patch right?  Are you sure?  Really really sure?
+> davinci		2 years, 2 months ago
 
-greg "I don't think you tested this" k-h
+You can remove the davinci tree from linux-next since the patches are
+now reaching linux-next through ARM-SoC tree. Apologies for not asking
+you to remove it for so long.
+
+Regards,
+Sekhar
+
