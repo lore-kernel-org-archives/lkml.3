@@ -1,96 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab3IQUVx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 16:21:53 -0400
-Received: from smtpauth02.mfg.siteprotect.com ([64.26.60.136]:39837 "EHLO
-	smtpauth02.mfg.siteprotect.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753180Ab3IQUVw (ORCPT
+	id S1753842Ab3IQUXu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 16:23:50 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56391 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753007Ab3IQUXr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 16:21:52 -0400
-Date: Tue, 17 Sep 2013 16:23:25 -0400 (EDT)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, adrian.hunter@intel.com, tglx@linutronix.de
-cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] perf: Fix broken union in ' struct
- perf_event_mmap_page'
-In-Reply-To: <tip-860f085b74e9f0075de8140ed3a1e5b5e3e39aa8@git.kernel.org>
-Message-ID: <alpine.DEB.2.02.1309171617400.13303@pianoman.cluster.toy>
-References: <1372425741-1676-2-git-send-email-adrian.hunter@intel.com> <tip-860f085b74e9f0075de8140ed3a1e5b5e3e39aa8@git.kernel.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 17 Sep 2013 16:23:47 -0400
+Date: Tue, 17 Sep 2013 22:23:32 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Cc: Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH 11/11] sched, x86: Optimize the preempt_schedule() call
+Message-ID: <20130917202332.GI12926@twins.programming.kicks-ass.net>
+References: <20130917082838.218329307@infradead.org>
+ <20130917091144.096544204@infradead.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020205.5238B9DF.013D,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130917091144.096544204@infradead.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Another build error by Thomas Meyer.. we need to export the asm symbols.
 
-This patch somehow breaks the perf-ABI.
+---
+Subject: sched, x86: Optimize the preempt_schedule() call
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Wed Aug 14 14:51:00 CEST 2013
 
-If I take a program that reads "mmap->cap_usr_rdpmc" and compile it
-against the new header with this change (say from 3.12-rc1)
-and then run it on an old kernel (say 3.11) then I get "0" for
-cap_usr_rdpmc.
+Remove the bloat of the C calling convention out of the
+preempt_enable() sites by creating an ASM wrapper which allows us to
+do an asm("call ___preempt_schedule") instead.
 
-If I take the same program and recompile against the old (without this 
-patch) header and run it on 3.11, I get the expected "1" value.
+calling.h bits by Andi Kleen
 
-So something about this changed the bit pattern in an incompatible 
-fashion.
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ arch/x86/include/asm/calling.h   |   50 +++++++++++++++++++++++++++++++++++++++
+ arch/x86/include/asm/preempt.h   |    8 ++++++
+ arch/x86/kernel/Makefile         |    2 +
+ arch/x86/kernel/i386_ksyms_32.c  |    7 +++++
+ arch/x86/kernel/preempt.S        |   25 +++++++++++++++++++
+ arch/x86/kernel/x8664_ksyms_64.c |    7 +++++
+ include/asm-generic/preempt.h    |   10 +++++++
+ include/linux/preempt.h          |   13 +++-------
+ 8 files changed, 114 insertions(+), 8 deletions(-)
 
-Vince
+--- a/arch/x86/include/asm/calling.h
++++ b/arch/x86/include/asm/calling.h
+@@ -48,6 +48,8 @@ For 32-bit we have the following convent
+ 
+ #include <asm/dwarf2.h>
+ 
++#ifdef CONFIG_X86_64
++
+ /*
+  * 64-bit system call stack frame layout defines and helpers,
+  * for assembly code:
+@@ -192,3 +194,51 @@ For 32-bit we have the following convent
+ 	.macro icebp
+ 	.byte 0xf1
+ 	.endm
++
++#else /* CONFIG_X86_64 */
++
++/*
++ * For 32bit only simplified versions of SAVE_ALL/RESTORE_ALL. These
++ * are different from the entry_32.S versions in not changing the segment
++ * registers. So only suitable for in kernel use, not when transitioning
++ * from or to user space. The resulting stack frame is not a standard
++ * pt_regs frame. The main use case is calling C code from assembler
++ * when all the registers need to be preserved.
++ */
++
++	.macro SAVE_ALL
++	pushl_cfi %eax
++	CFI_REL_OFFSET eax, 0
++	pushl_cfi %ebp
++	CFI_REL_OFFSET ebp, 0
++	pushl_cfi %edi
++	CFI_REL_OFFSET edi, 0
++	pushl_cfi %esi
++	CFI_REL_OFFSET esi, 0
++	pushl_cfi %edx
++	CFI_REL_OFFSET edx, 0
++	pushl_cfi %ecx
++	CFI_REL_OFFSET ecx, 0
++	pushl_cfi %ebx
++	CFI_REL_OFFSET ebx, 0
++	.endm
++
++	.macro RESTORE_ALL
++	popl_cfi %ebx
++	CFI_RESTORE ebx
++	popl_cfi %ecx
++	CFI_RESTORE ecx
++	popl_cfi %edx
++	CFI_RESTORE edx
++	popl_cfi %esi
++	CFI_RESTORE esi
++	popl_cfi %edi
++	CFI_RESTORE edi
++	popl_cfi %ebp
++	CFI_RESTORE ebp
++	popl_cfi %eax
++	CFI_RESTORE eax
++	.endm
++
++#endif /* CONFIG_X86_64 */
++
+--- a/arch/x86/include/asm/preempt.h
++++ b/arch/x86/include/asm/preempt.h
+@@ -95,4 +95,12 @@ static __always_inline bool should_resch
+ 	return unlikely(!__this_cpu_read_4(__preempt_count));
+ }
+ 
++#ifdef CONFIG_PREEMPT
++#define __preempt_schedule() asm ("call ___preempt_schedule")
++
++#ifdef CONFIG_CONTEXT_TRACKING
++#define __preempt_schedule_context() asm ("call ___preempt_schedule_context")
++#endif
++#endif /* CONFIG_PREEMPT */
++
+ #endif /* __ASM_PREEMPT_H */
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -36,6 +36,8 @@ obj-y			+= tsc.o io_delay.o rtc.o
+ obj-y			+= pci-iommu_table.o
+ obj-y			+= resource.o
+ 
++obj-$(CONFIG_PREEMPT)	+= preempt.o
++
+ obj-y				+= process.o
+ obj-y				+= i387.o xsave.o
+ obj-y				+= ptrace.o
+--- a/arch/x86/kernel/i386_ksyms_32.c
++++ b/arch/x86/kernel/i386_ksyms_32.c
+@@ -37,3 +37,10 @@ EXPORT_SYMBOL(strstr);
+ 
+ EXPORT_SYMBOL(csum_partial);
+ EXPORT_SYMBOL(empty_zero_page);
++
++#ifdef CONFIG_PREEMPT
++EXPORT_SYMBOL(___preempt_schedule);
++#ifdef CONFIG_CONTEXT_TRACKING
++EXPORT_SYMBOL(___preempt_schedule_context);
++#endif
++#endif
+--- /dev/null
++++ b/arch/x86/kernel/preempt.S
+@@ -0,0 +1,25 @@
++
++#include <linux/linkage.h>
++#include <asm/dwarf2.h>
++#include <asm/asm.h>
++#include <asm/calling.h>
++
++ENTRY(___preempt_schedule)
++	CFI_STARTPROC
++	SAVE_ALL
++	call preempt_schedule
++	RESTORE_ALL
++	ret
++	CFI_ENDPROC
++
++#ifdef CONFIG_CONTEXT_TRACKING
++
++ENTRY(___preempt_schedule_context)
++	CFI_STARTPROC
++	SAVE_ALL
++	call preempt_schedule_context
++	RESTORE_ALL
++	ret
++	CFI_ENDPROC
++
++#endif
+--- a/arch/x86/kernel/x8664_ksyms_64.c
++++ b/arch/x86/kernel/x8664_ksyms_64.c
+@@ -66,3 +66,10 @@ EXPORT_SYMBOL(empty_zero_page);
+ #ifndef CONFIG_PARAVIRT
+ EXPORT_SYMBOL(native_load_gs_index);
+ #endif
++
++#ifdef CONFIG_PREEMPT
++EXPORT_SYMBOL(___preempt_schedule);
++#ifdef CONFIG_CONTEXT_TRACKING
++EXPORT_SYMBOL(___preempt_schedule_context);
++#endif
++#endif
+--- a/include/asm-generic/preempt.h
++++ b/include/asm-generic/preempt.h
+@@ -90,4 +90,14 @@ static __always_inline bool should_resch
+ 	return unlikely(!*preempt_count_ptr());
+ }
+ 
++#ifdef CONFIG_PREEMPT
++extern asmlinkage void preempt_schedule(void);
++#define __preempt_schedule() preempt_schedule()
++
++#ifdef CONFIG_CONTEXT_TRACKING
++extern asmlinkage void preempt_schedule_context(void);
++#define __preempt_schedule_context() preempt_schedule_context()
++#endif
++#endif /* CONFIG_PREEMPT */
++
+ #endif /* __ASM_PREEMPT_H */
+--- a/include/linux/preempt.h
++++ b/include/linux/preempt.h
+@@ -50,18 +50,17 @@ do { \
+ #define preempt_enable_no_resched() sched_preempt_enable_no_resched()
+ 
+ #ifdef CONFIG_PREEMPT
+-asmlinkage void preempt_schedule(void);
+ #define preempt_enable() \
+ do { \
+ 	barrier(); \
+ 	if (unlikely(preempt_count_dec_and_test())) \
+-		preempt_schedule(); \
++		__preempt_schedule(); \
+ } while (0)
+ 
+ #define preempt_check_resched() \
+ do { \
+ 	if (should_resched()) \
+-		preempt_schedule(); \
++		__preempt_schedule(); \
+ } while (0)
+ 
+ #else
+@@ -83,17 +82,15 @@ do { \
+ 
+ #ifdef CONFIG_PREEMPT
+ 
+-#ifdef CONFIG_CONTEXT_TRACKING
+-asmlinkage void preempt_schedule_context(void);
+-#else
+-#define preempt_schedule_context() preempt_schedule()
++#ifndef CONFIG_CONTEXT_TRACKING
++#define __preempt_schedule_context() __preempt_schedule()
+ #endif
+ 
+ #define preempt_enable_notrace() \
+ do { \
+ 	barrier(); \
+ 	if (unlikely(__preempt_count_dec_and_test())) \
+-		preempt_schedule_context(); \
++		__preempt_schedule_context(); \
+ } while (0)
+ #else
+ #define preempt_enable_notrace() preempt_enable_no_resched_notrace()
 
-
-
-
-On Tue, 23 Jul 2013, tip-bot for Adrian Hunter wrote:
-
-> Commit-ID:  860f085b74e9f0075de8140ed3a1e5b5e3e39aa8
-> Gitweb:     http://git.kernel.org/tip/860f085b74e9f0075de8140ed3a1e5b5e3e39aa8
-> Author:     Adrian Hunter <adrian.hunter@intel.com>
-> AuthorDate: Fri, 28 Jun 2013 16:22:17 +0300
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Tue, 23 Jul 2013 12:17:10 +0200
-> 
-> perf: Fix broken union in 'struct perf_event_mmap_page'
-> 
-> The capabilities bits must not be "union'ed" together.
-> Put them in a separate struct.
-> 
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Link: http://lkml.kernel.org/r/1372425741-1676-2-git-send-email-adrian.hunter@intel.com
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> ---
->  include/uapi/linux/perf_event.h | 8 +++++---
->  1 file changed, 5 insertions(+), 3 deletions(-)
-> 
-> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-> index 00d8274..0041aed 100644
-> --- a/include/uapi/linux/perf_event.h
-> +++ b/include/uapi/linux/perf_event.h
-> @@ -375,9 +375,11 @@ struct perf_event_mmap_page {
->  	__u64	time_running;		/* time event on cpu */
->  	union {
->  		__u64	capabilities;
-> -		__u64	cap_usr_time  : 1,
-> -			cap_usr_rdpmc : 1,
-> -			cap_____res   : 62;
-> +		struct {
-> +			__u64	cap_usr_time		: 1,
-> +				cap_usr_rdpmc		: 1,
-> +				cap_____res		: 62;
-> +		};
->  	};
->  
->  	/*
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-k
