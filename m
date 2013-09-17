@@ -1,183 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662Ab3IQKDN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 06:03:13 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:53333 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752443Ab3IQKCR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 06:02:17 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-m68k@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 2/3] m68k: Add support to export bootinfo in procfs
-Date: Tue, 17 Sep 2013 12:01:32 +0200
-Message-Id: <1379412095-7213-3-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1379412095-7213-1-git-send-email-geert@linux-m68k.org>
-References: <1379412095-7213-1-git-send-email-geert@linux-m68k.org>
+	id S1752700Ab3IQKDS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 06:03:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60377 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752443Ab3IQKDP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 06:03:15 -0400
+Date: Tue, 17 Sep 2013 12:03:09 +0200
+From: Andrew Jones <drjones@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: kvm@vger.kernel.org, pbonzini@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [RFC] x86: kvm: remove KVM_SOFT_MAX_VCPUS
+Message-ID: <20130917100308.GA2169@hawk.usersys.redhat.com>
+References: <1379161011-28239-1-git-send-email-drjones@redhat.com>
+ <20130915090322.GV17294@redhat.com>
+ <20130916082208.GA2101@hawk.usersys.redhat.com>
+ <20130916085517.GK17294@redhat.com>
+ <20130916114725.GA14981@hawk.usersys.redhat.com>
+ <20130916144118.GB906@redhat.com>
+ <20130916152226.GA17256@hawk.usersys.redhat.com>
+ <20130917093619.GW17294@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130917093619.GW17294@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add optional support to export the bootinfo used to boot the kernel in a
-"bootinfo" file in procfs.  This is useful with kexec.
+On Tue, Sep 17, 2013 at 12:36:19PM +0300, Gleb Natapov wrote:
+> On Mon, Sep 16, 2013 at 05:22:26PM +0200, Andrew Jones wrote:
+> > On Mon, Sep 16, 2013 at 05:41:18PM +0300, Gleb Natapov wrote:
+> > > On Mon, Sep 16, 2013 at 01:47:26PM +0200, Andrew Jones wrote:
+> > > > On Mon, Sep 16, 2013 at 11:55:17AM +0300, Gleb Natapov wrote:
+> > > > > On Mon, Sep 16, 2013 at 10:22:09AM +0200, Andrew Jones wrote:
+> > > > > > > > [1] Actually, until 972fc544b6034a in uq/master is merged there won't be
+> > > > > > > >     any warnings either.
+> > > > > > > > 
+> > > > > > > > Signed-off-by: Andrew Jones <drjones@redhat.com>
+> > > > > > > > ---
+> > > > > > > >  arch/x86/include/asm/kvm_host.h | 1 -
+> > > > > > > >  arch/x86/kvm/x86.c              | 2 +-
+> > > > > > > >  2 files changed, 1 insertion(+), 2 deletions(-)
+> > > > > > > > 
+> > > > > > > > diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> > > > > > > > index c76ff74a98f2e..9236c63315a9b 100644
+> > > > > > > > --- a/arch/x86/include/asm/kvm_host.h
+> > > > > > > > +++ b/arch/x86/include/asm/kvm_host.h
+> > > > > > > > @@ -32,7 +32,6 @@
+> > > > > > > >  #include <asm/asm.h>
+> > > > > > > >  
+> > > > > > > >  #define KVM_MAX_VCPUS 255
+> > > > > > > > -#define KVM_SOFT_MAX_VCPUS 160
+> > > > > > > >  #define KVM_USER_MEM_SLOTS 125
+> > > > > > > >  /* memory slots that are not exposed to userspace */
+> > > > > > > >  #define KVM_PRIVATE_MEM_SLOTS 3
+> > > > > > > > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> > > > > > > > index e5ca72a5cdb6d..d9d3e2ed68ee9 100644
+> > > > > > > > --- a/arch/x86/kvm/x86.c
+> > > > > > > > +++ b/arch/x86/kvm/x86.c
+> > > > > > > > @@ -2604,7 +2604,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+> > > > > > > >  		r = !kvm_x86_ops->cpu_has_accelerated_tpr();
+> > > > > > > >  		break;
+> > > > > > > >  	case KVM_CAP_NR_VCPUS:
+> > > > > > > > -		r = KVM_SOFT_MAX_VCPUS;
+> > > > > > > > +		r = min(num_online_cpus(), KVM_MAX_VCPUS);
+> > > > > > > s/KVM_MAX_VCPUS/KVM_SOFT_MAX_VCPUS/.  Also what about hotplug cpus?
+> > > > > > 
+> > > > > > I'll send a v2 with this change.
+> > > > > > 
+> > > > > > I thought a bit about hotplug, and thus using num_possible_cpus()
+> > > > > > instead, but then decided it made more sense to stick to what's online now
+> > > > > > for the recommended number. It's just a recommendation anyway. So as long
+> > > > > > as KVM_MAX_VCPUS is >= num_possible_cpus(), then one can still configure
+> > > > > > more vcpus to count for all hotplugable cpus, if they wish.
+> > > > > > 
+> > > > > It is just recommended, but we do warn about it, so it is user visible.
+> > > > > Well, the whole point of it existence is to be user visible ;). If user
+> > > > > creates a guest with max cpus greater than current number if online
+> > > > > cpus, taking into account feature grows, he will get a warning, but we
+> > > > > should not warn about it.
+> > > > 
+> > > > Even it if means the user may end up running, e.g. 128 vcpus on 96 pcpus
+> > > > indefinitely? I'd rather warn about it, which could remind them to offline
+> > > > 32 vcpus for the time being.
+> > > But there are other means to detect number of online cpus:
+> > > sysconf(_SC_NPROCESSORS_ONLN). Actually you can determine number of
+> > > possible cpus too with _SC_NPROCESSORS_CONF, so returning those values
+> > > as KVM_CAP_NR_VCPUS does not provide any additional information. What
+> > > if QEMU process is bound to two cores on 64 core host, do you want to
+> > > warn if qemu is created with more then 2 vcpus in such case? You can do
+> > > that too with pthread_setaffinity_np(). 
+> > > 
+> > > >                               Although, as we're just discussing when or
+> > > > when not to output a warning, then I'm not really stressed about it either
+> > > > way. I can certainly change this to num_possible_cpus(), if all are in
+> > > > agreement that that is a better recommendation.
+> > > > 
+> > > With this patch we only reduce information available to userspace. QEMU
+> > > can already obtain all the information it needs to produce meaningful
+> > > warning.
+> > 
+> > All good points. We're still left with the fact that KVM_CAP_NR_VCPU
+> > currently returns a distro-specific number though, which can only be
+> > modified by changing a constant embedded in the source. So I still believe
+> > that a config option is in order, but now you're convincing me that the
+> > option should adjust KVM_SOFT_MAX_VCPUS instead. The default should also
+> > remain distro-neutral, so I vote 255. We'd then change the defines to be
+> > 
+> > #define KVM_SOFT_MAX_VCPUS CONFIG_KVM_SOFT_MAX_VCPUS
+> > #define KVM_MAX_VCPUS KVM_SOFT_MAX_VCPUS
+> > 
+> So you make KVM_MAX_VCPUS same as KVM_SOFT_MAX_VCPUS, what's the point
+> to have both then? KVM_MAX_VCPUS is max number of cpu that KVM supports
 
-This is based on the similar feature for ATAGS on ARM.
+I actually didn't believe there was a good point, until...
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/m68k/Kconfig                |    7 ++++
- arch/m68k/include/asm/bootinfo.h |    6 +++
- arch/m68k/kernel/Makefile        |    1 +
- arch/m68k/kernel/bootinfo_proc.c |   78 ++++++++++++++++++++++++++++++++++++++
- arch/m68k/kernel/setup_mm.c      |    2 +
- 5 files changed, 94 insertions(+)
- create mode 100644 arch/m68k/kernel/bootinfo_proc.c
+> because of architectural and/or implementation reasons. Current maximum
+> is 255 because this is what X2APIC supports without interrupt remapping
+> and we cannot grow this number without additional coding.
+> KVM_SOFT_MAX_VCPUS is the number we (upstream) feel single VM can
 
-diff --git a/arch/m68k/Kconfig b/arch/m68k/Kconfig
-index d60497f..edd40b0 100644
---- a/arch/m68k/Kconfig
-+++ b/arch/m68k/Kconfig
-@@ -103,6 +103,13 @@ config KEXEC
- 	  interface is strongly in flux, so no good recommendation can be
- 	  made.
- 
-+config BOOTINFO_PROC
-+	bool "Export bootinfo in procfs"
-+	depends on KEXEC && M68KCLASSIC
-+	help
-+	  Say Y to export the bootinfo used to boot the kernel in a
-+	  "bootinfo" file in procfs.  This is useful with kexec.
-+
- menu "Platform setup"
- 
- source arch/m68k/Kconfig.cpu
-diff --git a/arch/m68k/include/asm/bootinfo.h b/arch/m68k/include/asm/bootinfo.h
-index fdc6266..65f5cc6 100644
---- a/arch/m68k/include/asm/bootinfo.h
-+++ b/arch/m68k/include/asm/bootinfo.h
-@@ -47,6 +47,12 @@ struct bi_record {
-     unsigned long data[0];		/* data */
- };
- 
-+#ifdef CONFIG_BOOTINFO_PROC
-+extern void save_bootinfo(const struct bi_record *bi);
-+#else
-+static inline void save_bootinfo(const struct bi_record *bi) {}
-+#endif
-+
- #endif /* __ASSEMBLY__ */
- 
- 
-diff --git a/arch/m68k/kernel/Makefile b/arch/m68k/kernel/Makefile
-index 7ee5f00..2d5d9be 100644
---- a/arch/m68k/kernel/Makefile
-+++ b/arch/m68k/kernel/Makefile
-@@ -23,4 +23,5 @@ obj-$(CONFIG_PCI) += pcibios.o
- obj-$(CONFIG_HAS_DMA)	+= dma.o
- 
- obj-$(CONFIG_KEXEC)		+= machine_kexec.o relocate_kernel.o
-+obj-$(CONFIG_BOOTINFO_PROC)	+= bootinfo_proc.o
- 
-diff --git a/arch/m68k/kernel/bootinfo_proc.c b/arch/m68k/kernel/bootinfo_proc.c
-new file mode 100644
-index 0000000..a22eac1
---- /dev/null
-+++ b/arch/m68k/kernel/bootinfo_proc.c
-@@ -0,0 +1,78 @@
-+/*
-+ * Based on arch/arm/kernel/atags_proc.c
-+ */
-+
-+#include <linux/fs.h>
-+#include <linux/init.h>
-+#include <linux/printk.h>
-+#include <linux/proc_fs.h>
-+#include <linux/slab.h>
-+#include <linux/string.h>
-+
-+#include <asm/bootinfo.h>
-+
-+
-+static char bootinfo_tmp[1536] __initdata;
-+
-+static void *bootinfo_copy;
-+static size_t bootinfo_size;
-+
-+static ssize_t bootinfo_read(struct file *file, char __user *buf,
-+			  size_t count, loff_t *ppos)
-+{
-+	return simple_read_from_buffer(buf, count, ppos, bootinfo_copy,
-+				       bootinfo_size);
-+}
-+
-+static const struct file_operations bootinfo_fops = {
-+	.read = bootinfo_read,
-+	.llseek = default_llseek,
-+};
-+
-+void __init save_bootinfo(const struct bi_record *bi)
-+{
-+	const void *start = bi;
-+	size_t size = sizeof(bi->tag);
-+
-+	while (bi->tag != BI_LAST) {
-+		size += bi->size;
-+		bi = (struct bi_record *)((unsigned long)bi + bi->size);
-+	}
-+
-+	if (size > sizeof(bootinfo_tmp)) {
-+		pr_err("Cannot save %zu bytes of bootinfo\n", size);
-+		return;
-+	}
-+
-+	pr_info("Saving %zu bytes of bootinfo\n", size);
-+	memcpy(bootinfo_tmp, start, size);
-+	bootinfo_size = size;
-+}
-+
-+static int __init init_bootinfo_procfs(void)
-+{
-+	/*
-+	 * This cannot go into save_bootinfo() because kmalloc and proc don't
-+	 * work yet when it is called.
-+	 */
-+	struct proc_dir_entry *pde;
-+
-+	if (!bootinfo_size)
-+		return -EINVAL;
-+
-+	bootinfo_copy = kmalloc(bootinfo_size, GFP_KERNEL);
-+	if (!bootinfo_copy)
-+		return -ENOMEM;
-+
-+	memcpy(bootinfo_copy, bootinfo_tmp, bootinfo_size);
-+
-+	pde = proc_create_data("bootinfo", 0400, NULL, &bootinfo_fops, NULL);
-+	if (!pde) {
-+		kfree(bootinfo_copy);
-+		return -ENOMEM;
-+	}
-+
-+	return 0;
-+}
-+
-+arch_initcall(init_bootinfo_procfs);
-diff --git a/arch/m68k/kernel/setup_mm.c b/arch/m68k/kernel/setup_mm.c
-index 1e3e2cb..cb7b0c9 100644
---- a/arch/m68k/kernel/setup_mm.c
-+++ b/arch/m68k/kernel/setup_mm.c
-@@ -143,6 +143,8 @@ extern void paging_init(void);
- 
- static void __init m68k_parse_bootinfo(const struct bi_record *record)
- {
-+	save_bootinfo(record);
-+
- 	while (record->tag != BI_LAST) {
- 		int unknown = 0;
- 		const unsigned long *data = record->data;
--- 
-1.7.9.5
+...learning this. I didn't know that KVM_SOFT_MAX_VCPUS was an upstream
+agreement. I thought that number came out of distro-specific testing (indeed
+that's what the commit message says), and thus I wanted to move it into
+distro-configurable territory. I also didn't know that the 255 limit
+serves to document the maximum the x2apic supports. Should we add a
+comment for that define stating that?
 
+Anyway, now that'd you've clarified all this for me, please disregard both
+this and the other patch.
+
+drew
