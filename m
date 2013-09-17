@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573Ab3IQJXg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 05:23:36 -0400
-Received: from mga03.intel.com ([143.182.124.21]:43473 "EHLO mga03.intel.com"
+	id S1752454Ab3IQJXF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 05:23:05 -0400
+Received: from mga03.intel.com ([143.182.124.21]:43461 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752465Ab3IQJXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 05:23:07 -0400
+	id S1751907Ab3IQJXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 05:23:03 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.90,922,1371106800"; 
-   d="scan'208";a="361626509"
+   d="scan'208";a="361626463"
 From: Aaron Lu <aaron.lu@intel.com>
 To: linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
         dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
@@ -23,161 +23,50 @@ Cc: Daniel Vetter <daniel@ffwll.ch>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
         Jani Nikula <jani.nikula@linux.intel.com>,
         Aaron Lu <aaron.lu@intel.com>
-Subject: [PATCH v2 3/3] ACPI / video: Do not register backlight if win8 and native interface exists
-Date: Tue, 17 Sep 2013 17:23:16 +0800
-Message-Id: <1379409796-29350-4-git-send-email-aaron.lu@intel.com>
+Subject: [PATCH v2 0/3] Fix Win8 backlight issue
+Date: Tue, 17 Sep 2013 17:23:13 +0800
+Message-Id: <1379409796-29350-1-git-send-email-aaron.lu@intel.com>
 X-Mailer: git-send-email 1.8.4.12.g2ea3df6
-In-Reply-To: <1379409796-29350-1-git-send-email-aaron.lu@intel.com>
-References: <1379409796-29350-1-git-send-email-aaron.lu@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to Matthew Garrett, "Windows 8 leaves backlight control up
-to individual graphics drivers rather than making ACPI calls itself.
-There's plenty of evidence to suggest that the Intel driver for
-Windows 8 doesn't use the ACPI interface, including the fact that
-it's broken on a bunch of machines when the OS claims to support
-Windows 8.  The simplest thing to do appears to be to disable the
-ACPI backlight interface on these systems".
+v1 has the subject of "Rework ACPI video driver" and is posted here:
+http://lkml.org/lkml/2013/9/9/74
+Since the objective is really to fix Win8 backlight issues, I changed
+the subject in this version, sorry about that.
 
-So for Win8 systems, if there is native backlight control interface
-registered by GPU driver, ACPI video will not register its own. For
-users who prefer to keep ACPI video's backlight interface, the existing
-kernel cmdline option acpi_backlight=video can be used.
+This patchset has three patches, the first introduced a new API named
+backlight_device_registered in backlight layer that can be used for
+backlight interface provider module to check if a specific type backlight
+interface has been registered, see changelog for patch 1/3 for details.
+Then patch 2/3 does the cleanup to sepeate the backlight control and
+event delivery functionality in the ACPI video module and patch 3/3
+solves some Win8 backlight control problems by avoiding register ACPI
+video's backlight interface if:
+1 Kernel cmdline option acpi_backlight=video is not given;
+2 This is a Win8 system;
+3 Native backlight control interface exists.
 
-This patch is an evolution from previous work done by Matthew Garrett,
-Chun-Yi Lee, Seth Forshee and Rafael J. Wysocki.
+Technically, patch 2/3 is not required to fix the issue here. So if you
+think it is not necessary, I can remove it from the series.
 
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
----
- drivers/acpi/internal.h     |  5 ++---
- drivers/acpi/video.c        | 27 +++++----------------------
- drivers/acpi/video_detect.c | 14 ++++++++++++--
- 3 files changed, 19 insertions(+), 27 deletions(-)
+Apply on top of v3.12-rc1.
 
-diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-index 20f4233..453ae8d 100644
---- a/drivers/acpi/internal.h
-+++ b/drivers/acpi/internal.h
-@@ -169,9 +169,8 @@ int acpi_create_platform_device(struct acpi_device *adev,
- 					Video
-   -------------------------------------------------------------------------- */
- #if defined(CONFIG_ACPI_VIDEO) || defined(CONFIG_ACPI_VIDEO_MODULE)
--bool acpi_video_backlight_quirks(void);
--#else
--static inline bool acpi_video_backlight_quirks(void) { return false; }
-+bool acpi_osi_is_win8(void);
-+bool acpi_video_verify_backlight_support(void);
- #endif
- 
- #endif /* _ACPI_INTERNAL_H_ */
-diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-index 5ad5a71..343db59 100644
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -1256,8 +1256,8 @@ acpi_video_switch_brightness(struct acpi_video_device *device, int event)
- 	unsigned long long level_current, level_next;
- 	int result = -EINVAL;
- 
--	/* no warning message if acpi_backlight=vendor is used */
--	if (!acpi_video_backlight_support())
-+	/* no warning message if acpi_backlight=vendor or a quirk is used */
-+	if (!acpi_video_verify_backlight_support())
- 		return 0;
- 
- 	if (!device->brightness)
-@@ -1386,13 +1386,13 @@ acpi_video_bus_get_devices(struct acpi_video_bus *video,
- static int acpi_video_bus_start_devices(struct acpi_video_bus *video)
- {
- 	return acpi_video_bus_DOS(video, 0,
--				  acpi_video_backlight_quirks() ? 1 : 0);
-+				  acpi_osi_is_win8() ? 1 : 0);
- }
- 
- static int acpi_video_bus_stop_devices(struct acpi_video_bus *video)
- {
- 	return acpi_video_bus_DOS(video, 0,
--				  acpi_video_backlight_quirks() ? 0 : 1);
-+				  acpi_osi_is_win8() ? 0 : 1);
- }
- 
- static void acpi_video_bus_notify(struct acpi_device *device, u32 event)
-@@ -1558,7 +1558,7 @@ acpi_video_bus_match(acpi_handle handle, u32 level, void *context,
- 
- static void acpi_video_dev_register_backlight(struct acpi_video_device *device)
- {
--	if (acpi_video_backlight_support()) {
-+	if (acpi_video_verify_backlight_support()) {
- 		struct backlight_properties props;
- 		struct pci_dev *pdev;
- 		acpi_handle acpi_parent;
-@@ -1677,23 +1677,6 @@ static int acpi_video_bus_unregister_backlight(struct acpi_video_bus *video)
- 	return error;
- }
- 
--int acpi_video_unregister_backlight(void)
--{
--	struct acpi_video_bus *video;
--	int error = 0;
--
--	mutex_lock(&video_list_lock);
--	list_for_each_entry(video, &video_bus_head, entry) {
--		error = acpi_video_bus_unregister_backlight(video);
--		if (error)
--			break;
--	}
--	mutex_unlock(&video_list_lock);
--
--	return error;
--}
--EXPORT_SYMBOL(acpi_video_unregister_backlight);
--
- static void acpi_video_dev_add_notify_handler(struct acpi_video_device *device)
- {
- 	acpi_status status;
-diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
-index 940edbf..23d7d26 100644
---- a/drivers/acpi/video_detect.c
-+++ b/drivers/acpi/video_detect.c
-@@ -37,6 +37,7 @@
- #include <linux/acpi.h>
- #include <linux/dmi.h>
- #include <linux/pci.h>
-+#include <linux/backlight.h>
- 
- #include "internal.h"
- 
-@@ -233,11 +234,11 @@ static void acpi_video_caps_check(void)
- 		acpi_video_get_capabilities(NULL);
- }
- 
--bool acpi_video_backlight_quirks(void)
-+bool acpi_osi_is_win8(void)
- {
- 	return acpi_gbl_osi_data >= ACPI_OSI_WIN_8;
- }
--EXPORT_SYMBOL(acpi_video_backlight_quirks);
-+EXPORT_SYMBOL(acpi_osi_is_win8);
- 
- /* Promote the vendor interface instead of the generic video module.
-  * This function allow DMI blacklists to be implemented by externals
-@@ -283,6 +284,15 @@ int acpi_video_backlight_support(void)
- }
- EXPORT_SYMBOL(acpi_video_backlight_support);
- 
-+bool acpi_video_verify_backlight_support(void)
-+{
-+	if (!(acpi_video_support & ACPI_VIDEO_BACKLIGHT_FORCE_VIDEO) &&
-+	    acpi_osi_is_win8() && backlight_device_registered(BACKLIGHT_RAW))
-+		return false;
-+	return acpi_video_backlight_support();
-+}
-+EXPORT_SYMBOL(acpi_video_verify_backlight_support);
-+
- /*
-  * Use acpi_backlight=vendor/video to force that backlight switching
-  * is processed by vendor specific acpi drivers or video.ko driver.
+Aaron Lu (3):
+  backlight: introduce backlight_device_registered
+  ACPI / video: seperate backlight control and event interface
+  ACPI / video: Do not register backlight if win8 and native interface
+    exists
+
+ drivers/acpi/internal.h             |   5 +-
+ drivers/acpi/video.c                | 442 ++++++++++++++++++++----------------
+ drivers/acpi/video_detect.c         |  14 +-
+ drivers/video/backlight/backlight.c |  31 +++
+ include/acpi/video.h                |   2 +
+ include/linux/backlight.h           |   4 +
+ 6 files changed, 300 insertions(+), 198 deletions(-)
+
 -- 
 1.8.4.12.g2ea3df6
 
