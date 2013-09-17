@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753303Ab3IQNgZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 09:36:25 -0400
-Received: from outbound-mail02.westnet.com.au ([203.10.1.243]:64428 "EHLO
-	outbound-mail02.westnet.com.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753162Ab3IQNgX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 09:36:23 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApMBAIBXOFKVhxBY/2dsb2JhbAANTsUngTODGQEBAQQ4QAEQCxgJFg8JAwIBAgFFBg0BBQIBARavXJJPj2cHhB4DrSU
-X-IronPort-AV: E=Sophos;i="4.90,923,1371052800"; 
-   d="scan'208";a="362724621"
-X-WN-REMOTEIP: 149.135.16.88
-X-WN-ENVELOPESENDER: gerg@uclinux.org
-X-WN-MID: 362724621
-X-WN-SMTPAUTHID: gregungerer@westnet.com.au
-Message-ID: <52385893.6000802@uclinux.org>
-Date: Tue, 17 Sep 2013 23:26:43 +1000
-From: Greg Ungerer <gerg@uclinux.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	id S1752818Ab3IQNpL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 09:45:11 -0400
+Received: from nm13-vm0.bullet.mail.bf1.yahoo.com ([98.139.213.79]:40586 "EHLO
+	nm13-vm0.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752528Ab3IQNpI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 09:45:08 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 726173.18019.bm@omp1041.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=bqyLoKSYthQ3H3eYUtYF8hsXoo7xCr88ZorRg4Ql6jzr2+zuFfjP1hjVL6aUOH/L0tgveRQsS0C2FJUfM98H/1qM6Cn79aUEi+D8SIW5QOhy6dIIvnmtzfRoIDIUSH6M9rKKf3aF+juwjIr0HqRbADLpS8VMroc20+YTVQ7A1iY=;
+X-YMail-OSG: NEL1XM4VM1lhc5Dg5NQxIRyAR2zjSAvETFukx.WXhnHqz5S
+ oi18tLy0DWrZBO9hFPQcG
+X-Rocket-MIMEInfo: 002.001,DQrCoCDCoCDCoCDCoCDCoCDCoCDCoCDCoCDCoCAgIMKgIENPTkZJREVOVElBTCBUUlVTVCBSRVBMWSAuIA0KDQoNCkRlYXIgRnJpZW5kLCAgDQoNCkkgYW0gY29udGFjdGluZyB5b3UgdG8gYXNzaXN0IG1lIGluIHRoZSB0cmFuc2ZlciBvZiAkNiwyMDAsMDAwLjAwIGludG8geW91ciBwZXJzb25hbCBiYW5rIGFjY291bnQgZm9yIG91ciBiZW5lZml0LCB0aGlzIHRyYW5zYWN0aW9uIGlzIGNvbmZpZGVudGlhbCBhbmQgd2UgTVVTVCByZW1haW4gZmlkdWNpYWxseSBpbiBhbGwgb3VyIGRlYWxpbmdzIHNpbmNlIEkBMAEBAQE-
+X-RocketYMMF: malikzumar
+X-Mailer: YahooMailClassic/330 YahooMailWebService/0.8.157.561
+Message-ID: <1379425507.64640.YahooMailBasic@web161203.mail.bf1.yahoo.com>
+Date: Tue, 17 Sep 2013 06:45:07 -0700 (PDT)
+From: David Williams <dw5508688@gmail.com>
+Reply-To: lika12@voila.fr
+Subject: CONFIDENTIAL TRUST REPLY .
+To: undisclosed recipients:;
 MIME-Version: 1.0
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-CC: geert@linux-m68k.org, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] m68k: remove unused Kconfig parameters
-References: <1378468779-3289-1-git-send-email-michael.opdenacker@free-electrons.com> <523798BD.9010108@westnet.com.au> <5237C726.9070002@free-electrons.com>
-In-Reply-To: <5237C726.9070002@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
 
-On 17/09/13 13:06, Michael Opdenacker wrote:
-> On 09/17/2013 01:48 AM, Greg Ungerer wrote:
->> On 06/09/13 21:59, Michael Opdenacker wrote:
->>> This patch proposes to remove the UC5282 and UC5272 kernel configuration
->>> parameters defined in arch/m68k/Kconfig.machine,
->>> but used nowhere in the makefiles and source code.
->>>
->>> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
->> This change is a subset of c065edde ("remove 16 unused boards in
->> Kconfig.machine") by Pauk Bolle. And that is in 3.12-rc1.
-> Awesome! Thank you very much for the good news, and for not applying the
-> same change twice. Pfooh, this would have created anti-kconfig
-> parameters. Scary. ;)
-
-That would be scary :-)
-
-Regards
-Greg
+                      CONFIDENTIAL TRUST REPLY . 
 
 
+Dear Friend,  
 
+I am contacting you to assist me in the transfer of $6,200,000.00 into your personal bank account for our benefit, this transaction is confidential and we MUST remain fiducially in all our dealings since I cannot execute this opportunity alone without the support of a foreigner. This is in line with the Laws governing my Bank and that is why I have contacted you in this manner. 
+
+
+For your role in assisting me actualize this opportunity, you will be entitled to 30% of the total sum while 70% will be for me. However, what I need is your maximum cooperation and to provide a valid bank account where my bank will transfer this fund for our benefit. By indicating your interest on assurance of trust I will send you the full details and how this business will be executed and your urgent response to this proposal will be highly appreciated 
+
+
+Best regards, 
+Mr. David Williams
