@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960Ab3IQUbf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 16:31:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43171 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753496Ab3IQUbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 16:31:33 -0400
-Date: Tue, 17 Sep 2013 22:31:31 +0200
-From: Jan Kara <jack@suse.cz>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: BLK_TN_PROCESS events not delivered for all devices
-Message-ID: <20130917203131.GA6537@quack.suse.cz>
-References: <20130916092347.GB19027@quack.suse.cz>
- <52386733.4010801@kernel.dk>
- <20130917171028.GB16938@quack.suse.cz>
- <52389E25.5010605@kernel.dk>
+	id S1753865Ab3IQUd7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 16:33:59 -0400
+Received: from smtpauth05h.mfg.siteprotect.com ([64.26.60.146]:51283 "EHLO
+	smtpauth05.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753007Ab3IQUd6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 16:33:58 -0400
+Date: Tue, 17 Sep 2013 16:35:30 -0400 (EDT)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, adrian.hunter@intel.com, tglx@linutronix.de
+cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf: Fix broken union in ' struct
+ perf_event_mmap_page'
+In-Reply-To: <alpine.DEB.2.02.1309171617400.13303@pianoman.cluster.toy>
+Message-ID: <alpine.DEB.2.02.1309171632180.13443@pianoman.cluster.toy>
+References: <1372425741-1676-2-git-send-email-adrian.hunter@intel.com> <tip-860f085b74e9f0075de8140ed3a1e5b5e3e39aa8@git.kernel.org> <alpine.DEB.2.02.1309171617400.13303@pianoman.cluster.toy>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52389E25.5010605@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020208.5238BCB5.01EF,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 17-09-13 12:23:33, Jens Axboe wrote:
-> On 09/17/2013 11:10 AM, Jan Kara wrote:
-> > On Tue 17-09-13 08:29:07, Jens Axboe wrote:
-> >> On 09/16/2013 03:23 AM, Jan Kara wrote:
-> >>>   Hi,
-> >>>
-> >>>   I've been looking into a problem where BLK_TN_PROCESS events are not
-> >>> delivered to all devices which are being traced. This results in process
-> >>> name being (null) when trace for a single device is parsed.
-> >>>
-> >>> The reason for this problem is that trace_note_tsk() is called only if
-> >>> tsk->btrace_seq != blktrace_seq and it updates tsk->btrace_seq to
-> >>> blktrace_seq. Thus after a trace for another device is started
-> >>> BLK_TN_PROCESS event is sent only on behalf of the first device with which
-> >>> the task interacts. That isn't necessarily the new device thus traces for
-> >>> some devices accumulate several BLK_TN_PROCESS events for one task while
-> >>> other have none. Is this a known problem and is this intended to work
-> >>> better?
-> >>>
-> >>> I was thinking how to fix that for a while and it doesn't seem to be
-> >>> possible without tracking with each block trace which tasks it has been
-> >>> notified about. And that is relatively expensive...
-> >>
-> >> It is unfortunately a known issue... I have not come up with a good way
-> >> to fix it either, while keeping it cheap. So if you think of something,
-> >> do let me know.
-> >   Hum... How about linking all running block traces (struct blk_trace) in a
-> > linked list and sending BLK_TN_PROCESS to all the traces? Sure we will be
-> > spamming with BLK_TN_PROCESS a bit but starting a trace isn't such a common
-> > thing so it shouldn't be too bad. What do you think?
-> 
-> That might be good enough. I'm not worried about start/stop type
-> expenses, those things generally don't matter. And the list wont add any
-> fast path overhead when tracing.
-  OK, I've sent you a patch which does the trick for me.
+On Tue, 17 Sep 2013, Vince Weaver wrote:
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> 
+> This patch somehow breaks the perf-ABI.
+> 
+> If I take a program that reads "mmap->cap_usr_rdpmc" and compile it
+> against the new header with this change (say from 3.12-rc1)
+> and then run it on an old kernel (say 3.11) then I get "0" for
+> cap_usr_rdpmc.
+> 
+> If I take the same program and recompile against the old (without this 
+> patch) header and run it on 3.11, I get the expected "1" value.
+
+To follow up, the original case:
+
+        union {
+                __u64   capabilities;
+                __u64   cap_usr_time  : 1,
+                        cap_usr_rdpmc : 1,
+                        cap_____res   : 62;
+        };
+
+        Then mmap->usr_rdpmc=1; gets assembled as
+
+        400420:       80 0d 11 05 20 00 02    orb    $0x2,0x200511(%rip)        
+
+The new version
+
+       union {
+                __u64   capabilities;
+                struct {
+                        __u64   cap_usr_time            : 1,
+                                cap_usr_rdpmc           : 1,
+                                cap_usr_time_zero       : 1,
+                                cap_____res             : 61;
+                };
+        };
+
+        mmap->usr_rdpmc=1; gets assembled as
+
+
+       400427:       80 0d 02 05 20 00 01    orb    $0x1,0x200502(%rip)        
+
+note the difference in the or value.
+
+Vince
