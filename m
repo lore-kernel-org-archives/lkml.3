@@ -1,106 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179Ab3IQH4p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 03:56:45 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:46501 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab3IQH4n (ORCPT
+	id S1752228Ab3IQH5T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 03:57:19 -0400
+Received: from goliath.siemens.de ([192.35.17.28]:26801 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982Ab3IQH5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 03:56:43 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: "memory" binding issues
-Date: Tue, 17 Sep 2013 09:56:39 +0200
-Message-ID: <1815499.tpfeUKmP6V@flatron>
-User-Agent: KMail/4.11.1 (Linux/3.10.10-gentoo; KDE/4.11.1; x86_64; ; )
-In-Reply-To: <CAOesGMgE1jiF5OHsmPQz2z66Bcqu0HeAj=taE1vmFK-0-0s2TQ@mail.gmail.com>
-References: <1379300274.4098.77.camel@pasglop> <1379371567.3721.46.camel@pasglop> <CAOesGMgE1jiF5OHsmPQz2z66Bcqu0HeAj=taE1vmFK-0-0s2TQ@mail.gmail.com>
+	Tue, 17 Sep 2013 03:57:16 -0400
+Message-ID: <52380B55.5010408@siemens.com>
+Date: Tue, 17 Sep 2013 09:57:09 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: linux-kernel@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>, stable@vger.kernel.org,
+        kvm@vger.kernel.org, gleb@redhat.com
+Subject: Re: [PATCH 1/3] KVM: cleanup (physical) CPU hotplug
+References: <1379340373-5135-1-git-send-email-pbonzini@redhat.com> <1379340373-5135-2-git-send-email-pbonzini@redhat.com>
+In-Reply-To: <1379340373-5135-2-git-send-email-pbonzini@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 16 of September 2013 15:48:22 Olof Johansson wrote:
-> On Mon, Sep 16, 2013 at 3:46 PM, Benjamin Herrenschmidt
+On 2013-09-16 16:06, Paolo Bonzini wrote:
+> Remove the useless argument, and do not do anything if there are no
+> VMs running at the time of the hotplug.
+
+kvm_cpu_hotplug already filters !kvm_usage_count. If we need the check
+to be under kvm_lock, drop that line as well. If that is not required
+(machine still halted?), drop the related changes here.
+
+Jan
+
 > 
-> <benh@kernel.crashing.org> wrote:
-> > On Mon, 2013-09-16 at 10:17 -0600, Stephen Warren wrote:
-> >> On 09/15/2013 08:57 PM, Benjamin Herrenschmidt wrote:
-> >> > [resent to the right list this time around]
-> >> > 
-> >> > Hi folks !
-> >> > 
-> >> > So I don't have the bandwidth to follow closely what's going on,
-> >> > but I
-> >> > just today noticed the crackpot that went into 3.11 as part of
-> >> > commit:
-> >> > 
-> >> > 9d8eab7af79cb4ce2de5de39f82c455b1f796963
-> >> > drivers: of: add initialization code for dma reserved memory
-> >> > 
-> >> > Fist of all, do NOT add (or change) a binding as part of a patch
-> >> > implementing code, it's gross.
-> >> 
-> >> Personally, I would argue the opposite; it's much easier to see
-> >> what's
-> >> going on when it's all together in one patch.
-> > 
-> > One patch series eventually, but not the same patch.
-> > 
-> >> Ensuring ABI stability can
-> >> only be achieved through code review, i.e. splitting into separate
-> >> DT/code patches won't achieve that, so that argument doesn't affect
-> >> this.
-> >> 
-> >> ...
-> >> 
-> >> > Additionally, it has the following issues:
-> >> >  - It describes the "memory" node as /memory, which is WRONG
-> >> > 
-> >> > It should be "/memory@unit-address, this is important because the
-> >> > Linux
-> >> > kernel of_find_device_by_path() isn't smart enough to do partial
-> >> > searches (unlike the real OFW one) and thus to ignore the unit
-> >> > address
-> >> > for search purposes, and you *need* the unit address if you have
-> >> > multiple memory nodes (which you typically do on NUMA machines).
-> >> 
-> >> Perhaps /memory should have had a unit-address, but it never has had
-> >> on
-> > 
-> >> ARM; see arch/arm/boot/dts/skeleton.dtsi which says:
-> > Well, this is a mistake ARM folks might have done from day one but it
-> > should still be fixed :-)
-> > 
-> > A node that has a "reg" property should have the corresponding unit
-> > address.
+> Cc: stable@vger.kernel.org
+> Cc: kvm@vger.kernel.org
+> Cc: gleb@redhat.com
+> Cc: jan.kiszka@siemens.com
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>  virt/kvm/kvm_main.c | 14 ++++++++------
+>  1 file changed, 8 insertions(+), 6 deletions(-)
 > 
-> No, absolutely _NOT_ a requirement. Unit address is only required if
-> needed to disambiguate two properties with the same name.
+> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> index 979bff4..75522b3 100644
+> --- a/virt/kvm/kvm_main.c
+> +++ b/virt/kvm/kvm_main.c
+> @@ -2681,10 +2681,11 @@ static void hardware_enable_nolock(void *junk)
+>  	}
+>  }
+>  
+> -static void hardware_enable(void *junk)
+> +static void hardware_enable(void)
+>  {
+>  	raw_spin_lock(&kvm_lock);
+> -	hardware_enable_nolock(junk);
+> +	if (kvm_usage_count)
+> +		hardware_enable_nolock(NULL);
+>  	raw_spin_unlock(&kvm_lock);
+>  }
+>  
+> @@ -2698,10 +2699,11 @@ static void hardware_disable_nolock(void *junk)
+>  	kvm_arch_hardware_disable(NULL);
+>  }
+>  
+> -static void hardware_disable(void *junk)
+> +static void hardware_disable(void)
+>  {
+>  	raw_spin_lock(&kvm_lock);
+> -	hardware_disable_nolock(junk);
+> +	if (kvm_usage_count)
+> +		hardware_disable_nolock(NULL);
+>  	raw_spin_unlock(&kvm_lock);
+>  }
+>  
+> @@ -2756,12 +2758,12 @@ static int kvm_cpu_hotplug(struct notifier_block *notifier, unsigned long val,
+>  	case CPU_DYING:
+>  		printk(KERN_INFO "kvm: disabling virtualization on CPU%d\n",
+>  		       cpu);
+> -		hardware_disable(NULL);
+> +		hardware_disable();
+>  		break;
+>  	case CPU_STARTING:
+>  		printk(KERN_INFO "kvm: enabling virtualization on CPU%d\n",
+>  		       cpu);
+> -		hardware_enable(NULL);
+> +		hardware_enable();
+>  		break;
+>  	}
+>  	return NOTIFY_OK;
 > 
-> If there are no ambiguities, then leaving off the unit address is much
-> preferred.
 
-I'm afraid that I must disagree. For consistency I'd rather go with what 
-Ben said. Please see ePAPR chapter 2.2.1.1, which clearly defines how 
-nodes should be named.
-
-Having unit-address whenever the node has a reg property has the nice 
-property of eliminating the need to rename any nodes when adding new one. 
-(Consider the case that you have one subnode somewhere and you omit the 
-unit-address and then you find out that you have to add another subnode 
-with the same name, but another reg value.)
-
-Best regards,
-Tomasz
-
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+Corporate Competence Center Embedded Linux
