@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009Ab3IQVYI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 17:24:08 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60149 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753378Ab3IQVYG (ORCPT
+	id S1754022Ab3IQVY4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 17:24:56 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55019 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753216Ab3IQVYx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 17:24:06 -0400
-Date: Tue, 17 Sep 2013 22:23:59 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>,
-        Eric Van Hensbergen <ericvh@gmail.com>,
-        "M. Mohan Kumar" <mohan@in.ibm.com>, stable@vger.kernel.org
-Subject: Re: [PATCH 02/11] 9p: fix dentry leak in v9fs_vfs_atomic_open_dotl()
-Message-ID: <20130917212359.GJ13318@ZenIV.linux.org.uk>
-References: <1379335925-30858-3-git-send-email-miklos@szeredi.hu>
- <20130916181938.GD13318@ZenIV.linux.org.uk>
- <CAJfpegt3mAKVE7ToZbvPpFQCY1EAZ3tKfn__kfpGz4HeXWr8fw@mail.gmail.com>
- <20130916195003.GE13318@ZenIV.linux.org.uk>
- <CAJfpegsLeuw55Diw0yDmiFR+7qkSkOrW2fUbjmzFC9OxVsrAkQ@mail.gmail.com>
- <20130916220241.GF13318@ZenIV.linux.org.uk>
- <20130916232810.GG13318@ZenIV.linux.org.uk>
- <CAJfpegtJwgFNNQQB3AX9umsK+RacpQFSoakAMs++w6TT9x0yGw@mail.gmail.com>
- <20130917114404.GI13318@ZenIV.linux.org.uk>
- <CAJfpegtSVYStQQuJvd6CWAy-ZM6v8tmTcL5uz=iA1aHM72TeQQ@mail.gmail.com>
+	Tue, 17 Sep 2013 17:24:53 -0400
+Date: Tue, 17 Sep 2013 23:24:49 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, Linux-Arch <linux-arch@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linux/m68k <linux-m68k@vger.kernel.org>
+Subject: Re: [patch 1/6] hardirq: Make hardirq bits generic
+In-Reply-To: <CAMuHMdWgrQf+ULDrZyY5R+vT3GtiWEgpsWxmfk0b5pivN7wBmg@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1309172315550.4089@ionos.tec.linutronix.de>
+References: <20130917082838.218329307@infradead.org> <20130917182350.449685712@linutronix.de> <20130917183628.534494408@linutronix.de> <CAMuHMdWgrQf+ULDrZyY5R+vT3GtiWEgpsWxmfk0b5pivN7wBmg@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJfpegtSVYStQQuJvd6CWAy-ZM6v8tmTcL5uz=iA1aHM72TeQQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17, 2013 at 05:36:49PM +0200, Miklos Szeredi wrote:
-> On Tue, Sep 17, 2013 at 1:44 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > On Tue, Sep 17, 2013 at 12:16:56PM +0200, Miklos Szeredi wrote:
+On Tue, 17 Sep 2013, Geert Uytterhoeven wrote:
+
+> On Tue, Sep 17, 2013 at 8:53 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > --- linux-2.6.orig/arch/m68k/include/asm/hardirq.h
+> > +++ linux-2.6/arch/m68k/include/asm/hardirq.h
+> > @@ -5,17 +5,6 @@
+> >  #include <linux/cache.h>
+> >  #include <asm/irq.h>
 > >
-> >> Just one. This needs to be removed, since this condition is now
-> >> explicitly allowed and later checked for:
-> >>
-> >>     if (WARN_ON(excl && !(*opened & FILE_CREATED)))
-> >>         *opened |= FILE_CREATED;
-> >
-> > D'oh...  Fixed and pushed.
+> > -#define HARDIRQ_BITS   8
 > 
-> Okay, but moving the fsnotify_create()  to after the no-open section
-> is wrong, I think,  It's needed for the case of ->atomic_open() doing
-> lookup/create/no_open too.
+> > --- linux-2.6.orig/include/linux/preempt_mask.h
+> > +++ linux-2.6/include/linux/preempt_mask.h
+> > @@ -11,36 +11,22 @@
+> >   * - bits 0-7 are the preemption count (max preemption depth: 256)
+> >   * - bits 8-15 are the softirq count (max # of softirqs: 256)
+> >   *
+> > - * The hardirq count can in theory reach the same as NR_IRQS.
+> > - * In reality, the number of nested IRQS is limited to the stack
+> > - * size as well. For archs with over 1000 IRQS it is not practical
+> > - * to expect that they will all nest. We give a max of 10 bits for
+> > - * hardirq nesting. An arch may choose to give less than 10 bits.
+> > - * m68k expects it to be 8.
+> 
+> m68k needs some changes in arch/m68k/kernel/entry.S, cfr. this check
+> in arch/m68k/kernel/ints.c:
+> 
+>         /* assembly irq entry code relies on this... */
+>         if (HARDIRQ_MASK != 0x00ff0000) {
+>                 extern void hardirq_mask_is_broken(void);
+>                 hardirq_mask_is_broken();
+>         }
+> 
+> Haven't looked into the details yet...
 
-What a mess...  It's actually even uglier than that - which dentry should
-we pass to fsnotify_create() in case where finish_no_open() has been given
-a non-NULL dentry other than one we had passed to ->atomic_open()?  I think
-that version in mainline is actually broken in that respect as far as fuse
-is concerned, not that anybody sane could expect ...notify to work on fuse.
+Whee. Did not notice that one. Though I can't find anything
+interesting in the low level entry code... Looks like some more
+histerical left overs.
 
-Anyway, I've pushed what I think is a sane fix.  Please, review and test -
-I don't have a setup for testing fsnotify on fuse.
+Thanks,
+
+	tglx
+
