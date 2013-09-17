@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029Ab3IQBBU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 21:01:20 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:5504 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751437Ab3IQBBR (ORCPT
+	id S1751762Ab3IQBIM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 21:08:12 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36744 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437Ab3IQBIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 21:01:17 -0400
-Message-ID: <5237A9B0.2070507@huawei.com>
-Date: Tue, 17 Sep 2013 09:00:32 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Mon, 16 Sep 2013 21:08:11 -0400
+Message-ID: <5237AB72.5020806@infradead.org>
+Date: Mon, 16 Sep 2013 18:08:02 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Cody P Schafer <cody@linux.vnet.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, "Hugh Dickins" <hughd@google.com>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm/mempolicy: use NUMA_NO_NODE
-References: <5236FF32.60503@huawei.com> <5237695F.6010501@linux.vnet.ibm.com>
-In-Reply-To: <5237695F.6010501@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
+To: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
+Subject: [PATCH] regulator: fix fatal kernel-doc error
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.216]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/9/17 4:26, Cody P Schafer wrote:
+From: Randy Dunlap <rdunlap@infradead.org>
 
-> 
->> @@ -1802,11 +1802,11 @@ static inline unsigned interleave_nid(struct mempolicy *pol,
->>
->>   /*
->>    * Return the bit number of a random bit set in the nodemask.
->> - * (returns -1 if nodemask is empty)
->> + * (returns NUMA_NO_NOD if nodemask is empty)
-> 
-> s/NUMA_NO_NOD/NUMA_NO_NODE/
+Fix fatal kernel-doc error in <linux/regulator/driver.h>:
 
-> 
+Error(include/linux/regulator/driver.h:52): cannot understand prototype: 'struct regulator_linear_range '
 
-Thanks, I will resent this.
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+Cc:	Liam Girdwood <lgirdwood@gmail.com>
+Cc:	Mark Brown <broonie@kernel.org>
+---
+ include/linux/regulator/driver.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
->>    */
->>   int node_random(const nodemask_t *maskp)
->>   {
->> -    int w, bit = -1;
->> +    int w, bit = NUMA_NO_NODE;
->>
->>       w = nodes_weight(*maskp);
->>       if (w)
->>
-> 
-> 
-> 
-
-
-
+--- lnx-312-rc1.orig/include/linux/regulator/driver.h
++++ lnx-312-rc1/include/linux/regulator/driver.h
+@@ -40,6 +40,8 @@ enum regulator_status {
+ };
+ 
+ /**
++ * struct regulator_linear_range - specify voltage ranges
++ *
+  * Specify a range of voltages for regulator_map_linar_range() and
+  * regulator_list_linear_range().
+  *
