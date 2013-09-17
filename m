@@ -1,46 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842Ab3IQLoK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 07:44:10 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:58821 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493Ab3IQLoI (ORCPT
+	id S1752535Ab3IQLx0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 07:53:26 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:37921 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751975Ab3IQLxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 07:44:08 -0400
-Date: Tue, 17 Sep 2013 12:44:04 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>,
-        Eric Van Hensbergen <ericvh@gmail.com>,
-        "M. Mohan Kumar" <mohan@in.ibm.com>, stable@vger.kernel.org
-Subject: Re: [PATCH 02/11] 9p: fix dentry leak in v9fs_vfs_atomic_open_dotl()
-Message-ID: <20130917114404.GI13318@ZenIV.linux.org.uk>
-References: <1379335925-30858-1-git-send-email-miklos@szeredi.hu>
- <1379335925-30858-3-git-send-email-miklos@szeredi.hu>
- <20130916181938.GD13318@ZenIV.linux.org.uk>
- <CAJfpegt3mAKVE7ToZbvPpFQCY1EAZ3tKfn__kfpGz4HeXWr8fw@mail.gmail.com>
- <20130916195003.GE13318@ZenIV.linux.org.uk>
- <CAJfpegsLeuw55Diw0yDmiFR+7qkSkOrW2fUbjmzFC9OxVsrAkQ@mail.gmail.com>
- <20130916220241.GF13318@ZenIV.linux.org.uk>
- <20130916232810.GG13318@ZenIV.linux.org.uk>
- <CAJfpegtJwgFNNQQB3AX9umsK+RacpQFSoakAMs++w6TT9x0yGw@mail.gmail.com>
+	Tue, 17 Sep 2013 07:53:25 -0400
+Message-ID: <523841BF.3070806@linux.vnet.ibm.com>
+Date: Tue, 17 Sep 2013 17:19:19 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJfpegtJwgFNNQQB3AX9umsK+RacpQFSoakAMs++w6TT9x0yGw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Viresh Kumar <viresh.kumar@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] cpufreq: serialize calls to __cpufreq_governor()
+References: <085013f4e584e3fef97187bcb349c3fa76942e19.1378012620.git.viresh.kumar@linaro.org> <80c4bd8c577e5da0aa63342671773be5cdc26a9a.1378012620.git.viresh.kumar@linaro.org> <5225E205.7080008@linux.vnet.ibm.com>	<5197493.kSPF7VUWqc@vostro.rjw.lan> <CAKohpom8d89OtJOs-_eCu+RiVA+B0bt7rtgNcJn=D=y95+jdQg@mail.gmail.com>
+In-Reply-To: <CAKohpom8d89OtJOs-_eCu+RiVA+B0bt7rtgNcJn=D=y95+jdQg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13091711-5816-0000-0000-000009F14225
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17, 2013 at 12:16:56PM +0200, Miklos Szeredi wrote:
-
-> Just one. This needs to be removed, since this condition is now
-> explicitly allowed and later checked for:
+On 09/13/2013 05:14 PM, Viresh Kumar wrote:
+> On 4 September 2013 01:10, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> On Tuesday, September 03, 2013 06:50:05 PM Srivatsa S. Bhat wrote:
 > 
->     if (WARN_ON(excl && !(*opened & FILE_CREATED)))
->         *opened |= FILE_CREATED;
+>>> This doesn't solve the problem completely: it prevents the store_*() task
+>>> from continuing *only* when it concurrently executes the __cpufreq_governor()
+>>> function along with the CPU offline task. But if the two calls don't overlap,
+>>> we will still have the possibility where the store_*() task tries to acquire
+>>> the timer mutex after the CPU offline task has just finished destroying it.
+>>
+>> Yeah, I overlooked that.
+> 
+> As a background, I had a IRC chat with Srivatsa on this mail.. (I have marked
+> this unread as there were other important topics to close)..
+> 
+> And he had some other code in mind and these synchronization problems
+> aren't there with my patch at all (as per him too)..
+> 
+> Rafael, probably both me and Srivatsa are missing something that you
+> understood, can you please share what problem you see here with my patch?
+> 
+> And yes, even with Srivatsa's patchset I found a problem:
+> Two threads, one changing governor from ondemand->conservative and other
+> one changing min/max freq..
+> 
+> First one will try to STOP governor and other one will try to change
+> limits of gov.
+> Suppose 2nd one gets to ->governor() and after this first one stops
+> the governor.
+> Now the first one tries to access lock and crashes..
+> 
+> On IRC, Srivatsa agreed about the problem..
+> 
 
-D'oh...  Fixed and pushed.
+Actually, we had another round of discussions and decided that there is no
+problem here. The reason is, the top-level store() routine takes the rwsem of
+that policy for write; so only one store() can go at a time. So the race between
+changing the governor and changing the min/max freq won't happen because only
+one of them can execute at a given time. In fact, by extension, *any* two store()s
+in cpufreq shouldn't race with one another.
+
+So the conclusion is that the mainline code is fine in this aspect. Nothing
+needs to be reverted.
+
+That said, there are still certain low-priority/less-visible synchronization
+issues to be fixed in cpufreq, and we'll take them up later, once the dust is
+settled.
+
+Regards,
+Srivatsa S. Bhat
+
