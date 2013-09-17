@@ -1,123 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247Ab3IQNcO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 09:32:14 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:53348 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817Ab3IQNcM (ORCPT
+	id S1752956Ab3IQNeU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 09:34:20 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:65302 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752492Ab3IQNeS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 09:32:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAOMqctQ+XchmXk_Xno6ViAoZF-tHFPpDWoy7LVW1nooa+ywbmg@mail.gmail.com>
-References: <CAJd=RBBbJMWox5yJaNzW_jUdDfKfWe-Y7d1riYdN6huQStxzcA@mail.gmail.com>
- <CAOMqctQyS2SFraqJpzE0sRFcihFpMHRhT+3QuZhxft=SUXYVDw@mail.gmail.com> <CAOMqctQ+XchmXk_Xno6ViAoZF-tHFPpDWoy7LVW1nooa+ywbmg@mail.gmail.com>
-From: Michal Suchanek <hramrach@gmail.com>
-Date: Tue, 17 Sep 2013 15:31:31 +0200
-Message-ID: <CAOMqctT2u7E0kwpm052B9pkNo4D=sYHO+Vk=P_TziUb5KvTMKA@mail.gmail.com>
-Subject: Re: doing lots of disk writes causes oom killer to kill processes
-To: Hillf Danton <dhillf@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 17 Sep 2013 09:34:18 -0400
+Message-ID: <1379424853.3348.1.camel@ThinkPad-X230.localdomain>
+Subject: Re: [PATCH v2 0/3] Fix Win8 backlight issue
+From: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel@ffwll.ch>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Lee Chun-Yi <joeyli.kernel@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Yves-Alexis Perez <corsac@debian.org>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        Jani Nikula <jani.nikula@linux.intel.com>
+Date: Tue, 17 Sep 2013 17:34:13 +0400
+In-Reply-To: <1379409796-29350-1-git-send-email-aaron.lu@intel.com>
+References: <1379409796-29350-1-git-send-email-aaron.lu@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.9.91 (3.9.91-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 September 2013 12:12, Michal Suchanek <hramrach@gmail.com> wrote:
-> Hello
->
-> On 26 August 2013 15:51, Michal Suchanek <hramrach@gmail.com> wrote:
->> On 12 March 2013 03:15, Hillf Danton <dhillf@gmail.com> wrote:
->>>>On 11 March 2013 13:15, Michal Suchanek <hramrach@gmail.com> wrote:
->>>>>On 8 February 2013 17:31, Michal Suchanek <hramrach@gmail.com> wrote:
->>>>> Hello,
->>>>>
->>>>> I am dealing with VM disk images and performing something like wiping
->>>>> free space to prepare image for compressing and storing on server or
->>>>> copying it to external USB disk causes
->>>>>
->>>>> 1) system lockup in order of a few tens of seconds when all CPU cores
->>>>> are 100% used by system and the machine is basicaly unusable
->>>>>
->>>>> 2) oom killer killing processes
->>>>>
->>>>> This all on system with 8G ram so there should be plenty space to work with.
->>>>>
->>>>> This happens with kernels 3.6.4 or 3.7.1
->>>>>
->>>>> With earlier kernel versions (some 3.0 or 3.2 kernels) this was not a
->>>>> problem even with less ram.
->>>>>
->>>>> I have  vm.swappiness = 0 set for a long  time already.
->>>>>
->>>>>
->>>>I did some testing with 3.7.1 and with swappiness as much as 75 the
->>>>kernel still causes all cores to loop somewhere in system when writing
->>>>lots of data to disk.
->>>>
->>>>With swappiness as much as 90 processes still get killed on large disk writes.
->>>>
->>>>Given that the max is 100 the interval in which mm works at all is
->>>>going to be very narrow, less than 10% of the paramater range. This is
->>>>a severe regression as is the cpu time consumed by the kernel.
->>>>
->>>>The io scheduler is the default cfq.
->>>>
->>>>If you have any idea what to try other than downgrading to an earlier
->>>>unaffected kernel I would like to hear.
->>>>
->>> Can you try commit 3cf23841b4b7(mm/vmscan.c: avoid possible
->>> deadlock caused by too_many_isolated())?
->>>
->>> Or try 3.8 and/or 3.9, additionally?
->>>
->>
->> Hello,
->>
->> with deadline IO scheduler I experience this issue less often but it
->> still happens.
->>
->> I am on 3.9.6 Debian kernel so 3.8 did not fix this problem.
->>
->> Do you have some idea what to log so that useful information about the
->> lockup is gathered?
->>
->
-> This appears to be fixed in vanilla 3.11 kernel.
->
-> I still get short intermittent lockups and cpu usage spikes up to 20%
-> on a core but nowhere near the minute+ long lockups with all cores
-> 100% on earlier kernels.
->
+On Tue, 2013-09-17 at 17:23 +0800, Aaron Lu wrote:
+> v1 has the subject of "Rework ACPI video driver" and is posted here:
+> http://lkml.org/lkml/2013/9/9/74
+> Since the objective is really to fix Win8 backlight issues, I changed
+> the subject in this version, sorry about that.
+> 
+> This patchset has three patches, the first introduced a new API named
+> backlight_device_registered in backlight layer that can be used for
+> backlight interface provider module to check if a specific type backlight
+> interface has been registered, see changelog for patch 1/3 for details.
+> Then patch 2/3 does the cleanup to sepeate the backlight control and
+> event delivery functionality in the ACPI video module and patch 3/3
+> solves some Win8 backlight control problems by avoiding register ACPI
+> video's backlight interface if:
+> 1 Kernel cmdline option acpi_backlight=video is not given;
+> 2 This is a Win8 system;
+> 3 Native backlight control interface exists.
+> 
+> Technically, patch 2/3 is not required to fix the issue here. So if you
+> think it is not necessary, I can remove it from the series.
+> 
+> Apply on top of v3.12-rc1.
+> 
+> Aaron Lu (3):
+>   backlight: introduce backlight_device_registered
+>   ACPI / video: seperate backlight control and event interface
+>   ACPI / video: Do not register backlight if win8 and native interface
+>     exists
+> 
+>  drivers/acpi/internal.h             |   5 +-
+>  drivers/acpi/video.c                | 442 ++++++++++++++++++++----------------
+>  drivers/acpi/video_detect.c         |  14 +-
+>  drivers/video/backlight/backlight.c |  31 +++
+>  include/acpi/video.h                |   2 +
+>  include/linux/backlight.h           |   4 +
+>  6 files changed, 300 insertions(+), 198 deletions(-)
+> 
 
-So I did more testing on the 3.11 kernel and while it works OK with
-tar you can get severe lockups with mc or kvm. The difference is
-probably the fact that sane tools do fsync() on files they close
-forcing the file to write out and the kernel returning possible write
-errors before they move on to next file.
+Aaron, how about fix indicator on ThinkPads ?
 
-With kvm writing to a file used as virtual disk the system would stall
-indefinitely until the disk driver in the emulated system would time
-out, return disk IO error, and the emulated system would stop writing.
-In top I see all CPU cores 90%+ in wait. System is unusable. With mc
-the lockups would be indefinite, probably because there is no timeout
-on writing a file in mc.
+-- 
+Igor Gnatenko
+Fedora release 20 (Heisenbug)
+Linux 3.11.1-300.fc20.x86_64
 
-I tried tuning swappiness and eleveators but the the basic problem is
-solved by neither: the dirty buffers fill up memory and system stalls
-trying to resolve the situation.
-
-Obviously the kernel puts off writing any dirty buffers until the
-memory pressure is overwhelming and the vmm flops.
-
-At least the OOM killer does not get invoked anymore since there is
-lots of memory - just Linux does not know how to use it.
-
-The solution to this problem is quite simple - use the ancient
-userspace bdflushd or what it was called. I emulate it with
-{ while true ; do sleep 5; sync ; done } &
-
-The system performance suddenly increases - to the awesome Debian stable levels.
-
-Thanks
-
-Michal
