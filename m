@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751775Ab3IQAh6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 20:37:58 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:46514 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751166Ab3IQAh5 (ORCPT
+	id S1751741Ab3IQAo1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 20:44:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44339 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751697Ab3IQAoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 20:37:57 -0400
-Message-ID: <5237A461.3010802@hurleysoftware.com>
-Date: Mon, 16 Sep 2013 20:37:53 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
+	Mon, 16 Sep 2013 20:44:23 -0400
+Message-ID: <5237A5D5.8010006@canonical.com>
+Date: Mon, 16 Sep 2013 20:44:05 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: David Daney <ddaney.cavm@gmail.com>
-CC: Josef Bacik <jbacik@fusionio.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-btrfs@vger.kernel.org,
-        walken@google.com, mingo@elte.hu, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rwsem: add rwsem_is_contended
-References: <1377872041-390-1-git-send-email-jbacik@fusionio.com> <20130916160547.371b74f91511a42ac263449e@linux-foundation.org> <20130917000516.GJ2446@localhost.localdomain> <5237A257.1070303@gmail.com>
-In-Reply-To: <5237A257.1070303@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: thomas@m3y3r.de, Jiri Kosina <jkosina@suse.cz>, list@osuosl.org,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        LKML <linux-kernel@vger.kernel.org>, open@osuosl.org,
+        HID CORE LAYER <linux-input@vger.kernel.org>,
+        devel@linuxdriverproject.org
+Subject: Re: [v3.11][Regression] HID: hyperv: convert alloc+memcpy to memdup
+References: <5237430B.5040009@canonical.com> <20130916203824.GP25896@mwanda> <52376ED9.5080208@canonical.com> <20130916210503.GQ25896@mwanda>
+In-Reply-To: <20130916210503.GQ25896@mwanda>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/2013 08:29 PM, David Daney wrote:
-> On 09/16/2013 05:05 PM, Josef Bacik wrote:
->> On Mon, Sep 16, 2013 at 04:05:47PM -0700, Andrew Morton wrote:
->>> On Fri, 30 Aug 2013 10:14:01 -0400 Josef Bacik <jbacik@fusionio.com> wrote:
+On 09/16/2013 05:05 PM, Dan Carpenter wrote:
+> On Mon, Sep 16, 2013 at 04:49:29PM -0400, Joseph Salisbury wrote:
+>> On 09/16/2013 04:38 PM, Dan Carpenter wrote:
+>>> On Mon, Sep 16, 2013 at 01:42:35PM -0400, Joseph Salisbury wrote:
+>>>> Reverting the patch changes the driver back to useing kzalloc() and
+>>>> memcpy() instead of  kmemdup.  Doing so has uncovered another bug, which
+>>>> causes an oops on memcpy()[1].  We are in the process of bisecting that
+>>>> one now and will provide the results.
+>>> The two bugs are the same it's that the code has shifted a little.  Mark
+>>> the commit as buggy and continue with the git bisect.
 >>>
->>>> Btrfs uses an rwsem to control access to its extent tree.  Threads will hold a
->>>> read lock on this rwsem while they scan the extent tree, and if need_resched()
->>>> they will drop the lock and schedule.  The transaction commit needs to take a
->>>> write lock for this rwsem for a very short period to switch out the commit
->>>> roots.  If there are a lot of threads doing this caching operation we can starve
->>>> out the committers which slows everybody out.  To address this we want to add
->>>> this functionality to see if our rwsem has anybody waiting to take a write lock
->>>> so we can drop it and schedule for a bit to allow the commit to continue.
->>>> Thanks,
->>>>
->>>
->>> This sounds rather nasty and hacky.  Rather then working around a
->>> locking shortcoming in a caller it would be better to fix/enhance the
->>> core locking code.  What would such a change need to do?
->>>
->>> Presently rwsem waiters are fifo-queued, are they not?  So the commit
->>> thread will eventually get that lock.  Apparently that's not working
->>> adequately for you but I don't fully understand what it is about these
->>> dynamics which is causing observable problems.
->>>
+>>> regards,
+>>> dan carpenter
+>> Can you explain a little further?  Mark commit a4a23f6 as bad?  An
+>> initial bisect already reported that was the first bad commit, so it
+>> can't be marked bad.  The oops on memcpy() happens after commit a4a23f6
+>> is reverted.  The oops on memcpy() did not happen before a4a23f6 was
+>> committed, so I assume this new oops was introduced by a change later.
 >>
->> So the problem is not that its normal lock starvation, it's more our particular
->> use case that is causing the starvation.  We can have lots of people holding
->> readers and simply never give them up for long periods of time, which is why we
->> need this is_contended helper so we know to drop things and let the committer
->> through.  Thanks,
+>> Right now I'm bisecting down the oops on memcpy() by updating the bisect
+>> with good or bad, depending if the test kernel hit the oops.  I then
+>> revert a4a23f6, so that revert is the HEAD of the tree each time before
+>> building the kernel again(As long as the commit spit out by bisect is
+>> after when a4a23f6 was introduced).
+> Yep.  Please continue bisecting the memcpy() oops.
 >
-> You could easily achieve the same thing by putting an "is_contending" flag in parallel with the rwsem and testing that:
+> kmemdup() is just a kzalloc() followed by a memcpy().  When we split it
+> apart by reverting the patch then we would expect the oops to move to
+> the memcpy() part.  Somehow "desc" is a bogus pointer, but I don't
+> immediately see how that is possible.
+>
+> regards,
+> dan carpenter
 
-Which adds a bunch more bus-locked operations to contended over, when
-a unlocked if (list_empty()) is sufficient.
+Thanks for the details.  We'll continue the bisect and let you know how
+it goes.
 
-Regards,
-Peter Hurley
+Thanks again,
 
+Joe
