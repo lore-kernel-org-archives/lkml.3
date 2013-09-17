@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751553Ab3IQGhZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 02:37:25 -0400
-Received: from kiruna.synopsys.com ([198.182.44.80]:40989 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751316Ab3IQGhW convert rfc822-to-8bit (ORCPT
+	id S1751639Ab3IQGpa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 02:45:30 -0400
+Received: from us01smtp3.synopsys.com ([198.182.44.81]:43199 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355Ab3IQGp3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 02:37:22 -0400
+	Tue, 17 Sep 2013 02:45:29 -0400
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: Rob Herring <robherring2@gmail.com>
 CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         Grant Likely <grant.likely@linaro.org>,
         Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH 10/28] arc: use early_init_dt_scan
-Thread-Topic: [PATCH 10/28] arc: use early_init_dt_scan
-Thread-Index: AQHOszHXLV27u1YJz0K76iptpYAoag==
-Date: Tue, 17 Sep 2013 06:37:17 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA2307514C2D1@IN01WEMBXA.internal.synopsys.com>
+Subject: Re: [PATCH 21/28] of: remove early_init_dt_setup_initrd_arch
+Thread-Topic: [PATCH 21/28] of: remove early_init_dt_setup_initrd_arch
+Thread-Index: AQHOszHbq1WDYwJXy067EexIOEh41w==
+Date: Tue, 17 Sep 2013 06:45:20 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA2307514C2DE@IN01WEMBXA.internal.synopsys.com>
 References: <1379372965-22359-1-git-send-email-robherring2@gmail.com>
- <1379372965-22359-11-git-send-email-robherring2@gmail.com>
+ <1379372965-22359-22-git-send-email-robherring2@gmail.com>
 Accept-Language: en-US, en-IN
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -35,7 +35,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On 09/17/2013 04:39 AM, Rob Herring wrote:
 > From: Rob Herring <rob.herring@calxeda.com>
 >
-> Convert arc to use new early_init_dt_scan function.
+> All arches do essentially the same thing now for
+> early_init_dt_setup_initrd_arch, so it can now be removed.
 >
 > Signed-off-by: Rob Herring <rob.herring@calxeda.com>
 > Cc: Vineet Gupta <vgupta@synopsys.com>
