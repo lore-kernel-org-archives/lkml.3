@@ -1,119 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751591Ab3IQFDA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 01:03:00 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:43084 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238Ab3IQFC5 (ORCPT
+	id S1751850Ab3IQFFc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 01:05:32 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:65060 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555Ab3IQFFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 01:02:57 -0400
+	Tue, 17 Sep 2013 01:05:30 -0400
 MIME-Version: 1.0
-From: Dmitry Vyukov <dvyukov@google.com>
-Date: Mon, 16 Sep 2013 22:02:33 -0700
-Message-ID: <CACT4Y+aBrLLSjOS7j-pn7T-X3-Ouqtarm_fZ5C7SrKKMhjdWbA@mail.gmail.com>
-Subject: Potential use-after-free in SyS_remap_file_pages
-To: LKML <linux-kernel@vger.kernel.org>, Ranjit Manomohan <ranjitm@google.com>,
-        Paul Turner <pjt@google.com>, Andrey Konovalov <andreyknvl@google.com>,
-        Kostya Serebryany <kcc@google.com>,
-        Michel Lespinasse <walken@google.com>
+In-Reply-To: <CAG6tG3yQVhANm1eHx3W3Hacp8t5Bh=pF9dQbHc3rSVs5n0WR9g@mail.gmail.com>
+References: <1367416573-5430-1-git-send-email-rlove@google.com>
+	<20130513214216.GA23743@kroah.com>
+	<CA+2_TiZ3dECAW8LV-Es=BjHCwgWw69zbWkr73at+0_c-EaDHmA@mail.gmail.com>
+	<CAG9bXvkH0L5FjkU3-=3X3zwp3vw8U7+jJRYp28GFXjLkQKBL5g@mail.gmail.com>
+	<CAG9bXvkjV6-O3JZH6taVX-dZ1tzbSoqaC_sN00LRszsS4QAnrg@mail.gmail.com>
+	<CAG6tG3zaU=gkJZzNezOX=s5WWDrc2x7SHiDy3UxVzDvKkw2foA@mail.gmail.com>
+	<20130516094559.4d2c9212.akpm@linux-foundation.org>
+	<CAG6tG3xLydqQTOHaXMpdCo8m+WkydAqgLvi5HW8_djoO-hcf9g@mail.gmail.com>
+	<20130516101907.d102dd91.akpm@linux-foundation.org>
+	<CAG6tG3yQVhANm1eHx3W3Hacp8t5Bh=pF9dQbHc3rSVs5n0WR9g@mail.gmail.com>
+Date: Tue, 17 Sep 2013 13:05:29 +0800
+Message-ID: <CAG9bXvkaAg2tqUKU8Gv-8rseraWzdaXXgohHg9BqnVmsLd=33w@mail.gmail.com>
+Subject: Re: [PATCH -next] ashmem: Fix ashmem_shrink deadlock.
+From: Raul Xiong <raulxiong@gmail.com>
+To: Robert Love <rlove@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Neil Zhang <glacier1980@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Shankar Brahadeeswaran <shankoo77@gmail.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Bringert <bringert@google.com>,
+        devel <devel@driverdev.osuosl.org>, Hugh Dickins <hughd@google.com>,
+        Anjana V Kumar <anjanavk12@gmail.com>,
+        linux-next <linux-next@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+2013/5/17 Robert Love <rlove@google.com>:
+> On Thu, May 16, 2013 at 1:19 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+>> On Thu, 16 May 2013 13:08:17 -0400 Robert Love <rlove@google.com> wrote:
+>>> This problem seems a rare proper use of mutex_trylock.
+>>
+>> Not really.  The need for a trylock is often an indication that a
+>> subsystem has a locking misdesign.  That is indeed the case here.
+>
+> It is exactly the same as PF_MEMALLOC. We've got an effectively
+> asynchronous event (shrinking) that can occur while you are holding
+> locks requisite to that shrinking. Given that the shrinkage is best
+> effort, a trylock actually communicates the intent pretty well: "If
+> possible, grab this lock and shrink."
+>
+> I think the idiomatic fix is to introduce a GFP_SHMEM but that seems
+> overkill. Lots of the GFP flags are really just preventing recursing
+> into the shrinkage code and it seems ill-designed that we require
+> developers to know where they might end up. But we can disagree. :)
+>
+>> Well, it's not exactly a ton of work, but adding a per-ashmem_area lock
+>> to protect ->file would rather be putting lipstick on a pig.  I suppose
+>> we can put the trylock in there and run away, but it wouldn't hurt to
+>> drop in a big fat comment somewhere explaining that the driver should be
+>> migrated to a per-object locking scheme.
+>
+> Unfortunately I think ashmem_shrink would need to grab the per-object
+> lock too; it needs to update the ranges. I'm sure we could re-design
+> this but I don't think it is as easy as simply pushing the locking
+> into the objects.
+>
+>        Robert
 
-I am working on AddressSanitizer -- a tool that detects use-after-free
-and out-of-bounds bugs
-(https://code.google.com/p/address-sanitizer/wiki/AddressSanitizerForKernel).
+Hi all,
+I am wondering if this is fixed in latest kernel? We are continuously
+seeing this deadlock issue.
 
-Here is one of the use-after-free reports:
-
-[  296.869705] ERROR: AddressSanitizer: heap-use-after-free on address
-ffff88005b47a670
-[  296.870787] ffff88005b47a670 is located 80 bytes inside of 184-byte
-region [ffff88005b47a620, ffff88005b47a6d8)
-[  296.872146] Accessed by thread T12219:
-[  296.872673]   #0      inlined     describe_heap_address
-./arch/x86/mm/asan/report.c:170
-[  296.872673]   #0 ffffffff810dd2a6 (asan_report_error+0x306/0x410)
-./arch/x86/mm/asan/report.c:284
-[  296.873509]   #1 ffffffff810dc6a0 (asan_check_region+0x30/0x40)
-./arch/x86/mm/asan/asan.c:37
-[  296.874328]   #2 ffffffff810dd453 (__tsan_read8+0x13/0x20) ??:0
-[  296.875295]   #3 ffffffff8124d1b6 (SyS_remap_file_pages+0x486/0x4f0) ??:0
-[  296.876243]   #4 ffffffff81928582 (system_call_fastpath+0x16/0x1b)
-./arch/x86/kernel/entry_64.S:645
-[  296.877098]
-[  296.877319] Freed by thread T12219:
-[  296.877797]   #0 ffffffff810dc849 (asan_slab_free+0x69/0xb0)
-./arch/x86/mm/asan/asan.c:134
-[  296.878590]   #1      inlined     __cache_free ./mm/slab.c:3591
-[  296.878590]   #1 ffffffff81280c55 (kmem_cache_free+0x55/0x2e0)
-./mm/slab.c:3800
-[  296.879403]   #2 ffffffff81258bfd (remove_vma+0xad/0xc0) ./mm/mmap.c:256
-[  296.880161]   #3      inlined     remove_vma_list ./mm/mmap.c:2321
-[  296.880161]   #3 ffffffff8125c817 (do_munmap+0x4d7/0x5f0) ./mm/mmap.c:2542
-[  296.880888]   #4 ffffffff8125d3f0 (mmap_region+0x280/0x960) ./mm/mmap.c:1506
-[  296.881666]   #5 ffffffff8124d18e (SyS_remap_file_pages+0x45e/0x4f0) ??:0
-[  296.882547]   #6 ffffffff81928582 (system_call_fastpath+0x16/0x1b)
-./arch/x86/kernel/entry_64.S:645
-[  296.883408]
-[  296.883627] Allocated by thread T12219:
-[  296.884182]   #0 ffffffff810dc768 (asan_slab_alloc+0x48/0xc0)
-./arch/x86/mm/asan/asan.c:91
-[  296.884954]   #1      inlined     slab_alloc ./mm/slab.c:3475
-[  296.884954]   #1 ffffffff81282eca (kmem_cache_alloc+0x9a/0x4c0)
-./mm/slab.c:3630
-[  296.885773]   #2 ffffffff8125d660 (mmap_region+0x4f0/0x960) ./mm/mmap.c:1534
-[  296.886550]   #3 ffffffff8125df0a (do_mmap_pgoff+0x43a/0x510)
-./mm/mmap.c:1345
-[  296.887349]   #4 ffffffff81240482 (vm_mmap_pgoff+0xb2/0xf0) ./mm/util.c:370
-[  296.888129]   #5      inlined     SYSC_mmap_pgoff ./mm/mmap.c:1394
-[  296.888129]   #5 ffffffff8125b552 (SyS_mmap_pgoff+0x282/0x2f0)
-./mm/mmap.c:1352
-[  296.888912]   #6 ffffffff8108441d (SyS_mmap+0x5d/0x80)
-./arch/x86/kernel/sys_x86_64.c:79
-[  296.889650]   #7 ffffffff81928582 (system_call_fastpath+0x16/0x1b)
-./arch/x86/kernel/entry_64.S:645
-[  296.890505]
-[  296.890705] Shadow bytes around the buggy address:
-[  296.891415]   ffff88005b47a380: fa fa fa fa fa fa fa fa fa fa fa fa
-fa fa fa fa
-[  296.892644]   ffff88005b47a400: fa fa fa fa fa fa 00 00 00 00 00 00
-00 00 00 00
-[  296.893706]   ffff88005b47a480: 00 00 00 00 00 00 00 00 00 00 00 00
-00 fa fa fa
-[  296.894753]   ffff88005b47a500: fa fa fa fa fa fa fa fa fa fa fa fa
-fa fa fa fa
-[  296.895798]   ffff88005b47a580: fa fa fa fa fa fa fa fa fa fa fa fa
-fa fa fa fa
-[  296.896844] =>ffff88005b47a600: fa fa fa fa fd fd fd fd fd fd fd fd
-fd fd[fd]fd
-[  296.897893]   ffff88005b47a680: fd fd fd fd fd fd fd fd fd fd fd fa
-fa fa fa fa
-[  296.899037]   ffff88005b47a700: fa fa fa fa fa fa fa fa fa fa fa fa
-fa fa fa fa
-[  296.900101]   ffff88005b47a780: fa fa fa fa fa fa fa fa fa fa fa fa
-fa fa fa fa
-[  296.901149]   ffff88005b47a800: fa fa 00 00 00 00 00 00 00 00 00 00
-00 00 00 00
-[  296.902190]   ffff88005b47a880: 00 00 00 00 00 00 00 00 00 fa fa fa
-fa fa fa fa
-[  296.903180] Shadow byte legend (one shadow byte represents 8
-application bytes):
-[  296.904185]   Addressable:           00
-[  296.904714]   Partially addressable: 01 02 03 04 05 06 07
-[  296.905515]   Heap redzone:          fa
-[  296.906096]   Heap kmalloc redzone:  fb
-[  296.906613]   Freed heap region:     fd
-[  296.907177]   Shadow gap:            fe
-
-SyS_remap_file_pages() calls mmap_region(), which calls
-remove_vma_list(), which calls remove_vma(), which frees the vma.
-Later (after out label) SyS_remap_file_pages() accesses the freed vma
-in vm_flags = vma->vm_flags.
-
-The report is obtained on revision 6a7492a4b2e05051a44458d7187023e22d580666.
-
-Please help to confirm/triage the report.
+Best Regards,
+Raul
