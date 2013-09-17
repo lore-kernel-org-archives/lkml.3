@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590Ab3IQVdO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 17:33:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38783 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753041Ab3IQVdN (ORCPT
+	id S1753828Ab3IQVdy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 17:33:54 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:50046 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753301Ab3IQVdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 17:33:13 -0400
-Date: Tue, 17 Sep 2013 14:33:12 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Joe Perches <joe@perches.com>, Josh Triplett <josh@joshtriplett.org>,
-        linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>,
-        David Howells <dhowells@redhat.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] checkpatch: Add warning about submitting patches using
- --file
-Message-Id: <20130917143312.0ca010002b7196a1f0868cad@linux-foundation.org>
-In-Reply-To: <20130902203705.GN19256@mwanda>
-References: <9976.1378132260@warthog.procyon.org.uk>
-	<1378138205.1953.66.camel@joe-AO722>
-	<20130902181510.GA29787@leaf>
-	<20130902181856.GB29787@leaf>
-	<1378150847.1953.106.camel@joe-AO722>
-	<20130902203705.GN19256@mwanda>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 17 Sep 2013 17:33:52 -0400
+MIME-Version: 1.0
+X-Originating-IP: [208.54.5.211]
+In-Reply-To: <2179723.s3DLWi0P8b@flatron>
+References: <1379300274.4098.77.camel@pasglop>
+	<5238C4D1.6060500@gmail.com>
+	<CAOesGMh0F09OAR4bepGSCE5Z5OZ56fBmDPBSfwZ+NB9RgcE0Vw@mail.gmail.com>
+	<2179723.s3DLWi0P8b@flatron>
+Date: Tue, 17 Sep 2013 14:33:51 -0700
+Message-ID: <CAOesGMjt6RsvYRjXxpB=v-Ro6iyUN=YzkDd1mfHqCDJJDRJvLg@mail.gmail.com>
+Subject: Re: "memory" binding issues
+From: Olof Johansson <olof@lixom.net>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: frowand.list@gmail.com, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Sep 2013 23:37:05 +0300 Dan Carpenter <dan.carpenter@oracle.com> wrote:
+On Tue, Sep 17, 2013 at 2:19 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+> On Tuesday 17 of September 2013 14:15:52 Olof Johansson wrote:
+>> On Tue, Sep 17, 2013 at 2:08 PM, Frank Rowand <frowand.list@gmail.com>
+> wrote:
+>> > On 9/17/2013 9:43 AM, Olof Johansson wrote:
+>> >> On Tue, Sep 17, 2013 at 09:56:39AM +0200, Tomasz Figa wrote:
+>> >>> I'm afraid that I must disagree. For consistency I'd rather go with
+>> >>> what Ben said. Please see ePAPR chapter 2.2.1.1, which clearly
+>> >>> defines how nodes should be named.
+>> >>
+>> >> 2.2.1.1 is there to point out that unit address _has_ to reflect reg.
+>> >>
+>> >> 2.2.3 says that unit addresses can be omitted.
+>> >
+>> > 2.2.3 is talking about path names.
+>> >
+>> > 2.2.1.1 is talking about node names.
+>> >
+>> > 2.2.1.1 _does_ require the unit address in the node name, 2.2.3 does
+>> > not remove that requirement.
+>>
+>> Sigh, that's horrible. OF clearly doesn't require it.
+>>
+>> I guess people prefer to follow ePAPR even though it's broken? That
+>> means someone needs to cleanup the current dts files. Any takers?
+>
+> I don't think it's broken, why do you think so? It's at least consistent.
+> Probably not perfect and not complete, but IMHO a reasonable base for
+> further work. (Also at least something written down that people can learn
+> from and/or refer to.)
 
-> On Mon, Sep 02, 2013 at 12:40:47PM -0700, Joe Perches wrote:
-> > +WARNING: When using --file mode, do not send patches that just make
-> > +whitespace or formatting changes unless more significant changes are
-> > +also made for other reasons in another patch.
-> > +
-> 
-> This is a run on sentence.  Also I don't agree with it.  Clean up
-> patches are good on their own.  There are parts of the kernel which are
-> not just in staging where I refuse to look at because it is so bad.
-> 
-> The problem is that people send "clean up" patches which don't clean up
-> the code or which make the code worse than the original.  All they care
-> about is pleasing checkpatch.pl instead of actually thinking about what
-> they are doing.  The message should just say something like, "Take a
-> step back and think about if this actually improves things for human
-> readers."
+So, I stand corrected. It seems that at least one legacy system I'm
+looking at always specifies unit address as well. I don't like it but
+I'll stop arguing.
 
-I don't agree either, really.  If someone sends a large cleanup patch
-and it improves the code and comes at a suitable time, I'll happily
-apply it, because it makes the kernel better.
+Ben: The interesting part is that it does _not_ specify it on /memory
+though. Nor, of course, on /cpus or /openprom. So assuming /memory@0
+exists will break even on some powerpc platforms.
 
-Often these patches come from newbies and they've made various errors,
-the most common of which is missed opportunities: there are cleanups
-which should have been made but which weren't, due to timidity or to
-lack of experience.  And that's OK - you point these things out, work
-with the submitter and end up with a good patch and a happy and
-better-informed submitter and a better kernel.  What's not to like
-about that?
 
-Sure, it takes time and it takes work.  But that's the maintainer's
-problem, nobody else's.  Don't go assuming that your problems and
-priorities are universal ones!
-
+-Olof
