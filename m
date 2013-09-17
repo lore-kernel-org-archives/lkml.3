@@ -1,120 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751857Ab3IQHaj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 03:30:39 -0400
-Received: from mga09.intel.com ([134.134.136.24]:34590 "EHLO mga09.intel.com"
+	id S1752133Ab3IQHeX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 03:34:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55604 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751434Ab3IQHah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 03:30:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,921,1371106800"; 
-   d="scan'208";a="379347392"
-Date: Tue, 17 Sep 2013 12:11:23 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Cc: kgene.kim@samsung.com, Dan Williams <djbw@fb.com>,
-        linus.walleij@linaro.org, Tomasz Figa <tomasz.figa@gmail.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Subject: Re: [PATCH v4 2/4] dmaengine: add driver for Samsung s3c24xx SoCs
-Message-ID: <20130917064123.GQ17188@intel.com>
-References: <201309050033.50333.heiko@sntech.de>
- <201309050035.24237.heiko@sntech.de>
+	id S1751946Ab3IQHeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 03:34:22 -0400
+Date: Tue, 17 Sep 2013 15:32:35 +0800
+From: Dong Zhu <bluezhudong@gmail.com>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: Rob Landley <rob@landley.net>, netdev@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next v4] ptp: add the PTP_SYS_OFFSET ioctl to the
+ testptp program
+Message-ID: <20130917073235.GG23682@zhudong.nay.redhat.com>
+References: <20130914080306.GC23682@zhudong.nay.redhat.com>
+ <20130914143144.GA4206@netboy>
+ <20130914153952.GD23682@zhudong.nay.redhat.com>
+ <20130915084811.GA10163@netboy>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201309050035.24237.heiko@sntech.de>
+In-Reply-To: <20130915084811.GA10163@netboy>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 05, 2013 at 12:35:23AM +0200, Heiko Stübner wrote:
-> This adds a new driver to support the s3c24xx dma using the dmaengine
-> and makes the old one in mach-s3c24xx obsolete in the long run.
-> 
-> Conceptually the s3c24xx-dma feels like a distant relative of the pl08x
-> with numerous virtual channels being mapped to a lot less physical ones.
-> The driver therefore borrows a lot from the amba-pl08x driver in this
-> regard. Functionality-wise the driver gains a memcpy ability in addition
-> to the slave_sg one.
-> 
-> The driver supports both the method for requesting the peripheral used
-> by SoCs before the S3C2443 and the different method for S3C2443 and later.
-> 
-> On earlier SoCs the hardware channels usable for specific peripherals is
-> constrainted while on later SoCs all channels can be used for any peripheral.
-> 
-> Tested on a s3c2416-based board, memcpy using the dmatest module and
-> slave_sg partially using the spi-s3c64xx driver.
-> 
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
-> +static enum dma_status s3c24xx_dma_tx_status(struct dma_chan *chan,
-> +		dma_cookie_t cookie, struct dma_tx_state *txstate)
-> +{
-> +	struct s3c24xx_dma_chan *s3cchan = to_s3c24xx_dma_chan(chan);
-> +	struct virt_dma_desc *vd;
-> +	unsigned long flags;
-> +	enum dma_status ret;
-> +	size_t bytes = 0;
-> +
-> +	ret = dma_cookie_status(chan, cookie, txstate);
-> +	if (ret == DMA_SUCCESS)
-> +		return ret;
-> +
-> +	/*
-> +	 * There's no point calculating the residue if there's
-> +	 * no txstate to store the value.
-> +	 */
-> +	if (!txstate)
-> +		return ret;
-> +
-> +	spin_lock_irqsave(&s3cchan->vc.lock, flags);
-> +	ret = dma_async_is_complete(cookie, txstate->last, txstate->used);
-Did you see what dma_cookie_status() does. There is no need to call
-dma_async_is_complete() here!
+Hi Richard,
 
-> +	if (ret != DMA_SUCCESS) {
-> +		struct s3c24xx_txd *txd;
-> +		struct s3c24xx_sg *dsg;
-> +
-> +		vd = vchan_find_desc(&s3cchan->vc, cookie);
-> +		if (vd) {
-> +			/* On the issued list, so hasn't been processed yet */
-> +			txd = to_s3c24xx_txd(&vd->tx);
-> +
-> +			list_for_each_entry(dsg, &txd->dsg_list, node)
-> +				bytes += dsg->len;
-> +		} else {
-> +			/*
-> +			 * Currently running, so sum over the pending sg's and
-> +			 * the currently active one.
-> +			 */
-> +			txd = s3cchan->at;
-> +
-> +			dsg = list_entry(txd->at, struct s3c24xx_sg, node);
-> +			list_for_each_entry_from(dsg, &txd->dsg_list, node);
-> +				bytes += dsg->len;
-> +
-> +			bytes += s3c24xx_dma_getbytes_chan(s3cchan);
-> +		}
-> +	}
-> +	spin_unlock_irqrestore(&s3cchan->vc.lock, flags);
-> +
-> +	/*
-> +	 * This cookie not complete yet
-> +	 * Get number of bytes left in the active transactions and queue
-> +	 */
-> +	dma_set_residue(txstate, bytes);
-> +
-> +	/* Whether waiting or running, we're in progress */
-> +	return ret;
+I developed a new patch and added a method to estimate the time offset
+between system and phc clock.
 
-Aprt form this driver looks fine to me...
+Could you help reviewing it again ? If it do make sense I hope it could
+be accepted.
 
-~Vinod
+Thanks !
+
+>From e524e3b68f3df3cd91acd814490d092bad05386b Mon Sep 17 00:00:00 2001
+
+This patch add a method into testptp.c to measure the time offset
+between phc and system clock through the ioctl PTP_SYS_OFFSET.
+
+Signed-off-by: Dong Zhu <bluezhudong@gmail.com>
+---
+ Documentation/ptp/testptp.c | 65 +++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 63 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/ptp/testptp.c b/Documentation/ptp/testptp.c
+index f59ded0..a74d0a8 100644
+--- a/Documentation/ptp/testptp.c
++++ b/Documentation/ptp/testptp.c
+@@ -100,6 +100,11 @@ static long ppb_to_scaled_ppm(int ppb)
+ 	return (long) (ppb * 65.536);
+ }
+ 
++static int64_t pctns(struct ptp_clock_time *t)
++{
++	return t->sec * 1000000000LL + t->nsec;
++}
++
+ static void usage(char *progname)
+ {
+ 	fprintf(stderr,
+@@ -112,6 +117,8 @@ static void usage(char *progname)
+ 		" -f val     adjust the ptp clock frequency by 'val' ppb\n"
+ 		" -g         get the ptp clock time\n"
+ 		" -h         prints this message\n"
++		" -k val     measure the time offset between system and phc clock\n"
++		"            for 'val' times (Maximum 25)\n"
+ 		" -p val     enable output with a period of 'val' nanoseconds\n"
+ 		" -P val     enable or disable (val=1|0) the system clock PPS\n"
+ 		" -s         set the ptp clock time from the system time\n"
+@@ -133,8 +140,12 @@ int main(int argc, char *argv[])
+ 	struct itimerspec timeout;
+ 	struct sigevent sigevent;
+ 
++	struct ptp_clock_time *pct;
++	struct ptp_sys_offset *sysoff;
++
++
+ 	char *progname;
+-	int c, cnt, fd;
++	int i, c, cnt, fd;
+ 
+ 	char *device = DEVICE;
+ 	clockid_t clkid;
+@@ -144,14 +155,19 @@ int main(int argc, char *argv[])
+ 	int extts = 0;
+ 	int gettime = 0;
+ 	int oneshot = 0;
++	int pct_offset = 0;
++	int n_samples = 0;
+ 	int periodic = 0;
+ 	int perout = -1;
+ 	int pps = -1;
+ 	int settime = 0;
+ 
++	int64_t t1, t2, tp;
++	int64_t interval, offset;
++
+ 	progname = strrchr(argv[0], '/');
+ 	progname = progname ? 1+progname : argv[0];
+-	while (EOF != (c = getopt(argc, argv, "a:A:cd:e:f:ghp:P:sSt:v"))) {
++	while (EOF != (c = getopt(argc, argv, "a:A:cd:e:f:ghk:p:P:sSt:v"))) {
+ 		switch (c) {
+ 		case 'a':
+ 			oneshot = atoi(optarg);
+@@ -174,6 +190,10 @@ int main(int argc, char *argv[])
+ 		case 'g':
+ 			gettime = 1;
+ 			break;
++		case 'k':
++			pct_offset = 1;
++			n_samples = atoi(optarg);
++			break;
+ 		case 'p':
+ 			perout = atoi(optarg);
+ 			break;
+@@ -376,6 +396,47 @@ int main(int argc, char *argv[])
+ 		}
+ 	}
+ 
++	if (pct_offset) {
++		if (n_samples <= 0 || n_samples > 25) {
++			puts("n_samples should be between 1 and 25");
++			usage(progname);
++			return -1;
++		}
++
++		sysoff = calloc(1, sizeof(*sysoff));
++		if (!sysoff) {
++			perror("calloc");
++			return -1;
++		}
++		sysoff->n_samples = n_samples;
++
++		if (ioctl(fd, PTP_SYS_OFFSET, sysoff))
++			perror("PTP_SYS_OFFSET");
++		else
++			puts("system and phc clock time offset request okay");
++
++		pct = &sysoff->ts[0];
++		for (i = 0; i < sysoff->n_samples; i++) {
++			t1 = pctns(pct+2*i);
++			tp = pctns(pct+2*i+1);
++			t2 = pctns(pct+2*i+2);
++			interval = t2 - t1;
++			offset = (t2 + t1) / 2 - tp;
++
++			printf("system time: %ld.%ld\n",
++				(pct+2*i)->sec, (pct+2*i)->nsec);
++			printf("phc    time: %ld.%ld\n",
++				(pct+2*i+1)->sec, (pct+2*i+1)->nsec);
++			printf("system time: %ld.%ld\n",
++				(pct+2*i+2)->sec, (pct+2*i+2)->nsec);
++			printf("system/phc clock time offset is %ld ns\n"
++				"system     clock time delay  is %ld ns\n",
++				offset, interval);
++		}
++
++		free(sysoff);
++	}
++
+ 	close(fd);
+ 	return 0;
+ }
+-- 
+1.7.11.7
+
 
 -- 
+Best Regards,
+Dong Zhu
