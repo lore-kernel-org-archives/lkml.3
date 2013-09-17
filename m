@@ -1,153 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753069Ab3IQObo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 10:31:44 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:56170 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752790Ab3IQObl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 10:31:41 -0400
-Message-ID: <52386733.8010807@ti.com>
-Date: Tue, 17 Sep 2013 09:29:07 -0500
-From: Joel Fernandes <joelf@ti.com>
-Reply-To: <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1753314Ab3IQOct (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 10:32:49 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49098 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752270Ab3IQOcs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 10:32:48 -0400
+Date: Tue, 17 Sep 2013 16:32:35 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 37/50] sched: Introduce migrate_swap()
+Message-ID: <20130917143235.GB29354@twins.programming.kicks-ass.net>
+References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
+ <1378805550-29949-38-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-To: Sekhar Nori <nsekhar@ti.com>
-CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Russell King <linux@arm.linux.org.uk>, Jyri Sarah <jsarha@ti.com>,
-        Koen Kooi <koen@beagleboard.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Pantel Antoniou <panto@antoniou-consulting.com>
-Subject: Re: [PATCH v3] ARM: EDMA: Fix clearing of unused list for DT DMA
- resources
-References: <1378839171-14455-1-git-send-email-joelf@ti.com> <5231903F.7080301@ti.com> <5233B471.40603@ti.com> <5236F00B.5040605@ti.com> <5237314D.7080102@ti.com> <5237E3C3.8050602@ti.com> <5237EAF3.70505@ti.com> <5237F147.1020302@ti.com>
-In-Reply-To: <5237F147.1020302@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1378805550-29949-38-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/2013 01:05 AM, Sekhar Nori wrote:
-[..]
->>> mixed messages. In short, we aim for consistency with situation today,
->>> not tomorrow.
->>
->> What you're asking to do infact breaks consistency with the rest of the code.
-> 
-> Well, ideally we support second CC even with DT to be consistent all
-> around. Since that has not happened, I don't want the code to pretend
-> that it it supports the second channel controller with DT that too only
-> in parts of code.
+On Tue, Sep 10, 2013 at 10:32:17AM +0100, Mel Gorman wrote:
+> TODO: I'm fairly sure we can get rid of the wake_cpu != -1 test by keeping
+> wake_cpu to the actual task cpu; just couldn't be bothered to think through
+> all the cases.
 
-Ok, I agree that the bindings don't talk about encoding a controller number in
-the channel provided from DT so it shouldn't assume that without binding
-updates. Following this suggestion, I've update the patch to the below:
+> + * XXX worry about hotplug
 
----8<---
-From: Joel Fernandes <joelf@ti.com>
-Subject: [PATCH v6] ARM: EDMA: Fix clearing of unused list for DT DMA resources
+Combined with the {get,put}_online_cpus() optimization patch, the below
+should address the two outstanding issues.
 
-HWMOD removal for MMC is breaking edma_start as the events are being manually
-triggered due to unused channel list not being clear.
+Completely untested for now.. will try and get it some runtime later.
 
-The above issue is fixed by reading the "dmas" property from the DT node if it
-exists and clearing the bits in the unused channel list if the dma controller
-used by any device is EDMA. For this purpose we use the of_* helpers to parse
-the arguments in the dmas phandle list.
-
-Also introduced is a minor clean up of a checkpatch error in old code.
-
-Reviewed-by: Sekhar Nori <nsekhar@ti.com>
-Reported-by: Balaji T K <balajitk@ti.com>
-Cc: Pantel Antoniou <panto@antoniou-consulting.com>
-Signed-off-by: Joel Fernandes <joelf@ti.com>
+Not-yet-signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
-Changes since initial version:
-- Using of_node_put on dma_spec's node pointer.
-- Update changelog with minor cleanup information.
-- For DT-case, set controller number as 0.
-- Reduced indentation of non-of case by returning from of-case
-- Using of_* helpers for parsing
+ kernel/sched/core.c  |   37 ++++++++++++++++++++-----------------
+ kernel/sched/sched.h |    1 +
+ 2 files changed, 21 insertions(+), 17 deletions(-)
 
- arch/arm/common/edma.c | 38 +++++++++++++++++++++++++++++++-------
- 1 file changed, 31 insertions(+), 7 deletions(-)
-
-diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
-index 117f955..8e1a024 100644
---- a/arch/arm/common/edma.c
-+++ b/arch/arm/common/edma.c
-@@ -269,6 +269,11 @@ static const struct edmacc_param dummy_paramset = {
- 	.ccnt = 1,
- };
-
-+static const struct of_device_id edma_of_ids[] = {
-+	{ .compatible = "ti,edma3", },
-+	{}
-+};
-+
- /*****************************************************************************/
-
- static void map_dmach_queue(unsigned ctlr, unsigned ch_no,
-@@ -560,14 +565,38 @@ static int reserve_contiguous_slots(int ctlr, unsigned int id,
- static int prepare_unused_channel_list(struct device *dev, void *data)
- {
- 	struct platform_device *pdev = to_platform_device(dev);
--	int i, ctlr;
-+	int i, count, ctlr;
-+	struct of_phandle_args  dma_spec;
-
-+	if (dev->of_node) {
-+		count = of_property_count_strings(dev->of_node, "dma-names");
-+		if (count < 0)
-+			return 0;
-+		for (i = 0; i < count; i++) {
-+			if (of_parse_phandle_with_args(dev->of_node, "dmas",
-+						       "#dma-cells", i,
-+						       &dma_spec))
-+				continue;
-+
-+			if (!of_match_node(edma_of_ids, dma_spec.np)) {
-+				of_node_put(dma_spec.np);
-+				continue;
-+			}
-+
-+			clear_bit(EDMA_CHAN_SLOT(dma_spec.args[0]),
-+				  edma_cc[0]->edma_unused);
-+			of_node_put(dma_spec.np);
-+		}
-+		return 0;
-+	}
-+
-+	/* For non-OF case */
- 	for (i = 0; i < pdev->num_resources; i++) {
- 		if ((pdev->resource[i].flags & IORESOURCE_DMA) &&
- 				(int)pdev->resource[i].start >= 0) {
- 			ctlr = EDMA_CTLR(pdev->resource[i].start);
- 			clear_bit(EDMA_CHAN_SLOT(pdev->resource[i].start),
--					edma_cc[ctlr]->edma_unused);
-+				  edma_cc[ctlr]->edma_unused);
- 		}
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1035,7 +1035,7 @@ static void __migrate_swap_task(struct t
+ 		/*
+ 		 * Task isn't running anymore; make it appear like we migrated
+ 		 * it before it went to sleep. This means on wakeup we make the
+-		 * previous cpu or targer instead of where it really is.
++		 * previous cpu our target instead of where it really is.
+ 		 */
+ 		p->wake_cpu = cpu;
  	}
-
-@@ -1762,11 +1791,6 @@ static int edma_probe(struct platform_device *pdev)
- 	return 0;
+@@ -1080,11 +1080,16 @@ static int migrate_swap_stop(void *data)
  }
-
--static const struct of_device_id edma_of_ids[] = {
--	{ .compatible = "ti,edma3", },
--	{}
--};
+ 
+ /*
+- * XXX worry about hotplug
++ * Cross migrate two tasks
+  */
+ int migrate_swap(struct task_struct *cur, struct task_struct *p)
+ {
+-	struct migration_swap_arg arg = {
++	struct migration_swap_arg arg;
++	int ret = -EINVAL;
++
++	get_online_cpus();
++
++       	arg = (struct migration_swap_arg){
+ 		.src_task = cur,
+ 		.src_cpu = task_cpu(cur),
+ 		.dst_task = p,
+@@ -1092,15 +1097,22 @@ int migrate_swap(struct task_struct *cur
+ 	};
+ 
+ 	if (arg.src_cpu == arg.dst_cpu)
+-		return -EINVAL;
++		goto out;
++
++	if (!cpu_active(arg.src_cpu) || !cpu_active(arg.dst_cpu))
++		goto out;
+ 
+ 	if (!cpumask_test_cpu(arg.dst_cpu, tsk_cpus_allowed(arg.src_task)))
+-		return -EINVAL;
++		goto out;
+ 
+ 	if (!cpumask_test_cpu(arg.src_cpu, tsk_cpus_allowed(arg.dst_task)))
+-		return -EINVAL;
++		goto out;
++
++	ret = stop_two_cpus(arg.dst_cpu, arg.src_cpu, migrate_swap_stop, &arg);
+ 
+-	return stop_two_cpus(arg.dst_cpu, arg.src_cpu, migrate_swap_stop, &arg);
++out:
++	put_online_cpus();
++	return ret;
+ }
+ 
+ struct migration_arg {
+@@ -1608,12 +1620,7 @@ try_to_wake_up(struct task_struct *p, un
+ 	if (p->sched_class->task_waking)
+ 		p->sched_class->task_waking(p);
+ 
+-	if (p->wake_cpu != -1) {	/* XXX make this condition go away */
+-		cpu = p->wake_cpu;
+-		p->wake_cpu = -1;
+-	}
 -
- static struct platform_driver edma_driver = {
- 	.driver = {
- 		.name	= "edma",
--- 
-1.8.1.2
-
-
+-	cpu = select_task_rq(p, cpu, SD_BALANCE_WAKE, wake_flags);
++	cpu = select_task_rq(p, p->wake_cpu, SD_BALANCE_WAKE, wake_flags);
+ 	if (task_cpu(p) != cpu) {
+ 		wake_flags |= WF_MIGRATED;
+ 		set_task_cpu(p, cpu);
+@@ -1699,10 +1706,6 @@ static void __sched_fork(struct task_str
+ {
+ 	p->on_rq			= 0;
+ 
+-#ifdef CONFIG_SMP
+-	p->wake_cpu			= -1;
+-#endif
+-
+ 	p->se.on_rq			= 0;
+ 	p->se.exec_start		= 0;
+ 	p->se.sum_exec_runtime		= 0;
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -737,6 +737,7 @@ static inline void __set_task_cpu(struct
+ 	 */
+ 	smp_wmb();
+ 	task_thread_info(p)->cpu = cpu;
++	p->wake_cpu = cpu;
+ #endif
+ }
+ 
