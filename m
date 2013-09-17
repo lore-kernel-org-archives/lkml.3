@@ -1,134 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823Ab3IQTxm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 15:53:42 -0400
-Received: from mail-bn1lp0155.outbound.protection.outlook.com ([207.46.163.155]:33312
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1753864Ab3IQT4g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 15:56:36 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:55236 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753336Ab3IQTxl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 15:53:41 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Gleb Natapov <gleb@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "JBeulich@suse.com" <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>
-Subject: RE: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer frequency
- from the hypervisor
-Thread-Topic: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer
- frequency from the hypervisor
-Thread-Index: AQHOqM30I+mkPB2b1kKq/5YqjRysqJnC17CggAAG+ACAABQ5UIAAikAAgABK5hCABkKSgIAAYOzQ
-Date: Tue, 17 Sep 2013 19:53:36 +0000
-Message-ID: <2b4a9a0cff5143c59a0802a2e425c4db@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1378233023-4512-1-git-send-email-kys@microsoft.com>
- <dd29077371564a14b2d317d2291db8a9@SN2PR03MB061.namprd03.prod.outlook.com>
- <52325C1E.90101@zytor.com>
- <50f92d9c16a54e5bb6fa14ef72e5fdfb@SN2PR03MB061.namprd03.prod.outlook.com>
- <20130913095526.GE18381@redhat.com>
- <7737cb643a664b6fb39021b4d364b5cf@SN2PR03MB061.namprd03.prod.outlook.com>
- <20130917135918.GY17294@redhat.com>
-In-Reply-To: <20130917135918.GY17294@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:4898:80e0:ee43::3]
-x-forefront-prvs: 0972DEC1D9
-x-forefront-antispam-report: SFV:NSPM;SFS:(479174003)(24454002)(51704005)(377454003)(13464003)(199002)(189002)(74366001)(79102001)(65816001)(76786001)(81686001)(81816001)(80976001)(77096001)(56816003)(54356001)(59766001)(74316001)(76482001)(76796001)(63696002)(50986001)(77982001)(76576001)(83072001)(31966008)(19580395003)(83322001)(47446002)(19580405001)(74502001)(74662001)(51856001)(69226001)(74706001)(81342001)(81542001)(80022001)(53806001)(74876001)(46102001)(54316002)(15975445006)(4396001)(56776001)(47736001)(49866001)(15202345003)(47976001)(33646001)(3826001)(15583001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB063;H:SN2PR03MB061.namprd03.prod.outlook.com;CLIP:2001:4898:80e0:ee43::3;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753223Ab3IQT4e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 15:56:34 -0400
+Date: Tue, 17 Sep 2013 15:56:15 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
+        Michel Lespinasse <walken@google.com>,
+        Greg Thelen <gthelen@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Balbir Singh <bsingharora@gmail.com>,
+        Glauber Costa <glommer@gmail.com>
+Subject: Re: [PATCH v5] Soft limit rework
+Message-ID: <20130917195615.GC856@cmpxchg.org>
+References: <20130819163512.GB712@cmpxchg.org>
+ <20130820091414.GC31552@dhcp22.suse.cz>
+ <20130820141339.GA31419@cmpxchg.org>
+ <20130822105856.GA21529@dhcp22.suse.cz>
+ <20130903161550.GA856@cmpxchg.org>
+ <20130904163823.GA30851@dhcp22.suse.cz>
+ <20130906192311.GE856@cmpxchg.org>
+ <20130913144953.GA23857@dhcp22.suse.cz>
+ <20130913161709.GV856@cmpxchg.org>
+ <20130916164405.GG3674@dhcp22.suse.cz>
 MIME-Version: 1.0
-X-OriginatorOrg: DuplicateDomain-a84fc36a-4ed7-4e57-ab1c-3e967bcbad48.microsoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130916164405.GG3674@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Gleb Natapov [mailto:gleb@redhat.com]
-> Sent: Tuesday, September 17, 2013 6:59 AM
-> To: KY Srinivasan
-> Cc: H. Peter Anvin; x86@kernel.org; gregkh@linuxfoundation.org; linux-
-> kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
-> apw@canonical.com; jasowang@redhat.com; tglx@linutronix.de;
-> JBeulich@suse.com; bp@alien8.de
-> Subject: Re: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer frequency
-> from the hypervisor
+On Mon, Sep 16, 2013 at 06:44:05PM +0200, Michal Hocko wrote:
+> On Fri 13-09-13 12:17:09, Johannes Weiner wrote:
+> > On Fri, Sep 13, 2013 at 04:49:53PM +0200, Michal Hocko wrote:
+> > > On Fri 06-09-13 15:23:11, Johannes Weiner wrote:
+> [...]
+> > > > I would really like to deprecate soft limits and introduce something
+> > > > new that has the proper semantics we want from the get-go.  Its
+> > > > implementation could very much look like your code, so we can easily
+> > > > reuse that.  But the interface and its semantics should come first.
+> > > 
+> > > I am open to discussin such a change I just do not see any reason to
+> > > have a crippled soft reclaim implementation for the mean time.
+> > > Especially when it doesn't look like such a new interface is easy to
+> > > agree on.
+> > 
+> > We had a crippled soft limit implementation from the time it was
+> > merged, it never worked better than now.
+> > 
+> > You seem to think that this is an argument *for* finally fixing it.  I
+> > disagree.  We should absolutely *avoid* steering people toward it now,
+> > when the long term plan is already to get rid of it.
 > 
-> On Fri, Sep 13, 2013 at 02:28:35PM +0000, KY Srinivasan wrote:
-> >
-> >
-> > > -----Original Message-----
-> > > From: Gleb Natapov [mailto:gleb@redhat.com]
-> > > Sent: Friday, September 13, 2013 2:55 AM
-> > > To: KY Srinivasan
-> > > Cc: H. Peter Anvin; x86@kernel.org; gregkh@linuxfoundation.org; linux-
-> > > kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
-> > > apw@canonical.com; jasowang@redhat.com; tglx@linutronix.de;
-> > > JBeulich@suse.com; bp@alien8.de
-> > > Subject: Re: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer frequency
-> > > from the hypervisor
-> > >
-> > > On Fri, Sep 13, 2013 at 01:43:09AM +0000, KY Srinivasan wrote:
-> > > >
-> > > >
-> > > > > -----Original Message-----
-> > > > > From: H. Peter Anvin [mailto:hpa@zytor.com]
-> > > > > Sent: Thursday, September 12, 2013 5:28 PM
-> > > > > To: KY Srinivasan
-> > > > > Cc: x86@kernel.org; gregkh@linuxfoundation.org; linux-
-> > > kernel@vger.kernel.org;
-> > > > > devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
-> > > > > jasowang@redhat.com; tglx@linutronix.de; JBeulich@suse.com;
-> > > bp@alien8.de
-> > > > > Subject: Re: [PATCH V2 1/1] X86: Hyper-V: Get the local APIC timer
-> frequency
-> > > > > from the hypervisor
-> > > > >
-> > > > > On 09/12/2013 05:06 PM, KY Srinivasan wrote:
-> > > > > >
-> > > > > > Peter,
-> > > > > >
-> > > > > > Let me know if you want me to address any additional issues in this
-> patch.
-> > > > > >
-> > > > >
-> > > > > Please address Jan and Gleb's feedback.
-> > > >
-> > > > Gleb's feedback was a question and I answered that as I did Jan's feedback
-> as
-> > > well.
-> > > > Gleb, Jan, please let me know if there is something else you want
-> addressed
-> > > here.
-> > > >
-> > > No, I am just interesting to know some details about the interface since
-> > > I cannot find it documented in Hyper-V spec.
-> >
-> > Thanks Gleb. Here is the link for the latest Hyper-V specification:
-> > http://www.microsoft.com/en-us/download/details.aspx?id=39289
-> >
-> > This spec talks about how migration is handled with regards to TSC.
-> >
-> All I can see is "15.4.3 Partition Reference TSC Mechanism". I see
-> nothing about HV_X64_MSR_TSC_FREQUENCY specifically. To access this MSR
-> a partition needs AccessFrequencyMsrs privilege, may be partition that
-> cab be migrated does not have this privilege?
-
-If you use the MSR to read the TSC frequency, then indeed when you migrate then there
-is no guarantee that the TSC frequency won't change when you migrate. The approach
-described in section 15.4.3 is the preferred approach that can accommodate migration.
-
-Regards,
-
-K. Y 
+> It is not just about fixing it. It is also about getting rid of the
+> bloat that the previous implementation depended on. Not only LoC but
+> also the resulting binary:
 > 
-> --
-> 			Gleb.
+> $ size mm/built-in.o 
+> base:
+>    text    data     bss     dec     hex filename
+>    534283  233703  163456  931442   e3672 mm/built-in.o
+> rework:
+>    text    data     bss     dec     hex filename
+>    532866  229591  163456  925913   e20d9 mm/built-in.o
+> 
+> I would like to get rid of as much of a special code as possible.
+> Especially this one which I hate personally because it is a crude hack
+> that shouldn't have existed.
+
+The interface is, not the implementation.
+
+> > There is a concensus that cgroups and the controllers were merged
+> > before they were ready and we are now struggling heavily to iron out
+> > the design mistakes with the minimum amount of disruption we can get
+> > away with.
+> > 
+> > We are also at this time coordinating with all the other controllers
+> > and the cgroup core to do exactly that, where Tejun is providing us
+> > with tools to revamp the problematic interfaces.
+> > 
+> > And we agree that soft limits were such a design mistake that should
+> > be ironed out.
+> > 
+> > So for the love of everything we hold dear, why would you think that
+> > NOW is a good time to fix the implemantion and get people to use it?
+> 
+> There are users who already use this feature and it will take some (read
+> a lot of) time to move them to something else. And that something else
+> still doesn't exist and I suspect it will take some time to push it into
+> a proper shape (and be sure we do not screw it this time).
+
+Yet you could not name a single sensible use case.  So no, we have no
+known users, except maybe Google, who actually want guarantees.
+
+> So while I agree that we need something more (semantically) reasonable
+> there is no need to keep this crippled implementation around especially
+> when it is non-trivial amount of code.
+
+You traded a non-trivial amount of code for non-trivial code.  And you
+moved the cost from optional memcg code to essential memory management
+code.  All for a feature that needs to be redesigned and has a
+questionable userbase.
+
+> > > > > > You have not shown that prio-0 scans are a problem. 
+> > > > > 
+> > > > > OK, I thought this was self evident but let me be more specific.
+> > > > > 
+> > > > > The scan the world is almost always a problem. We are no longer doing
+> > > > > proportional anon/file reclaim (swappiness is ignored). This is wrong
+> > > > > from at least two points of view. Firstly it makes the reclaim decisions
+> > > > > different a lot for groups that are under the soft limit and those
+> > > > > that are over. Secondly, and more importantly, this might lead to a
+> > > > > pre-mature swapping, especially when there is a lot of IO going on.
+> > > > > 
+> > > > > The global reclaim suffers from the very same problem and that is why
+> > > > > we try to prevent from prio-0 reclaim as much as possible and use it
+> > > > > only as a last resort.
+> > > > 
+> > > > I know that and I can see that this should probably be fixed, but
+> > > > there is no quantification for this.  We have no per-memcg reclaim
+> > > > statistics
+> > > 
+> > > Not having statistic is a separate issue. It makes the situation worse
+> > > but that is not a new thing. The old implementation is even worse
+> > > because the soft reclaim activity is basically hidden from global
+> > > reclaim counters. So a lot of pages might get scanned and we will have
+> > > no way to find out. That part is inherently fixed by the series because
+> > > of the integration.
+> > 
+> > Because it's in the *global* reclaim counters?  That's great but it
+> > does not address the problem at all.  This is about pressure balance
+> > between groups and you don't have any numbers for that.
+> 
+> yes, but the point was that if somebody uses soft reclaim currently you
+> would miss a big part of reclaim activity because soft reclaim is not
+> accounted even in the global counters. So you can see a long stall
+> during direct reclaim while the counters look all good.
+
+This is not going anywhere :(
+
+> > This series is a grab bag of fixes that drag a lot of complexity from
+> > memcg code into generic reclaim, to repair the age old implementation
+> > of a user-visible interface that we already agree sucks balls and
+> > should be deprecated.  The fact that you did not even demonstrate that
+> > the repair itself was successful is a secondary issue at this point,
+> > but it certainly didn't help your case.
+> 
+> I will follow up with the testing results later. I hope I manage to have
+> them before I leave on vacation.
+> 
+> The question, though, is whether even results supporting my claims about
+> enhancements would make any difference. To be honest I thought that the
+> integration would be non-controversial topic even without performance
+> improvements which could have be expected due to removing prio-0 reclaim
+> which is a pure evil. Also the natural fairness of the s.r. sounds like
+> a good thing.
+> 
+> Anyway. Your wording that nothing should be done about the soft reclaim
+> seems to be quite clear though. If this position is really firm then go
+> ahead and NACK the series _explicitly_ so that Andrew or you can send a
+> revert request to Linus. I would really like to not waste a lot of time
+> on testing right now when it wouldn't lead to anything.
+
+Nacked-by: Johannes Weiner <hannes@cmpxchg.org>
