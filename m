@@ -1,96 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782Ab3IQRLG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 13:11:06 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:55495 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753731Ab3IQRLE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 13:11:04 -0400
-Date: Tue, 17 Sep 2013 19:10:58 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Linus Walleij <linus.walleij@linaro.org>
-cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-Subject: Re: [PATCH 1/4] pinctrl: sh-pfc: r8a7790: add pin definitions for
- the I2C3 interface
-In-Reply-To: <CACRpkdbDa5Smpfyneq-SAPYvbxB-ju7-X8kkZ7RFpNcYrcBggg@mail.gmail.com>
-Message-ID: <Pine.LNX.4.64.1309171907220.25596@axis700.grange>
-References: <1378742636-11215-1-git-send-email-g.liakhovetski@gmx.de>
- <1378742636-11215-2-git-send-email-g.liakhovetski@gmx.de>
- <CACRpkdbDa5Smpfyneq-SAPYvbxB-ju7-X8kkZ7RFpNcYrcBggg@mail.gmail.com>
+	id S1753641Ab3IQROR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 13:14:17 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:40272 "EHLO mail.kapsi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752884Ab3IQROQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 13:14:16 -0400
+Message-ID: <52388DB9.9020406@iki.fi>
+Date: Tue, 17 Sep 2013 20:13:29 +0300
+From: Antti Palosaari <crope@iki.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:Ti17r86uaP1tldNWkG4sjI2Vd/WICIpJKoFXsTzP3N+
- QeNu3lWxsgjuFmYPOk5LxGsruJaGnynFDtL6RNBKOSWsgOCEOd
- EL4z/wwx4U9ssMjd9uF0xIJqoxn/9up79jvajFyo4l0i8dGDzi
- IDq1VEBZQ89LRJDwIMIOsxKZTWMdxVSR+EsQLY1BUYEjzqtYWa
- SWbjXoJr47JasJO0kC+PFYwBMj4du6CDzbDa+DzLgTSU3o/t4K
- AU7cTX9VVyMa0pCoTsMT349iuwO7Z9cPUPkXGAeqvdyZ/wNv+z
- 4FMPN/ku3fUl4jFaUXCsgUXFE4XSa4pSY5tEBLezy25lxZ/A6q
- 63jWoYPaiHbX5AsarPg+k6dl9fBBSZ9jkKgzy5MwF8twyFC3B8
- 2bwrGDhOidi5A==
+To: Jim Davis <jim.epost@gmail.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: Re: randconfig build error with next-20130917, in drivers/staging/media/msi3101
+References: <CA+r1Zhig6Xc_-jw=nGqd18j0MfTbpLRZoVYYtFZ2wY5LUp6J5w@mail.gmail.com>
+In-Reply-To: <CA+r1Zhig6Xc_-jw=nGqd18j0MfTbpLRZoVYYtFZ2wY5LUp6J5w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 82.128.186.45
+X-SA-Exim-Mail-From: crope@iki.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus
+Hello Jim,
 
-On Tue, 17 Sep 2013, Linus Walleij wrote:
+That is maybe 5th times I got that same bug report :-] It is already 
+fixed. Mauro tends to handle pending patches once per release candidate, 
+so I think fix will be in next very soon (during this week).
 
-> On Mon, Sep 9, 2013 at 6:03 PM, Guennadi Liakhovetski
-> <g.liakhovetski@gmx.de> wrote:
-> 
-> > There are four I2C interfaces on r8a7790, each of them can be connected to
-> > one of the two respective I2C controllers, e.g. interface #0 can be
-> > configured to work with I2C0 or with IIC0. Additionally some of those
-> > interfaces can also use one of several pin sets. Interface #3 is special,
-> > because it can be used in automatic mode for DVFS. It only has one set
-> > of pins available and those pins cannot be used for anything else, they
-> > also lack the GPIO function.
-> >
-> > This patch uses the sh-pfc ability to configure pins, not associated with
-> > GPIOs and adds support for I2C3 to the r8a7790 PFC set up.
-> >
-> > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-> 
-> Pls CC Laurent who is main reviewer on all sh-pfc stuff.
+https://patchwork.kernel.org/patch/2856771/
+https://lkml.org/lkml/2013/9/12/824
 
-Sure, sorry, thanks for adding him.
-
-> > +/* R8A7790 has 6 banks with 32 GPIOs in each = 192 GPIOs */
-> > +#define ROW_GROUP_A(r) ('Z' - 'A' + 1 + (r))
-> > +#define PIN_NUMBER(r, c) (((r) - 'A') * 16 + (c) + 200)
-> > +#define PIN_A_NUMBER(r, c) PIN_NUMBER(ROW_GROUP_A(r), c)
-> 
-> You add these #defines but do not use them.
-
-ehm, actually I do:
-
-+/* - I2C3 ------------------------------------------------------------------- */
-+static const unsigned int i2c3_pins[] = {
-+	/* SCL, SDA */
-+	PIN_A_NUMBER('J', 15), PIN_A_NUMBER('H', 15),
-+};
-
-Besides, the PIN_NUMBER() macro is used in sh_pfc.h in the definition of 
-SH_PFC_PIN_NAMED(), and that macro is also used in this patch:
-
-+	/* Pins not associated with a GPIO port */
-+	SH_PFC_PIN_NAMED(ROW_GROUP_A('J'), 15, AJ15),
-+	SH_PFC_PIN_NAMED(ROW_GROUP_A('H'), 15, AH15),
+regards
+Antti
 
 
-> Yours,
-> Linus Walleij
+On 09/17/2013 08:05 PM, Jim Davis wrote:
+> Building with the attached random configuration file,
+>
+>    LD      init/built-in.o
+> drivers/built-in.o: In function `msi3101_probe':
+> /home/jim/linux-randbuild/2/drivers/staging/media/msi3101/sdr-msi3101.c:1847:
+> undefined reference to `vb2_vmalloc_memops'
+> make: *** [vmlinux] Error 1
+>
 
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+
+-- 
+http://palosaari.fi/
