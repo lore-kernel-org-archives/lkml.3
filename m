@@ -1,74 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab3IQRwO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 13:52:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28661 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753177Ab3IQRwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 13:52:13 -0400
-Date: Tue, 17 Sep 2013 14:52:01 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>, Steven Rostedt <srostedt@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Jiri Olsa <jolsa@redhat.com>,
-        Masami Hiramatsu <mhiramat@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Full syscall argument decode in "perf trace"
-Message-ID: <20130917175201.GA3918@infradead.org>
-References: <523870FF.3030306@redhat.com>
+	id S1753445Ab3IQSNw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 14:13:52 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:50574 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753239Ab3IQSNv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 14:13:51 -0400
+Message-ID: <52389BDD.8070801@linaro.org>
+Date: Tue, 17 Sep 2013 11:13:49 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <523870FF.3030306@redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] First set of timekeeping changes for 3.13
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Sep 17, 2013 at 05:10:55PM +0200, Denys Vlasenko escreveu:
-> I'm trying to figure out how to extend "perf trace".
- 
-> Currently, it shows syscall names and arguments, and only them.
-> Meaning that syscalls such as open(2) are shown as:
- 
->     open(filename: 140736118412184, flags: 0, mode: 140736118403776) = 3
- 
-> The problem is, of course, that user wants to see the filename
-> per se, not the address of its first byte.
- 
-> To improve that, we need to fetch the pointed-to data.
-> There are two approaches to this: extending
-> "raw_syscalls:sys_{enter,exit}" tracepoint so that it returns this data,
-> or selectively stopping the traced process when it reaches the thacepoint.
+Hey Thomas, Ingo,
+    So these were items I had hoped to get merged in 3.12, but I'm
+guessing got buried in Thomas inbox while he was traveling/busy (and its
+my fault for not cc'ing Ingo). So now 3.12-rc1 is out, I wanted to send
+this in for tip/timers/core right away so these don't get missed in this
+next cycle.
 
-We don't want to stop the process at all, this is one of the major
-advantages of 'perf trace' over 'strace'.
+Please let me know if there are any objections or issues with these changes.
 
-Look at the tmp.perf/trace2 branch in my git repo, tglx and Ingo added a
-tracepoint to vfs_getname to use that.
- 
-> First solution is attractive performance-wise, but requires a lot
-> of new code: *ALL* syscalls will need to know which arguments are pointers,
-> how large their pointed-to data structures are, and (remember
-> readv and friends!) some of pointed-to structures themselves
-> contain pointers which reference even more data.
+thanks
+-john
 
-Well, we can look at DWARF to get the function signatures, types,
-librarize 'perf probe' and insert probes in the syscalls we want
-decoding.
 
-That for the cases where we don't have a tracepoint or when adding a new
-tracepoint is not an option.
+The following changes since commit 272b98c6455f00884f0350f775c5342358ebb73f:
 
-And this all with what we have in the kernel right now.
+  Linux 3.12-rc1 (2013-09-16 16:17:51 -0400)
 
-Also for 'perf trace' look at my perf/core branch, where we have more
-syscall arg beautifiers and the machinery that is getting in place to
-allow that.
+are available in the git repository at:
 
-Longer term we could have something like dtrace's CTF to have a more
-compact type only ELF section that always go with the kernel, like we
-have CFI in binaries these days.
- 
-- Arnaldo
+  git://git.linaro.org/people/jstultz/linux.git fortglx/3.13/time
+
+for you to fetch changes up to 389e067032fbb96e439abafae848dd447e4cafb4:
+
+  Merge branch 'fortglx/3.12/time' into fortglx/3.13/time (2013-09-16
+18:54:07 -0700)
+
+----------------------------------------------------------------
+
+John Stultz (2):
+      Merge branch 'fortglx/3.12/sched-clock64-base' into fortglx/3.13/time
+      Merge branch 'fortglx/3.12/time' into fortglx/3.13/time
+
+Miroslav Lichvar (1):
+      ntp: Make periodic RTC update more reliable
+
+Prarit Bhargava (1):
+      clocksource: Fix !CONFIG_CLOCKSOURCE_WATCHDOG compile
+
+Stephen Boyd (4):
+      clocksource: Extract max nsec calculation into separate function
+      sched_clock: Use seqcount instead of rolling our own
+      sched_clock: Use an hrtimer instead of timer
+      sched_clock: Add support for >32 bit sched_clock
+
+Zoran Markovic (1):
+      rtc: Keep system awake until all expired RTC timers are handled
+
+ drivers/rtc/interface.c     |  13 ++++--
+ include/linux/clocksource.h |   2 +
+ include/linux/sched_clock.h |   2 +
+ kernel/time/clocksource.c   |  46 ++++++++++++------
+ kernel/time/ntp.c           |   3 +-
+ kernel/time/sched_clock.c   | 111
+++++++++++++++++++++++++--------------------
+ 6 files changed, 107 insertions(+), 70 deletions(-)
