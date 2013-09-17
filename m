@@ -1,215 +1,747 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199Ab3IQBwp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 21:52:45 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:38285 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751793Ab3IQBwl (ORCPT
+	id S1751914Ab3IQB7m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 21:59:42 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:59518 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751489Ab3IQB7i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 21:52:41 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <linux-scsi@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Hannes Reinecke <hare@suse.de>, Doug Ledford <dledford@redhat.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: [PATCH] scsi: delete decade+ obsolete aic7xxx_old driver
-Date: Mon, 16 Sep 2013 21:51:23 -0400
-Message-ID: <1379382683-27862-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.1.2
+	Mon, 16 Sep 2013 21:59:38 -0400
+X-AuditID: 9c930179-b7c02ae000003439-90-5237b7886651
+Date: Tue, 17 Sep 2013 10:59:39 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Phillip Lougher <phillip@squashfs.org.uk>
+Cc: linux-kernel@vger.kernel.org, ch0.han@lge.com, gunho.lee@lge.com
+Subject: Re: [RFC 5/5] squashfs: support readpages
+Message-ID: <20130917015938.GB2949@bbox>
+References: <1379315319-7752-1-git-send-email-minchan@kernel.org>
+ <1379315319-7752-6-git-send-email-minchan@kernel.org>
+ <20130917015214.GA2949@bbox>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130917015214.GA2949@bbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After getting warnings in an allyesconfig build[1] from this
-driver, I decided to remind myself just how old it was, and
-whether it warranted fixing.  In the Kconfig help text, I found:
+And I found regression from iozone random read test.
+This patch fixes it.
 
-  "This driver will eventually be phased out entirely"
+>From 546a541c6e29b321e4908ebe0f8aac506eb5b3af Mon Sep 17 00:00:00 2001
+From: Minchan Kim <minchan@kernel.org>
+Date: Tue, 17 Sep 2013 10:20:56 +0900
+Subject: [PATCH] squahsfs: read synchronously when readahead window is small
 
-Going back to the history archive, I see the line was added[2]
-in Feb 2002, when we moved from v2.4.2.1 ---> v2.4.2.2
+Normally, MM does readahead with small window size so in that case,
+our plugging logic can hurt performance.
+If readahead window is smaller than compress block size, let's do
+old synchronous read.
 
-So, with over a decade of notification, and multiple major releases
-since then, I think we can justify removing this.  Currently we have
-people wasting time building it during routine testing, and then
-wasting more time re-researching the known reported warnings, only to
-find that nobody really is willing to integrate the fixes[3] for it.
-
-A quick search didn't seem to indicate any active user base for it.
-If someone happens to have a quirky _old_ card that the eleven year
-old "new" driver doesn't work with, then it is entirely reasonable
-that they stick with a kernel version that predates this removal.
-
-[1] drivers/scsi/aic7xxx_old.c: In function ‘aic7xxx_register’:
-    drivers/scsi/aic7xxx_old.c:7901:5: warning: case value ‘257’ not in enumerated type ‘ahc_chip’ [-Wswitch]
-    drivers/scsi/aic7xxx_old.c:7898:5: warning: case value ‘513’ not in enumerated type ‘ahc_chip’ [-Wswitch]
-    drivers/scsi/aic7xxx_old.c: In function ‘aic7xxx_load_seeprom’:
-    drivers/scsi/aic7xxx_old.c:8517:5: warning: case value ‘257’ not in enumerated type ‘ahc_chip’ [-Wswitch]
-    drivers/scsi/aic7xxx_old.c:8510:5: warning: case value ‘513’ not in enumerated type ‘ahc_chip’ [-Wswitch]
-
-[2] http://git.kernel.org/cgit/linux/kernel/git/tglx/history.git commit 44e8778c
-
-[3] https://lkml.org/lkml/2012/10/29/215
-
-Cc: Hannes Reinecke <hare@suse.de>
-Cc: Doug Ledford <dledford@redhat.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
+ fs/squashfs/file.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-[This is an "--irreversible-delete" pseudo-patch which doesn't show all
-the file content that was deleted wholesale.  The full commit is at:
-git://git.kernel.org/pub/scm/linux/kernel/git/paulg/linux.git aic7xxx-delete ]
-
- Documentation/scsi/00-INDEX             |     2 -
- Documentation/scsi/aic7xxx_old.txt      |   511 --
- MAINTAINERS                             |     1 -
- drivers/scsi/Kconfig                    |    41 -
- drivers/scsi/Makefile                   |     1 -
- drivers/scsi/aic7xxx_old.c              | 11149 ------------------------------
- drivers/scsi/aic7xxx_old/aic7xxx.h      |    28 -
- drivers/scsi/aic7xxx_old/aic7xxx.reg    |  1401 ----
- drivers/scsi/aic7xxx_old/aic7xxx.seq    |  1539 -----
- drivers/scsi/aic7xxx_old/aic7xxx_proc.c |   270 -
- drivers/scsi/aic7xxx_old/aic7xxx_reg.h  |   629 --
- drivers/scsi/aic7xxx_old/aic7xxx_seq.c  |   817 ---
- drivers/scsi/aic7xxx_old/scsi_message.h |    49 -
- drivers/scsi/aic7xxx_old/sequencer.h    |   135 -
- 14 files changed, 16573 deletions(-)
- delete mode 100644 Documentation/scsi/aic7xxx_old.txt
- delete mode 100644 drivers/scsi/aic7xxx_old.c
- delete mode 100644 drivers/scsi/aic7xxx_old/aic7xxx.h
- delete mode 100644 drivers/scsi/aic7xxx_old/aic7xxx.reg
- delete mode 100644 drivers/scsi/aic7xxx_old/aic7xxx.seq
- delete mode 100644 drivers/scsi/aic7xxx_old/aic7xxx_proc.c
- delete mode 100644 drivers/scsi/aic7xxx_old/aic7xxx_reg.h
- delete mode 100644 drivers/scsi/aic7xxx_old/aic7xxx_seq.c
- delete mode 100644 drivers/scsi/aic7xxx_old/scsi_message.h
- delete mode 100644 drivers/scsi/aic7xxx_old/sequencer.h
-
-diff --git a/Documentation/scsi/00-INDEX b/Documentation/scsi/00-INDEX
-index 9b0787f..2044be5 100644
---- a/Documentation/scsi/00-INDEX
-+++ b/Documentation/scsi/00-INDEX
-@@ -42,8 +42,6 @@ aic79xx.txt
- 	- Adaptec Ultra320 SCSI host adapters
- aic7xxx.txt
- 	- info on driver for Adaptec controllers
--aic7xxx_old.txt
--	- info on driver for Adaptec controllers, old generation
- arcmsr_spec.txt
- 	- ARECA FIRMWARE SPEC (for IOP331 adapter)
- dc395x.txt
-diff --git a/Documentation/scsi/aic7xxx_old.txt b/Documentation/scsi/aic7xxx_old.txt
-deleted file mode 100644
-index ecfc474..0000000
-diff --git a/MAINTAINERS b/MAINTAINERS
-index e61c2e8..c79be42 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -470,7 +470,6 @@ M:	Hannes Reinecke <hare@suse.de>
- L:	linux-scsi@vger.kernel.org
- S:	Maintained
- F:	drivers/scsi/aic7xxx/
--F:	drivers/scsi/aic7xxx_old/
+diff --git a/fs/squashfs/file.c b/fs/squashfs/file.c
+index b98965c..2537eeb 100644
+--- a/fs/squashfs/file.c
++++ b/fs/squashfs/file.c
+@@ -1007,6 +1007,24 @@ static int squashfs_readpages(struct file *file, struct address_space *mapping,
+ 	start_bindex = hpage->index >> (msblk->block_log - PAGE_CACHE_SHIFT);
+ 	last_bindex = tpage->index >> (msblk->block_log - PAGE_CACHE_SHIFT);
  
- AIMSLAB FM RADIO RECEIVER DRIVER
- M:	Hans Verkuil <hverkuil@xs4all.nl>
-diff --git a/drivers/scsi/Kconfig b/drivers/scsi/Kconfig
-index fe25677..1f02003 100644
---- a/drivers/scsi/Kconfig
-+++ b/drivers/scsi/Kconfig
-@@ -499,47 +499,6 @@ config SCSI_AACRAID
++	/*
++	 * Normally, MM readahread window is smaller than our compressed
++	 * block size. In that case, plugging could hurt performance so
++	 * let's do synchronous read in that case.
++	 */
++	if (start_bindex == last_bindex) {
++		list_del(&hpage->lru);
++		if (add_to_page_cache_lru(hpage, mapping, hpage->index,
++				GFP_KERNEL)) {
++			page_cache_release(hpage);
++			return 0;
++		}
++
++		ret = squashfs_readpage(file, hpage);
++		page_cache_release(hpage);
++		return ret;
++	}
++
+ 	if (last_bindex >= (i_size_read(inode) >> msblk->block_log))
+ 		return 0;
  
- 
- source "drivers/scsi/aic7xxx/Kconfig.aic7xxx"
--
--config SCSI_AIC7XXX_OLD
--	tristate "Adaptec AIC7xxx support (old driver)"
--	depends on (ISA || EISA || PCI ) && SCSI
--	help
--	  WARNING This driver is an older aic7xxx driver and is no longer
--	  under active development.  Adaptec, Inc. is writing a new driver to
--	  take the place of this one, and it is recommended that whenever
--	  possible, people should use the new Adaptec written driver instead
--	  of this one.  This driver will eventually be phased out entirely.
--
--	  This is support for the various aic7xxx based Adaptec SCSI
--	  controllers. These include the 274x EISA cards; 284x VLB cards;
--	  2902, 2910, 293x, 294x, 394x, 3985 and several other PCI and
--	  motherboard based SCSI controllers from Adaptec. It does not support
--	  the AAA-13x RAID controllers from Adaptec, nor will it likely ever
--	  support them. It does not support the 2920 cards from Adaptec that
--	  use the Future Domain SCSI controller chip. For those cards, you
--	  need the "Future Domain 16xx SCSI support" driver.
--
--	  In general, if the controller is based on an Adaptec SCSI controller
--	  chip from the aic777x series or the aic78xx series, this driver
--	  should work. The only exception is the 7810 which is specifically
--	  not supported (that's the RAID controller chip on the AAA-13x
--	  cards).
--
--	  Note that the AHA2920 SCSI host adapter is *not* supported by this
--	  driver; choose "Future Domain 16xx SCSI support" instead if you have
--	  one of those.
--
--	  Information on the configuration options for this controller can be
--	  found by checking the help file for each of the available
--	  configuration options. You should read
--	  <file:Documentation/scsi/aic7xxx_old.txt> at a minimum before
--	  contacting the maintainer with any questions.  The SCSI-HOWTO,
--	  available from <http://www.tldp.org/docs.html#howto>, can also
--	  be of great help.
--
--	  To compile this driver as a module, choose M here: the
--	  module will be called aic7xxx_old.
--
- source "drivers/scsi/aic7xxx/Kconfig.aic79xx"
- source "drivers/scsi/aic94xx/Kconfig"
- source "drivers/scsi/mvsas/Kconfig"
-diff --git a/drivers/scsi/Makefile b/drivers/scsi/Makefile
-index 149bb6b..e172d4f 100644
---- a/drivers/scsi/Makefile
-+++ b/drivers/scsi/Makefile
-@@ -70,7 +70,6 @@ obj-$(CONFIG_SCSI_AHA1740)	+= aha1740.o
- obj-$(CONFIG_SCSI_AIC7XXX)	+= aic7xxx/
- obj-$(CONFIG_SCSI_AIC79XX)	+= aic7xxx/
- obj-$(CONFIG_SCSI_AACRAID)	+= aacraid/
--obj-$(CONFIG_SCSI_AIC7XXX_OLD)	+= aic7xxx_old.o
- obj-$(CONFIG_SCSI_AIC94XX)	+= aic94xx/
- obj-$(CONFIG_SCSI_PM8001)	+= pm8001/
- obj-$(CONFIG_SCSI_ISCI)		+= isci/
-diff --git a/drivers/scsi/aic7xxx_old.c b/drivers/scsi/aic7xxx_old.c
-deleted file mode 100644
-index 33ec9c6..0000000
-diff --git a/drivers/scsi/aic7xxx_old/aic7xxx.h b/drivers/scsi/aic7xxx_old/aic7xxx.h
-deleted file mode 100644
-index 0116c81..0000000
-diff --git a/drivers/scsi/aic7xxx_old/aic7xxx.reg b/drivers/scsi/aic7xxx_old/aic7xxx.reg
-deleted file mode 100644
-index f67b4bc..0000000
-diff --git a/drivers/scsi/aic7xxx_old/aic7xxx.seq b/drivers/scsi/aic7xxx_old/aic7xxx.seq
-deleted file mode 100644
-index dc3bb81..0000000
-diff --git a/drivers/scsi/aic7xxx_old/aic7xxx_proc.c b/drivers/scsi/aic7xxx_old/aic7xxx_proc.c
-deleted file mode 100644
-index 976f45c..0000000
-diff --git a/drivers/scsi/aic7xxx_old/aic7xxx_reg.h b/drivers/scsi/aic7xxx_old/aic7xxx_reg.h
-deleted file mode 100644
-index 27f2334..0000000
-diff --git a/drivers/scsi/aic7xxx_old/aic7xxx_seq.c b/drivers/scsi/aic7xxx_old/aic7xxx_seq.c
-deleted file mode 100644
-index e1bc140..0000000
-diff --git a/drivers/scsi/aic7xxx_old/scsi_message.h b/drivers/scsi/aic7xxx_old/scsi_message.h
-deleted file mode 100644
-index a79f89c..0000000
-diff --git a/drivers/scsi/aic7xxx_old/sequencer.h b/drivers/scsi/aic7xxx_old/sequencer.h
-deleted file mode 100644
-index ee66855..0000000
 -- 
-1.8.1.2
+1.7.9.5
 
+
+On Tue, Sep 17, 2013 at 10:52:14AM +0900, Minchan Kim wrote:
+> This patch had a bug so I send fixed below patchset.
+> Thanks.
+> 
+> >From ccbf1322b6322bc34bb3e6f75a27f4fecf84ed02 Mon Sep 17 00:00:00 2001
+> From: Minchan Kim <minchan@kernel.org>
+> Date: Mon, 16 Sep 2013 14:28:49 +0900
+> Subject: [RFC 5/5] squashfs: support readpages
+> 
+> This patch supports squashfs_readpages so it can do readahead pages
+> without unplugging I/O scheduler. With blktrace, I confirmed following test.
+> 
+> 2 compression ratio 1G file(ie, 500M consumed by real storage) sequential read
+> with fadvise(SEQUENTIAL) hint and tune some knobs for block device and read_ahead_kb.
+> 
+> Old :
+>  Reads Queued:      524289,   524289KiB  Writes Queued:           0,        0KiB
+>  Read Dispatches:     4096,   524289KiB  Write Dispatches:        0,        0KiB
+>  Reads Requeued:         0               Writes Requeued:         0
+>  Reads Completed:     4096,   524289KiB  Writes Completed:        0,        0KiB
+>  Read Merges:       520193,   520193KiB  Write Merges:            0,        0KiB
+>  PC Reads Queued:        0,        0KiB  PC Writes Queued:        0,        0KiB
+>  PC Read Disp.:         10,        0KiB  PC Write Disp.:          0,        0KiB
+>  PC Reads Req.:          0               PC Writes Req.:          0
+>  PC Reads Compl.:        0               PC Writes Compl.:        0
+>  IO unplugs:          4096               Timer unplugs:           0
+> 
+> New :
+>  Reads Queued:      524289,   524289KiB  Writes Queued:           0,        0KiB
+>  Read Dispatches:      633,   524289KiB  Write Dispatches:        0,        0KiB
+>  Reads Requeued:         0               Writes Requeued:         0
+>  Reads Completed:      633,   524289KiB  Writes Completed:        0,        0KiB
+>  Read Merges:       523656,   523656KiB  Write Merges:            0,        0KiB
+>  PC Reads Queued:        0,        0KiB  PC Writes Queued:        0,        0KiB
+>  PC Read Disp.:          7,        0KiB  PC Write Disp.:          0,        0KiB
+>  PC Reads Req.:          0               PC Writes Req.:          0
+>  PC Reads Compl.:        0               PC Writes Compl.:        0
+>  IO unplugs:            31               Timer unplugs:           0
+> 
+> IOW, lots of I/O were merged before issuing. Of course, I can confirm that with
+> blktrace.
+> 
+> old:
+> 
+>   8,34   0     1933     0.014381550  4957  Q   R 4197628 + 2 [seqread]
+>   8,34   0     1934     0.014381629  4957  M   R 4197628 + 2 [seqread]
+>   8,32   0     1935     0.014381821  4957  A   R 4197630 + 2 <- (8,34) 1278
+>   8,34   0     1936     0.014381919  4957  Q   R 4197630 + 2 [seqread]
+>   8,34   0     1937     0.014381998  4957  M   R 4197630 + 2 [seqread]
+>   8,32   0     1938     0.014382131  4957  A   R 4197632 + 2 <- (8,34) 1280
+>   8,34   0     1939     0.014382203  4957  Q   R 4197632 + 2 [seqread]
+>   8,34   0     1940     0.014382281  4957  M   R 4197632 + 2 [seqread]
+>   8,34   0     1941     0.014382873  4957  I   R 4197378 + 256 [seqread]
+>   8,34   0        0     0.014383649     0  m   N cfq4957S  / insert_request
+>   8,34   0        0     0.014384609     0  m   N cfq4957S  / dispatch_insert
+>   8,34   0        0     0.014385132     0  m   N cfq4957S  / dispatched a request
+>   8,34   0        0     0.014385460     0  m   N cfq4957S  / activate rq, drv=1
+>   8,34   0     1942     0.014385581  4957  D   R 4197378 + 256 [seqread]
+> 
+> new:
+> 
+>   8,34   0    98321     0.352583517  5101  M   R 4261888 + 2 [seqread]
+>   8,34   0    98322     0.353008833  5101  I   R 4230404 + 4096 [seqread]
+>   8,34   0        0     0.353012357     0  m   N cfq5101SN / insert_request
+>   8,34   0    98323     0.353013872  5101  I   R 4234500 + 4096 [seqread]
+>   8,34   0        0     0.353014218     0  m   N cfq5101SN / insert_request
+>   8,34   0    98324     0.353014553  5101  I   R 4238596 + 4096 [seqread]
+>   8,34   0        0     0.353014802     0  m   N cfq5101SN / insert_request
+>   8,34   0    98325     0.353014992  5101  I   R 4242692 + 4096 [seqread]
+>   8,34   0        0     0.353015315     0  m   N cfq5101SN / insert_request
+> 
+> Voila, it's a result by that.
+> elapsed time, old : 17.5 sec new : 11.5 sec
+> 
+> A drawback from my mind is magic value 3ms for waiting more I/O so that
+> it can make delay at least 3ms although the I/O was done earlier.
+> The reason I selected that value is that it was a vaule kblockd had used
+> for a long time to plug/unplug for scheduler until we introduced explicit
+> blk_[start|finish]_plug. If it's really problem, we can add a hook into
+> plug and flush the I/O if someone is waiting the I/O.
+> 
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  fs/squashfs/block.c          |   2 -
+>  fs/squashfs/file.c           | 447 ++++++++++++++++++++++++++++++++++++++++++-
+>  fs/squashfs/squashfs.h       |   3 +
+>  fs/squashfs/squashfs_fs_sb.h |   4 +
+>  fs/squashfs/super.c          |   4 +-
+>  5 files changed, 450 insertions(+), 10 deletions(-)
+> 
+> diff --git a/fs/squashfs/block.c b/fs/squashfs/block.c
+> index d41bac8..e8bf200 100644
+> --- a/fs/squashfs/block.c
+> +++ b/fs/squashfs/block.c
+> @@ -76,8 +76,6 @@ static struct buffer_head *get_block_length(struct super_block *sb,
+>  	return bh;
+>  }
+>  
+> -
+> -
+>  int squashfs_decompress_block(struct super_block *sb, int compressed,
+>  		void **buffer, struct buffer_head **bh, int nr_bh,
+>  		int offset, int length, int srclength, int pages)
+> diff --git a/fs/squashfs/file.c b/fs/squashfs/file.c
+> index 36508c3..b98965c 100644
+> --- a/fs/squashfs/file.c
+> +++ b/fs/squashfs/file.c
+> @@ -47,6 +47,7 @@
+>  #include <linux/string.h>
+>  #include <linux/pagemap.h>
+>  #include <linux/mutex.h>
+> +#include <linux/swap.h>
+>  
+>  #include "squashfs_fs.h"
+>  #include "squashfs_fs_sb.h"
+> @@ -454,8 +455,55 @@ error_out:
+>  	return 0;
+>  }
+>  
+> -static int squashfs_hole_readpage(struct file *file, struct inode *inode,
+> -				int index, struct page *page)
+> +static int squashfs_hole_readpages(struct inode *inode, int index,
+> +				struct list_head *page_list)
+> +{
+> +	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
+> +	int bytes, i, offset = 0;
+> +	void *pageaddr;
+> +	struct page *push_page;
+> +
+> +	int start_index = index << (msblk->block_log - PAGE_CACHE_SHIFT);
+> +	int file_end = i_size_read(inode) >> msblk->block_log;
+> +
+> +	bytes = index == file_end ?
+> +		(i_size_read(inode) & (msblk->block_size - 1)) :
+> +		 msblk->block_size;
+> +
+> +	/*
+> +	 * Loop copying datablock into pages.  As the datablock likely covers
+> +	 * many PAGE_CACHE_SIZE pages (default block size is 128 KiB) explicitly
+> +	 * grab the pages from the page cache, except for the page that we've
+> +	 * been called to fill.
+> +	 */
+> +	for (i = start_index; bytes > 0; i++,
+> +			bytes -= PAGE_CACHE_SIZE, offset += PAGE_CACHE_SIZE) {
+> +
+> +		push_page = list_entry(page_list->prev, struct page, lru);
+> +		list_del(&push_page->lru);
+> +
+> +		pageaddr = kmap_atomic(push_page);
+> +		memset(pageaddr, 0, PAGE_CACHE_SIZE);
+> +		kunmap_atomic(pageaddr);
+> +		flush_dcache_page(push_page);
+> +		SetPageUptodate(push_page);
+> +
+> +		lru_cache_add_file(push_page);
+> +		unlock_page(push_page);
+> +		page_cache_release(push_page);
+> +	}
+> +
+> +	while (!list_empty(page_list)) {
+> +		push_page = list_entry(page_list->prev, struct page, lru);
+> +		list_del(&push_page->lru);
+> +		page_cache_release(push_page);
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int squashfs_hole_readpage(struct inode *inode, int index,
+> +				struct page *page)
+>  {
+>  	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
+>  	int bytes, i, offset = 0;
+> @@ -478,8 +526,8 @@ static int squashfs_hole_readpage(struct file *file, struct inode *inode,
+>  			bytes -= PAGE_CACHE_SIZE, offset += PAGE_CACHE_SIZE) {
+>  		struct page *push_page;
+>  
+> -		push_page = (page && i == page->index) ? page :
+> -			grab_cache_page_nowait(page->mapping, i);
+> +		push_page = (i == page->index) ? page :
+> +			grab_cache_page_nowait(inode->i_mapping, i);
+>  
+>  		if (!push_page)
+>  			continue;
+> @@ -494,7 +542,7 @@ static int squashfs_hole_readpage(struct file *file, struct inode *inode,
+>  		SetPageUptodate(push_page);
+>  skip_page:
+>  		unlock_page(push_page);
+> -		if (page && i == page->index)
+> +		if (i == page->index)
+>  			continue;
+>  		page_cache_release(push_page);
+>  	}
+> @@ -533,7 +581,7 @@ static int squashfs_regular_readpage(struct file *file, struct page *page)
+>  		goto error_out;
+>  
+>  	if (bsize == 0)
+> -		return squashfs_hole_readpage(file, inode, index, page);
+> +		return squashfs_hole_readpage(inode, index, page);
+>  
+>  	/*
+>  	 * Read and decompress data block
+> @@ -660,6 +708,391 @@ out:
+>  	return 0;
+>  }
+>  
+> +static int squashfs_ra_readblock(struct inode *inode, int index,
+> +			struct buffer_head **bh, int *nr_bh,
+> +			int *block_size, u64 *block)
+> +{
+> +	int bsize;
+> +	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
+> +	int ret, b;
+> +
+> +	/*
+> +	 * Reading a datablock from disk.  Need to read block list
+> +	 * to get location and block size.
+> +	 */
+> +	*block_size = read_blocklist(inode, index, block);
+> +	if (*block_size < 0)
+> +		return 1;
+> +
+> +	if (*block_size == 0)
+> +		return 0;
+> +
+> +	bsize = SQUASHFS_COMPRESSED_SIZE_BLOCK(*block_size);
+> +	ret = squashfs_read_submit(inode->i_sb, *block, bsize,
+> +				msblk->block_size, bh, &b);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	*nr_bh = b;
+> +	return 0;
+> +}
+> +
+> +struct squashfs_ra_private {
+> +	struct buffer_head **bh;
+> +	int nr_bh;
+> +	int block_size;
+> +	u64 block;
+> +	void **buffer;
+> +	struct page **page_array;
+> +};
+> +
+> +/* Caller should free buffer head */
+> +static int squashfs_ra_read_submit(struct inode *inode, int bindex,
+> +			struct squashfs_ra_private *ra_priv)
+> +{
+> +	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
+> +	int ret;
+> +	struct buffer_head **bh;
+> +	int nr_bh = -1, bsize;
+> +	u64 block;
+> +	bh = kcalloc(((msblk->block_size + msblk->devblksize - 1)
+> +				>> msblk->devblksize_log2) + 1,
+> +				sizeof(*bh), GFP_KERNEL);
+> +	if (!bh)
+> +		return -ENOMEM;
+> +
+> +	ra_priv->bh = bh;
+> +	ret = squashfs_ra_readblock(inode, bindex, bh, &nr_bh,
+> +					&bsize, &block);
+> +	if (ret != 0)
+> +		goto release_bh;
+> +
+> +	ra_priv->nr_bh = nr_bh;
+> +	ra_priv->block_size = bsize;
+> +	ra_priv->block = block;
+> +
+> +	return 0;
+> +
+> +release_bh:
+> +	kfree(ra_priv->bh);
+> +	return ret;
+> +}
+> +
+> +static int squashfs_ra_decompress(struct inode *inode, int bindex,
+> +			struct squashfs_ra_private *ra_priv, gfp_t gfp_mask,
+> +			struct list_head *page_list)
+> +{
+> +	int j;
+> +	int ret = -ENOMEM;
+> +	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
+> +	int pages_per_block;
+> +
+> +	void **buffer;
+> +	struct buffer_head **bh;
+> +	int block_size, nr_bh;
+> +	u64 block;
+> +	struct page **page_array, *page;
+> +
+> +	int compressed, offset, length;
+> +
+> +	pages_per_block = msblk->block_size >> PAGE_CACHE_SHIFT;
+> +	pages_per_block = pages_per_block ? pages_per_block : 1;
+> +
+> +	bh = ra_priv->bh;
+> +	block_size = ra_priv->block_size;
+> +	nr_bh = ra_priv->nr_bh;
+> +	block = ra_priv->block;
+> +
+> +	if (block_size == 0)
+> +		return squashfs_hole_readpages(inode, bindex, page_list);
+> +
+> +	buffer = kcalloc(1 << (msblk->block_log - PAGE_CACHE_SHIFT),
+> +					sizeof(void *), GFP_KERNEL);
+> +	if (!buffer)
+> +		goto out;
+> +	ra_priv->buffer = buffer;
+> +
+> +	page_array = kcalloc(1 << (msblk->block_log - PAGE_CACHE_SHIFT),
+> +					sizeof(struct page *), GFP_KERNEL);
+> +	if (!page_array)
+> +		goto release_buffer;
+> +	ra_priv->page_array = page_array;
+> +
+> +	/* alloc buffer pages */
+> +	for (j = 0; j < pages_per_block; j++) {
+> +		page = list_entry(page_list->prev, struct page, lru);
+> +		list_del(&page->lru);
+> +		buffer[j] = kmap(page);
+> +		page_array[j] = page;
+> +	}
+> +
+> +	compressed = SQUASHFS_COMPRESSED_BLOCK(block_size);
+> +	length = SQUASHFS_COMPRESSED_SIZE_BLOCK(block_size);
+> +
+> +	offset = block & ((1 << msblk->devblksize_log2) - 1);
+> +	length = squashfs_decompress_block(inode->i_sb, compressed, buffer,
+> +				bh, nr_bh, offset, length, msblk->block_size,
+> +				pages_per_block);
+> +
+> +	for (j = 0; j < pages_per_block; j++) {
+> +		page = page_array[j];
+> +		flush_dcache_page(page);
+> +		SetPageUptodate(page);
+> +		lru_cache_add_file(page);
+> +		if (!PageLocked(page))
+> +			printk("unlock page %p j %d\n", page, j);
+> +		unlock_page(page);
+> +	}
+> +
+> +	ret = 0;
+> +
+> +release_buffer:
+> +	if (ra_priv->buffer) {
+> +		for (j = 0; j < pages_per_block; j++) {
+> +			if (!ra_priv->buffer[j])
+> +				break;
+> +			kunmap(ra_priv->page_array[j]);
+> +			page_cache_release(ra_priv->page_array[j]);
+> +		}
+> +		kfree(ra_priv->page_array);
+> +	}
+> +
+> +	kfree(ra_priv->buffer);
+> +out:
+> +	return ret;
+> +}
+> +
+> +/*
+> + * Fill hole pages between page_index and last_page_index
+> + * Return 0 if function is successful, otherwise, return 1
+> + * All pages are locked and added into page cache so that caller should
+> + * add them into LRU and unlock.
+> + */
+> +int hole_plugging(struct squashfs_sb_info *msblk, struct list_head *page_list,
+> +				int start_bindex, int last_bindex,
+> +				struct address_space *mapping)
+> +{
+> +	struct page *page, *tmp_page, *hpage, *tpage;
+> +	int page_index, last_page_index;
+> +	gfp_t gfp_mask = mapping_gfp_mask(mapping);
+> +
+> +	page_index = start_bindex << (msblk->block_log - PAGE_CACHE_SHIFT);
+> +	last_page_index = ((last_bindex + 1) <<
+> +			(msblk->block_log - PAGE_CACHE_SHIFT));
+> +	
+> +	hpage = list_entry(page_list->prev, struct page, lru);
+> +	for (; page_index < hpage->index; page_index++) {
+> +		struct page *new_page = page_cache_alloc_readahead(mapping);
+> +		if (!new_page)
+> +			return 1;
+> +		new_page->index = page_index;
+> +		list_add(&new_page->lru, &hpage->lru);
+> +	}
+> +
+> +	tpage = list_entry(page_list->next, struct page, lru);
+> +	page_index = tpage->index + 1;
+> +	for (; page_index < last_page_index; page_index++) {
+> +		struct page *new_page = page_cache_alloc_readahead(mapping);
+> +		if (!new_page)
+> +			return 1;
+> +		new_page->index = page_index;
+> +		list_add(&new_page->lru, page_list);
+> +	}
+> +
+> +	list_for_each_entry_reverse(page, page_list, lru)
+> +		if (add_to_page_cache(page, mapping, page->index, gfp_mask))
+> +			goto remove_pagecache;
+> +	return 0;
+> +
+> +remove_pagecache:
+> +	list_for_each_entry_reverse(tmp_page, page_list, lru) {
+> +		if (tmp_page == page)
+> +			break;
+> +		delete_from_page_cache(tmp_page);
+> +		unlock_page(tmp_page);
+> +	}
+> +	return 1;
+> +}
+> +
+> +struct decomp_work {
+> +	struct inode *inode;
+> +	int bindex;
+> +	struct list_head list;
+> +	struct list_head pages;
+> +	struct squashfs_ra_private *ra_priv;
+> +	gfp_t gfp_mask;
+> +};
+> +
+> +void squashfs_decomp_work(struct work_struct *work)
+> +{
+> +	struct inode *inode;
+> +	struct list_head *pages;
+> +	struct squashfs_ra_private *ra_priv;
+> +	struct decomp_work *decomp_work;
+> +	gfp_t gfp_mask;
+> +	int bindex;
+> +	struct squashfs_sb_info *msblk =
+> +		container_of(work, struct squashfs_sb_info, delay_work.work);
+> +
+> +	for (;;) {
+> +		decomp_work = NULL;
+> +		spin_lock(&msblk->decomp_lock);
+> +		if (!list_empty(&msblk->decomp_list)) {
+> +			decomp_work = list_entry(msblk->decomp_list.prev,
+> +					struct decomp_work, list);
+> +			list_del(&decomp_work->list);
+> +		}
+> +		spin_unlock(&msblk->decomp_lock);
+> +		if (!decomp_work)
+> +			return;
+> +
+> +		inode = decomp_work->inode;
+> +		bindex = decomp_work->bindex;
+> +		ra_priv = decomp_work->ra_priv;
+> +		gfp_mask = decomp_work->gfp_mask;
+> +		pages = &decomp_work->pages;
+> +
+> +		if (squashfs_ra_decompress(inode, bindex, ra_priv,
+> +						gfp_mask, pages)) {
+> +			struct page *page, *tmp;
+> +			list_for_each_entry_safe_reverse(page, tmp,
+> +							pages, lru) {
+> +				list_del(&page->lru);
+> +				delete_from_page_cache(page);
+> +				unlock_page(page);
+> +				page_cache_release(page);
+> +			}
+> +		}
+> +
+> +		kfree(ra_priv->bh);
+> +		kfree(ra_priv);
+> +		kfree(decomp_work);
+> +	}
+> +}
+> +
+> +static int move_pages(struct list_head *page_list, struct list_head *pages,
+> +				int nr)
+> +{
+> +	int moved_pages = 0;
+> +	struct page *page, *tmp_page;
+> +	list_for_each_entry_safe_reverse(page, tmp_page,
+> +						page_list, lru) {
+> +		list_move(&page->lru, pages);
+> +		moved_pages++;
+> +		if (moved_pages == nr)
+> +			break;
+> +	}
+> +
+> +	return moved_pages;
+> +}
+> +
+> +static int squashfs_readpages(struct file *file, struct address_space *mapping,
+> +		struct list_head *page_list, unsigned nr_pages)
+> +{
+> +	struct inode *inode = mapping->host;
+> +	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
+> +	struct page *hpage, *tpage, *page;
+> +	struct decomp_work **work;
+> +	int start_bindex, last_bindex;
+> +	struct squashfs_ra_private **ra_priv;
+> +	int pages_per_block, i, ret = -ENOMEM;
+> +	gfp_t gfp_mask;
+> +	int nr_blocks;
+> +
+> +	gfp_mask = mapping_gfp_mask(mapping);
+> +
+> +	hpage = list_entry(page_list->prev, struct page, lru);
+> +	tpage = list_entry(page_list->next, struct page, lru);
+> +
+> +	start_bindex = hpage->index >> (msblk->block_log - PAGE_CACHE_SHIFT);
+> +	last_bindex = tpage->index >> (msblk->block_log - PAGE_CACHE_SHIFT);
+> +
+> +	if (last_bindex >= (i_size_read(inode) >> msblk->block_log))
+> +		return 0;
+> +
+> +	/* fill with pages for readahead  */
+> +	if (hole_plugging(msblk, page_list, start_bindex,
+> +					last_bindex, mapping)) {
+> +		ret = 0;
+> +		goto out;
+> +	}
+> +
+> +	nr_blocks = last_bindex - start_bindex + 1;
+> +	ra_priv = kcalloc(nr_blocks, sizeof(*ra_priv), GFP_KERNEL);
+> +	if (!ra_priv)
+> +		goto remove_pagecache;
+> +
+> +	for (i = 0; i < nr_blocks; i++) {
+> +		ra_priv[i] = kmalloc(sizeof(**ra_priv),	GFP_KERNEL);
+> +		if (ra_priv[i] == NULL)
+> +			goto release_ra_priv;
+> +	}
+> +
+> +	work = kcalloc(nr_blocks, sizeof(*work), GFP_KERNEL);
+> +	if (!work)
+> +		goto release_ra_priv;
+> +
+> +	for (i = 0; i < nr_blocks; i++) {
+> +		work[i] = kmalloc(sizeof(**work), GFP_KERNEL);
+> +		if (!work[i])
+> +			goto release_work;
+> +	}
+> +
+> +	for (i = 0; i < nr_blocks; i++) {
+> +		ret = squashfs_ra_read_submit(inode, start_bindex + i ,
+> +							ra_priv[i]);
+> +		if (ret)
+> +			goto release_ra_priv;
+> +	}
+> +
+> +	ret = 0;
+> +
+> +	queue_delayed_work(system_unbound_wq, &msblk->delay_work,
+> +		msecs_to_jiffies(3));
+> +
+> +	pages_per_block = msblk->block_size >> PAGE_CACHE_SHIFT;
+> +	pages_per_block = pages_per_block ? pages_per_block : 1;
+> +
+> +	for (i = 0; i < nr_blocks; i++) {
+> +		struct decomp_work *decomp_work = work[i];
+> +
+> +		INIT_LIST_HEAD(&decomp_work->pages);
+> +		decomp_work->bindex = start_bindex + i;
+> +		decomp_work->ra_priv = ra_priv[i];
+> +		decomp_work->gfp_mask = gfp_mask;
+> +		decomp_work->inode = inode;
+> +
+> +		move_pages(page_list, &decomp_work->pages,
+> +			pages_per_block);
+> +
+> +		spin_lock(&msblk->decomp_lock);
+> +		list_add(&decomp_work->list, &msblk->decomp_list);
+> +		spin_unlock(&msblk->decomp_lock);
+> +	}
+> +
+> +	kfree(ra_priv);
+> +	kfree(work);
+> +
+> +	return ret;
+> +
+> +release_work:
+> +	for (i = 0; i < nr_blocks; i++)
+> +		kfree(work[i]);
+> +	kfree(work);
+> +release_ra_priv:
+> +	for (i = 0; i < nr_blocks; i++)
+> +		kfree(ra_priv[i]);
+> +	kfree(ra_priv);
+> +remove_pagecache:
+> +	list_for_each_entry_reverse(page, page_list, lru) {
+> +		delete_from_page_cache(page);
+> +		unlock_page(page);
+> +	}
+> +out:
+> +	return ret;
+> +}
+> +
+>  const struct address_space_operations squashfs_aops = {
+> -	.readpage = squashfs_readpage
+> +	.readpage = squashfs_readpage,
+> +	.readpages = squashfs_readpages,
+>  };
+> diff --git a/fs/squashfs/squashfs.h b/fs/squashfs/squashfs.h
+> index 4bb1f90..2de96a7 100644
+> --- a/fs/squashfs/squashfs.h
+> +++ b/fs/squashfs/squashfs.h
+> @@ -34,6 +34,8 @@ extern int squashfs_read_metablock(struct super_block *, void **, u64, int,
+>  				u64 *, int, int);
+>  extern int squashfs_read_submit(struct super_block *, u64, int, int,
+>  				struct buffer_head **, int *);
+> +extern int squashfs_decompress_block(struct super_block *, int, void **,
+> +			struct buffer_head **, int, int, int, int, int);
+>  
+>  /* cache.c */
+>  extern struct squashfs_cache *squashfs_cache_init(char *, int, int);
+> @@ -89,6 +91,7 @@ extern const struct export_operations squashfs_export_ops;
+>  
+>  /* file.c */
+>  extern const struct address_space_operations squashfs_aops;
+> +extern void squashfs_decomp_work(struct work_struct *work);
+>  
+>  /* inode.c */
+>  extern const struct inode_operations squashfs_inode_ops;
+> diff --git a/fs/squashfs/squashfs_fs_sb.h b/fs/squashfs/squashfs_fs_sb.h
+> index 0a209e6..bdcc0f2 100644
+> --- a/fs/squashfs/squashfs_fs_sb.h
+> +++ b/fs/squashfs/squashfs_fs_sb.h
+> @@ -79,5 +79,9 @@ struct squashfs_sb_info {
+>  	wait_queue_head_t			decomp_wait_queue;
+>  	int					nr_avail_decomp;
+>  	unsigned short				flags;
+> +
+> +	struct delayed_work			delay_work;
+> +	spinlock_t				decomp_lock;
+> +	struct list_head			decomp_list;
+>  };
+>  #endif
+> diff --git a/fs/squashfs/super.c b/fs/squashfs/super.c
+> index 70aa9c4..78d12d6 100644
+> --- a/fs/squashfs/super.c
+> +++ b/fs/squashfs/super.c
+> @@ -73,7 +73,6 @@ static const struct squashfs_decompressor *supported_squashfs_filesystem(short
+>  	return decompressor;
+>  }
+>  
+> -
+>  static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
+>  {
+>  	struct squashfs_sb_info *msblk;
+> @@ -98,6 +97,9 @@ static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
+>  	msblk->devblksize = sb_min_blocksize(sb, SQUASHFS_DEVBLK_SIZE);
+>  	msblk->devblksize_log2 = ffz(~msblk->devblksize);
+>  
+> +	spin_lock_init(&msblk->decomp_lock);
+> +	INIT_DELAYED_WORK(&msblk->delay_work, squashfs_decomp_work);
+> +	INIT_LIST_HEAD(&msblk->decomp_list);
+>  	INIT_LIST_HEAD(&msblk->strm_list);
+>  	mutex_init(&msblk->comp_strm_mutex);
+>  	init_waitqueue_head(&msblk->decomp_wait_queue);
+> -- 
+> 1.8.2.1
+> 
+> -- 
+> Kind regards,
+> Minchan Kim
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Kind regards,
+Minchan Kim
