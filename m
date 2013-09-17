@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777Ab3IQM6y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 08:58:54 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:47279 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752270Ab3IQM6x (ORCPT
+	id S1752839Ab3IQNAu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 09:00:50 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:38542 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752270Ab3IQNAt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 08:58:53 -0400
-Date: Tue, 17 Sep 2013 13:58:26 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux-ALSA <alsa-devel@alsa-project.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>,
-        Simon <horms@verge.net.au>, linux-kernel@vger.kernel.org
-Message-ID: <20130917125826.GA14323@sirena.org.uk>
-References: <87sixrre8r.wl%kuninori.morimoto.gx@renesas.com>
- <87mwnvsy7a.wl%kuninori.morimoto.gx@renesas.com>
- <87ioyjsxvj.wl%kuninori.morimoto.gx@renesas.com>
+	Tue, 17 Sep 2013 09:00:49 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5vNYLRcllDrimb99"
-Content-Disposition: inline
-In-Reply-To: <87ioyjsxvj.wl%kuninori.morimoto.gx@renesas.com>
-X-Cookie: You dialed 5483.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 3/4] ASoC: rsnd: gen: rsnd_gen_ops cares .probe and
- .remove
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Date: Tue, 17 Sep 2013 14:00:48 +0100
+Message-ID: <CACu8kRTN7XoTxvcFHQ=7N-rUGoUePS43EwRKax25mqBjzEXNVg@mail.gmail.com>
+Subject: Lightweight type analysis for memory safety through verification of
+ API uses
+From: Marcelo Sousa <marceloabsousa@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: msousa@cs.ox.ac.uk
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(* Apologies if this is a duplicate: I screw up the plain text before *)
 
---5vNYLRcllDrimb99
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hello all,
 
-On Sun, Sep 01, 2013 at 08:31:16PM -0700, Kuninori Morimoto wrote:
-> Current rsnd_gen_ops didn't care about .probe and .remove
-> functions, but it was not good sense.
-> This patch tidyup it
+I've designed and implemented a tool similar to sparse and CQUAL that
+does type inference of user specified type qualifiers, e.g. iomem. It
+receives an API specification with the type qualifiers and also a
+partial order, e.g. IOAddr is not compatible with KernelAddr and
+ioremap returns a pointer to IOAddr while __kmalloc returns a pointer
+to a KernelAddr.
 
-Applied, thanks.
+The tool is part of a verification framework for LLVM that I'm
+developing called llvmvf. I'm using the llvmlinux project to compile
+with clang and I perform intra/interprocedural analysis on every IR
+module. I can easily extend to inter-module analysis for a whole
+driver analysis.
 
---5vNYLRcllDrimb99
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The performance results are quite fast when compared to similar tools:
+less than 5 min to analyse the entire source code (~9k modules;
+millions of constraints).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
+Initially, I focused on separation of IO vs regular memory and I
+implemented a partial transformation that converts inline assembly to
+LLVM IR functions because I'm also interested in catching misuses of
+atomic instructions with IO memory pointers.
 
-iQIcBAEBAgAGBQJSOFHvAAoJELSic+t+oim927oP+wYaBN5BCsDvCPGC0ZweDcW/
-YVCSjxo4N/LgM2JGfyFa620WkMzQ+O12DuQo5xB3OmA4wTk3jVpdbYFcM1OdFqrI
-7r8Mts+y3t9/v7GpNnJSINflSp6Wt/ny5PgJouNWJFR4xzFMx5TU2cCL2u/7dLj5
-BobDkJJTAct8Ztd7GRaAq5pBy54fteIkW+mt6U44eutSveL6XPPz5fV34elbcyOE
-52OiBjWCsEeYzb9R66sc6vE0XlP4A5sbtEzL4z5qqQgb7nOiGrKWXdYIYWjHOaxO
-s8R+nzr8+pepLiveSLqi9AoZ1Za/fkRGwmWh3Dn9+SVlAtXOVCefKanCFmylPTxi
-hdFn1alucNRT83dGKMh4ynpft+K1oCsnGDZNS29fg6n66fNh3jSWOD/HmLI3Y3Ig
-Fxxx5rkTXrnNWMEW3xvMTsiThC/DCn0/ohq39p3Y4lB0/hLmF2CBVc1Q+6lMnXy/
-HEZtC2+ysjl5M/fUVrASUonJ2QrXgjk2tZGrUl116Q/+sDrSjNlvcKFFJrFrIVkQ
-VTeaV1xQAhgV2wWPOYOU56TgBYzaPi9mOMajFt9aKYzboKOOOwf9KPEgx7ghivQF
-vU8Vby/jRngekEj851uTKNlWPvc8Vsup7GeHbBu8oL0YJAnNTVMcYz3dHJ/2EQoO
-VsIxUbnALJopVFFPi6Gf
-=0Ca9
------END PGP SIGNATURE-----
+I'm looking for bugs related to misuses of IO pointers to validate my
+approach and have a good direction on how to increase the precision.
+More importantly, I'm looking for other use cases that are likely to
+produce a small number of false positives and could be useful to the
+linux kernel community. I would like your general feedback and
+suggestions of analysis. In particular, I'm thinking on using this
+approach to verify the DMA API, and I'm looking for known bugs that
+could be used for validation.
 
---5vNYLRcllDrimb99--
+Kind regards,
+Marcelo
