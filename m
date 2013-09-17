@@ -1,387 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752774Ab3IQJR7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 05:17:59 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42969 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752142Ab3IQJP0 (ORCPT
+	id S1752823Ab3IQJSa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 05:18:30 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48750 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751736Ab3IQJSZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 05:15:26 -0400
-Message-Id: <20130917091143.809146812@infradead.org>
-Date: Tue, 17 Sep 2013 11:10:53 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Cc: Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 07/11] sched, arch: Create asm/preempt.h
-References: <20130917082838.218329307@infradead.org>
-Content-Disposition: inline; filename=peterz-asm-preempt_count.patch
+	Tue, 17 Sep 2013 05:18:25 -0400
+Date: Tue, 17 Sep 2013 10:18:23 +0100
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: arizona: Update volatile registers for WM5110 DSP
+Message-ID: <20130917091823.GF3635@opensource.wolfsonmicro.com>
+References: <1379345514-2998-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <20130917072425.GP16984@lee--X1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130917072425.GP16984@lee--X1>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to prepare to per-arch implementations of preempt_count move
-the required bits into an asm-generic header and use this for all
-archs.
+No problem sorry the commit message was a little vague there.
+Seems I accidentally generated the first version of this patch
+against the ASoC tree, but this got me thinking now you are
+looking after MFD patches which tree should I be generating them
+against?
 
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- arch/alpha/include/asm/Kbuild      |    1 
- arch/arc/include/asm/Kbuild        |    1 
- arch/arm/include/asm/Kbuild        |    1 
- arch/arm64/include/asm/Kbuild      |    1 
- arch/avr32/include/asm/Kbuild      |    1 
- arch/blackfin/include/asm/Kbuild   |    1 
- arch/c6x/include/asm/Kbuild        |    1 
- arch/cris/include/asm/Kbuild       |    1 
- arch/frv/include/asm/Kbuild        |    1 
- arch/h8300/include/asm/Kbuild      |    1 
- arch/hexagon/include/asm/Kbuild    |    1 
- arch/ia64/include/asm/Kbuild       |    1 
- arch/m32r/include/asm/Kbuild       |    1 
- arch/m68k/include/asm/Kbuild       |    1 
- arch/metag/include/asm/Kbuild      |    1 
- arch/microblaze/include/asm/Kbuild |    1 
- arch/mips/include/asm/Kbuild       |    1 
- arch/mn10300/include/asm/Kbuild    |    1 
- arch/openrisc/include/asm/Kbuild   |    1 
- arch/parisc/include/asm/Kbuild     |    1 
- arch/powerpc/include/asm/Kbuild    |    1 
- arch/s390/include/asm/Kbuild       |    1 
- arch/score/include/asm/Kbuild      |    1 
- arch/sh/include/asm/Kbuild         |    1 
- arch/sparc/include/asm/Kbuild      |    1 
- arch/tile/include/asm/Kbuild       |    1 
- arch/um/include/asm/Kbuild         |    1 
- arch/unicore32/include/asm/Kbuild  |    1 
- arch/x86/include/asm/Kbuild        |    1 
- arch/xtensa/include/asm/Kbuild     |    1 
- include/asm-generic/preempt.h      |   44 +++++++++++++++++++++++++++++++++++++
- include/linux/preempt.h            |   39 --------------------------------
- 32 files changed, 75 insertions(+), 38 deletions(-)
+Thanks,
+Charles
 
---- a/arch/alpha/include/asm/Kbuild
-+++ b/arch/alpha/include/asm/Kbuild
-@@ -3,3 +3,4 @@ generic-y += clkdev.h
- 
- generic-y += exec.h
- generic-y += trace_clock.h
-+generic-y += preempt.h
---- a/arch/arc/include/asm/Kbuild
-+++ b/arch/arc/include/asm/Kbuild
-@@ -46,3 +46,4 @@ generic-y += ucontext.h
- generic-y += user.h
- generic-y += vga.h
- generic-y += xor.h
-+generic-y += preempt.h
---- a/arch/arm/include/asm/Kbuild
-+++ b/arch/arm/include/asm/Kbuild
-@@ -33,3 +33,4 @@ generic-y += timex.h
- generic-y += trace_clock.h
- generic-y += types.h
- generic-y += unaligned.h
-+generic-y += preempt.h
---- a/arch/arm64/include/asm/Kbuild
-+++ b/arch/arm64/include/asm/Kbuild
-@@ -50,3 +50,4 @@ generic-y += unaligned.h
- generic-y += user.h
- generic-y += vga.h
- generic-y += xor.h
-+generic-y += preempt.h
---- a/arch/avr32/include/asm/Kbuild
-+++ b/arch/avr32/include/asm/Kbuild
-@@ -3,3 +3,4 @@ generic-y	+= clkdev.h
- generic-y	+= exec.h
- generic-y	+= trace_clock.h
- generic-y	+= param.h
-+generic-y += preempt.h
---- a/arch/blackfin/include/asm/Kbuild
-+++ b/arch/blackfin/include/asm/Kbuild
-@@ -44,3 +44,4 @@ generic-y += ucontext.h
- generic-y += unaligned.h
- generic-y += user.h
- generic-y += xor.h
-+generic-y += preempt.h
---- a/arch/c6x/include/asm/Kbuild
-+++ b/arch/c6x/include/asm/Kbuild
-@@ -56,3 +56,4 @@ generic-y += ucontext.h
- generic-y += user.h
- generic-y += vga.h
- generic-y += xor.h
-+generic-y += preempt.h
---- a/arch/cris/include/asm/Kbuild
-+++ b/arch/cris/include/asm/Kbuild
-@@ -11,3 +11,4 @@ generic-y += module.h
- generic-y += trace_clock.h
- generic-y += vga.h
- generic-y += xor.h
-+generic-y += preempt.h
---- a/arch/frv/include/asm/Kbuild
-+++ b/arch/frv/include/asm/Kbuild
-@@ -2,3 +2,4 @@
- generic-y += clkdev.h
- generic-y += exec.h
- generic-y += trace_clock.h
-+generic-y += preempt.h
---- a/arch/h8300/include/asm/Kbuild
-+++ b/arch/h8300/include/asm/Kbuild
-@@ -6,3 +6,4 @@ generic-y += mmu.h
- generic-y += module.h
- generic-y += trace_clock.h
- generic-y += xor.h
-+generic-y += preempt.h
---- a/arch/hexagon/include/asm/Kbuild
-+++ b/arch/hexagon/include/asm/Kbuild
-@@ -53,3 +53,4 @@ generic-y += types.h
- generic-y += ucontext.h
- generic-y += unaligned.h
- generic-y += xor.h
-+generic-y += preempt.h
---- a/arch/ia64/include/asm/Kbuild
-+++ b/arch/ia64/include/asm/Kbuild
-@@ -3,4 +3,5 @@ generic-y += clkdev.h
- generic-y += exec.h
- generic-y += kvm_para.h
- generic-y += trace_clock.h
-+generic-y += preempt.h
- generic-y += vtime.h
-\ No newline at end of file
---- a/arch/m32r/include/asm/Kbuild
-+++ b/arch/m32r/include/asm/Kbuild
-@@ -3,3 +3,4 @@ generic-y += clkdev.h
- generic-y += exec.h
- generic-y += module.h
- generic-y += trace_clock.h
-+generic-y += preempt.h
---- a/arch/m68k/include/asm/Kbuild
-+++ b/arch/m68k/include/asm/Kbuild
-@@ -31,3 +31,4 @@ generic-y += trace_clock.h
- generic-y += types.h
- generic-y += word-at-a-time.h
- generic-y += xor.h
-+generic-y += preempt.h
---- a/arch/metag/include/asm/Kbuild
-+++ b/arch/metag/include/asm/Kbuild
-@@ -52,3 +52,4 @@ generic-y += unaligned.h
- generic-y += user.h
- generic-y += vga.h
- generic-y += xor.h
-+generic-y += preempt.h
---- a/arch/microblaze/include/asm/Kbuild
-+++ b/arch/microblaze/include/asm/Kbuild
-@@ -3,3 +3,4 @@ generic-y += clkdev.h
- generic-y += exec.h
- generic-y += trace_clock.h
- generic-y += syscalls.h
-+generic-y += preempt.h
---- a/arch/mips/include/asm/Kbuild
-+++ b/arch/mips/include/asm/Kbuild
-@@ -11,5 +11,6 @@ generic-y += sections.h
- generic-y += segment.h
- generic-y += serial.h
- generic-y += trace_clock.h
-+generic-y += preempt.h
- generic-y += ucontext.h
- generic-y += xor.h
---- a/arch/mn10300/include/asm/Kbuild
-+++ b/arch/mn10300/include/asm/Kbuild
-@@ -2,3 +2,4 @@
- generic-y += clkdev.h
- generic-y += exec.h
- generic-y += trace_clock.h
-+generic-y += preempt.h
---- a/arch/openrisc/include/asm/Kbuild
-+++ b/arch/openrisc/include/asm/Kbuild
-@@ -67,3 +67,4 @@ generic-y += ucontext.h
- generic-y += user.h
- generic-y += word-at-a-time.h
- generic-y += xor.h
-+generic-y += preempt.h
---- a/arch/parisc/include/asm/Kbuild
-+++ b/arch/parisc/include/asm/Kbuild
-@@ -4,3 +4,4 @@ generic-y += word-at-a-time.h auxvec.h u
- 	  div64.h irq_regs.h kdebug.h kvm_para.h local64.h local.h param.h \
- 	  poll.h xor.h clkdev.h exec.h
- generic-y += trace_clock.h
-+generic-y += preempt.h
---- a/arch/powerpc/include/asm/Kbuild
-+++ b/arch/powerpc/include/asm/Kbuild
-@@ -2,4 +2,5 @@
- generic-y += clkdev.h
- generic-y += rwsem.h
- generic-y += trace_clock.h
-+generic-y += preempt.h
- generic-y += vtime.h
-\ No newline at end of file
---- a/arch/s390/include/asm/Kbuild
-+++ b/arch/s390/include/asm/Kbuild
-@@ -2,3 +2,4 @@
- 
- generic-y += clkdev.h
- generic-y += trace_clock.h
-+generic-y += preempt.h
---- a/arch/score/include/asm/Kbuild
-+++ b/arch/score/include/asm/Kbuild
-@@ -4,3 +4,4 @@ header-y +=
- generic-y += clkdev.h
- generic-y += trace_clock.h
- generic-y += xor.h
-+generic-y += preempt.h
---- a/arch/sh/include/asm/Kbuild
-+++ b/arch/sh/include/asm/Kbuild
-@@ -34,3 +34,4 @@ generic-y += termios.h
- generic-y += trace_clock.h
- generic-y += ucontext.h
- generic-y += xor.h
-+generic-y += preempt.h
---- a/arch/sparc/include/asm/Kbuild
-+++ b/arch/sparc/include/asm/Kbuild
-@@ -16,3 +16,4 @@ generic-y += serial.h
- generic-y += trace_clock.h
- generic-y += types.h
- generic-y += word-at-a-time.h
-+generic-y += preempt.h
---- a/arch/tile/include/asm/Kbuild
-+++ b/arch/tile/include/asm/Kbuild
-@@ -38,3 +38,4 @@ generic-y += termios.h
- generic-y += trace_clock.h
- generic-y += types.h
- generic-y += xor.h
-+generic-y += preempt.h
---- a/arch/um/include/asm/Kbuild
-+++ b/arch/um/include/asm/Kbuild
-@@ -3,3 +3,4 @@ generic-y += hw_irq.h irq_regs.h kdebug.
- generic-y += ftrace.h pci.h io.h param.h delay.h mutex.h current.h exec.h
- generic-y += switch_to.h clkdev.h
- generic-y += trace_clock.h
-+generic-y += preempt.h
---- a/arch/unicore32/include/asm/Kbuild
-+++ b/arch/unicore32/include/asm/Kbuild
-@@ -60,3 +60,4 @@ generic-y += unaligned.h
- generic-y += user.h
- generic-y += vga.h
- generic-y += xor.h
-+generic-y += preempt.h
---- a/arch/x86/include/asm/Kbuild
-+++ b/arch/x86/include/asm/Kbuild
-@@ -5,3 +5,4 @@ genhdr-y += unistd_64.h
- genhdr-y += unistd_x32.h
- 
- generic-y += clkdev.h
-+generic-y += preempt.h
---- a/arch/xtensa/include/asm/Kbuild
-+++ b/arch/xtensa/include/asm/Kbuild
-@@ -28,3 +28,4 @@ generic-y += termios.h
- generic-y += topology.h
- generic-y += trace_clock.h
- generic-y += xor.h
-+generic-y += preempt.h
---- /dev/null
-+++ b/include/asm-generic/preempt.h
-@@ -0,0 +1,44 @@
-+#ifndef __ASM_PREEMPT_H
-+#define __ASM_PREEMPT_H
-+
-+#include <linux/thread_info.h>
-+
-+/*
-+ * We mask the PREEMPT_NEED_RESCHED bit so as not to confuse all current users
-+ * that think a non-zero value indicates we cannot preempt.
-+ */
-+static __always_inline int preempt_count(void)
-+{
-+	return current_thread_info()->preempt_count & ~PREEMPT_NEED_RESCHED;
-+}
-+
-+static __always_inline int *preempt_count_ptr(void)
-+{
-+	return &current_thread_info()->preempt_count;
-+}
-+
-+/*
-+ * We fold the NEED_RESCHED bit into the preempt count such that
-+ * preempt_enable() can decrement and test for needing to reschedule with a
-+ * single instruction.
-+ *
-+ * We invert the actual bit, so that when the decrement hits 0 we know we both
-+ * need to resched (the bit is cleared) and can resched (no preempt count).
-+ */
-+
-+static __always_inline void set_preempt_need_resched(void)
-+{
-+	*preempt_count_ptr() &= ~PREEMPT_NEED_RESCHED;
-+}
-+
-+static __always_inline void clear_preempt_need_resched(void)
-+{
-+	*preempt_count_ptr() |= PREEMPT_NEED_RESCHED;
-+}
-+
-+static __always_inline bool test_preempt_need_resched(void)
-+{
-+	return !(*preempt_count_ptr() & PREEMPT_NEED_RESCHED);
-+}
-+
-+#endif /* __ASM_PREEMPT_H */
---- a/include/linux/preempt.h
-+++ b/include/linux/preempt.h
-@@ -6,7 +6,6 @@
-  * preempt_count (used for kernel preemption, interrupt count, etc.)
-  */
- 
--#include <linux/thread_info.h>
- #include <linux/linkage.h>
- #include <linux/list.h>
- 
-@@ -16,43 +15,7 @@
-  */
- #define PREEMPT_NEED_RESCHED	0x80000000
- 
--/*
-- * We mask the PREEMPT_NEED_RESCHED bit so as not to confuse all current users
-- * that think a non-zero value indicates we cannot preempt.
-- */
--static __always_inline int preempt_count(void)
--{
--	return current_thread_info()->preempt_count & ~PREEMPT_NEED_RESCHED;
--}
--
--static __always_inline int *preempt_count_ptr(void)
--{
--	return &current_thread_info()->preempt_count;
--}
--
--/*
-- * We fold the NEED_RESCHED bit into the preempt count such that
-- * preempt_enable() can decrement and test for needing to reschedule with a
-- * single instruction.
-- *
-- * We invert the actual bit, so that when the decrement hits 0 we know we both
-- * need to resched (the bit is cleared) and can resched (no preempt count).
-- */
--
--static __always_inline void set_preempt_need_resched(void)
--{
--	*preempt_count_ptr() &= ~PREEMPT_NEED_RESCHED;
--}
--
--static __always_inline void clear_preempt_need_resched(void)
--{
--	*preempt_count_ptr() |= PREEMPT_NEED_RESCHED;
--}
--
--static __always_inline bool test_preempt_need_resched(void)
--{
--	return !(*preempt_count_ptr() & PREEMPT_NEED_RESCHED);
--}
-+#include <asm/preempt.h>
- 
- #if defined(CONFIG_DEBUG_PREEMPT) || defined(CONFIG_PREEMPT_TRACER)
-   extern void add_preempt_count(int val);
-
-
+On Tue, Sep 17, 2013 at 08:24:25AM +0100, Lee Jones wrote:
+> On Mon, 16 Sep 2013, Charles Keepax wrote:
+> 
+> Any chance of a little more information in the commit message?
+> 
+> What are scratch registers and why are they required now where they
+> weren't before? Why are the control and clocking regulators no longer
+> needed?
