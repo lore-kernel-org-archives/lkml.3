@@ -1,126 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187Ab3IQD3P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 23:29:15 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:48815 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751681Ab3IQD3N (ORCPT
+	id S1751359Ab3IQEHf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 00:07:35 -0400
+Received: from alvesta.synopsys.com ([198.182.60.77]:62986 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125Ab3IQEHc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 23:29:13 -0400
+	Tue, 17 Sep 2013 00:07:32 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: David Miller <davem@davemloft.net>
+CC: greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Alexey.Brodkin@synopsys.com" <Alexey.Brodkin@synopsys.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [PATCH] ethernet/arc/arc_emac: Fix huge delays in large file
+ copies
+Thread-Topic: [PATCH] ethernet/arc/arc_emac: Fix huge delays in large file
+ copies
+Thread-Index: AQHOsxSJ1ZAy2elFY0GqgerXRxd1ZA==
+Date: Tue, 17 Sep 2013 04:07:23 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA2307514C1F4@IN01WEMBXA.internal.synopsys.com>
+References: <1378295235-18928-1-git-send-email-vgupta@synopsys.com>
+ <20130905.142530.732425484460470485.davem@davemloft.net>
+ <522EBBD2.1060003@synopsys.com> <52369A94.5060900@synopsys.com>
+ <20130916194012.GA23656@kroah.com>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.239.237]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <523736DE.1050201@wwwdotorg.org>
-References: <1379238028-7960-1-git-send-email-acourbot@nvidia.com>
- <1379238028-7960-2-git-send-email-acourbot@nvidia.com> <523736DE.1050201@wwwdotorg.org>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Tue, 17 Sep 2013 12:28:53 +0900
-Message-ID: <CAAVeFuJgtF1xWHfF4gN+WbOBpL93pFdX7AR1ccu1imvoi9XZXg@mail.gmail.com>
-Subject: Re: [PATCH v6 1/5] ARM: add basic support for Trusted Foundations
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tomasz Figa <t.figa@samsung.com>, Dave Martin <Dave.Martin@arm.com>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Kevin Hilman <khilman@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17, 2013 at 1:50 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 09/15/2013 03:40 AM, Alexandre Courbot wrote:
->> Trusted Foundations is a TrustZone-based secure monitor for ARM that
->> can be invoked using the same SMC-based API on all supported
->> platforms. This patch adds initial basic support for Trusted
->> Foundations using the ARM firmware API. Current features are limited
->> to the ability to boot secondary processors.
+On 09/17/2013 01:10 AM, greg Kroah-Hartman wrote:
+> On Mon, Sep 16, 2013 at 11:13:48AM +0530, Vineet Gupta wrote:
+>> On 09/10/2013 11:57 AM, Vineet Gupta wrote:
+>>> On 09/05/2013 11:55 PM, David Miller wrote:
+>>>> From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+>>>> Date: Wed, 4 Sep 2013 17:17:15 +0530
+>>>>
+>>>>> copying large files to a NFS mounted host was taking absurdly large
+>>>>> time.
+>>>>>
+>>>>> Turns out that TX BD reclaim had a sublte bug.
+>>>>>
+>>>>> Loop starts off from @txbd_dirty cursor and stops when it hits a BD
+>>>>> still in use by controller. However when it stops it needs to keep the
+>>>>> cursor at that very BD to resume scanning in next iteration. However it
+>>>>> was erroneously incrementing the cursor, causing the next scan(s) to
+>>>>> fail too, unless the BD chain was completely drained out.
+>>>>>
+>>>>> [ARCLinux]$ ls -l -sh /disk/log.txt
+>>>>>  17976 -rw-r--r--    1 root     root       17.5M Sep  /disk/log.txt
+>>>>>
+>>>>> ========== Before =====================
+>>>>> [ARCLinux]$ time cp /disk/log.txt /mnt/.
+>>>>> real    31m 7.95s
+>>>>> user    0m 0.00s
+>>>>> sys     0m 0.10s
+>>>>>
+>>>>> ========== After =====================
+>>>>> [ARCLinux]$ time cp /disk/log.txt /mnt/.
+>>>>> real    0m 24.33s
+>>>>> user    0m 0.00s
+>>>>> sys     0m 0.19s
+>>>>>
+>>>>> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+>>>> Applied.
+>>>>
+>>> Hi Greg,
+>>>
+>>> This needs a stable backport (3.11).
+>>> Mainline commit 27082ee1b92f4d41e78b85
+>>>
+>>> Thx,
+>>> -Vineet
+>> Hi Greg,
 >>
->> Note: The API followed by Trusted Foundations does *not* follow the SMC
->> calling conventions. It has nothing to do with PSCI neither and is only
->> relevant to devices that use Trusted Foundations (like most Tegra-based
->> retail devices).
+>> I didn't spot this one in your stable-queue for 3.11.
+>> Please apply.
+> Network patches for the stable tree needs to go through the networking
+> maintainer.  Please let them know about this and they will forward it on
+> to me if needed.
 >
->> diff --git a/arch/arm/firmware/trusted_foundations.c b/arch/arm/firmware/trusted_foundations.c
+> thanks,
 >
->> +#if IS_ENABLED(CONFIG_OF)
->> +void of_register_trusted_foundations(void)
->> +{
->> +     struct device_node *node;
->> +     struct trusted_foundations_platform_data pdata;
->> +     int err;
->> +
->> +     node = of_find_compatible_node(NULL, NULL, "tl,trusted-foundations");
->> +     if (!node)
->> +             return;
-> ...
->
->> diff --git a/arch/arm/include/asm/trusted_foundations.h b/arch/arm/include/asm/trusted_foundations.h
->
->> +#if IS_ENABLED(CONFIG_TRUSTED_FOUNDATIONS)
->> +void register_trusted_foundations(struct trusted_foundations_platform_data *pd);
->> +#if IS_ENABLED(CONFIG_OF)
->> +void of_register_trusted_foundations(void);
->> +#endif
->
-> I still don't think that's correct.
->
-> If TF support is enabled, yet DT support is not enabled, then there is
-> no prototype, implementation, or dummy implementation for
-> of_register_trusted_foundations(). I think there should be a dummy
-> implementation in this case, shouldn't there?
->
->> +
->> +#else /* CONFIG_TRUSTED_FOUNDATIONS */
->> +
->> +#include <linux/printk.h>
->> +#include <linux/of.h>
->> +#include <asm/bug.h>
->> +
->> +static inline void register_trusted_foundations(
->> +                                struct trusted_foundations_platform_data *pd)
->> +{
->> +     panic("No support for Trusted Foundations, stopping...\n");
->> +}
->> +
->> +#if IS_ENABLED(CONFIG_OF)
->> +static inline void of_register_trusted_foundations(void)
->> +{
->> +     /* If we find the target should enable TF but does not support it,
->> +      * fail as the system won't be able to do much anyway */
->> +     if (of_find_compatible_node(NULL, NULL, "tl,trusted-foundations"))
->> +             register_trusted_foundations(NULL);
->> +}
->> +#else
->> +static inline void of_register_trusted_foundations(void)
->> +{
->> +}
->> +#endif /* CONFIG_OF */
->
-> That's more complex than it needs to be; there is a dummy
-> of_find_compatible_node() in the !OF case, so you don't need to ifdef
-> the implementation of of_register_trusted_foundations(); you just need
-> the first implementation here.
->
->> +#endif /* CONFIG_TRUSTED_FOUNDATIONS */
->
-> In summary, I think you need:
->
-> If TF is enabled, always implement of_register_trusted_foundations() in
-> the C file, and rely on of_find_compatible_node() to return NULL if
-> !CONFIG_OF.
->
-> If TF is not enabled, implement the inline version in the header file,
-> and again rely on of_find_compatible_node() to return NULL if !CONFIG_OF.
+> greg k-h
 
-Indeed, all your points are correct, and I've clearly been negligent
-here. Sorry about that.
+Hi David,
 
-Will have to submit a v7, but hopefully we can get the acks that we
-need (Russel?) on this version.
+Can you please do the needful for stable 3.11 backport of this patch.
 
-Alex.
+Thx,
+-Vineet
