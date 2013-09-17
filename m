@@ -1,64 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab3IQXSc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 19:18:32 -0400
-Received: from nm15-vm7.access.bullet.mail.gq1.yahoo.com ([216.39.63.193]:21716
-	"EHLO nm15-vm7.access.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753271Ab3IQXSa (ORCPT
+	id S1754171Ab3IQXT0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 19:19:26 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:61458 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753421Ab3IQXTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 19:18:30 -0400
-X-Yahoo-Newman-Id: 623616.68152.bm@smtp112.sbc.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: c4OAeaEVM1kLwfUCmMVYI2iCg.ggs6b7QF.pWRMFV0IPRoG
- qzKbXFvQnNJfHtDKK1Q.T_272oHRvgD0INk26..bny6bvXmwoN9LD6_Sdowz
- g92g72ZJxOKIgoOrizoXrFnZl8a5NW8BzHT4kxi6jXnFLSNx_i9drr2Gfu6V
- xfreJWctObxqG_ap.9rfx6Ik7PQ0ntxNK0ITIhtflFh2vuZKRso6UCPsDDqg
- KIYNVdVIWUVFPY0.23ycqdnoAb5v.SPkaqmsJ5keKkqaNEgw.RbLf7wCu7E5
- eTnO7PWAT_JEuJKYQ4WD_eLStXA5qjdrWb5eAgWdorefGm9U38nXDSNJ.7TP
- TYVtpIpfYnlGoHaqsQN20Vh9IAQ5pyaPqaIUczEEiB6lU4snm6HvskJQ0Ye8
- _TUGi0LKbTWkWxr6UPkDYr6AEY5jskEGaK0oYeLlFL.ekQf.lVrXGh.h8PkK
- AnJIBYGx2e1q.D6_G8HGUYkfQDbgoxYy07fYs1rmHFoE1PYYyFwxW28oZx.Y
- eSMkZQP7SZYMGBIuGtbGDXIFaGnkx5_9H9ZFlK84UhcHJT562FW1pSJPL4Uz
- 67qyCltQNvTk-
-X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
-X-Rocket-Received: from [192.168.1.4] (danielfsantos@99.70.244.137 with )
-        by smtp112.sbc.mail.gq1.yahoo.com with SMTP; 17 Sep 2013 16:18:29 -0700 PDT
-Message-ID: <5238E35F.3060206@att.net>
-Date: Tue, 17 Sep 2013 18:18:55 -0500
-From: Daniel Santos <danielfsantos@att.net>
-Reply-To: Daniel Santos <daniel.santos@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130730 Thunderbird/17.0.7
+	Tue, 17 Sep 2013 19:19:24 -0400
+Message-ID: <5238E385.1050705@redhat.com>
+Date: Wed, 18 Sep 2013 01:19:33 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Daniel Santos <daniel.santos@pobox.com>
-CC: linux-kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        George Spelvin <linux@horizon.com>
-Subject: Re: [PATCH 2/5] lib: Add .config options for error strings in printks
-References: <1379459317-13046-1-git-send-email-daniel.santos@pobox.com> <1379459317-13046-3-git-send-email-daniel.santos@pobox.com>
-In-Reply-To: <1379459317-13046-3-git-send-email-daniel.santos@pobox.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Jan Kiszka <jan.kiszka@siemens.com>
+CC: linux-kernel@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>, stable@vger.kernel.org,
+        kvm@vger.kernel.org, gleb@redhat.com
+Subject: Re: [PATCH 1/3] KVM: cleanup (physical) CPU hotplug
+References: <1379340373-5135-1-git-send-email-pbonzini@redhat.com> <1379340373-5135-2-git-send-email-pbonzini@redhat.com> <52380B55.5010408@siemens.com>
+In-Reply-To: <52380B55.5010408@siemens.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/2013 06:08 PM, danielfsantos@att.net wrote:
-> --- a/lib/Kconfig.debug
-> +++ b/lib/Kconfig.debug
-> @@ -58,6 +58,7 @@ config DYNAMIC_DEBUG
->   	  implicitly compiles in all pr_debug() and dev_dbg() calls, which
->   	  enlarges the kernel text size by about 2%.
->   
-> +
->   	  If a source file is compiled with DEBUG flag set, any
->   	  pr_debug() calls in it are enabled by default, but can be
->   	  disabled at runtime as below.  Note that DEBUG flag is
-> @@ -113,6 +114,58 @@ config DYNAMIC_DEBUG
-whoops! Please ignore this carriage return! :)
+Il 17/09/2013 09:57, Jan Kiszka ha scritto:
+>> > Remove the useless argument, and do not do anything if there are no
+>> > VMs running at the time of the hotplug.
+> kvm_cpu_hotplug already filters !kvm_usage_count. If we need the check
+> to be under kvm_lock, drop that line as well. If that is not required
+> (machine still halted?), drop the related changes here.
 
+CPU_DYING is called under stop_machine, CPU_STARTING is not.  So I
+should drop the test in kvm_cpu_hotplug.  It's a bit clearer anyway to
+not rely on stop_machine.
+
+Paolo
