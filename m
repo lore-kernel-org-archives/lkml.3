@@ -1,72 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752454Ab3IQJXF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 05:23:05 -0400
-Received: from mga03.intel.com ([143.182.124.21]:43461 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751907Ab3IQJXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 05:23:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,922,1371106800"; 
-   d="scan'208";a="361626463"
-From: Aaron Lu <aaron.lu@intel.com>
-To: linux-acpi@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Cc: Daniel Vetter <daniel@ffwll.ch>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Lee Chun-Yi <joeyli.kernel@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        Yves-Alexis Perez <corsac@debian.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>
-Subject: [PATCH v2 0/3] Fix Win8 backlight issue
-Date: Tue, 17 Sep 2013 17:23:13 +0800
-Message-Id: <1379409796-29350-1-git-send-email-aaron.lu@intel.com>
-X-Mailer: git-send-email 1.8.4.12.g2ea3df6
+	id S1752455Ab3IQJYy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 05:24:54 -0400
+Received: from smarthost01d.mail.zen.net.uk ([212.23.1.7]:48569 "EHLO
+	smarthost01d.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751859Ab3IQJYw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 05:24:52 -0400
+Message-ID: <1379409886.3413.14.camel@linaro1.home>
+Subject: Re: [PATCH V2 1/2] cpufreq: unlock correct rwsem while updating
+ policy->cpu
+From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: rjw@sisk.pl, linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com
+Date: Tue, 17 Sep 2013 10:24:46 +0100
+In-Reply-To: <63ac1edc637ef2c8cf05579972506ad5365948c1.1379393377.git.viresh.kumar@linaro.org>
+References: <63ac1edc637ef2c8cf05579972506ad5365948c1.1379393377.git.viresh.kumar@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-smarthost01d-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v1 has the subject of "Rework ACPI video driver" and is posted here:
-http://lkml.org/lkml/2013/9/9/74
-Since the objective is really to fix Win8 backlight issues, I changed
-the subject in this version, sorry about that.
+On Tue, 2013-09-17 at 10:22 +0530, Viresh Kumar wrote:
+> Current code looks like this:
+> 
+>         WARN_ON(lock_policy_rwsem_write(cpu));
+>         update_policy_cpu(policy, new_cpu);
+>         unlock_policy_rwsem_write(cpu);
+> 
+> {lock|unlock}_policy_rwsem_write(cpu) takes/releases policy->cpu's rwsem.
+> Because cpu is changing with the call to update_policy_cpu(), the
+> unlock_policy_rwsem_write() will release the incorrect lock.
+> 
+> The right solution would be to release the same lock as was taken earlier. Also
+> update_policy_cpu() was also called from cpufreq_add_dev() without any locks and
+> so its better if we move this locking to inside update_policy_cpu().
+> 
+> Reported-and-Tested-by: Jon Medhurst<tixy@linaro.org>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+> Hi Rafael,
+> 
+> Only one patch is sent now as other one is unchanged.
 
-This patchset has three patches, the first introduced a new API named
-backlight_device_registered in backlight layer that can be used for
-backlight interface provider module to check if a specific type backlight
-interface has been registered, see changelog for patch 1/3 for details.
-Then patch 2/3 does the cleanup to sepeate the backlight control and
-event delivery functionality in the ACPI video module and patch 3/3
-solves some Win8 backlight control problems by avoiding register ACPI
-video's backlight interface if:
-1 Kernel cmdline option acpi_backlight=video is not given;
-2 This is a Win8 system;
-3 Native backlight control interface exists.
+This patch fixes a regression introduced in 3.12 by commit f9ba680d23
+(cpufreq: Extract the handover of policy cpu to a helper function).
 
-Technically, patch 2/3 is not required to fix the issue here. So if you
-think it is not necessary, I can remove it from the series.
+The other patch is a tidyup of long-standing code.
 
-Apply on top of v3.12-rc1.
-
-Aaron Lu (3):
-  backlight: introduce backlight_device_registered
-  ACPI / video: seperate backlight control and event interface
-  ACPI / video: Do not register backlight if win8 and native interface
-    exists
-
- drivers/acpi/internal.h             |   5 +-
- drivers/acpi/video.c                | 442 ++++++++++++++++++++----------------
- drivers/acpi/video_detect.c         |  14 +-
- drivers/video/backlight/backlight.c |  31 +++
- include/acpi/video.h                |   2 +
- include/linux/backlight.h           |   4 +
- 6 files changed, 300 insertions(+), 198 deletions(-)
+>  drivers/cpufreq/cpufreq.c | 13 +++++++++++--
+>  1 file changed, 11 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 43c24aa..1479522 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -952,9 +952,20 @@ static void update_policy_cpu(struct cpufreq_policy *policy, unsigned int cpu)
+>  	if (cpu == policy->cpu)
+>  		return;
+>  
+> +	/*
+> +	 * Take direct locks as lock_policy_rwsem_write wouldn't work here.
+> +	 * Also lock for last cpu is enough here as contention will happen only
+> +	 * after policy->cpu is changed and after it is changed, other threads
+> +	 * will try to acquire lock for new cpu. And policy is already updated
+> +	 * by then.
+> +	 */
+> +	down_write(&per_cpu(cpu_policy_rwsem, policy->cpu));
+> +
+>  	policy->last_cpu = policy->cpu;
+>  	policy->cpu = cpu;
+>  
+> +	up_write(&per_cpu(cpu_policy_rwsem, policy->last_cpu));
+> +
+>  #ifdef CONFIG_CPU_FREQ_TABLE
+>  	cpufreq_frequency_table_update_policy_cpu(policy);
+>  #endif
+> @@ -1203,9 +1214,7 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
+>  
+>  		new_cpu = cpufreq_nominate_new_policy_cpu(policy, cpu, frozen);
+>  		if (new_cpu >= 0) {
+> -			WARN_ON(lock_policy_rwsem_write(cpu));
+>  			update_policy_cpu(policy, new_cpu);
+> -			unlock_policy_rwsem_write(cpu);
+>  
+>  			if (!frozen) {
+>  				pr_debug("%s: policy Kobject moved to cpu: %d "
 
 -- 
-1.8.4.12.g2ea3df6
+Tixy
 
