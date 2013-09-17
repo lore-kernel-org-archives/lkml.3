@@ -1,64 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945Ab3IQVd7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 17:33:59 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60884 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753850Ab3IQVd4 (ORCPT
+	id S1754016Ab3IQVec (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 17:34:32 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:33396 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753954Ab3IQVeb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 17:33:56 -0400
-Message-ID: <5238CABF.4010606@wwwdotorg.org>
-Date: Tue, 17 Sep 2013 15:33:51 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 17 Sep 2013 17:34:31 -0400
+Date: Tue, 17 Sep 2013 22:34:28 +0100
+From: Christoffer Dall <christoffer.dall@linaro.org>
+To: Andrew Jones <drjones@redhat.com>
+Cc: kvmarm@lists.cs.columbia.edu, kvm@vger.kernel.org, catalin.marinas@arm.com,
+        gleb@redhat.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, marc.zyngier@arm.com,
+        pbonzini@redhat.com, linux@arm.linux.org.uk, will.deacon@arm.com
+Subject: Re: [PATCH 3/3] aarch64: kvm: introduce CONFIG_KVM_MAX_VCPUS
+Message-ID: <20130917213428.GJ7623@lvm>
+References: <1379160656-28050-1-git-send-email-drjones@redhat.com>
+ <1379160656-28050-4-git-send-email-drjones@redhat.com>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: broonie@kernel.org, swarren@nvidia.com, rob.herring@calxeda.com,
-        mark.rutland@arm.com, rob@landley.net, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lgirdwood@gmail.com
-Subject: Re: [PATCH V3] regulator: core: add support for configuring turn-on
- time through constraints
-References: <1379418354-27269-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1379418354-27269-1-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379160656-28050-4-git-send-email-drjones@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/2013 05:45 AM, Laxman Dewangan wrote:
-> The Turn-on time of the regulator depends on the regulator device's
-> electrical characteristics. Sometimes regulator turn-on time also
-> depends on the capacitive load on the given platform and it can be
-> more than the datasheet value.
+On Sat, Sep 14, 2013 at 02:10:56PM +0200, Andrew Jones wrote:
+> Take CONFIG_KVM_MAX_VCPUS from arm32, but set the default to 8.
 > 
-> The driver provides the enable-time as per datasheet.
+> Signed-off-by: Andrew Jones <drjones@redhat.com>
+> ---
+>  arch/arm64/include/asm/kvm_host.h |  7 ++++++-
+>  arch/arm64/kvm/Kconfig            | 11 +++++++++++
+>  2 files changed, 17 insertions(+), 1 deletion(-)
 > 
-> Add support for configure the enable ramp time through regulator
-> constraints so that regulator core can take this value for enable
-> time for that regulator.
+> diff --git a/arch/arm64/include/asm/kvm_host.h b/arch/arm64/include/asm/kvm_host.h
+> index 0859a4ddd1e7d..d1af8c49a5ca4 100644
+> --- a/arch/arm64/include/asm/kvm_host.h
+> +++ b/arch/arm64/include/asm/kvm_host.h
+> @@ -26,7 +26,12 @@
+>  #include <asm/kvm_asm.h>
+>  #include <asm/kvm_mmio.h>
+>  
+> -#define KVM_MAX_VCPUS 4
+> +#if defined(CONFIG_KVM_MAX_VCPUS)
+> +#define KVM_MAX_VCPUS CONFIG_KVM_MAX_VCPUS
+> +#else
+> +#define KVM_MAX_VCPUS 0
+> +#endif
+> +
+>  #define KVM_USER_MEM_SLOTS 32
+>  #define KVM_PRIVATE_MEM_SLOTS 4
+>  #define KVM_COALESCED_MMIO_PAGE_OFFSET 1
+> diff --git a/arch/arm64/kvm/Kconfig b/arch/arm64/kvm/Kconfig
+> index 21e90820bd23c..c9924b02e84f7 100644
+> --- a/arch/arm64/kvm/Kconfig
+> +++ b/arch/arm64/kvm/Kconfig
+> @@ -35,6 +35,17 @@ config KVM_ARM_HOST
+>  	---help---
+>  	  Provides host support for ARM processors.
+>  
+> +config KVM_MAX_VCPUS
+> +	int "Number maximum supported virtual CPUs per VM"
+> +	depends on KVM_ARM_HOST
+> +	default 8
 
-> diff --git a/Documentation/devicetree/bindings/regulator/regulator.txt b/Documentation/devicetree/bindings/regulator/regulator.txt
+That data structure gets really big with 8 max vcpus.  I think we should
+keep this at 4 for now, a quad-core VM is quite reasonable for now.
 
-> +- regulator-enable-ramp-delay: Turn-on time for regulator(in microsecond).
+> +	help
+> +	  Static number of max supported virtual CPUs per VM.
+> +
+> +	  The default is set to the highest number of vcpus that
+> +	  current hardware supports. Set to a lower number to save
+> +	  some resources. Set to a higher number to test scalability.
+> +
+>  config KVM_ARM_VGIC
+>  	bool
+>  	depends on KVM_ARM_HOST && OF
+> -- 
+> 1.8.1.4
+> 
 
-You need a space before (. You don't even need the brackets.
-microseconds not microsecond.
-
-> +  This is the time time taken to reach the target voltage from off state.
-> +  The delay specified in the DT to just completely override what the drivers
-> +  know.
-
-This description references driver behaviour which it really shouldn't.
-Instead, it should describe the HW itself. How about the following text,
-which I suggested last time:
-
-- regulator-enable-ramp-delay: The time taken, in microseconds, for the
-supply rail to reach the target voltage, plus/minus whatever tolerance
-the board design requires. This property describes the total system ramp
-time required due to the combination of internal ramping of the
-regulator itself, and board design issues such as trace capacitance and
-load on the supply.
-
+-- 
+Christoffer
