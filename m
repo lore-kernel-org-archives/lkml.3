@@ -1,71 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976Ab3IQOKU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 10:10:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57029 "EHLO mx2.suse.de"
+	id S1752968Ab3IQOS1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 10:18:27 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:47789 "EHLO kanga.kvack.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752751Ab3IQOKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 10:10:18 -0400
-Date: Tue, 17 Sep 2013 16:10:13 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: azurIt <azurit@pobox.sk>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, x86@kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/7] improve memcg oom killer robustness v2
-Message-ID: <20130917141013.GA30838@dhcp22.suse.cz>
-References: <20130916134014.GA3674@dhcp22.suse.cz>
- <20130916160119.2E76C2A1@pobox.sk>
- <20130916140607.GC3674@dhcp22.suse.cz>
- <20130916161316.5113F6E7@pobox.sk>
- <20130916145744.GE3674@dhcp22.suse.cz>
- <20130916170543.77F1ECB4@pobox.sk>
- <20130916152548.GF3674@dhcp22.suse.cz>
- <20130916225246.A633145B@pobox.sk>
- <20130917000244.GD3278@cmpxchg.org>
- <20130917131535.94E0A843@pobox.sk>
-MIME-Version: 1.0
+	id S1752270Ab3IQOS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 10:18:26 -0400
+Date: Tue, 17 Sep 2013 10:18:25 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@osdl.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org
+Subject: [rfc] rework aio migrate pages to use aio fs
+Message-ID: <20130917141825.GF11526@kvack.org>
+References: <20130913165937.GL2517@kvack.org> <20130913184204.GS13318@ZenIV.linux.org.uk>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130917131535.94E0A843@pobox.sk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130913184204.GS13318@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 17-09-13 13:15:35, azurIt wrote:
-[...]
-> Is something unusual on this stack?
-> 
-> 
-> [<ffffffff810d1a5e>] dump_header+0x7e/0x1e0
-> [<ffffffff810d195f>] ? find_lock_task_mm+0x2f/0x70
-> [<ffffffff810d1f25>] oom_kill_process+0x85/0x2a0
-> [<ffffffff810d24a8>] mem_cgroup_out_of_memory+0xa8/0xf0
-> [<ffffffff8110fb76>] mem_cgroup_oom_synchronize+0x2e6/0x310
-> [<ffffffff8110efc0>] ? mem_cgroup_uncharge_page+0x40/0x40
-> [<ffffffff810d2703>] pagefault_out_of_memory+0x13/0x130
-> [<ffffffff81026f6e>] mm_fault_error+0x9e/0x150
-> [<ffffffff81027424>] do_page_fault+0x404/0x490
-> [<ffffffff810f952c>] ? do_mmap_pgoff+0x3dc/0x430
-> [<ffffffff815cb87f>] page_fault+0x1f/0x30
+Hi Al,
 
-This is a regular memcg OOM killer. Which dumps messages about what is
-going to do. So no, nothing unusual, except if it was like that for ever
-which would mean that oom_kill_process is in the endless loop. But a
-single stack doesn't tell us much.
+On Fri, Sep 13, 2013 at 07:42:04PM +0100, Al Viro wrote:
+> OK...  As for objections against anon_inodes.c stuff, it can be dealt with
+> after merge.  Basically, I don't like using anon_inodes as a dumping ground -
+> look how little of what that sucker is doing has anything to do with the
+> code in anon_inodes.c; you override practically everything anyway.  It's
+> just a "filesystems are hard, let's go shopping".  Look, declaring an
+> fs takes about 20 lines.  Total.  All you really use from anon_inodes.c is
+...
+> Note that anon_inodes.c reason to exist was "it's for situations where
+> all context lives on struct file and we don't need separate inode for
+> them".  Going from that to "it happens to contain a handy function for inode
+> allocation"...
 
-Just a note. When you see something hogging a cpu and you are not sure
-whether it might be in an endless loop inside the kernel it makes sense
-to take several snaphosts of the stack trace and see if it changes. If
-not and the process is not sleeping (there is no schedule on the trace)
-then it might be looping somewhere waiting for Godot. If it is sleeping
-then it is slightly harder because you would have to identify what it is
-waiting for which requires to know a deeper context.
+The main reason for re-using anon_inodes.c was more to avoid duplicating 
+code.  In any case, the below reworks things as suggested, and it seems to 
+work in basic testing (the migrate pages test passes, as well as some basic 
+operations generating events).  Could you please review changes below?  If 
+it looks okay, I'll add it to my next bug fix pull.  Credit goes to Al for 
+having written most of this code in his previous email.
+
+		-ben
+
+ aio.c |  136 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 129 insertions(+), 7 deletions(-)
+
+diff --git a/fs/aio.c b/fs/aio.c
+index 6b868f0..3acca84 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -36,10 +36,11 @@
+ #include <linux/eventfd.h>
+ #include <linux/blkdev.h>
+ #include <linux/compat.h>
+-#include <linux/anon_inodes.h>
+ #include <linux/migrate.h>
+ #include <linux/ramfs.h>
+ #include <linux/percpu-refcount.h>
++#include <linux/module.h>
++#include <linux/mount.h>
+ 
+ #include <asm/kmap_types.h>
+ #include <asm/uaccess.h>
+@@ -152,12 +153,138 @@ unsigned long aio_max_nr = 0x10000; /* system wide maximum number of aio request
+ static struct kmem_cache	*kiocb_cachep;
+ static struct kmem_cache	*kioctx_cachep;
+ 
++static struct vfsmount *aio_mnt;
++
++static const struct file_operations aio_ring_fops;
++
++static int aio_set_page_dirty(struct page *page)
++{
++	return 0;
++};
++
++static const struct address_space_operations aio_aops = {
++	.set_page_dirty = aio_set_page_dirty,
++};
++
++/*
++ * A single inode exists for each aio_inode file.  The inodes are only
++ * used for mapping the event ring buffers in order to make it possible
++ * to provide migration ops to the vm.
++ */
++static struct inode *aio_inode_mkinode(struct super_block *s)
++{
++	struct inode *inode = new_inode_pseudo(s);
++
++	if (!inode)
++		return ERR_PTR(-ENOMEM);
++
++	inode->i_ino = get_next_ino();
++	inode->i_fop = &aio_ring_fops;
++	inode->i_mapping->a_ops = &aio_aops;
++
++	/*
++	 * Mark the inode dirty from the very beginning,
++	 * that way it will never be moved to the dirty
++	 * list because mark_inode_dirty() will think
++	 * that it already _is_ on the dirty list.
++	 */
++	inode->i_state = I_DIRTY;
++	inode->i_mode = S_IRUSR | S_IWUSR;
++	inode->i_uid = current_fsuid();
++	inode->i_gid = current_fsgid();
++	inode->i_flags |= S_PRIVATE;
++	inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
++	return inode;
++}
++
++/**
++ * aio_inode_getfile_private - creates a new file instance by hooking it up to
++ * an anonymous inode, and a dentry that describe the "class" of the file.
++ *
++ * @name:    [in]    name of the "class" of the new file
++ * @fops:    [in]    file operations for the new file
++ * @priv:    [in]    private data for the new file (will be file's private_data)
++ * @flags:   [in]    flags
++ *
++ *
++ * Similar to aio_inode_getfile, but each file holds a single inode.
++ *
++ */
++struct file *aio_inode_getfile_private(const char *name,
++				       const struct file_operations *fops,
++				       void *priv, int flags)
++{
++	struct qstr this;
++	struct path path;
++	struct file *file;
++	struct inode *inode;
++
++	if (fops->owner && !try_module_get(fops->owner))
++		return ERR_PTR(-ENOENT);
++
++	inode = aio_inode_mkinode(aio_mnt->mnt_sb);
++	if (IS_ERR(inode)) {
++		file = ERR_PTR(-ENOMEM);
++		goto err_module;
++	}
++
++	/*
++	 * Link the inode to a directory entry by creating a unique name
++	 * using the inode sequence number.
++	 */
++	file = ERR_PTR(-ENOMEM);
++	this.name = name;
++	this.len = strlen(name);
++	this.hash = 0;
++	path.dentry = d_alloc_pseudo(aio_mnt->mnt_sb, &this);
++	if (!path.dentry)
++		goto err_module;
++
++	path.mnt = mntget(aio_mnt);
++
++	d_instantiate(path.dentry, inode);
++
++	file = alloc_file(&path, OPEN_FMODE(flags), fops);
++	if (IS_ERR(file))
++		goto err_dput;
++
++	file->f_mapping = inode->i_mapping;
++	file->f_flags = flags & (O_ACCMODE | O_NONBLOCK);
++	file->private_data = priv;
++
++	return file;
++
++err_dput:
++	path_put(&path);
++err_module:
++	module_put(fops->owner);
++	return file;
++}
++
++static struct dentry *aio_mount(struct file_system_type *fs_type,
++				int flags, const char *dev_name, void *data)
++{
++	static const struct dentry_operations ops = {
++		.d_dname	= simple_dname,
++	};
++        return mount_pseudo(fs_type, "aio:", NULL, &ops, 0xa10a10a1);
++}
++
+ /* aio_setup
+  *	Creates the slab caches used by the aio routines, panic on
+  *	failure as this is done early during the boot sequence.
+  */
+ static int __init aio_setup(void)
+ {
++	static struct file_system_type aio_fs = {
++		.name		= "aio",
++		.mount		= aio_mount,
++		.kill_sb	= kill_anon_super,
++	};
++	aio_mnt = kern_mount(&aio_fs);
++	if (IS_ERR(aio_mnt))
++		panic("Failed to create aio fs mount.");
++
+ 	kiocb_cachep = KMEM_CACHE(kiocb, SLAB_HWCACHE_ALIGN|SLAB_PANIC);
+ 	kioctx_cachep = KMEM_CACHE(kioctx,SLAB_HWCACHE_ALIGN|SLAB_PANIC);
+ 
+@@ -198,11 +325,6 @@ static const struct file_operations aio_ring_fops = {
+ 	.mmap = aio_ring_mmap,
+ };
+ 
+-static int aio_set_page_dirty(struct page *page)
+-{
+-	return 0;
+-}
+-
+ #if IS_ENABLED(CONFIG_MIGRATION)
+ static int aio_migratepage(struct address_space *mapping, struct page *new,
+ 			struct page *old, enum migrate_mode mode)
+@@ -260,7 +382,7 @@ static int aio_setup_ring(struct kioctx *ctx)
+ 	if (nr_pages < 0)
+ 		return -EINVAL;
+ 
+-	file = anon_inode_getfile_private("[aio]", &aio_ring_fops, ctx, O_RDWR);
++	file = aio_inode_getfile_private("[aio]", &aio_ring_fops, ctx, O_RDWR);
+ 	if (IS_ERR(file)) {
+ 		ctx->aio_ring_file = NULL;
+ 		return -EAGAIN;
 -- 
-Michal Hocko
-SUSE Labs
+"Thought is the essence of where you are now."
