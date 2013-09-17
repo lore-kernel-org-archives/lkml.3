@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751721Ab3IQG7s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 02:59:48 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:46531 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338Ab3IQG7r (ORCPT
+	id S1751933Ab3IQHAg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 03:00:36 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:56060 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751589Ab3IQHAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 02:59:47 -0400
-Message-ID: <5237FDCC.5010109@oracle.com>
-Date: Tue, 17 Sep 2013 14:59:24 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Tue, 17 Sep 2013 03:00:34 -0400
 MIME-Version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-CC: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dave Hansen <dave.hansen@intel.com>, Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH v2 0/5] mm: migrate zbud pages
-References: <1378889944-23192-1-git-send-email-k.kozlowski@samsung.com>
-In-Reply-To: <1378889944-23192-1-git-send-email-k.kozlowski@samsung.com>
+X-Originating-IP: [81.241.63.71]
+In-Reply-To: <1379370502-30376-3-git-send-email-khilman@linaro.org>
+References: <1379370502-30376-1-git-send-email-khilman@linaro.org>
+	<1379370502-30376-3-git-send-email-khilman@linaro.org>
+Date: Tue, 17 Sep 2013 09:00:34 +0200
+Message-ID: <CAORVsuUrwH+4csjT_rpk2e7z7gje1ksrVdeTDYVAZ7bRZbd5UQ@mail.gmail.com>
+Subject: Re: [PATCH 2/4] nohz_full: Kconfig: drop requrement on 64-bit
+From: Jean Pihet <jean.pihet@newoldbits.com>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Krzysztof,
+Hi Kevin,
 
-On 09/11/2013 04:58 PM, Krzysztof Kozlowski wrote:
-> Hi,
-> 
-> Currently zbud pages are not movable and they cannot be allocated from CMA
-> (Contiguous Memory Allocator) region. These patches add migration of zbud pages.
-> 
+FWIW typo in the title: 'requirement'.
 
-I agree that the migration of zbud pages is important so that system
-will not enter order-0 page fragmentation and can be helpful for page
-compaction/huge pages etc..
-
-But after I looked at the [patch 4/5], I found it will make zbud very
-complicated.
-I'd prefer to add this migration feature later until current version
-zswap/zbud becomes better enough and more stable.
-
-Mel mentioned several problems about zswap/zbud in thread "[PATCH v6
-0/5] zram/zsmalloc promotion".
-
-Like "it's clunky as hell and the layering between zswap and zbud is
-twisty" and "I think I brought up its stalling behaviour during review
-when it was being merged. It would have been preferable if writeback
-could be initiated in batches and then waited on at the very least..
- It's worse that it uses _swap_writepage directly instead of going
-through a writepage ops.  It would have been better if zbud pages
-existed on the LRU and written back with an address space ops and
-properly handled asynchonous writeback."
-
-So I think it would be better if we can address those issues at first
-and it would be easier to address these issues before adding more new
-features. Welcome any ideas.
-
--- 
 Regards,
--Bob
+Jean
+
+On Tue, Sep 17, 2013 at 12:28 AM, Kevin Hilman <khilman@linaro.org> wrote:
+> Now that VIRT_CPU_ACCOUNTING_GEN no longer has a 64-bit requirement,
+> it can be dropped here as well.
+>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+> ---
+>  kernel/time/Kconfig | 2 --
+>  1 file changed, 2 deletions(-)
+>
+> diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
+> index 2b62fe8..a54e3e9 100644
+> --- a/kernel/time/Kconfig
+> +++ b/kernel/time/Kconfig
+> @@ -99,8 +99,6 @@ config NO_HZ_FULL
+>         depends on SMP
+>         # RCU_USER_QS dependency
+>         depends on HAVE_CONTEXT_TRACKING
+> -       # VIRT_CPU_ACCOUNTING_GEN dependency
+> -       depends on 64BIT
+>         select NO_HZ_COMMON
+>         select RCU_USER_QS
+>         select RCU_NOCB_CPU
+> --
+> 1.8.3
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
