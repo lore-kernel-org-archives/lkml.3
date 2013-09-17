@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752463Ab3IQJij (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 05:38:39 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:48998 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752135Ab3IQJih (ORCPT
+	id S1752198Ab3IQJnm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 05:43:42 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:33212 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853Ab3IQJnk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 05:38:37 -0400
-Message-ID: <523822D8.9030008@huawei.com>
-Date: Tue, 17 Sep 2013 17:37:28 +0800
-From: Xie XiuQi <xiexiuqi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Tue, 17 Sep 2013 05:43:40 -0400
+Date: Tue, 17 Sep 2013 12:43:26 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Adil Mujeeb <mujeeb.adil@gmail.com>
+Cc: Iker Pedrosa <ikerpedrosam@gmail.com>, Pavel Machek <pavel@ucw.cz>,
+        Greg KH <gregkh@linuxfoundation.org>, harsh1kumar@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 15/24] Staging: winbond: reg: seventh of the patches
+ that fixes lines over 80 characters
+Message-ID: <20130917094326.GO19256@mwanda>
+References: <1379339024-12157-1-git-send-email-ikerpedrosam@gmail.com>
+ <1379339024-12157-16-git-send-email-ikerpedrosam@gmail.com>
+ <CANBXnMm7QCab3cU4NMzmA3OjXckcUx5dakyD_TRwfj3j2_02MA@mail.gmail.com>
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: clocksource: fix comment for __clocksource_updatefreq_scale
-References: <52381CB4.9060802@huawei.com>
-In-Reply-To: <52381CB4.9060802@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.69.18]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANBXnMm7QCab3cU4NMzmA3OjXckcUx5dakyD_TRwfj3j2_02MA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add cc John Stultz <john.stultz@linaro.org>
-
-On 2013/9/17 17:11, Xie XiuQi wrote:
-> The functions clocksource_updatefreq_hz() and clocksource_updatefreq_khz()
-> do not exist. The proper ones are __clocksource_updatefreq_hz() and
-> __clocksource_updatefreq_khz().
+On Tue, Sep 17, 2013 at 02:29:22PM +0530, Adil Mujeeb wrote:
+> Hi,
 > 
-> Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
-> ---
->  kernel/time/clocksource.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
 > 
-> diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-> index 50a8736..d2f6ddc 100644
-> --- a/kernel/time/clocksource.c
-> +++ b/kernel/time/clocksource.c
-> @@ -714,7 +714,8 @@ static void clocksource_enqueue(struct clocksource *cs)
->   * This should only be called from the clocksource->enable() method.
->   *
->   * This *SHOULD NOT* be called directly! Please use the
-> - * clocksource_updatefreq_hz() or clocksource_updatefreq_khz helper functions.
-> + * __clocksource_updatefreq_hz() or __clocksource_updatefreq_khz helper
-> + * functions.
->   */
->  void __clocksource_updatefreq_scale(struct clocksource *cs, u32 scale, u32 freq)
->  {
+> >-       PowerData = (1 << 31) | (0 << 30) | (24 << 24) |
+> BitReverse(w89rf242_txvga_data[i][0], 24);
+> >+       PowerData = (1 << 31) | (0 << 30) | (24 << 24)
+> >+                           | BitReverse(w89rf242_txvga_data[i][0], 24);
+> .....
+> .....
+> 
+> >-       reg->M38_MacControl = (DEFAULT_RATE_RETRY_LIMIT << 8) |
+> (DEFAULT_LONG_RETRY_LIMIT << 4) | DEFAULT_SHORT_RETRY_LIMIT;
+> >+       reg->M38_MacControl = (DEFAULT_RATE_RETRY_LIMIT << 8) |
+> >+                                      (DEFAULT_LONG_RETRY_LIMIT << 4) |
+> >+                                      DEFAULT_SHORT_RETRY_LIMIT;
+> 
+> I think consistency is needed. Either break the lines putting the OR
+> operator ( | ) at the start of new line or at the end of each line. People
+> has its own preference but here you have used both style in single file.
+> Just a suggestion.
 > 
 
+Put the '|' character at the end of the line.  That's the New Unwritten
+Style Guidelines.  Most of the kernel does it this way and it's easier
+to read.
+
+But this could be fixed in a later patch instead of redoing the whole
+series.
+
+regards,
+dan carpenter
 
