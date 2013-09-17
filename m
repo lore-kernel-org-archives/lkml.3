@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738Ab3IQMCb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 08:02:31 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:54611 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751656Ab3IQMCa (ORCPT
+	id S1752515Ab3IQMUR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 08:20:17 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:40918 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912Ab3IQMUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 08:02:30 -0400
+	Tue, 17 Sep 2013 08:20:15 -0400
 MIME-Version: 1.0
-Date: Tue, 17 Sep 2013 14:02:29 +0200
-Message-ID: <CAFrcx1nMmomNJZknpmRx73umXMCdHdMjEfXC5tDPGcUdD31=nw@mail.gmail.com>
-Subject: perf: cannot resolve kernel symbols
-From: Jean Pihet <jean.pihet@linaro.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1378742636-11215-2-git-send-email-g.liakhovetski@gmx.de>
+References: <1378742636-11215-1-git-send-email-g.liakhovetski@gmx.de>
+	<1378742636-11215-2-git-send-email-g.liakhovetski@gmx.de>
+Date: Tue, 17 Sep 2013 14:20:14 +0200
+Message-ID: <CACRpkdbDa5Smpfyneq-SAPYvbxB-ju7-X8kkZ7RFpNcYrcBggg@mail.gmail.com>
+Subject: Re: [PATCH 1/4] pinctrl: sh-pfc: r8a7790: add pin definitions for the
+ I2C3 interface
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Sep 9, 2013 at 6:03 PM, Guennadi Liakhovetski
+<g.liakhovetski@gmx.de> wrote:
 
-I am running the perf record and report commands, which are running OK
-but I do not get any kernel symbol resolved when using a built and
-installed kernel.
-Using the distro installed kernel is OK though.
-The setup is: Marvell ARMv7 quad core, Linaro Ubuntu release.
+> There are four I2C interfaces on r8a7790, each of them can be connected to
+> one of the two respective I2C controllers, e.g. interface #0 can be
+> configured to work with I2C0 or with IIC0. Additionally some of those
+> interfaces can also use one of several pin sets. Interface #3 is special,
+> because it can be used in automatic mode for DVFS. It only has one set
+> of pins available and those pins cannot be used for anything else, they
+> also lack the GPIO function.
+>
+> This patch uses the sh-pfc ability to configure pins, not associated with
+> GPIOs and adds support for I2C3 to the r8a7790 PFC set up.
+>
+> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
 
-Here are the commands in use:
-- perf record -g dwarf -- stress --cpu 2 --io 2 --vm 2 --timeout 1s
-- perf report -vvv
+Pls CC Laurent who is main reviewer on all sh-pfc stuff.
 
-With a vmlinux found at /lib/modules/<version>/build I get the
-following in the trace output:
-...
-Looking at the vmlinux_path (6 entries long)
-Using /lib/modules/3.11.0-00003-g0d4d4a1/build/vmlinux for symbols
-...
-dso: [kernel.kallsyms]
-(/lib/modules/3.11.0-00003-g0d4d4a1/build/vmlinux, Functions, loaded,
-0000000000000000000000000000000000000000)
- c00081c0-c00081c3 g asm_do_IRQ
-...
-dso: [kernel.kallsyms].head.text ([kernel.kallsyms], Functions, loaded, 00000000
-00000000000000000000000000000000)
- c0008000-c0008077 g stext
- c0008000-c0008000 g _text
- c0008084-c0008127 l __create_page_tables
-...
-dso: [kernel.kallsyms].init.text ([kernel.kallsyms], Functions, loaded, 00000000
-00000000000000000000000000000000)
- c04f3260-c04f32af l __fixup_smp
+> +/* R8A7790 has 6 banks with 32 GPIOs in each = 192 GPIOs */
+> +#define ROW_GROUP_A(r) ('Z' - 'A' + 1 + (r))
+> +#define PIN_NUMBER(r, c) (((r) - 'A') * 16 + (c) + 200)
+> +#define PIN_A_NUMBER(r, c) PIN_NUMBER(ROW_GROUP_A(r), c)
 
+You add these #defines but do not use them.
 
-Without any vmlinux found I get the following:
-...
-Looking at the vmlinux_path (6 entries long)
-Using /proc/kallsyms for symbols
-...
-dso: [kernel.kallsyms] ([kernel.kallsyms], Functions, loaded,
-0000000000000000000000000000000000000000)
- 0-beffffff l __vectors_start
-dso: [kernel.kallsyms] ([kernel.kallsyms], Variables, NOT loaded,
-0000000000000000000000000000000000000000)
-dso: stress (/usr/bin/stress, Functions, loaded,
-bdf57306ab106fb0ce9835c95dae5b173f238b61)
-...
-
-
-In any case the symbols are not resolved although vmlinux contains
-symbols and /proc/kallsyms is accessible and working correctly.
-Any idea on where to look at? I guess the problem is in the kernel installation.
-
-Thx & regards,
-Jean
+Yours,
+Linus Walleij
