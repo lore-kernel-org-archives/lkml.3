@@ -1,81 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753787Ab3IQV5O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 17:57:14 -0400
-Received: from gate.crashing.org ([63.228.1.57]:42090 "EHLO gate.crashing.org"
+	id S1753965Ab3IQV6C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 17:58:02 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:36288 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752863Ab3IQV5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 17:57:12 -0400
-Message-ID: <1379455006.6148.0.camel@pasglop>
-Subject: Re: "memory" binding issues
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: frowand.list@gmail.com, Tomasz Figa <tomasz.figa@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 18 Sep 2013 07:56:46 +1000
-In-Reply-To: <CAOesGMh0F09OAR4bepGSCE5Z5OZ56fBmDPBSfwZ+NB9RgcE0Vw@mail.gmail.com>
-References: <1379300274.4098.77.camel@pasglop>
-	 <1379371567.3721.46.camel@pasglop>
-	 <CAOesGMgE1jiF5OHsmPQz2z66Bcqu0HeAj=taE1vmFK-0-0s2TQ@mail.gmail.com>
-	 <1815499.tpfeUKmP6V@flatron> <20130917164307.GA31327@quad.lixom.net>
-	 <5238C4D1.6060500@gmail.com>
-	 <CAOesGMh0F09OAR4bepGSCE5Z5OZ56fBmDPBSfwZ+NB9RgcE0Vw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752003Ab3IQV6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 17:58:00 -0400
+Date: Tue, 17 Sep 2013 15:57:49 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Commit breaks strace: ARM: entry: allow ARM-private syscalls to be
+ restarted
+Message-ID: <20130917215749.GA11109@obsidianresearch.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Will,
 
-On Tue, 2013-09-17 at 14:15 -0700, Olof Johansson wrote:
-> Sigh, that's horrible. OF clearly doesn't require it.
+I was just testing v3.12-rc1 (on kirkwood) and noticed that strace is
+not working:
 
-Doesn't it ?
+$ strace /bin/ls
+mmap2(0xb6f79000, 9552, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0xb6f79000
+close(3)                                = 0
+mmap2(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xb6fad000
+set_tls(0xb6fad4c0, 0xb6fadb98, 0xb6fb1050, 0xb6fad4c0, 0xb6fb1050) = -1 ENOSYS (Function not implemented)
+writev(2, [{"cannot set up thread-local stora"..., 36}, {"unknown error", 13}, {"\n", 1}], 3cannot set up thread-local storage: unknown error
+) = 50
+exit_group(127)                         = ?
++++ exited with 127 +++
 
-All OF implementations will create it, you would have to explicitly
-remove the encode-unit method of the parent to make it disappear...
+I determined that reverting your commit below makes strace work again.
+I've tested 3.10.12 and it is OK.
 
-All I can find in 1275 is:
+This happens with the latest git head for strace, as well as the 4.7
+release.
 
-<<
-Some nodes in the device tree do not represent physical devices. These
-system nodes are used instead for various
-general firmware purposes. System nodes do not have physical addresses.
-Their node names have a driver name
-field but not a unit address field.
->>
+Hopefully you can cook up a fix :)
 
-That implies that such nodes also don't have a "reg" property (ie. "do
-not have physical address").
+Regards,
+Jason
 
-I don't see anything else, if anything, the definition of the node name
-seems to not have provisions for a missing unit address.
+commit 377747c40657eb35ad98a56439606d96a928425a
+Author: Will Deacon <will.deacon@arm.com>
+Date:   Mon May 13 19:16:34 2013 +0100
 
-The only case in OF that I know where the unit address is not present is
-wildcard nodes (also known as protocol nodes) which also don't have a
-"reg" property such as used by some SCSI controllers when the fcode
-doesn't want to probe the bus at boot and requires the unit address to
-be explicitly passed in the "open" call. This is clearly not the case
-here.
+    ARM: entry: allow ARM-private syscalls to be restarted
+    
+    System calls will only be restarted after signal handling if they (a)
+    return an error code indicating that a restart is required and (b) have
+    `why' set to a non-zero value, to indicate that the signal interrupted
+    them.
+    
+    This patch leaves `why' set to a non-zero value for ARM-private syscalls
+    , and only zeroes it for syscalls that are not implemented.
+    
+    Signed-off-by: Will Deacon <will.deacon@arm.com>
 
-Or did I miss something ?
-
-> I guess people prefer to follow ePAPR even though it's broken? That
-> means someone needs to cleanup the current dts files. Any takers?
-
-It's not broken. I don't understand why you are so adamant about
-that :-)
-
-Cheers,
-Ben.
-
-
-
+diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
+index 94104bf..74ad15d1 100644
+--- a/arch/arm/kernel/entry-common.S
++++ b/arch/arm/kernel/entry-common.S
+@@ -442,10 +442,10 @@ local_restart:
+        ldrcc   pc, [tbl, scno, lsl #2]         @ call sys_* routine
+ 
+        add     r1, sp, #S_OFF
+-2:     mov     why, #0                         @ no longer a real syscall
+        cmp     scno, #(__ARM_NR_BASE - __NR_SYSCALL_BASE)
+        eor     r0, scno, #__NR_SYSCALL_BASE    @ put OS number back
+-       bcs     arm_syscall     
++       bcs     arm_syscall
++2:     mov     why, #0                         @ no longer a real syscall
+        b       sys_ni_syscall                  @ not private func
+ 
+ #if defined(CONFIG_OABI_COMPAT) || !defined(CONFIG_AEABI)
