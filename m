@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753597Ab3IQUKM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 16:10:12 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:55215 "EHLO
+	id S1753819Ab3IQUKp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 16:10:45 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:55225 "EHLO
 	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753223Ab3IQUKK (ORCPT
+	by vger.kernel.org with ESMTP id S1753718Ab3IQUKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 16:10:10 -0400
-Message-ID: <1379448607.2213.16.camel@dabdike>
+	Tue, 17 Sep 2013 16:10:43 -0400
+Message-ID: <1379448641.2213.18.camel@dabdike>
 Subject: Re: [PATCH] scsi: delete decade+ obsolete aic7xxx_old driver
 From: James Bottomley <James.Bottomley@HansenPartnership.com>
 To: Hannes Reinecke <hare@suse.de>
@@ -15,7 +15,7 @@ Cc: Doug Ledford <dledford@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         linux-scsi list <linux-scsi@vger.kernel.org>,
         linux-kernel@vger.kernel.org
-Date: Tue, 17 Sep 2013 15:10:07 -0500
+Date: Tue, 17 Sep 2013 15:10:41 -0500
 In-Reply-To: <52386730.4060508@suse.de>
 References: <y687fpks4kdsmfuadq4cykip.1379384036544@email.android.com>
 	 <52386730.4060508@suse.de>
