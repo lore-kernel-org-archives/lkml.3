@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753764Ab3IQQzn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 12:55:43 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:49069 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753519Ab3IQQzm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 12:55:42 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH] n_tty: Fix EOF push index when termios changes
-Date: Tue, 17 Sep 2013 12:34:14 -0400
-Message-Id: <1379435654-14354-1-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	id S1753565Ab3IQRAi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 13:00:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35792 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752881Ab3IQRAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 13:00:37 -0400
+Date: Tue, 17 Sep 2013 18:00:32 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Rik van Riel <riel@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 17/50] mm: Do not flush TLB during protection change if
+ !pte_present && !migration_entry
+Message-ID: <20130917170031.GM22421@suse.de>
+References: <1378805550-29949-1-git-send-email-mgorman@suse.de>
+ <1378805550-29949-18-git-send-email-mgorman@suse.de>
+ <20130916163547.GF9326@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130916163547.GF9326@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 40d5e0905a03601d40cd4e46b8690093c2355d03,
-'n_tty: Fix EOF push handling' introduced a subtle state
-change error wrt EOF push handling when the termios is
-changed from non-canonical to canonical mode.
+On Mon, Sep 16, 2013 at 06:35:47PM +0200, Peter Zijlstra wrote:
+> On Tue, Sep 10, 2013 at 10:31:57AM +0100, Mel Gorman wrote:
+> > NUMA PTE scanning is expensive both in terms of the scanning itself and
+> > the TLB flush if there are any updates. Currently non-present PTEs are
+> > accounted for as an update and incurring a TLB flush where it is only
+> > necessary for anonymous migration entries. This patch addresses the
+> > problem and should reduce TLB flushes.
+> > 
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > ---
+> >  mm/mprotect.c | 3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/mm/mprotect.c b/mm/mprotect.c
+> > index 1f9b54b..1e9cef0 100644
+> > --- a/mm/mprotect.c
+> > +++ b/mm/mprotect.c
+> > @@ -109,8 +109,9 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+> >  				make_migration_entry_read(&entry);
+> >  				set_pte_at(mm, addr, pte,
+> >  					swp_entry_to_pte(entry));
+> > +
+> > +				pages++;
+> >  			}
+> > -			pages++;
+> >  		}
+> >  	} while (pte++, addr += PAGE_SIZE, addr != end);
+> >  	arch_leave_lazy_mmu_mode();
+> 
+> Should we fold this into patch 7 ?
 
-Reset line_start to the current read_tail index, not 0.
+Looking closer at it, I think folding it into the patch would overload
+the purpose of patch 7 a little too much but I shuffled the series to
+keep the patches together.
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/n_tty.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index c9a9ddd..01bf5eb 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -1758,8 +1758,7 @@ static void n_tty_set_termios(struct tty_struct *tty, struct ktermios *old)
- 		canon_change = (old->c_lflag ^ tty->termios.c_lflag) & ICANON;
- 	if (canon_change) {
- 		bitmap_zero(ldata->read_flags, N_TTY_BUF_SIZE);
--		ldata->line_start = 0;
--		ldata->canon_head = ldata->read_tail;
-+		ldata->line_start = ldata->canon_head = ldata->read_tail;
- 		ldata->erasing = 0;
- 		ldata->lnext = 0;
- 	}
 -- 
-1.8.1.2
-
+Mel Gorman
+SUSE Labs
