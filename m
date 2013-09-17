@@ -1,120 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab3IQLdb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 07:33:31 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37667 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751975Ab3IQLd3 (ORCPT
+	id S1752680Ab3IQLlm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 07:41:42 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:43167 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752340Ab3IQLlj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 07:33:29 -0400
-Date: Tue, 17 Sep 2013 12:32:43 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Cc: "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "jgunthorpe@obsidianresearch.com" <jgunthorpe@obsidianresearch.com>,
-        "gregory.clement@free-electrons.com" 
-	<gregory.clement@free-electrons.com>,
-        "ezequiel.garcia@free-electrons.com" 
-	<ezequiel.garcia@free-electrons.com>,
-        "JBottomley@Parallels.com" <JBottomley@Parallels.com>,
-        "npiggin@kernel.dk" <npiggin@kernel.dk>, davem@davemloft.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Kernel semantics of relaxed MMIO accessors
-Message-ID: <20130917113243.GB29356@mudshark.cambridge.arm.com>
-References: <20130909114449.GB5426@mudshark.cambridge.arm.com>
+	Tue, 17 Sep 2013 07:41:39 -0400
+Date: Tue, 17 Sep 2013 12:41:33 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: lee.jones@linaro.org, sameo@linux.intel.com, linus.walleij@linaro.org,
+        akpm@linux-foundation.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-gpio@vger.kernel.org, rtc-linux@googlegroups.com,
+        rob.herring@calxeda.com, mark.rutland@arm.com, pawel.moll@arm.com,
+        swarren@wwwdotorg.org, rob@landley.net, ijc+devicetree@hellion.org.uk,
+        grant.likely@linaro.org, florian.lobmaier@ams.com
+Message-ID: <20130917114133.GV21013@sirena.org.uk>
+References: <1379400338-20704-1-git-send-email-ldewangan@nvidia.com>
+ <1379400338-20704-4-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ipiAXJWFVZGVDOzf"
 Content-Disposition: inline
-In-Reply-To: <20130909114449.GB5426@mudshark.cambridge.arm.com>
+In-Reply-To: <1379400338-20704-4-git-send-email-ldewangan@nvidia.com>
+X-Cookie: Give him an evasive answer.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/4] regulator: as3722: add regulator driver for AMS
+ AS3722
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[expanding CC list and bumping since the merge window is now over]
 
-On Mon, Sep 09, 2013 at 12:44:49PM +0100, Will Deacon wrote:
-> Hello,
-> 
-> During the review of a recent patch to add support for atomic MMIO
-> read-modify-write sequences between drivers on ARM, it was suggested
-> that this code could be made generic and used by other architectures.
-> 
->   http://lists.infradead.org/pipermail/linux-arm-kernel/2013-August/194178.html
-> 
-> However, making this generic requires the availability of relaxed MMIO
-> accessors across all architectures because { readX(); modify(); writeX(); }
-> is an extremely expensive sequence on ARM. This expense is due to heavyweight
-> barriers inside our accessor macros to satisfy the conclusions from this
-> earlier thread with respect to cacheable memory ordering (which do make sense
-> from a driver writer's perspective):
-> 
->   http://www.gossamer-threads.com/lists/linux/kernel/932153?do=post_view_threaded#932153
-> 
-> The problem with relaxed accessors (which is also mentioned in the thread
-> above) is that they don't seem to have well defined semantics across all
-> architectures. For example, the table below illustrates a few architectures
-> and their behaviour in this area (please correct any mistakes or add any
-> interesting architectures):
-> 
-> 
-> Ordered against: | IO (same device) | Cacheable accesses | Spin lock/unlock |
-> -----------------+------------------+--------------------+------------------+
-> ARM/ARM64        |                  |                    |                  |
->   readX/writeX   |        Y         |         Y          |        Y         |
->   _relaxed       |        Y         |         N          |        Y         |
->                  |                  |                    |                  |
-> Alpha            |                  |                    |                  |
->   readX/writeX   |        Y         |         Y          |        Y         |
->   _relaxed       |        N*        |         N          |        Y         |
->                  |                  |                    |                  |
-> PowerPC**        |                  |                    |                  |
->   readX/writeX   |        Y         |         Y          |        Y         |
->   _relaxed       |        Y         |         Y          |        Y         |
->                  |                  |                    |                  |
-> x86              |                  |                    |                  |
->   readX/writeX   |        Y         |         Y          |        Y         |
->   _relaxed***    |        N         |         N          |        Y         |
-> 
-> *   Depends on specific machine afaict.
-> **  _relaxed accessors just #defined as non-relaxed variants, so could be
->     improved.
-> *** Potential for re-ordering by the compiler.
-> 
-> 
-> On top of that, there is the concept of relaxed transactions in PCI-X and
-> PCI-E, which seem to permit re-ordering of accesses to the same address!
-> I think this is also behind the reason that, whilst readX_relaxed is
-> implemented on almost all architectures, writeX_relaxed is very uncommon.
-> 
-> Documentation/memory-barriers.txt states vaguely that readX_relaxed is
-> "not guaranteed to be ordered in any way" whilst
-> Documentation/DocBook/deviceiobook.tmpl explicitly ties the relaxed ordering
-> to IO accesses and DMA writes from a device.
-> 
-> So this email is a bit of a cry for help. I'd like to try and define some
-> common semantics for relaxed I/O accessors so that they can be implemented
-> by all architectures and relied upon by driver writers, including the
-> addition of relaxed writes.
-> 
-> My basic proposal would be to copy the ARM definition of _relaxed accessors
-> (i.e. only relax ordering against cacheable accesses), which is the semantic
-> hinted at by Nick when this was last discussed:
-> 
->   http://www.gossamer-threads.com/lists/linux/kernel/932390?do=post_view_threaded#932390
-> 
-> This should allow for significant performance improvements in drivers which
-> don't care about normal memory ordering most of the time yet do have strict
-> requirements on ordering of I/O accesses (I think this is the common case).
-> 
-> All feedback/suggestions/war stories welcome!
-> 
-> Will
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arch" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+--ipiAXJWFVZGVDOzf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Tue, Sep 17, 2013 at 12:15:37PM +0530, Laxman Dewangan wrote:
+
+> +               ams,enable-oc-config: Enable overcurrent configuration of the
+> +               ams,oc-trip-threshold-perphase: Overcurrent trip threshold
+> +               ams,oc-alarm-threshold-perphase: Overcurrent alarm threshold
+
+These look like you should be implementing the current setting
+operations in the framework, probably mapping to the alarm limit if
+nothing else.
+
+> +static int as3722_ldo_get_voltage_sel(struct regulator_dev *rdev)
+> +{
+> +	int ret;
+> +
+> +	ret = regulator_get_voltage_sel_regmap(rdev);
+> +	if (ret >= 0x40)
+> +		ret -= 0x1B;
+> +	return ret;
+> +}
+
+This looks very strange.  What's going on here?  A gap in the selectors?
+If that's the case you probably want to be using linear ranges.
+
+> +static struct regulator_ops as3722_ldo_extcntrl_ops = {
+> +	.get_voltage_sel = as3722_ldo_get_voltage_sel,
+> +	.set_voltage_sel = as3722_ldo_set_voltage_sel,
+> +	.list_voltage = regulator_list_voltage_linear,
+> +};
+
+You ought to be providing map_voltage() too, same for some if not all of
+the other regulators.
+
+> +static unsigned int as3722_sd_get_mode(struct regulator_dev *dev)
+> +{
+> +	struct as3722_regulators *as3722_regs = rdev_get_drvdata(dev);
+> +	struct as3722 *as3722 = as3722_regs->as3722;
+> +	int id = rdev_get_id(dev);
+> +	u32 val;
+> +	int ret;
+> +
+> +	if (!as3722_reg_lookup[id].control_reg)
+> +		return -ERANGE;
+
+That seems a bit of a random error code.  -ENOTSUPP?
+
+> +static int as3722_sd_list_voltage(struct regulator_dev *rdev, unsigned selector)
+> +{
+> +	if (selector >= AS3722_SD2_VSEL_MAX)
+> +		return -EINVAL;
+> +
+> +	selector++;
+> +	if (selector <= 0x40)
+> +		return 600000 + selector * 12500;
+> +	if (selector <= 0x70)
+> +		return 1400000 + (selector - 0x40) * 25000;
+> +	if (selector <= 0x7F)
+> +		return 2600000 + (selector - 0x70) * 50000;
+> +	return -EINVAL;
+> +}
+
+Use linear ranges.
+
+> +static struct of_regulator_match as3722_regulator_matches[] = {
+> +	{.name = "sd0", },
+
+	{ .name = "sd0", },
+
+> +		config.of_node = as3722_regulator_matches[id].of_node;
+> +		rdev = regulator_register(&as3722_regs->desc[id], &config);
+> +		if (IS_ERR(rdev)) {
+
+devm_regualtor_register().
+
+> +		if (reg_config->ext_control) {
+> +			ret = regulator_enable_regmap(rdev);
+> +			if (ret < 0) {
+> +				dev_err(&pdev->dev,
+> +					"Regulator %d enable failed: %d\n",
+> +					id, ret);
+> +				goto scrub;
+> +			}
+
+This looks wrong...  why is the regualtor being enabled by something
+other than the core?
+
+> +static int __init as3722_regulator_init(void)
+> +{
+> +	return platform_driver_register(&as3722_regulator_driver);
+> +}
+> +subsys_initcall(as3722_regulator_init);
+> +
+> +static void __exit as3722_regulator_exit(void)
+> +{
+> +	platform_driver_unregister(&as3722_regulator_driver);
+> +}
+> +module_exit(as3722_regulator_exit);
+
+module_platform_driver().
+
+--ipiAXJWFVZGVDOzf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSOD/qAAoJELSic+t+oim9DqcQAIBbKCBKPeK8AlIDAhHLT89S
+yn6317kv6wFizBhyDwBOFAX2S92Cyniyuhk8859QdXag4fAh0kVTDmz+qZuwxr1e
+7hwUmh25DhnPniwHkSwNRKx+DOWCq1/ZQ5L0suwgqNbGb67/uWjzETtLWDrvbVOf
+Xt/q6ZRtgc0JaWIHI4oMkZh4n/n+NRzzCgVDIiHiHFEsNdsxL6IgAeS0otWOpajN
+YvDbkym7fespZPUij3wRGGExbpRzNgRh489MjbDJI/IJrzMggHvRSPDaOXMyYVOi
+9yQL6RDCjF0tNqTK+vWQ5jPYcv60/TjclDEVLoKWTrcSHbwNVLNKNXVzMUdvZkFo
+ETaqBrb7Inih8sxqJp+r5LsJYye97Mnc92cNFS9+z/hwbNeGOxEtidJee/0pLFFj
+x9LMbXQpmV52KoRsbqlxbWwOzGGr+OeIhvBC7LPqrPqcZ3NXzQ8jbOWZaAtrzzh5
+FJbyGVNOQti/MZ7gMcF2e4bG5pT/SWWzo1G7ilauclDT67ctg9JC3noGzXifh4iy
+1W9e2XNBpXzQ1kCXwCv87uNFvKVv3oILLRxHwSyA0paWU+wxg9AsD6+V1TnBkruJ
+FamdR0Ev6/2qWZQHj3krG6bkycJZxdkX23egp3M5dc58ROCViVmFcIh7NuJ0KMl6
+NiGJD7iXahNKD/86JLRV
+=cozY
+-----END PGP SIGNATURE-----
+
+--ipiAXJWFVZGVDOzf--
