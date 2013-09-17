@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752184Ab3IQIFS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 04:05:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43273 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751536Ab3IQIFP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 04:05:15 -0400
-Date: Tue, 17 Sep 2013 09:05:02 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: ?????? <ZhangTianFei@leadcoretech.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: ????: [PATCH 34/50] sched: numa: Do not trap hinting faults for
- shared libraries
-Message-ID: <20130917080502.GH22421@suse.de>
-References: <1378805550-29949-35-git-send-email-mgorman@suse.de>
- <E81554BCB8813E49A8916AACC0503A851844C937@lc-shmail3.SHANGHAI.LEADCORETECH.COM>
+	id S1752260Ab3IQIFa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 04:05:30 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:39308 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644Ab3IQIFY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 04:05:24 -0400
+Date: Tue, 17 Sep 2013 09:05:17 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, jic23@cam.ac.uk, arnd@arndb.de,
+        linus.walleij@linaro.org, denis.ciocca@st.com,
+        linux-iio@vger.kernel.org
+Subject: Re: [PATCH 14/38] iio: accel: st: Append _accel to accelerator
+ sensor device names
+Message-ID: <20130917080517.GS16984@lee--X1>
+References: <1378817379-8238-1-git-send-email-lee.jones@linaro.org>
+ <1378817379-8238-15-git-send-email-lee.jones@linaro.org>
+ <52345330.4050707@kernel.org>
+ <20130916133106.GI16984@lee--X1>
+ <52370B08.3030709@metafoo.de>
+ <5237593F.5010405@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <E81554BCB8813E49A8916AACC0503A851844C937@lc-shmail3.SHANGHAI.LEADCORETECH.COM>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5237593F.5010405@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17, 2013 at 10:02:22AM +0800, ?????? wrote:
-> index fd724bc..5d244d0 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1227,6 +1227,16 @@ void task_numa_work(struct callback_head *work)
->  		if (!vma_migratable(vma))
->  			continue;
->  
-> +		/*
-> +		 * Shared library pages mapped by multiple processes are not
-> +		 * migrated as it is expected they are cache replicated. Avoid
-> +		 * hinting faults in read-only file-backed mappings or the vdso
-> +		 * as migrating the pages will be of marginal benefit.
-> +		 */
-> +		if (!vma->vm_mm ||
-> +		    (vma->vm_file && (vma->vm_flags & (VM_READ|VM_WRITE)) == (VM_READ)))
-> +			continue;
-> +
->  
-> =?? May I ask a question, we should consider some VMAs canot be scaned for BalanceNuma?
-> (VM_DONTEXPAND | VM_RESERVED | VM_INSERTPAGE |
-> 				  VM_NONLINEAR | VM_MIXEDMAP | VM_SAO));
+On Mon, 16 Sep 2013, Jonathan Cameron wrote:
 
-vma_migratable check covers most of the other VMAs we do not care
-about.  I do not see the point of checking for some of the VMA flags you
-mention. Please state which of the additional flags that you think should
-be checked and why.
+> On 09/16/13 14:43, Lars-Peter Clausen wrote:
+> > On 09/16/2013 03:31 PM, Lee Jones wrote:
+> >>> Honestly I don't care either way on these, but consistency would definitely
+> >>> be good so applied to the togreg branch of iio.git
+> >>
+> >> For clarification, is togreg due for the v3.12 merge window or will be
+> >> get a settling period in -next?
+> >>
+> > 
+> > Well everything up to the 'iio-for-3.12c' tag will be in v3.12, everything
+> > else not.
+> > 
+> > - Lars
+> > 
+> Yes.  At the moment IIO is routed through Greg KHs staging tree.  His merge
+> window closes 1 week before Linus opens the main one (when Greg can figure
+> out what Linus is intending!)  Hence I close the IIO one whenever I manage
+> to get a last pull request in before that.
+> 
+> Hence all 3.13 for the current togreg branch.
+
+Perfect, thanks both of you.
 
 -- 
-Mel Gorman
-SUSE Labs
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
