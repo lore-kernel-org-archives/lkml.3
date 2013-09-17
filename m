@@ -1,88 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018Ab3IQWZo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 18:25:44 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45017 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753147Ab3IQWZn (ORCPT
+	id S1754059Ab3IQW1w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 18:27:52 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:40160 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753288Ab3IQW1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 18:25:43 -0400
-Message-ID: <5238D6BE.6040603@pengutronix.de>
-Date: Wed, 18 Sep 2013 00:25:02 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130518 Icedove/17.0.5
+	Tue, 17 Sep 2013 18:27:49 -0400
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        nicolas.ferre@atmel.com, LKML <linux-kernel@vger.kernel.org>,
-        Marc Pignat <marc.pignat@hevs.ch>, john.stultz@linaro.org,
-        kernel@pengutronix.de, Ronald Wahl <ronald.wahl@raritan.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        =?UTF-8?B?VXdlIEtsZWluZS1Lw7Y=?= =?UTF-8?B?bmln?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [PATCH] clockevents: Sanitize ticks to nsec conversion
-References: <1379077365-18458-1-git-send-email-mkl@pengutronix.de> <20130917095600.GJ26819@ludovic.desroches@atmel.com> <20130917100417.GQ12758@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1309171210450.4089@ionos.tec.linutronix.de> <20130917130153.GL26819@ludovic.desroches@atmel.com> <alpine.DEB.2.02.1309172228400.4089@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1309172228400.4089@ionos.tec.linutronix.de>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="lXvI9XfF7mgXCgDbuVn0cQiKUs2rrQQ7E"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <87ob7x37p6.fsf@rustcorp.com.au>
+References: <20130724071757.GA30970@gondor.apana.org.au> <87siz38q2t.fsf@rustcorp.com.au>
+ <20130725020329.GA14625@gondor.apana.org.au> <CAKi4VA+=1vOOt0BqdQHQaeF1hP3DrRtCL_ObXY0cPeO7S_MtYw@mail.gmail.com>
+ <87ob7x37p6.fsf@rustcorp.com.au>
+From: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Date: Tue, 17 Sep 2013 19:27:28 -0300
+Message-ID: <CAKi4VALAu0ek6tYhb_Ls34hNU1Omjhv=QJDaACAp_0gpRy98HA@mail.gmail.com>
+Subject: Re: [PATCH] modules: add support for soft module dependencies
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+        Andreas Robinson <andr345@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Zhao Hongjiang <zhaohongjiang@huawei.com>,
+        David Miller <davem@davemloft.net>, tim.c.chen@linux.intel.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        linux-crypto@vger.kernel.org,
+        linux-modules <linux-modules@vger.kernel.org>,
+        Tom Gundersen <teg@jklm.no>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---lXvI9XfF7mgXCgDbuVn0cQiKUs2rrQQ7E
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Thu, Sep 12, 2013 at 9:07 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> Lucas De Marchi <lucas.de.marchi@gmail.com> writes:
+>> On Wed, Jul 24, 2013 at 11:03 PM, Herbert Xu
+>> <herbert@gondor.apana.org.au> wrote:
+>>> On Thu, Jul 25, 2013 at 09:32:02AM +0930, Rusty Russell wrote:
+>>>> Herbert Xu <herbert@gondor.apana.org.au> writes:
+>>>> > Hi Rusty:
+>>>> >
+>>>> > I don't know why this patch never went into the kernel, even
+>>>> > though the corresponding features have been added to modprobe
+>>>> > in most if not all distros.
+>>>>
+>>>> Because Andreas never sent me the patch?  This is the first I've *heard*
+>>>> of this feature.  Looks like it didn't hit lkml either.  And what was
+>>>> 2/2?
+>>>
+>>> 2/2 was the patch to actually use this in crc32c.
+>>>
+>>>> It's not how I would have done this: post-deps are more flexibly done at
+>>>> runtime, because the module may have to do work to figure out what to
+>>>> pull in.  But since it already exists, I'll apply this patch: it doesn't
+>>>> cost the kernel anything.
+>>
+>> But it did cause boot failures. The file modules.softdep file was
+>> supposed to be informational until now. That's why depmod put a
+>> comment saying to "copy on user's discretion to /etc/modules.d"
+>> instead of parsing it directly.
+>
+> I'm happy to change this macro to create a modinfo line like
+> "softdep:<modname>"
 
-On 09/17/2013 11:15 PM, Thomas Gleixner wrote:
-> Marc Kleine-Budde pointed out, that commit 77cc982 "clocksource: use
-> clockevents_config_and_register() where possible" caused a regression
-> for some of the converted subarchs.
->=20
-> The reason is, that the clockevents core code converts the minimal
-> hardware tick delta to a nanosecond value for core internal
-> usage. This conversion is affected by integer math rounding loss, so
-> the backwards conversion to hardware ticks will likely result in a
-> value which is less than the configured hardware limitation. The
-> affected subarchs used their own workaround (SIGH!) which got lost in
-> the conversion.
->=20
-> Now instead of fixing the underlying core code problem, Marcs patch
-> tried to work around the core code issue by increasing the minimal
-> tick delta at clockevents registration time so the resulting limit in
-> the core code backwards conversion did not violate the hardware
-> limits. More SIGH!
+how is that solving the issue that this macro can be used to designate
+a mandatory or optional dependency
+(https://lkml.org/lkml/2013/9/10/371)? If we decide the dependency is
+mandatory we can very well let modprobe use that dependency during
+module load
 
-It was not easy getting your attention with this problem :)
+>
+> ie. tools like mkinitrd could pick it up and try to find a matching
+> module, but depmod would ignore it.
 
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+Some mkinitrd-like use whatever depmod/modprobe tells them it's
+needed. So kmod still needs to know about it.
 
 
---lXvI9XfF7mgXCgDbuVn0cQiKUs2rrQQ7E
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+>
+> It's really up to Lucas, since this affects him.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+IMO  saying "this is an optional dependency and we can work without"
+doesn't buy us much. Distros will end up putting the soft dep in
+/etc/modules.d, kmod will always use them anyway and failing to load
+the soft dep will fail the module load. I'd like to have no distro
+files in /etc/modules.d in future.
 
-iEYEARECAAYFAlI41r4ACgkQjTAFq1RaXHPzFACeNit+gHlSELWSMdSOnu3lKCQU
-YbwAnjjdVI2CSJEWKFCAj6qf3ZHDoP8V
-=/iZ5
------END PGP SIGNATURE-----
 
---lXvI9XfF7mgXCgDbuVn0cQiKUs2rrQQ7E--
+Lucas De Marchi
