@@ -1,65 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab3IQS5a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 14:57:30 -0400
-Received: from www.linutronix.de ([62.245.132.108]:54624 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753447Ab3IQS53 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 14:57:29 -0400
-Date: Tue, 17 Sep 2013 20:57:23 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Xie XiuQi <xiexiuqi@huawei.com>
-cc: John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] clocksource: fix comment for
- __clocksource_updatefreq_scale
-In-Reply-To: <523831AB.9060101@huawei.com>
-Message-ID: <alpine.DEB.2.02.1309172056320.4089@ionos.tec.linutronix.de>
-References: <523831AB.9060101@huawei.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1753827Ab3IQS6l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 14:58:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53353 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753632Ab3IQS6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 14:58:40 -0400
+Date: Tue, 17 Sep 2013 14:57:31 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Alex Thorlton <athorlton@sgi.com>, Mel Gorman <mgorman@suse.de>,
+        Andi Kleen <andi@firstfloor.org>, Michal Hocko <mhocko@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        linux-kernel@vger.kernel.org
+Message-ID: <1379444251-8ulan52g-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20130917151851.09771E0090@blue.fi.intel.com>
+References: <1379117362-gwv3vrog-mutt-n-horiguchi@ah.jp.nec.com>
+ <20130916104205.5605CE0090@blue.fi.intel.com>
+ <1379366550-9vhj3y8s-mutt-n-horiguchi@ah.jp.nec.com>
+ <20130917151851.09771E0090@blue.fi.intel.com>
+Subject: Re: [PATCH v4] hugetlbfs: support split page table lock
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Sep 2013, Xie XiuQi wrote:
+On Tue, Sep 17, 2013 at 06:18:51PM +0300, Kirill A. Shutemov wrote:
+> Naoya Horiguchi wrote:
+> > On Mon, Sep 16, 2013 at 01:42:05PM +0300, Kirill A. Shutemov wrote:
+> > > Naoya Horiguchi wrote:
+> > > > Hi,
+> > > > 
+> > > > Kirill posted split_ptl patchset for thp today, so in this version
+> > > > I post only hugetlbfs part. I added Kconfig variables in following
+> > > > Kirill's patches (although without CONFIG_SPLIT_*_PTLOCK_CPUS.)
+> > > > 
+> > > > This patch changes many lines, but all are in hugetlbfs specific code,
+> > > > so I think we can apply this independent of thp patches.
+> > > > -----
+> > > > From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > > > Date: Fri, 13 Sep 2013 18:12:30 -0400
+> > > > Subject: [PATCH v4] hugetlbfs: support split page table lock
+> > > > 
+> > > > Currently all of page table handling by hugetlbfs code are done under
+> > > > mm->page_table_lock. So when a process have many threads and they heavily
+> > > > access to the memory, lock contention happens and impacts the performance.
+> > > > 
+> > > > This patch makes hugepage support split page table lock so that we use
+> > > > page->ptl of the leaf node of page table tree which is pte for normal pages
+> > > > but can be pmd and/or pud for hugepages of some architectures.
+> > > > 
+> > > > ChangeLog v4:
+> > > >  - introduce arch dependent macro ARCH_ENABLE_SPLIT_HUGETLB_PTLOCK
+> > > >    (only defined for x86 for now)
+> > > >  - rename USE_SPLIT_PTLOCKS_HUGETLB to USE_SPLIT_HUGETLB_PTLOCKS
+> > > > 
+> > > > ChangeLog v3:
+> > > >  - disable split ptl for ppc with USE_SPLIT_PTLOCKS_HUGETLB.
+> > > >  - remove replacement in some architecture dependent code. This is justified
+> > > >    because an allocation of pgd/pud/pmd/pte entry can race with other
+> > > >    allocation, not with read/write access, so we can use different locks.
+> > > >    http://thread.gmane.org/gmane.linux.kernel.mm/106292/focus=106458
+> > > > 
+> > > > ChangeLog v2:
+> > > >  - add split ptl on other archs missed in v1
+> > > >  - drop changes on arch/{powerpc,tile}/mm/hugetlbpage.c
+> > > > 
+> > > > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > > > ---
+> > > >  arch/x86/Kconfig         |  4 +++
+> > > >  include/linux/hugetlb.h  | 20 +++++++++++
+> > > >  include/linux/mm_types.h |  2 ++
+> > > >  mm/Kconfig               |  3 ++
+> > > >  mm/hugetlb.c             | 92 +++++++++++++++++++++++++++++-------------------
+> > > >  mm/mempolicy.c           |  5 +--
+> > > >  mm/migrate.c             |  4 +--
+> > > >  mm/rmap.c                |  2 +-
+> > > >  8 files changed, 91 insertions(+), 41 deletions(-)
+> > > > 
+> > > > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> > > > index 6a5cf6a..5b83d14 100644
+> > > > --- a/arch/x86/Kconfig
+> > > > +++ b/arch/x86/Kconfig
+> > > > @@ -1884,6 +1884,10 @@ config ARCH_ENABLE_SPLIT_PMD_PTLOCK
+> > > >  	def_bool y
+> > > >  	depends on X86_64 || X86_PAE
+> > > >  
+> > > > +config ARCH_ENABLE_SPLIT_HUGETLB_PTLOCK
+> > > > +	def_bool y
+> > > > +	depends on X86_64 || X86_PAE
+> > > > +
+> > > >  menu "Power management and ACPI options"
+> > > >  
+> > > >  config ARCH_HIBERNATION_HEADER
+> > > > diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+> > > > index 0393270..2cdac68 100644
+> > > > --- a/include/linux/hugetlb.h
+> > > > +++ b/include/linux/hugetlb.h
+> > > > @@ -80,6 +80,24 @@ extern const unsigned long hugetlb_zero, hugetlb_infinity;
+> > > >  extern int sysctl_hugetlb_shm_group;
+> > > >  extern struct list_head huge_boot_pages;
+> > > >  
+> > > > +#if USE_SPLIT_HUGETLB_PTLOCKS
+> > > > +#define huge_pte_lockptr(mm, ptep) ({__pte_lockptr(virt_to_page(ptep)); })
+> > > > +#else	/* !USE_SPLIT_HUGETLB_PTLOCKS */
+> > > > +#define huge_pte_lockptr(mm, ptep) ({&(mm)->page_table_lock; })
+> > > > +#endif	/* USE_SPLIT_HUGETLB_PTLOCKS */
+> > > > +
+> > > > +#define huge_pte_offset_lock(mm, address, ptlp)		\
+> > > > +({							\
+> > > > +	pte_t *__pte = huge_pte_offset(mm, address);	\
+> > > > +	spinlock_t *__ptl = NULL;			\
+> > > > +	if (__pte) {					\
+> > > > +		__ptl = huge_pte_lockptr(mm, __pte);	\
+> > > > +		*(ptlp) = __ptl;			\
+> > > > +		spin_lock(__ptl);			\
+> > > > +	}						\
+> > > > +	__pte;						\
+> > > > +})
+> > > > +
+> > > 
+> > > [ Disclaimer: I don't know much about hugetlb. ]
+> > > 
+> > > I don't think it's correct. Few points:
+> > > 
+> > >  - Hugetlb supports multiple page sizes: on x86_64 2M (PMD) and 1G (PUD).
+> > >    My patchset only implements it for PMD. We don't even initialize
+> > >    spinlock in struct page for PUD.
+> > 
+> > In hugetlbfs code, we use huge_pte_offset() to get leaf level entries
+> > which can be pud or pmd in x86. huge_pte_lockptr() uses this function,
+> > so we can always get the correct ptl regardless of hugepage sizes.
+> > As for spinlock initialization, you're right. I'll add it on huge_pte_alloc().
+> 
+> Please, don't.
+> If USE_SPLIT_PMD_PTLOCKS is true, pmd_alloc_one() will do it for you
+> already for PMD table.
 
-> The functions clocksource_updatefreq_hz() and clocksource_updatefreq_khz()
-> do not exist, The proper ones are __clocksource_updatefreq_hz() and
-> __clocksource_updatefreq_khz().
+OK, sorry for my sloppy suggestion.
 
-I'd rather rename the functions and the few call sites because the
-underscores are completely meaningless.
+> For pud it should be done in pud_alloc_one(), not in hugetlb code.
+
+Right.
+
+> We already have too many special cases for hugetlb. Don't contribute to
+> the mess.
+
+OK.
+
+> > >  - If we enable split PMD lock we should use it *globally*. With you patch
+> > >    we can end up with different locks used by hugetlb and rest of kernel
+> > >    to protect the same PMD table if USE_SPLIT_HUGETLB_PTLOCKS !=
+> > >    USE_SPLIT_PMD_PTLOCKS. It's just broken.
+> > 
+> > I don't think so. Thp specific operations (like thp allocation, split,
+> > and collapse) are never called on the virtual address range covered by
+> > vma(VM_HUGETLB) by checking VM_HUGETLB. So no one tries to lock/unlock
+> > a ptl concurrently from thp context and hugetlbfs context.
+> 
+> Two vma's can be next to each other and share the same PMD table (not
+> entries) and in this case I don't see what will serialize pmd_alloc() if
+> USE_SPLIT_HUGETLB_PTLOCKS != USE_SPLIT_PMD_PTLOCKS.
+
+OK, we can't split thp code and hugetlbfs code finally.
+USE_SPLIT_HUGETLB_PTLOCKS must depend on USE_SPLIT_PMD_PTLOCKS.
 
 Thanks,
-
-	tglx
-
-> Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
-> ---
->  kernel/time/clocksource.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-> index 50a8736..d2f6ddc 100644
-> --- a/kernel/time/clocksource.c
-> +++ b/kernel/time/clocksource.c
-> @@ -714,7 +714,8 @@ static void clocksource_enqueue(struct clocksource *cs)
->   * This should only be called from the clocksource->enable() method.
->   *
->   * This *SHOULD NOT* be called directly! Please use the
-> - * clocksource_updatefreq_hz() or clocksource_updatefreq_khz helper functions.
-> + * __clocksource_updatefreq_hz() or __clocksource_updatefreq_khz helper
-> + * functions.
->   */
->  void __clocksource_updatefreq_scale(struct clocksource *cs, u32 scale, u32 freq)
->  {
-> -- 
-> 1.8.2.1
-> 
-> 
+Naoya
