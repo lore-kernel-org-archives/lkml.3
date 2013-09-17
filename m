@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519Ab3IQSXv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 14:23:51 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53857 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753038Ab3IQSXu (ORCPT
+	id S1753545Ab3IQS1r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 14:27:47 -0400
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:64555 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752689Ab3IQS1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 14:23:50 -0400
-Message-ID: <52389E25.5010605@kernel.dk>
-Date: Tue, 17 Sep 2013 12:23:33 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: BLK_TN_PROCESS events not delivered for all devices
-References: <20130916092347.GB19027@quack.suse.cz> <52386733.4010801@kernel.dk> <20130917171028.GB16938@quack.suse.cz>
-In-Reply-To: <20130917171028.GB16938@quack.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 17 Sep 2013 14:27:46 -0400
+Message-ID: <1379442463.31104.11.camel@x220.thuisdomein>
+Subject: Re: scsi: delete decade+ obsolete aic7xxx_old driver
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hannes Reinecke <hare@suse.de>, Doug Ledford <dledford@redhat.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Josh Boyer <jwboyer@redhat.com>
+Date: Tue, 17 Sep 2013 20:27:43 +0200
+In-Reply-To: <1379382683-27862-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1379382683-27862-1-git-send-email-paul.gortmaker@windriver.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 17 Sep 2013 18:27:44.0051 (UTC) FILETIME=[99D29830:01CEB3D3]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/2013 11:10 AM, Jan Kara wrote:
-> On Tue 17-09-13 08:29:07, Jens Axboe wrote:
->> On 09/16/2013 03:23 AM, Jan Kara wrote:
->>>   Hi,
->>>
->>>   I've been looking into a problem where BLK_TN_PROCESS events are not
->>> delivered to all devices which are being traced. This results in process
->>> name being (null) when trace for a single device is parsed.
->>>
->>> The reason for this problem is that trace_note_tsk() is called only if
->>> tsk->btrace_seq != blktrace_seq and it updates tsk->btrace_seq to
->>> blktrace_seq. Thus after a trace for another device is started
->>> BLK_TN_PROCESS event is sent only on behalf of the first device with which
->>> the task interacts. That isn't necessarily the new device thus traces for
->>> some devices accumulate several BLK_TN_PROCESS events for one task while
->>> other have none. Is this a known problem and is this intended to work
->>> better?
->>>
->>> I was thinking how to fix that for a while and it doesn't seem to be
->>> possible without tracking with each block trace which tasks it has been
->>> notified about. And that is relatively expensive...
->>
->> It is unfortunately a known issue... I have not come up with a good way
->> to fix it either, while keeping it cheap. So if you think of something,
->> do let me know.
->   Hum... How about linking all running block traces (struct blk_trace) in a
-> linked list and sending BLK_TN_PROCESS to all the traces? Sure we will be
-> spamming with BLK_TN_PROCESS a bit but starting a trace isn't such a common
-> thing so it shouldn't be too bad. What do you think?
+On Mon, 2013-09-16 at 21:51 -0400, Paul Gortmaker wrote:
+> Currently we have people wasting time building it during routine testing,
+> and then wasting more time re-researching the known reported warnings,
+> only to find that nobody really is willing to integrate the fixes[3] for
+> it.
+> 
+>[...]
+>
+> [3] https://lkml.org/lkml/2012/10/29/215
 
-That might be good enough. I'm not worried about start/stop type
-expenses, those things generally don't matter. And the list wont add any
-fast path overhead when tracing.
+Well, this didn't end up as an entire waste of my time. After that
+message I sent a patch to Fedora's kernel list, and a reminder a few
+months later[1]. That prompted Josh Boyer to remove this old driver from
+the Fedora build[2].
 
--- 
-Jens Axboe
+And now that driver is disabled in all kernels that Fedora currently
+ships. I'm not familiar with any complaints about this decision.
+
+
+Paul Bolle
+
+[1] https://lists.fedoraproject.org/pipermail/kernel/2013-February/004102.html
+[2] http://pkgs.fedoraproject.org/cgit/kernel.git/commit/?id=2192022f4bf13b30e389e77170da7ae08fd28ecf
 
