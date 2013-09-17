@@ -1,83 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751491Ab3IQFji (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 01:39:38 -0400
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:43197 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751275Ab3IQFjf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 01:39:35 -0400
+	id S1751668Ab3IQFju (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 01:39:50 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44118 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751420Ab3IQFjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 01:39:37 -0400
+Message-ID: <5237EAF3.70505@ti.com>
+Date: Tue, 17 Sep 2013 00:38:59 -0500
+From: Joel Fernandes <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <5237971b.4c19310a.2b36.7d41SMTPIN_ADDED_BROKEN@mx.google.com>
-References: <1379202342-23140-1-git-send-email-liwanp@linux.vnet.ibm.com>
- <1379202342-23140-2-git-send-email-liwanp@linux.vnet.ibm.com>
- <523766E1.1020303@jp.fujitsu.com> <5237971b.4c19310a.2b36.7d41SMTPIN_ADDED_BROKEN@mx.google.com>
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Tue, 17 Sep 2013 01:39:13 -0400
-X-Google-Sender-Auth: S8WG648d6pid5G0rd8uE3Wfeb10
-Message-ID: <CAHGf_=pNwf0CO_sTcLxTfTYUfqUrbr8mtcXDgLUC9_wa7wR_5Q@mail.gmail.com>
-Subject: Re: [RESEND PATCH v5 2/4] mm/vmalloc: revert "mm/vmalloc.c: emit the
- failure message before return"
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, iamjoonsoo.kim@lge.com,
-        David Rientjes <rientjes@google.com>, zhangyanfei@cn.fujitsu.com,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sekhar Nori <nsekhar@ti.com>
+CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Russell King <linux@arm.linux.org.uk>, Jyri Sarah <jsarha@ti.com>,
+        Koen Kooi <koen@beagleboard.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Pantel Antoniou <panto@antoniou-consulting.com>
+Subject: Re: [PATCH v3] ARM: EDMA: Fix clearing of unused list for DT DMA
+ resources
+References: <1378839171-14455-1-git-send-email-joelf@ti.com> <5231903F.7080301@ti.com> <5233B471.40603@ti.com> <5236F00B.5040605@ti.com> <5237314D.7080102@ti.com> <5237E3C3.8050602@ti.com>
+In-Reply-To: <5237E3C3.8050602@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 7:41 PM, Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
-> Hi KOSAKI,
-> On Mon, Sep 16, 2013 at 04:15:29PM -0400, KOSAKI Motohiro wrote:
->>On 9/14/2013 7:45 PM, Wanpeng Li wrote:
->>> Changelog:
->>>  *v2 -> v3: revert commit 46c001a2 directly
->>>
->>> Don't warning twice in __vmalloc_area_node and __vmalloc_node_range if
->>> __vmalloc_area_node allocation failure. This patch revert commit 46c001a2
->>> (mm/vmalloc.c: emit the failure message before return).
->>>
->>> Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
->>> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
->>> ---
->>>  mm/vmalloc.c | 2 +-
->>>  1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
->>> index d78d117..e3ec8b4 100644
->>> --- a/mm/vmalloc.c
->>> +++ b/mm/vmalloc.c
->>> @@ -1635,7 +1635,7 @@ void *__vmalloc_node_range(unsigned long size, unsigned long align,
->>>
->>>      addr = __vmalloc_area_node(area, gfp_mask, prot, node, caller);
->>>      if (!addr)
->>> -            goto fail;
->>> +            return NULL;
->
-> The goto fail is introduced by commit (mm/vmalloc.c: emit the failure message
-> before return), and the commit author ignore there has already have warning in
-> __vmalloc_area_node.
->
-> http://marc.info/?l=linux-mm&m=137818671125209&w=2
-
-But, module_alloc() directly calls __vmalloc_node_range(). Your fix
-makes another regression.
-
-
->>This is not right fix. Now we have following call stack.
+On 09/17/2013 12:08 AM, Sekhar Nori wrote:
+[..]
+>>> I still cannot find any users of edma in the device tree sources either
+>>> in linux-next or linus/master. Why cannot this wait until v3.13?
 >>
->> __vmalloc_node
->>       __vmalloc_node_range
->>               __vmalloc_node
+>> I understand this affects only DT users of EDMA. But I get so many private
+>> reports of breakage due to this patch not being there that I think it will save
+>> everyone a lot of pain, specially folks creating integration trees to have this
+>> patch available by default.
+> 
+> Well, I do agree that the current DT support for EDMA is incomplete
+> without this patch even if there are no in-kernel users of it. I will
+> try sending this for the next -rc if we get to the final version in time
+> and after that its upto the upstreams to take it.
+
+Ok, except for the one minor nit below my last scissor patch is good to go.
+
+>>>> +
+>>>> +			ctlr = EDMA_CTLR(dma_spec.args[0]);
+>>>> +			clear_bit(EDMA_CHAN_SLOT(dma_spec.args[0]),
+>>>> +				  edma_cc[ctlr]->edma_unused);
+>>>
+>>> We don't support the second controller when using DT and the controller
+>>> number is not really encoded in the argument to edma phandle. So just
+>>> simplify this to:
+>>>
+>>> 	clear_bit(EDMA_CHAN_SLOT(dma_spec.args[0]), 	
+>>> 		  edma_cc[0]->edma_unused);
 >>
->>Even if we remove a warning of __vmalloc_node_range, we still be able to see double warning
->>because we call __vmalloc_node recursively.
->
-> Different size allocation failure in your example actually.
+>> I think let's not make that assumption just incase in the future we support more
+>> than one EDMA controller for DT-based boot. Is that ok?
+> 
+> We don't write future proof code in that _hope_ that it will get used
+> someday.  In fact this will confuse the reader into wondering if support
+> for second channel controller is present or not as the code will send
 
-But, when we can not allocate small size memory, almost always we
-can't allocate large size too.
+Nope I don't agree with this at all.. EDMA CC ctrl will not be hardcoded. We
+need to write future-proof code to make sure sudden regressions don't pop up
+when say a second EDMA CC is introduced.. further edma_cc[ctrl] pattern is used
+all through out the code so what you're asking to do doesn't make much sense in
+this context. There's no reason to break out of this pattern. It actually will
+confuse the reader more.
 
-You need some refactoring and make right fix.
+Second controller can be present in future. I don't want to come back to change
+the code when we introduce more than 1 CC which is possible in the future.
+
+> mixed messages. In short, we aim for consistency with situation today,
+> not tomorrow.
+
+What you're asking to do infact breaks consistency with the rest of the code.
+
+> 
+> Besides, I can bet that when second CC support does get added, it is
+> very unlikely that the CC number is get encoded into channel number when
+> using DT.
+
+Even if it is not encoded, the data structure for edma_cc is an array and what
+you're asking is to hardcode the controller number to 0 always. No way I'm going
+to hard code controller number to a single value.
+
+Different topic but anyway why wouldn't ctrl number be encoded in the channel?
+That's clean, and saves variables and extra structures. Better use of the
+integer bitmap making up the Ctrl and channel number of small ranges.
+
+Regards,
+
+-Joel
+
