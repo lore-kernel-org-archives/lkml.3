@@ -1,79 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab3IQSNw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 14:13:52 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:50574 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753239Ab3IQSNv (ORCPT
+	id S1753047Ab3IQSOl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 14:14:41 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:65372 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753009Ab3IQSOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 14:13:51 -0400
-Message-ID: <52389BDD.8070801@linaro.org>
-Date: Tue, 17 Sep 2013 11:13:49 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 17 Sep 2013 14:14:40 -0400
+Message-ID: <52389C0D.7070307@cogentembedded.com>
+Date: Tue, 17 Sep 2013 22:14:37 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] First set of timekeeping changes for 3.13
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: linux-kernel@vger.kernel.org, Dan Aloni <alonid@stratoscale.com>,
+        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, nab@linux-iscsi.org,
+        Asias He <asias@redhat.com>
+Subject: Re: [PATCH] vhost/scsi: use vmalloc for order-10 allocation
+References: <1379401998-5131-1-git-send-email-mst@redhat.com>
+In-Reply-To: <1379401998-5131-1-git-send-email-mst@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Thomas, Ingo,
-    So these were items I had hoped to get merged in 3.12, but I'm
-guessing got buried in Thomas inbox while he was traveling/busy (and its
-my fault for not cc'ing Ingo). So now 3.12-rc1 is out, I wanted to send
-this in for tip/timers/core right away so these don't get missed in this
-next cycle.
+Hello.
 
-Please let me know if there are any objections or issues with these changes.
+On 09/17/2013 11:21 AM, Michael S. Tsirkin wrote:
 
-thanks
--john
+> As vhost scsi device struct is large, if the device is
+> created on a busy system, kzalloc() might fail, so this patch does a
+> fallback to vzalloc().
 
+> As vmalloc() adds overhead on data-path, add __GFP_REPEAT
+> to kzalloc() flags to do this fallback only when really needed.
 
-The following changes since commit 272b98c6455f00884f0350f775c5342358ebb73f:
+> Reported-by: Dan Aloni <alonid@stratoscale.com>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
 
-  Linux 3.12-rc1 (2013-09-16 16:17:51 -0400)
+> I put this on my vhost fixes branch, intend to merge for 3.12.
+> Dan, could you please confirm this works for you?
 
-are available in the git repository at:
+>   drivers/vhost/scsi.c | 41 +++++++++++++++++++++++++++--------------
+>   1 file changed, 27 insertions(+), 14 deletions(-)
 
-  git://git.linaro.org/people/jstultz/linux.git fortglx/3.13/time
+> diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
+> index 4b79a1f..2c30bb0 100644
+> --- a/drivers/vhost/scsi.c
+> +++ b/drivers/vhost/scsi.c
+> @@ -1373,21 +1373,30 @@ static int vhost_scsi_set_features(struct vhost_scsi *vs, u64 features)
+>   	return 0;
+>   }
+>
+> +static void vhost_scsi_free(struct vhost_scsi *vs)
+> +{
+> +        if (is_vmalloc_addr(vs))
+> +                vfree(vs);
+> +        else
+> +                kfree(vs);
 
-for you to fetch changes up to 389e067032fbb96e439abafae848dd447e4cafb4:
+    Indent with the tabs ISO spaces, please.
 
-  Merge branch 'fortglx/3.12/time' into fortglx/3.13/time (2013-09-16
-18:54:07 -0700)
+> +}
+> +
+>   static int vhost_scsi_open(struct inode *inode, struct file *f)
+>   {
+>   	struct vhost_scsi *vs;
+>   	struct vhost_virtqueue **vqs;
+> -	int r, i;
+> +	int r = -ENOMEM, i;
+>
+> -	vs = kzalloc(sizeof(*vs), GFP_KERNEL);
+> -	if (!vs)
+> -		return -ENOMEM;
+> +        vs = kzalloc(sizeof(*vs), GFP_KERNEL | __GFP_NOWARN | __GFP_REPEAT);
 
-----------------------------------------------------------------
+    Indent here with a tab, please.
 
-John Stultz (2):
-      Merge branch 'fortglx/3.12/sched-clock64-base' into fortglx/3.13/time
-      Merge branch 'fortglx/3.12/time' into fortglx/3.13/time
+> +	if (!vs) {
+> +		vs = vzalloc(sizeof(*vs));
+> +		if (!vs)
+> +			goto err_vs;
+> +	}
 
-Miroslav Lichvar (1):
-      ntp: Make periodic RTC update more reliable
+WBR, Sergei
 
-Prarit Bhargava (1):
-      clocksource: Fix !CONFIG_CLOCKSOURCE_WATCHDOG compile
-
-Stephen Boyd (4):
-      clocksource: Extract max nsec calculation into separate function
-      sched_clock: Use seqcount instead of rolling our own
-      sched_clock: Use an hrtimer instead of timer
-      sched_clock: Add support for >32 bit sched_clock
-
-Zoran Markovic (1):
-      rtc: Keep system awake until all expired RTC timers are handled
-
- drivers/rtc/interface.c     |  13 ++++--
- include/linux/clocksource.h |   2 +
- include/linux/sched_clock.h |   2 +
- kernel/time/clocksource.c   |  46 ++++++++++++------
- kernel/time/ntp.c           |   3 +-
- kernel/time/sched_clock.c   | 111
-++++++++++++++++++++++++--------------------
- 6 files changed, 107 insertions(+), 70 deletions(-)
