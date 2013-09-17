@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752949Ab3IQMoF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 08:44:05 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:35989 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752919Ab3IQMoB (ORCPT
+	id S1752980Ab3IQMoJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 08:44:09 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:35777 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752936Ab3IQMoF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 08:44:01 -0400
+	Tue, 17 Sep 2013 08:44:05 -0400
 From: Russ Dill <Russ.Dill@ti.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-omap@vger.kernel.org
@@ -14,9 +14,9 @@ Cc: linux-kbuild@vger.kernel.org, Ard Biesheuvel <ard.biesheuvel@linaro.org>,
         mans@mansr.com, Shawn Guo <shawn.guo@linaro.org>,
         Dave Martin <Dave.Martin@arm.com>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: [RFC PATCH 04/11] asm-generic: fncpy: Add function copying macros
-Date: Tue, 17 Sep 2013 05:43:30 -0700
-Message-Id: <1379421817-15759-5-git-send-email-Russ.Dill@ti.com>
+Subject: [RFC PATCH 06/11] ARM: PIE: Add position independent executable embedding to ARM
+Date: Tue, 17 Sep 2013 05:43:32 -0700
+Message-Id: <1379421817-15759-7-git-send-email-Russ.Dill@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1379421817-15759-1-git-send-email-Russ.Dill@ti.com>
 References: <1379421817-15759-1-git-send-email-Russ.Dill@ti.com>
@@ -24,507 +24,308 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Under certain arches (ARM) function pointers cannot be
-used naively. Specifically, for thumb functions, their 0 bit
-is set, but they are contained on a word aligned address.
-
-Add a fncpy macro to perform function copies correctly
-along with two helpers, fnptr_to_address, and fnptr_translate.
+Add support to ARM for embedding PIEs into the kernel, loading them into
+genalloc pools (such as SRAM) and executing them. Support for ARM means
+performing R_ARM_RELATIVE fixups within the .rel.dyn section.
 
 Signed-off-by: Russ Dill <Russ.Dill@ti.com>
 ---
- arch/alpha/include/asm/fncpy.h      |   1 +
- arch/arc/include/asm/fncpy.h        |   1 +
- arch/arm/include/asm/fncpy.h        |  76 +++++++-------------------
- arch/arm/plat-omap/sram.c           |   2 +-
- arch/arm64/include/asm/fncpy.h      |   1 +
- arch/avr32/include/asm/fncpy.h      |   1 +
- arch/blackfin/include/asm/fncpy.h   |   1 +
- arch/c6x/include/asm/fncpy.h        |   1 +
- arch/cris/include/asm/fncpy.h       |   1 +
- arch/frv/include/asm/fncpy.h        |   1 +
- arch/h8300/include/asm/fncpy.h      |   1 +
- arch/hexagon/include/asm/fncpy.h    |   1 +
- arch/ia64/include/asm/fncpy.h       |   1 +
- arch/m32r/include/asm/fncpy.h       |   1 +
- arch/m68k/include/asm/fncpy.h       |   1 +
- arch/metag/include/asm/fncpy.h      |   1 +
- arch/microblaze/include/asm/fncpy.h |   1 +
- arch/mips/include/asm/fncpy.h       |   1 +
- arch/mn10300/include/asm/fncpy.h    |   1 +
- arch/openrisc/include/asm/fncpy.h   |   1 +
- arch/parisc/include/asm/fncpy.h     |   1 +
- arch/powerpc/include/asm/fncpy.h    |   1 +
- arch/s390/include/asm/fncpy.h       |   1 +
- arch/score/include/asm/fncpy.h      |   1 +
- arch/sh/include/asm/fncpy.h         |   1 +
- arch/sparc/include/asm/fncpy.h      |   1 +
- arch/tile/include/asm/fncpy.h       |   1 +
- arch/um/include/asm/fncpy.h         |   1 +
- arch/unicore32/include/asm/fncpy.h  |   1 +
- arch/x86/include/asm/fncpy.h        |   1 +
- arch/xtensa/include/asm/fncpy.h     |   1 +
- include/asm-generic/fncpy.h         | 104 ++++++++++++++++++++++++++++++++++++
- 32 files changed, 154 insertions(+), 57 deletions(-)
- create mode 100644 arch/alpha/include/asm/fncpy.h
- create mode 100644 arch/arc/include/asm/fncpy.h
- create mode 100644 arch/arm64/include/asm/fncpy.h
- create mode 100644 arch/avr32/include/asm/fncpy.h
- create mode 100644 arch/blackfin/include/asm/fncpy.h
- create mode 100644 arch/c6x/include/asm/fncpy.h
- create mode 100644 arch/cris/include/asm/fncpy.h
- create mode 100644 arch/frv/include/asm/fncpy.h
- create mode 100644 arch/h8300/include/asm/fncpy.h
- create mode 100644 arch/hexagon/include/asm/fncpy.h
- create mode 100644 arch/ia64/include/asm/fncpy.h
- create mode 100644 arch/m32r/include/asm/fncpy.h
- create mode 100644 arch/m68k/include/asm/fncpy.h
- create mode 100644 arch/metag/include/asm/fncpy.h
- create mode 100644 arch/microblaze/include/asm/fncpy.h
- create mode 100644 arch/mips/include/asm/fncpy.h
- create mode 100644 arch/mn10300/include/asm/fncpy.h
- create mode 100644 arch/openrisc/include/asm/fncpy.h
- create mode 100644 arch/parisc/include/asm/fncpy.h
- create mode 100644 arch/powerpc/include/asm/fncpy.h
- create mode 100644 arch/s390/include/asm/fncpy.h
- create mode 100644 arch/score/include/asm/fncpy.h
- create mode 100644 arch/sh/include/asm/fncpy.h
- create mode 100644 arch/sparc/include/asm/fncpy.h
- create mode 100644 arch/tile/include/asm/fncpy.h
- create mode 100644 arch/um/include/asm/fncpy.h
- create mode 100644 arch/unicore32/include/asm/fncpy.h
- create mode 100644 arch/x86/include/asm/fncpy.h
- create mode 100644 arch/xtensa/include/asm/fncpy.h
- create mode 100644 include/asm-generic/fncpy.h
+ arch/arm/Kconfig              |  1 +
+ arch/arm/Makefile             |  5 +++
+ arch/arm/include/asm/elf.h    |  1 +
+ arch/arm/kernel/.gitignore    |  1 +
+ arch/arm/kernel/Makefile      |  4 ++-
+ arch/arm/kernel/pie.c         | 83 +++++++++++++++++++++++++++++++++++++++++++
+ arch/arm/kernel/pie.lds.S     | 40 +++++++++++++++++++++
+ arch/arm/kernel/vmlinux.lds.S |  2 ++
+ arch/arm/libpie/.gitignore    |  3 ++
+ arch/arm/libpie/Makefile      | 32 +++++++++++++++++
+ arch/arm/libpie/empty.S       | 12 +++++++
+ 11 files changed, 183 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/kernel/pie.c
+ create mode 100644 arch/arm/kernel/pie.lds.S
+ create mode 100644 arch/arm/libpie/.gitignore
+ create mode 100644 arch/arm/libpie/Makefile
+ create mode 100644 arch/arm/libpie/empty.S
 
-diff --git a/arch/alpha/include/asm/fncpy.h b/arch/alpha/include/asm/fncpy.h
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 43594d5..de7b7603 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -49,6 +49,7 @@ config ARM
+ 	select HAVE_MEMBLOCK
+ 	select HAVE_OPROFILE if (HAVE_PERF_EVENTS)
+ 	select HAVE_PERF_EVENTS
++	select HAVE_PIE
+ 	select HAVE_REGS_AND_STACK_ACCESS_API
+ 	select HAVE_SYSCALL_TRACEPOINTS
+ 	select HAVE_UID16
+diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+index 6fd2cea..a673d36 100644
+--- a/arch/arm/Makefile
++++ b/arch/arm/Makefile
+@@ -128,6 +128,8 @@ KBUILD_AFLAGS	+=$(CFLAGS_ABI) $(AFLAGS_ISA) $(arch-y) $(tune-y) -include asm/uni
+ 
+ CHECKFLAGS	+= -D__arm__
+ 
++OBJCOPY_OUTPUT_FORMAT := elf32-littlearm
++
+ #Default value
+ head-y		:= arch/arm/kernel/head$(MMUEXT).o
+ textofs-y	:= 0x00008000
+@@ -273,6 +275,9 @@ drivers-$(CONFIG_OPROFILE)      += arch/arm/oprofile/
+ 
+ libs-y				:= arch/arm/lib/ $(libs-y)
+ 
++PIE_LDS				:= arch/arm/kernel/pie.lds
++libpie-$(CONFIG_PIE)		+= arch/arm/libpie/
++
+ # Default target when executing plain make
+ ifeq ($(CONFIG_XIP_KERNEL),y)
+ KBUILD_IMAGE := xipImage
+diff --git a/arch/arm/include/asm/elf.h b/arch/arm/include/asm/elf.h
+index 56211f2..a8d036b 100644
+--- a/arch/arm/include/asm/elf.h
++++ b/arch/arm/include/asm/elf.h
+@@ -50,6 +50,7 @@ typedef struct user_fp elf_fpregset_t;
+ #define R_ARM_NONE		0
+ #define R_ARM_PC24		1
+ #define R_ARM_ABS32		2
++#define R_ARM_RELATIVE		23
+ #define R_ARM_CALL		28
+ #define R_ARM_JUMP24		29
+ #define R_ARM_V4BX		40
+diff --git a/arch/arm/kernel/.gitignore b/arch/arm/kernel/.gitignore
+index c5f676c..a055a48 100644
+--- a/arch/arm/kernel/.gitignore
++++ b/arch/arm/kernel/.gitignore
+@@ -1 +1,2 @@
+ vmlinux.lds
++pie.lds
+diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+index 86d10dd..652312e 100644
+--- a/arch/arm/kernel/Makefile
++++ b/arch/arm/kernel/Makefile
+@@ -96,4 +96,6 @@ obj-y				+= psci.o
+ obj-$(CONFIG_SMP)		+= psci_smp.o
+ endif
+ 
+-extra-y := $(head-y) vmlinux.lds
++obj-$(CONFIG_PIE)		+= pie.o
++
++extra-y := $(head-y) vmlinux.lds pie.lds
+diff --git a/arch/arm/kernel/pie.c b/arch/arm/kernel/pie.c
 new file mode 100644
-index 0000000..ee4741c
+index 0000000..5dff5d6
 --- /dev/null
-+++ b/arch/alpha/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/arc/include/asm/fncpy.h b/arch/arc/include/asm/fncpy.h
++++ b/arch/arm/kernel/pie.c
+@@ -0,0 +1,83 @@
++/*
++ * Copyright 2013 Texas Instruments, Inc.
++ *	Russ Dill <russ.dill@ti.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ */
++
++#include <linux/kernel.h>
++#include <linux/pie.h>
++#include <linux/elf.h>
++
++#include <asm/elf.h>
++
++extern char __pie_rel_dyn_start[];
++extern char __pie_rel_dyn_end[];
++extern char __pie_tail_offset[];
++
++struct arm_pie_tail {
++	int count;
++	uintptr_t offset[0];
++};
++
++int pie_arch_fill_tail(void *tail, void *common_start, void *common_end,
++			void *overlay_start, void *code_start, void *code_end)
++{
++	Elf32_Rel *rel;
++	int records;
++	int i;
++	struct arm_pie_tail *pie_tail = tail;
++	int count;
++
++	rel = (Elf32_Rel *) __pie_rel_dyn_start;
++	records = (__pie_rel_dyn_end - __pie_rel_dyn_start) /
++						sizeof(*rel);
++
++	count = 0;
++	for (i = 0; i < records; i++, rel++) {
++		void *kern_off;
++		if (ELF32_R_TYPE(rel->r_info) != R_ARM_RELATIVE)
++			return -ENOEXEC;
++
++		/* Adjust offset to match area in kernel */
++		kern_off = common_start + rel->r_offset;
++
++		if (kern_off >= common_start && kern_off < code_end) {
++			if (tail)
++				pie_tail->offset[count] = rel->r_offset;
++			count++;
++		} else if (kern_off >= code_start && kern_off < code_end) {
++			if (tail)
++				pie_tail->offset[count] = rel->r_offset -
++						(code_start - overlay_start);
++			count++;
++		}
++	}
++
++	if (tail)
++		pie_tail->count = count;
++
++	return count * sizeof(uintptr_t) + sizeof(*pie_tail);
++}
++EXPORT_SYMBOL_GPL(pie_arch_fill_tail);
++
++/*
++ * R_ARM_RELATIVE: B(S) + A
++ * B(S) - Addressing origin of the output segment defining the symbol S.
++ * A - Addend for the relocation.
++ */
++int pie_arch_fixup(struct pie_chunk *chunk, void *base, void *tail,
++						unsigned long offset)
++{
++	struct arm_pie_tail *pie_tail = tail;
++	int i;
++
++	/* Perform relocation fixups for given offset */
++	for (i = 0; i < pie_tail->count; i++)
++		*((uintptr_t *) (pie_tail->offset[i] + base)) += offset;
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(pie_arch_fixup);
+diff --git a/arch/arm/kernel/pie.lds.S b/arch/arm/kernel/pie.lds.S
 new file mode 100644
-index 0000000..ee4741c
+index 0000000..4fd5ac5
 --- /dev/null
-+++ b/arch/arc/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/arm/include/asm/fncpy.h b/arch/arm/include/asm/fncpy.h
-index de53547..f165f20 100644
---- a/arch/arm/include/asm/fncpy.h
-+++ b/arch/arm/include/asm/fncpy.h
-@@ -17,16 +17,12 @@
-  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-  */
- 
-+#ifndef __ASM_FNCPY_H
-+#define __ASM_FNCPY_H
++++ b/arch/arm/kernel/pie.lds.S
+@@ -0,0 +1,40 @@
++/*
++ * ld script to make ARM PIEs
++ * taken from the ARM vmlinux.lds.S version by Russ Dill <russ.dill@ti.com.
++ */
 +
-+#include <linux/types.h>
++#include <asm-generic/pie.lds.h>
 +
- /*
-- * These macros are intended for use when there is a need to copy a low-level
-- * function body into special memory.
-- *
-- * For example, when reconfiguring the SDRAM controller, the code doing the
-- * reconfiguration may need to run from SRAM.
-- *
-- * NOTE: that the copied function body must be entirely self-contained and
-- * position-independent in order for this to work properly.
-- *
-  * NOTE: in order for embedded literals and data to get referenced correctly,
-  * the alignment of functions must be preserved when copying.  To ensure this,
-  * the source and destination addresses for fncpy() must be aligned to a
-@@ -34,61 +30,29 @@
-  * You will typically need a ".align 3" directive in the assembler where the
-  * function to be copied is defined, and ensure that your allocator for the
-  * destination buffer returns 8-byte-aligned pointers.
-- *
-- * Typical usage example:
-- *
-- * extern int f(args);
-- * extern uint32_t size_of_f;
-- * int (*copied_f)(args);
-- * void *sram_buffer;
-- *
-- * copied_f = fncpy(sram_buffer, &f, size_of_f);
-- *
-- * ... later, call the function: ...
-- *
-- * copied_f(args);
-- *
-- * The size of the function to be copied can't be determined from C:
-- * this must be determined by other means, such as adding assmbler directives
-- * in the file where f is defined.
-- */
-+*/
-+#define ARCH_FNCPY_ALIGN	3
- 
--#ifndef __ASM_FNCPY_H
--#define __ASM_FNCPY_H
--
--#include <linux/types.h>
--#include <linux/string.h>
--
--#include <asm/bug.h>
--#include <asm/cacheflush.h>
--
--/*
-- * Minimum alignment requirement for the source and destination addresses
-- * for function copying.
-- */
--#define FNCPY_ALIGN 8
--
--#define fncpy(dest_buf, funcp, size) ({					\
-+/* Clear the Thumb bit */
-+#define fnptr_to_addr(funcp) ({						\
- 	uintptr_t __funcp_address;					\
--	typeof(funcp) __result;						\
- 									\
- 	asm("" : "=r" (__funcp_address) : "0" (funcp));			\
-+	__funcp_address & ~1;						\
-+})
++OUTPUT_ARCH(arm)
 +
-+/* Put the Thumb bit back */
-+#define fnptr_translate(orig_funcp, new_addr) ({			\
-+	uintptr_t __funcp_address;					\
-+	typeof(orig_funcp) __result;					\
- 									\
--	/*								\
--	 * Ensure alignment of source and destination addresses,	\
--	 * disregarding the function's Thumb bit:			\
--	 */								\
--	BUG_ON((uintptr_t)(dest_buf) & (FNCPY_ALIGN - 1) ||		\
--		(__funcp_address & ~(uintptr_t)1 & (FNCPY_ALIGN - 1)));	\
--									\
--	memcpy(dest_buf, (void const *)(__funcp_address & ~1), size);	\
--	flush_icache_range((unsigned long)(dest_buf),			\
--		(unsigned long)(dest_buf) + (size));			\
--									\
-+	asm("" : "=r" (__funcp_address) : "0" (orig_funcp));		\
- 	asm("" : "=r" (__result)					\
--		: "0" ((uintptr_t)(dest_buf) | (__funcp_address & 1)));	\
-+		: "0" ((uintptr_t)(new_addr) | (__funcp_address & 1)));	\
- 									\
- 	__result;							\
- })
- 
-+#include <asm-generic/fncpy.h>
++SECTIONS
++{
++	. = 0x0;
 +
- #endif /* !__ASM_FNCPY_H */
-diff --git a/arch/arm/plat-omap/sram.c b/arch/arm/plat-omap/sram.c
-index a5bc92d..90ccd74 100644
---- a/arch/arm/plat-omap/sram.c
-+++ b/arch/arm/plat-omap/sram.c
-@@ -54,7 +54,7 @@ void *omap_sram_push_address(unsigned long size)
++	PIE_COMMON_START
++	.got.plt : {
++		*(.got)
++		*(.got.plt)
++	}
++	.text : {
++		PIE_TEXT_TEXT
++	}
++	PIE_COMMON_END
++
++	PIE_OVERLAY_START
++	OVERLAY : NOCROSSREFS {
++	}
++	PIE_OVERLAY_SEND
++
++	__pie_rel_dyn_start : {
++		VMLINUX_SYMBOL(__pie_rel_dyn_start) = .;
++	}
++	.rel.dyn : {
++		KEEP(*(.rel*))
++	}
++	__pie_rel_dyn_end : {
++		VMLINUX_SYMBOL(__pie_rel_dyn_end) = .;
++	}
++
++	PIE_DISCARDS
++}
+diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
+index 7bcee5c..8c11235 100644
+--- a/arch/arm/kernel/vmlinux.lds.S
++++ b/arch/arm/kernel/vmlinux.lds.S
+@@ -77,6 +77,8 @@ SECTIONS
+ #ifndef CONFIG_SMP_ON_UP
+ 		*(.alt.smp.init)
+ #endif
++		*(.pie.*)
++		*(.ARM.exidx.pie.*.text)
+ 		*(.discard)
+ 		*(.discard.*)
  	}
- 
- 	new_ceil -= size;
--	new_ceil = ROUND_DOWN(new_ceil, FNCPY_ALIGN);
-+	new_ceil = ROUND_DOWN(new_ceil, 1 << ARCH_FNCPY_ALIGN);
- 	omap_sram_ceil = IOMEM(new_ceil);
- 
- 	return (void *)omap_sram_ceil;
-diff --git a/arch/arm64/include/asm/fncpy.h b/arch/arm64/include/asm/fncpy.h
+diff --git a/arch/arm/libpie/.gitignore b/arch/arm/libpie/.gitignore
 new file mode 100644
-index 0000000..ee4741c
+index 0000000..02e3cd5
 --- /dev/null
-+++ b/arch/arm64/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/avr32/include/asm/fncpy.h b/arch/avr32/include/asm/fncpy.h
++++ b/arch/arm/libpie/.gitignore
+@@ -0,0 +1,3 @@
++lib1funcs.S
++ashldi3.S
++string.c
+diff --git a/arch/arm/libpie/Makefile b/arch/arm/libpie/Makefile
 new file mode 100644
-index 0000000..ee4741c
+index 0000000..5662e99
 --- /dev/null
-+++ b/arch/avr32/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/blackfin/include/asm/fncpy.h b/arch/blackfin/include/asm/fncpy.h
-new file mode 100644
-index 0000000..ee4741c
---- /dev/null
-+++ b/arch/blackfin/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/c6x/include/asm/fncpy.h b/arch/c6x/include/asm/fncpy.h
-new file mode 100644
-index 0000000..ee4741c
---- /dev/null
-+++ b/arch/c6x/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/cris/include/asm/fncpy.h b/arch/cris/include/asm/fncpy.h
-new file mode 100644
-index 0000000..ee4741c
---- /dev/null
-+++ b/arch/cris/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/frv/include/asm/fncpy.h b/arch/frv/include/asm/fncpy.h
-new file mode 100644
-index 0000000..ee4741c
---- /dev/null
-+++ b/arch/frv/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/h8300/include/asm/fncpy.h b/arch/h8300/include/asm/fncpy.h
-new file mode 100644
-index 0000000..ee4741c
---- /dev/null
-+++ b/arch/h8300/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/hexagon/include/asm/fncpy.h b/arch/hexagon/include/asm/fncpy.h
-new file mode 100644
-index 0000000..ee4741c
---- /dev/null
-+++ b/arch/hexagon/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/ia64/include/asm/fncpy.h b/arch/ia64/include/asm/fncpy.h
-new file mode 100644
-index 0000000..ee4741c
---- /dev/null
-+++ b/arch/ia64/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/m32r/include/asm/fncpy.h b/arch/m32r/include/asm/fncpy.h
-new file mode 100644
-index 0000000..ee4741c
---- /dev/null
-+++ b/arch/m32r/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/m68k/include/asm/fncpy.h b/arch/m68k/include/asm/fncpy.h
-new file mode 100644
-index 0000000..ee4741c
---- /dev/null
-+++ b/arch/m68k/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/metag/include/asm/fncpy.h b/arch/metag/include/asm/fncpy.h
-new file mode 100644
-index 0000000..ee4741c
---- /dev/null
-+++ b/arch/metag/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/microblaze/include/asm/fncpy.h b/arch/microblaze/include/asm/fncpy.h
-new file mode 100644
-index 0000000..ee4741c
---- /dev/null
-+++ b/arch/microblaze/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/mips/include/asm/fncpy.h b/arch/mips/include/asm/fncpy.h
-new file mode 100644
-index 0000000..ee4741c
---- /dev/null
-+++ b/arch/mips/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/mn10300/include/asm/fncpy.h b/arch/mn10300/include/asm/fncpy.h
-new file mode 100644
-index 0000000..ee4741c
---- /dev/null
-+++ b/arch/mn10300/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/openrisc/include/asm/fncpy.h b/arch/openrisc/include/asm/fncpy.h
-new file mode 100644
-index 0000000..ee4741c
---- /dev/null
-+++ b/arch/openrisc/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/parisc/include/asm/fncpy.h b/arch/parisc/include/asm/fncpy.h
-new file mode 100644
-index 0000000..ee4741c
---- /dev/null
-+++ b/arch/parisc/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/powerpc/include/asm/fncpy.h b/arch/powerpc/include/asm/fncpy.h
-new file mode 100644
-index 0000000..ee4741c
---- /dev/null
-+++ b/arch/powerpc/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/s390/include/asm/fncpy.h b/arch/s390/include/asm/fncpy.h
-new file mode 100644
-index 0000000..ee4741c
---- /dev/null
-+++ b/arch/s390/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/score/include/asm/fncpy.h b/arch/score/include/asm/fncpy.h
-new file mode 100644
-index 0000000..ee4741c
---- /dev/null
-+++ b/arch/score/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/sh/include/asm/fncpy.h b/arch/sh/include/asm/fncpy.h
-new file mode 100644
-index 0000000..ee4741c
---- /dev/null
-+++ b/arch/sh/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/sparc/include/asm/fncpy.h b/arch/sparc/include/asm/fncpy.h
-new file mode 100644
-index 0000000..ee4741c
---- /dev/null
-+++ b/arch/sparc/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/tile/include/asm/fncpy.h b/arch/tile/include/asm/fncpy.h
-new file mode 100644
-index 0000000..ee4741c
---- /dev/null
-+++ b/arch/tile/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/um/include/asm/fncpy.h b/arch/um/include/asm/fncpy.h
-new file mode 100644
-index 0000000..ee4741c
---- /dev/null
-+++ b/arch/um/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/unicore32/include/asm/fncpy.h b/arch/unicore32/include/asm/fncpy.h
-new file mode 100644
-index 0000000..ee4741c
---- /dev/null
-+++ b/arch/unicore32/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/x86/include/asm/fncpy.h b/arch/x86/include/asm/fncpy.h
-new file mode 100644
-index 0000000..ee4741c
---- /dev/null
-+++ b/arch/x86/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/arch/xtensa/include/asm/fncpy.h b/arch/xtensa/include/asm/fncpy.h
-new file mode 100644
-index 0000000..ee4741c
---- /dev/null
-+++ b/arch/xtensa/include/asm/fncpy.h
-@@ -0,0 +1 @@
-+#include <asm-generic/fncpy.h>
-diff --git a/include/asm-generic/fncpy.h b/include/asm-generic/fncpy.h
-new file mode 100644
-index 0000000..1a25282
---- /dev/null
-+++ b/include/asm-generic/fncpy.h
-@@ -0,0 +1,104 @@
-+/*
-+ * include/asm-generic/fncpy.h - helper macros for function body copying
-+ *
-+ * Copyright (C) 2011 Linaro Limited
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
++++ b/arch/arm/libpie/Makefile
+@@ -0,0 +1,32 @@
++#
++# linux/arch/arm/libpie/Makefile
++#
++ccflags-y	:= -fpic -mno-single-pic-base -fno-builtin
 +
-+/*
-+ * These macros are intended for use when there is a need to copy a low-level
-+ * function body into special memory.
-+ *
-+ * For example, when reconfiguring the SDRAM controller, the code doing the
-+ * reconfiguration may need to run from SRAM.
-+ *
-+ * NOTE: that the copied function body must be entirely self-contained and
-+ * position-independent in order for this to work properly.
-+ *
-+ * Typical usage example:
-+ *
-+ * extern int f(args);
-+ * extern uint32_t size_of_f;
-+ * int (*copied_f)(args);
-+ * void *sram_buffer;
-+ *
-+ * copied_f = fncpy(sram_buffer, &f, size_of_f);
-+ *
-+ * ... later, call the function: ...
-+ *
-+ * copied_f(args);
-+ *
-+ * The size of the function to be copied can't be determined from C:
-+ * this must be determined by other means, such as adding assmbler directives
-+ * in the file where f is defined.
-+ */
++obj-y		:= empty.o
++obj-y		+= lib1funcs.o ashldi3.o string.o
 +
-+#ifndef __ASM_GENERIC_FNCPY_H
-+#define __ASM_GENERIC_FNCPY_H
++# string library code (-Os is enforced to keep it much smaller)
++string = $(obj)/string.o
++CFLAGS_string.o := -Os
 +
-+#include <linux/types.h>
-+#include <linux/string.h>
++$(obj)/string.c: $(srctree)/arch/$(SRCARCH)/boot/compressed/string.c
++	$(call cmd,shipped)
 +
-+#include <asm/bug.h>
-+#include <asm/cacheflush.h>
++# For __aeabi_uidivmod
++lib1funcs = $(obj)/lib1funcs.o
 +
-+/*
-+ * Minimum alignment requirement for the source and destination addresses
-+ * for function copying.
-+ */
-+#ifndef ARCH_FNCPY_ALIGN
-+#define ARCH_FNCPY_ALIGN	0
-+#endif
++$(obj)/lib1funcs.S: $(srctree)/arch/$(SRCARCH)/lib/lib1funcs.S
++	$(call cmd,shipped)
 +
-+#define ARCH_FNCPY_MASK		((1 << (ARCH_FNCPY_ALIGN)) - 1)
++# For __aeabi_llsl
++ashldi3 = $(obj)/ashldi3.o
 +
-+#ifndef fnptr_to_addr
-+#define fnptr_to_addr(funcp) ({						\
-+	(uintptr_t) (funcp);						\
-+})
-+#endif
++$(obj)/ashldi3.S: $(srctree)/arch/$(SRCARCH)/lib/ashldi3.S
++	$(call cmd,shipped)
 +
-+#ifndef fnptr_translate
-+#define fnptr_translate(orig_funcp, new_addr) ({			\
-+	(typeof(orig_funcp)) (new_addr);				\
-+})
-+#endif
++$(obj)/libpie.o: $(string) $(lib1funcs) $(ashldi3) $(addprefix $(obj)/,$(OBJS))
++	$(call if_changed,ld)
 +
-+/* Ensure alignment of source and destination addresses */
-+#ifndef fn_dest_invalid
-+#define fn_dest_invalid(funcp, dest_buf) ({				\
-+	uintptr_t __funcp_address;					\
-+									\
-+	__funcp_address = fnptr_to_addr(funcp);				\
-+									\
-+	((uintptr_t)(dest_buf) & ARCH_FNCPY_MASK) ||			\
-+		(__funcp_address & ARCH_FNCPY_MASK);			\
-+})
-+#endif
++# Make sure files are removed during clean
++extra-y		+= string.c lib1funcs.S ashldi3.S
+diff --git a/arch/arm/libpie/empty.S b/arch/arm/libpie/empty.S
+new file mode 100644
+index 0000000..2416862
+--- /dev/null
++++ b/arch/arm/libpie/empty.S
+@@ -0,0 +1,12 @@
++#include <linux/linkage.h>
 +
-+#ifndef fncpy
-+#define fncpy(dest_buf, funcp, size) ({					\
-+	BUG_ON(fn_dest_invalid(funcp, dest_buf));			\
-+									\
-+	memcpy(dest_buf, (void const *)(funcp), size);			\
-+	flush_icache_range((unsigned long)(dest_buf),			\
-+		(unsigned long)(dest_buf) + (size));			\
-+									\
-+	fnptr_translate(funcp, dest_buf);				\
-+})
-+#endif
-+
-+#endif /* !__ASM_GENERIC_FNCPY_H */
++ENTRY(__div0)
++ENTRY(__aeabi_unwind_cpp_pr0)
++ENTRY(__aeabi_unwind_cpp_pr1)
++ENTRY(__aeabi_unwind_cpp_pr2)
++	mov	pc, lr
++ENDPROC(__div0)
++ENDPROC(__aeabi_unwind_cpp_pr0)
++ENDPROC(__aeabi_unwind_cpp_pr1)
++ENDPROC(__aeabi_unwind_cpp_pr2)
 +
 -- 
 1.8.3.2
