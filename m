@@ -1,115 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561Ab3IQKTC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 06:19:02 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:54689 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752145Ab3IQKTA convert rfc822-to-8bit (ORCPT
+	id S1752438Ab3IQKaG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 06:30:06 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36297 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752207Ab3IQKaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 06:19:00 -0400
-X-AuditID: cbfec7f5-b7ef66d00000795a-86-52382c92b55c
-From: Tomasz Figa <t.figa@samsung.com>
-To: =?ISO-8859-1?Q?Jos=E9_Miguel_Gon=E7alves?= <jose.goncalves@inov.pt>
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH] serial: samsung: add support for manual RTS setting
-Date: Tue, 17 Sep 2013 12:18:50 +0200
-Message-id: <35383907.gKXZyKLrYq@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.11 (Linux/3.10.10-gentoo; KDE/4.11.0; x86_64; ; )
-In-reply-to: <1378894107-7904-1-git-send-email-jose.goncalves@inov.pt>
-References: <1378894107-7904-1-git-send-email-jose.goncalves@inov.pt>
-MIME-version: 1.0
-Content-transfer-encoding: 8BIT
-Content-type: text/plain; charset=iso-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJLMWRmVeSWpSXmKPExsVy+t/xy7qTdCyCDH6fErH42LSWyeLyrjls
-	FjPO72OyOLO4l92BxePx9rtMHp83yQUwRXHZpKTmZJalFunbJXBldF4/wVywRKTiyO6rLA2M
-	zwS6GDk5JARMJB4eusEIYYtJXLi3ng3EFhJYyiix92o4hN3FJNEysRTEZhNQk/jc8AisRkTA
-	XWLKjPVgvcwCyRK9f74DxTk4hAU8JFZfTAEJswioSny/3A9WziugJTHnznewcn4BdYl3254y
-	gdiiAq4SnxZuZAexOQXcJLqXfGKGWOsqMXnLFWaIXkGJH5PvsUCs0pZ48u4CK4StI9H7/Rvz
-	BEbBWUjKZiEpm4WkbAEj8ypG0dTS5ILipPRcI73ixNzi0rx0veT83E2MkOD9uoNx6TGrQ4wC
-	HIxKPLw/lM2DhFgTy4orcw8xSnAwK4nwhrJYBAnxpiRWVqUW5ccXleakFh9iZOLglGpg9D+z
-	I8x9iVhaxL/JZ7xvua1dGB52TG/lJNsGC67zpnn3LuTwN9heOLltYxxf9AlhO+n7b84Z5P7m
-	ccwonqF8o8CeyfLv0q52CS7PDNHXMZ7/XgTxS6VmSRhp/cgXbhL+e/t899PIpgve/e8/esad
-	2smesvT/rooJnGJ6hmbJctXpfRLfal4qsRRnJBpqMRcVJwIAg9vMFDwCAAA=
+	Tue, 17 Sep 2013 06:30:04 -0400
+Date: Tue, 17 Sep 2013 11:29:04 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: Jiri Olsa <jolsa@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        "patches@linaro.org" <patches@linaro.org>, acme@ghostprotocols.net
+Subject: Re: [PATCH 3/4] perf tools: Check libunwind for availability of
+ dwarf parsing feature
+Message-ID: <20130917102904.GA27258@mudshark.cambridge.arm.com>
+References: <1379323053-11458-1-git-send-email-jean.pihet@linaro.org>
+ <1379323053-11458-4-git-send-email-jean.pihet@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1379323053-11458-4-git-send-email-jean.pihet@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi José,
+Arnaldo, Ingo,
 
-Please see my comments below.
-
-On Wednesday 11 of September 2013 11:08:27 José Miguel Gonçalves wrote:
-> The Samsung serial driver currently does not support setting the
-> RTS pin with an ioctl(TIOCMSET) call. This patch adds this support.
+On Mon, Sep 16, 2013 at 10:17:32AM +0100, Jean Pihet wrote:
+> The newly added dwarf unwinding feature [1] requires:
+> . a recent version (>= 1.1) of libunwind,
+> . libunwind to be configured with --enable-debug-frame.
 > 
-> Signed-off-by: José Miguel Gonçalves <jose.goncalves@inov.pt>
+> [1] http://www.spinics.net/lists/kernel/msg1598951.html
+> 
+> Add the corresponding API test in the feature check list.
+> 
+> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
 > ---
->  drivers/tty/serial/samsung.c |   17 ++++++++++++++---
->  1 file changed, 14 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/tty/serial/samsung.c b/drivers/tty/serial/samsung.c
-> index f3dfa19..e5dd808 100644
-> --- a/drivers/tty/serial/samsung.c
-> +++ b/drivers/tty/serial/samsung.c
-> @@ -407,7 +407,14 @@ static unsigned int s3c24xx_serial_get_mctrl(struct
-> uart_port *port)
-> 
->  static void s3c24xx_serial_set_mctrl(struct uart_port *port, unsigned
-> int mctrl) {
-> -	/* todo - possibly remove AFC and do manual CTS */
-> +	unsigned int umcon = rd_regl(port, S3C2410_UMCON);
-> +
-> +	if (mctrl & TIOCM_RTS)
-> +		umcon |= S3C2410_UMCOM_RTS_LOW;
-> +	else
-> +		umcon &= ~S3C2410_UMCOM_RTS_LOW;
-> +
-> +	wr_regl(port, S3C2410_UMCON, umcon);
+>  tools/perf/config/Makefile          |  2 +-
+>  tools/perf/config/feature-tests.mak | 11 ++++++++++-
+>  2 files changed, 11 insertions(+), 2 deletions(-)
 
-I wonder if port capability shouldn't be considered here. Depending on SoC, 
-only selected ports provide modem control capability.
+Can I have an ack for this and the following patch please?
 
-For example on S3C64xx only ports 0 and 1 support modem control, while 
-ports 2 and 3 don't.
+(http://lists.infradead.org/pipermail/linux-arm-kernel/2013-September/198531.html)
 
->  }
-> 
->  static void s3c24xx_serial_break_ctl(struct uart_port *port, int
-> break_state) @@ -774,8 +781,6 @@ static void
-> s3c24xx_serial_set_termios(struct uart_port *port, if (termios->c_cflag
-> & CSTOPB)
->  		ulcon |= S3C2410_LCON_STOPB;
-> 
-> -	umcon = (termios->c_cflag & CRTSCTS) ? S3C2410_UMCOM_AFC : 0;
-> -
->  	if (termios->c_cflag & PARENB) {
->  		if (termios->c_cflag & PARODD)
->  			ulcon |= S3C2410_LCON_PODD;
-> @@ -792,6 +797,12 @@ static void s3c24xx_serial_set_termios(struct
-> uart_port *port,
-> 
->  	wr_regl(port, S3C2410_ULCON, ulcon);
->  	wr_regl(port, S3C2410_UBRDIV, quot);
-> +
-> +	if (termios->c_cflag & CRTSCTS)
-> +		umcon = S3C2410_UMCOM_AFC;
+Then I can stick these into -next for some more exposure before I queue them
+for 3.13.
 
-Is it correct to override the last manual RTS value set to this register 
-when activating manual flow control?
+Cheers,
 
-Shouldn't the code be more like the following:
-
-	umcon = rd_regb(port, S3C2410_UMCON);
-	if (termios->c_cflag & CRTSCTS)
-		umcon |= S3C2410_UMCOM_AFC;
-	else
-		umcon &= ~S3C2410_UMCOM_AFC;
-	wr_regl(port, S3C2410_UMCON, umcon);
-
-Probably port capability should be considered here as well.
-
-Best regards,
-Tomasz
-
+Will
