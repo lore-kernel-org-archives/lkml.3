@@ -1,121 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752958Ab3IQOkd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 10:40:33 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49272 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752607Ab3IQOkb (ORCPT
+	id S1753204Ab3IQOll (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 10:41:41 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:55539 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752840Ab3IQOlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 10:40:31 -0400
-Date: Tue, 17 Sep 2013 16:40:12 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Cc: Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Thomas Meyer <thomas@m3y3r.de>
-Subject: Re: [PATCH 02/11] sched, rcu: Make RCU use resched_cpu()
-Message-ID: <20130917144012.GC29354@twins.programming.kicks-ass.net>
-References: <20130917082838.218329307@infradead.org>
- <20130917091143.449530904@infradead.org>
+	Tue, 17 Sep 2013 10:41:40 -0400
+Message-ID: <52386A38.2050401@windriver.com>
+Date: Tue, 17 Sep 2013 10:42:00 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130917091143.449530904@infradead.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Hannes Reinecke <hare@suse.de>
+CC: Doug Ledford <dledford@redhat.com>,
+        linux-scsi list <linux-scsi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Subject: Re: [PATCH] scsi: delete decade+ obsolete aic7xxx_old driver
+References: <y687fpks4kdsmfuadq4cykip.1379384036544@email.android.com> <52386730.4060508@suse.de>
+In-Reply-To: <52386730.4060508@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Meyer reported a UP build fail, should be fixed.
+On 13-09-17 10:29 AM, Hannes Reinecke wrote:
+> On 09/17/2013 04:13 AM, Doug Ledford wrote:
+>> Yes, this driver is well past ready to be removed.
+>>
+>> Acked-by: Doug Ledford <dledford@redhat.com>
+>>
+>> Sent from my ASUS Pad
+>>
+>> Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+>>
+>>> After getting warnings in an allyesconfig build[1] from this
+>>> driver, I decided to remind myself just how old it was, and
+>>> whether it warranted fixing.  In the Kconfig help text, I found:
+>>>
+>>>  "This driver will eventually be phased out entirely"
+>>>
+>>> Going back to the history archive, I see the line was added[2]
+>>> in Feb 2002, when we moved from v2.4.2.1 ---> v2.4.2.2
+>>>
+>>> So, with over a decade of notification, and multiple major releases
+>>> since then, I think we can justify removing this.  Currently we have
+>>> people wasting time building it during routine testing, and then
+>>> wasting more time re-researching the known reported warnings, only to
+>>> find that nobody really is willing to integrate the fixes[3] for it.
+>>>
+>>> A quick search didn't seem to indicate any active user base for it.
+>>> If someone happens to have a quirky _old_ card that the eleven year
+>>> old "new" driver doesn't work with, then it is entirely reasonable
+>>> that they stick with a kernel version that predates this removal.
+>>>
+>>> [1] drivers/scsi/aic7xxx_old.c: In function ‘aic7xxx_register’:
+>>>    drivers/scsi/aic7xxx_old.c:7901:5: warning: case value ‘257’ not in enumerated type ‘ahc_chip’ [-Wswitch]
+>>>    drivers/scsi/aic7xxx_old.c:7898:5: warning: case value ‘513’ not in enumerated type ‘ahc_chip’ [-Wswitch]
+>>>    drivers/scsi/aic7xxx_old.c: In function ‘aic7xxx_load_seeprom’:
+>>>    drivers/scsi/aic7xxx_old.c:8517:5: warning: case value ‘257’ not in enumerated type ‘ahc_chip’ [-Wswitch]
+>>>    drivers/scsi/aic7xxx_old.c:8510:5: warning: case value ‘513’ not in enumerated type ‘ahc_chip’ [-Wswitch]
+>>>
+>>> [2] http://git.kernel.org/cgit/linux/kernel/git/tglx/history.git commit 44e8778c
+>>>
+>>> [3] https://lkml.org/lkml/2012/10/29/215
+>>>
+>>> Cc: Hannes Reinecke <hare@suse.de>
+>>> Cc: Doug Ledford <dledford@redhat.com>
+>>> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+>>> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> 
+> However, if we do this we're removing support for any non-PCI based
+> adapters. I personally doubt that there are any installations left
+> running on (E)ISA or VLB. But we should be clear on this.
 
----
-Subject: sched, rcu: Make RCU use resched_cpu()
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Tue Sep 17 09:30:55 CEST 2013
+Is the Kconfig text for the "new" driver wrong then?  It says:
 
-We're going to deprecate and remove set_need_resched() for it will do
-the wrong thing. Make an exception for RCU and allow it to use
-resched_cpu() which will do the right thing.
+ ---------------------
+config SCSI_AIC7XXX
+        tristate "Adaptec AIC7xxx Fast -> U160 support (New Driver)"
+        depends on (PCI || EISA) && SCSI
+        select SCSI_SPI_ATTRS
+        ---help---
+        This driver supports all of Adaptec's Fast through Ultra 160 PCI
+        based SCSI controllers as well as the aic7770 based EISA and VLB
+        SCSI controllers (the 274x and 284x series).
+ ---------------------
 
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- kernel/rcutree.c    |   15 ++++++++++++++-
- kernel/sched/core.c |   10 ++--------
- 2 files changed, 16 insertions(+), 9 deletions(-)
+So, as long as you'd enabled either of PCI or EISA, a VLB card should
+work too.  (Of course you are correct in doubting that anyone is genuinely
+using a 486 VLB system with ~16MB RAM, so it is largely a moot point.)
 
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -898,6 +898,12 @@ static void print_other_cpu_stall(struct
- 	force_quiescent_state(rsp);  /* Kick them all. */
- }
- 
-+/*
-+ * This function really isn't for public consumption, but RCU is special in
-+ * that context switches can allow the state machine to make progress.
-+ */
-+extern void resched_cpu(int cpu);
-+
- static void print_cpu_stall(struct rcu_state *rsp)
- {
- 	int cpu;
-@@ -927,7 +933,14 @@ static void print_cpu_stall(struct rcu_s
- 				     3 * rcu_jiffies_till_stall_check() + 3;
- 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
- 
--	set_need_resched();  /* kick ourselves to get things going. */
-+	/*
-+	 * Attempt to revive the RCU machinery by forcing a context switch.
-+	 *
-+	 * A context switch would normally allow the RCU state machine to make
-+	 * progress and it could be we're stuck in kernel space without context
-+	 * switches for an entirely unreasonable amount of time.
-+	 */
-+	resched_cpu(smp_processor_id());
- }
- 
- static void check_cpu_stall(struct rcu_state *rsp, struct rcu_data *rdp)
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -513,12 +513,11 @@ static inline void init_hrtick(void)
-  * might also involve a cross-CPU call to trigger the scheduler on
-  * the target CPU.
-  */
--#ifdef CONFIG_SMP
- void resched_task(struct task_struct *p)
- {
- 	int cpu;
- 
--	assert_raw_spin_locked(&task_rq(p)->lock);
-+	lockdep_assert_held(&task_rq(p)->lock);
- 
- 	if (test_tsk_need_resched(p))
- 		return;
-@@ -546,6 +545,7 @@ void resched_cpu(int cpu)
- 	raw_spin_unlock_irqrestore(&rq->lock, flags);
- }
- 
-+#ifdef CONFIG_SMP
- #ifdef CONFIG_NO_HZ_COMMON
- /*
-  * In the semi idle case, use the nearest busy cpu for migrating timers
-@@ -693,12 +693,6 @@ void sched_avg_update(struct rq *rq)
- 	}
- }
- 
--#else /* !CONFIG_SMP */
--void resched_task(struct task_struct *p)
--{
--	assert_raw_spin_locked(&task_rq(p)->lock);
--	set_tsk_need_resched(p);
--}
- #endif /* CONFIG_SMP */
- 
- #if defined(CONFIG_RT_GROUP_SCHED) || (defined(CONFIG_FAIR_GROUP_SCHED) && \
+[I probably could delete that "(New Driver)" text as part of this commit too].
 
+Thanks,
+Paul.
+--
 
+> 
+> In general I'm in favour removing obsolete drivers, so
+> 
+> Acked-by: Hannes Reinecke <hare@suse.de>
+> 
+> Cheers,
+> 
+> Hannes
+> 
