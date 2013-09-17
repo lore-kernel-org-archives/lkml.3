@@ -1,81 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480Ab3IQSmg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 14:42:36 -0400
-Received: from mail-by2lp0243.outbound.protection.outlook.com ([207.46.163.243]:24806
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753055Ab3IQSmf convert rfc822-to-8bit (ORCPT
+	id S1753537Ab3IQSqh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 14:46:37 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:52725 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753055Ab3IQSqg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 14:42:35 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-CC: "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 00/13] hv: clean up dev_attr usage
-Thread-Topic: [PATCH 00/13] hv: clean up dev_attr usage
-Thread-Index: AQHOsK+1mcM+7wT8AkG+31wmWIBnRpnKSIeQ
-Date: Tue, 17 Sep 2013 18:42:30 +0000
-Message-ID: <654a20fac822400798f991f33b699018@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1379097181-23407-1-git-send-email-gregkh@linuxfoundation.org>
-In-Reply-To: <1379097181-23407-1-git-send-email-gregkh@linuxfoundation.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:4898:80e0:ee43::3]
-x-forefront-prvs: 0972DEC1D9
-x-forefront-antispam-report: SFV:NSPM;SFS:(51704005)(377454003)(13464003)(199002)(189002)(74366001)(79102001)(65816001)(76786001)(81686001)(81816001)(80976001)(1511001)(77096001)(54356001)(59766001)(56816003)(74316001)(76482001)(76796001)(63696002)(50986001)(77982001)(76576001)(83072001)(31966008)(83322001)(19580395003)(47446002)(19580405001)(74662001)(74502001)(51856001)(69226001)(74706001)(81342001)(81542001)(80022001)(53806001)(74876001)(46102001)(54316002)(4396001)(47736001)(56776001)(49866001)(47976001)(33646001)(3826001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB063;H:SN2PR03MB061.namprd03.prod.outlook.com;CLIP:2001:4898:80e0:ee43::3;FPR:;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 17 Sep 2013 14:46:36 -0400
+Date: Tue, 17 Sep 2013 14:53:41 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: linux-kernel@vger.kernel.org
+cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [patch] uapi perf_event.h has a u64
+Message-ID: <alpine.DEB.2.10.1309171450380.11444@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-X-OriginatorOrg: DuplicateDomain-a84fc36a-4ed7-4e57-ab1c-3e967bcbad48.microsoft.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+Without the following patch I have problems compiling code using 
+the new PERF_EVENT_IOC_ID ioctl().  It looks like u64 was used
+instead of __u64
 
-> -----Original Message-----
-> From: Greg Kroah-Hartman [mailto:gregkh@linuxfoundation.org]
-> Sent: Friday, September 13, 2013 11:33 AM
-> To: KY Srinivasan; Haiyang Zhang
-> Cc: devel@linuxdriverproject.org; linux-kernel@vger.kernel.org
-> Subject: [PATCH 00/13] hv: clean up dev_attr usage
-> 
-> Hi,
-> 
-> Here's a set of 13 patches to get rid of the dev_attrs use in the hv bus
-> code, as it will be going away soon.  It's _way_ bigger than all other
-> conversions I've had to do so far in the kernel, as you were using a
-> "multiplexor" function for all of these files.
-> 
-> So, I've broken it up into individual show/store sysfs functions, and
-> cleaned up a bunch of debug structures that aren't needed and shouldn't
-> be exported to the rest of the kernel.
-> 
-> I've also fixed up some void * usage in the hv core, in patch 07, to
-> make things simpler and not so "magic" when dealing with these pages.
-> If you could review that one closely to ensure I didn't mess anything
-> up, I would appreciate it.
-> 
-> Also, are all of these files really needed for sysfs?  They seem to be
-> all debugging stuff, shouldn't they go into debugfs if you really
-> need/use them anymore?
-> 
-> KY, could you test these out?  I don't have access to a hv system at the
-> moment.  I'll wait for your ack before applying them to any of my trees.
+Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
 
-The patches look good and I tested them. The guest comes up and is functional.
-I did notice though that the pending state appears to be a signed entity now which was not the
-the case  before - I see a negative sign when I cat the client/server pending state.
-
-Regards,
-
-K. Y 
-> 
-> thanks,
-> 
-> greg k-h
-
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index ca1d90b..40a1fb8 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -324,7 +324,7 @@ struct perf_event_attr {
+ #define PERF_EVENT_IOC_PERIOD		_IOW('$', 4, __u64)
+ #define PERF_EVENT_IOC_SET_OUTPUT	_IO ('$', 5)
+ #define PERF_EVENT_IOC_SET_FILTER	_IOW('$', 6, char *)
+-#define PERF_EVENT_IOC_ID		_IOR('$', 7, u64 *)
++#define PERF_EVENT_IOC_ID		_IOR('$', 7, __u64 *)
+ 
+ enum perf_event_ioc_flags {
+ 	PERF_IOC_FLAG_GROUP		= 1U << 0,
