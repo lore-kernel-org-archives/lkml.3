@@ -1,98 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448Ab3IQIo3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 04:44:29 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:42947 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752376Ab3IQIoX (ORCPT
+	id S1752365Ab3IQIrA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 04:47:00 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:36890 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751536Ab3IQIq5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 04:44:23 -0400
-From: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-To: jic23@cam.ac.uk, dmitry.torokhov@gmail.com
-Cc: linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, bigeasy@linutronix.de,
-        gregkh@linuxfoundation.org, zubair.lutfullah@gmail.com
-Subject: =?UTF-8?q?=5BPATCH=201/2=5D=20input=3A=20ti=5Fam335x=5Ftsc=3A=20Enable=20shared=20IRQ=20for=20TSC?=
-Date: Tue, 17 Sep 2013 09:44:06 +0500
-Message-Id: <1379393047-11772-2-git-send-email-zubair.lutfullah@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1379393047-11772-1-git-send-email-zubair.lutfullah@gmail.com>
-References: <1379393047-11772-1-git-send-email-zubair.lutfullah@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 17 Sep 2013 04:46:57 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 6.5 \(1508\))
+Subject: Re: [PATCH 18/28] of: create default early_init_dt_add_memory_arch
+From: Catalin Marinas <catalin.marinas@arm.com>
+In-Reply-To: <1379372965-22359-19-git-send-email-robherring2@gmail.com>
+Date: Tue, 17 Sep 2013 09:46:52 +0100
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        James Hogan <james.hogan@imgtec.com>, Michal Simek <monstr@monstr.eu>,
+        Jonas Bonn <jonas@southpole.se>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "microblaze-uclinux@itee.uq.edu.au" 
+	<microblaze-uclinux@itee.uq.edu.au>,
+        "linux@openrisc.net" <linux@openrisc.net>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <DDB72C85-45A3-40FC-9108-7B56F6C5BC5B@arm.com>
+References: <1379372965-22359-1-git-send-email-robherring2@gmail.com> <1379372965-22359-19-git-send-email-robherring2@gmail.com>
+To: Rob Herring <robherring2@gmail.com>
+X-Mailer: Apple Mail (2.1508)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable shared IRQ to allow ADC to share IRQ line from
-parent MFD core. Only FIFO0 IRQs are for TSC and handled
-on the TSC side.
+On 17 Sep 2013, at 00:09, Rob Herring <robherring2@gmail.com> wrote:
+> --- a/arch/arm64/kernel/setup.c
+> +++ b/arch/arm64/kernel/setup.c
+> @@ -147,24 +147,6 @@ static void __init setup_machine_fdt(phys_addr_t dt_phys)
+> 	pr_info("Machine: %s\n", machine_name);
+> }
+> 
+> -void __init early_init_dt_add_memory_arch(u64 base, u64 size)
+> -{
+> -	base &= PAGE_MASK;
+> -	size &= PAGE_MASK;
+> -	if (base + size < PHYS_OFFSET) {
+> -		pr_warning("Ignoring memory block 0x%llx - 0x%llx\n",
+> -			   base, base + size);
+> -		return;
+> -	}
+> -	if (base < PHYS_OFFSET) {
+> -		pr_warning("Ignoring memory range 0x%llx - 0x%llx\n",
+> -			   base, PHYS_OFFSET);
+> -		size -= PHYS_OFFSET - base;
+> -		base = PHYS_OFFSET;
+> -	}
+> -	memblock_add(base, size);
+> -}
+> -
+> /*
+>  * Limit the memory size that was specified via FDT.
+>  */
 
-Step mask would be updated from cached variable only previously.
-In rare cases when both TSC and ADC are used, the cached
-variable gets mixed up.
-The step mask is written with the required mask every time.
+...
 
-Rachna Patil (TI) laid ground work for shared IRQ.
+> --- a/drivers/of/fdt.c
+> +++ b/drivers/of/fdt.c
+> @@ -688,6 +688,17 @@ u64 __init dt_mem_next_cell(int s, __be32 **cellp)
+> 	return of_read_number(p, s);
+> }
+> 
+> +void __init __weak early_init_dt_add_memory_arch(u64 base, u64 size)
+> +{
+> +#ifdef CONFIG_HAVE_MEMBLOCK
+> +	base &= PAGE_MASK;
+> +	size &= PAGE_MASK;
+> +	memblock_add(base, size);
+> +#else
+> +	pr_err("%s: ignoring memory (%llx, %llx)\n", __func__, base, size);
+> +#endif
+> +}
 
-Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
- drivers/input/touchscreen/ti_am335x_tsc.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+Are the arm64 changes equivalent here?  There are some safety checks to
+cope with the kernel being loaded at a higher offset than the
+recommended one (PHYS_OFFSET calculated automatically).
 
-diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
-index e1c5300..24e625c 100644
---- a/drivers/input/touchscreen/ti_am335x_tsc.c
-+++ b/drivers/input/touchscreen/ti_am335x_tsc.c
-@@ -52,6 +52,7 @@ struct titsc {
- 	u32			config_inp[4];
- 	u32			bit_xp, bit_xn, bit_yp, bit_yn;
- 	u32			inp_xp, inp_xn, inp_yp, inp_yn;
-+	u32			step_mask;
- };
- 
- static unsigned int titsc_readl(struct titsc *ts, unsigned int reg)
-@@ -196,7 +197,8 @@ static void titsc_step_config(struct titsc *ts_dev)
- 
- 	/* The steps1 … end and bit 0 for TS_Charge */
- 	stepenable = (1 << (end_step + 2)) - 1;
--	am335x_tsc_se_set(ts_dev->mfd_tscadc, stepenable);
-+	ts_dev->step_mask = stepenable;
-+	am335x_tsc_se_set(ts_dev->mfd_tscadc, ts_dev->step_mask);
- }
- 
- static void titsc_read_coordinates(struct titsc *ts_dev,
-@@ -260,6 +262,10 @@ static irqreturn_t titsc_irq(int irq, void *dev)
- 	unsigned int fsm;
- 
- 	status = titsc_readl(ts_dev, REG_IRQSTATUS);
-+	/*
-+	 * ADC and touchscreen share the IRQ line.
-+	 * FIFO1 interrupts are used by ADC. Handle FIFO0 IRQs here only
-+	 */
- 	if (status & IRQENB_FIFO0THRES) {
- 
- 		titsc_read_coordinates(ts_dev, &x, &y, &z1, &z2);
-@@ -316,7 +322,7 @@ static irqreturn_t titsc_irq(int irq, void *dev)
- 
- 	if (irqclr) {
- 		titsc_writel(ts_dev, REG_IRQSTATUS, irqclr);
--		am335x_tsc_se_update(ts_dev->mfd_tscadc);
-+		am335x_tsc_se_set(ts_dev->mfd_tscadc, ts_dev->step_mask);
- 		return IRQ_HANDLED;
- 	}
- 	return IRQ_NONE;
-@@ -389,7 +395,7 @@ static int titsc_probe(struct platform_device *pdev)
- 	}
- 
- 	err = request_irq(ts_dev->irq, titsc_irq,
--			  0, pdev->dev.driver->name, ts_dev);
-+			  IRQF_SHARED, pdev->dev.driver->name, ts_dev);
- 	if (err) {
- 		dev_err(&pdev->dev, "failed to allocate irq.\n");
- 		goto err_free_mem;
--- 
-1.7.9.5
-
+Catalin
