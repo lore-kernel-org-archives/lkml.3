@@ -1,119 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783Ab3IQLZY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 07:25:24 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:53764 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751722Ab3IQLZR (ORCPT
+	id S1752742Ab3IQL1L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 07:27:11 -0400
+Received: from www.linutronix.de ([62.245.132.108]:52538 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751907Ab3IQL1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 07:25:17 -0400
-Date: Tue, 17 Sep 2013 12:24:44 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: lee.jones@linaro.org, sameo@linux.intel.com, linus.walleij@linaro.org,
-        akpm@linux-foundation.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-gpio@vger.kernel.org, rtc-linux@googlegroups.com,
-        rob.herring@calxeda.com, mark.rutland@arm.com, pawel.moll@arm.com,
-        swarren@wwwdotorg.org, rob@landley.net, ijc+devicetree@hellion.org.uk,
-        grant.likely@linaro.org, florian.lobmaier@ams.com
-Message-ID: <20130917112444.GU21013@sirena.org.uk>
-References: <1379400338-20704-1-git-send-email-ldewangan@nvidia.com>
- <1379400338-20704-2-git-send-email-ldewangan@nvidia.com>
+	Tue, 17 Sep 2013 07:27:09 -0400
+Date: Tue, 17 Sep 2013 13:26:56 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>, nicolas.ferre@atmel.com,
+        linux-kernel@vger.kernel.org, Marc Pignat <marc.pignat@hevs.ch>,
+        john.stultz@linaro.org, kernel@pengutronix.de,
+        Ronald Wahl <ronald.wahl@raritan.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] [PATCH] clocksource: tcb: fix min_delta calculation
+In-Reply-To: <20130917100417.GQ12758@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.02.1309171210450.4089@ionos.tec.linutronix.de>
+References: <1379077365-18458-1-git-send-email-mkl@pengutronix.de> <20130917095600.GJ26819@ludovic.desroches@atmel.com> <20130917100417.GQ12758@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2F7AbV2suvT8PGoH"
-Content-Disposition: inline
-In-Reply-To: <1379400338-20704-2-git-send-email-ldewangan@nvidia.com>
-X-Cookie: Give him an evasive answer.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/4] mfd: add support for AMS AS3722 PMIC
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 17 Sep 2013, Russell King - ARM Linux wrote:
 
---2F7AbV2suvT8PGoH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Tue, Sep 17, 2013 at 11:56:00AM +0200, Ludovic Desroches wrote:
+> > Any reason to not do this:
+> > 
+> > --- a/drivers/clocksource/tcb_clksrc.c
+> > +++ b/drivers/clocksource/tcb_clksrc.c
+> > @@ -144,6 +144,9 @@ static void tc_mode(enum clock_event_mode m, struct
+> > clock_event_device *d)
+> >  
+> >  static int tc_next_event(unsigned long delta, struct clock_event_device
+> > *d)
+> >  {
+> > +       if (delta < d->min_delta_ticks)
+> > +               delta = d->min_delta_ticks;
+> > +
+> >         __raw_writel(delta, tcaddr + ATMEL_TC_REG(2, RC));
+> >  
+> >         /* go go gadget! */
+> > 
+> > Then we can keep the same min_delta.
+> 
+> You really should not play such games in your set_next_event() code - if
+> the interval is not supported, you should return -ETIME so that the core
+> code knows about it and can adjust things to suit.  If you're getting
+> deltas which are too small for the hardware, that'll either be because
+> the bounds are wrong, or there's a bug in the core code.
 
-On Tue, Sep 17, 2013 at 12:15:35PM +0530, Laxman Dewangan wrote:
+The core code does:
 
-> +MFD driver adds following mfd devices with their compatible values:
-> +as3722-gpio: The compatible value of this as3722 gpio driver is
-> +	     "ams,as3722-gpio";
-> +as3722-regulator: The compatible value of this as3722 regulator driver is
-> +	     "ams,as3722-regulator";
-> +as3722-rtc: The compatible value of this as3722 rtc driver is
-> +	     "ams,as3722-rtc";
-> +as3722-adc: The compatible value of this as3722 adc driver is
-> +	     "ams,as3722-adc";
-> +as3722-power-off: he compatible value of this as3722 power off driver is
-> +	     "ams,as3722-power-off".
+int clockevents_program_event(struct clock_event_device *dev, ktime_t expires,
+                              bool force)
+{
+....
 
-Personally I find this to be exposing implementation details of Linux -
-unless there is something reusable about the binding that'd allow it to
-be used to describe the contents of the chip the subnodes really aren't=20
-adding any information that wasn't present from just knowing the parent
-chip.  If there were relocatable IPs it'd be a bit different.
+        delta = min(delta, (int64_t) dev->max_delta_ns);
+        delta = max(delta, (int64_t) dev->min_delta_ns);
 
-> +#define reg_range(min, max)	{.range_min =3D min, .range_max =3D max,}
-> +static const struct regmap_range as3722_readable_ranges[] =3D {
-> +	reg_range(AS3722_SD0_VOLTAGE_REG, AS3722_SD6_VOLTAGE_REG),
-> +	reg_range(AS3722_GPIO0_CONTROL_REG, AS3722_LDO7_VOLTAGE_REG),
+        clc = ((unsigned long long) delta * dev->mult) >> dev->shift;
+        rc = dev->set_next_event((unsigned long) clc, dev);
 
-If this macro is useful it should be a generic thing in the header, not
-done driver local.
+} 
 
-> +static const struct regmap_access_table as3722_volatile_table =3D {
-> +	.no_ranges =3D as3722_voltaile_ranges,
-> +	.n_no_ranges =3D ARRAY_SIZE(as3722_voltaile_ranges),
-> +};
+So, the min_delta in timer ticks is set to 1 and converted by the core
+to nsecs for various reasons. This is where the rounding problem comes
+into play.
 
-This looks wrong - the registers listed in _volatile_ranges are in fact
-the ones that are not volatile.  I'd rename _volatile_ranges to
-something like _cacheable_ranges.
+The patch below should fix that.
 
-> +static int __init as3722_i2c_init(void)
-> +{
-> +	return i2c_add_driver(&as3722_i2c_driver);
-> +}
-> +subsys_initcall(as3722_i2c_init);
-> +
-> +static void __exit as3722_i2c_exit(void)
-> +{
-> +	i2c_del_driver(&as3722_i2c_driver);
-> +}
-> +module_exit(as3722_i2c_exit);
+Thanks,
 
-Modern systems should be able to use module_i2c_driver() and deferred
-probing - is this not working well?
-
---2F7AbV2suvT8PGoH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSODv5AAoJELSic+t+oim9jZ8P/idmFHPapqV0CQm7y9Pxw4Ij
-dUehc9jrgF5bU3w7WE4qxZy4sxKS5ixSIoSuNuAMG9nuN+yEi/2MXJtfOUpen8ky
-dBwmM2J/65sbLl0pd3XE/fuutHp1ieT/Ncf56KBU2N03XE6RV/exe+XZ+D6hbCbH
-W06f9LAyxi+Na4u3oxlyc16T+QsAcXHTku0248/9SqMdDMqYOqm35SqvUoupojMB
-T9CkjSV56JbI2MYmf4FAIek1U4oG2anEy6XjhzZ3o9pV9pPI1PitmebhGVQO9Hqa
-Nbh5srfovfheX4ngZgqE9jlbKnIjMS0Zyw5ds4mNS1tu/Ku/Nmynvq8Y5aGsv1Nf
-UdUqonxtzqHE0ILnefir3eRHnUb6E/VGyeh79dmBUFyx8hHTZWrfqOCll7e+xR5B
-1o2RV8NliIO7UjLOq+LRZd+fnlv8zNA6PH/s19KMY5Mt4VkMpRHktsBiJtnMOBPe
-hbNNtvF3U/aTf2b2Fy/NuAzx+lSWmLgOXui85xdB3efY4DYNCljaOeYlQq7nV5lG
-0stRER29XOAttTjSK5bCCAusMSfELzlx5EkIlG04k6O8bcVdIMUbxxehxr0rl7Qz
-ZmSFfn0XrCVZlTWnsca7kFA5Y5dNJ42DLROxirrWGRCAri6Rr3FkBL0CySeeSu88
-Ie1UTJVrDCNWMzYz0Qg4
-=dTEc
------END PGP SIGNATURE-----
-
---2F7AbV2suvT8PGoH--
+	tglx
+----
+diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
+index 38959c8..41b7a30 100644
+--- a/kernel/time/clockevents.c
++++ b/kernel/time/clockevents.c
+@@ -42,7 +42,7 @@ struct ce_unbind {
+  */
+ u64 clockevent_delta2ns(unsigned long latch, struct clock_event_device *evt)
+ {
+-	u64 clc = (u64) latch << evt->shift;
++	u64 tmp, clc = (u64) latch << evt->shift;
+ 
+ 	if (unlikely(!evt->mult)) {
+ 		evt->mult = 1;
+@@ -52,6 +52,14 @@ u64 clockevent_delta2ns(unsigned long latch, struct clock_event_device *evt)
+ 	do_div(clc, evt->mult);
+ 	if (clc < 1000)
+ 		clc = 1000;
++
++	/* Avoid rounding artifacts */
++	tmp = (clc * dev->mult) >> dev->shift;
++	while (tmp < (u64) dev->min_delta_ticks) {
++		clc += 1000;
++		tmp = (clc * dev->mult) >> dev->shift;
++	}
++
+ 	if (clc > KTIME_MAX)
+ 		clc = KTIME_MAX;
+ 
