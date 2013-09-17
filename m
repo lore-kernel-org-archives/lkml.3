@@ -1,209 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752730Ab3IQLnB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 07:43:01 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:53895 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751975Ab3IQLnA (ORCPT
+	id S1752811Ab3IQLno (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 07:43:44 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:35184 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752515Ab3IQLnm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 07:43:00 -0400
-Date: Tue, 17 Sep 2013 13:42:56 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH] perf bench sched: Add --threaded 0/1 option
-Message-ID: <20130917114256.GA31159@gmail.com>
+	Tue, 17 Sep 2013 07:43:42 -0400
+Date: Tue, 17 Sep 2013 12:43:38 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: lee.jones@linaro.org, sameo@linux.intel.com, linus.walleij@linaro.org,
+        akpm@linux-foundation.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-gpio@vger.kernel.org, rtc-linux@googlegroups.com,
+        rob.herring@calxeda.com, mark.rutland@arm.com, pawel.moll@arm.com,
+        swarren@wwwdotorg.org, rob@landley.net, ijc+devicetree@hellion.org.uk,
+        grant.likely@linaro.org, florian.lobmaier@ams.com
+Message-ID: <20130917114338.GW21013@sirena.org.uk>
+References: <1379400338-20704-1-git-send-email-ldewangan@nvidia.com>
+ <1379400338-20704-5-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zGa1rFMfQatMxgJk"
 Content-Disposition: inline
+In-Reply-To: <1379400338-20704-5-git-send-email-ldewangan@nvidia.com>
+X-Cookie: Give him an evasive answer.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 4/4] drivers/rtc/rtc-as3722: add RTC driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Allow the measurement of thread versus process context switch performance.
+--zGa1rFMfQatMxgJk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-The default stays at 'process' based measurement, like lmbench's lat_ctx 
-benchmark.
+On Tue, Sep 17, 2013 at 12:15:38PM +0530, Laxman Dewangan wrote:
 
-Sample output:
+> +Optional properties:
+> +-------------------
+> +ams,enable_clk32k_out: Enable CLK32K output.
 
- comet:~/tip/tools/perf> taskset 1 ./perf bench sched pipe --threaded 0
- # Running sched/pipe benchmark...
- # Executed 1000000 pipe operations between two processes
+This looks like it should be being supported via the clock API?  This
+sort of thing is one of the reasons why I'm not too keen on representing
+the MFD structure directly in the DT.
 
-     Total time: 4.138 [sec]
+--zGa1rFMfQatMxgJk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-       4.138729 usecs/op
-         241620 ops/sec
- comet:~/tip/tools/perf> taskset 1 ./perf bench sched pipe --threaded 1
- # Running sched/pipe benchmark...
- # Executed 1000000 pipe operations between two threads
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.21 (GNU/Linux)
 
-     Total time: 3.667 [sec]
+iQIcBAEBAgAGBQJSOEBmAAoJELSic+t+oim9I0AQAIbpSzwHF9eepbxJXqKUCUhB
+aWROqPd7Dyj65kx4iU0wOlyiYl1f+RhUliFC6q6k+q7us1gjdOGJbThFdSaV/dNA
+JehexnH5/Pyd24KEQsVGWcP3FuYJPSf63XScbzanrfEKUCsypiSAdB0KdxyJU6AT
+Ty4cAREnpyEjnKnjHGRK/4Qrrt4gOsZMjFQffkvky2Vp62s81SztC1EV2G6D9u1O
+QR4E/z5dqBUhUyFGqpJyBJsxV6ZUcykd5TI0pzbFbYHqqsuKwcw6Y47vebUHTreA
+1keChsQYoJbh1mb5IuBEXgkrR7afccNiLvYr15MX7nJH2EugJ6LhxlsXzLtwRd1E
+jDVf/BRfHHA4hTEP2e4QCDEHigqslwS4JXL2AlaTM5TgRPZWS8u0DZzgvU4Gl/2K
+D30b0DXWtg03ofT/PebIvAx+KHe+kdSFz9DRc7VR0Bf7dVnZA/ckcFdjAxntsRo/
+iJ/WRWRIYrFc9Kj93Q7pfBgkHhDAxF0FJWBMkWj/8jkSFufO3H+5qYMugmQaeM17
+OC2ebPcy03ML9fWmX9rYMKSG9EDvpanwsk9K5EY8/Nj39FR9ZX4l83IsTZrjEB+B
+udBRxYzhlpcvutIVEzPEQo7OB5hWj0Ftd2IPXWpWiN+svuE2mL6XJkFHz9j5cYjg
+aBMssUYJt0aE10yH3QYH
+=Ktbe
+-----END PGP SIGNATURE-----
 
-       3.667667 usecs/op
-         272652 ops/sec
-
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-
-diff --git a/tools/perf/bench/sched-pipe.c b/tools/perf/bench/sched-pipe.c
-index 69cfba8..7630dc6 100644
---- a/tools/perf/bench/sched-pipe.c
-+++ b/tools/perf/bench/sched-pipe.c
-@@ -28,12 +28,25 @@
- #include <sys/time.h>
- #include <sys/types.h>
- 
-+#include <pthread.h>
-+
-+struct thread_data {
-+	int			nr;
-+	int			pipe_read;
-+	int			pipe_write;
-+	pthread_t		pthread;
-+};
-+
- #define LOOPS_DEFAULT 1000000
- static int loops = LOOPS_DEFAULT;
- 
-+static int threaded = 0;
-+
- static const struct option options[] = {
- 	OPT_INTEGER('l', "loop", &loops,
- 		    "Specify number of loops"),
-+	OPT_INTEGER('T', "threaded", &threaded,
-+		    "Specify threaded/process based task setup"),
- 	OPT_END()
- };
- 
-@@ -42,13 +55,38 @@ static const char * const bench_sched_pipe_usage[] = {
- 	NULL
- };
- 
-+static void *worker_thread(void *__tdata)
-+{
-+        struct thread_data *td = __tdata;
-+	int m = 0, i;
-+	int ret;
-+
-+	for (i = 0; i < loops; i++) {
-+		if (!td->nr) {
-+			ret = read(td->pipe_read, &m, sizeof(int));
-+			BUG_ON(ret != sizeof(int));
-+			ret = write(td->pipe_write, &m, sizeof(int));
-+			BUG_ON(ret != sizeof(int));
-+		} else {
-+			ret = write(td->pipe_write, &m, sizeof(int));
-+			BUG_ON(ret != sizeof(int));
-+			ret = read(td->pipe_read, &m, sizeof(int));
-+			BUG_ON(ret != sizeof(int));
-+		}
-+	}
-+
-+	return NULL;
-+}
-+
- int bench_sched_pipe(int argc, const char **argv,
- 		     const char *prefix __maybe_unused)
- {
-+	struct thread_data threads[2], *td;
- 	int pipe_1[2], pipe_2[2];
--	int m = 0, i;
- 	struct timeval start, stop, diff;
- 	unsigned long long result_usec = 0;
-+	int nr_threads = 2;
-+	int t;
- 
- 	/*
- 	 * why does "ret" exist?
-@@ -58,43 +96,66 @@ int bench_sched_pipe(int argc, const char **argv,
- 	int __maybe_unused ret, wait_stat;
- 	pid_t pid, retpid __maybe_unused;
- 
--	argc = parse_options(argc, argv, options,
--			     bench_sched_pipe_usage, 0);
-+	argc = parse_options(argc, argv, options, bench_sched_pipe_usage, 0);
- 
- 	BUG_ON(pipe(pipe_1));
- 	BUG_ON(pipe(pipe_2));
- 
--	pid = fork();
--	assert(pid >= 0);
--
- 	gettimeofday(&start, NULL);
- 
--	if (!pid) {
--		for (i = 0; i < loops; i++) {
--			ret = read(pipe_1[0], &m, sizeof(int));
--			ret = write(pipe_2[1], &m, sizeof(int));
--		}
--	} else {
--		for (i = 0; i < loops; i++) {
--			ret = write(pipe_1[1], &m, sizeof(int));
--			ret = read(pipe_2[0], &m, sizeof(int));
-+	for (t = 0; t < nr_threads; t++) {
-+		td = threads + t;
-+
-+		td->nr = t;
-+
-+		if (t == 0) {
-+			td->pipe_read = pipe_1[0];
-+			td->pipe_write = pipe_2[1];
-+		} else {
-+			td->pipe_write = pipe_1[1];
-+			td->pipe_read = pipe_2[0];
- 		}
- 	}
- 
--	gettimeofday(&stop, NULL);
--	timersub(&stop, &start, &diff);
- 
--	if (pid) {
-+	if (threaded) {
-+
-+		for (t = 0; t < nr_threads; t++) {
-+			td = threads + t;
-+
-+			ret = pthread_create(&td->pthread, NULL, worker_thread, td);
-+			BUG_ON(ret);
-+		}
-+
-+		for (t = 0; t < nr_threads; t++) {
-+			td = threads + t;
-+
-+			ret = pthread_join(td->pthread, NULL);
-+			BUG_ON(ret);
-+		}
-+
-+	} else {
-+		pid = fork();
-+		assert(pid >= 0);
-+
-+		if (!pid) {
-+			worker_thread(threads + 0);
-+			exit(0);
-+		} else {
-+			worker_thread(threads + 1);
-+		}
-+
- 		retpid = waitpid(pid, &wait_stat, 0);
- 		assert((retpid == pid) && WIFEXITED(wait_stat));
--	} else {
--		exit(0);
- 	}
- 
-+	gettimeofday(&stop, NULL);
-+	timersub(&stop, &start, &diff);
-+
- 	switch (bench_format) {
- 	case BENCH_FORMAT_DEFAULT:
--		printf("# Executed %d pipe operations between two tasks\n\n",
--			loops);
-+		printf("# Executed %d pipe operations between two %s\n\n",
-+			loops, threaded ? "threads" : "processes");
- 
- 		result_usec = diff.tv_sec * 1000000;
- 		result_usec += diff.tv_usec;
+--zGa1rFMfQatMxgJk--
