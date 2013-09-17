@@ -1,54 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753390Ab3IQPgw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 11:36:52 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:39923 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752993Ab3IQPgu (ORCPT
+	id S1753415Ab3IQPh2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 11:37:28 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:43151 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752854Ab3IQPhZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 11:36:50 -0400
+	Tue, 17 Sep 2013 11:37:25 -0400
+Date: Tue, 17 Sep 2013 10:36:16 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Julius Werner <jwerner@chromium.org>
+CC: Tomasz Figa <tomasz.figa@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+Subject: Re: [PATCH 1/3 v5] usb: phy-samsung-usb: Simplify PMU register
+ handling
+Message-ID: <20130917153616.GG15645@radagast>
+Reply-To: <balbi@ti.com>
+References: <1375812017-6287-1-git-send-email-jwerner@chromium.org>
+ <20130808092615.GF14648@e106331-lin.cambridge.arm.com>
+ <CAODwPW-j=JjunZU3zewrE1_-WoW-RXLmKVQypzxmo_BOYjc3VA@mail.gmail.com>
+ <1729120.r596vOTlMW@flatron>
+ <CAODwPW_W9gu+nwNzpq3sfcOCDkyppu6K8C9+S8OZt_A0qHqNEg@mail.gmail.com>
+ <CAODwPW8KG2ZxOFf936H233g35KVPjDp+f8e3qgkd4Z7NN9RAtQ@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [86.59.245.170]
-In-Reply-To: <20130917114404.GI13318@ZenIV.linux.org.uk>
-References: <1379335925-30858-1-git-send-email-miklos@szeredi.hu>
-	<1379335925-30858-3-git-send-email-miklos@szeredi.hu>
-	<20130916181938.GD13318@ZenIV.linux.org.uk>
-	<CAJfpegt3mAKVE7ToZbvPpFQCY1EAZ3tKfn__kfpGz4HeXWr8fw@mail.gmail.com>
-	<20130916195003.GE13318@ZenIV.linux.org.uk>
-	<CAJfpegsLeuw55Diw0yDmiFR+7qkSkOrW2fUbjmzFC9OxVsrAkQ@mail.gmail.com>
-	<20130916220241.GF13318@ZenIV.linux.org.uk>
-	<20130916232810.GG13318@ZenIV.linux.org.uk>
-	<CAJfpegtJwgFNNQQB3AX9umsK+RacpQFSoakAMs++w6TT9x0yGw@mail.gmail.com>
-	<20130917114404.GI13318@ZenIV.linux.org.uk>
-Date: Tue, 17 Sep 2013 17:36:49 +0200
-Message-ID: <CAJfpegtSVYStQQuJvd6CWAy-ZM6v8tmTcL5uz=iA1aHM72TeQQ@mail.gmail.com>
-Subject: Re: [PATCH 02/11] 9p: fix dentry leak in v9fs_vfs_atomic_open_dotl()
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>,
-        Eric Van Hensbergen <ericvh@gmail.com>,
-        "M. Mohan Kumar" <mohan@in.ibm.com>, stable@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+ZmrHH5cGjskQnY1"
+Content-Disposition: inline
+In-Reply-To: <CAODwPW8KG2ZxOFf936H233g35KVPjDp+f8e3qgkd4Z7NN9RAtQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 17, 2013 at 1:44 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Tue, Sep 17, 2013 at 12:16:56PM +0200, Miklos Szeredi wrote:
->
->> Just one. This needs to be removed, since this condition is now
->> explicitly allowed and later checked for:
->>
->>     if (WARN_ON(excl && !(*opened & FILE_CREATED)))
->>         *opened |= FILE_CREATED;
->
-> D'oh...  Fixed and pushed.
+--+ZmrHH5cGjskQnY1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Okay, but moving the fsnotify_create()  to after the no-open section
-is wrong, I think,  It's needed for the case of ->atomic_open() doing
-lookup/create/no_open too.
+Hi,
 
-Thanks,
-Miklos
+On Tue, Aug 27, 2013 at 01:27:48PM -0700, Julius Werner wrote:
+> *Ping!*
+>=20
+> Are there still unanswered concerns left with this patch? I hope my
+> prior mails could clear up why I think that the PMU register
+> description in the device tree for a specific PHY is represents the
+> hardware more accurately after my patch, and my analysis of the
+> Exynos4 situation currently not being implemented (and therefore not
+> needing to be addressed by this patch) was correct. Please let me know
+> if you have further objections... and if not, could we agree to have
+> this picked up somewhere?
+
+I need acks for DTS part...
+
+--=20
+balbi
+
+--+ZmrHH5cGjskQnY1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSOHbwAAoJEIaOsuA1yqRERCAP/jeaTKdJ4KGpEjMQLRUgeNuF
+tiQ9FPviR1dIq+nL7FITOmjt9uiS5uojgZOt6c1BX4RyxJySm2cAfKYKVK1LSCN4
+AC44lEAzHaCtLazV0WmGnMIjXfvxMe6bb6uxXxVBCOGwwrKGG8WZXPeTxW+VNIeJ
+FQN1UpPckdDGhFbGNjmf4LBi7N0dof9Nkk0d4e/bRZGcPrJgHNlDCuY9d8AlenL0
+j9HUn/xd60y8+QCGKCpYqwcboD4AevlGopNG612BhWmBcquS4ejnDiwk37iX7pUf
+5RET7HqNRYCYWdi0aPVteC4Db1fPYpBfTUpaevgorEbyr06/JejyuIrNiGkEPv+Q
+FWfGcJPNcFc2d09yrXUnCn2vzEFZ6o5uLlLuCYnn6E4ZbsqRK4yMzV2pXTc5At8+
+Iu3fLoSmJhGverc7W/uyX8Y2NXQTR8aNgn4kG2FYQfnlthR6a7glQzkRq8Q5ciyC
++Cp89Qa7PhqLwz8ZBKxxULxGIvMXdjrUAfHP9c40FAT9qhJJZR4Jeb3kWkybGuFS
+BmwdqqMMH9BdZUjEVcEvrTAyaBBKE/n8EfsDFokgNotrXdpM6nKMuezji2+NaqQm
+aUxjXBOqYbJvXDzKGkHLSxgtrS+GQ6hdIg8xYujLzPaeAtA/eaNlqxP7kKSHfLE3
+R/8TMRjDlzay4OgsyzPt
+=2p3m
+-----END PGP SIGNATURE-----
+
+--+ZmrHH5cGjskQnY1--
