@@ -1,95 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397Ab3IQIbv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 04:31:51 -0400
-Received: from mga02.intel.com ([134.134.136.20]:36496 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751946Ab3IQIbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 04:31:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,921,1371106800"; 
-   d="scan'208";a="404506040"
-Date: Tue, 17 Sep 2013 11:37:12 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Zheng, Lv" <lv.zheng@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH 2/2] gpio / ACPI: add support for GPIO operation regions
-Message-ID: <20130917083712.GS7393@intel.com>
-References: <1379085280-2211-1-git-send-email-mika.westerberg@linux.intel.com>
- <1379085280-2211-2-git-send-email-mika.westerberg@linux.intel.com>
- <1AE640813FDE7649BE1B193DEA596E880246367A@SHSMSX101.ccr.corp.intel.com>
- <20130915065151.GK7393@intel.com>
- <1AE640813FDE7649BE1B193DEA596E88024639E4@SHSMSX101.ccr.corp.intel.com>
- <1AE640813FDE7649BE1B193DEA596E8802463A46@SHSMSX101.ccr.corp.intel.com>
- <20130916081048.GM7393@intel.com>
- <1AE640813FDE7649BE1B193DEA596E8802463D85@SHSMSX101.ccr.corp.intel.com>
+	id S1752106Ab3IQIfg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 04:35:36 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:55827
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751456Ab3IQIfe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 04:35:34 -0400
+X-IronPort-AV: E=Sophos;i="4.90,921,1371074400"; 
+   d="scan'208";a="27103041"
+Date: Tue, 17 Sep 2013 10:35:26 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Shalin Mehta <shalinmehta85@gmail.com>
+cc: gregkh@linuxfoundation.org, klmckinney1@gmail.com,
+        devel@driverdev.osuosl.org, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: bcm: PHSModule.c: Matching the function definition
+ with function declaration
+In-Reply-To: <1379401962-10208-1-git-send-email-shalinmehta85@gmail.com>
+Message-ID: <alpine.DEB.2.02.1309171035000.2252@hadrien>
+References: <1379401962-10208-1-git-send-email-shalinmehta85@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E8802463D85@SHSMSX101.ccr.corp.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 11:35:56PM +0000, Zheng, Lv wrote:
-> > From: Mika Westerberg [mailto:mika.westerberg@linux.intel.com]
-> > Sent: Monday, September 16, 2013 4:11 PM
-> > 
-> > On Mon, Sep 16, 2013 at 01:21:53AM +0000, Zheng, Lv wrote:
-> > > > A pseudo device may be created to access the GPIO operation region fields provided by one GPIO device.
-> > > > The pseudo device may have other functions to access other GPIO operation region fields provided by other GPIO devices, or even worse
-> > to
-> > > > access other ACPI provided value-adds.
-> > > > So hierarchically the pseudo device only requires CPU, thus should not be under the GPIO device, which means the GPIO operation
-> > regions
-> > > > have nothing to do with the GPIO devices' ACPI handle.
-> > >
-> > > Sorry for the wording.
-> > > It's better to say the GPIO operation region users haven't strict
-> > > relationship to the GPIO operation region providers.
-> > > As the installation is to provide GPIO operation regions to the users, it
-> > > shouldn't relate to the providers' ACPI handle.
-> > 
-> > If I understand you correctly you mean that there might be multiple users
-> > (different devices) for the same GPIO operation region, right?
-> 
-> No, this is not what I meant.
-> Can one vendor device uses two or more GPIO pins from different GPIO ports?
+On Tue, 17 Sep 2013, Shalin Mehta wrote:
 
-Yes.
+> From: Shalin Mehta <shalinmehta85@gmail.com>
+>
+> NOTE: Sending it again. I got mail delivery failure due to typo in emai ID gregkh@linuxfoundation.org
 
-> > That shouldn't be a problem as far as I can tell.
-> > 
-> > What comes to the hierarchy you refer, I'm not sure if that is a problem
-> > either (unless I'm missing something). The GPIO can be used anywhere in the
-> > ASL, it doesn't have to be descendant of the GPIO device. You only need to
-> > do something like this:
-> > 
-> > 	// Assert the GPIO
-> > 	Store(1, \_SB.PCI0.SHD3)
-> > 
-> > In other words, use the fully qualified name.
-> 
-> Yes, which means this line of code can be everywhere in the namespace.
-> It is not required to be under one particular GPIO device as long as there is an operation region defined in that scope.
-> 
-> The problem is the installation, the first parameter for
-> acpi_install_address_space_handler() is a namespace node, the function
-> will call _REG for all OperationRegions below the scope whose top most
-> node is the specified node.
-> The nodes out of this scope are not affected.  So if an OperationRegion
-> is defined out of this scope, problem happens.
+I think that such a comment should go below the ---, since it doesn't have
+to be preserved in git.
 
-I suppose for that operation region another GPIO device should be
-introduced then, no?
+julia
 
-So if we don't have a GPIO driver for the given operation region, what can
-we do? We don't want the ASL code to erroneusly think that there is an
-operation region available when it is not.
+>
+>
+> The function implementations of the PHSModule didn't match with the declaration. The functions are static
+> in the declaration but in the implemntation they are non-static
+>
+> Signed-off-by: Shalin Mehta <shalinmehta85@gmail.com>
+> ---
+>  drivers/staging/bcm/PHSModule.c | 12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/staging/bcm/PHSModule.c b/drivers/staging/bcm/PHSModule.c
+> index af5d22f..56c5bee 100644
+> --- a/drivers/staging/bcm/PHSModule.c
+> +++ b/drivers/staging/bcm/PHSModule.c
+> @@ -596,7 +596,7 @@ ULONG PhsDeleteSFRules(IN void *pvContext, IN B_UINT16 uiVcid)
+>   * 0 if successful,
+>   * >0 Error.
+>   */
+> -ULONG PhsCompress(IN void *pvContext,
+> +static ULONG PhsCompress(IN void *pvContext,
+>  		IN B_UINT16 uiVcid,
+>  		IN B_UINT16 uiClsId,
+>  		IN void *pvInputBuffer,
+> @@ -677,7 +677,7 @@ ULONG PhsCompress(IN void *pvContext,
+>   * 0 if successful,
+>   * >0 Error.
+>   */
+> -ULONG PhsDeCompress(IN void *pvContext,
+> +static ULONG PhsDeCompress(IN void *pvContext,
+>  		IN B_UINT16 uiVcid,
+>  		IN void *pvInputBuffer,
+>  		OUT void *pvOutputBuffer,
+> @@ -829,7 +829,7 @@ UINT GetServiceFlowEntry(IN struct bcm_phs_table *psServiceFlowTable,
+>  	return PHS_INVALID_TABLE_INDEX;
+>  }
+>
+> -UINT GetClassifierEntry(IN struct bcm_phs_classifier_table *pstClassifierTable,
+> +static UINT GetClassifierEntry(IN struct bcm_phs_classifier_table *pstClassifierTable,
+>  			IN B_UINT32 uiClsid, enum bcm_phs_classifier_context eClsContext,
+>  			OUT struct bcm_phs_classifier_entry **ppstClassifierEntry)
+>  {
+> @@ -880,7 +880,7 @@ static UINT GetPhsRuleEntry(IN struct bcm_phs_classifier_table *pstClassifierTab
+>  	return PHS_INVALID_TABLE_INDEX;
+>  }
+>
+> -UINT CreateSFToClassifierRuleMapping(IN B_UINT16 uiVcid, IN B_UINT16  uiClsId,
+> +static UINT CreateSFToClassifierRuleMapping(IN B_UINT16 uiVcid, IN B_UINT16  uiClsId,
+>  				IN struct bcm_phs_table *psServiceFlowTable,
+>  				struct bcm_phs_rule *psPhsRule,
+>  				B_UINT8 u8AssociatedPHSI)
+> @@ -913,7 +913,7 @@ UINT CreateSFToClassifierRuleMapping(IN B_UINT16 uiVcid, IN B_UINT16  uiClsId,
+>  	return uiStatus;
+>  }
+>
+> -UINT CreateClassiferToPHSRuleMapping(IN B_UINT16 uiVcid,
+> +static UINT CreateClassiferToPHSRuleMapping(IN B_UINT16 uiVcid,
+>  				IN B_UINT16 uiClsId,
+>  				IN struct bcm_phs_entry *pstServiceFlowEntry,
+>  				struct bcm_phs_rule *psPhsRule,
+> @@ -1239,7 +1239,7 @@ void DumpPhsRules(struct bcm_phs_extension *pDeviceExtension)
+>   *			header.
+>   *	0	-If PHS rule is NULL.If PHSI is 0 indicateing packet as uncompressed.
+>   */
+> -int phs_decompress(unsigned char *in_buf,
+> +static int phs_decompress(unsigned char *in_buf,
+>  		unsigned char *out_buf,
+>  		struct bcm_phs_rule *decomp_phs_rules,
+>  		UINT *header_size)
+> --
+> 1.8.1.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
