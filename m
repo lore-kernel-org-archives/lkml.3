@@ -1,30 +1,30 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917Ab3IKD65 (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Tue, 10 Sep 2013 23:58:57 -0400
-Received: from ip-203.189.11.40.dream.com.ph ([203.189.11.40]:42999 "EHLO
-	mail.dream.com.ph" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751443Ab3IKD64 convert rfc822-to-8bit (ORCPT
+	id S1753994Ab3IQVQw (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Tue, 17 Sep 2013 17:16:52 -0400
+Received: from mail.trabajo.gob.hn ([207.42.179.137]:54826 "EHLO
+	mail.trabajo.gob.hn" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753713Ab3IQVQv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Sep 2013 23:58:56 -0400
-X-Greylist: delayed 52715 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Sep 2013 23:58:56 EDT
+	Tue, 17 Sep 2013 17:16:51 -0400
+X-Greylist: delayed 1472 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Sep 2013 17:16:51 EDT
 Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7BIT
 Content-Description: Mail message body
-Subject: Hello
-To: Recipients <info@sfp.com>
-From: "T. Stratford" <info@sfp.com>
-Date: Tue, 10 Sep 2013 06:50:55 +0100
-Reply-To: jeremy-office@qq.com
-Message-Id: <20130910052654.D698B7EF8EE@mail.dream.com.ph>
+Subject: loan offer!!!
+To: Recipients <info@loan.com>
+From: info@loan.com
+Date: Wed, 18 Sep 2013 02:08:05 +0530
+Reply-To: midlloan@ufoff.co.in
+Message-Id: <20130917202553.E428951CC73@mail.trabajo.gob.hn>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Do you need a loan? Do you need a loan that can be process within 2 to 3 working days? Have you been frustrated so many times by your banks and other loan firm. Here is the the Good news Midland Financial loan company is here to offer you any kind of loan you need. We give out loans to customer at an affordable interest loan. We Offer LOANS ranging from $20,000 USD  Min to $50,000,000.00 USD Max. At 3%interest rate per annual. How much loan do you need ?. If you are interested let us know how much you need and your person information which Include your Full name address City/state , country,  Telephone number ,  Amount Needed, loan Duration.   Note: We offer personal loans, business loan , Home loans etc.
 
-You have won  1,000.000 great british pounds in the ongoing promo draw.
-For claims, contact Mr Jeremy via email on: jeremy-office@qq.com
-
-Thanks,
-T. Stratford.
+Regards
+Mr.Mahindra George
+Financial Officer.
+Email: midlandloan@ufoff.co.in
+Tel: +919582455780
