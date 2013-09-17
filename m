@@ -1,316 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141Ab3IQWaA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 18:30:00 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:50522 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753288Ab3IQW35 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 18:29:57 -0400
+	id S1754159Ab3IQWbQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 18:31:16 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52274 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753288Ab3IQWbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 18:31:14 -0400
+Message-ID: <5238D7D9.9010203@ti.com>
+Date: Tue, 17 Sep 2013 18:29:45 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <1379206621-18639-3-git-send-email-jlee@suse.com>
-References: <1379206621-18639-1-git-send-email-jlee@suse.com>
-	<1379206621-18639-3-git-send-email-jlee@suse.com>
-Date: Tue, 17 Sep 2013 17:29:55 -0500
-Message-ID: <CACE9dm8dBdQFD55ABa1nXEAsW0-t3w71PwkDxEFtjO9OqDP=0w@mail.gmail.com>
-Subject: Re: [PATCH V4 02/15] asymmetric keys: implement EMSA_PKCS1-v1_5-ENCODE
- in rsa
-From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-To: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-security-module@vger.kernel.org, linux-efi@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-crypto@vger.kernel.org,
-        opensuse-kernel@opensuse.org, David Howells <dhowells@redhat.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Josh Boyer <jwboyer@redhat.com>,
-        Vojtech Pavlik <vojtech@suse.cz>,
-        Matt Fleming <matt.fleming@intel.com>,
-        James Bottomley <james.bottomley@hansenpartnership.com>,
-        Greg KH <gregkh@linuxfoundation.org>, JKosina@suse.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        Gary Lin <GLin@suse.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "Lee, Chun-Yi" <jlee@suse.com>
-Content-Type: text/plain; charset=UTF-8
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>, <swarren@wwwdotorg.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ian.campbell@citrix.com>, <rob.herring@calxeda.com>,
+        <rui.zhang@intel.com>, <wni@nvidia.com>, <grant.likely@linaro.org>,
+        <durgadoss.r@intel.com>, <linux-pm@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <lm-sensors@lm-sensors.org>,
+        <linux-kernel@vger.kernel.org>, Jean Delvare <khali@linux-fr.org>
+Subject: Re: [PATCH 06/16] hwmon: tmp102: expose to thermal fw via DT nodes
+References: <1379282563-14650-1-git-send-email-eduardo.valentin@ti.com> <1379282563-14650-7-git-send-email-eduardo.valentin@ti.com> <523643D4.30208@roeck-us.net>
+In-Reply-To: <523643D4.30208@roeck-us.net>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature";
+	boundary="DRL6iNjCceenODkoGtIA3TOmsuj8cbFR2"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 14, 2013 at 7:56 PM, Lee, Chun-Yi <joeyli.kernel@gmail.com> wrote:
-> Implement EMSA_PKCS1-v1_5-ENCODE [RFC3447 sec 9.2] in rsa.c. It's the
-> first step of signature generation operation (RSASSA-PKCS1-v1_5-SIGN).
->
-> This patch is temporary set emLen to pks->k, and temporary set EM to
-> pks->S for debugging. We will replace the above values to real signature
-> after implement RSASP1.
->
-> The naming of EMSA_PKCS1_v1_5_ENCODE and the variables used in this function
-> accord PKCS#1 spec but not follow kernel naming convention, it useful when look
-> at them with spec.
->
-> Reference: ftp://ftp.rsasecurity.com/pub/pkcs/pkcs-1v2/pkcs1ietffinal.txt
-> Reference: http://www.emc.com/collateral/white-papers/h11300-pkcs-1v2-2-rsa-cryptography-standard-wp.pdf
->
-> V2:
-> - Clean up naming of variable: replace _EM by EM, replace EM by EM_tmp.
-> - Add comment to EMSA_PKCS1-v1_5-ENCODE function.
->
-> Cc: Pavel Machek <pavel@ucw.cz>
-> Reviewed-by: Jiri Kosina <jkosina@suse.cz>
-> Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
-> ---
->  crypto/asymmetric_keys/rsa.c |  163 +++++++++++++++++++++++++++++++++++++++++-
->  include/crypto/public_key.h  |    2 +
->  2 files changed, 164 insertions(+), 1 deletions(-)
->
-> diff --git a/crypto/asymmetric_keys/rsa.c b/crypto/asymmetric_keys/rsa.c
-> index 47f3be4..352ba45 100644
-> --- a/crypto/asymmetric_keys/rsa.c
-> +++ b/crypto/asymmetric_keys/rsa.c
-> @@ -13,6 +13,7 @@
->  #include <linux/module.h>
->  #include <linux/kernel.h>
->  #include <linux/slab.h>
-> +#include <crypto/hash.h>
->  #include "public_key.h"
->  #include "private_key.h"
->
-> @@ -152,6 +153,132 @@ static int RSA_I2OSP(MPI x, size_t xLen, u8 **_X)
->  }
->
->  /*
-> + * EMSA_PKCS1-v1_5-ENCODE [RFC3447 sec 9.2]
-> + * @M: message to be signed, an octet string
-> + * @emLen: intended length in octets of the encoded message
-> + * @hash_algo: hash function (option)
-> + * @hash: true means hash M, otherwise M is already a digest
-> + * @EM: encoded message, an octet string of length emLen
-> + *
-> + * This function is a implementation of the EMSA-PKCS1-v1_5 encoding operation
-> + * in RSA PKCS#1 spec. It used by the signautre generation operation of
-> + * RSASSA-PKCS1-v1_5 to encode message M to encoded message EM.
-> + *
-> + * The variables used in this function accord PKCS#1 spec but not follow kernel
-> + * naming convention, it useful when look at them with spec.
-> + */
-> +static int EMSA_PKCS1_v1_5_ENCODE(const u8 *M, size_t emLen,
-> +               enum pkey_hash_algo hash_algo, const bool hash,
-> +               u8 **EM, struct public_key_signature *pks)
-> +{
-> +       u8 *digest;
-> +       struct crypto_shash *tfm;
-> +       struct shash_desc *desc;
-> +       size_t digest_size, desc_size;
-> +       size_t tLen;
-> +       u8 *T, *PS, *EM_tmp;
-> +       int i, ret;
-> +
-> +       pr_info("EMSA_PKCS1_v1_5_ENCODE start\n");
-> +
-> +       if (!RSA_ASN1_templates[hash_algo].data)
-> +               ret = -ENOTSUPP;
-> +       else
-> +               pks->pkey_hash_algo = hash_algo;
-> +
-> +       /* 1) Apply the hash function to the message M to produce a hash value H */
-> +       tfm = crypto_alloc_shash(pkey_hash_algo[hash_algo], 0, 0);
-> +       if (IS_ERR(tfm))
-> +               return (PTR_ERR(tfm) == -ENOENT) ? -ENOPKG : PTR_ERR(tfm);
-> +
-> +       desc_size = crypto_shash_descsize(tfm) + sizeof(*desc);
-> +       digest_size = crypto_shash_digestsize(tfm);
-> +
-> +       ret = -ENOMEM;
-> +
-> +       digest = kzalloc(digest_size + desc_size, GFP_KERNEL);
-> +       if (!digest)
-> +               goto error_digest;
-> +       pks->digest = digest;
-> +       pks->digest_size = digest_size;
-> +
-> +       if (hash) {
-> +               desc = (void *) digest + digest_size;
-> +               desc->tfm = tfm;
-> +               desc->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
-> +
-> +               ret = crypto_shash_init(desc);
-> +               if (ret < 0)
-> +                       goto error_shash;
-> +               ret = crypto_shash_finup(desc, M, sizeof(M), pks->digest);
-> +               if (ret < 0)
-> +                       goto error_shash;
-> +       } else {
-> +               memcpy(pks->digest, M, pks->digest_size);
-> +               pks->digest_size = digest_size;
-> +       }
-> +       crypto_free_shash(tfm);
-> +
-> +       /* 2) Encode the algorithm ID for the hash function and the hash value into
-> +        * an ASN.1 value of type DigestInfo with the DER. Let T be the DER encoding of
-> +        * the DigestInfo value and let tLen be the length in octets of T.
-> +        */
-> +       tLen = RSA_ASN1_templates[hash_algo].size + pks->digest_size;
-> +       T = kmalloc(tLen, GFP_KERNEL);
-> +       if (!T)
-> +               goto error_T;
-> +
+--DRL6iNjCceenODkoGtIA3TOmsuj8cbFR2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-as I said, remove it... see bellow....
+On 15-09-2013 19:33, Guenter Roeck wrote:
+> On 09/15/2013 03:02 PM, Eduardo Valentin wrote:
+>> This patch adds to tmp102 temperature sensor the possibility
+>> to expose itself as thermal zone device, registered on the
+>> thermal framework.
+>>
+>> The thermal zone is built only if a device tree node
+>> describing a thermal zone for this sensor is present
+>> inside the tmp102 DT node. Otherwise, the driver behavior
+>> will be the same.
+>>
+>> Cc: Jean Delvare <khali@linux-fr.org>
+>> Cc: Guenter Roeck <linux@roeck-us.net>
+>> Cc: lm-sensors@lm-sensors.org
+>> Cc: linux-kernel@vger.kernel.org
+>> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+>> ---
+>>   drivers/hwmon/tmp102.c | 28 ++++++++++++++++++++++++++++
+>>   1 file changed, 28 insertions(+)
+>>
+>> diff --git a/drivers/hwmon/tmp102.c b/drivers/hwmon/tmp102.c
+>> index d7b47ab..e432444 100644
+>> --- a/drivers/hwmon/tmp102.c
+>> +++ b/drivers/hwmon/tmp102.c
+>> @@ -27,6 +27,8 @@
+>>   #include <linux/mutex.h>
+>>   #include <linux/device.h>
+>>   #include <linux/jiffies.h>
+>> +#include <linux/thermal.h>
+>> +#include <linux/of.h>
+>>
+>>   #define    DRIVER_NAME "tmp102"
+>>
+>> @@ -50,6 +52,7 @@
+>>
+>>   struct tmp102 {
+>>       struct device *hwmon_dev;
+>> +    struct thermal_zone_device *tz;
+>>       struct mutex lock;
+>>       u16 config_orig;
+>>       unsigned long last_update;
+>> @@ -93,6 +96,19 @@ static struct tmp102 *tmp102_update_device(struct
+>> i2c_client *client)
+>>       return tmp102;
+>>   }
+>>
+>> +static int tmp102_read_temp(void *dev, long *temp)
+>> +{
+>> +    struct tmp102 *tmp102 =3D tmp102_update_device(to_i2c_client(dev)=
+);
+>> +
+>> +    if (tmp102->temp[0] < 0)
+>> +        dev_warn(tmp102->hwmon_dev,
+>> +             "operating in negative temp: %d\n", tmp102->temp[0]);
+>> +
+>=20
+> Please drop this warning.
+>=20
 
-> +       memcpy(T, RSA_ASN1_templates[hash_algo].data, RSA_ASN1_templates[hash_algo].size);
-> +       memcpy(T + RSA_ASN1_templates[hash_algo].size, pks->digest, pks->digest_size);
-> +
-> +       /* 3) check If emLen < tLen + 11, output "intended encoded message length too short" */
-> +       if (emLen < tLen + 11) {
-> +               ret = -EINVAL;
-> +               goto error_emLen;
-> +       }
-> +
-> +       /* 4) Generate an octet string PS consisting of emLen - tLen - 3 octets with 0xff. */
-> +       PS = kmalloc(emLen - tLen - 3, GFP_KERNEL);
-> +       if (!PS)
-> +               goto error_P;
-> +
-as I said remove it...
-see bellow..
+Done for both drivers.
 
-> +       for (i = 0; i < (emLen - tLen - 3); i++)
-> +               PS[i] = 0xff;
-> +
+> Guenter
+>=20
+>> +    *temp =3D tmp102->temp[0];
+>> +
+>> +    return 0;
+>> +}
+>> +
+>>   static ssize_t tmp102_show_temp(struct device *dev,
+>>                   struct device_attribute *attr,
+>>                   char *buf)
+>> @@ -204,6 +220,16 @@ static int tmp102_probe(struct i2c_client *client=
+,
+>>           goto fail_remove_sysfs;
+>>       }
+>>
+>> +    tmp102->tz =3D thermal_zone_of_sensor_register(&client->dev, 0,
+>> +                             &client->dev,
+>> +                             tmp102_read_temp, NULL);
+>> +    if (IS_ERR(tmp102->tz)) {
+>> +        dev_warn(&client->dev,
+>> +             "Could not parse thermal data in device tree: %ld\n",
+>> +             PTR_ERR(tmp102->tz));
+>=20
+> Please drop this warning. You already create error messages in
+> thermal_zone_of_sensor_register(). That should be sufficient.
+> The same applies to the lm75 patch.
 
-memset() does not work here?
+OK. Done for both.
 
-> +       /* 5) Concatenate PS, the DER encoding T, and other padding to form the encoded
-> +        * message EM as EM = 0x00 || 0x01 || PS || 0x00 || T
-> +        */
-> +       EM_tmp = kmalloc(3 + emLen - tLen - 3 + tLen, GFP_KERNEL);
-> +       if (!EM_tmp)
-> +               goto error_EM;
-> +
-> +       EM_tmp[0] = 0x00;
-> +       EM_tmp[1] = 0x01;
+>=20
+> As a side note, I would suggest to provide devm_ functions for
+> registration.
+> We are introducing those for hwmon registration, which enables us to re=
+move
+> most _remove functions. It would be great if we can keep it that way.
+>=20
 
-> +       memcpy(EM_tmp + 2, PS, emLen - tLen - 3);
-> +       EM_tmp[2 + emLen - tLen - 3] = 0x00;
+Right. This side note is taken. Actually this is on my todo list for
+quite a while. But I believe this should not block this series, should
+it? I will be probably cleaning the thermal framework code after this
+current work is accepted at least.
 
-           above 2 lines can be replaced by:
+> On a higher level, I don't think it is a good idea to make thermal zone=
+s
+> and thermal zone data mandatory. Many systems may neither need nor want=
+ it.
+>=20
 
-           PS = &EM_tmp[2];
-           PS_len = emLen - tLen - 3
-           memset(PS, 0xff, PS_len);
-           EM_tmp[2 + PS_len] = 0x00;
+Well, I agree with you. Did you see something hard required in the patch
+I sent. I made it so that it could continue the driver probe without
+thermal zones, as you requested.
 
 
-> +       memcpy(EM_tmp + 2 + emLen - tLen - 3 + 1, T, tLen);
-> +
-       This can be replaced by:
+I will repost both patches in reply to our thread.
 
-         T = &EM_tmp[2+ PS_Len + 1];
-         memcpy(T, RSA_ASN1_templates[hash_algo].data,
-RSA_ASN1_templates[hash_algo].size);
-         memcpy(T + RSA_ASN1_templates[hash_algo].size, pks->digest,
-pks->digest_size);
+Eduardo
 
-> +       *EM = EM_tmp;
-> +
-> +       kfree(PS);
-> +       kfree(T);
-> +
-
-Right? So please remove unneeded allocations...
-
-Dmitry
-
-> +       return 0;
-> +
-> +error_EM:
-> +       kfree(PS);
-> +error_P:
-> +error_emLen:
-> +       kfree(T);
-> +error_T:
-> +error_shash:
-> +       kfree(digest);
-> +error_digest:
-> +       crypto_free_shash(tfm);
-> +       return ret;
-> +}
-> +
-> +/*
->   * Perform the RSA signature verification.
->   * @H: Value of hash of data and metadata
->   * @EM: The computed signature value
-> @@ -275,9 +402,43 @@ static struct public_key_signature *RSA_generate_signature(
->                 const struct private_key *key, u8 *M,
->                 enum pkey_hash_algo hash_algo, const bool hash)
->  {
-> +       struct public_key_signature *pks;
-> +       u8 *EM = NULL;
-> +       size_t emLen;
-> +       int ret;
-> +
->         pr_info("RSA_generate_signature start\n");
->
-> -       return 0;
-> +       ret = -ENOMEM;
-> +       pks = kzalloc(sizeof(*pks), GFP_KERNEL);
-> +       if (!pks)
-> +               goto error_no_pks;
-> +
-> +       /* 1): EMSA-PKCS1-v1_5 encoding: */
-> +       /* Use the private key modulus size to be EM length */
-> +       emLen = mpi_get_nbits(key->rsa.n);
-> +       emLen = (emLen + 7) / 8;
-> +
-> +       ret = EMSA_PKCS1_v1_5_ENCODE(M, emLen, hash_algo, hash, &EM, pks);
-> +       if (ret < 0)
-> +               goto error_v1_5_encode;
-> +
-> +       /* TODO 2): m = OS2IP (EM) */
-> +
-> +       /* TODO 3): s = RSASP1 (K, m) */
-> +
-> +       /* TODO 4): S = I2OSP (s, k) */
-> +
-> +       /* TODO: signature S to a u8* S or set to sig->rsa.s? */
-> +       pks->S = EM;            /* TODO: temporary set S to EM */
-> +
-> +       return pks;
-> +
-> +error_v1_5_encode:
-> +       kfree(pks);
-> +error_no_pks:
-> +       pr_info("<==%s() = %d\n", __func__, ret);
-> +       return ERR_PTR(ret);
->  }
->
->  const struct public_key_algorithm RSA_public_key_algorithm = {
-> diff --git a/include/crypto/public_key.h b/include/crypto/public_key.h
-> index d44b29f..1cdf457 100644
-> --- a/include/crypto/public_key.h
-> +++ b/include/crypto/public_key.h
-> @@ -110,6 +110,8 @@ extern void public_key_destroy(void *payload);
->  struct public_key_signature {
->         u8 *digest;
->         u8 digest_size;                 /* Number of bytes in digest */
-> +       u8 *S;                          /* signature S of length k octets */
-> +       size_t k;                       /* length k of signature S */
->         u8 nr_mpi;                      /* Occupancy of mpi[] */
->         enum pkey_hash_algo pkey_hash_algo : 8;
->         union {
-> --
-> 1.6.0.2
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-crypto" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Guenter
+>=20
+>> +        tmp102->tz =3D NULL;
+>> +    }
+>> +
+>>       dev_info(&client->dev, "initialized\n");
+>>
+>>       return 0;
+>> @@ -220,6 +246,8 @@ static int tmp102_remove(struct i2c_client *client=
+)
+>>   {
+>>       struct tmp102 *tmp102 =3D i2c_get_clientdata(client);
+>>
+>> +    /* thermal zone life cycle is not our responsibility */
+>> +    thermal_zone_of_sensor_unregister(&client->dev, tmp102->tz);
+>>       hwmon_device_unregister(tmp102->hwmon_dev);
+>>       sysfs_remove_group(&client->dev.kobj, &tmp102_attr_group);
+>>
+>>
+>=20
+>=20
+>=20
 
 
+--=20
+You have got to be excited about what you are doing. (L. Lamport)
 
--- 
-Thanks,
-Dmitry
+Eduardo Valentin
+
+
+--DRL6iNjCceenODkoGtIA3TOmsuj8cbFR2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iF4EAREIAAYFAlI4190ACgkQCXcVR3XQvP3GHQD7BSUEBuqajjm7XMykeo4s84gh
+YvCXQ3BdSnWdNxFAFzEA+gOqYkg5KhWl04akhJi7zDXBCG8PXjgLMo3SIYcrywbq
+=xKEY
+-----END PGP SIGNATURE-----
+
+--DRL6iNjCceenODkoGtIA3TOmsuj8cbFR2--
