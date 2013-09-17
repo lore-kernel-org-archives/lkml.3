@@ -1,115 +1,345 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752035Ab3IQHCS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 03:02:18 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:34663 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355Ab3IQHCQ (ORCPT
+	id S1752058Ab3IQHEN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 03:04:13 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:7576 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338Ab3IQHEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 03:02:16 -0400
-Date: Tue, 17 Sep 2013 17:01:24 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus <torvalds@linux-foundation.org>
-Subject: linux-next: old trees
-Message-Id: <20130917170124.0afa2e103a9977355ad7c72c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__17_Sep_2013_17_01_24_+1000_ugYdwK6T7JDx0cPM"
+	Tue, 17 Sep 2013 03:04:11 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 17 Sep 2013 00:04:09 -0700
+Message-ID: <5237FEEF.9050308@nvidia.com>
+Date: Tue, 17 Sep 2013 15:04:15 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Jean Delvare <khali@linux-fr.org>
+CC: "linux@roeck-us.net" <linux@roeck-us.net>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH RESEND v4] hwmon: (lm90) split set&show temp as common
+ codes
+References: <1375785417-13650-1-git-send-email-wni@nvidia.com> <20130916212908.25248fae@endymion.delvare>
+In-Reply-To: <20130916212908.25248fae@endymion.delvare>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__17_Sep_2013_17_01_24_+1000_ugYdwK6T7JDx0cPM
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 09/17/2013 03:29 AM, Jean Delvare wrote:
+> Hi Wei,
+> 
+> On Tue, 6 Aug 2013 18:36:57 +0800, Wei Ni wrote:
+>> Split set&show temp codes as common functions, so we can use it
+>> directly when implement linux thermal framework.
+>> And handle error return value for the lm90_select_remote_channel
+>> and write_tempx, then set_temp8 and set_temp11 could return it
+>> to user-space.
+>>
+>> Signed-off-by: Wei Ni <wni@nvidia.com>
+>> ---
+>>  drivers/hwmon/lm90.c |  150 +++++++++++++++++++++++++++++++++-----------------
+>>  1 file changed, 99 insertions(+), 51 deletions(-)
+>>
+>> diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
+>> index cdff742..6de8e01 100644
+>> --- a/drivers/hwmon/lm90.c
+>> +++ b/drivers/hwmon/lm90.c
+>> @@ -422,20 +422,29 @@ static int lm90_read16(struct i2c_client *client, u8 regh, u8 regl, u16 *value)
+>>   * various registers have different meanings as a result of selecting a
+>>   * non-default remote channel.
+>>   */
+>> -static inline void lm90_select_remote_channel(struct i2c_client *client,
+>> +static inline int lm90_select_remote_channel(struct i2c_client *client,
+>>                                             struct lm90_data *data,
+>>                                             int channel)
+>>  {
+>>       u8 config;
+>> +     int err = 0;
+> 
+> You don't have to initialize err, as you return immediately when an
+> error happens. You can just...
 
-Hi all,
+Got it, I will change it.
 
-This message is bcc'd to each of the contacts for the trees listed below,
-so apologies if you get two copies.
+> 
+>>
+>>       if (data->kind == max6696) {
+>>               lm90_read_reg(client, LM90_REG_R_CONFIG1, &config);
+>>               config &= ~0x08;
+>>               if (channel)
+>>                       config |= 0x08;
+>> -             i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1,
+>> -                                       config);
+>> +             err = i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1,
+>> +                                             config);
+>> +             if (err < 0) {
+>> +                     dev_err(&client->dev,
+>> +                             "Failed to select remote channel %d, err %d\n",
+>> +                             channel, err);
+>> +                     return err;
+>> +             }
+>>       }
+>> +
+>> +     return err;
+> 
+> ... return 0 here.
+> 
+>>  }
+>>
+>>  /*
+>> @@ -702,29 +711,34 @@ static u16 temp_to_u16_adt7461(struct lm90_data *data, long val)
+>>   * Sysfs stuff
+>>   */
+>>
+>> -static ssize_t show_temp8(struct device *dev, struct device_attribute *devattr,
+>> -                       char *buf)
+>> +static int read_temp8(struct device *dev, int index)
+>>  {
+>> -     struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+>>       struct lm90_data *data = lm90_update_device(dev);
+>>       int temp;
+>>
+>>       if (data->kind == adt7461)
+>> -             temp = temp_from_u8_adt7461(data, data->temp8[attr->index]);
+>> +             temp = temp_from_u8_adt7461(data, data->temp8[index]);
+>>       else if (data->kind == max6646)
+>> -             temp = temp_from_u8(data->temp8[attr->index]);
+>> +             temp = temp_from_u8(data->temp8[index]);
+>>       else
+>> -             temp = temp_from_s8(data->temp8[attr->index]);
+>> +             temp = temp_from_s8(data->temp8[index]);
+>>
+>>       /* +16 degrees offset for temp2 for the LM99 */
+>> -     if (data->kind == lm99 && attr->index == 3)
+>> +     if (data->kind == lm99 && index == 3)
+>>               temp += 16000;
+>>
+>> -     return sprintf(buf, "%d\n", temp);
+>> +     return temp;
+>>  }
+>>
+>> -static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
+>> -                      const char *buf, size_t count)
+>> +static ssize_t show_temp8(struct device *dev, struct device_attribute *devattr,
+>> +                       char *buf)
+>> +{
+>> +     struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+>> +
+>> +     return sprintf(buf, "%d\n", read_temp8(dev, attr->index));
+>> +}
+>> +
+>> +static int write_temp8(struct device *dev, int index, long val)
+>>  {
+>>       static const u8 reg[8] = {
+>>               LM90_REG_W_LOCAL_LOW,
+>> @@ -737,60 +751,79 @@ static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
+>>               MAX6659_REG_W_REMOTE_EMERG,
+>>       };
+>>
+>> -     struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+>>       struct i2c_client *client = to_i2c_client(dev);
+>>       struct lm90_data *data = i2c_get_clientdata(client);
+>> -     int nr = attr->index;
+>> -     long val;
+>>       int err;
+>>
+>> -     err = kstrtol(buf, 10, &val);
+>> -     if (err < 0)
+>> -             return err;
+>> -
+>>       /* +16 degrees offset for temp2 for the LM99 */
+>> -     if (data->kind == lm99 && attr->index == 3)
+>> +     if (data->kind == lm99 && index == 3)
+>>               val -= 16000;
+>>
+>>       mutex_lock(&data->update_lock);
+>>       if (data->kind == adt7461)
+>> -             data->temp8[nr] = temp_to_u8_adt7461(data, val);
+>> +             data->temp8[index] = temp_to_u8_adt7461(data, val);
+>>       else if (data->kind == max6646)
+>> -             data->temp8[nr] = temp_to_u8(val);
+>> +             data->temp8[index] = temp_to_u8(val);
+>>       else
+>> -             data->temp8[nr] = temp_to_s8(val);
+>> -
+>> -     lm90_select_remote_channel(client, data, nr >= 6);
+>> -     i2c_smbus_write_byte_data(client, reg[nr], data->temp8[nr]);
+>> -     lm90_select_remote_channel(client, data, 0);
+>> +             data->temp8[index] = temp_to_s8(val);
+>>
+>> +     err = lm90_select_remote_channel(client, data, index >= 6);
+>> +     err |= i2c_smbus_write_byte_data(client, reg[index], data->temp8[index]);
+>> +     err |= lm90_select_remote_channel(client, data, 0);
+> 
+> You can't use |= for error codes. Imagine that
+> lm90_select_remote_channel() returns -EIO (-5) and
+> i2c_smbus_write_byte_data() returns -EAGAIN (-11), err will have value
+> -EPERM (-1) which makes no sense. You have to report errors as soon as
+> they happen so that the error code isn't lost.
+> 
+> What you can do is:
+> 
+>         if ((err = f1(...)) ||
+>             (err = f2(...)) ||
+>             (err = f3(...))) {
+>                 dev_err(...);
+>                 return err;
+>         }
+> 
+> I think checkpatch will complain about that construct but me, I'm fine
+> with it.
 
-I have been inspired to check the ages of the trees included in
-linux-next.  Below I have listed all the trees that have not been
-commited to in the past 6 months.  Please let me know if the tree is not
-longer in use.  I don't mind keeping these trees in linux-next if they
-will have continued use, but would like to remove any that are no longer
-needed.
+Ok, I will do it.
 
-Tree		Last commit
-----		-----------
-4xx		1 year, 4 months ago
-apm		1 year, 5 months ago
-asm-generic	9 months ago
-audit		1 year, 8 months ago
-audit-current	1 year, 8 months ago
-configfs	1 year, 10 months ago
-cpupowerutils	1 year, 7 months ago
-cputime		1 year, 9 months ago
-davinci		2 years, 2 months ago
-dwmw2		6 months ago
-dwmw2-iommu	9 months ago
-embedded	5 years ago
-firmware	4 years, 4 months ago
-fsnotify	9 months ago
-fw-nohz		10 months ago
-hsi		1 year, 8 months ago
-hwpoison	2 years, 11 months ago
-hwspinlock	2 years ago
-ibft		1 year, 9 months ago
-isci		1 year, 2 months ago
-ixp4xx		7 months ago
-jc_docs		2 years, 6 months ago
-kconfig		12 months ago
-kgdb		7 months ago
-logfs		10 months ago
-lzo-update	7 months ago
-ocfs2		1 year, 1 month ago
-omfs		1 year, 11 months ago
-openrisc	6 months ago
-osd		9 months ago
-parisc		8 months ago
-pcmcia		1 year, 7 months ago
-pstore		6 months ago
-random		7 months ago
-sh		7 months ago
-sh-current	1 year, 2 months ago
-swiotlb		11 months ago
-sysctl		1 year, 6 months ago
-tmem		11 months ago
-uclinux		7 months ago
-unicore32	10 months ago
-uprobes		1 year, 6 months ago
-viafb		1 year, 6 months ago
+> 
+>> +     if (err)
+>> +             dev_err(dev, "write_temp8 failed!\n");
+>>       mutex_unlock(&data->update_lock);
+>> +
+>> +     return err;
+>> +}
+>> +
+>> +static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
+>> +                      const char *buf, size_t count)
+>> +{
+>> +     struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+>> +     int index = attr->index;
+>> +     long val;
+>> +     int err;
+>> +
+>> +     err = kstrtol(buf, 10, &val);
+>> +     if (err < 0)
+>> +             return err;
+>> +
+>> +     err = write_temp8(dev, index, val);
+>> +     if (err < 0)
+>> +             return err;
+>> +
+>>       return count;
+>>  }
+>>
+>> -static ssize_t show_temp11(struct device *dev, struct device_attribute *devattr,
+>> -                        char *buf)
+>> +static int read_temp11(struct device *dev, int index)
+>>  {
+>> -     struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
+>>       struct lm90_data *data = lm90_update_device(dev);
+>>       int temp;
+>>
+>>       if (data->kind == adt7461)
+>> -             temp = temp_from_u16_adt7461(data, data->temp11[attr->index]);
+>> +             temp = temp_from_u16_adt7461(data, data->temp11[index]);
+>>       else if (data->kind == max6646)
+>> -             temp = temp_from_u16(data->temp11[attr->index]);
+>> +             temp = temp_from_u16(data->temp11[index]);
+>>       else
+>> -             temp = temp_from_s16(data->temp11[attr->index]);
+>> +             temp = temp_from_s16(data->temp11[index]);
+>>
+>>       /* +16 degrees offset for temp2 for the LM99 */
+>> -     if (data->kind == lm99 &&  attr->index <= 2)
+>> +     if (data->kind == lm99 && index <= 2)
+>>               temp += 16000;
+>>
+>> -     return sprintf(buf, "%d\n", temp);
+>> +     return temp;
+>>  }
+>>
+>> -static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
+>> -                       const char *buf, size_t count)
+>> +static ssize_t show_temp11(struct device *dev, struct device_attribute *devattr,
+>> +                        char *buf)
+>> +{
+>> +     struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
+>> +
+>> +     return sprintf(buf, "%d\n", read_temp11(dev, attr->index));
+>> +}
+>> +
+>> +static int write_temp11(struct device *dev, int nr, int index, long val)
+>>  {
+>>       struct {
+>>               u8 high;
+>> @@ -804,18 +837,10 @@ static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
+>>               { LM90_REG_W_REMOTE_HIGHH, LM90_REG_W_REMOTE_HIGHL, 1 }
+>>       };
+>>
+>> -     struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
+>>       struct i2c_client *client = to_i2c_client(dev);
+>>       struct lm90_data *data = i2c_get_clientdata(client);
+>> -     int nr = attr->nr;
+>> -     int index = attr->index;
+>> -     long val;
+>>       int err;
+>>
+>> -     err = kstrtol(buf, 10, &val);
+>> -     if (err < 0)
+>> -             return err;
+>> -
+>>       /* +16 degrees offset for temp2 for the LM99 */
+>>       if (data->kind == lm99 && index <= 2)
+>>               val -= 16000;
+>> @@ -830,15 +855,38 @@ static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
+>>       else
+>>               data->temp11[index] = temp_to_s8(val) << 8;
+>>
+>> -     lm90_select_remote_channel(client, data, reg[nr].channel);
+>> -     i2c_smbus_write_byte_data(client, reg[nr].high,
+>> +     err = lm90_select_remote_channel(client, data, reg[nr].channel);
+>> +     err |= i2c_smbus_write_byte_data(client, reg[nr].high,
+>>                                 data->temp11[index] >> 8);
+>>       if (data->flags & LM90_HAVE_REM_LIMIT_EXT)
+>> -             i2c_smbus_write_byte_data(client, reg[nr].low,
+>> -                                       data->temp11[index] & 0xff);
+>> -     lm90_select_remote_channel(client, data, 0);
+>> +             err |= i2c_smbus_write_byte_data(client, reg[nr].low,
+>> +                                             data->temp11[index] & 0xff);
+>> +     err |= lm90_select_remote_channel(client, data, 0);
+>> +     if (err)
+>> +             dev_err(dev, "write_temp11 failed !\n");
+> 
+> Same here, you can't use |=.
+> 
+> Also, no space needed before exclamation marks in English.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Oh, you reviewed so carefully, thanks.
 
---Signature=_Tue__17_Sep_2013_17_01_24_+1000_ugYdwK6T7JDx0cPM
-Content-Type: application/pgp-signature
+> 
+>>
+>>       mutex_unlock(&data->update_lock);
+>> +
+>> +     return err;
+>> +}
+>> +
+>> +static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
+>> +                       const char *buf, size_t count)
+>> +{
+>> +     struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
+>> +     int nr = attr->nr;
+>> +     int index = attr->index;
+>> +     long val;
+>> +     int err;
+>> +
+>> +     err = kstrtol(buf, 10, &val);
+>> +     if (err < 0)
+>> +             return err;
+>> +
+>> +     err = write_temp11(dev, nr, index, val);
+>> +     if (err < 0)
+>> +             return err;
+>> +
+>>       return count;
+>>  }
+>>
+> 
+> --
+> Jean Delvare
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.21 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSN/5KAAoJEECxmPOUX5FEfmEQAJA1Q8roqFRXsr+xD4Cqw9QJ
-mpmhbR5il0FMwrb9pgLJzO3bHhBZn+sOHgKUCSs2wXsbeLU4pYZ00GiM9zqcw4Ns
-LVzTT0bvQaC4F5svo2fLWzk8ShJ4UK5JhXCbRMtHZF4ZVsfdSF3at1j0I4S8/ST2
-iG0j3zSpynyJdwRCIp1P2+kbVVHLhQLUFqa7jpjmZelX4QP0nYXeFXKW1M09dhVA
-0L4pqgzHn6V0e7wTnGp9JDSYsylEtF23FPTGca9hAco8Brg9VCPgLoNXnChR4fbD
-Mu0nHDwhFstvf1ZThjbjZzxd0Vot2MYqPcV+47VKFmpkotj5kdLEeDAom4XAhrhb
-7AI85JPvX0PPcxp/vHWsEfDGZ8+cfWpobTnsTaInOy/F2Ji8m9FQFyHpCj7cr+VV
-o45YdBFj1oyZ9SCTUCNUgMM+7P0me7R9c7yDhHmZ1jJy6x8gNGXCVNZq5ooTSZsy
-L9Hf+Izl9D+HBVP3ek8UOo0LPf3ZJXHZ4LRXy/bC0PPFYAEGNfQz/4mAmbbzZBZC
-ak27e4JaiP8AcLMhiXG/fJ6xhZupQQIcLK+Zy6Q9CPHwMg3Jh9wBSUsQ+G9jJ7KT
-5tNJqrzl+XiE0pz3tiIprgE7kWF5U7LM4hw1hr5GaaDK8oL+nqwij4vmt1Tuq9PQ
-7aDLAP6RKiCMZ1Ean3Ye
-=3Ucm
------END PGP SIGNATURE-----
-
---Signature=_Tue__17_Sep_2013_17_01_24_+1000_ugYdwK6T7JDx0cPM--
