@@ -1,67 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046Ab3IQBOV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Sep 2013 21:14:21 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:62948 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751489Ab3IQBOR (ORCPT
+	id S1752088Ab3IQBQE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Sep 2013 21:16:04 -0400
+Received: from mail-yh0-f45.google.com ([209.85.213.45]:61937 "EHLO
+	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751697Ab3IQBQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Sep 2013 21:14:17 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mark Brown <broonie@kernel.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kevin Hilman <khilman@linaro.org>, linux-i2c@vger.kernel.org,
-        Wolfram Sang <wsa@the-dreams.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lv Zheng <lv.zheng@intel.com>, Aaron Lu <aaron.lu@intel.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH v2 1/9] i2c: prepare runtime PM support for I2C client devices
-Date: Tue, 17 Sep 2013 03:25:25 +0200
-Message-ID: <1820315.QOOAzSjac3@vostro.rjw.lan>
-User-Agent: KMail/4.10.5 (Linux/3.11.0+; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20130916233111.GB21013@sirena.org.uk>
-References: <1378913560-2752-1-git-send-email-mika.westerberg@linux.intel.com> <1861747.RtS0ZLgUUN@vostro.rjw.lan> <20130916233111.GB21013@sirena.org.uk>
+	Mon, 16 Sep 2013 21:16:01 -0400
+X-Greylist: delayed 434 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Sep 2013 21:16:00 EDT
+Message-ID: <5237AB9A.1030604@gmail.com>
+Date: Mon, 16 Sep 2013 18:08:42 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: Josef Bacik <jbacik@fusionio.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-btrfs@vger.kernel.org,
+        walken@google.com, mingo@elte.hu, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rwsem: add rwsem_is_contended
+References: <1377872041-390-1-git-send-email-jbacik@fusionio.com> <20130916160547.371b74f91511a42ac263449e@linux-foundation.org> <20130917000516.GJ2446@localhost.localdomain> <5237A257.1070303@gmail.com> <5237A461.3010802@hurleysoftware.com>
+In-Reply-To: <5237A461.3010802@hurleysoftware.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, September 17, 2013 12:31:11 AM Mark Brown wrote:
-> On Mon, Sep 16, 2013 at 09:07:07PM +0200, Rafael J. Wysocki wrote:
-> 
-> > That may be left to the client driver altogether.  I mean, if the client wants
-> > the controller to be powered up, it should just call
-> > pm_runtime_get_sync(controller device) at a suitable place (and then do the
-> > corresponding _put when the controller is not necessary anu more) from its
-> > ->probe() callback.
-> 
-> It shouldn't even need to do that, it should just be able to rely on the
-> controller to power itself up when asked to do work.   This is how the
-> existing implementations are done - the controller power management is
-> totally transparent to the slave.
+On 09/16/2013 05:37 PM, Peter Hurley wrote:
+> On 09/16/2013 08:29 PM, David Daney wrote:
+>> On 09/16/2013 05:05 PM, Josef Bacik wrote:
+>>> On Mon, Sep 16, 2013 at 04:05:47PM -0700, Andrew Morton wrote:
+>>>> On Fri, 30 Aug 2013 10:14:01 -0400 Josef Bacik <jbacik@fusionio.com>
+>>>> wrote:
+>>>>
+>>>>> Btrfs uses an rwsem to control access to its extent tree.  Threads
+>>>>> will hold a
+>>>>> read lock on this rwsem while they scan the extent tree, and if
+>>>>> need_resched()
+>>>>> they will drop the lock and schedule.  The transaction commit needs
+>>>>> to take a
+>>>>> write lock for this rwsem for a very short period to switch out the
+>>>>> commit
+>>>>> roots.  If there are a lot of threads doing this caching operation
+>>>>> we can starve
+>>>>> out the committers which slows everybody out.  To address this we
+>>>>> want to add
+>>>>> this functionality to see if our rwsem has anybody waiting to take
+>>>>> a write lock
+>>>>> so we can drop it and schedule for a bit to allow the commit to
+>>>>> continue.
+>>>>> Thanks,
+>>>>>
+>>>>
+>>>> This sounds rather nasty and hacky.  Rather then working around a
+>>>> locking shortcoming in a caller it would be better to fix/enhance the
+>>>> core locking code.  What would such a change need to do?
+>>>>
+>>>> Presently rwsem waiters are fifo-queued, are they not?  So the commit
+>>>> thread will eventually get that lock.  Apparently that's not working
+>>>> adequately for you but I don't fully understand what it is about these
+>>>> dynamics which is causing observable problems.
+>>>>
+>>>
+>>> So the problem is not that its normal lock starvation, it's more our
+>>> particular
+>>> use case that is causing the starvation.  We can have lots of people
+>>> holding
+>>> readers and simply never give them up for long periods of time, which
+>>> is why we
+>>> need this is_contended helper so we know to drop things and let the
+>>> committer
+>>> through.  Thanks,
+>>
+>> You could easily achieve the same thing by putting an "is_contending"
+>> flag in parallel with the rwsem and testing that:
+>
+> Which adds a bunch more bus-locked operations to contended over
 
-If both the I2C client and I2C controller have corresponding objects in the
-ACPI namespace and the client's object is a child of the controller's object,
-then in order to power up the client we need to power up the controller even
-if no transactions are going to be carried out.  That's what the spec simply
-requires us to do in that case.
+Would that be a problem in this particular case?  Has it been measured?
 
-Thanks,
-Rafael
+> , when
+> a unlocked if (list_empty()) is sufficient.
 
+I don't object to adding rwsem_is_contended() *if* it is required.  I 
+was just pointing out that there may be other options.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+The patch adds a bunch of new semantics to rwsem.  There is a trade off 
+between increased complexity of core code, and generalizing subsystem 
+specific optimizations that may not be globally useful.
+
+Is it worth it in this case?  I do not know.
+
+<insert quote relating to occam's razor>
+
+David Daney
+
