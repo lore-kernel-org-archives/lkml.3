@@ -1,90 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753756Ab3IQTJO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 15:09:14 -0400
-Received: from lmv.inov.pt ([146.193.64.2]:56544 "EHLO lmv.inov.pt"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753180Ab3IQTJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 15:09:11 -0400
-Message-ID: <5238A8B1.9080105@inov.pt>
-Date: Tue, 17 Sep 2013 20:08:33 +0100
-From: =?ISO-8859-1?Q?Jos=E9_Miguel_Gon=E7alves?= <jose.goncalves@inov.pt>
+	id S1753814Ab3IQTJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 15:09:29 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:46199 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753789Ab3IQTJ2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 15:09:28 -0400
+Message-ID: <5238A8E6.4000506@hurleysoftware.com>
+Date: Tue, 17 Sep 2013 15:09:26 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Tomasz Figa <t.figa@samsung.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: Re: [PATCH] serial: samsung: add support for manual RTS setting
-References: <1378894107-7904-1-git-send-email-jose.goncalves@inov.pt> <35383907.gKXZyKLrYq@amdc1227> <52385327.9020706@inov.pt> <2486439.1yKjlWu5X1@amdc1227>
-In-Reply-To: <2486439.1yKjlWu5X1@amdc1227>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-INOV-EmailServer-Information: Please contact the Email service provider for more information
-X-INOV-EmailServer: Found to be clean
-X-INOV-EmailServer-From: jose.goncalves@inov.pt
+To: johnflux <johnflux@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Deadlock in fb and tty
+References: <CAHQ6N+pQpfmG-b_9iv0Ajg5EYPjfEK0=KYcQa0DLVmyN8VKZrQ@mail.gmail.com> <52308D47.409@hurleysoftware.com> <1378992144394-718779.post@n7.nabble.com>
+In-Reply-To: <1378992144394-718779.post@n7.nabble.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17-09-2013 16:21, Tomasz Figa wrote:
-> I had the following scenario in mind:
-> 1) enable CRTSCTS,
-> 2) set RTS status using the IOCTL,
-> 3) disable CRTSCTS,
-> 4) do something,
-> 5) enable CRTSCTS again.
+On 09/12/2013 09:22 AM, johnflux wrote:
+> The following seems to be better:
 >
-> I would expect that the value set in point 2 would be still valid after
-> point 5, while it will be reset.
-
-Maybe I'm missing something but, as I see it, as soon as you enable AFC in the 
-UART controller the RTS pin is no more manually controllable, so after point 5 the 
-pin is set automattically by the controller according with the Rx FIFO contents. 
-Don't you want to say instead that the value set in 2) will be valid in 4)?
-
+>  From d93c1e9761ff66365d658da7d8d0d33823aa946f Mon Sep 17 00:00:00 2001
+> From: John Tapsell<johnflux@gmail.com>
+> Date: Thu, 12 Sep 2013 09:16:12 +0100
+> Subject: [PATCH] Fix deadlock between fb_info and console.  Do not lock
+>   fb_info when calling sending the FB_EVENT_CONBLANK
 >
->> Regarding port capability, if it's decided to validate it in
->> s3c24xx_serial_get_mctrl() and s3c24xx_serial_set_mctrl() it should also
->> be validated here. The question is how to validate for the full spectrum
->> of SoCs that this driver supports?
-> Hmm, since the driver is already broken in this aspect, ignoring this in
-> your patch might be fine for now. A follow up patch fixing this would be
-> welcome, though. However I don't have any good idea how to implement this
-> at the moment.
+> In fbmem.c, the semantics are that we acquire the lock_fb_info first,
+> and then console_lock.  However when fbcon.c fbcon_generic_blank() is
+> called, the console lock could already be held.  Locking fb_info can
+> thus cause a deadlock.
 >
-> First thing that comes to my mind is using the variant data structures to
-> store information about per port capability (different port FIFO sizes are
-> already handled like this), but this would imply splitting some of the
-> groups, as S5PC100 supports modem control for different subset of ports
-> than S3C64xx, while they both use the same variant data.
+> fbmem.c sends the FB_EVENT_BLANK without locking lock_fb_info first, so
+> this change introduces similar behaviour.
+> ---
+>   drivers/video/console/fbcon.c | 4 ----
+>   1 file changed, 4 deletions(-)
 >
-> Using device tree, this could be passed as an extra property, but some of
-> the platforms using samsung serial driver can be booted without device
-> tree, so it wouldn't cover all the cases.
-
-So, as I understand, for now is enough to resubmit the patch with the UMCON 
-register setting in s3c24xx_serial_set_termios() preserving the previous manual 
-setting of the RTS pin, correct? I was thinking in something like this:
-
-     umcon = rd_regb(port, S3C2410_UMCON);
-     if (termios->c_cflag & CRTSCTS) {
-         umcon |= S3C2410_UMCOM_AFC;
-         umcon &= ~S3C2412_UMCON_AFC_8; // Disable RTS when RX FIFO contains 63 bytes
-     } else {
-         umcon &= ~S3C2410_UMCOM_AFC;
-     }
-     wr_regl(port, S3C2410_UMCON, umcon);
-
-> Best regards,
-> Tomasz
+> diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
+> index 6b4fb5c..8546441 100644
+> --- a/drivers/video/console/fbcon.c
+> +++ b/drivers/video/console/fbcon.c
+> @@ -2333,13 +2333,9 @@ static void fbcon_generic_blank(struct vc_data *vc,
+> struct fb_info *info,
+>                  vc->vc_video_erase_char = oldc;
+>          }
 >
-> P.S. Please remember to add all the relevant people to Cc when sending
-> patches. You can use scripts/get_maintainer.pl to find them.
+> -
+> -       if (!lock_fb_info(info))
+> -               return;
+>          event.info = info;
+>          event.data = &blank;
+>          fb_notifier_call_chain(FB_EVENT_CONBLANK, &event);
+> -       unlock_fb_info(info);
+>   }
+>
+>   static int fbcon_blank(struct vc_data *vc, int blank, int mode_switch)
+> -- 1.8.1.2
 
-OK, sorry for that.
+> How can I get this reviewed/acked please?
 
-Bet regards,
-José Gonçalves
+The get_maintainer.pl script can help to discover to whom to
+address patches. For example,
+
+peter@thor:~/src/kernels/next$ ./scripts/get_maintainer.pl -f drivers/video/console/fbcon.c
+Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com> (maintainer:FRAMEBUFFER LAYER)
+Tomi Valkeinen <tomi.valkeinen@ti.com> (maintainer:FRAMEBUFFER LAYER)
+Dave Airlie <airlied@redhat.com> (commit_signer:5/11=45%)
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> (commit_signer:4/11=36%)
+Wang YanQing <udknight@gmail.com> (commit_signer:4/11=36%)
+Andrew Morton <akpm@linux-foundation.org> (commit_signer:3/11=27%)
+Kamal Mostafa <kamal@whence.com> (commit_signer:1/11=9%)
+linux-fbdev@vger.kernel.org (open list:FRAMEBUFFER LAYER)
+linux-kernel@vger.kernel.org (open list)
+
+In this case, you'll want to send this patch addressed to the two maintainers
+and cc linux-fbdev and linux-kernel. You can cc me if you want.
+
+This is covered in Documentation/SubmittingPatches, which also covers the
+required subject line format <hint: too long, needs subsystem identifier>.
+
+Also, if you have the lockdep report of the deadlock, it's customary to
+include it in the commit message.
+
+Regards,
+Peter Hurley
+
+PS - Don't put stuff after the '--' tag at the end of the patch. Many
+mailers treat that as don't care. I missed your question first time around
+because Thunderbird grays that text :(
+
