@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068Ab3IQHZn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 03:25:43 -0400
-Received: from mga02.intel.com ([134.134.136.20]:32646 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751763Ab3IQHZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 03:25:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,921,1371106800"; 
-   d="scan'208";a="379345903"
-Subject: [PATCH] ahci: Changing two module params with static and
- __read_mostly
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: tj@kernel.org
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        chuansheng.liu@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 18 Sep 2013 00:48:38 +0800
-Message-ID: <1379436518.26153.31.camel@cliu38-desktop-build>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1752168Ab3IQH0r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 03:26:47 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:59799 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751763Ab3IQH0n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 03:26:43 -0400
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+Date: Tue, 17 Sep 2013 09:26:41 +0200
+Message-ID: <CA+icZUWPG2PQx3-c=UeRsad=qbPY=iXyqSGpEhD8RdXdHkHuzQ@mail.gmail.com>
+Subject: Re: linux-next stats (Was: Linux 3.12-rc1)
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-next <linux-next@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Stephen,
 
-Here module parameters ahci_em_messages and devslp_idle_timeout can
-be set as static and __read_mostly.
+I am subscribed to linux-next but I did not receive [1].
+If you did not CC linux-next, can you do this next time?
+Thanks.
 
-Signed-off-by: Liu, Chuansheng <chuansheng.liu@intel.com>
----
- drivers/ata/libahci.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+Your stats have a lot of number, I am not sure if I read/interpret
+them correctly.
+Just one number is interesting for me:
+How many commits/patches were taken from Linux-next tree 1:1 into v3.12-rc1?
+Percentage of them to the total number of commits v3.11..v3.12-rc1?
+IOW: How successful is Linux-next?
 
-diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
-index acfd0f7..1757631 100644
---- a/drivers/ata/libahci.c
-+++ b/drivers/ata/libahci.c
-@@ -189,14 +189,15 @@ struct ata_port_operations ahci_pmp_retry_srst_ops = {
- };
- EXPORT_SYMBOL_GPL(ahci_pmp_retry_srst_ops);
- 
--int ahci_em_messages = 1;
-+static int ahci_em_messages __read_mostly = 1;
- EXPORT_SYMBOL_GPL(ahci_em_messages);
- module_param(ahci_em_messages, int, 0444);
- /* add other LED protocol types when they become supported */
- MODULE_PARM_DESC(ahci_em_messages,
- 	"AHCI Enclosure Management Message control (0 = off, 1 = on)");
- 
--int devslp_idle_timeout = 1000;	/* device sleep idle timeout in ms */
-+/* device sleep idle timeout in ms */
-+static int devslp_idle_timeout __read_mostly = 1000;
- module_param(devslp_idle_timeout, int, 0644);
- MODULE_PARM_DESC(devslp_idle_timeout, "device sleep idle timeout");
- 
--- 
-1.7.9.5
+I am irritated by the number of SHA-IDs vs. number of subject-lines.
+If those patches went into v3.12-rc1 from Linux-next both should be
+nearly the same.
+Can you explain that?
+
+How many trees of maintainers/submaintainers were taken from their
+"for-next" trees [2]?
+IOW: Without any changes, special preperations "for-linus" (aka
+"for-v3.12-rc1")?
+IOW #2: How effective work maintainers :-)!
+
+To summarize: I am interested in what went from -next to -rc1 in the
+last merge-window.
+
+Thanks for clarification in advance.
+
+Regards,
+- Sedat -
+
+P.S.: While digging through the scripts-dir I found "diffconfig". For
+your stats I highly recommend to see which Kconfig-options are 1. new
+2. changed (name or Y|M|N, especially M->Y).
 
 
-
+[1] http://marc.info/?l=linux-kernel&m=137939708327120&w=2
+[2] http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/Next/Trees
