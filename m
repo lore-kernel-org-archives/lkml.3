@@ -1,104 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751529Ab3IQGBB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 02:01:01 -0400
-Received: from mga14.intel.com ([143.182.124.37]:15783 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751349Ab3IQGA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 02:00:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.90,920,1371106800"; 
-   d="scan'208";a="361535758"
-From: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>
-To: Thomas Meyer <thomas@m3y3r.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ilw <ilw@linux.intel.com>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>
-Subject: RE: [Ilw] 3.10.10-rt7: inconsistent lock state (iwlwifi)
-Thread-Topic: [Ilw] 3.10.10-rt7: inconsistent lock state (iwlwifi)
-Thread-Index: AQHOsyNJ8bUgZCxMZkyUVL1GjuiAsJnJbpHw
-Date: Tue, 17 Sep 2013 06:00:54 +0000
-Message-ID: <0BA3FCBA62E2DC44AF3030971E174FB301DB078F@HASMSX103.ger.corp.intel.com>
-References: <1379365850.3828.3.camel@localhost.localdomain>
-In-Reply-To: <1379365850.3828.3.camel@localhost.localdomain>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.12]
-Content-Type: text/plain; charset="utf-8"
+	id S1751648Ab3IQGGL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 02:06:11 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42576 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab3IQGGJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 02:06:09 -0400
+Message-ID: <5237F147.1020302@ti.com>
+Date: Tue, 17 Sep 2013 11:35:59 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
+To: Joel Fernandes <joelf@ti.com>
+CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Russell King <linux@arm.linux.org.uk>, Jyri Sarah <jsarha@ti.com>,
+        Koen Kooi <koen@beagleboard.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Pantel Antoniou <panto@antoniou-consulting.com>
+Subject: Re: [PATCH v3] ARM: EDMA: Fix clearing of unused list for DT DMA
+ resources
+References: <1378839171-14455-1-git-send-email-joelf@ti.com> <5231903F.7080301@ti.com> <5233B471.40603@ti.com> <5236F00B.5040605@ti.com> <5237314D.7080102@ti.com> <5237E3C3.8050602@ti.com> <5237EAF3.70505@ti.com>
+In-Reply-To: <5237EAF3.70505@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r8H61WVV009569
+
+On Tuesday 17 September 2013 11:08 AM, Joel Fernandes wrote:
+> On 09/17/2013 12:08 AM, Sekhar Nori wrote:
+> [..]
+>>>> I still cannot find any users of edma in the device tree sources either
+>>>> in linux-next or linus/master. Why cannot this wait until v3.13?
+>>>
+>>> I understand this affects only DT users of EDMA. But I get so many private
+>>> reports of breakage due to this patch not being there that I think it will save
+>>> everyone a lot of pain, specially folks creating integration trees to have this
+>>> patch available by default.
+>>
+>> Well, I do agree that the current DT support for EDMA is incomplete
+>> without this patch even if there are no in-kernel users of it. I will
+>> try sending this for the next -rc if we get to the final version in time
+>> and after that its upto the upstreams to take it.
+> 
+> Ok, except for the one minor nit below my last scissor patch is good to go.
+> 
+>>>>> +
+>>>>> +			ctlr = EDMA_CTLR(dma_spec.args[0]);
+>>>>> +			clear_bit(EDMA_CHAN_SLOT(dma_spec.args[0]),
+>>>>> +				  edma_cc[ctlr]->edma_unused);
+>>>>
+>>>> We don't support the second controller when using DT and the controller
+>>>> number is not really encoded in the argument to edma phandle. So just
+>>>> simplify this to:
+>>>>
+>>>> 	clear_bit(EDMA_CHAN_SLOT(dma_spec.args[0]), 	
+>>>> 		  edma_cc[0]->edma_unused);
+>>>
+>>> I think let's not make that assumption just incase in the future we support more
+>>> than one EDMA controller for DT-based boot. Is that ok?
+>>
+>> We don't write future proof code in that _hope_ that it will get used
+>> someday.  In fact this will confuse the reader into wondering if support
+>> for second channel controller is present or not as the code will send
+> 
+> Nope I don't agree with this at all.. EDMA CC ctrl will not be hardcoded. We
+> need to write future-proof code to make sure sudden regressions don't pop up
+> when say a second EDMA CC is introduced.. further edma_cc[ctrl] pattern is used
+
+I am not sure why you call this a regression. There is no support for
+second channel controller. If someone wants to add that support there is
+a lot to worry about than just these two lines of code. So, no, there
+wont be "sudden regressions that pop up" like you say. Look at the probe
+routine. There is no way the second CC is going to get probed.
+
+> all through out the code so what you're asking to do doesn't make much sense in
+> this context. There's no reason to break out of this pattern. It actually will
+> confuse the reader more.
+
+Thats because that code is also used for existing platform data based
+approach. If you are adding code paths which just get exercised with DT,
+no point referring to the second channel controller since that does not
+exist.
 
 > 
-> lockdep complains about this:
- 
-> 
-> [   92.094870]        CPU0
-> [   92.094871]        ----
-> [   92.094872]   lock(&trans_pcie->irq_lock);
-> [   92.094873]   <Interrupt>
-> [   92.094875]     lock(&trans_pcie->irq_lock);
-> [   92.094875]
->  *** DEADLOCK ***
+> Second controller can be present in future. I don't want to come back to change
+> the code when we introduce more than 1 CC which is possible in the future.
 
-Sorry by I am not aware of all the details of RT kernels.
-What I see here is that we always disable interrupts when we take trans_pcie->irq_lock so I don't see how this flow is possible - at least not in the world I know. Can you please elaborate on why this is possible in the RT world?
-
-Thanks.
+You *will* have to come back and change the code to support the second
+channel controller. That is true with or without this patch. So lets
+stop arguing like the second channel controller support is only blocked
+because of these two lines of code.
 
 > 
-> [   92.094877] 1 lock held by systemd-journal/1002:
-> [   92.094882]  #0:  (&mm->mmap_sem){+++++.}, at: [<ffffffff8152d04c>]
-> __do_page_fault+0x1cc/0x5a0
-> [   92.094883]
-> stack backtrace:
-> [   92.094885] CPU: 0 PID: 1002 Comm: systemd-journal Not tainted 3.10.10-
-> rt7 #5
-> [   92.094887] Hardware name: Acer Aspire 1810T/JM11-MS, BIOS v1.3310
-> 03/25/2010
-> [   92.094890]  ffffffff81fd95f0 ffffffff81a21cf0 ffffffff81525783
-> ffffffff81a21d40
-> [   92.094893]  ffffffff81522347 0000000000000000 ffff880100000000
-> ffffffff00000001
-> [   92.094895]  0000000000000002 ffff88013734d050 ffffffff8107d420
-> 0000000000000000
-> [   92.094896] Call Trace:
-> [   92.094902]  <IRQ>  [<ffffffff81525783>] dump_stack+0x19/0x1b
-> [   92.094905]  [<ffffffff81522347>] print_usage_bug+0x1fb/0x20c
-> [   92.094909]  [<ffffffff8107d420>] ? check_usage_backwards+0x140/0x140
-> [   92.094912]  [<ffffffff8107de3a>] mark_lock+0x23a/0x2c0
-> [   92.094914]  [<ffffffff8107ec4f>] __lock_acquire+0x7ff/0x1a60
-> [   92.094918]  [<ffffffff8152d04c>] ? __do_page_fault+0x1cc/0x5a0
-> [   92.094920]  [<ffffffff81080622>] lock_acquire+0x62/0x80
-> [   92.094927]  [<ffffffffa015587c>] ? iwl_pcie_isr_ict+0x2c/0x2d0 [iwlwifi]
-> [   92.094930]  [<ffffffff81529360>] rt_spin_lock+0x40/0x50
-> [   92.094936]  [<ffffffffa015587c>] ? iwl_pcie_isr_ict+0x2c/0x2d0 [iwlwifi]
-> [   92.094943]  [<ffffffffa015587c>] iwl_pcie_isr_ict+0x2c/0x2d0 [iwlwifi]
-> [   92.094948]  [<ffffffff810a88d5>] handle_irq_event_percpu+0x55/0x180
-> [   92.094951]  [<ffffffff810a8a38>] handle_irq_event+0x38/0x60
-> [   92.094954]  [<ffffffff810aab7f>] handle_edge_irq+0x6f/0x140
-> [   92.094956]  [<ffffffff81003ae9>] handle_irq+0x19/0x30
-> [   92.094959]  [<ffffffff810039b5>] do_IRQ+0x45/0xb0
-> [   92.094962]  [<ffffffff8152a22d>] common_interrupt+0x6d/0x6d
-> [   92.094966]  <EOI>  [<ffffffff8152d04c>] ? __do_page_fault+0x1cc/0x5a0
-> [   92.094969]  [<ffffffff810806e0>] ? lock_release_non_nested+0xa0/0x300
-> [   92.094973]  [<ffffffff8106196d>] ? get_parent_ip+0xd/0x50
-> [   92.094976]  [<ffffffff8152a2c9>] ? retint_swapgs+0xe/0x13
-> [   92.094980]  [<ffffffff8123ed3d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
-> [   92.094983]  [<ffffffff8152d429>] do_page_fault+0x9/0x10
-> [   92.094985]  [<ffffffff8152a502>] page_fault+0x22/0x30
-> [   92.288725] iwlwifi 0000:02:00.0: L1 Enabled; Disabling L0S
-> [   92.291849] iwlwifi 0000:02:00.0: Radio type=0x1-0x2-0x0
-> [   92.422236] IPv6: ADDRCONF(NETDEV_UP): wlan0: link is not ready
+>> mixed messages. In short, we aim for consistency with situation today,
+>> not tomorrow.
 > 
+> What you're asking to do infact breaks consistency with the rest of the code.
+
+Well, ideally we support second CC even with DT to be consistent all
+around. Since that has not happened, I don't want the code to pretend
+that it it supports the second channel controller with DT that too only
+in parts of code.
+
 > 
-> _______________________________________________
-> ilw mailing list
-> ilw@linux.intel.com
-> http://linux.intel.com/mailman/listinfo/ilw
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>>
+>> Besides, I can bet that when second CC support does get added, it is
+>> very unlikely that the CC number is get encoded into channel number when
+>> using DT.
+> 
+> Even if it is not encoded, the data structure for edma_cc is an array and what
+> you're asking is to hardcode the controller number to 0 always. No way I'm going
+> to hard code controller number to a single value.
+
+You are missing the point. Look at the code. You are extracting
+controller number from dma_spec.args[0] which is directly the value
+present in DT. The binding today does not specify that the value be
+encoded with controller number. So I will have not have code that
+interprets it that way.
+
+The code follows from bindings, not the other way around.
+
+> 
+> Different topic but anyway why wouldn't ctrl number be encoded in the channel?
+> That's clean, and saves variables and extra structures. Better use of the
+> integer bitmap making up the Ctrl and channel number of small ranges.
+
+Lets have this discussion when you update the bindings to support the
+second controller.
+
+Thanks,
+Sekhar
