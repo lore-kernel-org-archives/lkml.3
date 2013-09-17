@@ -1,134 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134Ab3IQJgX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 05:36:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37436 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751584Ab3IQJgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 05:36:21 -0400
-Date: Tue, 17 Sep 2013 12:36:19 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Andrew Jones <drjones@redhat.com>
-Cc: kvm@vger.kernel.org, pbonzini@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [RFC] x86: kvm: remove KVM_SOFT_MAX_VCPUS
-Message-ID: <20130917093619.GW17294@redhat.com>
-References: <1379161011-28239-1-git-send-email-drjones@redhat.com>
- <20130915090322.GV17294@redhat.com>
- <20130916082208.GA2101@hawk.usersys.redhat.com>
- <20130916085517.GK17294@redhat.com>
- <20130916114725.GA14981@hawk.usersys.redhat.com>
- <20130916144118.GB906@redhat.com>
- <20130916152226.GA17256@hawk.usersys.redhat.com>
+	id S1752332Ab3IQJgt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 05:36:49 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33641 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751584Ab3IQJgs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 05:36:48 -0400
+Date: Tue, 17 Sep 2013 11:36:22 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Mike Dunn <mikedunn@newsguy.com>
+Cc: thierry.reding@gmail.com, Richard Purdie <rpurdie@rpsys.net>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-pwm@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Robert Jarzmik <robert.jarzmik@free.fr>,
+        Marek Vasut <marex@denx.de>
+Subject: Re: [PATCH] pwm-backlight: allow for non-increasing brightness levels
+Message-ID: <20130917093622.GB30088@pengutronix.de>
+References: <1379010952-8928-1-git-send-email-mikedunn@newsguy.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130916152226.GA17256@hawk.usersys.redhat.com>
+In-Reply-To: <1379010952-8928-1-git-send-email-mikedunn@newsguy.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 11:31:33 up 23 days, 19:02, 49 users,  load average: 0.05, 0.07,
+ 0.09
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 16, 2013 at 05:22:26PM +0200, Andrew Jones wrote:
-> On Mon, Sep 16, 2013 at 05:41:18PM +0300, Gleb Natapov wrote:
-> > On Mon, Sep 16, 2013 at 01:47:26PM +0200, Andrew Jones wrote:
-> > > On Mon, Sep 16, 2013 at 11:55:17AM +0300, Gleb Natapov wrote:
-> > > > On Mon, Sep 16, 2013 at 10:22:09AM +0200, Andrew Jones wrote:
-> > > > > > > [1] Actually, until 972fc544b6034a in uq/master is merged there won't be
-> > > > > > >     any warnings either.
-> > > > > > > 
-> > > > > > > Signed-off-by: Andrew Jones <drjones@redhat.com>
-> > > > > > > ---
-> > > > > > >  arch/x86/include/asm/kvm_host.h | 1 -
-> > > > > > >  arch/x86/kvm/x86.c              | 2 +-
-> > > > > > >  2 files changed, 1 insertion(+), 2 deletions(-)
-> > > > > > > 
-> > > > > > > diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> > > > > > > index c76ff74a98f2e..9236c63315a9b 100644
-> > > > > > > --- a/arch/x86/include/asm/kvm_host.h
-> > > > > > > +++ b/arch/x86/include/asm/kvm_host.h
-> > > > > > > @@ -32,7 +32,6 @@
-> > > > > > >  #include <asm/asm.h>
-> > > > > > >  
-> > > > > > >  #define KVM_MAX_VCPUS 255
-> > > > > > > -#define KVM_SOFT_MAX_VCPUS 160
-> > > > > > >  #define KVM_USER_MEM_SLOTS 125
-> > > > > > >  /* memory slots that are not exposed to userspace */
-> > > > > > >  #define KVM_PRIVATE_MEM_SLOTS 3
-> > > > > > > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> > > > > > > index e5ca72a5cdb6d..d9d3e2ed68ee9 100644
-> > > > > > > --- a/arch/x86/kvm/x86.c
-> > > > > > > +++ b/arch/x86/kvm/x86.c
-> > > > > > > @@ -2604,7 +2604,7 @@ int kvm_dev_ioctl_check_extension(long ext)
-> > > > > > >  		r = !kvm_x86_ops->cpu_has_accelerated_tpr();
-> > > > > > >  		break;
-> > > > > > >  	case KVM_CAP_NR_VCPUS:
-> > > > > > > -		r = KVM_SOFT_MAX_VCPUS;
-> > > > > > > +		r = min(num_online_cpus(), KVM_MAX_VCPUS);
-> > > > > > s/KVM_MAX_VCPUS/KVM_SOFT_MAX_VCPUS/.  Also what about hotplug cpus?
-> > > > > 
-> > > > > I'll send a v2 with this change.
-> > > > > 
-> > > > > I thought a bit about hotplug, and thus using num_possible_cpus()
-> > > > > instead, but then decided it made more sense to stick to what's online now
-> > > > > for the recommended number. It's just a recommendation anyway. So as long
-> > > > > as KVM_MAX_VCPUS is >= num_possible_cpus(), then one can still configure
-> > > > > more vcpus to count for all hotplugable cpus, if they wish.
-> > > > > 
-> > > > It is just recommended, but we do warn about it, so it is user visible.
-> > > > Well, the whole point of it existence is to be user visible ;). If user
-> > > > creates a guest with max cpus greater than current number if online
-> > > > cpus, taking into account feature grows, he will get a warning, but we
-> > > > should not warn about it.
-> > > 
-> > > Even it if means the user may end up running, e.g. 128 vcpus on 96 pcpus
-> > > indefinitely? I'd rather warn about it, which could remind them to offline
-> > > 32 vcpus for the time being.
-> > But there are other means to detect number of online cpus:
-> > sysconf(_SC_NPROCESSORS_ONLN). Actually you can determine number of
-> > possible cpus too with _SC_NPROCESSORS_CONF, so returning those values
-> > as KVM_CAP_NR_VCPUS does not provide any additional information. What
-> > if QEMU process is bound to two cores on 64 core host, do you want to
-> > warn if qemu is created with more then 2 vcpus in such case? You can do
-> > that too with pthread_setaffinity_np(). 
-> > 
-> > >                               Although, as we're just discussing when or
-> > > when not to output a warning, then I'm not really stressed about it either
-> > > way. I can certainly change this to num_possible_cpus(), if all are in
-> > > agreement that that is a better recommendation.
-> > > 
-> > With this patch we only reduce information available to userspace. QEMU
-> > can already obtain all the information it needs to produce meaningful
-> > warning.
-> 
-> All good points. We're still left with the fact that KVM_CAP_NR_VCPU
-> currently returns a distro-specific number though, which can only be
-> modified by changing a constant embedded in the source. So I still believe
-> that a config option is in order, but now you're convincing me that the
-> option should adjust KVM_SOFT_MAX_VCPUS instead. The default should also
-> remain distro-neutral, so I vote 255. We'd then change the defines to be
-> 
-> #define KVM_SOFT_MAX_VCPUS CONFIG_KVM_SOFT_MAX_VCPUS
-> #define KVM_MAX_VCPUS KVM_SOFT_MAX_VCPUS
-> 
-So you make KVM_MAX_VCPUS same as KVM_SOFT_MAX_VCPUS, what's the point
-to have both then? KVM_MAX_VCPUS is max number of cpu that KVM supports
-because of architectural and/or implementation reasons. Current maximum
-is 255 because this is what X2APIC supports without interrupt remapping
-and we cannot grow this number without additional coding.
-KVM_SOFT_MAX_VCPUS is the number we (upstream) feel single VM can
-safely scale to, the feeling is backed up by some amount of testing of
-course. It may make sense for downstream to change this value, but if
-they want to lower it I'd rather get bug reports from them that we are
-not as scalable as we claim, and if they want to make it large I want to
-hear about their successful testing too.
+Hi Mike,
 
-> distros can then configure something lower than 255 (160), and developers
-> can configure anything they want. Neither will create a warning gap unless
-> the developer manually changes the KVM_MAX_VCPUS define to create one.
-> 
-As I said in other email KVM_SOFT_MAX_VCPUS/KVM_MAX_VCPUS distinction
-was introduce precisely to avoid recompilation requirements. Not everyone
-who is interested in running VM with 255 vcpus want to recompile the
-kernel or have permission to do so.
+On Thu, Sep 12, 2013 at 11:35:52AM -0700, Mike Dunn wrote:
+> Currently the driver assumes that the values specified in the brightness-levels
+> device tree property increase as they are parsed from left to right.  But boards
+> that invert the signal between the PWM output and the backlight will need to
+> specify decreasing brightness-levels.  This patch removes the assumption that
+> the last element of the array is the max value, and instead searches the array
+> for the max value and uses that as the normalizing value when determining the
+> duty cycle.
 
---
-			Gleb.
+Note there's also support for inverted PWMs in the PWM framework
+provided your hardware supports this.
+
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
