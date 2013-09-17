@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752625Ab3IQKns (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 06:43:48 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:41816 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752566Ab3IQKnr (ORCPT
+	id S1752505Ab3IQKsJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 06:48:09 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:42804 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752207Ab3IQKsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 06:43:47 -0400
+	Tue, 17 Sep 2013 06:48:07 -0400
+Date: Tue, 17 Sep 2013 13:47:54 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] pinctrl: remove an unnecessary cast
+Message-ID: <20130917104754.GA29918@elgon.mountain>
 MIME-Version: 1.0
-In-Reply-To: <CAPUj1OMjwnFS01R0DQxss0j6svUD4Rdx-B5B1ONdPR=C_520yQ@mail.gmail.com>
-References: <CAPUj1OMjwnFS01R0DQxss0j6svUD4Rdx-B5B1ONdPR=C_520yQ@mail.gmail.com>
-Date: Tue, 17 Sep 2013 16:13:46 +0530
-Message-ID: <CAPUj1ON2cdOD4aSo0E2xwDyz8W6Mbyjpw-z59Po9YiWbF+rVTA@mail.gmail.com>
-Subject: Re: [V3,3/7] ARM: dts: Add gpio-button entries for Arndale board
-From: MJ embd <mj.embd@gmail.com>
-To: linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Tushar Behera <tushar.behera@linaro.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PS:Adding linux kernel for a larger forum comments
+sizeof() is already size_t so there is no need to cast here.  Generally,
+casting inside the min() macro instead of using min_t() is considered
+bad style.
 
-Hi Linaro,
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-I am trying to attach interrupt handlers to the push buttons on the
-arndale board.
-Your patch adds in dts information on the push buttons
-
-menu {
-+                       label = "SW-TACT2";
-+                       gpios = <&gpx1 4 1>;
-+                       linux,code = <139>;
-+                       gpio-key,wakeup;
-+               };
-
-I assume that <139> is the GPU number in base 10. Is this correct ?
-Also what is the significance of gpx1 and 4 1 ?
-
-As per my understanding if 139 the GPIO number then it should be
-mapped to a GPIO register where the state Input/ouput/Interrupt has to
-be set.
-
-I am not able to find that register in the
-"Exynos_5_Dual_User_Manaul_Public_REV100-0", All I could find a set of
-GPXXXX registers but no mapping between <139> and those registers.
-
-Can anyone explain the steps, on how to associate the push button to INT (IRQ)
-
-Thanks in Advance..
+diff --git a/drivers/pinctrl/pinconf.c b/drivers/pinctrl/pinconf.c
+index a138965..abe66d4 100644
+--- a/drivers/pinctrl/pinconf.c
++++ b/drivers/pinctrl/pinconf.c
+@@ -508,7 +508,7 @@ static int pinconf_dbg_config_write(struct file *file,
+ 	int i;
+ 
+ 	/* Get userspace string and assure termination */
+-	buf_size = min(count, (size_t)(sizeof(buf)-1));
++	buf_size = min(count, sizeof(buf) - 1);
+ 	if (copy_from_user(buf, user_buf, buf_size))
+ 		return -EFAULT;
+ 	buf[buf_size] = 0;
