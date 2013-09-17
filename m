@@ -1,47 +1,931 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293Ab3IQOy7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 10:54:59 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51399 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753008Ab3IQOy5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 10:54:57 -0400
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: lee.jones@linaro.org
-Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: wm5110: Update noise gate default to match the patch file
-Date: Tue, 17 Sep 2013 15:44:20 +0100
-Message-Id: <1379429060-10610-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
+	id S1753346Ab3IQO4k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 10:56:40 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:60069 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752827Ab3IQO4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 10:56:38 -0400
+Message-ID: <52386D64.4030306@mm-sol.com>
+Date: Tue, 17 Sep 2013 17:55:32 +0300
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Georgi Djakov <gdjakov@mm-sol.com>
+CC: linux-mmc@vger.kernel.org, cjb@laptop.org, grant.likely@linaro.org,
+        rob.herring@calxeda.com, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Asutosh Das <asutoshd@codeaurora.org>,
+        Venkat Gopalakrishnan <venkatg@codeaurora.org>,
+        Sahitya Tummala <stummala@codeaurora.org>,
+        Subhash Jadavani <subhashj@codeaurora.org>
+Subject: Re: [PATCH v5] mmc: sdhci-msm: Add support for MSM chipsets
+References: <1379341388-20912-1-git-send-email-gdjakov@mm-sol.com>
+In-Reply-To: <1379341388-20912-1-git-send-email-gdjakov@mm-sol.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The default value for the noise gate control register is changed in the
-patch file, we need to reflect this in the defaults array, this patch
-does so.
+Hi Georgi,
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- drivers/mfd/wm5110-tables.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Thanks for the patch.
 
-diff --git a/drivers/mfd/wm5110-tables.c b/drivers/mfd/wm5110-tables.c
-index 37463f3..7668d7a 100644
---- a/drivers/mfd/wm5110-tables.c
-+++ b/drivers/mfd/wm5110-tables.c
-@@ -583,7 +583,7 @@ static const struct reg_default wm5110_reg_default[] = {
- 	{ 0x0000043E, 0x0080 },    /* R1086  - DAC Volume Limit 6R */
- 	{ 0x0000043F, 0x0800 },    /* R1087  - Noise Gate Select 6R */
- 	{ 0x00000450, 0x0000 },    /* R1104  - DAC AEC Control 1 */
--	{ 0x00000458, 0x0001 },    /* R1112  - Noise Gate Control */
-+	{ 0x00000458, 0x0000 },    /* R1112  - Noise Gate Control */
- 	{ 0x00000480, 0x0040 },    /* R1152  - Class W ANC Threshold 1 */
- 	{ 0x00000481, 0x0040 },    /* R1153  - Class W ANC Threshold 2 */
- 	{ 0x00000490, 0x0069 },    /* R1168  - PDM SPK1 CTRL 1 */
--- 
-1.7.2.5
+I have some commnets below.
+
+On 09/16/2013 05:23 PM, Georgi Djakov wrote:
+> This platform driver adds the support of Secure Digital Host Controller
+> Interface compliant controller found in Qualcomm MSM chipsets.
+> 
+> CC: Asutosh Das <asutoshd@codeaurora.org>
+> CC: Venkat Gopalakrishnan <venkatg@codeaurora.org>
+> CC: Sahitya Tummala <stummala@codeaurora.org>
+> CC: Subhash Jadavani <subhashj@codeaurora.org>
+> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
+> ---
+> Changes from v4:
+> - Simplified sdhci_msm_vreg_disable() and sdhci_msm_set_vdd_io_vol()
+> - Use devm_ioremap_resource() instead of devm_ioremap()
+> - Converted IS_ERR_OR_NULL to IS_ERR
+> - Disable regulators in sdhci_msm_remove()
+> - Check for DT node at the beginning in sdhci_msm_probe()
+> - Removed more redundant code
+> - Changes in some error messages
+> - Minor fixes
+> 
+> Changes from v3:
+> - Allocate memory for all required structs at once
+> - Added termination entry in sdhci_msm_dt_match[]
+> - Fixed a missing sdhci_pltfm_free() in probe()
+> - Removed redundant of_match_ptr
+> - Removed the unneeded function sdhci_msm_vreg_reset()
+> 
+> Changes from v2:
+> - Added DT bindings for clocks
+> - Moved voltage regulators data to platform data
+> - Removed unneeded includes
+> - Removed obsolete and wrapper functions
+> - Removed error checking where unnecessary
+> - Removed redundant _clk suffix from clock names
+> - Just return instead of goto where possible
+> - Minor fixes
+> 
+> Changes from v1:
+> - GPIO references are replaced by pinctrl
+> - DT parsing is done mostly by mmc_of_parse()
+> - Use of_match_device() for DT matching
+> - A few minor changes
+> 
+>  .../devicetree/bindings/mmc/sdhci-msm.txt          |   71 +++
+>  drivers/mmc/host/Kconfig                           |   13 +
+>  drivers/mmc/host/Makefile                          |    1 +
+>  drivers/mmc/host/sdhci-msm.c                       |  627 ++++++++++++++++++++
+>  4 files changed, 712 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mmc/sdhci-msm.txt
+>  create mode 100644 drivers/mmc/host/sdhci-msm.c
+> 
+> diff --git a/Documentation/devicetree/bindings/mmc/sdhci-msm.txt b/Documentation/devicetree/bindings/mmc/sdhci-msm.txt
+> new file mode 100644
+> index 0000000..ee112da
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mmc/sdhci-msm.txt
+> @@ -0,0 +1,71 @@
+> +* Qualcomm SDHCI controller (sdhci-msm)
+> +
+> +This file documents differences between the core properties in mmc.txt
+> +and the properties used by the sdhci-msm driver.
+> +
+> +Required properties:
+> +- compatible: should be "qcom,sdhci-msm"
+> +- reg: should contain SDHC, SD Core register map
+> +- reg-names: indicates various resources passed to driver (via reg proptery) by name
+> +	"reg-names" examples are "hc_mem" and "core_mem"
+> +- interrupts: should contain SDHC interrupts
+> +- interrupt-names: indicates interrupts passed to driver (via interrupts property) by name
+> +	"interrupt-names" examples are "hc_irq" and "pwr_irq"
+> +- <supply-name>-supply: phandle to the regulator device tree node
+> +	"supply-name" examples are "vdd" and "vdd-io"
+> +- pinctrl-names: Should contain only one value - "default".
+> +- pinctrl-0: Should specify pin control groups used for this controller.
+> +- clocks: phandles to clock instances of the device tree nodes
+> +- clock-names:
+> +	iface: Main peripheral bus clock (PCLK/HCLK - AHB Bus clock) (required)
+> +	core: SDC MMC clock (MCLK) (required)
+> +	bus: SDCC bus voter clock (optional)
+> +
+> +Optional properties:
+> +- qcom,bus-speed-mode - specifies supported bus speed modes by host
+> +	The supported bus speed modes are :
+> +	"HS200_1p8v" - indicates that host can support HS200 at 1.8v
+> +	"HS200_1p2v" - indicates that host can support HS200 at 1.2v
+> +	"DDR_1p8v" - indicates that host can support DDR mode at 1.8v
+> +	"DDR_1p2v" - indicates that host can support DDR mode at 1.2v
+> +
+> +In the following, <supply> can be vdd (flash core voltage) or vdd-io (I/O voltage).
+> +- qcom,<supply>-always-on - specifies whether supply should be kept "on" always.
+> +- qcom,<supply>-lpm-sup - specifies whether supply can be kept in low power mode (lpm).
+> +- qcom,<supply>-voltage-level - specifies voltage levels for supply. Should be
+> +specified in pairs (min, max), units uV.
+> +- qcom,<supply>-current-level - specifies load levels for supply in lpm or high power mode
+> +	(hpm). Should be specified in pairs (lpm, hpm), units uA.
+> +
+> +Example:
+> +
+> +	aliases {
+> +		sdhc1 = &sdhc_1;
+> +	};
+> +
+> +	sdhc_1: qcom,sdhc@f9824900 {
+> +		compatible = "qcom,sdhci-msm";
+> +		reg = <0xf9824900 0x11c>, <0xf9824000 0x800>;
+> +		reg-names = "hc_mem", "core_mem";
+> +		interrupts = <0 123 0>, <0 138 0>;
+> +		interrupt-names = "hc_irq", "pwr_irq";
+> +		bus-width = <4>;
+> +		non-removable;
+> +
+> +		vdd-supply = <&pm8941_l21>;
+> +		vdd-io-supply = <&pm8941_l13>;
+> +		qcom,vdd-voltage-level = <2950000 2950000>;
+> +		qcom,vdd-current-level = <9000 800000>;
+> +		qcom,vdd-io-always-on;
+> +		qcom,vdd-io-lpm-sup;
+> +		qcom,vdd-io-voltage-level = <1800000 2950000>;
+> +		qcom,vdd-io-current-level = <6 22000>;
+> +		qcom,bus-speed-mode = "HS200_1p8v", "DDR_1p8v";
+> +
+> +		pinctrl-names = "default";
+> +		pinctrl-0 = <&sdc1_clk &sdc1_cmd &sdc1_data>;
+> +
+> +		clocks = <&iface>, <&core>, <&bus>;
+> +		clock-names = "iface", "core", "bus";
+> +
+> +	};
+> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+> index 7fc5099..e8da488 100644
+> --- a/drivers/mmc/host/Kconfig
+> +++ b/drivers/mmc/host/Kconfig
+> @@ -322,6 +322,19 @@ config MMC_ATMELMCI
+>  
+>  	  If unsure, say N.
+>  
+> +config MMC_SDHCI_MSM
+> +	tristate "Qualcomm SDHCI Controller Support"
+> +	depends on ARCH_MSM
+> +	depends on MMC_SDHCI_PLTFM
+> +	help
+> +	  This selects the Secure Digital Host Controller Interface (SDHCI)
+> +	  support present in MSM SOCs from Qualcomm. The controller
+> +	  supports SD/MMC/SDIO devices.
+> +
+> +	  If you have a controller with this interface, say Y or M here.
+> +
+> +	  If unsure, say N.
+> +
+>  config MMC_MSM
+>  	tristate "Qualcomm SDCC Controller Support"
+>  	depends on MMC && ARCH_MSM
+> diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
+> index c41d0c3..5faed14 100644
+> --- a/drivers/mmc/host/Makefile
+> +++ b/drivers/mmc/host/Makefile
+> @@ -61,6 +61,7 @@ obj-$(CONFIG_MMC_SDHCI_OF_ESDHC)	+= sdhci-of-esdhc.o
+>  obj-$(CONFIG_MMC_SDHCI_OF_HLWD)		+= sdhci-of-hlwd.o
+>  obj-$(CONFIG_MMC_SDHCI_BCM_KONA)	+= sdhci-bcm-kona.o
+>  obj-$(CONFIG_MMC_SDHCI_BCM2835)		+= sdhci-bcm2835.o
+> +obj-$(CONFIG_MMC_SDHCI_MSM)		+= sdhci-msm.o
+>  
+>  ifeq ($(CONFIG_CB710_DEBUG),y)
+>  	CFLAGS-cb710-mmc	+= -DDEBUG
+> diff --git a/drivers/mmc/host/sdhci-msm.c b/drivers/mmc/host/sdhci-msm.c
+> new file mode 100644
+> index 0000000..c746a9b
+> --- /dev/null
+> +++ b/drivers/mmc/host/sdhci-msm.c
+> @@ -0,0 +1,627 @@
+> +/*
+> + * drivers/mmc/host/sdhci-msm.c - Qualcomm MSM SDHCI Platform
+> + * driver source file
+> + *
+> + * Copyright (c) 2013, The Linux Foundation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/of_device.h>
+> +#include <linux/pinctrl/consumer.h>
+> +#include <linux/regulator/consumer.h>
+> +
+> +#include "sdhci-pltfm.h"
+> +
+> +#define CORE_HC_MODE		0x78
+> +#define HC_MODE_EN		0x1
+> +
+> +#define CORE_POWER		0x0
+> +#define CORE_SW_RST		(1 << 7)
+> +
+> +#define CORE_PWRCTL_STATUS	0xdc
+> +#define CORE_PWRCTL_MASK	0xe0
+> +#define CORE_PWRCTL_CLEAR	0xe4
+> +#define CORE_PWRCTL_CTL		0xe8
+> +
+> +#define CORE_PWRCTL_BUS_OFF	0x01
+> +#define CORE_PWRCTL_BUS_ON	(1 << 1)
+> +#define CORE_PWRCTL_IO_LOW	(1 << 2)
+> +#define CORE_PWRCTL_IO_HIGH	(1 << 3)
+> +
+> +#define CORE_PWRCTL_BUS_SUCCESS	0x01
+> +#define CORE_PWRCTL_BUS_FAIL	(1 << 1)
+> +#define CORE_PWRCTL_IO_SUCCESS	(1 << 2)
+> +#define CORE_PWRCTL_IO_FAIL	(1 << 3)
+> +
+> +#define INT_MASK		0xf
+> +
+> +/* This structure keeps information per regulator */
+> +struct sdhci_msm_reg_data {
+> +	/* voltage regulator handle */
+
+useless comment, please remove it.
+
+> +	struct regulator *reg;
+> +	/* regulator name */
+
+useless comment
+
+> +	const char *name;
+> +	/* voltage level to be set */
+> +	u32 low_vol_level;
+> +	u32 high_vol_level;
+> +	/* Load values for low power and high power mode */
+> +	u32 lpm_uA;
+> +	u32 hpm_uA;
+> +
+> +	/* is this regulator needs to be always on? */
+> +	bool is_always_on;
+> +	/* is low power mode setting required for this regulator? */
+> +	bool lpm_sup;
+> +};
+> +
+> +struct sdhci_msm_pltfm_data {
+> +	u32 caps;				/* Supported UHS-I Modes */
+> +	u32 caps2;				/* More capabilities */
+> +	struct sdhci_msm_reg_data vdd_data;	/* VDD/VCC regulator info */
+> +	struct sdhci_msm_reg_data vdd_io_data;	/* VDD IO regulator info */
+> +};
+> +
+> +struct sdhci_msm_host {
+> +	struct platform_device *pdev;
+> +	void __iomem *core_mem;	/* MSM SDCC mapped address */
+> +	int pwr_irq;		/* power irq */
+> +	struct clk *clk;	/* main SD/MMC bus clock */
+> +	struct clk *pclk;	/* SDHC peripheral bus clock */
+> +	struct clk *bus_clk;	/* SDHC bus voter clock */
+> +	struct sdhci_msm_pltfm_data pdata;
+> +	struct mmc_host *mmc;
+> +	struct sdhci_pltfm_data sdhci_msm_pdata;
+> +};
+> +
+> +enum vdd_io_level {
+> +	/* set vdd_io_data->low_vol_level */
+> +	VDD_IO_LOW,
+> +	/* set vdd_io_data->high_vol_level */
+> +	VDD_IO_HIGH,
+> +	/*
+> +	 * set whatever there in voltage_level (third argument) of
+> +	 * sdhci_msm_set_vdd_io_vol() function.
+> +	 */
+> +	VDD_IO_SET_LEVEL,
+> +};
+> +
+> +#define MAX_PROP_SIZE 32
+> +static int sdhci_msm_dt_parse_vreg_info(struct device *dev,
+> +					struct sdhci_msm_reg_data *vreg,
+> +					const char *vreg_name)
+> +{
+> +	int len, ret = 0;
+
+ret is not used you can remove it and return 0 at the function end.
+
+> +	const __be32 *prop;
+> +	char prop_name[MAX_PROP_SIZE];
+> +	struct device_node *np = dev->of_node;
+> +
+> +	snprintf(prop_name, MAX_PROP_SIZE, "%s-supply", vreg_name);
+> +	if (!of_parse_phandle(np, prop_name, 0)) {
+> +		dev_info(dev, "No vreg data found for %s\n", vreg_name);
+> +		return -EINVAL;
+> +	}
+> +
+> +	vreg->name = vreg_name;
+> +
+> +	snprintf(prop_name, MAX_PROP_SIZE, "qcom,%s-always-on", vreg_name);
+> +	if (of_get_property(np, prop_name, NULL))
+> +		vreg->is_always_on = true;
+> +
+> +	snprintf(prop_name, MAX_PROP_SIZE, "qcom,%s-lpm-sup", vreg_name);
+> +	if (of_get_property(np, prop_name, NULL))
+> +		vreg->lpm_sup = true;
+> +
+> +	snprintf(prop_name, MAX_PROP_SIZE, "qcom,%s-voltage-level", vreg_name);
+> +	prop = of_get_property(np, prop_name, &len);
+> +	if (!prop || (len != (2 * sizeof(__be32)))) {
+> +		dev_warn(dev, "%s %s property\n",
+> +			 prop ? "invalid format" : "no", prop_name);
+> +	} else {
+> +		vreg->low_vol_level = be32_to_cpup(&prop[0]);
+> +		vreg->high_vol_level = be32_to_cpup(&prop[1]);
+> +	}
+> +
+> +	snprintf(prop_name, MAX_PROP_SIZE, "qcom,%s-current-level", vreg_name);
+> +	prop = of_get_property(np, prop_name, &len);
+> +	if (!prop || (len != (2 * sizeof(__be32)))) {
+> +		dev_warn(dev, "%s %s property\n",
+> +			 prop ? "invalid format" : "no", prop_name);
+> +	} else {
+> +		vreg->lpm_uA = be32_to_cpup(&prop[0]);
+> +		vreg->hpm_uA = be32_to_cpup(&prop[1]);
+> +	}
+> +
+> +	dev_dbg(dev, "%s: %s%svol=[%d %d]uV, curr=[%d %d]uA\n",
+> +		vreg->name, vreg->is_always_on ? "always_on, " : "",
+> +		vreg->lpm_sup ? "lpm_sup, " : "", vreg->low_vol_level,
+> +		vreg->high_vol_level, vreg->lpm_uA, vreg->hpm_uA);
+> +
+> +	return ret;
+> +}
+> +
+> +/* Parse platform data */
+
+parse devicetree data ?
+
+> +static int sdhci_msm_populate_pdata(struct device *dev,
+> +					struct sdhci_msm_pltfm_data *pdata)
+> +{
+> +	struct device_node *np = dev->of_node;
+> +	int len, i;
+> +
+> +	if (sdhci_msm_dt_parse_vreg_info(dev, &pdata->vdd_data, "vdd")) {
+> +		dev_err(dev, "failed parsing vdd data\n");
+> +		return -EINVAL;
+> +	}
+> +	if (sdhci_msm_dt_parse_vreg_info(dev, &pdata->vdd_io_data, "vdd-io")) {
+> +		dev_err(dev, "failed parsing vdd-io data\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	len = of_property_count_strings(np, "qcom,bus-speed-mode");
+> +
+> +	for (i = 0; i < len; i++) {
+> +		const char *name = NULL;
+> +
+> +		of_property_read_string_index(np,
+> +					"qcom,bus-speed-mode", i, &name);
+> +		if (!name)
+> +			continue;
+> +
+> +		if (!strncmp(name, "HS200_1p8v", sizeof("HS200_1p8v")))
+> +			pdata->caps2 |= MMC_CAP2_HS200_1_8V_SDR;
+> +		else if (!strncmp(name, "HS200_1p2v", sizeof("HS200_1p2v")))
+> +			pdata->caps2 |= MMC_CAP2_HS200_1_2V_SDR;
+> +		else if (!strncmp(name, "DDR_1p8v", sizeof("DDR_1p8v")))
+> +			pdata->caps |= MMC_CAP_1_8V_DDR | MMC_CAP_UHS_DDR50;
+> +		else if (!strncmp(name, "DDR_1p2v", sizeof("DDR_1p2v")))
+> +			pdata->caps |= MMC_CAP_1_2V_DDR | MMC_CAP_UHS_DDR50;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +/* Regulator utility functions */
+> +static int sdhci_msm_vreg_init_reg(struct device *dev,
+> +				   struct sdhci_msm_reg_data *vreg)
+> +{
+> +	int ret = 0;
+
+could you remove ret variable, please.
+
+> +	/* Get the regulator handle */
+
+useless comment
+
+> +	vreg->reg = devm_regulator_get(dev, vreg->name);
+> +	if (IS_ERR(vreg->reg)) {
+> +		ret = PTR_ERR(vreg->reg);
+> +		dev_err(dev, "devm_regulator_get(%s) failed. ret=%d\n",
+> +			vreg->name, ret);
+> +		return ret;
+
+just return PTR_ERR(vreg->reg)
+
+> +	}
+> +
+> +	/* sanity check */
+> +	if (!vreg->high_vol_level || !vreg->hpm_uA) {
+
+if this is sanity check shouldn't you check low_vol_level and lpm_uA as
+well?
+
+> +		dev_err(dev, "%s invalid constraints specified\n", vreg->name);
+> +		return -EINVAL;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int sdhci_msm_vreg_enable(struct sdhci_msm_reg_data *vreg)
+> +{
+> +	int ret = 0;
+> +
+> +	/* Put regulator in HPM (high power mode) */
+> +	ret = regulator_set_optimum_mode(vreg->reg, vreg->hpm_uA);
+> +	if (ret < 0) {
+> +		pr_err("regulator_set_optimum_mode(%s,uA_load=%d) fail (%d)\n",
+> +			vreg->name, vreg->hpm_uA, ret);
+
+use dev_err() instead.
+
+> +		return ret;
+> +	}
+> +
+> +	if (!regulator_is_enabled(vreg->reg)) {
+> +		/* Set voltage level */
+> +		ret = regulator_set_voltage(vreg->reg, vreg->high_vol_level,
+> +						vreg->high_vol_level);
+> +		if (ret)
+> +			return ret;
+> +	}
+> +
+> +	ret = regulator_enable(vreg->reg);
+> +	if (ret) {
+> +		pr_err("regulator_enable(%s) fail (%d)\n", vreg->name, ret);
+
+use dev_err().
+
+> +		return ret;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int sdhci_msm_vreg_disable(struct sdhci_msm_reg_data *vreg)
+> +{
+> +	int ret = 0;
+
+IMO no need to initialize ret variable?
+
+> +
+> +	if (!regulator_is_enabled(vreg->reg))
+> +		return 0;
+> +
+> +	/* Never disable regulator marked as always_on */
+> +	if (vreg->is_always_on) {
+> +		if (vreg->lpm_sup) {
+> +			/* Put always_on regulator in LPM (low power mode) */
+> +			ret = regulator_set_optimum_mode(vreg->reg,
+> +				vreg->lpm_uA);
+> +			if (ret < 0)
+> +				return ret;
+> +		}
+> +	} else {
+> +		ret = regulator_disable(vreg->reg);
+> +		if (ret) {
+> +			pr_err("regulator_disable(%s) fail (%d)\n",
+> +				vreg->name, ret);
+
+dev_err(), please.
+
+> +			return ret;
+> +		}
+> +
+> +		ret = regulator_set_optimum_mode(vreg->reg, 0);
+> +		if (ret < 0)
+> +			return ret;
+> +
+> +		/* Set min. voltage level to 0 */
+> +		ret = regulator_set_voltage(vreg->reg, 0, vreg->high_vol_level);
+> +		if (ret)
+> +			return ret;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int sdhci_msm_setup_vreg(struct sdhci_msm_pltfm_data *pdata,
+> +				bool enable, bool is_init)
+> +{
+> +	int ret = 0, i;
+
+no need to initialize ret variable?
+
+> +	struct sdhci_msm_reg_data *vreg_table[2];
+> +
+> +	vreg_table[0] = &pdata->vdd_data;
+> +	vreg_table[1] = &pdata->vdd_io_data;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(vreg_table); i++) {
+> +		if (vreg_table[i]) {
+
+could you invert the logic here:
+
+		if (!vreg_table[i])
+			continue;
+
+by that way you will save one tab below.
+
+> +			if (enable)
+> +				ret = sdhci_msm_vreg_enable(vreg_table[i]);
+> +			else
+> +				ret = sdhci_msm_vreg_disable(vreg_table[i]);
+> +			if (ret)
+> +				return ret;
+> +		}
+> +	}
+
+blank line ?
+
+> +	return 0;
+> +}
+> +
+> +/* This init function should be called only once for each SDHC slot */
+> +static int sdhci_msm_vreg_init(struct device *dev,
+> +				struct sdhci_msm_pltfm_data *pdata)
+> +{
+> +	struct sdhci_msm_reg_data *curr_vdd_reg = &pdata->vdd_data;
+> +	struct sdhci_msm_reg_data *curr_vdd_io_reg = &pdata->vdd_io_data;
+> +	int ret = 0;
+
+no need to initialize ret variable.
+
+> +
+> +	ret = sdhci_msm_vreg_init_reg(dev, curr_vdd_reg);
+> +	if (ret)
+> +		return ret;
+> +
+> +	ret = sdhci_msm_vreg_init_reg(dev, curr_vdd_io_reg);
+> +	if (ret)
+> +		return ret;
+> +
+> +	return 0;
+> +}
+> +
+> +static int sdhci_msm_set_vdd_io_vol(struct sdhci_msm_pltfm_data *pdata,
+> +				    enum vdd_io_level level,
+> +				    unsigned int voltage_level)
+> +{
+> +	int set_level;
+> +	struct sdhci_msm_reg_data *vdd_io_reg = &pdata->vdd_io_data;
+> +
+> +	if (!regulator_is_enabled(vdd_io_reg->reg))
+> +		return 0;
+> +
+> +	switch (level) {
+> +	case VDD_IO_LOW:
+> +		set_level = vdd_io_reg->low_vol_level;
+> +		break;
+> +	case VDD_IO_HIGH:
+> +		set_level = vdd_io_reg->high_vol_level;
+> +		break;
+> +	case VDD_IO_SET_LEVEL:
+> +		set_level = voltage_level;
+> +		break;
+> +	default:
+> +		pr_err("invalid vdd_io level = %d", level);
+> +		return -EINVAL;
+> +	}
+
+add blank line here, please.
+
+> +	return regulator_set_voltage(vdd_io_reg->reg, set_level, set_level);
+> +}
+> +
+> +static irqreturn_t sdhci_msm_pwr_irq(int irq, void *data)
+> +{
+> +	struct sdhci_msm_host *msm_host = (struct sdhci_msm_host *)data;
+> +	u8 irq_status = 0;
+> +	u8 irq_ack = 0;
+> +	int ret = 0;
+
+no need to initialize irq_status and ret, right?
+
+> +
+> +	irq_status = readb_relaxed(msm_host->core_mem + CORE_PWRCTL_STATUS);
+> +	pr_debug("%s: Received IRQ(%d), status=0x%x\n",
+> +		 mmc_hostname(msm_host->mmc), irq, irq_status);
+
+dev_dbg() ?
+
+> +
+> +	/* Clear the interrupt */
+> +	writeb_relaxed(irq_status, (msm_host->core_mem + CORE_PWRCTL_CLEAR));
+
+why you use writeb here, but in .probe you use writel?
+
+> +	/*
+> +	 * SDHC has core_mem and hc_mem device memory and these memory
+> +	 * addresses do not fall within 1KB region. Hence, any update to
+> +	 * core_mem address space would require an mb() to ensure this gets
+> +	 * completed before its next update to registers within hc_mem.
+> +	 */
+> +	mb();
+> +
+> +	/* Handle BUS ON/OFF */
+> +	if (irq_status & (CORE_PWRCTL_BUS_ON | CORE_PWRCTL_BUS_OFF)) {
+> +		bool flag = (irq_status & CORE_PWRCTL_BUS_ON) ? 1 : 0;
+> +		ret = sdhci_msm_setup_vreg(&msm_host->pdata, flag, false);
+> +		if (ret)
+> +			irq_ack |= CORE_PWRCTL_BUS_FAIL;
+> +		else
+> +			irq_ack |= CORE_PWRCTL_BUS_SUCCESS;
+> +	}
+> +	/* Handle IO LOW/HIGH */
+> +	if (irq_status & (CORE_PWRCTL_IO_LOW | CORE_PWRCTL_IO_HIGH)) {
+> +		/* Switch voltage */
+> +		int io_status = (irq_status & CORE_PWRCTL_IO_LOW) ?
+> +		    VDD_IO_LOW : VDD_IO_HIGH;
+> +		ret = sdhci_msm_set_vdd_io_vol(&msm_host->pdata, io_status, 0);
+> +		if (ret)
+> +			irq_ack |= CORE_PWRCTL_IO_FAIL;
+> +		else
+> +			irq_ack |= CORE_PWRCTL_IO_SUCCESS;
+> +	}
+> +
+> +	/* ACK status to the core */
+> +	writeb_relaxed(irq_ack, (msm_host->core_mem + CORE_PWRCTL_CTL));
+> +	/*
+> +	 * SDHC has core_mem and hc_mem device memory and these memory
+> +	 * addresses do not fall within 1KB region. Hence, any update to
+> +	 * core_mem address space would require an mb() to ensure this gets
+> +	 * completed before its next update to registers within hc_mem.
+> +	 */
+> +	mb();
+> +
+> +	pr_debug("%s: Handled IRQ(%d), ret=%d, ack=0x%x\n",
+> +		 mmc_hostname(msm_host->mmc), irq, ret, irq_ack);
+
+dev_dbg() ?
+
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +/* This function returns the max. current supported by VDD rail in mA */
+> +static u32 sdhci_msm_get_vdd_max_current(struct sdhci_msm_host *host)
+> +{
+> +	return host->pdata.vdd_data.hpm_uA / 1000;
+> +}
+> +
+> +static const struct of_device_id sdhci_msm_dt_match[] = {
+> +	{.compatible = "qcom,sdhci-msm"},
+> +	{},
+> +};
+> +
+> +MODULE_DEVICE_TABLE(of, sdhci_msm_dt_match);
+> +
+> +static int sdhci_msm_probe(struct platform_device *pdev)
+> +{
+> +	struct sdhci_host *host;
+> +	struct sdhci_pltfm_host *pltfm_host;
+> +	struct sdhci_msm_host *msm_host;
+> +	struct resource *core_memres = NULL;
+> +	int ret = 0, dead = 0;
+
+no need to initialize ret and dead variables.
+
+> +	struct pinctrl *pinctrl;
+> +
+> +	if (!pdev->dev.of_node) {
+> +		dev_err(&pdev->dev, "No device tree data\n");
+> +		return -ENOENT;
+> +	}
+> +
+> +	msm_host = devm_kzalloc(&pdev->dev, sizeof(*msm_host), GFP_KERNEL);
+> +	if (!msm_host)
+> +		return -ENOMEM;
+> +
+> +	host = sdhci_pltfm_init(pdev, &msm_host->sdhci_msm_pdata, 0);
+> +	if (IS_ERR(host)) {
+> +		dev_err(mmc_dev(host->mmc), "sdhci_pltfm_init error\n");
+> +		return PTR_ERR(host);
+> +	}
+> +
+> +	pltfm_host = sdhci_priv(host);
+> +	pltfm_host->priv = msm_host;
+> +	msm_host->mmc = host->mmc;
+> +	msm_host->pdev = pdev;
+> +
+> +	ret = mmc_of_parse(host->mmc);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "failed parsing mmc device tree\n");
+> +		goto pltfm_free;
+> +	}
+> +
+> +	/* Extract platform data */
+
+needless comment, again.
+
+> +	ret = sdhci_msm_populate_pdata(&pdev->dev, &msm_host->pdata);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "DT parsing error\n");
+> +		goto pltfm_free;
+> +	}
+> +
+> +	/* Setup pins */
+> +	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+> +	if (IS_ERR(pinctrl))
+> +		dev_warn(&pdev->dev, "pins are not configured by the driver\n");
+> +
+> +	/* Setup SDCC bus voter clock. */
+> +	msm_host->bus_clk = devm_clk_get(&pdev->dev, "bus");
+> +	if (!IS_ERR(msm_host->bus_clk)) {
+> +		/* Vote for max. clk rate for max. performance */
+> +		ret = clk_set_rate(msm_host->bus_clk, INT_MAX);
+> +		if (ret)
+> +			goto pltfm_free;
+> +		ret = clk_prepare_enable(msm_host->bus_clk);
+> +		if (ret)
+> +			goto pltfm_free;
+> +	}
+> +
+> +	/* Setup main peripheral bus clock */
+> +	msm_host->pclk = devm_clk_get(&pdev->dev, "iface");
+> +	if (!IS_ERR(msm_host->pclk)) {
+> +		ret = clk_prepare_enable(msm_host->pclk);
+> +		if (ret) {
+> +			dev_err(&pdev->dev,
+> +				"Main peripheral clock setup failed (%d)\n",
+> +				ret);
+> +			goto bus_clk_disable;
+> +		}
+> +	}
+> +
+> +	/* Setup SDC MMC clock */
+> +	msm_host->clk = devm_clk_get(&pdev->dev, "core");
+> +	if (IS_ERR(msm_host->clk)) {
+> +		ret = PTR_ERR(msm_host->clk);
+> +		dev_err(&pdev->dev, "SDC MMC clock setup failed (%d)\n", ret);
+> +		goto pclk_disable;
+> +	}
+> +
+> +	ret = clk_prepare_enable(msm_host->clk);
+> +	if (ret)
+> +		goto pclk_disable;
+> +
+> +	/* Setup regulators */
+> +	ret = sdhci_msm_vreg_init(&pdev->dev, &msm_host->pdata);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Regulator setup failed (%d)\n", ret);
+> +		goto clk_disable;
+> +	}
+> +
+> +	/* Reset the core and Enable SDHC mode */
+
+this comment should go few lines below.
+
+> +	core_memres = platform_get_resource_byname(pdev,
+> +						   IORESOURCE_MEM, "core_mem");
+> +	msm_host->core_mem = devm_ioremap_resource(&pdev->dev, core_memres);
+> +
+> +	if (IS_ERR(msm_host->core_mem)) {
+> +		dev_err(&pdev->dev, "Failed to remap registers\n");
+> +		ret = PTR_ERR(msm_host->core_mem);
+> +		goto vreg_disable;
+> +	}
+> +
+> +	/* Set SW_RST bit in POWER register (Offset 0x0) */
+
+those comments are stupid, please remove them.
+
+> +	writel_relaxed(CORE_SW_RST, msm_host->core_mem + CORE_POWER);
+> +	/* Set HC_MODE_EN bit in HC_MODE register */
+> +	writel_relaxed(HC_MODE_EN, (msm_host->core_mem + CORE_HC_MODE));
+> +
+
+are all interrupts disabled at this point?
+
+> +	/*
+> +	 * Following are the deviations from SDHC spec v3.0 -
+> +	 * 1. Card detection is handled using separate GPIO.
+> +	 * 2. Bus power control is handled by interacting with PMIC.
+> +	 */
+> +	host->quirks |= SDHCI_QUIRK_BROKEN_CARD_DETECTION;
+> +
+> +	/* Setup PWRCTL irq */
+> +	msm_host->pwr_irq = platform_get_irq_byname(pdev, "pwr_irq");
+> +	if (msm_host->pwr_irq < 0) {
+> +		dev_err(&pdev->dev, "Failed to get pwr_irq by name (%d)\n",
+> +			msm_host->pwr_irq);
+> +		goto vreg_disable;
+> +	}
+> +	ret = devm_request_threaded_irq(&pdev->dev, msm_host->pwr_irq, NULL,
+> +					sdhci_msm_pwr_irq, IRQF_ONESHOT,
+> +					dev_name(&pdev->dev), host);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Request threaded irq(%d) failed (%d)\n",
+> +			msm_host->pwr_irq, ret);
+> +		goto vreg_disable;
+> +	}
+> +
+> +	/* Enable pwr irq interrupts */
+> +	writel_relaxed(INT_MASK, (msm_host->core_mem + CORE_PWRCTL_MASK));
+> +
+> +	/* Set host capabilities */
+
+useless comment
+
+> +	msm_host->mmc->caps |= msm_host->pdata.caps;
+> +	msm_host->mmc->caps2 |= msm_host->pdata.caps2;
+> +
+> +	ret = sdhci_add_host(host);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Add host failed (%d)\n", ret);
+> +		goto vreg_disable;
+> +	}
+> +
+> +	/* Set core clk rate */
+
+useless comment
+
+> +	ret = clk_set_rate(msm_host->clk, host->max_clk);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "MClk rate set failed (%d)\n", ret);
+> +		goto remove_host;
+> +	}
+> +
+> +	host->mmc->max_current_180 = host->mmc->max_current_300 =
+> +	host->mmc->max_current_330 = sdhci_msm_get_vdd_max_current(msm_host);
+> +
+> +	/* Successful initialization */
+
+useless comment
+
+> +	return 0;
+> +
+> +remove_host:
+> +	dead = (readl_relaxed(host->ioaddr + SDHCI_INT_STATUS) == 0xffffffff);
+> +	sdhci_remove_host(host, dead);
+> +vreg_disable:
+> +	if (!IS_ERR(msm_host->pdata.vdd_data.reg))
+> +		sdhci_msm_vreg_disable(&msm_host->pdata.vdd_data);
+> +	if (!IS_ERR(msm_host->pdata.vdd_io_data.reg))
+> +		sdhci_msm_vreg_disable(&msm_host->pdata.vdd_io_data);
+> +clk_disable:
+> +	if (!IS_ERR(msm_host->clk))
+> +		clk_disable_unprepare(msm_host->clk);
+> +pclk_disable:
+> +	if (!IS_ERR(msm_host->pclk))
+> +		clk_disable_unprepare(msm_host->pclk);
+> +bus_clk_disable:
+> +	if (!IS_ERR(msm_host->bus_clk))
+> +		clk_disable_unprepare(msm_host->bus_clk);
+> +pltfm_free:
+> +	sdhci_pltfm_free(pdev);
+> +	return ret;
+> +}
+> +
+> +static int sdhci_msm_remove(struct platform_device *pdev)
+> +{
+> +	struct sdhci_host *host = platform_get_drvdata(pdev);
+> +	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+> +	struct sdhci_msm_host *msm_host = pltfm_host->priv;
+> +	int dead = (readl_relaxed(host->ioaddr + SDHCI_INT_STATUS) ==
+> +		    0xffffffff);
+> +
+> +	sdhci_remove_host(host, dead);
+> +	sdhci_pltfm_free(pdev);
+> +	sdhci_msm_vreg_disable(&msm_host->pdata.vdd_data);
+> +	sdhci_msm_vreg_disable(&msm_host->pdata.vdd_io_data);
+> +	clk_disable_unprepare(msm_host->clk);
+> +	clk_disable_unprepare(msm_host->pclk);
+> +	if (!IS_ERR(msm_host->bus_clk))
+> +		clk_disable_unprepare(msm_host->bus_clk);
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver sdhci_msm_driver = {
+> +	.probe = sdhci_msm_probe,
+> +	.remove = sdhci_msm_remove,
+> +	.driver = {
+> +		   .name = "sdhci_msm",
+> +		   .owner = THIS_MODULE,
+> +		   .of_match_table = sdhci_msm_dt_match,
+> +		   },
+
+this bracket should be under ".driver".
+
+> +};
+> +
+> +module_platform_driver(sdhci_msm_driver);
+> +
+> +MODULE_DESCRIPTION("Qualcomm Secure Digital Host Controller Interface driver");
+> +MODULE_LICENSE("GPL v2");
+> 
 
