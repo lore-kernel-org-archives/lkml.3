@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546Ab3IQRJb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 13:09:31 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:49379 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752653Ab3IQRJa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 13:09:30 -0400
-Date: Tue, 17 Sep 2013 19:09:27 +0200
-Message-Id: <201309171709.r8HH9Rxo018278@localhost.localdomain>
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, scottwood@freescale.com
-CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Subject: [PATCH v3] powerpc 8xx: Fixing issue with CONFIG_PIN_TLB
+	id S1753649Ab3IQRJi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 13:09:38 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52756 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753406Ab3IQRJg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Sep 2013 13:09:36 -0400
+Message-ID: <52388CC4.7040101@infradead.org>
+Date: Tue, 17 Sep 2013 10:09:24 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Subject: Re: [PATCH] regulator: fix fatal kernel-doc error
+References: <5237AB72.5020806@infradead.org> <20130917103238.GM21013@sirena.org.uk>
+In-Reply-To: <20130917103238.GM21013@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Activating CONFIG_PIN_TLB is supposed to pin the IMMR and the first three
-8Mbytes pages. But the setting of the MD_CTR was missing so as the index is
-decremented every DTLB update, the pinning of the third 8Mbytes page was
-overwriting the DTLB entry for IMMR. At the same time, the last entry written
-being entry 31, next entries would possibly get overwritten after.
-We are now starting from entry 31 and decrementing.
+On 09/17/13 03:32, Mark Brown wrote:
+> On Mon, Sep 16, 2013 at 06:08:02PM -0700, Randy Dunlap wrote:
+>> From: Randy Dunlap <rdunlap@infradead.org>
+>>
+>> Fix fatal kernel-doc error in <linux/regulator/driver.h>:
+>>
+>> Error(include/linux/regulator/driver.h:52): cannot understand prototype: 'struct regulator_linear_range '
+> 
+> Applied with the first line redone, but this seems like really terrible
+> quality of implementation for the kernel-doc stuff - it shouldn't
+> explode over something readily copable with like this.  Should we also
+> not pick this sort of thing up in -next?
 
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+/** means kernel-doc syntax and it was not in proper kernel-doc format,
+but maybe it could just be a Warning instead of a fatal Error.
 
-diff -ur linux-3.11.org/arch/powerpc/kernel/head_8xx.S linux-3.11/arch/powerpc/kernel/head_8xx.S
---- linux-3.11.org/arch/powerpc/kernel/head_8xx.S	2013-09-02 22:46:10.000000000 +0200
-+++ linux-3.11/arch/powerpc/kernel/head_8xx.S	2013-09-09 11:28:54.000000000 +0200
-@@ -796,8 +796,7 @@
- 
- #ifdef CONFIG_PIN_TLB
- 	lis	r10, (MD_RSV4I | MD_RESETVAL)@h
--	ori	r10, r10, 0x1c00
--	mr	r8, r10
-+	ori	r10, r10, 0x1f00
- #else
- 	lis	r10, MD_RESETVAL@h
- #endif
-@@ -829,7 +828,7 @@
- 	 * internal registers (among other things).
- 	 */
- #ifdef CONFIG_PIN_TLB
--	addi	r10, r10, 0x0100
-+	addi	r10, r10, -0x0100
- 	mtspr	SPRN_MD_CTR, r10
- #endif
- 	mfspr	r9, 638			/* Get current IMMR */
-@@ -848,7 +847,7 @@
- #ifdef CONFIG_PIN_TLB
- 	/* Map two more 8M kernel data pages.
- 	*/
--	addi	r10, r10, 0x0100
-+	addi	r10, r10, -0x0100
- 	mtspr	SPRN_MD_CTR, r10
- 
- 	lis	r8, KERNELBASE@h	/* Create vaddr for TLB */
-@@ -862,6 +861,9 @@
- 	addis	r11, r11, 0x0080	/* Add 8M */
- 	mtspr	SPRN_MD_RPN, r11
- 
-+	addi	r10, r10, -0x0100
-+	mtspr	SPRN_MD_CTR, r10
-+
- 	addis	r8, r8, 0x0080		/* Add 8M */
- 	mtspr	SPRN_MD_EPN, r8
- 	mtspr	SPRN_MD_TWC, r9
+Ideally we should pick it up in -next, of course, but I doubt that anyone
+is running kernel-doc on linux-next.  I used to do that, but there are
+too many errors/warnings.  I suppose that I could just concentrate on
+(fatal) Errors in linux-next and ignore the Warnings.
+
+-- 
+~Randy
