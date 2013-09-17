@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176Ab3IQQOI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Sep 2013 12:14:08 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:45857 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752828Ab3IQQOG (ORCPT
+	id S1753365Ab3IQQSM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Sep 2013 12:18:12 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:45623 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753007Ab3IQQSJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Sep 2013 12:14:06 -0400
-Message-ID: <52387FC9.1080905@wwwdotorg.org>
-Date: Tue, 17 Sep 2013 10:14:01 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 17 Sep 2013 12:18:09 -0400
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Guenter Roeck <linux@roeck-us.net>, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
-        Hyun Kwon <hyunk@xilinx.com>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        linux-arm-kernel@lists.infradead.org, Rob Landley <rob@landley.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: Re: [PATCH] clk: si570: Add a driver for SI570 oscillators
-References: <1379033737-30015-1-git-send-email-soren.brinkmann@xilinx.com> <1379033737-30015-2-git-send-email-soren.brinkmann@xilinx.com> <52373314.5070806@wwwdotorg.org> <20130916164927.GB21352@roeck-us.net> <5237390E.5070203@wwwdotorg.org> <20130916173540.GA3481@roeck-us.net> <52374FF7.8040604@wwwdotorg.org> <52380BD5.8080105@gmail.com>
-In-Reply-To: <52380BD5.8080105@gmail.com>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <52387343.7040007@wwwdotorg.org>
+References: <cover.1378963070.git.viresh.kumar@linaro.org>
+	<8f777cc6b41b2fed4bf71ce2adc36800353d5738.1378963070.git.viresh.kumar@linaro.org>
+	<52387343.7040007@wwwdotorg.org>
+Date: Tue, 17 Sep 2013 21:48:08 +0530
+Message-ID: <CAKohpo=_bhaws44_XEf=DEjbVtiRfYHeMm-cK=bHo1Sed14kAg@mail.gmail.com>
+Subject: Re: [PATCH 5/5] cpufreq: use correct values of cpus in __cpufreq_remove_dev_finish()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/2013 01:59 AM, Sebastian Hesselbarth wrote:
-> On 09/16/2013 08:37 PM, Stephen Warren wrote:
-...
->> Perhaps if clock-frequency is specified, the driver should refuse to
->> provide anything else. If clock-frequency isn't specified, the driver
->> shouldn't touch the HW when it initializes, but should honor any
->> requests that come in from other drivers? That would maintain what I
->> feel is clock-frequency's connection to being a fixed clock.
-> 
-> For the clk-si5351 programmable clock driver in mainline, it already
-> uses "clock-frequency" for initial clock setup but allows to set it
-> later on. IMHO that is ok, because from a initial point-of-view, an
-> initial frequency is fixed. As soon as the driver takes over, the user
-> is free to do whatever he wants and should not be limited by DT.
-> 
-> But if we vote against that approach, we should probably also modifiy
-> clk-si5351 accordingly.
+On 17 September 2013 20:50, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 09/11/2013 11:25 PM, Viresh Kumar wrote:
+>> This broke after a recent change "cedb70a cpufreq: Split __cpufreq_remove_dev()
+>> into two parts" from Srivatsa..
+>>
+>> Consider a scenario where we have two CPUs in a policy (0 & 1) and we are
+>> removing cpu 1. On the call to __cpufreq_remove_dev_prepare() we have cleared 1
+>> from policy->cpus and now on a call to __cpufreq_remove_dev_finish() we read
+>> cpumask_weight of policy->cpus, which will come as 1 and this code will behave
+>> as if we are removing the last cpu from policy :)
+>>
+>> Fix it by clearing cpu mask in __cpufreq_remove_dev_finish() instead of
+>> __cpufreq_remove_dev_prepare().
+>
+> I see this patch isn't in linux-next yet, nor did it make 3.12-rc1. I
+> assume it'll make 3.12-rc2? It solves various CPU hotplug and
+> suspend/resume issues for me.
 
-I suppose that approach isn't unreasonable. So, if there's precedent for
-it, this driver may as well follow it.
+Yes, I have asked Rafael to get this in for rc2 and few others too..
+Waiting for his reply though..
+
+--
+viresh
